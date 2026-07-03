@@ -33,15 +33,17 @@ defmodule KanbanWeb.API.AgentJSONTest do
 
     test "returns 200 with exactly the expected top-level sections", %{conn: conn} do
       body = json_response(conn, 200)
+      keys = body |> Map.keys() |> MapSet.new()
 
-      assert MapSet.new(Map.keys(body)) == MapSet.new(@onboarding_keys),
+      assert keys == MapSet.new(@onboarding_keys),
              "onboarding top-level key set drifted — external agents depend on it"
     end
 
     test "api_schema exposes exactly the documented key set", %{conn: conn} do
       body = json_response(conn, 200)
+      keys = body["api_schema"] |> Map.keys() |> MapSet.new()
 
-      assert MapSet.new(Map.keys(body["api_schema"])) == MapSet.new(@api_schema_keys),
+      assert keys == MapSet.new(@api_schema_keys),
              "api_schema key set drifted — future edits to the SchemaDoc literal must be deliberate"
     end
 

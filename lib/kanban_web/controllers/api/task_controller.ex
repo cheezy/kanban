@@ -4,76 +4,12 @@ defmodule KanbanWeb.API.TaskController do
   alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias KanbanWeb.API.ChangedFilesTransport
   alias KanbanWeb.API.CompletionResultGate
   alias KanbanWeb.API.ErrorDocs
+  alias KanbanWeb.API.TaskParamFilter
 
   require Logger
-
-  # String keys (since params arrive from JSON as strings) that an API client
-  # may NOT mass-assign via PATCH /api/tasks/:id. These flow through the
-  # dedicated workflow endpoints (claim/complete/mark_reviewed) instead.
-  # Defense in depth: the controller filters and logs; Task.api_update_changeset/2
-  # also enforces the allow-list at the changeset layer.
-  # String keys an API client may NOT mass-assign on POST /api/tasks (or
-  # /api/tasks/batch). status defaults to :open via the schema, identifier and
-  # position are generated server-side, and the workflow/audit fields can only
-  # be set by the dedicated workflow endpoints. created_by_id and
-  # created_by_agent are not in this list because the controller helper
-  # `build_task_params_with_creator/3` overwrites them server-side after the
-  # filter — they need to flow through the changeset's allow-list.
-  @forbidden_api_create_fields ~w(
-    status
-    identifier
-    position
-    claimed_at
-    claim_expires_at
-    completed_at
-    completed_by_id
-    completed_by_agent
-    completion_summary
-    actual_complexity
-    actual_files_changed
-    time_spent_minutes
-    review_status
-    review_notes
-    review_report
-    reviewed_by_id
-    reviewed_at
-    workflow_steps
-    explorer_result
-    reviewer_result
-    archived_at
-    assigned_to_id
-  )
-
-  @forbidden_api_update_fields ~w(
-    status
-    identifier
-    parent_id
-    column_id
-    position
-    assigned_to_id
-    claimed_at
-    claim_expires_at
-    completed_at
-    completed_by_id
-    completed_by_agent
-    completion_summary
-    actual_complexity
-    actual_files_changed
-    time_spent_minutes
-    review_status
-    review_notes
-    review_report
-    reviewed_by_id
-    reviewed_at
-    workflow_steps
-    explorer_result
-    reviewer_result
-    created_by_id
-    created_by_agent
-    archived_at
-  )
 
   action_fallback KanbanWeb.API.FallbackController
 
@@ -208,11 +144,15 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   defp perform_api_task_create(conn, column, task_params, user, api_token) do
-    {safe_task_params, rejected_goal_fields} = filter_forbidden_create_fields(task_params)
-    child_tasks_raw = Map.get(task_params, "tasks", [])
-    {safe_child_tasks, rejected_child_fields} = filter_child_tasks(child_tasks_raw)
+    {safe_task_params, rejected_goal_fields} =
+      TaskParamFilter.filter_forbidden_create_fields(task_params)
 
-    log_create_mass_assignment(conn, rejected_goal_fields, rejected_child_fields)
+    child_tasks_raw = Map.get(task_params, "tasks", [])
+
+    {safe_child_tasks, rejected_child_fields} =
+      TaskParamFilter.filter_child_tasks(child_tasks_raw)
+
+    log_create_forbidden_fields(conn, rejected_goal_fields, rejected_child_fields)
 
     task_params_with_creator =
       build_task_params_with_creator(safe_task_params, user, api_token)
@@ -329,7 +269,7 @@ defmodule KanbanWeb.API.TaskController do
 
     case fetch_and_verify_task(id_or_identifier, board) do
       {:ok, task} ->
-        if column_change_attempted?(task_params, task) do
+        if TaskParamFilter.column_change_attempted?(task_params, task) do
           reject_column_change(conn, task)
         else
           perform_api_task_update(conn, task, task_params)
@@ -566,7 +506,8 @@ defmodule KanbanWeb.API.TaskController do
     # {changed_files: {encoding: "base64"|"gzip+base64", data: "..."}} (D61).
     # The encoded form lets a unified code diff upload even when an edge filter
     # would otherwise misread the raw text as an attack; it is decoded back to
-    # the same list the raw shapes carry (see decode_changed_files_payload/1).
+    # the same list the raw shapes carry (see
+    # ChangedFilesTransport.decode_and_validate_changed_files/1).
     payload = params["changed_files"] || params["_json"]
 
     case persist_changed_files(conn, id_or_identifier, payload) do
@@ -581,7 +522,7 @@ defmodule KanbanWeb.API.TaskController do
 
     with {:ok, task} <- fetch_and_verify_task(id_or_identifier, board),
          :ok <- authorize_changed_files(task, user),
-         {:ok, value} <- decode_and_validate_changed_files(payload),
+         {:ok, value} <- ChangedFilesTransport.decode_and_validate_changed_files(payload),
          {:ok, updated} <- Tasks.update_changed_files(task, value) do
       {:ok, updated, value}
     end
@@ -617,149 +558,6 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   defp authorize_changed_files(_task, _user), do: {:error, :not_authorized_changed_files}
-
-  defp validate_changed_files_payload(payload) do
-    case Kanban.Tasks.CompletionValidation.validate_changed_files(payload) do
-      {:ok, value} ->
-        {:ok, value}
-
-      {:error, errors} ->
-        {:error, {:completion_validation_failed, build_changed_files_failure_body(errors)}}
-    end
-  end
-
-  defp build_changed_files_failure_body(errors) do
-    %{
-      error: "completion validation failed",
-      failures: [
-        %{
-          field: "changed_files",
-          errors:
-            Enum.map(errors, fn {field, message} ->
-              %{field: to_string(field), message: message}
-            end)
-        }
-      ],
-      required_format: %{
-        "changed_files" => [
-          %{
-            "path" => "lib/foo.ex",
-            "diff" => "Unified-patch text — see docs/diff-contract.md (≤ 500 lines per file)"
-          },
-          %{"path" => "assets/logo.png", "diff" => "[binary file — no diff captured]"}
-        ]
-      }
-    }
-  end
-
-  # --- Transport-encoded changed_files payload (D61) -----------------------
-  #
-  # The diff snapshot may arrive base64- or gzip+base64-encoded so an edge
-  # request filter does not misread a unified code diff as an attack and drop
-  # the upload. The encoded form is an envelope wrapping the same JSON array the
-  # raw shape sends:
-  #
-  #     {"changed_files": {"encoding": "base64", "data": "<base64 of the array>"}}
-  #
-  # The decoded bytes are validated and persisted by the existing path, so the
-  # encoded form is purely additive. A raw list, nil, or any other shape passes
-  # straight through for the validator to handle exactly as before.
-
-  # Caps guarding against an oversized or decompression-bomb upload before it
-  # reaches the validator. The downstream 500-line-per-file rule bounds content
-  # further; these bound the raw transport bytes.
-  @max_decoded_changed_files_bytes 5_000_000
-  @max_encoded_changed_files_bytes 10_000_000
-
-  defp decode_and_validate_changed_files(payload) do
-    with {:ok, decoded} <- decode_changed_files_payload(payload) do
-      validate_changed_files_payload(decoded)
-    end
-  end
-
-  defp decode_changed_files_payload(%{"encoding" => encoding, "data" => data})
-       when is_binary(encoding) and is_binary(data) do
-    with {:ok, raw} <- decode_transport(encoding, data) do
-      decode_json_array(raw)
-    end
-  end
-
-  defp decode_changed_files_payload(payload), do: {:ok, payload}
-
-  defp decode_transport(_encoding, data)
-       when byte_size(data) > @max_encoded_changed_files_bytes,
-       do: changed_files_decode_error("encoded data exceeds the maximum allowed size")
-
-  defp decode_transport("base64", data) do
-    case Base.decode64(data) do
-      {:ok, bin} -> {:ok, bin}
-      :error -> changed_files_decode_error("data is not valid base64")
-    end
-  end
-
-  defp decode_transport("gzip+base64", data) do
-    case Base.decode64(data) do
-      {:ok, gzipped} -> gunzip_changed_files(gzipped)
-      :error -> changed_files_decode_error("data is not valid base64")
-    end
-  end
-
-  defp decode_transport(_encoding, _data),
-    do:
-      changed_files_decode_error("unsupported changed_files encoding (use base64 or gzip+base64)")
-
-  # Inflate gzip data incrementally, aborting as soon as the cumulative
-  # decompressed size exceeds the cap. A one-shot :zlib.gunzip/1 would inflate
-  # the entire payload into memory first, so a small high-ratio "bomb" could
-  # allocate gigabytes before the downstream size guard ever ran. The streaming
-  # loop bounds peak memory to the cap.
-  defp gunzip_changed_files(gzipped) do
-    z = :zlib.open()
-
-    try do
-      :zlib.inflateInit(z, 31)
-      bounded_inflate(z, :zlib.safeInflate(z, gzipped), [], 0)
-    rescue
-      _ -> changed_files_decode_error("data is not valid gzip")
-    catch
-      _, _ -> changed_files_decode_error("data is not valid gzip")
-    after
-      :zlib.close(z)
-    end
-  end
-
-  defp bounded_inflate(z, {status, output}, acc, size) do
-    size = size + IO.iodata_length(output)
-
-    cond do
-      size > @max_decoded_changed_files_bytes ->
-        changed_files_decode_error("decoded payload exceeds the maximum allowed size")
-
-      status == :continue ->
-        bounded_inflate(z, :zlib.safeInflate(z, []), [acc | [output]], size)
-
-      true ->
-        {:ok, IO.iodata_to_binary([acc | [output]])}
-    end
-  end
-
-  defp decode_json_array(raw)
-       when byte_size(raw) > @max_decoded_changed_files_bytes,
-       do: changed_files_decode_error("decoded payload exceeds the maximum allowed size")
-
-  defp decode_json_array(raw) do
-    case Jason.decode(raw) do
-      {:ok, list} when is_list(list) -> {:ok, list}
-      {:ok, _other} -> changed_files_decode_error("decoded payload is not a JSON array")
-      {:error, _} -> changed_files_decode_error("decoded payload is not valid JSON")
-    end
-  end
-
-  defp changed_files_decode_error(message) do
-    {:error,
-     {:completion_validation_failed,
-      build_changed_files_failure_body([{:changed_files, message}])}}
-  end
 
   def unclaim(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
@@ -1322,11 +1120,15 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   defp create_single_goal_in_batch(goal_params, index, ctx, acc) do
-    {safe_goal_params, rejected_goal_fields} = filter_forbidden_create_fields(goal_params)
-    child_tasks_raw = Map.get(goal_params, "tasks", [])
-    {safe_child_tasks, rejected_child_fields} = filter_child_tasks(child_tasks_raw)
+    {safe_goal_params, rejected_goal_fields} =
+      TaskParamFilter.filter_forbidden_create_fields(goal_params)
 
-    log_create_mass_assignment(ctx.conn, rejected_goal_fields, rejected_child_fields)
+    child_tasks_raw = Map.get(goal_params, "tasks", [])
+
+    {safe_child_tasks, rejected_child_fields} =
+      TaskParamFilter.filter_child_tasks(child_tasks_raw)
+
+    log_create_forbidden_fields(ctx.conn, rejected_goal_fields, rejected_child_fields)
 
     task_params_with_creator =
       build_task_params_with_creator(safe_goal_params, ctx.user, ctx.api_token)
@@ -1392,15 +1194,6 @@ defmodule KanbanWeb.API.TaskController do
     })
   end
 
-  defp column_change_attempted?(%{"column_id" => new_id}, task) do
-    case parse_id(new_id) do
-      {:ok, int_id} -> int_id != task.column_id
-      :error -> true
-    end
-  end
-
-  defp column_change_attempted?(_task_params, _task), do: false
-
   defp reject_column_change(conn, task) do
     emit_telemetry(conn, :task_update_column_change_forbidden, %{task_id: task.id})
 
@@ -1413,9 +1206,9 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   defp perform_api_task_update(conn, task, task_params) do
-    {safe_params, rejected_fields} = filter_forbidden_update_fields(task_params)
+    {safe_params, rejected_fields} = TaskParamFilter.filter_forbidden_update_fields(task_params)
 
-    log_update_mass_assignment(conn, task, rejected_fields)
+    log_update_forbidden_fields(conn, task, rejected_fields)
 
     case Tasks.api_update_task(task, safe_params) do
       {:ok, updated_task} ->
@@ -1430,73 +1223,35 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp log_update_mass_assignment(_conn, _task, []), do: :ok
+  # Emits the update-path mass-assignment audit log (via TaskParamFilter) and,
+  # when a forbidden field was rejected, the companion telemetry event.
+  defp log_update_forbidden_fields(conn, task, rejected_fields) do
+    TaskParamFilter.log_update_mass_assignment(task.id, rejected_fields, actor_user_id(conn))
 
-  defp log_update_mass_assignment(conn, task, rejected_fields) do
-    Logger.info("API mass-assignment attempt rejected",
-      task_id: task.id,
-      rejected_fields: rejected_fields,
-      actor_user_id: conn.assigns[:current_user] && conn.assigns.current_user.id
-    )
-
-    emit_telemetry(conn, :task_update_forbidden_fields_filtered, %{
-      task_id: task.id,
-      fields: rejected_fields
-    })
+    if rejected_fields != [] do
+      emit_telemetry(conn, :task_update_forbidden_fields_filtered, %{
+        task_id: task.id,
+        fields: rejected_fields
+      })
+    end
   end
 
-  # Splits task_params into the safe subset (allowed fields only) and the list
-  # of forbidden field names that were present in the original payload. Always
-  # also strips "column_id" (column moves happen via the workflow endpoints,
-  # and the upstream column_change_attempted?/2 check has already produced 403
-  # for substantive column changes).
-  defp filter_forbidden_update_fields(task_params) do
-    rejected = Enum.filter(@forbidden_api_update_fields, &Map.has_key?(task_params, &1))
-    safe_params = Map.drop(task_params, @forbidden_api_update_fields)
-    {safe_params, rejected}
+  # Emits the create-path mass-assignment audit log (via TaskParamFilter) and,
+  # when a forbidden field was rejected, the companion telemetry event. The
+  # audit Logger line lives in TaskParamFilter; telemetry stays here because
+  # emit_telemetry/3 is controller-wide infra keyed off conn.
+  defp log_create_forbidden_fields(conn, goal_fields, child_fields) do
+    TaskParamFilter.log_create_mass_assignment(goal_fields, child_fields, actor_user_id(conn))
+
+    if goal_fields != [] or child_fields != [] do
+      emit_telemetry(conn, :task_create_forbidden_fields_filtered, %{
+        goal_fields: goal_fields,
+        child_fields: child_fields
+      })
+    end
   end
 
-  # Strips the create-path forbidden fields and returns {safe_params, rejected}.
-  # Unlike the update filter, this keeps `column_id` (the create flow legitimately
-  # honors it after `verify_column_ownership`).
-  defp filter_forbidden_create_fields(task_params) when is_map(task_params) do
-    rejected = Enum.filter(@forbidden_api_create_fields, &Map.has_key?(task_params, &1))
-    safe_params = Map.drop(task_params, @forbidden_api_create_fields)
-    {safe_params, rejected}
-  end
-
-  defp filter_forbidden_create_fields(other), do: {other, []}
-
-  # Filters a list of child task maps (from POST /api/tasks with `tasks: [...]`
-  # or POST /api/tasks/batch). Returns the cleaned list plus a deduplicated list
-  # of any forbidden field names that appeared across children.
-  defp filter_child_tasks(child_tasks) when is_list(child_tasks) do
-    {safe_children, rejected_lists} =
-      Enum.map_reduce(child_tasks, [], fn child, acc ->
-        {safe, rejected} = filter_forbidden_create_fields(child)
-        {safe, acc ++ rejected}
-      end)
-
-    {safe_children, Enum.uniq(rejected_lists)}
-  end
-
-  defp filter_child_tasks(other), do: {other, []}
-
-  defp log_create_mass_assignment(conn, [], []), do: conn
-
-  defp log_create_mass_assignment(conn, goal_fields, child_fields) do
-    Logger.info("API mass-assignment attempt rejected on create",
-      rejected_fields: Enum.uniq(goal_fields ++ child_fields),
-      actor_user_id: conn.assigns[:current_user] && conn.assigns.current_user.id
-    )
-
-    emit_telemetry(conn, :task_create_forbidden_fields_filtered, %{
-      goal_fields: goal_fields,
-      child_fields: child_fields
-    })
-
-    conn
-  end
+  defp actor_user_id(conn), do: conn.assigns[:current_user] && conn.assigns.current_user.id
 
   defp parse_id(id) when is_integer(id), do: {:ok, id}
 
