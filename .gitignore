@@ -46,6 +46,7 @@ TOKENS
 .stride-env-cache
 .stride-changed-files.json
 .stride-diff-upload-state
+.stride-dirty-baseline
 priv/repo/seed_metrics_data.exs
 package.json
 package-lock.json
