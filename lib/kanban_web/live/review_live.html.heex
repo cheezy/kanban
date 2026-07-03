@@ -1,0 +1,495 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:review}>
+  <:breadcrumbs>
+    <span>{gettext("Workspace")}</span>
+    <span style="color: var(--ink-4);">/</span>
+    <span style="color: var(--ink); font-weight: 500;">{gettext("Review queue")}</span>
+  </:breadcrumbs>
+
+  <div
+    class="stride-screen"
+    style="display: flex; flex-direction: column; height: 100%; min-height: 0;"
+  >
+    <header
+      data-review-header
+      style={[
+        "display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 16px;",
+        "padding: 16px 24px;",
+        "border-bottom: 1px solid var(--line);",
+        "background: var(--surface);"
+      ]}
+    >
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <h1 style={[
+          "margin: 0; font-size: 18px; font-weight: 600;",
+          "letter-spacing: -0.01em; color: var(--ink);"
+        ]}>
+          {gettext("Review queue")}
+        </h1>
+        <p
+          data-review-header-subtitle
+          style="margin: 0; font-size: 12.5px; color: var(--ink-3);"
+        >
+          {queue_subtitle(@stats)}
+        </p>
+      </div>
+      <span style="flex: 1;" />
+      <span
+        data-review-header-avg-time
+        style={[
+          "font-size: 11px; font-family: var(--font-mono);",
+          "color: var(--ink-3); white-space: nowrap;"
+        ]}
+      >
+        {gettext("Avg time to review · 17m")}
+      </span>
+    </header>
+
+    <div class="flex-1 min-h-0 flex flex-col md:flex-row">
+      <aside
+        data-review-queue-rail
+        class={[
+          "flex-1 md:flex-none w-full md:w-[380px] md:flex-shrink-0 overflow-y-auto",
+          if(@selected, do: "hidden md:block", else: "block")
+        ]}
+        style={[
+          "border-right: 1px solid var(--line);",
+          "background: var(--surface-2);"
+        ]}
+      >
+        <p
+          :if={@pending == []}
+          data-review-queue-empty
+          style={[
+            "margin: 0; padding: 24px 16px; text-align: center;",
+            "font-size: 12.5px; font-style: italic;",
+            "color: var(--ink-3);"
+          ]}
+        >
+          {gettext("Inbox zero — nothing is waiting for review.")}
+        </p>
+
+        <ReviewQueueItem.review_queue_item
+          :for={item <- @pending}
+          item={item}
+          selected={selected?(@selected, item)}
+          on_click="select_item"
+        />
+      </aside>
+
+      <section
+        data-review-detail
+        class={[
+          "flex-1 min-w-0 overflow-y-auto md:flex md:flex-col",
+          if(@selected, do: "flex flex-col", else: "hidden md:flex")
+        ]}
+      >
+        <div
+          :if={@selected == nil}
+          data-review-detail-empty
+          style={[
+            "padding: 48px 24px; text-align: center;",
+            "font-size: 13px; color: var(--ink-3); font-style: italic;"
+          ]}
+        >
+          {gettext("Select a task from the queue to start a review.")}
+        </div>
+
+        <div :if={@selected != nil}>
+          <button
+            type="button"
+            phx-click="deselect_item"
+            class="md:hidden inline-flex items-center gap-2 min-h-11 px-4 py-2 text-sm font-medium text-base-content hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            style="border-bottom: 1px solid var(--line);"
+            aria-label={gettext("Back to review queue")}
+          >
+            <.icon name="hero-arrow-left" class="w-4 h-4" />
+            {gettext("Back to queue")}
+          </button>
+          <ReviewDetailHeader.review_detail_header
+            task={@selected}
+            on_approve="approve"
+            on_request_changes="request_changes"
+          />
+
+          <form
+            :if={@request_changes_open?}
+            id="review-request-changes-form"
+            data-review-request-changes-form
+            phx-submit="submit_request_changes"
+            phx-mounted={Phoenix.LiveView.JS.focus(to: "#review-notes")}
+            style={[
+              "padding: 14px 16px; border-bottom: 1px solid var(--line);",
+              "display: flex; flex-direction: column; gap: 10px;",
+              "background: var(--surface-sunken);"
+            ]}
+          >
+            <label
+              for="review-notes"
+              style="font-size: 12px; font-weight: 600; color: var(--ink);"
+            >
+              {gettext("Notes for the agent")}
+            </label>
+            <textarea
+              id="review-notes"
+              name="review[notes]"
+              rows="4"
+              required
+              style={[
+                "width: 100%; padding: 8px 10px;",
+                "font-family: var(--font-mono); font-size: 12px;",
+                "color: var(--ink); background: var(--surface);",
+                "border: 1px solid var(--line); border-radius: 6px;"
+              ]}
+            ></textarea>
+            <div class="flex flex-wrap gap-2 justify-end">
+              <.button type="button" phx-click="cancel_request_changes">
+                {gettext("Cancel")}
+              </.button>
+              <.button variant="primary" type="submit">
+                {gettext("Send request")}
+              </.button>
+            </div>
+          </form>
+
+          <div
+            data-review-detail-summary
+            style={[
+              "padding: 14px 16px;",
+              "color: var(--ink);",
+              "display: flex; align-items: flex-start; gap: 10px;"
+            ]}
+          >
+            <span
+              :if={review_status_pill(@selected)}
+              data-review-detail-summary-status={review_status_pill(@selected).status}
+              style={[
+                "flex-shrink: 0;",
+                "display: inline-flex; align-items: center; gap: 6px;",
+                "padding: 4px 12px; border-radius: 999px;",
+                "font-size: 13px; font-weight: 600;",
+                "letter-spacing: 0.02em;",
+                "margin-top: 6px;",
+                review_status_pill(@selected).style
+              ]}
+            >
+              <.icon name={review_status_pill(@selected).icon} class="w-4 h-4" />
+              {review_status_pill(@selected).label}
+            </span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+              <h2
+                data-review-detail-summary-title
+                style={[
+                  "margin: 0; font-size: 20px; font-weight: 600;",
+                  "letter-spacing: -0.01em; line-height: 1.2; color: var(--ink);"
+                ]}
+              >
+                {@selected.title}
+              </h2>
+              <p
+                :if={present_text?(summary_text(@selected))}
+                data-review-detail-summary-description
+                style="margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-2);"
+              >
+                {summary_text(@selected)}
+              </p>
+            </div>
+          </div>
+
+          <ReviewStatsStrip.review_stats_strip
+            acceptance={acceptance_value(@selected)}
+            acceptance_passed={acceptance_passed(@selected)}
+            acceptance_inconsistent={acceptance_inconsistent?(@selected)}
+            tests={ReviewReportHelpers.testing_strategy_value(@selected)}
+            tests_passed={ReviewReportHelpers.testing_strategy_passed(@selected)}
+            diff={ReviewReportHelpers.patterns_value(@selected)}
+            diff_passed={ReviewReportHelpers.patterns_passed(@selected)}
+            hooks={ReviewReportHelpers.pitfalls_value(@selected)}
+            hooks_passed={ReviewReportHelpers.pitfalls_passed(@selected)}
+          />
+
+          <section
+            :if={present_text?(@selected.completion_summary)}
+            data-review-completion-summary
+            style={[
+              "margin: 12px 16px 0; padding: 10px 12px;",
+              "border-radius: 6px;",
+              "background: var(--surface); border: 1px solid var(--line);",
+              "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+              "display: flex; flex-direction: column; gap: 6px;"
+            ]}
+          >
+            <span style={[
+              "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+              "text-transform: uppercase; color: var(--ink-3);"
+            ]}>
+              {gettext("Completion summary")}
+            </span>
+            <p style="margin: 0; white-space: pre-wrap;">
+              {@selected.completion_summary}
+            </p>
+          </section>
+
+          <section
+            data-review-issues
+            style={[
+              "margin: 12px 16px 0; padding: 10px 12px;",
+              "border-radius: 6px;",
+              "background: var(--surface); border: 1px solid var(--line);",
+              "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+              "display: flex; flex-direction: column; gap: 6px;"
+            ]}
+          >
+            <span style={[
+              "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+              "text-transform: uppercase; color: var(--ink-3);"
+            ]}>
+              {gettext("Issues")}
+            </span>
+            <ReviewReportPanel.review_report_panel task={@selected} />
+          </section>
+
+          <section
+            :if={
+              ReviewReportHelpers.security_considerations_value(@selected) ||
+                ReviewReportHelpers.section_incomplete?(@selected, :security_considerations)
+            }
+            data-review-security-considerations
+            data-review-security-status={section_status_key(@selected, :security_considerations)}
+            style={[
+              "margin: 12px 16px 0; padding: 10px 12px;",
+              "border-radius: 6px;",
+              "background: var(--surface); border: 1px solid var(--line);",
+              "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+              "display: flex; flex-direction: column; gap: 6px;"
+            ]}
+          >
+            <span style={[
+              "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+              "text-transform: uppercase; color: var(--ink-3);"
+            ]}>
+              {gettext("Security considerations")}
+            </span>
+            <%= if ReviewReportHelpers.section_incomplete?(@selected, :security_considerations) do %>
+              <div
+                data-review-security-incomplete
+                style={[
+                  "display: flex; align-items: flex-start; gap: 8px; align-self: stretch;",
+                  "padding: 8px 10px; border-radius: 5px;",
+                  "background: var(--st-blocked-soft); color: var(--st-blocked);",
+                  "border: 1px solid var(--st-blocked);"
+                ]}
+              >
+                <.icon name="hero-exclamation-triangle" class="w-4 h-4 flex-shrink-0" />
+                <span>
+                  {gettext(
+                    "Not assessed — this task specified security considerations, but the review did not record a verdict for them."
+                  )}
+                </span>
+              </div>
+            <% else %>
+              <span
+                data-review-security-pill
+                style={[
+                  "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
+                  "padding: 2px 10px; border-radius: 999px;",
+                  "font-size: 12px; font-weight: 600; text-transform: capitalize;",
+                  verdict_tone_style(
+                    ReviewReportHelpers.security_considerations_passed(@selected)
+                  )
+                ]}
+              >
+                <.icon
+                  name={
+                    verdict_icon(
+                      :security_considerations,
+                      ReviewReportHelpers.security_considerations_passed(@selected)
+                    )
+                  }
+                  class="w-4 h-4"
+                />
+                {ReviewReportHelpers.security_considerations_value(@selected)}
+              </span>
+              <p
+                :if={security_considerations_note(@selected)}
+                data-review-security-note
+                style="margin: 0; white-space: pre-wrap; color: var(--ink-2);"
+              >
+                {security_considerations_note(@selected)}
+              </p>
+            <% end %>
+          </section>
+
+          <section
+            data-review-acceptance
+            style={[
+              "margin: 12px 16px 0; padding: 10px 12px;",
+              "border-radius: 6px;",
+              "background: var(--surface); border: 1px solid var(--line);"
+            ]}
+          >
+            <AcceptanceChecklist.acceptance_checklist
+              acceptance_criteria={@selected.acceptance_criteria}
+              checked={acceptance_checked(@selected)}
+              failed={acceptance_failed(@selected)}
+              structured={structured_acceptance(@selected)}
+            />
+          </section>
+
+          <section
+            :if={review_check_rows(@selected) != []}
+            data-review-checks
+            style={[
+              "margin: 12px 16px 0; padding: 10px 12px;",
+              "border-radius: 6px;",
+              "background: var(--surface); border: 1px solid var(--line);",
+              "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+              "display: flex; flex-direction: column; gap: 6px;"
+            ]}
+          >
+            <span style={[
+              "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+              "text-transform: uppercase; color: var(--ink-3);"
+            ]}>
+              {gettext("Review checks")}
+            </span>
+            <div
+              :for={row <- review_check_rows(@selected)}
+              data-review-check-row={Atom.to_string(row.section)}
+              data-review-check-status={row.status}
+              style="display: flex; flex-direction: column; gap: 4px; margin-top: 14px;"
+            >
+              <span style="font-weight: 600; color: var(--ink);">{row.label}</span>
+              <%= if row.incomplete? do %>
+                <div
+                  data-review-check-incomplete
+                  style={[
+                    "display: flex; align-items: flex-start; gap: 8px; align-self: stretch;",
+                    "padding: 8px 10px; border-radius: 5px;",
+                    "background: var(--st-blocked-soft); color: var(--st-blocked);",
+                    "border: 1px solid var(--st-blocked);"
+                  ]}
+                >
+                  <.icon name="hero-exclamation-triangle" class="w-4 h-4 flex-shrink-0" />
+                  <span>
+                    {gettext(
+                      "Not assessed — this task specified this check, but the review did not record a verdict for it."
+                    )}
+                  </span>
+                </div>
+              <% else %>
+                <span
+                  :if={row.value && row.breakdown == []}
+                  data-review-check-pill
+                  style={[
+                    "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
+                    "padding: 2px 10px; border-radius: 999px;",
+                    "font-size: 12px; font-weight: 600; text-transform: capitalize;",
+                    verdict_tone_style(row.passed)
+                  ]}
+                >
+                  <.icon name={verdict_icon(row.section, row.passed)} class="w-4 h-4" />
+                  {row.value}
+                </span>
+                <p
+                  :if={row.note && row.breakdown == []}
+                  data-review-check-note
+                  style="margin: 0; white-space: pre-wrap; color: var(--ink-2);"
+                >
+                  {row.note}
+                </p>
+              <% end %>
+              <div
+                :if={row.breakdown != []}
+                data-review-check-breakdown
+                style="display: flex; flex-direction: column; gap: 8px; margin-top: 2px; margin-left: 14px;"
+              >
+                <div
+                  :for={category <- row.breakdown}
+                  data-review-check-category={category.key}
+                  data-review-check-category-status={category_status_key(category.passed)}
+                  style="display: flex; flex-direction: column; gap: 3px;"
+                >
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style={[
+                      "font-size: 11.5px; font-weight: 600;",
+                      "font-family: var(--font-mono); color: var(--ink);"
+                    ]}>
+                      {category.label}
+                    </span>
+                    <span
+                      data-review-check-category-pill
+                      style={[
+                        "display: inline-flex; align-items: center; gap: 4px;",
+                        "padding: 0 8px; border-radius: 999px;",
+                        "font-size: 11px; font-weight: 600; text-transform: capitalize;",
+                        verdict_tone_style(category.passed)
+                      ]}
+                    >
+                      <.icon
+                        name={verdict_icon(row.section, category.passed)}
+                        class="w-3.5 h-3.5"
+                      />
+                      {category_verdict_label(category.passed)}
+                    </span>
+                  </div>
+                  <ul style={[
+                    "margin: 0; padding-left: 18px; color: var(--ink-2);",
+                    "display: flex; flex-direction: column; gap: 2px;"
+                  ]}>
+                    <li :for={item <- category.items}>{item}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            data-review-changed-files
+            style={[
+              "margin: 12px 16px 0; padding: 10px 12px;",
+              "border-radius: 6px;",
+              "background: var(--surface); border: 1px solid var(--line);",
+              "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+              "display: flex; flex-direction: column; gap: 6px;"
+            ]}
+          >
+            <span style={[
+              "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+              "text-transform: uppercase; color: var(--ink-3);"
+            ]}>
+              {gettext("Changed files")}
+            </span>
+            <ReviewDiffPanel.review_diff_panel
+              files={task_files(@selected)}
+              selected_file={selected_file_payload(@selected, @selected_changed_file)}
+              on_file_click="select_changed_file"
+            />
+          </section>
+
+          <section
+            :if={
+              CodeReviewPanel.checks_for(@selected) != [] or
+                ReviewReportHelpers.project_checks_gap(@selected) != nil
+            }
+            data-review-code-review-section
+            style={[
+              "margin: 12px 16px 16px; padding: 10px 12px;",
+              "border-radius: 6px;",
+              "background: var(--surface); border: 1px solid var(--line);",
+              "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+              "display: flex; flex-direction: column; gap: 8px;"
+            ]}
+          >
+            <span style={[
+              "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+              "text-transform: uppercase; color: var(--ink-3);"
+            ]}>
+              {gettext("Code review")}
+            </span>
+            <CodeReviewPanel.code_review_panel task={@selected} />
+          </section>
+        </div>
+      </section>
+    </div>
+  </div>
+</Layouts.app>
