@@ -1,13 +1,14 @@
 defmodule KanbanWeb.BoardLive.Show do
   use KanbanWeb, :live_view
 
-  alias Kanban.ApiTokens
   alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Messages
   alias Kanban.Tasks
   alias KanbanWeb.BoardAccent
   alias KanbanWeb.BoardHeader
+  alias KanbanWeb.BoardLive.ApiTokens
+  alias KanbanWeb.BoardLive.Authorization
   alias KanbanWeb.BoardLive.Goals
   alias KanbanWeb.BoardLive.TaskCardData
   alias KanbanWeb.BoardTabs
@@ -40,7 +41,11 @@ defmodule KanbanWeb.BoardLive.Show do
 
   def handle_params(%{"id" => id, "column_id" => column_id}, _, socket) do
     with_board(socket, id, fn board, user_access ->
-      case check_column_action_authorization(socket.assigns.live_action, user_access, board) do
+      case Authorization.check_column_action_authorization(
+             socket.assigns.live_action,
+             user_access,
+             board
+           ) do
         :ok ->
           assign_board_with_column(socket, board, user_access, column_id)
 
@@ -61,7 +66,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
   def handle_params(%{"id" => id}, _, socket) when socket.assigns.live_action == :api_tokens do
     with_board(socket, id, fn board, user_access ->
-      resolve_api_tokens_view(socket, board, user_access)
+      ApiTokens.resolve_api_tokens_view(socket, board, user_access)
     end)
   end
 
@@ -136,7 +141,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("archive_task", %{"id" => id}, socket) do
-    case authorize_modify_for_task(socket, id) do
+    case Authorization.authorize_modify_for_task(socket, id) do
       {:ok, task} ->
         perform_task_archive(socket, task, id)
 
@@ -155,7 +160,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("delete_task", %{"id" => id}, socket) do
-    case authorize_modify_for_task(socket, id) do
+    case Authorization.authorize_modify_for_task(socket, id) do
       {:ok, task} ->
         perform_task_delete(socket, task)
 
@@ -174,7 +179,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("promote_goal_to_ready", %{"id" => id}, socket) do
-    case authorize_modify_for_task(socket, id) do
+    case Authorization.authorize_modify_for_task(socket, id) do
       {:ok, goal} ->
         do_promote_goal(socket, goal)
 
@@ -202,9 +207,15 @@ defmodule KanbanWeb.BoardLive.Show do
         },
         socket
       ) do
-    case authorize_move_task(socket, task_id, old_column_id, new_column_id) do
+    case Authorization.authorize_move_task(socket, task_id, old_column_id, new_column_id) do
       {:ok, task, parsed_old_col_id, parsed_new_col_id} ->
-        dispatch_authorized_move(socket, task, parsed_old_col_id, parsed_new_col_id, new_position)
+        Authorization.dispatch_authorized_move(
+          socket,
+          task,
+          parsed_old_col_id,
+          parsed_new_col_id,
+          new_position
+        )
 
       {:error, :not_authorized} ->
         {:noreply,
@@ -257,7 +268,7 @@ defmodule KanbanWeb.BoardLive.Show do
   @impl true
   def handle_event("create_token", params, socket) do
     if socket.assigns.can_modify do
-      do_create_token(socket, params)
+      ApiTokens.do_create_token(socket, params)
     else
       {:noreply,
        put_flash(socket, :error, gettext("You do not have permission to manage API tokens"))}
@@ -272,7 +283,7 @@ defmodule KanbanWeb.BoardLive.Show do
   @impl true
   def handle_event("revoke_token", %{"id" => id}, socket) do
     if socket.assigns.can_modify do
-      do_revoke_token(socket, id)
+      ApiTokens.do_revoke_token(socket, id)
     else
       {:noreply,
        put_flash(socket, :error, gettext("You do not have permission to manage API tokens"))}
@@ -281,7 +292,7 @@ defmodule KanbanWeb.BoardLive.Show do
 
   def handle_event("delete_token", %{"id" => id}, socket) do
     if socket.assigns.can_modify do
-      do_delete_token(socket, id)
+      ApiTokens.do_delete_token(socket, id)
     else
       {:noreply,
        put_flash(socket, :error, gettext("You do not have permission to manage API tokens"))}
@@ -413,77 +424,22 @@ defmodule KanbanWeb.BoardLive.Show do
     {:noreply, assign(socket, :skip_next_reload, false)}
   end
 
-  defp check_column_action_authorization(live_action, user_access, board)
-       when live_action in [:new_column, :edit_column] do
-    cond do
-      user_access != :owner ->
-        {:error, gettext("Only the board owner can manage columns")}
+  # Shared board-scoped id parser. Public because the extracted
+  # KanbanWeb.BoardLive.Authorization module calls it (Show.parse_task_id/1)
+  # and several stayers in this LiveView use it directly.
+  @doc false
+  def parse_task_id(id) when is_integer(id), do: {:ok, id}
 
-      live_action == :new_column and board.ai_optimized_board ->
-        {:error, gettext("Cannot add columns to AI optimized boards")}
-
-      live_action == :edit_column and board.ai_optimized_board ->
-        {:error, gettext("Cannot edit columns on AI optimized boards")}
-
-      true ->
-        :ok
-    end
-  end
-
-  defp check_column_action_authorization(_live_action, _user_access, _board), do: :ok
-
-  defp check_new_column_authorization(:new_column, user_access, board) do
-    cond do
-      user_access != :owner ->
-        {:error, gettext("Only the board owner can create columns")}
-
-      board.ai_optimized_board ->
-        {:error, gettext("Cannot add columns to AI optimized boards")}
-
-      true ->
-        :ok
-    end
-  end
-
-  # Defense-in-depth for W1434: keep the :manage_members view (and the member
-  # list / search component it renders) owner-only, so a non-owner who navigates
-  # straight to /boards/:id/members is redirected away rather than reaching the
-  # MembersFormComponent. The search handler itself is independently gated in
-  # KanbanWeb.BoardLive.Membership.search_user/3.
-  defp check_new_column_authorization(:manage_members, user_access, _board)
-       when user_access != :owner do
-    {:error, gettext("Only the board owner can manage board membership")}
-  end
-
-  defp check_new_column_authorization(_live_action, _user_access, _board), do: :ok
-
-  defp authorize_modify_for_task(socket, raw_id) do
-    if socket.assigns.can_modify do
-      lookup_task_for_board(socket, raw_id)
-    else
-      {:error, :not_authorized}
-    end
-  end
-
-  defp lookup_task_for_board(socket, raw_id) do
-    with {:ok, id} <- parse_task_id(raw_id),
-         %{} = task <- Tasks.get_task_for_board(id, socket.assigns.board.id) do
-      {:ok, task}
-    else
-      _ -> {:error, :not_found}
-    end
-  end
-
-  defp parse_task_id(id) when is_integer(id), do: {:ok, id}
-
-  defp parse_task_id(id) when is_binary(id) do
+  @doc false
+  def parse_task_id(id) when is_binary(id) do
     case Integer.parse(id) do
       {n, ""} -> {:ok, n}
       _ -> :error
     end
   end
 
-  defp parse_task_id(_), do: :error
+  @doc false
+  def parse_task_id(_), do: :error
 
   defp do_promote_goal(socket, goal) do
     case Tasks.promote_goal_to_ready(goal, socket.assigns.board.id) do
@@ -513,135 +469,8 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  defp do_create_token(socket, params) do
-    user = socket.assigns.current_scope.user
-    board = socket.assigns.board
-    token_params = build_token_params(params)
-
-    case ApiTokens.create_api_token(user, board, token_params) do
-      {:ok, {_api_token, plain_text_token}} ->
-        assign_created_token(socket, board, plain_text_token)
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :token_form, to_form(changeset, action: :insert))}
-    end
-  end
-
-  defp build_token_params(params) do
-    params["api_token"]
-    |> Map.merge(params["token"] || %{})
-    |> parse_agent_capabilities()
-  end
-
-  defp assign_created_token(socket, board, plain_text_token) do
-    api_tokens = ApiTokens.list_api_tokens(board)
-    token_changeset = ApiTokens.change_api_token(%ApiTokens.ApiToken{}, %{})
-
-    {:noreply,
-     socket
-     |> assign(:api_tokens, api_tokens)
-     |> assign(:new_token, plain_text_token)
-     |> assign(:token_form, to_form(token_changeset))}
-  end
-
-  defp do_revoke_token(socket, id) do
-    api_token = ApiTokens.get_api_token!(id)
-    board = socket.assigns.board
-
-    if api_token.board_id == board.id do
-      case ApiTokens.revoke_api_token(api_token) do
-        {:ok, _api_token} ->
-          api_tokens = ApiTokens.list_api_tokens(board)
-
-          {:noreply,
-           socket
-           |> assign(:api_tokens, api_tokens)
-           |> put_flash(:info, gettext("API token revoked successfully"))}
-
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to revoke token"))}
-      end
-    else
-      {:noreply, put_flash(socket, :error, gettext("Unauthorized"))}
-    end
-  end
-
-  defp do_delete_token(socket, id) do
-    api_token = ApiTokens.get_api_token!(id)
-    board = socket.assigns.board
-
-    if api_token.board_id == board.id do
-      case ApiTokens.delete_api_token(api_token) do
-        {:ok, _api_token} ->
-          api_tokens = ApiTokens.list_api_tokens(board)
-
-          {:noreply,
-           socket
-           |> assign(:api_tokens, api_tokens)
-           |> put_flash(:info, gettext("API token deleted successfully"))}
-
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to delete token"))}
-      end
-    else
-      {:noreply, put_flash(socket, :error, gettext("Unauthorized"))}
-    end
-  end
-
-  defp dispatch_authorized_move(socket, task, old_col_id, new_col_id, new_position) do
-    require Logger
-
-    Logger.info(
-      "Move task event: task_id=#{task.id}, old_column=#{old_col_id}, new_column=#{new_col_id}, new_position=#{new_position}"
-    )
-
-    if old_col_id == new_col_id do
-      handle_task_reorder(socket, old_col_id, task.id, new_position)
-    else
-      handle_task_move(socket, task, new_col_id, new_position)
-    end
-  end
-
-  defp authorize_move_task(socket, raw_task_id, raw_old_col_id, raw_new_col_id) do
-    if socket.assigns.can_modify do
-      lookup_move_targets(socket, raw_task_id, raw_old_col_id, raw_new_col_id)
-    else
-      {:error, :not_authorized}
-    end
-  end
-
-  defp lookup_move_targets(socket, raw_task_id, raw_old_col_id, raw_new_col_id) do
-    board_id = socket.assigns.board.id
-
-    with {:ok, ids} <- parse_move_ids(raw_task_id, raw_old_col_id, raw_new_col_id),
-         {:ok, task} <- fetch_move_targets(board_id, ids) do
-      {task_id, old_col_id, new_col_id} = ids
-      _ = task_id
-      {:ok, task, old_col_id, new_col_id}
-    else
-      _ -> {:error, :not_found}
-    end
-  end
-
-  defp parse_move_ids(raw_task_id, raw_old_col_id, raw_new_col_id) do
-    with {:ok, task_id} <- parse_task_id(raw_task_id),
-         {:ok, old_col_id} <- parse_task_id(raw_old_col_id),
-         {:ok, new_col_id} <- parse_task_id(raw_new_col_id) do
-      {:ok, {task_id, old_col_id, new_col_id}}
-    end
-  end
-
-  defp fetch_move_targets(board_id, {task_id, old_col_id, new_col_id}) do
-    with %{} = task <- Tasks.get_task_for_board(task_id, board_id),
-         %{} <- Columns.get_column_for_board(old_col_id, board_id),
-         %{} <- Columns.get_column_for_board(new_col_id, board_id) do
-      {:ok, task}
-    else
-      _ -> :error
-    end
-  end
-
-  defp assign_common_board_state(socket, board, user_access, columns) do
+  @doc false
+  def assign_common_board_state(socket, board, user_access, columns) do
     user = socket.assigns.current_scope.user
     board_with_metrics = put_board_metrics(board, user)
 
@@ -680,25 +509,8 @@ defmodule KanbanWeb.BoardLive.Show do
     {:noreply, assign_common_board_state(socket, board, user_access, columns)}
   end
 
-  defp assign_api_tokens_state(socket, board, user_access) do
-    columns = Columns.list_columns(board)
-    api_tokens = ApiTokens.list_api_tokens(board)
-    token_changeset = ApiTokens.change_api_token(%ApiTokens.ApiToken{}, %{})
-
-    new_token = Map.get(socket.assigns, :new_token, nil)
-
-    {:noreply,
-     socket
-     |> assign_common_board_state(board, user_access, columns)
-     |> assign(:page_title, "Stride")
-     |> assign(:api_tokens, api_tokens)
-     |> assign(:token_form, to_form(token_changeset))
-     |> assign(:new_token, new_token)
-     |> assign(:viewing_task_id, nil)
-     |> assign(:show_task_modal, false)}
-  end
-
-  defp handle_task_reorder(socket, column_id, task_id, new_position) do
+  @doc false
+  def handle_task_reorder(socket, column_id, task_id, new_position) do
     # IDs here were already board-scoped by authorize_move_task; the scoped
     # lookup is defense-in-depth in case this helper is ever called directly.
     case Columns.get_column_for_board(column_id, socket.assigns.board.id) do
@@ -736,7 +548,8 @@ defmodule KanbanWeb.BoardLive.Show do
      |> load_tasks_for_columns(columns)}
   end
 
-  defp handle_task_move(socket, task, new_column_id, new_position) do
+  @doc false
+  def handle_task_move(socket, task, new_column_id, new_position) do
     require Logger
 
     case Columns.get_column_for_board(new_column_id, socket.assigns.board.id) do
@@ -905,23 +718,6 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  defp parse_agent_capabilities(params) do
-    case params do
-      %{"agent_capabilities" => capabilities} when is_binary(capabilities) ->
-        parsed_capabilities =
-          capabilities
-          |> String.split(",")
-          |> Enum.map(&String.trim/1)
-          |> Enum.reject(&(&1 == ""))
-          |> Enum.uniq()
-
-        Map.put(params, "agent_capabilities", parsed_capabilities)
-
-      _ ->
-        params
-    end
-  end
-
   defp assign_board_with_column(socket, board, user_access, column_id) do
     with {:ok, column_id_int} <- parse_task_id(column_id),
          %Columns.Column{} = column <- Columns.get_column_for_board(column_id_int, board.id) do
@@ -1083,27 +879,12 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  defp resolve_api_tokens_view(socket, board, user_access) do
-    cond do
-      not board.ai_optimized_board ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("API tokens are only available for AI Optimized boards"))
-         |> push_patch(to: ~p"/boards/#{board}")}
-
-      user_access in [:owner, :modify] ->
-        assign_api_tokens_state(socket, board, user_access)
-
-      true ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("You don't have permission to manage API tokens"))
-         |> push_patch(to: ~p"/boards/#{board}")}
-    end
-  end
-
   defp resolve_default_board_view(socket, board, user_access) do
-    case check_new_column_authorization(socket.assigns.live_action, user_access, board) do
+    case Authorization.check_new_column_authorization(
+           socket.assigns.live_action,
+           user_access,
+           board
+         ) do
       :ok ->
         if same_board_show?(socket, board) do
           refresh_board_tasks(socket, board)
