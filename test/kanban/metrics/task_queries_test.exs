@@ -183,6 +183,264 @@ defmodule Kanban.Metrics.TaskQueriesTest do
     end
   end
 
+  describe "get_throughput_tasks/2" do
+    setup :ai_board_with_column
+
+    test "returns completed non-goal tasks with the throughput row keys", %{column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_at: ~U[2026-06-01 12:00:00Z]})
+
+      board_id = board_id(column)
+      assert [row] = TaskQueries.get_throughput_tasks(board_id, time_range: :all_time)
+      assert row.identifier == task.identifier
+      assert Map.has_key?(row, :claimed_at)
+      assert Map.has_key?(row, :inserted_at)
+      assert row.completed_at == ~U[2026-06-01 12:00:00Z]
+      refute Map.has_key?(row, :cycle_time_seconds)
+    end
+
+    test "excludes goal-type tasks", %{column: column} do
+      goal = task_fixture(column, %{type: :goal})
+      {:ok, _} = complete_task(goal)
+
+      board_id = board_id(column)
+      assert TaskQueries.get_throughput_tasks(board_id, time_range: :all_time) == []
+    end
+
+    test "excludes tasks that are not completed", %{column: column} do
+      _open = task_fixture(column)
+
+      board_id = board_id(column)
+      assert TaskQueries.get_throughput_tasks(board_id, time_range: :all_time) == []
+    end
+
+    test "bounds results by completed_at within the time range", %{column: column} do
+      recent = task_fixture(column)
+      old = task_fixture(column)
+      {:ok, _} = complete_task(recent, %{completed_at: DateTime.utc_now()})
+      {:ok, _} = complete_task(old, %{completed_at: DateTime.add(DateTime.utc_now(), -60, :day)})
+
+      board_id = board_id(column)
+
+      identifiers =
+        board_id |> TaskQueries.get_throughput_tasks(time_range: :last_30_days) |> ids()
+
+      assert recent.identifier in identifiers
+      refute old.identifier in identifiers
+    end
+
+    test "filters by agent_name when provided", %{column: column} do
+      mine = task_fixture(column)
+      theirs = task_fixture(column)
+      {:ok, _} = complete_task(mine, %{completed_by_agent: "Claude Opus 4.8"})
+      {:ok, _} = complete_task(theirs, %{completed_by_agent: "Some Other Agent"})
+
+      board_id = board_id(column)
+
+      assert [row] =
+               TaskQueries.get_throughput_tasks(board_id,
+                 time_range: :all_time,
+                 agent_name: "Claude Opus 4.8"
+               )
+
+      assert row.identifier == mine.identifier
+    end
+  end
+
+  describe "get_completed_goals/2" do
+    setup :ai_board_with_column
+
+    test "returns goals with a completed_at", %{column: column} do
+      goal = task_fixture(column, %{type: :goal})
+      {:ok, _} = complete_task(goal, %{completed_at: ~U[2026-06-01 12:00:00Z]})
+
+      board_id = board_id(column)
+      assert [row] = TaskQueries.get_completed_goals(board_id, time_range: :all_time)
+      assert row.identifier == goal.identifier
+      # completed_at comes back via coalesce(completed_at, updated_at) as a
+      # NaiveDateTime — the exact (preserved) shape of the original inline query.
+      assert row.completed_at == ~N[2026-06-01 12:00:00]
+    end
+
+    test "returns goals sitting in a column named done even without completed_at", %{board: board} do
+      done_column = column_fixture(board, %{name: "Done"})
+      goal = task_fixture(done_column, %{type: :goal})
+
+      assert [row] = TaskQueries.get_completed_goals(board.id, time_range: :all_time)
+      assert row.identifier == goal.identifier
+      # completed_at falls back to updated_at via coalesce, so it is never nil.
+      refute is_nil(row.completed_at)
+    end
+
+    test "excludes non-goal tasks", %{column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      board_id = board_id(column)
+      assert TaskQueries.get_completed_goals(board_id, time_range: :all_time) == []
+    end
+
+    test "filters by agent_name when provided", %{column: column} do
+      mine = task_fixture(column, %{type: :goal})
+      theirs = task_fixture(column, %{type: :goal})
+      {:ok, _} = complete_task(mine, %{completed_by_agent: "Claude Opus 4.8"})
+      {:ok, _} = complete_task(theirs, %{completed_by_agent: "Some Other Agent"})
+
+      board_id = board_id(column)
+
+      assert [row] =
+               TaskQueries.get_completed_goals(board_id,
+                 time_range: :all_time,
+                 agent_name: "Claude Opus 4.8"
+               )
+
+      assert row.identifier == mine.identifier
+    end
+  end
+
+  describe "get_review_wait_tasks/2 - AI-optimized boards" do
+    setup :ai_board_with_column
+
+    test "measures review wait from completed_at to reviewed_at", %{column: column} do
+      task = task_fixture(column)
+
+      {:ok, _} =
+        complete_task(task, %{
+          completed_at: ~U[2026-06-01 10:00:00Z],
+          reviewed_at: ~U[2026-06-01 12:00:00Z]
+        })
+
+      board_id = board_id(column)
+      assert [row] = TaskQueries.get_review_wait_tasks(board_id, time_range: :all_time)
+      assert row.identifier == task.identifier
+      # 2 hours between completion and review.
+      assert_in_delta to_float(row.review_wait_seconds), 7200.0, 0.1
+    end
+
+    test "clamps a negative wait to zero (GREATEST)", %{column: column} do
+      task = task_fixture(column)
+
+      {:ok, _} =
+        complete_task(task, %{
+          completed_at: ~U[2026-06-01 12:00:00Z],
+          reviewed_at: ~U[2026-06-01 10:00:00Z]
+        })
+
+      board_id = board_id(column)
+      assert [row] = TaskQueries.get_review_wait_tasks(board_id, time_range: :all_time)
+      assert to_float(row.review_wait_seconds) == 0.0
+    end
+
+    test "excludes tasks that were never reviewed", %{column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{reviewed_at: nil})
+
+      board_id = board_id(column)
+      assert TaskQueries.get_review_wait_tasks(board_id, time_range: :all_time) == []
+    end
+
+    test "filters by agent_name when provided", %{column: column} do
+      mine = task_fixture(column)
+      theirs = task_fixture(column)
+      reviewed = %{reviewed_at: ~U[2026-06-01 12:00:00Z], completed_at: ~U[2026-06-01 10:00:00Z]}
+      {:ok, _} = complete_task(mine, Map.put(reviewed, :completed_by_agent, "Claude Opus 4.8"))
+      {:ok, _} = complete_task(theirs, Map.put(reviewed, :completed_by_agent, "Other Agent"))
+
+      board_id = board_id(column)
+
+      assert [row] =
+               TaskQueries.get_review_wait_tasks(board_id,
+                 time_range: :all_time,
+                 agent_name: "Claude Opus 4.8"
+               )
+
+      assert row.identifier == mine.identifier
+    end
+  end
+
+  describe "get_review_wait_tasks/2 - regular boards" do
+    setup :regular_board_with_column
+
+    test "always returns an empty list (no review step)", %{column: column} do
+      task = task_fixture(column)
+
+      {:ok, _} =
+        complete_task(task, %{
+          completed_at: ~U[2026-06-01 10:00:00Z],
+          reviewed_at: ~U[2026-06-01 12:00:00Z]
+        })
+
+      board_id = board_id(column)
+      assert TaskQueries.get_review_wait_tasks(board_id, time_range: :all_time) == []
+    end
+  end
+
+  describe "get_backlog_wait_tasks/2 - AI-optimized boards" do
+    setup :ai_board_with_column
+
+    test "measures backlog wait from inserted_at to claimed_at", %{column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{claimed_at: ~U[2026-06-01 12:00:00Z]})
+
+      board_id = board_id(column)
+      assert [row] = TaskQueries.get_backlog_wait_tasks(board_id, time_range: :all_time)
+      assert row.identifier == task.identifier
+      assert row.claimed_at == ~U[2026-06-01 12:00:00Z]
+      assert to_float(row.backlog_wait_seconds) >= 0.0
+    end
+
+    test "excludes tasks without a claimed_at", %{column: column} do
+      task = task_fixture(column)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      board_id = board_id(column)
+      assert TaskQueries.get_backlog_wait_tasks(board_id, time_range: :all_time) == []
+    end
+
+    test "filters by agent_name when provided", %{column: column} do
+      mine = task_fixture(column)
+      theirs = task_fixture(column)
+      {:ok, _} = complete_task(mine, %{completed_by_agent: "Claude Opus 4.8"})
+      {:ok, _} = complete_task(theirs, %{completed_by_agent: "Some Other Agent"})
+
+      board_id = board_id(column)
+
+      assert [row] =
+               TaskQueries.get_backlog_wait_tasks(board_id,
+                 time_range: :all_time,
+                 agent_name: "Claude Opus 4.8"
+               )
+
+      assert row.identifier == mine.identifier
+    end
+  end
+
+  describe "get_backlog_wait_tasks/2 - regular boards" do
+    setup :regular_board_with_column
+
+    test "derives backlog wait from the first move event, aliased to claimed_at", %{
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+      create_move_history(task, "Backlog", "In Progress", ~U[2026-06-01 12:00:00Z])
+
+      board_id = board_id(column)
+      assert [row] = TaskQueries.get_backlog_wait_tasks(board_id, time_range: :all_time)
+      assert row.identifier == task.identifier
+      assert row.claimed_at == ~N[2026-06-01 12:00:00]
+      assert to_float(row.backlog_wait_seconds) >= 0.0
+    end
+
+    test "excludes tasks that were never moved", %{column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      board_id = board_id(column)
+      assert TaskQueries.get_backlog_wait_tasks(board_id, time_range: :all_time) == []
+    end
+  end
+
   defp ai_board_with_column(_context) do
     user = user_fixture()
     board = ai_optimized_board_fixture(user)
@@ -229,4 +487,6 @@ defmodule Kanban.Metrics.TaskQueriesTest do
 
   defp to_float(%Decimal{} = value), do: Decimal.to_float(value)
   defp to_float(value) when is_number(value), do: value / 1
+
+  defp ids(rows), do: Enum.map(rows, & &1.identifier)
 end

@@ -2,12 +2,10 @@ defmodule KanbanWeb.MetricsLive.Throughput do
   use KanbanWeb, :live_view
   use KanbanWeb.MetricsLive.Base, page_title: "Throughput Metrics"
 
-  import Ecto.Query
   import KanbanWeb.MetricsLive.Components
 
   alias Kanban.Metrics
-  alias Kanban.Repo
-  alias Kanban.Tasks.Task
+  alias Kanban.Metrics.TaskQueries
   alias KanbanWeb.MetricsLive.Helpers
 
   @impl KanbanWeb.MetricsLive.Base
@@ -16,8 +14,8 @@ defmodule KanbanWeb.MetricsLive.Throughput do
     board_id = socket.assigns.board.id
 
     {:ok, throughput} = Metrics.get_throughput(board_id, opts)
-    tasks = get_throughput_tasks(board_id, opts)
-    goals = get_completed_goals(board_id, opts)
+    tasks = TaskQueries.get_throughput_tasks(board_id, opts)
+    goals = TaskQueries.get_completed_goals(board_id, opts)
 
     assign_throughput_data(socket, throughput, tasks, goals)
   end
@@ -45,79 +43,6 @@ defmodule KanbanWeb.MetricsLive.Throughput do
     else
       opts
     end
-  end
-
-  defp get_throughput_tasks(board_id, opts) do
-    time_range = Keyword.get(opts, :time_range, :last_30_days)
-    agent_name = Keyword.get(opts, :agent_name)
-    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
-    start_date = Helpers.get_start_date(time_range, timezone)
-
-    query =
-      Task
-      |> join(:inner, [t], c in assoc(t, :column))
-      |> where([t, c], c.board_id == ^board_id)
-      |> where([t], not is_nil(t.completed_at))
-      |> where([t], t.completed_at >= ^start_date)
-      |> where([t], t.type != ^:goal)
-      |> order_by([t], desc: t.completed_at)
-      |> select([t], %{
-        id: t.id,
-        identifier: t.identifier,
-        title: t.title,
-        inserted_at: t.inserted_at,
-        claimed_at: t.claimed_at,
-        completed_at: t.completed_at,
-        completed_by_agent: t.completed_by_agent
-      })
-
-    query =
-      if agent_name do
-        where(query, [t], t.completed_by_agent == ^agent_name)
-      else
-        query
-      end
-
-    Repo.all(query)
-  end
-
-  defp get_completed_goals(board_id, opts) do
-    time_range = Keyword.get(opts, :time_range, :last_30_days)
-    agent_name = Keyword.get(opts, :agent_name)
-    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
-    start_date = Helpers.get_start_date(time_range, timezone)
-
-    query =
-      Task
-      |> join(:inner, [t], c in assoc(t, :column))
-      |> where([t, c], c.board_id == ^board_id)
-      |> where([t], t.type == ^:goal)
-      |> where(
-        [t, c],
-        not is_nil(t.completed_at) or fragment("lower(?)", c.name) == "done"
-      )
-      |> where(
-        [t],
-        coalesce(t.completed_at, t.updated_at) >= ^start_date
-      )
-      |> order_by([t], desc: coalesce(t.completed_at, t.updated_at))
-      |> select([t], %{
-        id: t.id,
-        identifier: t.identifier,
-        title: t.title,
-        inserted_at: t.inserted_at,
-        completed_at: coalesce(t.completed_at, t.updated_at),
-        completed_by_agent: t.completed_by_agent
-      })
-
-    query =
-      if agent_name do
-        where(query, [t], t.completed_by_agent == ^agent_name)
-      else
-        query
-      end
-
-    Repo.all(query)
   end
 
   defp calculate_summary_stats([_ | _] = throughput) do

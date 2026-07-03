@@ -1,13 +1,9 @@
 defmodule KanbanWeb.MetricsPdfController do
   use KanbanWeb, :controller
 
-  import Ecto.Query
-
   alias Kanban.Boards
   alias Kanban.Metrics
-  alias Kanban.Repo
-  alias Kanban.Tasks.Task
-  alias Kanban.Tasks.TaskHistory
+  alias Kanban.Metrics.TaskQueries
   alias KanbanWeb.MetricsExcelExport
   alias KanbanWeb.MetricsLive.Helpers
 
@@ -154,9 +150,9 @@ defmodule KanbanWeb.MetricsPdfController do
   defp load_metric_data("throughput", board_id, opts) do
     {:ok, throughput} = Metrics.get_throughput(board_id, opts)
     stats = calculate_throughput_stats(throughput)
-    tasks = get_throughput_tasks(board_id, opts)
+    tasks = TaskQueries.get_throughput_tasks(board_id, opts)
     grouped_tasks = group_tasks_by_field(tasks, :completed_at)
-    goals = get_completed_goals(board_id, opts)
+    goals = TaskQueries.get_completed_goals(board_id, opts)
 
     %{
       throughput: throughput,
@@ -169,7 +165,7 @@ defmodule KanbanWeb.MetricsPdfController do
 
   defp load_metric_data("cycle-time", board_id, opts) do
     {:ok, stats} = Metrics.get_cycle_time_stats(board_id, opts)
-    tasks = get_cycle_time_tasks(board_id, opts)
+    tasks = TaskQueries.get_cycle_time_tasks(board_id, opts)
     grouped_tasks = Helpers.group_tasks_by_completion_date(tasks)
     daily_cycle_times = Helpers.calculate_daily_times(tasks, :cycle_time_seconds)
 
@@ -183,7 +179,7 @@ defmodule KanbanWeb.MetricsPdfController do
 
   defp load_metric_data("lead-time", board_id, opts) do
     {:ok, stats} = Metrics.get_lead_time_stats(board_id, opts)
-    tasks = get_lead_time_tasks(board_id, opts)
+    tasks = TaskQueries.get_lead_time_tasks(board_id, opts)
     grouped_tasks = Helpers.group_tasks_by_completion_date(tasks)
     daily_lead_times = Helpers.calculate_daily_times(tasks, :lead_time_seconds)
 
@@ -197,8 +193,8 @@ defmodule KanbanWeb.MetricsPdfController do
 
   defp load_metric_data("wait-time", board_id, opts) do
     {:ok, stats} = Metrics.get_wait_time_stats(board_id, opts)
-    review_tasks = get_review_wait_tasks(board_id, opts)
-    backlog_tasks = get_backlog_wait_tasks(board_id, opts)
+    review_tasks = TaskQueries.get_review_wait_tasks(board_id, opts)
+    backlog_tasks = TaskQueries.get_backlog_wait_tasks(board_id, opts)
     grouped_review_tasks = group_tasks_by_field(review_tasks, :reviewed_at)
     grouped_backlog_tasks = group_tasks_by_field(backlog_tasks, :claimed_at)
 
@@ -267,237 +263,6 @@ defmodule KanbanWeb.MetricsPdfController do
 
   defp calculate_throughput_stats(_),
     do: %{total: 0, avg_per_day: 0.0, peak_day: nil, peak_count: 0}
-
-  defp base_task_query(board_id, opts) do
-    start_date =
-      opts
-      |> Keyword.get(:time_range, :last_30_days)
-      |> Helpers.get_start_date()
-
-    agent_name = Keyword.get(opts, :agent_name)
-
-    query =
-      Task
-      |> join(:inner, [t], c in assoc(t, :column))
-      |> where([t, c], c.board_id == ^board_id)
-
-    query =
-      if agent_name do
-        where(query, [t], t.completed_by_agent == ^agent_name)
-      else
-        query
-      end
-
-    {query, start_date}
-  end
-
-  defp get_throughput_tasks(board_id, opts) do
-    {query, start_date} = base_task_query(board_id, opts)
-
-    query
-    |> where([t], not is_nil(t.completed_at))
-    |> where([t], t.completed_at >= ^start_date)
-    |> where([t], t.type != ^:goal)
-    |> order_by([t], desc: t.completed_at)
-    |> select([t], %{
-      id: t.id,
-      identifier: t.identifier,
-      title: t.title,
-      inserted_at: t.inserted_at,
-      claimed_at: t.claimed_at,
-      completed_at: t.completed_at,
-      completed_by_agent: t.completed_by_agent
-    })
-    |> Repo.all()
-  end
-
-  defp get_completed_goals(board_id, opts) do
-    {query, start_date} = base_task_query(board_id, opts)
-
-    query
-    |> where([t], t.type == ^:goal)
-    |> where(
-      [t, c],
-      not is_nil(t.completed_at) or fragment("lower(?)", c.name) == "done"
-    )
-    |> where([t], coalesce(t.completed_at, t.updated_at) >= ^start_date)
-    |> order_by([t], desc: coalesce(t.completed_at, t.updated_at))
-    |> select([t], %{
-      id: t.id,
-      identifier: t.identifier,
-      title: t.title,
-      inserted_at: t.inserted_at,
-      completed_at: coalesce(t.completed_at, t.updated_at),
-      completed_by_agent: t.completed_by_agent
-    })
-    |> Repo.all()
-  end
-
-  defp get_cycle_time_tasks(board_id, opts) do
-    board = Repo.get!(Kanban.Boards.Board, board_id)
-
-    if board.ai_optimized_board do
-      get_cycle_time_tasks_ai(board_id, opts)
-    else
-      get_cycle_time_tasks_regular(board_id, opts)
-    end
-  end
-
-  defp get_cycle_time_tasks_ai(board_id, opts) do
-    {query, start_date} = base_task_query(board_id, opts)
-
-    query
-    |> where([t], not is_nil(t.completed_at) and not is_nil(t.claimed_at))
-    |> where([t], t.completed_at >= ^start_date)
-    |> where([t], t.type != ^:goal)
-    |> order_by([t], desc: t.completed_at)
-    |> select([t], %{
-      id: t.id,
-      identifier: t.identifier,
-      title: t.title,
-      claimed_at: t.claimed_at,
-      completed_at: t.completed_at,
-      completed_by_agent: t.completed_by_agent,
-      cycle_time_seconds: fragment("EXTRACT(EPOCH FROM (? - ?))", t.completed_at, t.claimed_at)
-    })
-    |> Repo.all()
-  end
-
-  defp get_cycle_time_tasks_regular(board_id, opts) do
-    {_query, start_date} = base_task_query(board_id, opts)
-
-    first_move_subquery =
-      from th in TaskHistory,
-        where: th.type == :move,
-        group_by: th.task_id,
-        select: %{task_id: th.task_id, started_at: min(th.inserted_at)}
-
-    Task
-    |> join(:inner, [t], c in assoc(t, :column))
-    |> join(:inner, [t], fm in subquery(first_move_subquery), on: fm.task_id == t.id)
-    |> where([t, c], c.board_id == ^board_id)
-    |> where([t], not is_nil(t.completed_at))
-    |> where([t], t.completed_at >= ^start_date)
-    |> where([t], t.type != ^:goal)
-    |> order_by([t], desc: t.completed_at)
-    |> select([t, _c, fm], %{
-      id: t.id,
-      identifier: t.identifier,
-      title: t.title,
-      claimed_at: fm.started_at,
-      completed_at: t.completed_at,
-      completed_by_agent: t.completed_by_agent,
-      cycle_time_seconds: fragment("EXTRACT(EPOCH FROM (? - ?))", t.completed_at, fm.started_at)
-    })
-    |> Repo.all()
-  end
-
-  defp get_lead_time_tasks(board_id, opts) do
-    {query, start_date} = base_task_query(board_id, opts)
-
-    query
-    |> where([t], not is_nil(t.completed_at))
-    |> where([t], t.completed_at >= ^start_date)
-    |> where([t], t.type != ^:goal)
-    |> order_by([t], desc: t.completed_at)
-    |> select([t], %{
-      id: t.id,
-      identifier: t.identifier,
-      title: t.title,
-      inserted_at: t.inserted_at,
-      completed_at: t.completed_at,
-      completed_by_agent: t.completed_by_agent,
-      lead_time_seconds: fragment("EXTRACT(EPOCH FROM (? - ?))", t.completed_at, t.inserted_at)
-    })
-    |> Repo.all()
-  end
-
-  defp get_review_wait_tasks(board_id, opts) do
-    board = Repo.get!(Kanban.Boards.Board, board_id)
-
-    if board.ai_optimized_board do
-      get_review_wait_tasks_ai(board_id, opts)
-    else
-      []
-    end
-  end
-
-  defp get_review_wait_tasks_ai(board_id, opts) do
-    {query, start_date} = base_task_query(board_id, opts)
-
-    query
-    |> where([t], not is_nil(t.completed_at) and not is_nil(t.reviewed_at))
-    |> where([t], t.reviewed_at >= ^start_date)
-    |> order_by([t], desc: t.reviewed_at)
-    |> select([t], %{
-      id: t.id,
-      identifier: t.identifier,
-      title: t.title,
-      completed_at: t.completed_at,
-      reviewed_at: t.reviewed_at,
-      completed_by_agent: t.completed_by_agent,
-      review_wait_seconds: fragment("EXTRACT(EPOCH FROM (? - ?))", t.reviewed_at, t.completed_at)
-    })
-    |> Repo.all()
-  end
-
-  defp get_backlog_wait_tasks(board_id, opts) do
-    board = Repo.get!(Kanban.Boards.Board, board_id)
-
-    if board.ai_optimized_board do
-      get_backlog_wait_tasks_ai(board_id, opts)
-    else
-      get_backlog_wait_tasks_regular(board_id, opts)
-    end
-  end
-
-  defp get_backlog_wait_tasks_ai(board_id, opts) do
-    {query, start_date} = base_task_query(board_id, opts)
-
-    query
-    |> where([t], not is_nil(t.claimed_at))
-    |> where([t], t.claimed_at >= ^start_date)
-    |> order_by([t], desc: t.claimed_at)
-    |> select([t], %{
-      id: t.id,
-      identifier: t.identifier,
-      title: t.title,
-      inserted_at: t.inserted_at,
-      claimed_at: t.claimed_at,
-      completed_by_agent: t.completed_by_agent,
-      backlog_wait_seconds: fragment("EXTRACT(EPOCH FROM (? - ?))", t.claimed_at, t.inserted_at)
-    })
-    |> Repo.all()
-  end
-
-  defp get_backlog_wait_tasks_regular(board_id, opts) do
-    {_query, start_date} = base_task_query(board_id, opts)
-
-    first_move_subquery =
-      from th in TaskHistory,
-        where: th.type == :move,
-        group_by: th.task_id,
-        select: %{task_id: th.task_id, first_moved_at: min(th.inserted_at)}
-
-    Task
-    |> join(:inner, [t], c in assoc(t, :column))
-    |> join(:inner, [t], fm in subquery(first_move_subquery), on: fm.task_id == t.id)
-    |> where([t, c], c.board_id == ^board_id)
-    |> where([t], t.type != ^:goal)
-    |> order_by([t, _c, fm], desc: fm.first_moved_at)
-    |> where([t, _c, fm], fm.first_moved_at >= ^start_date)
-    |> select([t, _c, fm], %{
-      id: t.id,
-      identifier: t.identifier,
-      title: t.title,
-      inserted_at: t.inserted_at,
-      claimed_at: fm.first_moved_at,
-      completed_by_agent: t.completed_by_agent,
-      backlog_wait_seconds:
-        fragment("EXTRACT(EPOCH FROM (? - ?))", fm.first_moved_at, t.inserted_at)
-    })
-    |> Repo.all()
-  end
 
   defp group_tasks_by_field(tasks, field) do
     tasks
