@@ -1,4 +1,27 @@
 defmodule KanbanWeb.MetricsLive.Compliance do
+  @moduledoc """
+  Compliance metrics LiveView.
+
+  Unlike the sibling metrics views (CycleTime, LeadTime, Throughput,
+  WaitTime), this view intentionally does NOT use
+  `KanbanWeb.MetricsLive.Base`. Base is a poor fit here for two reasons:
+
+    * **Stricter authorization.** Base's generated `handle_params/3` only
+      checks board *access* via `Boards.get_board/2`. Compliance additionally
+      requires `Boards.can_modify?/2` and, when that fails, redirects to the
+      board itself (not `/boards`) with a permission-specific flash. Adopting
+      Base would silently drop that authorization gate.
+
+    * **No filter controls.** Base wires up `time_range` / `agent_name` /
+      `exclude_weekends` filter state, a `timezone`, an `agents` list, and a
+      `"filter_change"` handler, then calls `load_data/1`. The compliance page
+      has none of these — it renders board-wide dispatch rates, skip reasons,
+      and per-agent compliance with no time/agent filtering, and its assigns
+      (`dispatch_rates`, `skip_reasons`, `agent_compliance`) do not match the
+      Base contract.
+
+  It therefore keeps its own `mount/3` and `handle_params/3`.
+  """
   use KanbanWeb, :live_view
 
   alias Kanban.Boards
