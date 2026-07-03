@@ -1,0 +1,232 @@
+defmodule Kanban.Metrics.TaskQueriesTest do
+  use Kanban.DataCase, async: true
+
+  import Kanban.AccountsFixtures
+  import Kanban.BoardsFixtures
+  import Kanban.ColumnsFixtures
+  import Kanban.TasksFixtures
+
+  alias Kanban.Metrics.TaskQueries
+  alias Kanban.Tasks
+
+  describe "get_cycle_time_tasks/2 - AI-optimized boards" do
+    setup :ai_board_with_column
+
+    test "returns completed tasks using claimed_at as the start marker", %{column: column} do
+      task = task_fixture(column)
+      claimed_at = ~U[2026-06-01 09:00:00Z]
+      completed_at = ~U[2026-06-01 12:00:00Z]
+      {:ok, _} = complete_task(task, %{claimed_at: claimed_at, completed_at: completed_at})
+
+      board_id = board_id(column)
+      assert [row] = TaskQueries.get_cycle_time_tasks(board_id, time_range: :all_time)
+      assert row.identifier == task.identifier
+      assert row.claimed_at == claimed_at
+      assert row.completed_at == completed_at
+      # 3 hours between claim and completion.
+      assert_in_delta to_float(row.cycle_time_seconds), 10_800.0, 0.1
+    end
+
+    test "excludes tasks completed without a claimed_at", %{column: column} do
+      task = task_fixture(column)
+      {:ok, _} = Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+
+      board_id = board_id(column)
+      assert TaskQueries.get_cycle_time_tasks(board_id, time_range: :all_time) == []
+    end
+
+    test "excludes goal-type tasks", %{column: column} do
+      goal = task_fixture(column, %{type: :goal})
+      {:ok, _} = complete_task(goal)
+
+      board_id = board_id(column)
+      assert TaskQueries.get_cycle_time_tasks(board_id, time_range: :all_time) == []
+    end
+
+    test "returns an empty list when no tasks are completed", %{column: column} do
+      _open = task_fixture(column)
+
+      board_id = board_id(column)
+      assert TaskQueries.get_cycle_time_tasks(board_id, time_range: :all_time) == []
+    end
+
+    test "filters by agent_name when provided", %{column: column} do
+      mine = task_fixture(column)
+      theirs = task_fixture(column)
+      {:ok, _} = complete_task(mine, %{completed_by_agent: "Claude Opus 4.8"})
+      {:ok, _} = complete_task(theirs, %{completed_by_agent: "Some Other Agent"})
+
+      board_id = board_id(column)
+
+      assert [row] =
+               TaskQueries.get_cycle_time_tasks(board_id,
+                 time_range: :all_time,
+                 agent_name: "Claude Opus 4.8"
+               )
+
+      assert row.identifier == mine.identifier
+    end
+  end
+
+  describe "get_cycle_time_tasks/2 - regular boards" do
+    setup :regular_board_with_column
+
+    test "derives the start from the earliest move event", %{column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_at: ~U[2026-06-02 15:00:00Z]})
+      create_move_history(task, "Backlog", "In Progress", ~U[2026-06-02 09:00:00Z])
+
+      board_id = board_id(column)
+      assert [row] = TaskQueries.get_cycle_time_tasks(board_id, time_range: :all_time)
+      assert row.identifier == task.identifier
+      # 6 hours between the first move and completion.
+      assert_in_delta to_float(row.cycle_time_seconds), 21_600.0, 0.1
+    end
+
+    test "uses the earliest move when several moves exist", %{column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_at: ~U[2026-06-02 15:00:00Z]})
+      create_move_history(task, "Backlog", "In Progress", ~U[2026-06-02 09:00:00Z])
+      create_move_history(task, "In Progress", "Review", ~U[2026-06-02 13:00:00Z])
+
+      board_id = board_id(column)
+      assert [row] = TaskQueries.get_cycle_time_tasks(board_id, time_range: :all_time)
+      # Still measured from the 09:00 move, not the later 13:00 one.
+      assert_in_delta to_float(row.cycle_time_seconds), 21_600.0, 0.1
+    end
+
+    test "excludes tasks that were never moved", %{column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task)
+
+      board_id = board_id(column)
+      assert TaskQueries.get_cycle_time_tasks(board_id, time_range: :all_time) == []
+    end
+  end
+
+  describe "get_cycle_time_tasks/2 - time range" do
+    setup :ai_board_with_column
+
+    test "bounds results by completed_at within the range", %{column: column} do
+      recent = task_fixture(column)
+      old = task_fixture(column)
+      {:ok, _} = complete_task(recent, %{completed_at: DateTime.utc_now()})
+
+      {:ok, _} =
+        complete_task(old, %{completed_at: DateTime.add(DateTime.utc_now(), -60, :day)})
+
+      board_id = board_id(column)
+      rows = TaskQueries.get_cycle_time_tasks(board_id, time_range: :last_30_days)
+
+      identifiers = Enum.map(rows, & &1.identifier)
+      assert recent.identifier in identifiers
+      refute old.identifier in identifiers
+    end
+  end
+
+  describe "get_lead_time_tasks/2" do
+    setup :regular_board_with_column
+
+    test "measures lead time from inserted_at to completed_at", %{column: column} do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_at: DateTime.utc_now()})
+
+      board_id = board_id(column)
+      assert [row] = TaskQueries.get_lead_time_tasks(board_id, time_range: :all_time)
+      assert row.identifier == task.identifier
+      assert Map.has_key?(row, :inserted_at)
+      refute Map.has_key?(row, :claimed_at)
+      assert to_float(row.lead_time_seconds) >= 0.0
+    end
+
+    test "does not require a move event (unlike cycle time on regular boards)", %{
+      column: column
+    } do
+      task = task_fixture(column)
+      {:ok, _} = complete_task(task, %{completed_at: DateTime.utc_now()})
+
+      board_id = board_id(column)
+      # No move history created; lead time still returns the row.
+      assert [_row] = TaskQueries.get_lead_time_tasks(board_id, time_range: :all_time)
+    end
+
+    test "excludes goal-type tasks", %{column: column} do
+      goal = task_fixture(column, %{type: :goal})
+      {:ok, _} = complete_task(goal)
+
+      board_id = board_id(column)
+      assert TaskQueries.get_lead_time_tasks(board_id, time_range: :all_time) == []
+    end
+
+    test "filters by agent_name when provided", %{column: column} do
+      mine = task_fixture(column)
+      theirs = task_fixture(column)
+      {:ok, _} = complete_task(mine, %{completed_by_agent: "Claude Opus 4.8"})
+      {:ok, _} = complete_task(theirs, %{completed_by_agent: "Some Other Agent"})
+
+      board_id = board_id(column)
+
+      assert [row] =
+               TaskQueries.get_lead_time_tasks(board_id,
+                 time_range: :all_time,
+                 agent_name: "Claude Opus 4.8"
+               )
+
+      assert row.identifier == mine.identifier
+    end
+
+    test "returns an empty list when no tasks are completed", %{column: column} do
+      _open = task_fixture(column)
+
+      board_id = board_id(column)
+      assert TaskQueries.get_lead_time_tasks(board_id, time_range: :all_time) == []
+    end
+  end
+
+  defp ai_board_with_column(_context) do
+    user = user_fixture()
+    board = ai_optimized_board_fixture(user)
+    column = column_fixture(board)
+    %{user: user, board: board, column: column}
+  end
+
+  defp regular_board_with_column(_context) do
+    user = user_fixture()
+    board = board_fixture(user)
+    column = column_fixture(board)
+    %{user: user, board: board, column: column}
+  end
+
+  defp complete_task(task, attrs \\ %{}) do
+    attrs =
+      Map.merge(
+        %{
+          claimed_at: DateTime.add(DateTime.utc_now(), -24, :hour),
+          completed_at: DateTime.utc_now()
+        },
+        attrs
+      )
+
+    Tasks.update_task(task, attrs)
+  end
+
+  defp create_move_history(task, from_column, to_column, inserted_at) do
+    %Kanban.Tasks.TaskHistory{}
+    |> Kanban.Tasks.TaskHistory.changeset(%{
+      type: :move,
+      task_id: task.id,
+      from_column: from_column,
+      to_column: to_column
+    })
+    |> Ecto.Changeset.force_change(
+      :inserted_at,
+      inserted_at |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+    )
+    |> Kanban.Repo.insert!()
+  end
+
+  defp board_id(column), do: Kanban.Repo.reload!(column).board_id
+
+  defp to_float(%Decimal{} = value), do: Decimal.to_float(value)
+  defp to_float(value) when is_number(value), do: value / 1
+end

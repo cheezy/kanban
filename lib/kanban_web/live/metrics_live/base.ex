@@ -143,9 +143,10 @@ defmodule KanbanWeb.MetricsLive.Base do
 
     * `stats_fn` — `(board_id, opts -> {:ok, map})`, e.g.
       `&Metrics.get_cycle_time_stats/2`
-    * `tasks_fn` — `(board_id, opts -> [map])`, a capture of the caller's
-      private task loader. The loaders stay local on purpose: cycle time
-      has an AI/regular two-path dispatch that lead time does not share.
+    * `tasks_fn` — `(board_id, opts -> [map])`, a capture of a
+      `Kanban.Metrics.TaskQueries` loader (e.g.
+      `&TaskQueries.get_cycle_time_tasks/2`). The row-building queries live in
+      that context module so the LiveViews hold no Ecto queries.
     * `time_field` — the per-task seconds field, `:cycle_time_seconds` or
       `:lead_time_seconds`
     * `daily_assign_key` — `:daily_cycle_times` or `:daily_lead_times`
