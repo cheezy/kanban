@@ -101,5 +101,52 @@ defmodule KanbanWeb.BoardLive.TaskCardDataTest do
       in_backlog = TaskCardData.task_card_data(goal, MapSet.new([10]), progress, %{})
       assert in_backlog.promoted == false
     end
+
+    test "a goal whose id is absent from goal_progress has nil children" do
+      goal = %Task{id: 99, type: :goal}
+      data = TaskCardData.task_card_data(goal, MapSet.new(), %{}, %{})
+      assert data.children == nil
+    end
+  end
+
+  describe "task_card_data — defensive branches" do
+    test "a non-map reviewer_result yields no skip flag and nil verdict fields" do
+      # Map.get(task, :reviewer_result) || %{} keeps a truthy non-map as-is, so
+      # reviewer_skipped?/1 and get_in_either/2 hit their non-map fallbacks.
+      data = TaskCardData.task_card_data(%Task{id: 1, type: :work, reviewer_result: "not a map"})
+
+      assert data.reviewer_skipped? == false
+      assert data.reviewer_skip_reason == nil
+      assert data.criteria_checked == nil
+    end
+
+    test "a completed_at before claimed_at (negative duration) yields nil cycle time" do
+      task = %Task{
+        id: 2,
+        type: :work,
+        claimed_at: ~U[2026-01-01 12:00:00Z],
+        completed_at: ~U[2026-01-01 10:00:00Z]
+      }
+
+      assert TaskCardData.task_card_data(task).cycle_time == nil
+    end
+
+    test "a non-binary completed_by_agent yields no avatar" do
+      assert TaskCardData.task_card_data(%Task{id: 3, type: :work, completed_by_agent: 123}).completed_by ==
+               nil
+    end
+
+    test "an assigned user with neither name nor email falls back to \"?\"" do
+      data = TaskCardData.task_card_data(%Task{id: 4, type: :work, assigned_to: %{id: 7}})
+      assert %{kind: :human, name: "?"} = data.claimed_by
+    end
+  end
+
+  describe "task_card_data arities" do
+    test "the /2 and /3 arities apply default goal_progress/goals_by_id" do
+      task = %Task{id: 8, type: :work}
+      assert %{promoted: true} = TaskCardData.task_card_data(task, MapSet.new())
+      assert %{promoted: true} = TaskCardData.task_card_data(task, MapSet.new(), %{})
+    end
   end
 end

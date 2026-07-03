@@ -7,6 +7,8 @@ defmodule KanbanWeb.API.TaskErrorsTest do
   """
   use ExUnit.Case, async: true
 
+  import Plug.Test
+
   alias KanbanWeb.API.TaskErrors
 
   describe "mark_reviewed_error/1" do
@@ -48,6 +50,28 @@ defmodule KanbanWeb.API.TaskErrorsTest do
         |> Ecto.Changeset.validate_required([:title])
 
       assert TaskErrors.translate_changeset_errors(changeset) == %{title: ["can't be blank"]}
+    end
+
+    test "stringifies binary and non-scalar interpolation values" do
+      changeset =
+        {%{}, %{title: :string}}
+        |> Ecto.Changeset.change()
+        |> Ecto.Changeset.add_error(:title, "binary %{val}", val: "verbatim")
+        |> Ecto.Changeset.add_error(:tags, "list %{val}", val: [1, 2])
+
+      result = TaskErrors.translate_changeset_errors(changeset)
+
+      assert result.title == ["binary verbatim"]
+      assert result.tags == ["list [1, 2]"]
+    end
+  end
+
+  describe "handle_task_error/2 — column_forbidden" do
+    test "renders 403 for a column that does not belong to the board" do
+      conn = conn(:get, "/") |> TaskErrors.handle_task_error({:error, :column_forbidden})
+
+      assert conn.status == 403
+      assert Jason.decode!(conn.resp_body) == %{"error" => "Column does not belong to this board"}
     end
   end
 end

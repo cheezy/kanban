@@ -93,5 +93,22 @@ defmodule KanbanWeb.API.ChangedFilesTransportTest do
 
       assert error_message(decode(bomb)) == "decoded payload exceeds the maximum allowed size"
     end
+
+    test "a plain-base64 payload whose decoded size exceeds the cap is rejected post-decode" do
+      # Under the 10 MB encoded cap, but decodes to > 5 MB — exercises the
+      # decode_json_array/1 byte_size guard (distinct from the streaming abort).
+      raw = String.duplicate("x", 5_000_001)
+      oversized = %{"encoding" => "base64", "data" => Base.encode64(raw)}
+
+      assert error_message(decode(oversized)) ==
+               "decoded payload exceeds the maximum allowed size"
+    end
+  end
+
+  describe "gzip+base64 with invalid base64" do
+    test "rejects invalid base64 in the gzip+base64 path" do
+      result = decode(%{"encoding" => "gzip+base64", "data" => "not valid base64 !!!"})
+      assert error_message(result) == "data is not valid base64"
+    end
   end
 end

@@ -62,4 +62,40 @@ defmodule Kanban.Tasks.Task.MapFieldValidationsTest do
       assert {"must be a JSON object", _} = bad.errors[:technical_details]
     end
   end
+
+  describe "empty-collection short circuits" do
+    test "an empty string list is accepted" do
+      result =
+        %Task{security_considerations: []}
+        |> Changeset.change()
+        |> MapFieldValidations.validate_string_list_field(:security_considerations)
+
+      assert result.errors == []
+    end
+
+    test "an empty testing_strategy / integration_points map is accepted" do
+      assert %Task{testing_strategy: %{}}
+             |> Changeset.change()
+             |> MapFieldValidations.validate_testing_strategy()
+             |> Map.fetch!(:errors) == []
+
+      assert %Task{integration_points: %{}}
+             |> Changeset.change()
+             |> MapFieldValidations.validate_integration_points()
+             |> Map.fetch!(:errors) == []
+    end
+
+    test "a nil map field is accepted (each validator's nil branch)" do
+      cs =
+        Changeset.change(%Task{
+          testing_strategy: nil,
+          integration_points: nil,
+          technical_details: nil
+        })
+
+      assert MapFieldValidations.validate_testing_strategy(cs).errors == []
+      assert MapFieldValidations.validate_integration_points(cs).errors == []
+      assert MapFieldValidations.validate_technical_details(cs).errors == []
+    end
+  end
 end

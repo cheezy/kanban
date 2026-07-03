@@ -51,4 +51,20 @@ defmodule Kanban.Tasks.Task.EmbedValidationsTest do
       assert {"is required (integer starting from 0)", _} = result.errors[:position]
     end
   end
+
+  describe "validate_embed_type/3 — generic (non key_files/verification_steps) field" do
+    test "uses the generic 'array of objects' message for non-object items" do
+      cs = Changeset.change(%Task{})
+      result = EmbedValidations.validate_embed_type(cs, :other, %{"other" => ["not a map"]})
+
+      assert {"must be an array of objects", _} = result.errors[:other]
+    end
+
+    test "uses the generic 'array' message for a non-array value" do
+      cs = Changeset.change(%Task{})
+      result = EmbedValidations.validate_embed_type(cs, :other, %{"other" => "not a list"})
+
+      assert {"must be an array", _} = result.errors[:other]
+    end
+  end
 end
