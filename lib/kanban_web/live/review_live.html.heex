@@ -160,8 +160,10 @@
             ]}
           >
             <span
-              :if={review_status_pill(@selected)}
-              data-review-detail-summary-status={review_status_pill(@selected).status}
+              :if={ReviewReportHelpers.review_status_pill(@selected)}
+              data-review-detail-summary-status={
+                ReviewReportHelpers.review_status_pill(@selected).status
+              }
               style={[
                 "flex-shrink: 0;",
                 "display: inline-flex; align-items: center; gap: 6px;",
@@ -169,11 +171,14 @@
                 "font-size: 13px; font-weight: 600;",
                 "letter-spacing: 0.02em;",
                 "margin-top: 6px;",
-                review_status_pill(@selected).style
+                ReviewReportHelpers.review_status_pill(@selected).style
               ]}
             >
-              <.icon name={review_status_pill(@selected).icon} class="w-4 h-4" />
-              {review_status_pill(@selected).label}
+              <.icon
+                name={ReviewReportHelpers.review_status_pill(@selected).icon}
+                class="w-4 h-4"
+              />
+              {ReviewReportHelpers.review_status_pill(@selected).label}
             </span>
             <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
               <h2
@@ -196,9 +201,9 @@
           </div>
 
           <ReviewStatsStrip.review_stats_strip
-            acceptance={acceptance_value(@selected)}
-            acceptance_passed={acceptance_passed(@selected)}
-            acceptance_inconsistent={acceptance_inconsistent?(@selected)}
+            acceptance={ReviewAcceptance.acceptance_value(@selected)}
+            acceptance_passed={ReviewAcceptance.acceptance_passed(@selected)}
+            acceptance_inconsistent={ReviewAcceptance.acceptance_inconsistent?(@selected)}
             tests={ReviewReportHelpers.testing_strategy_value(@selected)}
             tests_passed={ReviewReportHelpers.testing_strategy_passed(@selected)}
             diff={ReviewReportHelpers.patterns_value(@selected)}
@@ -254,7 +259,9 @@
                 ReviewReportHelpers.section_incomplete?(@selected, :security_considerations)
             }
             data-review-security-considerations
-            data-review-security-status={section_status_key(@selected, :security_considerations)}
+            data-review-security-status={
+              ReviewReportHelpers.section_status_key(@selected, :security_considerations)
+            }
             style={[
               "margin: 12px 16px 0; padding: 10px 12px;",
               "border-radius: 6px;",
@@ -293,14 +300,14 @@
                   "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
                   "padding: 2px 10px; border-radius: 999px;",
                   "font-size: 12px; font-weight: 600; text-transform: capitalize;",
-                  verdict_tone_style(
+                  ReviewReportHelpers.verdict_tone_style(
                     ReviewReportHelpers.security_considerations_passed(@selected)
                   )
                 ]}
               >
                 <.icon
                   name={
-                    verdict_icon(
+                    ReviewReportHelpers.verdict_icon(
                       :security_considerations,
                       ReviewReportHelpers.security_considerations_passed(@selected)
                     )
@@ -310,11 +317,11 @@
                 {ReviewReportHelpers.security_considerations_value(@selected)}
               </span>
               <p
-                :if={security_considerations_note(@selected)}
+                :if={ReviewReportHelpers.security_considerations_note(@selected)}
                 data-review-security-note
                 style="margin: 0; white-space: pre-wrap; color: var(--ink-2);"
               >
-                {security_considerations_note(@selected)}
+                {ReviewReportHelpers.security_considerations_note(@selected)}
               </p>
             <% end %>
           </section>
@@ -329,14 +336,14 @@
           >
             <AcceptanceChecklist.acceptance_checklist
               acceptance_criteria={@selected.acceptance_criteria}
-              checked={acceptance_checked(@selected)}
-              failed={acceptance_failed(@selected)}
-              structured={structured_acceptance(@selected)}
+              checked={ReviewAcceptance.acceptance_checked(@selected)}
+              failed={ReviewAcceptance.acceptance_failed(@selected)}
+              structured={ReviewAcceptance.structured_acceptance(@selected)}
             />
           </section>
 
           <section
-            :if={review_check_rows(@selected) != []}
+            :if={ReviewReportHelpers.review_check_rows(@selected) != []}
             data-review-checks
             style={[
               "margin: 12px 16px 0; padding: 10px 12px;",
@@ -353,7 +360,7 @@
               {gettext("Review checks")}
             </span>
             <div
-              :for={row <- review_check_rows(@selected)}
+              :for={row <- ReviewReportHelpers.review_check_rows(@selected)}
               data-review-check-row={Atom.to_string(row.section)}
               data-review-check-status={row.status}
               style="display: flex; flex-direction: column; gap: 4px; margin-top: 14px;"
@@ -384,10 +391,13 @@
                     "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
                     "padding: 2px 10px; border-radius: 999px;",
                     "font-size: 12px; font-weight: 600; text-transform: capitalize;",
-                    verdict_tone_style(row.passed)
+                    ReviewReportHelpers.verdict_tone_style(row.passed)
                   ]}
                 >
-                  <.icon name={verdict_icon(row.section, row.passed)} class="w-4 h-4" />
+                  <.icon
+                    name={ReviewReportHelpers.verdict_icon(row.section, row.passed)}
+                    class="w-4 h-4"
+                  />
                   {row.value}
                 </span>
                 <p
@@ -406,7 +416,9 @@
                 <div
                   :for={category <- row.breakdown}
                   data-review-check-category={category.key}
-                  data-review-check-category-status={category_status_key(category.passed)}
+                  data-review-check-category-status={
+                    ReviewReportHelpers.category_status_key(category.passed)
+                  }
                   style="display: flex; flex-direction: column; gap: 3px;"
                 >
                   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -422,14 +434,14 @@
                         "display: inline-flex; align-items: center; gap: 4px;",
                         "padding: 0 8px; border-radius: 999px;",
                         "font-size: 11px; font-weight: 600; text-transform: capitalize;",
-                        verdict_tone_style(category.passed)
+                        ReviewReportHelpers.verdict_tone_style(category.passed)
                       ]}
                     >
                       <.icon
-                        name={verdict_icon(row.section, category.passed)}
+                        name={ReviewReportHelpers.verdict_icon(row.section, category.passed)}
                         class="w-3.5 h-3.5"
                       />
-                      {category_verdict_label(category.passed)}
+                      {ReviewReportHelpers.category_verdict_label(category.passed)}
                     </span>
                   </div>
                   <ul style={[
