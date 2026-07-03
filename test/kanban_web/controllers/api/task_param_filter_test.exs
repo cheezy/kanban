@@ -10,8 +10,6 @@ defmodule KanbanWeb.API.TaskParamFilterTest do
 
   alias KanbanWeb.API.TaskParamFilter
 
-  require Logger
-
   describe "filter_forbidden_update_fields/1" do
     test "strips forbidden fields and reports them, keeping allowed fields" do
       params = %{
