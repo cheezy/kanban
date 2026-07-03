@@ -46,7 +46,7 @@ jobs:
 
       # Step: Setup Elixir + Erlang image as the base.
     - name: Set up Elixir
-      uses: erlef/setup-beam@v1
+      uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
       with:
         otp-version: ${{matrix.otp}}
         elixir-version: ${{matrix.elixir}}
@@ -57,7 +57,7 @@ jobs:
 
     # Step: Install Chrome for ChromicPDF (PDF generation tests)
     - name: Install Chrome
-      uses: browser-actions/setup-chrome@v1
+      uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1.7.3
 
     # Step: Define how to cache deps. Restores existing cache if present.
     - name: Cache deps
@@ -139,7 +139,7 @@ jobs:
     concurrency: review-deploy-group    # optional: ensure only one action runs at a time
     steps:
       - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1.6
       - run: flyctl deploy --remote-only --config ./fly.review.toml --dockerfile ./Dockerfile.review
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
@@ -152,7 +152,7 @@ jobs:
     concurrency: prod-deploy-group    # optional: ensure only one action runs at a time
     steps:
       - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1.6
       - run: flyctl deploy --remote-only --config ./fly.production.toml --dockerfile ./Dockerfile.production
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

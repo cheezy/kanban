@@ -1,0 +1,11 @@
+version: 2
+updates:
+  # Keep the SHA-pinned GitHub Actions in .github/workflows current.
+  # Dependabot bumps the pinned commit SHA and rewrites the trailing
+  # "# vX.Y.Z" version comment, opening a reviewable PR for each update
+  # so pinned refs stay safe (immutable) without going stale.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
