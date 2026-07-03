@@ -4,9 +4,11 @@ defmodule KanbanWeb.API.TaskController do
   alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias KanbanWeb.API.BatchGoalCreation
   alias KanbanWeb.API.ChangedFilesTransport
   alias KanbanWeb.API.CompletionResultGate
   alias KanbanWeb.API.ErrorDocs
+  alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskParamFilter
 
   require Logger
@@ -32,7 +34,7 @@ defmodule KanbanWeb.API.TaskController do
         # had (W399).
         case Columns.get_column_for_board(column_id, board.id) do
           nil ->
-            handle_task_error(conn, {:error, :not_found})
+            TaskErrors.handle_task_error(conn, {:error, :not_found})
 
           column ->
             tasks = Tasks.list_tasks(column)
@@ -41,7 +43,7 @@ defmodule KanbanWeb.API.TaskController do
         end
 
       :error ->
-        error_response(
+        TaskErrors.error_response(
           conn,
           :bad_request,
           "Invalid column_id: must be an integer",
@@ -62,7 +64,7 @@ defmodule KanbanWeb.API.TaskController do
 
     case fetch_and_verify_task(id_or_identifier, board) do
       {:ok, task} -> render(conn, :show, task: task)
-      error -> handle_task_error(conn, error)
+      error -> TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -99,7 +101,7 @@ defmodule KanbanWeb.API.TaskController do
         resolve_column_and_create(conn, board, column_id, task_params, user, api_token)
 
       :error ->
-        error_response(
+        TaskErrors.error_response(
           conn,
           :bad_request,
           "Invalid column_id: must be an integer",
@@ -136,7 +138,7 @@ defmodule KanbanWeb.API.TaskController do
     # board" into a single not_found response (W399).
     case Columns.get_column_for_board(column_id, board.id) do
       nil ->
-        handle_task_error(conn, {:error, :not_found})
+        TaskErrors.handle_task_error(conn, {:error, :not_found})
 
       column ->
         perform_api_task_create(conn, column, task_params, user, api_token)
@@ -206,12 +208,12 @@ defmodule KanbanWeb.API.TaskController do
     # this is defense-in-depth in case get_default_column_id returns nil/stale.
     case column_id && Columns.get_column_for_board(column_id, board.id) do
       nil ->
-        handle_task_error(conn, {:error, :not_found})
+        TaskErrors.handle_task_error(conn, {:error, :not_found})
 
       column ->
         goals
-        |> process_batch_goals(column, user, api_token, conn)
-        |> handle_batch_result(conn)
+        |> BatchGoalCreation.process_batch_goals(column, user, api_token, conn)
+        |> BatchGoalCreation.handle_batch_result(conn)
     end
   end
 
@@ -276,7 +278,7 @@ defmodule KanbanWeb.API.TaskController do
         end
 
       error ->
-        handle_task_error(conn, error)
+        TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -348,7 +350,7 @@ defmodule KanbanWeb.API.TaskController do
         proceed_with_claim(conn, user, board, task_identifier, agent)
 
       {:error, reason} ->
-        handle_hook_validation_error(conn, "before_doing", reason)
+        TaskErrors.handle_hook_validation_error(conn, "before_doing", reason)
     end
   end
 
@@ -364,7 +366,7 @@ defmodule KanbanWeb.API.TaskController do
         handle_assigned_to_other_user(conn, task_identifier)
 
       {:error, :not_authorized} ->
-        error_response(
+        TaskErrors.error_response(
           conn,
           :forbidden,
           "You do not have write access to claim tasks on this board",
@@ -427,7 +429,7 @@ defmodule KanbanWeb.API.TaskController do
          :ok <- validate_complete_preconditions(task, params) do
       proceed_with_complete(conn, task, user, params, build_complete_agent(params, api_token))
     else
-      error -> handle_task_error(conn, error)
+      error -> TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -464,7 +466,7 @@ defmodule KanbanWeb.API.TaskController do
         render_completed_task(conn, task, hooks, agent)
 
       {:error, :invalid_status} ->
-        error_response(
+        TaskErrors.error_response(
           conn,
           :unprocessable_entity,
           "Task must be in progress or blocked to complete",
@@ -472,7 +474,7 @@ defmodule KanbanWeb.API.TaskController do
         )
 
       {:error, :not_authorized} ->
-        error_response(
+        TaskErrors.error_response(
           conn,
           :forbidden,
           "You can only complete tasks that you are assigned to",
@@ -512,7 +514,7 @@ defmodule KanbanWeb.API.TaskController do
 
     case persist_changed_files(conn, id_or_identifier, payload) do
       {:ok, task, value} -> render_changed_files_response(conn, task, value)
-      error -> handle_task_error(conn, error)
+      error -> TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -568,7 +570,7 @@ defmodule KanbanWeb.API.TaskController do
         proceed_with_unclaim(conn, task, user, params["reason"])
 
       error ->
-        handle_task_error(conn, error)
+        TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -579,7 +581,7 @@ defmodule KanbanWeb.API.TaskController do
         render(conn, :show, task: task)
 
       {:error, :not_authorized} ->
-        error_response(
+        TaskErrors.error_response(
           conn,
           :forbidden,
           "You can only unclaim tasks that you claimed",
@@ -587,7 +589,7 @@ defmodule KanbanWeb.API.TaskController do
         )
 
       {:error, :not_claimed} ->
-        error_response(
+        TaskErrors.error_response(
           conn,
           :unprocessable_entity,
           "Task is not currently claimed",
@@ -609,7 +611,7 @@ defmodule KanbanWeb.API.TaskController do
          :ok <- validate_hook(params["after_review_result"], "after_review") do
       proceed_with_mark_reviewed(conn, task, user)
     else
-      error -> handle_task_error(conn, error)
+      error -> TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -631,23 +633,9 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   defp render_mark_reviewed_result({:error, reason}, conn) do
-    {message, code} = mark_reviewed_error(reason)
-    error_response(conn, :unprocessable_entity, message, code)
+    {message, code} = TaskErrors.mark_reviewed_error(reason)
+    TaskErrors.error_response(conn, :unprocessable_entity, message, code)
   end
-
-  defp mark_reviewed_error(:invalid_column),
-    do: {"Task must be in Review column to mark as reviewed", :invalid_column_for_review}
-
-  defp mark_reviewed_error(:review_not_performed),
-    do: {"Task must have a review status before being marked as reviewed", :review_not_performed}
-
-  defp mark_reviewed_error(:invalid_review_status),
-    do:
-      {"Invalid review status. Must be 'approved', 'changes_requested', or 'rejected'",
-       :invalid_review_status}
-
-  defp mark_reviewed_error(_other),
-    do: {"Unexpected mark_reviewed error", :unexpected_mark_reviewed_error}
 
   defp render_reviewed_task(conn, task, opts \\ []) do
     event_name =
@@ -667,7 +655,7 @@ defmodule KanbanWeb.API.TaskController do
 
     case fetch_and_verify_task(id_or_identifier, board) do
       {:ok, task} -> proceed_with_mark_done(conn, task, user)
-      error -> handle_task_error(conn, error)
+      error -> TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -678,7 +666,7 @@ defmodule KanbanWeb.API.TaskController do
         render(conn, :show, task: task)
 
       {:error, :invalid_column} ->
-        error_response(
+        TaskErrors.error_response(
           conn,
           :unprocessable_entity,
           "Task must be in Review column to mark as done",
@@ -720,7 +708,7 @@ defmodule KanbanWeb.API.TaskController do
          {:ok, attempt} <- validate_after_goal_result(params) do
       proceed_with_after_goal(conn, task, attempt)
     else
-      error -> handle_task_error(conn, error)
+      error -> TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -782,7 +770,7 @@ defmodule KanbanWeb.API.TaskController do
         })
 
       error ->
-        handle_task_error(conn, error)
+        TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -804,7 +792,7 @@ defmodule KanbanWeb.API.TaskController do
         })
 
       error ->
-        handle_task_error(conn, error)
+        TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -818,7 +806,7 @@ defmodule KanbanWeb.API.TaskController do
         render(conn, :tree, tree: tree_data)
 
       error ->
-        handle_task_error(conn, error)
+        TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -861,71 +849,8 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp handle_task_error(conn, {:error, :not_found}) do
-    conn |> put_status(:not_found) |> json(%{error: "Task not found"})
-  end
-
-  defp handle_task_error(conn, {:error, :forbidden}) do
-    conn |> put_status(:forbidden) |> json(%{error: "Task does not belong to this board"})
-  end
-
-  defp handle_task_error(conn, {:error, :column_forbidden}) do
-    conn |> put_status(:forbidden) |> json(%{error: "Column does not belong to this board"})
-  end
-
-  defp handle_task_error(conn, {:error, {:hook_failed, hook_name, reason}}) do
-    handle_hook_validation_error(conn, hook_name, reason)
-  end
-
-  defp handle_task_error(conn, {:error, {:completion_validation_failed, body}}) do
-    conn
-    |> put_status(:unprocessable_entity)
-    |> json(ErrorDocs.add_docs_to_error(body, :completion_validation_failed))
-  end
-
-  defp handle_task_error(conn, {:error, :after_goal_not_a_goal}) do
-    error_response(
-      conn,
-      :unprocessable_entity,
-      "after_goal can only be reported against tasks of type goal",
-      :after_goal_not_a_goal
-    )
-  end
-
-  defp handle_task_error(conn, {:error, :after_goal_not_started}) do
-    error_response(
-      conn,
-      :unprocessable_entity,
-      "Goal has no in-flight after_goal lifecycle (after_goal_status is nil)",
-      :after_goal_not_started
-    )
-  end
-
-  defp handle_task_error(conn, {:error, :invalid_after_goal_result}) do
-    error_response(
-      conn,
-      :unprocessable_entity,
-      "after_goal payload requires {exit_code: integer, output: string, duration_ms: non-negative integer}",
-      :invalid_after_goal_result
-    )
-  end
-
-  defp handle_task_error(conn, {:error, :not_authorized_changed_files}) do
-    error_response(
-      conn,
-      :forbidden,
-      "You can only update changed_files on tasks you are assigned to, or as a board reviewer with write access",
-      :not_authorized_to_complete
-    )
-  end
-
-  defp error_response(conn, status, message, doc_key) do
-    conn
-    |> put_status(status)
-    |> json(ErrorDocs.add_docs_to_error(%{error: message}, doc_key))
-  end
-
-  defp build_task_params_with_creator(task_params, user, api_token) do
+  @doc false
+  def build_task_params_with_creator(task_params, user, api_token) do
     task_params
     |> Map.put("created_by_id", user.id)
     |> maybe_add_created_by_agent(api_token)
@@ -971,7 +896,8 @@ defmodule KanbanWeb.API.TaskController do
     |> render(:error, changeset: changeset)
   end
 
-  defp render_goal_with_children(goal) do
+  @doc false
+  def render_goal_with_children(goal) do
     %{
       id: goal.id,
       identifier: goal.identifier,
@@ -1002,7 +928,12 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp emit_telemetry(conn, event_name, metadata) do
+  # Exposed (with build_task_params_with_creator/3, log_create_forbidden_fields/3,
+  # render_goal_with_children/1, render_task_summary/1) so KanbanWeb.API.BatchGoalCreation
+  # can compose them; they remain owned here because the single-create and
+  # dependency-listing actions share them.
+  @doc false
+  def emit_telemetry(conn, event_name, metadata) do
     :telemetry.execute(
       [:kanban, :api, event_name],
       %{count: 1},
@@ -1015,7 +946,8 @@ defmodule KanbanWeb.API.TaskController do
     )
   end
 
-  defp render_task_summary(task) do
+  @doc false
+  def render_task_summary(task) do
     %{
       id: task.id,
       identifier: task.identifier,
@@ -1097,107 +1029,10 @@ defmodule KanbanWeb.API.TaskController do
     |> json(error_response)
   end
 
-  defp translate_changeset_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Enum.reduce(opts, msg, fn {key, value}, acc ->
-        String.replace(acc, "%{#{key}}", stringify_value(value))
-      end)
-    end)
-  end
-
-  defp stringify_value(value) when is_binary(value), do: value
-  defp stringify_value(value) when is_atom(value) or is_number(value), do: to_string(value)
-  defp stringify_value(value), do: inspect(value)
-
-  defp process_batch_goals(goals, column, user, api_token, conn) do
-    ctx = %{column: column, user: user, api_token: api_token, conn: conn}
-
-    goals
-    |> Enum.with_index()
-    |> Enum.reduce_while({:ok, []}, fn {goal_params, index}, {:ok, acc} ->
-      create_single_goal_in_batch(goal_params, index, ctx, acc)
-    end)
-  end
-
-  defp create_single_goal_in_batch(goal_params, index, ctx, acc) do
-    {safe_goal_params, rejected_goal_fields} =
-      TaskParamFilter.filter_forbidden_create_fields(goal_params)
-
-    child_tasks_raw = Map.get(goal_params, "tasks", [])
-
-    {safe_child_tasks, rejected_child_fields} =
-      TaskParamFilter.filter_child_tasks(child_tasks_raw)
-
-    log_create_forbidden_fields(ctx.conn, rejected_goal_fields, rejected_child_fields)
-
-    task_params_with_creator =
-      build_task_params_with_creator(safe_goal_params, ctx.user, ctx.api_token)
-
-    case Tasks.api_create_goal_with_tasks(ctx.column, task_params_with_creator, safe_child_tasks) do
-      {:ok, %{goal: goal, child_tasks: created_child_tasks}} ->
-        handle_successful_goal_creation(goal, created_child_tasks, index, ctx.conn, acc)
-
-      {:error, _operation, changeset} ->
-        {:halt, {:error, index, changeset}}
-    end
-  end
-
-  defp handle_successful_goal_creation(goal, created_child_tasks, index, conn, acc) do
-    goal = Tasks.get_task_for_view!(goal.id)
-
-    emit_telemetry(conn, :goal_created, %{
-      goal_id: goal.id,
-      child_task_count: length(created_child_tasks),
-      batch: true,
-      batch_index: index
-    })
-
-    result = %{
-      goal: render_goal_with_children(goal),
-      child_tasks: Enum.map(created_child_tasks, &render_task_summary/1)
-    }
-
-    {:cont, {:ok, [result | acc]}}
-  end
-
-  defp handle_batch_result({:ok, created_goals}, conn) do
-    emit_telemetry(conn, :batch_goals_created, %{
-      total_goals: length(created_goals)
-    })
-
-    conn
-    |> put_status(:created)
-    |> json(%{
-      success: true,
-      goals: Enum.reverse(created_goals),
-      total: length(created_goals)
-    })
-  end
-
-  defp handle_batch_result({:error, index, changeset}, conn)
-       when is_struct(changeset, Ecto.Changeset) do
-    conn
-    |> put_status(:unprocessable_entity)
-    |> json(%{
-      error: "Failed to create goal at index #{index}",
-      index: index,
-      details: translate_changeset_errors(changeset)
-    })
-  end
-
-  defp handle_batch_result({:error, index, :wip_limit_reached}, conn) do
-    conn
-    |> put_status(:unprocessable_entity)
-    |> json(%{
-      error: "WIP limit reached while creating goal at index #{index}",
-      index: index
-    })
-  end
-
   defp reject_column_change(conn, task) do
     emit_telemetry(conn, :task_update_column_change_forbidden, %{task_id: task.id})
 
-    error_response(
+    TaskErrors.error_response(
       conn,
       :forbidden,
       "Agents cannot move tasks between columns via update. Use the workflow endpoints (claim, complete, mark_reviewed, mark_done) to transition tasks.",
@@ -1240,7 +1075,8 @@ defmodule KanbanWeb.API.TaskController do
   # when a forbidden field was rejected, the companion telemetry event. The
   # audit Logger line lives in TaskParamFilter; telemetry stays here because
   # emit_telemetry/3 is controller-wide infra keyed off conn.
-  defp log_create_forbidden_fields(conn, goal_fields, child_fields) do
+  @doc false
+  def log_create_forbidden_fields(conn, goal_fields, child_fields) do
     TaskParamFilter.log_create_mass_assignment(goal_fields, child_fields, actor_user_id(conn))
 
     if goal_fields != [] or child_fields != [] do
@@ -1263,26 +1099,4 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   defp parse_id(_), do: :error
-
-  defp handle_hook_validation_error(conn, hook_name, reason) do
-    error_response =
-      ErrorDocs.add_docs_to_error(
-        %{
-          error: reason,
-          hook: hook_name,
-          required_format: %{
-            "#{hook_name}_result" => %{
-              exit_code: 0,
-              output: "Hook execution output",
-              duration_ms: 1234
-            }
-          }
-        },
-        :hook_validation_failed
-      )
-
-    conn
-    |> put_status(:unprocessable_entity)
-    |> json(error_response)
-  end
 end
