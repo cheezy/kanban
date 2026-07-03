@@ -2,7 +2,7 @@ defmodule KanbanWeb.MetricsKpiStrip do
   @moduledoc """
   4-cell KPI strip rendered at the top of the workspace `/metrics` page.
 
-  Consumes the map returned by `Kanban.Metrics.workspace_kpis/1`:
+  Consumes the map returned by `Kanban.Metrics.Workspace.workspace_kpis/1`:
 
       %{
         cycle_time_median_minutes: integer,  cycle_time_delta_pct: float,
@@ -28,7 +28,7 @@ defmodule KanbanWeb.MetricsKpiStrip do
 
   ## Attrs
 
-    * `kpis` — required map matching the `Kanban.Metrics.workspace_kpis/1`
+    * `kpis` — required map matching the `Kanban.Metrics.Workspace.workspace_kpis/1`
       return shape.
   """
   attr :kpis, :map, required: true

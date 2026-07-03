@@ -30,7 +30,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
-  alias Kanban.Metrics
+  alias Kanban.Metrics.Workspace
   alias KanbanWeb.MetricsAgentLeaderboard
   alias KanbanWeb.MetricsCumulativeFlow
   alias KanbanWeb.MetricsCycleTimeChart
@@ -85,11 +85,11 @@ defmodule KanbanWeb.MetricsLive.Workspace do
 
     socket
     |> assign(:selected_board_ids, selected_ids)
-    |> assign(:kpis, Metrics.workspace_kpis(opts))
-    |> assign(:cycle_series, Metrics.cycle_time_daily(opts))
-    |> assign(:throughput_series, Metrics.throughput_daily(opts))
-    |> assign(:leaderboard, Metrics.agent_leaderboard(opts))
-    |> assign(:flow_snapshots, Metrics.cumulative_flow(opts))
+    |> assign(:kpis, Workspace.workspace_kpis(opts))
+    |> assign(:cycle_series, Workspace.cycle_time_daily(opts))
+    |> assign(:throughput_series, Workspace.throughput_daily(opts))
+    |> assign(:leaderboard, Workspace.agent_leaderboard(opts))
+    |> assign(:flow_snapshots, Workspace.cumulative_flow(opts))
     |> assign(:window_label, window_label(window_days, boards, selected_ids))
   end
 

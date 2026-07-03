@@ -3,7 +3,7 @@ defmodule KanbanWeb.MetricsAgentLeaderboard do
   Top-contributors panel for the workspace `/metrics` page.
 
   Consumes the list shape returned by
-  `Kanban.Metrics.agent_leaderboard/1`:
+  `Kanban.Metrics.Workspace.agent_leaderboard/1`:
 
       [%{name: String.t(), kind: :agent | :human,
          completed: non_neg_integer(), success_pct: float()}, ...]
@@ -28,7 +28,7 @@ defmodule KanbanWeb.MetricsAgentLeaderboard do
   ## Attrs
 
     * `rows` — required. List of contributor maps; capped upstream at
-      six entries by `Kanban.Metrics.agent_leaderboard/1`. An empty
+      six entries by `Kanban.Metrics.Workspace.agent_leaderboard/1`. An empty
       list renders the empty state.
   """
   attr :rows, :list, required: true

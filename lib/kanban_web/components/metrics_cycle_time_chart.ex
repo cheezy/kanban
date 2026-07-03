@@ -3,7 +3,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
   Bar chart rendering the trailing-14-day overall daily median cycle
   time as a single series.
 
-  Consumes the list shape returned by `Kanban.Metrics.cycle_time_daily/1`:
+  Consumes the list shape returned by `Kanban.Metrics.Workspace.cycle_time_daily/1`:
 
       [%{date: Date.t(), minutes: integer()}, ...]
 
@@ -34,7 +34,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
 
     * `data` — required. List of `%{date: Date.t(), minutes: integer()}`
       entries. The chart adapts to any length, though
-      `Kanban.Metrics.cycle_time_daily/1` always returns exactly 14.
+      `Kanban.Metrics.Workspace.cycle_time_daily/1` always returns exactly 14.
   """
   attr :data, :list, required: true
   attr :window_days, :integer, default: 14

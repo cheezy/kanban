@@ -5,7 +5,7 @@ defmodule KanbanWeb.MetricsThroughputChart do
   `:window_days` selection), with x-axis date labels under the plot.
 
   Consumes the list shape returned by
-  `Kanban.Metrics.throughput_daily/1` — a list of non-negative integers
+  `Kanban.Metrics.Workspace.throughput_daily/1` — a list of non-negative integers
   ordered oldest-to-newest.
 
   The plot is a 140px-tall responsive SVG with a `var(--stride-orange)`
@@ -33,7 +33,7 @@ defmodule KanbanWeb.MetricsThroughputChart do
   ## Attrs
 
     * `series` — required. List of non-negative integers (any length,
-      though `Kanban.Metrics.throughput_daily/1` always returns 14).
+      though `Kanban.Metrics.Workspace.throughput_daily/1` always returns 14).
   """
   attr :series, :list, required: true
   attr :window_days, :integer, default: 14
@@ -255,7 +255,7 @@ defmodule KanbanWeb.MetricsThroughputChart do
   # One x-axis date label per retained point, thinned for longer windows so the
   # ticks never overlap. The dates are the trailing window ending today (today
   # going back length-1 days) — the same ordered window
-  # `Kanban.Metrics.throughput_daily/1` builds its counts from — so each label
+  # `Kanban.Metrics.Workspace.throughput_daily/1` builds its counts from — so each label
   # sits under the point for that day. left_pct/shift_x mirror the value labels
   # so the ticks align to the points and the first/last stay inside the plot.
   defp date_labels([]), do: []

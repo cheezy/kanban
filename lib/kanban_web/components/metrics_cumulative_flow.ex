@@ -4,7 +4,7 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
   (default 14 days; driven by the caller's `:window_days` selection).
 
   Consumes the list shape returned by
-  `Kanban.Metrics.cumulative_flow/1`:
+  `Kanban.Metrics.Workspace.cumulative_flow/1`:
 
       [%{date: Date.t(),
          backlog: integer(), ready: integer(),
@@ -38,7 +38,7 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
   ## Attrs
 
     * `snapshots` — required. List of daily snapshot maps. The chart
-      adapts to any length, though `Kanban.Metrics.cumulative_flow/1`
+      adapts to any length, though `Kanban.Metrics.Workspace.cumulative_flow/1`
       always returns 14.
   """
   attr :snapshots, :list, required: true
