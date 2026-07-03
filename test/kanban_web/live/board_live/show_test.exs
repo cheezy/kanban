@@ -2768,7 +2768,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
   defp card_for(overrides) do
     overrides
     |> base_task_struct()
-    |> KanbanWeb.BoardLive.Show.task_card_data()
+    |> KanbanWeb.BoardLive.TaskCardData.task_card_data()
   end
 
   # Builds a struct shaped like %Kanban.Tasks.Task{} with the supplied
