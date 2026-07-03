@@ -142,6 +142,9 @@ defmodule Kanban.Tasks.Task do
 
   alias Kanban.Schemas.Task.KeyFile
   alias Kanban.Schemas.Task.VerificationStep
+  alias Kanban.Tasks.Task.ArchiveChangeset
+  alias Kanban.Tasks.Task.EmbedValidations
+  alias Kanban.Tasks.Task.MapFieldValidations
 
   @doc """
   Valid capability strings for the `required_capabilities` field.
@@ -568,10 +571,10 @@ defmodule Kanban.Tasks.Task do
       :archived_by_id,
       :duplicate_of_id
     ])
-    |> validate_embed_type(:key_files, attrs)
-    |> validate_embed_type(:verification_steps, attrs)
-    |> cast_embed(:key_files, with: &validate_key_file_embed/2)
-    |> cast_embed(:verification_steps, with: &validate_verification_step_embed/2)
+    |> EmbedValidations.validate_embed_type(:key_files, attrs)
+    |> EmbedValidations.validate_embed_type(:verification_steps, attrs)
+    |> cast_embed(:key_files, with: &EmbedValidations.validate_key_file_embed/2)
+    |> cast_embed(:verification_steps, with: &EmbedValidations.validate_verification_step_embed/2)
     |> normalize_ai_context_fields()
     |> validate_required([:title, :position, :type, :priority, :status])
     |> validate_inclusion(:type, [:work, :defect, :goal],
@@ -601,11 +604,11 @@ defmodule Kanban.Tasks.Task do
     |> validate_claim_expiration()
     |> validate_completion_fields()
     |> validate_review_fields()
-    |> validate_archive_fields()
-    |> validate_security_considerations()
-    |> validate_testing_strategy()
-    |> validate_integration_points()
-    |> validate_technical_details()
+    |> ArchiveChangeset.validate_archive_fields()
+    |> MapFieldValidations.validate_security_considerations()
+    |> MapFieldValidations.validate_testing_strategy()
+    |> MapFieldValidations.validate_integration_points()
+    |> MapFieldValidations.validate_technical_details()
     |> foreign_key_constraint(:column_id)
     |> foreign_key_constraint(:assigned_to_id)
     |> foreign_key_constraint(:created_by_id)
@@ -697,10 +700,10 @@ defmodule Kanban.Tasks.Task do
   def api_create_changeset(task, attrs) do
     task
     |> cast(attrs, @api_create_fields)
-    |> validate_embed_type(:key_files, attrs)
-    |> validate_embed_type(:verification_steps, attrs)
-    |> cast_embed(:key_files, with: &validate_key_file_embed/2)
-    |> cast_embed(:verification_steps, with: &validate_verification_step_embed/2)
+    |> EmbedValidations.validate_embed_type(:key_files, attrs)
+    |> EmbedValidations.validate_embed_type(:verification_steps, attrs)
+    |> cast_embed(:key_files, with: &EmbedValidations.validate_key_file_embed/2)
+    |> cast_embed(:verification_steps, with: &EmbedValidations.validate_verification_step_embed/2)
     |> normalize_ai_context_fields()
     |> validate_required([:title, :position, :type, :priority])
     |> validate_inclusion(:type, [:work, :defect, :goal],
@@ -715,10 +718,10 @@ defmodule Kanban.Tasks.Task do
     |> validate_technology_requirements()
     |> validate_required_capabilities()
     |> validate_dependencies()
-    |> validate_security_considerations()
-    |> validate_testing_strategy()
-    |> validate_integration_points()
-    |> validate_technical_details()
+    |> MapFieldValidations.validate_security_considerations()
+    |> MapFieldValidations.validate_testing_strategy()
+    |> MapFieldValidations.validate_integration_points()
+    |> MapFieldValidations.validate_technical_details()
     |> validate_varchar_255_lengths()
     |> validate_varchar_255_array_element_lengths()
     |> foreign_key_constraint(:column_id)
@@ -737,10 +740,10 @@ defmodule Kanban.Tasks.Task do
   def api_update_changeset(task, attrs) do
     task
     |> cast(attrs, @api_update_fields)
-    |> validate_embed_type(:key_files, attrs)
-    |> validate_embed_type(:verification_steps, attrs)
-    |> cast_embed(:key_files, with: &validate_key_file_embed/2)
-    |> cast_embed(:verification_steps, with: &validate_verification_step_embed/2)
+    |> EmbedValidations.validate_embed_type(:key_files, attrs)
+    |> EmbedValidations.validate_embed_type(:verification_steps, attrs)
+    |> cast_embed(:key_files, with: &EmbedValidations.validate_key_file_embed/2)
+    |> cast_embed(:verification_steps, with: &EmbedValidations.validate_verification_step_embed/2)
     |> normalize_ai_context_fields()
     |> validate_required([:title, :type, :priority])
     |> validate_inclusion(:type, [:work, :defect, :goal],
@@ -755,10 +758,10 @@ defmodule Kanban.Tasks.Task do
     |> validate_technology_requirements()
     |> validate_required_capabilities()
     |> validate_dependencies()
-    |> validate_security_considerations()
-    |> validate_testing_strategy()
-    |> validate_integration_points()
-    |> validate_technical_details()
+    |> MapFieldValidations.validate_security_considerations()
+    |> MapFieldValidations.validate_testing_strategy()
+    |> MapFieldValidations.validate_integration_points()
+    |> MapFieldValidations.validate_technical_details()
     |> validate_varchar_255_lengths()
     |> validate_varchar_255_array_element_lengths()
   end
@@ -821,115 +824,6 @@ defmodule Kanban.Tasks.Task do
   defp codepoint_length(value), do: value |> String.codepoints() |> length()
 
   # Validate that embed fields are arrays before casting
-  defp validate_embed_type(changeset, field, attrs) do
-    field_str = to_string(field)
-
-    case Map.get(attrs, field_str) || Map.get(attrs, field) do
-      nil ->
-        changeset
-
-      [] ->
-        # Empty arrays are valid - just means no embedded records
-        changeset
-
-      value when is_list(value) ->
-        validate_embed_array_items(changeset, field, value)
-
-      _non_list_value ->
-        add_error(changeset, field, embed_type_error_message(field, :not_array))
-    end
-  end
-
-  defp validate_embed_array_items(changeset, field, value) do
-    if Enum.all?(value, &is_map/1) do
-      changeset
-    else
-      add_error(changeset, field, embed_type_error_message(field, :not_objects))
-    end
-  end
-
-  defp embed_type_error_message(field, error_type) do
-    case {field, error_type} do
-      {:key_files, :not_objects} ->
-        "must be an array of objects with file_path, note, and position fields"
-
-      {:verification_steps, :not_objects} ->
-        "must be an array of objects with step_type, step_text, expected_result, and position fields"
-
-      {_, :not_objects} ->
-        "must be an array of objects"
-
-      {:key_files, :not_array} ->
-        "must be an array of objects with file_path, note, and position fields"
-
-      {:verification_steps, :not_array} ->
-        "must be an array of objects with step_type, step_text, expected_result, and position fields"
-
-      {_, :not_array} ->
-        "must be an array"
-    end
-  end
-
-  # Custom embed validation with better error messages
-  defp validate_key_file_embed(key_file, attrs) do
-    KeyFile.changeset(key_file, attrs)
-    |> improve_embed_errors(:key_files)
-  end
-
-  defp validate_verification_step_embed(step, attrs) do
-    VerificationStep.changeset(step, attrs)
-    |> improve_embed_errors(:verification_steps)
-  end
-
-  defp improve_embed_errors(changeset, field_name) do
-    # If the changeset is valid, return it as-is
-    if changeset.valid? do
-      changeset
-    else
-      # Otherwise, enhance error messages for better clarity
-      case field_name do
-        :key_files ->
-          enhance_key_file_errors(changeset)
-
-        :verification_steps ->
-          enhance_verification_step_errors(changeset)
-
-        _ ->
-          changeset
-      end
-    end
-  end
-
-  defp enhance_key_file_errors(changeset) do
-    changeset
-    |> update_error_message(
-      :file_path,
-      "can't be blank",
-      "is required (relative path from project root)"
-    )
-    |> update_error_message(:position, "can't be blank", "is required (integer starting from 0)")
-  end
-
-  defp enhance_verification_step_errors(changeset) do
-    changeset
-    |> update_error_message(:step_type, "can't be blank", "is required ('command' or 'manual')")
-    |> update_error_message(:step_text, "can't be blank", "is required (command or instruction)")
-    |> update_error_message(:position, "can't be blank", "is required (integer starting from 0)")
-    |> update_error_message(:step_type, "is invalid", "must be 'command' or 'manual'")
-  end
-
-  defp update_error_message(changeset, field, old_msg, new_msg) do
-    errors = changeset.errors
-
-    updated_errors =
-      Enum.map(errors, fn
-        {^field, {^old_msg, opts}} -> {field, {new_msg, opts}}
-        error -> error
-      end)
-
-    %{changeset | errors: updated_errors}
-  end
-
   defp normalize_ai_context_fields(changeset) do
     changeset
     |> normalize_field(:security_considerations, [])
@@ -953,7 +847,7 @@ defmodule Kanban.Tasks.Task do
   end
 
   defp validate_technology_requirements(changeset) do
-    validate_string_list_field(changeset, :technology_requirements)
+    MapFieldValidations.validate_string_list_field(changeset, :technology_requirements)
   end
 
   defp validate_required_capabilities(changeset) do
@@ -1104,206 +998,13 @@ defmodule Kanban.Tasks.Task do
   end
 
   @doc """
-  Focused changeset for the archive write path. Casts only the
-  archive-metadata fields plus `archived_at`, runs
-  `validate_archive_fields/1`, and declares the relevant FK + check
-  constraints — but skips the unrelated full-task validations
-  (`validate_review_fields/1`, `validate_completion_fields/1`, etc.) so
-  archiving a task does NOT retroactively reject pre-existing inconsistent
-  state on unrelated fields.
+  Focused changeset for the archive write path. Delegates to
+  `Kanban.Tasks.Task.ArchiveChangeset.changeset/2`, which casts only the
+  archive-metadata fields and runs the archive-reason conditional validations
+  — skipping the unrelated full-task validations so archiving does not
+  retroactively reject pre-existing inconsistent state on other fields.
 
   See `Kanban.Tasks.Lifecycle.archive_task/2` for the caller.
   """
-  def archive_changeset(task, attrs) do
-    task
-    |> cast(attrs, [
-      :archived_at,
-      :archive_reason,
-      :archive_note,
-      :archived_by_id,
-      :duplicate_of_id
-    ])
-    |> validate_archive_fields()
-    |> foreign_key_constraint(:archived_by_id)
-    |> foreign_key_constraint(:duplicate_of_id)
-    |> check_constraint(:duplicate_of_id,
-      name: :duplicate_of_id_not_self,
-      message: "must not reference the task itself"
-    )
-  end
-
-  # Archive-reason conditional validations:
-  #
-  #   :completed                          → no extra fields required
-  #   :wontdo / :deferred / :cancelled    → archive_note required
-  #   :duplicate                          → duplicate_of_id required
-  #   anything other than :duplicate      → duplicate_of_id forbidden
-  #
-  # Reason whitelist is enforced by `Ecto.Enum` on the field itself.
-  defp validate_archive_fields(changeset) do
-    reason = get_field(changeset, :archive_reason)
-
-    changeset
-    |> validate_archive_note_required(reason)
-    |> validate_duplicate_of_id_required(reason)
-    |> validate_duplicate_of_id_forbidden(reason)
-  end
-
-  @archive_reasons_requiring_note [:wontdo, :deferred, :cancelled]
-
-  defp validate_archive_note_required(changeset, reason)
-       when reason in @archive_reasons_requiring_note do
-    if blank_string?(get_field(changeset, :archive_note)) do
-      add_error(
-        changeset,
-        :archive_note,
-        "must be set when archive_reason is :wontdo, :deferred, or :cancelled"
-      )
-    else
-      changeset
-    end
-  end
-
-  defp validate_archive_note_required(changeset, _reason), do: changeset
-
-  defp validate_duplicate_of_id_required(changeset, :duplicate) do
-    if is_nil(get_field(changeset, :duplicate_of_id)) do
-      add_error(
-        changeset,
-        :duplicate_of_id,
-        "must be set when archive_reason is :duplicate"
-      )
-    else
-      changeset
-    end
-  end
-
-  defp validate_duplicate_of_id_required(changeset, _reason), do: changeset
-
-  defp validate_duplicate_of_id_forbidden(changeset, :duplicate), do: changeset
-
-  defp validate_duplicate_of_id_forbidden(changeset, _reason) do
-    if is_nil(get_field(changeset, :duplicate_of_id)) do
-      changeset
-    else
-      add_error(
-        changeset,
-        :duplicate_of_id,
-        "may only be set when archive_reason is :duplicate"
-      )
-    end
-  end
-
-  defp blank_string?(nil), do: true
-  defp blank_string?(s) when is_binary(s), do: String.trim(s) == ""
-  defp blank_string?(_), do: true
-
-  defp validate_security_considerations(changeset) do
-    validate_string_list_field(changeset, :security_considerations)
-  end
-
-  defp validate_string_list_field(changeset, field) do
-    case get_field(changeset, field) do
-      nil ->
-        changeset
-
-      [] ->
-        changeset
-
-      items when is_list(items) ->
-        if Enum.all?(items, &is_binary/1) do
-          changeset
-        else
-          add_error(changeset, field, "must be a list of strings")
-        end
-
-      _ ->
-        add_error(changeset, field, "must be a list")
-    end
-  end
-
-  defp validate_testing_strategy(changeset) do
-    case get_field(changeset, :testing_strategy) do
-      nil ->
-        changeset
-
-      %{} = strategy when map_size(strategy) == 0 ->
-        changeset
-
-      %{} = strategy ->
-        # Validate that all values are strings or arrays of strings
-        validate_testing_strategy_values(changeset, strategy)
-
-      _ ->
-        add_error(
-          changeset,
-          :testing_strategy,
-          "must be a JSON object with string or array values describing testing approach (e.g., {\"unit_tests\": \"Test each function\", \"edge_cases\": [\"Empty input\", \"Invalid data\"]})"
-        )
-    end
-  end
-
-  defp validate_testing_strategy_values(changeset, strategy) do
-    validate_string_or_string_list_map(changeset, :testing_strategy, strategy)
-  end
-
-  defp validate_integration_points(changeset) do
-    case get_field(changeset, :integration_points) do
-      nil ->
-        changeset
-
-      %{} = points when map_size(points) == 0 ->
-        changeset
-
-      %{} = points ->
-        # Validate that all values are strings or arrays of strings
-        validate_integration_points_values(changeset, points)
-
-      _ ->
-        add_error(
-          changeset,
-          :integration_points,
-          "must be a JSON object with string or array values describing integration points (e.g., {\"external_api\": \"Stripe API\", \"pubsub\": [\"TaskUpdated\", \"BoardUpdated\"]})"
-        )
-    end
-  end
-
-  defp validate_integration_points_values(changeset, points) do
-    validate_string_or_string_list_map(changeset, :integration_points, points)
-  end
-
-  # Free-form: any map (including empty) is valid; only a non-map value is an
-  # error. Deliberately does NOT validate inner keys/values (contrast with
-  # validate_testing_strategy/validate_integration_points which constrain values).
-  defp validate_technical_details(changeset) do
-    case get_field(changeset, :technical_details) do
-      nil ->
-        changeset
-
-      %{} ->
-        changeset
-
-      _ ->
-        add_error(changeset, :technical_details, "must be a JSON object")
-    end
-  end
-
-  defp validate_string_or_string_list_map(changeset, field, map) do
-    invalid_values =
-      Enum.reject(map, fn {_key, value} ->
-        is_binary(value) or (is_list(value) and Enum.all?(value, &is_binary/1))
-      end)
-
-    if Enum.empty?(invalid_values) do
-      changeset
-    else
-      invalid_keys = Enum.map_join(invalid_values, ", ", fn {key, _value} -> key end)
-
-      add_error(
-        changeset,
-        field,
-        "all values must be strings or arrays of strings. Invalid keys: #{invalid_keys}"
-      )
-    end
-  end
+  defdelegate archive_changeset(task, attrs), to: ArchiveChangeset, as: :changeset
 end
