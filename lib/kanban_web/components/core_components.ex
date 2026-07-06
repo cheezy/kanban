@@ -63,18 +63,19 @@ defmodule KanbanWeb.CoreComponents do
       class="toast toast-top toast-end z-50"
       {@rest}
     >
-      <%!-- Stride-token flash card: a soft tinted surface + status-coloured
-            accent (info = --st-ready/blue, error = --st-blocked/red) + ink text,
-            so it reads as a muted, on-palette notice in BOTH themes — not
-            daisyUI's bright solid alert-info/alert-error (garish in dark). --%>
+      <%!-- Stride-token flash card: a dedicated flash surface (--flash-info-bg /
+            --flash-error-bg, distinct enough from the page canvas to read as a
+            card — D104) + status-coloured accent (info = --st-ready/blue, error =
+            --st-blocked/red) + ink text, so it reads as an on-palette notice in
+            BOTH themes — not daisyUI's bright solid alert-info/alert-error. --%>
       <div
         class="w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap"
         style={
           "display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; " <>
             "border-radius: 10px; box-shadow: var(--shadow-lg); font-size: 13.5px; " <>
             if(@kind == :info,
-              do: "background: var(--st-ready-soft); border: 1px solid var(--st-ready);",
-              else: "background: var(--st-blocked-soft); border: 1px solid var(--st-blocked);"
+              do: "background: var(--flash-info-bg); border: 1px solid var(--st-ready);",
+              else: "background: var(--flash-error-bg); border: 1px solid var(--st-blocked);"
             )
         }
       >

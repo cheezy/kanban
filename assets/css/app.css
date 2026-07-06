@@ -874,6 +874,15 @@
   --st-done-soft:    oklch(96% 0.03 155);
   --st-blocked-soft: oklch(96% 0.03 25);
 
+  /* Flash toast surfaces — DEDICATED to the flash card (core_components flash/1).
+     Deliberately more saturated and further from --bg (98.8% L) than the shared
+     --st-*-soft chips, so a notice reads as a distinct card rather than a
+     near-white blur (D104). Do NOT fold these back into --st-ready-soft /
+     --st-blocked-soft — those softs are shared by dozens of chips/buttons and
+     must stay subtle. --ink text and --st-ready/--st-blocked accents sit on top. */
+  --flash-info-bg:  oklch(91% 0.055 240);
+  --flash-error-bg: oklch(91% 0.05 25);
+
   /* Composite gradients — announcement banner + top loading bar. Defined as
      paired light/dark tokens (the dark variants live in the dark override
      block) so theme-blind inline gradients can be replaced with a single
@@ -981,6 +990,12 @@
   --st-review-soft:  oklch(22% 0.05 277);
   --st-done-soft:    oklch(22% 0.05 155);
   --st-blocked-soft: oklch(22% 0.05 25);
+
+  /* Flash toast surfaces — dark variants of the D104 flash tokens (see the light
+     block for the rationale). Distinctly lighter than --bg (16% L) / --surface
+     (20% L) so the card reads as raised, while --ink stays high-contrast on top. */
+  --flash-info-bg:  oklch(30% 0.07 240);
+  --flash-error-bg: oklch(30% 0.07 25);
 
   /* Status foregrounds — brighter, higher-lightness variants that sit
      legibly on top of the matching -soft backgrounds (and on var(--surface)

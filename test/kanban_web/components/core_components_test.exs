@@ -16,8 +16,8 @@ defmodule KanbanWeb.CoreComponentsTest do
         """)
 
       assert html =~ "Saved"
-      # Soft blue surface + blue accent + ink text — flips with the theme.
-      assert html =~ "background: var(--st-ready-soft)"
+      # Dedicated flash surface + blue accent + ink text — flips with the theme (D104).
+      assert html =~ "background: var(--flash-info-bg)"
       assert html =~ "color: var(--st-ready)"
       assert html =~ "color: var(--ink)"
       # No bright solid daisyUI alert (the thing that looked garish in dark).
@@ -33,7 +33,7 @@ defmodule KanbanWeb.CoreComponentsTest do
         """)
 
       assert html =~ "Nope"
-      assert html =~ "background: var(--st-blocked-soft)"
+      assert html =~ "background: var(--flash-error-bg)"
       assert html =~ "color: var(--st-blocked)"
       refute html =~ "alert-error"
     end
