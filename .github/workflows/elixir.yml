@@ -57,7 +57,7 @@ jobs:
 
     # Step: Install Chrome for ChromicPDF (PDF generation tests)
     - name: Install Chrome
-      uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1.7.3
+      uses: browser-actions/setup-chrome@2e1d749697dd1612b833dba4a722266286fbefcd # v2.1.2
 
     # Step: Define how to cache deps. Restores existing cache if present.
     - name: Cache deps
