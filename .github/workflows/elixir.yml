@@ -53,7 +53,7 @@ jobs:
       
     # Step: Check out the code.
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     # Step: Install Chrome for ChromicPDF (PDF generation tests)
     - name: Install Chrome
@@ -138,7 +138,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     concurrency: review-deploy-group    # optional: ensure only one action runs at a time
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1.6
       - run: flyctl deploy --remote-only --config ./fly.review.toml --dockerfile ./Dockerfile.review
         env:
@@ -151,7 +151,7 @@ jobs:
     if: github.ref == 'refs/heads/release'
     concurrency: prod-deploy-group    # optional: ensure only one action runs at a time
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1.6
       - run: flyctl deploy --remote-only --config ./fly.production.toml --dockerfile ./Dockerfile.production
         env:
