@@ -9,6 +9,7 @@ defmodule Kanban.Tasks.TaskTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.TargetsFixtures
   import Kanban.TasksFixtures
 
   alias Kanban.Tasks.Task
@@ -296,6 +297,65 @@ defmodule Kanban.Tasks.TaskTest do
 
         assert "may only be set when archive_reason is :duplicate" in errors_on(changeset).duplicate_of_id
       end
+    end
+  end
+
+  describe "target_id restricted to goal-type tasks" do
+    for type <- [:work, :defect] do
+      @task_type type
+
+      test "#{@task_type} rejects a non-nil target_id", %{column: column, user: user} do
+        target = delivery_target_fixture(user)
+        task = task_fixture(column, %{type: @task_type})
+
+        changeset = Task.changeset(task, base_attrs(%{target_id: target.id}))
+
+        refute changeset.valid?
+        assert "may only be set on goal-type tasks" in errors_on(changeset).target_id
+      end
+    end
+
+    test "accepts a target_id on a goal task", %{column: column, user: user} do
+      target = delivery_target_fixture(user)
+      goal = task_fixture(column, %{type: :goal})
+
+      changeset = Task.changeset(goal, base_attrs(%{target_id: target.id}))
+
+      assert changeset.valid?
+    end
+
+    test "accepts a goal task with no target_id", %{column: column} do
+      goal = task_fixture(column, %{type: :goal})
+
+      changeset = Task.changeset(goal, base_attrs(%{title: "Goal without a target"}))
+
+      assert changeset.valid?
+    end
+
+    test "accepts a work task with no target_id", %{column: column} do
+      task = task_fixture(column, %{type: :work})
+
+      changeset = Task.changeset(task, base_attrs(%{title: "Work without a target"}))
+
+      assert changeset.valid?
+    end
+
+    test "target_id nullifies when the referenced target is removed",
+         %{column: column, user: user} do
+      target = delivery_target_fixture(user)
+      goal = task_fixture(column, %{type: :goal})
+
+      {:ok, goal} =
+        goal
+        |> Task.changeset(base_attrs(%{target_id: target.id}))
+        |> Repo.update()
+
+      assert goal.target_id == target.id
+
+      Repo.delete!(target)
+
+      reloaded = Repo.get!(Task, goal.id)
+      assert reloaded.target_id == nil
     end
   end
 

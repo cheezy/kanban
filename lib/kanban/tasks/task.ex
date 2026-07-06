@@ -432,6 +432,10 @@ defmodule Kanban.Tasks.Task do
     belongs_to :completed_by, Kanban.Accounts.User
     belongs_to :reviewed_by, Kanban.Accounts.User
     belongs_to :archived_by, Kanban.Accounts.User
+    # Delivery target this task belongs to. Nullable and permitted only on
+    # goal-type tasks (enforced in changeset/2); nullifies when the target is
+    # removed (on_delete: :nilify_all in the migration).
+    belongs_to :target, Kanban.Targets.DeliveryTarget, foreign_key: :target_id
     # Self-FK for :duplicate reason — points at the canonical task this one
     # duplicates. Required when archive_reason is :duplicate, forbidden
     # otherwise. The DB enforces id <> duplicate_of_id via check constraint.
@@ -540,6 +544,7 @@ defmodule Kanban.Tasks.Task do
       # Task relationships (02)
       :dependencies,
       :parent_id,
+      :target_id,
       # Status tracking (02)
       :status,
       # Claim tracking (02)
@@ -605,6 +610,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_completion_fields()
     |> validate_review_fields()
     |> ArchiveChangeset.validate_archive_fields()
+    |> validate_target_requires_goal_type()
     |> MapFieldValidations.validate_security_considerations()
     |> MapFieldValidations.validate_testing_strategy()
     |> MapFieldValidations.validate_integration_points()
@@ -616,6 +622,7 @@ defmodule Kanban.Tasks.Task do
     |> foreign_key_constraint(:reviewed_by_id)
     |> foreign_key_constraint(:archived_by_id)
     |> foreign_key_constraint(:duplicate_of_id)
+    |> foreign_key_constraint(:target_id)
     |> check_constraint(:duplicate_of_id,
       name: :duplicate_of_id_not_self,
       message: "must not reference the task itself"
@@ -960,6 +967,18 @@ defmodule Kanban.Tasks.Task do
       add_error(changeset, :completed_at, "must be set when status is completed")
     else
       changeset
+    end
+  end
+
+  # A delivery target may only be attached to goal-type tasks. A non-nil
+  # :target_id is permitted when the task's type is :goal and rejected for
+  # :work and :defect. Goals without a target are the common case, so a nil
+  # :target_id is always allowed.
+  defp validate_target_requires_goal_type(changeset) do
+    if is_nil(get_field(changeset, :target_id)) or get_field(changeset, :type) == :goal do
+      changeset
+    else
+      add_error(changeset, :target_id, "may only be set on goal-type tasks")
     end
   end
 

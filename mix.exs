@@ -120,6 +120,7 @@ defmodule Kanban.MixProject do
 
   defp test_coverage do
     [
+      summary: [threshold: 90],
       ignore_modules: [
         Kanban.AccountsFixtures,
         Kanban.Application,
