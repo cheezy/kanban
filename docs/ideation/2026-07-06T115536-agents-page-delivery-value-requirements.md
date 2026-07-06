@@ -38,8 +38,19 @@ Transform `/agents` from a passive telemetry dashboard into a delivery-oriented 
 ## Outcome
 A delivery lead opening `/agents` (or alerted by it) can, in one place: see whether delivery is on track with agent work tied to real outcomes; catch stuck, failing, or drifting agents before they cost a deadline; and act directly — reassign, unblock, reprioritize — instead of only observing. The page has shifted from a report you glance at to a surface you manage delivery from.
 
+## Sketch
+*Phase 1 (commitment-modeling foundation) design — locked during refinement on 2026-07-06.*
+
+A **Delivery Commitment** is a new **workspace-level** entity that groups goals under a committed delivery date, surfaced as a strip on the boards page (`/boards`), mirroring the existing per-board goals strip (`goals_strip`). Clicking a commitment reveals its member goals (reusing `goal_card` and the existing `/boards/:id/goals/:goal_id` drill-down).
+
+- **New `delivery_commitments` table:** `name`, `target_date` (the committed date), `description`, `owner_id` (belongs_to user), timestamps. No stored baseline/history in v1.
+- **Membership — one commitment per goal:** a nullable `commitment_id` FK on the `tasks` row, changeset-guarded to `type: :goal`, `ON DELETE SET NULL`, indexed. The grouping key rides on the goal; the date/owner/description live on the commitment.
+- **Derived on-track status** (no stored column), computed at read time from member goals' existing children rollup vs `target_date`: **Complete** (all member goals done) · **Missed** (`today > target_date` and not complete) · **At-risk** (% of goal-work completed lags % of calendar time elapsed from creation → `target_date` beyond a threshold) · **On-track** (everything else).
+- **Access scoping:** commitments span boards, but each viewer sees only member goals on boards they can access (`BoardScope`, the same IDOR guard `Kanban.Tasks.Goals` uses). A user sees a commitment only if they own it or can access at least one member goal's board.
+- **Boundaries:** all reads/writes live in a new `Kanban.Commitments` context (no Ecto in the LiveView); all UI text via gettext.
+
 ## Open questions
-- How do delivery commitments/deadlines enter Stride so "on track" can be computed — goal target dates, a new commitment field, or column-level SLAs? (Intentionally unresolved; this is the first thing the phased plan below pins down.)
+- **Resolved (2026-07-06):** how commitments/deadlines enter Stride — a dedicated workspace-level `delivery_commitments` entity grouping goals; see Sketch. (The alternatives — a date on the goal row, or column-level SLAs — were rejected.)
 - Where does cost/ROI data (token/agent spend) come from to support the "leadership trust / investment paying off" metric?
 - Whether APM-scale observability and/or live agent orchestration should later be pulled into scope (intentionally left open, not ruled out).
 
@@ -52,7 +63,7 @@ A delivery lead opening `/agents` (or alerted by it) can, in one place: see whet
 ## Decomposition seams
 *A phased split so this ships as independent, dependency-ordered chunks rather than one giant goal. Each is a candidate `/stride-ideation:stridify <path> --goal <n>` dispatch. Phases 2–4 depend on Phase 1.*
 
-1. **Commitment-modeling foundation** — decide and implement how delivery commitments/deadlines enter Stride (goal target dates vs a new commitment field vs column-level SLAs). Resolves the top Open Question and is the prerequisite for any "on track" computation. Ship this first.
+1. **Commitment-modeling foundation** — the `delivery_commitments` table + nullable `commitment_id` FK on goal task rows; a new `Kanban.Commitments` context (CRUD, goal assignment, board-scoped listing, derived on-track status via the time-vs-progress heuristic); and the commitments strip on `/boards` with drill-down to member goals. See the **Sketch** for the locked model. Prerequisite for every outcome-linked view. Ship this first.
 2. **Delivery-outcome views** — recast `/agents` around delivery risk and on-track status tied to the Phase 1 model, anchored on the primary delivery-lead experience (redesign + new persistence land here).
 3. **In-page interventions** — introduce write actions from the page (reassign, unblock, reprioritize, nudge), moving the surface from observe-only to act. Directly serves the "actions taken from page" leading metric.
 4. **ROI / cost view** — surface token/agent spend vs delivered value for the upward-reporting leader; powers the "leadership trust / investment paying off" lagging metric.
