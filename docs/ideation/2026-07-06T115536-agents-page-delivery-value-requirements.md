@@ -49,6 +49,17 @@ A **Delivery Commitment** is a new **workspace-level** entity that groups goals 
 - **Access scoping:** commitments span boards, but each viewer sees only member goals on boards they can access (`BoardScope`, the same IDOR guard `Kanban.Tasks.Goals` uses). A user sees a commitment only if they own it or can access at least one member goal's board.
 - **Boundaries:** all reads/writes live in a new `Kanban.Commitments` context (no Ecto in the LiveView); all UI text via gettext.
 
+*Phase 2 (delivery-outcome views) design — locked during refinement on 2026-07-06.*
+
+The `/agents` page is **restructured in place** from agent-centric to **delivery-centric**: it opens on a commitment-health band, with the agent roster demoted to a reframed second tier. **Commitment-first** — the commitment is the primary object and agents surface inside it. **Fully derived — no new tables in Phase 2**; it depends only on the Phase 1 model existing.
+
+- **Agent↔commitment bridge:** walk `agent → task.parent_id (goal) → goal.commitment_id → commitment` over the accessible task set, reusing the stuck/dormant classification in `Kanban.Agents.Roster` to produce, per commitment, `{derived status, member goals, active agents, stalled goals/agents}`. The derivation lives in the context (reusing `Kanban.Commitments` for status), never the LiveView.
+- **Delivery-health band:** a new top-of-page component bucketing commitments by derived status (On-track / At-risk / Missed / Complete) with soonest target dates.
+- **At-risk explainer:** for each at-risk commitment, its stalled member goals and the stuck/failing agents on them — turning "catch trouble early" into a named agent stall endangering a named commitment.
+- **Reframed roster:** each agent annotated with the commitment/goal it advances, ordered risk-first (agents on at-risk commitments float up).
+- **Retained but demoted:** the activity feed, per-agent detail panel, and fleet metrics stay as a second tier, each tethered to the commitment/goal it serves. Agents with no goal parent still show, outside the delivery rollup.
+- **Time-to-detect metric deferred:** the "time from stall to action" leading indicator needs history the derived model doesn't keep; it is a later slice, not Phase 2.
+
 ## Open questions
 - **Resolved (2026-07-06):** how commitments/deadlines enter Stride — a dedicated workspace-level `delivery_commitments` entity grouping goals; see Sketch. (The alternatives — a date on the goal row, or column-level SLAs — were rejected.)
 - Where does cost/ROI data (token/agent spend) come from to support the "leadership trust / investment paying off" metric?
@@ -64,7 +75,7 @@ A **Delivery Commitment** is a new **workspace-level** entity that groups goals 
 *A phased split so this ships as independent, dependency-ordered chunks rather than one giant goal. Each is a candidate `/stride-ideation:stridify <path> --goal <n>` dispatch. Phases 2–4 depend on Phase 1.*
 
 1. **Commitment-modeling foundation** — the `delivery_commitments` table + nullable `commitment_id` FK on goal task rows; a new `Kanban.Commitments` context (CRUD, goal assignment, board-scoped listing, derived on-track status via the time-vs-progress heuristic); and the commitments strip on `/boards` with drill-down to member goals. See the **Sketch** for the locked model. Prerequisite for every outcome-linked view. Ship this first.
-2. **Delivery-outcome views** — recast `/agents` around delivery risk and on-track status tied to the Phase 1 model, anchored on the primary delivery-lead experience (redesign + new persistence land here).
+2. **Delivery-outcome views** — restructure `/agents` in place from agent-centric to delivery-centric (commitment-first): a delivery-health band on top, an at-risk explainer tying stalled agents to endangered commitments, and a risk-first reframed roster, with the existing feed/detail/metrics demoted to a second tier. **Fully derived — no migration** — via an `agent → goal → commitment` rollup in the context. See the **Sketch**. Depends on Phase 1 (G307).
 3. **In-page interventions** — introduce write actions from the page (reassign, unblock, reprioritize, nudge), moving the surface from observe-only to act. Directly serves the "actions taken from page" leading metric.
 4. **ROI / cost view** — surface token/agent spend vs delivered value for the upward-reporting leader; powers the "leadership trust / investment paying off" lagging metric.
 5. **Proactive alerts (deferred / conditional)** — stuck-agent and goal-at-risk notifications (Alternative B), pursued only if the adoption metric shows the pull model isn't reaching delivery leads.
