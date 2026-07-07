@@ -290,4 +290,56 @@ defmodule Kanban.TargetsTest do
       assert Targets.list_targets(scope) == []
     end
   end
+
+  describe "list_targets_with_status/2" do
+    test "summarizes a target with aggregate child progress and a derived status",
+         %{scope: scope, user: user, column: column} do
+      goal = goal_fixture(column)
+      _incomplete = task_fixture(column, %{parent_id: goal.id})
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      # today early in the target's window (created ~now, target_date 2026-12-31)
+      # with work at 1/2 = 0.5 => work leads elapsed => :on_track.
+      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-07])
+
+      assert summary.target.id == target.id
+      assert summary.completed == 1
+      assert summary.total == 2
+      assert summary.percentage == 50
+      assert summary.status == :on_track
+    end
+
+    test "reports 0/0 (0%) progress when a member goal has no children",
+         %{scope: scope, user: user, column: column} do
+      goal = goal_fixture(column)
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-07])
+      assert summary.completed == 0
+      assert summary.total == 0
+      assert summary.percentage == 0
+    end
+
+    test "excludes targets whose goals are all on inaccessible boards",
+         %{scope: scope, user: user, column: column, other_scope: other_scope} do
+      goal = goal_fixture(column)
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert Targets.list_targets_with_status(other_scope, ~D[2026-07-07]) == []
+    end
+  end
+
+  defp complete_task(task) do
+    {:ok, done} =
+      task
+      |> Task.changeset(%{status: :completed, completed_at: DateTime.utc_now()})
+      |> Repo.update()
+
+    done
+  end
 end

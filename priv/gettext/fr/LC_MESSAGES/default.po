@@ -11,7 +11,7 @@ msgstr ""
 "Language: fr\n"
 "Plural-Forms: nplurals=2; plural=(n>1);\n"
 
-#: lib/kanban_web/components/core_components.ex:463
+#: lib/kanban_web/components/core_components.ex:464
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "Actions"
@@ -32,8 +32,8 @@ msgstr "Quelque chose s'est mal passé !"
 msgid "We can't find the internet"
 msgstr "Impossible de trouver Internet"
 
-#: lib/kanban_web/components/core_components.ex:100
-#: lib/kanban_web/components/core_components.ex:644
+#: lib/kanban_web/components/core_components.ex:101
+#: lib/kanban_web/components/core_components.ex:645
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr "fermer"
@@ -161,7 +161,7 @@ msgstr "Enregistrement en cours..."
 msgid "You need to reauthenticate to perform sensitive actions on your account."
 msgstr "Vous devez vous réauthentifier pour effectuer des actions sensibles sur votre compte."
 
-#: lib/kanban_web/live/board_live/index.html.heex:88
+#: lib/kanban_web/live/board_live/index.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "Êtes-vous sûr de vouloir supprimer ce tableau ?"
@@ -185,7 +185,7 @@ msgstr "Tableau mis à jour avec succès"
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
-#: lib/kanban_web/live/review_live.ex:260
+#: lib/kanban_web/live/review_live.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "Annuler"
@@ -203,7 +203,7 @@ msgstr "Description"
 msgid "Edit Board"
 msgstr "Modifier le Tableau"
 
-#: lib/kanban_web/live/board_live/index.html.heex:81
+#: lib/kanban_web/live/board_live/index.html.heex:83
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr "Modifier le tableau"
@@ -246,7 +246,7 @@ msgstr "Utilisez ce formulaire pour gérer les tableaux dans votre base de donn�
 msgid "Column created successfully"
 msgstr "Colonne créée avec succès"
 
-#: lib/kanban_web/live/board_live/show.ex:1155
+#: lib/kanban_web/live/board_live/show.ex:836
 #, elixir-autogen, elixir-format
 msgid "Column deleted successfully"
 msgstr "Colonne supprimée avec succès"
@@ -266,7 +266,7 @@ msgstr "Créer une nouvelle colonne pour votre tableau"
 msgid "Create your first column"
 msgstr "Créez votre première colonne"
 
-#: lib/kanban_web/live/board_live/show.ex:1160
+#: lib/kanban_web/live/board_live/show.ex:841
 #, elixir-autogen, elixir-format
 msgid "Failed to delete column"
 msgstr "Échec de la suppression de la colonne"
@@ -317,8 +317,8 @@ msgstr "Créer une nouvelle tâche"
 
 #: lib/kanban_web/live/archive_live/index.ex:474
 #: lib/kanban_web/live/archive_live/index.ex:499
-#: lib/kanban_web/live/board_live/show.ex:170
-#: lib/kanban_web/live/board_live/show.ex:1307
+#: lib/kanban_web/live/board_live/show.ex:176
+#: lib/kanban_web/live/board_live/show.ex:973
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
 msgstr "Échec de la suppression de la tâche"
@@ -334,7 +334,7 @@ msgid "Task created successfully"
 msgstr "Tâche créée avec succès"
 
 #: lib/kanban_web/live/archive_live/index.ex:470
-#: lib/kanban_web/live/board_live/show.ex:1293
+#: lib/kanban_web/live/board_live/show.ex:959
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
 msgstr "Tâche supprimée avec succès"
@@ -375,7 +375,7 @@ msgstr "Limite WIP atteinte pour cette colonne"
 msgid "Stride"
 msgstr "Stride"
 
-#: lib/kanban_web/live/board_live/show.ex:798
+#: lib/kanban_web/live/board_live/show.ex:612
 #, elixir-autogen, elixir-format
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "Impossible de déplacer la tâche : la colonne a atteint sa limite WIP"
@@ -404,8 +404,8 @@ msgstr "Critique"
 msgid "Defect"
 msgstr "Défaut"
 
-#: lib/kanban_web/live/board_live/show.ex:217
-#: lib/kanban_web/live/board_live/show.ex:768
+#: lib/kanban_web/live/board_live/show.ex:229
+#: lib/kanban_web/live/board_live/show.ex:582
 #, elixir-autogen, elixir-format
 msgid "Failed to move task"
 msgstr "Échec du déplacement de la tâche"
@@ -589,7 +589,7 @@ msgstr "Échec de la suppression de l'utilisateur du tableau"
 msgid "Manage Users"
 msgstr "Gérer les Utilisateurs"
 
-#: lib/kanban_web/live/board_live/index.ex:235
+#: lib/kanban_web/live/board_live/index.ex:243
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete this board"
 msgstr "Seul le propriétaire du tableau peut supprimer ce tableau"
@@ -680,22 +680,22 @@ msgstr "Les utilisateurs doivent déjà être enregistrés dans le système pour
 msgid "You cannot add yourself to the board"
 msgstr "Vous ne pouvez pas vous ajouter au tableau"
 
-#: lib/kanban_web/live/board_live/show.ex:97
+#: lib/kanban_web/live/board_live/show.ex:103
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete columns"
 msgstr "Seul le propriétaire du tableau peut supprimer des colonnes"
 
-#: lib/kanban_web/live/board_live/show.ex:419
+#: lib/kanban_web/live/board_live/authorization.ex:30
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage columns"
 msgstr "Seul le propriétaire du tableau peut gérer les colonnes"
 
-#: lib/kanban_web/live/board_live/show.ex:437
+#: lib/kanban_web/live/board_live/authorization.ex:49
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can create columns"
 msgstr "Seul le propriétaire du tableau peut créer des colonnes"
 
-#: lib/kanban_web/live/board_live/show.ex:227
+#: lib/kanban_web/live/board_live/show.ex:239
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can reorder columns"
 msgstr "Seul le propriétaire du tableau peut réorganiser les colonnes"
@@ -1076,9 +1076,9 @@ msgstr "Ajouter une étape de vérification"
 msgid "Agent"
 msgstr "Agent"
 
-#: lib/kanban_web/live/review_live.ex:808
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:977
+#: lib/kanban_web/review_report_helpers.ex:599
 #, elixir-autogen, elixir-format
 msgid "Approved"
 msgstr "Approuvé"
@@ -1092,23 +1092,23 @@ msgstr "Approuvé"
 msgid "Blocked"
 msgstr "Bloqué"
 
-#: lib/kanban_web/live/board_live/show.ex:422
-#: lib/kanban_web/live/board_live/show.ex:440
+#: lib/kanban_web/live/board_live/authorization.ex:33
+#: lib/kanban_web/live/board_live/authorization.ex:52
 #, elixir-autogen, elixir-format
 msgid "Cannot add columns to AI optimized boards"
 msgstr "Impossible d'ajouter des colonnes aux tableaux optimisés pour l'IA"
 
-#: lib/kanban_web/live/board_live/show.ex:102
+#: lib/kanban_web/live/board_live/show.ex:108
 #, elixir-autogen, elixir-format
 msgid "Cannot delete columns on AI optimized boards"
 msgstr "Impossible de supprimer des colonnes sur les tableaux optimisés pour l'IA"
 
-#: lib/kanban_web/live/board_live/show.ex:425
+#: lib/kanban_web/live/board_live/authorization.ex:36
 #, elixir-autogen, elixir-format
 msgid "Cannot edit columns on AI optimized boards"
 msgstr "Impossible de modifier des colonnes sur les tableaux optimisés pour l'IA"
 
-#: lib/kanban_web/live/board_live/show.ex:232
+#: lib/kanban_web/live/board_live/show.ex:244
 #, elixir-autogen, elixir-format
 msgid "Cannot reorder columns on AI optimized boards"
 msgstr "Impossible de réorganiser les colonnes sur les tableaux optimisés pour l'IA"
@@ -1251,7 +1251,7 @@ msgid "Estimated Files"
 msgstr "Fichiers estimés"
 
 #: lib/kanban_web/live/board_live/field_visibility.ex:48
-#: lib/kanban_web/live/board_live/show.ex:1144
+#: lib/kanban_web/live/board_live/show.ex:825
 #, elixir-autogen, elixir-format
 msgid "Failed to update field visibility"
 msgstr "Échec de la mise à jour de la visibilité des champs"
@@ -1315,8 +1315,8 @@ msgid "On Failure (What Happens)"
 msgstr "En cas d'échec (ce qui se passe)"
 
 #: lib/kanban_web/live/board_live/field_visibility.ex:45
-#: lib/kanban_web/live/board_live/show.ex:244
-#: lib/kanban_web/live/board_live/show.ex:1141
+#: lib/kanban_web/live/board_live/show.ex:256
+#: lib/kanban_web/live/board_live/show.ex:822
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr "Seuls les propriétaires du tableau peuvent modifier la visibilité des champs"
@@ -1358,7 +1358,7 @@ msgstr "En attente"
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:247
 #: lib/kanban_web/live/task_live/view_component.ex:205
-#: lib/kanban_web/review_report_helpers.ex:47
+#: lib/kanban_web/review_report_helpers.ex:51
 #, elixir-autogen, elixir-format
 msgid "Pitfalls"
 msgstr "Pièges"
@@ -1530,7 +1530,7 @@ msgstr "minutes"
 msgid "API endpoint or service"
 msgstr "Point d'accès ou service API"
 
-#: lib/kanban_web/live/board_live/show.ex:558
+#: lib/kanban_web/live/board_live/api_tokens.ex:92
 #, elixir-autogen, elixir-format
 msgid "API token revoked successfully"
 msgstr "Jeton API révoqué avec succès"
@@ -1599,7 +1599,7 @@ msgstr "Création en cours..."
 msgid "External APIs"
 msgstr "API externes"
 
-#: lib/kanban_web/live/board_live/show.ex:561
+#: lib/kanban_web/live/board_live/api_tokens.ex:95
 #, elixir-autogen, elixir-format
 msgid "Failed to revoke token"
 msgstr "Échec de la révocation du token"
@@ -1687,8 +1687,8 @@ msgstr "Événements de télémétrie"
 msgid "Testing Strategy"
 msgstr "Stratégie de Test"
 
-#: lib/kanban_web/live/board_live/show.ex:564
-#: lib/kanban_web/live/board_live/show.ex:586
+#: lib/kanban_web/live/board_live/api_tokens.ex:98
+#: lib/kanban_web/live/board_live/api_tokens.ex:121
 #, elixir-autogen, elixir-format
 msgid "Unauthorized"
 msgstr "Non autorisé"
@@ -1704,7 +1704,7 @@ msgstr "Tests unitaires"
 msgid "Unit test description"
 msgstr "Description du test unitaire"
 
-#: lib/kanban_web/live/board_live/show.ex:1215
+#: lib/kanban_web/live/board_live/api_tokens.ex:42
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to manage API tokens"
 msgstr "Vous n'avez pas la permission de gérer les jetons API"
@@ -1736,7 +1736,7 @@ msgstr "Rejeter"
 msgid "Copied!"
 msgstr "Copié!"
 
-#: lib/kanban_web/live/board_live/show.ex:1206
+#: lib/kanban_web/live/board_live/api_tokens.ex:33
 #, elixir-autogen, elixir-format
 msgid "API tokens are only available for AI Optimized boards"
 msgstr "Les jetons API ne sont disponibles que pour les tableaux optimisés pour l'IA"
@@ -1906,8 +1906,8 @@ msgstr "Tableau :"
 msgid "Delete"
 msgstr "Supprimer"
 
-#: lib/kanban_web/live/board_live/show.ex:151
-#: lib/kanban_web/live/board_live/show.ex:1280
+#: lib/kanban_web/live/board_live/show.ex:157
+#: lib/kanban_web/live/board_live/show.ex:946
 #, elixir-autogen, elixir-format
 msgid "Failed to archive task"
 msgstr "Échec de l'archivage de la tâche"
@@ -1918,7 +1918,7 @@ msgstr "Échec de l'archivage de la tâche"
 msgid "Failed to unarchive task"
 msgstr "Échec du désarchivage de la tâche"
 
-#: lib/kanban_web/live/board_live/show.ex:1274
+#: lib/kanban_web/live/board_live/show.ex:940
 #, elixir-autogen, elixir-format
 msgid "Task archived successfully"
 msgstr "Tâche archivée avec succès"
@@ -1950,7 +1950,7 @@ msgstr "Sélectionner la capacité à ajouter..."
 msgid "code_generation, testing, documentation"
 msgstr "code_generation, testing, documentation"
 
-#: lib/kanban_web/live/board_live/show.ex:580
+#: lib/kanban_web/live/board_live/api_tokens.ex:115
 #, elixir-autogen, elixir-format
 msgid "API token deleted successfully"
 msgstr "Jeton API supprimé avec succès"
@@ -1960,7 +1960,7 @@ msgstr "Jeton API supprimé avec succès"
 msgid "Are you sure you want to delete this token?"
 msgstr "Êtes-vous sûr de vouloir supprimer ce jeton ?"
 
-#: lib/kanban_web/live/board_live/show.ex:583
+#: lib/kanban_web/live/board_live/api_tokens.ex:118
 #, elixir-autogen, elixir-format
 msgid "Failed to delete token"
 msgstr "Échec de la suppression du jeton"
@@ -1993,7 +1993,7 @@ msgstr "Retour à toutes les ressources"
 msgid "Browse all guides"
 msgstr "Parcourir tous les guides"
 
-#: lib/kanban_web/live/board_live/show.ex:1303
+#: lib/kanban_web/live/board_live/show.ex:969
 #, elixir-autogen, elixir-format
 msgid "Cannot delete task: other tasks depend on it. Remove dependencies first."
 msgstr "Impossible de supprimer la tâche : d'autres tâches en dépendent. Supprimez d'abord les dépendances."
@@ -2577,14 +2577,14 @@ msgstr "tâches terminées"
 #: lib/kanban_web/controllers/archive_export_controller.ex:34
 #: lib/kanban_web/live/archive_live/index.ex:33
 #: lib/kanban_web/live/board_live/form.ex:124
-#: lib/kanban_web/live/board_live/index.ex:243
-#: lib/kanban_web/live/board_live/show.ex:1346
+#: lib/kanban_web/live/board_live/index.ex:251
+#: lib/kanban_web/live/board_live/show.ex:1012
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
-#: lib/kanban_web/live/metrics_live/compliance.ex:26
+#: lib/kanban_web/live/metrics_live/compliance.ex:49
 #, elixir-autogen, elixir-format
 msgid "Board not found"
 msgstr "Tableau introuvable"
@@ -2594,8 +2594,8 @@ msgstr "Tableau introuvable"
 msgid "Check this box if this task is for human workers only and should not be claimed by AI agents"
 msgstr "Cochez cette case si cette tâche est réservée aux humains et ne doit pas être réservée par les agents IA"
 
-#: lib/kanban_web/live/board_live/show.ex:189
-#: lib/kanban_web/live/board_live/show.ex:511
+#: lib/kanban_web/live/board_live/show.ex:195
+#: lib/kanban_web/live/board_live/show.ex:468
 #, elixir-autogen, elixir-format
 msgid "Failed to move goal to Ready"
 msgstr "Échec du déplacement de l'objectif vers Ready"
@@ -2610,7 +2610,7 @@ msgstr "Tâche humaine"
 msgid "Move goal and tasks to Ready"
 msgstr "Déplacer l'objectif et les tâches vers « Prêt »"
 
-#: lib/kanban_web/live/board_live/show.ex:508
+#: lib/kanban_web/live/board_live/show.ex:465
 #, elixir-autogen, elixir-format
 msgid "Only goals can be promoted"
 msgstr "Seuls les objectifs peuvent être promus"
@@ -2667,7 +2667,7 @@ msgstr "(aucune raison fournie)"
 msgid "Avg Steps / Task"
 msgstr "Moy. étapes / tâche"
 
-#: lib/kanban_web/live/metrics_live/compliance.ex:49
+#: lib/kanban_web/live/metrics_live/compliance.ex:72
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Compliance Metrics"
@@ -2723,7 +2723,7 @@ msgstr "Conformité"
 msgid "Workflow step dispatch rates and agent compliance"
 msgstr "Taux de déclenchement des étapes et conformité des agents"
 
-#: lib/kanban_web/live/metrics_live/compliance.ex:34
+#: lib/kanban_web/live/metrics_live/compliance.ex:57
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to view compliance metrics for this board."
 msgstr "Vous n'avez pas l'autorisation de consulter les mesures de conformité de ce tableau."
@@ -2799,7 +2799,7 @@ msgstr "Utilisateur introuvable"
 msgid "No messages yet."
 msgstr "Aucun message pour l'instant."
 
-#: lib/kanban_web/live/board_live/show.ex:88
+#: lib/kanban_web/live/board_live/show.ex:94
 #, elixir-autogen, elixir-format
 msgid "Could not dismiss message."
 msgstr "Impossible de fermer le message."
@@ -2846,7 +2846,7 @@ msgstr "Chez Tango, nous ne construisons pas seulement des produits — nous aid
 msgid "Build what's next. Together."
 msgstr "Construisez ce qui vient ensuite. Ensemble."
 
-#: lib/kanban_web/controllers/metrics_pdf_controller.ex:151
+#: lib/kanban_web/controllers/metrics_pdf_controller.ex:147
 #, elixir-autogen, elixir-format
 msgid "Failed to generate the export. Please try again or contact support."
 msgstr "Échec de la génération de l'export. Veuillez réessayer ou contacter le support."
@@ -2861,8 +2861,8 @@ msgstr "Si vous êtes curieux de voir comment l'IA peut améliorer votre process
 msgid "Let's build what's next, together."
 msgstr "Construisons ce qui vient ensuite, ensemble."
 
+#: lib/kanban_web/live/board_live/authorization.ex:66
 #: lib/kanban_web/live/board_live/membership.ex:165
-#: lib/kanban_web/live/board_live/show.ex:454
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "Seul le propriétaire du tableau peut gérer les membres du tableau"
@@ -2872,7 +2872,7 @@ msgstr "Seul le propriétaire du tableau peut gérer les membres du tableau"
 msgid "Tango is a Canada-based software company focused on building modern, scalable digital products by combining cutting-edge technology with AI-assisted development. We help organizations move faster, build smarter, and deliver higher-quality software without unnecessary complexity."
 msgstr "Tango est une société de logiciels basée au Canada qui se consacre à la construction de produits numériques modernes et évolutifs en combinant des technologies de pointe et le développement assisté par l'IA. Nous aidons les organisations à avancer plus vite, à construire plus intelligemment et à livrer des logiciels de meilleure qualité sans complexité inutile."
 
-#: lib/kanban_web/live/board_live/show.ex:1262
+#: lib/kanban_web/live/board_live/show.ex:928
 #, elixir-autogen, elixir-format
 msgid "Task not found"
 msgstr "Tâche introuvable"
@@ -2903,30 +2903,30 @@ msgid "While many large organizations attempt to improve outcomes by measuring p
 msgstr "Alors que de nombreuses grandes organisations tentent d'améliorer leurs résultats en mesurant la productivité, notre expérience montre que les véritables gains viennent de"
 
 #: lib/kanban_web/live/archive_live/index.ex:164
-#: lib/kanban_web/live/board_live/show.ex:147
+#: lib/kanban_web/live/board_live/show.ex:153
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to archive tasks on this board"
 msgstr "Vous n'avez pas l'autorisation d'archiver des tâches sur ce tableau"
 
 #: lib/kanban_web/live/archive_live/index.ex:490
-#: lib/kanban_web/live/board_live/show.ex:166
+#: lib/kanban_web/live/board_live/show.ex:172
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
 msgstr "Vous n'avez pas l'autorisation de supprimer des tâches sur ce tableau"
 
-#: lib/kanban_web/live/board_live/show.ex:262
-#: lib/kanban_web/live/board_live/show.ex:277
-#: lib/kanban_web/live/board_live/show.ex:286
+#: lib/kanban_web/live/board_live/show.ex:274
+#: lib/kanban_web/live/board_live/show.ex:289
+#: lib/kanban_web/live/board_live/show.ex:298
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to manage API tokens"
 msgstr "Vous n'avez pas la permission de gérer les jetons API"
 
-#: lib/kanban_web/live/board_live/show.ex:213
+#: lib/kanban_web/live/board_live/show.ex:225
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to move tasks on this board"
 msgstr "Vous n'avez pas l'autorisation de déplacer des tâches sur ce tableau"
 
-#: lib/kanban_web/live/board_live/show.ex:185
+#: lib/kanban_web/live/board_live/show.ex:191
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to promote goals on this board"
 msgstr "Vous n'avez pas l'autorisation de promouvoir des objectifs sur ce tableau"
@@ -2974,15 +2974,15 @@ msgstr "L'attributaire n'a pas accès à ce tableau"
 msgid "Backlog Wait Tasks"
 msgstr "Tâches en attente dans Backlog"
 
-#: lib/kanban_web/live/board_live/show.ex:705
-#: lib/kanban_web/live/board_live/show.ex:743
-#: lib/kanban_web/live/board_live/show.ex:1054
-#: lib/kanban_web/live/board_live/show.ex:1120
+#: lib/kanban_web/live/board_live/show.ex:518
+#: lib/kanban_web/live/board_live/show.ex:557
+#: lib/kanban_web/live/board_live/show.ex:735
+#: lib/kanban_web/live/board_live/show.ex:801
 #, elixir-autogen, elixir-format
 msgid "Column not found on this board"
 msgstr "Colonne introuvable sur ce tableau"
 
-#: lib/kanban_web/live/board_live/show.ex:1172
+#: lib/kanban_web/live/board_live/show.ex:853
 #, elixir-autogen, elixir-format
 msgid "Column or task not found on this board"
 msgstr "Colonne ou tâche introuvable sur ce tableau"
@@ -2993,7 +2993,7 @@ msgid "Failed to submit the issue. Please try again later."
 msgstr "Échec de l'envoi du signalement. Veuillez réessayer plus tard."
 
 #: lib/kanban_web/live/board_live/field_visibility.ex:30
-#: lib/kanban_web/live/board_live/show.ex:249
+#: lib/kanban_web/live/board_live/show.ex:261
 #, elixir-autogen, elixir-format
 msgid "Invalid field name"
 msgstr "Nom de champ invalide"
@@ -3028,7 +3028,7 @@ msgstr "Erreur de sécurité : attributaire invalide"
 msgid "Security error: Invalid parent goal"
 msgstr "Erreur de sécurité : objectif parent invalide"
 
-#: lib/kanban_web/live/board_live/show.ex:1196
+#: lib/kanban_web/live/board_live/show.ex:877
 #, elixir-autogen, elixir-format
 msgid "Task not found on this board"
 msgstr "Tâche introuvable sur ce tableau"
@@ -4078,7 +4078,7 @@ msgstr "Vos droits"
 #: lib/kanban_web/components/goal_sidebar.ex:204
 #: lib/kanban_web/components/time_ago.ex:37
 #: lib/kanban_web/components/time_ago.ex:40
-#: lib/kanban_web/live/review_live.ex:783
+#: lib/kanban_web/live/review_live.ex:283
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "à l'instant"
@@ -4088,7 +4088,7 @@ msgstr "à l'instant"
 msgid "throughput"
 msgstr "Débit"
 
-#: lib/kanban_web/live/board_live/index.html.heex:63
+#: lib/kanban_web/live/board_live/index.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "%{count} active"
 msgid_plural "%{count} active"
@@ -4097,71 +4097,71 @@ msgstr[1] "%{count} actifs"
 
 #: lib/kanban_web/components/layouts.ex:261
 #: lib/kanban_web/live/board_live/index.html.heex:5
-#: lib/kanban_web/live/board_live/index.html.heex:60
+#: lib/kanban_web/live/board_live/index.html.heex:62
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
 #, elixir-autogen, elixir-format
 msgid "Boards"
 msgstr "Tableaux"
 
-#: lib/kanban_web/live/board_live/index.ex:110
+#: lib/kanban_web/live/board_live/index.ex:112
 #, elixir-autogen, elixir-format
 msgid "Create new board"
 msgstr "Créer un nouveau tableau"
 
-#: lib/kanban_web/live/board_live/index.html.heex:90
+#: lib/kanban_web/live/board_live/index.html.heex:92
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "Supprimer le tableau"
 
-#: lib/kanban_web/live/board_live/index.ex:121
+#: lib/kanban_web/live/board_live/index.ex:123
 #: lib/kanban_web/live/board_live/index.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "New board"
 msgstr "Nouveau Tableau"
 
-#: lib/kanban_web/live/board_live/index.ex:30
+#: lib/kanban_web/live/board_live/index.ex:32
 #, elixir-autogen, elixir-format
 msgid "A board is a workspace for a single product or codebase. Stride gives you the 5-column AI flow out of the box — your agents pull from Ready, humans approve in Review. You can change the columns later."
 msgstr "Un tableau est un espace de travail pour un seul produit ou une seule base de code. Stride vous offre le flux IA à 5 colonnes prêt à l'emploi — vos agents prennent depuis « Prêt », les humains approuvent dans « Relecture ». Vous pourrez changer les colonnes plus tard."
 
-#: lib/kanban_web/live/board_live/index.ex:47
+#: lib/kanban_web/live/board_live/index.ex:49
 #, elixir-autogen, elixir-format
 msgid "Coming soon"
 msgstr "Bientôt disponible"
 
-#: lib/kanban_web/live/board_live/index.ex:41
+#: lib/kanban_web/live/board_live/index.ex:43
 #: lib/kanban_web/live/user_live/confirmation.ex:95
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "Créez votre premier tableau"
 
-#: lib/kanban_web/live/board_live/index.ex:52
+#: lib/kanban_web/live/board_live/index.ex:54
 #, elixir-autogen, elixir-format
 msgid "Import from Linear or Jira"
 msgstr "Importer depuis Linear ou Jira"
 
-#: lib/kanban_web/live/board_live/index.ex:27
+#: lib/kanban_web/live/board_live/index.ex:29
 #, elixir-autogen, elixir-format
 msgid "Let's start with one."
 msgstr "Commençons par un."
 
-#: lib/kanban_web/live/board_live/index.ex:27
+#: lib/kanban_web/live/board_live/index.ex:29
 #, elixir-autogen, elixir-format
 msgid "No boards yet."
 msgstr "Aucun tableau pour le moment"
 
-#: lib/kanban_web/live/board_live/index.ex:59
+#: lib/kanban_web/live/board_live/index.ex:61
 #, elixir-autogen, elixir-format
 msgid "Tip: start with the board your team already works in. Stride can backfill history."
 msgstr "Astuce : commencez par le tableau sur lequel votre équipe travaille déjà. Stride peut remplir l'historique."
 
-#: lib/kanban_web/live/board_live/index.ex:148
+#: lib/kanban_web/live/board_live/index.ex:150
 #, elixir-autogen, elixir-format
 msgid "AI Optimized"
 msgstr "Optimisé pour l'IA"
 
-#: lib/kanban_web/live/board_live/index.ex:135
+#: lib/kanban_web/live/board_live/index.ex:137
 #, elixir-autogen, elixir-format
 msgid "Empty Board"
 msgstr "Tableau Vide"
@@ -4224,8 +4224,8 @@ msgid "Promote children to Ready"
 msgstr "Promouvoir les enfants vers « Prêt »"
 
 #: lib/kanban_web/components/layouts.ex:275
-#: lib/kanban_web/live/review_live.ex:119
-#: lib/kanban_web/live/review_live.ex:140
+#: lib/kanban_web/live/review_live.html.heex:5
+#: lib/kanban_web/live/review_live.html.heex:26
 #, elixir-autogen, elixir-format
 msgid "Review queue"
 msgstr "File de relecture"
@@ -4245,7 +4245,7 @@ msgstr "Accueil Stride"
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
 #: lib/kanban_web/live/metrics_live/workspace.ex:101
-#: lib/kanban_web/live/review_live.ex:117
+#: lib/kanban_web/live/review_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Workspace"
 msgstr "Espace de travail"
@@ -4711,6 +4711,7 @@ msgid "Avg cycle"
 msgstr "Cycle moy."
 
 #: lib/kanban_web/components/goal_sidebar.ex:58
+#: lib/kanban_web/components/targets_strip.ex:149
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
 msgstr "Complet"
@@ -4786,9 +4787,9 @@ msgstr "En Cours"
 msgid "Review report"
 msgstr "Rapport de revue"
 
-#: lib/kanban_web/live/review_live.ex:384
+#: lib/kanban_web/live/review_live.html.heex:277
 #: lib/kanban_web/live/task_live/view_component.ex:219
-#: lib/kanban_web/review_report_helpers.ex:48
+#: lib/kanban_web/review_report_helpers.ex:52
 #, elixir-autogen, elixir-format
 msgid "Security considerations"
 msgstr "Considérations de Sécurité"
@@ -4900,7 +4901,7 @@ msgstr "Succès"
 #: lib/kanban_web/components/review_queue_item.ex:254
 #: lib/kanban_web/components/review_stats_strip.ex:72
 #: lib/kanban_web/live/task_live/view_component.ex:276
-#: lib/kanban_web/review_report_helpers.ex:45
+#: lib/kanban_web/review_report_helpers.ex:49
 #, elixir-autogen, elixir-format
 msgid "Testing strategy"
 msgstr "Stratégie de tests"
@@ -4976,7 +4977,7 @@ msgstr "terminé"
 msgid "created"
 msgstr "Créé"
 
-#: lib/kanban_web/review_report_helpers.ex:192
+#: lib/kanban_web/review_report_helpers.ex:196
 #: lib/kanban_web/task_tokens.ex:154
 #, elixir-autogen, elixir-format
 msgid "reviewed"
@@ -5028,19 +5029,19 @@ msgid "live"
 msgstr "en direct"
 
 #: lib/kanban_web/components/time_ago.ex:48
-#: lib/kanban_web/live/review_live.ex:789
+#: lib/kanban_web/live/review_live.ex:289
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "il y a %{d} j"
 
 #: lib/kanban_web/components/time_ago.ex:46
-#: lib/kanban_web/live/review_live.ex:787
+#: lib/kanban_web/live/review_live.ex:287
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "il y a %{h} h"
 
 #: lib/kanban_web/components/time_ago.ex:43
-#: lib/kanban_web/live/review_live.ex:784
+#: lib/kanban_web/live/review_live.ex:284
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "il y a %{m} min"
@@ -5090,69 +5091,69 @@ msgstr[1] "%{count} tests en échec"
 msgid "No files changed."
 msgstr "Aucun fichier modifié."
 
-#: lib/kanban_web/live/review_live.ex:768
+#: lib/kanban_web/live/review_live.ex:268
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] "%{count} tâche de %{agents} agent en attente de vous"
 msgstr[1] "%{count} tâches de %{agents} agents en attente de vous"
 
-#: lib/kanban_web/live/review_live.ex:763
+#: lib/kanban_web/live/review_live.ex:263
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr "0 tâche en attente de vous."
 
-#: lib/kanban_web/live/review_live.ex:88
+#: lib/kanban_web/live/review_live.ex:87
 #, elixir-autogen, elixir-format
 msgid "Approved %{ident}"
 msgstr "Approuvée %{ident}"
 
-#: lib/kanban_web/live/review_live.ex:157
+#: lib/kanban_web/live/review_live.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "Avg time to review · 17m"
 msgstr "Temps moy. de relecture · 17 min"
 
-#: lib/kanban_web/live/review_live.ex:182
+#: lib/kanban_web/live/review_live.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Inbox zero — nothing is waiting for review."
 msgstr "Boîte vide — rien n'attend de relecture."
 
-#: lib/kanban_web/live/review_live.ex:646
+#: lib/kanban_web/live/review_live.ex:144
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr "Des notes sont requises lors de la demande de modifications."
 
-#: lib/kanban_web/live/review_live.ex:244
+#: lib/kanban_web/live/review_live.html.heex:130
 #, elixir-autogen, elixir-format
 msgid "Notes for the agent"
 msgstr "Notes pour l'agent"
 
-#: lib/kanban_web/live/review_live.ex:641
+#: lib/kanban_web/live/review_live.ex:139
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr "Modifications demandées sur %{ident}"
 
-#: lib/kanban_web/live/review_live.ex:208
+#: lib/kanban_web/live/review_live.html.heex:94
 #, elixir-autogen, elixir-format
 msgid "Select a task from the queue to start a review."
 msgstr "Sélectionnez une tâche dans la file pour démarrer une relecture."
 
-#: lib/kanban_web/live/review_live.ex:263
+#: lib/kanban_web/live/review_live.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Send request"
 msgstr "Envoyer la demande"
 
-#: lib/kanban_web/live/review_live.ex:92
+#: lib/kanban_web/live/review_live.ex:91
 #, elixir-autogen, elixir-format
 msgid "Unable to approve task."
 msgstr "Impossible d'approuver la tâche."
 
-#: lib/kanban_web/live/review_live.ex:650
+#: lib/kanban_web/live/review_live.ex:148
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr "Impossible de demander des modifications sur la tâche."
 
-#: lib/kanban_web/live/review_live.ex:778
+#: lib/kanban_web/live/review_live.ex:278
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr "la plus ancienne %{age}"
@@ -5346,12 +5347,12 @@ msgstr "Basculer le menu"
 msgid "Toggle sidebar"
 msgstr "Basculer la barre latérale"
 
-#: lib/kanban_web/live/review_live.ex:220
+#: lib/kanban_web/live/review_live.html.heex:106
 #, elixir-autogen, elixir-format
 msgid "Back to queue"
 msgstr "Retour à la file"
 
-#: lib/kanban_web/live/review_live.ex:217
+#: lib/kanban_web/live/review_live.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Back to review queue"
 msgstr "Retour à la file de relecture"
@@ -6032,7 +6033,7 @@ msgstr "Temps de cycle, séparé entre agent et humain à tous les niveaux"
 msgid "Every task carries why, what, acceptance criteria, testing strategy, security concerns, pitfalls to avoid, and observability. Agents claim with enough context to execute without round-trips; humans review against criteria they wrote, not vibes."
 msgstr "Chaque tâche porte un pourquoi, un quoi, des critères d'acceptation, une stratégie de tests, des considérations de sécurité, des pièges à éviter et de l'observabilité. Les agents la réservent avec assez de contexte pour exécuter sans allers-retours ; les humains révisent par rapport aux critères qu'ils ont eux-mêmes écrits, pas au feeling."
 
-#: lib/kanban_web/live/review_live.ex:987
+#: lib/kanban_web/review_acceptance.ex:144
 #, elixir-autogen, elixir-format
 msgid "%{checked}/%{total} · %{n} issue"
 msgid_plural "%{checked}/%{total} · %{n} issues"
@@ -6045,31 +6046,31 @@ msgstr[1] "%{checked}/%{total} · %{n} problèmes"
 msgid "Not met"
 msgstr "Non rempli"
 
-#: lib/kanban_web/review_report_helpers.ex:189
+#: lib/kanban_web/review_report_helpers.ex:193
 #, elixir-autogen, elixir-format
 msgid "%{n} case"
 msgid_plural "%{n} cases"
 msgstr[0] "%{n} cas"
 msgstr[1] "%{n} cas"
 
-#: lib/kanban_web/review_report_helpers.ex:181
+#: lib/kanban_web/review_report_helpers.ex:185
 #, elixir-autogen, elixir-format
 msgid "%{n} case · all present"
 msgid_plural "%{n} cases · all present"
 msgstr[0] "%{n} cas · tous présents"
 msgstr[1] "%{n} cas · tous présents"
 
-#: lib/kanban_web/review_report_helpers.ex:348
+#: lib/kanban_web/review_report_helpers.ex:352
 #, elixir-autogen, elixir-format
 msgid "none violated"
 msgstr "aucun violé"
 
-#: lib/kanban_web/review_report_helpers.ex:346
+#: lib/kanban_web/review_report_helpers.ex:350
 #, elixir-autogen, elixir-format
 msgid "violated"
 msgstr "violé"
 
-#: lib/kanban_web/live/review_live.ex:339
+#: lib/kanban_web/live/review_live.html.heex:230
 #, elixir-autogen, elixir-format
 msgid "Completion summary"
 msgstr "Résumé de complétion"
@@ -6086,12 +6087,12 @@ msgstr "Complétée par %{name}"
 
 #: lib/kanban_web/components/review_report_panel.ex:413
 #: lib/kanban_web/components/review_stats_strip.ex:79
-#: lib/kanban_web/review_report_helpers.ex:46
+#: lib/kanban_web/review_report_helpers.ex:50
 #, elixir-autogen, elixir-format
 msgid "Patterns"
 msgstr "Modèles"
 
-#: lib/kanban_web/review_report_helpers.ex:310
+#: lib/kanban_web/review_report_helpers.ex:314
 #, elixir-autogen, elixir-format
 msgid "followed"
 msgstr "suivis"
@@ -6112,7 +6113,7 @@ msgstr "modifications demandées"
 msgid "(no description)"
 msgstr "(aucune description)"
 
-#: lib/kanban_web/live/review_live.ex:818
+#: lib/kanban_web/review_report_helpers.ex:609
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
 msgstr "Modifications demandées"
@@ -6137,20 +6138,20 @@ msgstr "Mineur"
 msgid "Testing"
 msgstr "Tests"
 
-#: lib/kanban_web/live/review_live.ex:935
-#: lib/kanban_web/review_report_helpers.ex:486
+#: lib/kanban_web/review_report_helpers.ex:490
+#: lib/kanban_web/review_report_helpers.ex:741
 #, elixir-autogen, elixir-format
 msgid "failed"
 msgstr "échoué"
 
-#: lib/kanban_web/live/review_live.ex:936
-#: lib/kanban_web/review_report_helpers.ex:487
+#: lib/kanban_web/review_report_helpers.ex:491
+#: lib/kanban_web/review_report_helpers.ex:742
 #, elixir-autogen, elixir-format
 msgid "not assessed"
 msgstr "Non évalué"
 
-#: lib/kanban_web/live/review_live.ex:934
-#: lib/kanban_web/review_report_helpers.ex:485
+#: lib/kanban_web/review_report_helpers.ex:489
+#: lib/kanban_web/review_report_helpers.ex:740
 #, elixir-autogen, elixir-format
 msgid "passed"
 msgstr "réussi"
@@ -6180,12 +6181,12 @@ msgstr "Modèles suivis"
 msgid "TST"
 msgstr "TST"
 
-#: lib/kanban_web/live/review_live.ex:574
+#: lib/kanban_web/live/review_live.html.heex:472
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr "Fichiers modifiés"
 
-#: lib/kanban_web/live/review_live.ex:360
+#: lib/kanban_web/live/review_live.html.heex:251
 #, elixir-autogen, elixir-format
 msgid "Issues"
 msgstr "Problèmes"
@@ -6524,7 +6525,7 @@ msgstr "Stride enveloppe chaque tâche dans un cycle de vie en quatre étapes. L
 "manière autonome. Le tableau pilote une véritable base de code, pas une "
 "intuition."
 
-#: lib/kanban_web/live/review_live.ex:601
+#: lib/kanban_web/live/review_live.html.heex:499
 #, elixir-autogen, elixir-format
 msgid "Code review"
 msgstr "Revue de code"
@@ -6534,7 +6535,7 @@ msgstr "Revue de code"
 msgid "Settings sections"
 msgstr "Sections des paramètres"
 
-#: lib/kanban_web/live/review_live.ex:828
+#: lib/kanban_web/review_report_helpers.ex:619
 #, elixir-autogen, elixir-format
 msgid "Review data unavailable"
 msgstr "Données de revue indisponibles"
@@ -6584,17 +6585,17 @@ msgstr "Revue incomplète – la tâche a spécifié ces sections, mais la revue
 msgid "Incomplete review: only %{supplied} of the %{expected} project checks were recorded. Every checklist item must be evaluated."
 msgstr "Revue incomplète : seules %{supplied} des %{expected} vérifications de projet ont été enregistrées. Chaque élément de la liste de contrôle doit être évalué."
 
-#: lib/kanban_web/live/review_live.ex:398
+#: lib/kanban_web/live/review_live.html.heex:291
 #, elixir-autogen, elixir-format
 msgid "Not assessed — this task specified security considerations, but the review did not record a verdict for them."
 msgstr "Non évalué – cette tâche a spécifié des considérations de sécurité, mais la revue n'a pas enregistré de verdict à leur sujet."
 
-#: lib/kanban_web/live/review_live.ex:488
+#: lib/kanban_web/live/review_live.html.heex:381
 #, elixir-autogen, elixir-format
 msgid "Not assessed — this task specified this check, but the review did not record a verdict for it."
 msgstr "Non évalué – cette tâche a spécifié ce contrôle, mais la revue n'a pas enregistré de verdict à son sujet."
 
-#: lib/kanban_web/live/review_live.ex:467
+#: lib/kanban_web/live/review_live.html.heex:360
 #, elixir-autogen, elixir-format
 msgid "Review checks"
 msgstr "Contrôles de la Revue"
@@ -6895,27 +6896,27 @@ msgstr "Vous devez confirmer votre compte avant de vous connecter. Vérifiez vot
 msgid "You must confirm your account to access this page."
 msgstr "Vous devez confirmer votre compte pour accéder à cette page."
 
-#: lib/kanban_web/review_report_helpers.ex:281
+#: lib/kanban_web/review_report_helpers.ex:285
 #, elixir-autogen, elixir-format
 msgid "Coverage target"
 msgstr "Objectif de couverture"
 
-#: lib/kanban_web/review_report_helpers.ex:280
+#: lib/kanban_web/review_report_helpers.ex:284
 #, elixir-autogen, elixir-format
 msgid "Edge cases"
 msgstr "Cas limites"
 
-#: lib/kanban_web/review_report_helpers.ex:278
+#: lib/kanban_web/review_report_helpers.ex:282
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Integration tests"
 msgstr "Tests d'intégration"
 
-#: lib/kanban_web/review_report_helpers.ex:279
+#: lib/kanban_web/review_report_helpers.ex:283
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Manual tests"
 msgstr "Tests manuels"
 
-#: lib/kanban_web/review_report_helpers.ex:277
+#: lib/kanban_web/review_report_helpers.ex:281
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Unit tests"
 msgstr "Tests unitaires"
@@ -6930,13 +6931,13 @@ msgstr "Vérifiez votre e-mail"
 msgid "Didn't get it? Check your spam folder or resend below."
 msgstr "Rien reçu ? Vérifiez vos spams ou renvoyez ci-dessous."
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:163
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:162
 #, elixir-autogen, elixir-format
 msgid "If your email is in our system and the account isn't confirmed yet, you will receive a new confirmation link shortly."
 msgstr "Si votre e-mail figure dans notre système et que le compte n'est pas encore confirmé, vous recevrez bientôt un nouveau lien de confirmation."
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:128
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:141
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:127
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:140
 #, elixir-autogen, elixir-format
 msgid "Please wait a moment before requesting another email."
 msgstr "Veuillez patienter un instant avant de demander un autre e-mail."
@@ -7352,7 +7353,7 @@ msgstr "Aucune tâche archivée ne correspond à \"%{query}\"."
 msgid "Created today"
 msgstr "Terminés aujourd'hui"
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:145
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:144
 #, elixir-autogen, elixir-format
 msgid "Enter a valid email address."
 msgstr "Saisissez une adresse e-mail valide."
@@ -7366,3 +7367,23 @@ msgstr "Saisissez l'adresse e-mail avec laquelle vous vous êtes inscrit et nous
 #, elixir-autogen, elixir-format
 msgid "Send confirmation link"
 msgstr "Envoyer le lien de confirmation"
+
+#: lib/kanban_web/components/targets_strip.ex:151
+#, elixir-autogen, elixir-format
+msgid "At-risk"
+msgstr "À risque"
+
+#: lib/kanban_web/components/targets_strip.ex:152
+#, elixir-autogen, elixir-format
+msgid "Missed"
+msgstr "Non atteint"
+
+#: lib/kanban_web/components/targets_strip.ex:150
+#, elixir-autogen, elixir-format
+msgid "On-track"
+msgstr "Dans les temps"
+
+#: lib/kanban_web/components/targets_strip.ex:77
+#, elixir-autogen, elixir-format
+msgid "Targets"
+msgstr "Cibles"

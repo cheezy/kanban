@@ -2,8 +2,10 @@ defmodule KanbanWeb.BoardLive.Index do
   use KanbanWeb, :live_view
 
   alias Kanban.Boards
+  alias Kanban.Targets
   alias KanbanWeb.BoardAccent
   alias KanbanWeb.BoardPulseCard
+  alias KanbanWeb.TargetsStrip
 
   defp empty_state(assigns) do
     ~H"""
@@ -159,7 +161,9 @@ defmodule KanbanWeb.BoardLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    boards = load_boards(socket.assigns.current_scope.user)
+    scope = socket.assigns.current_scope
+    boards = load_boards(scope.user)
+    targets = Targets.list_targets_with_status(scope)
 
     if connected?(socket), do: schedule_refresh()
 
@@ -168,6 +172,7 @@ defmodule KanbanWeb.BoardLive.Index do
      |> assign(:has_boards, not Enum.empty?(boards))
      |> assign(:active_count, length(boards))
      |> assign(:nav_active, :boards)
+     |> assign(:targets, targets)
      |> stream(:boards, boards)}
   end
 
@@ -187,13 +192,16 @@ defmodule KanbanWeb.BoardLive.Index do
 
   @impl true
   def handle_info(:refresh_metrics, socket) do
-    boards = load_boards(socket.assigns.current_scope.user)
+    scope = socket.assigns.current_scope
+    boards = load_boards(scope.user)
+    targets = Targets.list_targets_with_status(scope)
     schedule_refresh()
 
     {:noreply,
      socket
      |> assign(:has_boards, not Enum.empty?(boards))
      |> assign(:active_count, length(boards))
+     |> assign(:targets, targets)
      |> stream(:boards, boards, reset: true)}
   end
 

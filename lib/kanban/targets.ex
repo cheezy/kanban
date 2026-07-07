@@ -31,6 +31,7 @@ defmodule Kanban.Targets do
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Targets.DeliveryTarget
+  alias Kanban.Targets.Status
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
 
@@ -159,6 +160,60 @@ defmodule Kanban.Targets do
     |> Repo.all()
   end
 
+  @typedoc """
+  One boards-page summary row for a delivery target: the target itself, its
+  read-time derived `Kanban.Targets.Status`, and the aggregate child-task
+  progress used by the targets strip.
+  """
+  @type target_summary :: %{
+          target: DeliveryTarget.t(),
+          status: Status.status(),
+          completed: non_neg_integer(),
+          total: non_neg_integer(),
+          percentage: 0..100
+        }
+
+  @doc """
+  Aggregates every accessible delivery target into the shape the boards-page
+  targets strip renders.
+
+  For each target visible to `scope` (via `list_targets/1`), this walks the
+  target's board-scoped member goals (`list_member_goals/2`) and, per goal, its
+  board-scoped child tasks (`Kanban.Tasks.get_task_children/2`) to produce:
+
+    * `:status` — the read-time `Kanban.Targets.Status.derive/3` verdict
+      (`:complete | :on_track | :at_risk | :missed`).
+    * `:completed` / `:total` — the single completed/total fraction across ALL
+      member goals' child tasks (a childless goal contributes `0/0` to this
+      display fraction; when every goal is childless the fraction is `0/0`).
+    * `:percentage` — `round(completed / total * 100)`, or `0` when `total == 0`.
+
+  ## Scoping / security
+
+  Every count is derived only from `scope`-filtered reads: `list_member_goals/2`
+  restricts to goals on boards the caller can access, and `get_task_children/2`
+  is board-scoped to that goal's own board (`goal.column.board_id`). A target
+  whose goals live on inaccessible boards is already dropped by
+  `list_targets/1`, so no cross-board child counts can leak into a summary.
+
+  ## Time injection
+
+  `today` is injected here at the impure context boundary (defaulting to
+  `Date.utc_today/0`, mirroring the `_from`/`today` split in
+  `Kanban.Agents.Metrics`). `Kanban.Targets.Status.derive/3` stays pure — it
+  never reads the clock.
+
+  This issues one member-goal query per target and one child query per goal
+  (N+1). That is acceptable for the boards index, which refreshes only every
+  30s; a batched version can replace it later without changing the shape.
+  """
+  @spec list_targets_with_status(Scope.t() | nil, Date.t()) :: [target_summary()]
+  def list_targets_with_status(scope, today \\ Date.utc_today()) do
+    scope
+    |> list_targets()
+    |> Enum.map(&summarize_target(scope, &1, today))
+  end
+
   # --- Query / auth helpers -------------------------------------------------
 
   # Distinct target_ids reachable from the caller's accessible goal-type tasks.
@@ -185,4 +240,48 @@ defmodule Kanban.Targets do
 
   defp scope_user(%Scope{user: %{id: _} = user}), do: user
   defp scope_user(_), do: nil
+
+  defp summarize_target(scope, %DeliveryTarget{} = target, today) do
+    progress = target_goal_progress(scope, target)
+    {completed, total} = aggregate_children(progress)
+
+    %{
+      target: target,
+      status: Status.derive(target, progress, today),
+      completed: completed,
+      total: total,
+      percentage: percentage(completed, total)
+    }
+  end
+
+  # One Status.goal_progress snapshot per accessible member goal. :column is
+  # preloaded so each goal's own board_id scopes its child-task query.
+  defp target_goal_progress(scope, target) do
+    scope
+    |> list_member_goals(target)
+    |> Repo.preload(:column)
+    |> Enum.map(&goal_progress_entry/1)
+  end
+
+  defp goal_progress_entry(%Task{} = goal) do
+    children = Tasks.get_task_children(goal.id, goal.column.board_id)
+
+    %{
+      completed_children: Enum.count(children, &(&1.status == :completed)),
+      total_children: length(children),
+      goal_complete?: goal.status == :completed
+    }
+  end
+
+  # Display fraction across every member goal's child tasks (childless goals
+  # add 0/0). Distinct from Status.derive's work-share, which counts a childless
+  # goal as one unit — the two measures are intentionally separate.
+  defp aggregate_children(progress) do
+    Enum.reduce(progress, {0, 0}, fn gp, {done, total} ->
+      {done + gp.completed_children, total + gp.total_children}
+    end)
+  end
+
+  defp percentage(_completed, 0), do: 0
+  defp percentage(completed, total), do: round(completed / total * 100)
 end

@@ -4,27 +4,27 @@ msgstr ""
 "Language: zh\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/kanban_web/live/board_live/show.ex:1357
+#: lib/kanban_web/live/board_live/show.ex:1023
 #, elixir-autogen, elixir-format
 msgid "Backlog"
 msgstr "待办事项"
 
-#: lib/kanban_web/live/board_live/show.ex:1359
+#: lib/kanban_web/live/board_live/show.ex:1025
 #, elixir-autogen, elixir-format
 msgid "Doing"
 msgstr "进行中"
 
-#: lib/kanban_web/live/board_live/show.ex:1361
+#: lib/kanban_web/live/board_live/show.ex:1027
 #, elixir-autogen, elixir-format
 msgid "Done"
 msgstr "已完成"
 
-#: lib/kanban_web/live/board_live/show.ex:1358
+#: lib/kanban_web/live/board_live/show.ex:1024
 #, elixir-autogen, elixir-format
 msgid "Ready"
 msgstr "准备就绪"
 
-#: lib/kanban_web/live/board_live/show.ex:1360
+#: lib/kanban_web/live/board_live/show.ex:1026
 #, elixir-autogen, elixir-format
 msgid "Review"
 msgstr "审查"

@@ -5,6 +5,7 @@ defmodule KanbanWeb.BoardLiveTest do
   import Kanban.BoardsFixtures
   import Kanban.AccountsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.TargetsFixtures
   import Kanban.TasksFixtures
   import ExUnit.CaptureLog
 
@@ -176,6 +177,54 @@ defmodule KanbanWeb.BoardLiveTest do
 
       # Footnote mono tip.
       assert html =~ "Stride can backfill history"
+    end
+
+    test "renders the targets strip with an assigned target for the scoped user",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal = task_fixture(column, %{title: "Launch Goal", type: :goal})
+      _child = task_fixture(column, %{title: "Child 1", parent_id: goal.id})
+
+      target = delivery_target_fixture(user, %{name: "Q3 Launch"})
+      scope = Kanban.Accounts.Scope.for_user(user)
+      {:ok, _goal} = Kanban.Targets.assign_goal(scope, goal, target)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards")
+
+      assert html =~ "Targets"
+      assert html =~ "Q3 Launch"
+      # One child, none completed -> a 0/1 (0%) aggregate fraction.
+      assert html =~ "0/1 (0%)"
+    end
+
+    test "renders no targets strip when the user has no targets", %{conn: conn, user: user} do
+      _board = board_fixture(user)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards")
+
+      # Empty targets list -> targets_strip renders nothing: no card.
+      refute html =~ "data-target-card"
+    end
+
+    test "the metrics refresh re-loads the targets strip", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      {:ok, index_live, html} = live(conn, ~p"/boards")
+      refute html =~ "data-target-card"
+
+      # Assign a target after mount, then trigger the refresh the poller uses.
+      goal = task_fixture(column, %{title: "Launch Goal", type: :goal})
+      target = delivery_target_fixture(user, %{name: "Refreshed Target"})
+      scope = Kanban.Accounts.Scope.for_user(user)
+      {:ok, _goal} = Kanban.Targets.assign_goal(scope, goal, target)
+
+      send(index_live.pid, :refresh_metrics)
+      html = render(index_live)
+
+      assert html =~ "data-target-card"
+      assert html =~ "Refreshed Target"
     end
   end
 
