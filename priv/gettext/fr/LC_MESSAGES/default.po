@@ -170,7 +170,7 @@ msgstr "Êtes-vous sûr de vouloir supprimer ce tableau ?"
 
 #: lib/kanban_web/live/board_live/form.html.heex:18
 #: lib/kanban_web/live/target_live/form.html.heex:9
-#: lib/kanban_web/live/target_live/show.html.heex:9
+#: lib/kanban_web/live/target_live/show.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr "Retour aux tableaux"
@@ -7503,22 +7503,12 @@ msgstr "Retirer"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "Utilisez ce formulaire pour gérer les cibles de livraison et leurs objectifs."
 
-#: lib/kanban_web/live/target_live/show.html.heex:20
-#, elixir-autogen, elixir-format
-msgid "Goals in this target"
-msgstr "Objectifs dans cette cible"
-
-#: lib/kanban_web/live/target_live/show.html.heex:28
+#: lib/kanban_web/live/target_live/show.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "Aucun objectif dans cette cible pour l'instant."
 
-#: lib/kanban_web/live/target_live/show.html.heex:15
-#, elixir-autogen, elixir-format
-msgid "Target date"
-msgstr "Date cible"
-
-#: lib/kanban_web/live/target_live/show.ex:33
+#: lib/kanban_web/live/target_live/show.ex:49
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "Cible introuvable"
@@ -7537,3 +7527,8 @@ msgstr "Progression de l'objectif par statut des enfants"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{done} sur %{total} terminés"
+
+#: lib/kanban_web/live/target_live/show.html.heex:24
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Goals"
+msgstr "Objectif"

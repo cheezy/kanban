@@ -170,7 +170,7 @@ msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:18
 #: lib/kanban_web/live/target_live/form.html.heex:9
-#: lib/kanban_web/live/target_live/show.html.heex:9
+#: lib/kanban_web/live/target_live/show.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr ""
@@ -7457,22 +7457,12 @@ msgstr ""
 msgid "Use this form to manage delivery targets and their goals."
 msgstr ""
 
-#: lib/kanban_web/live/target_live/show.html.heex:20
-#, elixir-autogen, elixir-format
-msgid "Goals in this target"
-msgstr ""
-
-#: lib/kanban_web/live/target_live/show.html.heex:28
+#: lib/kanban_web/live/target_live/show.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr ""
 
-#: lib/kanban_web/live/target_live/show.html.heex:15
-#, elixir-autogen, elixir-format
-msgid "Target date"
-msgstr ""
-
-#: lib/kanban_web/live/target_live/show.ex:33
+#: lib/kanban_web/live/target_live/show.ex:49
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr ""
@@ -7490,4 +7480,9 @@ msgstr ""
 #: lib/kanban_web/components/target_goal_row.ex:72
 #, elixir-autogen, elixir-format
 msgid "%{done} of %{total} (%{pct}%)"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/show.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "Goals"
 msgstr ""

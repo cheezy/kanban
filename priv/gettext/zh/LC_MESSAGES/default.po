@@ -170,7 +170,7 @@ msgstr "您确定要删除此看板吗？"
 
 #: lib/kanban_web/live/board_live/form.html.heex:18
 #: lib/kanban_web/live/target_live/form.html.heex:9
-#: lib/kanban_web/live/target_live/show.html.heex:9
+#: lib/kanban_web/live/target_live/show.html.heex:16
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr "返回看板"
@@ -7503,22 +7503,12 @@ msgstr "取消分配"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "使用此表单管理交付目标及其目标。"
 
-#: lib/kanban_web/live/target_live/show.html.heex:20
-#, elixir-autogen, elixir-format
-msgid "Goals in this target"
-msgstr "此交付目标中的目标"
-
-#: lib/kanban_web/live/target_live/show.html.heex:28
+#: lib/kanban_web/live/target_live/show.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "此交付目标中还没有目标。"
 
-#: lib/kanban_web/live/target_live/show.html.heex:15
-#, elixir-autogen, elixir-format
-msgid "Target date"
-msgstr "目标日期"
-
-#: lib/kanban_web/live/target_live/show.ex:33
+#: lib/kanban_web/live/target_live/show.ex:49
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "未找到交付目标"
@@ -7537,3 +7527,8 @@ msgstr "按子项状态显示的目标进度"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "已完成 %{done}/%{total}"
+
+#: lib/kanban_web/live/target_live/show.html.heex:24
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Goals"
+msgstr "目标"

@@ -13,10 +13,25 @@ defmodule KanbanWeb.TargetLive.ShowTest do
   import Kanban.TasksFixtures
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Repo
   alias Kanban.Targets
+  alias Kanban.Tasks.Task
 
   defp goal_fixture(column, attrs) do
     task_fixture(column, Map.merge(%{type: :goal}, attrs))
+  end
+
+  defp complete_task(task) do
+    {:ok, done} =
+      task
+      |> Task.changeset(%{status: :completed, completed_at: DateTime.utc_now()})
+      |> Repo.update()
+
+    done
+  end
+
+  defp count_occurrences(haystack, needle) do
+    haystack |> String.split(needle) |> length() |> Kernel.-(1)
   end
 
   describe "mount/3 — happy path" do
@@ -55,6 +70,89 @@ defmodule KanbanWeb.TargetLive.ShowTest do
       refute html =~ "No goals in this target yet."
       assert html =~ "Only Goal"
       assert html =~ "data-target-goals"
+    end
+  end
+
+  describe "mount/3 — hero and goals table" do
+    setup [:register_and_log_in_user]
+
+    test "renders the TargetProgressHeader hero with the aggregate percentage",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal = goal_fixture(column, %{title: "Ship it"})
+      # 1 of 2 children complete => 50%.
+      _incomplete = task_fixture(column, %{parent_id: goal.id})
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+
+      target = delivery_target_fixture(user, %{name: "Q3 Launch"})
+      scope = Scope.for_user(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      {:ok, _live, html} = live(conn, ~p"/targets/#{target}")
+
+      assert html =~ "data-target-progress-header"
+      assert html =~ "Q3 Launch"
+      assert html =~ "50%"
+      assert html =~ "1 of 2 complete"
+    end
+
+    test "renders one TargetGoalRow per member goal, each linking to its goal drill-down",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal_a = goal_fixture(column, %{title: "Goal Alpha"})
+      goal_b = goal_fixture(column, %{title: "Goal Beta"})
+
+      target = delivery_target_fixture(user)
+      scope = Scope.for_user(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal_a, target)
+      assert {:ok, _} = Targets.assign_goal(scope, goal_b, target)
+
+      {:ok, _live, html} = live(conn, ~p"/targets/#{target}")
+
+      assert html =~ "Goal Alpha"
+      assert html =~ "Goal Beta"
+      assert count_occurrences(html, "data-target-goal-row") == 2
+      assert html =~ ~p"/boards/#{board}/goals/#{goal_a}"
+      assert html =~ ~p"/boards/#{board}/goals/#{goal_b}"
+    end
+
+    test "aggregates completed/total across multiple member goals in the hero",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal_a = goal_fixture(column, %{title: "Alpha"})
+      complete_task(task_fixture(column, %{parent_id: goal_a.id}))
+      _a_incomplete = task_fixture(column, %{parent_id: goal_a.id})
+
+      goal_b = goal_fixture(column, %{title: "Beta"})
+      complete_task(task_fixture(column, %{parent_id: goal_b.id}))
+
+      target = delivery_target_fixture(user)
+      scope = Scope.for_user(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal_a, target)
+      assert {:ok, _} = Targets.assign_goal(scope, goal_b, target)
+
+      {:ok, _live, html} = live(conn, ~p"/targets/#{target}")
+
+      # 2 of 3 across both goals => 67%.
+      assert html =~ "2 of 3 complete"
+      assert html =~ "67%"
+    end
+
+    test "renders the hero at 0% and an empty table (no rows) for a memberless target the owner views",
+         %{conn: conn, user: user} do
+      target = delivery_target_fixture(user, %{name: "Empty Target"})
+
+      {:ok, _live, html} = live(conn, ~p"/targets/#{target}")
+
+      assert html =~ "data-target-progress-header"
+      assert html =~ "Empty Target"
+      assert html =~ "0%"
+      assert html =~ "No goals in this target yet."
+      refute html =~ "data-target-goal-row"
     end
   end
 

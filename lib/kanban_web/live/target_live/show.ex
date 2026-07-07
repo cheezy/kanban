@@ -1,31 +1,39 @@
 defmodule KanbanWeb.TargetLive.Show do
   @moduledoc """
-  Read-only drill-down for a single delivery target at `/targets/:id`, listing
-  the target's member goals (via `KanbanWeb.GoalCard`), each linking to its own
-  goal drill-down.
+  Read-only drill-down for a single delivery target at `/targets/:id`.
 
-  Mounts inside the `:require_authenticated_user` live_session and fetches the
-  target board-scope-aware via `Kanban.Targets.get_target/2` — which only
-  returns a target that has at least one member goal on a board the viewer can
-  access. A target with no accessible goals redirects back to `/boards` with a
-  flash, mirroring `KanbanWeb.GoalLive.Show`.
+  Renders the `KanbanWeb.TargetProgressHeader` hero (aggregate percentage,
+  segmented progress bar, status badge) followed by a table of
+  `KanbanWeb.TargetGoalRow` rows — one per member goal — mirroring the Goal
+  view (`KanbanWeb.GoalLive.Show`).
+
+  Mounts inside the `:require_authenticated_user` live_session and loads the
+  target owner-scoped via `Kanban.Targets.get_owned_target/2` (so a freshly
+  created, still-memberless target is viewable by its owner and renders the
+  hero at 0% with an empty table), then loads its progress —
+  `%{summary, goals}` — via `Kanban.Targets.get_target_progress/2`, which
+  board-scopes every member-goal read. A target the caller does not own
+  redirects back to `/boards` with a flash.
+
+  All Ecto access lives in the `Kanban.Targets` context; this LiveView only
+  derives the aggregate flow (a pure sum across the per-goal flows) for the
+  hero's segmented bar.
   """
   use KanbanWeb, :live_view
 
   alias Kanban.Targets
-  alias KanbanWeb.GoalCard
+  alias KanbanWeb.TargetGoalRow
+  alias KanbanWeb.TargetProgressHeader
+
+  @empty_flow %{done: 0, review: 0, doing: 0, ready: 0, backlog: 0, total: 0}
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     scope = socket.assigns.current_scope
 
-    case Targets.get_target(scope, id) do
+    case Targets.get_owned_target(scope, id) do
       {:ok, target} ->
-        {:ok,
-         socket
-         |> assign(:target, target)
-         |> assign(:member_goals, Targets.list_member_goals(scope, target))
-         |> assign(:page_title, target.name)}
+        {:ok, assign_target_progress(socket, scope, target)}
 
       {:error, :not_found} ->
         {:ok,
@@ -35,18 +43,23 @@ defmodule KanbanWeb.TargetLive.Show do
     end
   end
 
-  defp format_date(%Date{} = date), do: Calendar.strftime(date, "%b %-d, %Y")
+  defp assign_target_progress(socket, scope, target) do
+    progress = Targets.get_target_progress(scope, target)
 
-  # A member goal is a %Task{} whose :children association is not loaded and
-  # which has no :promoted flag. GoalCard renders an empty progress bar for a
-  # truthy-but-unloaded :children and a "Promote children" button when
-  # :promoted is falsy (invalid nested in the surrounding <.link> and unhandled
-  # here). Pass a curated display map: the fields GoalCard reads, with
-  # :promoted set so the button is suppressed and :children omitted so the
-  # progress bar is skipped.
-  defp goal_card_task(goal) do
-    goal
-    |> Map.take([:id, :identifier, :title, :type, :priority, :description])
-    |> Map.put(:promoted, true)
+    socket
+    |> assign(:target, target)
+    |> assign(:summary, progress.summary)
+    |> assign(:goals, progress.goals)
+    |> assign(:aggregate_flow, aggregate_flow(progress.goals))
+    |> assign(:page_title, target.name)
+  end
+
+  # Sums the per-goal flow maps into one aggregate %{done, review, doing,
+  # ready, backlog, total} for the hero's segmented bar. Pure derivation over
+  # the list the context already returned — no query.
+  defp aggregate_flow(goals) do
+    Enum.reduce(goals, @empty_flow, fn %{flow: flow}, acc ->
+      Map.new(acc, fn {key, value} -> {key, value + Map.get(flow, key, 0)} end)
+    end)
   end
 end
