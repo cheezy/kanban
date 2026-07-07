@@ -334,6 +334,182 @@ defmodule Kanban.TargetsTest do
     end
   end
 
+  describe "get_target_progress/3" do
+    test "aggregate summary matches list_targets_with_status/2 for the same target",
+         %{scope: scope, user: user, column: column} do
+      goal = goal_fixture(column)
+      _incomplete = task_fixture(column, %{parent_id: goal.id})
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      [expected] = Targets.list_targets_with_status(scope, ~D[2026-07-07])
+      assert %{summary: summary} = Targets.get_target_progress(scope, target, ~D[2026-07-07])
+
+      assert summary.target.id == target.id
+      assert summary.status == expected.status
+      assert summary.completed == expected.completed
+      assert summary.total == expected.total
+      assert summary.percentage == expected.percentage
+    end
+
+    test "returns a per-goal entry whose flow buckets children by column name",
+         %{scope: scope, user: user, board: board, column: column} do
+      goal = goal_fixture(column)
+
+      backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+      review = column_fixture(board, %{name: "Review"})
+      done = column_fixture(board, %{name: "Done"})
+
+      task_fixture(backlog, %{parent_id: goal.id})
+      task_fixture(ready, %{parent_id: goal.id})
+      task_fixture(doing, %{parent_id: goal.id})
+      task_fixture(review, %{parent_id: goal.id})
+      complete_task(task_fixture(done, %{parent_id: goal.id}))
+
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert %{goals: [entry]} = Targets.get_target_progress(scope, target, ~D[2026-07-07])
+
+      assert entry.goal.id == goal.id
+      assert entry.flow == %{backlog: 1, ready: 1, doing: 1, review: 1, done: 1, total: 5}
+      assert entry.completed == 1
+      assert entry.total == 5
+      assert entry.percentage == 20
+    end
+
+    test "flow buckets by column name even when a child's status disagrees",
+         %{scope: scope, user: user, board: board, column: column} do
+      goal = goal_fixture(column)
+      ready = column_fixture(board, %{name: "Ready"})
+      # Completed (status) but sitting in the Ready column: it must bucket to
+      # :ready (column) yet still count toward :completed (status).
+      complete_task(task_fixture(ready, %{parent_id: goal.id}))
+
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert %{goals: [entry]} = Targets.get_target_progress(scope, target, ~D[2026-07-07])
+      assert entry.flow == %{backlog: 0, ready: 1, doing: 0, review: 0, done: 0, total: 1}
+      assert entry.completed == 1
+      assert entry.total == 1
+    end
+
+    test "a member goal with no children yields an all-zero flow map",
+         %{scope: scope, user: user, column: column} do
+      goal = goal_fixture(column)
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert %{goals: [entry]} = Targets.get_target_progress(scope, target, ~D[2026-07-07])
+      assert entry.flow == %{backlog: 0, ready: 0, doing: 0, review: 0, done: 0, total: 0}
+      assert entry.completed == 0
+      assert entry.total == 0
+      assert entry.percentage == 0
+    end
+
+    test "a target with no member goals returns a zeroed summary and empty goals",
+         %{scope: scope, user: user} do
+      target = delivery_target_fixture(user)
+
+      assert %{summary: summary, goals: []} =
+               Targets.get_target_progress(scope, target, ~D[2026-07-07])
+
+      assert summary.target.id == target.id
+      assert summary.completed == 0
+      assert summary.total == 0
+      assert summary.percentage == 0
+      assert summary.status == :on_track
+    end
+
+    test "a fully-complete target reports 100% and :complete status",
+         %{scope: scope, user: user, column: column} do
+      goal = goal_fixture(column)
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+      complete_task(goal)
+
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert %{summary: summary, goals: [entry]} =
+               Targets.get_target_progress(scope, target, ~D[2026-07-07])
+
+      assert summary.completed == 2
+      assert summary.total == 2
+      assert summary.percentage == 100
+      assert summary.status == :complete
+      assert entry.percentage == 100
+    end
+
+    test "aggregates completed/total across multiple member goals",
+         %{scope: scope, user: user, column: column} do
+      goal_a = goal_fixture(column)
+      complete_task(task_fixture(column, %{parent_id: goal_a.id}))
+      _a_incomplete = task_fixture(column, %{parent_id: goal_a.id})
+
+      goal_b = goal_fixture(column)
+      complete_task(task_fixture(column, %{parent_id: goal_b.id}))
+
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal_a, target)
+      assert {:ok, _} = Targets.assign_goal(scope, goal_b, target)
+
+      assert %{summary: summary, goals: goals} =
+               Targets.get_target_progress(scope, target, ~D[2026-07-07])
+
+      assert summary.completed == 2
+      assert summary.total == 3
+      assert summary.percentage == 67
+      assert length(goals) == 2
+    end
+
+    test "is board-scoped: a foreign scope sees none of the target's member goals",
+         %{scope: scope, user: user, column: column, other_scope: other_scope} do
+      goal = goal_fixture(column)
+      task_fixture(column, %{parent_id: goal.id})
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert %{summary: summary, goals: []} =
+               Targets.get_target_progress(other_scope, target, ~D[2026-07-07])
+
+      assert summary.total == 0
+    end
+
+    test "accepts a target id, resolving it through the board-scoped get_target/2",
+         %{scope: scope, user: user, column: column} do
+      goal = goal_fixture(column)
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      by_struct = Targets.get_target_progress(scope, target, ~D[2026-07-07])
+      by_id = Targets.get_target_progress(scope, target.id, ~D[2026-07-07])
+
+      assert by_id.summary.target.id == target.id
+      assert by_id.summary.completed == by_struct.summary.completed
+      assert by_id.summary.total == by_struct.summary.total
+      assert by_id.summary.percentage == by_struct.summary.percentage
+      assert length(by_id.goals) == length(by_struct.goals)
+    end
+
+    test "returns {:error, :not_found} for an id with no accessible target",
+         %{scope: scope} do
+      assert {:error, :not_found} = Targets.get_target_progress(scope, 999_999_999)
+    end
+
+    test "returns {:error, :not_found} for a memberless target referenced by id",
+         %{scope: scope, user: user} do
+      target = delivery_target_fixture(user)
+      assert {:error, :not_found} = Targets.get_target_progress(scope, target.id)
+    end
+  end
+
   describe "owner?/2" do
     test "true for the owner, false for a non-owner", %{user: user, other_user: other} do
       target = delivery_target_fixture(user)

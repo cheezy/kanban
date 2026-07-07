@@ -248,6 +248,41 @@ defmodule Kanban.Targets do
           percentage: 0..100
         }
 
+  @typedoc """
+  A single goal's child-task flow, bucketed by the child's *column name*
+  (not `task.status`), mirroring the boards Goals view. Every key is present
+  even when zero, and `:total` is the sum of the five column buckets.
+  """
+  @type goal_flow :: %{
+          done: non_neg_integer(),
+          review: non_neg_integer(),
+          doing: non_neg_integer(),
+          ready: non_neg_integer(),
+          backlog: non_neg_integer(),
+          total: non_neg_integer()
+        }
+
+  @typedoc """
+  One member goal's progress detail: the goal task, its column-bucketed
+  `:flow` map, and its completed/total/percentage child fraction.
+  """
+  @type goal_progress_detail :: %{
+          goal: Task.t(),
+          flow: goal_flow(),
+          completed: non_neg_integer(),
+          total: non_neg_integer(),
+          percentage: 0..100
+        }
+
+  @typedoc """
+  The full progress payload for a single target: the same aggregate
+  `target_summary/0` the boards strip uses, plus a per-goal breakdown.
+  """
+  @type target_progress :: %{
+          summary: target_summary(),
+          goals: [goal_progress_detail()]
+        }
+
   @doc """
   Aggregates every accessible delivery target into the shape the boards-page
   targets strip renders.
@@ -289,6 +324,62 @@ defmodule Kanban.Targets do
     |> Enum.map(&summarize_target(scope, &1, today))
   end
 
+  @doc """
+  Loads one target's full progress payload — the aggregate summary the boards
+  strip renders *and* a per-goal breakdown — in a single context call, so a
+  LiveView (the target hero and its goals table) never runs Ecto queries.
+
+  `target_or_id` may be a `%DeliveryTarget{}` the caller already holds (the
+  common case — the drill-down LiveView fetches it via `get_owned_target/2`),
+  or a target id, which is resolved through the board-scoped `get_target/2`.
+
+  Returns `%{summary: target_summary(), goals: [goal_progress_detail()]}`:
+
+    * `:summary` — identical in shape and meaning to a `list_targets_with_status/2`
+      row: `:status` (`Kanban.Targets.Status.derive/3`), the aggregate
+      `:completed`/`:total` child fraction across all member goals, and
+      `:percentage`.
+    * `:goals` — one entry per accessible member goal, each carrying the goal
+      task, its column-bucketed `:flow` map (`%{done, review, doing, ready,
+      backlog, total}`), and that goal's own `:completed`/`:total`/`:percentage`.
+
+  A target with no accessible member goals returns a `0/0`, `0%`, `:on_track`
+  summary and an empty `:goals` list — it never raises. When `target_or_id` is
+  an id that resolves to no accessible target, `{:error, :not_found}` is
+  returned (mirroring `get_target/2`).
+
+  ## Scoping / security
+
+  Board scoping is enforced exactly as in `list_targets_with_status/2`:
+  `list_member_goals/2` drops goals on boards the caller cannot access, and each
+  goal's child query is board-scoped to that goal's own board — so no
+  cross-board child counts can leak. The id form additionally re-checks target
+  visibility through `get_target/2` before any child read.
+
+  Like `list_targets_with_status/2`, `today` is injected at this impure
+  boundary (defaulting to `Date.utc_today/0`) so `Kanban.Targets.Status.derive/3`
+  stays pure. One member-goal query per call plus one child query per goal
+  (N+1) — acceptable for a single drill-down page, matching the module's
+  documented stance.
+  """
+  @spec get_target_progress(
+          Scope.t() | nil,
+          DeliveryTarget.t() | integer() | String.t(),
+          Date.t()
+        ) :: target_progress() | {:error, :not_found}
+  def get_target_progress(scope, target_or_id, today \\ Date.utc_today())
+
+  def get_target_progress(scope, %DeliveryTarget{} = target, today) do
+    build_target_progress(scope, target, today)
+  end
+
+  def get_target_progress(scope, id, today) when is_integer(id) or is_binary(id) do
+    case get_target(scope, id) do
+      {:ok, target} -> build_target_progress(scope, target, today)
+      {:error, :not_found} = error -> error
+    end
+  end
+
   # --- Query / auth helpers -------------------------------------------------
 
   # Distinct target_ids reachable from the caller's accessible goal-type tasks.
@@ -318,6 +409,14 @@ defmodule Kanban.Targets do
 
   defp summarize_target(scope, %DeliveryTarget{} = target, today) do
     progress = target_goal_progress(scope, target)
+    summarize_progress(target, progress, today)
+  end
+
+  # The aggregate `target_summary/0` for a target given its member goals'
+  # `Status`-progress shapes. Shared by `summarize_target/3` (the boards strip)
+  # and `build_target_progress/3` (the drill-down) so the status/fraction math
+  # lives in exactly one place.
+  defp summarize_progress(%DeliveryTarget{} = target, progress, today) do
     {completed, total} = aggregate_children(progress)
 
     %{
@@ -339,12 +438,65 @@ defmodule Kanban.Targets do
   end
 
   defp goal_progress_entry(%Task{} = goal) do
-    children = Tasks.get_task_children(goal.id, goal.column.board_id)
+    goal.id
+    |> Tasks.get_task_children(goal.column.board_id)
+    |> then(&progress_shape(goal, &1))
+  end
 
+  # The `Kanban.Targets.Status.derive/3` progress shape for one goal, computed
+  # once here so the aggregate (`summarize_target/3`, `get_target_progress/3`)
+  # and the per-goal breakdown never duplicate the completed/total math.
+  defp progress_shape(%Task{} = goal, children) do
     %{
       completed_children: Enum.count(children, &(&1.status == :completed)),
       total_children: length(children),
       goal_complete?: goal.status == :completed
+    }
+  end
+
+  # Builds the full progress payload for one already-resolved target. The
+  # target-level aggregate and the per-goal breakdown both derive from the
+  # single `details` list — one child fetch per goal — reusing the shared
+  # `aggregate_children/1`, `percentage/2`, and `Status.derive/3` helpers.
+  defp build_target_progress(scope, %DeliveryTarget{} = target, today) do
+    details =
+      scope
+      |> list_member_goals(target)
+      |> Enum.map(&goal_detail_entry/1)
+
+    progress = Enum.map(details, & &1.progress)
+
+    %{
+      summary: summarize_progress(target, progress, today),
+      goals: Enum.map(details, &goal_detail_view/1)
+    }
+  end
+
+  # The public per-goal detail shape — drops the internal `:progress` key that
+  # only `Status.derive/3` needs.
+  defp goal_detail_view(detail) do
+    Map.take(detail, [:goal, :flow, :completed, :total, :percentage])
+  end
+
+  # One member goal's detail: fetches its child tasks once (with `:column`
+  # preloaded for flow bucketing), then derives the Status progress shape, the
+  # column-bucketed flow map, and the completed/total/percentage fraction from
+  # that single fetch.
+  defp goal_detail_entry(%Task{} = goal) do
+    children =
+      goal.id
+      |> Tasks.get_task_children(goal.column.board_id)
+      |> Repo.preload(:column)
+
+    progress = progress_shape(goal, children)
+
+    %{
+      goal: goal,
+      flow: flow_map(children),
+      completed: progress.completed_children,
+      total: progress.total_children,
+      percentage: percentage(progress.completed_children, progress.total_children),
+      progress: progress
     }
   end
 
@@ -359,4 +511,35 @@ defmodule Kanban.Targets do
 
   defp percentage(_completed, 0), do: 0
   defp percentage(completed, total), do: round(completed / total * 100)
+
+  @empty_flow %{done: 0, review: 0, doing: 0, ready: 0, backlog: 0, total: 0}
+
+  # Buckets a goal's child tasks into %{done, review, doing, ready, backlog,
+  # total} by each child's column NAME (never task.status), matching the boards
+  # Goals view. Children must have :column preloaded.
+  defp flow_map(children) do
+    Enum.reduce(children, @empty_flow, fn child, acc ->
+      bucket = flow_bucket(child.column)
+
+      acc
+      |> Map.update!(bucket, &(&1 + 1))
+      |> Map.update!(:total, &(&1 + 1))
+    end)
+  end
+
+  # Maps a column name to its flow bucket. Duplicates the tiny name→status case
+  # from KanbanWeb.BoardLive.Show.column_status/1 deliberately: a context must
+  # not depend on the web layer. Any unknown/nil column falls back to :backlog.
+  defp flow_bucket(%{name: name}) when is_binary(name) do
+    case String.downcase(name) do
+      "backlog" -> :backlog
+      "ready" -> :ready
+      "doing" -> :doing
+      "review" -> :review
+      "done" -> :done
+      _ -> :backlog
+    end
+  end
+
+  defp flow_bucket(_), do: :backlog
 end
