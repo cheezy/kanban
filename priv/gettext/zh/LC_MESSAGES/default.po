@@ -50,6 +50,7 @@ msgstr " · 任务管理"
 #: lib/kanban_web/components/goal_progress_header.ex:208
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:78
+#: lib/kanban_web/components/target_progress_header.ex:181
 #: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
@@ -2210,6 +2211,7 @@ msgstr "返回仪表盘"
 #: lib/kanban_web/components/goal_progress_header.ex:204
 #: lib/kanban_web/components/marketing_mini_board.ex:188
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:74
+#: lib/kanban_web/components/target_progress_header.ex:177
 #: lib/kanban_web/live/goal_live/show.ex:287
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
@@ -2442,6 +2444,7 @@ msgstr "队列和等待时间分析"
 #: lib/kanban_web/components/goal_progress_header.ex:207
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:77
+#: lib/kanban_web/components/target_progress_header.ex:180
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:312
 #: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
@@ -3118,6 +3121,7 @@ msgstr "Diff、测试、验收、hook 遥测——同一面板。一键批准。
 #: lib/kanban_web/components/goal_progress_header.ex:206
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:76
+#: lib/kanban_web/components/target_progress_header.ex:179
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
@@ -3206,6 +3210,7 @@ msgstr "产品"
 #: lib/kanban_web/components/goal_sidebar.ex:65
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:75
+#: lib/kanban_web/components/target_progress_header.ex:178
 #: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
@@ -4519,6 +4524,7 @@ msgid "Goal progress by status"
 msgstr "按状态显示的目标进度"
 
 #: lib/kanban_web/components/goal_progress_header.ex:105
+#: lib/kanban_web/components/target_progress_header.ex:99
 #, elixir-autogen, elixir-format
 msgid "%{done} of %{total} complete"
 msgstr "已完成 %{done}/%{total}"
@@ -4710,6 +4716,7 @@ msgid "Avg cycle"
 msgstr "平均周期"
 
 #: lib/kanban_web/components/goal_sidebar.ex:58
+#: lib/kanban_web/components/target_progress_header.ex:187
 #: lib/kanban_web/components/targets_strip.ex:155
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
@@ -7375,16 +7382,19 @@ msgstr "请输入您注册时使用的电子邮件地址，我们将发送新的
 msgid "Send confirmation link"
 msgstr "发送确认链接"
 
+#: lib/kanban_web/components/target_progress_header.ex:189
 #: lib/kanban_web/components/targets_strip.ex:157
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "有风险"
 
+#: lib/kanban_web/components/target_progress_header.ex:190
 #: lib/kanban_web/components/targets_strip.ex:158
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "未达成"
 
+#: lib/kanban_web/components/target_progress_header.ex:188
 #: lib/kanban_web/components/targets_strip.ex:156
 #, elixir-autogen, elixir-format
 msgid "On-track"
@@ -7510,3 +7520,13 @@ msgstr "目标日期"
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "未找到交付目标"
+
+#: lib/kanban_web/components/target_progress_header.ex:64
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Target"
+msgstr "交付目标"
+
+#: lib/kanban_web/components/target_progress_header.ex:105
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Target progress by child status"
+msgstr "按子项状态显示的目标进度"

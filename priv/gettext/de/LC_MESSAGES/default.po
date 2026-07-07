@@ -50,6 +50,7 @@ msgstr " · Aufgabenverwaltung"
 #: lib/kanban_web/components/goal_progress_header.ex:208
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:78
+#: lib/kanban_web/components/target_progress_header.ex:181
 #: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
@@ -2212,6 +2213,7 @@ msgstr "Zurück zum Dashboard"
 #: lib/kanban_web/components/goal_progress_header.ex:204
 #: lib/kanban_web/components/marketing_mini_board.ex:188
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:74
+#: lib/kanban_web/components/target_progress_header.ex:177
 #: lib/kanban_web/live/goal_live/show.ex:287
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
@@ -2444,6 +2446,7 @@ msgstr "Warteschlangen- und Wartezeit-Analyse"
 #: lib/kanban_web/components/goal_progress_header.ex:207
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:77
+#: lib/kanban_web/components/target_progress_header.ex:180
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:312
 #: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
@@ -3121,6 +3124,7 @@ msgstr "Diff, Tests, Akzeptanz, Hook-Telemetrie — ein Fenster. Genehmigen mit 
 #: lib/kanban_web/components/goal_progress_header.ex:206
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:76
+#: lib/kanban_web/components/target_progress_header.ex:179
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
@@ -3209,6 +3213,7 @@ msgstr "Produkt"
 #: lib/kanban_web/components/goal_sidebar.ex:65
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:75
+#: lib/kanban_web/components/target_progress_header.ex:178
 #: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
@@ -4526,6 +4531,7 @@ msgid "Goal progress by status"
 msgstr "Zielfortschritt nach Status"
 
 #: lib/kanban_web/components/goal_progress_header.ex:105
+#: lib/kanban_web/components/target_progress_header.ex:99
 #, elixir-autogen, elixir-format
 msgid "%{done} of %{total} complete"
 msgstr "%{done} von %{total} abgeschlossen"
@@ -4718,6 +4724,7 @@ msgid "Avg cycle"
 msgstr "Ø Zyklus"
 
 #: lib/kanban_web/components/goal_sidebar.ex:58
+#: lib/kanban_web/components/target_progress_header.ex:187
 #: lib/kanban_web/components/targets_strip.ex:155
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
@@ -7435,16 +7442,19 @@ msgstr "Geben Sie die E-Mail-Adresse ein, mit der Sie sich registriert haben, un
 msgid "Send confirmation link"
 msgstr "Bestätigungslink senden"
 
+#: lib/kanban_web/components/target_progress_header.ex:189
 #: lib/kanban_web/components/targets_strip.ex:157
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "Gefährdet"
 
+#: lib/kanban_web/components/target_progress_header.ex:190
 #: lib/kanban_web/components/targets_strip.ex:158
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "Verpasst"
 
+#: lib/kanban_web/components/target_progress_header.ex:188
 #: lib/kanban_web/components/targets_strip.ex:156
 #, elixir-autogen, elixir-format
 msgid "On-track"
@@ -7570,3 +7580,13 @@ msgstr "Zieldatum"
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "Zielvorgabe nicht gefunden"
+
+#: lib/kanban_web/components/target_progress_header.ex:64
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Target"
+msgstr "Zielvorgaben"
+
+#: lib/kanban_web/components/target_progress_header.ex:105
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Target progress by child status"
+msgstr "Zielfortschritt nach Status der Unterelemente"

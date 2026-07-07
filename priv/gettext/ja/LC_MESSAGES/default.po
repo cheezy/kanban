@@ -50,6 +50,7 @@ msgstr " · タスク管理"
 #: lib/kanban_web/components/goal_progress_header.ex:208
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:78
+#: lib/kanban_web/components/target_progress_header.ex:181
 #: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
@@ -2210,6 +2211,7 @@ msgstr "ダッシュボードに戻る"
 #: lib/kanban_web/components/goal_progress_header.ex:204
 #: lib/kanban_web/components/marketing_mini_board.ex:188
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:74
+#: lib/kanban_web/components/target_progress_header.ex:177
 #: lib/kanban_web/live/goal_live/show.ex:287
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
@@ -2442,6 +2444,7 @@ msgstr "キューと待ち時間の分析"
 #: lib/kanban_web/components/goal_progress_header.ex:207
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:77
+#: lib/kanban_web/components/target_progress_header.ex:180
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:312
 #: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
@@ -3118,6 +3121,7 @@ msgstr "差分、テスト、受け入れ条件、フックのテレメトリ、
 #: lib/kanban_web/components/goal_progress_header.ex:206
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:76
+#: lib/kanban_web/components/target_progress_header.ex:179
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
@@ -3206,6 +3210,7 @@ msgstr "プロダクト"
 #: lib/kanban_web/components/goal_sidebar.ex:65
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:75
+#: lib/kanban_web/components/target_progress_header.ex:178
 #: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
@@ -4519,6 +4524,7 @@ msgid "Goal progress by status"
 msgstr "状態別のゴール進捗"
 
 #: lib/kanban_web/components/goal_progress_header.ex:105
+#: lib/kanban_web/components/target_progress_header.ex:99
 #, elixir-autogen, elixir-format
 msgid "%{done} of %{total} complete"
 msgstr "%{total} 中 %{done} 完了"
@@ -4710,6 +4716,7 @@ msgid "Avg cycle"
 msgstr "平均サイクル"
 
 #: lib/kanban_web/components/goal_sidebar.ex:58
+#: lib/kanban_web/components/target_progress_header.ex:187
 #: lib/kanban_web/components/targets_strip.ex:155
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
@@ -7375,16 +7382,19 @@ msgstr "登録時のメールアドレスを入力してください。新しい
 msgid "Send confirmation link"
 msgstr "確認リンクを送信"
 
+#: lib/kanban_web/components/target_progress_header.ex:189
 #: lib/kanban_web/components/targets_strip.ex:157
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "リスクあり"
 
+#: lib/kanban_web/components/target_progress_header.ex:190
 #: lib/kanban_web/components/targets_strip.ex:158
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "未達"
 
+#: lib/kanban_web/components/target_progress_header.ex:188
 #: lib/kanban_web/components/targets_strip.ex:156
 #, elixir-autogen, elixir-format
 msgid "On-track"
@@ -7510,3 +7520,13 @@ msgstr "目標日"
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "ターゲットが見つかりません"
+
+#: lib/kanban_web/components/target_progress_header.ex:64
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Target"
+msgstr "ターゲット"
+
+#: lib/kanban_web/components/target_progress_header.ex:105
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Target progress by child status"
+msgstr "子要素の状態別ゴール進捗"
