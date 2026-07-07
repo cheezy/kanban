@@ -169,6 +169,7 @@ msgstr "您确定要删除此看板吗？"
 
 #: lib/kanban_web/live/board_live/form.html.heex:18
 #: lib/kanban_web/live/target_live/form.html.heex:9
+#: lib/kanban_web/live/target_live/show.html.heex:9
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr "返回看板"
@@ -4709,7 +4710,7 @@ msgid "Avg cycle"
 msgstr "平均周期"
 
 #: lib/kanban_web/components/goal_sidebar.ex:58
-#: lib/kanban_web/components/targets_strip.ex:149
+#: lib/kanban_web/components/targets_strip.ex:150
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
 msgstr "完成"
@@ -7374,17 +7375,17 @@ msgstr "请输入您注册时使用的电子邮件地址，我们将发送新的
 msgid "Send confirmation link"
 msgstr "发送确认链接"
 
-#: lib/kanban_web/components/targets_strip.ex:151
+#: lib/kanban_web/components/targets_strip.ex:152
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "有风险"
 
-#: lib/kanban_web/components/targets_strip.ex:152
+#: lib/kanban_web/components/targets_strip.ex:153
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "未达成"
 
-#: lib/kanban_web/components/targets_strip.ex:150
+#: lib/kanban_web/components/targets_strip.ex:151
 #, elixir-autogen, elixir-format
 msgid "On-track"
 msgstr "正常"
@@ -7488,3 +7489,23 @@ msgstr "取消分配"
 #, elixir-autogen, elixir-format
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "使用此表单管理交付目标及其目标。"
+
+#: lib/kanban_web/live/target_live/show.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Goals in this target"
+msgstr "此交付目标中的目标"
+
+#: lib/kanban_web/live/target_live/show.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "No goals in this target yet."
+msgstr "此交付目标中还没有目标。"
+
+#: lib/kanban_web/live/target_live/show.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Target date"
+msgstr "目标日期"
+
+#: lib/kanban_web/live/target_live/show.ex:33
+#, elixir-autogen, elixir-format
+msgid "Target not found"
+msgstr "未找到交付目标"

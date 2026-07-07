@@ -1,0 +1,46 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mb-6">
+      <.link
+        navigate={~p"/boards"}
+        class="text-[var(--ink-2)] hover:text-[var(--stride-orange)] flex items-center gap-2"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" />
+        {gettext("Back to boards")}
+      </.link>
+    </div>
+
+    <.header>
+      {@target.name}
+      <:subtitle>{gettext("Target date")}: {format_date(@target.target_date)}</:subtitle>
+    </.header>
+
+    <div class="mt-8">
+      <h2 class="text-lg font-semibold text-base-content mb-4">
+        {gettext("Goals in this target")}
+      </h2>
+
+      <%!-- Defensive: get_target/2 only resolves when the target has >=1
+      accessible member goal, so this is normally unreachable. It still guards
+      the narrow window where a member goal is unassigned between the
+      get_target and list_member_goals reads on mount. --%>
+      <p :if={@member_goals == []} class="text-sm text-base-content opacity-70">
+        {gettext("No goals in this target yet.")}
+      </p>
+
+      <div
+        :if={@member_goals != []}
+        data-target-goals
+        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;"
+      >
+        <.link
+          :for={goal <- @member_goals}
+          navigate={~p"/boards/#{goal.column.board_id}/goals/#{goal.id}"}
+          style="text-decoration: none;"
+        >
+          <GoalCard.goal_card task={goal_card_task(goal)} />
+        </.link>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

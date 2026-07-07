@@ -156,6 +156,7 @@ defmodule KanbanWeb.Router do
 
       live "/targets/new", TargetLive.Form, :new
       live "/targets/:id/edit", TargetLive.Form, :edit
+      live "/targets/:id", TargetLive.Show, :show
 
       live "/agents", AgentsLive, :index
       live "/review", ReviewLive, :index

@@ -14,7 +14,7 @@ defmodule KanbanWeb.TargetsStripTest do
   defp entry(overrides \\ %{}) do
     Map.merge(
       %{
-        target: %{name: "Q3 Launch", target_date: ~D[2026-12-31]},
+        target: %{id: 1, name: "Q3 Launch", target_date: ~D[2026-12-31]},
         status: :on_track,
         completed: 12,
         total: 20,
@@ -46,7 +46,7 @@ defmodule KanbanWeb.TargetsStripTest do
       html =
         render_targets([
           entry(),
-          entry(%{target: %{name: "Beta", target_date: ~D[2026-11-01]}})
+          entry(%{target: %{id: 2, name: "Beta", target_date: ~D[2026-11-01]}})
         ])
 
       assert html =~ "Targets"
@@ -59,6 +59,7 @@ defmodule KanbanWeb.TargetsStripTest do
       html = render_targets([entry(%{completed: 12, total: 20, percentage: 60})])
 
       assert html =~ "data-target-card"
+      assert html =~ ~s(href="/targets/1")
       assert html =~ "Q3 Launch"
       assert html =~ "Dec 31, 2026"
       assert html =~ ~r/12\/20 \(60%\)/

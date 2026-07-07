@@ -100,7 +100,7 @@ defmodule KanbanWeb.TargetsStrip do
       |> assign(:label, label)
 
     ~H"""
-    <div style={card_style(@token)} data-target-card>
+    <.link navigate={~p"/targets/#{@entry.target.id}"} style={card_style(@token)} data-target-card>
       <span style="font-size: 12px; font-weight: 500; color: var(--ink);">
         {@entry.target.name}
       </span>
@@ -118,7 +118,7 @@ defmodule KanbanWeb.TargetsStrip do
         <div style={"height: 100%; border-radius: 2px; width: #{@entry.percentage}%; background: var(--st-#{@token});"}>
         </div>
       </div>
-    </div>
+    </.link>
     """
   end
 
@@ -133,7 +133,8 @@ defmodule KanbanWeb.TargetsStrip do
       "background: var(--surface);",
       "border: 1px solid var(--st-#{token});",
       "border-left: 3px solid var(--st-#{token});",
-      "border-radius: 5px;"
+      "border-radius: 5px;",
+      "text-decoration: none;"
     ]
   end
 

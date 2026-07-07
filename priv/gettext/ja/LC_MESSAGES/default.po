@@ -169,6 +169,7 @@ msgstr "このボードを削除してもよろしいですか？"
 
 #: lib/kanban_web/live/board_live/form.html.heex:18
 #: lib/kanban_web/live/target_live/form.html.heex:9
+#: lib/kanban_web/live/target_live/show.html.heex:9
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr "ボードに戻る"
@@ -4709,7 +4710,7 @@ msgid "Avg cycle"
 msgstr "平均サイクル"
 
 #: lib/kanban_web/components/goal_sidebar.ex:58
-#: lib/kanban_web/components/targets_strip.ex:149
+#: lib/kanban_web/components/targets_strip.ex:150
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
 msgstr "完了"
@@ -7374,17 +7375,17 @@ msgstr "登録時のメールアドレスを入力してください。新しい
 msgid "Send confirmation link"
 msgstr "確認リンクを送信"
 
-#: lib/kanban_web/components/targets_strip.ex:151
+#: lib/kanban_web/components/targets_strip.ex:152
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "リスクあり"
 
-#: lib/kanban_web/components/targets_strip.ex:152
+#: lib/kanban_web/components/targets_strip.ex:153
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "未達"
 
-#: lib/kanban_web/components/targets_strip.ex:150
+#: lib/kanban_web/components/targets_strip.ex:151
 #, elixir-autogen, elixir-format
 msgid "On-track"
 msgstr "順調"
@@ -7488,3 +7489,23 @@ msgstr "割り当て解除"
 #, elixir-autogen, elixir-format
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "このフォームでデリバリーターゲットとそのゴールを管理します。"
+
+#: lib/kanban_web/live/target_live/show.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Goals in this target"
+msgstr "このターゲットのゴール"
+
+#: lib/kanban_web/live/target_live/show.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "No goals in this target yet."
+msgstr "このターゲットにはまだゴールがありません。"
+
+#: lib/kanban_web/live/target_live/show.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Target date"
+msgstr "目標日"
+
+#: lib/kanban_web/live/target_live/show.ex:33
+#, elixir-autogen, elixir-format
+msgid "Target not found"
+msgstr "ターゲットが見つかりません"

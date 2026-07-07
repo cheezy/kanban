@@ -203,13 +203,16 @@ defmodule Kanban.Targets do
 
   @doc """
   Lists the goal-type member tasks of `target` that live on boards the scoped
-  user can access. A `nil` scope applies no board filter.
+  user can access, each with its `:column` preloaded (so `goal.column.board_id`
+  is available to callers such as the target drill-down and
+  `target_goal_progress/2`). A `nil` scope applies no board filter.
   """
   @spec list_member_goals(Scope.t() | nil, DeliveryTarget.t()) :: [Task.t()]
   def list_member_goals(scope, %DeliveryTarget{} = target) do
     Task
     |> where([t], t.type == :goal and t.target_id == ^target.id)
     |> BoardScope.apply_board_scope_with_column_join(scope)
+    |> preload(:column)
     |> Repo.all()
   end
 
@@ -326,12 +329,12 @@ defmodule Kanban.Targets do
     }
   end
 
-  # One Status.goal_progress snapshot per accessible member goal. :column is
-  # preloaded so each goal's own board_id scopes its child-task query.
+  # One Status.goal_progress snapshot per accessible member goal.
+  # list_member_goals/2 already preloads :column, so each goal's own board_id
+  # scopes its child-task query.
   defp target_goal_progress(scope, target) do
     scope
     |> list_member_goals(target)
-    |> Repo.preload(:column)
     |> Enum.map(&goal_progress_entry/1)
   end
 
