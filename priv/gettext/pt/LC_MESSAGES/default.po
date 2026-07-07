@@ -16,18 +16,18 @@ msgstr ""
 msgid "Actions"
 msgstr "Ações"
 
-#: lib/kanban_web/components/layouts.ex:410
-#: lib/kanban_web/components/layouts.ex:422
+#: lib/kanban_web/components/layouts.ex:417
+#: lib/kanban_web/components/layouts.ex:429
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "Tentando reconectar"
 
-#: lib/kanban_web/components/layouts.ex:417
+#: lib/kanban_web/components/layouts.ex:424
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "Algo deu errado!"
 
-#: lib/kanban_web/components/layouts.ex:405
+#: lib/kanban_web/components/layouts.ex:412
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "Não conseguimos encontrar a internet"
@@ -73,7 +73,7 @@ msgstr "Em Progresso"
 msgid "Log in"
 msgstr "Entrar"
 
-#: lib/kanban_web/components/layouts.ex:207
+#: lib/kanban_web/components/layouts.ex:214
 #: lib/kanban_web/components/layouts/root.html.heex:91
 #: lib/kanban_web/components/nav_components.ex:134
 #, elixir-autogen, elixir-format
@@ -81,8 +81,8 @@ msgid "Log out"
 msgstr "Sair"
 
 #: lib/kanban_web/components/board_tabs.ex:143
-#: lib/kanban_web/components/layouts.ex:182
-#: lib/kanban_web/components/layouts.ex:183
+#: lib/kanban_web/components/layouts.ex:189
+#: lib/kanban_web/components/layouts.ex:190
 #: lib/kanban_web/components/layouts/root.html.heex:82
 #: lib/kanban_web/components/nav_components.ex:129
 #: lib/kanban_web/live/user_live/settings.ex:16
@@ -369,8 +369,8 @@ msgstr "Atualizar detalhes da tarefa"
 msgid "WIP limit reached for this column"
 msgstr "Limite WIP atingido para esta coluna"
 
-#: lib/kanban_web/components/layouts.ex:143
-#: lib/kanban_web/components/layouts.ex:371
+#: lib/kanban_web/components/layouts.ex:150
+#: lib/kanban_web/components/layouts.ex:378
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -756,7 +756,7 @@ msgstr "Painel"
 msgid "This account has already been confirmed. You can log in."
 msgstr "Esta conta já foi confirmada. Você pode fazer login."
 
-#: lib/kanban_web/components/layouts.ex:301
+#: lib/kanban_web/components/layouts.ex:308
 #: lib/kanban_web/components/layouts/root.html.heex:88
 #: lib/kanban_web/components/layouts/root.html.heex:98
 #: lib/kanban_web/components/marketing_components.ex:88
@@ -2066,7 +2066,7 @@ msgstr "Anterior"
 msgid "Read more"
 msgstr "Leia mais"
 
-#: lib/kanban_web/components/layouts.ex:294
+#: lib/kanban_web/components/layouts.ex:301
 #: lib/kanban_web/components/layouts/root.html.heex:85
 #: lib/kanban_web/components/layouts/root.html.heex:95
 #: lib/kanban_web/components/marketing_components.ex:84
@@ -2154,7 +2154,7 @@ msgid "Could not find a user with that email address"
 msgstr "Não foi possível encontrar um usuário com esse e-mail"
 
 #: lib/kanban_web/components/board_tabs.ex:125
-#: lib/kanban_web/components/layouts.ex:282
+#: lib/kanban_web/components/layouts.ex:289
 #: lib/kanban_web/live/metrics_live/workspace.ex:103
 #: lib/kanban_web/live/metrics_live/workspace.ex:121
 #: lib/kanban_web/live/task_live/view_component.ex:249
@@ -4102,7 +4102,7 @@ msgid_plural "%{count} active"
 msgstr[0] "%{count} ativa"
 msgstr[1] "%{count} ativas"
 
-#: lib/kanban_web/components/layouts.ex:261
+#: lib/kanban_web/components/layouts.ex:268
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:76
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4184,7 +4184,7 @@ msgstr "A fazer"
 msgid "Active goals"
 msgstr "Metas ativas"
 
-#: lib/kanban_web/components/layouts.ex:268
+#: lib/kanban_web/components/layouts.ex:275
 #: lib/kanban_web/live/agents_live.ex:165
 #, elixir-autogen, elixir-format
 msgid "Agents"
@@ -4220,7 +4220,7 @@ msgstr "Nova meta"
 msgid "Pre-configured for AI workflow"
 msgstr "Pré-configurado para fluxo de IA"
 
-#: lib/kanban_web/components/layouts.ex:121
+#: lib/kanban_web/components/layouts.ex:128
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr "Navegação principal"
@@ -4230,7 +4230,7 @@ msgstr "Navegação principal"
 msgid "Promote children to Ready"
 msgstr "Promover filhos para Pronto"
 
-#: lib/kanban_web/components/layouts.ex:275
+#: lib/kanban_web/components/layouts.ex:282
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
 #, elixir-autogen, elixir-format
@@ -4242,7 +4242,7 @@ msgstr "Fila de revisão"
 msgid "Start with a blank board"
 msgstr "Começar com um quadro em branco"
 
-#: lib/kanban_web/components/layouts.ex:130
+#: lib/kanban_web/components/layouts.ex:137
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr "Início do Stride"
@@ -4718,7 +4718,7 @@ msgid "Avg cycle"
 msgstr "Ciclo méd."
 
 #: lib/kanban_web/components/goal_sidebar.ex:58
-#: lib/kanban_web/components/targets_strip.ex:171
+#: lib/kanban_web/components/targets_strip.ex:155
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
 msgstr "Concluída"
@@ -5349,7 +5349,7 @@ msgstr "todos os quadros"
 msgid "Toggle menu"
 msgstr "Alternar menu"
 
-#: lib/kanban_web/components/layouts.ex:350
+#: lib/kanban_web/components/layouts.ex:357
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr "Alternar barra lateral"
@@ -7405,22 +7405,22 @@ msgstr "Insira o e-mail com o qual você se cadastrou e enviaremos um novo link 
 msgid "Send confirmation link"
 msgstr "Enviar link de confirmação"
 
-#: lib/kanban_web/components/targets_strip.ex:173
+#: lib/kanban_web/components/targets_strip.ex:157
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "Em risco"
 
-#: lib/kanban_web/components/targets_strip.ex:174
+#: lib/kanban_web/components/targets_strip.ex:158
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "Não atingido"
 
-#: lib/kanban_web/components/targets_strip.ex:172
+#: lib/kanban_web/components/targets_strip.ex:156
 #, elixir-autogen, elixir-format
 msgid "On-track"
 msgstr "No prazo"
 
-#: lib/kanban_web/components/targets_strip.ex:83
+#: lib/kanban_web/components/targets_strip.ex:82
 #, elixir-autogen, elixir-format
 msgid "Targets"
 msgstr "Alvos"
@@ -7470,7 +7470,6 @@ msgstr "Metas que atualmente contam para este alvo."
 msgid "Goals you can add to this target."
 msgstr "Metas que você pode adicionar a este alvo."
 
-#: lib/kanban_web/components/targets_strip.ex:105
 #: lib/kanban_web/live/board_live/index.html.heex:66
 #: lib/kanban_web/live/target_live/form.html.heex:14
 #, elixir-autogen, elixir-format

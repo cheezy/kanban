@@ -92,9 +92,16 @@ defmodule KanbanWeb.Layouts do
           {render_slot(@inner_block)}
         </main>
       </div>
-    </div>
 
-    <.flash_group flash={@flash} />
+      <%!-- The flash card reads its --flash-*-bg surface tokens from the
+            .stride-screen scope (light: .stride-screen; dark: [data-theme=dark]
+            .stride-screen). It MUST render inside this container — as a sibling
+            it fell outside that scope, so var(--flash-info-bg) resolved to
+            nothing and the card rendered with a transparent background (D104
+            never took effect). The toast is position: fixed, so nesting it here
+            does not change where it appears on screen. --%>
+      <.flash_group flash={@flash} />
+    </div>
     """
   end
 

@@ -16,18 +16,18 @@ msgstr ""
 msgid "Actions"
 msgstr "操作"
 
-#: lib/kanban_web/components/layouts.ex:410
-#: lib/kanban_web/components/layouts.ex:422
+#: lib/kanban_web/components/layouts.ex:417
+#: lib/kanban_web/components/layouts.ex:429
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "正在尝试重新连接"
 
-#: lib/kanban_web/components/layouts.ex:417
+#: lib/kanban_web/components/layouts.ex:424
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "出错了！"
 
-#: lib/kanban_web/components/layouts.ex:405
+#: lib/kanban_web/components/layouts.ex:412
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "无法连接到互联网"
@@ -73,7 +73,7 @@ msgstr "进行中"
 msgid "Log in"
 msgstr "登录"
 
-#: lib/kanban_web/components/layouts.ex:207
+#: lib/kanban_web/components/layouts.ex:214
 #: lib/kanban_web/components/layouts/root.html.heex:91
 #: lib/kanban_web/components/nav_components.ex:134
 #, elixir-autogen, elixir-format
@@ -81,8 +81,8 @@ msgid "Log out"
 msgstr "退出"
 
 #: lib/kanban_web/components/board_tabs.ex:143
-#: lib/kanban_web/components/layouts.ex:182
-#: lib/kanban_web/components/layouts.ex:183
+#: lib/kanban_web/components/layouts.ex:189
+#: lib/kanban_web/components/layouts.ex:190
 #: lib/kanban_web/components/layouts/root.html.heex:82
 #: lib/kanban_web/components/nav_components.ex:129
 #: lib/kanban_web/live/user_live/settings.ex:16
@@ -369,8 +369,8 @@ msgstr "更新任务详情"
 msgid "WIP limit reached for this column"
 msgstr "此列已达到在制品限制"
 
-#: lib/kanban_web/components/layouts.ex:143
-#: lib/kanban_web/components/layouts.ex:371
+#: lib/kanban_web/components/layouts.ex:150
+#: lib/kanban_web/components/layouts.ex:378
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -756,7 +756,7 @@ msgstr "仪表板"
 msgid "This account has already been confirmed. You can log in."
 msgstr "此账户已确认。您可以登录。"
 
-#: lib/kanban_web/components/layouts.ex:301
+#: lib/kanban_web/components/layouts.ex:308
 #: lib/kanban_web/components/layouts/root.html.heex:88
 #: lib/kanban_web/components/layouts/root.html.heex:98
 #: lib/kanban_web/components/marketing_components.ex:88
@@ -2065,7 +2065,7 @@ msgstr "上一步"
 msgid "Read more"
 msgstr "阅读更多"
 
-#: lib/kanban_web/components/layouts.ex:294
+#: lib/kanban_web/components/layouts.ex:301
 #: lib/kanban_web/components/layouts/root.html.heex:85
 #: lib/kanban_web/components/layouts/root.html.heex:95
 #: lib/kanban_web/components/marketing_components.ex:84
@@ -2152,7 +2152,7 @@ msgid "Could not find a user with that email address"
 msgstr "未找到使用该邮箱的用户"
 
 #: lib/kanban_web/components/board_tabs.ex:125
-#: lib/kanban_web/components/layouts.ex:282
+#: lib/kanban_web/components/layouts.ex:289
 #: lib/kanban_web/live/metrics_live/workspace.ex:103
 #: lib/kanban_web/live/metrics_live/workspace.ex:121
 #: lib/kanban_web/live/task_live/view_component.ex:249
@@ -4098,7 +4098,7 @@ msgid "%{count} active"
 msgid_plural "%{count} active"
 msgstr[0] "%{count} 个活跃"
 
-#: lib/kanban_web/components/layouts.ex:261
+#: lib/kanban_web/components/layouts.ex:268
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:76
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4180,7 +4180,7 @@ msgstr "待办"
 msgid "Active goals"
 msgstr "活动目标"
 
-#: lib/kanban_web/components/layouts.ex:268
+#: lib/kanban_web/components/layouts.ex:275
 #: lib/kanban_web/live/agents_live.ex:165
 #, elixir-autogen, elixir-format
 msgid "Agents"
@@ -4216,7 +4216,7 @@ msgstr "新建目标"
 msgid "Pre-configured for AI workflow"
 msgstr "已为 AI 工作流预配置"
 
-#: lib/kanban_web/components/layouts.ex:121
+#: lib/kanban_web/components/layouts.ex:128
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr "主导航"
@@ -4226,7 +4226,7 @@ msgstr "主导航"
 msgid "Promote children to Ready"
 msgstr "将子项提升至「就绪」"
 
-#: lib/kanban_web/components/layouts.ex:275
+#: lib/kanban_web/components/layouts.ex:282
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
 #, elixir-autogen, elixir-format
@@ -4238,7 +4238,7 @@ msgstr "审核队列"
 msgid "Start with a blank board"
 msgstr "从一个空白看板开始"
 
-#: lib/kanban_web/components/layouts.ex:130
+#: lib/kanban_web/components/layouts.ex:137
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr "Stride 首页"
@@ -4710,7 +4710,7 @@ msgid "Avg cycle"
 msgstr "平均周期"
 
 #: lib/kanban_web/components/goal_sidebar.ex:58
-#: lib/kanban_web/components/targets_strip.ex:171
+#: lib/kanban_web/components/targets_strip.ex:155
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
 msgstr "完成"
@@ -5337,7 +5337,7 @@ msgstr "所有看板"
 msgid "Toggle menu"
 msgstr "切换菜单"
 
-#: lib/kanban_web/components/layouts.ex:350
+#: lib/kanban_web/components/layouts.ex:357
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr "切换侧边栏"
@@ -7375,22 +7375,22 @@ msgstr "请输入您注册时使用的电子邮件地址，我们将发送新的
 msgid "Send confirmation link"
 msgstr "发送确认链接"
 
-#: lib/kanban_web/components/targets_strip.ex:173
+#: lib/kanban_web/components/targets_strip.ex:157
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "有风险"
 
-#: lib/kanban_web/components/targets_strip.ex:174
+#: lib/kanban_web/components/targets_strip.ex:158
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "未达成"
 
-#: lib/kanban_web/components/targets_strip.ex:172
+#: lib/kanban_web/components/targets_strip.ex:156
 #, elixir-autogen, elixir-format
 msgid "On-track"
 msgstr "正常"
 
-#: lib/kanban_web/components/targets_strip.ex:83
+#: lib/kanban_web/components/targets_strip.ex:82
 #, elixir-autogen, elixir-format
 msgid "Targets"
 msgstr "交付目标"
@@ -7440,7 +7440,6 @@ msgstr "当前计入此交付目标的目标。"
 msgid "Goals you can add to this target."
 msgstr "可以添加到此交付目标的目标。"
 
-#: lib/kanban_web/components/targets_strip.ex:105
 #: lib/kanban_web/live/board_live/index.html.heex:66
 #: lib/kanban_web/live/target_live/form.html.heex:14
 #, elixir-autogen, elixir-format

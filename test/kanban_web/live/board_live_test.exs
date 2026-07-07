@@ -217,6 +217,27 @@ defmodule KanbanWeb.BoardLiveTest do
       assert has_element?(index_live, ~s(a[href="/targets/new"]))
     end
 
+    test "renders the New Target link exactly once when a target exists", %{
+      conn: conn,
+      user: user
+    } do
+      # The single create entry point lives in the header. The targets strip
+      # must NOT add its own duplicate, so even with a target present the
+      # /targets/new link appears exactly once.
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal = task_fixture(column, %{title: "Launch Goal", type: :goal})
+      target = delivery_target_fixture(user, %{name: "Q3 Launch"})
+      scope = Kanban.Accounts.Scope.for_user(user)
+      {:ok, _goal} = Kanban.Targets.assign_goal(scope, goal, target)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards")
+
+      # Strip is present (target exists) but contributes no second link.
+      assert html =~ "data-target-card"
+      assert length(String.split(html, ~s(href="/targets/new"))) - 1 == 1
+    end
+
     test "the metrics refresh re-loads the targets strip", %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board)

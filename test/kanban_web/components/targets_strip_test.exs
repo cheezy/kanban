@@ -54,23 +54,6 @@ defmodule KanbanWeb.TargetsStripTest do
     end
   end
 
-  describe "targets_strip/1 — new target affordance" do
-    test "renders a New target link to /targets/new when targets exist" do
-      html = render_targets([entry()])
-
-      assert html =~ "data-new-target"
-      assert html =~ ~s(href="/targets/new")
-      assert html =~ "New Target"
-    end
-
-    test "renders no New target link when the targets list is empty" do
-      html = render_targets([])
-
-      refute html =~ "data-new-target"
-      refute html =~ ~s(href="/targets/new")
-    end
-  end
-
   describe "targets_strip/1 — target card" do
     test "renders the name, formatted date and the N/M (P%) fraction" do
       html = render_targets([entry(%{completed: 12, total: 20, percentage: 60})])
