@@ -1,0 +1,109 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mb-6">
+      <.link
+        navigate={~p"/boards"}
+        class="text-[var(--ink-2)] hover:text-[var(--stride-orange)] flex items-center gap-2"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" />
+        {gettext("Back to boards")}
+      </.link>
+    </div>
+
+    <.header>
+      {if @live_action == :new, do: gettext("New Target"), else: gettext("Edit Target")}
+      <:subtitle>
+        {gettext("Use this form to manage delivery targets and their goals.")}
+      </:subtitle>
+    </.header>
+
+    <div class="mt-8 max-w-2xl">
+      <.form :let={f} for={@form} id="target-form" phx-change="validate" phx-submit="save">
+        <.input field={f[:name]} type="text" label={gettext("Name")} />
+        <.input field={f[:target_date]} type="date" label={gettext("Target Date")} />
+        <.input field={f[:description]} type="textarea" label={gettext("Description")} />
+
+        <div class="fieldset mb-2">
+          <span class="label mb-1">{gettext("Owner")}</span>
+          <p class="text-sm text-base-content opacity-70" id="target-owner">{@owner_email}</p>
+        </div>
+
+        <div class="mt-6 flex items-center gap-4">
+          <.button phx-disable-with={gettext("Saving...")}>
+            {if @live_action == :new, do: gettext("Create Target"), else: gettext("Save Target")}
+          </.button>
+          <.link
+            navigate={~p"/boards"}
+            class="text-sm text-base-content opacity-70 hover:opacity-100"
+          >
+            {gettext("Cancel")}
+          </.link>
+        </div>
+      </.form>
+
+      <%= if @live_action == :edit do %>
+        <div class="mt-12 border-t pt-8">
+          <h2 class="text-lg font-semibold text-base-content mb-2">
+            {gettext("Assigned Goals")}
+          </h2>
+          <p class="text-sm text-base-content opacity-70 mb-4">
+            {gettext("Goals currently counting toward this target.")}
+          </p>
+
+          <%= if @member_goals == [] do %>
+            <p class="text-sm text-base-content opacity-70 mb-6">
+              {gettext("No goals are assigned to this target yet.")}
+            </p>
+          <% else %>
+            <div class="space-y-2 mb-6">
+              <%= for goal <- @member_goals do %>
+                <div
+                  id={"member-goal-#{goal.id}"}
+                  class="flex items-center justify-between p-3 bg-base-200 rounded-lg"
+                >
+                  <div class="flex-1">
+                    <p class="font-medium text-base-content">{goal.title}</p>
+                    <p class="text-sm text-base-content opacity-70">{goal.identifier}</p>
+                  </div>
+                  <.button type="button" phx-click="unassign_goal" phx-value-goal_id={goal.id}>
+                    {gettext("Unassign")}
+                  </.button>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <h2 class="text-lg font-semibold text-base-content mb-2">
+            {gettext("Available Goals")}
+          </h2>
+          <p class="text-sm text-base-content opacity-70 mb-4">
+            {gettext("Goals you can add to this target.")}
+          </p>
+
+          <%= if @assignable_goals == [] do %>
+            <p class="text-sm text-base-content opacity-70">
+              {gettext("No goals are available to assign.")}
+            </p>
+          <% else %>
+            <div class="space-y-2">
+              <%= for goal <- @assignable_goals do %>
+                <div
+                  id={"assignable-goal-#{goal.id}"}
+                  class="flex items-center justify-between p-3 bg-base-200 rounded-lg"
+                >
+                  <div class="flex-1">
+                    <p class="font-medium text-base-content">{goal.title}</p>
+                    <p class="text-sm text-base-content opacity-70">{goal.identifier}</p>
+                  </div>
+                  <.button type="button" phx-click="assign_goal" phx-value-goal_id={goal.id}>
+                    {gettext("Assign")}
+                  </.button>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</Layouts.app>

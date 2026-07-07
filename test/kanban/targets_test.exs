@@ -334,6 +334,109 @@ defmodule Kanban.TargetsTest do
     end
   end
 
+  describe "owner?/2" do
+    test "true for the owner, false for a non-owner", %{user: user, other_user: other} do
+      target = delivery_target_fixture(user)
+      assert Targets.owner?(target, user)
+      refute Targets.owner?(target, other)
+    end
+  end
+
+  describe "change_target/2" do
+    test "returns a changeset for the target", %{user: user} do
+      target = delivery_target_fixture(user)
+      assert %Ecto.Changeset{} = Targets.change_target(target)
+    end
+
+    test "does not cast owner_id (never mass-assignable)", %{user: user, other_user: other} do
+      target = delivery_target_fixture(user)
+      cs = Targets.change_target(target, %{owner_id: other.id})
+      refute Map.has_key?(cs.changes, :owner_id)
+    end
+  end
+
+  describe "get_owned_target/2" do
+    test "returns {:ok, target} with :owner preloaded for the owner (no goals needed)",
+         %{scope: scope, user: user} do
+      target = delivery_target_fixture(user)
+
+      assert {:ok, fetched} = Targets.get_owned_target(scope, target.id)
+      assert fetched.id == target.id
+      assert fetched.owner.id == user.id
+    end
+
+    test "returns {:error, :not_found} for a target owned by another user",
+         %{other_scope: other_scope, user: user} do
+      target = delivery_target_fixture(user)
+      assert {:error, :not_found} = Targets.get_owned_target(other_scope, target.id)
+    end
+
+    test "returns {:error, :not_found} for a missing id", %{scope: scope} do
+      assert {:error, :not_found} = Targets.get_owned_target(scope, 999_999_999)
+    end
+
+    test "returns {:error, :not_found} for a nil scope", %{user: user} do
+      target = delivery_target_fixture(user)
+      assert {:error, :not_found} = Targets.get_owned_target(nil, target.id)
+    end
+  end
+
+  describe "update_target/3 authorization" do
+    test "the owner may update", %{scope: scope, user: user} do
+      target = delivery_target_fixture(user)
+      assert {:ok, updated} = Targets.update_target(scope, target, %{name: "Owner Renamed"})
+      assert updated.name == "Owner Renamed"
+    end
+
+    test "a non-owner is rejected with {:error, :not_authorized}",
+         %{other_scope: other_scope, user: user} do
+      target = delivery_target_fixture(user)
+
+      assert {:error, :not_authorized} =
+               Targets.update_target(other_scope, target, %{name: "Nope"})
+
+      assert Repo.get!(DeliveryTarget, target.id).name == target.name
+    end
+  end
+
+  describe "list_assignable_goals/2" do
+    test "returns goals not on this target, on accessible boards",
+         %{scope: scope, user: user, column: column, other_column: other_column} do
+      target = delivery_target_fixture(user)
+
+      unassigned = goal_fixture(column)
+      already_here = goal_fixture(column)
+      foreign = goal_fixture(other_column)
+      assert {:ok, _} = Targets.assign_goal(scope, already_here, target)
+
+      ids = scope |> Targets.list_assignable_goals(target) |> Enum.map(& &1.id)
+
+      assert unassigned.id in ids
+      refute already_here.id in ids
+      refute foreign.id in ids
+    end
+
+    test "excludes goals already assigned to a different target (no silent stealing)",
+         %{scope: scope, user: user, column: column} do
+      target = delivery_target_fixture(user)
+      other_target = delivery_target_fixture(user)
+
+      goal = goal_fixture(column)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, other_target)
+
+      ids = scope |> Targets.list_assignable_goals(target) |> Enum.map(& &1.id)
+      refute goal.id in ids
+    end
+
+    test "excludes non-goal (work) tasks", %{scope: scope, user: user, column: column} do
+      target = delivery_target_fixture(user)
+      work = task_fixture(column, %{type: :work})
+
+      ids = scope |> Targets.list_assignable_goals(target) |> Enum.map(& &1.id)
+      refute work.id in ids
+    end
+  end
+
   defp complete_task(task) do
     {:ok, done} =
       task

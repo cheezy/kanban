@@ -149,6 +149,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:52
 #: lib/kanban_web/live/board_live/settings_form_component.ex:142
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
+#: lib/kanban_web/live/target_live/form.html.heex:32
 #: lib/kanban_web/live/task_live/form_component.html.heex:988
 #: lib/kanban_web/live/user_live/settings.ex:93
 #: lib/kanban_web/live/user_live/settings.ex:156
@@ -167,6 +168,7 @@ msgid "Are you sure you want to delete this board?"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:18
+#: lib/kanban_web/live/target_live/form.html.heex:9
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr ""
@@ -186,6 +188,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
 #: lib/kanban_web/live/review_live.html.heex:146
+#: lib/kanban_web/live/target_live/form.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr ""
@@ -193,6 +196,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:31
 #: lib/kanban_web/live/board_live/settings_form_component.ex:82
 #: lib/kanban_web/live/issue_live/form_component.ex:85
+#: lib/kanban_web/live/target_live/form.html.heex:24
 #: lib/kanban_web/live/task_live/form_component.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "Description"
@@ -216,6 +220,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:78
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
+#: lib/kanban_web/live/target_live/form.html.heex:22
 #: lib/kanban_web/live/user_live/settings.ex:65
 #, elixir-autogen, elixir-format
 msgid "Name"
@@ -601,6 +606,7 @@ msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:321
 #: lib/kanban_web/live/board_live/members_form_component.ex:213
+#: lib/kanban_web/live/target_live/form.html.heex:27
 #, elixir-autogen, elixir-format
 msgid "Owner"
 msgstr ""
@@ -7340,4 +7346,99 @@ msgstr ""
 #: lib/kanban_web/components/targets_strip.ex:77
 #, elixir-autogen, elixir-format
 msgid "Targets"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:99
+#, elixir-autogen, elixir-format
+msgid "Assign"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "Assigned Goals"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:77
+#, elixir-autogen, elixir-format
+msgid "Available Goals"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.ex:54
+#, elixir-autogen, elixir-format
+msgid "Could not assign goal"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.ex:67
+#, elixir-autogen, elixir-format
+msgid "Could not unassign goal"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:33
+#, elixir-autogen, elixir-format
+msgid "Create Target"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Edit Target"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:50
+#, elixir-autogen, elixir-format
+msgid "Goals currently counting toward this target."
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:80
+#, elixir-autogen, elixir-format
+msgid "Goals you can add to this target."
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "New Target"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:55
+#, elixir-autogen, elixir-format
+msgid "No goals are assigned to this target yet."
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:85
+#, elixir-autogen, elixir-format
+msgid "No goals are available to assign."
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.ex:126
+#, elixir-autogen, elixir-format
+msgid "Only the target owner can edit this target"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:33
+#, elixir-autogen, elixir-format
+msgid "Save Target"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:23
+#, elixir-autogen, elixir-format
+msgid "Target Date"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.ex:96
+#, elixir-autogen, elixir-format
+msgid "Target created successfully"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.ex:80
+#, elixir-autogen, elixir-format
+msgid "Target updated successfully"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:69
+#, elixir-autogen, elixir-format
+msgid "Unassign"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:16
+#, elixir-autogen, elixir-format
+msgid "Use this form to manage delivery targets and their goals."
 msgstr ""

@@ -94,12 +94,61 @@ defmodule Kanban.Targets do
   end
 
   @doc """
+  Returns true when `user` owns `target` (`target.owner_id == user.id`).
+
+  Ownership is the authorization basis for editing a target and managing its
+  goal assignments, mirroring `Kanban.Boards.owner?/2`.
+  """
+  @spec owner?(DeliveryTarget.t(), Kanban.Accounts.User.t()) :: boolean()
+  def owner?(%DeliveryTarget{owner_id: owner_id}, %{id: user_id}), do: owner_id == user_id
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking delivery-target changes.
+
+  Mirrors `Kanban.Boards.change_board/2` so the LiveView form never builds
+  `DeliveryTarget.changeset/2` directly. `owner_id` is never cast (see
+  `DeliveryTarget.changeset/2`).
+  """
+  @spec change_target(DeliveryTarget.t(), map()) :: Ecto.Changeset.t()
+  def change_target(%DeliveryTarget{} = target, attrs \\ %{}) do
+    DeliveryTarget.changeset(target, attrs)
+  end
+
+  @doc """
+  Fetches a target the scoped user owns, by id, with `:owner` preloaded.
+
+  Unlike `get_target/2` (board-scoped through member goals), this is scoped by
+  *ownership* — so a freshly created target with no member goals is still
+  editable by its owner. Returns `{:error, :not_found}` when the target is
+  missing, owned by another user, or the scope has no user.
+  """
+  @spec get_owned_target(Scope.t() | nil, integer() | String.t()) ::
+          {:ok, DeliveryTarget.t()} | {:error, :not_found}
+  def get_owned_target(scope, id) do
+    case scope_user(scope) do
+      nil ->
+        {:error, :not_found}
+
+      %{id: user_id} ->
+        DeliveryTarget
+        |> where([dt], dt.id == ^id and dt.owner_id == ^user_id)
+        |> preload(:owner)
+        |> Repo.one()
+        |> case do
+          nil -> {:error, :not_found}
+          %DeliveryTarget{} = target -> {:ok, target}
+        end
+    end
+  end
+
+  @doc """
   Updates a delivery target's editable fields (`name`, `target_date`,
-  `description`).
+  `description`). Owner-only.
 
   Deliberately does not require the target to have accessible member goals —
   a freshly created target must be editable before any goal is assigned.
-  Returns `{:error, :not_authorized}` when there is no user on the scope.
+  Returns `{:error, :not_authorized}` when there is no user on the scope, or
+  when the scoped user is not the target's owner.
   """
   @spec update_target(Scope.t() | nil, DeliveryTarget.t(), map()) ::
           {:ok, DeliveryTarget.t()} | {:error, Ecto.Changeset.t()} | {:error, :not_authorized}
@@ -108,10 +157,14 @@ defmodule Kanban.Targets do
       nil ->
         {:error, :not_authorized}
 
-      _user ->
-        target
-        |> DeliveryTarget.changeset(attrs)
-        |> Repo.update()
+      user ->
+        if owner?(target, user) do
+          target
+          |> DeliveryTarget.changeset(attrs)
+          |> Repo.update()
+        else
+          {:error, :not_authorized}
+        end
     end
   end
 
@@ -156,6 +209,25 @@ defmodule Kanban.Targets do
   def list_member_goals(scope, %DeliveryTarget{} = target) do
     Task
     |> where([t], t.type == :goal and t.target_id == ^target.id)
+    |> BoardScope.apply_board_scope_with_column_join(scope)
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists goal-type tasks visible to `scope` that are not yet assigned to ANY
+  target — the candidates the owner can attach to `target`.
+
+  Only unassigned goals (`is_nil(target_id)`) qualify: a goal already on
+  another target is deliberately excluded so assigning here cannot silently
+  steal it from someone else's target. Reassignment requires unassigning the
+  goal from its current target first. Board scoping mirrors
+  `list_member_goals/2` exactly: a `nil` scope applies no board filter. The
+  `target` argument is retained for API symmetry with `list_member_goals/2`.
+  """
+  @spec list_assignable_goals(Scope.t() | nil, DeliveryTarget.t()) :: [Task.t()]
+  def list_assignable_goals(scope, %DeliveryTarget{} = _target) do
+    Task
+    |> where([t], t.type == :goal and is_nil(t.target_id))
     |> BoardScope.apply_board_scope_with_column_join(scope)
     |> Repo.all()
   end
