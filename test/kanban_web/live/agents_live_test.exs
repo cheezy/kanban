@@ -505,13 +505,15 @@ defmodule KanbanWeb.AgentsLiveTest do
       |> element(~s([data-agent-roster-card][data-agent-name="Claude"]))
       |> render_click()
 
-      composed_html =
-        view
-        |> element(~s([data-agent-feed-tab="completions"]))
-        |> render_click()
+      view
+      |> element(~s([data-agent-feed-tab="completions"]))
+      |> render_click()
 
       # Only Claude's completion remains: the kind filter drops the claim and
-      # the agent filter drops Codex's completion.
+      # the agent filter drops Codex's completion. Scope the identifier checks to
+      # the feed — short identifiers collide with random substrings in the full
+      # page (CSRF token, data-URIs), making a whole-page match flaky.
+      composed_html = view |> element(~s([data-agent-feed])) |> render()
       assert composed_html =~ claude_done.identifier
       refute composed_html =~ codex_done.identifier
       refute composed_html =~ ~s(data-agent-feed-kind="claim")
@@ -560,8 +562,14 @@ defmodule KanbanWeb.AgentsLiveTest do
 
       assert alice_html =~ "data-agent-filter-indicator"
       assert alice_html =~ ~s(data-selected-agent="Claude")
-      assert alice_html =~ alice_done.identifier
-      refute alice_html =~ bob_done.identifier
+
+      # Scope the identifier assertions to the feed section. Short identifiers
+      # (e.g. "W2") collide with random substrings elsewhere in the full page
+      # (CSRF token, SVG data-URIs, generated ids), making a whole-page match
+      # flaky; the feed is where the filtered events actually render.
+      feed_html = view |> element(~s([data-agent-feed])) |> render()
+      assert feed_html =~ alice_done.identifier
+      refute feed_html =~ bob_done.identifier
     end
 
     test "clicking the already-selected agent toggles the filter off",
