@@ -162,7 +162,7 @@ msgstr "正在保存..."
 msgid "You need to reauthenticate to perform sensitive actions on your account."
 msgstr "您需要重新验证才能对账户执行敏感操作。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:90
+#: lib/kanban_web/live/board_live/index.html.heex:104
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "您确定要删除此看板吗？"
@@ -208,7 +208,7 @@ msgstr "描述"
 msgid "Edit Board"
 msgstr "编辑看板"
 
-#: lib/kanban_web/live/board_live/index.html.heex:83
+#: lib/kanban_web/live/board_live/index.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr "编辑看板"
@@ -4092,7 +4092,7 @@ msgstr "刚刚"
 msgid "throughput"
 msgstr "吞吐量"
 
-#: lib/kanban_web/live/board_live/index.html.heex:65
+#: lib/kanban_web/live/board_live/index.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "%{count} active"
 msgid_plural "%{count} active"
@@ -4100,7 +4100,7 @@ msgstr[0] "%{count} 个活跃"
 
 #: lib/kanban_web/components/layouts.ex:261
 #: lib/kanban_web/live/board_live/index.html.heex:5
-#: lib/kanban_web/live/board_live/index.html.heex:62
+#: lib/kanban_web/live/board_live/index.html.heex:76
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
 #, elixir-autogen, elixir-format
@@ -4112,7 +4112,7 @@ msgstr "看板"
 msgid "Create new board"
 msgstr "创建新看板"
 
-#: lib/kanban_web/live/board_live/index.html.heex:92
+#: lib/kanban_web/live/board_live/index.html.heex:106
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "删除看板"
@@ -4710,7 +4710,7 @@ msgid "Avg cycle"
 msgstr "平均周期"
 
 #: lib/kanban_web/components/goal_sidebar.ex:58
-#: lib/kanban_web/components/targets_strip.ex:150
+#: lib/kanban_web/components/targets_strip.ex:171
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
 msgstr "完成"
@@ -7375,22 +7375,22 @@ msgstr "请输入您注册时使用的电子邮件地址，我们将发送新的
 msgid "Send confirmation link"
 msgstr "发送确认链接"
 
-#: lib/kanban_web/components/targets_strip.ex:152
+#: lib/kanban_web/components/targets_strip.ex:173
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "有风险"
 
-#: lib/kanban_web/components/targets_strip.ex:153
+#: lib/kanban_web/components/targets_strip.ex:174
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "未达成"
 
-#: lib/kanban_web/components/targets_strip.ex:151
+#: lib/kanban_web/components/targets_strip.ex:172
 #, elixir-autogen, elixir-format
 msgid "On-track"
 msgstr "正常"
 
-#: lib/kanban_web/components/targets_strip.ex:77
+#: lib/kanban_web/components/targets_strip.ex:83
 #, elixir-autogen, elixir-format
 msgid "Targets"
 msgstr "交付目标"
@@ -7440,6 +7440,8 @@ msgstr "当前计入此交付目标的目标。"
 msgid "Goals you can add to this target."
 msgstr "可以添加到此交付目标的目标。"
 
+#: lib/kanban_web/components/targets_strip.ex:105
+#: lib/kanban_web/live/board_live/index.html.heex:66
 #: lib/kanban_web/live/target_live/form.html.heex:14
 #, elixir-autogen, elixir-format
 msgid "New Target"
@@ -7495,7 +7497,7 @@ msgstr "使用此表单管理交付目标及其目标。"
 msgid "Goals in this target"
 msgstr "此交付目标中的目标"
 
-#: lib/kanban_web/live/target_live/show.html.heex:24
+#: lib/kanban_web/live/target_live/show.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "此交付目标中还没有目标。"

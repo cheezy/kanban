@@ -162,7 +162,7 @@ msgstr "Wird gespeichert..."
 msgid "You need to reauthenticate to perform sensitive actions on your account."
 msgstr "Sie müssen sich erneut authentifizieren, um sensible Aktionen in Ihrem Konto durchzuführen."
 
-#: lib/kanban_web/live/board_live/index.html.heex:90
+#: lib/kanban_web/live/board_live/index.html.heex:104
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "Sind Sie sicher, dass Sie dieses Board löschen möchten?"
@@ -208,7 +208,7 @@ msgstr "Beschreibung"
 msgid "Edit Board"
 msgstr "Board bearbeiten"
 
-#: lib/kanban_web/live/board_live/index.html.heex:83
+#: lib/kanban_web/live/board_live/index.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr "Board bearbeiten"
@@ -4095,7 +4095,7 @@ msgstr "gerade eben"
 msgid "throughput"
 msgstr "Durchsatz"
 
-#: lib/kanban_web/live/board_live/index.html.heex:65
+#: lib/kanban_web/live/board_live/index.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "%{count} active"
 msgid_plural "%{count} active"
@@ -4104,7 +4104,7 @@ msgstr[1] "%{count} aktiv"
 
 #: lib/kanban_web/components/layouts.ex:261
 #: lib/kanban_web/live/board_live/index.html.heex:5
-#: lib/kanban_web/live/board_live/index.html.heex:62
+#: lib/kanban_web/live/board_live/index.html.heex:76
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
 #, elixir-autogen, elixir-format
@@ -4116,7 +4116,7 @@ msgstr "Boards"
 msgid "Create new board"
 msgstr "Neues Board erstellen"
 
-#: lib/kanban_web/live/board_live/index.html.heex:92
+#: lib/kanban_web/live/board_live/index.html.heex:106
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "Board löschen"
@@ -4718,7 +4718,7 @@ msgid "Avg cycle"
 msgstr "Ø Zyklus"
 
 #: lib/kanban_web/components/goal_sidebar.ex:58
-#: lib/kanban_web/components/targets_strip.ex:150
+#: lib/kanban_web/components/targets_strip.ex:171
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
 msgstr "Abgeschlossen"
@@ -7435,22 +7435,22 @@ msgstr "Geben Sie die E-Mail-Adresse ein, mit der Sie sich registriert haben, un
 msgid "Send confirmation link"
 msgstr "Bestätigungslink senden"
 
-#: lib/kanban_web/components/targets_strip.ex:152
+#: lib/kanban_web/components/targets_strip.ex:173
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "Gefährdet"
 
-#: lib/kanban_web/components/targets_strip.ex:153
+#: lib/kanban_web/components/targets_strip.ex:174
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "Verpasst"
 
-#: lib/kanban_web/components/targets_strip.ex:151
+#: lib/kanban_web/components/targets_strip.ex:172
 #, elixir-autogen, elixir-format
 msgid "On-track"
 msgstr "Im Plan"
 
-#: lib/kanban_web/components/targets_strip.ex:77
+#: lib/kanban_web/components/targets_strip.ex:83
 #, elixir-autogen, elixir-format
 msgid "Targets"
 msgstr "Zielvorgaben"
@@ -7500,6 +7500,8 @@ msgstr "Ziele, die aktuell zu dieser Zielvorgabe zählen."
 msgid "Goals you can add to this target."
 msgstr "Ziele, die Sie dieser Zielvorgabe hinzufügen können."
 
+#: lib/kanban_web/components/targets_strip.ex:105
+#: lib/kanban_web/live/board_live/index.html.heex:66
 #: lib/kanban_web/live/target_live/form.html.heex:14
 #, elixir-autogen, elixir-format
 msgid "New Target"
@@ -7555,7 +7557,7 @@ msgstr "Verwenden Sie dieses Formular, um Zielvorgaben und ihre Ziele zu verwalt
 msgid "Goals in this target"
 msgstr "Ziele in dieser Zielvorgabe"
 
-#: lib/kanban_web/live/target_live/show.html.heex:24
+#: lib/kanban_web/live/target_live/show.html.heex:28
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "Noch keine Ziele in dieser Zielvorgabe."

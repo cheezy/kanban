@@ -207,6 +207,16 @@ defmodule KanbanWeb.BoardLiveTest do
       refute html =~ "data-target-card"
     end
 
+    test "renders a New Target link in the header even with zero targets", %{conn: conn} do
+      # No board or target fixtures: the header action must be reachable
+      # before any targets (or boards) exist, so the first target can be
+      # created. The targets strip is absent here, so this proves the
+      # always-visible header entry point.
+      {:ok, index_live, _html} = live(conn, ~p"/boards")
+
+      assert has_element?(index_live, ~s(a[href="/targets/new"]))
+    end
+
     test "the metrics refresh re-loads the targets strip", %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board)

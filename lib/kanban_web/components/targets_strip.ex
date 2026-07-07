@@ -15,6 +15,12 @@ defmodule KanbanWeb.TargetsStrip do
   (`def targets_strip(%{targets: []} = assigns), do: ~H""`), so a
   workspace with no targets shows no empty band above the boards grid.
 
+  When the strip does render, it closes with a trailing "New Target"
+  link (`data-new-target`) that navigates to `/targets/new`, mirroring
+  the goals strip's "New goal" affordance. Because the strip is absent
+  when there are no targets, this is only a secondary entry point — the
+  always-visible one lives in the boards index header actions.
+
   ## Progress
 
   Progress is a SINGLE fraction of completed child tasks summed across all
@@ -83,6 +89,21 @@ defmodule KanbanWeb.TargetsStrip do
       <div style="display: flex; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 0;">
         <.target_card :for={entry <- @targets} entry={entry} />
       </div>
+
+      <.link
+        navigate={~p"/targets/new"}
+        data-new-target
+        style={[
+          "flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;",
+          "padding: 4px 8px; border-radius: 4px;",
+          "background: transparent; border: 1px solid var(--line);",
+          "color: var(--ink-2); font-size: 11px; font-weight: 500;",
+          "text-decoration: none;"
+        ]}
+      >
+        <.icon name="hero-plus" class="w-2.5 h-2.5" />
+        {gettext("New Target")}
+      </.link>
     </div>
     """
   end
