@@ -7503,12 +7503,12 @@ msgstr "取消分配"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "使用此表单管理交付目标及其目标。"
 
-#: lib/kanban_web/live/target_live/show.html.heex:29
+#: lib/kanban_web/live/target_live/show.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "此交付目标中还没有目标。"
 
-#: lib/kanban_web/live/target_live/show.ex:49
+#: lib/kanban_web/live/target_live/show.ex:41
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "未找到交付目标"
@@ -7528,7 +7528,12 @@ msgstr "按子项状态显示的目标进度"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "已完成 %{done}/%{total}"
 
-#: lib/kanban_web/live/target_live/show.html.heex:24
+#: lib/kanban_web/live/target_live/show.html.heex:39
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "目标"
+
+#: lib/kanban_web/live/target_live/show.html.heex:31
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Edit target"
+msgstr "编辑交付目标"

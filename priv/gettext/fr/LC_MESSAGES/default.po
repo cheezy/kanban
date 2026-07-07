@@ -7503,12 +7503,12 @@ msgstr "Retirer"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "Utilisez ce formulaire pour gérer les cibles de livraison et leurs objectifs."
 
-#: lib/kanban_web/live/target_live/show.html.heex:29
+#: lib/kanban_web/live/target_live/show.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "Aucun objectif dans cette cible pour l'instant."
 
-#: lib/kanban_web/live/target_live/show.ex:49
+#: lib/kanban_web/live/target_live/show.ex:41
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "Cible introuvable"
@@ -7528,7 +7528,12 @@ msgstr "Progression de l'objectif par statut des enfants"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{done} sur %{total} terminés"
 
-#: lib/kanban_web/live/target_live/show.html.heex:24
+#: lib/kanban_web/live/target_live/show.html.heex:39
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "Objectif"
+
+#: lib/kanban_web/live/target_live/show.html.heex:31
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Edit target"
+msgstr "Modifier la cible"

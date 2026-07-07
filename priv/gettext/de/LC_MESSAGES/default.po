@@ -7563,12 +7563,12 @@ msgstr "Zuweisung aufheben"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "Verwenden Sie dieses Formular, um Zielvorgaben und ihre Ziele zu verwalten."
 
-#: lib/kanban_web/live/target_live/show.html.heex:29
+#: lib/kanban_web/live/target_live/show.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "Noch keine Ziele in dieser Zielvorgabe."
 
-#: lib/kanban_web/live/target_live/show.ex:49
+#: lib/kanban_web/live/target_live/show.ex:41
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "Zielvorgabe nicht gefunden"
@@ -7588,7 +7588,12 @@ msgstr "Zielfortschritt nach Status der Unterelemente"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{done} von %{total} abgeschlossen"
 
-#: lib/kanban_web/live/target_live/show.html.heex:24
+#: lib/kanban_web/live/target_live/show.html.heex:39
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "Ziel"
+
+#: lib/kanban_web/live/target_live/show.html.heex:31
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Edit target"
+msgstr "Zielvorgabe bearbeiten"

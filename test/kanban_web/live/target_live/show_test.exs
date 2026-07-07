@@ -56,6 +56,15 @@ defmodule KanbanWeb.TargetLive.ShowTest do
       assert html =~ ~p"/boards/#{board}/goals/#{goal}"
     end
 
+    test "renders an Edit link pointing to the target's edit page", %{conn: conn, user: user} do
+      target = delivery_target_fixture(user, %{name: "Q3 Launch"})
+
+      {:ok, _live, html} = live(conn, ~p"/targets/#{target}")
+
+      assert html =~ ~p"/targets/#{target}/edit"
+      assert html =~ "Edit target"
+    end
+
     test "renders the goals grid (not the empty state) when the target has member goals",
          %{conn: conn, user: user} do
       board = board_fixture(user)

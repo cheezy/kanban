@@ -7503,12 +7503,12 @@ msgstr "割り当て解除"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "このフォームでデリバリーターゲットとそのゴールを管理します。"
 
-#: lib/kanban_web/live/target_live/show.html.heex:29
+#: lib/kanban_web/live/target_live/show.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "このターゲットにはまだゴールがありません。"
 
-#: lib/kanban_web/live/target_live/show.ex:49
+#: lib/kanban_web/live/target_live/show.ex:41
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "ターゲットが見つかりません"
@@ -7528,7 +7528,12 @@ msgstr "子要素の状態別ゴール進捗"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{total} 中 %{done} 完了"
 
-#: lib/kanban_web/live/target_live/show.html.heex:24
+#: lib/kanban_web/live/target_live/show.html.heex:39
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "ゴール"
+
+#: lib/kanban_web/live/target_live/show.html.heex:31
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Edit target"
+msgstr "ターゲットを編集"

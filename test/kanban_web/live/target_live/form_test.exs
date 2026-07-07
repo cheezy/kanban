@@ -9,9 +9,12 @@ defmodule KanbanWeb.TargetLive.FormTest do
   import Kanban.TasksFixtures
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Repo
   alias Kanban.Targets
+  alias Kanban.Targets.DeliveryTarget
 
   @create_attrs %{name: "Q3 Launch", target_date: "2026-09-30", description: "ship it"}
+  @update_attrs %{name: "Renamed Launch", target_date: "2026-12-31", description: "revised scope"}
   @invalid_attrs %{name: nil, target_date: nil, description: nil}
 
   defp goal_fixture(column, attrs) do
@@ -48,6 +51,21 @@ defmodule KanbanWeb.TargetLive.FormTest do
       assert html =~ "Target created successfully"
       assert html =~ "Assigned Goals"
     end
+
+    test "submitting invalid input re-renders the form and creates no target",
+         %{conn: conn} do
+      {:ok, form_live, _html} = live(conn, ~p"/targets/new")
+
+      html =
+        form_live
+        |> form("#target-form", delivery_target: @invalid_attrs)
+        |> render_submit()
+
+      assert html =~ "can&#39;t be blank"
+      # Still on the form (no redirect happened) and nothing was persisted.
+      assert form_live.module == KanbanWeb.TargetLive.Form
+      assert Repo.aggregate(DeliveryTarget, :count) == 0
+    end
   end
 
   describe "edit" do
@@ -60,6 +78,78 @@ defmodule KanbanWeb.TargetLive.FormTest do
       assert html =~ target.name
       assert html =~ user.email
       assert html =~ "Available Goals"
+    end
+
+    test "the owner edits the scalar fields, persisting them and redirecting to /boards",
+         %{conn: conn, user: user} do
+      target = delivery_target_fixture(user, %{name: "Original"})
+      {:ok, form_live, _html} = live(conn, ~p"/targets/#{target}/edit")
+
+      {:ok, _boards_live, html} =
+        form_live
+        |> form("#target-form", delivery_target: @update_attrs)
+        |> render_submit()
+        |> follow_redirect(conn, ~p"/boards")
+
+      assert html =~ "Target updated successfully"
+
+      scope = Scope.for_user(user)
+      {:ok, updated} = Targets.get_owned_target(scope, target.id)
+      assert updated.name == "Renamed Launch"
+      assert updated.target_date == ~D[2026-12-31]
+      assert updated.description == "revised scope"
+    end
+
+    test "submitting invalid edits re-renders the form and leaves the target unchanged",
+         %{conn: conn, user: user} do
+      target = delivery_target_fixture(user, %{name: "Keep Me"})
+      {:ok, form_live, _html} = live(conn, ~p"/targets/#{target}/edit")
+
+      html =
+        form_live
+        |> form("#target-form", delivery_target: @invalid_attrs)
+        |> render_submit()
+
+      assert html =~ "can&#39;t be blank"
+      assert form_live.module == KanbanWeb.TargetLive.Form
+
+      scope = Scope.for_user(user)
+      {:ok, reloaded} = Targets.get_owned_target(scope, target.id)
+      assert reloaded.name == "Keep Me"
+    end
+
+    test "flashes an error when assigning a goal on an inaccessible board",
+         %{conn: conn, user: user} do
+      target = delivery_target_fixture(user)
+
+      other = user_fixture()
+      other_board = board_fixture(other)
+      other_column = column_fixture(other_board)
+      other_goal = goal_fixture(other_column, %{title: "Off-limits"})
+
+      {:ok, form_live, _html} = live(conn, ~p"/targets/#{target}/edit")
+
+      html = render_hook(form_live, "assign_goal", %{"goal_id" => to_string(other_goal.id)})
+
+      assert html =~ "Could not assign goal"
+      scope = Scope.for_user(user)
+      assert Targets.list_member_goals(scope, target) == []
+    end
+
+    test "flashes an error when unassigning a goal on an inaccessible board",
+         %{conn: conn, user: user} do
+      target = delivery_target_fixture(user)
+
+      other = user_fixture()
+      other_board = board_fixture(other)
+      other_column = column_fixture(other_board)
+      other_goal = goal_fixture(other_column, %{title: "Off-limits"})
+
+      {:ok, form_live, _html} = live(conn, ~p"/targets/#{target}/edit")
+
+      html = render_hook(form_live, "unassign_goal", %{"goal_id" => to_string(other_goal.id)})
+
+      assert html =~ "Could not unassign goal"
     end
 
     test "a non-owner is redirected to /boards with an error flash", %{conn: conn} do
@@ -113,6 +203,21 @@ defmodule KanbanWeb.TargetLive.FormTest do
       assert has_element?(form_live, "#assignable-goal-#{goal.id}")
       refute has_element?(form_live, "#member-goal-#{goal.id}")
       assert Targets.list_member_goals(scope, target) == []
+    end
+  end
+
+  describe "anonymous" do
+    test "the new form redirects to the login page", %{conn: conn} do
+      assert {:error, {:redirect, %{to: to}}} = live(conn, ~p"/targets/new")
+      assert to =~ "/users/log-in"
+    end
+
+    test "the edit form redirects to the login page", %{conn: conn} do
+      user = user_fixture()
+      target = delivery_target_fixture(user)
+
+      assert {:error, {:redirect, %{to: to}}} = live(conn, ~p"/targets/#{target}/edit")
+      assert to =~ "/users/log-in"
     end
   end
 end
