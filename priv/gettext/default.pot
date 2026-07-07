@@ -4537,6 +4537,7 @@ msgid "%{done} of %{total} complete"
 msgstr ""
 
 #: lib/kanban_web/components/goal_progress_header.ex:111
+#: lib/kanban_web/components/target_goal_row.ex:69
 #, elixir-autogen, elixir-format
 msgid "Goal progress by child status"
 msgstr ""
@@ -4547,6 +4548,7 @@ msgid "priority"
 msgstr ""
 
 #: lib/kanban_web/components/goal_child_row.ex:85
+#: lib/kanban_web/components/target_goal_row.ex:96
 #, elixir-autogen, elixir-format
 msgid "unassigned"
 msgstr ""
@@ -7483,4 +7485,9 @@ msgstr ""
 #: lib/kanban_web/components/target_progress_header.ex:105
 #, elixir-autogen, elixir-format
 msgid "Target progress by child status"
+msgstr ""
+
+#: lib/kanban_web/components/target_goal_row.ex:72
+#, elixir-autogen, elixir-format
+msgid "%{done} of %{total} (%{pct}%)"
 msgstr ""
