@@ -158,4 +158,6 @@ defmodule Kanban.Tasks do
   defdelegate reprioritize_preview(scope, goal), to: Interventions
   defdelegate reassign_goal_unstarted(scope, goal, new_assigned_to_id), to: Interventions
   defdelegate reprioritize_goal_unstarted(scope, goal, new_priority), to: Interventions
+  defdelegate undo_reassignment(scope, goal, restorations), to: Interventions
+  defdelegate undo_reprioritization(scope, goal, restorations), to: Interventions
 end

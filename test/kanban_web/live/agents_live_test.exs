@@ -2096,6 +2096,158 @@ defmodule KanbanWeb.AgentsLiveTest do
     end
   end
 
+  describe "undo window" do
+    setup [:register_and_log_in_user]
+
+    test "a successful reassign arms the Undo affordance",
+         %{conn: conn, user: user} do
+      %{goal: goal, board: board, ready: ready} = at_risk_goal_with_children(user)
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, user)
+      _ready_child = task_fixture(ready, %{parent_id: goal.id})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      html =
+        view
+        |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+        |> render_submit()
+
+      assert html =~ "data-undo-affordance"
+      assert has_element?(view, "[data-undo-trigger]")
+    end
+
+    test "undo restores the prior owner for the moved set via the context op",
+         %{conn: conn, user: user} do
+      %{goal: goal, board: board, ready: ready} = at_risk_goal_with_children(user)
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, user)
+      ready_child = task_fixture(ready, %{parent_id: goal.id})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      view
+      |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+      |> render_submit()
+
+      # Reassigned to `other`; now undo returns them to the prior (nil) owner.
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == other.id
+
+      html = view |> element("[data-undo-trigger]") |> render_click()
+
+      assert html =~ "Undone"
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == nil
+      assert Repo.get!(Kanban.Tasks.Task, ready_child.id).assigned_to_id == nil
+      # Affordance is gone after the undo.
+      refute has_element?(view, "[data-undo-affordance]")
+    end
+
+    test "undo restores each moved task's own prior priority, not a flattened value",
+         %{conn: conn, user: user} do
+      # Goal defaults to :medium; the child starts at :low — distinct priors so a
+      # per-task restore is observably different from a goal-level flatten.
+      %{goal: goal, ready: ready} = at_risk_goal_with_children(user)
+      ready_child = task_fixture(ready, %{parent_id: goal.id, priority: :low})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reprioritize-trigger="#{goal.id}"])) |> render_click()
+
+      view
+      |> form("#reprioritize-form", %{"priority" => "critical"})
+      |> render_submit()
+
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).priority == :critical
+      assert Repo.get!(Kanban.Tasks.Task, ready_child.id).priority == :critical
+
+      html = view |> element("[data-undo-trigger]") |> render_click()
+
+      assert html =~ "Undone"
+      # Each task returns to ITS OWN prior: goal :medium, child :low.
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).priority == :medium
+      assert Repo.get!(Kanban.Tasks.Task, ready_child.id).priority == :low
+    end
+
+    test "undo surfaces a moved task that was claimed since and cannot be restored",
+         %{conn: conn, user: user} do
+      %{goal: goal, board: board, ready: ready, backlog: backlog} =
+        at_risk_goal_with_children(user)
+
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, user)
+      _ready_child = task_fixture(ready, %{parent_id: goal.id})
+      claimed_child = task_fixture(backlog, %{parent_id: goal.id})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      view
+      |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+      |> render_submit()
+
+      # After the reassign, one moved child is claimed (status :in_progress), so
+      # the undo op re-reads it as no longer eligible and cannot restore it.
+      {1, _} =
+        from(t in Kanban.Tasks.Task, where: t.id == ^claimed_child.id)
+        |> Repo.update_all(set: [status: :in_progress])
+
+      html = view |> element("[data-undo-trigger]") |> render_click()
+
+      assert html =~ "Could not restore"
+      assert html =~ claimed_child.identifier
+      # The claimed task keeps its reassigned owner (not force-reverted).
+      assert Repo.get!(Kanban.Tasks.Task, claimed_child.id).assigned_to_id == other.id
+    end
+
+    test "the Undo affordance disappears after the bounded window elapses",
+         %{conn: conn, user: user} do
+      # Shrink the window so the scheduled clear fires within the test.
+      Application.put_env(:kanban, :undo_window_ms, 40)
+      on_exit(fn -> Application.delete_env(:kanban, :undo_window_ms) end)
+
+      %{goal: goal, board: board} = at_risk_goal_with_children(user)
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, user)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      view
+      |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+      |> render_submit()
+
+      assert has_element?(view, "[data-undo-affordance]")
+
+      Process.sleep(80)
+
+      # A subsequent render reflects the timed clear; the affordance is gone.
+      refute render(view) =~ "data-undo-affordance"
+    end
+
+    test "clicking undo again after it was applied is a harmless no-op",
+         %{conn: conn, user: user} do
+      %{goal: goal, board: board} = at_risk_goal_with_children(user)
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, user)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      view
+      |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+      |> render_submit()
+
+      view |> element("[data-undo-trigger]") |> render_click()
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == nil
+
+      # Snapshot cleared — a stale/forged second undo does nothing and does not crash.
+      render_click(view, "undo_intervention")
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == nil
+      refute has_element?(view, "[data-undo-affordance]")
+    end
+  end
+
   # Builds an at-risk target with a stalled agent on a fresh goal, plus Backlog
   # and Ready columns for not-started children, all owned by `owner`. Returns the
   # goal and the columns so a test can attach children in specific states.

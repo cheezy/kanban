@@ -39,6 +39,12 @@ defmodule KanbanWeb.AgentsLive do
   @refresh_debounce_ms 250
   @presence_topic "agents"
 
+  # How long the Undo affordance for a reassign/reprioritize stays live before it
+  # is cleared. Read at runtime (not a compile-time attr) so tests can shorten the
+  # window; a bounded window keeps a stale prior-state snapshot from being
+  # replayed indefinitely.
+  @default_undo_window_ms 8_000
+
   # The detail-panel category keys that can be collapsed/expanded. Used both to
   # seed the all-expanded default and to validate an incoming toggle payload so
   # the event can only flip a known section's view state (never an arbitrary
@@ -66,6 +72,7 @@ defmodule KanbanWeb.AgentsLive do
        time_range: :all_time,
        reassign: nil,
        reprioritize: nil,
+       undo: nil,
        boards: Boards.list_boards(socket.assigns.current_scope.user)
      })
      |> load_agents_data()}
@@ -235,9 +242,32 @@ defmodule KanbanWeb.AgentsLive do
   def handle_event("confirm_reprioritize", _params, socket), do: {:noreply, socket}
 
   @impl true
+  def handle_event(
+        "undo_intervention",
+        _params,
+        %{assigns: %{undo: %{} = undo}} = socket
+      ) do
+    {:noreply, commit_undo(socket, undo)}
+  end
+
+  # The window elapsed (snapshot cleared) or a forged click with no snapshot — ignore.
+  @impl true
+  def handle_event("undo_intervention", _params, socket), do: {:noreply, socket}
+
+  @impl true
   def handle_info({:agent_event, _payload}, socket) do
     {:noreply, maybe_schedule_refresh(socket)}
   end
+
+  # Clear the Undo affordance when its bounded window elapses. The token guards
+  # against a stale timer from an earlier intervention clearing a newer snapshot.
+  @impl true
+  def handle_info({:clear_undo, token}, %{assigns: %{undo: %{token: token}}} = socket) do
+    {:noreply, assign(socket, :undo, nil)}
+  end
+
+  @impl true
+  def handle_info({:clear_undo, _token}, socket), do: {:noreply, socket}
 
   @impl true
   def handle_info(:refresh_agents_data, socket) do
@@ -288,6 +318,7 @@ defmodule KanbanWeb.AgentsLive do
 
         <.reassign_dialog reassign={@reassign} />
         <.reprioritize_dialog reprioritize={@reprioritize} />
+        <.undo_affordance undo={@undo} />
 
         <div data-agents-second-tier class="flex-1 min-h-0 flex flex-col">
           <div
@@ -569,15 +600,21 @@ defmodule KanbanWeb.AgentsLive do
     scope = socket.assigns.current_scope
 
     case Tasks.reassign_goal_unstarted(scope, goal, assigned_to_id) do
-      {:ok, result} -> {:noreply, reassign_succeeded(socket, result)}
+      {:ok, result} -> {:noreply, reassign_succeeded(socket, goal, result)}
       {:error, reason} -> {:noreply, reassign_failed(socket, reason)}
     end
   end
 
-  defp reassign_succeeded(socket, %{moved: moved, skipped: skipped}) do
+  # The pre-write goal + preview children still carry each task's original owner,
+  # so they seed the per-task undo snapshot (matched by id against the moved set).
+  defp reassign_succeeded(socket, goal, %{moved: moved, skipped: skipped}) do
+    restorations =
+      intervention_restorations([goal | socket.assigns.reassign.children], moved, :assigned_to_id)
+
     socket
     |> assign(:reassign, nil)
     |> put_flash(:info, reassign_flash(moved, skipped))
+    |> arm_undo(:reassign, goal, restorations)
     |> load_agents_data()
   end
 
@@ -655,15 +692,22 @@ defmodule KanbanWeb.AgentsLive do
     scope = socket.assigns.current_scope
 
     case Tasks.reprioritize_goal_unstarted(scope, goal, priority) do
-      {:ok, result} -> {:noreply, reprioritize_succeeded(socket, result)}
+      {:ok, result} -> {:noreply, reprioritize_succeeded(socket, goal, result)}
       {:error, reason} -> {:noreply, reprioritize_failed(socket, reason)}
     end
   end
 
-  defp reprioritize_succeeded(socket, %{moved: moved, skipped: skipped}) do
+  # The pre-write goal + preview children still carry each task's original
+  # priority, so they seed the per-task undo snapshot (matched by id to the moved
+  # set).
+  defp reprioritize_succeeded(socket, goal, %{moved: moved, skipped: skipped}) do
+    restorations =
+      intervention_restorations([goal | socket.assigns.reprioritize.children], moved, :priority)
+
     socket
     |> assign(:reprioritize, nil)
     |> put_flash(:info, reprioritize_flash(moved, skipped))
+    |> arm_undo(:reprioritize, goal, restorations)
     |> load_agents_data()
   end
 
@@ -719,6 +763,133 @@ defmodule KanbanWeb.AgentsLive do
 
     moved_msg <> " " <> skipped_msg
   end
+
+  # Builds the per-task undo snapshot from the pre-write goal + preview children
+  # (which still carry each task's ORIGINAL value) matched by id against the set
+  # the op actually moved, so the undo restores each task to *its own* prior
+  # `field` value — not one flattened goal-level value.
+  defp intervention_restorations(prior_tasks, moved, field) do
+    prior_by_id = Map.new(prior_tasks, &{&1.id, Map.fetch!(&1, field)})
+
+    Enum.map(moved, fn task ->
+      %{id: task.id, identifier: task.identifier, prior: Map.get(prior_by_id, task.id)}
+    end)
+  end
+
+  # Snapshots the per-task restorations (id + identifier + that task's own prior
+  # value) and schedules the bounded-window clear. A fresh token per arming lets
+  # the timed clear ignore snapshots superseded by a later intervention.
+  defp arm_undo(socket, op, goal, restorations) do
+    token = make_ref()
+    Process.send_after(self(), {:clear_undo, token}, undo_window_ms())
+
+    assign(socket, :undo, %{op: op, goal_id: goal.id, restorations: restorations, token: token})
+  end
+
+  # Reverts exactly the snapshotted moved set to each task's own prior value via
+  # the set-scoped undo context op (never the goal's broader current not-started
+  # set, so a task that did not move is untouched). The op re-checks
+  # can_intervene?/2 and board scope and re-reads under a row lock, so a
+  # now-unauthorized user or a since-claimed task is refused/skipped rather than
+  # force-reverted. Anything from the moved set the op could not restore (claimed
+  # since — moved out of the not-started columns, so the op never sees it) is
+  # surfaced, not silently dropped.
+  defp commit_undo(socket, %{op: op, goal_id: goal_id, restorations: restorations}) do
+    scope = socket.assigns.current_scope
+    # Re-read the goal fresh: the snapshot's struct holds the pre-intervention
+    # field value, so building the revert changeset from it would be an empty
+    # (no-op) change. The fresh row carries the intervention's new value, so
+    # setting it back to its prior is a real update.
+    goal = Tasks.get_task!(goal_id)
+
+    case undo_op(op, scope, goal, restorations) do
+      {:ok, result} -> undo_succeeded(socket, result, restorations)
+      {:error, reason} -> undo_failed(socket, reason)
+    end
+  end
+
+  # `restored` is what the undo op actually re-read and reverted; any task from
+  # the moved snapshot missing from it was claimed since and is surfaced.
+  defp undo_succeeded(socket, %{moved: restored}, restorations) do
+    restored_ids = MapSet.new(restored, & &1.id)
+    unrestorable = Enum.reject(restorations, &MapSet.member?(restored_ids, &1.id))
+
+    socket
+    |> assign(:undo, nil)
+    |> put_flash(:info, undo_flash(restored, unrestorable))
+    |> load_agents_data()
+  end
+
+  defp undo_failed(socket, reason) do
+    socket
+    |> assign(:undo, nil)
+    |> put_flash(:error, undo_error_flash(reason))
+  end
+
+  defp undo_op(:reassign, scope, goal, restorations),
+    do: Tasks.undo_reassignment(scope, goal, restorations)
+
+  defp undo_op(:reprioritize, scope, goal, restorations),
+    do: Tasks.undo_reprioritization(scope, goal, restorations)
+
+  defp undo_flash(restored, []) do
+    ngettext(
+      "Undone: restored %{count} task.",
+      "Undone: restored %{count} tasks.",
+      length(restored)
+    )
+  end
+
+  defp undo_flash(restored, unrestorable) do
+    ids = Enum.map_join(unrestorable, ", ", & &1.identifier)
+
+    restored_msg =
+      ngettext(
+        "Undone: restored %{count} task.",
+        "Undone: restored %{count} tasks.",
+        length(restored)
+      )
+
+    unrestorable_msg =
+      ngettext(
+        "Could not restore %{count} task claimed since: %{ids}.",
+        "Could not restore %{count} tasks claimed since: %{ids}.",
+        length(unrestorable),
+        ids: ids
+      )
+
+    restored_msg <> " " <> unrestorable_msg
+  end
+
+  defp undo_error_flash(:unauthorized),
+    do: gettext("You are no longer allowed to undo this change.")
+
+  defp undo_error_flash(_reason), do: gettext("Could not undo the change. Please try again.")
+
+  defp undo_window_ms, do: Application.get_env(:kanban, :undo_window_ms, @default_undo_window_ms)
+
+  attr :undo, :map, default: nil
+
+  # The time-boxed Undo affordance shown after a successful reassign/reprioritize.
+  # Rendered only while the snapshot is live (cleared on undo or when the window
+  # elapses); clicking it reverts the moved set via commit_undo/2.
+  defp undo_affordance(assigns) do
+    ~H"""
+    <div
+      :if={@undo}
+      data-undo-affordance
+      class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-lg border border-base-300 bg-base-100 px-4 py-2 shadow-lg"
+    >
+      <span class="text-sm text-base-content">{undo_prompt(@undo.op)}</span>
+      <.button type="button" phx-click="undo_intervention" data-undo-trigger variant="primary">
+        {gettext("Undo")}
+      </.button>
+    </div>
+    """
+  end
+
+  defp undo_prompt(:reassign), do: gettext("Goal reassigned.")
+  defp undo_prompt(:reprioritize), do: gettext("Goal reprioritized.")
 
   attr :reassign, :map, default: nil
 

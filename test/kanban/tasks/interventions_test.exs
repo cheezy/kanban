@@ -552,6 +552,138 @@ defmodule Kanban.Tasks.InterventionsTest do
     end
   end
 
+  describe "undo_reassignment/3" do
+    setup do
+      owner = user_fixture()
+      assignee = user_fixture()
+      original = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, assignee, :modify, owner)
+      {:ok, _} = Boards.add_user_to_board(board, original, :modify, owner)
+      cols = board |> Columns.list_columns() |> Map.new(&{&1.name, &1})
+      goal = task_fixture(cols["Ready"], %{type: :goal})
+
+      %{
+        owner: owner,
+        assignee: assignee,
+        original: original,
+        cols: cols,
+        goal: goal,
+        scope: Scope.for_user(owner)
+      }
+    end
+
+    test "restores each task to its own prior owner", ctx do
+      %{cols: cols, goal: goal, original: original, scope: scope} = ctx
+      # Heterogeneous priors: goal unassigned, child owned by `original`.
+      child = task_fixture(cols["Backlog"], %{parent_id: goal.id, assigned_to_id: original.id})
+
+      restorations = [
+        %{id: goal.id, prior: nil},
+        %{id: child.id, prior: original.id}
+      ]
+
+      assert {:ok, %{moved: moved, skipped: []}} =
+               Interventions.undo_reassignment(scope, reload(goal), restorations)
+
+      assert length(moved) == 2
+      assert reload(goal).assigned_to_id == nil
+      assert reload(child).assigned_to_id == original.id
+    end
+
+    test "touches only the ids in the restoration set", ctx do
+      %{cols: cols, goal: goal, original: original, scope: scope} = ctx
+
+      moved_child =
+        task_fixture(cols["Backlog"], %{parent_id: goal.id, assigned_to_id: original.id})
+
+      # A sibling not-started child that was never part of the moved set.
+      bystander = task_fixture(cols["Ready"], %{parent_id: goal.id, assigned_to_id: original.id})
+
+      restorations = [%{id: goal.id, prior: nil}, %{id: moved_child.id, prior: nil}]
+
+      assert {:ok, _} = Interventions.undo_reassignment(scope, reload(goal), restorations)
+
+      assert reload(moved_child).assigned_to_id == nil
+      # The bystander keeps its owner — undo never widened to the goal's set.
+      assert reload(bystander).assigned_to_id == original.id
+    end
+
+    test "skips a moved child claimed since and surfaces it, restoring the rest", ctx do
+      %{cols: cols, goal: goal, original: original, scope: scope} = ctx
+
+      open_child =
+        task_fixture(cols["Backlog"], %{parent_id: goal.id, assigned_to_id: original.id})
+
+      claimed_child =
+        task_fixture(cols["Ready"], %{
+          parent_id: goal.id,
+          assigned_to_id: original.id,
+          status: :in_progress
+        })
+
+      restorations = [
+        %{id: goal.id, prior: nil},
+        %{id: open_child.id, prior: nil},
+        %{id: claimed_child.id, prior: nil}
+      ]
+
+      assert {:ok, %{moved: moved, skipped: skipped}} =
+               Interventions.undo_reassignment(scope, reload(goal), restorations)
+
+      moved_ids = Enum.map(moved, & &1.id)
+      assert open_child.id in moved_ids
+      refute claimed_child.id in moved_ids
+      assert Enum.map(skipped, & &1.id) == [claimed_child.id]
+
+      assert reload(open_child).assigned_to_id == nil
+      # The claimed child is left as-is (still owned by `original`).
+      assert reload(claimed_child).assigned_to_id == original.id
+    end
+
+    test "returns {:error, :unauthorized} for a scope that cannot intervene", ctx do
+      %{goal: goal} = ctx
+      stranger = Scope.for_user(user_fixture())
+
+      assert {:error, :unauthorized} =
+               Interventions.undo_reassignment(stranger, reload(goal), [
+                 %{id: goal.id, prior: nil}
+               ])
+    end
+  end
+
+  describe "undo_reprioritization/3" do
+    setup do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+      cols = board |> Columns.list_columns() |> Map.new(&{&1.name, &1})
+      goal = task_fixture(cols["Ready"], %{type: :goal, priority: :medium})
+
+      %{cols: cols, goal: goal, scope: Scope.for_user(owner)}
+    end
+
+    test "restores each task to its own prior priority", ctx do
+      %{cols: cols, goal: goal, scope: scope} = ctx
+      # Both currently :critical (as if a reprioritize had just run); restore to
+      # distinct priors per task.
+      child =
+        task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :critical})
+
+      {1, _} =
+        from(t in Task, where: t.id == ^goal.id)
+        |> Repo.update_all(set: [priority: :critical])
+
+      restorations = [%{id: goal.id, prior: :medium}, %{id: child.id, prior: :low}]
+
+      assert {:ok, %{moved: moved}} =
+               Interventions.undo_reprioritization(scope, reload(goal), restorations)
+
+      assert length(moved) == 2
+      assert reload(goal).priority == :medium
+      assert reload(child).priority == :low
+    end
+  end
+
   defp reload(%Task{id: id}), do: Repo.get!(Task, id)
 
   defp assignment_to(task_id) do

@@ -218,6 +218,41 @@ defmodule Kanban.Tasks.Interventions do
     end
   end
 
+  @doc """
+  Restores a specific, previously-moved set of tasks to their prior
+  `assigned_to_id` — the undo of `reassign_goal_unstarted/3`.
+
+  `restorations` is a list of `%{id: task_id, prior: prior_assigned_to_id}` (the
+  goal's own entry included). Unlike the forward op, this touches **exactly** the
+  given ids — never the goal's current not-started set — and restores each task
+  to **its own** prior value, so a task that never moved (a since-added child, or
+  one that was skipped originally) is never affected. Only ids still on a
+  Backlog/Ready column with status `:open` are restored (the goal itself is
+  always restored); any that were claimed/moved since are surfaced in `:skipped`.
+  Assignment history is recorded for each restored task. Gated by
+  `can_intervene?/2`; the caller supplies the authoritative server-side snapshot.
+
+  Returns `{:ok, %{moved: restored, skipped: unrestorable}}` or
+  `{:error, :unauthorized}`.
+  """
+  @spec undo_reassignment(Scope.t() | nil, Task.t(), [%{id: integer(), prior: integer() | nil}]) ::
+          {:ok, %{moved: [Task.t()], skipped: [Task.t()]}} | {:error, :unauthorized}
+  def undo_reassignment(scope, %Task{} = goal, restorations) do
+    run_undo(scope, goal, restorations, :assigned_to_id)
+  end
+
+  @doc """
+  Restores a specific, previously-moved set of tasks to their prior `priority` —
+  the undo of `reprioritize_goal_unstarted/3`. Same set-scoped, per-task
+  semantics and return shape as `undo_reassignment/3`; priority-change history is
+  recorded for each restored task.
+  """
+  @spec undo_reprioritization(Scope.t() | nil, Task.t(), [%{id: integer(), prior: atom()}]) ::
+          {:ok, %{moved: [Task.t()], skipped: [Task.t()]}} | {:error, :unauthorized}
+  def undo_reprioritization(scope, %Task{} = goal, restorations) do
+    run_undo(scope, goal, restorations, :priority)
+  end
+
   defp validate_priority(priority) when priority in @allowed_priorities, do: {:ok, priority}
 
   defp validate_priority(priority) when is_binary(priority) do
@@ -263,6 +298,65 @@ defmodule Kanban.Tasks.Interventions do
   defp read_candidates(repo, goal) do
     goal.id
     |> not_started_children_query()
+    |> repo.all()
+  end
+
+  # The undo write. Restores each task to its own prior value (per-task, from the
+  # snapshot) and reads only the snapshot's moved child ids — never the goal's
+  # broader current not-started set — so a task that never moved is never
+  # touched. Reuses the same candidate re-read (FOR UPDATE), partition, changeset
+  # + history reduce, and finalize as the forward ops; the goal is always
+  # restored, since-claimed children fall into `:skipped`. No assignee
+  # board-membership check: the prior value is a known-good historical state the
+  # authorized actor is reverting to, not a fresh off-board assignment.
+  defp run_undo(scope, goal, restorations, field) do
+    if can_intervene?(scope, goal) do
+      priors = Map.new(restorations, &{&1.id, &1.prior})
+      child_ids = restorations |> Enum.map(& &1.id) |> Enum.reject(&(&1 == goal.id))
+      {item_changeset, history} = undo_changeset_and_history(field, priors)
+      undo_transaction(goal, child_ids, item_changeset, history)
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  defp undo_transaction(goal, child_ids, item_changeset, history) do
+    Multi.new()
+    |> Multi.run(:candidates, fn repo, _changes ->
+      {:ok, read_moved_children(repo, goal, child_ids)}
+    end)
+    |> Multi.merge(fn %{candidates: candidates} ->
+      {eligible, _skipped} = partition_candidates(candidates)
+      changes_multi(goal, eligible, item_changeset, history)
+    end)
+    |> Repo.transaction()
+    |> finalize_intervention()
+  end
+
+  defp undo_changeset_and_history(:assigned_to_id, priors) do
+    changeset = fn task -> assign_changeset(task, Map.fetch!(priors, task.id)) end
+
+    history = fn task ->
+      assignment_history(task.id, task.assigned_to_id, Map.fetch!(priors, task.id))
+    end
+
+    {changeset, history}
+  end
+
+  defp undo_changeset_and_history(:priority, priors) do
+    changeset = fn task -> priority_changeset(task, Map.fetch!(priors, task.id)) end
+
+    history = fn task ->
+      priority_history(task.id, task.priority, Map.fetch!(priors, task.id))
+    end
+
+    {changeset, history}
+  end
+
+  defp read_moved_children(repo, goal, child_ids) do
+    goal.id
+    |> not_started_children_query()
+    |> where([t], t.id in ^child_ids)
     |> repo.all()
   end
 
