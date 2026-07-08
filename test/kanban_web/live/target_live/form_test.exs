@@ -80,7 +80,7 @@ defmodule KanbanWeb.TargetLive.FormTest do
       assert html =~ "Available Goals"
     end
 
-    test "the hide-archived checkbox removes and restores archived goals in Available Goals",
+    test "the hide-archived checkbox defaults to checked, hiding archived goals, and toggles them",
          %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board)
@@ -94,18 +94,19 @@ defmodule KanbanWeb.TargetLive.FormTest do
       live_row = "[data-assignable-goals] #target-goal-manage-row-#{live_goal.id}"
       archived_row = "[data-assignable-goals] #target-goal-manage-row-#{archived_goal.id}"
 
-      # Default: archived goals are shown (behaviour unchanged).
-      assert has_element?(form_live, live_row)
-      assert has_element?(form_live, archived_row)
-
-      # Checking the box hides the archived goal but keeps the live one.
-      form_live |> element("[data-hide-archived-toggle]") |> render_click()
+      # Default: the checkbox is checked, so archived goals are hidden.
+      assert has_element?(form_live, "[data-hide-archived-toggle][checked]")
       assert has_element?(form_live, live_row)
       refute has_element?(form_live, archived_row)
 
-      # Unchecking restores it.
+      # Unchecking the box reveals the archived goal alongside the live one.
       form_live |> element("[data-hide-archived-toggle]") |> render_click()
+      assert has_element?(form_live, live_row)
       assert has_element?(form_live, archived_row)
+
+      # Re-checking hides it again.
+      form_live |> element("[data-hide-archived-toggle]") |> render_click()
+      refute has_element?(form_live, archived_row)
     end
 
     test "the owner edits the scalar fields, persisting them and redirecting to /boards",

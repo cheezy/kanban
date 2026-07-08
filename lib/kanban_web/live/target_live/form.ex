@@ -8,7 +8,7 @@ defmodule KanbanWeb.TargetLive.Form do
 
   @impl true
   def mount(params, _session, socket) do
-    socket = assign(socket, member_goals: [], assignable_goals: [], hide_archived: false)
+    socket = assign(socket, member_goals: [], assignable_goals: [], hide_archived: true)
     {:ok, apply_action(socket, socket.assigns.live_action, params)}
   end
 
