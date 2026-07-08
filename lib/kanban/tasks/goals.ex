@@ -107,6 +107,34 @@ defmodule Kanban.Tasks.Goals do
   def promote_goal_to_ready(%Task{}, _board_id), do: {:error, :not_a_goal}
 
   @doc """
+  Returns the goal awaiting its `after_goal` for a completing task on `board_id`,
+  or `nil` when no after_goal is armed. Read-only — performs no state transition.
+
+  An after_goal is "armed" when the relevant goal's `after_goal_status` is
+  `:pending`: its last child has completed and the agent-run `## after_goal`
+  section is awaited (the `/after_goal` PATCH or the grace worker later flips it
+  to `:succeeded`, after which this returns `nil`). Accepts either the completing
+  child task — resolving its parent goal — or a goal task directly. The `board_id`
+  scopes the derived-parent lookup exactly like the sibling `get_task_tree/2`, so
+  a goal on another board can never be surfaced.
+
+  Backs `GET /api/tasks/:id/after_goal_status` so the Stride hook can decide
+  whether to run `## after_goal` without parsing the large, truncatable
+  `/complete` response.
+  """
+  def after_goal_armed_goal(%Task{type: :goal, after_goal_status: :pending} = goal, _board_id),
+    do: goal
+
+  def after_goal_armed_goal(%Task{parent_id: parent_id}, board_id) when is_integer(parent_id) do
+    case Queries.get_task_for_board(parent_id, board_id) do
+      %Task{type: :goal, after_goal_status: :pending} = goal -> goal
+      _ -> nil
+    end
+  end
+
+  def after_goal_armed_goal(%Task{}, _board_id), do: nil
+
+  @doc """
   Marks a goal's after_goal lifecycle as `:succeeded` and promotes the
   goal to its Done column. Called by:
 

@@ -82,6 +82,7 @@ defmodule KanbanWeb.Router do
     get "/tasks/:id/dependencies", TaskController, :dependencies
     get "/tasks/:id/dependents", TaskController, :dependents
     get "/tasks/:id/tree", TaskController, :tree
+    get "/tasks/:id/after_goal_status", TaskController, :after_goal_status
     resources "/tasks", TaskController, only: [:index, :show, :create, :update]
   end
 

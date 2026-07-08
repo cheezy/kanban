@@ -398,4 +398,137 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
       assert_enqueued(worker: GraceWorker, args: %{"goal_id" => goal.id})
     end
   end
+
+  defp create_goal_with_two_children(ctx) do
+    %{user: user, doing_column: doing_column} = ctx
+
+    {:ok, goal} =
+      Tasks.create_task(doing_column, %{
+        "title" => "Goal-#{System.unique_integer([:positive])}",
+        "type" => "goal",
+        "created_by_id" => user.id
+      })
+
+    child_attrs = fn title ->
+      %{
+        "title" => title,
+        "status" => "in_progress",
+        "needs_review" => false,
+        "claimed_at" => DateTime.utc_now(),
+        "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+        "assigned_to_id" => user.id,
+        "created_by_id" => user.id,
+        "parent_id" => goal.id
+      }
+    end
+
+    {:ok, child_a} = Tasks.create_task(doing_column, child_attrs.("Child A"))
+    {:ok, child_b} = Tasks.create_task(doing_column, child_attrs.("Child B"))
+    %{goal: goal, child_a: child_a, child_b: child_b}
+  end
+
+  describe "GET /api/tasks/:id/after_goal_status" do
+    test "returns armed=true with goal_id/identifier and GOAL_* env for a last child", ctx do
+      %{conn: conn, board: board} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+
+      # Completing the only child arms the goal's after_goal (status :pending).
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+      goal = Tasks.get_task!(goal.id)
+      assert goal.after_goal_status == :pending
+
+      conn = get(conn, ~p"/api/tasks/#{child.id}/after_goal_status")
+      body = json_response(conn, 200)
+
+      assert body["after_goal_armed"] == true
+      assert body["goal_id"] == goal.id
+      assert body["goal_identifier"] == goal.identifier
+
+      env = body["env"]
+      assert env["GOAL_ID"] == to_string(goal.id)
+      assert env["GOAL_IDENTIFIER"] == goal.identifier
+      assert env["GOAL_TITLE"] == goal.title
+      assert env["HOOK_NAME"] == "after_goal"
+      assert env["BOARD_ID"] == to_string(board.id)
+      assert env["BOARD_NAME"] == board.name
+    end
+
+    test "returns armed=true when queried with the goal id directly", ctx do
+      %{conn: conn} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      conn = get(conn, ~p"/api/tasks/#{goal.id}/after_goal_status")
+      body = json_response(conn, 200)
+
+      assert body["after_goal_armed"] == true
+      assert body["goal_id"] == goal.id
+    end
+
+    test "returns armed=false for a non-last-child completion", ctx do
+      %{conn: conn} = ctx
+      # child_b stays open in the DB, so completing child_a does NOT arm the goal.
+      %{child_a: child_a} = create_goal_with_two_children(ctx)
+
+      patch(conn, ~p"/api/tasks/#{child_a.id}/complete", valid_completion_params())
+
+      conn = get(conn, ~p"/api/tasks/#{child_a.id}/after_goal_status")
+      body = json_response(conn, 200)
+
+      assert body["after_goal_armed"] == false
+      assert body["goal_id"] == nil
+      assert body["goal_identifier"] == nil
+      assert body["env"] == %{}
+    end
+
+    test "returns armed=false for a task with no parent goal", ctx do
+      %{conn: conn, doing_column: doing_column, user: user} = ctx
+
+      {:ok, task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Standalone task",
+          "created_by_id" => user.id
+        })
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/after_goal_status")
+      body = json_response(conn, 200)
+
+      assert body["after_goal_armed"] == false
+      assert body["goal_id"] == nil
+      assert body["env"] == %{}
+    end
+
+    test "response is compact — exactly the four keys, no reviewer_result", ctx do
+      %{conn: conn} = ctx
+      %{child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      conn = get(conn, ~p"/api/tasks/#{child.id}/after_goal_status")
+      body = json_response(conn, 200)
+
+      assert body |> Map.keys() |> Enum.sort() ==
+               ["after_goal_armed", "env", "goal_id", "goal_identifier"]
+
+      refute Map.has_key?(body, "reviewer_result")
+      refute Map.has_key?(body, "data")
+    end
+
+    test "returns 403 for a task on a different board", %{conn: conn, user: user} do
+      other_board = ai_optimized_board_fixture(user)
+
+      other_column =
+        Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, task} =
+        Tasks.create_task(other_column, %{title: "Other board task", position: 0})
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}/after_goal_status")
+      assert json_response(conn, 403)["error"] =~ "does not belong to this board"
+    end
+
+    test "returns 404 for an unknown id", %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/999_999_999/after_goal_status")
+      assert json_response(conn, 404)["error"] =~ "not found"
+    end
+  end
 end

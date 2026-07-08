@@ -810,6 +810,29 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
+  @doc """
+  Returns a compact, read-only after_goal status for task `:id`.
+
+  The Stride hook calls this itself — independent of the large, truncatable
+  `/complete` response — to learn whether completing `:id` armed an `after_goal`
+  and to fetch the `GOAL_*` env needed to run the local `## after_goal` section.
+  Board-scoped and Bearer-authed exactly like `:tree` and `:after_goal`; makes
+  no state change (the `/after_goal` PATCH and the grace worker own transitions).
+  """
+  def after_goal_status(conn, %{"id" => id_or_identifier}) do
+    board = conn.assigns.current_board
+
+    case fetch_and_verify_task(id_or_identifier, board) do
+      {:ok, task} ->
+        goal = Tasks.after_goal_armed_goal(task, board.id)
+        emit_telemetry(conn, :after_goal_status_fetched, %{task_id: task.id})
+        render(conn, :after_goal_status, goal: goal, board: board)
+
+      error ->
+        TaskErrors.handle_task_error(conn, error)
+    end
+  end
+
   defp get_task_by_id_or_identifier(id_or_identifier, board) do
     case Integer.parse(id_or_identifier) do
       {id, ""} ->

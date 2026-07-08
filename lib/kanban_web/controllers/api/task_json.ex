@@ -31,6 +31,39 @@ defmodule KanbanWeb.API.TaskJSON do
     }
   end
 
+  @doc """
+  Compact after_goal status view. Deliberately minimal — no `reviewer_result`
+  or other large fields — so the response is never subject to output truncation.
+  """
+  def after_goal_status(%{goal: nil}) do
+    %{after_goal_armed: false, goal_id: nil, goal_identifier: nil, env: %{}}
+  end
+
+  def after_goal_status(%{goal: %Task{} = goal, board: board}) do
+    %{
+      after_goal_armed: true,
+      goal_id: goal.id,
+      goal_identifier: goal.identifier,
+      env: after_goal_env(goal, board)
+    }
+  end
+
+  # The GOAL_* env block the after_goal hook exports (mirrors the keys the
+  # plugin's export_after_goal_env reads: GOAL_ID/GOAL_IDENTIFIER/GOAL_TITLE/
+  # GOAL_DESCRIPTION), plus BOARD_* and HOOK_NAME. Values are strings — the hook
+  # sources them into a shell env.
+  defp after_goal_env(goal, board) do
+    %{
+      "GOAL_ID" => to_string(goal.id),
+      "GOAL_IDENTIFIER" => goal.identifier || "",
+      "GOAL_TITLE" => goal.title || "",
+      "GOAL_DESCRIPTION" => goal.description || "",
+      "BOARD_ID" => to_string(board.id),
+      "BOARD_NAME" => board.name,
+      "HOOK_NAME" => "after_goal"
+    }
+  end
+
   # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   defp data(%Task{} = task) do
     %{
