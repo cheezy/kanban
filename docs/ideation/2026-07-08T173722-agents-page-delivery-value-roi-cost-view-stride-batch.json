@@ -1,0 +1,657 @@
+{
+  "source_spec": "docs/ideation/2026-07-08T173722-agents-page-delivery-value-requirements.md",
+  "source_spec_sha256": "98910379de8cfe46510951b067cef6476b5d67e8c357a4e019cb1f9e12258867",
+  "decomposition_notes": "Single-goal shape. Seam #4 (ROI / cost view) is one delivery surface whose tasks are all code-coupled through one new context (Kanban.Roi) plus a shared schema-migration boundary on tasks (the new nullable cost columns). Everything reads or writes the same estimate-now/capture-later cost model, so splitting into multiple goals would fracture a single schema+context cluster and force cross-goal dependencies for no ship-ability gain. Eight tasks, all ~1-3h, ordered by code-coupling: (0) migration adds the nullable real-cost columns; (1) pricing table config module; (2) per-task cost estimator (needs columns + pricing); (3) delivered-value unit (same context, sequenced after estimator to serialize context edits); (4) ROI aggregation for both tiers (needs estimator + value); (5) real-cost capture at /complete (needs columns) overrides the estimate per task; (6) Tier 1 leader trend UI (needs aggregation); (7) Tier 2 lead drill-down UI (needs aggregation). This surface depends on Phase 1 (delivery_targets) which is already shipped per the requirements doc, so target-attribution reads existing tables. Constraint honored throughout: all reads/writes go through the Kanban.Roi context, never Ecto in the LiveView; board scoping preserved via Kanban.Agents.fetch_tasks/1; every dollar figure labeled 'estimated' until real-backed; unpriced models surface visibly, never silent $0.",
+  "goals": [
+    {
+      "created_by_agent": "Claude Opus 4.8",
+      "title": "Add a tiered ROI / cost view setting agent spend against delivered value on /agents",
+      "type": "goal",
+      "complexity": "large",
+      "priority": "high",
+      "needs_review": false,
+      "why": "Stride records zero agent cost today — only a model-name string — so leadership cannot answer 'is the AI investment paying off?' in budget reviews. Now that the fleet has scaled, unaccounted spend is a material line item. This goal gives the organization a defensible, explicitly-estimated ROI surface instead of a manually assembled slide.",
+      "what": "Introduce an estimate-now/capture-later cost model and a new Kanban.Roi context, then surface two tiers on the /agents page: Tier 1 is a leader-facing fleet ROI trend (estimated spend vs delivered value over time); Tier 2 is a lead-facing per-agent / per-target value-per-cost drill-down that flags outliers where spend outruns value. v1 estimates per-task cost from a config-owned per-model pricing table times a usage proxy over time_spent_minutes and complexity, retroactive across existing tasks; new nullable real-cost columns (input_tokens, output_tokens, cost_usd) let an agent's reported cost at /complete override the estimate for that task with no rebuild.",
+      "where_context": "Data: tasks table (new nullable columns) via priv/repo/migrations and lib/kanban/tasks/task.ex. Context: new lib/kanban/roi.ex + lib/kanban/roi/ submodules, reusing Kanban.Agents.fetch_tasks/1 for board scoping and Kanban.Targets / Kanban.Targets.DeliveryRollup for target attribution. API: lib/kanban_web/controllers/api/task_controller.ex + lib/kanban/tasks/agent_workflow.ex for real-cost capture at /complete. UI: lib/kanban_web/live/agents_live.ex + new components under lib/kanban_web/components/.",
+      "description": "Continuation seam #4 of the /agents delivery-value initiative. Phase 1 (delivery targets) is already shipped; this seam reads those existing tables for target attribution and is independent of seam 3. The load-bearing product guard is false-precision control: every estimated dollar figure MUST render as 'estimated' with a disclosable method until real reported cost backs that task, and unmapped or '?' model names MUST surface visibly as 'unpriced', never silently cost $0. Non-goals for v1: no budget enforcement / spend caps / throttling, no real-time per-call metering (per-completed-task aggregation only), no billing-grade precision, no human-vs-agent cost comparison.",
+      "acceptance_criteria": "Tasks carry new NULLABLE input_tokens, output_tokens, cost_usd columns; existing rows are unaffected (all NULL)\nA config-owned per-model pricing table supplies rates; unmapped or '?' model names resolve to an explicit :unpriced result, never $0\nPer-task cost is estimated as pricing_table[model_name] applied to a usage proxy over time_spent_minutes and complexity, with a complexity-only fallback when time_spent_minutes is NULL\nWhen a task has a non-NULL cost_usd, that real figure overrides the estimate and its label may drop 'estimated'\nDelivered value = sum of completed AND approved tasks weighted by complexity (small/medium/large to tunable points, default 1/3/8), preferring actual_complexity when set and falling back to self-assigned complexity, attributed to an agent and, where the goal is target-linked, to a delivery target\nTier 1 renders a fleet ROI trend (estimated spend vs delivered value) over time on /agents\nTier 2 renders per-agent and per-target value-per-cost with outliers surfaced\nEvery dollar figure is labeled 'estimated' until a real reported cost backs it; the estimation method is disclosable in the UI\nAll ROI reads/writes go through the Kanban.Roi context — no Ecto queries in the LiveView\nEvery read is board-scoped exactly as existing /agents reads (via Kanban.Agents.fetch_tasks/1)\nAll new UI text is via gettext and verified in both light and dark mode\nAn agent reporting input_tokens/output_tokens/cost_usd at /complete persists them and they survive read-back",
+      "pitfalls": [
+        "Do NOT enforce budgets, add spend caps, throttle, or auto-kill over budget — this seam is reporting, not control",
+        "Do NOT meter per-call / real-time cost — aggregate per completed task only",
+        "Do NOT claim billing-grade precision or reconcile against provider invoices",
+        "Do NOT model human-vs-agent cost comparison",
+        "Do NOT let an unmapped or '?' model name silently cost $0 — it must surface as 'unpriced'",
+        "Do NOT put Ecto queries in the LiveView — all reads go through Kanban.Roi",
+        "Do NOT drop the board-scope filter — reuse Kanban.Agents.fetch_tasks/1 so no cross-board data leaks",
+        "Do NOT drop the 'estimated' label on a task until a real reported cost actually backs it"
+      ],
+      "tasks": [
+        {
+          "title": "Add nullable input_tokens, output_tokens, cost_usd columns to tasks",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Create the data foundation for the capture-later half of the hybrid cost model: three new NULLABLE columns on the tasks table so an agent can later report real token counts and dollar cost at /complete. Generate the migration with `mix ecto.gen.migration add_real_cost_columns_to_tasks` and add input_tokens (integer), output_tokens (integer), cost_usd (decimal). All nullable with no default so every existing row stays NULL (estimate-driven) and no backfill is needed.",
+          "why": "The estimate-now/capture-later hybrid needs persistence from the start so real reported cost can override an estimate per task without a later rebuild. Existing rows must remain untouched (estimate-driven).",
+          "what": "Add three nullable columns to the tasks table via an Ecto migration.",
+          "where_context": "priv/repo/migrations/ (new generated migration file)",
+          "acceptance_criteria": "Migration adds input_tokens (integer, null: true), output_tokens (integer, null: true), cost_usd (decimal, null: true) to tasks\nNo default values; existing rows are all NULL after migration\nmix ecto.migrate runs cleanly and mix ecto.rollback removes the columns\nColumns are additive only — no existing column is altered",
+          "patterns_to_follow": "Follow the existing migration style in priv/repo/migrations/\nUse alter table(:tasks) with add/3 and null: true\nUse :decimal for cost_usd (money), :integer for token counts",
+          "pitfalls": [
+            "Do NOT add NOT NULL constraints or defaults — retroactive estimation depends on these being NULL for existing tasks",
+            "Do NOT backfill any values in this migration",
+            "Do NOT touch or rename any existing column"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "priv/repo/migrations/add_real_cost_columns_to_tasks.exs",
+              "note": "New migration (timestamp assigned by mix ecto.gen.migration) adding the three nullable cost columns",
+              "position": 0
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix ecto.migrate",
+              "expected_result": "Migration applies cleanly, adding input_tokens/output_tokens/cost_usd to tasks",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix ecto.rollback",
+              "expected_result": "Rollback removes the three columns without error",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "No unit tests for the raw migration itself — schema-field coverage lands in the schema task"
+            ],
+            "integration_tests": [
+              "mix ecto.migrate then mix ecto.rollback round-trips without error against the dev/test database"
+            ],
+            "manual_tests": [
+              "Inspect the tasks table columns after migrate and confirm all three exist and are nullable"
+            ],
+            "edge_cases": [
+              "Existing task rows read back with NULL for all three new columns after migrate"
+            ],
+            "coverage_target": "N/A — structural migration; exercised via schema and estimator tests downstream"
+          },
+          "security_considerations": [
+            "None — additive nullable schema columns with no default; no input handling or authorization surface in a migration"
+          ]
+        },
+        {
+          "title": "Add a config-owned per-model pricing table module with visible unpriced handling",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Create Kanban.Roi.PricingTable, a config-owned per-model rate lookup that maps a model-name string (the value on tasks.completed_by_agent / created_by_agent) to input/output token rates and/or a per-minute rate used by the estimator. An unmapped model name, an empty string, or a literal '?' MUST resolve to an explicit unpriced signal (e.g. {:unpriced, model_name}) so the caller can surface it visibly — it must never fall through to a $0 rate. Read the rate map from application config so prices can be kept current without a code change.",
+          "why": "The estimate needs a rate source, and the load-bearing false-precision guard requires that models with no known price fail visibly as 'unpriced' rather than silently costing $0. Keeping rates in config lets them be updated as models/prices change (a high-confidence assumption in the doc).",
+          "what": "A pure module that resolves a model-name string to a priced rate or an explicit :unpriced result, sourced from application config.",
+          "where_context": "lib/kanban/roi/pricing_table.ex (new); config/config.exs for the default rate map",
+          "acceptance_criteria": "Kanban.Roi.PricingTable resolves a known model name to its configured rate(s)\nAn unmapped name, empty string, or literal \"?\" resolves to an explicit unpriced result (e.g. {:unpriced, name}), never a $0 rate\nThe rate map is read from application config so it can be updated without editing the module\nA disclosable description of the pricing method/rates is exposed for the UI\nUnit tests cover known-model, unmapped-model, \"?\" and empty-string cases",
+          "patterns_to_follow": "Pure functional module — no Ecto, no side effects\nRead config via Application.get_env/3 with a sensible default map\nReturn tagged tuples ({:ok, rate} / {:unpriced, name}) rather than raising",
+          "pitfalls": [
+            "Do NOT return 0 or nil for an unknown model — return the explicit unpriced tag so the UI can render 'unpriced'",
+            "Do NOT use String.to_atom/1 on the model-name string (user/agent-supplied — memory-leak risk)",
+            "Do NOT hardcode rates inline in a way that cannot be updated via config"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/roi/pricing_table.ex",
+              "note": "New module — per-model rate lookup + unpriced handling",
+              "position": 0
+            },
+            {
+              "file_path": "config/config.exs",
+              "note": "Default per-model rate map under the :kanban app config",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban/roi/pricing_table_test.exs",
+              "note": "Rate lookup + unpriced/edge-case coverage",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/roi/pricing_table_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict lib/kanban/roi/pricing_table.ex",
+              "expected_result": "No issues reported",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Known model name returns its configured rate",
+              "Unmapped model name returns the :unpriced tag",
+              "Literal \"?\" returns :unpriced",
+              "Empty string / nil returns :unpriced",
+              "Config override changes the resolved rate"
+            ],
+            "integration_tests": [
+              "Estimator consuming the table treats :unpriced distinctly from a priced rate (covered in the estimator task)"
+            ],
+            "manual_tests": [
+              "In iex, resolve a known and an unknown model name and confirm the tagged results"
+            ],
+            "edge_cases": [
+              "Model name with surrounding whitespace",
+              "Case sensitivity of model names",
+              "Config key absent entirely (falls back to default map)"
+            ],
+            "coverage_target": "All lookup branches and the unpriced path fully covered"
+          },
+          "security_considerations": [
+            "Model name originates from agent-supplied task fields — never call String.to_atom/1 on it (memory-leak risk); key the config map with string keys",
+            "None beyond input handling — pure lookup with no persistence or authorization surface"
+          ]
+        },
+        {
+          "title": "Add per-task cost estimator with usage proxy, fallback, and real-cost override",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Create Kanban.Roi.CostEstimator that computes a per-task cost figure. When the task has a non-NULL cost_usd (real reported cost), use it directly and mark the figure real-backed. Otherwise estimate: rate from Kanban.Roi.PricingTable for the task's model-name string applied to a usage_proxy over time_spent_minutes and complexity; when time_spent_minutes is NULL (nullable, self-reported), fall back to a complexity-only proxy. An unpriced model produces an explicit :unpriced result, not $0. Return a tagged shape carrying the amount, whether it is :estimated or :real, and whether it is :unpriced, so callers and UI can label correctly.",
+          "why": "This is the heart of the estimate-now/capture-later model: one function that yields a directional per-task cost, degrades gracefully when the self-reported time proxy is missing, and lets a real reported figure override the estimate with no rebuild — while preserving the false-precision labeling guard.",
+          "what": "A pure estimator that maps a task to {amount, source: :estimated|:real, unpriced?: bool}, overriding the estimate whenever cost_usd is set.",
+          "where_context": "lib/kanban/roi/cost_estimator.ex (new); reads task fields cost_usd, completed_by_agent (model name), time_spent_minutes, complexity/actual_complexity",
+          "acceptance_criteria": "A task with non-NULL cost_usd yields that amount tagged source: :real (label may drop 'estimated')\nA task without cost_usd yields an estimate = pricing rate applied to the usage proxy over time_spent_minutes and complexity, tagged source: :estimated\nWhen time_spent_minutes is NULL the estimator uses a complexity-only fallback proxy rather than treating time as 0\nAn unpriced model yields an explicit unpriced result, never $0\nThe returned shape lets a caller distinguish estimated vs real vs unpriced\nUnit tests cover real-override, estimate-with-time, complexity-only fallback, and unpriced paths",
+          "patterns_to_follow": "Pure module — accept a %Kanban.Tasks.Task{} (or the needed fields) and return a tagged map/tuple; no Repo access\nDelegate rate resolution to Kanban.Roi.PricingTable; do not re-implement pricing\nUse Decimal arithmetic for money to avoid float drift on cost_usd",
+          "pitfalls": [
+            "Do NOT treat a NULL time_spent_minutes as 0 — use the complexity-only fallback",
+            "Do NOT let an unpriced model collapse to $0 — propagate the unpriced tag",
+            "Do NOT drop the source tag — the UI label depends on estimated-vs-real being explicit",
+            "Do NOT query the database here — operate on already-fetched task structs"
+          ],
+          "dependencies": [
+            0,
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/roi/cost_estimator.ex",
+              "note": "New module — per-task cost with proxy, fallback, and real-cost override",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/roi/cost_estimator_test.exs",
+              "note": "Override / estimate / fallback / unpriced coverage",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/roi/cost_estimator_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict lib/kanban/roi/cost_estimator.ex",
+              "expected_result": "No issues reported",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Non-NULL cost_usd overrides and is tagged :real",
+              "Estimate with time_spent_minutes present uses the full usage proxy",
+              "NULL time_spent_minutes triggers the complexity-only fallback",
+              "Unpriced model propagates the unpriced tag, not $0",
+              "small/medium/large complexity produce distinct estimates"
+            ],
+            "integration_tests": [
+              "Estimator over a fetched task set feeds the ROI aggregation correctly (covered in the aggregation task)"
+            ],
+            "manual_tests": [
+              "In iex, run the estimator over a seeded task with and without cost_usd and confirm the source tag flips"
+            ],
+            "edge_cases": [
+              "Both time_spent_minutes and a real cost_usd present (real wins)",
+              "cost_usd present but model unpriced (real still wins, no unpriced tag)",
+              "Zero-minute time proxy vs NULL time proxy"
+            ],
+            "coverage_target": "All override / estimate / fallback / unpriced branches covered"
+          },
+          "security_considerations": [
+            "Operates on already board-scoped task structs — does not itself fetch data, so no scope-bypass surface as long as callers pass a scoped task set",
+            "Model name is agent-supplied and flows through PricingTable — no atom conversion or query interpolation here"
+          ]
+        },
+        {
+          "title": "Add complexity-weighted delivered-value computation attributed to agent and target",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add Kanban.Roi.Value (or a value function in the Kanban.Roi context) computing delivered value as the sum of completed AND approved tasks weighted by complexity, using tunable points (default small/medium/large = 1/3/8, read from config). Prefer actual_complexity (measured) when set and fall back to self-assigned complexity when absent. Attribute value to an agent (via completed_by_agent) and, where the task's parent goal is target-linked, to a delivery target — reuse the existing agent->goal->target bridge in Kanban.Targets.DeliveryRollup rather than re-deriving it.",
+          "why": "Value-per-cost needs a defensible value numerator. Complexity-weighted approved completions are the doc's value proxy; preferring measured actual_complexity reduces gaming, and target attribution enables the Tier 2 per-target drill-down.",
+          "what": "A pure function mapping a scoped task set to per-agent and per-target delivered-value point totals.",
+          "where_context": "lib/kanban/roi/value.ex (new); reuses Kanban.Targets.DeliveryRollup for agent->goal->target attribution; reads complexity/actual_complexity, completed_at, review_status",
+          "acceptance_criteria": "Value counts only tasks that are completed AND approved (review_status :approved)\nEach counted task contributes complexity points using tunable config values (default 1/3/8 for small/medium/large)\nactual_complexity is preferred when set; self-assigned complexity is the fallback\nValue is attributed per agent and, for target-linked goals, per target\nTasks whose goal is not target-linked still contribute to the agent total but attribute to no target\nUnit tests cover weighting, actual-vs-assigned preference, approval filtering, and target attribution",
+          "patterns_to_follow": "Pure module operating on an already-fetched, board-scoped task list — no Repo access\nReuse Kanban.Targets.DeliveryRollup / Kanban.Targets for the agent->goal->target bridge; do not re-implement target linkage\nRead the points map from application config with the 1/3/8 default",
+          "pitfalls": [
+            "Do NOT count unapproved or non-completed tasks toward value",
+            "Do NOT hardcode the 1/3/8 weights so they cannot be tuned via config",
+            "Do NOT re-derive target linkage — reuse the existing DeliveryRollup bridge",
+            "Do NOT double-count a task touched by two agents — mirror the single-count rule the existing metrics use"
+          ],
+          "dependencies": [
+            2
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/roi/value.ex",
+              "note": "New module — complexity-weighted delivered value per agent and per target",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/targets/delivery_rollup.ex",
+              "note": "Reference/reuse — existing agent->goal->target bridge for attribution",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban/roi/value_test.exs",
+              "note": "Weighting / approval-filter / attribution coverage",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/roi/value_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict lib/kanban/roi/value.ex",
+              "expected_result": "No issues reported",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "small/medium/large map to configured points",
+              "actual_complexity preferred over complexity when both set",
+              "complexity used when actual_complexity is NULL",
+              "Only approved+completed tasks contribute",
+              "Target-linked goal attributes value to its target; unlinked goal does not"
+            ],
+            "integration_tests": [
+              "Value totals combine with estimator output in the ROI aggregation (covered in the aggregation task)"
+            ],
+            "manual_tests": [
+              "In iex, compute value over a seeded mixed task set and confirm per-agent and per-target totals"
+            ],
+            "edge_cases": [
+              "Task completed but rejected (excluded)",
+              "Goal with no target (agent total only)",
+              "Tunable points overridden via config"
+            ],
+            "coverage_target": "All weighting, filtering, and attribution branches covered"
+          },
+          "security_considerations": [
+            "Consumes an already board-scoped task set — attribution must not reach across boards, which holds as long as the caller passes Kanban.Agents.fetch_tasks/1 output",
+            "None beyond scope propagation — pure aggregation with no writes"
+          ]
+        },
+        {
+          "title": "Add Kanban.Roi context with fleet trend and per-agent/per-target value-per-cost reads",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Create the public Kanban.Roi context that both UI tiers call. It fetches the board-scoped task set via Kanban.Agents.fetch_tasks/1, runs Kanban.Roi.CostEstimator and Kanban.Roi.Value over it, and returns: (Tier 1) a fleet ROI trend time-series of estimated spend vs delivered value bucketed over a trailing window, and (Tier 2) per-agent and per-target value-per-cost rows with outliers flagged (spend outruns value) and any unpriced spend surfaced separately. All figures carry an estimated-vs-real indicator and an unpriced indicator so the LiveView can label without recomputing. No Ecto in the LiveView — this context is the single read boundary.",
+          "why": "Both tiers need one board-scoped, context-owned read API that composes estimator + value into ship-ready shapes, keeping Ecto out of the LiveView and guaranteeing the false-precision labels and unpriced surfacing are computed once, consistently.",
+          "what": "A context module exposing fleet_roi_trend/1 (Tier 1 series) and value_per_cost/1 (Tier 2 per-agent/per-target rows with outliers), both board-scoped.",
+          "where_context": "lib/kanban/roi.ex (new public context); reuses Kanban.Agents.fetch_tasks/1 for scoping and the estimator/value submodules; mirrors the trend-bucketing style in lib/kanban/agents/metrics.ex",
+          "acceptance_criteria": "Kanban.Roi exposes a Tier 1 read returning a time-series of estimated spend vs delivered value over a trailing window\nKanban.Roi exposes a Tier 2 read returning per-agent and per-target value-per-cost rows\nTier 2 flags outliers where spend outruns delivered value\nUnpriced spend is surfaced as a distinct signal, never folded into $0\nEvery returned figure carries an estimated-vs-real indicator\nAll reads accept and honor the :scope option, fetching via Kanban.Agents.fetch_tasks/1 (board-scoped)\nUnit tests cover trend bucketing, per-agent/per-target rows, outlier flagging, and scope isolation",
+          "patterns_to_follow": "Mirror the trailing-window bucketing and *_from/2 (already-fetched list) split in lib/kanban/agents/metrics.ex\nFetch the task set through Kanban.Agents.fetch_tasks/1 so board scoping and goal-exclusion rules are shared, not re-implemented\nCompose CostEstimator + Value; do not re-derive cost or value here",
+          "pitfalls": [
+            "Do NOT bypass Kanban.Agents.fetch_tasks/1 with a raw Repo query — that would drop the board scope",
+            "Do NOT fold unpriced spend into the priced total — keep it a separate, visible figure",
+            "Do NOT expose only a single aggregate that loses the estimated-vs-real distinction the UI must label",
+            "Do NOT sum per-agent rollups to get the fleet total in a way that double-counts multi-agent tasks — count from the task set like Metrics does"
+          ],
+          "dependencies": [
+            2,
+            3
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/roi.ex",
+              "note": "New public context — fleet trend + value-per-cost reads, board-scoped",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/agents/metrics.ex",
+              "note": "Reference — trailing-window bucketing and _from/2 pattern to mirror",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban/roi_test.exs",
+              "note": "Trend / value-per-cost / outlier / scope-isolation coverage",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/roi_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict lib/kanban/roi.ex",
+              "expected_result": "No issues reported",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Tier 1 trend returns one bucket per day across the window with spend and value",
+              "Tier 2 returns per-agent and per-target value-per-cost rows",
+              "Outlier flag set when spend outruns value",
+              "Unpriced spend surfaced separately",
+              "Estimated-vs-real indicator preserved on returned figures"
+            ],
+            "integration_tests": [
+              "A task in another board's scope does not appear in either tier's output",
+              "A real cost_usd on one task shifts its figure to real-backed in both tiers"
+            ],
+            "manual_tests": [
+              "In iex, call the Tier 1 and Tier 2 reads with a scope and inspect the shapes"
+            ],
+            "edge_cases": [
+              "Empty task set returns zeroed series and empty rows, not a crash",
+              "All-unpriced fleet surfaces unpriced total with no false $0 ROI",
+              "Agent with value but zero cost (division-by-zero guard)"
+            ],
+            "coverage_target": "All read paths, outlier flagging, and scope isolation covered"
+          },
+          "security_considerations": [
+            "Board scoping is the primary boundary — every read MUST route through Kanban.Agents.fetch_tasks/1 with the caller's scope so no cross-board task, agent, or target leaks into ROI figures",
+            "Division-by-zero on value-per-cost when cost is zero must be guarded to avoid crashing the read for a scoped user"
+          ]
+        },
+        {
+          "title": "Capture reported input_tokens/output_tokens/cost_usd at the /complete API endpoint",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "Let an agent optionally report real cost when completing a task so the estimate is overridden for that task. Accept input_tokens, output_tokens, and cost_usd in the /complete request params, allow them through the API param filter, add them to the Task completion changeset cast list, and persist them via the existing complete_task flow. All three are optional — omitting them leaves the columns NULL and the task stays estimate-driven. The override itself is already implemented in Kanban.Roi.CostEstimator; this task only wires capture + persistence.",
+          "why": "This is the capture-later half of the hybrid: as runtimes begin reporting real token/cost at /complete, accuracy improves per task with no rebuild. Without accepting and persisting these fields the real-cost override can never engage.",
+          "what": "Thread three optional numeric params through the /complete controller, param filter, and completion changeset onto the new nullable columns.",
+          "where_context": "lib/kanban_web/controllers/api/task_controller.ex and lib/kanban_web/controllers/api/task_param_filter.ex (accept params), lib/kanban/tasks/agent_workflow.ex (complete_task flow), lib/kanban/tasks/task.ex (cast the new fields)",
+          "acceptance_criteria": "PATCH /complete accepts optional input_tokens, output_tokens, cost_usd\nThe values persist to the corresponding task columns and survive read-back\nOmitting the fields leaves the columns NULL and does not error\nThe Task changeset casts and validates the three fields (non-negative integers for tokens, non-negative decimal for cost_usd)\ncost_usd is validated as a non-negative money value\nThe values are board-scoped on the write path exactly as the existing /complete write is\nTests cover capture-present, capture-absent, and invalid-value cases",
+          "patterns_to_follow": "Follow the existing /complete param handling in lib/kanban_web/controllers/api/task_controller.ex and the allow-list in task_param_filter.ex\nAdd the fields to the changeset cast list in lib/kanban/tasks/task.ex alongside the other completion actuals (time_spent_minutes, actual_complexity)\nPreserve the existing per-board scope check on complete_task in agent_workflow.ex — do not add a new unscoped write path",
+          "pitfalls": [
+            "Do NOT make the fields required — they are optional and default NULL",
+            "Do NOT accept negative token counts or negative cost_usd — validate non-negative",
+            "Do NOT introduce a separate write path that skips the existing board-scope authorization on complete_task",
+            "Do NOT recompute or store an estimate here — persistence only; the override lives in CostEstimator"
+          ],
+          "dependencies": [
+            0
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/controllers/api/task_controller.ex",
+              "note": "Accept the three optional cost params on /complete",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/controllers/api/task_param_filter.ex",
+              "note": "Allow the new params through the API filter",
+              "position": 1
+            },
+            {
+              "file_path": "lib/kanban/tasks/agent_workflow.ex",
+              "note": "complete_task flow that persists completion params (scope-checked)",
+              "position": 2
+            },
+            {
+              "file_path": "lib/kanban/tasks/task.ex",
+              "note": "Add the three fields to the changeset cast list with non-negative validation",
+              "position": 3
+            },
+            {
+              "file_path": "test/kanban_web/controllers/api/task_controller_test.exs",
+              "note": "Capture-present / absent / invalid coverage on /complete",
+              "position": 4
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/controllers/api/task_controller_test.exs",
+              "expected_result": "All tests pass, including new cost-capture cases",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict lib/kanban/tasks/task.ex lib/kanban_web/controllers/api/task_controller.ex",
+              "expected_result": "No issues reported",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Changeset casts input_tokens/output_tokens/cost_usd when present",
+              "Changeset rejects negative token counts and negative cost_usd",
+              "Changeset leaves columns NULL when the params are absent"
+            ],
+            "integration_tests": [
+              "PATCH /complete with cost params persists and reads back the values",
+              "PATCH /complete without cost params completes normally with NULL columns",
+              "A user cannot report cost against a task outside their board scope"
+            ],
+            "manual_tests": [
+              "curl the /complete endpoint with and without the cost fields against a local task and confirm persistence"
+            ],
+            "edge_cases": [
+              "cost_usd as a string vs number in JSON",
+              "Only tokens reported without cost_usd (and vice versa)",
+              "Zero values accepted; negatives rejected"
+            ],
+            "coverage_target": "All capture / omit / invalid branches covered on both the controller and changeset"
+          },
+          "security_considerations": [
+            "Write path must preserve the existing per-board scope check in complete_task — do not add an unscoped route that lets an agent write cost onto tasks in another board",
+            "Input validation: reject negative token counts and negative cost_usd; treat the JSON values as untrusted and validate types before casting",
+            "Do not let a reported cost_usd be interpolated anywhere as a string — persist it as a validated decimal"
+          ]
+        },
+        {
+          "title": "Add the Tier 1 leader fleet ROI trend band to the /agents page",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add a leader-facing Tier 1 band on /agents that renders the fleet ROI trend (estimated spend vs delivered value over time) from Kanban.Roi's Tier 1 read. Build it as a presentational component (matching the existing AgentsHeader / DeliveryHealthBand component pattern) that AgentsLive binds to the context output — no Ecto in the LiveView. Every dollar figure renders with a visible 'estimated' label and a disclosable method note; a figure backed by real reported cost may drop the label. All text via gettext; verify in both light and dark mode.",
+          "why": "This is the funding-narrative surface: it gives leadership a periodic, defensible 'is the AI investment paying off?' answer as an explicitly-estimated trend rather than a hand-built slide.",
+          "what": "A new ROI trend band component wired into AgentsLive, fed by Kanban.Roi's fleet-trend read, with estimated labeling and a disclosable method.",
+          "where_context": "lib/kanban_web/components/roi_trend_band.ex (new component), wired into lib/kanban_web/live/agents_live.ex which already loads scoped agent data",
+          "acceptance_criteria": "A Tier 1 band on /agents renders the fleet estimated spend vs delivered value trend over the window\nData comes from Kanban.Roi via AgentsLive assigns — no Ecto query in the LiveView\nEvery dollar figure shows a visible 'estimated' label; a real-backed figure may omit it\nThe estimation method is disclosable in the UI (e.g. a tooltip/expandable note)\nThe band respects the current board scope already applied in AgentsLive\nAll new text is via gettext and extracted to all locales\nThe band is verified legible in both light and dark mode",
+          "patterns_to_follow": "Mirror the presentational-component pattern of lib/kanban_web/components/agents_header.ex and delivery_health_band.ex — the component takes assigns, AgentsLive does the context call\nUse theme-aware daisyUI tokens (bg-base-100, text-base-content, border-base-300) per the dark-mode contract; run mix dark_mode.scan\nWrap all user-visible strings in gettext and run mix gettext.extract --merge",
+          "pitfalls": [
+            "Do NOT call Kanban.Repo or Ecto directly from the LiveView — go through Kanban.Roi",
+            "Do NOT render a dollar figure without the 'estimated' label unless it is real-backed",
+            "Do NOT hardcode colors (bg-white, text-gray-900) — use theme tokens so dark mode works",
+            "Do NOT ship untranslated literal strings — every label via gettext"
+          ],
+          "dependencies": [
+            4
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/components/roi_trend_band.ex",
+              "note": "New Tier 1 presentational component — fleet spend-vs-value trend",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/live/agents_live.ex",
+              "note": "Bind Kanban.Roi fleet-trend output to the new band; no Ecto here",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/components/roi_trend_band_test.exs",
+              "note": "Rendering + estimated-label coverage",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/components/roi_trend_band_test.exs test/kanban_web/live/agents_live_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix dark_mode.scan",
+              "expected_result": "No dark-mode contract violations in the new component",
+              "position": 1
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Load /agents in the running app and toggle light/dark; confirm the Tier 1 trend band is legible in both and every dollar figure shows the 'estimated' label with a disclosable method",
+              "expected_result": "Band renders correctly in both modes with estimated labeling and a disclosable method",
+              "position": 2
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Component renders a trend from a given spend/value series",
+              "Estimated figures render with the 'estimated' label",
+              "A real-backed figure renders without the label"
+            ],
+            "integration_tests": [
+              "AgentsLive mounts with the Tier 1 band populated from Kanban.Roi for the scoped board",
+              "Switching the board filter re-derives the trend for the new scope"
+            ],
+            "manual_tests": [
+              "Verify /agents Tier 1 band in light mode",
+              "Verify /agents Tier 1 band in dark mode",
+              "Confirm the method disclosure is reachable in the UI"
+            ],
+            "edge_cases": [
+              "Empty fleet (zeroed trend, no crash)",
+              "All-estimated fleet (all labels present)",
+              "A window with a real-backed task (mixed labeling)"
+            ],
+            "coverage_target": "Component rendering and estimated-label branches covered; LiveView mount path covered"
+          },
+          "security_considerations": [
+            "The band must render only scope-permitted data — it consumes AgentsLive assigns already board-scoped via Kanban.Roi; do not add a direct query that bypasses scope",
+            "Disclosed method text is developer-authored (not user input) — no injection surface; ensure any agent/model names rendered are HTML-escaped, never raw"
+          ]
+        },
+        {
+          "title": "Add the Tier 2 lead per-agent/per-target value-per-cost drill-down to /agents",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add a lead-facing Tier 2 drill-down on /agents rendering per-agent and per-target value-per-cost from Kanban.Roi's Tier 2 read, with outliers (spend outruns value) surfaced and any unpriced spend shown visibly as 'unpriced' rather than as $0. Build it as a presentational component bound by AgentsLive — no Ecto in the LiveView. Dollar figures carry the visible 'estimated' label (real-backed figures may drop it) with a disclosable method. All text via gettext; verify light and dark mode.",
+          "why": "This is the efficiency surface: a delivery lead needs to find where spend outruns delivered value, per agent and per target, to act on it. Visible 'unpriced' handling protects against false precision from unmapped models.",
+          "what": "A new Tier 2 drill-down component wired into AgentsLive, fed by Kanban.Roi's value-per-cost read, with outlier and unpriced surfacing plus estimated labeling.",
+          "where_context": "lib/kanban_web/components/roi_efficiency_table.ex (new component), wired into lib/kanban_web/live/agents_live.ex",
+          "acceptance_criteria": "A Tier 2 section on /agents lists per-agent and per-target value-per-cost\nOutliers where spend outruns value are visually flagged\nUnpriced spend renders visibly as 'unpriced', never as $0\nData comes from Kanban.Roi via AgentsLive assigns — no Ecto in the LiveView\nEvery dollar figure shows a visible 'estimated' label unless real-backed, with a disclosable method\nThe section respects the current board scope in AgentsLive\nAll new text via gettext and extracted to all locales\nVerified legible in both light and dark mode",
+          "patterns_to_follow": "Mirror the presentational-component pattern of lib/kanban_web/components/agent_roster_card.ex and delivery_health_band.ex — component takes assigns; AgentsLive does the Kanban.Roi call\nUse theme-aware daisyUI tokens and run mix dark_mode.scan\nWrap all strings in gettext and run mix gettext.extract --merge\nReuse the target attribution already produced by Kanban.Roi (via DeliveryRollup) — do not re-derive targets in the view",
+          "pitfalls": [
+            "Do NOT render unpriced spend as $0 — surface it as 'unpriced'",
+            "Do NOT call Ecto/Repo from the LiveView — go through Kanban.Roi",
+            "Do NOT omit the 'estimated' label on non-real-backed figures",
+            "Do NOT hardcode colors — use theme tokens so both modes work; every string via gettext"
+          ],
+          "dependencies": [
+            4
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/components/roi_efficiency_table.ex",
+              "note": "New Tier 2 presentational component — per-agent/per-target value-per-cost with outliers",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/live/agents_live.ex",
+              "note": "Bind Kanban.Roi value-per-cost output to the drill-down; no Ecto here",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/components/roi_efficiency_table_test.exs",
+              "note": "Row rendering, outlier flag, and unpriced surfacing coverage",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/components/roi_efficiency_table_test.exs test/kanban_web/live/agents_live_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix dark_mode.scan",
+              "expected_result": "No dark-mode contract violations in the new component",
+              "position": 1
+            },
+            {
+              "step_type": "manual",
+              "step_text": "Load /agents in the running app, toggle light/dark, and confirm the Tier 2 drill-down lists per-agent and per-target value-per-cost with outliers flagged, unpriced spend labeled 'unpriced', and dollar figures labeled 'estimated'",
+              "expected_result": "Drill-down renders correctly in both modes with outlier flagging, unpriced surfacing, and estimated labeling",
+              "position": 2
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Component renders per-agent and per-target rows from given data",
+              "Outlier rows are visually flagged",
+              "Unpriced spend renders as 'unpriced', not $0",
+              "Estimated label present on non-real-backed figures"
+            ],
+            "integration_tests": [
+              "AgentsLive mounts with the Tier 2 section populated from Kanban.Roi for the scoped board",
+              "Board-filter change re-derives the rows for the new scope"
+            ],
+            "manual_tests": [
+              "Verify Tier 2 drill-down in light mode",
+              "Verify Tier 2 drill-down in dark mode",
+              "Confirm an unmapped-model agent shows 'unpriced'"
+            ],
+            "edge_cases": [
+              "Agent with value but zero/unpriced cost",
+              "Target with no attributed agents",
+              "All rows real-backed (no estimated labels)"
+            ],
+            "coverage_target": "Component rendering, outlier, and unpriced branches covered; LiveView mount path covered"
+          },
+          "security_considerations": [
+            "Rows must render only scope-permitted agents and targets — consumes AgentsLive assigns already board-scoped via Kanban.Roi; no direct query that bypasses scope",
+            "Agent and target names originate from data — render as escaped text (never raw/1) to avoid stored-content injection into the drill-down"
+          ]
+        }
+      ]
+    }
+  ]
+}
