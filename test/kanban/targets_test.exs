@@ -613,6 +613,171 @@ defmodule Kanban.TargetsTest do
     end
   end
 
+  describe "list_member_goal_details/2" do
+    test "returns one goal_progress_detail per member goal with flow and fraction",
+         %{scope: scope, user: user, board: board, column: column} do
+      goal = goal_fixture(column)
+
+      backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+      review = column_fixture(board, %{name: "Review"})
+      done = column_fixture(board, %{name: "Done"})
+
+      task_fixture(backlog, %{parent_id: goal.id})
+      task_fixture(ready, %{parent_id: goal.id})
+      task_fixture(doing, %{parent_id: goal.id})
+      task_fixture(review, %{parent_id: goal.id})
+      complete_task(task_fixture(done, %{parent_id: goal.id}))
+
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert [entry] = Targets.list_member_goal_details(scope, target)
+
+      assert Map.keys(entry) |> Enum.sort() ==
+               [:completed, :flow, :goal, :percentage, :total]
+
+      assert entry.goal.id == goal.id
+      assert entry.flow == %{backlog: 1, ready: 1, doing: 1, review: 1, done: 1, total: 5}
+      assert entry.completed == 1
+      assert entry.total == 5
+      assert entry.percentage == 20
+    end
+
+    test "each returned goal has :column and :assigned_to preloaded",
+         %{scope: scope, user: user, column: column} do
+      goal = goal_fixture(column)
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert [entry] = Targets.list_member_goal_details(scope, target)
+      assert Ecto.assoc_loaded?(entry.goal.column)
+      assert Ecto.assoc_loaded?(entry.goal.assigned_to)
+    end
+
+    test "a childless member goal yields an all-zero flow map",
+         %{scope: scope, user: user, column: column} do
+      goal = goal_fixture(column)
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert [entry] = Targets.list_member_goal_details(scope, target)
+      assert entry.flow == %{backlog: 0, ready: 0, doing: 0, review: 0, done: 0, total: 0}
+      assert entry.completed == 0
+      assert entry.total == 0
+      assert entry.percentage == 0
+    end
+
+    test "excludes member goals on boards the scope cannot access", %{
+      scope: scope,
+      user: user,
+      column: column,
+      other_scope: other_scope,
+      other_column: other_column
+    } do
+      target = delivery_target_fixture(user)
+
+      accessible_goal = goal_fixture(column)
+      foreign_goal = goal_fixture(other_column)
+      assert {:ok, _} = Targets.assign_goal(scope, accessible_goal, target)
+      assert {:ok, _} = Targets.assign_goal(other_scope, foreign_goal, target)
+
+      ids = scope |> Targets.list_member_goal_details(target) |> Enum.map(& &1.goal.id)
+      assert ids == [accessible_goal.id]
+    end
+
+    test "returns [] when the target has no member goals",
+         %{scope: scope, user: user} do
+      target = delivery_target_fixture(user)
+      assert Targets.list_member_goal_details(scope, target) == []
+    end
+  end
+
+  describe "list_assignable_goal_details/2" do
+    test "returns details only for unassigned goals on accessible boards", %{
+      scope: scope,
+      user: user,
+      column: column,
+      other_column: other_column
+    } do
+      target = delivery_target_fixture(user)
+
+      unassigned = goal_fixture(column)
+      already_here = goal_fixture(column)
+      foreign = goal_fixture(other_column)
+      assert {:ok, _} = Targets.assign_goal(scope, already_here, target)
+
+      ids = scope |> Targets.list_assignable_goal_details(target) |> Enum.map(& &1.goal.id)
+
+      assert unassigned.id in ids
+      refute already_here.id in ids
+      refute foreign.id in ids
+    end
+
+    test "returns the goal_progress_detail shape with flow and fraction",
+         %{scope: scope, user: user, board: board, column: column} do
+      goal = goal_fixture(column)
+      ready = column_fixture(board, %{name: "Ready"})
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+      task_fixture(ready, %{parent_id: goal.id})
+
+      target = delivery_target_fixture(user)
+
+      assert [entry] =
+               scope
+               |> Targets.list_assignable_goal_details(target)
+               |> Enum.filter(&(&1.goal.id == goal.id))
+
+      assert Map.keys(entry) |> Enum.sort() ==
+               [:completed, :flow, :goal, :percentage, :total]
+
+      # The completed child sits in the default (unnamed) column, so it buckets
+      # to :backlog by column name even though its status counts as completed.
+      assert entry.flow == %{backlog: 1, ready: 1, doing: 0, review: 0, done: 0, total: 2}
+      assert entry.completed == 1
+      assert entry.total == 2
+      assert entry.percentage == 50
+    end
+
+    test "each returned goal has :column and :assigned_to preloaded",
+         %{scope: scope, user: user, column: column} do
+      goal = goal_fixture(column)
+      target = delivery_target_fixture(user)
+
+      assert [entry] =
+               scope
+               |> Targets.list_assignable_goal_details(target)
+               |> Enum.filter(&(&1.goal.id == goal.id))
+
+      assert Ecto.assoc_loaded?(entry.goal.column)
+      assert Ecto.assoc_loaded?(entry.goal.assigned_to)
+    end
+
+    test "excludes work tasks and goals already assigned to another target", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = delivery_target_fixture(user)
+      other_target = delivery_target_fixture(user)
+
+      work = task_fixture(column, %{type: :work})
+      assigned_elsewhere = goal_fixture(column)
+      assert {:ok, _} = Targets.assign_goal(scope, assigned_elsewhere, other_target)
+
+      ids = scope |> Targets.list_assignable_goal_details(target) |> Enum.map(& &1.goal.id)
+      refute work.id in ids
+      refute assigned_elsewhere.id in ids
+    end
+
+    test "returns [] when there are no unassigned goals",
+         %{scope: scope, user: user} do
+      target = delivery_target_fixture(user)
+      assert Targets.list_assignable_goal_details(scope, target) == []
+    end
+  end
+
   defp complete_task(task) do
     {:ok, done} =
       task

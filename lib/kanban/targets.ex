@@ -235,6 +235,50 @@ defmodule Kanban.Targets do
     |> Repo.all()
   end
 
+  @doc """
+  Like `list_member_goals/2`, but returns each member goal as a
+  `goal_progress_detail/0` (the goal plus its `:flow`/`completed`/`total`/
+  `percentage` child fraction) instead of a bare `Task`.
+
+  Every returned goal has both `:column` and `:assigned_to` preloaded so
+  callers (such as the Edit Target page's member-goals table) can read
+  `goal.column.board_id` and `goal.assigned_to` without further queries. Board
+  scoping and per-goal child-count scoping match `list_member_goals/2` exactly;
+  a `nil` scope applies no board filter.
+  """
+  @spec list_member_goal_details(Scope.t() | nil, DeliveryTarget.t()) ::
+          [goal_progress_detail()]
+  def list_member_goal_details(scope, %DeliveryTarget{} = target) do
+    Task
+    |> where([t], t.type == :goal and t.target_id == ^target.id)
+    |> BoardScope.apply_board_scope_with_column_join(scope)
+    |> preload([:column, :assigned_to])
+    |> Repo.all()
+    |> goal_detail_views()
+  end
+
+  @doc """
+  Like `list_assignable_goals/2`, but returns each candidate goal as a
+  `goal_progress_detail/0` instead of a bare `Task`.
+
+  Every returned goal has both `:column` and `:assigned_to` preloaded — note
+  `list_assignable_goals/2` preloads neither — so the Edit Target page's
+  assignable-goals table can render progress and owner without running Ecto in
+  the LiveView. Only unassigned goals (`is_nil(target_id)`) qualify, and board
+  scoping matches `list_assignable_goals/2` exactly; a `nil` scope applies no
+  board filter.
+  """
+  @spec list_assignable_goal_details(Scope.t() | nil, DeliveryTarget.t()) ::
+          [goal_progress_detail()]
+  def list_assignable_goal_details(scope, %DeliveryTarget{} = _target) do
+    Task
+    |> where([t], t.type == :goal and is_nil(t.target_id))
+    |> BoardScope.apply_board_scope_with_column_join(scope)
+    |> preload([:column, :assigned_to])
+    |> Repo.all()
+    |> goal_detail_views()
+  end
+
   @typedoc """
   One boards-page summary row for a delivery target: the target itself, its
   read-time derived `Kanban.Targets.Status`, and the aggregate child-task
@@ -462,7 +506,7 @@ defmodule Kanban.Targets do
     details =
       scope
       |> list_member_goals(target)
-      |> Enum.map(&goal_detail_entry/1)
+      |> goal_detail_entries()
 
     progress = Enum.map(details, & &1.progress)
 
@@ -470,6 +514,20 @@ defmodule Kanban.Targets do
       summary: summarize_progress(target, progress, today),
       goals: Enum.map(details, &goal_detail_view/1)
     }
+  end
+
+  # Maps a list of `:column`-preloaded goals to their internal detail entries
+  # (one child fetch each). Shared by `build_target_progress/3` (which also
+  # needs each entry's `:progress`) and `goal_detail_views/1`.
+  defp goal_detail_entries(goals), do: Enum.map(goals, &goal_detail_entry/1)
+
+  # Maps a list of `:column`-preloaded goals to the public
+  # `goal_progress_detail/0` shape. The DRY entry point for
+  # `list_member_goal_details/2` and `list_assignable_goal_details/2`.
+  defp goal_detail_views(goals) do
+    goals
+    |> goal_detail_entries()
+    |> Enum.map(&goal_detail_view/1)
   end
 
   # The public per-goal detail shape — drops the internal `:progress` key that
