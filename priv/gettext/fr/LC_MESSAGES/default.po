@@ -2529,7 +2529,7 @@ msgid "Time tasks spend waiting for human review after completion"
 msgstr "Temps que les tâches passent en attente de révision après achèvement"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:389
-#: lib/kanban_web/components/agent_roster_card.ex:194
+#: lib/kanban_web/components/agent_roster_card.ex:237
 #: lib/kanban_web/components/agents_header.ex:437
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
@@ -4853,7 +4853,7 @@ msgstr "Étapes de Vérification"
 msgid "today"
 msgstr "Aujourd'hui"
 
-#: lib/kanban_web/components/agent_roster_card.ex:195
+#: lib/kanban_web/components/agent_roster_card.ex:238
 #, elixir-autogen, elixir-format
 msgid "7d"
 msgstr "7 j"
@@ -4880,7 +4880,7 @@ msgstr "Réservé"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:348
 #: lib/kanban_web/components/agent_detail_panel.ex:96
-#: lib/kanban_web/components/agent_roster_card.ex:197
+#: lib/kanban_web/components/agent_roster_card.ex:240
 #, elixir-autogen, elixir-format
 msgid "Claims"
 msgstr "Réservations"
@@ -4895,7 +4895,7 @@ msgstr "Fichiers estimés"
 msgid "Human task"
 msgstr "Tâche humaine"
 
-#: lib/kanban_web/components/agent_roster_card.ex:234
+#: lib/kanban_web/components/agent_roster_card.ex:283
 #: lib/kanban_web/components/agents_header.ex:158
 #, elixir-autogen, elixir-format
 msgid "Idle"
@@ -4912,7 +4912,7 @@ msgid "Review status"
 msgstr "Statut de relecture"
 
 #: lib/kanban_web/components/agent_detail_panel.ex:236
-#: lib/kanban_web/components/agent_roster_card.ex:196
+#: lib/kanban_web/components/agent_roster_card.ex:239
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr "Succès"
@@ -4925,7 +4925,7 @@ msgstr "Succès"
 msgid "Testing strategy"
 msgstr "Stratégie de tests"
 
-#: lib/kanban_web/components/agent_roster_card.ex:233
+#: lib/kanban_web/components/agent_roster_card.ex:282
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr "En attente de relecture"
@@ -4940,7 +4940,7 @@ msgstr "Où"
 msgid "Workflow steps"
 msgstr "Étapes du workflow"
 
-#: lib/kanban_web/components/agent_roster_card.ex:232
+#: lib/kanban_web/components/agent_roster_card.ex:281
 #: lib/kanban_web/components/agents_header.ex:146
 #, elixir-autogen, elixir-format
 msgid "Working"
@@ -5030,7 +5030,7 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] "dernières 24 h · %{count} événement"
 msgstr[1] "dernières 24 h · %{count} événements"
 
-#: lib/kanban_web/live/agents_live.ex:507
+#: lib/kanban_web/live/agents_live.ex:547
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
@@ -7111,19 +7111,19 @@ msgstr "Détails techniques"
 msgid "Technical Details (JSON object)"
 msgstr "Détails techniques (objet JSON)"
 
-#: lib/kanban_web/live/agents_live.ex:312
+#: lib/kanban_web/live/agents_live.ex:314
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "Filtré par %{agent}"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:329
+#: lib/kanban_web/live/agents_live.ex:331
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "Effacer"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:252
-#: lib/kanban_web/components/agent_roster_card.ex:92
+#: lib/kanban_web/components/agent_roster_card.ex:98
 #, elixir-autogen, elixir-format
 msgid "Operator"
 msgstr "Opérateur"
@@ -7180,12 +7180,12 @@ msgstr "%{date} : %{count} terminées"
 msgid "of which"
 msgstr "dont"
 
-#: lib/kanban_web/live/agents_live.ex:273
+#: lib/kanban_web/live/agents_live.ex:274
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "Inactifs (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:562
+#: lib/kanban_web/live/agents_live.ex:602
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "Vu il y a %{days} j"
@@ -7571,3 +7571,8 @@ msgstr "Inactif"
 #, elixir-autogen, elixir-format
 msgid "Why targets are at risk"
 msgstr "Pourquoi les cibles sont à risque"
+
+#: lib/kanban_web/components/agent_roster_card.ex:135
+#, elixir-autogen, elixir-format
+msgid "Advancing delivery target and goal"
+msgstr "Cible de livraison et objectif en cours"

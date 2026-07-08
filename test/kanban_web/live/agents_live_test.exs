@@ -1774,6 +1774,74 @@ defmodule KanbanWeb.AgentsLiveTest do
     end
   end
 
+  describe "target-annotated, risk-first roster" do
+    setup [:register_and_log_in_user]
+
+    test "orders agents on at-risk targets first and annotates their card",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+
+      # At-risk target (created long ago, due soon) with an agent claimed a while
+      # ago, so recency alone would NOT put it first.
+      at_risk = delivery_target_fixture(user, %{name: "Launch", target_date: soon_target_date()})
+      backdate_target_inserted(at_risk, ~N[2020-01-01 00:00:00])
+      risky_goal = task_fixture(doing, %{type: :goal, title: "Ship the API"})
+      {:ok, _} = Tasks.update_task(risky_goal, %{target_id: at_risk.id})
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Risky",
+          parent_id: risky_goal.id,
+          status: :in_progress,
+          claimed_at: DateTime.add(DateTime.utc_now(), -1800, :second)
+        })
+
+      # On-track target with a MORE-recent agent (would sort first by recency).
+      on_track = delivery_target_fixture(user, %{name: "Steady"})
+      calm_goal = task_fixture(doing, %{type: :goal})
+      {:ok, _} = Tasks.update_task(calm_goal, %{target_id: on_track.id})
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Calm",
+          parent_id: calm_goal.id,
+          status: :in_progress,
+          claimed_at: DateTime.add(DateTime.utc_now(), -60, :second)
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+      roster = roster_html(html)
+
+      # Risk-first: Risky (at-risk) floats above the more-recent Calm.
+      assert {risky_pos, _} = :binary.match(roster, "Risky")
+      assert {calm_pos, _} = :binary.match(roster, "Calm")
+      assert risky_pos < calm_pos
+
+      # Risky's card carries the target + goal annotation.
+      assert roster =~ "data-agent-target-annotation"
+      assert roster =~ "Launch"
+      assert roster =~ "Ship the API"
+    end
+
+    test "an agent with no target renders without the annotation",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Lonely"})
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+      roster = roster_html(html)
+
+      assert roster =~ "Lonely"
+      refute roster =~ "data-agent-target-annotation"
+    end
+  end
+
   # A target_date far enough ahead that, paired with a long-ago inserted_at,
   # the elapsed calendar share outruns the (zero) work share -> :at_risk.
   defp soon_target_date, do: Date.add(Date.utc_today(), 20)

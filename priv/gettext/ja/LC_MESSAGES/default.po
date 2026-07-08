@@ -2527,7 +2527,7 @@ msgid "Time tasks spend waiting for human review after completion"
 msgstr "完了後にレビューを待つ時間"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:389
-#: lib/kanban_web/components/agent_roster_card.ex:194
+#: lib/kanban_web/components/agent_roster_card.ex:237
 #: lib/kanban_web/components/agents_header.ex:437
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
@@ -4845,7 +4845,7 @@ msgstr "検証ステップ"
 msgid "today"
 msgstr "今日"
 
-#: lib/kanban_web/components/agent_roster_card.ex:195
+#: lib/kanban_web/components/agent_roster_card.ex:238
 #, elixir-autogen, elixir-format
 msgid "7d"
 msgstr "7日"
@@ -4872,7 +4872,7 @@ msgstr "クレーム済み"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:348
 #: lib/kanban_web/components/agent_detail_panel.ex:96
-#: lib/kanban_web/components/agent_roster_card.ex:197
+#: lib/kanban_web/components/agent_roster_card.ex:240
 #, elixir-autogen, elixir-format
 msgid "Claims"
 msgstr "クレーム"
@@ -4887,7 +4887,7 @@ msgstr "見積もりファイル"
 msgid "Human task"
 msgstr "人間のタスク"
 
-#: lib/kanban_web/components/agent_roster_card.ex:234
+#: lib/kanban_web/components/agent_roster_card.ex:283
 #: lib/kanban_web/components/agents_header.ex:158
 #, elixir-autogen, elixir-format
 msgid "Idle"
@@ -4904,7 +4904,7 @@ msgid "Review status"
 msgstr "レビュー状態"
 
 #: lib/kanban_web/components/agent_detail_panel.ex:236
-#: lib/kanban_web/components/agent_roster_card.ex:196
+#: lib/kanban_web/components/agent_roster_card.ex:239
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr "成功"
@@ -4917,7 +4917,7 @@ msgstr "成功"
 msgid "Testing strategy"
 msgstr "テスト戦略"
 
-#: lib/kanban_web/components/agent_roster_card.ex:233
+#: lib/kanban_web/components/agent_roster_card.ex:282
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr "レビュー待ち"
@@ -4932,7 +4932,7 @@ msgstr "どこで"
 msgid "Workflow steps"
 msgstr "ワークフロー手順"
 
-#: lib/kanban_web/components/agent_roster_card.ex:232
+#: lib/kanban_web/components/agent_roster_card.ex:281
 #: lib/kanban_web/components/agents_header.ex:146
 #, elixir-autogen, elixir-format
 msgid "Working"
@@ -5021,7 +5021,7 @@ msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
 msgstr[0] "過去24時間 · %{count}件のイベント"
 
-#: lib/kanban_web/live/agents_live.ex:507
+#: lib/kanban_web/live/agents_live.ex:547
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
@@ -7111,19 +7111,19 @@ msgstr "技術的な詳細"
 msgid "Technical Details (JSON object)"
 msgstr "技術的な詳細 (JSONオブジェクト)"
 
-#: lib/kanban_web/live/agents_live.ex:312
+#: lib/kanban_web/live/agents_live.ex:314
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "%{agent} で絞り込み中"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:329
+#: lib/kanban_web/live/agents_live.ex:331
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "クリア"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:252
-#: lib/kanban_web/components/agent_roster_card.ex:92
+#: lib/kanban_web/components/agent_roster_card.ex:98
 #, elixir-autogen, elixir-format
 msgid "Operator"
 msgstr "オペレーター"
@@ -7180,12 +7180,12 @@ msgstr "%{date}: %{count} 件完了"
 msgid "of which"
 msgstr "うち"
 
-#: lib/kanban_web/live/agents_live.ex:273
+#: lib/kanban_web/live/agents_live.ex:274
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "休止中 (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:562
+#: lib/kanban_web/live/agents_live.ex:602
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "%{days}日前に最終アクティブ"
@@ -7571,3 +7571,8 @@ msgstr "休止中"
 #, elixir-autogen, elixir-format
 msgid "Why targets are at risk"
 msgstr "ターゲットがリスクにさらされている理由"
+
+#: lib/kanban_web/components/agent_roster_card.ex:135
+#, elixir-autogen, elixir-format
+msgid "Advancing delivery target and goal"
+msgstr "推進中のデリバリーターゲットとゴール"

@@ -239,7 +239,11 @@ defmodule Kanban.Targets.DeliveryRollupTest do
 
   describe "build/2 — shape and defaults" do
     test "an empty board yields no targets and no unrolled agents", %{scope: scope} do
-      assert DeliveryRollup.build(scope) == %{targets: [], unrolled_agents: []}
+      assert DeliveryRollup.build(scope) == %{
+               targets: [],
+               unrolled_agents: [],
+               agent_targets: %{}
+             }
     end
 
     test "each target entry carries every rollup field", %{scope: scope, doing: doing} do
@@ -259,6 +263,46 @@ defmodule Kanban.Targets.DeliveryRollupTest do
              } = entry
 
       assert status in [:complete, :missed, :at_risk, :on_track]
+    end
+  end
+
+  describe "build/2 — agent_targets annotation" do
+    test "annotates an agent with the target and goal it advances", %{scope: scope, doing: doing} do
+      target = delivery_target_fixture(scope.user, %{name: "Launch"})
+      goal = goal_on_target(doing, target)
+      {:ok, goal} = Tasks.update_task(goal, %{title: "Ship the API"})
+      agent_task(doing, %{created_by_agent: "Ada", parent_id: goal.id, claimed_at: ago(5)})
+
+      rollup = DeliveryRollup.build(scope)
+
+      assert [%{target: t, goal: g, status: status}] = rollup.agent_targets[{"Ada", "none"}]
+      assert t.id == target.id
+      assert g.id == goal.id
+      assert status == :on_track
+    end
+
+    test "an agent with no target has an empty annotation list", %{scope: scope, doing: doing} do
+      agent_task(doing, %{created_by_agent: "Orphan", claimed_at: ago(5)})
+
+      rollup = DeliveryRollup.build(scope)
+
+      assert rollup.agent_targets[{"Orphan", "none"}] == []
+    end
+
+    test "annotates an agent advancing goals on two targets", %{scope: scope, doing: doing} do
+      target_a = delivery_target_fixture(scope.user, %{name: "A"})
+      target_b = delivery_target_fixture(scope.user, %{name: "B"})
+      goal_a = goal_on_target(doing, target_a)
+      goal_b = goal_on_target(doing, target_b)
+      agent_task(doing, %{created_by_agent: "Ada", parent_id: goal_a.id, claimed_at: ago(5)})
+      agent_task(doing, %{created_by_agent: "Ada", parent_id: goal_b.id, claimed_at: ago(5)})
+
+      rollup = DeliveryRollup.build(scope)
+
+      target_ids =
+        rollup.agent_targets[{"Ada", "none"}] |> Enum.map(& &1.target.id) |> Enum.sort()
+
+      assert target_ids == Enum.sort([target_a.id, target_b.id])
     end
   end
 

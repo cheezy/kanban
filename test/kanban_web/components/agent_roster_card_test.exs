@@ -369,4 +369,49 @@ defmodule KanbanWeb.AgentRosterCardTest do
       assert html =~ ~r{<dd[^>]*>\s*0%\s*</dd>}
     end
   end
+
+  describe "card/1 — target annotation" do
+    defp annotation(status) do
+      %{target: %{name: "Launch"}, goal: %{title: "Ship the API"}, status: status}
+    end
+
+    test "renders the target and goal when an annotation is given" do
+      assigns = %{agent: agent(), annotation: annotation(:at_risk)}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} annotation={@annotation} />
+        """)
+
+      assert html =~ "data-agent-target-annotation"
+      assert html =~ ~s(data-agent-target-status="at_risk")
+      assert html =~ "Launch"
+      assert html =~ "Ship the API"
+      # At-risk targets accent the annotation amber.
+      assert html =~ "var(--st-doing)"
+    end
+
+    test "renders no annotation when none is given (default nil)" do
+      assigns = %{agent: agent()}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} />
+        """)
+
+      refute html =~ "data-agent-target-annotation"
+    end
+
+    test "uses a neutral accent for an on-track target" do
+      assigns = %{agent: agent(), annotation: annotation(:on_track)}
+
+      html =
+        rendered_to_string(~H"""
+        <AgentRosterCard.card agent={@agent} annotation={@annotation} />
+        """)
+
+      assert html =~ ~s(data-agent-target-status="on_track")
+      assert html =~ "var(--line)"
+    end
+  end
 end

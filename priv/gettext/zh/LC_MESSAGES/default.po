@@ -2527,7 +2527,7 @@ msgid "Time tasks spend waiting for human review after completion"
 msgstr "任务完成后等待人工审查的时间"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:389
-#: lib/kanban_web/components/agent_roster_card.ex:194
+#: lib/kanban_web/components/agent_roster_card.ex:237
 #: lib/kanban_web/components/agents_header.ex:437
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
@@ -4845,7 +4845,7 @@ msgstr "验证步骤"
 msgid "today"
 msgstr "今天"
 
-#: lib/kanban_web/components/agent_roster_card.ex:195
+#: lib/kanban_web/components/agent_roster_card.ex:238
 #, elixir-autogen, elixir-format
 msgid "7d"
 msgstr "7 天"
@@ -4872,7 +4872,7 @@ msgstr "已认领"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:348
 #: lib/kanban_web/components/agent_detail_panel.ex:96
-#: lib/kanban_web/components/agent_roster_card.ex:197
+#: lib/kanban_web/components/agent_roster_card.ex:240
 #, elixir-autogen, elixir-format
 msgid "Claims"
 msgstr "认领"
@@ -4887,7 +4887,7 @@ msgstr "预估文件"
 msgid "Human task"
 msgstr "人工任务"
 
-#: lib/kanban_web/components/agent_roster_card.ex:234
+#: lib/kanban_web/components/agent_roster_card.ex:283
 #: lib/kanban_web/components/agents_header.ex:158
 #, elixir-autogen, elixir-format
 msgid "Idle"
@@ -4904,7 +4904,7 @@ msgid "Review status"
 msgstr "审核状态"
 
 #: lib/kanban_web/components/agent_detail_panel.ex:236
-#: lib/kanban_web/components/agent_roster_card.ex:196
+#: lib/kanban_web/components/agent_roster_card.ex:239
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr "成功"
@@ -4917,7 +4917,7 @@ msgstr "成功"
 msgid "Testing strategy"
 msgstr "测试策略"
 
-#: lib/kanban_web/components/agent_roster_card.ex:233
+#: lib/kanban_web/components/agent_roster_card.ex:282
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr "等待审核"
@@ -4932,7 +4932,7 @@ msgstr "在哪里"
 msgid "Workflow steps"
 msgstr "工作流步骤"
 
-#: lib/kanban_web/components/agent_roster_card.ex:232
+#: lib/kanban_web/components/agent_roster_card.ex:281
 #: lib/kanban_web/components/agents_header.ex:146
 #, elixir-autogen, elixir-format
 msgid "Working"
@@ -5021,7 +5021,7 @@ msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
 msgstr[0] "最近 24 小时 · %{count} 个事件"
 
-#: lib/kanban_web/live/agents_live.ex:507
+#: lib/kanban_web/live/agents_live.ex:547
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
@@ -7111,19 +7111,19 @@ msgstr "技术细节"
 msgid "Technical Details (JSON object)"
 msgstr "技术细节（JSON 对象）"
 
-#: lib/kanban_web/live/agents_live.ex:312
+#: lib/kanban_web/live/agents_live.ex:314
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "按 %{agent} 筛选"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:329
+#: lib/kanban_web/live/agents_live.ex:331
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "清除"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:252
-#: lib/kanban_web/components/agent_roster_card.ex:92
+#: lib/kanban_web/components/agent_roster_card.ex:98
 #, elixir-autogen, elixir-format
 msgid "Operator"
 msgstr "操作员"
@@ -7180,12 +7180,12 @@ msgstr "%{date}：完成 %{count} 个"
 msgid "of which"
 msgstr "其中"
 
-#: lib/kanban_web/live/agents_live.ex:273
+#: lib/kanban_web/live/agents_live.ex:274
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "休眠 (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:562
+#: lib/kanban_web/live/agents_live.ex:602
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "%{days} 天前活跃"
@@ -7571,3 +7571,8 @@ msgstr "休眠"
 #, elixir-autogen, elixir-format
 msgid "Why targets are at risk"
 msgstr "目标存在风险的原因"
+
+#: lib/kanban_web/components/agent_roster_card.ex:135
+#, elixir-autogen, elixir-format
+msgid "Advancing delivery target and goal"
+msgstr "正在推进的交付目标和目标"

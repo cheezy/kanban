@@ -238,6 +238,7 @@ defmodule KanbanWeb.AgentsLive do
             <AgentRosterCard.card
               :for={agent <- @agents}
               agent={agent}
+              annotation={primary_annotation(@delivery_rollup.agent_targets, agent)}
               on_select="select_agent"
               selected?={{agent.name, agent.owner_key} == @selected_agent}
             />
@@ -280,6 +281,7 @@ defmodule KanbanWeb.AgentsLive do
                 <div :for={agent <- @dormant_agents} data-agent-dormant-card>
                   <AgentRosterCard.card
                     agent={agent}
+                    annotation={primary_annotation(@delivery_rollup.agent_targets, agent)}
                     on_select="select_agent"
                     selected?={{agent.name, agent.owner_key} == @selected_agent}
                   />
@@ -372,9 +374,36 @@ defmodule KanbanWeb.AgentsLive do
 
   defp load_agents_data(socket) do
     scope = socket.assigns.current_scope
-    # Fetch the scoped task set ONCE and derive every roster, event, and metric
-    # from it. Previously each of the 6-7 calls below re-ran the unbounded task
-    # fetch (W1242), turning a single render into ~24-28 queries.
+    timezone = socket.assigns.timezone
+    {tasks, throughput_tasks} = fetch_task_sets(socket, scope)
+
+    agents = Agents.list_agents_from(tasks, timezone)
+    events = Agents.recent_activity_from(tasks, @recent_activity_limit)
+    # Build the delivery rollup once (board-scoped, no LiveView Ecto) and reuse
+    # it for the delivery-health band, the at-risk explainer, and the roster's
+    # target annotation + risk-first ordering (W1589).
+    delivery_rollup = DeliveryRollup.build(scope, timezone: timezone)
+
+    metrics =
+      metric_assigns(tasks, throughput_tasks, agents, timezone, socket.assigns.time_range)
+
+    assigns =
+      socket
+      |> base_assigns(tasks, agents, events, delivery_rollup)
+      |> Map.merge(metrics)
+      |> Map.put(:delivery_rollup, delivery_rollup)
+
+    assign(socket, assigns)
+  end
+
+  # The two board-scoped task fetches every derivation shares. The first is the
+  # selector-filtered set that drives the roster, events, and header stats
+  # (fetched ONCE — before W1242 each derivation re-ran the unbounded fetch,
+  # ~24-28 queries per render). The second is a fixed @throughput_window_days
+  # set, independent of the page time-range selector, so a "30D" throughput card
+  # always means 30 days; it stays bounded so it never reintroduces the old
+  # unbounded per-render fetch.
+  defp fetch_task_sets(socket, scope) do
     tasks =
       Agents.fetch_tasks(
         scope: scope,
@@ -383,11 +412,6 @@ defmodule KanbanWeb.AgentsLive do
         timezone: socket.assigns.timezone
       )
 
-    # The fixed-window throughput cards (Today/7D/30D + prior-period deltas) must
-    # be independent of the page time-range selector, so derive them from a
-    # second board-scoped fetch bounded to @throughput_window_days rather than the
-    # selector-filtered set above. Board scope still applies; the window keeps the
-    # extra fetch bounded (no return to the pre-W1242 unbounded per-render fetch).
     throughput_tasks =
       Agents.fetch_tasks(
         scope: scope,
@@ -396,32 +420,19 @@ defmodule KanbanWeb.AgentsLive do
         timezone: socket.assigns.timezone
       )
 
-    agents = Agents.list_agents_from(tasks, socket.assigns.timezone)
-    events = Agents.recent_activity_from(tasks, @recent_activity_limit)
-
-    metrics =
-      metric_assigns(
-        scope,
-        tasks,
-        throughput_tasks,
-        agents,
-        socket.assigns.timezone,
-        socket.assigns.time_range
-      )
-
-    assigns = socket |> base_assigns(tasks, agents, events) |> Map.merge(metrics)
-
-    assign(socket, assigns)
+    {tasks, throughput_tasks}
   end
 
   # The roster, event, and drill-down assigns derived from the shared task fetch.
-  defp base_assigns(socket, tasks, agents, events) do
+  defp base_assigns(socket, tasks, agents, events, delivery_rollup) do
     # Dormant agents are split out of the main roster into a collapsible group;
     # the dormant flag is derived in the context (W1222), not recomputed here.
     {live_agents, dormant_agents} = Enum.split_with(agents, &(not &1.dormant))
 
     %{
-      agents: live_agents,
+      # Order the live roster risk-first: agents advancing a goal inside an
+      # at-risk target float to the top, everything else keeps its recency order.
+      agents: order_risk_first(live_agents, delivery_rollup.agent_targets),
       dormant_agents: dormant_agents,
       all_events: events,
       events: apply_filters(events, socket.assigns.filter, socket.assigns.selected_agent),
@@ -440,17 +451,46 @@ defmodule KanbanWeb.AgentsLive do
   # Everything else (today header stats, trends-chart span) stays on the
   # selector-scoped `tasks`. `success_rate` rides the throughput block, so it is
   # now the fixed-window rate too — intentionally consistent with the cards.
-  defp metric_assigns(scope, tasks, throughput_tasks, agents, timezone, time_range) do
+  defp metric_assigns(tasks, throughput_tasks, agents, timezone, time_range) do
     %{
       stats: Agents.header_stats_from(tasks, timezone),
       fleet_health: Agents.fleet_health_from(agents),
       throughput_and_success: Agents.throughput_and_success_from(throughput_tasks, timezone),
       throughput_trends:
-        Agents.throughput_trends_from(tasks, trend_days_for(time_range), timezone),
-      # The delivery-health band buckets every accessible target by derived
-      # status; scoped by DeliveryRollup so no inaccessible-board target leaks.
-      delivery_rollup: DeliveryRollup.build(scope, timezone: timezone)
+        Agents.throughput_trends_from(tasks, trend_days_for(time_range), timezone)
     }
+  end
+
+  # Stable risk-first ordering: agents advancing a goal inside an at-risk target
+  # sort ahead of the rest, and (because Enum.sort_by/3 is stable) each group
+  # keeps the roster's recency order. Agents with no target stay in the second
+  # group and still render — none are dropped.
+  defp order_risk_first(agents, agent_targets) do
+    Enum.sort_by(agents, &if(on_at_risk?(&1, agent_targets), do: 0, else: 1))
+  end
+
+  defp on_at_risk?(agent, agent_targets) do
+    agent_targets
+    |> Map.get({agent.name, agent.owner_key}, [])
+    |> Enum.any?(&(&1.status == :at_risk))
+  end
+
+  # The single target+goal annotation a roster card renders for an agent, or nil
+  # when the agent advances no target. When the agent works several targets the
+  # most-endangered one wins (at-risk, then missed, then the first) so the card
+  # surfaces the reason it was floated to the top.
+  defp primary_annotation(agent_targets, agent) do
+    agent_targets
+    |> Map.get({agent.name, agent.owner_key}, [])
+    |> pick_annotation()
+  end
+
+  defp pick_annotation([]), do: nil
+
+  defp pick_annotation(entries) do
+    Enum.find(entries, &(&1.status == :at_risk)) ||
+      Enum.find(entries, &(&1.status == :missed)) ||
+      hd(entries)
   end
 
   # Map the selected window to the throughput-trends day span so the chart's

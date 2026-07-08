@@ -37,10 +37,16 @@ defmodule KanbanWeb.AgentRosterCard do
       focus-visible outline); when `nil` the card is purely presentational.
     * `selected?` — whether this card is the currently-selected agent;
       drives the highlighted border/background and `aria-pressed`.
+    * `annotation` — optional `%{target, goal, status}` map (a
+      `Kanban.Targets.DeliveryRollup.agent_annotation/0`) naming the delivery
+      target and goal the agent is advancing. When present it renders a small
+      target · goal line accented by the target's status; `nil` (the default)
+      renders no annotation, so existing callers are unaffected.
   """
   attr :agent, :map, required: true
   attr :on_select, :string, default: nil
   attr :selected?, :boolean, default: false
+  attr :annotation, :map, default: nil
 
   def card(assigns) do
     ~H"""
@@ -102,6 +108,8 @@ defmodule KanbanWeb.AgentRosterCard do
         <.status_dot status={@agent.status} />
       </header>
 
+      <.target_annotation :if={@annotation} annotation={@annotation} />
+
       <.current_task_pill
         :if={@agent.status == :working and @agent.current_task}
         task={@agent.current_task}
@@ -111,6 +119,41 @@ defmodule KanbanWeb.AgentRosterCard do
 
       <.stats_grid agent={@agent} />
     </article>
+    """
+  end
+
+  attr :annotation, :map, required: true
+
+  # The delivery target + goal the agent is advancing, accented by the target's
+  # status so an at-risk target draws the eye. Names are data; the aria-label is
+  # the only translated string.
+  defp target_annotation(assigns) do
+    ~H"""
+    <div
+      data-agent-target-annotation
+      data-agent-target-status={@annotation.status}
+      aria-label={gettext("Advancing delivery target and goal")}
+      style={[
+        "display: flex; align-items: center; gap: 5px; min-width: 0;",
+        "padding: 3px 8px; border-radius: 6px;",
+        "background: var(--surface-2);",
+        "border-left: 2px solid #{annotation_accent(@annotation.status)};"
+      ]}
+    >
+      <span style={[
+        "font-size: 10.5px; font-weight: 600; color: var(--ink-2);",
+        "white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%;"
+      ]}>
+        {@annotation.target.name}
+      </span>
+      <span aria-hidden="true" style="font-size: 10px; color: var(--ink-4);">·</span>
+      <span style={[
+        "font-size: 10.5px; color: var(--ink-3);",
+        "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+      ]}>
+        {@annotation.goal.title}
+      </span>
+    </div>
     """
   end
 
@@ -228,6 +271,12 @@ defmodule KanbanWeb.AgentRosterCard do
   defp status_dot_color(:working), do: "var(--st-doing)"
   defp status_dot_color(:waiting), do: "var(--ink-3)"
   defp status_dot_color(:idle), do: "var(--ink-4)"
+
+  # Left-border accent for the target annotation, keyed on the target's status:
+  # at-risk amber and missed red draw the eye; on-track/complete stay neutral.
+  defp annotation_accent(:at_risk), do: "var(--st-doing)"
+  defp annotation_accent(:missed), do: "var(--st-blocked)"
+  defp annotation_accent(_status), do: "var(--line)"
 
   defp status_label(:working), do: gettext("Working")
   defp status_label(:waiting), do: gettext("Waiting for review")

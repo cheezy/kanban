@@ -88,13 +88,29 @@ defmodule Kanban.Targets.DeliveryRollup do
         }
 
   @typedoc """
+  One target+goal an agent is advancing, with the target's read-time status —
+  the annotation the roster card renders and the risk-first roster ordering
+  keys on.
+  """
+  @type agent_annotation :: %{
+          target: DeliveryTarget.t(),
+          goal: Task.t(),
+          status: Status.status()
+        }
+
+  @typedoc """
   The full delivery rollup: one entry per accessible target (ordered as
   `Kanban.Targets.list_targets_with_status/2` orders them, soonest date first),
-  plus the agents whose work never reaches a target.
+  the agents whose work never reaches a target, and `agent_targets` — a map from
+  each agent's `{name, owner_key}` identity to the target+goal annotations it is
+  advancing (empty list for an agent that reaches no target). All three views
+  derive from the same board-scoped data, so a consumer can annotate and order
+  the roster without any further query.
   """
   @type t :: %{
           targets: [target_rollup()],
-          unrolled_agents: [Agent.t()]
+          unrolled_agents: [Agent.t()],
+          agent_targets: %{{String.t(), String.t()} => [agent_annotation()]}
         }
 
   @doc """
@@ -118,10 +134,12 @@ defmodule Kanban.Targets.DeliveryRollup do
     tasks = fetch_bridged_tasks(scope)
     agents = Roster.from_tasks(tasks, timezone)
     bridges = agent_bridges(agents, tasks)
+    target_rollups = build_target_rollups(scope, today, agents, bridges)
 
     %{
-      targets: build_target_rollups(scope, today, agents, bridges),
-      unrolled_agents: unrolled_agents(agents, bridges)
+      targets: target_rollups,
+      unrolled_agents: unrolled_agents(agents, bridges),
+      agent_targets: agent_targets(agents, bridges, target_rollups)
     }
   end
 
@@ -189,6 +207,51 @@ defmodule Kanban.Targets.DeliveryRollup do
   # goal has no target — are returned outside the target rollup.
   defp unrolled_agents(agents, bridges) do
     Enum.filter(agents, fn agent -> Map.fetch!(bridges, identity(agent)) == [] end)
+  end
+
+  # Maps each agent identity to the target+goal annotations it is advancing,
+  # resolving the bridge's `{goal_id, target_id}` pairs against the already-built
+  # target rollups (so goal/target structs and status come from the same
+  # board-scoped derivation — no extra query, no inaccessible data).
+  defp agent_targets(agents, bridges, target_rollups) do
+    goal_index = goal_index(target_rollups)
+    target_index = target_index(target_rollups)
+
+    Map.new(agents, fn agent ->
+      id = identity(agent)
+      {id, annotations_for(id, bridges, goal_index, target_index)}
+    end)
+  end
+
+  # goal id -> goal task, across every accessible target's member goals.
+  defp goal_index(target_rollups) do
+    target_rollups
+    |> Enum.flat_map(& &1.goals)
+    |> Map.new(&{&1.id, &1})
+  end
+
+  # target id -> {target, status}, from the already-built target rollups.
+  defp target_index(target_rollups) do
+    Map.new(target_rollups, &{&1.target.id, {&1.target, &1.status}})
+  end
+
+  defp annotations_for(identity, bridges, goal_index, target_index) do
+    bridges
+    |> Map.fetch!(identity)
+    |> Enum.uniq()
+    |> Enum.flat_map(&annotation(&1, goal_index, target_index))
+  end
+
+  # A single `{goal_id, target_id}` bridge pair resolved to an annotation, or an
+  # empty list when either the goal or the target is not in the accessible
+  # rollup (defensive — the bridge pairs come from the same scoped data).
+  defp annotation({goal_id, target_id}, goal_index, target_index) do
+    with %Task{} = goal <- Map.get(goal_index, goal_id),
+         {%DeliveryTarget{} = target, status} <- Map.get(target_index, target_id) do
+      [%{target: target, goal: goal, status: status}]
+    else
+      _ -> []
+    end
   end
 
   # Maps each agent identity to the `{goal_id, target_id}` pairs its tasks reach.
