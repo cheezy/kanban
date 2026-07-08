@@ -17,8 +17,15 @@
       </:subtitle>
     </.header>
 
-    <div class="mt-8 max-w-2xl">
-      <.form :let={f} for={@form} id="target-form" phx-change="validate" phx-submit="save">
+    <div class="mt-8 max-w-4xl">
+      <.form
+        :let={f}
+        for={@form}
+        id="target-form"
+        class="max-w-2xl"
+        phx-change="validate"
+        phx-submit="save"
+      >
         <.input field={f[:name]} type="text" label={gettext("Name")} />
         <.input field={f[:target_date]} type="date" label={gettext("Target Date")} />
         <.input field={f[:description]} type="textarea" label={gettext("Description")} />
