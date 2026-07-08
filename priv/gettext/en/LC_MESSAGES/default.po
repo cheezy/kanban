@@ -150,7 +150,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:52
 #: lib/kanban_web/live/board_live/settings_form_component.ex:142
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
-#: lib/kanban_web/live/target_live/form.html.heex:32
+#: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/form_component.html.heex:988
 #: lib/kanban_web/live/user_live/settings.ex:93
 #: lib/kanban_web/live/user_live/settings.ex:156
@@ -190,7 +190,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
 #: lib/kanban_web/live/review_live.html.heex:146
-#: lib/kanban_web/live/target_live/form.html.heex:39
+#: lib/kanban_web/live/target_live/form.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr ""
@@ -198,7 +198,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:31
 #: lib/kanban_web/live/board_live/settings_form_component.ex:82
 #: lib/kanban_web/live/issue_live/form_component.ex:85
-#: lib/kanban_web/live/target_live/form.html.heex:24
+#: lib/kanban_web/live/target_live/form.html.heex:31
 #: lib/kanban_web/live/task_live/form_component.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "Description"
@@ -222,7 +222,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:78
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
-#: lib/kanban_web/live/target_live/form.html.heex:22
+#: lib/kanban_web/live/target_live/form.html.heex:29
 #: lib/kanban_web/live/user_live/settings.ex:65
 #, elixir-autogen, elixir-format
 msgid "Name"
@@ -608,7 +608,7 @@ msgstr ""
 
 #: lib/kanban_web/live/board_live/form.html.heex:321
 #: lib/kanban_web/live/board_live/members_form_component.ex:213
-#: lib/kanban_web/live/target_live/form.html.heex:27
+#: lib/kanban_web/live/target_live/form.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Owner"
 msgstr ""
@@ -4190,7 +4190,7 @@ msgid "Active goals"
 msgstr "Active goals"
 
 #: lib/kanban_web/components/layouts.ex:275
-#: lib/kanban_web/live/agents_live.ex:165
+#: lib/kanban_web/live/agents_live.ex:167
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr ""
@@ -4252,7 +4252,7 @@ msgstr ""
 msgid "Stride home"
 msgstr "Stride home"
 
-#: lib/kanban_web/live/agents_live.ex:163
+#: lib/kanban_web/live/agents_live.ex:165
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -4537,6 +4537,7 @@ msgid "%{done} of %{total} complete"
 msgstr ""
 
 #: lib/kanban_web/components/goal_progress_header.ex:111
+#: lib/kanban_web/components/target_goal_manage_row.ex:81
 #: lib/kanban_web/components/target_goal_row.ex:69
 #, elixir-autogen, elixir-format
 msgid "Goal progress by child status"
@@ -4548,6 +4549,7 @@ msgid "priority"
 msgstr ""
 
 #: lib/kanban_web/components/goal_child_row.ex:85
+#: lib/kanban_web/components/target_goal_manage_row.ex:115
 #: lib/kanban_web/components/target_goal_row.ex:96
 #, elixir-autogen, elixir-format
 msgid "unassigned"
@@ -4725,6 +4727,7 @@ msgstr ""
 msgid "Avg cycle"
 msgstr ""
 
+#: lib/kanban_web/components/delivery_health_band.ex:173
 #: lib/kanban_web/components/goal_sidebar.ex:58
 #: lib/kanban_web/components/target_progress_header.ex:187
 #: lib/kanban_web/components/targets_strip.ex:155
@@ -5027,19 +5030,19 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/agents_live.ex:496
+#: lib/kanban_web/live/agents_live.ex:504
 #, elixir-autogen, elixir-format
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/agents_live.ex:229
+#: lib/kanban_web/live/agents_live.ex:233
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:199
+#: lib/kanban_web/live/agents_live.ex:203
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr ""
@@ -7062,13 +7065,13 @@ msgstr ""
 msgid "Technical Details (JSON object)"
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:305
+#: lib/kanban_web/live/agents_live.ex:309
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr ""
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:322
+#: lib/kanban_web/live/agents_live.ex:326
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr ""
@@ -7130,12 +7133,12 @@ msgstr ""
 msgid "of which"
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:266
+#: lib/kanban_web/live/agents_live.ex:270
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:551
+#: lib/kanban_web/live/agents_live.ex:559
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr ""
@@ -7338,18 +7341,21 @@ msgstr ""
 msgid "Send confirmation link"
 msgstr ""
 
+#: lib/kanban_web/components/delivery_health_band.ex:171
 #: lib/kanban_web/components/target_progress_header.ex:189
 #: lib/kanban_web/components/targets_strip.ex:157
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr ""
 
+#: lib/kanban_web/components/delivery_health_band.ex:172
 #: lib/kanban_web/components/target_progress_header.ex:190
 #: lib/kanban_web/components/targets_strip.ex:158
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr ""
 
+#: lib/kanban_web/components/delivery_health_band.ex:170
 #: lib/kanban_web/components/target_progress_header.ex:188
 #: lib/kanban_web/components/targets_strip.ex:156
 #, elixir-autogen, elixir-format
@@ -7361,32 +7367,32 @@ msgstr ""
 msgid "Targets"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:99
+#: lib/kanban_web/live/target_live/form.html.heex:105
 #, elixir-autogen, elixir-format
 msgid "Assign"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:47
+#: lib/kanban_web/live/target_live/form.html.heex:54
 #, elixir-autogen, elixir-format
 msgid "Assigned Goals"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:77
+#: lib/kanban_web/live/target_live/form.html.heex:83
 #, elixir-autogen, elixir-format
 msgid "Available Goals"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.ex:54
+#: lib/kanban_web/live/target_live/form.ex:57
 #, elixir-autogen, elixir-format
 msgid "Could not assign goal"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.ex:67
+#: lib/kanban_web/live/target_live/form.ex:71
 #, elixir-autogen, elixir-format
 msgid "Could not unassign goal"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:33
+#: lib/kanban_web/live/target_live/form.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "Create Target"
 msgstr ""
@@ -7396,12 +7402,12 @@ msgstr ""
 msgid "Edit Target"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:50
+#: lib/kanban_web/live/target_live/form.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Goals currently counting toward this target."
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:80
+#: lib/kanban_web/live/target_live/form.html.heex:86
 #, elixir-autogen, elixir-format
 msgid "Goals you can add to this target."
 msgstr ""
@@ -7412,42 +7418,42 @@ msgstr ""
 msgid "New Target"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:55
+#: lib/kanban_web/live/target_live/form.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "No goals are assigned to this target yet."
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:85
+#: lib/kanban_web/live/target_live/form.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "No goals are available to assign."
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.ex:126
+#: lib/kanban_web/live/target_live/form.ex:130
 #, elixir-autogen, elixir-format
 msgid "Only the target owner can edit this target"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:33
+#: lib/kanban_web/live/target_live/form.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "Save Target"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:23
+#: lib/kanban_web/live/target_live/form.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Target Date"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.ex:96
+#: lib/kanban_web/live/target_live/form.ex:100
 #, elixir-autogen, elixir-format
 msgid "Target created successfully"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.ex:80
+#: lib/kanban_web/live/target_live/form.ex:84
 #, elixir-autogen, elixir-format
 msgid "Target updated successfully"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:69
+#: lib/kanban_web/live/target_live/form.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Unassign"
 msgstr ""
@@ -7477,6 +7483,7 @@ msgstr ""
 msgid "Target progress by child status"
 msgstr ""
 
+#: lib/kanban_web/components/target_goal_manage_row.ex:84
 #: lib/kanban_web/components/target_goal_row.ex:72
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{done} of %{total} (%{pct}%)"
@@ -7490,4 +7497,19 @@ msgstr ""
 #: lib/kanban_web/live/target_live/show.html.heex:31
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit target"
+msgstr ""
+
+#: lib/kanban_web/components/delivery_health_band.ex:72
+#, elixir-autogen, elixir-format
+msgid "Delivery health"
+msgstr ""
+
+#: lib/kanban_web/components/delivery_health_band.ex:95
+#, elixir-autogen, elixir-format
+msgid "No delivery targets yet."
+msgstr ""
+
+#: lib/kanban_web/components/delivery_health_band.ex:131
+#, elixir-autogen, elixir-format
+msgid "Soonest target date"
 msgstr ""

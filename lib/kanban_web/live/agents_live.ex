@@ -19,11 +19,13 @@ defmodule KanbanWeb.AgentsLive do
 
   alias Kanban.Agents
   alias Kanban.Boards
+  alias Kanban.Targets.DeliveryRollup
   alias KanbanWeb.AgentActivityFeed
   alias KanbanWeb.AgentDetailPanel
   alias KanbanWeb.AgentRosterCard
   alias KanbanWeb.AgentsHeader
   alias KanbanWeb.AgentsPresence
+  alias KanbanWeb.DeliveryHealthBand
 
   @default_filter :all
   @recent_activity_limit 200
@@ -177,6 +179,8 @@ defmodule KanbanWeb.AgentsLive do
           board_id={@board_id}
           time_range={@time_range}
         />
+
+        <DeliveryHealthBand.delivery_health_band targets={@delivery_rollup.targets} />
 
         <div
           data-agents-live-indicator
@@ -394,6 +398,7 @@ defmodule KanbanWeb.AgentsLive do
 
     metrics =
       metric_assigns(
+        scope,
         tasks,
         throughput_tasks,
         agents,
@@ -432,13 +437,16 @@ defmodule KanbanWeb.AgentsLive do
   # Everything else (today header stats, trends-chart span) stays on the
   # selector-scoped `tasks`. `success_rate` rides the throughput block, so it is
   # now the fixed-window rate too — intentionally consistent with the cards.
-  defp metric_assigns(tasks, throughput_tasks, agents, timezone, time_range) do
+  defp metric_assigns(scope, tasks, throughput_tasks, agents, timezone, time_range) do
     %{
       stats: Agents.header_stats_from(tasks, timezone),
       fleet_health: Agents.fleet_health_from(agents),
       throughput_and_success: Agents.throughput_and_success_from(throughput_tasks, timezone),
       throughput_trends:
-        Agents.throughput_trends_from(tasks, trend_days_for(time_range), timezone)
+        Agents.throughput_trends_from(tasks, trend_days_for(time_range), timezone),
+      # The delivery-health band buckets every accessible target by derived
+      # status; scoped by DeliveryRollup so no inaccessible-board target leaks.
+      delivery_rollup: DeliveryRollup.build(scope, timezone: timezone)
     }
   end
 

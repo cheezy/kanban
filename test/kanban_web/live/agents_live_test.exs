@@ -10,6 +10,7 @@ defmodule KanbanWeb.AgentsLiveTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.TargetsFixtures
   import Kanban.TasksFixtures
 
   alias Kanban.Repo
@@ -1640,5 +1641,83 @@ defmodule KanbanWeb.AgentsLiveTest do
       [_, rest] -> rest |> String.split("data-agent-feed", parts: 2) |> hd()
       _ -> ""
     end
+  end
+
+  describe "delivery health band" do
+    setup [:register_and_log_in_user]
+
+    test "renders the band populated from the scoped delivery rollup", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+      target = delivery_target_fixture(user, %{target_date: ~D[2026-07-21]})
+
+      goal = task_fixture(doing, %{type: :goal})
+      {:ok, _} = Tasks.update_task(goal, %{target_id: target.id})
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Ada",
+          parent_id: goal.id,
+          status: :in_progress
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-delivery-health-band"
+      # A freshly-created target with incomplete work reads :on_track.
+      assert band_count(html, "on-track") == 1
+      assert html =~ "Jul 21, 2026"
+
+      # The band sits at the top of the page — above the roster.
+      band_pos = :binary.match(html, "data-delivery-health-band") |> elem(0)
+      roster_pos = :binary.match(html, "data-agents-roster") |> elem(0)
+      assert band_pos < roster_pos
+    end
+
+    test "renders the empty state when the user has no targets", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      board |> column_fixture() |> then(&task_fixture(&1))
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-delivery-health-band"
+      assert html =~ "data-delivery-health-empty"
+      assert html =~ "No delivery targets yet."
+    end
+
+    test "excludes targets on boards the user cannot access", %{conn: conn, user: user} do
+      # The signed-in user's own on-track target.
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+      target = delivery_target_fixture(user, %{target_date: ~D[2026-07-21]})
+      goal = task_fixture(doing, %{type: :goal})
+      {:ok, _} = Tasks.update_task(goal, %{target_id: target.id})
+
+      # A foreign user's target on an inaccessible board.
+      other = user_fixture()
+      other_doing = other |> board_fixture() |> column_fixture(%{name: "Doing"})
+      foreign = delivery_target_fixture(other, %{target_date: ~D[2026-07-10]})
+      foreign_goal = task_fixture(other_doing, %{type: :goal})
+      {:ok, _} = Tasks.update_task(foreign_goal, %{target_id: foreign.id})
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      # Only the user's own target is counted; the foreign one is excluded.
+      assert band_count(html, "on-track") == 1
+      refute html =~ "Jul 10, 2026"
+    end
+  end
+
+  # The <dd> count for a delivery-health bucket marker, as an integer.
+  defp band_count(html, marker) do
+    [_, count] =
+      Regex.run(
+        ~r/data-delivery-health-stat="#{marker}".*?<dd[^>]*>\s*(\d+)\s*<\/dd>/s,
+        html
+      )
+
+    String.to_integer(count)
   end
 end
