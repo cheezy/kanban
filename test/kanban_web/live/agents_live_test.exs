@@ -2248,16 +2248,212 @@ defmodule KanbanWeb.AgentsLiveTest do
     end
   end
 
+  describe "intervention authorization (end-to-end)" do
+    setup [:register_and_log_in_user]
+
+    test "a target owner who is a board member (not board owner) can reassign",
+         %{conn: conn, user: target_owner} do
+      board_owner = user_fixture()
+      %{goal: goal, board: board, ready: ready} = at_risk_goal(board_owner, target_owner)
+      {:ok, _} = Boards.add_user_to_board(board, target_owner, :modify, board_owner)
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, board_owner)
+      _child = task_fixture(ready, %{parent_id: goal.id})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      assert has_element?(view, ~s([data-reassign-trigger="#{goal.id}"]))
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      html =
+        view
+        |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+        |> render_submit()
+
+      assert html =~ "Reassigned"
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == other.id
+    end
+
+    test "a target owner who is a board member can reprioritize",
+         %{conn: conn, user: target_owner} do
+      board_owner = user_fixture()
+      %{goal: goal, board: board, ready: ready} = at_risk_goal(board_owner, target_owner)
+      {:ok, _} = Boards.add_user_to_board(board, target_owner, :modify, board_owner)
+      _child = task_fixture(ready, %{parent_id: goal.id, priority: :low})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      assert has_element?(view, ~s([data-reprioritize-trigger="#{goal.id}"]))
+      view |> element(~s([data-reprioritize-trigger="#{goal.id}"])) |> render_click()
+
+      html =
+        view
+        |> form("#reprioritize-form", %{"priority" => "critical"})
+        |> render_submit()
+
+      assert html =~ "Reprioritized"
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).priority == :critical
+    end
+
+    test "the board owner can reassign even when the target is owned by someone else",
+         %{conn: conn, user: board_owner} do
+      target_owner = user_fixture()
+      %{goal: goal, board: board, ready: ready} = at_risk_goal(board_owner, target_owner)
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, board_owner)
+      _child = task_fixture(ready, %{parent_id: goal.id})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      assert has_element?(view, ~s([data-reassign-trigger="#{goal.id}"]))
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      html =
+        view
+        |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+        |> render_submit()
+
+      assert html =~ "Reassigned"
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == other.id
+    end
+
+    test "a forged open_reassign from a board member who is neither owner is refused server-side",
+         %{conn: conn, user: member} do
+      board_owner = user_fixture()
+      %{goal: goal, board: board} = at_risk_goal(board_owner, board_owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, board_owner)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      # The control is not even rendered for this member (hidden in the UI)...
+      refute has_element?(view, ~s([data-reassign-trigger="#{goal.id}"]))
+      # ...and forging the event directly is refused by the server gate, not opened.
+      html = render_click(view, "open_reassign", %{"goal-id" => to_string(goal.id)})
+
+      assert html =~ "not allowed to reassign"
+      refute has_element?(view, "#reassign-goal-modal")
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == nil
+    end
+
+    test "a forged open_reprioritize from a non-owner board member is refused server-side",
+         %{conn: conn, user: member} do
+      board_owner = user_fixture()
+      %{goal: goal, board: board} = at_risk_goal(board_owner, board_owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, board_owner)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      refute has_element?(view, ~s([data-reprioritize-trigger="#{goal.id}"]))
+      html = render_click(view, "open_reprioritize", %{"goal-id" => to_string(goal.id)})
+
+      assert html =~ "not allowed to reprioritize"
+      refute has_element?(view, "#reprioritize-goal-modal")
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).priority == :medium
+    end
+
+    test "a forged confirm_reassign from a non-owner with no open dialog changes nothing",
+         %{conn: conn, user: member} do
+      board_owner = user_fixture()
+      %{goal: goal, board: board} = at_risk_goal(board_owner, board_owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, board_owner)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      # No dialog was opened (can_intervene?/2 hid the control), so the confirm
+      # handler has no reassign snapshot to act on — a forged submit is a no-op.
+      render_click(view, "confirm_reassign", %{"assigned_to_id" => to_string(member.id)})
+
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == nil
+    end
+
+    test "a forged confirm_reprioritize from a non-owner with no open dialog changes nothing",
+         %{conn: conn, user: member} do
+      board_owner = user_fixture()
+      %{goal: goal, board: board} = at_risk_goal(board_owner, board_owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, board_owner)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      render_click(view, "confirm_reprioritize", %{"priority" => "critical"})
+
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).priority == :medium
+    end
+  end
+
+  describe "intervention safeguards (end-to-end)" do
+    setup [:register_and_log_in_user]
+
+    test "when every not-started child is claimed mid-flow, all are skipped and none reassigned",
+         %{conn: conn, user: user} do
+      %{goal: goal, board: board, ready: ready, backlog: backlog} =
+        at_risk_goal_with_children(user)
+
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, user)
+      child_a = task_fixture(ready, %{parent_id: goal.id})
+      child_b = task_fixture(backlog, %{parent_id: goal.id})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      # Both children are claimed after the dialog opened but before confirm.
+      {2, _} =
+        from(t in Kanban.Tasks.Task, where: t.id in ^[child_a.id, child_b.id])
+        |> Repo.update_all(set: [status: :in_progress])
+
+      html =
+        view
+        |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+        |> render_submit()
+
+      assert html =~ "Skipped"
+      assert html =~ child_a.identifier
+      assert html =~ child_b.identifier
+      # Neither child was reassigned; only the goal moved.
+      assert Repo.get!(Kanban.Tasks.Task, child_a.id).assigned_to_id == nil
+      assert Repo.get!(Kanban.Tasks.Task, child_b.id).assigned_to_id == nil
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == other.id
+    end
+
+    test "a forged undo click after the window elapses is a no-op",
+         %{conn: conn, user: user} do
+      Application.put_env(:kanban, :undo_window_ms, 40)
+      on_exit(fn -> Application.delete_env(:kanban, :undo_window_ms) end)
+
+      %{goal: goal, board: board} = at_risk_goal_with_children(user)
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, user)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      view
+      |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+      |> render_submit()
+
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == other.id
+
+      Process.sleep(80)
+      refute render(view) =~ "data-undo-affordance"
+
+      # Forging the undo after the window is a no-op — the goal stays reassigned.
+      render_click(view, "undo_intervention")
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == other.id
+    end
+  end
+
   # Builds an at-risk target with a stalled agent on a fresh goal, plus Backlog
   # and Ready columns for not-started children, all owned by `owner`. Returns the
   # goal and the columns so a test can attach children in specific states.
-  defp at_risk_goal_with_children(owner) do
-    board = board_fixture(owner)
+  defp at_risk_goal_with_children(owner), do: at_risk_goal(owner, owner)
+
+  # Like at_risk_goal_with_children/1 but with the board and the delivery target
+  # owned by (possibly) different users, so a test can exercise the board-owner
+  # vs target-owner branches of can_intervene?/2 independently.
+  defp at_risk_goal(board_owner, target_owner) do
+    board = board_fixture(board_owner)
     doing = column_fixture(board, %{name: "Doing"})
     backlog = column_fixture(board, %{name: "Backlog"})
     ready = column_fixture(board, %{name: "Ready"})
 
-    target = delivery_target_fixture(owner, %{name: "Launch", target_date: soon_target_date()})
+    target =
+      delivery_target_fixture(target_owner, %{name: "Launch", target_date: soon_target_date()})
+
     backdate_target_inserted(target, ~N[2020-01-01 00:00:00])
     goal = task_fixture(doing, %{type: :goal, title: "Ship the API"})
     {:ok, goal} = Tasks.update_task(goal, %{target_id: target.id})
