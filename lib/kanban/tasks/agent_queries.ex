@@ -66,6 +66,16 @@ defmodule Kanban.Tasks.AgentQueries do
   4. No key_file conflicts with tasks in "Doing" or "Review" (JSONB comparison)
   5. Ordered by priority (descending), then position (ascending)
 
+  ## Priority-ordering guarantee
+
+  Among the eligible tasks, the returned task is always the highest-priority
+  one, ranked `critical > high > medium > low`; position (ascending) breaks ties
+  within a priority band. Raising a task's priority (for example via
+  `Kanban.Tasks.reprioritize_goal_unstarted/3`) therefore moves it ahead of
+  lower-priority peers in the claim order on the next call. This guarantee is a
+  contract the in-page intervention write paths rely on and is covered by
+  regression tests in `test/kanban/tasks/agent_queries_test.exs`.
+
   Has status "open" (not claimed) OR has expired claim.
   Returns nil if no task available.
 
