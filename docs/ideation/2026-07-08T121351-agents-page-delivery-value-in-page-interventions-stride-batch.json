@@ -1,0 +1,686 @@
+{
+  "source_spec": "docs/ideation/2026-07-08T121351-agents-page-delivery-value-requirements.md",
+  "source_spec_sha256": "7198f4208d534930a172c4595db627132174092c291fa38bb4df5cd842f4a80a",
+  "decomposition_notes": "Single-goal shape. The requirements doc scopes this dispatch to one surface (seam 3, 'In-page interventions'), and all the work is code-coupled around one feature on /agents: two context-layer write operations (reassign, reprioritize), one load-bearing verification of existing claim-order behavior, one authorization predicate, and the LiveView wiring (confirmation dialog + skipped-surfacing + undo) plus tests. All tasks touch the same feature cluster (Kanban.Tasks interventions submodule + KanbanWeb.AgentsLive) and share the confirmation/undo UI, so a layer split would only fragment coupled files. Phases 1 (delivery_targets model) and 2 (delivery-centric /agents page) already shipped, so no cross-goal claim ordering is needed. Within the goal, tasks use array-index dependencies: the context ops and the claim-order verification land first (indices 0-3), then the LiveView actions build on them (indices 4-5), then undo (6), then end-to-end tests (7). Grounded in the codebase: Kanban.Tasks.AgentQueries.get_next_task already orders Ready-column work by priority DESC then position ASC (confirmed), so task index 3 is a verification-and-regression-test task, not new ordering logic; Kanban.Tasks.Lifecycle already cascades goal assignment to ALL non-completed children, which is the WRONG scope for interventions (spec wants only not-started/unclaimed children), so a dedicated Kanban.Tasks.Interventions submodule is warranted per the project's module-size guidance. Boards.owner?/2 and Targets.owner?/2 both exist and back the 'target owner or board owner' actor set; BoardScope guards the write path.",
+  "goals": [
+    {
+      "created_by_agent": "Claude Opus 4.8",
+      "title": "Add Reassign and Reprioritize in-page interventions to the /agents page",
+      "type": "goal",
+      "complexity": "large",
+      "priority": "high",
+      "needs_review": false,
+      "why": "The workspace /agents page is passive telemetry: a delivery lead can observe agent activity but cannot act on it, and the metrics are disconnected from the delivery outcomes the org is measured on. As agent usage scales, this 'flying blind' is a growing cost. Giving delivery leads their first write actions — reassign not-started work to a different owner, or reprioritize it — turns the page into a control surface and is measured by interventions initiated per week.",
+      "what": "Add two goal-level write actions to /agents. Reassign sets a goal's assigned_to to a new human user and reassigns only its not-started (Backlog/Ready, unclaimed) children; Doing/Review/Done keep their assignee. Reprioritize raises/lowers a goal's priority and that of its not-started children. Both run entirely through Kanban.Tasks / Kanban.Targets context functions (never Ecto in the LiveView), honor the same BoardScope guard the reads use, are gated to the target owner or board owner, are concurrency-safe (tasks claimed since the confirmation dialog opened are skipped and surfaced), and are protected by a confirmation dialog (exact count + list of tasks that will move) plus an undo window.",
+      "where_context": "Context: new Kanban.Tasks.Interventions submodule (delegated through the Kanban.Tasks facade), Kanban.Tasks.AgentQueries (claim-order verification), Kanban.Tasks.History (assignment/priority history for undo), Kanban.Targets and Kanban.Boards (owner checks), Kanban.Queries.BoardScope (write-path scoping). UI: KanbanWeb.AgentsLive at /agents.",
+      "acceptance_criteria": "A target owner or board owner on /agents can reassign a goal's not-started (Backlog/Ready, unclaimed) children plus the goal itself to a different human user; Doing/Review/Done children keep their assignee\nA target owner or board owner can raise or lower a goal's priority and its not-started children's priority\nEvery write goes through Kanban.Tasks / Kanban.Targets context functions — no Ecto queries in the LiveView\nThe write path honors the same BoardScope access guard the reads use; a user who cannot access the board cannot intervene\nBefore any write, a confirmation dialog lists the exact count and identifiers of the tasks that will move\nTasks claimed between opening the dialog and confirming are skipped and surfaced back to the user\nAn undo window lets the actor revert the reassign/reprioritize immediately after it lands\nReprioritize is verified to actually change agent claim order (GET /api/tasks/next respects priority)\nAll new UI text is provided via gettext and renders correctly in both light and dark mode",
+      "pitfalls": [
+        "Do not reuse Kanban.Tasks.Lifecycle.update_task's existing assignment cascade — it cascades to ALL non-completed children (including Doing/Review), which is the wrong scope for interventions",
+        "Do not put Ecto queries in the LiveView; all reads and writes go through context modules",
+        "Do not skip the board-access guard on the write path — reads and writes must scope identically",
+        "Do not touch in-progress or completed work; interventions move only not-started, unclaimed children",
+        "Do not hardcode UI strings or colors — use gettext and daisyUI theme tokens for dark-mode support"
+      ],
+      "tasks": [
+        {
+          "title": "Add can_intervene? authorization predicate for target owner or board owner",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add a single authorization predicate that answers whether a scoped user may run an in-page intervention on a given goal. The actor set is 'target owner OR board owner', and the user must also pass the BoardScope access guard (belong to the goal's board). This predicate is the gate both the context write ops and the LiveView will call before mutating anything.",
+          "why": "The requirements name a specific actor set — target owner or board owner — honoring the same BoardScope guard the reads use. Centralizing this in one predicate avoids drift between the context write path and the LiveView action guard.",
+          "what": "Add can_intervene?(scope, goal) that returns true when scope.user is the owner of the goal's delivery target (Kanban.Targets.owner?/2) OR the owner of the goal's board (Kanban.Boards.owner?/2), AND the goal is on a board the scoped user can access. Return false otherwise (including nil scope / nil user).",
+          "where_context": "New predicate in the Kanban.Tasks.Interventions submodule (or Kanban.Targets if it reads more naturally there); reuses Kanban.Boards.owner?/2, Kanban.Targets.owner?/2, and Kanban.Queries.BoardScope.",
+          "acceptance_criteria": "can_intervene?(scope, goal) returns true for the goal's delivery-target owner\ncan_intervene?(scope, goal) returns true for the board owner of the goal's board\nReturns false for a user who is neither owner, even if they can read the board\nReturns false for a nil scope or a scope with a nil user\nReturns false when the goal is on a board the scoped user cannot access\nPredicate name ends in a question mark per the project Elixir conventions",
+          "patterns_to_follow": "Reuse Kanban.Boards.owner?/2 (lib/kanban/boards.ex:462) and Kanban.Targets.owner?/2 (lib/kanban/targets.ex:103) rather than reimplementing owner checks\nFollow the BoardScope access pattern in lib/kanban/queries/board_scope.ex for the accessibility check\nPredicate naming: end in '?', do not prefix with 'is_'",
+          "pitfalls": [
+            "Do not grant access on target-owner OR board-owner without ALSO confirming board accessibility — an owner check alone must not bypass BoardScope",
+            "Do not raise on nil scope; return false"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/tasks/interventions.ex",
+              "note": "New submodule — home for can_intervene?/2 and the write ops",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/boards.ex",
+              "note": "Reuse owner?/2 (line 462)",
+              "position": 1
+            },
+            {
+              "file_path": "lib/kanban/targets.ex",
+              "note": "Reuse owner?/2 (line 103) and scope patterns",
+              "position": 2
+            },
+            {
+              "file_path": "lib/kanban/queries/board_scope.ex",
+              "note": "Board accessibility guard reference",
+              "position": 3
+            },
+            {
+              "file_path": "test/kanban/tasks/interventions_test.exs",
+              "note": "New test file for the predicate",
+              "position": 4
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/tasks/interventions_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict",
+              "expected_result": "No new warnings",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Target owner of the goal's target returns true",
+              "Board owner of the goal's board returns true",
+              "Non-owner board member returns false",
+              "nil scope and nil-user scope return false",
+              "Owner whose goal is on an inaccessible board returns false"
+            ],
+            "integration_tests": [
+              "Predicate composes with the same BoardScope helper used by the /agents reads"
+            ],
+            "manual_tests": [
+              "None — pure predicate, covered by unit tests"
+            ],
+            "edge_cases": [
+              "Goal with no delivery target (target owner branch cannot match, board owner branch still applies)",
+              "User who is both target owner and board owner"
+            ],
+            "coverage_target": "All branches of can_intervene?/2 covered"
+          },
+          "security_considerations": [
+            "This is an authorization boundary — it is the gate that decides who may mutate goals and children; a false negative locks out legitimate leads, a false positive is privilege escalation",
+            "Must fail closed on nil/unknown scope, never default to permitting the write",
+            "Owner check must not bypass board-access scoping — combine both, do not substitute one for the other"
+          ]
+        },
+        {
+          "title": "Add concurrency-safe reassign_goal_unstarted context operation in Kanban.Tasks",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add a context-layer operation that reassigns a goal and only its not-started, unclaimed children to a new human user, atomically, skipping any child claimed since the caller inspected the goal. This is distinct from the existing Lifecycle assignment cascade, which cascades to ALL non-completed children (wrong scope for interventions).",
+          "why": "Reassign is the first write action from /agents. The spec is explicit: only the goal and its not-started (Backlog/Ready, unclaimed) children move; Doing/Review/Done keep their assignee; and any child claimed between the dialog opening and the write must be skipped and surfaced. The existing update_task cascade does not honor this scope, so a dedicated operation is required.",
+          "what": "Add reassign_goal_unstarted(scope, goal, new_assigned_to_id) delegated through the Kanban.Tasks facade to Kanban.Tasks.Interventions. In a single Repo.transaction: re-fetch the goal's children whose column is Backlog or Ready AND status is open (unclaimed, no active claim), set assigned_to_id on those plus the goal, and skip children now claimed/in-progress or moved out of Backlog/Ready. Record assignment history via Kanban.Tasks.History.create_assignment_history. Return {:ok, %{moved: [tasks], skipped: [tasks]}} or {:error, reason}.",
+          "where_context": "Kanban.Tasks.Interventions (new), delegated from lib/kanban/tasks.ex; reuses Kanban.Tasks.History and the eligible-children pattern from lib/kanban/tasks/lifecycle.ex.",
+          "acceptance_criteria": "reassign_goal_unstarted/3 sets the goal's assigned_to_id and the assigned_to_id of every not-started (Backlog/Ready, status open) child\nChildren in Doing, Review, or Done are never touched\nA child claimed (status in_progress with an active claim) after the goal was inspected is skipped, not reassigned\nThe operation is atomic — either the whole eligible set moves or nothing does\nAssignment history is recorded for the goal and each moved child\nReturns {:ok, %{moved: [...], skipped: [...]}} so the caller can surface skipped tasks\nExposed through the Kanban.Tasks facade; no Repo access leaks to callers",
+          "patterns_to_follow": "Mirror the Multi/transaction and eligible-children shape in lib/kanban/tasks/lifecycle.ex (fetch_eligible_children, build_cascade_multi) but scope children to Backlog/Ready + status open\nRecord history with Kanban.Tasks.History.create_assignment_history/3 (lib/kanban/tasks/history.ex:40)\nExpose via defdelegate in lib/kanban/tasks.ex like the other submodules",
+          "pitfalls": [
+            "Do not call Lifecycle.update_task's cascade — it includes Doing/Review children",
+            "Do not compute the eligible set before the transaction and trust it — re-read inside the transaction so a race with an agent claim is caught",
+            "Determine 'not-started' by column name (Backlog/Ready) AND status open, matching the claim-eligibility semantics in AgentQueries"
+          ],
+          "dependencies": [],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/tasks/interventions.ex",
+              "note": "New — reassign_goal_unstarted/3",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/tasks.ex",
+              "note": "Add defdelegate for the facade",
+              "position": 1
+            },
+            {
+              "file_path": "lib/kanban/tasks/lifecycle.ex",
+              "note": "Reference cascade/eligible-children transaction pattern",
+              "position": 2
+            },
+            {
+              "file_path": "lib/kanban/tasks/history.ex",
+              "note": "create_assignment_history/3 (line 40)",
+              "position": 3
+            },
+            {
+              "file_path": "test/kanban/tasks/interventions_test.exs",
+              "note": "Reassign op tests",
+              "position": 4
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/tasks/interventions_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict",
+              "expected_result": "No new warnings",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Goal + all Backlog/Ready open children get the new assigned_to_id",
+              "Doing/Review/Done children are untouched",
+              "A child flipped to in_progress with an active claim before the write appears in :skipped, not :moved",
+              "Assignment history rows created for goal and each moved child",
+              "Return shape is {:ok, %{moved: [...], skipped: [...]}}"
+            ],
+            "integration_tests": [
+              "Full transaction rollback leaves no partial reassignment when an update fails"
+            ],
+            "manual_tests": [
+              "In iex, reassign a seeded goal and confirm skipped list contains a concurrently-claimed child"
+            ],
+            "edge_cases": [
+              "Goal with zero eligible children (empty moved list, valid result)",
+              "new_assigned_to_id equal to current assignee (no-op)",
+              "Reassign to nil (unassign) if supported by the caller"
+            ],
+            "coverage_target": "All branches of reassign_goal_unstarted/3 covered"
+          },
+          "security_considerations": [
+            "Write path must honor BoardScope exactly as reads do — a caller cannot reassign tasks on a board they cannot access",
+            "new_assigned_to_id must reference a real user; validate/constrain via the changeset and foreign key so work is not assigned to a nonexistent or off-board user",
+            "The concurrency skip is a correctness-and-safety property: never silently overwrite a task an agent has already claimed"
+          ]
+        },
+        {
+          "title": "Add reprioritize_goal_unstarted context operation in Kanban.Tasks",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add a context-layer operation that raises or lowers a goal's priority and the priority of its not-started, unclaimed children, atomically, recording priority history so the change can be undone.",
+          "why": "Reprioritize is the second in-page write action. It is only meaningful because the claim order respects priority (verified separately); this task provides the write that changes it.",
+          "what": "Add reprioritize_goal_unstarted(scope, goal, new_priority) delegated through the Kanban.Tasks facade to Kanban.Tasks.Interventions. In a single transaction: set the goal's priority and the priority of every not-started (Backlog/Ready, status open) child, record priority-change history for each, and return {:ok, %{moved: [...], skipped: [...]}}. new_priority must be one of the four allowed priority values.",
+          "where_context": "Kanban.Tasks.Interventions (new), delegated from lib/kanban/tasks.ex; reuses Kanban.Tasks.History.create_priority_change_history.",
+          "acceptance_criteria": "reprioritize_goal_unstarted/3 sets the goal's priority and every not-started (Backlog/Ready, open) child's priority to new_priority\nChildren in Doing/Review/Done are untouched\nnew_priority is validated against the allowed set (low/medium/high/critical); an invalid value returns {:error, _}\nPriority-change history is recorded for the goal and each moved child\nOperation is atomic\nReturns {:ok, %{moved: [...], skipped: [...]}}\nExposed via the Kanban.Tasks facade",
+          "patterns_to_follow": "Share the not-started child-selection helper with reassign_goal_unstarted (Backlog/Ready + status open)\nRecord history with Kanban.Tasks.History.create_priority_change_history/3 (lib/kanban/tasks/history.ex:26)\nExpose via defdelegate in lib/kanban/tasks.ex",
+          "pitfalls": [
+            "Do not accept an arbitrary priority string — validate against the schema's allowed values",
+            "Do not reprioritize Doing/Review/Done children",
+            "Reuse the same not-started selection as reassign so the two actions stay consistent"
+          ],
+          "dependencies": [
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/tasks/interventions.ex",
+              "note": "Add reprioritize_goal_unstarted/3; share child-selection helper",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/tasks.ex",
+              "note": "Add defdelegate for the facade",
+              "position": 1
+            },
+            {
+              "file_path": "lib/kanban/tasks/history.ex",
+              "note": "create_priority_change_history/3 (line 26)",
+              "position": 2
+            },
+            {
+              "file_path": "test/kanban/tasks/interventions_test.exs",
+              "note": "Reprioritize op tests",
+              "position": 3
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/tasks/interventions_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix credo --strict",
+              "expected_result": "No new warnings",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Goal + all Backlog/Ready open children get new_priority",
+              "Doing/Review/Done children unchanged",
+              "Invalid priority value returns {:error, _} and mutates nothing",
+              "Priority-change history recorded for goal and each moved child",
+              "Return shape is {:ok, %{moved: [...], skipped: [...]}}"
+            ],
+            "integration_tests": [
+              "Reprioritize followed by AgentQueries.get_next_task returns the reprioritized goal's child in the new priority order (see claim-order verification task)"
+            ],
+            "manual_tests": [
+              "In iex, raise a goal to critical and confirm children priorities updated"
+            ],
+            "edge_cases": [
+              "new_priority equal to current (no-op)",
+              "Goal with no eligible children",
+              "Lowering priority to low"
+            ],
+            "coverage_target": "All branches of reprioritize_goal_unstarted/3 covered"
+          },
+          "security_considerations": [
+            "Write path must honor BoardScope exactly as reads do",
+            "priority is a bounded enum — reject any value outside the allowed set to prevent invalid state and downstream ordering surprises",
+            "None beyond scope/validation — no secrets or external input surface"
+          ]
+        },
+        {
+          "title": "Verify and regression-test that agent claim order respects priority",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Confirm the load-bearing dependency named in the requirements: reprioritize is only real if GET /api/tasks/next hands out higher-priority work first. Kanban.Tasks.AgentQueries.get_next_task already orders Ready-column work by priority DESC then position ASC; this task pins that behavior with an explicit regression test so a future change cannot silently make Reprioritize theater.",
+          "why": "The requirements flag this as a load-bearing assumption and an explicit acceptance condition: 'only real if the claim order respects priority — verifying/ensuring this is an acceptance condition.' If claim order ever stops respecting priority, the whole Reprioritize feature becomes decorative.",
+          "what": "Add a focused regression test asserting that, given several Ready, unclaimed, dependency-free tasks with differing priorities, get_next_task returns the highest-priority one first, and that raising a lower task's priority via reprioritize_goal_unstarted changes which task is returned next. Document the guarantee in the AgentQueries moduledoc/get_next_task doc if not already stated.",
+          "where_context": "lib/kanban/tasks/agent_queries.ex (get_next_task, already orders by priority DESC then position ASC at lines 112-119); test in test/kanban/tasks/agent_queries_test.exs.",
+          "acceptance_criteria": "A regression test asserts get_next_task returns the highest-priority eligible Ready task first across critical/high/medium/low\nA test asserts that after reprioritize_goal_unstarted raises a task's priority, the next get_next_task result reflects the new order\nThe priority-ordering guarantee is documented on get_next_task\nIf get_next_task is found NOT to order by priority, that is corrected so the guarantee holds (baseline read shows it already does)",
+          "patterns_to_follow": "Follow the existing setup/assertion style in test/kanban/tasks/agent_queries_test.exs\nUse the existing priority CASE ordering in get_next_task as the source of truth (lib/kanban/tasks/agent_queries.ex:112-119)",
+          "pitfalls": [
+            "Do not duplicate the priority CASE ordering in a new place — assert the existing behavior",
+            "Ensure test tasks are dependency-free, unclaimed, human_task=false, and in the Ready column so they are actually eligible",
+            "Priority ties fall back to position ASC — construct fixtures so priority, not position, is the discriminator being tested"
+          ],
+          "dependencies": [
+            2
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban/tasks/agent_queries.ex",
+              "note": "get_next_task priority ordering; document the guarantee",
+              "position": 0
+            },
+            {
+              "file_path": "test/kanban/tasks/agent_queries_test.exs",
+              "note": "Add priority-order regression tests",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban/tasks/agent_queries_test.exs",
+              "expected_result": "All tests pass, including the new priority-order assertions",
+              "position": 0
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "critical is returned before high, high before medium, medium before low among eligible Ready tasks",
+              "Within a single priority, lower position is returned first (tie-break)",
+              "After reprioritizing a low task to critical, get_next_task returns it first"
+            ],
+            "integration_tests": [
+              "reprioritize_goal_unstarted then get_next_task reflects the new order end-to-end"
+            ],
+            "manual_tests": [
+              "Optionally hit GET /api/tasks/next against a seeded board and confirm ordering (no server restart)"
+            ],
+            "edge_cases": [
+              "All tasks same priority (position decides)",
+              "Only one eligible task",
+              "Reprioritized task still blocked by an incomplete dependency is NOT returned despite higher priority"
+            ],
+            "coverage_target": "Priority-ordering branch of get_next_task exercised"
+          },
+          "security_considerations": [
+            "None — read-only query verification and tests; no new input surface or authorization change"
+          ]
+        },
+        {
+          "title": "Wire the Reassign action and confirmation dialog into /agents LiveView",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add the Reassign write action to KanbanWeb.AgentsLive: a goal-level control that opens a confirmation dialog listing the exact count and identifiers of the not-started children (plus the goal) that will move, then commits via the reassign_goal_unstarted context op and surfaces any tasks skipped because they were claimed since the dialog opened.",
+          "why": "This is the user-facing half of Reassign — the point where a delivery lead actually acts. The safeguard (confirmation dialog with an exact count + list) and the skipped-task surfacing are explicit requirements.",
+          "what": "Add handle_event clauses to AgentsLive for opening the reassign dialog (compute the affected not-started children via the context and show count + identifiers + target-user selector), and for confirming (call Kanban.Tasks.reassign_goal_unstarted/3, gate on can_intervene?/2, then flash the moved count and list any skipped tasks). All reads/writes go through context functions; all strings via gettext; dialog styled for light and dark mode.",
+          "where_context": "lib/kanban_web/live/agents_live.ex; reuses the existing confirmation/modal component patterns (e.g., KanbanWeb.DelayedModal / core_components) already used in the app.",
+          "acceptance_criteria": "A Reassign control on /agents opens a dialog listing the exact count and identifiers of the goal + not-started children that will move, plus a selector for the new owner\nConfirming calls Kanban.Tasks.reassign_goal_unstarted/3 through the context — no Ecto in the LiveView\nThe action is gated by can_intervene?/2; a non-owner sees no control / gets refused\nTasks skipped due to concurrent claiming are surfaced to the user after the write\nAll new UI text goes through gettext\nDialog and controls render correctly in both light and dark mode",
+          "patterns_to_follow": "Begin the template with <Layouts.app flash={@flash} ...> and use existing modal/confirmation patterns rather than a bespoke modal\nUse <.button>, <.input>, and daisyUI theme tokens (text-base-content, bg-base-100, border-base-300) per the project dark-mode contract\nKeep all data access in Kanban.Tasks / Kanban.Targets — the LiveView only binds context output",
+          "pitfalls": [
+            "Never call Repo or write an Ecto query in the LiveView",
+            "Do not compute the affected-children list once and trust it at confirm time — the context op re-checks, and the UI must show whatever the op reports as skipped",
+            "Do not hardcode colors or English strings — gettext + theme tokens only",
+            "Do not show the Reassign control to users who fail can_intervene?/2"
+          ],
+          "dependencies": [
+            0,
+            1
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/live/agents_live.ex",
+              "note": "Add reassign open/confirm handle_event clauses and dialog rendering",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/tasks.ex",
+              "note": "Call reassign_goal_unstarted/3 and can_intervene?/2 via the facade",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/live/agents_live_test.exs",
+              "note": "LiveView reassign-flow assertions",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/agents_live_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix gettext.extract --merge",
+              "expected_result": "New strings extracted and merged into all locale .po files with no untranslated leftovers introduced by this change",
+              "position": 1
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix dark_mode.scan",
+              "expected_result": "No hardcoded-color violations in the changed template",
+              "position": 2
+            },
+            {
+              "step_type": "manual",
+              "step_text": "On /agents in the running dev server, open the Reassign dialog on a goal and confirm the listed count/identifiers match its not-started children; complete a reassign and read the moved/skipped flash",
+              "expected_result": "Dialog lists exact affected tasks; reassign succeeds and skipped tasks (if any) are surfaced",
+              "position": 3
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "handle_event opens the dialog with the correct affected-children count and identifiers",
+              "confirm delegates to reassign_goal_unstarted/3 and updates assigns/flash"
+            ],
+            "integration_tests": [
+              "render_click the Reassign control, confirm, assert the goal and its not-started children show the new owner and Doing/Review children are unchanged",
+              "A non-owner cannot trigger the reassign path"
+            ],
+            "manual_tests": [
+              "Visual check of the dialog in light and dark mode",
+              "Confirm skipped-task list renders when a child is claimed mid-flow"
+            ],
+            "edge_cases": [
+              "Goal with zero not-started children (dialog shows only the goal)",
+              "All children claimed since dialog opened (everything skipped)",
+              "Selecting the current owner (no-op)"
+            ],
+            "coverage_target": "Reassign open/confirm event paths covered"
+          },
+          "security_considerations": [
+            "Gate the action with can_intervene?/2 on the server — never rely on hiding the button alone; a forged event must be refused",
+            "Render task identifiers and titles as escaped text, never raw",
+            "The target-user selector must not let the actor assign to an off-board user; validation lives in the context op, and the LiveView must handle its {:error, _}"
+          ]
+        },
+        {
+          "title": "Wire the Reprioritize action and confirmation dialog into /agents LiveView",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add the Reprioritize write action to KanbanWeb.AgentsLive: a goal-level control that opens a confirmation dialog listing the not-started children (plus the goal) whose priority will change, then commits via the reprioritize_goal_unstarted context op, gated by can_intervene?/2.",
+          "why": "The user-facing half of Reprioritize. Sharing the confirmation-dialog scaffold with Reassign keeps the two interventions consistent and is why this task depends on the Reassign wiring.",
+          "what": "Add handle_event clauses for opening the reprioritize dialog (compute affected not-started children, show count + identifiers + a priority selector across low/medium/high/critical) and for confirming (call Kanban.Tasks.reprioritize_goal_unstarted/3 after can_intervene?/2, flash the result). Reuse the confirmation-dialog component built for Reassign; all strings via gettext; light and dark mode.",
+          "where_context": "lib/kanban_web/live/agents_live.ex; reuses the confirmation dialog and result-flash pattern from the Reassign task.",
+          "acceptance_criteria": "A Reprioritize control on /agents opens a dialog listing the exact count and identifiers of the goal + not-started children that will change priority, plus a priority selector\nConfirming calls Kanban.Tasks.reprioritize_goal_unstarted/3 through the context — no Ecto in the LiveView\nGated by can_intervene?/2\nUses the shared confirmation-dialog scaffold from the Reassign action\nAll new UI text via gettext; renders correctly in light and dark mode",
+          "patterns_to_follow": "Reuse the confirmation-dialog component and result-handling introduced in the Reassign wiring task\nUse <.button>, <.input>, and daisyUI theme tokens; begin template with <Layouts.app ...>\nKeep all data access in the context modules",
+          "pitfalls": [
+            "Do not duplicate the confirmation-dialog markup — reuse the Reassign scaffold",
+            "Do not put Ecto in the LiveView",
+            "Constrain the priority selector to the four allowed values",
+            "gettext + theme tokens only"
+          ],
+          "dependencies": [
+            0,
+            2,
+            4
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/live/agents_live.ex",
+              "note": "Add reprioritize open/confirm handle_event clauses; reuse dialog scaffold",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/tasks.ex",
+              "note": "Call reprioritize_goal_unstarted/3 and can_intervene?/2 via the facade",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/live/agents_live_test.exs",
+              "note": "LiveView reprioritize-flow assertions",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/agents_live_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix gettext.extract --merge",
+              "expected_result": "New strings extracted and merged into all locales",
+              "position": 1
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix dark_mode.scan",
+              "expected_result": "No hardcoded-color violations in the changed template",
+              "position": 2
+            },
+            {
+              "step_type": "manual",
+              "step_text": "On /agents, raise a goal to critical via the Reprioritize dialog and confirm the goal and its not-started children reflect the new priority",
+              "expected_result": "Priority change applies to goal + not-started children only",
+              "position": 3
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "handle_event opens the reprioritize dialog with the correct affected set",
+              "confirm delegates to reprioritize_goal_unstarted/3 and updates flash"
+            ],
+            "integration_tests": [
+              "render_click Reprioritize, select critical, confirm, assert goal and not-started children updated and Doing/Review unchanged",
+              "Non-owner cannot trigger the path"
+            ],
+            "manual_tests": [
+              "Visual check in light and dark mode",
+              "Confirm the selector offers exactly the four allowed priorities"
+            ],
+            "edge_cases": [
+              "Choosing the current priority (no-op)",
+              "Goal with no not-started children",
+              "Invalid priority rejected by the context op surfaces an error flash"
+            ],
+            "coverage_target": "Reprioritize open/confirm event paths covered"
+          },
+          "security_considerations": [
+            "Server-side can_intervene?/2 gate on every reprioritize event; do not trust the client",
+            "Reject any priority value outside the allowed enum in the context op; LiveView must handle {:error, _}",
+            "Escape all rendered identifiers/titles"
+          ]
+        },
+        {
+          "title": "Add an undo window for Reassign and Reprioritize on /agents",
+          "type": "work",
+          "complexity": "small",
+          "priority": "medium",
+          "needs_review": false,
+          "description": "After a successful reassign or reprioritize, offer a time-boxed undo that reverts the goal and the tasks that actually moved back to their prior owner/priority, using the same context write operations. Only the moved tasks are reverted, and only within the window.",
+          "why": "The requirements name an undo window as part of the interventions safeguard, alongside the confirmation dialog. It lowers the cost of a mistaken reassign/reprioritize and encourages leads to actually use the controls.",
+          "what": "On a successful intervention, capture a snapshot of the prior assigned_to_id / priority for exactly the tasks reported as :moved, and present an Undo affordance in the result flash for a bounded window (implemented via a LiveView timer/assign). Undo calls the corresponding context op (reassign_goal_unstarted / reprioritize_goal_unstarted) to restore prior values for the still-eligible moved tasks, and reports anything it could not restore (e.g., a task claimed since). After the window elapses, the Undo affordance disappears.",
+          "where_context": "lib/kanban_web/live/agents_live.ex (snapshot in socket assigns, timed clear, undo handle_event); reuses the reassign/reprioritize context ops and can_intervene?/2.",
+          "acceptance_criteria": "After a successful reassign or reprioritize, an Undo affordance appears in the result flash/UI\nUndo restores the prior assigned_to_id (reassign) or priority (reprioritize) for exactly the tasks that moved, via the context ops\nUndo is gated by can_intervene?/2 and honors board scoping\nThe Undo affordance disappears after a bounded window\nTasks that can no longer be safely restored (e.g., claimed since) are surfaced, not silently skipped\nAll undo UI text via gettext; light and dark mode",
+          "patterns_to_follow": "Store the prior-state snapshot in socket assigns and clear it with Process.send_after / a scheduled message (mirror the existing debounce/timer pattern in agents_live.ex, e.g., @refresh_debounce_ms)\nRevert through the same Kanban.Tasks context ops — do not add a new write path\nUse gettext and daisyUI theme tokens",
+          "pitfalls": [
+            "Do not revert tasks that were skipped originally — only the moved set is eligible for undo",
+            "Do not keep the snapshot forever; clear it when the window elapses to avoid stale reverts",
+            "Do not bypass can_intervene?/2 on the undo path",
+            "Do not write Ecto in the LiveView — undo goes through the context ops"
+          ],
+          "dependencies": [
+            4,
+            5
+          ],
+          "key_files": [
+            {
+              "file_path": "lib/kanban_web/live/agents_live.ex",
+              "note": "Undo snapshot assign, timed clear, undo handle_event",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban/tasks.ex",
+              "note": "Reuse reassign/reprioritize ops for the revert",
+              "position": 1
+            },
+            {
+              "file_path": "test/kanban_web/live/agents_live_test.exs",
+              "note": "Undo-flow assertions",
+              "position": 2
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/agents_live_test.exs",
+              "expected_result": "All tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix gettext.extract --merge",
+              "expected_result": "Undo strings extracted and merged into all locales",
+              "position": 1
+            },
+            {
+              "step_type": "manual",
+              "step_text": "On /agents, perform a reassign, click Undo within the window, and confirm the goal + moved children return to their prior owner",
+              "expected_result": "Undo restores the moved set; affordance disappears after the window",
+              "position": 2
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Successful intervention assigns an undo snapshot of the moved set",
+              "Undo handle_event reverts owner/priority for the snapshot via the context op",
+              "The scheduled clear removes the undo affordance"
+            ],
+            "integration_tests": [
+              "Reassign then Undo returns children to prior owner; Reprioritize then Undo returns prior priority",
+              "Undo after the window is a no-op / affordance gone"
+            ],
+            "manual_tests": [
+              "Visual check of the Undo affordance in light and dark mode"
+            ],
+            "edge_cases": [
+              "A moved task claimed after the intervention cannot be reverted — surfaced, not silently dropped",
+              "Undo clicked twice",
+              "Window elapses between render and click"
+            ],
+            "coverage_target": "Undo snapshot, revert, and expiry paths covered"
+          },
+          "security_considerations": [
+            "Undo is a write — re-check can_intervene?/2 and board scope; a stale snapshot must not let a now-unauthorized user revert",
+            "Do not trust the client-supplied snapshot; keep the authoritative prior-state snapshot server-side in socket assigns",
+            "Bound the window so a snapshot cannot be replayed indefinitely"
+          ]
+        },
+        {
+          "title": "Add end-to-end LiveView tests for interventions: permission, concurrency, undo, dark mode",
+          "type": "work",
+          "complexity": "small",
+          "priority": "high",
+          "needs_review": false,
+          "description": "Add integration-level tests that exercise the full intervention flows on /agents together: authorization (target owner and board owner allowed, others refused), the concurrency skip (a child claimed mid-flow is surfaced, not reassigned), the undo round-trip, and a dark-mode / gettext sanity check, then run the full precommit gate.",
+          "why": "The individual tasks each test their own slice; this task pins the cross-cutting behaviors that only emerge when the pieces run together — the exact safeguards the requirements call out (board-scoped actor set, skip-claimed-tasks, confirmation count, undo). It is the last task because it depends on the full UI being wired.",
+          "what": "Add LiveView tests to test/kanban_web/live/agents_live_test.exs covering: (1) a target owner and a board owner can each open and confirm both interventions; a board member who is neither is refused; (2) a child claimed between opening the dialog and confirming lands in the surfaced skipped list and is not reassigned; (3) reassign+undo and reprioritize+undo restore prior state; (4) the confirmation dialog shows the exact affected count. Then run mix precommit (which includes tests, credo, sobelow, and the dark-mode scan per the project setup).",
+          "where_context": "test/kanban_web/live/agents_live_test.exs; supported by the context ops and LiveView wiring from the prior tasks.",
+          "acceptance_criteria": "Tests prove target owner and board owner can run both interventions and a non-owner cannot\nA test proves a concurrently-claimed child is skipped and surfaced, never reassigned\nTests prove reassign+undo and reprioritize+undo restore prior owner/priority for the moved set\nA test asserts the confirmation dialog shows the exact affected-task count and identifiers\nmix precommit passes (tests, credo --strict, sobelow, dark-mode scan)",
+          "patterns_to_follow": "Follow the existing authenticated-conn / render_click / element assertions style in test/kanban_web/live/board_live/authorization_test.exs and the existing agents_live_test.exs\nSeed target-owner and board-owner fixtures to cover both actor branches\nSimulate a mid-flow claim by mutating a child's status/claim between opening and confirming",
+          "pitfalls": [
+            "Do not assert only the happy path — the skip-claimed and permission-denied paths are the load-bearing safeguards",
+            "Do not stub the context ops; drive them for real so the integration is genuine",
+            "Ensure fixtures put children in the right columns/status so 'not-started' selection is actually exercised"
+          ],
+          "dependencies": [
+            4,
+            5,
+            6
+          ],
+          "key_files": [
+            {
+              "file_path": "test/kanban_web/live/agents_live_test.exs",
+              "note": "End-to-end intervention tests",
+              "position": 0
+            },
+            {
+              "file_path": "lib/kanban_web/live/agents_live.ex",
+              "note": "System under test",
+              "position": 1
+            }
+          ],
+          "verification_steps": [
+            {
+              "step_type": "command",
+              "step_text": "mix test test/kanban_web/live/agents_live_test.exs",
+              "expected_result": "All intervention integration tests pass",
+              "position": 0
+            },
+            {
+              "step_type": "command",
+              "step_text": "mix precommit",
+              "expected_result": "Full gate passes: tests, credo --strict, sobelow, and dark-mode scan all clean",
+              "position": 1
+            }
+          ],
+          "testing_strategy": {
+            "unit_tests": [
+              "Permission branch: target owner allowed, board owner allowed, plain member refused"
+            ],
+            "integration_tests": [
+              "Concurrently-claimed child is surfaced as skipped and keeps its prior owner",
+              "Reassign then Undo restores prior owner for the moved set",
+              "Reprioritize then Undo restores prior priority for the moved set",
+              "Confirmation dialog shows exact affected count and identifiers"
+            ],
+            "manual_tests": [
+              "Final light/dark visual pass of both dialogs and the undo flash on /agents"
+            ],
+            "edge_cases": [
+              "Non-owner forging a confirm event is refused server-side",
+              "All children claimed mid-flow (everything skipped)",
+              "Undo after the window elapses is a no-op"
+            ],
+            "coverage_target": "Intervention flows on AgentsLive covered end-to-end; overall suite stays above the project coverage threshold"
+          },
+          "security_considerations": [
+            "These tests are the guardrail proving the authorization boundary and concurrency skip hold — a regression here is a privilege-escalation or data-clobber risk",
+            "Assert that a forged confirm event from a non-owner is refused server-side, not merely hidden in the UI",
+            "sobelow run via precommit guards against newly introduced web-layer security issues"
+          ]
+        }
+      ]
+    }
+  ]
+}
