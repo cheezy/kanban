@@ -41,6 +41,7 @@ defmodule Kanban.Tasks.Interventions do
   alias Kanban.Tasks.TaskHistory
 
   @not_started_columns ["Backlog", "Ready"]
+  @allowed_priorities [:low, :medium, :high, :critical]
 
   @doc """
   Returns `true` when the scoped user may run an in-page intervention on `goal`.
@@ -110,25 +111,84 @@ defmodule Kanban.Tasks.Interventions do
     end
   end
 
+  @doc """
+  Sets `goal` and its not-started, unclaimed children to `new_priority`,
+  atomically.
+
+  `new_priority` must be one of `#{inspect(@allowed_priorities)}` (an atom, or
+  the equivalent string); any other value returns `{:error, :invalid_priority}`
+  without touching the database. Child selection is identical to
+  `reassign_goal_unstarted/3` (Backlog/Ready column, status `:open`, re-read
+  under a row lock), so the two actions stay consistent — a claimed child is
+  surfaced in `:skipped`, and Doing/Review/Done children are never considered.
+  Priority-change history is recorded for the goal and each moved child.
+
+  The scoped user must pass `can_intervene?/2`. Returns:
+
+    * `{:ok, %{moved: [tasks], skipped: [tasks]}}` — `moved` is the goal plus
+      every reprioritized child; `skipped` is the already-claimed children.
+    * `{:error, :unauthorized}` — the scope may not intervene on this goal.
+    * `{:error, :invalid_priority}` — `new_priority` is not an allowed value.
+  """
+  @spec reprioritize_goal_unstarted(Scope.t() | nil, Task.t(), atom() | String.t()) ::
+          {:ok, %{moved: [Task.t()], skipped: [Task.t()]}}
+          | {:error, :unauthorized | :invalid_priority | Ecto.Changeset.t()}
+  def reprioritize_goal_unstarted(scope, %Task{} = goal, new_priority) do
+    if can_intervene?(scope, goal) do
+      with {:ok, priority} <- validate_priority(new_priority) do
+        run_reprioritize(goal, priority)
+      end
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  defp validate_priority(priority) when priority in @allowed_priorities, do: {:ok, priority}
+
+  defp validate_priority(priority) when is_binary(priority) do
+    case Enum.find(@allowed_priorities, fn allowed -> Atom.to_string(allowed) == priority end) do
+      nil -> {:error, :invalid_priority}
+      allowed -> {:ok, allowed}
+    end
+  end
+
+  defp validate_priority(_priority), do: {:error, :invalid_priority}
+
   defp run_reassign(goal, new_assigned_to_id) do
+    item_changeset = fn task -> assign_changeset(task, new_assigned_to_id) end
+    history = fn task -> assignment_history(task.id, task.assigned_to_id, new_assigned_to_id) end
+
     Multi.new()
     |> Multi.run(:assignee, fn repo, _changes ->
       check_assignee_on_board(repo, goal, new_assigned_to_id)
     end)
-    |> Multi.run(:candidates, fn repo, _changes ->
-      candidates =
-        goal.id
-        |> not_started_children_query()
-        |> repo.all()
-
-      {:ok, candidates}
-    end)
+    |> Multi.run(:candidates, fn repo, _changes -> {:ok, read_candidates(repo, goal)} end)
     |> Multi.merge(fn %{candidates: candidates} ->
       {eligible, _skipped} = partition_candidates(candidates)
-      reassign_multi(goal, eligible, new_assigned_to_id)
+      changes_multi(goal, eligible, item_changeset, history)
     end)
     |> Repo.transaction()
-    |> handle_reassign_result()
+    |> finalize_intervention()
+  end
+
+  defp run_reprioritize(goal, new_priority) do
+    item_changeset = fn task -> priority_changeset(task, new_priority) end
+    history = fn task -> priority_history(task.id, task.priority, new_priority) end
+
+    Multi.new()
+    |> Multi.run(:candidates, fn repo, _changes -> {:ok, read_candidates(repo, goal)} end)
+    |> Multi.merge(fn %{candidates: candidates} ->
+      {eligible, _skipped} = partition_candidates(candidates)
+      changes_multi(goal, eligible, item_changeset, history)
+    end)
+    |> Repo.transaction()
+    |> finalize_intervention()
+  end
+
+  defp read_candidates(repo, goal) do
+    goal.id
+    |> not_started_children_query()
+    |> repo.all()
   end
 
   # nil unassigns and needs no membership check. Otherwise the assignee must
@@ -171,27 +231,30 @@ defmodule Kanban.Tasks.Interventions do
     Enum.split_with(candidates, fn %Task{status: status} -> status == :open end)
   end
 
-  defp reassign_multi(goal, eligible, new_assigned_to_id) do
+  # Builds the goal + per-child update/history steps shared by both
+  # interventions. `item_changeset` and `history` are closures that turn a task
+  # into its Ecto changesets, so the same reduce serves reassignment (assigned_to
+  # + assignment history) and reprioritization (priority + priority-change
+  # history).
+  defp changes_multi(goal, eligible, item_changeset, history) do
     multi =
       Multi.new()
-      |> Multi.update(:goal, assign_changeset(goal, new_assigned_to_id))
-      |> Multi.insert(
-        :goal_history,
-        assignment_history(goal.id, goal.assigned_to_id, new_assigned_to_id)
-      )
+      |> Multi.update(:goal, item_changeset.(goal))
+      |> Multi.insert(:goal_history, history.(goal))
 
     Enum.reduce(eligible, multi, fn child, acc ->
       acc
-      |> Multi.update({:child, child.id}, assign_changeset(child, new_assigned_to_id))
-      |> Multi.insert(
-        {:child_history, child.id},
-        assignment_history(child.id, child.assigned_to_id, new_assigned_to_id)
-      )
+      |> Multi.update({:child, child.id}, item_changeset.(child))
+      |> Multi.insert({:child_history, child.id}, history.(child))
     end)
   end
 
   defp assign_changeset(%Task{} = task, new_assigned_to_id) do
     Task.changeset(task, %{assigned_to_id: new_assigned_to_id})
+  end
+
+  defp priority_changeset(%Task{} = task, new_priority) do
+    Task.changeset(task, %{priority: new_priority})
   end
 
   defp assignment_history(task_id, from_user_id, to_user_id) do
@@ -203,7 +266,16 @@ defmodule Kanban.Tasks.Interventions do
     })
   end
 
-  defp handle_reassign_result({:ok, changes}) do
+  defp priority_history(task_id, from_priority, to_priority) do
+    TaskHistory.changeset(%TaskHistory{}, %{
+      task_id: task_id,
+      type: :priority_change,
+      from_priority: Atom.to_string(from_priority),
+      to_priority: Atom.to_string(to_priority)
+    })
+  end
+
+  defp finalize_intervention({:ok, changes}) do
     {eligible, skipped} = partition_candidates(changes.candidates)
 
     moved_children = Enum.map(eligible, fn child -> Map.fetch!(changes, {:child, child.id}) end)
@@ -218,7 +290,7 @@ defmodule Kanban.Tasks.Interventions do
   # membership step fails with the atom `:assignee_not_on_board`; an update or
   # insert step fails with an `%Ecto.Changeset{}` — pass whichever through, the
   # transaction has already rolled back either way.
-  defp handle_reassign_result({:error, _step, failed_value, _changes}) do
+  defp finalize_intervention({:error, _step, failed_value, _changes}) do
     {:error, failed_value}
   end
 end

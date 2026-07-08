@@ -266,6 +266,164 @@ defmodule Kanban.Tasks.InterventionsTest do
     end
   end
 
+  describe "reprioritize_goal_unstarted/3" do
+    setup do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+      columns = Columns.list_columns(board)
+
+      cols = Map.new(columns, &{&1.name, &1})
+      goal = task_fixture(cols["Ready"], %{type: :goal, priority: :medium})
+
+      %{owner: owner, board: board, cols: cols, goal: goal, scope: Scope.for_user(owner)}
+    end
+
+    test "sets the goal and every Backlog/Ready open child to the new priority", ctx do
+      %{cols: cols, goal: goal, scope: scope} = ctx
+      backlog_child = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :low})
+      ready_child = task_fixture(cols["Ready"], %{parent_id: goal.id, priority: :medium})
+
+      assert {:ok, %{moved: moved, skipped: []}} =
+               Interventions.reprioritize_goal_unstarted(scope, goal, :critical)
+
+      for task <- moved, do: assert(task.priority == :critical)
+      assert reload(goal).priority == :critical
+      assert reload(backlog_child).priority == :critical
+      assert reload(ready_child).priority == :critical
+    end
+
+    test "leaves Doing, Review, and Done children unchanged", ctx do
+      %{cols: cols, goal: goal, scope: scope} = ctx
+
+      doing =
+        task_fixture(cols["Doing"], %{parent_id: goal.id, status: :in_progress, priority: :low})
+
+      review =
+        task_fixture(cols["Review"], %{parent_id: goal.id, status: :in_progress, priority: :low})
+
+      done =
+        task_fixture(cols["Done"], %{
+          parent_id: goal.id,
+          status: :completed,
+          completed_at: DateTime.utc_now(),
+          priority: :low
+        })
+
+      assert {:ok, _} = Interventions.reprioritize_goal_unstarted(scope, goal, :high)
+
+      assert reload(doing).priority == :low
+      assert reload(review).priority == :low
+      assert reload(done).priority == :low
+    end
+
+    test "skips a Backlog/Ready child that has been claimed", ctx do
+      %{cols: cols, goal: goal, scope: scope} = ctx
+      open_child = task_fixture(cols["Ready"], %{parent_id: goal.id, priority: :low})
+      claimed_child = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :low})
+
+      {1, _} =
+        from(t in Task, where: t.id == ^claimed_child.id)
+        |> Repo.update_all(set: [status: :in_progress])
+
+      assert {:ok, %{moved: moved, skipped: skipped}} =
+               Interventions.reprioritize_goal_unstarted(scope, goal, :high)
+
+      assert Enum.any?(moved, &(&1.id == open_child.id))
+      assert Enum.map(skipped, & &1.id) == [claimed_child.id]
+      assert reload(open_child).priority == :high
+      assert reload(claimed_child).priority == :low
+    end
+
+    test "records priority-change history for the goal and each moved child", ctx do
+      %{cols: cols, goal: goal, scope: scope} = ctx
+      child = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :medium})
+
+      assert {:ok, _} = Interventions.reprioritize_goal_unstarted(scope, goal, :high)
+
+      assert priority_changes_to(goal.id) == ["high"]
+      assert priority_changes_to(child.id) == ["high"]
+    end
+
+    test "returns {:ok, %{moved: ..., skipped: ...}} with only the goal when there are no children",
+         ctx do
+      %{goal: goal, scope: scope} = ctx
+
+      assert {:ok, %{moved: [moved_goal], skipped: []}} =
+               Interventions.reprioritize_goal_unstarted(scope, goal, :high)
+
+      assert moved_goal.id == goal.id
+      assert moved_goal.priority == :high
+    end
+
+    test "accepts an allowed priority passed as a string", ctx do
+      %{cols: cols, goal: goal, scope: scope} = ctx
+      child = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :medium})
+
+      assert {:ok, _} = Interventions.reprioritize_goal_unstarted(scope, goal, "critical")
+
+      assert reload(goal).priority == :critical
+      assert reload(child).priority == :critical
+    end
+
+    test "reprioritizing to the current priority is a no-op that still succeeds", ctx do
+      %{cols: cols, goal: goal, scope: scope} = ctx
+      child = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :medium})
+
+      assert {:ok, %{moved: moved, skipped: []}} =
+               Interventions.reprioritize_goal_unstarted(scope, goal, :medium)
+
+      for task <- moved, do: assert(task.priority == :medium)
+      assert reload(goal).priority == :medium
+      assert reload(child).priority == :medium
+      assert priority_changes_to(goal.id) == ["medium"]
+    end
+
+    test "lowering to low succeeds", ctx do
+      %{cols: cols, goal: goal, scope: scope} = ctx
+      child = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :high})
+
+      assert {:ok, _} = Interventions.reprioritize_goal_unstarted(scope, goal, :low)
+
+      assert reload(goal).priority == :low
+      assert reload(child).priority == :low
+    end
+
+    test "rejects an invalid priority atom and mutates nothing", ctx do
+      %{cols: cols, goal: goal, scope: scope} = ctx
+      child = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :medium})
+
+      assert {:error, :invalid_priority} =
+               Interventions.reprioritize_goal_unstarted(scope, goal, :urgent)
+
+      assert reload(goal).priority == :medium
+      assert reload(child).priority == :medium
+      assert priority_changes_to(goal.id) == []
+    end
+
+    test "rejects an invalid priority string and mutates nothing", ctx do
+      %{cols: cols, goal: goal, scope: scope} = ctx
+      child = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :medium})
+
+      assert {:error, :invalid_priority} =
+               Interventions.reprioritize_goal_unstarted(scope, goal, "urgent")
+
+      assert reload(goal).priority == :medium
+      assert reload(child).priority == :medium
+    end
+
+    test "returns {:error, :unauthorized} for a scope that cannot intervene", ctx do
+      %{goal: goal, cols: cols} = ctx
+      stranger_scope = Scope.for_user(user_fixture())
+      child = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :medium})
+
+      assert {:error, :unauthorized} =
+               Interventions.reprioritize_goal_unstarted(stranger_scope, goal, :high)
+
+      assert reload(goal).priority == :medium
+      assert reload(child).priority == :medium
+    end
+  end
+
   defp reload(%Task{id: id}), do: Repo.get!(Task, id)
 
   defp assignment_to(task_id) do
@@ -274,5 +432,13 @@ defmodule Kanban.Tasks.InterventionsTest do
     |> Map.fetch!(:task_histories)
     |> Enum.filter(&(&1.type == :assignment))
     |> Enum.map(& &1.to_user_id)
+  end
+
+  defp priority_changes_to(task_id) do
+    task_id
+    |> Tasks.get_task_with_history!()
+    |> Map.fetch!(:task_histories)
+    |> Enum.filter(&(&1.type == :priority_change))
+    |> Enum.map(& &1.to_priority)
   end
 end
