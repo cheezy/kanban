@@ -55,21 +55,20 @@
               {gettext("No goals are assigned to this target yet.")}
             </p>
           <% else %>
-            <div class="space-y-2 mb-6">
-              <%= for goal <- @member_goals do %>
-                <div
-                  id={"member-goal-#{goal.id}"}
-                  class="flex items-center justify-between p-3 bg-base-200 rounded-lg"
-                >
-                  <div class="flex-1">
-                    <p class="font-medium text-base-content">{goal.title}</p>
-                    <p class="text-sm text-base-content opacity-70">{goal.identifier}</p>
-                  </div>
-                  <.button type="button" phx-click="unassign_goal" phx-value-goal_id={goal.id}>
-                    {gettext("Unassign")}
-                  </.button>
-                </div>
-              <% end %>
+            <div
+              data-member-goals
+              class="mb-6"
+              style={[
+                "background: var(--surface); border: 1px solid var(--line);",
+                "border-radius: 8px; overflow: hidden;"
+              ]}
+            >
+              <TargetGoalManageRow.target_goal_manage_row
+                :for={entry <- @member_goals}
+                entry={entry}
+                event="unassign_goal"
+                label={gettext("Unassign")}
+              />
             </div>
           <% end %>
 
@@ -85,21 +84,19 @@
               {gettext("No goals are available to assign.")}
             </p>
           <% else %>
-            <div class="space-y-2">
-              <%= for goal <- @assignable_goals do %>
-                <div
-                  id={"assignable-goal-#{goal.id}"}
-                  class="flex items-center justify-between p-3 bg-base-200 rounded-lg"
-                >
-                  <div class="flex-1">
-                    <p class="font-medium text-base-content">{goal.title}</p>
-                    <p class="text-sm text-base-content opacity-70">{goal.identifier}</p>
-                  </div>
-                  <.button type="button" phx-click="assign_goal" phx-value-goal_id={goal.id}>
-                    {gettext("Assign")}
-                  </.button>
-                </div>
-              <% end %>
+            <div
+              data-assignable-goals
+              style={[
+                "background: var(--surface); border: 1px solid var(--line);",
+                "border-radius: 8px; overflow: hidden;"
+              ]}
+            >
+              <TargetGoalManageRow.target_goal_manage_row
+                :for={entry <- @assignable_goals}
+                entry={entry}
+                event="assign_goal"
+                label={gettext("Assign")}
+              />
             </div>
           <% end %>
         </div>

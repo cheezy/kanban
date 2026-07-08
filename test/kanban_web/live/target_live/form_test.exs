@@ -170,14 +170,21 @@ defmodule KanbanWeb.TargetLive.FormTest do
 
       {:ok, form_live, _html} = live(conn, ~p"/targets/#{target}/edit")
 
-      assert has_element?(form_live, "#assignable-goal-#{goal.id}")
+      assert has_element?(
+               form_live,
+               "[data-assignable-goals] #target-goal-manage-row-#{goal.id}"
+             )
 
       form_live
-      |> element("#assignable-goal-#{goal.id} button", "Assign")
+      |> element("[data-assignable-goals] #target-goal-manage-row-#{goal.id} button", "Assign")
       |> render_click()
 
-      assert has_element?(form_live, "#member-goal-#{goal.id}")
-      refute has_element?(form_live, "#assignable-goal-#{goal.id}")
+      assert has_element?(form_live, "[data-member-goals] #target-goal-manage-row-#{goal.id}")
+
+      refute has_element?(
+               form_live,
+               "[data-assignable-goals] #target-goal-manage-row-#{goal.id}"
+             )
 
       scope = Scope.for_user(user)
       assert [assigned] = Targets.list_member_goals(scope, target)
@@ -194,16 +201,59 @@ defmodule KanbanWeb.TargetLive.FormTest do
 
       {:ok, form_live, _html} = live(conn, ~p"/targets/#{target}/edit")
 
-      assert has_element?(form_live, "#member-goal-#{goal.id}")
+      assert has_element?(form_live, "[data-member-goals] #target-goal-manage-row-#{goal.id}")
 
       form_live
-      |> element("#member-goal-#{goal.id} button", "Unassign")
+      |> element("[data-member-goals] #target-goal-manage-row-#{goal.id} button", "Unassign")
       |> render_click()
 
-      assert has_element?(form_live, "#assignable-goal-#{goal.id}")
-      refute has_element?(form_live, "#member-goal-#{goal.id}")
+      assert has_element?(
+               form_live,
+               "[data-assignable-goals] #target-goal-manage-row-#{goal.id}"
+             )
+
+      refute has_element?(form_live, "[data-member-goals] #target-goal-manage-row-#{goal.id}")
       assert Targets.list_member_goals(scope, target) == []
     end
+
+    test "renders each goal row with a progress count and owner cell", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal = goal_fixture(column, %{title: "Ship API"})
+      # one incomplete + one complete child => 1 of 2 (50%)
+      task_fixture(column, %{parent_id: goal.id})
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+      target = delivery_target_fixture(user)
+      scope = Scope.for_user(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      {:ok, form_live, html} = live(conn, ~p"/targets/#{target}/edit")
+
+      # Progress count cell rendered by TargetGoalManageRow.
+      assert html =~ "1 of 2 (50%)"
+
+      assert has_element?(
+               form_live,
+               "[data-member-goals] #target-goal-manage-row-#{goal.id} [data-goal-col='progress']"
+             )
+
+      # Owner cell rendered; this goal has no assignee, so it reads "unassigned".
+      assert has_element?(
+               form_live,
+               "[data-member-goals] #target-goal-manage-row-#{goal.id} [data-goal-col='owner']"
+             )
+
+      assert html =~ "unassigned"
+    end
+  end
+
+  defp complete_task(task) do
+    {:ok, done} =
+      task
+      |> Kanban.Tasks.Task.changeset(%{status: :completed, completed_at: DateTime.utc_now()})
+      |> Repo.update()
+
+    done
   end
 
   describe "anonymous" do

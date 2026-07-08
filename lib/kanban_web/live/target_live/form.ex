@@ -4,6 +4,7 @@ defmodule KanbanWeb.TargetLive.Form do
   alias Kanban.Targets
   alias Kanban.Targets.DeliveryTarget
   alias Kanban.Tasks.Task
+  alias KanbanWeb.TargetGoalManageRow
 
   @impl true
   def mount(params, _session, socket) do
@@ -41,10 +42,12 @@ defmodule KanbanWeb.TargetLive.Form do
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
 
+  @impl true
   def handle_event("save", %{"delivery_target" => target_params}, socket) do
     save_target(socket, socket.assigns.live_action, target_params)
   end
 
+  @impl true
   def handle_event("assign_goal", %{"goal_id" => goal_id}, socket) do
     scope = socket.assigns.current_scope
     target = socket.assigns.target
@@ -55,6 +58,7 @@ defmodule KanbanWeb.TargetLive.Form do
     end
   end
 
+  @impl true
   def handle_event("unassign_goal", %{"goal_id" => goal_id}, socket) do
     scope = socket.assigns.current_scope
     target = socket.assigns.target
@@ -117,8 +121,8 @@ defmodule KanbanWeb.TargetLive.Form do
     scope = socket.assigns.current_scope
 
     socket
-    |> assign(:member_goals, Targets.list_member_goals(scope, target))
-    |> assign(:assignable_goals, Targets.list_assignable_goals(scope, target))
+    |> assign(:member_goals, Targets.list_member_goal_details(scope, target))
+    |> assign(:assignable_goals, Targets.list_assignable_goal_details(scope, target))
   end
 
   defp target_not_authorized(socket) do
