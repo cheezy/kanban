@@ -38,11 +38,17 @@ defmodule KanbanWeb.TargetRiskExplainer do
 
   attr :reassignable_goal_ids, :any,
     default: nil,
-    doc: "MapSet of goal ids the viewer may reassign; a Reassign control renders for each."
+    doc:
+      "MapSet of goal ids the viewer may intervene on; Reassign/Reprioritize controls render for each."
 
   attr :on_reassign, :string,
     default: nil,
     doc: "handle_event name pushed (with phx-value-goal-id) when a Reassign control is clicked."
+
+  attr :on_reprioritize, :string,
+    default: nil,
+    doc:
+      "handle_event name pushed (with phx-value-goal-id) when a Reprioritize control is clicked."
 
   def target_risk_explainer(assigns) do
     assigns = assign(assigns, :at_risk, Enum.filter(assigns.targets, &at_risk_with_stall?/1))
@@ -73,6 +79,7 @@ defmodule KanbanWeb.TargetRiskExplainer do
         entry={entry}
         reassignable_goal_ids={@reassignable_goal_ids}
         on_reassign={@on_reassign}
+        on_reprioritize={@on_reprioritize}
       />
     </section>
     """
@@ -83,6 +90,7 @@ defmodule KanbanWeb.TargetRiskExplainer do
   attr :entry, :map, required: true
   attr :reassignable_goal_ids, :any, required: true
   attr :on_reassign, :string, default: nil
+  attr :on_reprioritize, :string, default: nil
 
   # One at-risk target: its name, an At-risk badge, and a block per stalled goal.
   defp target_card(assigns) do
@@ -116,6 +124,7 @@ defmodule KanbanWeb.TargetRiskExplainer do
         detail={detail}
         reassignable_goal_ids={@reassignable_goal_ids}
         on_reassign={@on_reassign}
+        on_reprioritize={@on_reprioritize}
       />
     </div>
     """
@@ -124,9 +133,11 @@ defmodule KanbanWeb.TargetRiskExplainer do
   attr :detail, :map, required: true
   attr :reassignable_goal_ids, :any, required: true
   attr :on_reassign, :string, default: nil
+  attr :on_reprioritize, :string, default: nil
 
-  # One stalled goal and the stuck/dormant agents stalling it, plus a Reassign
-  # control when the viewer is authorized (server-cleared via can_intervene?/2).
+  # One stalled goal and the stuck/dormant agents stalling it, plus Reassign and
+  # Reprioritize controls when the viewer is authorized (server-cleared via
+  # can_intervene?/2 — the same gate governs both interventions).
   defp goal_block(assigns) do
     ~H"""
     <div
@@ -146,15 +157,19 @@ defmodule KanbanWeb.TargetRiskExplainer do
           phx-click={@on_reassign}
           phx-value-goal-id={@detail.goal.id}
           data-reassign-trigger={@detail.goal.id}
-          style={[
-            "font-size: 9.5px; font-weight: 600;",
-            "padding: 1px 7px; border-radius: 3px;",
-            "border: 1px solid var(--line);",
-            "background: var(--surface-2); color: var(--ink-2);",
-            "font-family: var(--font-mono); cursor: pointer; flex-shrink: 0;"
-          ]}
+          style={intervention_button_style()}
         >
           {gettext("Reassign")}
+        </button>
+        <button
+          :if={@on_reprioritize && reassignable?(@reassignable_goal_ids, @detail.goal.id)}
+          type="button"
+          phx-click={@on_reprioritize}
+          phx-value-goal-id={@detail.goal.id}
+          data-reprioritize-trigger={@detail.goal.id}
+          style={intervention_button_style()}
+        >
+          {gettext("Reprioritize")}
         </button>
       </div>
 
@@ -163,9 +178,21 @@ defmodule KanbanWeb.TargetRiskExplainer do
     """
   end
 
-  # Uses the Stride custom-property token vocabulary (not daisyUI classes) to
-  # match the surrounding explainer, so the control stays legible in both themes
-  # without a hardcoded color; membership is nil-safe for standalone renders.
+  # Shared style for the goal-level intervention controls (Reassign,
+  # Reprioritize). Uses the Stride custom-property token vocabulary (not daisyUI
+  # classes) to match the surrounding explainer, so the controls stay legible in
+  # both themes without a hardcoded color.
+  defp intervention_button_style do
+    [
+      "font-size: 9.5px; font-weight: 600;",
+      "padding: 1px 7px; border-radius: 3px;",
+      "border: 1px solid var(--line);",
+      "background: var(--surface-2); color: var(--ink-2);",
+      "font-family: var(--font-mono); cursor: pointer; flex-shrink: 0;"
+    ]
+  end
+
+  # Membership is nil-safe for standalone renders.
   defp reassignable?(nil, _goal_id), do: false
   defp reassignable?(ids, goal_id), do: MapSet.member?(ids, goal_id)
 

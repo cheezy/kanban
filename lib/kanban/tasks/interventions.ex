@@ -131,20 +131,56 @@ defmodule Kanban.Tasks.Interventions do
           {:ok, %{goal: Task.t(), children: [Task.t()], members: [map()]}}
           | {:error, :unauthorized}
   def reassign_preview(scope, %Task{} = goal) do
+    with {:ok, goal, children} <- intervention_preview(scope, goal) do
+      {:ok,
+       %{goal: goal, children: children, members: Boards.list_board_users(goal.column.board)}}
+    end
+  end
+
+  @doc """
+  Read-only preview of what `reprioritize_goal_unstarted/3` would change for
+  `goal`.
+
+  Gated by `can_intervene?/2` (scope-first, like the write and
+  `reassign_preview/2`) — returns `{:error, :unauthorized}` for a scope that may
+  not intervene, so the preview cannot read a goal's children without the same
+  authorization the write enforces.
+
+  On success returns `{:ok, %{goal, children}}`: the goal (with its `:target` and
+  `column: :board` preloaded) and the not-started, unclaimed children that would
+  be reprioritized. Like `reassign_preview/2` it performs no row locking — the
+  previewed children are a best-effort snapshot; the authoritative moved and
+  skipped sets come from `reprioritize_goal_unstarted/3` at confirm time. The
+  member list `reassign_preview/2` returns is omitted, since a priority change
+  needs no assignee selector.
+  """
+  @spec reprioritize_preview(Scope.t() | nil, Task.t()) ::
+          {:ok, %{goal: Task.t(), children: [Task.t()]}}
+          | {:error, :unauthorized}
+  def reprioritize_preview(scope, %Task{} = goal) do
+    with {:ok, goal, children} <- intervention_preview(scope, goal) do
+      {:ok, %{goal: goal, children: children}}
+    end
+  end
+
+  # Shared read for the goal-level intervention previews: authorizes via
+  # can_intervene?/2 (scope-first), then returns the goal (with :target and
+  # column: :board preloaded) and the not-started, unclaimed children that would
+  # actually move. Partitions with the same `:open` eligibility the write uses,
+  # so the preview lists exactly the children that would move (claimed ones are
+  # excluded — they would be skipped). No row locking; the `FOR UPDATE` guard
+  # applies only inside the write transaction.
+  defp intervention_preview(scope, %Task{} = goal) do
     if can_intervene?(scope, goal) do
       goal = Repo.preload(goal, [:target, column: :board])
 
-      # Partition with the same `:open` eligibility the write uses, so the preview
-      # lists exactly the children that would actually move (claimed ones are
-      # excluded — they would be skipped).
       {eligible, _claimed} =
         goal.id
         |> not_started_children_query(lock: false)
         |> Repo.all()
         |> partition_candidates()
 
-      {:ok,
-       %{goal: goal, children: eligible, members: Boards.list_board_users(goal.column.board)}}
+      {:ok, goal, eligible}
     else
       {:error, :unauthorized}
     end

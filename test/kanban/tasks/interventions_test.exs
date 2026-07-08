@@ -497,6 +497,61 @@ defmodule Kanban.Tasks.InterventionsTest do
     end
   end
 
+  describe "reprioritize_preview/2" do
+    setup do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+      cols = board |> Columns.list_columns() |> Map.new(&{&1.name, &1})
+      goal = task_fixture(cols["Ready"], %{type: :goal})
+
+      %{cols: cols, goal: goal, scope: Scope.for_user(owner)}
+    end
+
+    test "returns only the not-started, unclaimed children", %{
+      cols: cols,
+      goal: goal,
+      scope: scope
+    } do
+      backlog = task_fixture(cols["Backlog"], %{parent_id: goal.id})
+      ready = task_fixture(cols["Ready"], %{parent_id: goal.id})
+      _doing = task_fixture(cols["Doing"], %{parent_id: goal.id, status: :in_progress})
+
+      claimed = task_fixture(cols["Backlog"], %{parent_id: goal.id})
+
+      {1, _} =
+        from(t in Task, where: t.id == ^claimed.id)
+        |> Repo.update_all(set: [status: :in_progress])
+
+      assert {:ok, %{children: children}} = Interventions.reprioritize_preview(scope, goal)
+
+      child_ids = children |> Enum.map(& &1.id) |> Enum.sort()
+      assert child_ids == Enum.sort([backlog.id, ready.id])
+    end
+
+    test "preloads the goal's board but omits the member list", %{goal: goal, scope: scope} do
+      assert {:ok, preview} = Interventions.reprioritize_preview(scope, goal)
+
+      assert preview.goal.column.board
+      refute Map.has_key?(preview, :members)
+    end
+
+    test "returns an empty child list for a goal with no not-started children", %{
+      cols: cols,
+      goal: goal,
+      scope: scope
+    } do
+      _doing = task_fixture(cols["Doing"], %{parent_id: goal.id, status: :in_progress})
+
+      assert {:ok, %{children: []}} = Interventions.reprioritize_preview(scope, goal)
+    end
+
+    test "returns {:error, :unauthorized} for a scope that cannot intervene", %{goal: goal} do
+      stranger_scope = Scope.for_user(user_fixture())
+
+      assert {:error, :unauthorized} = Interventions.reprioritize_preview(stranger_scope, goal)
+    end
+  end
+
   defp reload(%Task{id: id}), do: Repo.get!(Task, id)
 
   defp assignment_to(task_id) do

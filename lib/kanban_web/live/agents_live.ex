@@ -65,6 +65,7 @@ defmodule KanbanWeb.AgentsLive do
        board_id: nil,
        time_range: :all_time,
        reassign: nil,
+       reprioritize: nil,
        boards: Boards.list_boards(socket.assigns.current_scope.user)
      })
      |> load_agents_data()}
@@ -190,6 +191,50 @@ defmodule KanbanWeb.AgentsLive do
   def handle_event("confirm_reassign", _params, socket), do: {:noreply, socket}
 
   @impl true
+  def handle_event("open_reprioritize", %{"goal-id" => goal_id}, socket) do
+    scope = socket.assigns.current_scope
+
+    # Resolve the id against the goals actually on screen (client-supplied
+    # payload); reprioritize_preview/2 then re-authorizes via can_intervene?/2, so
+    # a forged goal-id or a non-owner is refused server-side, never trusting the
+    # hidden control.
+    with %Kanban.Tasks.Task{} = goal <- find_stalled_goal(socket, goal_id),
+         {:ok, preview} <- Tasks.reprioritize_preview(scope, goal) do
+      {:noreply, assign(socket, :reprioritize, build_reprioritize_state(preview))}
+    else
+      _ ->
+        {:noreply,
+         put_flash(socket, :error, gettext("You are not allowed to reprioritize this goal."))}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_reprioritize", _params, socket) do
+    {:noreply, assign(socket, :reprioritize, nil)}
+  end
+
+  @impl true
+  def handle_event(
+        "confirm_reprioritize",
+        %{"priority" => raw_priority},
+        %{
+          assigns: %{reprioritize: %{goal: goal}}
+        } = socket
+      ) do
+    case parse_priority(raw_priority) do
+      :none ->
+        {:noreply, put_flash(socket, :error, gettext("Choose a new priority first."))}
+
+      priority ->
+        commit_reprioritize(socket, goal, priority)
+    end
+  end
+
+  # No dialog is open (stale/forged submit) — ignore.
+  @impl true
+  def handle_event("confirm_reprioritize", _params, socket), do: {:noreply, socket}
+
+  @impl true
   def handle_info({:agent_event, _payload}, socket) do
     {:noreply, maybe_schedule_refresh(socket)}
   end
@@ -237,10 +282,12 @@ defmodule KanbanWeb.AgentsLive do
             targets={@delivery_rollup.targets}
             reassignable_goal_ids={@reassignable_goal_ids}
             on_reassign="open_reassign"
+            on_reprioritize="open_reprioritize"
           />
         </div>
 
         <.reassign_dialog reassign={@reassign} />
+        <.reprioritize_dialog reprioritize={@reprioritize} />
 
         <div data-agents-second-tier class="flex-1 min-h-0 flex flex-col">
           <div
@@ -604,64 +651,201 @@ defmodule KanbanWeb.AgentsLive do
     moved_msg <> " " <> skipped_msg
   end
 
+  defp commit_reprioritize(socket, goal, priority) do
+    scope = socket.assigns.current_scope
+
+    case Tasks.reprioritize_goal_unstarted(scope, goal, priority) do
+      {:ok, result} -> {:noreply, reprioritize_succeeded(socket, result)}
+      {:error, reason} -> {:noreply, reprioritize_failed(socket, reason)}
+    end
+  end
+
+  defp reprioritize_succeeded(socket, %{moved: moved, skipped: skipped}) do
+    socket
+    |> assign(:reprioritize, nil)
+    |> put_flash(:info, reprioritize_flash(moved, skipped))
+    |> load_agents_data()
+  end
+
+  defp reprioritize_failed(socket, :unauthorized) do
+    socket
+    |> assign(:reprioritize, nil)
+    |> put_flash(:error, gettext("You are not allowed to reprioritize this goal."))
+  end
+
+  defp reprioritize_failed(socket, :invalid_priority) do
+    put_flash(socket, :error, gettext("That is not a valid priority."))
+  end
+
+  defp reprioritize_failed(socket, _changeset) do
+    put_flash(socket, :error, gettext("Could not reprioritize the goal. Please try again."))
+  end
+
+  defp build_reprioritize_state(%{goal: goal, children: children}) do
+    %{goal: goal, children: children}
+  end
+
+  # The priority selector is constrained to these four values; the context op
+  # re-validates the submitted string, so no atom is ever built from user input.
+  defp parse_priority(""), do: :none
+  defp parse_priority(priority), do: priority
+
+  defp priority_options do
+    [
+      {gettext("Low"), "low"},
+      {gettext("Medium"), "medium"},
+      {gettext("High"), "high"},
+      {gettext("Critical"), "critical"}
+    ]
+  end
+
+  defp reprioritize_flash(moved, []) do
+    ngettext("Reprioritized %{count} task.", "Reprioritized %{count} tasks.", length(moved))
+  end
+
+  defp reprioritize_flash(moved, skipped) do
+    ids = Enum.map_join(skipped, ", ", & &1.identifier)
+
+    moved_msg =
+      ngettext("Reprioritized %{count} task.", "Reprioritized %{count} tasks.", length(moved))
+
+    skipped_msg =
+      ngettext(
+        "Skipped %{count} task already claimed: %{ids}.",
+        "Skipped %{count} tasks already claimed: %{ids}.",
+        length(skipped),
+        ids: ids
+      )
+
+    moved_msg <> " " <> skipped_msg
+  end
+
   attr :reassign, :map, default: nil
 
-  # The confirmation dialog for the goal-level Reassign action. Lists the exact
-  # goal + not-started children that will move and a board-member owner selector;
-  # confirming routes through the reassign_goal_unstarted context op.
+  # The confirmation dialog for the goal-level Reassign action: a board-member
+  # owner selector in the shared intervention_dialog/1 scaffold; confirming routes
+  # through the reassign_goal_unstarted context op.
   defp reassign_dialog(assigns) do
     ~H"""
-    <KanbanWeb.DelayedModal.delayed_modal
+    <.intervention_dialog
       :if={@reassign}
       id="reassign-goal-modal"
+      form_id="reassign-form"
+      goal={@reassign.goal}
+      children={@reassign.children}
+      title={gettext("Reassign %{goal}", goal: @reassign.goal.identifier)}
+      summary={
+        ngettext(
+          "This will move 1 task to the new owner:",
+          "This will move %{count} tasks to the new owner:",
+          length(@reassign.children) + 1
+        )
+      }
+      cancel_event="cancel_reassign"
+      submit_event="confirm_reassign"
+      submit_label={gettext("Reassign")}
+    >
+      <.input
+        type="select"
+        id="reassign-assigned-to"
+        name="assigned_to_id"
+        value=""
+        label={gettext("New owner")}
+        options={@reassign.member_options}
+        prompt={gettext("Choose a new owner")}
+      />
+    </.intervention_dialog>
+    """
+  end
+
+  attr :reprioritize, :map, default: nil
+
+  # The confirmation dialog for the goal-level Reprioritize action: a selector
+  # constrained to the four allowed priorities in the shared intervention_dialog/1
+  # scaffold; confirming routes through the reprioritize_goal_unstarted context op.
+  defp reprioritize_dialog(assigns) do
+    ~H"""
+    <.intervention_dialog
+      :if={@reprioritize}
+      id="reprioritize-goal-modal"
+      form_id="reprioritize-form"
+      goal={@reprioritize.goal}
+      children={@reprioritize.children}
+      title={gettext("Reprioritize %{goal}", goal: @reprioritize.goal.identifier)}
+      summary={
+        ngettext(
+          "This will change the priority of 1 task:",
+          "This will change the priority of %{count} tasks:",
+          length(@reprioritize.children) + 1
+        )
+      }
+      cancel_event="cancel_reprioritize"
+      submit_event="confirm_reprioritize"
+      submit_label={gettext("Reprioritize")}
+    >
+      <.input
+        type="select"
+        id="reprioritize-priority"
+        name="priority"
+        value=""
+        label={gettext("New priority")}
+        options={priority_options()}
+        prompt={gettext("Choose a new priority")}
+      />
+    </.intervention_dialog>
+    """
+  end
+
+  attr :id, :string, required: true
+  attr :form_id, :string, required: true
+  attr :goal, :map, required: true
+  attr :children, :list, required: true
+  attr :title, :string, required: true
+  attr :summary, :string, required: true
+  attr :cancel_event, :string, required: true
+  attr :submit_event, :string, required: true
+  attr :submit_label, :string, required: true
+  slot :inner_block, required: true
+
+  # Shared confirmation-dialog scaffold for the goal-level interventions
+  # (Reassign, Reprioritize). Renders the DelayedModal shell, the title, the
+  # affected goal + not-started children list, and a form whose selector is the
+  # caller-supplied inner block; the caller wires the submit/cancel events to its
+  # own context op. Keeps the two interventions' shared markup in one place per
+  # the "reuse the scaffold" contract, so only the selector and copy differ.
+  defp intervention_dialog(assigns) do
+    ~H"""
+    <KanbanWeb.DelayedModal.delayed_modal
+      id={@id}
       show
-      on_cancel={JS.push("cancel_reassign")}
+      on_cancel={JS.push(@cancel_event)}
       max_width="max-w-lg"
     >
       <div class="flex flex-col gap-4">
-        <h2 class="text-lg font-semibold text-base-content">
-          {gettext("Reassign %{goal}", goal: @reassign.goal.identifier)}
-        </h2>
+        <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
 
-        <p class="text-sm text-base-content opacity-70">
-          {ngettext(
-            "This will move 1 task to the new owner:",
-            "This will move %{count} tasks to the new owner:",
-            length(@reassign.children) + 1
-          )}
-        </p>
+        <p class="text-sm text-base-content opacity-70">{@summary}</p>
 
-        <ul
-          class="flex flex-col gap-1 text-sm text-base-content"
-          data-reassign-affected
-        >
-          <li data-reassign-goal={@reassign.goal.id}>
-            <span class="font-mono">{@reassign.goal.identifier}</span>
-            <span class="opacity-70">— {@reassign.goal.title}</span>
+        <ul class="flex flex-col gap-1 text-sm text-base-content" data-intervention-affected>
+          <li data-intervention-goal={@goal.id}>
+            <span class="font-mono">{@goal.identifier}</span>
+            <span class="opacity-70">— {@goal.title}</span>
           </li>
-          <li :for={child <- @reassign.children} data-reassign-child={child.id}>
+          <li :for={child <- @children} data-intervention-child={child.id}>
             <span class="font-mono">{child.identifier}</span>
             <span class="opacity-70">— {child.title}</span>
           </li>
         </ul>
 
-        <form id="reassign-form" phx-submit="confirm_reassign" class="flex flex-col gap-4">
-          <.input
-            type="select"
-            id="reassign-assigned-to"
-            name="assigned_to_id"
-            value=""
-            label={gettext("New owner")}
-            options={@reassign.member_options}
-            prompt={gettext("Choose a new owner")}
-          />
+        <form id={@form_id} phx-submit={@submit_event} class="flex flex-col gap-4">
+          {render_slot(@inner_block)}
 
           <div class="flex justify-end gap-2">
-            <.button type="button" phx-click="cancel_reassign">
+            <.button type="button" phx-click={@cancel_event}>
               {gettext("Cancel")}
             </.button>
             <.button type="submit" variant="primary">
-              {gettext("Reassign")}
+              {@submit_label}
             </.button>
           </div>
         </form>

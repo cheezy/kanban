@@ -1988,6 +1988,114 @@ defmodule KanbanWeb.AgentsLiveTest do
     end
   end
 
+  describe "reprioritize action" do
+    setup [:register_and_log_in_user]
+
+    test "shows a Reprioritize control and dialog listing the goal + not-started children",
+         %{conn: conn, user: user} do
+      %{goal: goal, backlog: backlog} = at_risk_goal_with_children(user)
+      backlog_child = task_fixture(backlog, %{parent_id: goal.id, title: "Tune it up"})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      assert has_element?(view, ~s([data-reprioritize-trigger="#{goal.id}"]))
+
+      html = view |> element(~s([data-reprioritize-trigger="#{goal.id}"])) |> render_click()
+
+      assert html =~ "reprioritize-goal-modal"
+      # Goal + the one not-started child = 2 affected tasks, both listed.
+      assert html =~ goal.identifier
+      assert html =~ backlog_child.identifier
+      assert html =~ "Tune it up"
+      assert html =~ "2 tasks"
+    end
+
+    test "confirming reprioritizes the goal and its not-started children, leaving Doing untouched",
+         %{conn: conn, user: user} do
+      %{goal: goal, ready: ready, doing: doing} = at_risk_goal_with_children(user)
+      ready_child = task_fixture(ready, %{parent_id: goal.id, priority: :low})
+
+      doing_child =
+        task_fixture(doing, %{parent_id: goal.id, status: :in_progress, priority: :low})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reprioritize-trigger="#{goal.id}"])) |> render_click()
+
+      html =
+        view
+        |> form("#reprioritize-form", %{"priority" => "critical"})
+        |> render_submit()
+
+      assert html =~ "Reprioritized"
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).priority == :critical
+      assert Repo.get!(Kanban.Tasks.Task, ready_child.id).priority == :critical
+      # The in-progress Doing child keeps its original priority.
+      assert Repo.get!(Kanban.Tasks.Task, doing_child.id).priority == :low
+      # Dialog closed after a successful write.
+      refute has_element?(view, "#reprioritize-goal-modal")
+    end
+
+    test "surfaces tasks skipped because they were claimed since the dialog opened",
+         %{conn: conn, user: user} do
+      %{goal: goal, ready: ready, backlog: backlog} = at_risk_goal_with_children(user)
+      _open_child = task_fixture(ready, %{parent_id: goal.id, priority: :low})
+      claimed = task_fixture(backlog, %{parent_id: goal.id, status: :in_progress, priority: :low})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reprioritize-trigger="#{goal.id}"])) |> render_click()
+
+      html =
+        view
+        |> form("#reprioritize-form", %{"priority" => "critical"})
+        |> render_submit()
+
+      assert html =~ "Skipped"
+      assert html =~ claimed.identifier
+      assert Repo.get!(Kanban.Tasks.Task, claimed.id).priority == :low
+    end
+
+    test "surfaces an error flash when the submitted priority is not a valid value",
+         %{conn: conn, user: user} do
+      %{goal: goal} = at_risk_goal_with_children(user)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reprioritize-trigger="#{goal.id}"])) |> render_click()
+
+      # A value outside the allowed enum (a forged submit bypassing the
+      # constrained selector) is rejected by the context op, surfacing the
+      # invalid-priority flash.
+      html = render_submit(view, "confirm_reprioritize", %{"priority" => "bogus"})
+
+      assert html =~ "not a valid priority"
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).priority == :medium
+    end
+
+    test "cancelling closes the dialog without changing priorities",
+         %{conn: conn, user: user} do
+      %{goal: goal} = at_risk_goal_with_children(user)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reprioritize-trigger="#{goal.id}"])) |> render_click()
+      assert has_element?(view, "#reprioritize-goal-modal")
+
+      render_click(view, "cancel_reprioritize")
+
+      refute has_element?(view, "#reprioritize-goal-modal")
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).priority == :medium
+    end
+
+    test "does not render the Reprioritize control for a user who cannot intervene",
+         %{conn: conn, user: viewer} do
+      owner = user_fixture()
+      %{goal: goal, board: board} = at_risk_goal_with_children(owner)
+      {:ok, _} = Boards.add_user_to_board(board, viewer, :read_only, owner)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      refute has_element?(view, ~s([data-reprioritize-trigger="#{goal.id}"]))
+    end
+  end
+
   # Builds an at-risk target with a stalled agent on a fresh goal, plus Backlog
   # and Ready columns for not-started children, all owned by `owner`. Returns the
   # goal and the columns so a test can attach children in specific states.

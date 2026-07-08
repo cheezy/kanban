@@ -155,6 +155,7 @@ defmodule Kanban.Tasks do
 
   defdelegate can_intervene?(scope, goal), to: Interventions
   defdelegate reassign_preview(scope, goal), to: Interventions
+  defdelegate reprioritize_preview(scope, goal), to: Interventions
   defdelegate reassign_goal_unstarted(scope, goal, new_assigned_to_id), to: Interventions
   defdelegate reprioritize_goal_unstarted(scope, goal, new_priority), to: Interventions
 end
