@@ -4190,7 +4190,7 @@ msgid "Active goals"
 msgstr "Active goals"
 
 #: lib/kanban_web/components/layouts.ex:275
-#: lib/kanban_web/live/agents_live.ex:167
+#: lib/kanban_web/live/agents_live.ex:168
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr ""
@@ -4252,7 +4252,7 @@ msgstr ""
 msgid "Stride home"
 msgstr "Stride home"
 
-#: lib/kanban_web/live/agents_live.ex:165
+#: lib/kanban_web/live/agents_live.ex:166
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -5030,19 +5030,19 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/agents_live.ex:504
+#: lib/kanban_web/live/agents_live.ex:507
 #, elixir-autogen, elixir-format
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/agents_live.ex:233
+#: lib/kanban_web/live/agents_live.ex:236
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:203
+#: lib/kanban_web/live/agents_live.ex:206
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr ""
@@ -7065,13 +7065,13 @@ msgstr ""
 msgid "Technical Details (JSON object)"
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:309
+#: lib/kanban_web/live/agents_live.ex:312
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr ""
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:326
+#: lib/kanban_web/live/agents_live.ex:329
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr ""
@@ -7083,6 +7083,7 @@ msgid "Operator"
 msgstr ""
 
 #: lib/kanban_web/components/agents_header.ex:190
+#: lib/kanban_web/components/target_risk_explainer.ex:147
 #, elixir-autogen, elixir-format
 msgid "Stuck"
 msgstr ""
@@ -7133,12 +7134,12 @@ msgstr ""
 msgid "of which"
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:270
+#: lib/kanban_web/live/agents_live.ex:273
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr ""
 
-#: lib/kanban_web/live/agents_live.ex:559
+#: lib/kanban_web/live/agents_live.ex:562
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr ""
@@ -7343,6 +7344,7 @@ msgstr ""
 
 #: lib/kanban_web/components/delivery_health_band.ex:171
 #: lib/kanban_web/components/target_progress_header.ex:189
+#: lib/kanban_web/components/target_risk_explainer.ex:95
 #: lib/kanban_web/components/targets_strip.ex:157
 #, elixir-autogen, elixir-format
 msgid "At-risk"
@@ -7512,4 +7514,14 @@ msgstr ""
 #: lib/kanban_web/components/delivery_health_band.ex:131
 #, elixir-autogen, elixir-format
 msgid "Soonest target date"
+msgstr ""
+
+#: lib/kanban_web/components/target_risk_explainer.ex:150
+#, elixir-autogen, elixir-format
+msgid "Dormant"
+msgstr ""
+
+#: lib/kanban_web/components/target_risk_explainer.ex:60
+#, elixir-autogen, elixir-format
+msgid "Why targets are at risk"
 msgstr ""

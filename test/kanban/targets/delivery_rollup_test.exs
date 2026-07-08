@@ -139,6 +139,40 @@ defmodule Kanban.Targets.DeliveryRollupTest do
       assert on_track_entry.stalled_goals == []
     end
 
+    test "stalled_details pairs each stalled goal with the stalled agents on it",
+         %{scope: scope, doing: doing} do
+      target = delivery_target_fixture(scope.user)
+      goal_a = goal_on_target(doing, target)
+      goal_b = goal_on_target(doing, target)
+
+      # Stuck agent on goal_a; a different stuck agent on goal_b; a healthy
+      # agent on goal_a that must NOT appear in the stalled details.
+      agent_task(doing, %{created_by_agent: "StalledA", parent_id: goal_a.id, claimed_at: ago(90)})
+
+      agent_task(doing, %{created_by_agent: "StalledB", parent_id: goal_b.id, claimed_at: ago(90)})
+
+      agent_task(doing, %{created_by_agent: "Fresh", parent_id: goal_a.id, claimed_at: ago(5)})
+
+      [entry] = DeliveryRollup.build(scope).targets
+
+      details = Map.new(entry.stalled_details, fn d -> {d.goal.id, agent_names(d.agents)} end)
+
+      assert details[goal_a.id] == ["StalledA"]
+      assert details[goal_b.id] == ["StalledB"]
+      # Every stalled goal appears exactly once in the details.
+      assert length(entry.stalled_details) == 2
+    end
+
+    test "stalled_details is empty when no agent is stalled", %{scope: scope, doing: doing} do
+      target = delivery_target_fixture(scope.user)
+      goal = goal_on_target(doing, target)
+      agent_task(doing, %{created_by_agent: "Ada", parent_id: goal.id, claimed_at: ago(5)})
+
+      [entry] = DeliveryRollup.build(scope).targets
+
+      assert entry.stalled_details == []
+    end
+
     test "a dormant agent counts as stalled", %{scope: scope, board: board} do
       done = column_fixture(board, %{name: "Done"})
       target = delivery_target_fixture(scope.user)
@@ -244,6 +278,8 @@ defmodule Kanban.Targets.DeliveryRollupTest do
 
     task
   end
+
+  defp agent_names(agents), do: agents |> Enum.map(& &1.name) |> Enum.sort()
 
   defp ago(minutes) do
     DateTime.utc_now() |> DateTime.add(-minutes * 60, :second) |> DateTime.truncate(:second)

@@ -63,8 +63,19 @@ defmodule Kanban.Targets.DeliveryRollup do
   alias Kanban.Timezone
 
   @typedoc """
+  One stalled member goal paired with the stalled agents active on it — the
+  per-goal breakdown the at-risk explainer renders under a target.
+  """
+  @type stalled_detail :: %{goal: Task.t(), agents: [Agent.t()]}
+
+  @typedoc """
   One target's rollup entry: the target, its read-time status, its member
   goals, the agents active on it, and the stalled subset of each.
+
+  `stalled_details` pairs each stalled goal with the stalled agents active on
+  that specific goal (a subset of `stalled_agents`), so a consumer can tie a
+  named agent stall to the named goal it is stalling without re-deriving the
+  agent→goal bridge.
   """
   @type target_rollup :: %{
           target: DeliveryTarget.t(),
@@ -72,7 +83,8 @@ defmodule Kanban.Targets.DeliveryRollup do
           goals: [Task.t()],
           agents: [Agent.t()],
           stalled_goals: [Task.t()],
-          stalled_agents: [Agent.t()]
+          stalled_agents: [Agent.t()],
+          stalled_details: [stalled_detail()]
         }
 
   @typedoc """
@@ -137,14 +149,16 @@ defmodule Kanban.Targets.DeliveryRollup do
     goals = Targets.list_member_goals(scope, target)
     target_agents = Enum.filter(agents, &active_on_target?(&1, target.id, bridges))
     stalled_agents = Enum.filter(target_agents, &stalled?/1)
+    stalled_goals = stalled_goals(goals, stalled_agents, target.id, bridges)
 
     %{
       target: target,
       status: status,
       goals: goals,
       agents: target_agents,
-      stalled_goals: stalled_goals(goals, stalled_agents, target.id, bridges),
-      stalled_agents: stalled_agents
+      stalled_goals: stalled_goals,
+      stalled_agents: stalled_agents,
+      stalled_details: stalled_details(stalled_goals, stalled_agents, target.id, bridges)
     }
   end
 
@@ -152,6 +166,23 @@ defmodule Kanban.Targets.DeliveryRollup do
   defp stalled_goals(goals, stalled_agents, target_id, bridges) do
     ids = stalled_goal_ids(stalled_agents, target_id, bridges)
     Enum.filter(goals, &MapSet.member?(ids, &1.id))
+  end
+
+  # Each stalled goal paired with the stalled agents active on that goal — the
+  # per-goal breakdown the at-risk explainer renders.
+  defp stalled_details(stalled_goals, stalled_agents, target_id, bridges) do
+    Enum.map(stalled_goals, fn goal ->
+      %{
+        goal: goal,
+        agents: Enum.filter(stalled_agents, &on_goal?(&1, goal.id, target_id, bridges))
+      }
+    end)
+  end
+
+  defp on_goal?(agent, goal_id, target_id, bridges) do
+    bridges
+    |> Map.fetch!(identity(agent))
+    |> Enum.any?(fn {gid, tid} -> gid == goal_id and tid == target_id end)
   end
 
   # Agents with no bridge at all — every task lacks a parent goal or the parent

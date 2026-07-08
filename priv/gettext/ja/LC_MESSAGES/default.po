@@ -4186,7 +4186,7 @@ msgid "Active goals"
 msgstr "アクティブなゴール"
 
 #: lib/kanban_web/components/layouts.ex:275
-#: lib/kanban_web/live/agents_live.ex:167
+#: lib/kanban_web/live/agents_live.ex:168
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr "エージェント"
@@ -4248,7 +4248,7 @@ msgstr "空のボードから始める"
 msgid "Stride home"
 msgstr "Stride ホーム"
 
-#: lib/kanban_web/live/agents_live.ex:165
+#: lib/kanban_web/live/agents_live.ex:166
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -5021,18 +5021,18 @@ msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
 msgstr[0] "過去24時間 · %{count}件のイベント"
 
-#: lib/kanban_web/live/agents_live.ex:504
+#: lib/kanban_web/live/agents_live.ex:507
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] "%{count}件接続中"
 
-#: lib/kanban_web/live/agents_live.ex:233
+#: lib/kanban_web/live/agents_live.ex:236
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr "まだエージェントの活動はありません。"
 
-#: lib/kanban_web/live/agents_live.ex:203
+#: lib/kanban_web/live/agents_live.ex:206
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr "ライブ"
@@ -7111,13 +7111,13 @@ msgstr "技術的な詳細"
 msgid "Technical Details (JSON object)"
 msgstr "技術的な詳細 (JSONオブジェクト)"
 
-#: lib/kanban_web/live/agents_live.ex:309
+#: lib/kanban_web/live/agents_live.ex:312
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "%{agent} で絞り込み中"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:326
+#: lib/kanban_web/live/agents_live.ex:329
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "クリア"
@@ -7129,6 +7129,7 @@ msgid "Operator"
 msgstr "オペレーター"
 
 #: lib/kanban_web/components/agents_header.ex:190
+#: lib/kanban_web/components/target_risk_explainer.ex:147
 #, elixir-autogen, elixir-format
 msgid "Stuck"
 msgstr "停滞中"
@@ -7179,12 +7180,12 @@ msgstr "%{date}: %{count} 件完了"
 msgid "of which"
 msgstr "うち"
 
-#: lib/kanban_web/live/agents_live.ex:270
+#: lib/kanban_web/live/agents_live.ex:273
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "休止中 (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:559
+#: lib/kanban_web/live/agents_live.ex:562
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "%{days}日前に最終アクティブ"
@@ -7389,6 +7390,7 @@ msgstr "確認リンクを送信"
 
 #: lib/kanban_web/components/delivery_health_band.ex:171
 #: lib/kanban_web/components/target_progress_header.ex:189
+#: lib/kanban_web/components/target_risk_explainer.ex:95
 #: lib/kanban_web/components/targets_strip.ex:157
 #, elixir-autogen, elixir-format
 msgid "At-risk"
@@ -7559,3 +7561,13 @@ msgstr "デリバリーターゲットはまだありません。"
 #, elixir-autogen, elixir-format
 msgid "Soonest target date"
 msgstr "最も近いターゲット期日"
+
+#: lib/kanban_web/components/target_risk_explainer.ex:150
+#, elixir-autogen, elixir-format
+msgid "Dormant"
+msgstr "休止中"
+
+#: lib/kanban_web/components/target_risk_explainer.ex:60
+#, elixir-autogen, elixir-format
+msgid "Why targets are at risk"
+msgstr "ターゲットがリスクにさらされている理由"

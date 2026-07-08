@@ -1720,4 +1720,66 @@ defmodule KanbanWeb.AgentsLiveTest do
 
     String.to_integer(count)
   end
+
+  describe "at-risk target explainer" do
+    setup [:register_and_log_in_user]
+
+    test "names the stalled agent and its at-risk target", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+
+      # An at-risk target (created long ago, due soon) with a stuck agent.
+      target = delivery_target_fixture(user, %{name: "Launch", target_date: soon_target_date()})
+      backdate_target_inserted(target, ~N[2020-01-01 00:00:00])
+      goal = task_fixture(doing, %{type: :goal, title: "Ship the API"})
+      {:ok, _} = Tasks.update_task(goal, %{target_id: target.id})
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Ada",
+          parent_id: goal.id,
+          status: :in_progress,
+          claimed_at: DateTime.add(DateTime.utc_now(), -90 * 60, :second)
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-target-risk-explainer"
+      assert html =~ ~s(data-target-risk-card="#{target.id}")
+      assert html =~ "Launch"
+      assert html =~ "Ship the API"
+      assert html =~ ~s(data-target-risk-agent="Ada")
+      assert html =~ "Stuck"
+    end
+
+    test "renders nothing when no target is at risk with stalled work",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+      # An on-track target with a healthy agent — no at-risk explainer.
+      target = delivery_target_fixture(user)
+      goal = task_fixture(doing, %{type: :goal})
+      {:ok, _} = Tasks.update_task(goal, %{target_id: target.id})
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{created_by_agent: "Ada", parent_id: goal.id, status: :in_progress})
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      refute html =~ "data-target-risk-explainer"
+    end
+  end
+
+  # A target_date far enough ahead that, paired with a long-ago inserted_at,
+  # the elapsed calendar share outruns the (zero) work share -> :at_risk.
+  defp soon_target_date, do: Date.add(Date.utc_today(), 20)
+
+  defp backdate_target_inserted(%{id: id}, %NaiveDateTime{} = at) do
+    from(t in Kanban.Targets.DeliveryTarget, where: t.id == ^id)
+    |> Repo.update_all(set: [inserted_at: at])
+  end
 end

@@ -26,6 +26,7 @@ defmodule KanbanWeb.AgentsLive do
   alias KanbanWeb.AgentsHeader
   alias KanbanWeb.AgentsPresence
   alias KanbanWeb.DeliveryHealthBand
+  alias KanbanWeb.TargetRiskExplainer
 
   @default_filter :all
   @recent_activity_limit 200
@@ -181,6 +182,8 @@ defmodule KanbanWeb.AgentsLive do
         />
 
         <DeliveryHealthBand.delivery_health_band targets={@delivery_rollup.targets} />
+
+        <TargetRiskExplainer.target_risk_explainer targets={@delivery_rollup.targets} />
 
         <div
           data-agents-live-indicator
