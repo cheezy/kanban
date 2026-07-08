@@ -13,6 +13,7 @@ defmodule KanbanWeb.AgentsLiveTest do
   import Kanban.TargetsFixtures
   import Kanban.TasksFixtures
 
+  alias Kanban.Boards
   alias Kanban.Repo
   alias Kanban.Tasks
   alias Kanban.Tasks.AgentWorkflow
@@ -1901,6 +1902,118 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert feed =~ "Launch"
       assert feed =~ "Ship the API"
     end
+  end
+
+  describe "reassign action" do
+    setup [:register_and_log_in_user]
+
+    test "shows a Reassign control and dialog listing the goal + not-started children",
+         %{conn: conn, user: user} do
+      %{goal: goal, backlog: backlog} = at_risk_goal_with_children(user)
+      backlog_child = task_fixture(backlog, %{parent_id: goal.id, title: "Wire it up"})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      assert has_element?(view, ~s([data-reassign-trigger="#{goal.id}"]))
+
+      html = view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      assert html =~ "reassign-goal-modal"
+      # Goal + the one not-started child = 2 affected tasks, both listed.
+      assert html =~ goal.identifier
+      assert html =~ backlog_child.identifier
+      assert html =~ "Wire it up"
+      assert html =~ "2 tasks"
+    end
+
+    test "confirming reassigns the goal and its not-started children, leaving Doing untouched",
+         %{conn: conn, user: user} do
+      %{goal: goal, board: board, ready: ready, doing: doing} = at_risk_goal_with_children(user)
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, user)
+      ready_child = task_fixture(ready, %{parent_id: goal.id})
+      doing_child = task_fixture(doing, %{parent_id: goal.id, status: :in_progress})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      html =
+        view
+        |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+        |> render_submit()
+
+      assert html =~ "Reassigned"
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == other.id
+      assert Repo.get!(Kanban.Tasks.Task, ready_child.id).assigned_to_id == other.id
+      # The in-progress Doing child keeps its (nil) assignee.
+      assert Repo.get!(Kanban.Tasks.Task, doing_child.id).assigned_to_id == nil
+      # Dialog closed after a successful write.
+      refute has_element?(view, "#reassign-goal-modal")
+    end
+
+    test "surfaces tasks skipped because they were claimed since the dialog opened",
+         %{conn: conn, user: user} do
+      %{goal: goal, board: board, ready: ready, backlog: backlog} =
+        at_risk_goal_with_children(user)
+
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, user)
+      _open_child = task_fixture(ready, %{parent_id: goal.id})
+      claimed = task_fixture(backlog, %{parent_id: goal.id, status: :in_progress})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      html =
+        view
+        |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+        |> render_submit()
+
+      assert html =~ "Skipped"
+      assert html =~ claimed.identifier
+      assert Repo.get!(Kanban.Tasks.Task, claimed.id).assigned_to_id == nil
+    end
+
+    test "does not render the Reassign control for a user who cannot intervene",
+         %{conn: conn, user: viewer} do
+      # The goal lives on another owner's board; the viewer is only a read-only
+      # member, so can_intervene?/2 is false and no control renders.
+      owner = user_fixture()
+      %{goal: goal, board: board} = at_risk_goal_with_children(owner)
+      {:ok, _} = Boards.add_user_to_board(board, viewer, :read_only, owner)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      refute has_element?(view, ~s([data-reassign-trigger="#{goal.id}"]))
+    end
+  end
+
+  # Builds an at-risk target with a stalled agent on a fresh goal, plus Backlog
+  # and Ready columns for not-started children, all owned by `owner`. Returns the
+  # goal and the columns so a test can attach children in specific states.
+  defp at_risk_goal_with_children(owner) do
+    board = board_fixture(owner)
+    doing = column_fixture(board, %{name: "Doing"})
+    backlog = column_fixture(board, %{name: "Backlog"})
+    ready = column_fixture(board, %{name: "Ready"})
+
+    target = delivery_target_fixture(owner, %{name: "Launch", target_date: soon_target_date()})
+    backdate_target_inserted(target, ~N[2020-01-01 00:00:00])
+    goal = task_fixture(doing, %{type: :goal, title: "Ship the API"})
+    {:ok, goal} = Tasks.update_task(goal, %{target_id: target.id})
+
+    # A stalled (stuck) agent on the goal makes it surface in the at-risk explainer.
+    {:ok, _} =
+      doing
+      |> task_fixture()
+      |> Tasks.update_task(%{
+        created_by_agent: "Ada",
+        parent_id: goal.id,
+        status: :in_progress,
+        claimed_at: DateTime.add(DateTime.utc_now(), -90 * 60, :second)
+      })
+
+    %{goal: goal, board: board, doing: doing, backlog: backlog, ready: ready, target: target}
   end
 
   # The activity-feed region of the page (from its section marker onward).

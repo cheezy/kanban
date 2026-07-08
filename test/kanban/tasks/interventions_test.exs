@@ -424,6 +424,79 @@ defmodule Kanban.Tasks.InterventionsTest do
     end
   end
 
+  describe "reassign_preview/2" do
+    setup do
+      owner = user_fixture()
+      member = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      cols = board |> Columns.list_columns() |> Map.new(&{&1.name, &1})
+      goal = task_fixture(cols["Ready"], %{type: :goal})
+
+      %{
+        owner: owner,
+        member: member,
+        board: board,
+        cols: cols,
+        goal: goal,
+        scope: Scope.for_user(owner)
+      }
+    end
+
+    test "returns only the not-started, unclaimed children", %{
+      cols: cols,
+      goal: goal,
+      scope: scope
+    } do
+      backlog = task_fixture(cols["Backlog"], %{parent_id: goal.id})
+      ready = task_fixture(cols["Ready"], %{parent_id: goal.id})
+      _doing = task_fixture(cols["Doing"], %{parent_id: goal.id, status: :in_progress})
+
+      claimed = task_fixture(cols["Backlog"], %{parent_id: goal.id})
+
+      {1, _} =
+        from(t in Task, where: t.id == ^claimed.id)
+        |> Repo.update_all(set: [status: :in_progress])
+
+      assert {:ok, %{children: children}} = Interventions.reassign_preview(scope, goal)
+
+      child_ids = children |> Enum.map(& &1.id) |> Enum.sort()
+      assert child_ids == Enum.sort([backlog.id, ready.id])
+    end
+
+    test "preloads the goal's board and lists its members", %{
+      owner: owner,
+      member: member,
+      board: board,
+      goal: goal,
+      scope: scope
+    } do
+      assert {:ok, %{goal: preloaded, members: members}} =
+               Interventions.reassign_preview(scope, goal)
+
+      assert preloaded.column.board.id == board.id
+      member_ids = Enum.map(members, & &1.user.id)
+      assert owner.id in member_ids
+      assert member.id in member_ids
+    end
+
+    test "returns an empty child list for a goal with no not-started children", %{
+      cols: cols,
+      goal: goal,
+      scope: scope
+    } do
+      _doing = task_fixture(cols["Doing"], %{parent_id: goal.id, status: :in_progress})
+
+      assert {:ok, %{children: []}} = Interventions.reassign_preview(scope, goal)
+    end
+
+    test "returns {:error, :unauthorized} for a scope that cannot intervene", %{goal: goal} do
+      stranger_scope = Scope.for_user(user_fixture())
+
+      assert {:error, :unauthorized} = Interventions.reassign_preview(stranger_scope, goal)
+    end
+  end
+
   defp reload(%Task{id: id}), do: Repo.get!(Task, id)
 
   defp assignment_to(task_id) do

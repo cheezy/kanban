@@ -186,6 +186,7 @@ msgstr "ボードが正常に作成されました"
 msgid "Board updated successfully"
 msgstr "ボードが正常に更新されました"
 
+#: lib/kanban_web/live/agents_live.ex:652
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
@@ -4186,7 +4187,7 @@ msgid "Active goals"
 msgstr "アクティブなゴール"
 
 #: lib/kanban_web/components/layouts.ex:275
-#: lib/kanban_web/live/agents_live.ex:168
+#: lib/kanban_web/live/agents_live.ex:209
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr "エージェント"
@@ -4248,7 +4249,7 @@ msgstr "空のボードから始める"
 msgid "Stride home"
 msgstr "Stride ホーム"
 
-#: lib/kanban_web/live/agents_live.ex:166
+#: lib/kanban_web/live/agents_live.ex:207
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -5021,18 +5022,18 @@ msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
 msgstr[0] "過去24時間 · %{count}件のイベント"
 
-#: lib/kanban_web/live/agents_live.ex:568
+#: lib/kanban_web/live/agents_live.ex:781
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] "%{count}件接続中"
 
-#: lib/kanban_web/live/agents_live.ex:239
+#: lib/kanban_web/live/agents_live.ex:286
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr "まだエージェントの活動はありません。"
 
-#: lib/kanban_web/live/agents_live.ex:209
+#: lib/kanban_web/live/agents_live.ex:256
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr "ライブ"
@@ -7111,13 +7112,13 @@ msgstr "技術的な詳細"
 msgid "Technical Details (JSON object)"
 msgstr "技術的な詳細 (JSONオブジェクト)"
 
-#: lib/kanban_web/live/agents_live.ex:317
+#: lib/kanban_web/live/agents_live.ex:364
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "%{agent} で絞り込み中"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:334
+#: lib/kanban_web/live/agents_live.ex:381
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "クリア"
@@ -7129,7 +7130,7 @@ msgid "Operator"
 msgstr "オペレーター"
 
 #: lib/kanban_web/components/agents_header.ex:190
-#: lib/kanban_web/components/target_risk_explainer.ex:147
+#: lib/kanban_web/components/target_risk_explainer.ex:194
 #, elixir-autogen, elixir-format
 msgid "Stuck"
 msgstr "停滞中"
@@ -7180,12 +7181,12 @@ msgstr "%{date}: %{count} 件完了"
 msgid "of which"
 msgstr "うち"
 
-#: lib/kanban_web/live/agents_live.ex:277
+#: lib/kanban_web/live/agents_live.ex:324
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "休止中 (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:623
+#: lib/kanban_web/live/agents_live.ex:836
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "%{days}日前に最終アクティブ"
@@ -7390,7 +7391,7 @@ msgstr "確認リンクを送信"
 
 #: lib/kanban_web/components/delivery_health_band.ex:171
 #: lib/kanban_web/components/target_progress_header.ex:189
-#: lib/kanban_web/components/target_risk_explainer.ex:95
+#: lib/kanban_web/components/target_risk_explainer.ex:110
 #: lib/kanban_web/components/targets_strip.ex:157
 #, elixir-autogen, elixir-format
 msgid "At-risk"
@@ -7562,12 +7563,12 @@ msgstr "デリバリーターゲットはまだありません。"
 msgid "Soonest target date"
 msgstr "最も近いターゲット期日"
 
-#: lib/kanban_web/components/target_risk_explainer.ex:150
+#: lib/kanban_web/components/target_risk_explainer.ex:197
 #, elixir-autogen, elixir-format
 msgid "Dormant"
 msgstr "休止中"
 
-#: lib/kanban_web/components/target_risk_explainer.ex:60
+#: lib/kanban_web/components/target_risk_explainer.ex:68
 #, elixir-autogen, elixir-format
 msgid "Why targets are at risk"
 msgstr "ターゲットがリスクにさらされている理由"
@@ -7582,3 +7583,64 @@ msgstr "推進中のデリバリーターゲットとゴール"
 #, elixir-autogen, elixir-format
 msgid "Hide archived goals"
 msgstr "アーカイブ済みのゴールを非表示"
+
+#: lib/kanban_web/live/agents_live.ex:647
+#, elixir-autogen, elixir-format
+msgid "Choose a new owner"
+msgstr "新しい担当者を選択"
+
+#: lib/kanban_web/live/agents_live.ex:173
+#, elixir-autogen, elixir-format
+msgid "Choose a new owner first."
+msgstr "先に新しい担当者を選択してください。"
+
+#: lib/kanban_web/live/agents_live.ex:536
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Could not reassign the goal. Please try again."
+msgstr "ゴールを割り当てできませんでした"
+
+#: lib/kanban_web/live/agents_live.ex:645
+#, elixir-autogen, elixir-format
+msgid "New owner"
+msgstr "新しい担当者"
+
+#: lib/kanban_web/components/target_risk_explainer.ex:157
+#: lib/kanban_web/live/agents_live.ex:655
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Reassign"
+msgstr "再割り当て済み"
+
+#: lib/kanban_web/live/agents_live.ex:614
+#, elixir-autogen, elixir-format
+msgid "Reassign %{goal}"
+msgstr "%{goal} を再割り当て"
+
+#: lib/kanban_web/live/agents_live.ex:579
+#: lib/kanban_web/live/agents_live.ex:585
+#, elixir-autogen, elixir-format
+msgid "Reassigned %{count} task."
+msgid_plural "Reassigned %{count} tasks."
+msgstr[0] "%{count} 件のタスクを再割り当てしました。"
+
+#: lib/kanban_web/live/agents_live.ex:588
+#, elixir-autogen, elixir-format
+msgid "Skipped %{count} task already claimed: %{ids}."
+msgid_plural "Skipped %{count} tasks already claimed: %{ids}."
+msgstr[0] "既に取得済みの %{count} 件のタスクをスキップしました: %{ids}"
+
+#: lib/kanban_web/live/agents_live.ex:532
+#, elixir-autogen, elixir-format
+msgid "That user is not a member of this board."
+msgstr "そのユーザーはこのボードのメンバーではありません。"
+
+#: lib/kanban_web/live/agents_live.ex:618
+#, elixir-autogen, elixir-format
+msgid "This will move 1 task to the new owner:"
+msgid_plural "This will move %{count} tasks to the new owner:"
+msgstr[0] "%{count} 件のタスクを新しい担当者に移動します:"
+
+#: lib/kanban_web/live/agents_live.ex:158
+#: lib/kanban_web/live/agents_live.ex:528
+#, elixir-autogen, elixir-format
+msgid "You are not allowed to reassign this goal."
+msgstr "このゴールを再割り当てする権限がありません。"

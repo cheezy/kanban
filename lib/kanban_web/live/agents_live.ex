@@ -20,6 +20,7 @@ defmodule KanbanWeb.AgentsLive do
   alias Kanban.Agents
   alias Kanban.Boards
   alias Kanban.Targets.DeliveryRollup
+  alias Kanban.Tasks
   alias KanbanWeb.AgentActivityFeed
   alias KanbanWeb.AgentDetailPanel
   alias KanbanWeb.AgentRosterCard
@@ -53,16 +54,19 @@ defmodule KanbanWeb.AgentsLive do
 
     {:ok,
      socket
-     |> assign(:filter, @default_filter)
-     |> assign(:selected_agent, nil)
-     |> assign(:refresh_scheduled?, false)
-     |> assign(:dormant_expanded?, false)
-     |> assign(:expanded_detail_sections, MapSet.new(@detail_sections))
-     |> assign(:timezone, KanbanWeb.Timezone.browser_timezone(socket))
-     |> assign(:connected_count, connected_count(socket))
-     |> assign(:board_id, nil)
-     |> assign(:time_range, :all_time)
-     |> assign(:boards, Boards.list_boards(socket.assigns.current_scope.user))
+     |> assign(%{
+       filter: @default_filter,
+       selected_agent: nil,
+       refresh_scheduled?: false,
+       dormant_expanded?: false,
+       expanded_detail_sections: MapSet.new(@detail_sections),
+       timezone: KanbanWeb.Timezone.browser_timezone(socket),
+       connected_count: connected_count(socket),
+       board_id: nil,
+       time_range: :all_time,
+       reassign: nil,
+       boards: Boards.list_boards(socket.assigns.current_scope.user)
+     })
      |> load_agents_data()}
   end
 
@@ -138,7 +142,52 @@ defmodule KanbanWeb.AgentsLive do
   # Ignore toggles for any key that is not a known detail-panel section: the
   # payload is client-supplied, so an unrecognized section must not mutate
   # state (security).
+  @impl true
   def handle_event("toggle_detail_section", _params, socket), do: {:noreply, socket}
+
+  @impl true
+  def handle_event("open_reassign", %{"goal-id" => goal_id}, socket) do
+    scope = socket.assigns.current_scope
+
+    # Resolve the id against the goals actually on screen (client-supplied
+    # payload); reassign_preview/2 then re-authorizes via can_intervene?/2, so a
+    # forged goal-id or a non-owner is refused server-side, never trusting the
+    # hidden control.
+    with %Kanban.Tasks.Task{} = goal <- find_stalled_goal(socket, goal_id),
+         {:ok, preview} <- Tasks.reassign_preview(scope, goal) do
+      {:noreply, assign(socket, :reassign, build_reassign_state(preview))}
+    else
+      _ ->
+        {:noreply,
+         put_flash(socket, :error, gettext("You are not allowed to reassign this goal."))}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_reassign", _params, socket) do
+    {:noreply, assign(socket, :reassign, nil)}
+  end
+
+  @impl true
+  def handle_event(
+        "confirm_reassign",
+        %{"assigned_to_id" => raw_id},
+        %{
+          assigns: %{reassign: %{goal: goal}}
+        } = socket
+      ) do
+    case parse_assignee_id(raw_id) do
+      :none ->
+        {:noreply, put_flash(socket, :error, gettext("Choose a new owner first."))}
+
+      assigned_to_id ->
+        commit_reassign(socket, goal, assigned_to_id)
+    end
+  end
+
+  # No dialog is open (stale/forged submit) — ignore.
+  @impl true
+  def handle_event("confirm_reassign", _params, socket), do: {:noreply, socket}
 
   @impl true
   def handle_info({:agent_event, _payload}, socket) do
@@ -184,8 +233,14 @@ defmodule KanbanWeb.AgentsLive do
         <div data-agents-delivery-tier>
           <DeliveryHealthBand.delivery_health_band targets={@delivery_rollup.targets} />
 
-          <TargetRiskExplainer.target_risk_explainer targets={@delivery_rollup.targets} />
+          <TargetRiskExplainer.target_risk_explainer
+            targets={@delivery_rollup.targets}
+            reassignable_goal_ids={@reassignable_goal_ids}
+            on_reassign="open_reassign"
+          />
         </div>
+
+        <.reassign_dialog reassign={@reassign} />
 
         <div data-agents-second-tier class="flex-1 min-h-0 flex flex-col">
           <div
@@ -444,8 +499,175 @@ defmodule KanbanWeb.AgentsLive do
       # Recompute the open agent's drill-down so it refreshes on the same
       # PubSub debounce as the rest of the view; nil when nothing is selected.
       agent_detail: agent_detail_for(tasks, socket.assigns.selected_agent),
-      event_count_24h: count_events_within_24h(events)
+      event_count_24h: count_events_within_24h(events),
+      # The subset of on-screen stalled goals the current user may reassign, so
+      # the Reassign control renders only where can_intervene?/2 allows.
+      reassignable_goal_ids: reassignable_goal_ids(socket.assigns.current_scope, delivery_rollup)
     }
+  end
+
+  # Ids of the stalled goals currently shown in the at-risk explainer that the
+  # scoped user is authorized to reassign. Computed once per rebuild so the
+  # template membership test is a cheap MapSet lookup, and the write path stays
+  # the single source of truth (each id was cleared by can_intervene?/2).
+  defp reassignable_goal_ids(scope, delivery_rollup) do
+    for target <- delivery_rollup.targets,
+        detail <- target.stalled_details,
+        Tasks.can_intervene?(scope, detail.goal),
+        into: MapSet.new(),
+        do: detail.goal.id
+  end
+
+  defp commit_reassign(socket, goal, assigned_to_id) do
+    scope = socket.assigns.current_scope
+
+    case Tasks.reassign_goal_unstarted(scope, goal, assigned_to_id) do
+      {:ok, result} -> {:noreply, reassign_succeeded(socket, result)}
+      {:error, reason} -> {:noreply, reassign_failed(socket, reason)}
+    end
+  end
+
+  defp reassign_succeeded(socket, %{moved: moved, skipped: skipped}) do
+    socket
+    |> assign(:reassign, nil)
+    |> put_flash(:info, reassign_flash(moved, skipped))
+    |> load_agents_data()
+  end
+
+  defp reassign_failed(socket, :unauthorized) do
+    socket
+    |> assign(:reassign, nil)
+    |> put_flash(:error, gettext("You are not allowed to reassign this goal."))
+  end
+
+  defp reassign_failed(socket, :assignee_not_on_board) do
+    put_flash(socket, :error, gettext("That user is not a member of this board."))
+  end
+
+  defp reassign_failed(socket, _changeset) do
+    put_flash(socket, :error, gettext("Could not reassign the goal. Please try again."))
+  end
+
+  # Resolve a client-supplied goal id against the stalled goals actually on
+  # screen, so a forged payload can only ever name a goal the page already
+  # shows (authorization is still re-checked by can_intervene?/2 afterward).
+  defp find_stalled_goal(socket, goal_id) do
+    case Integer.parse(goal_id) do
+      {id, ""} ->
+        socket.assigns.delivery_rollup.targets
+        |> Enum.flat_map(& &1.stalled_details)
+        |> Enum.map(& &1.goal)
+        |> Enum.find(&(&1.id == id))
+
+      _ ->
+        nil
+    end
+  end
+
+  defp build_reassign_state(%{goal: goal, children: children, members: members}) do
+    %{goal: goal, children: children, member_options: member_options(members)}
+  end
+
+  defp member_options(members) do
+    Enum.map(members, fn %{user: user} -> {user_label(user), user.id} end)
+  end
+
+  defp user_label(%{name: name}) when is_binary(name) and name != "", do: name
+  defp user_label(%{email: email}), do: email
+
+  defp parse_assignee_id(""), do: :none
+
+  defp parse_assignee_id(raw_id) do
+    case Integer.parse(raw_id) do
+      {id, ""} -> id
+      _ -> :none
+    end
+  end
+
+  defp reassign_flash(moved, []) do
+    ngettext("Reassigned %{count} task.", "Reassigned %{count} tasks.", length(moved))
+  end
+
+  defp reassign_flash(moved, skipped) do
+    ids = Enum.map_join(skipped, ", ", & &1.identifier)
+
+    moved_msg = ngettext("Reassigned %{count} task.", "Reassigned %{count} tasks.", length(moved))
+
+    skipped_msg =
+      ngettext(
+        "Skipped %{count} task already claimed: %{ids}.",
+        "Skipped %{count} tasks already claimed: %{ids}.",
+        length(skipped),
+        ids: ids
+      )
+
+    moved_msg <> " " <> skipped_msg
+  end
+
+  attr :reassign, :map, default: nil
+
+  # The confirmation dialog for the goal-level Reassign action. Lists the exact
+  # goal + not-started children that will move and a board-member owner selector;
+  # confirming routes through the reassign_goal_unstarted context op.
+  defp reassign_dialog(assigns) do
+    ~H"""
+    <KanbanWeb.DelayedModal.delayed_modal
+      :if={@reassign}
+      id="reassign-goal-modal"
+      show
+      on_cancel={JS.push("cancel_reassign")}
+      max_width="max-w-lg"
+    >
+      <div class="flex flex-col gap-4">
+        <h2 class="text-lg font-semibold text-base-content">
+          {gettext("Reassign %{goal}", goal: @reassign.goal.identifier)}
+        </h2>
+
+        <p class="text-sm text-base-content opacity-70">
+          {ngettext(
+            "This will move 1 task to the new owner:",
+            "This will move %{count} tasks to the new owner:",
+            length(@reassign.children) + 1
+          )}
+        </p>
+
+        <ul
+          class="flex flex-col gap-1 text-sm text-base-content"
+          data-reassign-affected
+        >
+          <li data-reassign-goal={@reassign.goal.id}>
+            <span class="font-mono">{@reassign.goal.identifier}</span>
+            <span class="opacity-70">— {@reassign.goal.title}</span>
+          </li>
+          <li :for={child <- @reassign.children} data-reassign-child={child.id}>
+            <span class="font-mono">{child.identifier}</span>
+            <span class="opacity-70">— {child.title}</span>
+          </li>
+        </ul>
+
+        <form id="reassign-form" phx-submit="confirm_reassign" class="flex flex-col gap-4">
+          <.input
+            type="select"
+            id="reassign-assigned-to"
+            name="assigned_to_id"
+            value=""
+            label={gettext("New owner")}
+            options={@reassign.member_options}
+            prompt={gettext("Choose a new owner")}
+          />
+
+          <div class="flex justify-end gap-2">
+            <.button type="button" phx-click="cancel_reassign">
+              {gettext("Cancel")}
+            </.button>
+            <.button type="submit" variant="primary">
+              {gettext("Reassign")}
+            </.button>
+          </div>
+        </form>
+      </div>
+    </KanbanWeb.DelayedModal.delayed_modal>
+    """
   end
 
   # The fleet-level aggregate rollups, derived from the single shared task fetch

@@ -112,6 +112,45 @@ defmodule Kanban.Tasks.Interventions do
   end
 
   @doc """
+  Read-only preview of what `reassign_goal_unstarted/3` would move for `goal`.
+
+  Gated by `can_intervene?/2` (scope-first, like the write) — returns
+  `{:error, :unauthorized}` for a scope that may not intervene, so the preview
+  cannot read a goal's children or board members without the same authorization
+  the write enforces.
+
+  On success returns `{:ok, %{goal, children, members}}`: the goal (with its
+  `:target` and `column: :board` preloaded), the not-started, unclaimed children
+  that would be reassigned, and the goal's board members (candidate assignees for
+  the owner selector). Performs no row locking — the `FOR UPDATE` guard applies
+  only inside the write transaction, so the previewed children are a best-effort
+  snapshot; the authoritative moved and skipped sets come from
+  `reassign_goal_unstarted/3` at confirm time.
+  """
+  @spec reassign_preview(Scope.t() | nil, Task.t()) ::
+          {:ok, %{goal: Task.t(), children: [Task.t()], members: [map()]}}
+          | {:error, :unauthorized}
+  def reassign_preview(scope, %Task{} = goal) do
+    if can_intervene?(scope, goal) do
+      goal = Repo.preload(goal, [:target, column: :board])
+
+      # Partition with the same `:open` eligibility the write uses, so the preview
+      # lists exactly the children that would actually move (claimed ones are
+      # excluded — they would be skipped).
+      {eligible, _claimed} =
+        goal.id
+        |> not_started_children_query(lock: false)
+        |> Repo.all()
+        |> partition_candidates()
+
+      {:ok,
+       %{goal: goal, children: eligible, members: Boards.list_board_users(goal.column.board)}}
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  @doc """
   Sets `goal` and its not-started, unclaimed children to `new_priority`,
   atomically.
 
@@ -214,17 +253,24 @@ defmodule Kanban.Tasks.Interventions do
   # flips a child to :in_progress either lands before this lock (child is seen
   # as claimed and skipped) or blocks behind it (child stays :open and is
   # reassigned) — never a lost update. The lock targets only task rows because
-  # the column filter uses a subquery rather than a join.
-  defp not_started_children_query(goal_id) do
+  # the column filter uses a subquery rather than a join. The write path locks
+  # (default); the read-only preview passes `lock: false`.
+  defp not_started_children_query(goal_id, opts \\ []) do
     not_started_column_ids =
       from(c in Column, where: c.name in ^@not_started_columns, select: c.id)
 
-    from(t in Task,
-      where: t.parent_id == ^goal_id,
-      where: t.column_id in subquery(not_started_column_ids),
-      where: is_nil(t.archived_at),
-      lock: "FOR UPDATE"
-    )
+    query =
+      from(t in Task,
+        where: t.parent_id == ^goal_id,
+        where: t.column_id in subquery(not_started_column_ids),
+        where: is_nil(t.archived_at)
+      )
+
+    if Keyword.get(opts, :lock, true) do
+      from(t in query, lock: "FOR UPDATE")
+    else
+      query
+    end
   end
 
   defp partition_candidates(candidates) do

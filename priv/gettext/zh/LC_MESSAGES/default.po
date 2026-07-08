@@ -186,6 +186,7 @@ msgstr "看板创建成功"
 msgid "Board updated successfully"
 msgstr "看板更新成功"
 
+#: lib/kanban_web/live/agents_live.ex:652
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
@@ -4186,7 +4187,7 @@ msgid "Active goals"
 msgstr "活动目标"
 
 #: lib/kanban_web/components/layouts.ex:275
-#: lib/kanban_web/live/agents_live.ex:168
+#: lib/kanban_web/live/agents_live.ex:209
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr "代理"
@@ -4248,7 +4249,7 @@ msgstr "从一个空白看板开始"
 msgid "Stride home"
 msgstr "Stride 首页"
 
-#: lib/kanban_web/live/agents_live.ex:166
+#: lib/kanban_web/live/agents_live.ex:207
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -5021,18 +5022,18 @@ msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
 msgstr[0] "最近 24 小时 · %{count} 个事件"
 
-#: lib/kanban_web/live/agents_live.ex:568
+#: lib/kanban_web/live/agents_live.ex:781
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] "%{count} 个已连接"
 
-#: lib/kanban_web/live/agents_live.ex:239
+#: lib/kanban_web/live/agents_live.ex:286
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr "暂无代理活动。"
 
-#: lib/kanban_web/live/agents_live.ex:209
+#: lib/kanban_web/live/agents_live.ex:256
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr "实时"
@@ -7111,13 +7112,13 @@ msgstr "技术细节"
 msgid "Technical Details (JSON object)"
 msgstr "技术细节（JSON 对象）"
 
-#: lib/kanban_web/live/agents_live.ex:317
+#: lib/kanban_web/live/agents_live.ex:364
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "按 %{agent} 筛选"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:334
+#: lib/kanban_web/live/agents_live.ex:381
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "清除"
@@ -7129,7 +7130,7 @@ msgid "Operator"
 msgstr "操作员"
 
 #: lib/kanban_web/components/agents_header.ex:190
-#: lib/kanban_web/components/target_risk_explainer.ex:147
+#: lib/kanban_web/components/target_risk_explainer.ex:194
 #, elixir-autogen, elixir-format
 msgid "Stuck"
 msgstr "卡住"
@@ -7180,12 +7181,12 @@ msgstr "%{date}：完成 %{count} 个"
 msgid "of which"
 msgstr "其中"
 
-#: lib/kanban_web/live/agents_live.ex:277
+#: lib/kanban_web/live/agents_live.ex:324
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "休眠 (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:623
+#: lib/kanban_web/live/agents_live.ex:836
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "%{days} 天前活跃"
@@ -7390,7 +7391,7 @@ msgstr "发送确认链接"
 
 #: lib/kanban_web/components/delivery_health_band.ex:171
 #: lib/kanban_web/components/target_progress_header.ex:189
-#: lib/kanban_web/components/target_risk_explainer.ex:95
+#: lib/kanban_web/components/target_risk_explainer.ex:110
 #: lib/kanban_web/components/targets_strip.ex:157
 #, elixir-autogen, elixir-format
 msgid "At-risk"
@@ -7562,12 +7563,12 @@ msgstr "暂无交付目标。"
 msgid "Soonest target date"
 msgstr "最近的目标日期"
 
-#: lib/kanban_web/components/target_risk_explainer.ex:150
+#: lib/kanban_web/components/target_risk_explainer.ex:197
 #, elixir-autogen, elixir-format
 msgid "Dormant"
 msgstr "休眠"
 
-#: lib/kanban_web/components/target_risk_explainer.ex:60
+#: lib/kanban_web/components/target_risk_explainer.ex:68
 #, elixir-autogen, elixir-format
 msgid "Why targets are at risk"
 msgstr "目标存在风险的原因"
@@ -7582,3 +7583,64 @@ msgstr "正在推进的交付目标和目标"
 #, elixir-autogen, elixir-format
 msgid "Hide archived goals"
 msgstr "隐藏已归档的目标"
+
+#: lib/kanban_web/live/agents_live.ex:647
+#, elixir-autogen, elixir-format
+msgid "Choose a new owner"
+msgstr "选择新的负责人"
+
+#: lib/kanban_web/live/agents_live.ex:173
+#, elixir-autogen, elixir-format
+msgid "Choose a new owner first."
+msgstr "请先选择新的负责人。"
+
+#: lib/kanban_web/live/agents_live.ex:536
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Could not reassign the goal. Please try again."
+msgstr "无法分配目标"
+
+#: lib/kanban_web/live/agents_live.ex:645
+#, elixir-autogen, elixir-format
+msgid "New owner"
+msgstr "新的负责人"
+
+#: lib/kanban_web/components/target_risk_explainer.ex:157
+#: lib/kanban_web/live/agents_live.ex:655
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Reassign"
+msgstr "已重新分配"
+
+#: lib/kanban_web/live/agents_live.ex:614
+#, elixir-autogen, elixir-format
+msgid "Reassign %{goal}"
+msgstr "重新分配 %{goal}"
+
+#: lib/kanban_web/live/agents_live.ex:579
+#: lib/kanban_web/live/agents_live.ex:585
+#, elixir-autogen, elixir-format
+msgid "Reassigned %{count} task."
+msgid_plural "Reassigned %{count} tasks."
+msgstr[0] "已重新分配 %{count} 个任务。"
+
+#: lib/kanban_web/live/agents_live.ex:588
+#, elixir-autogen, elixir-format
+msgid "Skipped %{count} task already claimed: %{ids}."
+msgid_plural "Skipped %{count} tasks already claimed: %{ids}."
+msgstr[0] "已跳过 %{count} 个已被领取的任务：%{ids}"
+
+#: lib/kanban_web/live/agents_live.ex:532
+#, elixir-autogen, elixir-format
+msgid "That user is not a member of this board."
+msgstr "该用户不是此看板的成员。"
+
+#: lib/kanban_web/live/agents_live.ex:618
+#, elixir-autogen, elixir-format
+msgid "This will move 1 task to the new owner:"
+msgid_plural "This will move %{count} tasks to the new owner:"
+msgstr[0] "这会将 %{count} 个任务移交给新的负责人："
+
+#: lib/kanban_web/live/agents_live.ex:158
+#: lib/kanban_web/live/agents_live.ex:528
+#, elixir-autogen, elixir-format
+msgid "You are not allowed to reassign this goal."
+msgstr "您无权重新分配此目标。"
