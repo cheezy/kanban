@@ -226,11 +226,18 @@ defmodule Kanban.Targets do
   goal from its current target first. Board scoping mirrors
   `list_member_goals/2` exactly: a `nil` scope applies no board filter. The
   `target` argument is retained for API symmetry with `list_member_goals/2`.
+
+  ## Options
+
+    * `:exclude_archived` — when `true`, archived goals (those with a set
+      `archived_at`) are dropped from the result. Defaults to `false`, so the
+      historic behavior (archived goals included) is unchanged.
   """
-  @spec list_assignable_goals(Scope.t() | nil, DeliveryTarget.t()) :: [Task.t()]
-  def list_assignable_goals(scope, %DeliveryTarget{} = _target) do
+  @spec list_assignable_goals(Scope.t() | nil, DeliveryTarget.t(), keyword()) :: [Task.t()]
+  def list_assignable_goals(scope, %DeliveryTarget{} = _target, opts \\ []) do
     Task
     |> where([t], t.type == :goal and is_nil(t.target_id))
+    |> maybe_exclude_archived(Keyword.get(opts, :exclude_archived, false))
     |> BoardScope.apply_board_scope_with_column_join(scope)
     |> Repo.all()
   end
@@ -267,17 +274,30 @@ defmodule Kanban.Targets do
   the LiveView. Only unassigned goals (`is_nil(target_id)`) qualify, and board
   scoping matches `list_assignable_goals/2` exactly; a `nil` scope applies no
   board filter.
+
+  ## Options
+
+    * `:exclude_archived` — when `true`, archived goals (those with a set
+      `archived_at`) are dropped. Defaults to `false`, so the historic behavior
+      (archived goals included) is unchanged. This backs the Edit Target page's
+      "hide archived goals" checkbox.
   """
-  @spec list_assignable_goal_details(Scope.t() | nil, DeliveryTarget.t()) ::
+  @spec list_assignable_goal_details(Scope.t() | nil, DeliveryTarget.t(), keyword()) ::
           [goal_progress_detail()]
-  def list_assignable_goal_details(scope, %DeliveryTarget{} = _target) do
+  def list_assignable_goal_details(scope, %DeliveryTarget{} = _target, opts \\ []) do
     Task
     |> where([t], t.type == :goal and is_nil(t.target_id))
+    |> maybe_exclude_archived(Keyword.get(opts, :exclude_archived, false))
     |> BoardScope.apply_board_scope_with_column_join(scope)
     |> preload([:column, :assigned_to])
     |> Repo.all()
     |> goal_detail_views()
   end
+
+  # Drops archived goals (those with a set `archived_at`) when asked; a no-op
+  # otherwise. Applied before BoardScope's joins so only the `t` binding exists.
+  defp maybe_exclude_archived(query, true), do: where(query, [t], is_nil(t.archived_at))
+  defp maybe_exclude_archived(query, false), do: query
 
   @typedoc """
   One boards-page summary row for a delivery target: the target itself, its

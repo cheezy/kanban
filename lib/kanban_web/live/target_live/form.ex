@@ -8,7 +8,7 @@ defmodule KanbanWeb.TargetLive.Form do
 
   @impl true
   def mount(params, _session, socket) do
-    socket = assign(socket, member_goals: [], assignable_goals: [])
+    socket = assign(socket, member_goals: [], assignable_goals: [], hide_archived: false)
     {:ok, apply_action(socket, socket.assigns.live_action, params)}
   end
 
@@ -72,6 +72,12 @@ defmodule KanbanWeb.TargetLive.Form do
     end
   end
 
+  @impl true
+  def handle_event("toggle_hide_archived", _params, socket) do
+    socket = assign(socket, :hide_archived, not socket.assigns.hide_archived)
+    {:noreply, assign_goal_lists(socket, socket.assigns.target)}
+  end
+
   defp save_target(socket, :edit, target_params) do
     case Targets.update_target(
            socket.assigns.current_scope,
@@ -120,9 +126,14 @@ defmodule KanbanWeb.TargetLive.Form do
   defp assign_goal_lists(socket, target) do
     scope = socket.assigns.current_scope
 
+    assignable =
+      Targets.list_assignable_goal_details(scope, target,
+        exclude_archived: socket.assigns.hide_archived
+      )
+
     socket
     |> assign(:member_goals, Targets.list_member_goal_details(scope, target))
-    |> assign(:assignable_goals, Targets.list_assignable_goal_details(scope, target))
+    |> assign(:assignable_goals, assignable)
   end
 
   defp target_not_authorized(socket) do

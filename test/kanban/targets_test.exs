@@ -715,6 +715,58 @@ defmodule Kanban.TargetsTest do
       refute foreign.id in ids
     end
 
+    test "excludes archived goals when exclude_archived: true", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = delivery_target_fixture(user)
+      live = goal_fixture(column)
+      archived = goal_fixture(column)
+      {:ok, _} = Kanban.Tasks.archive_task(archived)
+
+      ids =
+        scope
+        |> Targets.list_assignable_goal_details(target, exclude_archived: true)
+        |> Enum.map(& &1.goal.id)
+
+      assert live.id in ids
+      refute archived.id in ids
+    end
+
+    test "includes archived goals when the option is not set (default unchanged)", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = delivery_target_fixture(user)
+      archived = goal_fixture(column)
+      {:ok, _} = Kanban.Tasks.archive_task(archived)
+
+      ids = scope |> Targets.list_assignable_goal_details(target) |> Enum.map(& &1.goal.id)
+
+      assert archived.id in ids
+    end
+
+    test "board scoping still applies with exclude_archived: true", %{
+      scope: scope,
+      user: user,
+      column: column,
+      other_column: other_column
+    } do
+      target = delivery_target_fixture(user)
+      mine = goal_fixture(column)
+      foreign = goal_fixture(other_column)
+
+      ids =
+        scope
+        |> Targets.list_assignable_goal_details(target, exclude_archived: true)
+        |> Enum.map(& &1.goal.id)
+
+      assert mine.id in ids
+      refute foreign.id in ids
+    end
+
     test "returns the goal_progress_detail shape with flow and fraction",
          %{scope: scope, user: user, board: board, column: column} do
       goal = goal_fixture(column)

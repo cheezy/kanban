@@ -7369,7 +7369,7 @@ msgstr ""
 msgid "Targets"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:105
+#: lib/kanban_web/live/target_live/form.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Assign"
 msgstr ""
@@ -7425,12 +7425,12 @@ msgstr ""
 msgid "No goals are assigned to this target yet."
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.html.heex:91
+#: lib/kanban_web/live/target_live/form.html.heex:105
 #, elixir-autogen, elixir-format
 msgid "No goals are available to assign."
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.ex:130
+#: lib/kanban_web/live/target_live/form.ex:141
 #, elixir-autogen, elixir-format
 msgid "Only the target owner can edit this target"
 msgstr ""
@@ -7445,12 +7445,12 @@ msgstr ""
 msgid "Target Date"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.ex:100
+#: lib/kanban_web/live/target_live/form.ex:106
 #, elixir-autogen, elixir-format
 msgid "Target created successfully"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/form.ex:84
+#: lib/kanban_web/live/target_live/form.ex:90
 #, elixir-autogen, elixir-format
 msgid "Target updated successfully"
 msgstr ""
@@ -7530,4 +7530,9 @@ msgstr ""
 #: lib/kanban_web/components/agent_roster_card.ex:135
 #, elixir-autogen, elixir-format
 msgid "Advancing delivery target and goal"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/form.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "Hide archived goals"
 msgstr ""

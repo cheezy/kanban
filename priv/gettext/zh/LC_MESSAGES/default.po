@@ -7415,7 +7415,7 @@ msgstr "正常"
 msgid "Targets"
 msgstr "交付目标"
 
-#: lib/kanban_web/live/target_live/form.html.heex:105
+#: lib/kanban_web/live/target_live/form.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Assign"
 msgstr "分配"
@@ -7471,12 +7471,12 @@ msgstr "新建交付目标"
 msgid "No goals are assigned to this target yet."
 msgstr "尚未为此交付目标分配目标。"
 
-#: lib/kanban_web/live/target_live/form.html.heex:91
+#: lib/kanban_web/live/target_live/form.html.heex:105
 #, elixir-autogen, elixir-format
 msgid "No goals are available to assign."
 msgstr "没有可分配的目标。"
 
-#: lib/kanban_web/live/target_live/form.ex:130
+#: lib/kanban_web/live/target_live/form.ex:141
 #, elixir-autogen, elixir-format
 msgid "Only the target owner can edit this target"
 msgstr "只有所有者可以编辑此交付目标"
@@ -7491,12 +7491,12 @@ msgstr "保存交付目标"
 msgid "Target Date"
 msgstr "目标日期"
 
-#: lib/kanban_web/live/target_live/form.ex:100
+#: lib/kanban_web/live/target_live/form.ex:106
 #, elixir-autogen, elixir-format
 msgid "Target created successfully"
 msgstr "交付目标创建成功"
 
-#: lib/kanban_web/live/target_live/form.ex:84
+#: lib/kanban_web/live/target_live/form.ex:90
 #, elixir-autogen, elixir-format
 msgid "Target updated successfully"
 msgstr "交付目标更新成功"
@@ -7577,3 +7577,8 @@ msgstr "目标存在风险的原因"
 #, elixir-autogen, elixir-format
 msgid "Advancing delivery target and goal"
 msgstr "正在推进的交付目标和目标"
+
+#: lib/kanban_web/live/target_live/form.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "Hide archived goals"
+msgstr "隐藏已归档的目标"

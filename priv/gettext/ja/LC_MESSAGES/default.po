@@ -7415,7 +7415,7 @@ msgstr "順調"
 msgid "Targets"
 msgstr "ターゲット"
 
-#: lib/kanban_web/live/target_live/form.html.heex:105
+#: lib/kanban_web/live/target_live/form.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Assign"
 msgstr "割り当て"
@@ -7471,12 +7471,12 @@ msgstr "新しいターゲット"
 msgid "No goals are assigned to this target yet."
 msgstr "このターゲットにはまだゴールが割り当てられていません。"
 
-#: lib/kanban_web/live/target_live/form.html.heex:91
+#: lib/kanban_web/live/target_live/form.html.heex:105
 #, elixir-autogen, elixir-format
 msgid "No goals are available to assign."
 msgstr "割り当て可能なゴールがありません。"
 
-#: lib/kanban_web/live/target_live/form.ex:130
+#: lib/kanban_web/live/target_live/form.ex:141
 #, elixir-autogen, elixir-format
 msgid "Only the target owner can edit this target"
 msgstr "このターゲットを編集できるのは所有者のみです"
@@ -7491,12 +7491,12 @@ msgstr "ターゲットを保存"
 msgid "Target Date"
 msgstr "目標日"
 
-#: lib/kanban_web/live/target_live/form.ex:100
+#: lib/kanban_web/live/target_live/form.ex:106
 #, elixir-autogen, elixir-format
 msgid "Target created successfully"
 msgstr "ターゲットを作成しました"
 
-#: lib/kanban_web/live/target_live/form.ex:84
+#: lib/kanban_web/live/target_live/form.ex:90
 #, elixir-autogen, elixir-format
 msgid "Target updated successfully"
 msgstr "ターゲットを更新しました"
@@ -7577,3 +7577,8 @@ msgstr "ターゲットがリスクにさらされている理由"
 #, elixir-autogen, elixir-format
 msgid "Advancing delivery target and goal"
 msgstr "推進中のデリバリーターゲットとゴール"
+
+#: lib/kanban_web/live/target_live/form.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "Hide archived goals"
+msgstr "アーカイブ済みのゴールを非表示"

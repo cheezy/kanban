@@ -80,6 +80,34 @@ defmodule KanbanWeb.TargetLive.FormTest do
       assert html =~ "Available Goals"
     end
 
+    test "the hide-archived checkbox removes and restores archived goals in Available Goals",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      live_goal = goal_fixture(column, %{title: "Live goal"})
+      archived_goal = goal_fixture(column, %{title: "Archived goal"})
+      {:ok, _} = Kanban.Tasks.archive_task(archived_goal)
+      target = delivery_target_fixture(user)
+
+      {:ok, form_live, _html} = live(conn, ~p"/targets/#{target}/edit")
+
+      live_row = "[data-assignable-goals] #target-goal-manage-row-#{live_goal.id}"
+      archived_row = "[data-assignable-goals] #target-goal-manage-row-#{archived_goal.id}"
+
+      # Default: archived goals are shown (behaviour unchanged).
+      assert has_element?(form_live, live_row)
+      assert has_element?(form_live, archived_row)
+
+      # Checking the box hides the archived goal but keeps the live one.
+      form_live |> element("[data-hide-archived-toggle]") |> render_click()
+      assert has_element?(form_live, live_row)
+      refute has_element?(form_live, archived_row)
+
+      # Unchecking restores it.
+      form_live |> element("[data-hide-archived-toggle]") |> render_click()
+      assert has_element?(form_live, archived_row)
+    end
+
     test "the owner edits the scalar fields, persisting them and redirecting to /boards",
          %{conn: conn, user: user} do
       target = delivery_target_fixture(user, %{name: "Original"})

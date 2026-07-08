@@ -7445,7 +7445,7 @@ msgstr "No prazo"
 msgid "Targets"
 msgstr "Alvos"
 
-#: lib/kanban_web/live/target_live/form.html.heex:105
+#: lib/kanban_web/live/target_live/form.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Assign"
 msgstr "Atribuir"
@@ -7501,12 +7501,12 @@ msgstr "Novo alvo"
 msgid "No goals are assigned to this target yet."
 msgstr "Nenhuma meta foi atribuída a este alvo ainda."
 
-#: lib/kanban_web/live/target_live/form.html.heex:91
+#: lib/kanban_web/live/target_live/form.html.heex:105
 #, elixir-autogen, elixir-format
 msgid "No goals are available to assign."
 msgstr "Nenhuma meta disponível para atribuir."
 
-#: lib/kanban_web/live/target_live/form.ex:130
+#: lib/kanban_web/live/target_live/form.ex:141
 #, elixir-autogen, elixir-format
 msgid "Only the target owner can edit this target"
 msgstr "Apenas o proprietário pode editar este alvo"
@@ -7521,12 +7521,12 @@ msgstr "Salvar alvo"
 msgid "Target Date"
 msgstr "Data alvo"
 
-#: lib/kanban_web/live/target_live/form.ex:100
+#: lib/kanban_web/live/target_live/form.ex:106
 #, elixir-autogen, elixir-format
 msgid "Target created successfully"
 msgstr "Alvo criado com sucesso"
 
-#: lib/kanban_web/live/target_live/form.ex:84
+#: lib/kanban_web/live/target_live/form.ex:90
 #, elixir-autogen, elixir-format
 msgid "Target updated successfully"
 msgstr "Alvo atualizado com sucesso"
@@ -7607,3 +7607,8 @@ msgstr "Por que os alvos estão em risco"
 #, elixir-autogen, elixir-format
 msgid "Advancing delivery target and goal"
 msgstr "Alvo de entrega e meta em andamento"
+
+#: lib/kanban_web/live/target_live/form.html.heex:100
+#, elixir-autogen, elixir-format
+msgid "Hide archived goals"
+msgstr "Ocultar metas arquivadas"

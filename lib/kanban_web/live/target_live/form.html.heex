@@ -86,6 +86,20 @@
             {gettext("Goals you can add to this target.")}
           </p>
 
+          <label
+            class="text-sm text-base-content mb-4"
+            style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;"
+          >
+            <input
+              type="checkbox"
+              class="checkbox checkbox-sm"
+              phx-click="toggle_hide_archived"
+              checked={@hide_archived}
+              data-hide-archived-toggle
+            />
+            <span>{gettext("Hide archived goals")}</span>
+          </label>
+
           <%= if @assignable_goals == [] do %>
             <p class="text-sm text-base-content opacity-70">
               {gettext("No goals are available to assign.")}
