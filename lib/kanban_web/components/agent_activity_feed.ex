@@ -50,11 +50,18 @@ defmodule KanbanWeb.AgentActivityFeed do
       Each row's time is shown in this zone and rows are grouped by the
       local calendar date. Defaults to `"Etc/UTC"`; an unknown zone falls
       back to UTC display without error.
+    * `tethers` — optional map from an actor identity `{name, owner_key}` to
+      the `%{target, goal, status}` annotation that actor is advancing (a
+      `Kanban.Targets.DeliveryRollup.agent_annotation/0`, already picked by the
+      caller). When a row's actor has a tether, the row shows a small
+      target · goal line tying the activity to the delivery it serves. Defaults
+      to `%{}`, so callers that don't tether render the feed unchanged.
   """
   attr :events, :list, required: true
   attr :filter, :atom, required: true, values: @filters
   attr :on_filter_change, :string, required: true
   attr :timezone, :string, default: "Etc/UTC"
+  attr :tethers, :map, default: %{}
 
   def feed(assigns) do
     assigns =
@@ -102,6 +109,7 @@ defmodule KanbanWeb.AgentActivityFeed do
           events={events}
           today={@today}
           timezone={@timezone}
+          tethers={@tethers}
         />
       </ul>
     </section>
@@ -115,6 +123,7 @@ defmodule KanbanWeb.AgentActivityFeed do
   attr :events, :list, required: true
   attr :today, :any, required: true
   attr :timezone, :string, required: true
+  attr :tethers, :map, required: true
 
   defp feed_group(assigns) do
     ~H"""
@@ -132,7 +141,7 @@ defmodule KanbanWeb.AgentActivityFeed do
     >
       {format_date_header(@date, @today)}
     </li>
-    <.row :for={event <- @events} event={event} timezone={@timezone} />
+    <.row :for={event <- @events} event={event} timezone={@timezone} tethers={@tethers} />
     """
   end
 
@@ -194,8 +203,11 @@ defmodule KanbanWeb.AgentActivityFeed do
 
   attr :event, :map, required: true
   attr :timezone, :string, required: true
+  attr :tethers, :map, required: true
 
   defp row(assigns) do
+    assigns = assign(assigns, :tether, resolve_tether(assigns.event, assigns.tethers))
+
     ~H"""
     <li
       data-agent-feed-row
@@ -240,23 +252,43 @@ defmodule KanbanWeb.AgentActivityFeed do
 
       <.row_avatar actor={@event.actor} />
 
-      <div style={[
-        "min-width: 0;",
-        "color: var(--ink);",
-        "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-      ]}>
-        <span :if={@event.actor} style="font-weight: 600;">{@event.actor}</span>
-        <span
-          :if={owner_label(@event.owner)}
-          data-agent-feed-owner
-          aria-label={gettext("Operator")}
-          style="color: var(--ink-3);"
-        >({owner_label(@event.owner)})</span>
-        <span style="color: var(--ink-3);">{TaskTokens.kind_label(@event.kind)}</span>
-        <span :if={@event.identifier} style="font-weight: 600; letter-spacing: 0.02em;">
-          {@event.identifier}
-        </span>
-        <span :if={@event.title} style="color: var(--ink-2);">— {@event.title}</span>
+      <div style="min-width: 0; display: flex; flex-direction: column; gap: 1px;">
+        <div style={[
+          "min-width: 0;",
+          "color: var(--ink);",
+          "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+        ]}>
+          <span :if={@event.actor} style="font-weight: 600;">{@event.actor}</span>
+          <span
+            :if={owner_label(@event.owner)}
+            data-agent-feed-owner
+            aria-label={gettext("Operator")}
+            style="color: var(--ink-3);"
+          >({owner_label(@event.owner)})</span>
+          <span style="color: var(--ink-3);">{TaskTokens.kind_label(@event.kind)}</span>
+          <span :if={@event.identifier} style="font-weight: 600; letter-spacing: 0.02em;">
+            {@event.identifier}
+          </span>
+          <span :if={@event.title} style="color: var(--ink-2);">— {@event.title}</span>
+        </div>
+
+        <div
+          :if={@tether}
+          data-agent-feed-tether
+          data-agent-feed-tether-status={@tether.status}
+          aria-label={gettext("Advancing delivery target and goal")}
+          style={[
+            "min-width: 0; display: flex; align-items: center; gap: 4px;",
+            "font-size: 10px;",
+            "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+          ]}
+        >
+          <span style={"font-weight: 600; color: #{tether_accent(@tether.status)};"}>
+            {@tether.target.name}
+          </span>
+          <span aria-hidden="true" style="color: var(--ink-4);">·</span>
+          <span style="color: var(--ink-3);">{@tether.goal.title}</span>
+        </div>
       </div>
 
       <.chips event={@event} />
@@ -335,6 +367,32 @@ defmodule KanbanWeb.AgentActivityFeed do
     </div>
     """
   end
+
+  # The delivery tether for an event: the target+goal annotation its actor is
+  # advancing, looked up from the caller-supplied `tethers` map by the actor's
+  # `{name, owner_key}` identity. nil when the actor has no name or is advancing
+  # no target — those rows render without a tether line.
+  defp resolve_tether(event, tethers) do
+    case actor_identity(event) do
+      nil -> nil
+      identity -> Map.get(tethers, identity)
+    end
+  end
+
+  # The `{name, owner_key}` identity of an event's actor. Mirrors the owner-key
+  # rule that `Kanban.Agents.owner_key_for_owner/1` defines (owning user id as a
+  # string, else the "none" sentinel) so tethers key identically to the roster.
+  defp actor_identity(%{actor: name, owner: %{id: id}}) when is_binary(name),
+    do: {name, Integer.to_string(id)}
+
+  defp actor_identity(%{actor: name}) when is_binary(name), do: {name, "none"}
+  defp actor_identity(_event), do: nil
+
+  # Tints the tether's target name by the target's status: at-risk amber and
+  # missed red draw the eye in the dense feed; on-track/complete stay neutral.
+  defp tether_accent(:at_risk), do: "var(--st-doing)"
+  defp tether_accent(:missed), do: "var(--st-blocked)"
+  defp tether_accent(_status), do: "var(--ink-2)"
 
   # Derives the display label for the human owner behind an event's actor.
   # Prefers the owner's name, falls back to their email, and returns nil when

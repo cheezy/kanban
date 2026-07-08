@@ -2528,7 +2528,7 @@ msgstr "Temps que les tâches passent dans la file d'attente avant le début du 
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "Temps que les tâches passent en attente de révision après achèvement"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:389
+#: lib/kanban_web/components/agent_activity_feed.ex:447
 #: lib/kanban_web/components/agent_roster_card.ex:237
 #: lib/kanban_web/components/agents_header.ex:437
 #: lib/kanban_web/live/metrics_live/components.ex:385
@@ -4878,7 +4878,7 @@ msgstr "Enfants"
 msgid "Claimed"
 msgstr "Réservé"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:348
+#: lib/kanban_web/components/agent_activity_feed.ex:406
 #: lib/kanban_web/components/agent_detail_panel.ex:96
 #: lib/kanban_web/components/agent_roster_card.ex:240
 #, elixir-autogen, elixir-format
@@ -4951,30 +4951,30 @@ msgstr "Au travail"
 msgid "Yes"
 msgstr "Oui"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:402
+#: lib/kanban_web/components/agent_activity_feed.ex:460
 #: lib/kanban_web/components/agents_header.ex:565
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr "%{h}h %{m}min"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:406
+#: lib/kanban_web/components/agent_activity_feed.ex:464
 #: lib/kanban_web/components/agents_header.ex:568
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr "%{m}min"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:347
+#: lib/kanban_web/components/agent_activity_feed.ex:405
 #: lib/kanban_web/components/archive_filter_chips.ex:88
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "Tous"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:350
+#: lib/kanban_web/components/agent_activity_feed.ex:408
 #, elixir-autogen, elixir-format
 msgid "Completions"
 msgstr "Complétions"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:87
+#: lib/kanban_web/components/agent_activity_feed.ex:94
 #: lib/kanban_web/components/agent_detail_panel.ex:137
 #, elixir-autogen, elixir-format
 msgid "No recent activity."
@@ -5030,19 +5030,19 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] "dernières 24 h · %{count} événement"
 msgstr[1] "dernières 24 h · %{count} événements"
 
-#: lib/kanban_web/live/agents_live.ex:547
+#: lib/kanban_web/live/agents_live.ex:568
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] "%{count} connecté"
 msgstr[1] "%{count} connectés"
 
-#: lib/kanban_web/live/agents_live.ex:236
+#: lib/kanban_web/live/agents_live.ex:239
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr "Aucun agent n'a encore d'activité."
 
-#: lib/kanban_web/live/agents_live.ex:206
+#: lib/kanban_web/live/agents_live.ex:209
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr "en direct"
@@ -5086,8 +5086,8 @@ msgstr "Approuver"
 msgid "Request changes"
 msgstr "Demander des modifications"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:278
-#: lib/kanban_web/components/agent_activity_feed.ex:279
+#: lib/kanban_web/components/agent_activity_feed.ex:310
+#: lib/kanban_web/components/agent_activity_feed.ex:311
 #: lib/kanban_web/components/review_detail_header.ex:74
 #, elixir-autogen, elixir-format
 msgid "Unknown agent"
@@ -7089,7 +7089,7 @@ msgstr "est incohérent avec la tâche : la revue liste %{supplied} entrées de 
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "est incohérent avec la tâche : la revue indique %{checked} critères d'acceptation vérifiés mais la tâche en définit %{expected} ; les nombres doivent correspondre"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:349
+#: lib/kanban_web/components/agent_activity_feed.ex:407
 #, elixir-autogen, elixir-format
 msgid "Reviewed"
 msgstr "Révisé"
@@ -7111,18 +7111,18 @@ msgstr "Détails techniques"
 msgid "Technical Details (JSON object)"
 msgstr "Détails techniques (objet JSON)"
 
-#: lib/kanban_web/live/agents_live.ex:314
+#: lib/kanban_web/live/agents_live.ex:317
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "Filtré par %{agent}"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:331
+#: lib/kanban_web/live/agents_live.ex:334
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "Effacer"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:252
+#: lib/kanban_web/components/agent_activity_feed.ex:265
 #: lib/kanban_web/components/agent_roster_card.ex:98
 #, elixir-autogen, elixir-format
 msgid "Operator"
@@ -7180,12 +7180,12 @@ msgstr "%{date} : %{count} terminées"
 msgid "of which"
 msgstr "dont"
 
-#: lib/kanban_web/live/agents_live.ex:274
+#: lib/kanban_web/live/agents_live.ex:277
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "Inactifs (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:602
+#: lib/kanban_web/live/agents_live.ex:623
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "Vu il y a %{days} j"
@@ -7220,12 +7220,12 @@ msgstr "Aucun"
 msgid "vs the prior period"
 msgstr "par rapport à la période précédente"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:391
+#: lib/kanban_web/components/agent_activity_feed.ex:449
 #, elixir-autogen, elixir-format
 msgid "%a, %b %-d"
 msgstr "%a %-d %b"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:390
+#: lib/kanban_web/components/agent_activity_feed.ex:448
 #, elixir-autogen, elixir-format
 msgid "Yesterday"
 msgstr "Hier"
@@ -7572,6 +7572,7 @@ msgstr "Inactif"
 msgid "Why targets are at risk"
 msgstr "Pourquoi les cibles sont à risque"
 
+#: lib/kanban_web/components/agent_activity_feed.ex:279
 #: lib/kanban_web/components/agent_roster_card.ex:135
 #, elixir-autogen, elixir-format
 msgid "Advancing delivery target and goal"

@@ -335,4 +335,56 @@ defmodule KanbanWeb.AgentActivityFeedTest do
       assert html =~ "Yesterday"
     end
   end
+
+  describe "feed/1 — delivery tether" do
+    defp render_tethered(events, tethers) do
+      assigns = %{events: events, tethers: tethers}
+
+      rendered_to_string(~H"""
+      <AgentActivityFeed.feed
+        events={@events}
+        filter={:all}
+        on_filter_change="filter"
+        timezone="Etc/UTC"
+        tethers={@tethers}
+      />
+      """)
+    end
+
+    test "renders the target and goal an event's actor is advancing" do
+      # A no-owner actor keys as {name, "none"}, matching the feed's identity rule.
+      tethers = %{
+        {"Claude", "none"} => %{
+          target: %{name: "Launch"},
+          goal: %{title: "Ship the API"},
+          status: :at_risk
+        }
+      }
+
+      html = render_tethered([event()], tethers)
+
+      assert html =~ "data-agent-feed-tether"
+      assert html =~ ~s(data-agent-feed-tether-status="at_risk")
+      assert html =~ "Launch"
+      assert html =~ "Ship the API"
+      # At-risk tethers accent the target name amber.
+      assert html =~ "var(--st-doing)"
+    end
+
+    test "renders no tether when the actor has none" do
+      html = render_tethered([event(%{actor: "Nomad"})], %{})
+
+      refute html =~ "data-agent-feed-tether"
+    end
+
+    test "renders no tether for an actorless event" do
+      tethers = %{
+        {"Claude", "none"} => %{target: %{name: "Launch"}, goal: %{title: "G"}, status: :on_track}
+      }
+
+      html = render_tethered([event(%{actor: nil})], tethers)
+
+      refute html =~ "data-agent-feed-tether"
+    end
+  end
 end

@@ -181,171 +181,176 @@ defmodule KanbanWeb.AgentsLive do
           time_range={@time_range}
         />
 
-        <DeliveryHealthBand.delivery_health_band targets={@delivery_rollup.targets} />
+        <div data-agents-delivery-tier>
+          <DeliveryHealthBand.delivery_health_band targets={@delivery_rollup.targets} />
 
-        <TargetRiskExplainer.target_risk_explainer targets={@delivery_rollup.targets} />
-
-        <div
-          data-agents-live-indicator
-          style={[
-            "display: flex; align-items: center; gap: 6px;",
-            "padding: 6px 24px;",
-            "font-size: 11px;",
-            "color: var(--ink-3);",
-            "border-bottom: 1px solid var(--line);"
-          ]}
-        >
-          <span
-            aria-hidden="true"
-            style={[
-              "width: 7px; height: 7px; border-radius: 50%;",
-              "background: var(--st-done);",
-              "animation: sp-pulse 1.2s ease-in-out infinite;"
-            ]}
-          />
-          <span style="font-weight: 500; color: var(--ink-2);">{gettext("live")}</span>
-          <span>·</span>
-          <span>{live_indicator_label(@connected_count)}</span>
+          <TargetRiskExplainer.target_risk_explainer targets={@delivery_rollup.targets} />
         </div>
 
-        <AgentsHeader.pm_trends
-          throughput_and_success={@throughput_and_success}
-          throughput_trends={@throughput_trends}
-        />
-
-        <div class="flex-1 min-h-0 flex flex-col md:flex-row">
-          <aside
-            data-agents-roster
-            class="w-full md:w-[380px] md:flex-shrink-0 md:overflow-y-auto"
+        <div data-agents-second-tier class="flex-1 min-h-0 flex flex-col">
+          <div
+            data-agents-live-indicator
             style={[
-              "padding: 16px;",
-              "border-right: 1px solid var(--line);",
-              "background: var(--surface-2);",
-              "display: flex; flex-direction: column; gap: 8px;"
+              "display: flex; align-items: center; gap: 6px;",
+              "padding: 6px 24px;",
+              "font-size: 11px;",
+              "color: var(--ink-3);",
+              "border-bottom: 1px solid var(--line);"
             ]}
           >
-            <p
-              :if={@agents == [] and @dormant_agents == []}
-              data-agents-roster-empty
+            <span
+              aria-hidden="true"
               style={[
-                "margin: 0; padding: 16px; text-align: center;",
-                "font-size: 12px; font-style: italic;",
-                "color: var(--ink-3);"
+                "width: 7px; height: 7px; border-radius: 50%;",
+                "background: var(--st-done);",
+                "animation: sp-pulse 1.2s ease-in-out infinite;"
               ]}
-            >
-              {gettext("No agents have activity yet.")}
-            </p>
-            <AgentRosterCard.card
-              :for={agent <- @agents}
-              agent={agent}
-              annotation={primary_annotation(@delivery_rollup.agent_targets, agent)}
-              on_select="select_agent"
-              selected?={{agent.name, agent.owner_key} == @selected_agent}
             />
+            <span style="font-weight: 500; color: var(--ink-2);">{gettext("live")}</span>
+            <span>·</span>
+            <span>{live_indicator_label(@connected_count)}</span>
+          </div>
 
-            <div
-              :if={@dormant_agents != []}
-              data-agents-dormant-group
+          <AgentsHeader.pm_trends
+            throughput_and_success={@throughput_and_success}
+            throughput_trends={@throughput_trends}
+          />
+
+          <div class="flex-1 min-h-0 flex flex-col md:flex-row">
+            <aside
+              data-agents-roster
+              class="w-full md:w-[380px] md:flex-shrink-0 md:overflow-y-auto"
               style={[
-                "margin-top: 8px; padding-top: 8px;",
-                "border-top: 1px solid var(--line);",
+                "padding: 16px;",
+                "border-right: 1px solid var(--line);",
+                "background: var(--surface-2);",
                 "display: flex; flex-direction: column; gap: 8px;"
               ]}
             >
-              <button
-                type="button"
-                phx-click="toggle_dormant"
-                data-agents-dormant-toggle
-                aria-expanded={to_string(@dormant_expanded?)}
-                class="min-h-11 md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              <p
+                :if={@agents == [] and @dormant_agents == []}
+                data-agents-roster-empty
                 style={[
-                  "display: flex; align-items: center; gap: 6px;",
-                  "width: 100%; padding: 4px 2px;",
-                  "background: transparent; border: 0; cursor: pointer;",
-                  "font-size: 11px; font-weight: 600;",
-                  "text-transform: uppercase; letter-spacing: 0.06em;",
+                  "margin: 0; padding: 16px; text-align: center;",
+                  "font-size: 12px; font-style: italic;",
                   "color: var(--ink-3);"
                 ]}
               >
-                <.icon
-                  name={if @dormant_expanded?, do: "hero-chevron-down", else: "hero-chevron-right"}
-                  class="w-3 h-3"
-                />
-                <span>{gettext("Dormant (%{count})", count: length(@dormant_agents))}</span>
-              </button>
+                {gettext("No agents have activity yet.")}
+              </p>
+              <AgentRosterCard.card
+                :for={agent <- @agents}
+                agent={agent}
+                annotation={primary_annotation(@delivery_rollup.agent_targets, agent)}
+                on_select="select_agent"
+                selected?={{agent.name, agent.owner_key} == @selected_agent}
+              />
 
               <div
-                :if={@dormant_expanded?}
-                style="display: flex; flex-direction: column; gap: 8px;"
-              >
-                <div :for={agent <- @dormant_agents} data-agent-dormant-card>
-                  <AgentRosterCard.card
-                    agent={agent}
-                    annotation={primary_annotation(@delivery_rollup.agent_targets, agent)}
-                    on_select="select_agent"
-                    selected?={{agent.name, agent.owner_key} == @selected_agent}
-                  />
-                  <p style={[
-                    "margin: 2px 0 0; padding-left: 2px;",
-                    "font-size: 10px; color: var(--ink-3);"
-                  ]}>
-                    {format_last_seen(agent.last_active_at)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          <div class="flex-1 min-w-0 min-h-0 flex flex-col" style="padding: 16px;">
-            <div
-              :if={@selected_agent}
-              data-agent-filter-indicator
-              data-selected-agent={selected_agent_name(@selected_agent)}
-              style={[
-                "display: inline-flex; align-items: center; gap: 8px;",
-                "align-self: flex-start;",
-                "margin-bottom: 12px; padding: 4px 4px 4px 12px;",
-                "background: var(--stride-violet-soft);",
-                "color: var(--stride-violet);",
-                "border-radius: 999px;",
-                "font-size: 12px; font-weight: 500;"
-              ]}
-            >
-              <span>{gettext("Filtering by %{agent}", agent: selected_agent_name(@selected_agent))}</span>
-              <button
-                type="button"
-                phx-click="clear_agent_filter"
-                data-clear-agent-filter
-                class="min-h-11 md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                :if={@dormant_agents != []}
+                data-agents-dormant-group
                 style={[
-                  "display: inline-flex; align-items: center; gap: 4px;",
-                  "padding: 2px 9px;",
-                  "border: 1px solid var(--stride-violet); border-radius: 999px;",
-                  "background: transparent; color: var(--stride-violet);",
-                  "cursor: pointer; font-size: 11px; font-weight: 600; line-height: 1.4;"
+                  "margin-top: 8px; padding-top: 8px;",
+                  "border-top: 1px solid var(--line);",
+                  "display: flex; flex-direction: column; gap: 8px;"
                 ]}
               >
-                <span aria-hidden="true" style="display: inline-flex;">
-                  <.icon name="hero-x-mark" class="w-3 h-3" />
-                </span>
-                <span>{gettext("Clear")}</span>
-              </button>
-            </div>
+                <button
+                  type="button"
+                  phx-click="toggle_dormant"
+                  data-agents-dormant-toggle
+                  aria-expanded={to_string(@dormant_expanded?)}
+                  class="min-h-11 md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  style={[
+                    "display: flex; align-items: center; gap: 6px;",
+                    "width: 100%; padding: 4px 2px;",
+                    "background: transparent; border: 0; cursor: pointer;",
+                    "font-size: 11px; font-weight: 600;",
+                    "text-transform: uppercase; letter-spacing: 0.06em;",
+                    "color: var(--ink-3);"
+                  ]}
+                >
+                  <.icon
+                    name={if @dormant_expanded?, do: "hero-chevron-down", else: "hero-chevron-right"}
+                    class="w-3 h-3"
+                  />
+                  <span>{gettext("Dormant (%{count})", count: length(@dormant_agents))}</span>
+                </button>
 
-            <div :if={@agent_detail} data-agent-detail style="margin-bottom: 16px;">
-              <AgentDetailPanel.panel
-                detail={@agent_detail}
-                expanded_sections={@expanded_detail_sections}
-                on_toggle="toggle_detail_section"
+                <div
+                  :if={@dormant_expanded?}
+                  style="display: flex; flex-direction: column; gap: 8px;"
+                >
+                  <div :for={agent <- @dormant_agents} data-agent-dormant-card>
+                    <AgentRosterCard.card
+                      agent={agent}
+                      annotation={primary_annotation(@delivery_rollup.agent_targets, agent)}
+                      on_select="select_agent"
+                      selected?={{agent.name, agent.owner_key} == @selected_agent}
+                    />
+                    <p style={[
+                      "margin: 2px 0 0; padding-left: 2px;",
+                      "font-size: 10px; color: var(--ink-3);"
+                    ]}>
+                      {format_last_seen(agent.last_active_at)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            <div class="flex-1 min-w-0 min-h-0 flex flex-col" style="padding: 16px;">
+              <div
+                :if={@selected_agent}
+                data-agent-filter-indicator
+                data-selected-agent={selected_agent_name(@selected_agent)}
+                style={[
+                  "display: inline-flex; align-items: center; gap: 8px;",
+                  "align-self: flex-start;",
+                  "margin-bottom: 12px; padding: 4px 4px 4px 12px;",
+                  "background: var(--stride-violet-soft);",
+                  "color: var(--stride-violet);",
+                  "border-radius: 999px;",
+                  "font-size: 12px; font-weight: 500;"
+                ]}
+              >
+                <span>{gettext("Filtering by %{agent}", agent: selected_agent_name(@selected_agent))}</span>
+                <button
+                  type="button"
+                  phx-click="clear_agent_filter"
+                  data-clear-agent-filter
+                  class="min-h-11 md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  style={[
+                    "display: inline-flex; align-items: center; gap: 4px;",
+                    "padding: 2px 9px;",
+                    "border: 1px solid var(--stride-violet); border-radius: 999px;",
+                    "background: transparent; color: var(--stride-violet);",
+                    "cursor: pointer; font-size: 11px; font-weight: 600; line-height: 1.4;"
+                  ]}
+                >
+                  <span aria-hidden="true" style="display: inline-flex;">
+                    <.icon name="hero-x-mark" class="w-3 h-3" />
+                  </span>
+                  <span>{gettext("Clear")}</span>
+                </button>
+              </div>
+
+              <div :if={@agent_detail} data-agent-detail style="margin-bottom: 16px;">
+                <AgentDetailPanel.panel
+                  detail={@agent_detail}
+                  expanded_sections={@expanded_detail_sections}
+                  on_toggle="toggle_detail_section"
+                />
+              </div>
+
+              <AgentActivityFeed.feed
+                events={@events}
+                filter={@filter}
+                timezone={@timezone}
+                tethers={feed_tethers(@delivery_rollup.agent_targets)}
+                on_filter_change="filter_events"
               />
             </div>
-
-            <AgentActivityFeed.feed
-              events={@events}
-              filter={@filter}
-              timezone={@timezone}
-              on_filter_change="filter_events"
-            />
           </div>
         </div>
       </div>
@@ -491,6 +496,22 @@ defmodule KanbanWeb.AgentsLive do
     Enum.find(entries, &(&1.status == :at_risk)) ||
       Enum.find(entries, &(&1.status == :missed)) ||
       hd(entries)
+  end
+
+  # The activity-feed tether map: each agent identity mapped to the single
+  # primary annotation its rows are tethered to (dropping agents that advance no
+  # target). Reuses pick_annotation/1 so a feed row tethers to the same target as
+  # the agent's roster card. Keyed by {name, owner_key} so the feed can resolve a
+  # row's actor identically to the roster.
+  defp feed_tethers(agent_targets) do
+    agent_targets
+    |> Enum.flat_map(fn {identity, entries} ->
+      case pick_annotation(entries) do
+        nil -> []
+        annotation -> [{identity, annotation}]
+      end
+    end)
+    |> Map.new()
   end
 
   # Map the selected window to the throughput-trends day span so the chart's

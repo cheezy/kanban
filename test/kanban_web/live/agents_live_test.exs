@@ -1842,6 +1842,73 @@ defmodule KanbanWeb.AgentsLiveTest do
     end
   end
 
+  describe "delivery-first layout" do
+    setup [:register_and_log_in_user]
+
+    test "renders the delivery tier before the second tier", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      board |> column_fixture() |> then(&task_fixture(&1))
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert {delivery_pos, _} = :binary.match(html, "data-agents-delivery-tier")
+      assert {second_pos, _} = :binary.match(html, "data-agents-second-tier")
+      assert delivery_pos < second_pos
+
+      # The delivery band + explainer live in the delivery tier, above the roster.
+      assert {band_pos, _} = :binary.match(html, "data-delivery-health-band")
+      assert {roster_pos, _} = :binary.match(html, "data-agents-roster")
+      assert band_pos < second_pos
+      assert delivery_pos < band_pos and band_pos < roster_pos
+    end
+
+    test "keeps the second-tier components (roster, pm-trends, feed) present",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Claude"})
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-agents-roster"
+      assert html =~ "data-agents-pm-trends"
+      assert html =~ "data-agent-feed"
+    end
+
+    test "tethers a feed entry to the target and goal its agent serves",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+      target = delivery_target_fixture(user, %{name: "Launch"})
+      goal = task_fixture(doing, %{type: :goal, title: "Ship the API"})
+      {:ok, _} = Tasks.update_task(goal, %{target_id: target.id})
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Ada",
+          parent_id: goal.id,
+          status: :in_progress,
+          claimed_at: DateTime.add(DateTime.utc_now(), -300, :second)
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-agent-feed-tether"
+      # The feed row for Ada's claim is tethered to its target and goal.
+      feed = feed_html(html)
+      assert feed =~ "Launch"
+      assert feed =~ "Ship the API"
+    end
+  end
+
+  # The activity-feed region of the page (from its section marker onward).
+  defp feed_html(html) do
+    [_, feed] = String.split(html, "data-agent-feed", parts: 2)
+    feed
+  end
+
   # A target_date far enough ahead that, paired with a long-ago inserted_at,
   # the elapsed calendar share outruns the (zero) work share -> :at_risk.
   defp soon_target_date, do: Date.add(Date.utc_today(), 20)
