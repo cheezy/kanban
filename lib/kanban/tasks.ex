@@ -23,6 +23,7 @@ defmodule Kanban.Tasks do
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.GoalCompletion
   alias Kanban.Tasks.Goals
+  alias Kanban.Tasks.Interventions
   alias Kanban.Tasks.Lifecycle
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
@@ -149,4 +150,9 @@ defmodule Kanban.Tasks do
   def report_after_goal(%Task{type: :goal} = goal, attempt) when is_map(attempt) do
     Goals.record_after_goal_failure(goal, attempt)
   end
+
+  # ── Intervention delegations ───────────────────────────────────────
+
+  defdelegate can_intervene?(scope, goal), to: Interventions
+  defdelegate reassign_goal_unstarted(scope, goal, new_assigned_to_id), to: Interventions
 end
