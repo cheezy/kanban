@@ -58,7 +58,7 @@ defmodule KanbanWeb.TargetGoalManageRow do
       style={[
         "display: grid; grid-template-columns: 22px 56px 1fr 220px 120px auto;",
         "align-items: center; gap: 10px;",
-        "padding: 8px 14px; border-bottom: 1px solid var(--line);"
+        "padding: 4px 14px; border-bottom: 1px solid var(--line);"
       ]}
     >
       <.priority_dot priority={@priority} />
