@@ -90,7 +90,7 @@ defmodule KanbanWeb.TargetGoalManageRow do
       <span style="display: inline-flex; justify-content: flex-end;">
         <.button
           type="button"
-          class="btn btn-primary btn-soft btn-xs"
+          style="height: 1.5rem; min-height: 1.5rem; padding: 0 0.625rem; font-size: 0.6875rem;"
           phx-click={@event}
           phx-value-goal_id={@goal_id}
         >
