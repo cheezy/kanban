@@ -1,0 +1,203 @@
+defmodule KanbanWeb.TargetGoalManageRowTest do
+  @moduledoc """
+  Contract tests for `KanbanWeb.TargetGoalManageRow.target_goal_manage_row/1` —
+  the non-navigating manage row on the Edit Target page. Pure
+  `rendered_to_string` tests, mirroring `KanbanWeb.TargetGoalRowTest` minus the
+  drill-down link and plus the Assign/Unassign action button.
+  """
+  use KanbanWeb.ConnCase, async: true
+
+  import Phoenix.Component
+  import Phoenix.LiveViewTest
+
+  alias KanbanWeb.TargetGoalManageRow
+
+  defp entry(overrides \\ %{}) do
+    goal_overrides = Map.get(overrides, :goal, %{})
+
+    goal =
+      Map.merge(
+        %{
+          id: 42,
+          identifier: "G7",
+          title: "Ship the delivery dashboard",
+          priority: :high,
+          assigned_to: %{kind: :human, name: "Jamie K", palette: "human-green"}
+        },
+        goal_overrides
+      )
+
+    Map.merge(
+      %{
+        goal: goal,
+        flow: %{backlog: 2, ready: 1, doing: 1, review: 1, done: 3, total: 8},
+        completed: 3,
+        total: 8,
+        percentage: 38
+      },
+      Map.delete(overrides, :goal)
+    )
+  end
+
+  defp render_row(entry, opts \\ []) do
+    event = Keyword.get(opts, :event, "assign_goal")
+    label = Keyword.get(opts, :label, "Assign")
+    assigns = %{entry: entry, event: event, label: label}
+
+    rendered_to_string(~H"""
+    <TargetGoalManageRow.target_goal_manage_row entry={@entry} event={@event} label={@label} />
+    """)
+  end
+
+  describe "target_goal_manage_row/1 — base render" do
+    test "renders identifier, title, progress bar, count and owner" do
+      html = render_row(entry())
+
+      assert html =~ "data-target-goal-manage-row"
+      assert html =~ "G7"
+      assert html =~ "Ship the delivery dashboard"
+      assert html =~ "data-segmented-progress"
+      assert html =~ "3 of 8 (38%)"
+      assert html =~ "Jamie K"
+      assert html =~ ~s(data-goal-col="identifier")
+      assert html =~ ~s(data-goal-col="owner")
+    end
+
+    test "gives the row a stable DOM id derived from the goal id" do
+      html = render_row(entry(%{goal: %{id: 99}}))
+
+      assert html =~ ~s(id="target-goal-manage-row-99")
+    end
+
+    test "truncates the title with an ellipsis" do
+      html =
+        render_row(
+          entry(%{
+            goal: %{
+              title:
+                "An extremely long goal title that should be truncated with an ellipsis so it fits"
+            }
+          })
+        )
+
+      assert html =~ "text-overflow: ellipsis;"
+    end
+  end
+
+  describe "target_goal_manage_row/1 — action button" do
+    test "renders a button whose text is the label attr" do
+      html = render_row(entry(), label: "Assign")
+
+      assert html =~ "Assign"
+    end
+
+    test "renders a different label when told to" do
+      html = render_row(entry(), label: "Unassign")
+
+      assert html =~ "Unassign"
+    end
+
+    test "sets phx-click to the event attr" do
+      html = render_row(entry(), event: "unassign_goal")
+
+      assert html =~ ~s(phx-click="unassign_goal")
+    end
+
+    test "sets phx-value-goal_id to the goal id" do
+      html = render_row(entry(%{goal: %{id: 7}}))
+
+      assert html =~ ~s(phx-value-goal_id="7")
+    end
+
+    test "renders the action as a button, not a submit input" do
+      html = render_row(entry())
+
+      assert html =~ ~s(type="button")
+    end
+  end
+
+  describe "target_goal_manage_row/1 — not a navigation link" do
+    test "does not wrap the row in an anchor / navigate link" do
+      html = render_row(entry(%{goal: %{id: 42}}))
+
+      refute html =~ "data-target-goal-row"
+      refute html =~ ~s(href="/boards/)
+      refute html =~ "hero-chevron-right"
+    end
+  end
+
+  describe "target_goal_manage_row/1 — progress" do
+    test "re-derives 0% and does not crash for a goal with no child tasks" do
+      html =
+        render_row(
+          entry(%{
+            flow: %{backlog: 0, ready: 0, doing: 0, review: 0, done: 0, total: 0},
+            completed: 0,
+            total: 0,
+            percentage: 0
+          })
+        )
+
+      assert html =~ "0 of 0 (0%)"
+      assert html =~ "data-segmented-progress"
+    end
+
+    test "renders a compact (:sm) segmented progress bar" do
+      html = render_row(entry())
+
+      # size: :sm => 96px wide, 10px tall
+      assert html =~ "width: 96px"
+    end
+
+    test "renders 100% for a fully complete goal" do
+      html =
+        render_row(
+          entry(%{
+            flow: %{backlog: 0, ready: 0, doing: 0, review: 0, done: 5, total: 5},
+            completed: 5,
+            total: 5,
+            percentage: 100
+          })
+        )
+
+      assert html =~ "5 of 5 (100%)"
+    end
+  end
+
+  describe "target_goal_manage_row/1 — priority dot" do
+    for {level, token} <- [
+          {:critical, "var(--pri-critical)"},
+          {:high, "var(--pri-high)"},
+          {:medium, "var(--pri-medium)"},
+          {:low, "var(--pri-low)"}
+        ] do
+      test "priority=#{level} colors the dot with #{token}" do
+        html = render_row(entry(%{goal: %{priority: unquote(level)}}))
+
+        assert html =~ "background: #{unquote(token)};"
+      end
+    end
+  end
+
+  describe "target_goal_manage_row/1 — owner" do
+    test "renders the avatar swatch and name when the goal is assigned" do
+      html = render_row(entry())
+
+      assert html =~ "oklch(60% 0.10 155)"
+      assert html =~ "Jamie K"
+    end
+
+    test "renders 'unassigned' when the goal has no assignee" do
+      html = render_row(entry(%{goal: %{assigned_to: nil}}))
+
+      assert html =~ "unassigned"
+      refute html =~ "Jamie K"
+    end
+
+    test "tolerates an unloaded assigned_to association" do
+      html = render_row(entry(%{goal: %{assigned_to: %Ecto.Association.NotLoaded{}}}))
+
+      assert html =~ "unassigned"
+    end
+  end
+end
