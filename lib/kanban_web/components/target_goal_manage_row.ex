@@ -88,7 +88,12 @@ defmodule KanbanWeb.TargetGoalManageRow do
       <.owner_cell owner={@owner} />
 
       <span style="display: inline-flex; justify-content: flex-end;">
-        <.button type="button" phx-click={@event} phx-value-goal_id={@goal_id}>
+        <.button
+          type="button"
+          class="btn btn-primary btn-soft btn-xs"
+          phx-click={@event}
+          phx-value-goal_id={@goal_id}
+        >
           {@label}
         </.button>
       </span>
