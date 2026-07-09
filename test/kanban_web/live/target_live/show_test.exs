@@ -151,6 +151,27 @@ defmodule KanbanWeb.TargetLive.ShowTest do
       assert html =~ "67%"
     end
 
+    test "renders an archived-but-finished goal as complete (100%), not understated (D124)",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal = goal_fixture(column, %{title: "Shipped and archived"})
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+
+      target = delivery_target_fixture(user, %{name: "Q3 Launch"})
+      scope = Scope.for_user(user)
+      assert {:ok, goal} = Targets.assign_goal(scope, goal, target)
+      # Archiving cascades to the completed child and collapses the old view to
+      # 0/0 — after the fix it must still read complete.
+      {:ok, _} = Kanban.Tasks.archive_task(goal)
+
+      {:ok, _live, html} = live(conn, ~p"/targets/#{target}")
+
+      assert html =~ "Shipped and archived"
+      assert html =~ "1 of 1 complete"
+      assert html =~ "100%"
+    end
+
     test "renders the hero at 0% and an empty table (no rows) for a memberless target the owner views",
          %{conn: conn, user: user} do
       target = delivery_target_fixture(user, %{name: "Empty Target"})

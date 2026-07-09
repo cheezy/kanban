@@ -43,14 +43,15 @@ defmodule Kanban.Tasks.Goals do
 
   defp fetch_scoped_children(parent_task_id, board_id, opts) do
     preload? = Keyword.get(opts, :preload, false)
+    include_archived? = Keyword.get(opts, :include_archived, false)
 
     base =
       from(t in Task,
         join: c in assoc(t, :column),
-        where:
-          is_nil(t.archived_at) and t.parent_id == ^parent_task_id and c.board_id == ^board_id,
+        where: t.parent_id == ^parent_task_id and c.board_id == ^board_id,
         order_by: [asc: t.position]
       )
+      |> exclude_archived_unless(include_archived?)
 
     if preload? do
       base
@@ -60,6 +61,14 @@ defmodule Kanban.Tasks.Goals do
       Repo.all(base)
     end
   end
+
+  # Board/flow views exclude archived children (the default); only the target
+  # progress path opts in to archived children so it can credit archived-
+  # completed work. See D124.
+  defp exclude_archived_unless(query, true), do: query
+
+  defp exclude_archived_unless(query, false),
+    do: from(t in query, where: is_nil(t.archived_at))
 
   defp build_task_tree_result(task, children) do
     total_count = 1 + length(children)
@@ -91,6 +100,18 @@ defmodule Kanban.Tasks.Goals do
   """
   def get_task_children(parent_task_id, board_id) do
     fetch_scoped_children(parent_task_id, board_id, preload: false)
+  end
+
+  @doc """
+  Like `get_task_children/2` but INCLUDES archived children, board-scoped.
+
+  Used only by the target progress path (`Kanban.Targets`), which must credit
+  archived-but-completed work toward a goal's completion instead of silently
+  dropping it. Board columns and flow views keep using `get_task_children/2`
+  (archived excluded), so this does not resurface archived tasks there. See D124.
+  """
+  def get_task_children_including_archived(parent_task_id, board_id) do
+    fetch_scoped_children(parent_task_id, board_id, preload: false, include_archived: true)
   end
 
   @doc """

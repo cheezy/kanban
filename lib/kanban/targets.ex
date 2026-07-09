@@ -503,20 +503,42 @@ defmodule Kanban.Targets do
 
   defp goal_progress_entry(%Task{} = goal) do
     goal.id
-    |> Tasks.get_task_children(goal.column.board_id)
+    |> Tasks.get_task_children_including_archived(goal.column.board_id)
     |> then(&progress_shape(goal, &1))
   end
 
   # The `Kanban.Targets.Status.derive/3` progress shape for one goal, computed
   # once here so the aggregate (`summarize_target/3`, `get_target_progress/3`)
   # and the per-goal breakdown never duplicate the completed/total math.
+  #
+  # `children` includes archived children (fetched via
+  # `get_task_children_including_archived/2`): archived-completed work is
+  # credited toward the fraction, archived-incomplete work is treated as removed
+  # (dropped from both counts). See D124.
   defp progress_shape(%Task{} = goal, children) do
+    credited = Enum.filter(children, &credited_child?/1)
+
     %{
-      completed_children: Enum.count(children, &(&1.status == :completed)),
-      total_children: length(children),
-      goal_complete?: goal.status == :completed
+      completed_children: Enum.count(credited, &(&1.status == :completed)),
+      total_children: length(credited),
+      goal_complete?: goal_complete?(goal)
     }
   end
+
+  # A child counts toward the goal's completed/total fraction when it is live
+  # (not archived) or archived-but-completed. Archived-incomplete children
+  # (wontdo/duplicate/deferred/cancelled) are removed work and drop out of the
+  # fraction entirely rather than dragging the denominator down. See D124.
+  defp credited_child?(%Task{archived_at: nil}), do: true
+  defp credited_child?(%Task{status: status}), do: status == :completed
+
+  # A goal is complete when its own status is :completed, or it has been
+  # archived as finished work — archive_reason :completed, or legacy nil. A goal
+  # archived as :wontdo/:duplicate/:deferred/:cancelled is abandoned, not
+  # complete, so it must not credit the target toward :complete. See D124.
+  defp goal_complete?(%Task{status: :completed}), do: true
+  defp goal_complete?(%Task{archived_at: nil}), do: false
+  defp goal_complete?(%Task{archive_reason: reason}), do: reason in [:completed, nil]
 
   # Builds the full progress payload for one already-resolved target. The
   # target-level aggregate and the per-goal breakdown both derive from the
@@ -563,14 +585,14 @@ defmodule Kanban.Targets do
   defp goal_detail_entry(%Task{} = goal) do
     children =
       goal.id
-      |> Tasks.get_task_children(goal.column.board_id)
+      |> Tasks.get_task_children_including_archived(goal.column.board_id)
       |> Repo.preload(:column)
 
     progress = progress_shape(goal, children)
 
     %{
       goal: goal,
-      flow: flow_map(children),
+      flow: flow_map(Enum.filter(children, &credited_child?/1)),
       completed: progress.completed_children,
       total: progress.total_children,
       percentage: percentage(progress.completed_children, progress.total_children),
@@ -597,12 +619,19 @@ defmodule Kanban.Targets do
   # Goals view. Children must have :column preloaded.
   defp flow_map(children) do
     Enum.reduce(children, @empty_flow, fn child, acc ->
-      bucket = flow_bucket(child.column)
+      bucket = flow_bucket_for(child)
 
       acc
       |> Map.update!(bucket, &(&1 + 1))
       |> Map.update!(:total, &(&1 + 1))
     end)
+  end
+
+  # Archived-completed children are credited into the progress fraction but are
+  # hidden from the board, so their stale column must not drive a bucket — count
+  # them as :done. Live children bucket by their column name as before. See D124.
+  defp flow_bucket_for(%Task{archived_at: at, column: column}) do
+    if is_nil(at), do: flow_bucket(column), else: :done
   end
 
   # Maps a column name to its flow bucket. Duplicates the tiny name→status case

@@ -93,6 +93,7 @@ defmodule Kanban.Tasks do
   defdelegate after_goal_armed_goal(task, board_id), to: Goals
   defdelegate get_task_tree(task_id, board_id), to: Goals
   defdelegate get_task_children(parent_task_id, board_id), to: Goals
+  defdelegate get_task_children_including_archived(parent_task_id, board_id), to: Goals
   defdelegate promote_goal_to_ready(goal, board_id), to: Goals
   defdelegate update_parent_goal_position(moving_task, old_column_id, new_column_id), to: Goals
 

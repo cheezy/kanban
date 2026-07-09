@@ -830,6 +830,121 @@ defmodule Kanban.TargetsTest do
     end
   end
 
+  describe "get_target_progress/3 — archived work crediting (D124)" do
+    @today ~D[2026-07-07]
+
+    test "a fully-archived, finished goal reads complete (100%) and the target status is :complete",
+         %{scope: scope, user: user, column: column} do
+      goal = goal_fixture(column)
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+
+      target = delivery_target_fixture(user)
+      {:ok, goal} = Targets.assign_goal(scope, goal, target)
+      # Archiving cascades to the (completed) children and never flips the goal's
+      # own status — the exact shape that previously collapsed the goal to 0/0.
+      {:ok, _} = Kanban.Tasks.archive_task(goal)
+
+      %{summary: summary, goals: [entry]} =
+        Targets.get_target_progress(scope, target, @today)
+
+      assert entry.completed == 2
+      assert entry.total == 2
+      assert entry.percentage == 100
+      # Archived-completed children bucket as :done so the segmented bar agrees
+      # with the 2-of-2 count instead of rendering empty.
+      assert entry.flow == %{backlog: 0, ready: 0, doing: 0, review: 0, done: 2, total: 2}
+      assert summary.status == :complete
+    end
+
+    test "an archived-completed child is credited toward completed/total", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      goal = goal_fixture(column)
+      archived_done = complete_task(task_fixture(column, %{parent_id: goal.id}))
+      {:ok, _} = Kanban.Tasks.archive_task(archived_done)
+      _live_incomplete = task_fixture(column, %{parent_id: goal.id})
+
+      target = delivery_target_fixture(user)
+      {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      %{goals: [entry]} = Targets.get_target_progress(scope, target, @today)
+
+      # 1 archived-completed + 1 live-incomplete => 1 of 2 (not 0 of 1).
+      assert entry.completed == 1
+      assert entry.total == 2
+      assert entry.percentage == 50
+    end
+
+    test "an archived-but-unfinished child is dropped, not counted (as complete or as pending)",
+         %{scope: scope, user: user, column: column} do
+      goal = goal_fixture(column)
+      complete_task(task_fixture(column, %{parent_id: goal.id}))
+
+      cancelled = task_fixture(column, %{parent_id: goal.id})
+
+      {:ok, _} =
+        Kanban.Tasks.archive_task(cancelled, %{
+          archive_reason: :cancelled,
+          archive_note: "descoped"
+        })
+
+      target = delivery_target_fixture(user)
+      {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      %{goals: [entry]} = Targets.get_target_progress(scope, target, @today)
+
+      # The archived-cancelled child leaves the fraction entirely: 1 of 1, not
+      # 1 of 2 (which would understate) and not 2 of 2 (which would over-credit).
+      assert entry.completed == 1
+      assert entry.total == 1
+      assert entry.percentage == 100
+    end
+
+    test "a goal archived as :wontdo does NOT read complete", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      goal = goal_fixture(column)
+
+      {:ok, goal} =
+        Kanban.Tasks.archive_task(goal, %{archive_reason: :wontdo, archive_note: "descoped"})
+
+      target = delivery_target_fixture(user)
+      {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      %{summary: summary} = Targets.get_target_progress(scope, target, @today)
+
+      refute summary.status == :complete
+    end
+
+    test "a target mixing an archived-complete goal with a genuinely incomplete goal is NOT :complete",
+         %{scope: scope, user: user, column: column} do
+      done_goal = goal_fixture(column)
+      complete_task(task_fixture(column, %{parent_id: done_goal.id}))
+
+      open_goal = goal_fixture(column)
+      _incomplete = task_fixture(column, %{parent_id: open_goal.id})
+
+      target = delivery_target_fixture(user)
+      {:ok, done_goal} = Targets.assign_goal(scope, done_goal, target)
+      {:ok, _} = Targets.assign_goal(scope, open_goal, target)
+      {:ok, _} = Kanban.Tasks.archive_task(done_goal)
+
+      %{summary: summary, goals: goals} = Targets.get_target_progress(scope, target, @today)
+
+      refute summary.status == :complete
+
+      done_entry = Enum.find(goals, &(&1.goal.id == done_goal.id))
+      open_entry = Enum.find(goals, &(&1.goal.id == open_goal.id))
+      assert done_entry.percentage == 100
+      assert open_entry.percentage == 0
+    end
+  end
+
   defp complete_task(task) do
     {:ok, done} =
       task

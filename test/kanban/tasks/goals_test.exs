@@ -78,6 +78,36 @@ defmodule Kanban.Tasks.GoalsTest do
     end
   end
 
+  describe "get_task_children_including_archived/2 (target-progress path — D124)" do
+    test "includes archived children (unlike get_task_children/2), still board-scoped",
+         %{board: board, column: column, goal: goal} do
+      active = task_fixture(column, %{title: "Active", parent_id: goal.id})
+
+      archived =
+        column
+        |> task_fixture(%{title: "Archived", parent_id: goal.id})
+        |> archive!()
+
+      including = Tasks.get_task_children_including_archived(goal.id, board.id)
+
+      assert Enum.map(including, & &1.id) |> Enum.sort() ==
+               Enum.sort([active.id, archived.id])
+
+      # The board/flow path still excludes the archived child — the change is
+      # scoped to the progress fetch only.
+      live_only = Tasks.get_task_children(goal.id, board.id)
+      assert Enum.map(live_only, & &1.id) == [active.id]
+    end
+
+    test "returns [] for children on another board (cross-board IDOR closed)",
+         %{column: column, goal: goal} do
+      task_fixture(column, %{title: "Child", parent_id: goal.id})
+
+      other_board = board_fixture(user_fixture())
+      assert Tasks.get_task_children_including_archived(goal.id, other_board.id) == []
+    end
+  end
+
   describe "get_task_tree/2 (archived-child exclusion)" do
     # counts.total is 1 (the goal itself) + the number of ACTIVE children;
     # this is the denominator consumed by compute_goal_progress/2 in
