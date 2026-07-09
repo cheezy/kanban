@@ -115,6 +115,37 @@ defmodule Kanban.Tasks.Goals do
   end
 
   @doc """
+  Batched form of `get_task_children_including_archived/2`.
+
+  Given a list of `{goal_id, board_id}` pairs (typically a delivery target's
+  member goals, each with its own board), returns a map of
+  `goal_id => [child Task]` (archived children included, per D124), fetching all
+  children with **one query per distinct board** instead of one per goal. Each
+  child is board-scoped to its goal's board exactly as the per-goal variant, so
+  the W397 cross-board IDOR closure is preserved. A goal with no children is
+  simply absent from the map — callers use `Map.get(map, goal_id, [])`.
+
+  This bounds the per-goal N+1 the target rollup (`Kanban.Targets.DeliveryRollup`)
+  used to fire on every /agents refresh (D125): query count is now O(boards),
+  not O(goals).
+  """
+  def get_children_including_archived_by_parent(goal_board_pairs) do
+    goal_board_pairs
+    |> Enum.group_by(fn {_goal_id, board_id} -> board_id end, fn {goal_id, _board_id} ->
+      goal_id
+    end)
+    |> Enum.flat_map(fn {board_id, goal_ids} ->
+      from(t in Task,
+        join: c in assoc(t, :column),
+        where: t.parent_id in ^goal_ids and c.board_id == ^board_id,
+        order_by: [asc: t.position]
+      )
+      |> Repo.all()
+    end)
+    |> Enum.group_by(& &1.parent_id)
+  end
+
+  @doc """
   Moves a goal and all of its children that are in the Backlog column to the Ready column.
   """
   def promote_goal_to_ready(%Task{type: :goal} = goal, board_id) do

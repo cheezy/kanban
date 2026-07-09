@@ -34,7 +34,7 @@ defmodule Kanban.Tasks.Broadcaster do
         {Kanban.Tasks, event, task_with_column}
       )
 
-      broadcast_agent_event(task_with_column, event)
+      broadcast_agent_event(task_with_column, event, board_id)
 
       :telemetry.execute(
         [:kanban, :pubsub, :broadcast],
@@ -47,14 +47,20 @@ defmodule Kanban.Tasks.Broadcaster do
   end
 
   @doc """
-  Broadcasts an agent-surface event to the shared "agents" PubSub topic.
+  Broadcasts an agent-surface event to the board-scoped `"agents:\#{board_id}"`
+  PubSub topic.
 
   Maps the task `event` atom to the agent-feed `kind` and emits
-  `{:agent_event, payload}` so AgentsLive refreshes live. Completion paths
-  that broadcast only to the board topic call this directly to also notify
-  the agents topic, without re-broadcasting to the board.
+  `{:agent_event, payload}` so AgentsLive refreshes live — but only for viewers
+  scoped to `board_id`. Each `/agents` viewer subscribes to `"agents:\#{id}"` for
+  every board they can access, so a task change on one board no longer redrives
+  the heavy /agents load for every viewer of every other board (D125 — the
+  previous single global `"agents"` topic broadcast to all viewers on every task
+  change across all boards). Completion paths that broadcast only to the board
+  topic call this directly to also notify the agents feed, without
+  re-broadcasting to the board.
   """
-  def broadcast_agent_event(%Task{} = task, event) do
+  def broadcast_agent_event(%Task{} = task, event, board_id) do
     case agent_event_kind(event) do
       nil ->
         :ok
@@ -63,11 +69,12 @@ defmodule Kanban.Tasks.Broadcaster do
         payload = %{
           kind: kind,
           task_id: task.id,
+          board_id: board_id,
           agent_name: agent_actor(task, kind),
           at: timestamp_for(task, kind)
         }
 
-        Phoenix.PubSub.broadcast(Kanban.PubSub, "agents", {:agent_event, payload})
+        Phoenix.PubSub.broadcast(Kanban.PubSub, "agents:#{board_id}", {:agent_event, payload})
     end
   end
 

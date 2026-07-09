@@ -7,13 +7,19 @@ defmodule KanbanWeb.AgentsLive do
   every AI agent active across the user's workspace. Heavy logic lives
   in `Kanban.Agents`; this LiveView only binds the context output to the
   presentational components, handles filter-tab clicks, and reacts to
-  real-time `{:agent_event, _}` broadcasts on the `"agents"` PubSub
-  topic.
+  real-time `{:agent_event, _}` broadcasts on the board-scoped
+  `"agents:\#{board_id}"` PubSub topics.
+
+  The viewer subscribes to `"agents:\#{id}"` for every board they can access, so
+  a task change only redrives this load for boards in the viewer's scope — a
+  task change on an inaccessible board never triggers a reload (D125). Presence
+  tracking stays on the shared `"agents"` topic and powers the "live · N
+  connected" indicator.
 
   Re-derivation is debounced (`@refresh_debounce_ms`) so a burst of
-  events does not redrive the full Agents queries on every message.
-  Presence tracking on the same topic powers the "live · N connected"
-  indicator.
+  events does not redrive the full Agents queries on every message. A DB
+  timeout or missing bridge on the load path degrades gracefully (logs, keeps
+  last-good/placeholder data) rather than crashing the LiveView (D125).
   """
   use KanbanWeb, :live_view
 
@@ -28,6 +34,8 @@ defmodule KanbanWeb.AgentsLive do
   alias KanbanWeb.AgentsPresence
   alias KanbanWeb.DeliveryHealthBand
   alias KanbanWeb.TargetRiskExplainer
+
+  require Logger
 
   @default_filter :all
   @recent_activity_limit 200
@@ -61,13 +69,35 @@ defmodule KanbanWeb.AgentsLive do
     # disconnected and connected mount (D120). track_viewer/1 stays before
     # initial_assigns/1 so connected_count/1 still counts the current viewer.
     if connected?(socket) do
+      # Presence stays on the shared "agents" topic (powers the connected count);
+      # track_viewer/1 runs before initial_assigns/1 so connected_count/1 counts
+      # the current viewer. Agent-event reloads are scoped to the viewer's
+      # accessible boards (D125): subscribe per board AFTER initial_assigns/1
+      # seeds socket.assigns.boards.
       Phoenix.PubSub.subscribe(Kanban.PubSub, @presence_topic)
       AgentsPresence.track_viewer(socket)
+      socket = assign(socket, initial_assigns(socket))
+      subscribe_to_board_agent_events(socket.assigns.boards)
 
-      {:ok, socket |> assign(initial_assigns(socket)) |> load_agents_data()}
+      # Seed the empty placeholder baseline first so a DB failure on the very
+      # first connected load has last-good data to fall back to (load_agents_data
+      # degrades gracefully instead of leaving the data assigns unset).
+      {:ok, socket |> assign_placeholder_data() |> load_agents_data()}
     else
       {:ok, socket |> assign(initial_assigns(socket)) |> assign_placeholder_data()}
     end
+  end
+
+  # Subscribe to the per-board agent-event topic for every board the viewer can
+  # access. A task change broadcasts to "agents:#{board_id}", so this scopes
+  # reloads to the viewer's boards — a change on a board the viewer is not a
+  # member of never reaches them (D125). Before D125 every viewer subscribed to a
+  # single global "agents" topic and reloaded on every task change across ALL
+  # boards, producing the cross-board reload storm.
+  defp subscribe_to_board_agent_events(boards) do
+    Enum.each(boards, fn board ->
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents:#{board.id}")
+    end)
   end
 
   # The socket assigns that do not depend on the heavy task fetch. Seeded on both
@@ -539,13 +569,34 @@ defmodule KanbanWeb.AgentsLive do
 
   defp load_agents_data(socket) do
     scope = socket.assigns.current_scope
-    {tasks, throughput_tasks} = fetch_task_sets(socket, scope)
-    # Build the delivery rollup once (board-scoped, no LiveView Ecto) and reuse
-    # it for the delivery-health band, the at-risk explainer, and the roster's
-    # target annotation + risk-first ordering (W1589).
-    delivery_rollup = DeliveryRollup.build(scope, timezone: socket.assigns.timezone)
 
-    assign_agents_data(socket, tasks, throughput_tasks, delivery_rollup)
+    try do
+      {tasks, throughput_tasks} = fetch_task_sets(socket, scope)
+      # Build the delivery rollup once (board-scoped, no LiveView Ecto) and reuse
+      # it for the delivery-health band, the at-risk explainer, and the roster's
+      # target annotation + risk-first ordering (W1589).
+      delivery_rollup = DeliveryRollup.build(scope, timezone: socket.assigns.timezone)
+
+      assign_agents_data(socket, tasks, throughput_tasks, delivery_rollup)
+    rescue
+      # Degrade gracefully on a transient DB failure (e.g. a statement timeout on
+      # a large history) instead of letting the LiveView crash → "Something went
+      # wrong" → reconnect → remount → reload loop (D125). Keep the last-good /
+      # placeholder assigns already on the socket and log. The rescue is narrow —
+      # only DB connection/timeout errors are caught; any other exception
+      # re-raises so genuine logic bugs are never masked.
+      error in [DBConnection.ConnectionError, Postgrex.Error] ->
+        Logger.error(
+          "[AgentsLive] load_agents_data failed, keeping last-good data: " <>
+            Exception.message(error)
+        )
+
+        put_flash(
+          socket,
+          :error,
+          gettext("Agent data could not be refreshed just now. Showing the last available data.")
+        )
+    end
   end
 
   # Derives every task-dependent assign from an already-fetched task set + rollup

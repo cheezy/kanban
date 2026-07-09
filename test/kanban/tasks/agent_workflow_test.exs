@@ -93,15 +93,15 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       task = create_open_task(ctx.ready, ctx.user)
       task_id = task.id
 
-      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents:#{ctx.board.id}")
 
       {:ok, claimed, _} =
         AgentWorkflow.claim_next_task([], ctx.user, ctx.board.id, nil, "Claude")
 
       assert claimed.id == task_id
 
-      # The "agents" topic is process-global and other async tests broadcast to
-      # it too, so match this task's event specifically. Without the claim-path
+      # The agent event is now broadcast to the board-scoped "agents:#{board_id}"
+      # topic (D125); match this task's event specifically. Without the claim-path
       # agents broadcast, a claim never reaches the agent activity feed live.
       assert_receive {:agent_event, %{kind: :claim, task_id: ^task_id} = payload}
       assert Map.has_key?(payload, :agent_name)
@@ -274,15 +274,15 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       claimed = claim_for(task, ctx.user, ctx.board)
       task_id = task.id
 
-      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents:#{ctx.board.id}")
 
       {:ok, completed, _hooks} =
         AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
 
       assert completed.id == task_id
 
-      # The "agents" topic is process-global and other async tests broadcast to
-      # it too, so match this task's event specifically rather than whichever
+      # The agent event is broadcast to the board-scoped "agents:#{board_id}"
+      # topic (D125); match this task's event specifically rather than whichever
       # {:agent_event, _} happens to land in the mailbox first.
       assert_receive {:agent_event, %{kind: :complete, task_id: ^task_id} = payload}
       assert Map.has_key?(payload, :agent_name)
@@ -315,14 +315,14 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       claimed = claim_for(task, ctx.user, ctx.board)
       task_id = task.id
 
-      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents:#{ctx.board.id}")
 
       {:ok, final, _hooks} =
         AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
 
       assert final.id == task_id
 
-      # Match this task's event — the "agents" topic is shared across async tests.
+      # Match this task's event on the board-scoped "agents:#{board_id}" topic (D125).
       assert_receive {:agent_event, %{kind: :complete, task_id: ^task_id}}
     end
 
@@ -331,7 +331,7 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       claimed = claim_for(task, ctx.user, ctx.board)
       task_id = task.id
 
-      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents:#{ctx.board.id}")
 
       {:ok, _final, _hooks} =
         AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
@@ -677,12 +677,12 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       task = set_review_status(ctx.in_review_task, :approved, ctx.user)
       task_id = task.id
 
-      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents:#{ctx.board.id}")
 
       assert {:ok, done_task, _hooks} = AgentWorkflow.mark_reviewed(task, ctx.user)
       assert done_task.id == task_id
 
-      # Match this task's event — the "agents" topic is shared across async tests.
+      # Match this task's event on the board-scoped "agents:#{board_id}" topic (D125).
       assert_receive {:agent_event, %{kind: :complete, task_id: ^task_id}}
     end
 

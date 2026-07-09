@@ -186,7 +186,7 @@ msgstr "ボードが正常に作成されました"
 msgid "Board updated successfully"
 msgstr "ボードが正常に更新されました"
 
-#: lib/kanban_web/live/agents_live.ex:1016
+#: lib/kanban_web/live/agents_live.ex:1100
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
@@ -398,7 +398,7 @@ msgid "Created"
 msgstr "作成日"
 
 #: lib/kanban_web/components/review_report_panel.ex:403
-#: lib/kanban_web/live/agents_live.ex:742
+#: lib/kanban_web/live/agents_live.ex:826
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -419,21 +419,21 @@ msgstr "不具合"
 msgid "Failed to move task"
 msgstr "タスクの移動に失敗しました"
 
-#: lib/kanban_web/live/agents_live.ex:741
+#: lib/kanban_web/live/agents_live.ex:825
 #: lib/kanban_web/live/task_live/form_component.html.heex:121
 #: lib/kanban_web/task_tokens.ex:56
 #, elixir-autogen, elixir-format
 msgid "High"
 msgstr "高"
 
-#: lib/kanban_web/live/agents_live.ex:739
+#: lib/kanban_web/live/agents_live.ex:823
 #: lib/kanban_web/live/task_live/form_component.html.heex:119
 #: lib/kanban_web/task_tokens.ex:58
 #, elixir-autogen, elixir-format
 msgid "Low"
 msgstr "低"
 
-#: lib/kanban_web/live/agents_live.ex:740
+#: lib/kanban_web/live/agents_live.ex:824
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:25
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:32
 #: lib/kanban_web/live/task_live/form_component.html.heex:120
@@ -601,7 +601,7 @@ msgstr "ボードからのユーザー削除に失敗しました"
 msgid "Manage Users"
 msgstr "ユーザー管理"
 
-#: lib/kanban_web/live/board_live/index.ex:243
+#: lib/kanban_web/live/board_live/index.ex:253
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete this board"
 msgstr "ボードの所有者のみがこのボードを削除できます"
@@ -2531,7 +2531,7 @@ msgstr "作業が始まるまでキューで待機する時間"
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "完了後にレビューを待つ時間"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:447
+#: lib/kanban_web/components/agent_activity_feed.ex:456
 #: lib/kanban_web/components/agent_roster_card.ex:237
 #: lib/kanban_web/components/agents_header.ex:437
 #: lib/kanban_web/live/metrics_live/components.ex:385
@@ -2590,7 +2590,7 @@ msgstr "タスク完了"
 #: lib/kanban_web/controllers/archive_export_controller.ex:34
 #: lib/kanban_web/live/archive_live/index.ex:33
 #: lib/kanban_web/live/board_live/form.ex:124
-#: lib/kanban_web/live/board_live/index.ex:251
+#: lib/kanban_web/live/board_live/index.ex:261
 #: lib/kanban_web/live/board_live/show.ex:1012
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
@@ -4191,7 +4191,7 @@ msgid "Active goals"
 msgstr "アクティブなゴール"
 
 #: lib/kanban_web/components/layouts.ex:275
-#: lib/kanban_web/live/agents_live.ex:292
+#: lib/kanban_web/live/agents_live.ex:349
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr "エージェント"
@@ -4253,7 +4253,7 @@ msgstr "空のボードから始める"
 msgid "Stride home"
 msgstr "Stride ホーム"
 
-#: lib/kanban_web/live/agents_live.ex:290
+#: lib/kanban_web/live/agents_live.ex:347
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -4875,7 +4875,7 @@ msgstr "子要素"
 msgid "Claimed"
 msgstr "クレーム済み"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:406
+#: lib/kanban_web/components/agent_activity_feed.ex:415
 #: lib/kanban_web/components/agent_detail_panel.ex:96
 #: lib/kanban_web/components/agent_roster_card.ex:240
 #, elixir-autogen, elixir-format
@@ -4948,30 +4948,30 @@ msgstr "作業中"
 msgid "Yes"
 msgstr "はい"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:460
+#: lib/kanban_web/components/agent_activity_feed.ex:469
 #: lib/kanban_web/components/agents_header.ex:565
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr "%{h}時間 %{m}分"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:464
+#: lib/kanban_web/components/agent_activity_feed.ex:473
 #: lib/kanban_web/components/agents_header.ex:568
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr "%{m}分"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:405
+#: lib/kanban_web/components/agent_activity_feed.ex:414
 #: lib/kanban_web/components/archive_filter_chips.ex:88
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "すべて"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:408
+#: lib/kanban_web/components/agent_activity_feed.ex:417
 #, elixir-autogen, elixir-format
 msgid "Completions"
 msgstr "完了数"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:94
+#: lib/kanban_web/components/agent_activity_feed.ex:96
 #: lib/kanban_web/components/agent_detail_panel.ex:137
 #, elixir-autogen, elixir-format
 msgid "No recent activity."
@@ -5026,18 +5026,18 @@ msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
 msgstr[0] "過去24時間 · %{count}件のイベント"
 
-#: lib/kanban_web/live/agents_live.ex:1145
+#: lib/kanban_web/live/agents_live.ex:1229
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] "%{count}件接続中"
 
-#: lib/kanban_web/live/agents_live.ex:372
+#: lib/kanban_web/live/agents_live.ex:429
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr "まだエージェントの活動はありません。"
 
-#: lib/kanban_web/live/agents_live.ex:342
+#: lib/kanban_web/live/agents_live.ex:399
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr "ライブ"
@@ -5081,8 +5081,8 @@ msgstr "承認"
 msgid "Request changes"
 msgstr "変更を依頼"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:310
-#: lib/kanban_web/components/agent_activity_feed.ex:311
+#: lib/kanban_web/components/agent_activity_feed.ex:312
+#: lib/kanban_web/components/agent_activity_feed.ex:313
 #: lib/kanban_web/components/review_detail_header.ex:74
 #, elixir-autogen, elixir-format
 msgid "Unknown agent"
@@ -7094,7 +7094,7 @@ msgstr "タスクと矛盾しています: レビューには %{supplied} 件の
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "タスクと矛盾しています: レビューは %{checked} 件の受け入れ基準を確認済みと報告していますが、タスクは %{expected} 件を定義しています。件数は一致する必要があります"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:407
+#: lib/kanban_web/components/agent_activity_feed.ex:416
 #, elixir-autogen, elixir-format
 msgid "Reviewed"
 msgstr "レビュー完了"
@@ -7116,18 +7116,18 @@ msgstr "技術的な詳細"
 msgid "Technical Details (JSON object)"
 msgstr "技術的な詳細 (JSONオブジェクト)"
 
-#: lib/kanban_web/live/agents_live.ex:450
+#: lib/kanban_web/live/agents_live.ex:507
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "%{agent} で絞り込み中"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:467
+#: lib/kanban_web/live/agents_live.ex:524
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "クリア"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:265
+#: lib/kanban_web/components/agent_activity_feed.ex:267
 #: lib/kanban_web/components/agent_roster_card.ex:98
 #, elixir-autogen, elixir-format
 msgid "Operator"
@@ -7185,12 +7185,12 @@ msgstr "%{date}: %{count} 件完了"
 msgid "of which"
 msgstr "うち"
 
-#: lib/kanban_web/live/agents_live.ex:410
+#: lib/kanban_web/live/agents_live.ex:467
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "休止中 (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:1200
+#: lib/kanban_web/live/agents_live.ex:1284
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "%{days}日前に最終アクティブ"
@@ -7225,12 +7225,12 @@ msgstr "なし"
 msgid "vs the prior period"
 msgstr "前の期間との比較"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:449
+#: lib/kanban_web/components/agent_activity_feed.ex:458
 #, elixir-autogen, elixir-format
 msgid "%a, %b %-d"
 msgstr "%b%-d日 (%a)"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:448
+#: lib/kanban_web/components/agent_activity_feed.ex:457
 #, elixir-autogen, elixir-format
 msgid "Yesterday"
 msgstr "昨日"
@@ -7521,7 +7521,7 @@ msgstr "このフォームでデリバリーターゲットとそのゴールを
 msgid "No goals in this target yet."
 msgstr "このターゲットにはまだゴールがありません。"
 
-#: lib/kanban_web/live/target_live/show.ex:41
+#: lib/kanban_web/live/target_live/show.ex:42
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "ターゲットが見つかりません"
@@ -7577,7 +7577,7 @@ msgstr "休止中"
 msgid "Why targets are at risk"
 msgstr "ターゲットがリスクにさらされている理由"
 
-#: lib/kanban_web/components/agent_activity_feed.ex:279
+#: lib/kanban_web/components/agent_activity_feed.ex:281
 #: lib/kanban_web/components/agent_roster_card.ex:135
 #, elixir-autogen, elixir-format
 msgid "Advancing delivery target and goal"
@@ -7588,157 +7588,162 @@ msgstr "推進中のデリバリーターゲットとゴール"
 msgid "Hide archived goals"
 msgstr "アーカイブ済みのゴールを非表示"
 
-#: lib/kanban_web/live/agents_live.ex:926
+#: lib/kanban_web/live/agents_live.ex:1010
 #, elixir-autogen, elixir-format
 msgid "Choose a new owner"
 msgstr "新しい担当者を選択"
 
-#: lib/kanban_web/live/agents_live.ex:189
+#: lib/kanban_web/live/agents_live.ex:246
 #, elixir-autogen, elixir-format
 msgid "Choose a new owner first."
 msgstr "先に新しい担当者を選択してください。"
 
-#: lib/kanban_web/live/agents_live.ex:632
+#: lib/kanban_web/live/agents_live.ex:716
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Could not reassign the goal. Please try again."
 msgstr "ゴールを割り当てできませんでした"
 
-#: lib/kanban_web/live/agents_live.ex:924
+#: lib/kanban_web/live/agents_live.ex:1008
 #, elixir-autogen, elixir-format
 msgid "New owner"
 msgstr "新しい担当者"
 
 #: lib/kanban_web/components/target_risk_explainer.ex:162
-#: lib/kanban_web/live/agents_live.ex:917
+#: lib/kanban_web/live/agents_live.ex:1001
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reassign"
 msgstr "再割り当て済み"
 
-#: lib/kanban_web/live/agents_live.ex:907
+#: lib/kanban_web/live/agents_live.ex:991
 #, elixir-autogen, elixir-format
 msgid "Reassign %{goal}"
 msgstr "%{goal} を再割り当て"
 
-#: lib/kanban_web/live/agents_live.ex:672
-#: lib/kanban_web/live/agents_live.ex:678
+#: lib/kanban_web/live/agents_live.ex:756
+#: lib/kanban_web/live/agents_live.ex:762
 #, elixir-autogen, elixir-format
 msgid "Reassigned %{count} task."
 msgid_plural "Reassigned %{count} tasks."
 msgstr[0] "%{count} 件のタスクを再割り当てしました。"
 
-#: lib/kanban_web/live/agents_live.ex:681
-#: lib/kanban_web/live/agents_live.ex:757
+#: lib/kanban_web/live/agents_live.ex:765
+#: lib/kanban_web/live/agents_live.ex:841
 #, elixir-autogen, elixir-format
 msgid "Skipped %{count} task already claimed: %{ids}."
 msgid_plural "Skipped %{count} tasks already claimed: %{ids}."
 msgstr[0] "既に取得済みの %{count} 件のタスクをスキップしました: %{ids}"
 
-#: lib/kanban_web/live/agents_live.ex:628
+#: lib/kanban_web/live/agents_live.ex:712
 #, elixir-autogen, elixir-format
 msgid "That user is not a member of this board."
 msgstr "そのユーザーはこのボードのメンバーではありません。"
 
-#: lib/kanban_web/live/agents_live.ex:909
+#: lib/kanban_web/live/agents_live.ex:993
 #, elixir-autogen, elixir-format
 msgid "This will move 1 task to the new owner:"
 msgid_plural "This will move %{count} tasks to the new owner:"
 msgstr[0] "%{count} 件のタスクを新しい担当者に移動します:"
 
-#: lib/kanban_web/live/agents_live.ex:170
-#: lib/kanban_web/live/agents_live.ex:624
+#: lib/kanban_web/live/agents_live.ex:227
+#: lib/kanban_web/live/agents_live.ex:708
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to reassign this goal."
 msgstr "このゴールを再割り当てする権限がありません。"
 
-#: lib/kanban_web/live/agents_live.ex:964
+#: lib/kanban_web/live/agents_live.ex:1048
 #, elixir-autogen, elixir-format
 msgid "Choose a new priority"
 msgstr "新しい優先度を選択"
 
-#: lib/kanban_web/live/agents_live.ex:233
+#: lib/kanban_web/live/agents_live.ex:290
 #, elixir-autogen, elixir-format
 msgid "Choose a new priority first."
 msgstr "先に新しい優先度を選択してください。"
 
-#: lib/kanban_web/live/agents_live.ex:725
+#: lib/kanban_web/live/agents_live.ex:809
 #, elixir-autogen, elixir-format
 msgid "Could not reprioritize the goal. Please try again."
 msgstr "ゴールの優先度を変更できませんでした。もう一度お試しください。"
 
-#: lib/kanban_web/live/agents_live.ex:962
+#: lib/kanban_web/live/agents_live.ex:1046
 #, elixir-autogen, elixir-format
 msgid "New priority"
 msgstr "新しい優先度"
 
 #: lib/kanban_web/components/target_risk_explainer.ex:172
-#: lib/kanban_web/live/agents_live.ex:955
+#: lib/kanban_web/live/agents_live.ex:1039
 #, elixir-autogen, elixir-format
 msgid "Reprioritize"
 msgstr "優先度を変更"
 
-#: lib/kanban_web/live/agents_live.ex:945
+#: lib/kanban_web/live/agents_live.ex:1029
 #, elixir-autogen, elixir-format
 msgid "Reprioritize %{goal}"
 msgstr "%{goal} の優先度を変更"
 
-#: lib/kanban_web/live/agents_live.ex:747
-#: lib/kanban_web/live/agents_live.ex:754
+#: lib/kanban_web/live/agents_live.ex:831
+#: lib/kanban_web/live/agents_live.ex:838
 #, elixir-autogen, elixir-format
 msgid "Reprioritized %{count} task."
 msgid_plural "Reprioritized %{count} tasks."
 msgstr[0] "%{count} 件のタスクの優先度を変更しました。"
 
-#: lib/kanban_web/live/agents_live.ex:721
+#: lib/kanban_web/live/agents_live.ex:805
 #, elixir-autogen, elixir-format
 msgid "That is not a valid priority."
 msgstr "有効な優先度ではありません。"
 
-#: lib/kanban_web/live/agents_live.ex:947
+#: lib/kanban_web/live/agents_live.ex:1031
 #, elixir-autogen, elixir-format
 msgid "This will change the priority of 1 task:"
 msgid_plural "This will change the priority of %{count} tasks:"
 msgstr[0] "%{count} 件のタスクの優先度を変更します:"
 
-#: lib/kanban_web/live/agents_live.ex:214
-#: lib/kanban_web/live/agents_live.ex:717
+#: lib/kanban_web/live/agents_live.ex:271
+#: lib/kanban_web/live/agents_live.ex:801
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to reprioritize this goal."
 msgstr "このゴールの優先度を変更する権限がありません。"
 
-#: lib/kanban_web/live/agents_live.ex:854
+#: lib/kanban_web/live/agents_live.ex:938
 #, elixir-autogen, elixir-format
 msgid "Could not restore %{count} task claimed since: %{ids}."
 msgid_plural "Could not restore %{count} tasks claimed since: %{ids}."
 msgstr[0] "その後に請求された %{count} 件のタスクを復元できませんでした：%{ids}。"
 
-#: lib/kanban_web/live/agents_live.ex:867
+#: lib/kanban_web/live/agents_live.ex:951
 #, elixir-autogen, elixir-format
 msgid "Could not undo the change. Please try again."
 msgstr "変更を元に戻せませんでした。もう一度お試しください。"
 
-#: lib/kanban_web/live/agents_live.ex:891
+#: lib/kanban_web/live/agents_live.ex:975
 #, elixir-autogen, elixir-format
 msgid "Goal reassigned."
 msgstr "ゴールを再割り当てしました。"
 
-#: lib/kanban_web/live/agents_live.ex:892
+#: lib/kanban_web/live/agents_live.ex:976
 #, elixir-autogen, elixir-format
 msgid "Goal reprioritized."
 msgstr "ゴールの優先度を変更しました。"
 
-#: lib/kanban_web/live/agents_live.ex:885
+#: lib/kanban_web/live/agents_live.ex:969
 #, elixir-autogen, elixir-format
 msgid "Undo"
 msgstr "元に戻す"
 
-#: lib/kanban_web/live/agents_live.ex:836
-#: lib/kanban_web/live/agents_live.ex:847
+#: lib/kanban_web/live/agents_live.ex:920
+#: lib/kanban_web/live/agents_live.ex:931
 #, elixir-autogen, elixir-format
 msgid "Undone: restored %{count} task."
 msgid_plural "Undone: restored %{count} tasks."
 msgstr[0] "元に戻しました：%{count} 件のタスクを復元しました。"
 
-#: lib/kanban_web/live/agents_live.ex:865
+#: lib/kanban_web/live/agents_live.ex:949
 #, elixir-autogen, elixir-format
 msgid "You are no longer allowed to undo this change."
 msgstr "この変更を元に戻す権限がなくなりました。"
+
+#: lib/kanban_web/live/agents_live.ex:594
+#, elixir-autogen, elixir-format
+msgid "Agent data could not be refreshed just now. Showing the last available data."
+msgstr "エージェントデータを現在更新できませんでした。最後に利用可能なデータを表示しています。"

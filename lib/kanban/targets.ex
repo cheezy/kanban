@@ -205,7 +205,7 @@ defmodule Kanban.Targets do
   Lists the goal-type member tasks of `target` that live on boards the scoped
   user can access, each with its `:column` preloaded (so `goal.column.board_id`
   is available to callers such as the target drill-down and
-  `target_goal_progress/2`). A `nil` scope applies no board filter.
+  `member_goal_children/1`). A `nil` scope applies no board filter.
   """
   @spec list_member_goals(Scope.t() | nil, DeliveryTarget.t()) :: [Task.t()]
   def list_member_goals(scope, %DeliveryTarget{} = target) do
@@ -313,6 +313,21 @@ defmodule Kanban.Targets do
         }
 
   @typedoc """
+  A `target_summary/0` that also carries the target's member goal tasks under
+  `:goals` (`:column` preloaded, same structs `list_member_goals/2` returns).
+  Returned by `list_targets_with_status_and_goals/2` so a caller needing both
+  the status summary and the raw goal list fetches the member goals once.
+  """
+  @type target_summary_with_goals :: %{
+          target: DeliveryTarget.t(),
+          status: Status.status(),
+          completed: non_neg_integer(),
+          total: non_neg_integer(),
+          percentage: 0..100,
+          goals: [Task.t()]
+        }
+
+  @typedoc """
   A single goal's child-task flow, bucketed by the child's *column name*
   (not `task.status`), mirroring the boards Goals view. Every key is present
   even when zero, and `:total` is the sum of the five column buckets.
@@ -386,6 +401,35 @@ defmodule Kanban.Targets do
     scope
     |> list_targets()
     |> Enum.map(&summarize_target(scope, &1, today))
+  end
+
+  @doc """
+  Like `list_targets_with_status/2`, but each summary map also carries a
+  `:goals` key holding the target's member goal tasks (`[Task.t()]`, `:column`
+  preloaded — the same structs, in the same order, that `list_member_goals/2`
+  returns).
+
+  `Kanban.Targets.DeliveryRollup.build/2` needs both the per-target status
+  summary and the raw member-goal list. Fetching them together here means the
+  member-goal query runs once per target instead of twice — the summary's own
+  fetch plus a second `list_member_goals/2` call the rollup used to make. The
+  `:status`/`:completed`/`:total`/`:percentage` fields are identical to a
+  `list_targets_with_status/2` row; only the extra `:goals` key is added, so
+  existing callers of `list_targets_with_status/2` are unaffected.
+
+  Board scoping, the per-goal child query (N+1) characteristics, and the
+  `today` injection are identical to `list_targets_with_status/2`.
+  """
+  @spec list_targets_with_status_and_goals(Scope.t() | nil, Date.t()) :: [
+          target_summary_with_goals()
+        ]
+  def list_targets_with_status_and_goals(scope, today \\ Date.utc_today()) do
+    scope
+    |> list_targets()
+    |> Enum.map(fn target ->
+      {summary, goals} = summarize_target_with_goals(scope, target, today)
+      Map.put(summary, :goals, goals)
+    end)
   end
 
   @doc """
@@ -472,8 +516,37 @@ defmodule Kanban.Targets do
   defp scope_user(_), do: nil
 
   defp summarize_target(scope, %DeliveryTarget{} = target, today) do
-    progress = target_goal_progress(scope, target)
-    summarize_progress(target, progress, today)
+    {summary, _goals} = summarize_target_with_goals(scope, target, today)
+    summary
+  end
+
+  # Summarizes a target AND returns its member goals, fetching the member-goal
+  # list exactly once. Both the aggregate summary (`summarize_target/3`, the
+  # boards strip) and callers that need the raw `[Task.t()]` goal list
+  # (`DeliveryRollup`, via `list_targets_with_status_and_goals/2`) share this
+  # single fetch, so the member-goal query runs once per target instead of
+  # twice. list_member_goals/2 preloads :column, so each goal's own board_id
+  # scopes its batched child-task query in `member_goal_children/1`.
+  defp summarize_target_with_goals(scope, %DeliveryTarget{} = target, today) do
+    goals = list_member_goals(scope, target)
+    children_by_goal = member_goal_children(goals)
+
+    progress =
+      Enum.map(goals, fn goal ->
+        progress_shape(goal, Map.get(children_by_goal, goal.id, []))
+      end)
+
+    {summarize_progress(target, progress, today), goals}
+  end
+
+  # Fetches every member goal's child tasks (archived included, per D124) in one
+  # query per distinct board instead of one per goal, bounding the per-goal N+1
+  # the rollup used to fire on every /agents refresh (D125). list_member_goals/2
+  # preloads :column, so each goal's board scopes its own children.
+  defp member_goal_children(goals) do
+    goals
+    |> Enum.map(&{&1.id, &1.column.board_id})
+    |> Tasks.get_children_including_archived_by_parent()
   end
 
   # The aggregate `target_summary/0` for a target given its member goals'
@@ -490,21 +563,6 @@ defmodule Kanban.Targets do
       total: total,
       percentage: percentage(completed, total)
     }
-  end
-
-  # One Status.goal_progress snapshot per accessible member goal.
-  # list_member_goals/2 already preloads :column, so each goal's own board_id
-  # scopes its child-task query.
-  defp target_goal_progress(scope, target) do
-    scope
-    |> list_member_goals(target)
-    |> Enum.map(&goal_progress_entry/1)
-  end
-
-  defp goal_progress_entry(%Task{} = goal) do
-    goal.id
-    |> Tasks.get_task_children_including_archived(goal.column.board_id)
-    |> then(&progress_shape(goal, &1))
   end
 
   # The `Kanban.Targets.Status.derive/3` progress shape for one goal, computed

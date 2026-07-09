@@ -343,10 +343,11 @@ defmodule Kanban.Tasks.AgentWorkflow do
       {:task_completed, updated_task}
     )
 
-    # Also notify the shared "agents" topic so AgentsLive (/agents) refreshes
-    # live on completion. The board-topic broadcast above stays untouched so the
-    # board LiveView contract is unchanged and the feed is not double-fired.
-    Broadcaster.broadcast_agent_event(updated_task, :task_completed)
+    # Also notify the board-scoped "agents:#{board_id}" topic so AgentsLive
+    # (/agents) refreshes live on completion for viewers of this board. The
+    # board-topic broadcast above stays untouched so the board LiveView contract
+    # is unchanged and the feed is not double-fired.
+    Broadcaster.broadcast_agent_event(updated_task, :task_completed, board_id)
 
     Dependencies.unblock_dependent_tasks(updated_task.identifier, board_id)
 
@@ -412,11 +413,11 @@ defmodule Kanban.Tasks.AgentWorkflow do
     )
 
     # The board-topic broadcast above only reaches board LiveViews. The agents
-    # surface subscribes to the shared "agents" topic, so notify it directly —
-    # mirroring the completion path — otherwise a claim never reaches the agent
-    # activity feed live and only appears after some later event triggers a
-    # refresh (or a manual reload).
-    Broadcaster.broadcast_agent_event(updated_task, :task_claimed)
+    # surface subscribes to the board-scoped "agents:#{board_id}" topic, so
+    # notify it directly — mirroring the completion path — otherwise a claim
+    # never reaches the agent activity feed live and only appears after some
+    # later event triggers a refresh (or a manual reload).
+    Broadcaster.broadcast_agent_event(updated_task, :task_claimed, board_id)
 
     {:ok, hook_info} = Hooks.get_hook_info(updated_task, board, "before_doing", agent_name)
     {:ok, updated_task, hook_info}
@@ -478,7 +479,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
       # Moving to Review is the terminal step for needs_review tasks (no
       # finalize_completion call follows), so emit the agents-topic event here
       # to keep /agents live. The auto-Done path emits it via finalize_completion.
-      Broadcaster.broadcast_agent_event(updated_task, :task_completed)
+      Broadcaster.broadcast_agent_event(updated_task, :task_completed, board_id)
 
       hooks =
         Metadata.build_completion_hooks(updated_task, board, agent_name, needs_review?: true)

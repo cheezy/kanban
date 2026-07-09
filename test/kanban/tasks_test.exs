@@ -3503,9 +3503,9 @@ defmodule Kanban.TasksTest do
       assert broadcasted_task.id == moved_task.id
     end
 
-    test "also broadcasts a :create agent_event on the 'agents' topic for task_created",
-         %{column: column} do
-      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+    test "also broadcasts a :create agent_event on the board-scoped agents topic for task_created",
+         %{column: column, board: board} do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents:#{board.id}")
       {:ok, task} = Tasks.create_task(column, %{title: "New task"})
 
       assert_received {:agent_event, payload}
@@ -3513,10 +3513,10 @@ defmodule Kanban.TasksTest do
       assert payload.task_id == task.id
     end
 
-    test "broadcasts :claim agent_event on the 'agents' topic when claimed_at is set",
-         %{column: column} do
+    test "broadcasts :claim agent_event on the board-scoped agents topic when claimed_at is set",
+         %{column: column, board: board} do
       {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
-      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents:#{board.id}")
 
       claimed_at = DateTime.utc_now() |> DateTime.truncate(:second)
       {:ok, _} = Tasks.update_task(task, %{claimed_at: claimed_at})
@@ -3525,10 +3525,10 @@ defmodule Kanban.TasksTest do
       assert task_id == task.id
     end
 
-    test "broadcasts :complete agent_event on the 'agents' topic when completed_at is set",
-         %{column: column} do
+    test "broadcasts :complete agent_event on the board-scoped agents topic when completed_at is set",
+         %{column: column, board: board} do
       {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
-      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents:#{board.id}")
 
       {:ok, _} =
         Tasks.update_task(task, %{
@@ -3541,10 +3541,10 @@ defmodule Kanban.TasksTest do
       assert payload.agent_name == "Codex"
     end
 
-    test "broadcasts :review agent_event on the 'agents' topic when review_status changes",
-         %{column: column, user: user} do
+    test "broadcasts :review agent_event on the board-scoped agents topic when review_status changes",
+         %{column: column, user: user, board: board} do
       {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
-      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents:#{board.id}")
 
       {:ok, _} =
         Tasks.update_task(task, %{
@@ -3556,12 +3556,12 @@ defmodule Kanban.TasksTest do
       assert_received {:agent_event, %{kind: :review}}
     end
 
-    test "does NOT broadcast on the 'agents' topic for unrelated updates like :task_moved",
+    test "does NOT broadcast on the board-scoped agents topic for unrelated updates like :task_moved",
          %{column: column, board: board} do
       column2 = column_fixture(board, %{position: 1})
       {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
 
-      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents")
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "agents:#{board.id}")
       {:ok, _} = Tasks.move_task(task, column2, 0)
 
       refute_received {:agent_event, _}

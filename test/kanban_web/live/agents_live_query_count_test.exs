@@ -116,4 +116,39 @@ defmodule KanbanWeb.AgentsLiveQueryCountTest do
     assert html =~ "Claude"
     assert html =~ "data-delivery-health-band"
   end
+
+  # D125 root cause 2: an agent_event triggered a full load_agents_data/1 on
+  # every message (debounced at @refresh_debounce_ms = 250). A burst of events
+  # must coalesce into a SINGLE reload — the maybe_schedule_refresh/1 guard drops
+  # every event after the first until the scheduled refresh fires. Counting Repo
+  # queries over the settle window proves the burst did not fan out into one
+  # reload per event.
+  test "a burst of agent events coalesces into a single reload", %{conn: conn, user: user} do
+    seed_workspace(user)
+    {:ok, view, _html} = live(conn, ~p"/agents")
+
+    one_reload =
+      count_queries(fn ->
+        send(view.pid, {:agent_event, %{}})
+        Process.sleep(400)
+        _ = render(view)
+      end)
+
+    burst =
+      count_queries(fn ->
+        for _ <- 1..5, do: send(view.pid, {:agent_event, %{}})
+        Process.sleep(400)
+        _ = render(view)
+      end)
+
+    # A single event reloads once (some queries).
+    assert one_reload > 0
+
+    # The 5-event burst debounces to one reload, so its query volume matches a
+    # single reload — not ~5x. A small slack tolerates incidental variation; a
+    # broken debounce (one reload per event) would be far above this ceiling.
+    assert burst <= one_reload + 2,
+           "a 5-event burst issued #{burst} queries vs #{one_reload} for one reload — " <>
+             "the debounce should coalesce the burst into a single reload"
+  end
 end

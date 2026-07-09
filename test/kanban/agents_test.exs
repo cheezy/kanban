@@ -99,11 +99,55 @@ defmodule Kanban.AgentsTest do
       refute old.id in ids
     end
 
-    test "all_time and nil time_range are a no-op", %{column: column, scope: scope} do
+    test "all_time and nil time_range apply no time window (all rows under the cap)",
+         %{column: column, scope: scope} do
+      # :all_time/nil no longer filter by time — but the fetch is still bounded
+      # by the row cap (see the cap tests below). With one row, well under the
+      # cap, both return it regardless of how old it is.
       column |> task_fixture() |> backdate_updated_at(~N[2020-01-01 00:00:00])
 
       assert length(Agents.fetch_tasks(scope: scope, time_range: :all_time)) == 1
       assert length(Agents.fetch_tasks(scope: scope, time_range: nil)) == 1
+    end
+
+    test "the :all_time fetch is bounded by :max_tasks and returns the most recent (D125)",
+         %{column: column, scope: scope} do
+      # Root cause 1: :all_time hit the no-op window branch and issued an
+      # unbounded full-history Repo.all. It is now capped and ordered by
+      # updated_at desc, so even :all_time can never scan the whole history.
+      newest = task_fixture(column)
+      middle = task_fixture(column)
+      oldest = task_fixture(column)
+      backdate_updated_at(newest, days_ago_naive(1))
+      backdate_updated_at(middle, days_ago_naive(2))
+      backdate_updated_at(oldest, days_ago_naive(3))
+
+      ids =
+        scope
+        |> then(&Agents.fetch_tasks(scope: &1, time_range: :all_time, max_tasks: 2))
+        |> Enum.map(& &1.id)
+
+      # Only the 2 most-recently-updated tasks survive the cap, newest first.
+      assert ids == [newest.id, middle.id]
+      refute oldest.id in ids
+    end
+
+    test "the cap applies even without a max_tasks override, ordered most-recent-first (D125)",
+         %{column: column, scope: scope} do
+      # The default @default_task_cap is far larger than the test data, so all
+      # rows return — but always in updated_at-desc order, proving the ORDER BY
+      # that makes the cap activity-relevant is applied on the default path too.
+      older = task_fixture(column)
+      newer = task_fixture(column)
+      backdate_updated_at(older, days_ago_naive(2))
+      backdate_updated_at(newer, days_ago_naive(1))
+
+      ids =
+        scope
+        |> then(&Agents.fetch_tasks(scope: &1, time_range: :all_time))
+        |> Enum.map(& &1.id)
+
+      assert ids == [newer.id, older.id]
     end
 
     test "window_days keeps tasks within the fixed window and drops older ones",

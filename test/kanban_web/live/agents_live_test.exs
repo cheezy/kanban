@@ -2525,6 +2525,128 @@ defmodule KanbanWeb.AgentsLiveTest do
     end
   end
 
+  describe "board-scoped refresh and crash tolerance (D125)" do
+    setup [:register_and_log_in_user]
+
+    # Any map works — handle_info({:agent_event, _payload}) ignores the payload
+    # and only schedules a refresh; the topic it arrives on is what matters.
+    defp agent_event(board_id) do
+      {:agent_event,
+       %{kind: :claim, task_id: 0, board_id: board_id, agent_name: "x", at: DateTime.utc_now()}}
+    end
+
+    # Polls render/1 until it contains `needle` or the deadline passes. The
+    # refresh is debounced (@refresh_debounce_ms = 250) and fires via
+    # Process.send_after, so the reload is not synchronous with the broadcast.
+    defp render_eventually(view, needle, timeout \\ 2_000) do
+      deadline = System.monotonic_time(:millisecond) + timeout
+      do_render_eventually(view, needle, deadline)
+    end
+
+    defp do_render_eventually(view, needle, deadline) do
+      if render(view) =~ needle do
+        true
+      else
+        if System.monotonic_time(:millisecond) >= deadline do
+          false
+        else
+          Process.sleep(50)
+          do_render_eventually(view, needle, deadline)
+        end
+      end
+    end
+
+    # Rename a task's agent directly in the DB, bypassing Tasks.update_task so no
+    # PubSub broadcast fires. The new name only surfaces in the roster if the
+    # LiveView reloads — the exact signal these tests need to attribute a reload
+    # to the manual broadcast (and not to a create/update broadcast side effect).
+    defp rename_agent_in_db(task_id, new_name) do
+      from(t in Kanban.Tasks.Task, where: t.id == ^task_id)
+      |> Repo.update_all(set: [created_by_agent: new_name])
+    end
+
+    test "a task event on an accessible board refreshes the roster", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Ada"})
+
+      {:ok, marker} =
+        column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Marker0"})
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+      assert html =~ "Marker0"
+
+      # Rename the marker agent in the DB (no broadcast), then fire a board-scoped
+      # agent event on the topic the viewer subscribes to for this accessible
+      # board. Only a reload can surface the new name.
+      rename_agent_in_db(marker.id, "Marker1")
+      Phoenix.PubSub.broadcast(Kanban.PubSub, "agents:#{board.id}", agent_event(board.id))
+
+      assert render_eventually(view, "Marker1")
+    end
+
+    test "a task event on a board the viewer cannot access does NOT reload",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Ada"})
+
+      {:ok, marker} =
+        column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Marker0"})
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+      assert html =~ "Marker0"
+
+      # Rename the marker agent in the DB (no broadcast — would show up only on a
+      # reload), then broadcast the agent event on an unrelated board's topic the
+      # viewer never subscribed to. The message never reaches the LiveView, so no
+      # reload happens and the rename stays invisible.
+      rename_agent_in_db(marker.id, "Marker1")
+      other_board = user_fixture() |> board_fixture()
+
+      Phoenix.PubSub.broadcast(
+        Kanban.PubSub,
+        "agents:#{other_board.id}",
+        agent_event(other_board.id)
+      )
+
+      # Wait well past the debounce window; an erroneous reload would have landed.
+      Process.sleep(400)
+      html = render(view)
+      assert html =~ "Marker0"
+      refute html =~ "Marker1"
+    end
+
+    test "a DB failure during a refresh degrades gracefully instead of crashing the LV",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      {:ok, _} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Ada"})
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+      assert html =~ "Ada"
+
+      # Poison the shared sandbox transaction so the LiveView's next query (the
+      # refresh load, which shares this transaction in non-async/shared mode)
+      # raises a Postgrex.Error — a stand-in for the production statement-timeout
+      # on a large history that caused the crash → "Something went wrong" →
+      # remount → reload loop.
+      try do
+        Repo.query!(~s|SELECT * FROM "table_that_does_not_exist_d125"|)
+      rescue
+        Postgrex.Error -> :ok
+      end
+
+      Phoenix.PubSub.broadcast(Kanban.PubSub, "agents:#{board.id}", agent_event(board.id))
+      Process.sleep(400)
+
+      # The load path rescued the DB error: the LiveView is still alive and still
+      # shows the last-good roster instead of crashing.
+      assert Process.alive?(view.pid)
+      assert render(view) =~ "Ada"
+    end
+  end
+
   # Builds an at-risk target with a stalled agent on a fresh goal, plus Backlog
   # and Ready columns for not-started children, all owned by `owner`. Returns the
   # goal and the columns so a test can attach children in specific states.

@@ -169,17 +169,18 @@ defmodule Kanban.Targets.DeliveryRollup do
     |> Repo.preload(:parent)
   end
 
-  # One rollup entry per accessible target, reusing Phase 1 status derivation
-  # (`list_targets_with_status/2`) for the target + status and
-  # `list_member_goals/2` for the member goals.
+  # One rollup entry per accessible target. `list_targets_with_status_and_goals/2`
+  # returns the target + status AND the member goals in one pass, fetching each
+  # target's member goals exactly once — previously the rollup called
+  # `list_member_goals/2` a second time per target on top of the fetch inside
+  # the status summary (a redundant query per target on every /agents refresh).
   defp build_target_rollups(scope, today, agents, bridges) do
     scope
-    |> Targets.list_targets_with_status(today)
-    |> Enum.map(&target_rollup(scope, &1, agents, bridges))
+    |> Targets.list_targets_with_status_and_goals(today)
+    |> Enum.map(&target_rollup(&1, agents, bridges))
   end
 
-  defp target_rollup(scope, %{target: target, status: status}, agents, bridges) do
-    goals = Targets.list_member_goals(scope, target)
+  defp target_rollup(%{target: target, status: status, goals: goals}, agents, bridges) do
     target_agents = Enum.filter(agents, &active_on_target?(&1, target.id, bridges))
     stalled_agents = Enum.filter(target_agents, &stalled?/1)
     stalled_goals = stalled_goals(goals, stalled_agents, target.id, bridges)
@@ -213,15 +214,21 @@ defmodule Kanban.Targets.DeliveryRollup do
   end
 
   defp on_goal?(agent, goal_id, target_id, bridges) do
+    # `bridges` maps every agent identity to its list of `{goal_id, target_id}`
+    # pairs (`[]` when it bridges to nothing). Use `Map.get/3` with an empty-list
+    # default rather than `Map.fetch!/2`: a missing key means "no bridges", which
+    # is the correct no-op for every consumer here — and it prevents a stray
+    # identity divergence (e.g. an association that failed to preload under a DB
+    # timeout) from raising a `KeyError` and crashing the whole /agents LiveView.
     bridges
-    |> Map.fetch!(identity(agent))
+    |> Map.get(identity(agent), [])
     |> Enum.any?(fn {gid, tid} -> gid == goal_id and tid == target_id end)
   end
 
   # Agents with no bridge at all — every task lacks a parent goal or the parent
   # goal has no target — are returned outside the target rollup.
   defp unrolled_agents(agents, bridges) do
-    Enum.filter(agents, fn agent -> Map.fetch!(bridges, identity(agent)) == [] end)
+    Enum.filter(agents, fn agent -> Map.get(bridges, identity(agent), []) == [] end)
   end
 
   # Maps each agent identity to the target+goal annotations it is advancing,
@@ -252,7 +259,7 @@ defmodule Kanban.Targets.DeliveryRollup do
 
   defp annotations_for(identity, bridges, goal_index, target_index) do
     bridges
-    |> Map.fetch!(identity)
+    |> Map.get(identity, [])
     |> Enum.uniq()
     |> Enum.flat_map(&annotation(&1, goal_index, target_index))
   end
@@ -296,14 +303,14 @@ defmodule Kanban.Targets.DeliveryRollup do
 
   defp active_on_target?(agent, target_id, bridges) do
     bridges
-    |> Map.fetch!(identity(agent))
+    |> Map.get(identity(agent), [])
     |> Enum.any?(fn {_goal_id, tid} -> tid == target_id end)
   end
 
   # The member goal ids of `target_id` that a stalled agent is active on.
   defp stalled_goal_ids(stalled_agents, target_id, bridges) do
     for agent <- stalled_agents,
-        {goal_id, tid} <- Map.fetch!(bridges, identity(agent)),
+        {goal_id, tid} <- Map.get(bridges, identity(agent), []),
         tid == target_id,
         into: MapSet.new(),
         do: goal_id

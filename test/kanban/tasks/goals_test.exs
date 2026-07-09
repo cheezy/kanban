@@ -108,6 +108,48 @@ defmodule Kanban.Tasks.GoalsTest do
     end
   end
 
+  describe "get_children_including_archived_by_parent/1 (batched target-progress path — D125)" do
+    test "groups each goal's children (archived included) by parent id",
+         %{board: board, column: column, goal: goal1} do
+      goal2 = task_fixture(column, %{title: "Goal 2", type: :goal})
+
+      g1_active = task_fixture(column, %{title: "G1 active", parent_id: goal1.id})
+
+      g1_archived =
+        column |> task_fixture(%{title: "G1 archived", parent_id: goal1.id}) |> archive!()
+
+      g2_active = task_fixture(column, %{title: "G2 active", parent_id: goal2.id})
+
+      by_parent =
+        Tasks.get_children_including_archived_by_parent([
+          {goal1.id, board.id},
+          {goal2.id, board.id}
+        ])
+
+      assert Enum.map(by_parent[goal1.id], & &1.id) |> Enum.sort() ==
+               Enum.sort([g1_active.id, g1_archived.id])
+
+      assert Enum.map(by_parent[goal2.id], & &1.id) == [g2_active.id]
+    end
+
+    test "a goal with no children is absent from the map (Map.get default applies)",
+         %{board: board, goal: goal} do
+      by_parent = Tasks.get_children_including_archived_by_parent([{goal.id, board.id}])
+
+      refute Map.has_key?(by_parent, goal.id)
+      assert Map.get(by_parent, goal.id, []) == []
+    end
+
+    test "children on another board are excluded per goal (cross-board IDOR closed)",
+         %{column: column, goal: goal} do
+      task_fixture(column, %{title: "Child", parent_id: goal.id})
+
+      other_board = board_fixture(user_fixture())
+      # Scoping the goal to a board it does not live on yields no children.
+      assert Tasks.get_children_including_archived_by_parent([{goal.id, other_board.id}]) == %{}
+    end
+  end
+
   describe "get_task_tree/2 (archived-child exclusion)" do
     # counts.total is 1 (the goal itself) + the number of ACTIVE children;
     # this is the denominator consumed by compute_goal_progress/2 in

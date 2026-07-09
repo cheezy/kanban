@@ -51,6 +51,18 @@ defmodule Kanban.Agents do
 
   @default_event_limit 50
 
+  # Hard ceiling on the roster/events/header task fetch. Even the `:all_time`
+  # window (a no-op time filter) is bounded to this many most-recently-updated
+  # rows so the /agents load can never issue an unbounded full-history
+  # `Repo.all` (the D122 statement-timeout failure mode, which D122 fixed only
+  # for the DeliveryRollup path — not this roster fetch). 5000 is generous
+  # enough that no realistic single-workspace live/today aggregate is truncated
+  # (the roster's dormant-agent tail is already collapsed into a separate
+  # group), while keeping the ordered index scan bounded well under the DB
+  # statement timeout. Overridable via the `:max_tasks` opt (used by tests to
+  # exercise the cap without seeding thousands of rows).
+  @default_task_cap 5000
+
   # Board column names that drive an agent's derived status. A task's
   # `:in_progress` status spans both Doing and Review, so status is inferred
   # from the column name instead. These mirror the default column names seeded
@@ -330,6 +342,7 @@ defmodule Kanban.Agents do
     |> BoardScope.apply_board_scope_with_column_join(Keyword.get(opts, :scope))
     |> filter_by_board(Keyword.get(opts, :board_id))
     |> apply_window(opts)
+    |> apply_cap(opts)
     |> Repo.all()
     # The column name drives status inference, so preload it (one batched
     # query for the whole list). The scope join above is filter-only and does
@@ -382,6 +395,22 @@ defmodule Kanban.Agents do
   end
 
   defp filter_by_board(query, _board_id), do: query
+
+  # Bound the fetch to at most `:max_tasks` (default `@default_task_cap`) rows,
+  # ordered by `updated_at` descending so the most-recent activity is always
+  # retained. This applies on EVERY path — including the `:all_time`/`nil`
+  # window that is otherwise a no-op — so the roster fetch can never scan the
+  # entire board history. Ordering by `updated_at` keeps the cap
+  # activity-relevant (dropping only the oldest dormant tail) and is served by
+  # the `tasks(updated_at)` index. Consumers (`Roster`, `Events`, `Metrics`)
+  # re-sort in Elixir, so the DB ordering does not constrain their output shape.
+  defp apply_cap(query, opts) do
+    cap = Keyword.get(opts, :max_tasks, @default_task_cap)
+
+    query
+    |> order_by([t], desc: t.updated_at)
+    |> limit(^cap)
+  end
 
   # Apply the trailing-window filter. A fixed `:window_days` takes precedence over
   # the page `:time_range` selector so selector-independent callers (the Agents
