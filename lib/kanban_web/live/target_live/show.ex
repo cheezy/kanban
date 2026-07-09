@@ -30,10 +30,11 @@ defmodule KanbanWeb.TargetLive.Show do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     scope = socket.assigns.current_scope
+    timezone = KanbanWeb.Timezone.browser_timezone(socket)
 
     case Targets.get_owned_target(scope, id) do
       {:ok, target} ->
-        {:ok, assign_target_progress(socket, scope, target)}
+        {:ok, assign_target_progress(socket, scope, target, timezone)}
 
       {:error, :not_found} ->
         {:ok,
@@ -43,8 +44,11 @@ defmodule KanbanWeb.TargetLive.Show do
     end
   end
 
-  defp assign_target_progress(socket, scope, target) do
-    progress = Targets.get_target_progress(scope, target)
+  # Anchor status on the viewer's local calendar day (not the server's UTC day)
+  # so the target-detail badge agrees with the boards TargetsStrip and the
+  # agents delivery-health band. See D123.
+  defp assign_target_progress(socket, scope, target, timezone) do
+    progress = Targets.get_target_progress(scope, target, Kanban.Timezone.local_today(timezone))
 
     socket
     |> assign(:target, target)

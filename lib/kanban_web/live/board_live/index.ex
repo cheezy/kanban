@@ -162,8 +162,9 @@ defmodule KanbanWeb.BoardLive.Index do
   @impl true
   def mount(_params, _session, socket) do
     scope = socket.assigns.current_scope
+    timezone = KanbanWeb.Timezone.browser_timezone(socket)
     boards = load_boards(scope.user)
-    targets = Targets.list_targets_with_status(scope)
+    targets = load_targets(scope, timezone)
 
     if connected?(socket), do: schedule_refresh()
 
@@ -172,6 +173,7 @@ defmodule KanbanWeb.BoardLive.Index do
      |> assign(:has_boards, not Enum.empty?(boards))
      |> assign(:active_count, length(boards))
      |> assign(:nav_active, :boards)
+     |> assign(:timezone, timezone)
      |> assign(:targets, targets)
      |> stream(:boards, boards)}
   end
@@ -194,7 +196,7 @@ defmodule KanbanWeb.BoardLive.Index do
   def handle_info(:refresh_metrics, socket) do
     scope = socket.assigns.current_scope
     boards = load_boards(scope.user)
-    targets = Targets.list_targets_with_status(scope)
+    targets = load_targets(scope, socket.assigns.timezone)
     schedule_refresh()
 
     {:noreply,
@@ -209,6 +211,14 @@ defmodule KanbanWeb.BoardLive.Index do
     user
     |> Boards.list_boards_with_metrics()
     |> BoardAccent.assign_to_boards()
+  end
+
+  # Anchor delivery-target status on the viewer's local calendar day (not the
+  # server's UTC day) so the boards TargetsStrip agrees with the agents
+  # delivery-health band, which already anchors on the viewer's timezone via
+  # Kanban.Targets.DeliveryRollup. See D123.
+  defp load_targets(scope, timezone) do
+    Targets.list_targets_with_status(scope, Kanban.Timezone.local_today(timezone))
   end
 
   @impl true
