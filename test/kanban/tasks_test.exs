@@ -1926,6 +1926,24 @@ defmodule Kanban.TasksTest do
       assert %{key_files: [%{file_path: ["must not contain .. path traversal"]}]} =
                errors_on(changeset)
     end
+
+    test "rejects a null byte in key file paths (D114)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      attrs = %{
+        title: "Test task",
+        key_files: [
+          %{file_path: "lib/foo\0.ex", position: 0}
+        ]
+      }
+
+      {:error, changeset} = Tasks.create_task(column, attrs)
+
+      assert %{key_files: [%{file_path: ["must not contain a null byte"]}]} =
+               errors_on(changeset)
+    end
   end
 
   describe "verification_steps embedded schema" do
