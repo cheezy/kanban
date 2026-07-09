@@ -635,11 +635,10 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 
   defp do_add_comment(socket, comment_params) do
-    # Always source task_id from the server-held task — overwrites any
-    # client-supplied task_id in comment_params.
-    comment_params = Map.put(comment_params, "task_id", socket.assigns.task.id)
-
-    case %TaskComment{}
+    # D111: task_id is set on the server-held struct, never cast from client
+    # params, so a comment cannot be redirected to another task/board. content is
+    # the only client-controlled field the changeset casts.
+    case %TaskComment{task_id: socket.assigns.task.id}
          |> TaskComment.changeset(comment_params)
          |> Repo.insert() do
       {:ok, _comment} ->

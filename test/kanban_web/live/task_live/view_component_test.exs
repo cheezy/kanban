@@ -396,9 +396,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
     end
 
     test "displays comment content", %{task: task} do
-      %TaskComment{}
+      %TaskComment{task_id: task.id}
       |> TaskComment.changeset(%{
-        task_id: task.id,
         content: "This is a test comment",
         inserted_at: ~U[2024-01-15 10:30:00Z]
       })
@@ -416,17 +415,15 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
     end
 
     test "displays multiple comments", %{task: task} do
-      %TaskComment{}
+      %TaskComment{task_id: task.id}
       |> TaskComment.changeset(%{
-        task_id: task.id,
         content: "First comment",
         inserted_at: ~U[2024-01-15 10:00:00Z]
       })
       |> Repo.insert!()
 
-      %TaskComment{}
+      %TaskComment{task_id: task.id}
       |> TaskComment.changeset(%{
-        task_id: task.id,
         content: "Second comment",
         inserted_at: ~U[2024-01-15 11:00:00Z]
       })
@@ -444,9 +441,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
     end
 
     test "displays comment timestamp with formatted datetime", %{task: task} do
-      %TaskComment{}
+      %TaskComment{task_id: task.id}
       |> TaskComment.changeset(%{
-        task_id: task.id,
         content: "Test comment",
         inserted_at: ~U[2024-01-15 10:30:00Z]
       })

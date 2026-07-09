@@ -12,24 +12,21 @@ defmodule Kanban.Tasks.TaskCommentTest do
     test "valid changeset with all required fields" do
       task = insert_task()
 
-      attrs = %{
-        content: "This is a comment",
-        task_id: task.id
-      }
-
-      changeset = TaskComment.changeset(%TaskComment{}, attrs)
+      # D111: task_id is set on the struct server-side, not cast from attrs.
+      changeset =
+        TaskComment.changeset(%TaskComment{task_id: task.id}, %{content: "This is a comment"})
 
       assert changeset.valid?
       assert get_change(changeset, :content) == "This is a comment"
-      assert get_change(changeset, :task_id) == task.id
+      assert get_field(changeset, :task_id) == task.id
+      # A client-supplied task_id in attrs is ignored (not cast).
+      refute get_change(TaskComment.changeset(%TaskComment{}, %{task_id: 999}), :task_id)
     end
 
     test "invalid changeset when content is missing" do
       task = insert_task()
 
-      attrs = %{task_id: task.id}
-
-      changeset = TaskComment.changeset(%TaskComment{}, attrs)
+      changeset = TaskComment.changeset(%TaskComment{task_id: task.id}, %{})
 
       refute changeset.valid?
       assert "can't be blank" in errors_on(changeset).content
@@ -45,12 +42,10 @@ defmodule Kanban.Tasks.TaskCommentTest do
     end
 
     test "invalid changeset when task_id does not exist" do
-      attrs = %{
-        content: "This is a comment",
-        task_id: -1
-      }
-
-      changeset = TaskComment.changeset(%TaskComment{}, attrs)
+      # D111: task_id set on the struct; the FK constraint still catches a
+      # nonexistent task at insert time.
+      changeset =
+        TaskComment.changeset(%TaskComment{task_id: -1}, %{content: "This is a comment"})
 
       assert changeset.valid?
 
@@ -64,8 +59,8 @@ defmodule Kanban.Tasks.TaskCommentTest do
       task = insert_task()
 
       {:ok, comment} =
-        %TaskComment{}
-        |> TaskComment.changeset(%{content: "Test comment", task_id: task.id})
+        %TaskComment{task_id: task.id}
+        |> TaskComment.changeset(%{content: "Test comment"})
         |> Repo.insert()
 
       comment = Repo.preload(comment, :task)
@@ -77,13 +72,13 @@ defmodule Kanban.Tasks.TaskCommentTest do
       task = insert_task()
 
       {:ok, comment1} =
-        %TaskComment{}
-        |> TaskComment.changeset(%{content: "First comment", task_id: task.id})
+        %TaskComment{task_id: task.id}
+        |> TaskComment.changeset(%{content: "First comment"})
         |> Repo.insert()
 
       {:ok, comment2} =
-        %TaskComment{}
-        |> TaskComment.changeset(%{content: "Second comment", task_id: task.id})
+        %TaskComment{task_id: task.id}
+        |> TaskComment.changeset(%{content: "Second comment"})
         |> Repo.insert()
 
       task = Repo.preload(task, :comments)
@@ -97,8 +92,8 @@ defmodule Kanban.Tasks.TaskCommentTest do
       task = insert_task()
 
       {:ok, comment} =
-        %TaskComment{}
-        |> TaskComment.changeset(%{content: "Test comment", task_id: task.id})
+        %TaskComment{task_id: task.id}
+        |> TaskComment.changeset(%{content: "Test comment"})
         |> Repo.insert()
 
       Repo.delete(task)
@@ -112,8 +107,8 @@ defmodule Kanban.Tasks.TaskCommentTest do
       task = insert_task()
 
       {:ok, comment} =
-        %TaskComment{}
-        |> TaskComment.changeset(%{content: "Test comment", task_id: task.id})
+        %TaskComment{task_id: task.id}
+        |> TaskComment.changeset(%{content: "Test comment"})
         |> Repo.insert()
 
       assert comment.inserted_at
