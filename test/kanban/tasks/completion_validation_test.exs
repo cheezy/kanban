@@ -1236,6 +1236,44 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       assert msg =~ "changed_files[0]"
     end
 
+    test "rejects a path with .. traversal (D114)" do
+      assert {:error, errors} =
+               CompletionValidation.validate_changed_files([%{"path" => "../../../etc/passwd"}])
+
+      assert {_, msg} = error_for(errors, :changed_file_path)
+      assert msg =~ "changed_files[0]"
+      assert msg =~ "traversal"
+    end
+
+    test "rejects a mid-path .. traversal (D114)" do
+      assert {:error, errors} =
+               CompletionValidation.validate_changed_files([%{"path" => "lib/../../secret"}])
+
+      assert {_, msg} = error_for(errors, :changed_file_path)
+      assert msg =~ "traversal"
+    end
+
+    test "rejects an absolute path (D114)" do
+      assert {:error, errors} =
+               CompletionValidation.validate_changed_files([%{"path" => "/etc/shadow"}])
+
+      assert {_, msg} = error_for(errors, :changed_file_path)
+      assert msg =~ "absolute"
+    end
+
+    test "rejects a path containing a null byte (D114)" do
+      assert {:error, errors} =
+               CompletionValidation.validate_changed_files([%{"path" => "lib/foo\0.ex"}])
+
+      assert {_, msg} = error_for(errors, :changed_file_path)
+      assert msg =~ "null byte"
+    end
+
+    test "still accepts a legitimate relative path (D114 regression)" do
+      assert {:ok, _} =
+               CompletionValidation.validate_changed_files([%{"path" => "lib/kanban/tasks.ex"}])
+    end
+
     test "rejects a non-string diff value" do
       assert {:error, errors} =
                CompletionValidation.validate_changed_files([

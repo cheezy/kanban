@@ -19,6 +19,8 @@ defmodule Kanban.Tasks.CompletionValidation do
 
   use Gettext, backend: KanbanWeb.Gettext
 
+  alias Kanban.Tasks.PathSafety
+
   @skip_reasons [
     :no_subagent_support,
     :small_task_0_1_key_files,
@@ -741,18 +743,31 @@ defmodule Kanban.Tasks.CompletionValidation do
   defp check_changed_file_entry(errors, _entry, idx),
     do: [{:changed_file_entry, "changed_files[#{idx}] must be a map"} | errors]
 
+  # D114: the changed_files path is fully attacker-controlled (public
+  # PUT /api/tasks/:id/changed_files). Reject absolute paths, `..` traversal, and
+  # null bytes so a stored path cannot escape the repo root — parity with the
+  # key_files embed, via the shared Kanban.Tasks.PathSafety predicate.
   defp check_changed_file_path(errors, entry, idx) do
-    case Map.get(entry, "path") do
-      path when is_binary(path) and byte_size(path) > 0 ->
+    case entry |> Map.get("path") |> PathSafety.validate() do
+      :ok ->
         errors
 
-      _ ->
-        [
-          {:changed_file_path, "changed_files[#{idx}] must have a non-empty string \"path\""}
-          | errors
-        ]
+      {:error, reason} ->
+        [{:changed_file_path, changed_file_path_error(idx, reason)} | errors]
     end
   end
+
+  defp changed_file_path_error(idx, reason) when reason in [:empty, :not_a_string],
+    do: "changed_files[#{idx}] must have a non-empty string \"path\""
+
+  defp changed_file_path_error(idx, :absolute),
+    do: "changed_files[#{idx}] \"path\" must be a relative path, not absolute"
+
+  defp changed_file_path_error(idx, :traversal),
+    do: "changed_files[#{idx}] \"path\" must not contain .. path traversal"
+
+  defp changed_file_path_error(idx, :null_byte),
+    do: "changed_files[#{idx}] \"path\" must not contain a null byte"
 
   defp check_changed_file_diff(errors, entry, idx) do
     case Map.get(entry, "diff") do
