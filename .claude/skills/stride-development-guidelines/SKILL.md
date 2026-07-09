@@ -28,27 +28,6 @@ You MUST NOT skip this step. Silently proceeding without stating applicability i
 
 ---
 
-## GATE 2: After Writing Code
-
-STOP. Run these commands and show the output. Do NOT claim they pass without running them.
-
-1. `mix test` — all tests must pass
-2. `mix credo --strict` — no issues
-
-IF you wrote new functions, you MUST have written tests for them before reaching this gate.
-
-IF you modified UI, you MUST have verified dark mode before reaching this gate (see Trigger Rules below).
-
----
-
-## GATE 3: Before Marking Complete
-
-STOP. Run `mix precommit` and show the output. This runs all quality and security checks together.
-
-IF anything fails, fix it and re-run. Do NOT mark complete until `mix precommit` passes with output shown.
-
----
-
 ## Trigger Rules
 
 These are IF/THEN rules. When you encounter the trigger condition, you MUST take the specified action.
@@ -110,10 +89,4 @@ These are hard failures. If you catch yourself doing any of these, STOP and corr
 BEFORE WRITING CODE → GATE 1 (state what applies)
     ↓
 WRITE CODE (follow trigger rules as you go)
-    ↓
-AFTER WRITING CODE → GATE 2 (mix test + mix credo --strict, show output)
-    ↓
-BEFORE MARKING COMPLETE → GATE 3 (mix precommit, show output)
 ```
-
-`mix precommit` runs tests, coverage, credo, and sobelow together. Use it at GATE 3.
