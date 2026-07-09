@@ -16,6 +16,30 @@ config :kanban, Kanban.Repo,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
+# D115: the dev signing-key placeholder must FAIL CLOSED for a running server.
+# Non-server Mix tasks (mix help, deps.audit, compile, …) still load with the
+# clearly-labeled placeholder, but starting the dev endpoint (`mix phx.server`,
+# `iex -S mix phx.server`, or PHX_SERVER=1) without exporting SECRET_KEY_BASE now
+# raises instead of silently serving with a publicly-known key — closing the
+# forge-any-session risk if such a server is ever exposed via tunneling.
+dev_server_starting? =
+  System.get_env("PHX_SERVER") != nil or "phx.server" in System.argv()
+
+dev_secret_key_base =
+  System.get_env("SECRET_KEY_BASE") ||
+    if dev_server_starting? do
+      raise """
+      SECRET_KEY_BASE is not set. Export a per-developer key before starting the dev server:
+
+          export SECRET_KEY_BASE="$(mix phx.gen.secret)"
+
+      The dev placeholder key is only for non-server Mix tasks; a server using it is
+      unsafe if ever exposed via tunneling or port forwarding.
+      """
+    else
+      "DEV_PLACEHOLDER_KEY_NOT_FOR_PUBLIC_USE_RUN_mix_phx_gen_secret_AND_EXPORT_SECRET_KEY_BASE_xxxxx"
+    end
+
 config :kanban, KanbanWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
@@ -23,17 +47,9 @@ config :kanban, KanbanWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  # Per-developer dev signing key. Each contributor SHOULD export
-  # SECRET_KEY_BASE (generate one with `mix phx.gen.secret`) so the dev
-  # signing key isn't shared across the team — important if a dev server
-  # is ever exposed to the internet via tunneling or port forwarding.
-  # See README "Local development setup" for the workflow. The fallback
-  # below is a clearly-labeled placeholder so non-server tasks (mix
-  # help, mix deps.audit, etc.) can still load this config; it is NOT
-  # suitable for any externally-reachable server.
-  secret_key_base:
-    System.get_env("SECRET_KEY_BASE") ||
-      "DEV_PLACEHOLDER_KEY_NOT_FOR_PUBLIC_USE_RUN_mix_phx_gen_secret_AND_EXPORT_SECRET_KEY_BASE_xxxxx",
+  # Per-developer dev signing key (see the D115 block above). Each contributor
+  # SHOULD export SECRET_KEY_BASE (generate one with `mix phx.gen.secret`).
+  secret_key_base: dev_secret_key_base,
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:kanban, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:kanban, ~w(--watch)]}
