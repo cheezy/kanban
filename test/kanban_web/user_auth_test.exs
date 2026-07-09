@@ -329,6 +329,55 @@ defmodule KanbanWeb.UserAuthTest do
     end
   end
 
+  describe "confirmation gate on admin/sudo authorization (D106)" do
+    setup %{conn: conn} do
+      socket = %LiveView.Socket{
+        endpoint: KanbanWeb.Endpoint,
+        assigns: %{__changed__: %{}, flash: %{}}
+      }
+
+      %{conn: conn, socket: socket}
+    end
+
+    test "on_mount :require_admin halts an unconfirmed admin", %{conn: conn, socket: socket} do
+      admin =
+        unconfirmed_user_fixture()
+        |> Ecto.Changeset.change(type: :admin)
+        |> Kanban.Repo.update!()
+
+      token = Accounts.generate_user_session_token(admin)
+      session = conn |> put_session(:user_token, token) |> get_session()
+
+      assert {:halt, _} = UserAuth.on_mount(:require_admin, %{}, session, socket)
+    end
+
+    test "on_mount :require_sudo_mode halts an unconfirmed user", %{conn: conn, socket: socket} do
+      token = Accounts.generate_user_session_token(unconfirmed_user_fixture())
+      session = conn |> put_session(:user_token, token) |> get_session()
+
+      assert {:halt, _} = UserAuth.on_mount(:require_sudo_mode, %{}, session, socket)
+    end
+
+    test "require_admin_user/2 halts an unconfirmed admin", %{conn: conn} do
+      admin =
+        unconfirmed_user_fixture()
+        |> Ecto.Changeset.change(type: :admin)
+        |> Kanban.Repo.update!()
+
+      token = Accounts.generate_user_session_token(admin)
+
+      conn =
+        conn
+        |> put_session(:user_token, token)
+        |> UserAuth.fetch_current_scope_for_user([])
+        |> fetch_flash()
+        |> UserAuth.require_admin_user([])
+
+      assert conn.halted
+      assert redirected_to(conn) == ~p"/users/log-in"
+    end
+  end
+
   describe "require_authenticated_user/2" do
     setup %{conn: conn} do
       %{conn: UserAuth.fetch_current_scope_for_user(conn, [])}

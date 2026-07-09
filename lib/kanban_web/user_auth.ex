@@ -255,33 +255,60 @@ defmodule KanbanWeb.UserAuth do
 
   def on_mount(:require_admin, _params, session, socket) do
     socket = mount_current_scope(socket, session)
+    user = socket.assigns.current_scope && socket.assigns.current_scope.user
 
-    if socket.assigns.current_scope && socket.assigns.current_scope.user &&
-         socket.assigns.current_scope.user.type == :admin do
-      {:cont, socket}
-    else
-      socket =
-        socket
-        |> Phoenix.LiveView.put_flash(:error, "You must be an admin to access this page.")
-        |> Phoenix.LiveView.redirect(to: ~p"/")
+    cond do
+      # D106: enforce the confirmation invariant at every gate, not just
+      # require_authenticated. Not exploitable today (login blocks unconfirmed
+      # sessions) but keeps the gates consistent if that ever changes.
+      user && is_nil(user.confirmed_at) ->
+        halt_unconfirmed_mount(socket)
 
-      {:halt, socket}
+      user && user.type == :admin ->
+        {:cont, socket}
+
+      true ->
+        socket =
+          socket
+          |> Phoenix.LiveView.put_flash(:error, "You must be an admin to access this page.")
+          |> Phoenix.LiveView.redirect(to: ~p"/")
+
+        {:halt, socket}
     end
   end
 
   def on_mount(:require_sudo_mode, _params, session, socket) do
     socket = mount_current_scope(socket, session)
+    user = socket.assigns.current_scope && socket.assigns.current_scope.user
 
-    if Accounts.sudo_mode?(socket.assigns.current_scope.user, -10) do
-      {:cont, socket}
-    else
-      socket =
-        socket
-        |> Phoenix.LiveView.put_flash(:error, "You must re-authenticate to access this page.")
-        |> Phoenix.LiveView.redirect(to: ~p"/users/log-in")
+    cond do
+      # D106: an unconfirmed account must not reach a sudo-gated page.
+      user && is_nil(user.confirmed_at) ->
+        halt_unconfirmed_mount(socket)
 
-      {:halt, socket}
+      Accounts.sudo_mode?(user, -10) ->
+        {:cont, socket}
+
+      true ->
+        socket =
+          socket
+          |> Phoenix.LiveView.put_flash(:error, "You must re-authenticate to access this page.")
+          |> Phoenix.LiveView.redirect(to: ~p"/users/log-in")
+
+        {:halt, socket}
     end
+  end
+
+  defp halt_unconfirmed_mount(socket) do
+    socket =
+      socket
+      |> Phoenix.LiveView.put_flash(
+        :error,
+        gettext("You must confirm your account to access this page.")
+      )
+      |> Phoenix.LiveView.redirect(to: ~p"/users/log-in")
+
+    {:halt, socket}
   end
 
   defp mount_current_scope(socket, session) do
@@ -336,14 +363,25 @@ defmodule KanbanWeb.UserAuth do
   Plug for routes that require the user to be an admin.
   """
   def require_admin_user(conn, _opts) do
-    if conn.assigns.current_scope && conn.assigns.current_scope.user &&
-         conn.assigns.current_scope.user.type == :admin do
-      conn
-    else
-      conn
-      |> put_flash(:error, "You must be an admin to access this page.")
-      |> redirect(to: ~p"/")
-      |> halt()
+    user = conn.assigns.current_scope && conn.assigns.current_scope.user
+
+    cond do
+      # D106: enforce the confirmation invariant here too, matching
+      # require_authenticated_user and the LiveView admin/sudo on_mount gates.
+      user && is_nil(user.confirmed_at) ->
+        halt_with_login_redirect(
+          conn,
+          gettext("You must confirm your account to access this page.")
+        )
+
+      user && user.type == :admin ->
+        conn
+
+      true ->
+        conn
+        |> put_flash(:error, "You must be an admin to access this page.")
+        |> redirect(to: ~p"/")
+        |> halt()
     end
   end
 
