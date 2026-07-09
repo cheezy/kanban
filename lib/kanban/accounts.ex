@@ -249,7 +249,7 @@ defmodule Kanban.Accounts do
 
   """
   def get_user_by_reset_password_token(token) do
-    with {:ok, query} <- UserToken.verify_email_token_query(token, "reset_password"),
+    with {:ok, query} <- UserToken.verify_reset_password_token_query(token),
          %UserToken{user_id: user_id} <- Repo.one(query) do
       Repo.get(User, user_id)
     else

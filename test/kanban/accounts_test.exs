@@ -459,6 +459,38 @@ defmodule Kanban.AccountsTest do
       refute Accounts.get_user_by_reset_password_token(token)
       assert Repo.get_by(UserToken, user_id: user.id)
     end
+
+    test "rejects a token older than the dedicated 1-day reset window (D105)", %{
+      user: user,
+      token: token
+    } do
+      # 2 days old: still valid under the old 7-day change-email window, but must
+      # be rejected under the dedicated 1-day reset-password window.
+      two_days_ago =
+        NaiveDateTime.utc_now() |> NaiveDateTime.add(-2, :day) |> NaiveDateTime.truncate(:second)
+
+      {1, nil} =
+        from(t in UserToken, where: t.user_id == ^user.id)
+        |> Repo.update_all(set: [inserted_at: two_days_ago])
+
+      refute Accounts.get_user_by_reset_password_token(token)
+    end
+
+    test "still returns the user for a token within the 1-day reset window (D105)", %{
+      user: %{id: id},
+      token: token
+    } do
+      twelve_hours_ago =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-12, :hour)
+        |> NaiveDateTime.truncate(:second)
+
+      {1, nil} =
+        from(t in UserToken, where: t.user_id == ^id)
+        |> Repo.update_all(set: [inserted_at: twelve_hours_ago])
+
+      assert %User{id: ^id} = Accounts.get_user_by_reset_password_token(token)
+    end
   end
 
   describe "reset_user_password/2" do

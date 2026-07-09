@@ -8,6 +8,9 @@ defmodule Kanban.Accounts.UserToken do
 
   @change_email_validity_in_days 7
   @session_validity_in_days 14
+  # D105: password-reset tokens are a full account-takeover primitive, so they
+  # get a dedicated, much shorter window than the 7-day change-email/confirm one.
+  @reset_password_validity_in_days 1
 
   schema "users_tokens" do
     field :token, :binary
@@ -136,6 +139,29 @@ defmodule Kanban.Accounts.UserToken do
         query =
           from token in by_token_and_context_query(hashed_token, context),
             where: token.inserted_at > ago(@change_email_validity_in_days, "day")
+
+        {:ok, query}
+
+      :error ->
+        :error
+    end
+  end
+
+  @doc """
+  Like `verify_email_token_query/2` but scoped to the `"reset_password"` context
+  with the dedicated, shorter `@reset_password_validity_in_days` window (D105).
+
+  A password-reset link is an account-takeover primitive; validating it against
+  the 7-day change-email window left an intercepted link usable for a full week.
+  """
+  def verify_reset_password_token_query(token) do
+    case Base.url_decode64(token, padding: false) do
+      {:ok, decoded_token} ->
+        hashed_token = :crypto.hash(@hash_algorithm, decoded_token)
+
+        query =
+          from token in by_token_and_context_query(hashed_token, "reset_password"),
+            where: token.inserted_at > ago(@reset_password_validity_in_days, "day")
 
         {:ok, query}
 
