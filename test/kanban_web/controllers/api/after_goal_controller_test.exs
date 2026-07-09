@@ -531,4 +531,29 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
       assert json_response(conn, 404)["error"] =~ "not found"
     end
   end
+
+  describe "PATCH /api/tasks/:id/after_goal — authorization (D108)" do
+    test "rejects after_goal from a token whose user lacks board-write access", ctx do
+      %{conn: conn, board: board, user: user} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      # Simulate access lost after the token was minted, without the token being
+      # revoked — the in-flight/edge case the W1430 live re-check guards.
+      Kanban.Repo.get_by!(Kanban.Boards.BoardUser, board_id: board.id, user_id: user.id)
+      |> Ecto.Changeset.change(access: :read_only)
+      |> Kanban.Repo.update!()
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{goal.id}/after_goal", %{
+          "exit_code" => 0,
+          "output" => "after_goal ran",
+          "duration_ms" => 1
+        })
+
+      assert json_response(conn, 403)
+      # Goal was not promoted; it stays pending for a re-run by an authorized caller.
+      assert Tasks.get_task!(goal.id).after_goal_status == :pending
+    end
+  end
 end

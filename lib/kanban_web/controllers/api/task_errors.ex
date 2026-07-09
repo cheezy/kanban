@@ -54,6 +54,15 @@ defmodule KanbanWeb.API.TaskErrors do
     )
   end
 
+  def handle_task_error(conn, {:error, :not_authorized_after_goal}) do
+    error_response(
+      conn,
+      :forbidden,
+      "Not authorized to finalize this goal — board write access required",
+      :not_authorized_after_goal
+    )
+  end
+
   def handle_task_error(conn, {:error, :after_goal_not_started}) do
     error_response(
       conn,

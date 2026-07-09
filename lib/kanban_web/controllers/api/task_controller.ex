@@ -703,12 +703,31 @@ defmodule KanbanWeb.API.TaskController do
   def after_goal(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
 
-    with {:ok, task} <- fetch_and_verify_task(id_or_identifier, board),
+    with {:ok, task} <-
+           fetch_verify_and_authorize_after_goal(
+             id_or_identifier,
+             board,
+             conn.assigns.current_user
+           ),
          :ok <- validate_after_goal_target(task),
          {:ok, attempt} <- validate_after_goal_result(params) do
       proceed_with_after_goal(conn, task, attempt)
     else
       error -> TaskErrors.handle_task_error(conn, error)
+    end
+  end
+
+  # D108: parity with claim/complete/mark_reviewed/mark_done — require live
+  # board-write access so a downgraded or leaked token cannot promote a goal to
+  # Done. Cross-board scope is already enforced by fetch_and_verify_task; this is
+  # the in-depth W1430 re-check the sibling endpoints apply.
+  defp fetch_verify_and_authorize_after_goal(id_or_identifier, board, %{id: user_id}) do
+    with {:ok, task} <- fetch_and_verify_task(id_or_identifier, board) do
+      if Boards.get_user_access(board.id, user_id) in [:owner, :modify] do
+        {:ok, task}
+      else
+        {:error, :not_authorized_after_goal}
+      end
     end
   end
 
