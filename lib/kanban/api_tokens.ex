@@ -74,8 +74,15 @@ defmodule Kanban.ApiTokens do
         {:error, :not_found}
 
       %ApiToken{revoked_at: nil} = api_token ->
-        update_last_used(api_token)
-        {:ok, api_token}
+        # D107: an expired token is rejected through the same dummy-timing path as
+        # revoked/not-found, so expiry does not open a timing side channel.
+        if ApiToken.expired?(api_token) do
+          Repo.one(timing_query)
+          {:error, :expired}
+        else
+          update_last_used(api_token)
+          {:ok, api_token}
+        end
 
       %ApiToken{} ->
         Repo.one(timing_query)

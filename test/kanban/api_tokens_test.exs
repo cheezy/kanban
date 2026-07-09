@@ -65,6 +65,42 @@ defmodule Kanban.ApiTokensTest do
       assert {:error, :revoked} = ApiTokens.get_api_token_by_token(plain_text_token)
     end
 
+    test "create_api_token/3 defaults a bounded expires_at ~90 days out (D107)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      {:ok, {api_token, _plain}} = ApiTokens.create_api_token(user, board, @valid_attrs)
+
+      assert %DateTime{} = api_token.expires_at
+      days = DateTime.diff(api_token.expires_at, DateTime.utc_now(), :day)
+      assert days in 89..90
+    end
+
+    test "get_api_token_by_token/1 returns {:error, :expired} for an expired token (D107)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      {:ok, {api_token, plain_text_token}} = ApiTokens.create_api_token(user, board, @valid_attrs)
+
+      past = DateTime.utc_now() |> DateTime.add(-1, :day) |> DateTime.truncate(:second)
+
+      api_token
+      |> Ecto.Changeset.change(expires_at: past)
+      |> Kanban.Repo.update!()
+
+      assert {:error, :expired} = ApiTokens.get_api_token_by_token(plain_text_token)
+    end
+
+    test "get_api_token_by_token/1 still accepts a legacy token with nil expires_at (D107)" do
+      user = user_fixture()
+      board = board_fixture(user)
+      {:ok, {api_token, plain_text_token}} = ApiTokens.create_api_token(user, board, @valid_attrs)
+
+      api_token
+      |> Ecto.Changeset.change(expires_at: nil)
+      |> Kanban.Repo.update!()
+
+      assert {:ok, _found} = ApiTokens.get_api_token_by_token(plain_text_token)
+    end
+
     test "create_api_token/3 with valid data creates an api_token" do
       user = user_fixture()
       board = board_fixture(user)

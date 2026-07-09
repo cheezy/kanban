@@ -70,6 +70,15 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     |> halt()
   end
 
+  defp halt_with_auth_error(conn, {:error, :expired}) do
+    emit_auth_failed_telemetry(conn, "token_expired")
+
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: "API token has expired"})
+    |> halt()
+  end
+
   defp extract_token(conn) do
     case get_req_header(conn, "authorization") do
       ["Bearer " <> token] ->

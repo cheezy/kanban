@@ -13,6 +13,7 @@ defmodule Kanban.ApiTokens.ApiToken do
     field :agent_purpose, :string
     field :last_used_at, :utc_datetime
     field :revoked_at, :utc_datetime
+    field :expires_at, :utc_datetime
     field :token, :string, virtual: true
 
     belongs_to :user, Kanban.Accounts.User
@@ -36,7 +37,36 @@ defmodule Kanban.ApiTokens.ApiToken do
     |> validate_required([:name, :user_id, :board_id])
     |> generate_token()
     |> hash_token()
+    |> put_default_expiry()
   end
+
+  # D107: default new tokens to a bounded lifetime so a leaked token cannot live
+  # forever. expires_at is server-controlled (not cast from attrs). Existing tokens
+  # persisted before this change keep a nil expires_at and never expire.
+  @default_token_lifetime_days 90
+
+  defp put_default_expiry(changeset) do
+    if changeset.valid? and is_nil(get_field(changeset, :expires_at)) do
+      expires_at =
+        DateTime.utc_now()
+        |> DateTime.add(@default_token_lifetime_days, :day)
+        |> DateTime.truncate(:second)
+
+      put_change(changeset, :expires_at, expires_at)
+    else
+      changeset
+    end
+  end
+
+  @doc """
+  Returns true if the token has a set expiry that is in the past. A nil
+  `expires_at` (legacy tokens) never expires (D107).
+  """
+  def expired?(api_token, now \\ DateTime.utc_now())
+  def expired?(%__MODULE__{expires_at: nil}, _now), do: false
+
+  def expired?(%__MODULE__{expires_at: expires_at}, now),
+    do: DateTime.compare(expires_at, now) == :lt
 
   @doc false
   def revoke_changeset(api_token) do
