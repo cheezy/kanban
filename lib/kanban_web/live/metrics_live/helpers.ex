@@ -93,14 +93,16 @@ defmodule KanbanWeb.MetricsLive.Helpers do
     |> Timezone.start_of_local_day(timezone)
   end
 
-  def parse_time_range(nil), do: :last_30_days
-  def parse_time_range(""), do: :last_30_days
-
-  def parse_time_range(time_range) when is_binary(time_range) do
-    String.to_existing_atom(time_range)
-  rescue
-    ArgumentError -> :last_30_days
-  end
+  # D112: match against the fixed set of valid ranges rather than
+  # String.to_existing_atom/1, which returned ANY existing atom. The result
+  # flows into the export content-disposition filename, so constraining it to
+  # this five-member set by construction closes that latent allow-list gap.
+  def parse_time_range("today"), do: :today
+  def parse_time_range("last_7_days"), do: :last_7_days
+  def parse_time_range("last_30_days"), do: :last_30_days
+  def parse_time_range("last_90_days"), do: :last_90_days
+  def parse_time_range("all_time"), do: :all_time
+  def parse_time_range(_time_range), do: :last_30_days
 
   def parse_agent_name(nil), do: nil
   def parse_agent_name(""), do: nil

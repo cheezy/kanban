@@ -235,6 +235,13 @@ defmodule KanbanWeb.MetricsLive.HelpersTest do
       assert Helpers.parse_time_range("this_atom_definitely_does_not_exist_xyz_123") ==
                :last_30_days
     end
+
+    test "returns :last_30_days for a valid existing atom that is not a range (D112)" do
+      # "name"/"error" are atoms that certainly already exist in the VM. The old
+      # String.to_existing_atom/1 would have returned them; the allow-list must not.
+      assert Helpers.parse_time_range("name") == :last_30_days
+      assert Helpers.parse_time_range("error") == :last_30_days
+    end
   end
 
   describe "parse_agent_name/1" do
