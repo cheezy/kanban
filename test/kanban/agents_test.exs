@@ -478,6 +478,25 @@ defmodule Kanban.AgentsTest do
       assert kinds == [:claim, :complete, :create, :review]
     end
 
+    test "each event carries its task's parent goal id so the feed can resolve per-row goals (D121)",
+         %{column: column} do
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      goal = task_fixture(column, %{type: :goal, title: "Ship it"})
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          parent_id: goal.id,
+          claimed_at: now
+        })
+
+      for event <- Agents.recent_activity(), event.identifier != goal.identifier do
+        assert event.parent_id == goal.id
+      end
+    end
+
     test "the :claim event actor is the completing agent, falling back to the creator (D82)",
          %{column: column} do
       now = DateTime.utc_now() |> DateTime.truncate(:second)

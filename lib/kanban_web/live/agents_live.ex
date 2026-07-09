@@ -1075,18 +1075,18 @@ defmodule KanbanWeb.AgentsLive do
       hd(entries)
   end
 
-  # The activity-feed tether map: each agent identity mapped to the single
-  # primary annotation its rows are tethered to (dropping agents that advance no
-  # target). Reuses pick_annotation/1 so a feed row tethers to the same target as
-  # the agent's roster card. Keyed by {name, owner_key} so the feed can resolve a
-  # row's actor identically to the roster.
+  # The activity-feed tether map: each agent identity mapped to a goal-id-indexed
+  # map of the annotations that agent advances. A feed row then resolves the goal
+  # of ITS OWN task (via the event's parent_id) instead of a single agent-level
+  # pick, so an agent working across several goals shows each row under the goal
+  # that row's task actually belongs to. Agents advancing no target are dropped,
+  # so their rows render untethered exactly as before. Keyed by {name, owner_key}
+  # so the feed resolves a row's actor identically to the roster.
   defp feed_tethers(agent_targets) do
     agent_targets
-    |> Enum.flat_map(fn {identity, entries} ->
-      case pick_annotation(entries) do
-        nil -> []
-        annotation -> [{identity, annotation}]
-      end
+    |> Enum.flat_map(fn
+      {_identity, []} -> []
+      {identity, entries} -> [{identity, Map.new(entries, &{&1.goal.id, &1})}]
     end)
     |> Map.new()
   end

@@ -89,6 +89,7 @@ defmodule Kanban.Agents.Events do
       owner: owner,
       identifier: task.identifier,
       title: task.title,
+      parent_id: task.parent_id,
       at: to_datetime(at),
       cycle_time_minutes: cycle_time_for(kind, task)
     }

@@ -351,17 +351,20 @@ defmodule KanbanWeb.AgentActivityFeedTest do
       """)
     end
 
-    test "renders the target and goal an event's actor is advancing" do
-      # A no-owner actor keys as {name, "none"}, matching the feed's identity rule.
+    test "renders the target and goal the event's own task belongs to" do
+      # A no-owner actor keys as {name, "none"}, matching the feed's identity
+      # rule; the inner map is keyed by goal id, matched by the event's parent_id.
       tethers = %{
         {"Claude", "none"} => %{
-          target: %{name: "Launch"},
-          goal: %{title: "Ship the API"},
-          status: :at_risk
+          7 => %{
+            target: %{name: "Launch"},
+            goal: %{id: 7, title: "Ship the API"},
+            status: :at_risk
+          }
         }
       }
 
-      html = render_tethered([event()], tethers)
+      html = render_tethered([event(%{parent_id: 7})], tethers)
 
       assert html =~ "data-agent-feed-tether"
       assert html =~ ~s(data-agent-feed-tether-status="at_risk")
@@ -371,18 +374,73 @@ defmodule KanbanWeb.AgentActivityFeedTest do
       assert html =~ "var(--st-doing)"
     end
 
+    test "resolves each row's tether from its own parent goal, not a sibling goal (D121)" do
+      # One actor advancing two goals: each row must tether to the goal ITS task
+      # belongs to (matched by parent_id), never a single collapsed goal.
+      tethers = %{
+        {"Claude", "none"} => %{
+          7 => %{
+            target: %{name: "Launch"},
+            goal: %{id: 7, title: "Ship the API"},
+            status: :at_risk
+          },
+          9 => %{
+            target: %{name: "Polish"},
+            goal: %{id: 9, title: "Refine the UI"},
+            status: :on_track
+          }
+        }
+      }
+
+      events = [
+        event(%{identifier: "W42", parent_id: 7}),
+        event(%{identifier: "W43", parent_id: 9})
+      ]
+
+      html = render_tethered(events, tethers)
+
+      tether_texts =
+        html
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query("[data-agent-feed-tether]")
+        |> Enum.map(&LazyHTML.text/1)
+
+      assert Enum.any?(tether_texts, &(&1 =~ "Launch" and &1 =~ "Ship the API"))
+      assert Enum.any?(tether_texts, &(&1 =~ "Polish" and &1 =~ "Refine the UI"))
+    end
+
+    test "renders no tether when the event's parent goal is not in the actor's set" do
+      # The actor advances goal 7, but this event's task belongs to goal 99 —
+      # show no goal rather than borrowing the actor's other goal label.
+      tethers = %{
+        {"Claude", "none"} => %{
+          7 => %{
+            target: %{name: "Launch"},
+            goal: %{id: 7, title: "Ship the API"},
+            status: :on_track
+          }
+        }
+      }
+
+      html = render_tethered([event(%{parent_id: 99})], tethers)
+
+      refute html =~ "data-agent-feed-tether"
+    end
+
     test "renders no tether when the actor has none" do
-      html = render_tethered([event(%{actor: "Nomad"})], %{})
+      html = render_tethered([event(%{actor: "Nomad", parent_id: 7})], %{})
 
       refute html =~ "data-agent-feed-tether"
     end
 
     test "renders no tether for an actorless event" do
       tethers = %{
-        {"Claude", "none"} => %{target: %{name: "Launch"}, goal: %{title: "G"}, status: :on_track}
+        {"Claude", "none"} => %{
+          7 => %{target: %{name: "Launch"}, goal: %{id: 7, title: "G"}, status: :on_track}
+        }
       }
 
-      html = render_tethered([event(%{actor: nil})], tethers)
+      html = render_tethered([event(%{actor: nil, parent_id: 7})], tethers)
 
       refute html =~ "data-agent-feed-tether"
     end

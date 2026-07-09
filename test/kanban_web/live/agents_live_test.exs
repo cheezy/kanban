@@ -1940,6 +1940,56 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert feed =~ "Launch"
       assert feed =~ "Ship the API"
     end
+
+    test "resolves each feed row's goal from its own task for a multi-goal agent",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+
+      launch = delivery_target_fixture(user, %{name: "Launch"})
+      polish = delivery_target_fixture(user, %{name: "Polish"})
+
+      api_goal = task_fixture(doing, %{type: :goal, title: "Ship the API"})
+      {:ok, _} = Tasks.update_task(api_goal, %{target_id: launch.id})
+
+      ui_goal = task_fixture(doing, %{type: :goal, title: "Refine the UI"})
+      {:ok, _} = Tasks.update_task(ui_goal, %{target_id: polish.id})
+
+      # One agent, "Ada", advances BOTH goals: a claimed task under each.
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Ada",
+          parent_id: api_goal.id,
+          status: :in_progress,
+          claimed_at: DateTime.add(DateTime.utc_now(), -600, :second)
+        })
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Ada",
+          parent_id: ui_goal.id,
+          status: :in_progress,
+          claimed_at: DateTime.add(DateTime.utc_now(), -300, :second)
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      tether_texts =
+        html
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("[data-agent-feed-tether]")
+        |> Enum.map(&LazyHTML.text/1)
+
+      # Each row tethers to the goal ITS OWN task belongs to, paired with that
+      # goal's target — not one collapsed agent-level goal. Before the fix every
+      # row showed the same picked goal, so one of these pairs was absent.
+      assert Enum.any?(tether_texts, &(&1 =~ "Launch" and &1 =~ "Ship the API"))
+      assert Enum.any?(tether_texts, &(&1 =~ "Polish" and &1 =~ "Refine the UI"))
+    end
   end
 
   describe "reassign action" do

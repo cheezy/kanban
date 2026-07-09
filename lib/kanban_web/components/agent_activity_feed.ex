@@ -50,12 +50,14 @@ defmodule KanbanWeb.AgentActivityFeed do
       Each row's time is shown in this zone and rows are grouped by the
       local calendar date. Defaults to `"Etc/UTC"`; an unknown zone falls
       back to UTC display without error.
-    * `tethers` — optional map from an actor identity `{name, owner_key}` to
-      the `%{target, goal, status}` annotation that actor is advancing (a
-      `Kanban.Targets.DeliveryRollup.agent_annotation/0`, already picked by the
-      caller). When a row's actor has a tether, the row shows a small
-      target · goal line tying the activity to the delivery it serves. Defaults
-      to `%{}`, so callers that don't tether render the feed unchanged.
+    * `tethers` — optional map from an actor identity `{name, owner_key}` to a
+      goal-id-indexed map of the `%{target, goal, status}` annotations that actor
+      is advancing (each a `Kanban.Targets.DeliveryRollup.agent_annotation/0`).
+      A row resolves its tether by its actor AND its own task's parent goal id,
+      so a multi-goal agent's rows each show the goal that row's task belongs to.
+      When a row resolves a tether, it shows a small target · goal line tying the
+      activity to the delivery it serves. Defaults to `%{}`, so callers that
+      don't tether render the feed unchanged.
   """
   attr :events, :list, required: true
   attr :filter, :atom, required: true, values: @filters
@@ -368,16 +370,23 @@ defmodule KanbanWeb.AgentActivityFeed do
     """
   end
 
-  # The delivery tether for an event: the target+goal annotation its actor is
-  # advancing, looked up from the caller-supplied `tethers` map by the actor's
-  # `{name, owner_key}` identity. nil when the actor has no name or is advancing
-  # no target — those rows render without a tether line.
-  defp resolve_tether(event, tethers) do
-    case actor_identity(event) do
-      nil -> nil
-      identity -> Map.get(tethers, identity)
+  # The delivery tether for an event: the target+goal annotation for the goal
+  # THIS event's task belongs to. Looked up from the caller-supplied `tethers`
+  # map by the actor's `{name, owner_key}` identity, then by the event's own
+  # parent goal id — so a row shows its own goal, never a sibling goal the same
+  # agent happens to also advance. nil when the actor has no name, advances no
+  # target, or the event's task has no parent goal in the actor's advancing set;
+  # those rows render without a tether line rather than borrowing another label.
+  defp resolve_tether(%{parent_id: parent_id} = event, tethers) do
+    with identity when not is_nil(identity) <- actor_identity(event),
+         goals when is_map(goals) <- Map.get(tethers, identity) do
+      Map.get(goals, parent_id)
+    else
+      _ -> nil
     end
   end
+
+  defp resolve_tether(_event, _tethers), do: nil
 
   # The `{name, owner_key}` identity of an event's actor. Mirrors the owner-key
   # rule that `Kanban.Agents.owner_key_for_owner/1` defines (owning user id as a
