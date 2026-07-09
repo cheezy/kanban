@@ -1554,6 +1554,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :edit_task,
@@ -1591,6 +1592,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -1643,6 +1645,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :edit_task,
@@ -1688,6 +1691,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user1},
             task: task,
             board: board1,
             action: :new_task,
@@ -1735,6 +1739,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user1},
             task: task,
             board: board1,
             action: :edit_task,
@@ -2519,6 +2524,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -2555,6 +2561,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -2595,6 +2602,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -2705,6 +2713,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -2760,6 +2769,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :edit_task,
@@ -2792,6 +2802,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :edit_task,
@@ -2831,6 +2842,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :edit_task,
@@ -2878,6 +2890,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: dep_task,
             board: board,
             action: :edit_task,
@@ -2922,6 +2935,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: dep_task,
             board: board,
             action: :edit_task,
@@ -2960,6 +2974,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: dep1,
             board: board,
             action: :edit_task,
@@ -3124,6 +3139,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :edit_task,
@@ -3158,6 +3174,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -3196,6 +3213,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -3241,6 +3259,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -3277,6 +3296,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -3312,6 +3332,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -3349,6 +3370,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -3391,6 +3413,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: %{user: user},
             task: task,
             board: board,
             action: :new_task,
@@ -3571,7 +3594,13 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     defp build_edit_socket(task, board) do
       {:ok, socket} =
         FormComponent.update(
-          %{task: task, board: board, action: :edit_task, patch: ~p"/"},
+          %{
+            current_scope: board_owner_scope(board),
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: ~p"/"
+          },
           %Phoenix.LiveView.Socket{}
         )
 
@@ -3686,6 +3715,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       {:ok, socket} =
         FormComponent.update(
           %{
+            current_scope: board_owner_scope(board),
             task: task,
             board: board,
             action: action,
@@ -3697,6 +3727,15 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
 
       # The save path calls put_flash/3 and push_patch/2, which need a flash assign.
       Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+    end
+
+    # Test helper: the current_scope for a board's owner, so save-path
+    # modify-access checks (D110) see an authorized user.
+    defp board_owner_scope(board) do
+      board_user =
+        Kanban.Repo.get_by!(Kanban.Boards.BoardUser, board_id: board.id, access: :owner)
+
+      %{user: %{id: board_user.user_id}}
     end
 
     test "initial raw value is pretty-printed JSON for an existing map", %{
@@ -3834,6 +3873,163 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert updated.assigns.form.source.errors[:technical_details]
       assert updated.assigns.technical_details_raw == "{bad"
       assert Kanban.Repo.get!(Tasks.Task, task.id).technical_details == %{"keep" => "me"}
+    end
+  end
+
+  describe "handle_event save modify-access authorization (D110)" do
+    test "rejects save on edit when the user is a read-only board member" do
+      owner = user_fixture()
+      reader = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Original Title"})
+      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: reader},
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => %{"title" => "Hacked Title"}}, socket)
+
+      assert updated_socket.assigns.flash["error"] =~ "permission to modify"
+      # Task is unchanged.
+      assert Kanban.Repo.get!(Tasks.Task, task.id).title == "Original Title"
+    end
+
+    test "rejects save on edit when the user is not a board member" do
+      owner = user_fixture()
+      stranger = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Original Title"})
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: stranger},
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => %{"title" => "Hacked Title"}}, socket)
+
+      assert updated_socket.assigns.flash["error"] =~ "permission to modify"
+      assert Kanban.Repo.get!(Tasks.Task, task.id).title == "Original Title"
+    end
+
+    test "rejects new-task save when the user is a read-only board member" do
+      owner = user_fixture()
+      reader = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board, %{name: "To Do"})
+      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: reader},
+            task: %Tasks.Task{column_id: column.id},
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "save",
+          %{"task" => %{"title" => "Sneaky New Task", "column_id" => column.id}},
+          socket
+        )
+
+      assert updated_socket.assigns.flash["error"] =~ "permission to modify"
+      assert Kanban.Repo.get_by(Tasks.Task, title: "Sneaky New Task") == nil
+    end
+
+    test "accepts save on edit when the user is a modify board member" do
+      owner = user_fixture()
+      editor = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Original Title"})
+      Kanban.Boards.add_user_to_board(board, editor, :modify, owner)
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: editor},
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event(
+          "save",
+          %{"task" => %{"title" => "Edited By Modifier"}},
+          socket
+        )
+
+      assert Kanban.Repo.get!(Tasks.Task, task.id).title == "Edited By Modifier"
+    end
+
+    test "rejects save when a non-member views a public read-only board" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true}, owner)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Public Read-Only Task"})
+
+      # A public read-only board grants READ to any authenticated user, but a
+      # non-member has nil access and must not be able to persist a save (D110).
+      viewer = user_fixture()
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: viewer},
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => %{"title" => "Hacked Title"}}, socket)
+
+      assert updated_socket.assigns.flash["error"] =~ "permission to modify"
+      assert Kanban.Repo.get!(Tasks.Task, task.id).title == "Public Read-Only Task"
     end
   end
 end

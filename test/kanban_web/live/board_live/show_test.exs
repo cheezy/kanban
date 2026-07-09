@@ -278,7 +278,10 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "New Task"
     end
 
-    test "user with read-only access can access new task page", %{conn: conn, user: _user} do
+    test "redirects a read-only user away from the new task page (D110)", %{
+      conn: conn,
+      user: _user
+    } do
       owner = user_fixture()
       board = board_fixture(owner)
       column = column_fixture(board)
@@ -289,10 +292,13 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       conn = log_in_user(conn, readonly_user)
 
-      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
+      # D110: read-only members cannot open the task form (write escalation guard).
+      assert {:error, {redirect_kind, %{flash: flash, to: to}}} =
+               live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/new")
 
-      # Should load but won't be able to save (tested elsewhere)
-      assert html =~ "New Task"
+      assert redirect_kind in [:live_redirect, :live_patch]
+      assert flash["error"] =~ "permission to modify"
+      assert to == ~p"/boards/#{board}"
     end
 
     test "redirects a non-owner away from the manage-members view (W1434)", %{conn: conn} do
@@ -451,7 +457,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "Edit Task"
     end
 
-    test "user with read-only access can access edit task in column page", %{
+    test "redirects a read-only user away from the edit task in column page (D110)", %{
       conn: conn,
       user: _user
     } do
@@ -466,11 +472,13 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       conn = log_in_user(conn, readonly_user)
 
-      {:ok, _show_live, html} =
-        live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
+      # D110: read-only members cannot open the task form (write escalation guard).
+      assert {:error, {redirect_kind, %{flash: flash, to: to}}} =
+               live(conn, ~p"/boards/#{board}/columns/#{column}/tasks/#{task}/edit")
 
-      # Should load but won't be able to save (tested elsewhere)
-      assert html =~ "Edit Task"
+      assert redirect_kind in [:live_redirect, :live_patch]
+      assert flash["error"] =~ "permission to modify"
+      assert to == ~p"/boards/#{board}"
     end
 
     test "assigns both column and task from URL parameters", %{conn: conn, user: user} do
@@ -621,7 +629,10 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "Edit Task"
     end
 
-    test "user with read-only access can access edit task page", %{conn: conn, user: _user} do
+    test "redirects a read-only user away from the edit task page (D110)", %{
+      conn: conn,
+      user: _user
+    } do
       owner = user_fixture()
       board = board_fixture(owner)
       column = column_fixture(board)
@@ -633,10 +644,13 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       conn = log_in_user(conn, readonly_user)
 
-      {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+      # D110: read-only members cannot open the task form (write escalation guard).
+      assert {:error, {redirect_kind, %{flash: flash, to: to}}} =
+               live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
 
-      # Should load but won't be able to save (tested elsewhere)
-      assert html =~ "Edit Task"
+      assert redirect_kind in [:live_redirect, :live_patch]
+      assert flash["error"] =~ "permission to modify"
+      assert to == ~p"/boards/#{board}"
     end
   end
 

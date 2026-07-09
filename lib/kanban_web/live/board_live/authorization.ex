@@ -68,6 +68,21 @@ defmodule KanbanWeb.BoardLive.Authorization do
 
   def check_new_column_authorization(_live_action, _user_access, _board), do: :ok
 
+  @doc """
+  Gates the task create/edit form live_actions (`:new_task`, `:edit_task`,
+  `:edit_task_in_column`) on modify access (D110). Returns `:ok` or
+  `{:error, flash}` so read-only viewers are redirected before the form renders,
+  as defense-in-depth for the authoritative server-side gate in the FormComponent
+  save handler.
+  """
+  def authorize_task_form(user_access) do
+    if user_access in [:owner, :modify] do
+      :ok
+    else
+      {:error, gettext("You do not have permission to modify tasks on this board")}
+    end
+  end
+
   @doc "Authorizes a modify action on a task; requires :can_modify assign."
   def authorize_modify_for_task(socket, raw_id) do
     if socket.assigns.can_modify do

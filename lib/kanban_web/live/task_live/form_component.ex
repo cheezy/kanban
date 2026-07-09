@@ -99,25 +99,15 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   def handle_event("save", %{"task" => task_params}, socket) do
-    task_params = ParamNormalizer.normalize_array_params(task_params)
-    raw = Map.get(task_params, "technical_details")
-
-    case decode_technical_details(task_params) do
-      {:ok, decoded_params} ->
-        save_task(socket, socket.assigns.action, decoded_params)
-
-      {:error, _raw} ->
-        changeset =
-          socket.assigns.task
-          |> Tasks.Task.changeset(Map.delete(task_params, "technical_details"))
-          |> Ecto.Changeset.add_error(:technical_details, "must be a JSON object")
-          |> Map.put(:action, :validate)
-
-        {:noreply,
-         socket
-         |> assign(:error_message, gettext("Please fix the errors below"))
-         |> maybe_assign_technical_details_raw(raw)
-         |> assign_form(changeset)}
+    if modify_authorized?(socket) do
+      do_save_task(socket, task_params)
+    else
+      {:noreply,
+       put_flash(
+         socket,
+         :error,
+         gettext("You do not have permission to modify tasks on this board")
+       )}
     end
   end
 
@@ -396,6 +386,31 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     assign(socket, :technical_details_raw, raw)
   end
 
+  # Runs the actual create/edit once modify access has been authorized in the
+  # "save" handle_event (D110).
+  defp do_save_task(socket, task_params) do
+    task_params = ParamNormalizer.normalize_array_params(task_params)
+    raw = Map.get(task_params, "technical_details")
+
+    case decode_technical_details(task_params) do
+      {:ok, decoded_params} ->
+        save_task(socket, socket.assigns.action, decoded_params)
+
+      {:error, _raw} ->
+        changeset =
+          socket.assigns.task
+          |> Tasks.Task.changeset(Map.delete(task_params, "technical_details"))
+          |> Ecto.Changeset.add_error(:technical_details, "must be a JSON object")
+          |> Map.put(:action, :validate)
+
+        {:noreply,
+         socket
+         |> assign(:error_message, gettext("Please fix the errors below"))
+         |> maybe_assign_technical_details_raw(raw)
+         |> assign_form(changeset)}
+    end
+  end
+
   defp save_task(socket, :edit_task, task_params) do
     # Security: every relational field that the user can change via the
     # form must be verified to live on the current board. The existing
@@ -664,6 +679,21 @@ defmodule KanbanWeb.TaskLive.FormComponent do
          access when not is_nil(access) <-
            Kanban.Boards.get_user_access(board.id, user_id) do
       true
+    else
+      _ -> false
+    end
+  end
+
+  # D110: the task create/edit save path is a modify action. Board access is
+  # verified authoritatively here (current_scope + board -> Boards.can_modify?)
+  # so a read-only member — or a non-member on a public read-only board — cannot
+  # persist a create/edit by pushing a "save" event, regardless of what the UI
+  # renders. Fail closed: any missing scope/board denies. Called from
+  # handle_event("save", ...); the analyzer regex misses predicate `?` callers.
+  defp modify_authorized?(socket) do
+    with %{user: %{} = user} <- Map.get(socket.assigns, :current_scope),
+         %{} = board <- socket.assigns[:board] do
+      Kanban.Boards.can_modify?(board, user)
     else
       _ -> false
     end

@@ -718,7 +718,16 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
+  # Serves :new_task (task form) and :edit_column (already owner-gated upstream by
+  # check_column_action_authorization). The task-form gate is a no-op for the owner
+  # editing a column, and blocks a read-only viewer opening the new-task form (D110).
   defp assign_board_with_column(socket, board, user_access, column_id) do
+    gate_task_form(socket, board, user_access, fn ->
+      do_assign_board_with_column(socket, board, user_access, column_id)
+    end)
+  end
+
+  defp do_assign_board_with_column(socket, board, user_access, column_id) do
     with {:ok, column_id_int} <- parse_task_id(column_id),
          %Columns.Column{} = column <- Columns.get_column_for_board(column_id_int, board.id) do
       columns = Columns.list_columns(board)
@@ -842,17 +851,35 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  defp resolve_column_and_task(socket, board, user_access, column_id, task_id) do
-    case fetch_column_and_task(board, column_id, task_id) do
-      {:ok, column, task} ->
-        assign_column_and_task(socket, board, user_access, column, task)
+  # D110: read-only viewers must not reach the task create/edit form. Gates the
+  # task-form live_actions on modify access; the FormComponent save handler is the
+  # authoritative server-side check, this is the redirect-before-render layer.
+  defp gate_task_form(socket, board, user_access, fun) do
+    case Authorization.authorize_task_form(user_access) do
+      :ok ->
+        fun.()
 
-      :error ->
+      {:error, message} ->
         {:noreply,
          socket
-         |> put_flash(:error, gettext("Column or task not found on this board"))
+         |> put_flash(:error, message)
          |> push_patch(to: ~p"/boards/#{board}")}
     end
+  end
+
+  defp resolve_column_and_task(socket, board, user_access, column_id, task_id) do
+    gate_task_form(socket, board, user_access, fn ->
+      case fetch_column_and_task(board, column_id, task_id) do
+        {:ok, column, task} ->
+          assign_column_and_task(socket, board, user_access, column, task)
+
+        :error ->
+          {:noreply,
+           socket
+           |> put_flash(:error, gettext("Column or task not found on this board"))
+           |> push_patch(to: ~p"/boards/#{board}")}
+      end
+    end)
   end
 
   defp fetch_column_and_task(board, column_id, task_id) do
@@ -867,16 +894,18 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   defp resolve_task_only(socket, board, user_access, task_id) do
-    with {:ok, task_id_int} <- parse_task_id(task_id),
-         %Tasks.Task{} = task <- Tasks.get_task_for_board(task_id_int, board.id) do
-      assign_task_only(socket, board, user_access, task)
-    else
-      _ ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("Task not found on this board"))
-         |> push_patch(to: ~p"/boards/#{board}")}
-    end
+    gate_task_form(socket, board, user_access, fn ->
+      with {:ok, task_id_int} <- parse_task_id(task_id),
+           %Tasks.Task{} = task <- Tasks.get_task_for_board(task_id_int, board.id) do
+        assign_task_only(socket, board, user_access, task)
+      else
+        _ ->
+          {:noreply,
+           socket
+           |> put_flash(:error, gettext("Task not found on this board"))
+           |> push_patch(to: ~p"/boards/#{board}")}
+      end
+    end)
   end
 
   defp resolve_default_board_view(socket, board, user_access) do
