@@ -126,6 +126,29 @@ if config_env() == :prod do
         """
     end
 
+  # D116: env-drift guard. `disable` (no TLS) is correct for Fly's internal 6PN
+  # network but unsafe over the public internet. If TLS is off AND the DB host is
+  # not a Fly internal address, refuse to boot rather than silently send
+  # credentials and query data in cleartext to a public database. Set
+  # DATABASE_ALLOW_INSECURE=true to explicitly opt out (e.g. another genuinely
+  # private network whose host is not *.internal / *.flycast).
+  db_host = URI.parse(database_url).host || ""
+
+  fly_internal_host? =
+    String.ends_with?(db_host, ".internal") or String.ends_with?(db_host, ".flycast")
+
+  allow_insecure_db? = System.get_env("DATABASE_ALLOW_INSECURE") == "true"
+
+  if ssl_setting == false and not fly_internal_host? and not allow_insecure_db? do
+    raise """
+    DATABASE_SSL is "disable" (no TLS) but the DATABASE_URL host #{inspect(db_host)}
+    is not a Fly internal (6PN) address. Refusing to connect to a public database
+    without TLS. Set DATABASE_SSL=verify_peer (with DATABASE_SSL_CACERTFILE or
+    CAStore) for a public DB, or DATABASE_ALLOW_INSECURE=true to opt out for a
+    genuinely private network.
+    """
+  end
+
   config :kanban, Kanban.Repo,
     ssl: ssl_setting,
     url: database_url,
