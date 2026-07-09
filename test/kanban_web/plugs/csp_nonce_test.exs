@@ -43,6 +43,10 @@ defmodule KanbanWeb.Plugs.CspNonceTest do
       assert policy =~ "script-src 'self' 'nonce-#{nonce}'"
       assert policy =~ "img-src 'self' data:"
       assert policy =~ "style-src 'self' 'unsafe-inline'"
+      # D113: hardening directives — base-uri does not fall back to default-src.
+      assert policy =~ "base-uri 'self'"
+      assert policy =~ "form-action 'self'"
+      assert policy =~ "object-src 'none'"
     end
 
     test "script-src does NOT include 'unsafe-inline'" do

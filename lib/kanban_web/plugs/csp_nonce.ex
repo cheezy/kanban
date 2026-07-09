@@ -53,12 +53,22 @@ defmodule KanbanWeb.Plugs.CspNonce do
   # style to a stylesheet — both are sizeable, separate refactors. The
   # impact gap between inline-script and inline-style XSS is large: scripts
   # execute arbitrary code, styles produce defacement at worst.
+  #
+  # D113: add base-uri/form-action/object-src. `base-uri` does NOT fall back to
+  # default-src, so without it an injected <base> tag could rehome relative
+  # script/resource URLs to an attacker origin; object-src 'none' and
+  # form-action 'self' close the plugin and form-hijack sinks. Removing
+  # style-src 'unsafe-inline' is intentionally deferred (the LiveView inline-style
+  # migration above); the residual risk is CSS-only defacement.
   defp build_policy(nonce) do
     """
     default-src 'self'; \
     script-src 'self' 'nonce-#{nonce}'; \
     img-src 'self' data:; \
-    style-src 'self' 'unsafe-inline'\
+    style-src 'self' 'unsafe-inline'; \
+    base-uri 'self'; \
+    form-action 'self'; \
+    object-src 'none'\
     """
   end
 end
