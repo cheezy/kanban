@@ -134,8 +134,14 @@ if config_env() == :prod do
   # private network whose host is not *.internal / *.flycast).
   db_host = URI.parse(database_url).host || ""
 
+  # Fly-network database hosts reached over the private 6PN network: `.internal`
+  # and `.flycast` (Fly apps/Postgres) and `.flympg.net` (Fly Managed Postgres,
+  # e.g. pgbouncer.<id>.flympg.net). `disable` (no TLS) is the documented,
+  # intentional setting for these — see the DATABASE_SSL notes above.
   fly_internal_host? =
-    String.ends_with?(db_host, ".internal") or String.ends_with?(db_host, ".flycast")
+    String.ends_with?(db_host, ".internal") or
+      String.ends_with?(db_host, ".flycast") or
+      String.ends_with?(db_host, ".flympg.net")
 
   allow_insecure_db? = System.get_env("DATABASE_ALLOW_INSECURE") == "true"
 
