@@ -58,17 +58,21 @@ defmodule Kanban.Targets.DeliveryRollupTest do
   end
 
   describe "build/2 — agents outside the rollup" do
-    test "an agent whose task has no goal parent is grouped outside the rollup",
+    # The rollup fetch is bounded to target-bridged tasks (D122): a task can only
+    # be fetched when its parent goal is assigned to a target. An agent whose work
+    # never reaches a target is therefore not fetched at all — it appears in
+    # neither the target rollups nor `unrolled_agents` (retained but always []).
+    test "an agent whose task has no goal parent is excluded from the bounded rollup",
          %{scope: scope, doing: doing} do
       agent_task(doing, %{created_by_agent: "Orphan", claimed_at: ago(5)})
 
       rollup = DeliveryRollup.build(scope)
 
       assert rollup.targets == []
-      assert [%Agent{name: "Orphan"}] = rollup.unrolled_agents
+      assert rollup.unrolled_agents == []
     end
 
-    test "an agent whose parent goal has no target is grouped outside the rollup",
+    test "an agent whose parent goal has no target is excluded from the bounded rollup",
          %{scope: scope, doing: doing} do
       goal = task_fixture(doing, %{type: :goal})
       agent_task(doing, %{created_by_agent: "Ada", parent_id: goal.id, claimed_at: ago(5)})
@@ -76,10 +80,11 @@ defmodule Kanban.Targets.DeliveryRollupTest do
       rollup = DeliveryRollup.build(scope)
 
       assert rollup.targets == []
-      assert [%Agent{name: "Ada"}] = rollup.unrolled_agents
+      assert rollup.unrolled_agents == []
     end
 
-    test "a target agent is not also listed as unrolled", %{scope: scope, doing: doing} do
+    test "only target-active agents populate the rollup; orphan work is excluded",
+         %{scope: scope, doing: doing} do
       target = delivery_target_fixture(scope.user)
       goal = goal_on_target(doing, target)
       agent_task(doing, %{created_by_agent: "Ada", parent_id: goal.id, claimed_at: ago(5)})
@@ -88,7 +93,10 @@ defmodule Kanban.Targets.DeliveryRollupTest do
       rollup = DeliveryRollup.build(scope)
 
       assert [%Agent{name: "Ada"}] = hd(rollup.targets).agents
-      assert [%Agent{name: "Orphan"}] = rollup.unrolled_agents
+      assert rollup.unrolled_agents == []
+      # Orphan reaches no target, so it is absent from the annotation map; a
+      # lookup for it yields no annotations (how AgentsLive reads the map).
+      assert Map.get(rollup.agent_targets, {"Orphan", "none"}, []) == []
     end
   end
 
@@ -281,12 +289,15 @@ defmodule Kanban.Targets.DeliveryRollupTest do
       assert status == :on_track
     end
 
-    test "an agent with no target has an empty annotation list", %{scope: scope, doing: doing} do
+    test "an agent with no target yields no annotations", %{scope: scope, doing: doing} do
       agent_task(doing, %{created_by_agent: "Orphan", claimed_at: ago(5)})
 
       rollup = DeliveryRollup.build(scope)
 
-      assert rollup.agent_targets[{"Orphan", "none"}] == []
+      # A non-target agent is not fetched into the bounded rollup, so it has no
+      # key in the annotation map; a lookup (as AgentsLive does) yields no
+      # annotations.
+      assert Map.get(rollup.agent_targets, {"Orphan", "none"}, []) == []
     end
 
     test "annotates an agent advancing goals on two targets", %{scope: scope, doing: doing} do
@@ -303,6 +314,96 @@ defmodule Kanban.Targets.DeliveryRollupTest do
         rollup.agent_targets[{"Ada", "none"}] |> Enum.map(& &1.target.id) |> Enum.sort()
 
       assert target_ids == Enum.sort([target_a.id, target_b.id])
+    end
+  end
+
+  describe "build/2 — bounded fetch (D122 regression)" do
+    # Before D122, fetch_bridged_tasks pulled the ENTIRE board-scoped task
+    # history (the :all_time no-op branch) and preloaded over all of it, which
+    # at production row counts exceeded the database statement timeout and
+    # crashed the /agents load. The fetch is now bounded to target-bridged tasks.
+    # This guard proves a large volume of non-target work is never scanned into
+    # the rollup: only the target-active agent is present, and build/2 completes
+    # — no attribution for the bridged agent is dropped.
+    test "a large non-target task history is excluded; only bridged agents appear",
+         %{scope: scope, doing: doing} do
+      target = delivery_target_fixture(scope.user)
+      goal = goal_on_target(doing, target)
+      agent_task(doing, %{created_by_agent: "Bridged", parent_id: goal.id, claimed_at: ago(5)})
+
+      # A large body of orphan work the old unbounded fetch would have scanned
+      # (a distinct agent per task, so an unbounded roster would list them all).
+      for n <- 1..60 do
+        agent_task(doing, %{created_by_agent: "Orphan#{n}", claimed_at: ago(5)})
+      end
+
+      rollup = DeliveryRollup.build(scope)
+
+      assert [entry] = rollup.targets
+      assert [%Agent{name: "Bridged"}] = entry.agents
+      # None of the 60 orphan agents leaked into the rollup.
+      assert rollup.unrolled_agents == []
+      assert Map.keys(rollup.agent_targets) == [{"Bridged", "none"}]
+    end
+
+    test "a long-dormant agent still attributed to a target is not dropped by the bound",
+         %{scope: scope, board: board} do
+      # The bound is by relevance, not time, so an agent whose only activity is
+      # far in the past is still fetched and still attributed/stalled — unlike a
+      # trailing time window, which would silently drop it.
+      done = column_fixture(board, %{name: "Done"})
+      target = delivery_target_fixture(scope.user)
+      goal = goal_on_target(done, target)
+
+      task =
+        agent_task(done, %{
+          created_by_agent: "Ancient",
+          parent_id: goal.id,
+          status: :completed,
+          completed_at: ~U[2026-01-01 00:00:00Z]
+        })
+
+      backdate_updated_at(task, ~N[2026-01-01 00:00:00])
+
+      [entry] = DeliveryRollup.build(scope).targets
+
+      assert [%Agent{name: "Ancient", dormant: true}] = entry.stalled_agents
+      assert Enum.map(entry.stalled_goals, & &1.id) == [goal.id]
+    end
+
+    test "a mixed-work agent's dormancy is scoped to its target work, not all work",
+         %{scope: scope, board: board} do
+      # Intended semantics after D122: because the rollup fetch is bounded to
+      # target-bridged tasks, an agent's stuck/dormant flags reflect its target
+      # work only. An agent whose ONLY target activity is long stale is dormant
+      # on that target even if it has recent non-target activity — under the old
+      # all-tasks fetch that recent non-target work would have kept it non-dormant
+      # and hidden the fact that it has abandoned the target. The delivery rollup
+      # answers "is this agent advancing its target", so target-scoped dormancy
+      # is the correct reading.
+      done = column_fixture(board, %{name: "Done"})
+      doing = column_fixture(board, %{name: "Doing"})
+      target = delivery_target_fixture(scope.user)
+      goal = goal_on_target(done, target)
+
+      # Split's only target work: completed and last touched far in the past.
+      stale_target_task =
+        agent_task(done, %{
+          created_by_agent: "Split",
+          parent_id: goal.id,
+          status: :completed,
+          completed_at: ~U[2026-01-01 00:00:00Z]
+        })
+
+      backdate_updated_at(stale_target_task, ~N[2026-01-01 00:00:00])
+
+      # Recent non-target work by the same agent identity — excluded by the bound.
+      agent_task(doing, %{created_by_agent: "Split", claimed_at: ago(5)})
+
+      [entry] = DeliveryRollup.build(scope).targets
+
+      assert [%Agent{name: "Split", dormant: true}] = entry.stalled_agents
+      assert Enum.map(entry.stalled_goals, & &1.id) == [goal.id]
     end
   end
 

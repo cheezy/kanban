@@ -5,6 +5,7 @@ defmodule Kanban.AgentsTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.TargetsFixtures
   import Kanban.TasksFixtures
 
   alias Kanban.Accounts.Scope
@@ -174,6 +175,79 @@ defmodule Kanban.AgentsTest do
       |> Repo.update_all(set: [updated_at: at])
 
       task
+    end
+  end
+
+  describe "fetch_target_bridged_tasks/1 (D122)" do
+    setup %{user: user} do
+      %{scope: Scope.for_user(user)}
+    end
+
+    test "returns only tasks whose parent goal is assigned to a target", %{
+      column: column,
+      scope: scope
+    } do
+      target = delivery_target_fixture(scope.user)
+      goal_on_target = task_fixture(column, %{type: :goal})
+      {:ok, goal_on_target} = Tasks.update_task(goal_on_target, %{target_id: target.id})
+      goal_without_target = task_fixture(column, %{type: :goal})
+
+      kept = task_fixture(column, %{parent_id: goal_on_target.id})
+      _no_parent = task_fixture(column)
+      _parent_has_no_target = task_fixture(column, %{parent_id: goal_without_target.id})
+
+      result = Agents.fetch_target_bridged_tasks(scope: scope)
+      assert Enum.map(result, & &1.id) == [kept.id]
+    end
+
+    test "excludes goal-type tasks even when they carry a target", %{
+      column: column,
+      scope: scope
+    } do
+      target = delivery_target_fixture(scope.user)
+      parent = task_fixture(column, %{type: :goal})
+      {:ok, parent} = Tasks.update_task(parent, %{target_id: target.id})
+      # A goal whose own parent is a target-bearing goal is still type :goal and
+      # must be excluded (the rollup bridges work tasks, not goals).
+      nested_goal = task_fixture(column, %{type: :goal, parent_id: parent.id})
+      {:ok, _nested_goal} = Tasks.update_task(nested_goal, %{target_id: target.id})
+
+      assert Agents.fetch_target_bridged_tasks(scope: scope) == []
+    end
+
+    test "is board-scoped: a foreign board's bridged task is excluded", %{
+      column: column,
+      scope: scope
+    } do
+      target = delivery_target_fixture(scope.user)
+      goal = task_fixture(column, %{type: :goal})
+      {:ok, goal} = Tasks.update_task(goal, %{target_id: target.id})
+      kept = task_fixture(column, %{parent_id: goal.id})
+
+      other = user_fixture()
+      other_column = other |> board_fixture() |> column_fixture()
+      foreign_target = delivery_target_fixture(other)
+      foreign_goal = task_fixture(other_column, %{type: :goal})
+      {:ok, foreign_goal} = Tasks.update_task(foreign_goal, %{target_id: foreign_target.id})
+      _foreign_task = task_fixture(other_column, %{parent_id: foreign_goal.id})
+
+      result = Agents.fetch_target_bridged_tasks(scope: scope)
+      assert Enum.map(result, & &1.id) == [kept.id]
+    end
+
+    test "preloads column, created_by, and completed_by for roster derivation", %{
+      column: column,
+      scope: scope
+    } do
+      target = delivery_target_fixture(scope.user)
+      goal = task_fixture(column, %{type: :goal})
+      {:ok, goal} = Tasks.update_task(goal, %{target_id: target.id})
+      task_fixture(column, %{parent_id: goal.id, created_by_agent: "Ada"})
+
+      [task] = Agents.fetch_target_bridged_tasks(scope: scope)
+      assert %Kanban.Columns.Column{} = task.column
+      refute match?(%Ecto.Association.NotLoaded{}, task.created_by)
+      refute match?(%Ecto.Association.NotLoaded{}, task.completed_by)
     end
   end
 

@@ -339,6 +339,39 @@ defmodule Kanban.Agents do
     |> Repo.preload([:column, :created_by, :completed_by])
   end
 
+  @doc false
+  # The board-scoped, goal-excluded task set restricted to tasks whose parent
+  # goal is assigned to a delivery target — the minimal set the
+  # `Kanban.Targets.DeliveryRollup` bridge (agent -> parent goal -> target)
+  # needs.
+  #
+  # Why this exists (D122): `fetch_tasks/1` with no window fetches the ENTIRE
+  # board-scoped task history (the `:all_time` no-op branch of `apply_window`).
+  # At production row counts that unbounded full-history scan exceeded the
+  # database `statement_timeout` and crashed the /agents load from
+  # `DeliveryRollup.fetch_bridged_tasks/1`. The rollup never needs history that
+  # cannot reach a target, so this bounds the fetch by RELEVANCE rather than by
+  # time: every task that can contribute a `{goal_id, target_id}` bridge pair
+  # has a parent goal with a non-nil `target_id`, and this returns exactly that
+  # set. Nothing the bridge or stall attribution needs is dropped, regardless of
+  # how old a task is — unlike a trailing time window, which would silently drop
+  # long-dormant-but-still-attributed agents. Agents whose work never reaches a
+  # target are intentionally excluded (see `DeliveryRollup`'s moduledoc).
+  #
+  # Board scoping only needs to filter the child task: a parent goal shares its
+  # children's board, so a board-scoped child set implies accessible parents.
+  # Same preloads as `fetch_tasks/1` so the Roster derivation is identical.
+  @spec fetch_target_bridged_tasks(keyword()) :: [Task.t()]
+  def fetch_target_bridged_tasks(opts) do
+    Task
+    |> where([t], t.type != ^:goal)
+    |> BoardScope.apply_board_scope_with_column_join(Keyword.get(opts, :scope))
+    |> join(:inner, [t], parent in assoc(t, :parent), as: :parent)
+    |> where([parent: parent], not is_nil(parent.target_id))
+    |> Repo.all()
+    |> Repo.preload([:column, :created_by, :completed_by])
+  end
+
   # Restrict to one board via a column-id subquery. Referencing only the Task
   # binding keeps this composable with BoardScope's joins regardless of their
   # positions; when scope is present a board the user cannot access intersects

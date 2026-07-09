@@ -22,8 +22,14 @@ defmodule Kanban.Targets.DeliveryRollup do
 
   An agent whose tasks never reach a target — because they have no parent goal,
   or the parent goal is not assigned to any target — is not attributed to any
-  target. Those agents are returned in `:unrolled_agents` so no work is silently
-  dropped from the delivery picture.
+  target.
+
+  The task fetch is bounded to target-bridged tasks (tasks whose parent goal is
+  assigned to a target) so the /agents load stays within the database statement
+  timeout at production scale (D122). A consequence of that bound is that agents
+  whose work never reaches a target are not fetched at all, so `:unrolled_agents`
+  is always `[]`. The key is retained in the return shape for API stability; it
+  is not currently rendered by any caller.
 
   ## Stalled goals and agents
 
@@ -101,9 +107,10 @@ defmodule Kanban.Targets.DeliveryRollup do
   @typedoc """
   The full delivery rollup: one entry per accessible target (ordered as
   `Kanban.Targets.list_targets_with_status/2` orders them, soonest date first),
-  the agents whose work never reaches a target, and `agent_targets` — a map from
-  each agent's `{name, owner_key}` identity to the target+goal annotations it is
-  advancing (empty list for an agent that reaches no target). All three views
+  `unrolled_agents` (always `[]` — see the "Agents outside the rollup" moduledoc
+  section; retained for API stability), and `agent_targets` — a map from each
+  agent's `{name, owner_key}` identity to the target+goal annotations it is
+  advancing (empty list for an agent that reaches no target). Both rendered views
   derive from the same board-scoped data, so a consumer can annotate and order
   the roster without any further query.
   """
@@ -143,15 +150,23 @@ defmodule Kanban.Targets.DeliveryRollup do
     }
   end
 
-  # The board-scoped, goal-excluded task set with each task's parent goal and
-  # that goal's target preloaded, so the in-memory bridge can walk
-  # task -> parent goal -> target without any further query. Parent goals share
-  # their children's board, so preloading from an already board-scoped task set
-  # yields only accessible goals/targets.
+  # The board-scoped task set the in-memory bridge needs, with each task's
+  # parent goal preloaded so it can walk task -> parent goal -> target without
+  # any further query. `fetch_target_bridged_tasks/1` bounds the fetch to tasks
+  # whose parent goal is assigned to a target (D122) — the only tasks that can
+  # produce a bridge pair — so the query stays within the database statement
+  # timeout at production scale without dropping any attribution. Parent goals
+  # share their children's board, so an already board-scoped task set yields
+  # only accessible goals.
+  #
+  # Only the parent goal's `id` and `target_id` are read (`target_id` is a plain
+  # column on the preloaded parent), so preloading `:parent` alone is enough —
+  # the nested `:target` struct is never read here (the target/status structs
+  # come from `Kanban.Targets`), so it is not preloaded.
   defp fetch_bridged_tasks(scope) do
     scope
-    |> then(&Agents.fetch_tasks(scope: &1))
-    |> Repo.preload(parent: :target)
+    |> then(&Agents.fetch_target_bridged_tasks(scope: &1))
+    |> Repo.preload(:parent)
   end
 
   # One rollup entry per accessible target, reusing Phase 1 status derivation

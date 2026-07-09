@@ -1677,6 +1677,44 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert band_pos < roster_pos
     end
 
+    test "mounts without raising on a large task history (D122 regression)",
+         %{conn: conn, user: user} do
+      # D122: at production row counts the old unbounded DeliveryRollup fetch
+      # (entire board-scoped history) exceeded the DB statement timeout and
+      # crashed this mount. With the relevance-bounded fetch, a large body of
+      # non-target work is never scanned into the rollup, so the page loads.
+      board = board_fixture(user)
+      doing = column_fixture(board, %{name: "Doing"})
+      target = delivery_target_fixture(user, %{target_date: ~D[2026-07-21]})
+      goal = task_fixture(doing, %{type: :goal})
+      {:ok, _} = Tasks.update_task(goal, %{target_id: target.id})
+
+      {:ok, _} =
+        doing
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Bridged",
+          parent_id: goal.id,
+          status: :in_progress
+        })
+
+      # A large volume of orphan work the old fetch would have scanned.
+      for n <- 1..80 do
+        {:ok, _} =
+          doing
+          |> task_fixture()
+          |> Tasks.update_task(%{created_by_agent: "Orphan#{n}", status: :in_progress})
+      end
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert html =~ "data-delivery-health-band"
+      assert html =~ "Bridged"
+      # The delivery rollup counts the one on-track target, unaffected by the
+      # 80 orphan tasks that are no longer fetched into it.
+      assert band_count(html, "on-track") == 1
+    end
+
     test "renders the empty state when the user has no targets", %{conn: conn, user: user} do
       board = board_fixture(user)
       board |> column_fixture() |> then(&task_fixture(&1))
