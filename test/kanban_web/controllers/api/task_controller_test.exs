@@ -144,6 +144,24 @@ defmodule KanbanWeb.API.TaskControllerTest do
   end
 
   describe "POST /api/tasks" do
+    test "returns 403 for a read-only board member (D109)", %{board: board, user: owner} do
+      reader = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      {:ok, {_t, reader_token}} =
+        ApiTokens.create_api_token(reader, board, %{"name" => "Reader Token"})
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{reader_token}")
+        |> post(~p"/api/tasks", %{
+          "task" => %{"title" => "Nope", "type" => "work", "priority" => "medium"}
+        })
+
+      assert json_response(conn, 403)
+    end
+
     test "creates task with all fields", %{conn: conn, column: column} do
       task_params = %{
         "title" => "Test Task",
@@ -1229,6 +1247,27 @@ defmodule KanbanWeb.API.TaskControllerTest do
         })
 
       %{task: task}
+    end
+
+    test "returns 403 for a read-only board member (D109)", %{
+      board: board,
+      user: owner,
+      task: task
+    } do
+      reader = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      {:ok, {_t, reader_token}} =
+        ApiTokens.create_api_token(reader, board, %{"name" => "Reader Token"})
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{reader_token}")
+        |> patch(~p"/api/tasks/#{task.id}", task: %{"title" => "Hacked"})
+
+      assert json_response(conn, 403)
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, task.id).title == "Original Title"
     end
 
     test "updates task fields", %{conn: conn, task: task} do

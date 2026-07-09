@@ -92,21 +92,9 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   def create(conn, %{"task" => task_params}) do
-    board = conn.assigns.current_board
-    user = conn.assigns.current_user
-    api_token = conn.assigns.api_token
-
-    case parse_id(task_params["column_id"] || get_default_column_id(board)) do
-      {:ok, column_id} ->
-        resolve_column_and_create(conn, board, column_id, task_params, user, api_token)
-
-      :error ->
-        TaskErrors.error_response(
-          conn,
-          :bad_request,
-          "Invalid column_id: must be an integer",
-          :invalid_param
-        )
+    case authorize_board_write(conn) do
+      :ok -> do_create(conn, task_params)
+      error -> TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -131,6 +119,56 @@ defmodule KanbanWeb.API.TaskController do
     conn
     |> put_status(:unprocessable_entity)
     |> json(error_response)
+  end
+
+  defp do_create(conn, task_params) do
+    board = conn.assigns.current_board
+    user = conn.assigns.current_user
+    api_token = conn.assigns.api_token
+
+    case parse_id(task_params["column_id"] || get_default_column_id(board)) do
+      {:ok, column_id} ->
+        resolve_column_and_create(conn, board, column_id, task_params, user, api_token)
+
+      :error ->
+        TaskErrors.error_response(
+          conn,
+          :bad_request,
+          "Invalid column_id: must be an integer",
+          :invalid_param
+        )
+    end
+  end
+
+  defp do_update(conn, id_or_identifier, task_params) do
+    board = conn.assigns.current_board
+
+    case fetch_and_verify_task(id_or_identifier, board) do
+      {:ok, task} ->
+        if TaskParamFilter.column_change_attempted?(task_params, task) do
+          reject_column_change(conn, task)
+        else
+          perform_api_task_update(conn, task, task_params)
+        end
+
+      error ->
+        TaskErrors.handle_task_error(conn, error)
+    end
+  end
+
+  # D109: live board-write re-check for the API create/update paths (W1430
+  # in-depth), matching claim/complete/unclaim. Cross-board scope and
+  # mass-assignment filtering already apply; this rejects a token whose user lost
+  # :owner/:modify access but that escaped revocation.
+  defp authorize_board_write(conn) do
+    board = conn.assigns.current_board
+    %{id: user_id} = conn.assigns.current_user
+
+    if Boards.get_user_access(board.id, user_id) in [:owner, :modify] do
+      :ok
+    else
+      {:error, :not_authorized_write}
+    end
   end
 
   defp resolve_column_and_create(conn, board, column_id, task_params, user, api_token) do
@@ -267,18 +305,9 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   def update(conn, %{"id" => id_or_identifier, "task" => task_params}) do
-    board = conn.assigns.current_board
-
-    case fetch_and_verify_task(id_or_identifier, board) do
-      {:ok, task} ->
-        if TaskParamFilter.column_change_attempted?(task_params, task) do
-          reject_column_change(conn, task)
-        else
-          perform_api_task_update(conn, task, task_params)
-        end
-
-      error ->
-        TaskErrors.handle_task_error(conn, error)
+    case authorize_board_write(conn) do
+      :ok -> do_update(conn, id_or_identifier, task_params)
+      error -> TaskErrors.handle_task_error(conn, error)
     end
   end
 

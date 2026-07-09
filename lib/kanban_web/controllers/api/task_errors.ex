@@ -63,6 +63,15 @@ defmodule KanbanWeb.API.TaskErrors do
     )
   end
 
+  def handle_task_error(conn, {:error, :not_authorized_write}) do
+    error_response(
+      conn,
+      :forbidden,
+      "Not authorized — board write access (owner or modify) required",
+      :not_authorized_write
+    )
+  end
+
   def handle_task_error(conn, {:error, :after_goal_not_started}) do
     error_response(
       conn,

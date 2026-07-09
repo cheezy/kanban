@@ -113,6 +113,12 @@ defmodule Kanban.Tasks.AgentWorkflow do
       task.assigned_to_id != user.id ->
         {:error, :not_authorized}
 
+      # D109: live board-write re-check (W1430 in-depth), matching claim/complete.
+      # An assignee who lost :owner/:modify access (and whose token escaped
+      # revocation) can no longer unclaim.
+      not board_write_access?(task.column.board_id, user) ->
+        {:error, :not_authorized}
+
       true ->
         ready_column = get_column_by_name(task.column.board_id, "Ready")
         result = perform_unclaim_transaction(task, ready_column)

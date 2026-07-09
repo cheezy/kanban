@@ -211,6 +211,21 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert reloaded.assigned_to_id == ctx.user.id
     end
 
+    test "returns {:error, :not_authorized} when the assignee has lost board-write access (D109)",
+         ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      # Downgrade the assignee to read-only WITHOUT clearing the claim — the
+      # in-flight/edge case the W1430 live re-check guards.
+      Repo.get_by!(Kanban.Boards.BoardUser, board_id: ctx.board.id, user_id: ctx.user.id)
+      |> Ecto.Changeset.change(access: :read_only)
+      |> Repo.update!()
+
+      assert {:error, :not_authorized} = AgentWorkflow.unclaim_task(claimed, ctx.user)
+      assert Repo.get!(Task, task.id).status == :in_progress
+    end
+
     test "broadcasts task_updated", ctx do
       task = create_open_task(ctx.ready, ctx.user)
       claimed = claim_for(task, ctx.user, ctx.board)
