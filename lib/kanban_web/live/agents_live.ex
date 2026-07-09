@@ -53,30 +53,57 @@ defmodule KanbanWeb.AgentsLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    # The heavy board-scoped reads run ONLY on the connected mount. The static
+    # (disconnected) first render seeds the same zero-DB empty state an
+    # agent-less workspace shows, so first paint is instant; the connected mount
+    # then loads the real data and replaces it. This halves the per-load query
+    # volume the old unconditional load incurred by running on BOTH the
+    # disconnected and connected mount (D120). track_viewer/1 stays before
+    # initial_assigns/1 so connected_count/1 still counts the current viewer.
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Kanban.PubSub, @presence_topic)
       AgentsPresence.track_viewer(socket)
-    end
 
-    {:ok,
-     socket
-     |> assign(%{
-       filter: @default_filter,
-       selected_agent: nil,
-       refresh_scheduled?: false,
-       dormant_expanded?: false,
-       expanded_detail_sections: MapSet.new(@detail_sections),
-       timezone: KanbanWeb.Timezone.browser_timezone(socket),
-       connected_count: connected_count(socket),
-       board_id: nil,
-       time_range: :all_time,
-       reassign: nil,
-       reprioritize: nil,
-       undo: nil,
-       boards: Boards.list_boards(socket.assigns.current_scope.user)
-     })
-     |> load_agents_data()}
+      {:ok, socket |> assign(initial_assigns(socket)) |> load_agents_data()}
+    else
+      {:ok, socket |> assign(initial_assigns(socket)) |> assign_placeholder_data()}
+    end
   end
+
+  # The socket assigns that do not depend on the heavy task fetch. Seeded on both
+  # the disconnected and connected mount so the first render has every
+  # selector/dialog assign it needs before (or without) the data load.
+  defp initial_assigns(socket) do
+    %{
+      filter: @default_filter,
+      selected_agent: nil,
+      refresh_scheduled?: false,
+      dormant_expanded?: false,
+      expanded_detail_sections: MapSet.new(@detail_sections),
+      timezone: KanbanWeb.Timezone.browser_timezone(socket),
+      connected_count: connected_count(socket),
+      board_id: nil,
+      time_range: :all_time,
+      reassign: nil,
+      reprioritize: nil,
+      undo: nil,
+      boards: Boards.list_boards(socket.assigns.current_scope.user)
+    }
+  end
+
+  # Zero-DB stand-in for the heavy load path, used on the disconnected mount so
+  # the static first render is instant. Runs the same derivation helpers as the
+  # connected load on empty inputs, so every assign key the connected path
+  # produces exists here too (no nil-crash in the template) and the shell renders
+  # the workspace empty state, replaced on connect by the real load.
+  defp assign_placeholder_data(socket) do
+    assign_agents_data(socket, [], [], empty_delivery_rollup())
+  end
+
+  # The delivery rollup for a workspace with no accessible targets — the exact
+  # shape DeliveryRollup.build/2 returns in that case (see its @type t()), used
+  # by the disconnected placeholder without a DB round trip.
+  defp empty_delivery_rollup, do: %{targets: [], unrolled_agents: [], agent_targets: %{}}
 
   @impl true
   def handle_event("filter_events", %{"filter" => raw_filter}, socket) do
@@ -512,15 +539,24 @@ defmodule KanbanWeb.AgentsLive do
 
   defp load_agents_data(socket) do
     scope = socket.assigns.current_scope
-    timezone = socket.assigns.timezone
     {tasks, throughput_tasks} = fetch_task_sets(socket, scope)
-
-    agents = Agents.list_agents_from(tasks, timezone)
-    events = Agents.recent_activity_from(tasks, @recent_activity_limit)
     # Build the delivery rollup once (board-scoped, no LiveView Ecto) and reuse
     # it for the delivery-health band, the at-risk explainer, and the roster's
     # target annotation + risk-first ordering (W1589).
-    delivery_rollup = DeliveryRollup.build(scope, timezone: timezone)
+    delivery_rollup = DeliveryRollup.build(scope, timezone: socket.assigns.timezone)
+
+    assign_agents_data(socket, tasks, throughput_tasks, delivery_rollup)
+  end
+
+  # Derives every task-dependent assign from an already-fetched task set + rollup
+  # and merges them onto the socket. Shared by the connected load
+  # (load_agents_data/1, real data) and the disconnected placeholder
+  # (assign_placeholder_data/1, empty data) so both paths emit an identical set
+  # of assign keys.
+  defp assign_agents_data(socket, tasks, throughput_tasks, delivery_rollup) do
+    timezone = socket.assigns.timezone
+    agents = Agents.list_agents_from(tasks, timezone)
+    events = Agents.recent_activity_from(tasks, @recent_activity_limit)
 
     metrics =
       metric_assigns(tasks, throughput_tasks, agents, timezone, socket.assigns.time_range)
