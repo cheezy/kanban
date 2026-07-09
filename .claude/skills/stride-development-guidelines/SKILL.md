@@ -50,9 +50,6 @@ These are IF/THEN rules. When you encounter the trigger condition, you MUST take
 **IF you are adding or updating a dependency:**
 → Run `mix deps.audit`, `mix hex.audit`, and `mix hex.outdated`. Show the output.
 
-**IF you are about to say "done", "complete", or "finished":**
-→ STOP. Go to GATE 3. Run `mix precommit`. Show the output. Only then say complete.
-
 ---
 
 ## FORBIDDEN Actions
@@ -60,7 +57,6 @@ These are IF/THEN rules. When you encounter the trigger condition, you MUST take
 These are hard failures. If you catch yourself doing any of these, STOP and correct immediately.
 
 - FORBIDDEN: Saying "tests should pass" or "credo should be clean" without running them
-- FORBIDDEN: Marking a task complete without showing passing output from `mix precommit`
 - FORBIDDEN: Adding UI elements without checking `core_components.ex` first
 - FORBIDDEN: Skipping dark mode verification on any UI change
 - FORBIDDEN: Writing new functions without unit tests
