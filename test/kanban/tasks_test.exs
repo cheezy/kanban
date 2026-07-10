@@ -7748,6 +7748,98 @@ defmodule Kanban.TasksTest do
       assert is_list(hooks)
     end
 
+    test "flags a review-bound task that reaches Review with no changed_files diff (D128)", %{
+      task: task,
+      user: user,
+      completion_params: params
+    } do
+      test_pid = self()
+
+      :telemetry.attach(
+        "test-d128-missing",
+        [:kanban, :task, :changed_files_missing],
+        fn _event, measurements, metadata, _config ->
+          send(test_pid, {:telemetry, measurements, metadata})
+        end,
+        nil
+      )
+
+      # actual_files_changed is set (params) but changed_files defaults to [] —
+      # the non-blocking safety net should flag it while completion still succeeds.
+      {:ok, result, _hooks} = Tasks.complete_task(task, user, params)
+
+      assert result.column_id
+      assert_received {:telemetry, %{count: 1}, %{task_id: task_id, identifier: identifier}}
+      assert task_id == result.id
+      assert identifier == result.identifier
+
+      :telemetry.detach("test-d128-missing")
+    end
+
+    test "does not flag a review-bound task whose changed_files diff is present (D128)", %{
+      task: task,
+      user: user,
+      completion_params: params
+    } do
+      {:ok, _} =
+        Kanban.Tasks.Lifecycle.update_changed_files(task, [
+          %{"path" => "lib/foo.ex", "diff" => "patch"}
+        ])
+
+      task = Kanban.Repo.reload!(task)
+      test_pid = self()
+
+      :telemetry.attach(
+        "test-d128-present",
+        [:kanban, :task, :changed_files_missing],
+        fn _event, measurements, metadata, _config ->
+          send(test_pid, {:telemetry, measurements, metadata})
+        end,
+        nil
+      )
+
+      {:ok, _result, _hooks} = Tasks.complete_task(task, user, params)
+
+      refute_received {:telemetry, _measurements, _metadata}
+
+      :telemetry.detach("test-d128-present")
+    end
+
+    test "does not flag a needs_review=false task (out of review scope) (D128)", %{
+      user: user,
+      doing_column: doing_column,
+      completion_params: params
+    } do
+      {:ok, auto_task} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Auto-done task",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "needs_review" => false
+        })
+
+      test_pid = self()
+
+      :telemetry.attach(
+        "test-d128-noreview",
+        [:kanban, :task, :changed_files_missing],
+        fn _event, measurements, metadata, _config ->
+          send(test_pid, {:telemetry, measurements, metadata})
+        end,
+        nil
+      )
+
+      # actual_files_changed set + changed_files empty, but needs_review=false auto-
+      # moves to Done — it is never review-bound, so the audit must not fire.
+      assert {:ok, _final_task, _hooks} = Tasks.complete_task(auto_task, user, params)
+      refute_received {:telemetry, _measurements, _metadata}
+
+      :telemetry.detach("test-d128-noreview")
+    end
+
     test "accepts review_report as optional parameter", %{
       task: task,
       user: user,

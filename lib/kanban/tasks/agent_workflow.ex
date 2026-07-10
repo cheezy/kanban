@@ -16,6 +16,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   alias Kanban.Repo
   alias Kanban.Tasks.AgentQueries
   alias Kanban.Tasks.Broadcaster
+  alias Kanban.Tasks.ChangedFilesAudit
   alias Kanban.Tasks.CompletionValidation
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.GoalCompletion
@@ -486,6 +487,11 @@ defmodule Kanban.Tasks.AgentWorkflow do
       # finalize_completion call follows), so emit the agents-topic event here
       # to keep /agents live. The auto-Done path emits it via finalize_completion.
       Broadcaster.broadcast_agent_event(updated_task, :task_completed, board_id)
+
+      # (D128) Non-blocking safety net: flag a review-bound task that reached
+      # Review with no changed_files diff despite having changed files, so the
+      # gap is telemetry-visible instead of a silently blind review queue.
+      ChangedFilesAudit.audit_review_bound_task(updated_task, board_id)
 
       hooks =
         Metadata.build_completion_hooks(updated_task, board, agent_name, needs_review?: true)
