@@ -145,7 +145,9 @@ defmodule Kanban.MixProject do
         KanbanWeb.Telemetry,
         KanbanWeb.Telemetry.UserActivityPage,
         Mix.Tasks.DarkMode.EnsureAuditUser,
-        Mix.Tasks.DarkMode.Scan
+        Mix.Tasks.DarkMode.Scan,
+        Mix.Tasks.Kanban.BackfillChangedFiles,
+        Mix.Tasks.Kanban.ScanMissingDiffs
       ]
     ]
   end
