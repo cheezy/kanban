@@ -47,6 +47,14 @@ defmodule KanbanWeb.ReviewLiveTest do
     task
   end
 
+  # Builds `changed_files` diff entries for the given paths so the diff panel
+  # renders clickable file rows. A task with `actual_files_changed` but an
+  # empty `changed_files` now renders the diff-missing banner (W1659) instead
+  # of a blind file list, so panel-interaction tests must carry real diff data.
+  defp with_diffs(paths) do
+    Enum.map(paths, fn path -> %{"path" => path, "diff" => "+ added line\n"} end)
+  end
+
   defp setup_review_column(user) do
     board = board_fixture(user)
     review_column = column_fixture(board, %{name: "Review", position: 1})
@@ -237,28 +245,29 @@ defmodule KanbanWeb.ReviewLiveTest do
                        %{task_id: ^task_id}}
     end
 
-    test "legacy payload (no changed_files): click still selects, panel shows 'no diff available', page does not crash",
+    test "diff lost in transit (files changed but no changed_files): shows the explicit 'Diff not uploaded' banner instead of a silent empty panel",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
-      # Legacy: older plugin emitted no `changed_files`. The DB default is
-      # [] so the field is empty, not nil.
+      # The diff was lost in transit: the work changed files
+      # (actual_files_changed present) but the changed_files upload never
+      # arrived (DB default []). This is the ChangedFilesAudit.diff_missing?
+      # case — the reviewer must see an explicit banner, not a blank review.
       _task = pending_task!(column, %{actual_files_changed: "lib/legacy.ex"})
 
-      {:ok, view, _html} = live(conn, ~p"/review")
+      {:ok, _view, html} = live(conn, ~p"/review")
 
-      html =
-        view
-        |> element(~s([data-review-diff-panel-file-path="lib/legacy.ex"] button))
-        |> render_click()
+      # Explicit diff-missing banner is rendered with its heading and copy.
+      assert html =~ "data-review-diff-missing"
+      assert html =~ "Diff not uploaded"
 
-      # Selection succeeded — row marked active.
-      assert html =~
-               ~s(data-review-diff-panel-file-path="lib/legacy.ex" data-review-diff-panel-file-active="true")
+      # A re-fetch action is offered.
+      assert html =~ "data-review-diff-refetch"
+      assert html =~ ~s(phx-click="refetch_diff")
 
-      # Panel renders in :empty mode with the "no diff available" copy.
-      assert html =~ ~s(data-review-diff-panel-diff-mode="empty")
-      assert html =~ "No diff available for this file."
+      # The silent per-file "no diff available" panel is NOT rendered in its
+      # place — the whole point is to replace it with the loud banner.
+      refute html =~ ~s(data-review-diff-panel-file-path="lib/legacy.ex")
 
       # Page did not crash — header still present.
       assert html =~ "data-review-detail-header"
@@ -335,6 +344,133 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "diff-missing banner + re-fetch (W1659)" do
+    setup [:register_and_log_in_user]
+
+    test "renders the banner and a re-fetch action when the diff is missing",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      pending_task!(column, %{actual_files_changed: "lib/a.ex", changed_files: []})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      assert html =~ "data-review-diff-missing"
+      assert html =~ "Diff not uploaded"
+      assert html =~ "data-review-diff-refetch"
+      assert html =~ ~s(phx-click="refetch_diff")
+    end
+
+    test "does not render the banner when changed_files carries diff data",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      pending_task!(column, %{
+        actual_files_changed: "lib/a.ex",
+        changed_files: [%{"path" => "lib/a.ex", "diff" => "+ added\n"}]
+      })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      refute html =~ "data-review-diff-missing"
+      # The normal diff panel renders instead.
+      assert html =~ ~s(data-review-diff-panel-file-path="lib/a.ex")
+    end
+
+    test "renders the banner when changed_files is nil (not just empty list)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      pending_task!(column, %{actual_files_changed: "lib/a.ex", changed_files: nil})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      assert html =~ "data-review-diff-missing"
+      assert html =~ "Diff not uploaded"
+    end
+
+    test "does not render the banner for a genuine no-op change (nothing changed)",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      # actual_files_changed blank => diff_missing? is false, so the empty
+      # diff panel (not the banner) is the correct state.
+      pending_task!(column, %{actual_files_changed: "", changed_files: []})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      refute html =~ "data-review-diff-missing"
+      assert html =~ "data-review-diff-panel-empty"
+    end
+
+    test "re-fetch reloads the task and clears the banner once the diff has arrived",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{actual_files_changed: "lib/a.ex", changed_files: []})
+
+      {:ok, view, html} = live(conn, ~p"/review")
+      assert html =~ "data-review-diff-missing"
+
+      # The diff arrives after the reviewer opened the page (late upload).
+      {:ok, _updated} =
+        Tasks.update_task(task, %{
+          changed_files: [%{"path" => "lib/a.ex", "diff" => "+ added\n"}]
+        })
+
+      html = render_click(view, "refetch_diff", %{})
+
+      # Banner is gone; the normal diff panel now renders the arrived file.
+      refute html =~ "data-review-diff-missing"
+      assert html =~ ~s(data-review-diff-panel-file-path="lib/a.ex")
+      assert html =~ "Diff reloaded."
+    end
+
+    test "re-fetch keeps the banner and reports when the diff is still missing",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      pending_task!(column, %{actual_files_changed: "lib/a.ex", changed_files: []})
+
+      {:ok, view, html} = live(conn, ~p"/review")
+      assert html =~ "data-review-diff-missing"
+
+      html = render_click(view, "refetch_diff", %{})
+
+      # Still missing: banner stays and the reviewer is told it has not arrived.
+      assert html =~ "data-review-diff-missing"
+      assert html =~ "has not been re-uploaded yet"
+    end
+
+    test "re-fetch reports when the task is no longer pending review",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{actual_files_changed: "lib/a.ex", changed_files: []})
+
+      {:ok, view, html} = live(conn, ~p"/review")
+      assert html =~ "data-review-diff-missing"
+
+      # The task left the review queue after the page mounted (e.g. approved
+      # elsewhere), so the scoped re-fetch no longer finds it.
+      {:ok, _} =
+        Tasks.update_task(task, %{
+          review_status: :approved,
+          reviewed_by_id: user.id,
+          reviewed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+
+      html = render_click(view, "refetch_diff", %{})
+
+      assert html =~ "This task is no longer available for review."
+    end
+
+    test "re-fetch is a no-op when nothing is selected",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      # Empty queue → selected is nil. Fire the raw event to exercise the guard.
+      html = render_hook(view, "refetch_diff", %{})
+
+      assert html =~ "data-review-queue-empty"
+      refute html =~ "data-review-diff-missing"
+    end
+  end
+
   describe "review_diff_panel telemetry" do
     setup [:register_and_log_in_user]
 
@@ -360,7 +496,13 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "emits :opened the first time a file is selected on a needs_review task",
          %{conn: conn, user: user, ref: ref} do
       %{column: column} = setup_review_column(user)
-      task = pending_task!(column, %{actual_files_changed: "lib/a.ex, lib/b.ex"})
+
+      task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/a.ex, lib/b.ex",
+          changed_files: with_diffs(["lib/a.ex", "lib/b.ex"])
+        })
+
       task_id = task.id
 
       {:ok, view, _html} = live(conn, ~p"/review")
@@ -376,7 +518,12 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "does not re-emit :opened when the same file is clicked twice",
          %{conn: conn, user: user, ref: ref} do
       %{column: column} = setup_review_column(user)
-      _task = pending_task!(column, %{actual_files_changed: "lib/a.ex"})
+
+      _task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/a.ex",
+          changed_files: with_diffs(["lib/a.ex"])
+        })
 
       {:ok, view, _html} = live(conn, ~p"/review")
 
@@ -396,7 +543,12 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "does not re-emit :opened when a different file is clicked on the same task",
          %{conn: conn, user: user, ref: ref} do
       %{column: column} = setup_review_column(user)
-      _task = pending_task!(column, %{actual_files_changed: "lib/a.ex, lib/b.ex"})
+
+      _task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/a.ex, lib/b.ex",
+          changed_files: with_diffs(["lib/a.ex", "lib/b.ex"])
+        })
 
       {:ok, view, _html} = live(conn, ~p"/review")
 
@@ -416,7 +568,13 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "emits :closed when the user deselects the task",
          %{conn: conn, user: user, ref: ref} do
       %{column: column} = setup_review_column(user)
-      task = pending_task!(column, %{actual_files_changed: "lib/a.ex"})
+
+      task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/a.ex",
+          changed_files: with_diffs(["lib/a.ex"])
+        })
+
       task_id = task.id
 
       {:ok, view, _html} = live(conn, ~p"/review")
@@ -434,8 +592,20 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "emits :closed for the previous task and :opened for the new one when switching tasks",
          %{conn: conn, user: user, ref: ref} do
       %{column: column} = setup_review_column(user)
-      first = pending_task!(column, %{identifier: "WT1", actual_files_changed: "lib/a.ex"})
-      second = pending_task!(column, %{identifier: "WT2", actual_files_changed: "lib/c.ex"})
+
+      first =
+        pending_task!(column, %{
+          identifier: "WT1",
+          actual_files_changed: "lib/a.ex",
+          changed_files: with_diffs(["lib/a.ex"])
+        })
+
+      second =
+        pending_task!(column, %{
+          identifier: "WT2",
+          actual_files_changed: "lib/c.ex",
+          changed_files: with_diffs(["lib/c.ex"])
+        })
 
       # Queue is ordered by updated_at ascending; second-resolution truncation
       # can collide between two fixtures created in the same tick, so pin the
@@ -470,7 +640,13 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "emits :closed on LiveView teardown when the panel was open",
          %{conn: conn, user: user, ref: ref} do
       %{column: column} = setup_review_column(user)
-      task = pending_task!(column, %{actual_files_changed: "lib/a.ex"})
+
+      task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/a.ex",
+          changed_files: with_diffs(["lib/a.ex"])
+        })
+
       task_id = task.id
 
       {:ok, view, _html} = live(conn, ~p"/review")
@@ -509,7 +685,12 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "clicking a file row sets selected_changed_file and marks that row active",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
-      _task = pending_task!(column, %{actual_files_changed: "lib/a.ex, lib/b.ex"})
+
+      _task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/a.ex, lib/b.ex",
+          changed_files: with_diffs(["lib/a.ex", "lib/b.ex"])
+        })
 
       {:ok, view, html} = live(conn, ~p"/review")
 
@@ -531,7 +712,12 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "clicking a different file moves the active state",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
-      _task = pending_task!(column, %{actual_files_changed: "lib/a.ex, lib/b.ex"})
+
+      _task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/a.ex, lib/b.ex",
+          changed_files: with_diffs(["lib/a.ex", "lib/b.ex"])
+        })
 
       {:ok, view, _html} = live(conn, ~p"/review")
 
@@ -554,12 +740,25 @@ defmodule KanbanWeb.ReviewLiveTest do
     test "selecting a different task clears the changed-file selection",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
-      first = pending_task!(column, %{identifier: "WX1", actual_files_changed: "lib/a.ex"})
+
+      first =
+        pending_task!(column, %{
+          identifier: "WX1",
+          actual_files_changed: "lib/a.ex",
+          changed_files: with_diffs(["lib/a.ex"])
+        })
+
       # Backdate so `first` is reliably the oldest and gets selected on mount;
       # otherwise both rows share the same truncated `updated_at` and the
       # head-of-queue selection becomes non-deterministic.
       backdate_updated_at!(first, -60)
-      second = pending_task!(column, %{identifier: "WX2", actual_files_changed: "lib/c.ex"})
+
+      second =
+        pending_task!(column, %{
+          identifier: "WX2",
+          actual_files_changed: "lib/c.ex",
+          changed_files: with_diffs(["lib/c.ex"])
+        })
 
       {:ok, view, _html} = live(conn, ~p"/review")
 
@@ -1801,10 +2000,16 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert html =~ ~s(data-review-diff-panel-file-path="lib/another.ex")
     end
 
-    test "lists paths from actual_files_changed when changed_files is empty (legacy)",
+    test "changed_files empty but files were changed shows the diff-missing banner, not a blind legacy list (W1659)",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
+      # Legacy-only payload where the diff was lost: files were changed
+      # (actual_files_changed present) but no changed_files arrived. Rather
+      # than list those paths as blind, diff-less rows, ReviewLive now
+      # replaces the panel with the explicit "Diff not uploaded" banner.
+      # (The task_files/1 legacy-append union is still exercised by the
+      # "deduplicates paths" test, where changed_files is non-empty.)
       _task =
         pending_task!(column, %{
           actual_files_changed: "lib/legacy_one.ex, lib/legacy_two.ex",
@@ -1812,8 +2017,8 @@ defmodule KanbanWeb.ReviewLiveTest do
         })
 
       {:ok, _view, html} = live(conn, ~p"/review")
-      assert html =~ ~s(data-review-diff-panel-file-path="lib/legacy_one.ex")
-      assert html =~ ~s(data-review-diff-panel-file-path="lib/legacy_two.ex")
+      assert html =~ "data-review-diff-missing"
+      refute html =~ ~s(data-review-diff-panel-file-path="lib/legacy_one.ex")
     end
 
     test "deduplicates paths that appear in both fields",

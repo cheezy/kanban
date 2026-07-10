@@ -532,7 +532,7 @@ msgstr "Ajouter un commentaire"
 msgid "Adding..."
 msgstr "Ajout en cours..."
 
-#: lib/kanban_web/live/task_live/form_component.ex:663
+#: lib/kanban_web/live/task_live/form_component.ex:662
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr "Commentaire ajouté avec succès"
@@ -4095,7 +4095,7 @@ msgstr "Vos droits"
 #: lib/kanban_web/components/goal_sidebar.ex:204
 #: lib/kanban_web/components/time_ago.ex:37
 #: lib/kanban_web/components/time_ago.ex:40
-#: lib/kanban_web/live/review_live.ex:283
+#: lib/kanban_web/live/review_live.ex:338
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "à l'instant"
@@ -5053,19 +5053,19 @@ msgid "live"
 msgstr "en direct"
 
 #: lib/kanban_web/components/time_ago.ex:48
-#: lib/kanban_web/live/review_live.ex:289
+#: lib/kanban_web/live/review_live.ex:344
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "il y a %{d} j"
 
 #: lib/kanban_web/components/time_ago.ex:46
-#: lib/kanban_web/live/review_live.ex:287
+#: lib/kanban_web/live/review_live.ex:342
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "il y a %{h} h"
 
 #: lib/kanban_web/components/time_ago.ex:43
-#: lib/kanban_web/live/review_live.ex:284
+#: lib/kanban_web/live/review_live.ex:339
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "il y a %{m} min"
@@ -5115,19 +5115,19 @@ msgstr[1] "%{count} tests en échec"
 msgid "No files changed."
 msgstr "Aucun fichier modifié."
 
-#: lib/kanban_web/live/review_live.ex:268
+#: lib/kanban_web/live/review_live.ex:323
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] "%{count} tâche de %{agents} agent en attente de vous"
 msgstr[1] "%{count} tâches de %{agents} agents en attente de vous"
 
-#: lib/kanban_web/live/review_live.ex:263
+#: lib/kanban_web/live/review_live.ex:318
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr "0 tâche en attente de vous."
 
-#: lib/kanban_web/live/review_live.ex:87
+#: lib/kanban_web/live/review_live.ex:89
 #, elixir-autogen, elixir-format
 msgid "Approved %{ident}"
 msgstr "Approuvée %{ident}"
@@ -5142,7 +5142,7 @@ msgstr "Temps moy. de relecture · 17 min"
 msgid "Inbox zero — nothing is waiting for review."
 msgstr "Boîte vide — rien n'attend de relecture."
 
-#: lib/kanban_web/live/review_live.ex:144
+#: lib/kanban_web/live/review_live.ex:151
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr "Des notes sont requises lors de la demande de modifications."
@@ -5152,7 +5152,7 @@ msgstr "Des notes sont requises lors de la demande de modifications."
 msgid "Notes for the agent"
 msgstr "Notes pour l'agent"
 
-#: lib/kanban_web/live/review_live.ex:139
+#: lib/kanban_web/live/review_live.ex:146
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr "Modifications demandées sur %{ident}"
@@ -5167,17 +5167,17 @@ msgstr "Sélectionnez une tâche dans la file pour démarrer une relecture."
 msgid "Send request"
 msgstr "Envoyer la demande"
 
-#: lib/kanban_web/live/review_live.ex:91
+#: lib/kanban_web/live/review_live.ex:93
 #, elixir-autogen, elixir-format
 msgid "Unable to approve task."
 msgstr "Impossible d'approuver la tâche."
 
-#: lib/kanban_web/live/review_live.ex:148
+#: lib/kanban_web/live/review_live.ex:155
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr "Impossible de demander des modifications sur la tâche."
 
-#: lib/kanban_web/live/review_live.ex:278
+#: lib/kanban_web/live/review_live.ex:333
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr "la plus ancienne %{age}"
@@ -6549,7 +6549,7 @@ msgstr "Stride enveloppe chaque tâche dans un cycle de vie en quatre étapes. L
 "manière autonome. Le tableau pilote une véritable base de code, pas une "
 "intuition."
 
-#: lib/kanban_web/live/review_live.html.heex:499
+#: lib/kanban_web/live/review_live.html.heex:528
 #, elixir-autogen, elixir-format
 msgid "Code review"
 msgstr "Revue de code"
@@ -6564,12 +6564,12 @@ msgstr "Sections des paramètres"
 msgid "Review data unavailable"
 msgstr "Données de revue indisponibles"
 
-#: lib/kanban/tasks/completion_validation.ex:684
+#: lib/kanban/tasks/completion_validation.ex:686
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "est requis pour une revue exécutée : incluez status ou issue_counts afin que la file de revue puisse afficher le verdict"
 
-#: lib/kanban/tasks/completion_validation.ex:677
+#: lib/kanban/tasks/completion_validation.ex:679
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "est requis pour une revue exécutée : le champ structuré %{field} affiché par la file de revue est manquant"
@@ -6579,12 +6579,12 @@ msgstr "est requis pour une revue exécutée : le champ structuré %{field} aff
 msgid "N/A"
 msgstr "S.O."
 
-#: lib/kanban/tasks/completion_validation.ex:696
+#: lib/kanban/tasks/completion_validation.ex:698
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "est incomplet : project_checks couvre %{supplied} des %{expected} points de la liste de contrôle du projet ; chaque point de la liste doit être évalué"
 
-#: lib/kanban/tasks/completion_validation.ex:690
+#: lib/kanban/tasks/completion_validation.ex:692
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "est requis lors d'une revue effectuée : project_checks doit être une liste non vide couvrant la liste de contrôle du projet"
@@ -6915,7 +6915,9 @@ msgid "You must confirm your account before signing in. Check your email for a c
 msgstr "Vous devez confirmer votre compte avant de vous connecter. Vérifiez votre e-mail pour trouver le lien de confirmation."
 
 #: lib/kanban_web/user_auth.ex:237
-#: lib/kanban_web/user_auth.ex:316
+#: lib/kanban_web/user_auth.ex:307
+#: lib/kanban_web/user_auth.ex:343
+#: lib/kanban_web/user_auth.ex:374
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "Vous devez confirmer votre compte pour accéder à cette page."
@@ -7084,12 +7086,12 @@ msgstr "Configurez votre agent de codage"
 msgid "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
 msgstr "Le nombre de revue enregistré ne correspond pas aux critères d'acceptation de cette tâche ; le nombre de la tâche est affiché."
 
-#: lib/kanban/tasks/completion_validation.ex:342
+#: lib/kanban/tasks/completion_validation.ex:344
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match"
 msgstr "est incohérent avec la tâche : la revue liste %{supplied} entrées de critères d'acceptation mais la tâche en définit %{expected} ; les nombres doivent correspondre"
 
-#: lib/kanban/tasks/completion_validation.ex:350
+#: lib/kanban/tasks/completion_validation.ex:352
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "est incohérent avec la tâche : la revue indique %{checked} critères d'acceptation vérifiés mais la tâche en définit %{expected} ; les nombres doivent correspondre"
@@ -7760,3 +7762,33 @@ msgstr "Les données des agents n'ont pas pu être actualisées pour le moment. 
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You do not have permission to modify tasks on this board"
 msgstr "Vous n'avez pas l'autorisation de déplacer des tâches sur ce tableau"
+
+#: lib/kanban_web/live/review_live.html.heex:487
+#, elixir-autogen, elixir-format
+msgid "Diff not uploaded"
+msgstr "Diff non téléversé"
+
+#: lib/kanban_web/live/review_live.ex:202
+#, elixir-autogen, elixir-format
+msgid "Diff reloaded."
+msgstr "Diff rechargé."
+
+#: lib/kanban_web/live/review_live.html.heex:497
+#, elixir-autogen, elixir-format
+msgid "Re-fetch diff"
+msgstr "Récupérer le diff"
+
+#: lib/kanban_web/live/review_live.ex:199
+#, elixir-autogen, elixir-format
+msgid "The diff has not been re-uploaded yet — re-run the task's completion to send it."
+msgstr "Le diff n'a pas encore été téléversé à nouveau — relancez la finalisation de la tâche pour l'envoyer."
+
+#: lib/kanban_web/live/review_live.html.heex:489
+#, elixir-autogen, elixir-format
+msgid "This task changed files, but no diff arrived — the upload was lost in transit, so there is nothing to review here yet. Re-fetch to check whether the diff has since been uploaded."
+msgstr "Cette tâche a modifié des fichiers, mais aucun diff n'est arrivé — le téléversement a été perdu en cours de route, il n'y a donc rien à examiner ici pour l'instant. Récupérez-le à nouveau pour vérifier si le diff a été téléversé depuis."
+
+#: lib/kanban_web/live/review_live.ex:178
+#, elixir-autogen, elixir-format
+msgid "This task is no longer available for review."
+msgstr "Cette tâche n'est plus disponible pour révision."

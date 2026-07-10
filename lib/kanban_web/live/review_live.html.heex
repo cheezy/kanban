@@ -471,11 +471,40 @@
             ]}>
               {gettext("Changed files")}
             </span>
-            <ReviewDiffPanel.review_diff_panel
-              files={task_files(@selected)}
-              selected_file={selected_file_payload(@selected, @selected_changed_file)}
-              on_file_click="select_changed_file"
-            />
+            <%= if diff_missing?(@selected) do %>
+              <div
+                data-review-diff-missing
+                style={[
+                  "display: flex; flex-direction: column; gap: 10px; align-self: stretch;",
+                  "padding: 12px 14px; border-radius: 6px;",
+                  "background: var(--st-blocked-soft); color: var(--st-blocked);",
+                  "border: 1px solid var(--st-blocked);"
+                ]}
+              >
+                <div style="display: flex; align-items: flex-start; gap: 8px;">
+                  <.icon name="hero-exclamation-triangle" class="w-5 h-5 flex-shrink-0" />
+                  <div style="display: flex; flex-direction: column; gap: 3px;">
+                    <span style="font-weight: 600;">{gettext("Diff not uploaded")}</span>
+                    <span>
+                      {gettext(
+                        "This task changed files, but no diff arrived — the upload was lost in transit, so there is nothing to review here yet. Re-fetch to check whether the diff has since been uploaded."
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <.button type="button" phx-click="refetch_diff" data-review-diff-refetch>
+                    <.icon name="hero-arrow-path" class="w-4 h-4" /> {gettext("Re-fetch diff")}
+                  </.button>
+                </div>
+              </div>
+            <% else %>
+              <ReviewDiffPanel.review_diff_panel
+                files={task_files(@selected)}
+                selected_file={selected_file_payload(@selected, @selected_changed_file)}
+                on_file_click="select_changed_file"
+              />
+            <% end %>
           </section>
 
           <section

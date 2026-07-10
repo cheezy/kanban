@@ -18,6 +18,8 @@ defmodule KanbanWeb.ReviewLive do
   use KanbanWeb, :live_view
 
   alias Kanban.Reviews
+  alias Kanban.Tasks.ChangedFilesAudit
+  alias Kanban.Tasks.Task
   alias KanbanWeb.AcceptanceChecklist
   alias KanbanWeb.CodeReviewPanel
   alias KanbanWeb.ReviewAcceptance
@@ -108,6 +110,11 @@ defmodule KanbanWeb.ReviewLive do
     do_submit_request_changes(socket, socket.assigns.selected, extract_notes(params))
   end
 
+  @impl true
+  def handle_event("refetch_diff", _params, socket) do
+    do_refetch_diff(socket, socket.assigns.selected)
+  end
+
   # --- Request-changes helpers ---------------------------------------------
 
   defp do_submit_request_changes(socket, nil, _notes), do: {:noreply, socket}
@@ -146,6 +153,56 @@ defmodule KanbanWeb.ReviewLive do
 
   defp request_changes_failure_flash(socket) do
     put_flash(socket, :error, gettext("Unable to request changes on task."))
+  end
+
+  # --- Diff re-fetch --------------------------------------------------------
+  #
+  # When a review task arrived with its diff lost in transit — it changed
+  # files but `changed_files` is empty, see
+  # `Kanban.Tasks.ChangedFilesAudit.diff_missing?/1` — the reviewer can ask
+  # the LiveView to reload the task from the database in case the diff has
+  # since been (re-)uploaded. The reload routes through the same scoped
+  # `Reviews.get_pending_review/2` used elsewhere, so it enforces the caller's
+  # board authorization: a reviewer can only re-fetch a task on a board they
+  # can access, and the returned task is exactly what the queue already shows.
+
+  defp do_refetch_diff(socket, nil), do: {:noreply, socket}
+
+  defp do_refetch_diff(socket, %{id: id}) do
+    case Reviews.get_pending_review(socket.assigns.current_scope, id) do
+      {:ok, reloaded} ->
+        {:noreply, apply_refetched_task(socket, reloaded)}
+
+      {:error, :not_found} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("This task is no longer available for review."))}
+    end
+  end
+
+  defp apply_refetched_task(socket, reloaded) do
+    new_pending =
+      Enum.map(socket.assigns.pending, fn task ->
+        if task.id == reloaded.id, do: reloaded, else: task
+      end)
+
+    socket
+    |> assign(:pending, new_pending)
+    |> assign(:selected, reloaded)
+    |> refetch_result_flash(reloaded)
+  end
+
+  defp refetch_result_flash(socket, task) do
+    if diff_missing?(task) do
+      put_flash(
+        socket,
+        :info,
+        gettext(
+          "The diff has not been re-uploaded yet — re-run the task's completion to send it."
+        )
+      )
+    else
+      put_flash(socket, :info, gettext("Diff reloaded."))
+    end
   end
 
   # --- Diff panel telemetry -------------------------------------------------
@@ -296,6 +353,16 @@ defmodule KanbanWeb.ReviewLive do
   # Used in review_live.html.heex (analyzer does not scan HEEx files).
   defp present_text?(s) when is_binary(s), do: String.trim(s) != ""
   defp present_text?(_), do: false
+
+  # Whether the selected task's diff is missing — it changed files but no
+  # `changed_files` diff arrived (the upload was lost in transit). Drives the
+  # explicit "Diff not uploaded" banner that renders in place of the diff
+  # panel. Delegates to the shared `ChangedFilesAudit.diff_missing?/1`
+  # predicate (D128) so the UI and the server-side audit agree exactly on
+  # what "missing" means.
+  # Used in review_live.html.heex (analyzer does not scan HEEx files).
+  defp diff_missing?(%Task{} = task), do: ChangedFilesAudit.diff_missing?(task)
+  defp diff_missing?(_), do: false
 
   # Builds the per-file payload passed to the diff panel. Looks up the
   # selected path in the task's persisted `changed_files` jsonb (see
