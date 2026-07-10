@@ -3280,6 +3280,39 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert [%{"path" => "lib/kanban/tasks/goals.ex"}] = reloaded.changed_files
     end
 
+    test "backfill: a Backfill-built envelope repopulates an empty changed_files end-to-end (W1660)",
+         %{conn: conn, task: task, review_column: review_column} do
+      # A review task whose diff was lost: files changed, changed_files empty.
+      {:ok, task} =
+        Tasks.update_task(task, %{
+          column_id: review_column.id,
+          actual_files_changed: "lib/a.ex",
+          changed_files: []
+        })
+
+      assert Kanban.Tasks.ChangedFilesAudit.diff_missing?(task)
+
+      # The backfill tool builds its entries and envelope through this module,
+      # then PUTs to the real (authorized, validated) endpoint.
+      entries =
+        Kanban.ChangedFiles.Backfill.build_entries(["lib/a.ex"], fn "lib/a.ex" ->
+          {:ok, "@@ -1 +1 @@\n-old\n+new"}
+        end)
+
+      envelope = Kanban.ChangedFiles.Backfill.encode_envelope(entries)
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files", %{"changed_files" => envelope})
+      response = json_response(conn, 200)["data"]
+
+      assert [%{"path" => "lib/a.ex", "diff" => diff}] = response["changed_files"]
+      assert diff =~ "+new"
+
+      reloaded = Tasks.get_task!(task.id)
+      assert [%{"path" => "lib/a.ex"}] = reloaded.changed_files
+      # The gap is now closed — the review no longer shows a missing diff.
+      refute Kanban.Tasks.ChangedFilesAudit.diff_missing?(reloaded)
+    end
+
     test "accepts a gzip+base64-encoded changed_files envelope (D61)",
          %{conn: conn, task: task} do
       entries = [%{"path" => "lib/foo.ex", "diff" => "@@ -1 +1 @@\n-old\n+new"}]

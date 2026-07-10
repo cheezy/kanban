@@ -20,11 +20,15 @@ defmodule Kanban.Tasks.ChangedFilesAudit do
   This module is the server-side safety net for when it still slips through.
   """
 
+  import Ecto.Query, warn: false
+
+  alias Kanban.Repo
   alias Kanban.Tasks.Task
 
   require Logger
 
   @telemetry_event [:kanban, :task, :changed_files_missing]
+  @review_column_name "Review"
 
   @doc """
   Audits a review-bound task for a missing `changed_files` diff.
@@ -62,6 +66,34 @@ defmodule Kanban.Tasks.ChangedFilesAudit do
   @spec diff_missing?(Task.t()) :: boolean()
   def diff_missing?(%Task{} = task) do
     files_changed?(task.actual_files_changed) and empty_changed_files?(task.changed_files)
+  end
+
+  @doc """
+  Scans every task currently in a Review column for a missing `changed_files`
+  diff and alerts on each hit.
+
+  Unlike `audit_review_bound_task/2` — which fires only at the instant a task
+  transitions into Review — this is a standing sweep over all rows already in
+  the Review column, so a gap that slipped through (e.g. D110/D114, where the
+  diff upload was lost before the safety net existed) is still surfaced after
+  the fact. Each diff-missing task re-emits the same
+  `[:kanban, :task, :changed_files_missing]` telemetry event and warning via
+  `audit_review_bound_task/2` — no second alerting path.
+
+  Returns the list of diff-missing review tasks (each with `:column`
+  preloaded), so a caller (a Mix task, a scheduled job) can report them.
+  """
+  @spec scan_missing_diffs() :: [Task.t()]
+  def scan_missing_diffs do
+    from(t in Task,
+      join: c in assoc(t, :column),
+      as: :column,
+      where: c.name == ^@review_column_name and is_nil(t.archived_at),
+      preload: [column: c]
+    )
+    |> Repo.all()
+    |> Enum.filter(&diff_missing?/1)
+    |> Enum.map(fn task -> audit_review_bound_task(task, task.column.board_id) end)
   end
 
   defp files_changed?(actual_files_changed) when is_binary(actual_files_changed),
