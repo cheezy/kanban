@@ -412,6 +412,41 @@ defmodule Kanban.TargetsTest do
       assert entry.percentage == 0
     end
 
+    test "counts a Ready-column member goal's non-archived, not-yet-started children (D129 regression)",
+         %{scope: scope, user: user, board: board} do
+      # Regression for D129: a goal sitting in Ready whose children are all
+      # non-archived and not yet started (open/blocked) must still count as
+      # 0 of N — never 0 of 0. Mirrors production goal G323 (child W1665 open,
+      # W1666/W1667 blocked, all in the Ready column). The count credits every
+      # non-archived child regardless of its column or not-started status.
+      ready = column_fixture(board, %{name: "Ready"})
+      goal = goal_fixture(ready)
+
+      _open_child = task_fixture(ready, %{parent_id: goal.id})
+      blocked_a = task_fixture(ready, %{parent_id: goal.id})
+      blocked_b = task_fixture(ready, %{parent_id: goal.id})
+      assert {:ok, %{status: :blocked}} = Kanban.Tasks.update_task(blocked_a, %{status: :blocked})
+      assert {:ok, %{status: :blocked}} = Kanban.Tasks.update_task(blocked_b, %{status: :blocked})
+
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      # Assigning the goal makes it a member of the target (association drives
+      # visibility) — an unassigned goal would be absent and the target 0/0.
+      assert [member] = Targets.list_member_goals(scope, target)
+      assert member.id == goal.id
+
+      # Its three active children are counted: the target reports 0 of 3, not 0 of 0.
+      assert %{summary: summary, goals: [entry]} =
+               Targets.get_target_progress(scope, target, ~D[2026-07-07])
+
+      assert summary.completed == 0
+      assert summary.total == 3
+      assert entry.goal.id == goal.id
+      assert entry.completed == 0
+      assert entry.total == 3
+    end
+
     test "a target with no member goals returns a zeroed summary and empty goals",
          %{scope: scope, user: user} do
       target = delivery_target_fixture(user)
