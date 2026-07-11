@@ -198,6 +198,23 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "0/1 (0%)"
     end
 
+    test "renders the Boards title above the targets strip", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal = task_fixture(column, %{title: "Launch Goal", type: :goal})
+      target = delivery_target_fixture(user, %{name: "Q3 Launch"})
+      scope = Kanban.Accounts.Scope.for_user(user)
+      {:ok, _goal} = Kanban.Targets.assign_goal(scope, goal, target)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards")
+
+      # The page title must render first, with the targets strip below it
+      # (matching the board page's title-then-strip ordering).
+      {title_pos, _} = :binary.match(html, "</h1>")
+      {strip_pos, _} = :binary.match(html, "data-target-card")
+      assert title_pos < strip_pos
+    end
+
     test "renders no targets strip when the user has no targets", %{conn: conn, user: user} do
       _board = board_fixture(user)
 

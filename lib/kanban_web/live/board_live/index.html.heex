@@ -67,8 +67,6 @@
     </.link>
   </:actions>
 
-  <TargetsStrip.targets_strip targets={@targets} />
-
   <div class="px-4 py-6 sm:px-6 lg:px-8">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6">
       <div class="flex items-baseline gap-3">
@@ -79,6 +77,10 @@
           {ngettext("%{count} active", "%{count} active", @active_count, count: @active_count)}
         </span>
       </div>
+    </div>
+
+    <div :if={@targets != []} class="mb-6">
+      <TargetsStrip.targets_strip targets={@targets} />
     </div>
 
     <%= if !@has_boards do %>
