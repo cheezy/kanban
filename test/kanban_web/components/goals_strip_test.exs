@@ -52,7 +52,7 @@ defmodule KanbanWeb.GoalsStripTest do
       assert html =~ ~r/class="ident"[^>]*>\s*2\s*</
     end
 
-    test "renders the New goal button" do
+    test "does not render a New goal button (entry point lives in the board header)" do
       assigns = %{goals: [goal()]}
 
       html =
@@ -60,8 +60,8 @@ defmodule KanbanWeb.GoalsStripTest do
         <GoalsStrip.goals_strip goals={@goals} />
         """)
 
-      assert html =~ "New goal"
-      assert html =~ "hero-plus"
+      refute html =~ "New goal"
+      refute html =~ "hero-plus"
     end
   end
 

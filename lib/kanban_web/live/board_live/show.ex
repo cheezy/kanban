@@ -70,6 +70,12 @@ defmodule KanbanWeb.BoardLive.Show do
     end)
   end
 
+  def handle_params(%{"id" => id}, _, socket) when socket.assigns.live_action == :new_goal do
+    with_board(socket, id, fn board, user_access ->
+      resolve_new_goal(socket, board, user_access)
+    end)
+  end
+
   def handle_params(%{"id" => id}, _, socket) do
     with_board(socket, id, fn board, user_access ->
       resolve_default_board_view(socket, board, user_access)
@@ -629,6 +635,7 @@ defmodule KanbanWeb.BoardLive.Show do
   defp page_title(:new_column), do: "New Column"
   defp page_title(:edit_column), do: "Edit Column"
   defp page_title(:new_task), do: "Stride"
+  defp page_title(:new_goal), do: "Stride"
   defp page_title(:api_tokens), do: "Stride"
   defp page_title(:edit_task), do: "Edit Task"
   defp page_title(:edit_task_in_column), do: "Edit Task"
@@ -724,6 +731,30 @@ defmodule KanbanWeb.BoardLive.Show do
   defp assign_board_with_column(socket, board, user_access, column_id) do
     gate_task_form(socket, board, user_access, fn ->
       do_assign_board_with_column(socket, board, user_access, column_id)
+    end)
+  end
+
+  # :new_goal — header "New goal" entry point. Same D110 gate as :new_task;
+  # the target column is resolved server-side to the board's leftmost
+  # (position 0) column rather than coming from the URL.
+  defp resolve_new_goal(socket, board, user_access) do
+    gate_task_form(socket, board, user_access, fn ->
+      columns = Columns.list_columns(board)
+
+      case List.first(columns) do
+        nil ->
+          {:noreply,
+           socket
+           |> put_flash(:error, gettext("Column not found on this board"))
+           |> push_patch(to: ~p"/boards/#{board}")}
+
+        column ->
+          {:noreply,
+           socket
+           |> assign_common_board_state(board, user_access, columns)
+           |> assign(:column, column)
+           |> assign(:column_id, column.id)}
+      end
     end)
   end
 

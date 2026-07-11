@@ -17,6 +17,13 @@
 
   <:actions>
     <.link
+      :if={@can_modify}
+      patch={~p"/boards/#{@board}/goals/new"}
+      class="btn btn-xs btn-ghost"
+    >
+      {gettext("New goal")}
+    </.link>
+    <.link
       :if={@user_access == :owner and not @board.ai_optimized_board}
       patch={~p"/boards/#{@board}/columns/new"}
       class="btn btn-xs btn-ghost"
@@ -348,7 +355,7 @@
   </KanbanWeb.DelayedModal.delayed_modal>
 
   <KanbanWeb.DelayedModal.delayed_modal
-    :if={@live_action in [:new_task, :edit_task, :edit_task_in_column]}
+    :if={@live_action in [:new_task, :new_goal, :edit_task, :edit_task_in_column]}
     id="task-modal"
     show
     on_cancel={JS.patch(~p"/boards/#{@board}")}
@@ -356,14 +363,29 @@
     padding="p-4 md:p-6 lg:p-8"
     mobile_fullscreen
   >
+    <%!-- :new_goal is a routing concept only: the FormComponent receives the
+    familiar :new_task action so its save/subtitle/column-select logic keeps
+    working; the Goal type comes preset on the task struct. --%>
     <.live_component
       module={KanbanWeb.TaskLive.FormComponent}
-      id={(@live_action == :new_task && :new) || "edit-#{@task.id}"}
-      title={(@live_action == :new_task && "New Task") || "Edit Task"}
-      action={@live_action}
+      id={(@live_action in [:new_task, :new_goal] && :new) || "edit-#{@task.id}"}
+      title={
+        cond do
+          @live_action == :new_goal -> gettext("New goal")
+          @live_action == :new_task -> "New Task"
+          true -> "Edit Task"
+        end
+      }
+      action={(@live_action == :new_goal && :new_task) || @live_action}
       board={@board}
-      task={(@live_action in [:edit_task, :edit_task_in_column] && @task) || %Kanban.Tasks.Task{}}
-      column_id={(@live_action == :new_task && Map.get(assigns, :column_id)) || nil}
+      task={
+        cond do
+          @live_action in [:edit_task, :edit_task_in_column] -> @task
+          @live_action == :new_goal -> %Kanban.Tasks.Task{type: :goal}
+          true -> %Kanban.Tasks.Task{}
+        end
+      }
+      column_id={(@live_action in [:new_task, :new_goal] && Map.get(assigns, :column_id)) || nil}
       current_scope={@current_scope}
       patch={~p"/boards/#{@board}"}
     />

@@ -10,10 +10,14 @@ defmodule KanbanWeb.GoalsStrip do
   Mirrors the `GoalsStrip` JSX block at lines 267-336 of
   `design_handoff_stride/design_source/screens/board-kanban.jsx`.
 
-  The strip hides itself entirely when the `goals` list is empty —
-  no chrome, no "New goal" button — so a board with no goals does not
-  introduce an empty band above the columns. The LiveView can surface
-  a separate empty affordance if needed.
+  The strip renders goal pills only — it carries no "New goal"
+  affordance of its own. The single create entry point lives in the
+  always-visible board page header actions (`BoardLive.Show`,
+  `/boards/:id/goals/new`), so it is reachable whether or not the board
+  has any goals and never appears twice (mirroring the
+  `KanbanWeb.TargetsStrip` pattern). The strip hides itself entirely
+  when the `goals` list is empty — no chrome — so a board with no goals
+  does not introduce an empty band above the columns.
 
   ## Goal shape
 
@@ -77,19 +81,6 @@ defmodule KanbanWeb.GoalsStrip do
       <div style="display: flex; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 0;">
         <.goal_pill :for={goal <- @goals} goal={goal} board={@board} />
       </div>
-
-      <button
-        type="button"
-        style={[
-          "padding: 4px 8px; border-radius: 4px;",
-          "background: transparent; border: 1px solid var(--line);",
-          "color: var(--ink-2); font-size: 11px; font-weight: 500;",
-          "display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;"
-        ]}
-      >
-        <.icon name="hero-plus" class="w-2.5 h-2.5" />
-        {gettext("New goal")}
-      </button>
     </div>
     """
   end

@@ -504,6 +504,153 @@ defmodule KanbanWeb.BoardLiveTest do
     end
   end
 
+  describe "New Goal Header Link" do
+    setup [:register_and_log_in_user]
+
+    test "displays New goal link in header when board has no goals", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      _column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # The whole point of the header entry point: reachable at zero goals.
+      assert html =~ "New goal"
+      assert has_element?(show_live, ~s(a[href="/boards/#{board.id}/goals/new"]))
+    end
+
+    test "member with modify access sees the New goal link", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify, other_user)
+      _column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      assert has_element?(show_live, ~s(a[href="/boards/#{board.id}/goals/new"]))
+    end
+
+    test "read-only user does not see the New goal link", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only, other_user)
+      _column = column_fixture(board, %{name: "To Do"})
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      refute html =~ "New goal"
+      refute has_element?(show_live, ~s(a[href="/boards/#{board.id}/goals/new"]))
+    end
+
+    test "read-only user navigating directly to /goals/new is denied", %{conn: conn, user: user} do
+      other_user = user_fixture()
+      board = board_fixture(other_user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only, other_user)
+      _column = column_fixture(board, %{name: "To Do"})
+
+      # On a direct mount the gate's push_patch surfaces as a live_redirect
+      # back to the board with the permission flash.
+      assert {:error, {:live_redirect, %{to: to, flash: flash}}} =
+               live(conn, ~p"/boards/#{board}/goals/new")
+
+      assert to == "/boards/#{board.id}"
+      assert flash["error"] == "You do not have permission to modify tasks on this board"
+    end
+
+    test "New goal link opens the task form with type preset to goal", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      first_col = column_fixture(board, %{name: "Backlog Column"})
+      _second_col = column_fixture(board, %{name: "Ready Column"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> element(~s(a[href="/boards/#{board.id}/goals/new"]))
+      |> render_click()
+
+      assert has_element?(show_live, "#task-form")
+
+      assert has_element?(
+               show_live,
+               ~s(#task-form select[name="task[type]"] option[value="goal"][selected])
+             )
+
+      # Column preselected to the board's leftmost column.
+      assert has_element?(
+               show_live,
+               ~s(#task-form select[name="task[column_id]"] option[value="#{first_col.id}"][selected])
+             )
+    end
+
+    test "submitting the New goal form creates a goal in the leftmost column", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      first_col = column_fixture(board, %{name: "Backlog Column"})
+      _second_col = column_fixture(board, %{name: "Ready Column"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/goals/new")
+
+      show_live
+      |> form("#task-form", task: %{title: "Ship Q3 launch"})
+      |> render_submit()
+
+      html = render(show_live)
+      assert html =~ "Ship Q3 launch"
+
+      task = Kanban.Repo.get_by!(Kanban.Tasks.Task, title: "Ship Q3 launch")
+      assert task.type == :goal
+      assert task.column_id == first_col.id
+    end
+
+    test "/goals/new on a board with no columns flashes and returns to the board", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+
+      # On a direct mount the missing-column push_patch surfaces as a
+      # live_redirect back to the board with the error flash.
+      assert {:error, {:live_redirect, %{to: to, flash: flash}}} =
+               live(conn, ~p"/boards/#{board}/goals/new")
+
+      assert to == "/boards/#{board.id}"
+      assert flash["error"] == "Column not found on this board"
+    end
+
+    test "creates a goal even when the leftmost column is at its WIP limit", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      first_col = column_fixture(board, %{name: "Limited", wip_limit: 1})
+      _task = task_fixture(first_col, %{title: "Fills the WIP limit"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/goals/new")
+
+      # Goals bypass WIP checks server-side (only :work/:defect are counted),
+      # so creating into a full column must succeed.
+      show_live
+      |> form("#task-form", task: %{title: "Goal over the limit"})
+      |> render_submit()
+
+      task = Kanban.Repo.get_by!(Kanban.Tasks.Task, title: "Goal over the limit")
+      assert task.type == :goal
+      assert task.column_id == first_col.id
+    end
+
+    test "displays New goal link on an AI-optimized board", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
+
+      # Unlike New Column (hidden on AI-optimized boards), the New goal
+      # link is gated only on @can_modify.
+      assert has_element?(show_live, ~s(a[href="/boards/#{board.id}/goals/new"]))
+      refute html =~ "New Column"
+    end
+  end
+
   describe "Task Management" do
     setup [:register_and_log_in_user]
 

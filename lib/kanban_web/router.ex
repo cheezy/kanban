@@ -185,6 +185,8 @@ defmodule KanbanWeb.Router do
 
       live "/boards/:id/tasks/:task_id/edit", BoardLive.Show, :edit_task
 
+      # /goals/new must precede /goals/:goal_id or "new" is captured as a goal_id
+      live "/boards/:id/goals/new", BoardLive.Show, :new_goal
       live "/boards/:id/goals/:goal_id", GoalLive.Show, :show
     end
 
