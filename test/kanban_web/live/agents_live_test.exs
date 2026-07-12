@@ -35,8 +35,8 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert html =~ ~s(id="agents-filter-form")
       assert html =~ ~s(name="board_id")
       assert html =~ ~s(name="time_range")
-      assert html =~ "All Boards"
-      assert html =~ "All Time"
+      assert html =~ "All boards"
+      assert html =~ "All time"
       assert html =~ board.name
 
       # W1383: the filters now live in the header (top-right), not in a separate
@@ -67,7 +67,7 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert filtered =~ "Alpha"
       refute filtered =~ "Bravo"
 
-      # Selecting "All Boards" (value "") restores the full cross-board view.
+      # Selecting "All boards" (value "") restores the full cross-board view.
       restored = view |> form("#agents-filter-form", %{"board_id" => ""}) |> render_change()
       assert restored =~ "Alpha"
       assert restored =~ "Bravo"
@@ -90,7 +90,7 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert filtered =~ "Recent"
       refute filtered =~ "Stale"
 
-      # "All Time" restores the unbounded view.
+      # "All time" restores the unbounded view.
       restored =
         view |> form("#agents-filter-form", %{"time_range" => "all_time"}) |> render_change()
 

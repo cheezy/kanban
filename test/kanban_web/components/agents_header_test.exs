@@ -79,8 +79,8 @@ defmodule KanbanWeb.AgentsHeaderTest do
       assert html =~ ~s(phx-change="filter_change")
       assert html =~ ~s(name="board_id")
       assert html =~ ~s(name="time_range")
-      assert html =~ "All Boards"
-      assert html =~ "All Time"
+      assert html =~ "All boards"
+      assert html =~ "All time"
     end
 
     test "renders an option per board and marks the selected board" do

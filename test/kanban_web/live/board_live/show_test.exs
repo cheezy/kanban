@@ -69,7 +69,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       board = board_fixture(user)
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "New Column"
+      assert html =~ "New column"
     end
 
     test "owner can delete columns", %{conn: conn, user: user} do
@@ -791,14 +791,14 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       board = ai_optimized_board_fixture(user)
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      refute html =~ "New Column"
+      refute html =~ "New column"
     end
 
     test "owner can see new column button on regular board", %{conn: conn, user: user} do
       board = board_fixture(user)
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "New Column"
+      assert html =~ "New column"
     end
 
     test "owner cannot see edit column link on AI optimized board", %{conn: conn, user: user} do

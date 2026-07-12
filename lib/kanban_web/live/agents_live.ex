@@ -548,7 +548,7 @@ defmodule KanbanWeb.AgentsLive do
     """
   end
 
-  # The board select submits "" for "All Boards" and a numeric id otherwise; an
+  # The board select submits "" for "All boards" and a numeric id otherwise; an
   # unparseable value falls back to nil (all boards) rather than crashing.
   defp parse_board_id(id) when is_binary(id) and id != "" do
     case Integer.parse(id) do

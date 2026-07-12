@@ -387,8 +387,8 @@ defmodule KanbanWeb.BoardLiveTest do
       board = board_fixture(user)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
-      # Click "New Column" button which patches to the form
-      show_live |> element("a", "New Column") |> render_click()
+      # Click "New column" button which patches to the form
+      show_live |> element("a", "New column") |> render_click()
 
       # Validate form shows error for missing name
       assert show_live
@@ -411,7 +411,7 @@ defmodule KanbanWeb.BoardLiveTest do
       board = board_fixture(user)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
-      show_live |> element("a", "New Column") |> render_click()
+      show_live |> element("a", "New column") |> render_click()
 
       show_live
       |> form("#column-form", column: %{name: "Done"})
@@ -428,7 +428,7 @@ defmodule KanbanWeb.BoardLiveTest do
       board = board_fixture(user)
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
 
-      show_live |> element("a", "New Column") |> render_click()
+      show_live |> element("a", "New column") |> render_click()
 
       html =
         show_live
@@ -496,11 +496,11 @@ defmodule KanbanWeb.BoardLiveTest do
       refute html =~ "Inbox"
     end
 
-    test "displays New Column button", %{conn: conn, user: user} do
+    test "displays New column button", %{conn: conn, user: user} do
       board = board_fixture(user)
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "New Column"
+      assert html =~ "New column"
     end
   end
 
@@ -644,10 +644,10 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      # Unlike New Column (hidden on AI-optimized boards), the New goal
+      # Unlike New column (hidden on AI-optimized boards), the New goal
       # link is gated only on @can_modify.
       assert has_element?(show_live, ~s(a[href="/boards/#{board.id}/goals/new"]))
-      refute html =~ "New Column"
+      refute html =~ "New column"
     end
   end
 
@@ -1266,12 +1266,12 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "Project description"
     end
 
-    test "displays New Column button", %{conn: conn, user: user} do
+    test "displays New column button", %{conn: conn, user: user} do
       board = board_fixture(user)
 
       {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
 
-      assert html =~ "New Column"
+      assert html =~ "New column"
       assert has_element?(show_live, ~s([href="/boards/#{board.id}/columns/new"]))
     end
   end
@@ -1440,7 +1440,7 @@ defmodule KanbanWeb.BoardLiveTest do
 
       {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/columns/new")
 
-      assert page_title(show_live) =~ "New Column"
+      assert page_title(show_live) =~ "New column"
     end
 
     test "sets page title for edit column action", %{conn: conn, user: user} do

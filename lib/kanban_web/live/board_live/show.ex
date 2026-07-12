@@ -632,7 +632,7 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   defp page_title(:show), do: "Stride"
-  defp page_title(:new_column), do: "New Column"
+  defp page_title(:new_column), do: "New column"
   defp page_title(:edit_column), do: "Edit Column"
   defp page_title(:new_task), do: "Stride"
   defp page_title(:new_goal), do: "Stride"

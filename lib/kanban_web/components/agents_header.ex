@@ -422,7 +422,7 @@ defmodule KanbanWeb.AgentsHeader do
         aria-label={gettext("Board")}
         style={filter_select_style()}
       >
-        <option value="" selected={is_nil(@board_id)}>{gettext("All Boards")}</option>
+        <option value="" selected={is_nil(@board_id)}>{gettext("All boards")}</option>
         <option :for={board <- @boards} value={board.id} selected={@board_id == board.id}>
           {board.name}
         </option>
@@ -436,16 +436,16 @@ defmodule KanbanWeb.AgentsHeader do
       >
         <option value="today" selected={@time_range == :today}>{gettext("Today")}</option>
         <option value="last_7_days" selected={@time_range == :last_7_days}>
-          {gettext("Last 7 Days")}
+          {gettext("Last 7 days")}
         </option>
         <option value="last_30_days" selected={@time_range == :last_30_days}>
-          {gettext("Last 30 Days")}
+          {gettext("Last 30 days")}
         </option>
         <option value="last_90_days" selected={@time_range == :last_90_days}>
-          {gettext("Last 90 Days")}
+          {gettext("Last 90 days")}
         </option>
         <option value="all_time" selected={@time_range == :all_time}>
-          {gettext("All Time")}
+          {gettext("All time")}
         </option>
       </select>
     </form>
