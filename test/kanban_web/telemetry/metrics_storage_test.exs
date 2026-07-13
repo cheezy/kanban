@@ -343,6 +343,51 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
     end
   end
 
+  describe "start_link/1 and init/1 — GenServer lifecycle" do
+    setup do
+      Repo.delete_all("metrics_events")
+      :ok
+    end
+
+    test "starts the named server, attaches a handler per metric, and persists a fired event" do
+      metric = Telemetry.Metrics.summary("kanban.storage_test.ping.count")
+
+      pid = start_supervised!({MetricsStorage, [metric]})
+      Ecto.Adapters.SQL.Sandbox.allow(Repo, self(), pid)
+
+      on_exit(fn ->
+        :telemetry.detach({MetricsStorage, [:kanban, :storage_test, :ping], pid})
+      end)
+
+      # init/1 registered the server under the module name and attached a
+      # telemetry handler for the metric's event.
+      assert Process.whereis(MetricsStorage) == pid
+
+      handler_ids =
+        [:kanban, :storage_test, :ping]
+        |> :telemetry.list_handlers()
+        |> Enum.map(& &1.id)
+
+      assert {MetricsStorage, [:kanban, :storage_test, :ping], pid} in handler_ids
+
+      # Firing the event routes handle_event/4 → handle_info/2 → DB insert.
+      :telemetry.execute([:kanban, :storage_test, :ping], %{count: 2.5}, %{kind: "test"})
+
+      # A sync call drains the mailbox, so the insert has happened once it returns.
+      _ = :sys.get_state(pid)
+
+      assert [row] =
+               from(m in "metrics_events",
+                 where: m.metric_name == "kanban.storage_test.ping.count",
+                 select: %{measurement: m.measurement, metadata: m.metadata}
+               )
+               |> Repo.all()
+
+      assert row.measurement == 2.5
+      assert row.metadata == %{"kind" => "test"}
+    end
+  end
+
   describe "handle_event/4" do
     test "skips events for metrics_events table queries" do
       measurements = %{duration: 100}

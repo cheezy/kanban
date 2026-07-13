@@ -441,6 +441,63 @@ defmodule Kanban.Metrics.TaskQueriesTest do
     end
   end
 
+  describe "default options (opts omitted)" do
+    setup :ai_board_with_column
+
+    test "every query defaults to the last-30-days window", %{column: column} do
+      task = task_fixture(column)
+
+      {:ok, _} =
+        complete_task(task, %{
+          needs_review: true,
+          reviewed_at: DateTime.utc_now()
+        })
+
+      goal = task_fixture(column, %{type: :goal})
+      {:ok, _} = Tasks.update_task(goal, %{completed_at: DateTime.utc_now()})
+
+      board_id = board_id(column)
+
+      assert [%{identifier: cycle_id}] = TaskQueries.get_cycle_time_tasks(board_id)
+      assert cycle_id == task.identifier
+
+      assert [%{identifier: lead_id}] = TaskQueries.get_lead_time_tasks(board_id)
+      assert lead_id == task.identifier
+
+      assert [%{identifier: throughput_id}] = TaskQueries.get_throughput_tasks(board_id)
+      assert throughput_id == task.identifier
+
+      assert [%{identifier: goal_id}] = TaskQueries.get_completed_goals(board_id)
+      assert goal_id == goal.identifier
+
+      assert [%{identifier: review_id}] = TaskQueries.get_review_wait_tasks(board_id)
+      assert review_id == task.identifier
+
+      assert [%{identifier: backlog_id}] = TaskQueries.get_backlog_wait_tasks(board_id)
+      assert backlog_id == task.identifier
+    end
+
+    test "the default window excludes completions older than 30 days", %{column: column} do
+      task = task_fixture(column)
+      old = DateTime.add(DateTime.utc_now(), -40 * 86_400, :second)
+
+      {:ok, _} =
+        complete_task(task, %{
+          claimed_at: DateTime.add(old, -3600, :second),
+          completed_at: old,
+          reviewed_at: old
+        })
+
+      board_id = board_id(column)
+
+      assert TaskQueries.get_cycle_time_tasks(board_id) == []
+      assert TaskQueries.get_lead_time_tasks(board_id) == []
+      assert TaskQueries.get_throughput_tasks(board_id) == []
+      assert TaskQueries.get_review_wait_tasks(board_id) == []
+      assert TaskQueries.get_backlog_wait_tasks(board_id) == []
+    end
+  end
+
   defp ai_board_with_column(_context) do
     user = user_fixture()
     board = ai_optimized_board_fixture(user)

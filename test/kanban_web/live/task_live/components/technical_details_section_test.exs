@@ -76,5 +76,21 @@ defmodule KanbanWeb.TaskLive.Components.TechnicalDetailsSectionTest do
       refute html =~ "<img src=x onerror=1>"
       assert html =~ "&lt;img"
     end
+
+    test "renders a non-JSON scalar (atom) via the inspect fallback" do
+      html = render_details(%{"status" => :in_progress})
+
+      assert html =~ "status"
+      # The fallback clause inspects the value, so the atom renders with its colon.
+      assert html =~ ":in_progress"
+    end
+
+    test "renders a tuple value via the inspect fallback without crashing" do
+      html = render_details(%{"pair" => {:ok, 42}})
+
+      assert html =~ "pair"
+      # Tuples are not JSON-encodable; inspect/1 output is escaped text.
+      assert html =~ "{:ok, 42}"
+    end
   end
 end

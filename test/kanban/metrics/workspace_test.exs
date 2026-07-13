@@ -653,4 +653,121 @@ defmodule Kanban.Metrics.WorkspaceTest do
                Workspace.cumulative_flow(scope: scope)
     end
   end
+
+  describe "workspace reads with no arguments (opts default)" do
+    test "every read returns its empty/zero shape without a scope" do
+      assert Workspace.workspace_kpis() == %{
+               cycle_time_median_minutes: 0,
+               cycle_time_delta_pct: 0.0,
+               lead_time_p75_minutes: 0,
+               lead_time_delta_pct: 0.0,
+               throughput_per_day: 0.0,
+               throughput_delta_pct: 0.0,
+               review_wait_minutes: 0,
+               review_wait_delta_pct: 0.0
+             }
+
+      cycle = Workspace.cycle_time_daily()
+      assert length(cycle) == 14
+      assert Enum.all?(cycle, &(&1.minutes == 0))
+
+      assert Workspace.throughput_daily() == List.duplicate(0, 14)
+      assert Workspace.agent_leaderboard() == []
+
+      flow = Workspace.cumulative_flow()
+      assert length(flow) == 14
+
+      assert Enum.all?(flow, fn snap ->
+               snap.backlog == 0 and snap.ready == 0 and snap.doing == 0 and
+                 snap.review == 0 and snap.done == 0
+             end)
+    end
+  end
+
+  describe "workspace_kpis/1 — review wait and unclaimed completions" do
+    test "review_wait_minutes is the median wait for reviewed needs_review tasks" do
+      %{column: column, scope: scope, user: user} = ws_setup()
+      task = task_fixture(column, %{needs_review: true})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      completed_at = DateTime.add(now, -2 * 86_400, :second)
+      # Reviewed 90 minutes after completion.
+      reviewed_at = DateTime.add(completed_at, 90 * 60, :second)
+
+      {:ok, _} =
+        Tasks.update_task(task, %{
+          claimed_at: DateTime.add(completed_at, -3600, :second),
+          completed_at: completed_at,
+          reviewed_at: reviewed_at,
+          review_status: :approved,
+          reviewed_by_id: user.id
+        })
+
+      kpis = Workspace.workspace_kpis(scope: scope)
+      assert kpis.review_wait_minutes == 90
+    end
+
+    test "a completion without a claimed_at contributes no cycle time" do
+      %{column: column, scope: scope} = ws_setup()
+      task = task_fixture(column)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      completed_at = DateTime.add(now, -2 * 86_400, :second)
+
+      {:ok, _} = Tasks.update_task(task, %{completed_at: completed_at})
+
+      kpis = Workspace.workspace_kpis(scope: scope)
+      # No claimed_at → cycle_minutes is nil for the task, so the median is 0...
+      assert kpis.cycle_time_median_minutes == 0
+      # ...while the completion still counts toward throughput.
+      assert kpis.throughput_per_day > 0.0
+    end
+  end
+
+  describe "agent_leaderboard/1 — human contributor naming" do
+    test "a human contributor with a name is listed under that name" do
+      %{column: column, scope: scope, user: user} = ws_setup()
+
+      {:ok, named_user} =
+        user
+        |> Ecto.Changeset.change(%{name: "Grace Hopper"})
+        |> Kanban.Repo.update()
+
+      task = task_fixture(column)
+      ws_complete!(task, 1, %{completed_by_id: named_user.id})
+
+      assert [%{kind: :human, name: "Grace Hopper"}] = Workspace.agent_leaderboard(scope: scope)
+    end
+  end
+
+  describe "cumulative_flow/1 — review and done transitions" do
+    test "a reviewed needs_review task moves from review to done at its reviewed_at day" do
+      %{column: column, scope: scope, user: user} = ws_setup()
+      task = task_fixture(column, %{needs_review: true})
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      completed_at = DateTime.add(now, -5 * 86_400, :second)
+      reviewed_at = DateTime.add(now, -2 * 86_400, :second)
+
+      {:ok, _} =
+        Tasks.update_task(task, %{
+          claimed_at: DateTime.add(completed_at, -3600, :second),
+          completed_at: completed_at,
+          reviewed_at: reviewed_at,
+          review_status: :approved,
+          reviewed_by_id: user.id
+        })
+
+      flow = Workspace.cumulative_flow(scope: scope)
+      completed_date = DateTime.to_date(completed_at)
+      reviewed_date = DateTime.to_date(reviewed_at)
+
+      in_review = Enum.find(flow, &(&1.date == completed_date))
+      done = Enum.find(flow, &(&1.date == reviewed_date))
+
+      # Between completion and review the task sits in the review bucket...
+      assert in_review.review == 1
+      assert in_review.done == 0
+      # ...and lands in done once reviewed_at has passed.
+      assert done.review == 0
+      assert done.done == 1
+    end
+  end
 end

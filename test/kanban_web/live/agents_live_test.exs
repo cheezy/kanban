@@ -123,6 +123,41 @@ defmodule KanbanWeb.AgentsLiveTest do
       from(t in Tasks.Task, where: t.id == ^id)
       |> Repo.update_all(set: [updated_at: at])
     end
+
+    test "every allow-listed time-range value narrows the window", %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+      agent_on(column, "Recent")
+      {:ok, stale} = column |> task_fixture() |> Tasks.update_task(%{created_by_agent: "Stale"})
+      backdate_updated_at(stale, ~N[2020-01-01 00:00:00])
+
+      {:ok, view, html} = live(conn, ~p"/agents")
+      assert html =~ "Stale"
+
+      for range <- ["today", "last_30_days", "last_90_days"] do
+        filtered =
+          view |> form("#agents-filter-form", %{"time_range" => range}) |> render_change()
+
+        assert filtered =~ "Recent", "expected Recent to survive range #{range}"
+        refute filtered =~ "Stale", "expected Stale to drop out of range #{range}"
+      end
+    end
+
+    test "an unparseable board_id falls back to all boards", %{conn: conn, user: user} do
+      board_a = board_fixture(user)
+      board_a |> column_fixture() |> agent_on("Alpha")
+      board_b = board_fixture(user)
+      board_b |> column_fixture() |> agent_on("Bravo")
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      # "12abc" fails Integer.parse's exact match, so the filter resets to nil
+      # (all boards) instead of crashing or narrowing to a phantom board. The
+      # select constrains real submits, so push the forged payload directly.
+      html = render_change(view, "filter_change", %{"board_id" => "12abc"})
+
+      assert html =~ "Alpha"
+      assert html =~ "Bravo"
+    end
   end
 
   describe "mount and route" do
@@ -1341,6 +1376,22 @@ defmodule KanbanWeb.AgentsLiveTest do
       refute toggled_off =~ "data-agent-detail-panel"
     end
 
+    test "an unrecognized detail-section toggle payload is ignored", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      seed_working_agent(board, "Claude")
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(@roster_card_for) |> render_click()
+      assert render(view) =~ "Current work"
+
+      # A client-forged section key outside the allow-list must not mutate the
+      # expanded-sections state (or crash) — the panel renders unchanged.
+      html = render_click(view, "toggle_detail_section", %{"section" => "forged"})
+
+      assert html =~ "data-agent-detail-panel"
+      assert html =~ "Current work"
+    end
+
     test "the detail panel refreshes on a broadcast while an agent is selected",
          %{conn: conn, user: user} do
       board = board_fixture(user)
@@ -2074,6 +2125,83 @@ defmodule KanbanWeb.AgentsLiveTest do
 
       refute has_element?(view, ~s([data-reassign-trigger="#{goal.id}"]))
     end
+
+    test "cancelling closes the reassign dialog without changing owners",
+         %{conn: conn, user: user} do
+      %{goal: goal} = at_risk_goal_with_children(user)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+      assert has_element?(view, "#reassign-goal-modal")
+
+      render_click(view, "cancel_reassign")
+
+      refute has_element?(view, "#reassign-goal-modal")
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == nil
+    end
+
+    test "submitting without choosing an owner prompts for a selection",
+         %{conn: conn, user: user} do
+      %{goal: goal} = at_risk_goal_with_children(user)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      # The select's prompt submits "" — no owner chosen yet.
+      html = render_submit(view, "confirm_reassign", %{"assigned_to_id" => ""})
+
+      assert html =~ "Choose a new owner first."
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == nil
+    end
+
+    test "a non-integer owner id is treated as no selection",
+         %{conn: conn, user: user} do
+      %{goal: goal} = at_risk_goal_with_children(user)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      html = render_submit(view, "confirm_reassign", %{"assigned_to_id" => "abc"})
+
+      assert html =~ "Choose a new owner first."
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == nil
+    end
+
+    test "reassigning to a user who is not a board member is refused",
+         %{conn: conn, user: user} do
+      %{goal: goal} = at_risk_goal_with_children(user)
+      outsider = user_fixture()
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      # A forged id bypassing the member-constrained selector is re-validated
+      # server-side by the context op.
+      html =
+        render_submit(view, "confirm_reassign", %{"assigned_to_id" => to_string(outsider.id)})
+
+      assert html =~ "That user is not a member of this board."
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == nil
+    end
+
+    test "the owner selector lists a member by name when the member has one",
+         %{conn: conn, user: user} do
+      %{goal: goal, board: board} = at_risk_goal_with_children(user)
+      other = user_fixture()
+
+      {:ok, other} =
+        other
+        |> Ecto.Changeset.change(%{name: "Grace Hopper"})
+        |> Repo.update()
+
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, user)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      html = view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      assert html =~ "Grace Hopper"
+      refute html =~ other.email
+    end
   end
 
   describe "reprioritize action" do
@@ -2181,6 +2309,20 @@ defmodule KanbanWeb.AgentsLiveTest do
       {:ok, view, _html} = live(conn, ~p"/agents")
 
       refute has_element?(view, ~s([data-reprioritize-trigger="#{goal.id}"]))
+    end
+
+    test "submitting without choosing a priority prompts for a selection",
+         %{conn: conn, user: user} do
+      %{goal: goal} = at_risk_goal_with_children(user)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reprioritize-trigger="#{goal.id}"])) |> render_click()
+
+      # The select's prompt submits "" — no priority chosen yet.
+      html = render_submit(view, "confirm_reprioritize", %{"priority" => ""})
+
+      assert html =~ "Choose a new priority first."
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).priority == :medium
     end
   end
 
@@ -2311,6 +2453,28 @@ defmodule KanbanWeb.AgentsLiveTest do
 
       # A subsequent render reflects the timed clear; the affordance is gone.
       refute render(view) =~ "data-undo-affordance"
+    end
+
+    test "a stale clear_undo token leaves the armed affordance in place",
+         %{conn: conn, user: user} do
+      %{goal: goal, board: board} = at_risk_goal_with_children(user)
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, user)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      view
+      |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+      |> render_submit()
+
+      assert has_element?(view, "[data-undo-affordance]")
+
+      # A timer from an earlier, superseded intervention carries a different
+      # token — it must not clear the current snapshot.
+      send(view.pid, {:clear_undo, make_ref()})
+
+      assert render(view) =~ "data-undo-affordance"
     end
 
     test "clicking undo again after it was applied is a harmless no-op",
@@ -2460,6 +2624,82 @@ defmodule KanbanWeb.AgentsLiveTest do
       render_click(view, "confirm_reprioritize", %{"priority" => "critical"})
 
       assert Repo.get!(Kanban.Tasks.Task, goal.id).priority == :medium
+    end
+
+    test "a reassign confirm after the user's board access was revoked is refused",
+         %{conn: conn, user: target_owner} do
+      board_owner = user_fixture()
+      %{goal: goal, board: board, ready: ready} = at_risk_goal(board_owner, target_owner)
+      {:ok, _} = Boards.add_user_to_board(board, target_owner, :modify, board_owner)
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, board_owner)
+      _child = task_fixture(ready, %{parent_id: goal.id})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      # Access is revoked between opening the dialog and confirming; the
+      # context op re-checks can_intervene?/2 and refuses the write.
+      {:ok, _} = Boards.remove_user_from_board(board, target_owner, board_owner)
+
+      html =
+        view
+        |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+        |> render_submit()
+
+      assert html =~ "not allowed to reassign"
+      refute has_element?(view, "#reassign-goal-modal")
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == nil
+    end
+
+    test "a reprioritize confirm after the user's board access was revoked is refused",
+         %{conn: conn, user: target_owner} do
+      board_owner = user_fixture()
+      %{goal: goal, board: board, ready: ready} = at_risk_goal(board_owner, target_owner)
+      {:ok, _} = Boards.add_user_to_board(board, target_owner, :modify, board_owner)
+      _child = task_fixture(ready, %{parent_id: goal.id, priority: :low})
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reprioritize-trigger="#{goal.id}"])) |> render_click()
+
+      {:ok, _} = Boards.remove_user_from_board(board, target_owner, board_owner)
+
+      html =
+        view
+        |> form("#reprioritize-form", %{"priority" => "critical"})
+        |> render_submit()
+
+      assert html =~ "not allowed to reprioritize"
+      refute has_element?(view, "#reprioritize-goal-modal")
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).priority == :medium
+    end
+
+    test "an undo after the user's board access was revoked is refused",
+         %{conn: conn, user: target_owner} do
+      board_owner = user_fixture()
+      %{goal: goal, board: board} = at_risk_goal(board_owner, target_owner)
+      {:ok, _} = Boards.add_user_to_board(board, target_owner, :modify, board_owner)
+      other = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, other, :modify, board_owner)
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+      view |> element(~s([data-reassign-trigger="#{goal.id}"])) |> render_click()
+
+      view
+      |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
+      |> render_submit()
+
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == other.id
+
+      # Access is revoked while the Undo affordance is still armed.
+      {:ok, _} = Boards.remove_user_from_board(board, target_owner, board_owner)
+
+      html = view |> element("[data-undo-trigger]") |> render_click()
+
+      assert html =~ "You are no longer allowed to undo this change."
+      # The reassignment stays in place and the affordance is cleared.
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == other.id
+      refute has_element?(view, "[data-undo-affordance]")
     end
   end
 

@@ -1083,6 +1083,52 @@ defmodule KanbanWeb.ReviewLiveTest do
       # The queue rail still lists the task.
       assert html =~ "data-review-queue-item-id=\"#{task.id}\""
     end
+
+    test "select_changed_file is a no-op when nothing is selected", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      # Empty queue → no selected task, so a stale/forged file click must
+      # neither crash nor emit a panel-opened session.
+      html = render_hook(view, "select_changed_file", %{"path" => "lib/a.ex"})
+
+      assert html =~ "data-review-queue-empty"
+    end
+
+    test "submit_request_changes without a review payload asks for notes",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{identifier: "W903"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      # A malformed submit payload (no "review" map) is treated as blank notes.
+      html = render_hook(view, "submit_request_changes", %{})
+
+      assert html =~ "Notes are required when requesting changes."
+    end
+  end
+
+  describe "nil changed_files with no legacy file list" do
+    setup [:register_and_log_in_user]
+
+    test "renders an empty panel and tolerates a forged file selection",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{actual_files_changed: "", changed_files: nil})
+
+      {:ok, view, html} = live(conn, ~p"/review")
+
+      # No legacy list and no structured diff → a genuine no-op change, so the
+      # diff-missing banner must NOT render and the file list is empty.
+      refute html =~ "data-review-diff-missing"
+      assert html =~ "data-review-changed-files"
+
+      # A forged/stale file click for a task with no file data falls back to a
+      # path-only payload (diff: nil) instead of crashing the LiveView.
+      html = render_hook(view, "select_changed_file", %{"path" => "lib/ghost.ex"})
+
+      assert html =~ "data-review-detail-header"
+    end
   end
 
   describe "approve and request_changes error paths" do
