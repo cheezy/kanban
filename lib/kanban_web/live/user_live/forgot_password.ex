@@ -4,6 +4,7 @@ defmodule KanbanWeb.UserLive.ForgotPassword do
   import KanbanWeb.AuthFrame
 
   alias Kanban.Accounts
+  alias Kanban.RateLimit
 
   @impl true
   def render(assigns) do
@@ -76,27 +77,45 @@ defmodule KanbanWeb.UserLive.ForgotPassword do
   end
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, assign(socket, form: to_form(%{}, as: "user"))}
+  def mount(_params, session, socket) do
+    {:ok,
+     socket
+     |> assign(:client_ip, KanbanWeb.ClientIp.from_session_or_socket(session, socket))
+     |> assign(:form, to_form(%{}, as: "user"))}
   end
 
   @impl true
   def handle_event("send_email", %{"user" => %{"email" => email}}, socket) do
-    if user = Accounts.get_user_by_email(email) do
-      Accounts.deliver_user_reset_password_instructions(
-        user,
-        &url(~p"/users/reset-password/#{&1}")
-      )
+    # Keyed on (IP, email) and checked BEFORE the existence lookup, so the limit
+    # applies identically whether or not the account exists — preserving the
+    # non-enumeration property of the neutral flash below.
+    case RateLimit.check(:reset, ip: socket.assigns.client_ip, identity: email) do
+      {:error, {:rate_limited, _}} ->
+        {:noreply,
+         socket
+         |> put_flash(
+           :info,
+           gettext("Too many requests. Please wait a few minutes and try again.")
+         )
+         |> redirect(to: ~p"/")}
+
+      :ok ->
+        if user = Accounts.get_user_by_email(email) do
+          Accounts.deliver_user_reset_password_instructions(
+            user,
+            &url(~p"/users/reset-password/#{&1}")
+          )
+        end
+
+        info =
+          gettext(
+            "If your email is in our system, you will receive instructions to reset your password shortly."
+          )
+
+        {:noreply,
+         socket
+         |> put_flash(:info, info)
+         |> redirect(to: ~p"/")}
     end
-
-    info =
-      gettext(
-        "If your email is in our system, you will receive instructions to reset your password shortly."
-      )
-
-    {:noreply,
-     socket
-     |> put_flash(:info, info)
-     |> redirect(to: ~p"/")}
   end
 end

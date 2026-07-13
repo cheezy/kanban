@@ -5,6 +5,7 @@ defmodule KanbanWeb.IssueLive.FormComponent do
   use KanbanWeb, :live_component
 
   alias Kanban.GitHub
+  alias Kanban.RateLimit
 
   @impl true
   def render(assigns) do
@@ -143,15 +144,12 @@ defmodule KanbanWeb.IssueLive.FormComponent do
     """
   end
 
-  # W402: bound the abuse surface of the publicly-mountable issue form. Even
-  # without a session-level or IP-level rate limiter (would require a new dep
-  # like Hammer or PlugAttack), these guards stop the runaway-loop spam shape
-  # and bound payload size so a malicious client cannot exhaust the server's
-  # GitHub rate limit with a single request. Future work: add Hammer-backed
-  # per-IP throttling once a dep upgrade can be scoped.
+  # W402/W1678: bound the abuse surface of the publicly-mountable issue form.
+  # Payload size is capped here; per-IP submission throttling is enforced by the
+  # shared Hammer-backed limiter (Kanban.RateLimit surface :issue), keyed on the
+  # client IP passed down from the parent LiveView.
   @title_max_length 200
   @body_max_length 4_000
-  @min_submission_interval_seconds 30
 
   @impl true
   def update(assigns, socket) do
@@ -161,7 +159,6 @@ defmodule KanbanWeb.IssueLive.FormComponent do
      |> assign_new(:submitted, fn -> false end)
      |> assign_new(:issue_url, fn -> nil end)
      |> assign_new(:error, fn -> nil end)
-     |> assign_new(:last_submission_at, fn -> nil end)
      |> assign_new(:form, fn -> to_form(default_params(), as: "issue") end)}
   end
 
@@ -228,16 +225,14 @@ defmodule KanbanWeb.IssueLive.FormComponent do
     |> assign(:submitted, true)
     |> assign(:issue_url, url)
     |> assign(:error, nil)
-    |> assign(:last_submission_at, System.system_time(:second))
   end
 
+  # Anonymous form, so there is no identity to key on — throttle purely by the
+  # client IP forwarded from the parent LiveView.
   defp rate_limited?(socket) do
-    case socket.assigns[:last_submission_at] do
-      nil ->
-        false
-
-      last ->
-        System.system_time(:second) - last < @min_submission_interval_seconds
+    case RateLimit.check(:issue, ip: socket.assigns[:client_ip]) do
+      :ok -> false
+      {:error, {:rate_limited, _}} -> true
     end
   end
 

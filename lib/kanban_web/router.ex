@@ -8,6 +8,10 @@ defmodule KanbanWeb.Router do
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
+    # Resolve the real client IP behind the Fly proxy before anything reads
+    # conn.remote_ip (rate limiting) — after :fetch_session so it can also stash
+    # the IP for LiveView.
+    plug KanbanWeb.Plugs.RemoteClientIp
     plug :fetch_live_flash
     plug :put_root_layout, html: {KanbanWeb.Layouts, :root}
     plug :protect_from_forgery
@@ -33,6 +37,9 @@ defmodule KanbanWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    # Resolve the real client IP behind the Fly proxy before the token plug
+    # reads conn.remote_ip for failure-based rate limiting.
+    plug KanbanWeb.Plugs.RemoteClientIp
     plug KanbanWeb.Plugs.ApiTelemetry
     plug KanbanWeb.Plugs.AuthenticateApiToken
   end

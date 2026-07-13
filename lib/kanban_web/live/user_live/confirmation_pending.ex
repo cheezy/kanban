@@ -4,8 +4,8 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
   import KanbanWeb.AuthFrame
 
   alias Kanban.Accounts
+  alias Kanban.RateLimit
 
-  @resend_cooldown_seconds 60
   @max_email_length 160
   @email_format ~r/^[^@,;\s]+@[^@,;\s]+$/
 
@@ -110,21 +110,23 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
   end
 
   @impl true
-  def mount(params, _session, socket) do
+  def mount(params, session, socket) do
+    socket =
+      assign(socket, :client_ip, KanbanWeb.ClientIp.from_session_or_socket(session, socket))
+
     case validate_email_param(params) do
       {:ok, email} ->
-        {:ok, assign(socket, email: email, last_resend_at: nil)}
+        {:ok, assign(socket, email: email)}
 
       :error ->
-        {:ok, assign(socket, email: nil, last_resend_at: nil, form: to_form(%{}, as: "user"))}
+        {:ok, assign(socket, email: nil, form: to_form(%{}, as: "user"))}
     end
   end
 
   @impl true
   def handle_event("resend", _params, socket) do
-    if rate_limited?(socket) do
-      {:noreply,
-       put_flash(socket, :info, gettext("Please wait a moment before requesting another email."))}
+    if rate_limited?(socket, socket.assigns.email) do
+      {:noreply, put_flash(socket, :info, throttle_message())}
     else
       {:noreply, deliver_and_flash(socket, socket.assigns.email)}
     end
@@ -132,16 +134,11 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
 
   def handle_event("send_email", %{"user" => %{"email" => email}}, socket) do
     cond do
-      rate_limited?(socket) ->
-        {:noreply,
-         put_flash(
-           socket,
-           :info,
-           gettext("Please wait a moment before requesting another email.")
-         )}
-
       not valid_email?(email) ->
         {:noreply, put_flash(socket, :error, gettext("Enter a valid email address."))}
+
+      rate_limited?(socket, email) ->
+        {:noreply, put_flash(socket, :info, throttle_message())}
 
       true ->
         {:noreply, socket |> deliver_and_flash(email) |> assign(:email, email)}
@@ -155,9 +152,8 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
       Accounts.deliver_user_confirmation_instructions(user, &url(~p"/users/confirm/#{&1}"))
     end
 
-    socket
-    |> assign(:last_resend_at, System.system_time(:second))
-    |> put_flash(
+    put_flash(
+      socket,
       :info,
       gettext(
         "If your email is in our system and the account isn't confirmed yet, you will receive a new confirmation link shortly."
@@ -165,11 +161,18 @@ defmodule KanbanWeb.UserLive.ConfirmationPending do
     )
   end
 
-  defp rate_limited?(socket) do
-    case socket.assigns.last_resend_at do
-      nil -> false
-      last -> System.system_time(:second) - last < @resend_cooldown_seconds
+  # Keyed on (IP, email) and applied uniformly for existing and non-existing
+  # accounts (the existence lookup happens later in deliver_and_flash), so the
+  # throttle does not become an enumeration oracle.
+  defp rate_limited?(socket, email) do
+    case RateLimit.check(:resend, ip: socket.assigns.client_ip, identity: email) do
+      :ok -> false
+      {:error, {:rate_limited, _}} -> true
     end
+  end
+
+  defp throttle_message do
+    gettext("Too many requests. Please wait a few minutes and try again.")
   end
 
   defp validate_email_param(%{"email" => email}) do

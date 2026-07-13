@@ -30,10 +30,24 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   import Phoenix.Controller, only: [json: 2]
 
   alias Kanban.ApiTokens
+  alias Kanban.RateLimit
 
   def init(opts), do: opts
 
   def call(conn, _opts) do
+    # Throttle a token-guessing flood by source IP before touching the DB. Only
+    # failed authentications are counted, so legitimate high-frequency API
+    # traffic with a valid token is never limited.
+    case RateLimit.peek(:api_token, ip: conn.remote_ip) do
+      {:error, {:rate_limited, retry_after_ms}} ->
+        halt_rate_limited(conn, retry_after_ms)
+
+      :ok ->
+        authenticate(conn)
+    end
+  end
+
+  defp authenticate(conn) do
     with {:ok, token} <- extract_token(conn),
          {:ok, api_token} <- ApiTokens.get_api_token_by_token(token) do
       conn
@@ -41,8 +55,20 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
       |> assign(:current_board, api_token.board)
       |> assign(:api_token, api_token)
     else
-      error -> halt_with_auth_error(conn, error)
+      error ->
+        RateLimit.record_failure(:api_token, ip: conn.remote_ip)
+        halt_with_auth_error(conn, error)
     end
+  end
+
+  defp halt_rate_limited(conn, retry_after_ms) do
+    emit_auth_failed_telemetry(conn, "rate_limited")
+
+    conn
+    |> put_resp_header("retry-after", Integer.to_string(div(retry_after_ms, 1000) + 1))
+    |> put_status(:too_many_requests)
+    |> json(%{error: "Too many requests"})
+    |> halt()
   end
 
   defp halt_with_auth_error(conn, {:error, :missing_token}) do

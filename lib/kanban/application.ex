@@ -10,6 +10,9 @@ defmodule Kanban.Application do
     children = [
       KanbanWeb.Telemetry,
       Kanban.Repo,
+      # Rate-limit bucket store (Hammer/ETS) backing Kanban.RateLimit. Expired
+      # buckets are swept every 10 minutes; the longest limit window is 15 min.
+      {Kanban.RateLimiter, clean_period: :timer.minutes(10)},
       {DNSCluster, query: Application.get_env(:kanban, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Kanban.PubSub},
       KanbanWeb.AgentsPresence,

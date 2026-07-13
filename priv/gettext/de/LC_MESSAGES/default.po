@@ -113,8 +113,8 @@ msgid "Creating account..."
 msgstr "Konto wird erstellt..."
 
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:88
-#: lib/kanban_web/live/user_live/forgot_password.ex:39
-#: lib/kanban_web/live/user_live/forgot_password.ex:46
+#: lib/kanban_web/live/user_live/forgot_password.ex:40
+#: lib/kanban_web/live/user_live/forgot_password.ex:47
 #: lib/kanban_web/live/user_live/login.ex:42
 #: lib/kanban_web/live/user_live/registration.ex:57
 #: lib/kanban_web/live/user_live/settings.ex:77
@@ -198,7 +198,7 @@ msgstr "Abbrechen"
 
 #: lib/kanban_web/live/board_live/form.html.heex:31
 #: lib/kanban_web/live/board_live/settings_form_component.ex:82
-#: lib/kanban_web/live/issue_live/form_component.ex:85
+#: lib/kanban_web/live/issue_live/form_component.ex:86
 #: lib/kanban_web/live/target_live/form.html.heex:31
 #: lib/kanban_web/live/task_live/form_component.html.heex:52
 #, elixir-autogen, elixir-format
@@ -349,7 +349,7 @@ msgstr "Aufgabe erfolgreich aktualisiert"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:23
 #: lib/kanban_web/live/archive_live/index.html.heex:188
-#: lib/kanban_web/live/issue_live/form_component.ex:70
+#: lib/kanban_web/live/issue_live/form_component.ex:71
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:30
 #: lib/kanban_web/live/task_live/form_component.html.heex:47
 #, elixir-autogen, elixir-format
@@ -400,7 +400,7 @@ msgstr "Erstellt"
 msgid "Critical"
 msgstr "Kritisch"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:308
+#: lib/kanban_web/live/issue_live/form_component.ex:303
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:71
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
 #: lib/kanban_web/task_tokens.ex:163
@@ -465,7 +465,7 @@ msgstr "Priorität"
 msgid "Task History"
 msgstr "Aufgabenverlauf"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:78
+#: lib/kanban_web/live/issue_live/form_component.ex:79
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:36
 #: lib/kanban_web/live/task_live/form_component.html.heex:102
 #: lib/kanban_web/live/task_live/view_component.ex:359
@@ -801,68 +801,68 @@ msgstr "KI ist nicht perfekt und ich bin sicher, dass es Probleme in dieser Anwe
 msgid "Report Issues or Request Features"
 msgstr "Probleme melden oder Funktionen anfordern"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:72
+#: lib/kanban_web/live/issue_live/form_component.ex:73
 #, elixir-autogen, elixir-format
 msgid "Brief description of the issue"
 msgstr "Kurze Beschreibung des Problems"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:112
+#: lib/kanban_web/live/issue_live/form_component.ex:113
 #, elixir-autogen, elixir-format
 msgid "Failed to submit issue"
 msgstr "Problem konnte nicht übermittelt werden"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:309
+#: lib/kanban_web/live/issue_live/form_component.ex:304
 #, elixir-autogen, elixir-format
 msgid "Feature Request"
 msgstr "Funktionsanfrage"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:208
+#: lib/kanban_web/live/issue_live/form_component.ex:205
 #, elixir-autogen, elixir-format
 msgid "GitHub integration is not configured"
 msgstr "GitHub-Integration ist nicht konfiguriert"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:35
+#: lib/kanban_web/live/issue_live/form_component.ex:36
 #, elixir-autogen, elixir-format
 msgid "Issue submitted successfully!"
 msgstr "Problem erfolgreich übermittelt!"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:88
+#: lib/kanban_web/live/issue_live/form_component.ex:89
 #, elixir-autogen, elixir-format
 msgid "Please provide details about the issue or feature request"
 msgstr "Bitte geben Sie Details zum Problem oder zur Funktionsanfrage an"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:93
+#: lib/kanban_web/live/issue_live/form_component.ex:94
 #, elixir-autogen, elixir-format
 msgid "Submit Issue"
 msgstr "Problem übermitteln"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:17
+#: lib/kanban_web/live/issue_live/form_component.ex:18
 #, elixir-autogen, elixir-format
 msgid "Submit an Issue"
 msgstr "Ein Problem einreichen"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:54
+#: lib/kanban_web/live/issue_live/form_component.ex:55
 #, elixir-autogen, elixir-format
 msgid "Submit another issue"
 msgstr "Ein weiteres Problem übermitteln"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:92
+#: lib/kanban_web/live/issue_live/form_component.ex:93
 #, elixir-autogen, elixir-format
 msgid "Submitting..."
 msgstr "Wird übermittelt..."
 
-#: lib/kanban_web/live/issue_live/form_component.ex:310
+#: lib/kanban_web/live/issue_live/form_component.ex:305
 #, elixir-autogen, elixir-format
 msgid "Translation"
 msgstr "Übersetzung"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:38
+#: lib/kanban_web/live/issue_live/form_component.ex:39
 #, elixir-autogen, elixir-format
 msgid "View your issue on"
 msgstr "Sehen Sie Ihr Problem an auf"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:258
-#: lib/kanban_web/live/issue_live/form_component.ex:274
+#: lib/kanban_web/live/issue_live/form_component.ex:253
+#: lib/kanban_web/live/issue_live/form_component.ex:269
 #, elixir-autogen, elixir-format
 msgid "can't be blank"
 msgstr "darf nicht leer sein"
@@ -919,7 +919,7 @@ msgstr "Neu zugewiesen"
 msgid "Unassigned from"
 msgstr "Zuweisung entfernt von"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:138
+#: lib/kanban_web/live/issue_live/form_component.ex:139
 #, elixir-autogen, elixir-format
 msgid "See existing issues"
 msgstr "Bestehende Probleme anzeigen"
@@ -1005,7 +1005,7 @@ msgstr "Sehen Sie die vollständige Versionsgeschichte und Funktionsliste für d
 msgid "Work With Us"
 msgstr "Arbeiten Sie mit uns"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:93
+#: lib/kanban_web/live/user_live/forgot_password.ex:111
 #, elixir-autogen, elixir-format
 msgid "If your email is in our system, you will receive instructions to reset your password shortly."
 msgstr "Falls Ihre E-Mail in unserem System hinterlegt ist, erhalten Sie in Kürze eine Anleitung zum Zurücksetzen Ihres Passworts."
@@ -2994,7 +2994,7 @@ msgstr "Spalte auf diesem Board nicht gefunden"
 msgid "Column or task not found on this board"
 msgstr "Spalte oder Aufgabe auf diesem Board nicht gefunden"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:221
+#: lib/kanban_web/live/issue_live/form_component.ex:218
 #, elixir-autogen, elixir-format
 msgid "Failed to submit the issue. Please try again later."
 msgstr "Senden des Problems fehlgeschlagen. Bitte versuchen Sie es später erneut."
@@ -3010,7 +3010,7 @@ msgstr "Ungültiger Feldname"
 msgid "Parent goal does not belong to this board"
 msgstr "Übergeordnetes Ziel gehört nicht zu diesem Board"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:181
+#: lib/kanban_web/live/issue_live/form_component.ex:178
 #, elixir-autogen, elixir-format
 msgid "Please wait a moment before submitting another issue."
 msgstr "Bitte warten Sie einen Moment, bevor Sie ein weiteres Problem einreichen."
@@ -3050,13 +3050,13 @@ msgstr "Sie müssen Board-Mitglied sein, um diese Aufgabe zu kommentieren"
 msgid "You must be an admin to perform this action."
 msgstr "Sie müssen Administrator sein, um diese Aktion auszuführen."
 
-#: lib/kanban_web/live/issue_live/form_component.ex:262
-#: lib/kanban_web/live/issue_live/form_component.ex:278
+#: lib/kanban_web/live/issue_live/form_component.ex:257
+#: lib/kanban_web/live/issue_live/form_component.ex:273
 #, elixir-autogen, elixir-format
 msgid "must be %{n} characters or fewer"
 msgstr "darf höchstens %{n} Zeichen lang sein"
 
-#: lib/kanban_web/live/issue_live/form_component.ex:291
+#: lib/kanban_web/live/issue_live/form_component.ex:286
 #, elixir-autogen, elixir-format
 msgid "must be one of the listed options"
 msgstr "muss eine der aufgeführten Optionen sein"
@@ -5439,13 +5439,13 @@ msgstr "Mindestens 12 Zeichen"
 msgid "Audit log for column reordering"
 msgstr "Audit-Log für die Neuanordnung von Spalten"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:17
+#: lib/kanban_web/live/user_live/forgot_password.ex:18
 #: lib/kanban_web/live/user_live/reset_password.ex:18
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to sign in"
 msgstr "Zurück zur Anmeldung"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:69
+#: lib/kanban_web/live/user_live/forgot_password.ex:70
 #, elixir-autogen, elixir-format
 msgid "Board → Tokens"
 msgstr "Board → Tokens"
@@ -5486,7 +5486,7 @@ msgstr "Erstellen Sie Ihr Konto"
 msgid "Established companies modernizing their development practices."
 msgstr "Etablierte Unternehmen, die ihre Entwicklungspraktiken modernisieren."
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:64
+#: lib/kanban_web/live/user_live/forgot_password.ex:65
 #, elixir-autogen, elixir-format, fuzzy
 msgid "For agents:"
 msgstr "Für Agenten"
@@ -5542,7 +5542,7 @@ msgstr "Teams aus dem öffentlichen und privaten Sektor, die komplexe technische
 msgid "Release notes for the Stride application."
 msgstr "Release Notes für die Stride-Anwendung."
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:23
+#: lib/kanban_web/live/user_live/forgot_password.ex:24
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reset your password"
 msgstr "Setzen Sie Ihr Passwort zurück"
@@ -5552,7 +5552,7 @@ msgstr "Setzen Sie Ihr Passwort zurück"
 msgid "Save password"
 msgstr "Passwort speichern"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:55
+#: lib/kanban_web/live/user_live/forgot_password.ex:56
 #, elixir-autogen, elixir-format
 msgid "Send reset link"
 msgstr "Zurücksetz-Link senden"
@@ -5593,7 +5593,7 @@ msgstr "Ihr Bestätigungslink wird überprüft…"
 msgid "We work with"
 msgstr "Wir arbeiten mit"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:26
+#: lib/kanban_web/live/user_live/forgot_password.ex:27
 #, elixir-autogen, elixir-format
 msgid "We'll email a one-time link. The link expires in 15 minutes."
 msgstr "Wir senden Ihnen einen Einmal-Link per E-Mail. Der Link läuft in 15 Minuten ab."
@@ -5618,7 +5618,7 @@ msgstr "Ihr Name und Ihre E-Mail-Adresse. E-Mail-Änderungen erfordern eine Best
 msgid "change credentials"
 msgstr "Anmeldedaten ändern"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:71
+#: lib/kanban_web/live/user_live/forgot_password.ex:72
 #, elixir-autogen, elixir-format
 msgid "if you suspect a key is compromised."
 msgstr "wenn Sie vermuten, dass ein Schlüssel kompromittiert ist."
@@ -5628,17 +5628,17 @@ msgstr "wenn Sie vermuten, dass ein Schlüssel kompromittiert ist."
 msgid "name · email"
 msgstr "Name · E-Mail"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:66
+#: lib/kanban_web/live/user_live/forgot_password.ex:67
 #, elixir-autogen, elixir-format
 msgid "not"
 msgstr "nicht"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:65
+#: lib/kanban_web/live/user_live/forgot_password.ex:66
 #, elixir-autogen, elixir-format
 msgid "resetting your operator password does"
 msgstr "das Zurücksetzen Ihres Operator-Passworts schon"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:67
+#: lib/kanban_web/live/user_live/forgot_password.ex:68
 #, elixir-autogen, elixir-format
 msgid "rotate API tokens. Rotate from"
 msgstr "rotieren API-Tokens. Rotieren Sie über"
@@ -6963,7 +6963,7 @@ msgstr "Ihre Inhalte"
 msgid "Your use of the service is subject to our "
 msgstr "Ihre Nutzung des Dienstes unterliegt unserer "
 
-#: lib/kanban_web/controllers/user_session_controller.ex:56
+#: lib/kanban_web/controllers/user_session_controller.ex:71
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "Sie müssen Ihr Konto bestätigen, bevor Sie sich anmelden. Prüfen Sie Ihre E-Mails auf einen Bestätigungslink."
@@ -7011,16 +7011,10 @@ msgstr "Prüfen Sie Ihre E-Mails"
 msgid "Didn't get it? Check your spam folder or resend below."
 msgstr "Nichts erhalten? Prüfen Sie Ihren Spam-Ordner oder senden Sie unten erneut."
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:162
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:157
 #, elixir-autogen, elixir-format
 msgid "If your email is in our system and the account isn't confirmed yet, you will receive a new confirmation link shortly."
 msgstr "Wenn Ihre E-Mail in unserem System ist und das Konto noch nicht bestätigt wurde, erhalten Sie in Kürze einen neuen Bestätigungslink."
-
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:127
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:140
-#, elixir-autogen, elixir-format
-msgid "Please wait a moment before requesting another email."
-msgstr "Bitte warten Sie einen Moment, bevor Sie eine weitere E-Mail anfordern."
 
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:64
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:72
@@ -7035,7 +7029,7 @@ msgstr "Bestätigungs-E-Mail erneut senden"
 msgid "Sending…"
 msgstr "Wird gesendet…"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:32
+#: lib/kanban_web/controllers/user_session_controller.ex:33
 #, elixir-autogen, elixir-format
 msgid "We couldn't send the confirmation email. Use the resend button to try again."
 msgstr "Wir konnten die Bestätigungs-E-Mail nicht senden. Verwenden Sie die Schaltfläche zum erneuten Senden."
@@ -7429,7 +7423,7 @@ msgstr "Keine archivierten Aufgaben stimmen mit \"%{query}\" überein."
 msgid "Created today"
 msgstr "Heute abgeschlossen"
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:144
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:137
 #, elixir-autogen, elixir-format
 msgid "Enter a valid email address."
 msgstr "Geben Sie eine gültige E-Mail-Adresse ein."
@@ -7866,3 +7860,14 @@ msgstr "Letzte 90 Tage"
 #, elixir-autogen, elixir-format
 msgid "New column"
 msgstr "Neue Spalte"
+
+#: lib/kanban_web/controllers/user_session_controller.ex:105
+#, elixir-autogen, elixir-format
+msgid "Too many attempts. Please wait a few minutes and try again."
+msgstr "Zu viele Versuche. Bitte warte ein paar Minuten und versuche es erneut."
+
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:174
+#: lib/kanban_web/live/user_live/forgot_password.ex:98
+#, elixir-autogen, elixir-format
+msgid "Too many requests. Please wait a few minutes and try again."
+msgstr "Zu viele Anfragen. Bitte warte ein paar Minuten und versuche es erneut."

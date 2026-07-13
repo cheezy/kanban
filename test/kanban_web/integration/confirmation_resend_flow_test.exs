@@ -47,11 +47,14 @@ defmodule KanbanWeb.Integration.ConfirmationResendFlowTest do
       assert render(pending_lv) =~ "If your email is in our system"
       assert_receive {:email, %Swoosh.Email{html_body: resent_html_body}}
 
-      # 4. A second resend inside the cooldown is throttled — no third email.
+      # 4. Per-request throttling now lives in the shared Kanban.RateLimit
+      #    limiter (disabled in this suite; wiring covered by the async: false
+      #    rate-limit integration test). Without an active throttle, a second
+      #    resend delivers another email.
       pending_lv |> element("button", "Resend confirmation email") |> render_click()
 
-      assert render(pending_lv) =~ "Please wait a moment before requesting another email"
-      refute_receive {:email, _}, 100
+      assert render(pending_lv) =~ "you will receive a new confirmation link shortly"
+      assert_receive {:email, %Swoosh.Email{}}
 
       # 5. Follow the resent link; the account confirms and onboarding renders.
       [token] =

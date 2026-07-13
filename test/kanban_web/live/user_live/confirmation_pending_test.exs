@@ -91,21 +91,24 @@ defmodule KanbanWeb.UserLive.ConfirmationPendingTest do
     end
 
     @tag :capture_log
-    test "throttles repeated resend clicks", %{conn: conn} do
+    test "repeated resend clicks deliver each time when not throttled", %{conn: conn} do
+      # Throttling now lives in the shared Kanban.RateLimit limiter (disabled in
+      # the async suite; wiring covered by the async: false integration test).
+      # Without an active throttle, each click delivers a fresh token.
       user = unconfirmed_user_fixture()
       {:ok, lv, _html} = live(conn, ~p"/users/confirmation-pending?email=#{user.email}")
 
       lv |> element("button", "Resend confirmation email") |> render_click()
       lv |> element("button", "Resend confirmation email") |> render_click()
 
-      assert render(lv) =~ "Please wait a moment before requesting another email"
+      assert render(lv) =~ "you will receive a new confirmation link shortly"
 
       tokens =
         UserToken
         |> Repo.all()
         |> Enum.filter(&(&1.user_id == user.id and &1.context == "confirm"))
 
-      assert length(tokens) == 1
+      assert length(tokens) == 2
     end
   end
 
@@ -154,7 +157,12 @@ defmodule KanbanWeb.UserLive.ConfirmationPendingTest do
     end
 
     @tag :capture_log
-    test "the cooldown from a form submit throttles the resend button", %{conn: conn} do
+    test "a resend without an active throttle sends another confirmation email",
+         %{conn: conn} do
+      # Per-request throttling now lives in the shared Kanban.RateLimit limiter
+      # (disabled in the async suite; wiring covered by the async: false
+      # rate-limit integration test). Without an active throttle, the resend
+      # button issues another confirmation token.
       user = unconfirmed_user_fixture()
       {:ok, lv, _html} = live(conn, ~p"/users/confirmation-pending")
 
@@ -164,14 +172,15 @@ defmodule KanbanWeb.UserLive.ConfirmationPendingTest do
 
       lv |> element("button", "Resend confirmation email") |> render_click()
 
-      assert render(lv) =~ "Please wait a moment before requesting another email"
+      assert render(lv) =~
+               "you will receive a new confirmation link shortly"
 
       tokens =
         UserToken
         |> Repo.all()
         |> Enum.filter(&(&1.user_id == user.id and &1.context == "confirm"))
 
-      assert length(tokens) == 1
+      assert length(tokens) == 2
     end
 
     test "rejects a malformed submit without sending", %{conn: conn} do

@@ -321,6 +321,17 @@ defmodule KanbanWeb.IssueLive.FormComponentTest do
 
     test "blocks a rapid follow-up submission within the rate-limit window",
          %{conn: conn} do
+      # Enable the shared limiter for this test only, with a tiny :issue budget
+      # (1 submission / window). Safe because this module is async: false.
+      original = Application.get_env(:kanban, Kanban.RateLimit)
+
+      Application.put_env(:kanban, Kanban.RateLimit,
+        enabled: true,
+        issue: %{scale_ms: 300_000, ip_limit: 1}
+      )
+
+      on_exit(fn -> Application.put_env(:kanban, Kanban.RateLimit, original) end)
+
       {:ok, view, _html} = live(conn, ~p"/issue")
 
       # First submission — succeeds.

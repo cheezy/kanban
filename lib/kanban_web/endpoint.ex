@@ -12,8 +12,8 @@ defmodule KanbanWeb.Endpoint do
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_options, user_agent: true]],
-    longpoll: [connect_info: [session: @session_options, user_agent: true]]
+    websocket: [connect_info: [session: @session_options, user_agent: true, peer_data: true]],
+    longpoll: [connect_info: [session: @session_options, user_agent: true, peer_data: true]]
 
   # Serve at "/" the static files from "priv/static" directory.
   #

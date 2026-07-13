@@ -2,6 +2,7 @@ defmodule KanbanWeb.UserSessionController do
   use KanbanWeb, :controller
 
   alias Kanban.Accounts
+  alias Kanban.RateLimit
   alias KanbanWeb.UserAuth
 
   def register(conn, %{"user" => user_params}) do
@@ -45,7 +46,21 @@ defmodule KanbanWeb.UserSessionController do
 
   defp create(conn, %{"user" => user_params}, info) do
     %{"email" => email, "password" => password} = user_params
+    rate_key = [ip: conn.remote_ip, identity: email]
 
+    # Block a brute-force flood before doing the (expensive) password hash. The
+    # counter is incremented only on failed attempts (see deny_login), so a
+    # legitimate user typing the wrong password a few times is unaffected.
+    case RateLimit.peek(:login, rate_key) do
+      {:error, {:rate_limited, _}} ->
+        deny_login_rate_limited(conn, email)
+
+      :ok ->
+        do_create(conn, email, password, user_params, info, rate_key)
+    end
+  end
+
+  defp do_create(conn, email, password, user_params, info, rate_key) do
     case Accounts.get_user_by_email_and_password(email, password) do
       %{confirmed_at: nil} ->
         # Only shown after the password verified, so this discloses nothing
@@ -60,6 +75,10 @@ defmodule KanbanWeb.UserSessionController do
         |> redirect(to: ~p"/users/confirmation-pending?email=#{email}")
 
       nil ->
+        # Invalid credentials — the brute-force signal. Count it against the
+        # login budget so repeated guesses eventually trip the limiter.
+        RateLimit.record_failure(:login, rate_key)
+
         # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
         deny_login(conn, email, "Invalid email or password")
 
@@ -73,6 +92,18 @@ defmodule KanbanWeb.UserSessionController do
   defp deny_login(conn, email, message) do
     conn
     |> put_flash(:error, message)
+    |> put_flash(:email, String.slice(email, 0, 160))
+    |> redirect(to: ~p"/users/log-in")
+  end
+
+  # Uniform with deny_login so an attacker cannot distinguish "throttled" from
+  # "wrong password" (both are a generic failure + redirect back to log-in).
+  defp deny_login_rate_limited(conn, email) do
+    conn
+    |> put_flash(
+      :error,
+      gettext("Too many attempts. Please wait a few minutes and try again.")
+    )
     |> put_flash(:email, String.slice(email, 0, 160))
     |> redirect(to: ~p"/users/log-in")
   end

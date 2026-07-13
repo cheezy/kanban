@@ -10,7 +10,11 @@ defmodule KanbanWeb.IssueLive.Form do
   @impl true
   def render(assigns) do
     ~H"""
-    <.live_component module={KanbanWeb.IssueLive.FormComponent} id="issue-form" />
+    <.live_component
+      module={KanbanWeb.IssueLive.FormComponent}
+      id="issue-form"
+      client_ip={@client_ip}
+    />
     """
   end
 
@@ -18,6 +22,10 @@ defmodule KanbanWeb.IssueLive.Form do
   def mount(_params, session, socket) do
     locale = session["locale"] || "en"
     Gettext.put_locale(KanbanWeb.Gettext, locale)
-    {:ok, assign(socket, :configured, GitHub.configured?())}
+
+    {:ok,
+     socket
+     |> assign(:configured, GitHub.configured?())
+     |> assign(:client_ip, KanbanWeb.ClientIp.from_session_or_socket(session, socket))}
   end
 end

@@ -59,3 +59,8 @@ config :kanban, Oban, testing: :manual
 # Speed up the after_goal grace window for tests so timing assertions
 # can run synchronously via Oban.drain_queue(with_scheduled: true).
 config :kanban, :after_goal_grace_window_ms, 1
+
+# Rate limiting is disabled by default in the test suite so the shared test IP
+# (127.0.0.1 / nil peer) does not cause cross-test interference. The
+# throttle-specific tests opt back in with known limits via Application.put_env.
+config :kanban, Kanban.RateLimit, enabled: false
