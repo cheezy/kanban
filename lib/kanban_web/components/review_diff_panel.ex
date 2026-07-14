@@ -366,25 +366,40 @@ defmodule KanbanWeb.ReviewDiffPanel do
 
   defp diff_view(_), do: %{mode: :empty}
 
-  # diff_url is agent-supplied (the per-file payload's "diff_url"). Only allow
-  # http/https schemes through to the rendered href — HEEx escapes attribute
-  # values but does NOT sanitize URL schemes, so an unvalidated value would let
-  # an agent point the "View full diff in repo" link at javascript:/data:/an
-  # arbitrary external host (W1431). nil suppresses the link entirely.
+  # diff_url is agent-supplied (the per-file payload's "diff_url"). It is only
+  # rendered as a link when BOTH the scheme (http/https) and the host (an
+  # allow-listed repository host) pass — HEEx escapes attribute values but does
+  # NOT sanitize URL schemes or hosts, so an unvalidated value would let an
+  # agent point the "View full diff in repo" link at javascript:/data: (W1431)
+  # or at an arbitrary external host (W1682 — defense-in-depth against SSRF if
+  # this link is ever fetched server-side). nil suppresses the link entirely.
+  @default_diff_url_hosts ["github.com", "www.github.com"]
+
   defp diff_url(%{"diff_url" => url}) when is_binary(url) and url != "" do
-    if allowed_diff_url_scheme?(url), do: url, else: nil
+    if safe_diff_url?(url), do: url, else: nil
   end
 
   defp diff_url(_), do: nil
 
-  defp allowed_diff_url_scheme?(url) do
+  defp safe_diff_url?(url) do
     case URI.new(url) do
-      {:ok, %URI{scheme: scheme}} when is_binary(scheme) ->
-        String.downcase(scheme) in ["http", "https"]
+      {:ok, %URI{scheme: scheme, host: host}} when is_binary(scheme) and is_binary(host) ->
+        String.downcase(scheme) in ["http", "https"] and allowed_diff_url_host?(host)
 
       _ ->
         false
     end
+  end
+
+  # Compare the parsed host component (not a substring of the URL), so
+  # `evil.com/github.com` and `github.com@evil.com` are both rejected — the
+  # URI host is `evil.com` in each. Case-insensitive; the allow-list is
+  # overridable per environment via the :diff_url_allowed_hosts app env.
+  defp allowed_diff_url_host?(host) do
+    allowed =
+      Application.get_env(:kanban, :diff_url_allowed_hosts, @default_diff_url_hosts)
+
+    String.downcase(host) in allowed
   end
 
   defp parse_diff_lines(diff) do

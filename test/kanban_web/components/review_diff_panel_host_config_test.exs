@@ -1,0 +1,43 @@
+defmodule KanbanWeb.ReviewDiffPanelHostConfigTest do
+  @moduledoc """
+  W1682: the diff_url host allow-list is configurable via the
+  :diff_url_allowed_hosts app env. async: false because it mutates that global
+  config; the default-host behavior is covered by the async ReviewDiffPanelTest.
+  """
+  use KanbanWeb.ConnCase, async: false
+
+  import Phoenix.Component
+  import Phoenix.LiveViewTest
+
+  alias KanbanWeb.ReviewDiffPanel
+
+  defp render_panel(diff_url) do
+    assigns = %{
+      selected_file: %{
+        "path" => "lib/foo.ex",
+        "diff" => "+ a\n[diff truncated at 500 lines]",
+        "diff_url" => diff_url
+      }
+    }
+
+    rendered_to_string(~H"""
+    <ReviewDiffPanel.review_diff_panel
+      files={["lib/foo.ex"]}
+      failing_tests_count={nil}
+      selected_file={@selected_file}
+    />
+    """)
+  end
+
+  test "an overridden allow-list admits its host and rejects the default github.com" do
+    original = Application.get_env(:kanban, :diff_url_allowed_hosts)
+    Application.put_env(:kanban, :diff_url_allowed_hosts, ["git.internal.example"])
+    on_exit(fn -> Application.put_env(:kanban, :diff_url_allowed_hosts, original) end)
+
+    assert render_panel("https://git.internal.example/x/y") =~
+             "data-review-diff-panel-diff-link"
+
+    refute render_panel("https://github.com/x/y") =~
+             "data-review-diff-panel-diff-link"
+  end
+end

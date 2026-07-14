@@ -260,7 +260,7 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
       end
     end
 
-    test "keeps an http(s) diff_url and renders the link (W1431)" do
+    test "keeps an http(s) diff_url on an allow-listed host and renders the link (W1431)" do
       diff = "+ a\n[diff truncated at 500 lines]"
 
       html =
@@ -268,12 +268,49 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
           selected_file: %{
             "path" => "lib/foo.ex",
             "diff" => diff,
-            "diff_url" => "http://example.com/diff"
+            "diff_url" => "https://github.com/x/y/pull/1/files"
           }
         )
 
       assert html =~ "data-review-diff-panel-diff-link"
-      assert html =~ "http://example.com/diff"
+      assert html =~ "https://github.com/x/y/pull/1/files"
+    end
+
+    test "drops a diff_url whose host is not allow-listed (W1682)" do
+      diff = "+ a\n[diff truncated at 500 lines]"
+
+      # Includes host-confusion attempts: a path/userinfo that merely mentions
+      # github.com must not pass — only the parsed host is checked.
+      for bad <- [
+            "https://example.com/diff",
+            "http://evil.com/github.com/x/y",
+            "https://github.com.evil.com/x",
+            "https://github.com@evil.com/x",
+            "https://203.0.113.5/diff"
+          ] do
+        html =
+          render_panel(["lib/foo.ex"],
+            selected_file: %{"path" => "lib/foo.ex", "diff" => diff, "diff_url" => bad}
+          )
+
+        refute html =~ "data-review-diff-panel-diff-link",
+               "expected no diff link for diff_url=#{bad}"
+      end
+    end
+
+    test "host allow-list is case-insensitive (W1682)" do
+      diff = "+ a\n[diff truncated at 500 lines]"
+
+      html =
+        render_panel(["lib/foo.ex"],
+          selected_file: %{
+            "path" => "lib/foo.ex",
+            "diff" => diff,
+            "diff_url" => "https://GitHub.com/x/y/files"
+          }
+        )
+
+      assert html =~ "data-review-diff-panel-diff-link"
     end
 
     test "renders a single very long line without crashing" do
