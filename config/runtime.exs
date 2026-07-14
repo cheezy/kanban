@@ -242,11 +242,13 @@ if config_env() == :prod do
   #     config :swoosh, :api_client, Swoosh.ApiClient.Req
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+  smtp_relay = System.get_env("SMTP_RELAY") || "smtp.gmail.com"
+
   config :kanban, Kanban.Mailer,
     adapter: Swoosh.Adapters.SMTP,
     username: System.get_env("SMTP_USERNAME"),
     password: System.get_env("SMTP_PASSWORD"),
-    relay: System.get_env("SMTP_RELAY") || "smtp.gmail.com",
+    relay: smtp_relay,
     ssl: true,
     auth: :always,
     port: 465,
@@ -261,10 +263,17 @@ if config_env() == :prod do
     # is flagged by sobelow) delivery broke because no explicit verification was
     # configured in its place. We configure real peer verification here (D148),
     # which is both secure and works against Gmail's valid certificate.
+    #
+    # server_name_indication is REQUIRED: gen_smtp resolves the relay to an IP
+    # and dials that IP, so without an explicit SNI the TLS layer verifies the
+    # cert against the IP and fails hostname verification (the cert is issued for
+    # smtp.gmail.com, not the IP). Pinning SNI to the relay hostname makes the
+    # hostname check compare against smtp.gmail.com, matching the certificate.
     sockopts: [
       verify: :verify_peer,
       cacerts: :public_key.cacerts_get(),
       depth: 99,
+      server_name_indication: String.to_charlist(smtp_relay),
       customize_hostname_check: [
         match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
       ]
