@@ -30,9 +30,15 @@ defmodule KanbanWeb.ReviewDiffPanelHostConfigTest do
   end
 
   test "an overridden allow-list admits its host and rejects the default github.com" do
-    original = Application.get_env(:kanban, :diff_url_allowed_hosts)
+    original = Application.fetch_env(:kanban, :diff_url_allowed_hosts)
     Application.put_env(:kanban, :diff_url_allowed_hosts, ["git.internal.example"])
-    on_exit(fn -> Application.put_env(:kanban, :diff_url_allowed_hosts, original) end)
+
+    on_exit(fn ->
+      case original do
+        {:ok, value} -> Application.put_env(:kanban, :diff_url_allowed_hosts, value)
+        :error -> Application.delete_env(:kanban, :diff_url_allowed_hosts)
+      end
+    end)
 
     assert render_panel("https://git.internal.example/x/y") =~
              "data-review-diff-panel-diff-link"

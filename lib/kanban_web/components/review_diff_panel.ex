@@ -396,8 +396,11 @@ defmodule KanbanWeb.ReviewDiffPanel do
   # URI host is `evil.com` in each. Case-insensitive; the allow-list is
   # overridable per environment via the :diff_url_allowed_hosts app env.
   defp allowed_diff_url_host?(host) do
+    # `|| @default` guards against the key being present but nil (or otherwise
+    # unset), so a misconfigured env can never crash the render or silently
+    # drop the guard to an empty list.
     allowed =
-      Application.get_env(:kanban, :diff_url_allowed_hosts, @default_diff_url_hosts)
+      Application.get_env(:kanban, :diff_url_allowed_hosts) || @default_diff_url_hosts
 
     String.downcase(host) in allowed
   end
