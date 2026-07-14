@@ -714,4 +714,55 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       refute html =~ "zz_ws_token_zz"
     end
   end
+
+  # W1680: review_report is agent-supplied and rendered via Phoenix.HTML.raw/1,
+  # so it is a stored-XSS sink guarded only by MDEx.to_html/1 defaulting to
+  # `unsafe: false` (see W1596). These tests pin that guard through the real
+  # component render path: a one-word change to `unsafe: true` at the
+  # render_markdown/1 call site would make them fail.
+  describe "markdown safety (stored XSS guard)" do
+    test "strips a raw <script> tag from the report" do
+      html = render_with(fallback_task("Intro paragraph.\n\n<script>alert('xss')</script>\n"))
+
+      assert html =~ "Intro paragraph."
+      refute html =~ "<script"
+      refute html =~ "alert('xss')"
+    end
+
+    test "strips a raw HTML element with an inline event handler" do
+      html = render_with(fallback_task("Before.\n\n<img src=x onerror=alert(1)>\n\nAfter.\n"))
+
+      assert html =~ "Before."
+      assert html =~ "After."
+      refute html =~ "onerror"
+      refute html =~ "<img"
+    end
+
+    test "neutralizes a javascript: link scheme" do
+      html = render_with(fallback_task("[click me](javascript:alert(1))"))
+
+      # MDEx keeps the link text but empties the dangerous href.
+      assert html =~ "click me"
+      refute html =~ "javascript:"
+    end
+
+    test "strips a raw block element with an onclick handler" do
+      html = render_with(fallback_task(~S|<div onclick="steal()">danger</div>|))
+
+      refute html =~ "onclick"
+      refute html =~ "steal()"
+      refute html =~ "<div onclick"
+    end
+
+    test "still renders legitimate markdown (headings, lists, code, safe links)" do
+      report = "# Heading\n\n- one\n- two\n\n[docs](https://example.com) and `inline_code`"
+      html = render_with(fallback_task(report))
+
+      assert html =~ "<h1"
+      assert html =~ "Heading"
+      assert html =~ "<li>one</li>"
+      assert html =~ "<code>inline_code</code>"
+      assert html =~ ~s(href="https://example.com")
+    end
+  end
 end
