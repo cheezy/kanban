@@ -30,6 +30,10 @@ defmodule KanbanWeb.ReviewDiffPanelHostConfigTest do
   end
 
   test "an overridden allow-list admits its host and rejects the default github.com" do
+    # The key is unset in test config, so restore must DELETE it — putting the
+    # captured nil back would store an explicit nil, and Application.get_env/3
+    # returns that stored nil instead of the default host list, crashing every
+    # later-seeded test that renders a diff link (`host in nil`).
     original = Application.fetch_env(:kanban, :diff_url_allowed_hosts)
     Application.put_env(:kanban, :diff_url_allowed_hosts, ["git.internal.example"])
 
