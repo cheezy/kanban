@@ -2,12 +2,18 @@ name: Elixir CD
 
 # Define workflow that runs when changes are pushed to the
 # `main` branch or pushed to a PR branch that targets the `main`
-# branch. 
+# branch. It also runs on a weekly schedule and on manual dispatch so
+# newly-published dependency advisories (mix deps.audit / hex.audit) are
+# caught even when the repo is quiet — schedule triggers run on the default
+# branch (main) and a failure surfaces as a failed workflow there.
 on:
   push:
     branches: [ "main", "release" ]  # adapt branch for project
   pull_request:
     branches: [ "main" ]  # adapt branch for project
+  schedule:
+    - cron: '0 6 * * 1'  # Mondays 06:00 UTC — weekly dependency-advisory sweep
+  workflow_dispatch:
 
 # Sets the ENV `MIX_ENV` to `test` for running tests
 env:

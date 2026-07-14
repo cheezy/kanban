@@ -21,17 +21,16 @@ the reference state — any *new* finding is a regression against a green baseli
 | Retired/advisory packages | `mix hex.audit` | **No retired or security-advisory packages found.** |
 | Outdated dependencies | `mix hex.outdated` | **All 35 dependencies up-to-date** (current == latest for every dep). |
 
-### Tooling-hygiene note (candidate finding — Domain 7)
+### Tooling-hygiene note (candidate finding — Domain 7) — RESOLVED (W1683)
 
-`.stride.md` (`## after_doing`) and `AGENTS.md` both invoke
-`mix sobelow --config .sobelow-config`, but the config file on disk is
-**`.sobelow-conf`** (no `ig`). Sobelow's `--config` flag reads `.sobelow-conf`
-by its own fixed convention and ignores the trailing positional argument, so the
-scan still runs against the intended config *by luck*, not because the path
-matches. This is not a vulnerability, but it is a latent hygiene bug: a future
-reader who creates a `.sobelow-config` file expecting it to be honored will be
-surprised. Recommend either renaming the file or correcting the documented
-command. Logged for the secrets/config/deploy domain (W1598).
+The invocation guides once referenced a mistyped Sobelow config filename
+(`…-config` instead of the on-disk `.sobelow-conf`, no `ig`). Sobelow's
+`--config` flag reads `.sobelow-conf` by its own fixed convention and ignores
+the trailing positional argument, so the scan always ran against the intended
+config regardless. W1683 corrected the stray reference in `.stride_dev.md` (the
+CI workflow already used `.sobelow-conf`), so every tracked invocation now names
+the real file. Not a vulnerability — logged here and under the
+secrets/config/deploy domain (W1598) as tooling hygiene.
 
 ## 2. Routes, pipelines, and auth boundaries
 
@@ -115,7 +114,7 @@ Each domain review below has a concrete, non-exhaustive starting file list.
 - `config/runtime.exs`, `config/dev.exs`, `config/prod.exs` — secret sourcing, dev-fallback isolation.
 - `Dockerfile.production`, `Dockerfile.review` — base-image digest pinning (W1429).
 - `fly.production.toml`, `fly.review.toml` — env exposure.
-- `.sobelow-conf` skip/ignore list; the `.sobelow-config` naming discrepancy above.
+- `.sobelow-conf` skip/ignore list; the config-filename naming discrepancy above (resolved in W1683).
 - Dev-route compile gate (`:dev_routes`).
 - **Verify held:** Chrome/base-image pinning (W1429), audit-credential env move (W1435, D-config).
 

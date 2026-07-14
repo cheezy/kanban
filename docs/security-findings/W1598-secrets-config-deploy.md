@@ -50,6 +50,7 @@ mode with an explicit, documented 6PN opt-out (or a deploy-time host→SSL guard
 
 ## Cross-reference
 
-The `.sobelow-config` vs `.sobelow-conf` naming discrepancy noted in the W1591
-baseline (`docs/security-review-baseline.md` §1) belongs to this domain — a
-tooling-hygiene nit, not a vulnerability; not filed as a defect.
+The Sobelow config-filename naming discrepancy noted in the W1591 baseline
+(`docs/security-review-baseline.md` §1) belongs to this domain — a
+tooling-hygiene nit, not a vulnerability. Resolved in W1683: the stray
+`.stride_dev.md` reference now names the real `.sobelow-conf` file.
