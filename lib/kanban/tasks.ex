@@ -100,9 +100,9 @@ defmodule Kanban.Tasks do
 
   # ── Agent query delegations ────────────────────────────────────────
 
-  defdelegate get_tasks_modifying_file(file_path), to: AgentQueries
-  defdelegate get_tasks_requiring_technology(tech), to: AgentQueries
-  defdelegate get_tasks_with_automated_verification(), to: AgentQueries
+  defdelegate get_tasks_modifying_file(board_id, file_path), to: AgentQueries
+  defdelegate get_tasks_requiring_technology(board_id, tech), to: AgentQueries
+  defdelegate get_tasks_with_automated_verification(board_id), to: AgentQueries
 
   def get_next_task(agent_capabilities \\ [], board_id, user_id \\ nil),
     do: AgentQueries.get_next_task(agent_capabilities, board_id, user_id)

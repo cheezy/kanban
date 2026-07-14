@@ -2081,10 +2081,35 @@ defmodule Kanban.TasksTest do
           ]
         })
 
-      results = Tasks.get_tasks_modifying_file("lib/kanban/tasks.ex")
+      results = Tasks.get_tasks_modifying_file(board.id, "lib/kanban/tasks.ex")
 
       assert length(results) == 1
       assert hd(results).id == task1.id
+    end
+
+    test "get_tasks_modifying_file does not leak tasks from other boards" do
+      user = user_fixture()
+      board_a = board_fixture(user)
+      board_b = board_fixture(user)
+      column_a = column_fixture(board_a)
+      column_b = column_fixture(board_b)
+
+      {:ok, _task_a} =
+        Tasks.create_task(column_a, %{
+          title: "A",
+          key_files: [%{file_path: "shared/file.ex", position: 0}]
+        })
+
+      {:ok, task_b} =
+        Tasks.create_task(column_b, %{
+          title: "B",
+          key_files: [%{file_path: "shared/file.ex", position: 0}]
+        })
+
+      results = Tasks.get_tasks_modifying_file(board_b.id, "shared/file.ex")
+
+      assert length(results) == 1
+      assert hd(results).id == task_b.id
     end
 
     test "finds tasks requiring specific technology" do
@@ -2112,10 +2137,29 @@ defmodule Kanban.TasksTest do
                t.id == task1.id && t.technology_requirements == ["ecto", "phoenix"]
              end)
 
-      results = Tasks.get_tasks_requiring_technology("ecto")
+      results = Tasks.get_tasks_requiring_technology(board.id, "ecto")
 
       assert length(results) == 1
       assert hd(results).id == task1.id
+    end
+
+    test "get_tasks_requiring_technology does not leak tasks from other boards" do
+      user = user_fixture()
+      board_a = board_fixture(user)
+      board_b = board_fixture(user)
+      column_a = column_fixture(board_a)
+      column_b = column_fixture(board_b)
+
+      {:ok, _task_a} =
+        Tasks.create_task(column_a, %{title: "A", technology_requirements: ["ecto"]})
+
+      {:ok, task_b} =
+        Tasks.create_task(column_b, %{title: "B", technology_requirements: ["ecto"]})
+
+      results = Tasks.get_tasks_requiring_technology(board_b.id, "ecto")
+
+      assert length(results) == 1
+      assert hd(results).id == task_b.id
     end
   end
 
@@ -7085,7 +7129,7 @@ defmodule Kanban.TasksTest do
     end
   end
 
-  describe "get_tasks_with_automated_verification/0" do
+  describe "get_tasks_with_automated_verification/1" do
     test "finds tasks with command-based verification steps" do
       user = user_fixture()
       board = board_fixture(user)
@@ -7117,7 +7161,7 @@ defmodule Kanban.TasksTest do
           ]
         })
 
-      results = Tasks.get_tasks_with_automated_verification()
+      results = Tasks.get_tasks_with_automated_verification(board.id)
 
       assert length(results) == 1
       assert hd(results).id == task_with_commands.id
@@ -7134,7 +7178,7 @@ defmodule Kanban.TasksTest do
           verification_steps: []
         })
 
-      results = Tasks.get_tasks_with_automated_verification()
+      results = Tasks.get_tasks_with_automated_verification(board.id)
 
       assert results == []
     end
@@ -7163,7 +7207,7 @@ defmodule Kanban.TasksTest do
           ]
         })
 
-      results = Tasks.get_tasks_with_automated_verification()
+      results = Tasks.get_tasks_with_automated_verification(board.id)
 
       assert length(results) == 1
       assert hd(results).id == mixed_task.id
@@ -7621,8 +7665,10 @@ defmodule Kanban.TasksTest do
         })
 
       # Verify both facades return same result
-      via_facade = Tasks.get_tasks_modifying_file("lib/kanban/facade_test.ex")
-      via_direct = Kanban.Tasks.AgentQueries.get_tasks_modifying_file("lib/kanban/facade_test.ex")
+      via_facade = Tasks.get_tasks_modifying_file(board.id, "lib/kanban/facade_test.ex")
+
+      via_direct =
+        Kanban.Tasks.AgentQueries.get_tasks_modifying_file(board.id, "lib/kanban/facade_test.ex")
 
       assert length(via_facade) == 1
       assert hd(via_facade).id == task.id
@@ -7640,8 +7686,8 @@ defmodule Kanban.TasksTest do
           technology_requirements: ["graphql", "absinthe"]
         })
 
-      via_facade = Tasks.get_tasks_requiring_technology("graphql")
-      via_direct = Kanban.Tasks.AgentQueries.get_tasks_requiring_technology("graphql")
+      via_facade = Tasks.get_tasks_requiring_technology(board.id, "graphql")
+      via_direct = Kanban.Tasks.AgentQueries.get_tasks_requiring_technology(board.id, "graphql")
 
       assert length(via_facade) == 1
       assert hd(via_facade).id == task.id
@@ -7661,8 +7707,8 @@ defmodule Kanban.TasksTest do
           ]
         })
 
-      via_facade = Tasks.get_tasks_with_automated_verification()
-      via_direct = Kanban.Tasks.AgentQueries.get_tasks_with_automated_verification()
+      via_facade = Tasks.get_tasks_with_automated_verification(board.id)
+      via_direct = Kanban.Tasks.AgentQueries.get_tasks_with_automated_verification(board.id)
 
       assert via_facade != []
       assert Enum.any?(via_facade, &(&1.id == task.id))

@@ -14,12 +14,16 @@ defmodule Kanban.Tasks.AgentQueries do
   alias Kanban.Tasks.Task
 
   @doc """
-  Returns all tasks that modify a specific file.
+  Returns tasks on the given board that modify a specific file.
 
   Uses PostgreSQL's @> (contains) operator with GIN index for fast lookups.
+  `board_id` is required and scopes the results to a single board so the query
+  can never leak tasks across board boundaries.
   """
-  def get_tasks_modifying_file(file_path) do
+  def get_tasks_modifying_file(board_id, file_path) do
     from(t in Task,
+      join: c in assoc(t, :column),
+      where: c.board_id == ^board_id,
       where:
         fragment(
           "EXISTS (SELECT 1 FROM jsonb_array_elements(?) elem WHERE elem->>'file_path' = ?)",
@@ -31,22 +35,29 @@ defmodule Kanban.Tasks.AgentQueries do
   end
 
   @doc """
-  Returns all tasks that require a specific technology.
+  Returns tasks on the given board that require a specific technology.
 
-  Uses PostgreSQL's array contains operator.
+  Uses PostgreSQL's array contains operator. `board_id` is required and scopes
+  the results to a single board.
   """
-  def get_tasks_requiring_technology(tech) do
+  def get_tasks_requiring_technology(board_id, tech) do
     from(t in Task,
+      join: c in assoc(t, :column),
+      where: c.board_id == ^board_id,
       where: fragment("? @> ?", t.technology_requirements, ^[tech])
     )
     |> Repo.all()
   end
 
   @doc """
-  Returns all tasks with command-based verification steps.
+  Returns tasks on the given board with command-based verification steps.
+
+  `board_id` is required and scopes the results to a single board.
   """
-  def get_tasks_with_automated_verification do
+  def get_tasks_with_automated_verification(board_id) do
     from(t in Task,
+      join: c in assoc(t, :column),
+      where: c.board_id == ^board_id,
       where:
         fragment(
           ~s|? @> '[{"step_type": "command"}]'::jsonb|,
