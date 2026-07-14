@@ -21,6 +21,17 @@ defmodule KanbanWeb.TargetLive.ShowTest do
     task_fixture(column, Map.merge(%{type: :goal}, attrs))
   end
 
+  # Creates a goal, then force-stamps a specific identifier (e.g. "G131") so a
+  # test can assert numeric-vs-alphabetical render order. `identifier` is
+  # server-injected and not castable, so set it directly via
+  # `Ecto.Changeset.change/2`, which bypasses the cast allow-list.
+  defp goal_with_identifier(column, identifier, attrs) do
+    column
+    |> goal_fixture(attrs)
+    |> Ecto.Changeset.change(identifier: identifier)
+    |> Repo.update!()
+  end
+
   defp complete_task(task) do
     {:ok, done} =
       task
@@ -32,6 +43,13 @@ defmodule KanbanWeb.TargetLive.ShowTest do
 
   defp count_occurrences(haystack, needle) do
     haystack |> String.split(needle) |> length() |> Kernel.-(1)
+  end
+
+  defp index_of(haystack, needle) do
+    case :binary.match(haystack, needle) do
+      {start, _len} -> start
+      :nomatch -> -1
+    end
   end
 
   describe "mount/3 — happy path" do
@@ -125,6 +143,25 @@ defmodule KanbanWeb.TargetLive.ShowTest do
       assert count_occurrences(html, "data-target-goal-row") == 2
       assert html =~ ~p"/boards/#{board}/goals/#{goal_a}"
       assert html =~ ~p"/boards/#{board}/goals/#{goal_b}"
+    end
+
+    test "renders the goals table rows in ascending numeric identifier order",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      g131 = goal_with_identifier(column, "G131", %{title: "Goal 131"})
+      g18 = goal_with_identifier(column, "G18", %{title: "Goal 18"})
+      g9 = goal_with_identifier(column, "G9", %{title: "Goal 9"})
+
+      target = delivery_target_fixture(user)
+      scope = Scope.for_user(user)
+      for goal <- [g131, g18, g9], do: assert({:ok, _} = Targets.assign_goal(scope, goal, target))
+
+      {:ok, _live, html} = live(conn, ~p"/targets/#{target}")
+
+      # Identifiers must appear in numeric (not alphabetical) order in the markup.
+      positions = Enum.map(["G9", "G18", "G131"], &index_of(html, &1))
+      assert positions == Enum.sort(positions)
     end
 
     test "aggregates completed/total across multiple member goals in the hero",

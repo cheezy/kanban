@@ -206,6 +206,9 @@ defmodule Kanban.Targets do
   user can access, each with its `:column` preloaded (so `goal.column.board_id`
   is available to callers such as the target drill-down and
   `member_goal_children/1`). A `nil` scope applies no board filter.
+
+  Goals are returned in ascending numeric identifier order (so `G18` precedes
+  `G131`), tie-broken by `id` ascending, via `sort_by_identifier/1`.
   """
   @spec list_member_goals(Scope.t() | nil, DeliveryTarget.t()) :: [Task.t()]
   def list_member_goals(scope, %DeliveryTarget{} = target) do
@@ -214,6 +217,7 @@ defmodule Kanban.Targets do
     |> BoardScope.apply_board_scope_with_column_join(scope)
     |> preload(:column)
     |> Repo.all()
+    |> sort_by_identifier()
   end
 
   @doc """
@@ -226,6 +230,10 @@ defmodule Kanban.Targets do
   goal from its current target first. Board scoping mirrors
   `list_member_goals/2` exactly: a `nil` scope applies no board filter. The
   `target` argument is retained for API symmetry with `list_member_goals/2`.
+
+  Candidates are returned in ascending numeric identifier order (so `G18`
+  precedes `G131`), tie-broken by `id` ascending, matching
+  `list_member_goals/2`.
 
   ## Options
 
@@ -240,6 +248,7 @@ defmodule Kanban.Targets do
     |> maybe_exclude_archived(Keyword.get(opts, :exclude_archived, false))
     |> BoardScope.apply_board_scope_with_column_join(scope)
     |> Repo.all()
+    |> sort_by_identifier()
   end
 
   @doc """
@@ -252,6 +261,11 @@ defmodule Kanban.Targets do
   `goal.column.board_id` and `goal.assigned_to` without further queries. Board
   scoping and per-goal child-count scoping match `list_member_goals/2` exactly;
   a `nil` scope applies no board filter.
+
+  Details are returned in ascending numeric identifier order (so `G18` precedes
+  `G131`), tie-broken by `id` ascending, matching `list_member_goals/2`. The
+  goals are sorted before `goal_detail_views/1` maps them, which preserves the
+  order.
   """
   @spec list_member_goal_details(Scope.t() | nil, DeliveryTarget.t()) ::
           [goal_progress_detail()]
@@ -261,6 +275,7 @@ defmodule Kanban.Targets do
     |> BoardScope.apply_board_scope_with_column_join(scope)
     |> preload([:column, :assigned_to])
     |> Repo.all()
+    |> sort_by_identifier()
     |> goal_detail_views()
   end
 
@@ -274,6 +289,11 @@ defmodule Kanban.Targets do
   the LiveView. Only unassigned goals (`is_nil(target_id)`) qualify, and board
   scoping matches `list_assignable_goals/2` exactly; a `nil` scope applies no
   board filter.
+
+  Details are returned in ascending numeric identifier order (so `G18` precedes
+  `G131`), tie-broken by `id` ascending, matching `list_assignable_goals/2`. The
+  goals are sorted before `goal_detail_views/1` maps them, which preserves the
+  order.
 
   ## Options
 
@@ -291,6 +311,7 @@ defmodule Kanban.Targets do
     |> BoardScope.apply_board_scope_with_column_join(scope)
     |> preload([:column, :assigned_to])
     |> Repo.all()
+    |> sort_by_identifier()
     |> goal_detail_views()
   end
 
@@ -298,6 +319,22 @@ defmodule Kanban.Targets do
   # otherwise. Applied before BoardScope's joins so only the `t` binding exists.
   defp maybe_exclude_archived(query, true), do: where(query, [t], is_nil(t.archived_at))
   defp maybe_exclude_archived(query, false), do: query
+
+  # Orders goals by the integer embedded in their identifier ("G18" -> 18) so
+  # numeric order holds (G18 before G131) instead of the string order the bare
+  # Repo.all() returns. Identifier numbers are generated per board and so are
+  # not globally unique; `id` ascending is the deterministic tie-breaker. Parses
+  # defensively: an identifier with no digits sorts as 0 rather than raising.
+  defp sort_by_identifier(goals) do
+    Enum.sort_by(goals, &{identifier_number(&1.identifier), &1.id})
+  end
+
+  defp identifier_number(identifier) do
+    case Regex.run(~r/\d+/, identifier || "") do
+      [digits] -> String.to_integer(digits)
+      nil -> 0
+    end
+  end
 
   @typedoc """
   One boards-page summary row for a delivery target: the target itself, its

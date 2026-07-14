@@ -274,6 +274,49 @@ defmodule KanbanWeb.TargetLive.FormTest do
 
       assert html =~ "unassigned"
     end
+
+    test "renders the member goals table in ascending numeric identifier order",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      g131 = goal_with_identifier(column, "G131", %{title: "Goal 131"})
+      g18 = goal_with_identifier(column, "G18", %{title: "Goal 18"})
+      g9 = goal_with_identifier(column, "G9", %{title: "Goal 9"})
+
+      target = delivery_target_fixture(user)
+      scope = Scope.for_user(user)
+      for goal <- [g131, g18, g9], do: assert({:ok, _} = Targets.assign_goal(scope, goal, target))
+
+      {:ok, _form_live, html} = live(conn, ~p"/targets/#{target}/edit")
+
+      positions = Enum.map(["G9", "G18", "G131"], &index_of(html, &1))
+      assert positions == Enum.sort(positions)
+    end
+
+    test "renders the assignable goals table in ascending numeric identifier order, including after toggling hide-archived",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal_with_identifier(column, "G131", %{title: "Goal 131"})
+      goal_with_identifier(column, "G18", %{title: "Goal 18"})
+      goal_with_identifier(column, "G9", %{title: "Goal 9"})
+
+      target = delivery_target_fixture(user)
+
+      {:ok, form_live, html} = live(conn, ~p"/targets/#{target}/edit")
+
+      positions = Enum.map(["G9", "G18", "G131"], &index_of(html, &1))
+      assert positions == Enum.sort(positions)
+
+      # Toggling the hide-archived checkbox re-runs the query; order must hold.
+      toggled_html =
+        form_live
+        |> element("[data-hide-archived-toggle]")
+        |> render_click()
+
+      toggled_positions = Enum.map(["G9", "G18", "G131"], &index_of(toggled_html, &1))
+      assert toggled_positions == Enum.sort(toggled_positions)
+    end
   end
 
   defp complete_task(task) do
@@ -283,6 +326,24 @@ defmodule KanbanWeb.TargetLive.FormTest do
       |> Repo.update()
 
     done
+  end
+
+  # Creates a goal, then force-stamps a specific identifier (e.g. "G131") so a
+  # test can assert numeric-vs-alphabetical render order. `identifier` is
+  # server-injected and not castable, so set it directly via
+  # `Ecto.Changeset.change/2`, which bypasses the cast allow-list.
+  defp goal_with_identifier(column, identifier, attrs) do
+    column
+    |> goal_fixture(attrs)
+    |> Ecto.Changeset.change(identifier: identifier)
+    |> Repo.update!()
+  end
+
+  defp index_of(haystack, needle) do
+    case :binary.match(haystack, needle) do
+      {start, _len} -> start
+      :nomatch -> -1
+    end
   end
 
   describe "anonymous" do

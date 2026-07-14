@@ -45,6 +45,17 @@ defmodule Kanban.TargetsTest do
     task_fixture(column, Map.merge(%{type: :goal}, attrs))
   end
 
+  # Creates a goal, then force-stamps a specific identifier (e.g. "G131") so a
+  # test can exercise the case where alphabetical and numeric order diverge.
+  # `identifier` is server-injected and not castable, so we set it directly via
+  # `Ecto.Changeset.change/2`, which bypasses the cast allow-list.
+  defp goal_with_identifier(column, identifier, attrs \\ %{}) do
+    column
+    |> goal_fixture(attrs)
+    |> Ecto.Changeset.change(identifier: identifier)
+    |> Repo.update!()
+  end
+
   describe "create_target/2" do
     test "creates a target and stamps owner_id from the scope", %{scope: scope, user: user} do
       assert {:ok, %DeliveryTarget{} = target} =
@@ -258,6 +269,44 @@ defmodule Kanban.TargetsTest do
 
       other_ids = other_scope |> Targets.list_member_goals(target) |> Enum.map(& &1.id)
       assert other_ids == [foreign_goal.id]
+    end
+
+    test "orders goals by numeric identifier so G18 precedes G131", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = delivery_target_fixture(user)
+
+      g131 = goal_with_identifier(column, "G131")
+      g18 = goal_with_identifier(column, "G18")
+      g9 = goal_with_identifier(column, "G9")
+
+      for goal <- [g131, g18, g9], do: assert({:ok, _} = Targets.assign_goal(scope, goal, target))
+
+      identifiers = scope |> Targets.list_member_goals(target) |> Enum.map(& &1.identifier)
+      assert identifiers == ["G9", "G18", "G131"]
+    end
+
+    test "breaks identifier-number ties deterministically by id ascending", %{
+      scope: scope,
+      user: user,
+      board: board
+    } do
+      target = delivery_target_fixture(user)
+
+      # Identifier numbers are per-board, so two goals can share "G5"; the sort
+      # must still be total. Force-stamp the same identifier on two goals.
+      column_a = column_fixture(board)
+      column_b = column_fixture(board)
+      first = goal_with_identifier(column_a, "G5")
+      second = goal_with_identifier(column_b, "G5")
+
+      for goal <- [second, first],
+          do: assert({:ok, _} = Targets.assign_goal(scope, goal, target))
+
+      ids = scope |> Targets.list_member_goals(target) |> Enum.map(& &1.id)
+      assert ids == Enum.sort([first.id, second.id])
     end
   end
 
@@ -646,6 +695,21 @@ defmodule Kanban.TargetsTest do
       ids = scope |> Targets.list_assignable_goals(target) |> Enum.map(& &1.id)
       refute work.id in ids
     end
+
+    test "orders candidates by numeric identifier so G18 precedes G131", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = delivery_target_fixture(user)
+
+      goal_with_identifier(column, "G131")
+      goal_with_identifier(column, "G18")
+      goal_with_identifier(column, "G9")
+
+      identifiers = scope |> Targets.list_assignable_goals(target) |> Enum.map(& &1.identifier)
+      assert identifiers == ["G9", "G18", "G131"]
+    end
   end
 
   describe "list_member_goal_details/2" do
@@ -726,6 +790,25 @@ defmodule Kanban.TargetsTest do
          %{scope: scope, user: user} do
       target = delivery_target_fixture(user)
       assert Targets.list_member_goal_details(scope, target) == []
+    end
+
+    test "orders detail entries by numeric identifier so G18 precedes G131", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = delivery_target_fixture(user)
+
+      g131 = goal_with_identifier(column, "G131")
+      g18 = goal_with_identifier(column, "G18")
+      g9 = goal_with_identifier(column, "G9")
+
+      for goal <- [g131, g18, g9], do: assert({:ok, _} = Targets.assign_goal(scope, goal, target))
+
+      identifiers =
+        scope |> Targets.list_member_goal_details(target) |> Enum.map(& &1.goal.identifier)
+
+      assert identifiers == ["G9", "G18", "G131"]
     end
   end
 
@@ -862,6 +945,23 @@ defmodule Kanban.TargetsTest do
          %{scope: scope, user: user} do
       target = delivery_target_fixture(user)
       assert Targets.list_assignable_goal_details(scope, target) == []
+    end
+
+    test "orders detail entries by numeric identifier so G18 precedes G131", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = delivery_target_fixture(user)
+
+      goal_with_identifier(column, "G131")
+      goal_with_identifier(column, "G18")
+      goal_with_identifier(column, "G9")
+
+      identifiers =
+        scope |> Targets.list_assignable_goal_details(target) |> Enum.map(& &1.goal.identifier)
+
+      assert identifiers == ["G9", "G18", "G131"]
     end
   end
 
