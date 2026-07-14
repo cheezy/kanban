@@ -78,6 +78,7 @@ defmodule KanbanWeb.UserSessionController do
         # Invalid credentials — the brute-force signal. Count it against the
         # login budget so repeated guesses eventually trip the limiter.
         RateLimit.record_failure(:login, rate_key)
+        Kanban.AuditLog.event(:login_failed, email: email, ip: conn.remote_ip)
 
         # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
         deny_login(conn, email, "Invalid email or password")

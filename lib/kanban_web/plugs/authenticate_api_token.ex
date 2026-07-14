@@ -55,10 +55,14 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
       |> assign(:current_board, api_token.board)
       |> assign(:api_token, api_token)
     else
-      error ->
-        RateLimit.record_failure(:api_token, ip: conn.remote_ip)
-        halt_with_auth_error(conn, error)
+      {:error, reason} = error -> handle_auth_failure(conn, reason, error)
     end
+  end
+
+  defp handle_auth_failure(conn, reason, error) do
+    RateLimit.record_failure(:api_token, ip: conn.remote_ip)
+    Kanban.AuditLog.event(:api_token_auth_failed, ip: conn.remote_ip, reason: reason)
+    halt_with_auth_error(conn, error)
   end
 
   defp halt_rate_limited(conn, retry_after_ms) do

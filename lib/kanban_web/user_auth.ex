@@ -268,6 +268,8 @@ defmodule KanbanWeb.UserAuth do
         {:cont, socket}
 
       true ->
+        Kanban.AuditLog.event(:permission_denied, user_id: user && user.id, gate: :require_admin)
+
         socket =
           socket
           |> Phoenix.LiveView.put_flash(:error, "You must be an admin to access this page.")
@@ -287,9 +289,15 @@ defmodule KanbanWeb.UserAuth do
         halt_unconfirmed_mount(socket)
 
       Accounts.sudo_mode?(user, -10) ->
+        Kanban.AuditLog.event(:sudo_mode_entered, user_id: user.id)
         {:cont, socket}
 
       true ->
+        Kanban.AuditLog.event(:permission_denied,
+          user_id: user && user.id,
+          gate: :require_sudo_mode
+        )
+
         socket =
           socket
           |> Phoenix.LiveView.put_flash(:error, "You must re-authenticate to access this page.")
@@ -378,6 +386,12 @@ defmodule KanbanWeb.UserAuth do
         conn
 
       true ->
+        Kanban.AuditLog.event(:permission_denied,
+          user_id: user && user.id,
+          ip: conn.remote_ip,
+          gate: :require_admin_user
+        )
+
         conn
         |> put_flash(:error, "You must be an admin to access this page.")
         |> redirect(to: ~p"/")

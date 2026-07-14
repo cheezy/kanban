@@ -91,31 +91,36 @@ defmodule KanbanWeb.UserLive.ForgotPassword do
     # non-enumeration property of the neutral flash below.
     case RateLimit.check(:reset, ip: socket.assigns.client_ip, identity: email) do
       {:error, {:rate_limited, _}} ->
-        {:noreply,
-         socket
-         |> put_flash(
-           :info,
-           gettext("Too many requests. Please wait a few minutes and try again.")
-         )
-         |> redirect(to: ~p"/")}
+        {:noreply, throttled(socket)}
 
       :ok ->
-        if user = Accounts.get_user_by_email(email) do
-          Accounts.deliver_user_reset_password_instructions(
-            user,
-            &url(~p"/users/reset-password/#{&1}")
-          )
-        end
-
-        info =
-          gettext(
-            "If your email is in our system, you will receive instructions to reset your password shortly."
-          )
-
-        {:noreply,
-         socket
-         |> put_flash(:info, info)
-         |> redirect(to: ~p"/")}
+        {:noreply, deliver_reset_instructions(socket, email)}
     end
+  end
+
+  defp throttled(socket) do
+    socket
+    |> put_flash(:info, gettext("Too many requests. Please wait a few minutes and try again."))
+    |> redirect(to: ~p"/")
+  end
+
+  defp deliver_reset_instructions(socket, email) do
+    Kanban.AuditLog.event(:password_reset_requested, email: email, ip: socket.assigns.client_ip)
+
+    if user = Accounts.get_user_by_email(email) do
+      Accounts.deliver_user_reset_password_instructions(
+        user,
+        &url(~p"/users/reset-password/#{&1}")
+      )
+    end
+
+    socket
+    |> put_flash(
+      :info,
+      gettext(
+        "If your email is in our system, you will receive instructions to reset your password shortly."
+      )
+    )
+    |> redirect(to: ~p"/")
   end
 end

@@ -119,6 +119,12 @@ defmodule Kanban.ApiTokens do
           %{user_id: user.id, board_id: board.id, token_id: api_token.id}
         )
 
+        Kanban.AuditLog.event(:api_token_created,
+          user_id: user.id,
+          board_id: board.id,
+          token_id: api_token.id
+        )
+
         {:ok, {api_token, plain_text_token}}
 
       {:error, changeset} ->
@@ -156,6 +162,11 @@ defmodule Kanban.ApiTokens do
           [:kanban, :api, :token_revoked],
           %{count: 1},
           %{user_id: api_token.user_id, token_id: api_token.id}
+        )
+
+        Kanban.AuditLog.event(:api_token_revoked,
+          user_id: api_token.user_id,
+          token_id: api_token.id
         )
 
         result
