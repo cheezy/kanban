@@ -250,5 +250,23 @@ if config_env() == :prod do
     ssl: true,
     auth: :always,
     port: 465,
-    retries: 1
+    retries: 1,
+    # Verify the relay's certificate chain against the system CA store. This is
+    # implicit TLS (ssl: true on port 465), so the verification options go in
+    # :sockopts (passed to :ssl.connect) — NOT :tls_options, which only applies
+    # to a STARTTLS upgrade. Without an explicit verify option gen_smtp's
+    # handshake behaviour is version-dependent and was failing against Gmail; a
+    # previously-present verification-disabling override used to mask that, and
+    # when W388 correctly removed it (verification-disabling is a MITM risk and
+    # is flagged by sobelow) delivery broke because no explicit verification was
+    # configured in its place. We configure real peer verification here (D148),
+    # which is both secure and works against Gmail's valid certificate.
+    sockopts: [
+      verify: :verify_peer,
+      cacerts: :public_key.cacerts_get(),
+      depth: 99,
+      customize_hostname_check: [
+        match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+      ]
+    ]
 end
