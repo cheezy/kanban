@@ -165,4 +165,59 @@ defmodule KanbanWeb.TargetGoalRowTest do
       assert html =~ "unassigned"
     end
   end
+
+  describe "target_goal_row/1 — agent owner fallback (D132)" do
+    test "renders the completing agent's name and a square agent avatar when unassigned" do
+      html =
+        render_row(entry(%{goal: %{assigned_to: nil, completed_by_agent: "Claude Sonnet 4.5"}}))
+
+      assert html =~ "Claude Sonnet 4.5"
+      # Agents render as 4px-radius squares (KanbanWeb.Avatar); humans as circles.
+      assert html =~ "border-radius: 4px;"
+      # agent-claude palette resolved via AvatarPalette.for_agent/1.
+      assert html =~ "oklch(70% 0.16 47)"
+      refute html =~ "unassigned"
+    end
+
+    test "falls back to created_by_agent when completed_by_agent is absent" do
+      html = render_row(entry(%{goal: %{assigned_to: nil, created_by_agent: "Codex CLI"}}))
+
+      assert html =~ "Codex CLI"
+      assert html =~ "border-radius: 4px;"
+      refute html =~ "unassigned"
+    end
+
+    test "skips a blank completed_by_agent and falls through to created_by_agent" do
+      html =
+        render_row(
+          entry(%{goal: %{assigned_to: nil, completed_by_agent: "", created_by_agent: "Aider"}})
+        )
+
+      assert html =~ "Aider"
+      refute html =~ "unassigned"
+    end
+
+    test "a human assignee wins over agent attribution" do
+      html =
+        render_row(
+          entry(%{
+            goal: %{
+              completed_by_agent: "Claude Sonnet 4.5",
+              created_by_agent: "Claude Sonnet 4.5"
+            }
+          })
+        )
+
+      assert html =~ "Jamie K"
+      refute html =~ "Claude Sonnet 4.5"
+      refute html =~ "border-radius: 4px;"
+    end
+
+    test "renders italic 'unassigned' when there is no user and no agent attribution" do
+      html = render_row(entry(%{goal: %{assigned_to: nil}}))
+
+      assert html =~ "unassigned"
+      assert html =~ "font-style: italic;"
+    end
+  end
 end

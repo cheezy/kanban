@@ -172,6 +172,28 @@ defmodule KanbanWeb.TargetLive.ShowTest do
       assert html =~ "100%"
     end
 
+    test "shows agent attribution in the owner column for an agent-completed, unassigned goal (D132)",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      goal =
+        goal_fixture(column, %{
+          title: "Agent-built goal",
+          completed_by_agent: "Claude Sonnet 4.5"
+        })
+
+      target = delivery_target_fixture(user)
+      scope = Scope.for_user(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      {:ok, _live, html} = live(conn, ~p"/targets/#{target}")
+
+      assert html =~ "data-target-goal-row"
+      assert html =~ "Claude Sonnet 4.5"
+      refute html =~ "unassigned"
+    end
+
     test "renders the hero at 0% and an empty table (no rows) for a memberless target the owner views",
          %{conn: conn, user: user} do
       target = delivery_target_fixture(user, %{name: "Empty Target"})

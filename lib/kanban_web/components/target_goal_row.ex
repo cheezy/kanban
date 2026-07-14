@@ -4,7 +4,8 @@ defmodule KanbanWeb.TargetGoalRow do
   target drill-down goals table. Mirrors `KanbanWeb.GoalChildRow`'s CSS-grid
   layout: priority dot, G-prefixed identifier, truncated title, a per-goal
   `KanbanWeb.SegmentedProgressBar` (`:sm`) with an N-of-M (P%) count, the owner
-  cell (assignee avatar + name, or "unassigned"), and a chevron.
+  cell (assignee avatar + name, an agent-attribution fallback, or
+  "unassigned"), and a chevron.
 
   The whole row is a `<.link navigate=...>` to the goal drill-down
   (`/boards/:board_id/goals/:goal_id`), built only from the goal's OWN
@@ -20,6 +21,7 @@ defmodule KanbanWeb.TargetGoalRow do
   import KanbanWeb.TaskVisuals
 
   alias KanbanWeb.Avatar
+  alias KanbanWeb.AvatarPalette
   alias KanbanWeb.SegmentedProgressBar
 
   @doc """
@@ -153,13 +155,28 @@ defmodule KanbanWeb.TargetGoalRow do
   end
 
   # Handles a real %User{} (has :name), nil, and %Ecto.Association.NotLoaded{}
-  # (no :name) uniformly — mirrors KanbanWeb.GoalChildRow.pick_owner/1.
+  # (no :name) uniformly — mirrors KanbanWeb.TargetGoalManageRow.pick_owner/1.
+  # When no user is assigned, falls back to agent attribution (D132):
+  # completed_by_agent wins over created_by_agent, and blank strings are
+  # skipped per field — the same semantics as
+  # KanbanWeb.GoalLive.Show.agents_from/1.
   defp pick_owner(goal) do
     case Map.get(goal, :assigned_to) do
       %{name: _} = user -> user
-      _ -> nil
+      _ -> agent_owner(goal)
     end
   end
+
+  defp agent_owner(goal) do
+    case agent_name(Map.get(goal, :completed_by_agent)) ||
+           agent_name(Map.get(goal, :created_by_agent)) do
+      nil -> nil
+      agent -> %{kind: :agent, name: agent, palette: AvatarPalette.for_agent(agent)}
+    end
+  end
+
+  defp agent_name(name) when is_binary(name) and name != "", do: name
+  defp agent_name(_), do: nil
 
   defp percentage(_done, 0), do: 0
   defp percentage(done, total), do: round(done / total * 100)
