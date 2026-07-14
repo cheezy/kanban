@@ -2922,6 +2922,34 @@ defmodule KanbanWeb.AgentsLiveTest do
     %{goal: goal, board: board, doing: doing, backlog: backlog, ready: ready, target: target}
   end
 
+  describe "API-created task attribution (D137)" do
+    setup [:register_and_log_in_user]
+
+    test "a task created via the API with only a top-level agent_name shows that agent on /agents",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column_fixture(board)
+
+      # Token with no agent_model — before D137 this create was unattributable
+      # and the feed's created row rendered the "?" fallback.
+      {:ok, {_token_struct, plain_token}} =
+        Kanban.ApiTokens.create_api_token(user, board, %{"name" => "Plain Token"})
+
+      api_conn =
+        Phoenix.ConnTest.build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+        |> post(~p"/api/tasks", task: %{"title" => "Agent made this"}, agent_name: "Feed Agent")
+
+      assert json_response(api_conn, 201)
+
+      {:ok, _view, html} = live(conn, ~p"/agents")
+
+      assert feed_html(html) =~ "Feed Agent"
+      assert html =~ "Agent made this"
+    end
+  end
+
   # The activity-feed region of the page (from its section marker onward).
   defp feed_html(html) do
     [_, feed] = String.split(html, "data-agent-feed", parts: 2)

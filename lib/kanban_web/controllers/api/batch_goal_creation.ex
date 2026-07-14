@@ -12,7 +12,7 @@ defmodule KanbanWeb.API.BatchGoalCreation do
 
   Like `KanbanWeb.API.TaskErrors`, this module takes `conn` and renders. It
   reuses the controller's shared creation/telemetry/rendering helpers
-  (`build_task_params_with_creator/3`, `log_create_forbidden_fields/3`,
+  (`build_task_params_with_creator/4`, `log_create_forbidden_fields/3`,
   `emit_telemetry/3`, `render_goal_with_children/1`, `render_task_summary/1`),
   which stay in `TaskController` because they are shared with the single-create
   and dependency-listing actions.
@@ -31,8 +31,8 @@ defmodule KanbanWeb.API.BatchGoalCreation do
   `{:ok, results}` (newest-first; `handle_batch_result/2` reverses) or
   `{:error, index, changeset | reason}`.
   """
-  def process_batch_goals(goals, column, user, api_token, conn) do
-    ctx = %{column: column, user: user, api_token: api_token, conn: conn}
+  def process_batch_goals(goals, column, user, api_token, agent_name, conn) do
+    ctx = %{column: column, user: user, api_token: api_token, agent_name: agent_name, conn: conn}
 
     goals
     |> Enum.with_index()
@@ -57,7 +57,12 @@ defmodule KanbanWeb.API.BatchGoalCreation do
     )
 
     task_params_with_creator =
-      TaskController.build_task_params_with_creator(safe_goal_params, ctx.user, ctx.api_token)
+      TaskController.build_task_params_with_creator(
+        safe_goal_params,
+        ctx.user,
+        ctx.api_token,
+        ctx.agent_name
+      )
 
     case Tasks.api_create_goal_with_tasks(ctx.column, task_params_with_creator, safe_child_tasks) do
       {:ok, %{goal: goal, child_tasks: created_child_tasks}} ->

@@ -84,6 +84,22 @@ Authorization: Bearer <your_api_token>
 | `task.required_capabilities` | array | No | Required agent capabilities (e.g., `["code_generation", "testing"]`) |
 | `task.column_id` | integer | No | Column ID where task should be created (default: Ready) |
 | `task.tasks` | array | No | Array of child task objects (for goals only) |
+| `agent_name` | string | No | **Top-level** (sibling of `task`, not nested inside it): the display name of the agent creating the task, used for `created_by_agent` attribution (see resolution order below) |
+
+#### created_by_agent Resolution Order
+
+The server records who created each task in the create-only `created_by_agent`
+field (it is rejected on PATCH so attribution history stays immutable). At
+create time the value is resolved from the first available source:
+
+1. An explicit `task.created_by_agent` in the payload (always wins)
+2. The API token's `agent_model`, recorded as `ai_agent:<model>`
+3. The request's top-level `agent_name` parameter
+4. The token's remembered `last_agent_name` — stamped automatically whenever a
+   claim, complete, or create request carries a usable `agent_name` (non-blank
+   and not the `"Unknown"` placeholder)
+5. Otherwise the task is created unattributed (`created_by_agent` is `null`)
+   and the agents page renders its created row with the neutral `?` avatar
 
 #### Key Files Format
 

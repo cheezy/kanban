@@ -1,6 +1,7 @@
 defmodule KanbanWeb.API.TaskController do
   use KanbanWeb, :controller
 
+  alias Kanban.ApiTokens
   alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Tasks
@@ -91,9 +92,9 @@ defmodule KanbanWeb.API.TaskController do
     |> json(error_response)
   end
 
-  def create(conn, %{"task" => task_params}) do
+  def create(conn, %{"task" => task_params} = params) do
     case authorize_board_write(conn) do
-      :ok -> do_create(conn, task_params)
+      :ok -> do_create(conn, task_params, params["agent_name"])
       error -> TaskErrors.handle_task_error(conn, error)
     end
   end
@@ -121,14 +122,21 @@ defmodule KanbanWeb.API.TaskController do
     |> json(error_response)
   end
 
-  defp do_create(conn, task_params) do
+  defp do_create(conn, task_params, agent_name) do
     board = conn.assigns.current_board
-    user = conn.assigns.current_user
-    api_token = conn.assigns.api_token
+
+    creator = %{
+      user: conn.assigns.current_user,
+      api_token: conn.assigns.api_token,
+      agent_name: agent_name
+    }
+
+    # D137: best-effort, post-authorization; a failed stamp never fails create.
+    ApiTokens.stamp_last_agent_name(creator.api_token, agent_name)
 
     case parse_id(task_params["column_id"] || get_default_column_id(board)) do
       {:ok, column_id} ->
-        resolve_column_and_create(conn, board, column_id, task_params, user, api_token)
+        resolve_column_and_create(conn, board, column_id, task_params, creator)
 
       :error ->
         TaskErrors.error_response(
@@ -171,7 +179,7 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp resolve_column_and_create(conn, board, column_id, task_params, user, api_token) do
+  defp resolve_column_and_create(conn, board, column_id, task_params, creator) do
     # Board-scoped lookup unifies "no such column" and "column on other
     # board" into a single not_found response (W399).
     case Columns.get_column_for_board(column_id, board.id) do
@@ -179,11 +187,11 @@ defmodule KanbanWeb.API.TaskController do
         TaskErrors.handle_task_error(conn, {:error, :not_found})
 
       column ->
-        perform_api_task_create(conn, column, task_params, user, api_token)
+        perform_api_task_create(conn, column, task_params, creator)
     end
   end
 
-  defp perform_api_task_create(conn, column, task_params, user, api_token) do
+  defp perform_api_task_create(conn, column, task_params, creator) do
     {safe_task_params, rejected_goal_fields} =
       TaskParamFilter.filter_forbidden_create_fields(task_params)
 
@@ -195,7 +203,12 @@ defmodule KanbanWeb.API.TaskController do
     log_create_forbidden_fields(conn, rejected_goal_fields, rejected_child_fields)
 
     task_params_with_creator =
-      build_task_params_with_creator(safe_task_params, user, api_token)
+      build_task_params_with_creator(
+        safe_task_params,
+        creator.user,
+        creator.api_token,
+        creator.agent_name
+      )
 
     if safe_child_tasks != [] do
       column
@@ -235,10 +248,13 @@ defmodule KanbanWeb.API.TaskController do
     |> json(error_response)
   end
 
-  def batch_create(conn, %{"goals" => goals}) do
+  def batch_create(conn, %{"goals" => goals} = params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
     api_token = conn.assigns.api_token
+    agent_name = params["agent_name"]
+
+    stamp_agent_identity(conn, params)
 
     column_id = get_default_column_id(board)
 
@@ -250,7 +266,7 @@ defmodule KanbanWeb.API.TaskController do
 
       column ->
         goals
-        |> BatchGoalCreation.process_batch_goals(column, user, api_token, conn)
+        |> BatchGoalCreation.process_batch_goals(column, user, api_token, agent_name, conn)
         |> BatchGoalCreation.handle_batch_result(conn)
     end
   end
@@ -365,6 +381,8 @@ defmodule KanbanWeb.API.TaskController do
     before_doing_result = params["before_doing_result"]
     agent_skills_version = params["skills_version"]
 
+    stamp_agent_identity(conn, params)
+
     agent = %{
       capabilities: agent_capabilities,
       name: agent_name,
@@ -452,14 +470,22 @@ defmodule KanbanWeb.API.TaskController do
   def complete(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
     user = conn.assigns.current_user
-    api_token = conn.assigns.api_token
+
+    stamp_agent_identity(conn, params)
 
     with {:ok, task} <- fetch_and_verify_task(id_or_identifier, board),
          :ok <- validate_complete_preconditions(task, params) do
-      proceed_with_complete(conn, task, user, params, build_complete_agent(params, api_token))
+      proceed_with_complete(conn, task, user, params, build_complete_agent(conn, params))
     else
       error -> TaskErrors.handle_task_error(conn, error)
     end
+  end
+
+  # D137: remember the token's last-seen agent identity from the raw request
+  # param — never the "Unknown" fallback the claim/complete paths default to.
+  # Best-effort: a failed stamp never fails the parent request.
+  defp stamp_agent_identity(conn, params) do
+    ApiTokens.stamp_last_agent_name(conn.assigns.api_token, params["agent_name"])
   end
 
   defp validate_complete_preconditions(task, params) do
@@ -469,10 +495,10 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp build_complete_agent(params, api_token) do
+  defp build_complete_agent(conn, params) do
     %{
       name: params["agent_name"] || "Unknown",
-      api_token: api_token,
+      api_token: conn.assigns.api_token,
       skills_version: params["skills_version"]
     }
   end
@@ -921,10 +947,10 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   @doc false
-  def build_task_params_with_creator(task_params, user, api_token) do
+  def build_task_params_with_creator(task_params, user, api_token, agent_name) do
     task_params
     |> Map.put("created_by_id", user.id)
-    |> maybe_add_created_by_agent(api_token)
+    |> maybe_add_created_by_agent(api_token, agent_name)
     |> Map.delete("column_id")
   end
 
@@ -999,7 +1025,7 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  # Exposed (with build_task_params_with_creator/3, log_create_forbidden_fields/3,
+  # Exposed (with build_task_params_with_creator/4, log_create_forbidden_fields/3,
   # render_goal_with_children/1, render_task_summary/1) so KanbanWeb.API.BatchGoalCreation
   # can compose them; they remain owned here because the single-create and
   # dependency-listing actions share them.
@@ -1040,16 +1066,26 @@ defmodule KanbanWeb.API.TaskController do
     end)
   end
 
-  defp maybe_add_created_by_agent(task_params, api_token) do
-    # If created_by_agent is already in task_params, preserve it
-    # Otherwise, add it from the API token's agent_model if available
+  # D137 resolution order: explicit created_by_agent field → token agent_model
+  # ("ai_agent:<model>") → top-level agent_name param → token last_agent_name
+  # → unset (the agents feed renders unattributed rows as "?").
+  defp maybe_add_created_by_agent(task_params, api_token, agent_name) do
     if Map.has_key?(task_params, "created_by_agent") do
       task_params
     else
-      case api_token.agent_model do
+      case resolve_created_by_agent(api_token, agent_name) do
         nil -> task_params
-        agent_model -> Map.put(task_params, "created_by_agent", "ai_agent:#{agent_model}")
+        agent -> Map.put(task_params, "created_by_agent", agent)
       end
+    end
+  end
+
+  defp resolve_created_by_agent(api_token, agent_name) do
+    cond do
+      api_token.agent_model -> "ai_agent:#{api_token.agent_model}"
+      ApiTokens.usable_agent_name?(agent_name) -> agent_name
+      ApiTokens.usable_agent_name?(api_token.last_agent_name) -> api_token.last_agent_name
+      true -> nil
     end
   end
 

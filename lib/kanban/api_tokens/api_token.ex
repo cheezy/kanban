@@ -11,6 +11,7 @@ defmodule Kanban.ApiTokens.ApiToken do
     field :agent_model, :string
     field :agent_version, :string
     field :agent_purpose, :string
+    field :last_agent_name, :string
     field :last_used_at, :utc_datetime
     field :revoked_at, :utc_datetime
     field :expires_at, :utc_datetime
@@ -78,6 +79,16 @@ defmodule Kanban.ApiTokens.ApiToken do
   def update_last_used_changeset(api_token) do
     api_token
     |> change(last_used_at: DateTime.utc_now() |> DateTime.truncate(:second))
+  end
+
+  # D137: server-stamped, not cast in changeset/2 — clients cannot set it at
+  # token creation. count: :codepoints matches Postgres varchar(255) semantics
+  # (Ecto's default grapheme count can under-count and let a DB error through).
+  @doc false
+  def update_last_agent_name_changeset(api_token, agent_name) do
+    api_token
+    |> change(last_agent_name: agent_name)
+    |> validate_length(:last_agent_name, max: 255, count: :codepoints)
   end
 
   defp generate_token(changeset) do

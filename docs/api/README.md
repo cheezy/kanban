@@ -542,10 +542,11 @@ done
 5. **Use the 5-value skip-reason enum** — free-form reasons are rejected
 6. **All blocking hooks must succeed** — `before_doing` (60s) and `after_doing` (120s) must exit 0 before the corresponding API call
 7. **Provide context** — include `agent_name`, `time_spent_minutes`, `completion_notes`, `completion_summary`, and `actual_complexity` on completion
-8. **Abort on hook failure** — if any blocking hook fails, don't call the API endpoint; fix the issue first
-9. **Check dependencies** — use `GET /api/tasks/:id/dependencies` to verify dependencies are complete
-10. **Unclaim when stuck** — if you can't complete a task, unclaim it with a reason
-11. **Create child tasks** — break down complex work into goals with child tasks; use `POST /api/tasks/batch` for several goals at once
+8. **Identify your agent on create too** — `POST /api/tasks` and `POST /api/tasks/batch` accept a top-level `agent_name` used for `created_by_agent` attribution when the explicit field and the token's `agent_model` are absent; claim/complete/create requests carrying a usable `agent_name` also update the token's remembered `last_agent_name`, the final create-time fallback (see `POST /api/tasks` docs for the full resolution order)
+9. **Abort on hook failure** — if any blocking hook fails, don't call the API endpoint; fix the issue first
+10. **Check dependencies** — use `GET /api/tasks/:id/dependencies` to verify dependencies are complete
+11. **Unclaim when stuck** — if you can't complete a task, unclaim it with a reason
+12. **Create child tasks** — break down complex work into goals with child tasks; use `POST /api/tasks/batch` for several goals at once
 
 ## Troubleshooting
 

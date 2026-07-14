@@ -22,7 +22,7 @@ defmodule KanbanWeb.API.TaskParamFilter do
   # position are generated server-side, and the workflow/audit fields can only
   # be set by the dedicated workflow endpoints. created_by_id and
   # created_by_agent are not in this list because the controller helper
-  # `build_task_params_with_creator/3` overwrites them server-side after the
+  # `build_task_params_with_creator/4` overwrites them server-side after the
   # filter — they need to flow through the changeset's allow-list.
   @forbidden_api_create_fields ~w(
     status

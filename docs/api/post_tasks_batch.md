@@ -373,6 +373,24 @@ WIP limit reached:
 - `needs_review` defaults to `false` (auto-complete without human review)
 - Agent model from API token is automatically recorded as `created_by_agent`
 
+### Agent Attribution (`agent_name`)
+
+A **top-level** `agent_name` (a sibling of `goals`, not nested inside a goal)
+applies to every goal in the batch, and child tasks inherit `created_by_agent`
+from their goal:
+
+```json
+{
+  "agent_name": "Claude Sonnet 4.5",
+  "goals": [ ... ]
+}
+```
+
+Per-goal resolution follows the same order as `POST /api/tasks` (see that
+endpoint's *created_by_agent Resolution Order*): explicit
+`created_by_agent` on the goal → token `agent_model` (`ai_agent:<model>`) →
+top-level `agent_name` → the token's remembered `last_agent_name` → unset.
+
 ### Telemetry
 
 The endpoint emits two types of telemetry events:

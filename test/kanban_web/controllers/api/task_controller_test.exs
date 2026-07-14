@@ -308,6 +308,121 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert created_by_agent == "gpt-4"
     end
 
+    test "uses top-level agent_name for created_by_agent when field and agent_model are absent (D137)",
+         %{conn: _conn, user: user, board: board} do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{"name" => "Regular Token"})
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+        |> post(~p"/api/tasks",
+          task: %{"title" => "Named Agent Task"},
+          agent_name: "Claude Fable 5"
+        )
+
+      assert %{"created_by_agent" => "Claude Fable 5"} = json_response(conn, 201)["data"]
+    end
+
+    test "token agent_model takes precedence over top-level agent_name (D137)",
+         %{conn: _conn, user: user, board: board} do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{
+          "name" => "AI Agent Token",
+          "agent_model" => "claude-sonnet-4"
+        })
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+        |> post(~p"/api/tasks", task: %{"title" => "Model Wins Task"}, agent_name: "Other Agent")
+
+      assert %{"created_by_agent" => "ai_agent:claude-sonnet-4"} =
+               json_response(conn, 201)["data"]
+    end
+
+    test "explicit created_by_agent wins over top-level agent_name (D137)",
+         %{conn: _conn, user: user, board: board} do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{"name" => "Regular Token"})
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+        |> post(~p"/api/tasks",
+          task: %{"title" => "Explicit Wins Task", "created_by_agent" => "gpt-4"},
+          agent_name: "Other Agent"
+        )
+
+      assert %{"created_by_agent" => "gpt-4"} = json_response(conn, 201)["data"]
+    end
+
+    test "falls back to the token's last_agent_name when the request carries no agent identity (D137)",
+         %{conn: _conn, user: user, board: board} do
+      {:ok, {token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{"name" => "Regular Token"})
+
+      api_conn = fn ->
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+      end
+
+      # First request identifies the agent and stamps the token...
+      first =
+        post(api_conn.(), ~p"/api/tasks", task: %{"title" => "Seeded"}, agent_name: "Seeder")
+
+      assert json_response(first, 201)
+      assert ApiTokens.get_api_token!(token_struct.id).last_agent_name == "Seeder"
+
+      # ...so a later create with no agent identity still attributes.
+      second = post(api_conn.(), ~p"/api/tasks", task: %{"title" => "Anonymous follow-up"})
+      assert %{"created_by_agent" => "Seeder"} = json_response(second, 201)["data"]
+    end
+
+    test "created_by_agent stays nil with no source, and the Unknown placeholder is never stamped (D137)",
+         %{conn: _conn, user: user, board: board} do
+      {:ok, {token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{"name" => "Regular Token"})
+
+      api_conn = fn ->
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+      end
+
+      first =
+        post(api_conn.(), ~p"/api/tasks", task: %{"title" => "Unknown"}, agent_name: "Unknown")
+
+      assert %{"created_by_agent" => nil} = json_response(first, 201)["data"]
+      assert ApiTokens.get_api_token!(token_struct.id).last_agent_name == nil
+
+      second = post(api_conn.(), ~p"/api/tasks", task: %{"title" => "Still anonymous"})
+      assert %{"created_by_agent" => nil} = json_response(second, 201)["data"]
+    end
+
+    test "create with agent_name surfaces the agent on the created activity event (D137)",
+         %{conn: _conn, user: user, board: board} do
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{"name" => "Regular Token"})
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+        |> post(~p"/api/tasks", task: %{"title" => "Feed Task"}, agent_name: "Feed Agent")
+
+      assert json_response(conn, 201)
+
+      assert Enum.any?(
+               Kanban.Agents.recent_activity(),
+               &(&1.kind == :create and &1.actor == "Feed Agent")
+             )
+    end
+
     test "creates goal with nested child tasks", %{conn: conn, column: _column} do
       goal_params = %{
         "title" => "Test Goal",
@@ -914,6 +1029,50 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       child_task = Enum.at(goals, 0)["child_tasks"] |> Enum.at(0)
       assert child_task["created_by_agent"] == "gpt-4-turbo"
+    end
+
+    test "applies a top-level agent_name to every batch goal and children inherit it (D137)", %{
+      conn: _conn,
+      user: user,
+      board: board
+    } do
+      {:ok, {token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{"name" => "Regular Token"})
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      goals_params = [
+        %{
+          "title" => "First Goal",
+          "type" => "goal",
+          "tasks" => [%{"title" => "First Child", "type" => "work"}]
+        },
+        %{
+          "title" => "Second Goal",
+          "type" => "goal",
+          "tasks" => [%{"title" => "Second Child", "type" => "work"}]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params, agent_name: "Claude Fable 5")
+      response = json_response(conn, 201)
+
+      assert %{"goals" => goals} = response
+      assert length(goals) == 2
+
+      for entry <- goals do
+        assert entry["goal"]["created_by_agent"] == "Claude Fable 5"
+
+        for child <- entry["child_tasks"] do
+          assert child["created_by_agent"] == "Claude Fable 5"
+        end
+      end
+
+      # The batch request also stamps the token for future fallbacks.
+      assert ApiTokens.get_api_token!(token_struct.id).last_agent_name == "Claude Fable 5"
     end
 
     test "returns 401 without authentication" do
@@ -1836,6 +1995,49 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 409)["error"] =~ "No tasks available"
     end
 
+    test "claim stamps last_agent_name from the raw param, never the Unknown default (D137)", %{
+      ready_column: ready_column,
+      user: user,
+      board: board
+    } do
+      {:ok, _task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Stamped Claim Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      {:ok, {token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{"name" => "Claim Token"})
+
+      api_conn = fn ->
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+      end
+
+      # A claim with no agent_name falls back to "Unknown" internally, which
+      # must never be persisted onto the token.
+      no_name =
+        post(api_conn.(), ~p"/api/tasks/claim", %{
+          "before_doing_result" => valid_before_doing_result()
+        })
+
+      assert json_response(no_name, 200)
+      assert ApiTokens.get_api_token!(token_struct.id).last_agent_name == nil
+
+      # A claim carrying agent_name stamps it (even a failed claim attempt
+      # identifies the agent — here the 409 path, since the task is taken).
+      named =
+        post(api_conn.(), ~p"/api/tasks/claim", %{
+          "agent_name" => "Claim Agent",
+          "before_doing_result" => valid_before_doing_result()
+        })
+
+      assert json_response(named, 409)
+      assert ApiTokens.get_api_token!(token_struct.id).last_agent_name == "Claim Agent"
+    end
+
     test "returns 403 when the caller is a read-only board member (W1430)", %{
       conn: _conn,
       ready_column: ready_column,
@@ -2566,6 +2768,39 @@ defmodule KanbanWeb.API.TaskControllerTest do
       response = json_response(conn, 200)["data"]
 
       assert response["completed_by_agent"] == "My Custom Agent"
+    end
+
+    test "complete stamps last_agent_name on the requesting token (D137)", %{
+      task: task,
+      user: user,
+      board: board
+    } do
+      {:ok, {token_struct, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{"name" => "Complete Token"})
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      completion_params = %{
+        "agent_name" => "Completer Agent",
+        "completion_summary" =>
+          Jason.encode!(%{
+            files_changed: [%{path: "lib/test.ex", changes: "Added function"}],
+            verification_results: %{status: "passed", commands_run: ["mix test"]}
+          }),
+        "actual_complexity" => "medium",
+        "actual_files_changed" => "2",
+        "time_spent_minutes" => 15,
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result()
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      assert json_response(conn, 200)
+
+      assert ApiTokens.get_api_token!(token_struct.id).last_agent_name == "Completer Agent"
     end
 
     test "returns 404 for nonexistent task", %{conn: conn} do

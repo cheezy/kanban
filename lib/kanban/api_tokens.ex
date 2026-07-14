@@ -260,4 +260,32 @@ defmodule Kanban.ApiTokens do
       %{user_id: api_token.user_id, token_id: api_token.id}
     )
   end
+
+  @unknown_agent_name "Unknown"
+
+  @doc """
+  Returns true when `agent_name` is a usable display name: a non-blank binary
+  that is not the `"Unknown"` claim/complete fallback literal (D137).
+  """
+  def usable_agent_name?(agent_name) when is_binary(agent_name) do
+    String.trim(agent_name) != "" and agent_name != @unknown_agent_name
+  end
+
+  def usable_agent_name?(_agent_name), do: false
+
+  @doc """
+  Best-effort stamp of the last usable agent name presented by this token
+  (D137). Follows `update_last_used/1`: the `Repo.update` result is discarded
+  so a failed stamp (e.g. an over-length name rejected by the changeset) never
+  fails the parent API request. No-op unless `usable_agent_name?/1`.
+  """
+  def stamp_last_agent_name(%ApiToken{} = api_token, agent_name) do
+    if usable_agent_name?(agent_name) do
+      api_token
+      |> ApiToken.update_last_agent_name_changeset(agent_name)
+      |> Repo.update()
+    end
+
+    :ok
+  end
 end

@@ -209,4 +209,55 @@ defmodule Kanban.ApiTokensTest do
       assert Repo.get!(ApiToken, token.id).revoked_at == original_revoked_at
     end
   end
+
+  describe "stamp_last_agent_name/2 (D137)" do
+    defp token_fixture do
+      user = user_fixture()
+      board = board_fixture(user)
+      {:ok, {token, _plain}} = ApiTokens.create_api_token(user, board, %{name: "Stamp Token"})
+      token
+    end
+
+    test "stamps a usable agent name onto the token" do
+      token = token_fixture()
+
+      assert :ok = ApiTokens.stamp_last_agent_name(token, "Claude Fable 5")
+      assert ApiTokens.get_api_token!(token.id).last_agent_name == "Claude Fable 5"
+    end
+
+    test "overwrites a previously stamped name" do
+      token = token_fixture()
+
+      assert :ok = ApiTokens.stamp_last_agent_name(token, "First Agent")
+      assert :ok = ApiTokens.stamp_last_agent_name(token, "Second Agent")
+      assert ApiTokens.get_api_token!(token.id).last_agent_name == "Second Agent"
+    end
+
+    test "skips nil, blank, and the Unknown placeholder" do
+      token = token_fixture()
+
+      for unusable <- [nil, "", "   ", "Unknown"] do
+        assert :ok = ApiTokens.stamp_last_agent_name(token, unusable)
+        assert ApiTokens.get_api_token!(token.id).last_agent_name == nil
+      end
+    end
+
+    test "discards an over-length name without raising or failing" do
+      token = token_fixture()
+      oversized = String.duplicate("a", 256)
+
+      assert :ok = ApiTokens.stamp_last_agent_name(token, oversized)
+      assert ApiTokens.get_api_token!(token.id).last_agent_name == nil
+    end
+
+    test "usable_agent_name?/1 truth table" do
+      assert ApiTokens.usable_agent_name?("Claude Fable 5")
+      assert ApiTokens.usable_agent_name?("unknown")
+      refute ApiTokens.usable_agent_name?("Unknown")
+      refute ApiTokens.usable_agent_name?("")
+      refute ApiTokens.usable_agent_name?("   ")
+      refute ApiTokens.usable_agent_name?(nil)
+      refute ApiTokens.usable_agent_name?(:agent)
+    end
+  end
 end
