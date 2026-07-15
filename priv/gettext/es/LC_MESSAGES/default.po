@@ -112,6 +112,7 @@ msgstr "Crear una cuenta"
 msgid "Creating account..."
 msgstr "Creando cuenta..."
 
+#: lib/kanban_web/live/admin/user_live/index.html.heex:17
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:88
 #: lib/kanban_web/live/user_live/forgot_password.ex:40
 #: lib/kanban_web/live/user_live/forgot_password.ex:47
@@ -220,6 +221,7 @@ msgstr "Editar tablero"
 msgid "Get started by creating columns for your board."
 msgstr "Comienza creando columnas para tu tablero."
 
+#: lib/kanban_web/live/admin/user_live/index.html.heex:20
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:78
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
@@ -465,6 +467,7 @@ msgstr "Prioridad"
 msgid "Task History"
 msgstr "Historial de Tarea"
 
+#: lib/kanban_web/live/admin/user_live/index.html.heex:23
 #: lib/kanban_web/live/issue_live/form_component.ex:79
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:36
 #: lib/kanban_web/live/task_live/form_component.html.heex:102
@@ -1005,7 +1008,7 @@ msgstr "Vea el historial completo de versiones y la lista de funciones de esta a
 msgid "Work With Us"
 msgstr "Trabaja Con Nosotros"
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:111
+#: lib/kanban_web/live/user_live/forgot_password.ex:120
 #, elixir-autogen, elixir-format
 msgid "If your email is in our system, you will receive instructions to reset your password shortly."
 msgstr "Si tu correo está en nuestro sistema, recibirás instrucciones para restablecer tu contraseña en breve."
@@ -4105,6 +4108,7 @@ msgstr[0] "%{count} activo"
 msgstr[1] "%{count} activos"
 
 #: lib/kanban_web/components/layouts.ex:268
+#: lib/kanban_web/live/admin/user_live/index.html.heex:44
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:74
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4535,8 +4539,8 @@ msgid "%{done} of %{total} complete"
 msgstr "%{done} de %{total} completos"
 
 #: lib/kanban_web/components/goal_progress_header.ex:111
-#: lib/kanban_web/components/target_goal_manage_row.ex:81
-#: lib/kanban_web/components/target_goal_row.ex:69
+#: lib/kanban_web/components/target_goal_manage_row.ex:82
+#: lib/kanban_web/components/target_goal_row.ex:71
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goal progress by child status"
 msgstr "Progreso del objetivo por estado de hijos"
@@ -4547,8 +4551,8 @@ msgid "priority"
 msgstr "Prioridad"
 
 #: lib/kanban_web/components/goal_child_row.ex:85
-#: lib/kanban_web/components/target_goal_manage_row.ex:115
-#: lib/kanban_web/components/target_goal_row.ex:96
+#: lib/kanban_web/components/target_goal_manage_row.ex:116
+#: lib/kanban_web/components/target_goal_row.ex:98
 #, elixir-autogen, elixir-format, fuzzy
 msgid "unassigned"
 msgstr "Sin asignar"
@@ -4944,6 +4948,8 @@ msgstr "Pasos del flujo de trabajo"
 msgid "Working"
 msgstr "Trabajando"
 
+#: lib/kanban_web/live/admin/user_live/index.html.heex:30
+#: lib/kanban_web/live/admin/user_live/index.html.heex:38
 #: lib/kanban_web/live/task_live/view_component.ex:413
 #, elixir-autogen, elixir-format
 msgid "Yes"
@@ -6962,9 +6968,9 @@ msgid "You must confirm your account before signing in. Check your email for a c
 msgstr "Debes confirmar tu cuenta antes de iniciar sesión. Revisa tu correo electrónico para encontrar el enlace de confirmación."
 
 #: lib/kanban_web/user_auth.ex:237
-#: lib/kanban_web/user_auth.ex:307
-#: lib/kanban_web/user_auth.ex:343
-#: lib/kanban_web/user_auth.ex:374
+#: lib/kanban_web/user_auth.ex:315
+#: lib/kanban_web/user_auth.ex:351
+#: lib/kanban_web/user_auth.ex:382
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "Debes confirmar tu cuenta para acceder a esta página."
@@ -7004,7 +7010,7 @@ msgstr "Revisa tu correo electrónico"
 msgid "Didn't get it? Check your spam folder or resend below."
 msgstr "¿No llegó? Revisa tu carpeta de spam o reenvíalo abajo."
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:157
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:158
 #, elixir-autogen, elixir-format
 msgid "If your email is in our system and the account isn't confirmed yet, you will receive a new confirmation link shortly."
 msgstr "Si tu correo está en nuestro sistema y la cuenta aún no está confirmada, recibirás un nuevo enlace de confirmación en breve."
@@ -7416,7 +7422,7 @@ msgstr "Ninguna tarea archivada coincide con \"%{query}\"."
 msgid "Created today"
 msgstr "Completadas hoy"
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:137
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:138
 #, elixir-autogen, elixir-format
 msgid "Enter a valid email address."
 msgstr "Introduce una dirección de correo electrónico válida."
@@ -7574,8 +7580,8 @@ msgstr "Metas"
 msgid "Target progress by child status"
 msgstr "Progreso del objetivo por estado de hijos"
 
-#: lib/kanban_web/components/target_goal_manage_row.ex:84
-#: lib/kanban_web/components/target_goal_row.ex:72
+#: lib/kanban_web/components/target_goal_manage_row.ex:85
+#: lib/kanban_web/components/target_goal_row.ex:74
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{done} de %{total} completos"
@@ -7854,13 +7860,55 @@ msgstr "Últimos 90 días"
 msgid "New column"
 msgstr "Nueva columna"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:105
+#: lib/kanban_web/controllers/user_session_controller.ex:106
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
 msgstr "Demasiados intentos. Espera unos minutos e inténtalo de nuevo."
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:174
-#: lib/kanban_web/live/user_live/forgot_password.ex:98
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:175
+#: lib/kanban_web/live/user_live/forgot_password.ex:103
 #, elixir-autogen, elixir-format
 msgid "Too many requests. Please wait a few minutes and try again."
 msgstr "Demasiadas solicitudes. Espera unos minutos e inténtalo de nuevo."
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Confirmed"
+msgstr "Confirmado"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:36
+#, elixir-autogen, elixir-format
+msgid "Disabled"
+msgstr "Deshabilitado"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Every account registered on this instance."
+msgstr "Todas las cuentas registradas en esta instancia."
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:33
+#: lib/kanban_web/live/admin/user_live/index.html.heex:41
+#, elixir-autogen, elixir-format
+msgid "No"
+msgstr "No"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "No users yet."
+msgstr "Aún no hay usuarios."
+
+#: lib/kanban_web/live/admin/user_live/index.ex:22
+#: lib/kanban_web/live/admin/user_live/index.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "User Administration"
+msgstr "Administración de usuarios"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:30
+#, elixir-autogen, elixir-format
+msgid "Admin"
+msgstr "Administrador"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:31
+#, elixir-autogen, elixir-format
+msgid "User"
+msgstr "Usuario"

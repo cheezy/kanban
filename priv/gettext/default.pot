@@ -112,6 +112,7 @@ msgstr ""
 msgid "Creating account..."
 msgstr ""
 
+#: lib/kanban_web/live/admin/user_live/index.html.heex:17
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:88
 #: lib/kanban_web/live/user_live/forgot_password.ex:40
 #: lib/kanban_web/live/user_live/forgot_password.ex:47
@@ -220,6 +221,7 @@ msgstr ""
 msgid "Get started by creating columns for your board."
 msgstr ""
 
+#: lib/kanban_web/live/admin/user_live/index.html.heex:20
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:78
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
@@ -465,6 +467,7 @@ msgstr ""
 msgid "Task History"
 msgstr ""
 
+#: lib/kanban_web/live/admin/user_live/index.html.heex:23
 #: lib/kanban_web/live/issue_live/form_component.ex:79
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:36
 #: lib/kanban_web/live/task_live/form_component.html.heex:102
@@ -1005,7 +1008,7 @@ msgstr ""
 msgid "Work With Us"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/forgot_password.ex:111
+#: lib/kanban_web/live/user_live/forgot_password.ex:120
 #, elixir-autogen, elixir-format
 msgid "If your email is in our system, you will receive instructions to reset your password shortly."
 msgstr ""
@@ -4105,6 +4108,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: lib/kanban_web/components/layouts.ex:268
+#: lib/kanban_web/live/admin/user_live/index.html.heex:44
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:74
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4535,8 +4539,8 @@ msgid "%{done} of %{total} complete"
 msgstr ""
 
 #: lib/kanban_web/components/goal_progress_header.ex:111
-#: lib/kanban_web/components/target_goal_manage_row.ex:81
-#: lib/kanban_web/components/target_goal_row.ex:69
+#: lib/kanban_web/components/target_goal_manage_row.ex:82
+#: lib/kanban_web/components/target_goal_row.ex:71
 #, elixir-autogen, elixir-format
 msgid "Goal progress by child status"
 msgstr ""
@@ -4547,8 +4551,8 @@ msgid "priority"
 msgstr ""
 
 #: lib/kanban_web/components/goal_child_row.ex:85
-#: lib/kanban_web/components/target_goal_manage_row.ex:115
-#: lib/kanban_web/components/target_goal_row.ex:96
+#: lib/kanban_web/components/target_goal_manage_row.ex:116
+#: lib/kanban_web/components/target_goal_row.ex:98
 #, elixir-autogen, elixir-format
 msgid "unassigned"
 msgstr ""
@@ -4944,6 +4948,8 @@ msgstr ""
 msgid "Working"
 msgstr ""
 
+#: lib/kanban_web/live/admin/user_live/index.html.heex:30
+#: lib/kanban_web/live/admin/user_live/index.html.heex:38
 #: lib/kanban_web/live/task_live/view_component.ex:413
 #, elixir-autogen, elixir-format
 msgid "Yes"
@@ -6863,9 +6869,9 @@ msgid "You must confirm your account before signing in. Check your email for a c
 msgstr ""
 
 #: lib/kanban_web/user_auth.ex:237
-#: lib/kanban_web/user_auth.ex:307
-#: lib/kanban_web/user_auth.ex:343
-#: lib/kanban_web/user_auth.ex:374
+#: lib/kanban_web/user_auth.ex:315
+#: lib/kanban_web/user_auth.ex:351
+#: lib/kanban_web/user_auth.ex:382
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr ""
@@ -6905,7 +6911,7 @@ msgstr ""
 msgid "Didn't get it? Check your spam folder or resend below."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:157
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:158
 #, elixir-autogen, elixir-format
 msgid "If your email is in our system and the account isn't confirmed yet, you will receive a new confirmation link shortly."
 msgstr ""
@@ -7317,7 +7323,7 @@ msgstr ""
 msgid "Created today"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:137
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:138
 #, elixir-autogen, elixir-format
 msgid "Enter a valid email address."
 msgstr ""
@@ -7475,8 +7481,8 @@ msgstr ""
 msgid "Target progress by child status"
 msgstr ""
 
-#: lib/kanban_web/components/target_goal_manage_row.ex:84
-#: lib/kanban_web/components/target_goal_row.ex:72
+#: lib/kanban_web/components/target_goal_manage_row.ex:85
+#: lib/kanban_web/components/target_goal_row.ex:74
 #, elixir-autogen, elixir-format
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr ""
@@ -7755,13 +7761,55 @@ msgstr ""
 msgid "New column"
 msgstr ""
 
-#: lib/kanban_web/controllers/user_session_controller.ex:105
+#: lib/kanban_web/controllers/user_session_controller.ex:106
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation_pending.ex:174
-#: lib/kanban_web/live/user_live/forgot_password.ex:98
+#: lib/kanban_web/live/user_live/confirmation_pending.ex:175
+#: lib/kanban_web/live/user_live/forgot_password.ex:103
 #, elixir-autogen, elixir-format
 msgid "Too many requests. Please wait a few minutes and try again."
+msgstr ""
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Confirmed"
+msgstr ""
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:36
+#, elixir-autogen, elixir-format
+msgid "Disabled"
+msgstr ""
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Every account registered on this instance."
+msgstr ""
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:33
+#: lib/kanban_web/live/admin/user_live/index.html.heex:41
+#, elixir-autogen, elixir-format
+msgid "No"
+msgstr ""
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "No users yet."
+msgstr ""
+
+#: lib/kanban_web/live/admin/user_live/index.ex:22
+#: lib/kanban_web/live/admin/user_live/index.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "User Administration"
+msgstr ""
+
+#: lib/kanban_web/live/admin/user_live/index.ex:30
+#, elixir-autogen, elixir-format
+msgid "Admin"
+msgstr ""
+
+#: lib/kanban_web/live/admin/user_live/index.ex:31
+#, elixir-autogen, elixir-format
+msgid "User"
 msgstr ""

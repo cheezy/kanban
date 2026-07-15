@@ -1,0 +1,53 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
+    <.header>
+      {gettext("User Administration")}
+      <:subtitle>
+        {gettext("Every account registered on this instance.")}
+      </:subtitle>
+    </.header>
+
+    <section class="mt-8">
+      <div :if={@users == []} class="text-base-content opacity-70">
+        {gettext("No users yet.")}
+      </div>
+
+      <div :if={@users != []} class="overflow-x-auto">
+        <.table id="users" rows={@users} row_id={fn user -> "user-#{user.id}" end}>
+          <:col :let={user} label={gettext("Email")}>
+            <span class="text-base-content break-all">{user.email}</span>
+          </:col>
+          <:col :let={user} label={gettext("Name")}>
+            <span class="text-base-content break-words">{display_name(user)}</span>
+          </:col>
+          <:col :let={user} label={gettext("Type")}>
+            <span class={["badge", user.type == :admin && "badge-primary"]}>
+              {type_label(user.type)}
+            </span>
+          </:col>
+          <:col :let={user} label={gettext("Confirmed")}>
+            <span :if={confirmed?(user)} class="badge badge-success">
+              {gettext("Yes")}
+            </span>
+            <span :if={!confirmed?(user)} class="badge badge-ghost">
+              {gettext("No")}
+            </span>
+          </:col>
+          <:col :let={user} label={gettext("Disabled")}>
+            <span :if={disabled?(user)} class="badge badge-error">
+              {gettext("Yes")}
+            </span>
+            <span :if={!disabled?(user)} class="badge badge-ghost">
+              {gettext("No")}
+            </span>
+          </:col>
+          <:col :let={user} label={gettext("Boards")}>
+            <span class="text-base-content tabular-nums">
+              {board_count(@board_counts, user)}
+            </span>
+          </:col>
+        </.table>
+      </div>
+    </section>
+  </div>
+</Layouts.app>

@@ -141,6 +141,7 @@ defmodule KanbanWeb.Router do
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/messages", MessageLive.Index, :index
+      live "/users", UserLive.Index, :index
     end
   end
 

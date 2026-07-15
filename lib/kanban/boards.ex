@@ -1,6 +1,9 @@
 defmodule Kanban.Boards do
   @moduledoc """
   The Boards context.
+
+  Board membership queries live in `Kanban.Boards.Membership` and are delegated
+  to below.
   """
 
   use Gettext, backend: KanbanWeb.Gettext
@@ -12,6 +15,7 @@ defmodule Kanban.Boards do
   alias Kanban.ApiTokens
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
+  alias Kanban.Boards.Membership
   alias Kanban.Columns.Column
   alias Kanban.Tasks.Task
 
@@ -58,6 +62,10 @@ defmodule Kanban.Boards do
   end
 
   def user_has_boards?(_), do: false
+
+  ## Membership
+
+  defdelegate board_counts_by_user(), to: Membership
 
   defp board_sort_key(board) do
     access_priority =
