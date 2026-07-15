@@ -115,10 +115,7 @@ defmodule KanbanWeb.Router do
       metrics: KanbanWeb.Telemetry,
       metrics_history: {KanbanWeb.Telemetry.MetricsStorage, :metrics_history, []},
       ecto_repos: [Kanban.Repo],
-      ecto_psql_extras_options: [long_running_queries_threshold: [threshold: "200 milliseconds"]],
-      additional_pages: [
-        user_activity: KanbanWeb.Telemetry.UserActivityPage
-      ]
+      ecto_psql_extras_options: [long_running_queries_threshold: [threshold: "200 milliseconds"]]
 
     # csp_nonce_assign_key lets ErrorTracker stamp our per-request CSP nonce
     # (KanbanWeb.Plugs.CspNonce) onto its inline <script>/<style> tags —

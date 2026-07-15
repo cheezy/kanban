@@ -145,7 +145,6 @@ defmodule Kanban.MixProject do
         KanbanWeb.Plugs.Locale,
         KanbanWeb.Router,
         KanbanWeb.Telemetry,
-        KanbanWeb.Telemetry.UserActivityPage,
         Mix.Tasks.DarkMode.EnsureAuditUser,
         Mix.Tasks.DarkMode.Scan,
         Mix.Tasks.Kanban.BackfillChangedFiles,
