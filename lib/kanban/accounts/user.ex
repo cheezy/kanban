@@ -9,6 +9,7 @@ defmodule Kanban.Accounts.User do
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
+    field :disabled_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
 
     has_many :board_users, Kanban.Boards.BoardUser
@@ -175,6 +176,22 @@ defmodule Kanban.Accounts.User do
   """
   def type_changeset(user, type) when type in [:user, :admin] do
     change(user, type: type)
+  end
+
+  @doc """
+  A changeset for disabling or enabling a user.
+
+  Pass a `DateTime` to disable the account, or `nil` to enable it. A `nil`
+  `disabled_at` means the account is enabled.
+
+  `:disabled_at` is deliberately absent from the field lists cast by
+  `email_changeset/3`, `registration_changeset/3`, `name_changeset/2` and
+  `password_changeset/3`, so it is unreachable from user-facing forms and can
+  only be set through this function.
+  """
+  def disabled_changeset(user, disabled_at)
+      when is_nil(disabled_at) or is_struct(disabled_at, DateTime) do
+    change(user, disabled_at: disabled_at)
   end
 
   @doc """

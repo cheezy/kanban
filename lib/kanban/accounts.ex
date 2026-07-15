@@ -1,11 +1,15 @@
 defmodule Kanban.Accounts do
   @moduledoc """
   The Accounts context.
+
+  Admin-facing user management (listing, disabling/enabling, and deletion)
+  lives in `Kanban.Accounts.AdminManagement` and is delegated to below.
   """
 
   import Ecto.Query, warn: false
   alias Kanban.Repo
 
+  alias Kanban.Accounts.AdminManagement
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserNotifier
   alias Kanban.Accounts.UserToken
@@ -317,6 +321,13 @@ defmodule Kanban.Accounts do
   """
   def admin?(%User{type: :admin}), do: true
   def admin?(_), do: false
+
+  ## Admin user management
+
+  defdelegate list_users(), to: AdminManagement
+  defdelegate disable_user(user), to: AdminManagement
+  defdelegate enable_user(user), to: AdminManagement
+  defdelegate delete_user(user, current_user), to: AdminManagement
 
   ## Session
 
