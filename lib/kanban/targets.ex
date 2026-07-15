@@ -12,6 +12,14 @@ defmodule Kanban.Targets do
   has no member goals at all — is never returned by `list_targets/1` or
   `get_target/2`.
 
+  Archiving is a second, independent axis: `archived_at` (`nil` = active) gates
+  `list_targets/1` and its derivatives, while `list_archived_targets/1` reads
+  the archived set under the same board scoping. `get_target/2` and
+  `get_owned_target/2` deliberately still resolve an archived target by id, so
+  an archived target remains fetchable (and therefore unarchivable). Archiving
+  itself (`archive_target/2`, `unarchive_target/2`) is *owner*-scoped rather
+  than board-scoped — the same split `update_target/3` already uses.
+
   All public functions take a `Kanban.Accounts.Scope` as the first argument.
   A `nil` scope (or `%Scope{user: nil}`) means "no board filter" for the read
   and membership functions, matching the convention in `Kanban.Reviews` and
@@ -37,19 +45,44 @@ defmodule Kanban.Targets do
   alias Kanban.Tasks.Task
 
   @doc """
-  Returns every delivery target with at least one member goal on a board the
-  scoped user can access, ordered by `target_date` (soonest first).
+  Returns every *active* delivery target with at least one member goal on a
+  board the scoped user can access, ordered by `target_date` (soonest first).
 
   Visibility flows through accessible member goals — a target whose goals are
   all on inaccessible boards, or which has no member goals, is omitted. A
   `nil` scope applies no board filter and returns every target that has at
   least one goal-type member.
+
+  Archived targets (`archived_at` set) are excluded. Because every active-target
+  listing is built on this query, archiving a target removes it from the boards
+  strip (`list_targets_with_status/2`) and the /agents rollup
+  (`list_targets_with_status_and_goals/2`) in one place. Use
+  `list_archived_targets/1` to read them back.
   """
   @spec list_targets(Scope.t() | nil) :: [DeliveryTarget.t()]
   def list_targets(scope) do
     DeliveryTarget
     |> where([dt], dt.id in subquery(member_target_ids_query(scope)))
+    |> where([dt], is_nil(dt.archived_at))
     |> order_by([dt], asc: dt.target_date, asc: dt.id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns every *archived* delivery target visible to the scoped user, newest
+  archived first.
+
+  The board-scoped visibility model is identical to `list_targets/1` (a target
+  is visible through its accessible member goals) — this is its archived-only
+  mirror. `archived_at` orders the list descending, with `id` as a deterministic
+  tiebreak.
+  """
+  @spec list_archived_targets(Scope.t() | nil) :: [DeliveryTarget.t()]
+  def list_archived_targets(scope) do
+    DeliveryTarget
+    |> where([dt], dt.id in subquery(member_target_ids_query(scope)))
+    |> where([dt], not is_nil(dt.archived_at))
+    |> order_by([dt], desc: dt.archived_at, desc: dt.id)
     |> Repo.all()
   end
 
@@ -166,6 +199,65 @@ defmodule Kanban.Targets do
         else
           {:error, :not_authorized}
         end
+    end
+  end
+
+  @doc """
+  Archives a target the scoped user owns, stamping `archived_at`.
+
+  Only a `:complete` target may be archived: completeness is derived at archive
+  time from the target's member goals via `Kanban.Targets.Status.derive/3` —
+  there is no stored status column to trust. The gate lives here in the context,
+  not in the UI, so no LiveView or API caller can archive an incomplete target.
+
+  Returns:
+
+    * `{:ok, target}` — archived.
+    * `{:error, :not_found}` — the target is missing, or is owned by another
+      user. Ownership is checked *before* completeness, so a non-owner cannot
+      distinguish "exists but incomplete" from "does not exist".
+    * `{:error, :not_complete}` — owned, but its derived status is not
+      `:complete`. A target with **no** member goals derives `:on_track` (an
+      empty target has delivered nothing — see `Status.derive/3`), so it lands
+      here too and can never be archived.
+
+  Archiving is idempotent in effect: re-archiving an already-archived complete
+  target simply re-stamps `archived_at`.
+  """
+  @spec archive_target(Scope.t() | nil, integer() | String.t()) ::
+          {:ok, DeliveryTarget.t()}
+          | {:error, :not_found}
+          | {:error, :not_complete}
+          | {:error, Ecto.Changeset.t()}
+  def archive_target(scope, id) do
+    with {:ok, target} <- get_owned_target(scope, id),
+         :complete <- derive_target_status(scope, target) do
+      target
+      |> DeliveryTarget.archive_changeset(%{archived_at: DateTime.utc_now()})
+      |> Repo.update()
+    else
+      {:error, :not_found} -> {:error, :not_found}
+      status when is_atom(status) -> {:error, :not_complete}
+    end
+  end
+
+  @doc """
+  Unarchives a target the scoped user owns, clearing `archived_at`.
+
+  Owner-gated exactly as `archive_target/2`, but *not* gated on completeness —
+  a target that drifted out of `:complete` while archived (a member goal
+  reopened, a new goal assigned) must still be recoverable. Returns
+  `{:error, :not_found}` when the target is missing or owned by another user.
+
+  Unarchiving an already-active target is a no-op write that succeeds.
+  """
+  @spec unarchive_target(Scope.t() | nil, integer() | String.t()) ::
+          {:ok, DeliveryTarget.t()} | {:error, :not_found} | {:error, Ecto.Changeset.t()}
+  def unarchive_target(scope, id) do
+    with {:ok, target} <- get_owned_target(scope, id) do
+      target
+      |> DeliveryTarget.archive_changeset(%{archived_at: nil})
+      |> Repo.update()
     end
   end
 
@@ -599,6 +691,21 @@ defmodule Kanban.Targets do
   # twice. list_member_goals/2 preloads :column, so each goal's own board_id
   # scopes its batched child-task query in `member_goal_children/1`.
   defp summarize_target_with_goals(scope, %DeliveryTarget{} = target, today) do
+    {progress, goals} = member_goal_progress(scope, target)
+
+    {summarize_progress(target, progress, today), goals}
+  end
+
+  # The `Status.derive/3` progress shape for each of `target`'s member goals,
+  # plus the goals themselves — one member-goal query and one batched child
+  # query. Shared by `summarize_target_with_goals/3` (the boards strip) and
+  # `derive_target_status/2` (the archive gate) so the assembly lives in exactly
+  # one place and the two can never drift apart on what "complete" means.
+  #
+  # Returns the goals alongside the progress so `summarize_target_with_goals/3`
+  # can hand them to `DeliveryRollup` without a second fetch, preserving the
+  # once-per-target member-goal query this module documents.
+  defp member_goal_progress(scope, %DeliveryTarget{} = target) do
     goals = list_member_goals(scope, target)
     children_by_goal = member_goal_children(goals)
 
@@ -607,7 +714,23 @@ defmodule Kanban.Targets do
         progress_shape(goal, Map.get(children_by_goal, goal.id, []))
       end)
 
-    {summarize_progress(target, progress, today), goals}
+    {progress, goals}
+  end
+
+  # A target's status derived from its member goals right now, for the archive
+  # gate.
+  #
+  # Unlike `list_targets_with_status/2`, this takes no injectable `today` — it
+  # anchors UTC internally. That is sufficient *here* because the gate reads
+  # only the `:complete` verdict, and `Status.derive/3` decides `:complete`
+  # (all member goals complete) before any `today`-dependent branch. So no
+  # timezone can change whether a target is archivable. A caller that needs a
+  # timezone-sensitive status (`:missed` / `:at_risk`) must go through
+  # `list_targets_with_status/2` and pass its own `today`.
+  defp derive_target_status(scope, %DeliveryTarget{} = target) do
+    {progress, _goals} = member_goal_progress(scope, target)
+
+    Status.derive(target, progress, Date.utc_today())
   end
 
   # Fetches every member goal's child tasks (archived included, per D124) in one

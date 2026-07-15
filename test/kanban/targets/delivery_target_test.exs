@@ -62,6 +62,65 @@ defmodule Kanban.Targets.DeliveryTargetTest do
       # owner_id is intentionally not castable — ownership is set server-side.
       assert get_change(changeset, :owner_id) == nil
     end
+
+    test "does not cast archived_at from params" do
+      changeset =
+        DeliveryTarget.changeset(%DeliveryTarget{}, %{
+          name: "Q3 launch",
+          target_date: ~D[2026-09-30],
+          archived_at: DateTime.utc_now()
+        })
+
+      # Archiving goes through archive_changeset/2 and the archive_target/2
+      # completeness gate — an ordinary edit must never set archived_at.
+      assert get_change(changeset, :archived_at) == nil
+    end
+  end
+
+  describe "archive_changeset/2" do
+    test "sets archived_at" do
+      now = DateTime.utc_now()
+      changeset = DeliveryTarget.archive_changeset(%DeliveryTarget{}, %{archived_at: now})
+
+      assert changeset.valid?
+      assert get_change(changeset, :archived_at) == now
+    end
+
+    test "clears archived_at to nil" do
+      archived = %DeliveryTarget{archived_at: DateTime.utc_now()}
+      changeset = DeliveryTarget.archive_changeset(archived, %{archived_at: nil})
+
+      assert changeset.valid?
+      assert get_change(changeset, :archived_at) == nil
+    end
+
+    test "does not cast owner_id from params" do
+      user = user_fixture()
+      other = user_fixture()
+
+      changeset =
+        DeliveryTarget.archive_changeset(%DeliveryTarget{owner_id: user.id}, %{
+          archived_at: DateTime.utc_now(),
+          owner_id: other.id
+        })
+
+      # Archiving must never be a path to forging ownership.
+      assert get_change(changeset, :owner_id) == nil
+    end
+
+    test "does not cast the editable fields" do
+      changeset =
+        DeliveryTarget.archive_changeset(%DeliveryTarget{name: "Original"}, %{
+          archived_at: DateTime.utc_now(),
+          name: "Renamed",
+          target_date: ~D[2027-01-01],
+          description: "smuggled"
+        })
+
+      assert get_change(changeset, :name) == nil
+      assert get_change(changeset, :target_date) == nil
+      assert get_change(changeset, :description) == nil
+    end
   end
 
   describe "database constraints" do

@@ -57,6 +57,26 @@ defmodule Kanban.TargetsTest do
     |> Repo.update!()
   end
 
+  # A target whose single member goal is complete — the minimal shape
+  # `Status.derive/3` reads as `:complete` (all_complete?/1 trusts the goal's
+  # stored status; a childless completed goal needs no children).
+  defp complete_target(scope, column, user) do
+    target = delivery_target_fixture(user)
+    goal = column |> goal_fixture() |> complete_task()
+    assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+    target
+  end
+
+  # Force-stamps archived_at so ordering assertions never race the clock.
+  # archived_at is only castable via archive_changeset/2, so this bypasses the
+  # allow-list the same way goal_with_identifier/3 does.
+  defp archived_at!(target, at) do
+    target
+    |> Ecto.Changeset.change(archived_at: at)
+    |> Repo.update!()
+  end
+
   describe "create_target/2" do
     test "creates a target and stamps owner_id from the scope", %{scope: scope, user: user} do
       assert {:ok, %DeliveryTarget{} = target} =
@@ -146,6 +166,204 @@ defmodule Kanban.TargetsTest do
     test "excludes targets that have no member goals", %{scope: scope, user: user} do
       _target = delivery_target_fixture(user)
       assert Targets.list_targets(scope) == []
+    end
+
+    test "excludes archived targets but keeps active ones", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      archived = complete_target(scope, column, user)
+      assert {:ok, _} = Targets.archive_target(scope, archived.id)
+
+      active = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal_fixture(column), active)
+
+      assert [listed] = Targets.list_targets(scope)
+      assert listed.id == active.id
+    end
+  end
+
+  describe "archive_target/2" do
+    test "archives a complete target", %{scope: scope, user: user, column: column} do
+      target = complete_target(scope, column, user)
+
+      assert {:ok, %DeliveryTarget{} = archived} = Targets.archive_target(scope, target.id)
+      assert %DateTime{} = archived.archived_at
+    end
+
+    test "returns {:error, :not_complete} when a member goal is incomplete", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal_fixture(column), target)
+
+      assert {:error, :not_complete} = Targets.archive_target(scope, target.id)
+      assert Repo.get!(DeliveryTarget, target.id).archived_at == nil
+    end
+
+    test "returns {:error, :not_complete} when a target has no member goals", %{
+      scope: scope,
+      user: user
+    } do
+      # Status.derive/3 reads an empty goal list as :on_track, never a vacuous
+      # :complete — an empty target has delivered nothing, so it cannot archive.
+      target = delivery_target_fixture(user)
+
+      assert {:error, :not_complete} = Targets.archive_target(scope, target.id)
+    end
+
+    test "returns {:error, :not_complete} when only some member goals are complete", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = delivery_target_fixture(user)
+
+      assert {:ok, _} =
+               Targets.assign_goal(scope, column |> goal_fixture() |> complete_task(), target)
+
+      assert {:ok, _} = Targets.assign_goal(scope, goal_fixture(column), target)
+
+      assert {:error, :not_complete} = Targets.archive_target(scope, target.id)
+    end
+
+    test "returns {:error, :not_found} for a nonexistent target", %{scope: scope} do
+      assert {:error, :not_found} = Targets.archive_target(scope, -1)
+    end
+
+    test "returns {:error, :not_found} when the caller does not own the target", %{
+      scope: scope,
+      user: user,
+      column: column,
+      other_scope: other_scope
+    } do
+      target = complete_target(scope, column, user)
+
+      # Ownership is checked before completeness, so a non-owner cannot tell
+      # "exists but incomplete" from "does not exist".
+      assert {:error, :not_found} = Targets.archive_target(other_scope, target.id)
+      assert Repo.get!(DeliveryTarget, target.id).archived_at == nil
+    end
+
+    test "returns {:error, :not_found} for a nil scope", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = complete_target(scope, column, user)
+
+      assert {:error, :not_found} = Targets.archive_target(nil, target.id)
+    end
+  end
+
+  describe "unarchive_target/2" do
+    test "clears archived_at for the owner", %{scope: scope, user: user, column: column} do
+      target = complete_target(scope, column, user)
+      assert {:ok, _} = Targets.archive_target(scope, target.id)
+
+      assert {:ok, %DeliveryTarget{} = unarchived} = Targets.unarchive_target(scope, target.id)
+      assert unarchived.archived_at == nil
+    end
+
+    test "restores the target to list_targets/1", %{scope: scope, user: user, column: column} do
+      target = complete_target(scope, column, user)
+      assert {:ok, _} = Targets.archive_target(scope, target.id)
+      assert Targets.list_targets(scope) == []
+
+      assert {:ok, _} = Targets.unarchive_target(scope, target.id)
+      assert [listed] = Targets.list_targets(scope)
+      assert listed.id == target.id
+    end
+
+    test "unarchives a target that is no longer complete", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = complete_target(scope, column, user)
+      assert {:ok, _} = Targets.archive_target(scope, target.id)
+
+      # A newly assigned incomplete goal drops the target out of :complete —
+      # unarchiving is not gated on completeness, so it must still recover.
+      assert {:ok, _} = Targets.assign_goal(scope, goal_fixture(column), target)
+
+      assert {:ok, unarchived} = Targets.unarchive_target(scope, target.id)
+      assert unarchived.archived_at == nil
+    end
+
+    test "returns {:error, :not_found} when the caller does not own the target", %{
+      scope: scope,
+      user: user,
+      column: column,
+      other_scope: other_scope
+    } do
+      target = complete_target(scope, column, user)
+      assert {:ok, _} = Targets.archive_target(scope, target.id)
+
+      assert {:error, :not_found} = Targets.unarchive_target(other_scope, target.id)
+      assert Repo.get!(DeliveryTarget, target.id).archived_at != nil
+    end
+
+    test "returns {:error, :not_found} for a nil scope", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = complete_target(scope, column, user)
+
+      assert {:error, :not_found} = Targets.unarchive_target(nil, target.id)
+    end
+  end
+
+  describe "list_archived_targets/1" do
+    test "returns only archived targets", %{scope: scope, user: user, column: column} do
+      archived = complete_target(scope, column, user)
+      assert {:ok, _} = Targets.archive_target(scope, archived.id)
+
+      active = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal_fixture(column), active)
+
+      assert [listed] = Targets.list_archived_targets(scope)
+      assert listed.id == archived.id
+    end
+
+    test "orders newest archived first", %{scope: scope, user: user, column: column} do
+      oldest = complete_target(scope, column, user)
+      middle = complete_target(scope, column, user)
+      newest = complete_target(scope, column, user)
+
+      for {target, at} <- [
+            {oldest, ~U[2026-01-01 00:00:00.000000Z]},
+            {middle, ~U[2026-03-01 00:00:00.000000Z]},
+            {newest, ~U[2026-06-01 00:00:00.000000Z]}
+          ] do
+        archived_at!(target, at)
+      end
+
+      assert [first, second, third] = Targets.list_archived_targets(scope)
+      assert [first.id, second.id, third.id] == [newest.id, middle.id, oldest.id]
+    end
+
+    test "excludes archived targets whose goals are on an inaccessible board", %{
+      scope: scope,
+      user: user,
+      column: column,
+      other_scope: other_scope
+    } do
+      target = complete_target(scope, column, user)
+      assert {:ok, _} = Targets.archive_target(scope, target.id)
+
+      # Same board-scoped visibility model as list_targets/1.
+      assert Targets.list_archived_targets(other_scope) == []
+    end
+
+    test "returns [] when nothing is archived", %{scope: scope, user: user, column: column} do
+      _active = complete_target(scope, column, user)
+
+      assert Targets.list_archived_targets(scope) == []
     end
   end
 
@@ -415,6 +633,21 @@ defmodule Kanban.TargetsTest do
       assert summary.total == 2
       assert summary.percentage == 50
       assert summary.status == :on_track
+    end
+
+    test "no longer includes a target once it is archived",
+         %{scope: scope, user: user, column: column} do
+      target = complete_target(scope, column, user)
+
+      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-07])
+      assert summary.target.id == target.id
+      assert summary.status == :complete
+
+      assert {:ok, _} = Targets.archive_target(scope, target.id)
+
+      # The boards feed is built on list_targets/1, so the is_nil filter there
+      # is what removes an archived target from the boards page.
+      assert Targets.list_targets_with_status(scope, ~D[2026-07-07]) == []
     end
 
     test "reports 0/0 (0%) progress when a member goal has no children",
