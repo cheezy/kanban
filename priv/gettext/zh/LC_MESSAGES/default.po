@@ -7509,12 +7509,12 @@ msgstr "取消分配"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "使用此表单管理交付目标及其目标。"
 
-#: lib/kanban_web/live/target_live/show.html.heex:44
+#: lib/kanban_web/live/target_live/show.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "此交付目标中还没有目标。"
 
-#: lib/kanban_web/live/target_live/show.ex:42
+#: lib/kanban_web/live/target_live/show.ex:75
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "未找到交付目标"
@@ -7535,7 +7535,7 @@ msgstr "按子项状态显示的目标进度"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "已完成 %{done}/%{total}"
 
-#: lib/kanban_web/live/target_live/show.html.heex:39
+#: lib/kanban_web/live/target_live/show.html.heex:58
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "目标"
@@ -7974,3 +7974,28 @@ msgstr "已创建任务"
 #, elixir-autogen, elixir-format
 msgid "Total Actions"
 msgstr "操作总数"
+
+#: lib/kanban_web/live/target_live/show.html.heex:49
+#, elixir-autogen, elixir-format
+msgid "Archive target"
+msgstr "归档交付目标"
+
+#: lib/kanban_web/live/target_live/show.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "Archive this target? It will no longer appear on your boards."
+msgstr "归档此交付目标？它将不再显示在您的看板上。"
+
+#: lib/kanban_web/live/target_live/show.ex:83
+#, elixir-autogen, elixir-format
+msgid "Failed to archive target"
+msgstr "归档交付目标失败"
+
+#: lib/kanban_web/live/target_live/show.ex:81
+#, elixir-autogen, elixir-format
+msgid "Only a complete target can be archived"
+msgstr "只有已完成的交付目标才能归档"
+
+#: lib/kanban_web/live/target_live/show.ex:67
+#, elixir-autogen, elixir-format
+msgid "Target archived successfully"
+msgstr "交付目标归档成功"

@@ -7562,12 +7562,12 @@ msgstr "Desasignar"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "Use este formulario para gestionar las metas de entrega y sus objetivos."
 
-#: lib/kanban_web/live/target_live/show.html.heex:44
+#: lib/kanban_web/live/target_live/show.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "Aún no hay objetivos en esta meta."
 
-#: lib/kanban_web/live/target_live/show.ex:42
+#: lib/kanban_web/live/target_live/show.ex:75
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "Meta no encontrada"
@@ -7588,7 +7588,7 @@ msgstr "Progreso del objetivo por estado de hijos"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{done} de %{total} completos"
 
-#: lib/kanban_web/live/target_live/show.html.heex:39
+#: lib/kanban_web/live/target_live/show.html.heex:58
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "Objetivo"
@@ -8034,3 +8034,28 @@ msgstr "Tareas creadas"
 #, elixir-autogen, elixir-format
 msgid "Total Actions"
 msgstr "Acciones totales"
+
+#: lib/kanban_web/live/target_live/show.html.heex:49
+#, elixir-autogen, elixir-format
+msgid "Archive target"
+msgstr "Archivar meta"
+
+#: lib/kanban_web/live/target_live/show.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "Archive this target? It will no longer appear on your boards."
+msgstr "¿Archivar esta meta? Dejará de aparecer en tus tableros."
+
+#: lib/kanban_web/live/target_live/show.ex:83
+#, elixir-autogen, elixir-format
+msgid "Failed to archive target"
+msgstr "No se pudo archivar la meta"
+
+#: lib/kanban_web/live/target_live/show.ex:81
+#, elixir-autogen, elixir-format
+msgid "Only a complete target can be archived"
+msgstr "Solo se puede archivar una meta completada"
+
+#: lib/kanban_web/live/target_live/show.ex:67
+#, elixir-autogen, elixir-format
+msgid "Target archived successfully"
+msgstr "Meta archivada correctamente"

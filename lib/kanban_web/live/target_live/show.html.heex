@@ -16,20 +16,39 @@
         {gettext("Back to boards")}
       </.link>
 
-      <.link
-        navigate={~p"/targets/#{@target}/edit"}
-        style={[
-          "margin-left: auto;",
-          "display: inline-flex; align-items: center; gap: 4px;",
-          "padding: 4px 10px; border-radius: 5px;",
-          "background: transparent; border: 1px solid var(--line);",
-          "color: var(--ink-2); font-size: 11.5px; font-weight: 600;",
-          "text-decoration: none;"
-        ]}
-      >
-        <.icon name="hero-pencil-square" class="h-3.5 w-3.5" />
-        {gettext("Edit target")}
-      </.link>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+        <.link
+          navigate={~p"/targets/#{@target}/edit"}
+          style={[
+            "display: inline-flex; align-items: center; gap: 4px;",
+            "padding: 4px 10px; border-radius: 5px;",
+            "background: transparent; border: 1px solid var(--line);",
+            "color: var(--ink-2); font-size: 11.5px; font-weight: 600;",
+            "text-decoration: none;"
+          ]}
+        >
+          <.icon name="hero-pencil-square" class="h-3.5 w-3.5" />
+          {gettext("Edit target")}
+        </.link>
+
+        <button
+          :if={@summary.status == :complete}
+          type="button"
+          data-archive-target
+          phx-click="archive_target"
+          data-confirm={gettext("Archive this target? It will no longer appear on your boards.")}
+          style={[
+            "display: inline-flex; align-items: center; gap: 4px;",
+            "padding: 4px 10px; border-radius: 5px;",
+            "background: transparent; border: 1px solid var(--line);",
+            "color: var(--ink-2); font-size: 11.5px; font-weight: 600;",
+            "cursor: pointer; font: inherit;"
+          ]}
+        >
+          <.icon name="hero-archive-box" class="h-3.5 w-3.5" />
+          {gettext("Archive target")}
+        </button>
+      </div>
     </header>
 
     <TargetProgressHeader.target_progress_header summary={@summary} flow={@aggregate_flow} />

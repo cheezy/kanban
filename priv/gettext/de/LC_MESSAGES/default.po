@@ -7569,12 +7569,12 @@ msgstr "Zuweisung aufheben"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "Verwenden Sie dieses Formular, um Zielvorgaben und ihre Ziele zu verwalten."
 
-#: lib/kanban_web/live/target_live/show.html.heex:44
+#: lib/kanban_web/live/target_live/show.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "Noch keine Ziele in dieser Zielvorgabe."
 
-#: lib/kanban_web/live/target_live/show.ex:42
+#: lib/kanban_web/live/target_live/show.ex:75
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "Zielvorgabe nicht gefunden"
@@ -7595,7 +7595,7 @@ msgstr "Zielfortschritt nach Status der Unterelemente"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{done} von %{total} abgeschlossen"
 
-#: lib/kanban_web/live/target_live/show.html.heex:39
+#: lib/kanban_web/live/target_live/show.html.heex:58
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "Ziel"
@@ -8041,3 +8041,28 @@ msgstr "Erstellte Aufgaben"
 #, elixir-autogen, elixir-format
 msgid "Total Actions"
 msgstr "Aktionen gesamt"
+
+#: lib/kanban_web/live/target_live/show.html.heex:49
+#, elixir-autogen, elixir-format
+msgid "Archive target"
+msgstr "Zielvorgabe archivieren"
+
+#: lib/kanban_web/live/target_live/show.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "Archive this target? It will no longer appear on your boards."
+msgstr "Diese Zielvorgabe archivieren? Sie erscheint dann nicht mehr auf Ihren Boards."
+
+#: lib/kanban_web/live/target_live/show.ex:83
+#, elixir-autogen, elixir-format
+msgid "Failed to archive target"
+msgstr "Zielvorgabe konnte nicht archiviert werden"
+
+#: lib/kanban_web/live/target_live/show.ex:81
+#, elixir-autogen, elixir-format
+msgid "Only a complete target can be archived"
+msgstr "Nur eine abgeschlossene Zielvorgabe kann archiviert werden"
+
+#: lib/kanban_web/live/target_live/show.ex:67
+#, elixir-autogen, elixir-format
+msgid "Target archived successfully"
+msgstr "Zielvorgabe erfolgreich archiviert"

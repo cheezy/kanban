@@ -15,6 +15,7 @@ defmodule KanbanWeb.TargetLive.ShowTest do
   alias Kanban.Accounts.Scope
   alias Kanban.Repo
   alias Kanban.Targets
+  alias Kanban.Targets.DeliveryTarget
   alias Kanban.Tasks.Task
 
   defp goal_fixture(column, attrs) do
@@ -39,6 +40,16 @@ defmodule KanbanWeb.TargetLive.ShowTest do
       |> Repo.update()
 
     done
+  end
+
+  # A target whose single member goal is complete — the only state that derives
+  # :complete, and therefore the only state that renders the Archive action.
+  defp complete_target(scope, user, column) do
+    target = delivery_target_fixture(user)
+    goal = column |> goal_fixture(%{title: "Delivered Goal"}) |> complete_task()
+    assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+    target
   end
 
   defp count_occurrences(haystack, needle) do
@@ -284,6 +295,120 @@ defmodule KanbanWeb.TargetLive.ShowTest do
 
       assert html =~ "Visible Goal"
       refute html =~ "Hidden Goal"
+    end
+  end
+
+  describe "archive_target event" do
+    setup [:register_and_log_in_user]
+
+    test "renders the Archive button with a confirm prompt for a :complete target",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = complete_target(Scope.for_user(user), user, column)
+
+      {:ok, live, html} = live(conn, ~p"/targets/#{target}")
+
+      assert has_element?(live, "[data-archive-target]")
+      assert html =~ "Archive target"
+      # data-confirm gates the click browser-side. LiveViewTest cannot drive the
+      # browser dialog, so the attribute's presence is the assertable proof —
+      # the context re-checks regardless.
+      assert html =~ "data-confirm"
+      assert html =~ "Archive this target?"
+    end
+
+    test "does not render the Archive button for an incomplete (:on_track) target",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      scope = Scope.for_user(user)
+      goal = goal_fixture(column, %{title: "Still Going"})
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      {:ok, live, html} = live(conn, ~p"/targets/#{target}")
+
+      refute has_element?(live, "[data-archive-target]")
+      refute html =~ "Archive target"
+    end
+
+    test "does not render the Archive button for a memberless target, which derives :on_track",
+         %{conn: conn, user: user} do
+      target = delivery_target_fixture(user, %{name: "Empty Target"})
+
+      {:ok, live, _html} = live(conn, ~p"/targets/#{target}")
+
+      refute has_element?(live, "[data-archive-target]")
+    end
+
+    test "does not render the Archive button for a :missed target", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      scope = Scope.for_user(user)
+      goal = goal_fixture(column, %{title: "Late Goal"})
+      target = delivery_target_fixture(user, %{target_date: ~D[2020-01-01]})
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      {:ok, live, _html} = live(conn, ~p"/targets/#{target}")
+
+      refute has_element?(live, "[data-archive-target]")
+    end
+
+    test "archiving a complete target flashes success, stamps archived_at and navigates to /boards",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = complete_target(Scope.for_user(user), user, column)
+
+      {:ok, live, _html} = live(conn, ~p"/targets/#{target}")
+
+      # Driven through the real button, so this also proves the markup wires
+      # phx-click correctly.
+      live |> element("[data-archive-target]") |> render_click()
+      flash = assert_redirect(live, ~p"/boards")
+
+      assert flash["info"] =~ "Target archived successfully"
+      assert %DateTime{} = Repo.get!(DeliveryTarget, target.id).archived_at
+    end
+
+    test "archiving an incomplete target is refused by the context and stays on the page",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      scope = Scope.for_user(user)
+      goal = goal_fixture(column, %{title: "Still Going"})
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      {:ok, live, _html} = live(conn, ~p"/targets/#{target}")
+
+      # Fired directly: the button never renders in this state, so this proves
+      # the context re-checks completeness rather than trusting the hidden
+      # button.
+      html = render_click(live, "archive_target", %{})
+
+      assert html =~ "Only a complete target can be archived"
+      assert render(live) =~ "Still Going"
+      assert Repo.get!(DeliveryTarget, target.id).archived_at == nil
+    end
+
+    test "archiving a target that vanished after mount flashes not-found and navigates to /boards",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = complete_target(Scope.for_user(user), user, column)
+
+      {:ok, live, _html} = live(conn, ~p"/targets/#{target}")
+
+      # The target is deleted in another session between mount and click.
+      # tasks.target_id is ON DELETE nilify_all, so the member goal survives.
+      Repo.delete!(target)
+
+      render_click(live, "archive_target", %{})
+      flash = assert_redirect(live, ~p"/boards")
+
+      assert flash["error"] =~ "Target not found"
     end
   end
 

@@ -7463,12 +7463,12 @@ msgstr ""
 msgid "Use this form to manage delivery targets and their goals."
 msgstr ""
 
-#: lib/kanban_web/live/target_live/show.html.heex:44
+#: lib/kanban_web/live/target_live/show.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr ""
 
-#: lib/kanban_web/live/target_live/show.ex:42
+#: lib/kanban_web/live/target_live/show.ex:75
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr ""
@@ -7489,7 +7489,7 @@ msgstr ""
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/show.html.heex:39
+#: lib/kanban_web/live/target_live/show.html.heex:58
 #, elixir-autogen, elixir-format
 msgid "Goals"
 msgstr ""
@@ -7934,4 +7934,29 @@ msgstr ""
 #: lib/kanban_web/live/admin/user_live/index.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "Total Actions"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/show.html.heex:49
+#, elixir-autogen, elixir-format
+msgid "Archive target"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/show.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "Archive this target? It will no longer appear on your boards."
+msgstr ""
+
+#: lib/kanban_web/live/target_live/show.ex:83
+#, elixir-autogen, elixir-format
+msgid "Failed to archive target"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/show.ex:81
+#, elixir-autogen, elixir-format
+msgid "Only a complete target can be archived"
+msgstr ""
+
+#: lib/kanban_web/live/target_live/show.ex:67
+#, elixir-autogen, elixir-format
+msgid "Target archived successfully"
 msgstr ""

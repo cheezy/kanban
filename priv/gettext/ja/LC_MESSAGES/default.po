@@ -7509,12 +7509,12 @@ msgstr "割り当て解除"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "このフォームでデリバリーターゲットとそのゴールを管理します。"
 
-#: lib/kanban_web/live/target_live/show.html.heex:44
+#: lib/kanban_web/live/target_live/show.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "このターゲットにはまだゴールがありません。"
 
-#: lib/kanban_web/live/target_live/show.ex:42
+#: lib/kanban_web/live/target_live/show.ex:75
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "ターゲットが見つかりません"
@@ -7535,7 +7535,7 @@ msgstr "子要素の状態別ゴール進捗"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{total} 中 %{done} 完了"
 
-#: lib/kanban_web/live/target_live/show.html.heex:39
+#: lib/kanban_web/live/target_live/show.html.heex:58
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "ゴール"
@@ -7974,3 +7974,28 @@ msgstr "作成タスク"
 #, elixir-autogen, elixir-format
 msgid "Total Actions"
 msgstr "総アクション数"
+
+#: lib/kanban_web/live/target_live/show.html.heex:49
+#, elixir-autogen, elixir-format
+msgid "Archive target"
+msgstr "ターゲットをアーカイブ"
+
+#: lib/kanban_web/live/target_live/show.html.heex:39
+#, elixir-autogen, elixir-format
+msgid "Archive this target? It will no longer appear on your boards."
+msgstr "このターゲットをアーカイブしますか？ボードに表示されなくなります。"
+
+#: lib/kanban_web/live/target_live/show.ex:83
+#, elixir-autogen, elixir-format
+msgid "Failed to archive target"
+msgstr "ターゲットをアーカイブできませんでした"
+
+#: lib/kanban_web/live/target_live/show.ex:81
+#, elixir-autogen, elixir-format
+msgid "Only a complete target can be archived"
+msgstr "完了したターゲットのみアーカイブできます"
+
+#: lib/kanban_web/live/target_live/show.ex:67
+#, elixir-autogen, elixir-format
+msgid "Target archived successfully"
+msgstr "ターゲットをアーカイブしました"

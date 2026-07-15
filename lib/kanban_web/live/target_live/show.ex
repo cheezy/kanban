@@ -18,6 +18,13 @@ defmodule KanbanWeb.TargetLive.Show do
   All Ecto access lives in the `Kanban.Targets` context; this LiveView only
   derives the aggregate flow (a pure sum across the per-goal flows) for the
   hero's segmented bar.
+
+  The Archive action renders only when the derived status is `:complete`, and
+  delegates to `Kanban.Targets.archive_target/2`, which re-derives that status
+  server-side — the hidden button is a UI affordance, never the gate. On
+  success the page navigates back to `/boards`, since an archived target is
+  filtered out of every active-target listing and its drill-down is no longer
+  a destination the boards page links to.
   """
   use KanbanWeb, :live_view
 
@@ -37,12 +44,43 @@ defmodule KanbanWeb.TargetLive.Show do
         {:ok, assign_target_progress(socket, scope, target, timezone)}
 
       {:error, :not_found} ->
-        {:ok,
-         socket
-         |> put_flash(:error, gettext("Target not found"))
-         |> push_navigate(to: ~p"/boards")}
+        {:ok, target_not_found(socket)}
     end
   end
+
+  # The button is gated on the derived :complete status, but that gate is a UI
+  # affordance only — Targets.archive_target/2 re-checks ownership AND
+  # completeness server-side, so a stale page (the target changed in another
+  # tab) is refused here rather than trusted.
+  @impl true
+  def handle_event("archive_target", _params, socket) do
+    case Targets.archive_target(socket.assigns.current_scope, socket.assigns.target.id) do
+      {:ok, _target} -> {:noreply, target_archived(socket)}
+      {:error, :not_complete} -> {:noreply, flash_error(socket, not_complete_message())}
+      {:error, :not_found} -> {:noreply, target_not_found(socket)}
+      {:error, %Ecto.Changeset{}} -> {:noreply, flash_error(socket, archive_failed_message())}
+    end
+  end
+
+  defp target_archived(socket) do
+    socket
+    |> put_flash(:info, gettext("Target archived successfully"))
+    |> push_navigate(to: ~p"/boards")
+  end
+
+  # Shared by mount/3 and the archive event so both render the same message and
+  # destination for a target that is missing or not the caller's.
+  defp target_not_found(socket) do
+    socket
+    |> put_flash(:error, gettext("Target not found"))
+    |> push_navigate(to: ~p"/boards")
+  end
+
+  defp flash_error(socket, message), do: put_flash(socket, :error, message)
+
+  defp not_complete_message, do: gettext("Only a complete target can be archived")
+
+  defp archive_failed_message, do: gettext("Failed to archive target")
 
   # Anchor status on the viewer's local calendar day (not the server's UTC day)
   # so the target-detail badge agrees with the boards TargetsStrip and the
