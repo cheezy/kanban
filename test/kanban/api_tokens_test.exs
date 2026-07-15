@@ -89,6 +89,33 @@ defmodule Kanban.ApiTokensTest do
       assert {:error, :expired} = ApiTokens.get_api_token_by_token(plain_text_token)
     end
 
+    test "get_api_token_by_token/1 returns {:error, :user_disabled} when the owner is disabled" do
+      user = user_fixture()
+      board = board_fixture(user)
+
+      {:ok, {_api_token, plain_text_token}} =
+        ApiTokens.create_api_token(user, board, @valid_attrs)
+
+      assert {:ok, _} = ApiTokens.get_api_token_by_token(plain_text_token)
+
+      {:ok, _} = Kanban.Accounts.disable_user(user)
+
+      assert {:error, :user_disabled} = ApiTokens.get_api_token_by_token(plain_text_token)
+    end
+
+    test "get_api_token_by_token/1 accepts the token again once the owner is re-enabled" do
+      user = user_fixture()
+      board = board_fixture(user)
+
+      {:ok, {_api_token, plain_text_token}} =
+        ApiTokens.create_api_token(user, board, @valid_attrs)
+
+      {:ok, disabled} = Kanban.Accounts.disable_user(user)
+      {:ok, _} = Kanban.Accounts.enable_user(disabled)
+
+      assert {:ok, _found} = ApiTokens.get_api_token_by_token(plain_text_token)
+    end
+
     test "get_api_token_by_token/1 still accepts a legacy token with nil expires_at (D107)" do
       user = user_fixture()
       board = board_fixture(user)

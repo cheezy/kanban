@@ -37,6 +37,9 @@ defmodule Kanban.Accounts do
   @doc """
   Gets a user by email and password.
 
+  Returns `nil` for a disabled user, so callers refuse the login through the
+  same path as a wrong password and reveal nothing about the account.
+
   ## Examples
 
       iex> get_user_by_email_and_password("foo@example.com", "correct_password")
@@ -45,11 +48,18 @@ defmodule Kanban.Accounts do
       iex> get_user_by_email_and_password("foo@example.com", "invalid_password")
       nil
 
+      iex> get_user_by_email_and_password("disabled@example.com", "correct_password")
+      nil
+
   """
   def get_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
     user = Repo.get_by(User, email: email)
-    if User.valid_password?(user, password), do: user
+
+    # The password is always verified first: returning early for a disabled user
+    # would skip the hash comparison and leak the account's state through
+    # response timing.
+    if User.valid_password?(user, password) and is_nil(user.disabled_at), do: user
   end
 
   @doc """

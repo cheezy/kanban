@@ -82,6 +82,43 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
       assert json_response(conn, 401) == %{"error" => "API token has been revoked"}
     end
 
+    # The response must stay the generic invalid-token error rather than report
+    # the owner's account state back to the caller.
+    test "returns 401 for a valid token whose owner is disabled", %{
+      conn: conn,
+      user: user,
+      plain_text_token: plain_text_token
+    } do
+      {:ok, _} = Kanban.Accounts.disable_user(user)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{plain_text_token}")
+        |> AuthenticateApiToken.call([])
+
+      assert conn.halted
+      assert conn.status == 401
+      assert json_response(conn, 401) == %{"error" => "Invalid API token"}
+      refute conn.assigns[:current_user]
+    end
+
+    test "authenticates again once a disabled owner is re-enabled", %{
+      conn: conn,
+      user: user,
+      plain_text_token: plain_text_token
+    } do
+      {:ok, disabled} = Kanban.Accounts.disable_user(user)
+      {:ok, _} = Kanban.Accounts.enable_user(disabled)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{plain_text_token}")
+        |> AuthenticateApiToken.call([])
+
+      refute conn.halted
+      assert conn.assigns.current_user.id == user.id
+    end
+
     test "updates last_used_at timestamp on successful authentication", %{
       conn: conn,
       api_token: api_token,

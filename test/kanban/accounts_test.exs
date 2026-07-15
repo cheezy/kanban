@@ -34,6 +34,22 @@ defmodule Kanban.AccountsTest do
       assert %User{id: ^id} =
                Accounts.get_user_by_email_and_password(user.email, valid_user_password())
     end
+
+    test "does not return the user if they are disabled" do
+      user = user_fixture() |> set_password()
+      {:ok, _} = Accounts.disable_user(user)
+
+      refute Accounts.get_user_by_email_and_password(user.email, valid_user_password())
+    end
+
+    test "returns the user once they are re-enabled" do
+      %{id: id} = user = user_fixture() |> set_password()
+      {:ok, disabled} = Accounts.disable_user(user)
+      {:ok, _} = Accounts.enable_user(disabled)
+
+      assert %User{id: ^id} =
+               Accounts.get_user_by_email_and_password(user.email, valid_user_password())
+    end
   end
 
   describe "get_user!/1" do
@@ -392,6 +408,19 @@ defmodule Kanban.AccountsTest do
       dt = ~N[2020-01-01 00:00:00]
       Repo.update_all(UserToken, set: [inserted_at: dt, authenticated_at: dt])
       refute Accounts.get_user_by_session_token(token)
+    end
+
+    test "does not return user disabled after the token was issued", %{user: user, token: token} do
+      {:ok, _} = Accounts.disable_user(user)
+      refute Accounts.get_user_by_session_token(token)
+    end
+
+    test "returns the user again once they are re-enabled", %{user: user, token: token} do
+      {:ok, disabled} = Accounts.disable_user(user)
+      {:ok, _} = Accounts.enable_user(disabled)
+
+      assert {session_user, _} = Accounts.get_user_by_session_token(token)
+      assert session_user.id == user.id
     end
   end
 

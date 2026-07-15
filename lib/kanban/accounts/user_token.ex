@@ -52,14 +52,24 @@ defmodule Kanban.Accounts.UserToken do
 
   The query returns the user found by the token, if any, along with the token's creation time.
 
-  The token is valid if it matches the value in the database and it has
-  not expired (after @session_validity_in_days).
+  The token is valid if it matches the value in the database, it has not expired
+  (after @session_validity_in_days), and the user is not disabled.
+
+  Excluding disabled users here is what makes a disable take effect on an
+  existing browser session: the `fetch_current_scope_for_user` plug, every
+  `on_mount` hook, and the remember-me cookie — which `ensure_user_token/1`
+  funnels into this same lookup — all resolve the user through this query, and
+  each already treats no result as signed out.
+
+  API Bearer tokens do not pass through here; they are guarded separately in
+  `Kanban.ApiTokens.get_api_token_by_token/1`.
   """
   def verify_session_token_query(token) do
     query =
       from token in by_token_and_context_query(token, "session"),
         join: user in assoc(token, :user),
         where: token.inserted_at > ago(@session_validity_in_days, "day"),
+        where: is_nil(user.disabled_at),
         select: {%{user | authenticated_at: token.authenticated_at}, token.inserted_at}
 
     {:ok, query}

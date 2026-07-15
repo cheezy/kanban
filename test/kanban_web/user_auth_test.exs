@@ -183,6 +183,48 @@ defmodule KanbanWeb.UserAuthTest do
       refute conn.assigns.current_scope
     end
 
+    test "does not authenticate a user disabled after the session was issued", %{
+      conn: conn,
+      user: user
+    } do
+      user_token = Accounts.generate_user_session_token(user)
+      {:ok, _} = Accounts.disable_user(user)
+
+      conn =
+        conn |> put_session(:user_token, user_token) |> UserAuth.fetch_current_scope_for_user([])
+
+      refute conn.assigns.current_scope
+    end
+
+    test "does not authenticate a disabled user from the remember-me cookie", %{
+      conn: conn,
+      user: user
+    } do
+      logged_in_conn =
+        conn |> fetch_cookies() |> UserAuth.log_in_user(user, %{"remember_me" => "true"})
+
+      %{value: signed_token} = logged_in_conn.resp_cookies[@remember_me_cookie]
+      {:ok, _} = Accounts.disable_user(user)
+
+      conn =
+        conn
+        |> put_req_cookie(@remember_me_cookie, signed_token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      refute conn.assigns.current_scope
+    end
+
+    test "authenticates a user again once they are re-enabled", %{conn: conn, user: user} do
+      user_token = Accounts.generate_user_session_token(user)
+      {:ok, disabled} = Accounts.disable_user(user)
+      {:ok, _} = Accounts.enable_user(disabled)
+
+      conn =
+        conn |> put_session(:user_token, user_token) |> UserAuth.fetch_current_scope_for_user([])
+
+      assert conn.assigns.current_scope.user.id == user.id
+    end
+
     test "reissues a new token after a few days and refreshes cookie", %{conn: conn, user: user} do
       logged_in_conn =
         conn |> fetch_cookies() |> UserAuth.log_in_user(user, %{"remember_me" => "true"})
@@ -225,6 +267,20 @@ defmodule KanbanWeb.UserAuthTest do
       assert updated_socket.assigns.current_scope.user.id == user.id
     end
 
+    test "assigns nil to current_scope for a user disabled after the session was issued", %{
+      conn: conn,
+      user: user
+    } do
+      user_token = Accounts.generate_user_session_token(user)
+      session = conn |> put_session(:user_token, user_token) |> get_session()
+      {:ok, _} = Accounts.disable_user(user)
+
+      {:cont, updated_socket} =
+        UserAuth.on_mount(:mount_current_scope, %{}, session, %LiveView.Socket{})
+
+      refute updated_socket.assigns.current_scope
+    end
+
     test "assigns nil to current_scope assign if there isn't a valid user_token", %{conn: conn} do
       user_token = "invalid_token"
       session = conn |> put_session(:user_token, user_token) |> get_session()
@@ -259,6 +315,20 @@ defmodule KanbanWeb.UserAuthTest do
     test "redirects to login page if there isn't a valid user_token", %{conn: conn} do
       user_token = "invalid_token"
       session = conn |> put_session(:user_token, user_token) |> get_session()
+
+      socket = %LiveView.Socket{
+        endpoint: KanbanWeb.Endpoint,
+        assigns: %{__changed__: %{}, flash: %{}}
+      }
+
+      {:halt, updated_socket} = UserAuth.on_mount(:require_authenticated, %{}, session, socket)
+      assert updated_socket.assigns.current_scope == nil
+    end
+
+    test "redirects a user disabled after the session was issued", %{conn: conn, user: user} do
+      user_token = Accounts.generate_user_session_token(user)
+      session = conn |> put_session(:user_token, user_token) |> get_session()
+      {:ok, _} = Accounts.disable_user(user)
 
       socket = %LiveView.Socket{
         endpoint: KanbanWeb.Endpoint,

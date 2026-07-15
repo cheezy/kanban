@@ -109,6 +109,18 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     |> halt()
   end
 
+  # The telemetry reason names the disabled owner so operators can see it, while
+  # the response stays the generic invalid-token error rather than reporting the
+  # account's state back to the caller.
+  defp halt_with_auth_error(conn, {:error, :user_disabled}) do
+    emit_auth_failed_telemetry(conn, "user_disabled")
+
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: "Invalid API token"})
+    |> halt()
+  end
+
   defp extract_token(conn) do
     case get_req_header(conn, "authorization") do
       ["Bearer " <> token] ->

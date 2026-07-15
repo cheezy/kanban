@@ -3,6 +3,8 @@ defmodule KanbanWeb.UserSessionControllerTest do
 
   import Kanban.AccountsFixtures
 
+  alias Kanban.Accounts
+
   setup do
     %{unconfirmed_user: unconfirmed_user_fixture(), user: user_fixture()}
   end
@@ -94,6 +96,74 @@ defmodule KanbanWeb.UserSessionControllerTest do
 
       assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
       assert redirected_to(conn) == ~p"/users/log-in"
+    end
+
+    test "refuses a disabled user holding valid credentials", %{conn: conn, user: user} do
+      {:ok, _} = Accounts.disable_user(user)
+
+      conn =
+        post(conn, ~p"/users/log-in?mode=password", %{
+          "user" => %{"email" => user.email, "password" => valid_user_password()}
+        })
+
+      assert redirected_to(conn) == ~p"/users/log-in"
+      refute get_session(conn, :user_token)
+    end
+
+    # The refusal must be indistinguishable from a wrong password, or it
+    # discloses that the address belongs to a real, disabled account.
+    test "refuses a disabled user with the same response as a wrong password", %{user: user} do
+      {:ok, _} = Accounts.disable_user(user)
+
+      disabled_conn =
+        post(build_conn(), ~p"/users/log-in?mode=password", %{
+          "user" => %{"email" => user.email, "password" => valid_user_password()}
+        })
+
+      unknown_conn =
+        post(build_conn(), ~p"/users/log-in?mode=password", %{
+          "user" => %{
+            "email" => "unknown#{System.unique_integer()}@example.com",
+            "password" => valid_user_password()
+          }
+        })
+
+      assert Phoenix.Flash.get(disabled_conn.assigns.flash, :error) ==
+               Phoenix.Flash.get(unknown_conn.assigns.flash, :error)
+
+      assert redirected_to(disabled_conn) == redirected_to(unknown_conn)
+      refute get_session(disabled_conn, :user_token)
+    end
+
+    # Pins the precedence: the disabled refusal must win over the unconfirmed
+    # branch, which redirects to a distinct page and so discloses the account.
+    test "refuses a user who is both unconfirmed and disabled without disclosing them", %{
+      conn: conn,
+      unconfirmed_user: unconfirmed_user
+    } do
+      {:ok, _} = Accounts.disable_user(unconfirmed_user)
+
+      conn =
+        post(conn, ~p"/users/log-in?mode=password", %{
+          "user" => %{"email" => unconfirmed_user.email, "password" => valid_user_password()}
+        })
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) == "Invalid email or password"
+      assert redirected_to(conn) == ~p"/users/log-in"
+      refute get_session(conn, :user_token)
+    end
+
+    test "logs in a user again once they are re-enabled", %{conn: conn, user: user} do
+      {:ok, disabled} = Accounts.disable_user(user)
+      {:ok, _} = Accounts.enable_user(disabled)
+
+      conn =
+        post(conn, ~p"/users/log-in?mode=password", %{
+          "user" => %{"email" => user.email, "password" => valid_user_password()}
+        })
+
+      assert get_session(conn, :user_token)
+      assert redirected_to(conn) == ~p"/boards"
     end
 
     test "redirects to login page with an unknown email", %{conn: conn} do

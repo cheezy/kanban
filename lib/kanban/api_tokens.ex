@@ -44,8 +44,11 @@ defmodule Kanban.ApiTokens do
   @doc """
   Gets an active (non-revoked) API token by its token string.
 
-  Returns {:ok, api_token} if found and active, {:error, :not_found} if not found,
-  and {:error, :revoked} if the token has been revoked.
+  Returns `{:ok, api_token}` if found and active, `{:error, :not_found}` if not
+  found, `{:error, :revoked}` if the token has been revoked, `{:error, :expired}`
+  if it has expired, and `{:error, :user_disabled}` if the token is valid but its
+  owner is disabled — a disabled account must not keep API access through a token
+  issued before it was disabled.
 
   ## Examples
 
@@ -54,6 +57,9 @@ defmodule Kanban.ApiTokens do
 
       iex> get_api_token_by_token("invalid")
       {:error, :not_found}
+
+      iex> get_api_token_by_token("token_of_a_disabled_user")
+      {:error, :user_disabled}
 
   """
   def get_api_token_by_token(token) when is_binary(token) do
@@ -69,24 +75,30 @@ defmodule Kanban.ApiTokens do
     timing_query = from t in ApiToken, where: t.id == -1, select: count()
 
     case Repo.one(query) do
-      nil ->
-        Repo.one(timing_query)
-        {:error, :not_found}
+      nil -> reject_with_timing(timing_query, :not_found)
+      %ApiToken{revoked_at: nil} = api_token -> authorize_token(api_token, timing_query)
+      %ApiToken{} -> reject_with_timing(timing_query, :revoked)
+    end
+  end
 
-      %ApiToken{revoked_at: nil} = api_token ->
-        # D107: an expired token is rejected through the same dummy-timing path as
-        # revoked/not-found, so expiry does not open a timing side channel.
-        if ApiToken.expired?(api_token) do
-          Repo.one(timing_query)
-          {:error, :expired}
-        else
-          update_last_used(api_token)
-          {:ok, api_token}
-        end
+  # D107: every rejection runs the dummy query so the response time does not
+  # distinguish a not-found token from a revoked, expired, or disabled-owner one.
+  defp reject_with_timing(timing_query, reason) do
+    Repo.one(timing_query)
+    {:error, reason}
+  end
 
-      %ApiToken{} ->
-        Repo.one(timing_query)
-        {:error, :revoked}
+  defp authorize_token(%ApiToken{} = api_token, timing_query) do
+    cond do
+      ApiToken.expired?(api_token) ->
+        reject_with_timing(timing_query, :expired)
+
+      not is_nil(api_token.user.disabled_at) ->
+        reject_with_timing(timing_query, :user_disabled)
+
+      true ->
+        update_last_used(api_token)
+        {:ok, api_token}
     end
   end
 
