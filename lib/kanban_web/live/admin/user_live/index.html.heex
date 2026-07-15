@@ -67,10 +67,13 @@
             >
               {gettext("Enable")}
             </.button>
+            <%!-- Disabled rather than hidden so the reason is discoverable. The
+                  server re-checks the guard regardless. --%>
             <.button
-              :if={!confirmed?(user)}
               phx-click="resend_confirmation"
               phx-value-id={user.id}
+              disabled={confirmed?(user)}
+              title={confirmed?(user) && gettext("This account is already confirmed.")}
               data-confirm={gettext("Send another confirmation email to this account?")}
               class="btn btn-soft btn-sm"
             >

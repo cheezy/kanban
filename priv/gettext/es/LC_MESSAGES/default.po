@@ -1912,7 +1912,7 @@ msgid "Board:"
 msgstr "Tablero:"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
-#: lib/kanban_web/live/admin/user_live/index.html.heex:92
+#: lib/kanban_web/live/admin/user_live/index.html.heex:95
 #: lib/kanban_web/live/board_live/show.html.heex:784
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -7936,7 +7936,7 @@ msgstr "Cuenta habilitada."
 msgid "Confirmation email sent."
 msgstr "Correo de confirmación enviado."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:89
+#: lib/kanban_web/live/admin/user_live/index.html.heex:92
 #, elixir-autogen, elixir-format
 msgid "Delete this account permanently? This cannot be undone."
 msgstr "¿Eliminar esta cuenta permanentemente? Esto no se puede deshacer."
@@ -7961,12 +7961,12 @@ msgstr "Habilitar"
 msgid "Enable this account? They will be able to log in again."
 msgstr "¿Habilitar esta cuenta? Podrá iniciar sesión de nuevo."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:77
+#: lib/kanban_web/live/admin/user_live/index.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Resend confirmation"
 msgstr "Reenviar confirmación"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:74
+#: lib/kanban_web/live/admin/user_live/index.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Send another confirmation email to this account?"
 msgstr "¿Enviar otro correo de confirmación a esta cuenta?"
@@ -7977,12 +7977,13 @@ msgid "Something went wrong. Please try again."
 msgstr "Algo salió mal. Inténtalo de nuevo."
 
 #: lib/kanban_web/live/admin/user_live/index.ex:106
+#: lib/kanban_web/live/admin/user_live/index.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr "Esta cuenta ya está confirmada."
 
 #: lib/kanban_web/live/admin/user_live/index.ex:104
-#: lib/kanban_web/live/admin/user_live/index.html.heex:87
+#: lib/kanban_web/live/admin/user_live/index.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr "Este usuario todavía pertenece a un tablero y no se puede eliminar."

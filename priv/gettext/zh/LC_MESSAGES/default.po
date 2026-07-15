@@ -1912,7 +1912,7 @@ msgid "Board:"
 msgstr "看板:"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
-#: lib/kanban_web/live/admin/user_live/index.html.heex:92
+#: lib/kanban_web/live/admin/user_live/index.html.heex:95
 #: lib/kanban_web/live/board_live/show.html.heex:784
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -7876,7 +7876,7 @@ msgstr "账户已启用。"
 msgid "Confirmation email sent."
 msgstr "确认邮件已发送。"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:89
+#: lib/kanban_web/live/admin/user_live/index.html.heex:92
 #, elixir-autogen, elixir-format
 msgid "Delete this account permanently? This cannot be undone."
 msgstr "永久删除此账户？此操作无法撤销。"
@@ -7901,12 +7901,12 @@ msgstr "启用"
 msgid "Enable this account? They will be able to log in again."
 msgstr "启用此账户？该用户将可以重新登录。"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:77
+#: lib/kanban_web/live/admin/user_live/index.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Resend confirmation"
 msgstr "重新发送确认邮件"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:74
+#: lib/kanban_web/live/admin/user_live/index.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Send another confirmation email to this account?"
 msgstr "向此账户再发送一封确认邮件？"
@@ -7917,12 +7917,13 @@ msgid "Something went wrong. Please try again."
 msgstr "出了点问题。请重试。"
 
 #: lib/kanban_web/live/admin/user_live/index.ex:106
+#: lib/kanban_web/live/admin/user_live/index.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr "此账户已确认。"
 
 #: lib/kanban_web/live/admin/user_live/index.ex:104
-#: lib/kanban_web/live/admin/user_live/index.html.heex:87
+#: lib/kanban_web/live/admin/user_live/index.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr "该用户仍属于某个看板，无法删除。"

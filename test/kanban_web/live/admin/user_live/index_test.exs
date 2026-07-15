@@ -228,12 +228,48 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
       assert_email_sent(to: [{"", unconfirmed.email}])
     end
 
-    test "the resend control is absent for a confirmed user", %{conn: conn} do
+    test "the resend control is present but disabled for a confirmed user", %{conn: conn} do
       confirmed = user_fixture()
+      unconfirmed = unconfirmed_user_fixture()
 
       {:ok, live, _html} = live(conn, ~p"/admin/users")
 
-      refute has_element?(live, "#user-#{confirmed.id} button", "Resend confirmation")
+      assert has_element?(live, "#user-#{confirmed.id} button[disabled]", "Resend confirmation")
+      refute has_element?(live, "#user-#{unconfirmed.id} button[disabled]", "Resend confirmation")
+    end
+
+    test "the disabled resend control explains itself with a tooltip", %{conn: conn} do
+      confirmed = user_fixture()
+      unconfirmed = unconfirmed_user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      assert has_element?(
+               live,
+               ~s(#user-#{confirmed.id} button[title="This account is already confirmed."]),
+               "Resend confirmation"
+             )
+
+      refute has_element?(live, "#user-#{unconfirmed.id} button[title]", "Resend confirmation")
+    end
+
+    test "a confirmed and disabled user keeps both the resend and enable controls", %{conn: conn} do
+      user = user_fixture()
+      {:ok, _} = Accounts.disable_user(user, admin_fixture())
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      assert has_element?(live, "#user-#{user.id} button[disabled]", "Resend confirmation")
+      assert has_element?(live, "#user-#{user.id} button", "Enable")
+    end
+
+    test "an unconfirmed and disabled user keeps the resend control enabled", %{conn: conn} do
+      user = unconfirmed_user_fixture()
+      {:ok, _} = Accounts.disable_user(user, admin_fixture())
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      refute has_element?(live, "#user-#{user.id} button[disabled]", "Resend confirmation")
     end
 
     test "resending to an already-confirmed user is refused without sending", %{conn: conn} do
