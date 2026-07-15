@@ -12,6 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: lib/kanban_web/components/core_components.ex:464
+#: lib/kanban_web/live/admin/user_live/index.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "Acciones"
@@ -112,7 +113,7 @@ msgstr "Crear una cuenta"
 msgid "Creating account..."
 msgstr "Creando cuenta..."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:17
+#: lib/kanban_web/live/admin/user_live/index.html.heex:26
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:88
 #: lib/kanban_web/live/user_live/forgot_password.ex:40
 #: lib/kanban_web/live/user_live/forgot_password.ex:47
@@ -221,7 +222,7 @@ msgstr "Editar tablero"
 msgid "Get started by creating columns for your board."
 msgstr "Comienza creando columnas para tu tablero."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:20
+#: lib/kanban_web/live/admin/user_live/index.html.heex:27
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:78
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
@@ -387,7 +388,7 @@ msgstr "No se puede mover tarea: la columna ha alcanzado su límite WIP"
 
 #: lib/kanban_web/components/task_activity_log.ex:93
 #: lib/kanban_web/components/task_metadata_grid.ex:112
-#: lib/kanban_web/live/admin/user_live/index.html.heex:28
+#: lib/kanban_web/live/admin/user_live/index.html.heex:29
 #: lib/kanban_web/live/task_live/components/history_section.ex:41
 #: lib/kanban_web/live/task_live/form_component.html.heex:1036
 #: lib/kanban_web/live/task_live/view_component.ex:420
@@ -468,7 +469,7 @@ msgstr "Prioridad"
 msgid "Task History"
 msgstr "Historial de Tarea"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:23
+#: lib/kanban_web/live/admin/user_live/index.html.heex:28
 #: lib/kanban_web/live/issue_live/form_component.ex:79
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:36
 #: lib/kanban_web/live/task_live/form_component.html.heex:102
@@ -1913,7 +1914,7 @@ msgid "Board:"
 msgstr "Tablero:"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
-#: lib/kanban_web/live/admin/user_live/index.html.heex:125
+#: lib/kanban_web/live/admin/user_live/index.html.heex:141
 #: lib/kanban_web/live/board_live/show.html.heex:784
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -4112,7 +4113,7 @@ msgstr[0] "%{count} activo"
 msgstr[1] "%{count} activos"
 
 #: lib/kanban_web/components/layouts.ex:268
-#: lib/kanban_web/live/admin/user_live/index.html.heex:49
+#: lib/kanban_web/live/admin/user_live/index.html.heex:37
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:74
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4206,7 +4207,7 @@ msgid "GOAL"
 msgstr "OBJETIVO"
 
 #: lib/kanban_web/components/board_pulse_card.ex:191
-#: lib/kanban_web/live/admin/user_live/index.html.heex:74
+#: lib/kanban_web/live/admin/user_live/index.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "Last Activity"
 msgstr "Última actividad"
@@ -4953,8 +4954,8 @@ msgstr "Pasos del flujo de trabajo"
 msgid "Working"
 msgstr "Trabajando"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:35
-#: lib/kanban_web/live/admin/user_live/index.html.heex:43
+#: lib/kanban_web/live/admin/user_live/index.html.heex:74
+#: lib/kanban_web/live/admin/user_live/index.html.heex:82
 #: lib/kanban_web/live/task_live/view_component.ex:413
 #, elixir-autogen, elixir-format
 msgid "Yes"
@@ -7877,12 +7878,12 @@ msgstr "Demasiados intentos. Espera unos minutos e inténtalo de nuevo."
 msgid "Too many requests. Please wait a few minutes and try again."
 msgstr "Demasiadas solicitudes. Espera unos minutos e inténtalo de nuevo."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:33
+#: lib/kanban_web/live/admin/user_live/index.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Confirmed"
 msgstr "Confirmado"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:41
+#: lib/kanban_web/live/admin/user_live/index.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr "Deshabilitado"
@@ -7892,8 +7893,8 @@ msgstr "Deshabilitado"
 msgid "Every account registered on this instance."
 msgstr "Todas las cuentas registradas en esta instancia."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:38
-#: lib/kanban_web/live/admin/user_live/index.html.heex:46
+#: lib/kanban_web/live/admin/user_live/index.html.heex:77
+#: lib/kanban_web/live/admin/user_live/index.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "No"
 msgstr "No"
@@ -7939,37 +7940,37 @@ msgstr "Cuenta habilitada."
 msgid "Confirmation email sent."
 msgstr "Correo de confirmación enviado."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:122
+#: lib/kanban_web/live/admin/user_live/index.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "Delete this account permanently? This cannot be undone."
 msgstr "¿Eliminar esta cuenta permanentemente? Esto no se puede deshacer."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:89
+#: lib/kanban_web/live/admin/user_live/index.html.heex:101
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr "Deshabilitar"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:85
+#: lib/kanban_web/live/admin/user_live/index.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Disable this account? They will be signed out and unable to log in."
 msgstr "¿Deshabilitar esta cuenta? Se cerrará su sesión y no podrá iniciar sesión."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:98
+#: lib/kanban_web/live/admin/user_live/index.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr "Habilitar"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:95
+#: lib/kanban_web/live/admin/user_live/index.html.heex:108
 #, elixir-autogen, elixir-format
 msgid "Enable this account? They will be able to log in again."
 msgstr "¿Habilitar esta cuenta? Podrá iniciar sesión de nuevo."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:110
+#: lib/kanban_web/live/admin/user_live/index.html.heex:124
 #, elixir-autogen, elixir-format
 msgid "Resend confirmation"
 msgstr "Reenviar confirmación"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:107
+#: lib/kanban_web/live/admin/user_live/index.html.heex:121
 #, elixir-autogen, elixir-format
 msgid "Send another confirmation email to this account?"
 msgstr "¿Enviar otro correo de confirmación a esta cuenta?"
@@ -7980,13 +7981,13 @@ msgid "Something went wrong. Please try again."
 msgstr "Algo salió mal. Inténtalo de nuevo."
 
 #: lib/kanban_web/live/admin/user_live/index.ex:115
-#: lib/kanban_web/live/admin/user_live/index.html.heex:106
+#: lib/kanban_web/live/admin/user_live/index.html.heex:120
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr "Esta cuenta ya está confirmada."
 
 #: lib/kanban_web/live/admin/user_live/index.ex:113
-#: lib/kanban_web/live/admin/user_live/index.html.heex:120
+#: lib/kanban_web/live/admin/user_live/index.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr "Este usuario todavía pertenece a un tablero y no se puede eliminar."
@@ -8019,22 +8020,22 @@ msgstr "No puedes eliminar al último administrador."
 msgid "User Admin"
 msgstr "Usuarios"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:59
+#: lib/kanban_web/live/admin/user_live/index.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Tasks Claimed"
 msgstr "Tareas reclamadas"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:64
+#: lib/kanban_web/live/admin/user_live/index.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "Tasks Completed"
 msgstr "Tareas completadas"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:69
+#: lib/kanban_web/live/admin/user_live/index.html.heex:41
 #, elixir-autogen, elixir-format
 msgid "Tasks Created"
 msgstr "Tareas creadas"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:54
+#: lib/kanban_web/live/admin/user_live/index.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Total Actions"
 msgstr "Acciones totales"

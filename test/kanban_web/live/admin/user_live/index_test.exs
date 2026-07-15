@@ -246,6 +246,48 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
       assert confirmed_at == created_at + 1
     end
 
+    test "each user occupies exactly two rows under a single tbody", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      assert has_element?(live, "tbody#user-#{user.id} > tr:nth-child(2)")
+      refute has_element?(live, "tbody#user-#{user.id} > tr:nth-child(3)")
+    end
+
+    test "the per-user stat spans stay addressable inside the user's tbody", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      for suffix <- ~w(boards total-actions tasks-claimed tasks-completed tasks-created
+                       last-activity) do
+        assert has_element?(live, "tbody#user-#{user.id} ##{"user-#{user.id}-#{suffix}"}"),
+               "expected #user-#{user.id}-#{suffix} to live inside the user's tbody"
+      end
+    end
+
+    test "the identity row carries the email and the metrics row carries the stats", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      assert has_element?(live, "tbody#user-#{user.id} > tr:first-child", user.email)
+      assert has_element?(live, "tbody#user-#{user.id} > tr:last-child #user-#{user.id}-boards")
+    end
+
+    test "the action cell spans both of the user's rows", %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      assert has_element?(
+               live,
+               ~s(tbody#user-#{user.id} > tr:first-child td[rowspan="2"] button),
+               "Delete"
+             )
+    end
+
     test "escapes a name containing HTML metacharacters" do
       # The name changeset rejects HTML metacharacters, so a hostile name can
       # only reach the table through a direct write. Force one in to prove the

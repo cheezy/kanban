@@ -12,6 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: lib/kanban_web/components/core_components.ex:464
+#: lib/kanban_web/live/admin/user_live/index.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "Aktionen"
@@ -112,7 +113,7 @@ msgstr "Konto erstellen"
 msgid "Creating account..."
 msgstr "Konto wird erstellt..."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:17
+#: lib/kanban_web/live/admin/user_live/index.html.heex:26
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:88
 #: lib/kanban_web/live/user_live/forgot_password.ex:40
 #: lib/kanban_web/live/user_live/forgot_password.ex:47
@@ -221,7 +222,7 @@ msgstr "Board bearbeiten"
 msgid "Get started by creating columns for your board."
 msgstr "Beginnen Sie mit dem Erstellen von Spalten für Ihr Board."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:20
+#: lib/kanban_web/live/admin/user_live/index.html.heex:27
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:78
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
@@ -387,7 +388,7 @@ msgstr "Aufgabe kann nicht verschoben werden: Spalte hat ihr WIP-Limit erreicht"
 
 #: lib/kanban_web/components/task_activity_log.ex:93
 #: lib/kanban_web/components/task_metadata_grid.ex:112
-#: lib/kanban_web/live/admin/user_live/index.html.heex:28
+#: lib/kanban_web/live/admin/user_live/index.html.heex:29
 #: lib/kanban_web/live/task_live/components/history_section.ex:41
 #: lib/kanban_web/live/task_live/form_component.html.heex:1036
 #: lib/kanban_web/live/task_live/view_component.ex:420
@@ -468,7 +469,7 @@ msgstr "Priorität"
 msgid "Task History"
 msgstr "Aufgabenverlauf"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:23
+#: lib/kanban_web/live/admin/user_live/index.html.heex:28
 #: lib/kanban_web/live/issue_live/form_component.ex:79
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:36
 #: lib/kanban_web/live/task_live/form_component.html.heex:102
@@ -1913,7 +1914,7 @@ msgid "Board:"
 msgstr "Board:"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
-#: lib/kanban_web/live/admin/user_live/index.html.heex:125
+#: lib/kanban_web/live/admin/user_live/index.html.heex:141
 #: lib/kanban_web/live/board_live/show.html.heex:784
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -4112,7 +4113,7 @@ msgstr[0] "%{count} aktiv"
 msgstr[1] "%{count} aktiv"
 
 #: lib/kanban_web/components/layouts.ex:268
-#: lib/kanban_web/live/admin/user_live/index.html.heex:49
+#: lib/kanban_web/live/admin/user_live/index.html.heex:37
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:74
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4206,7 +4207,7 @@ msgid "GOAL"
 msgstr "ZIEL"
 
 #: lib/kanban_web/components/board_pulse_card.ex:191
-#: lib/kanban_web/live/admin/user_live/index.html.heex:74
+#: lib/kanban_web/live/admin/user_live/index.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "Last Activity"
 msgstr "Letzte Aktivität"
@@ -4953,8 +4954,8 @@ msgstr "Workflow-Schritte"
 msgid "Working"
 msgstr "Aktiv"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:35
-#: lib/kanban_web/live/admin/user_live/index.html.heex:43
+#: lib/kanban_web/live/admin/user_live/index.html.heex:74
+#: lib/kanban_web/live/admin/user_live/index.html.heex:82
 #: lib/kanban_web/live/task_live/view_component.ex:413
 #, elixir-autogen, elixir-format
 msgid "Yes"
@@ -7884,12 +7885,12 @@ msgstr "Zu viele Versuche. Bitte warte ein paar Minuten und versuche es erneut."
 msgid "Too many requests. Please wait a few minutes and try again."
 msgstr "Zu viele Anfragen. Bitte warte ein paar Minuten und versuche es erneut."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:33
+#: lib/kanban_web/live/admin/user_live/index.html.heex:30
 #, elixir-autogen, elixir-format
 msgid "Confirmed"
 msgstr "Bestätigt"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:41
+#: lib/kanban_web/live/admin/user_live/index.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr "Deaktiviert"
@@ -7899,8 +7900,8 @@ msgstr "Deaktiviert"
 msgid "Every account registered on this instance."
 msgstr "Alle auf dieser Instanz registrierten Konten."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:38
-#: lib/kanban_web/live/admin/user_live/index.html.heex:46
+#: lib/kanban_web/live/admin/user_live/index.html.heex:77
+#: lib/kanban_web/live/admin/user_live/index.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "No"
 msgstr "Nein"
@@ -7946,37 +7947,37 @@ msgstr "Konto aktiviert."
 msgid "Confirmation email sent."
 msgstr "Bestätigungs-E-Mail gesendet."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:122
+#: lib/kanban_web/live/admin/user_live/index.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "Delete this account permanently? This cannot be undone."
 msgstr "Dieses Konto endgültig löschen? Dies kann nicht rückgängig gemacht werden."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:89
+#: lib/kanban_web/live/admin/user_live/index.html.heex:101
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr "Deaktivieren"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:85
+#: lib/kanban_web/live/admin/user_live/index.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Disable this account? They will be signed out and unable to log in."
 msgstr "Dieses Konto deaktivieren? Der Benutzer wird abgemeldet und kann sich nicht mehr anmelden."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:98
+#: lib/kanban_web/live/admin/user_live/index.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr "Aktivieren"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:95
+#: lib/kanban_web/live/admin/user_live/index.html.heex:108
 #, elixir-autogen, elixir-format
 msgid "Enable this account? They will be able to log in again."
 msgstr "Dieses Konto aktivieren? Der Benutzer kann sich wieder anmelden."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:110
+#: lib/kanban_web/live/admin/user_live/index.html.heex:124
 #, elixir-autogen, elixir-format
 msgid "Resend confirmation"
 msgstr "Bestätigung erneut senden"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:107
+#: lib/kanban_web/live/admin/user_live/index.html.heex:121
 #, elixir-autogen, elixir-format
 msgid "Send another confirmation email to this account?"
 msgstr "Eine weitere Bestätigungs-E-Mail an dieses Konto senden?"
@@ -7987,13 +7988,13 @@ msgid "Something went wrong. Please try again."
 msgstr "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
 
 #: lib/kanban_web/live/admin/user_live/index.ex:115
-#: lib/kanban_web/live/admin/user_live/index.html.heex:106
+#: lib/kanban_web/live/admin/user_live/index.html.heex:120
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr "Dieses Konto ist bereits bestätigt."
 
 #: lib/kanban_web/live/admin/user_live/index.ex:113
-#: lib/kanban_web/live/admin/user_live/index.html.heex:120
+#: lib/kanban_web/live/admin/user_live/index.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr "Dieser Benutzer gehört noch zu einem Board und kann nicht gelöscht werden."
@@ -8026,22 +8027,22 @@ msgstr "Sie können den letzten Administrator nicht entfernen."
 msgid "User Admin"
 msgstr "Benutzer"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:59
+#: lib/kanban_web/live/admin/user_live/index.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Tasks Claimed"
 msgstr "Übernommene Aufgaben"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:64
+#: lib/kanban_web/live/admin/user_live/index.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "Tasks Completed"
 msgstr "Abgeschlossene Aufgaben"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:69
+#: lib/kanban_web/live/admin/user_live/index.html.heex:41
 #, elixir-autogen, elixir-format
 msgid "Tasks Created"
 msgstr "Erstellte Aufgaben"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:54
+#: lib/kanban_web/live/admin/user_live/index.html.heex:38
 #, elixir-autogen, elixir-format
 msgid "Total Actions"
 msgstr "Aktionen gesamt"

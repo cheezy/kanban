@@ -12,120 +12,191 @@
         {gettext("No users yet.")}
       </div>
 
+      <%!-- Each user spans two rows, so this table is hand-rolled rather than
+            built from CoreComponents.table/1, which emits exactly one <tr> per
+            row. The first band holds identity and status, the second holds
+            activity metrics; the action cell spans both. Every id the LiveView
+            tests select on — user-<id> and the six per-stat spans — is
+            preserved, with user-<id> on the <tbody> so it stays an ancestor of
+            both rows. --%>
       <div :if={@users != []} class="overflow-x-auto">
-        <.table id="users" rows={@users} row_id={fn user -> "user-#{user.id}" end}>
-          <:col :let={user} label={gettext("Email")}>
-            <span class="text-base-content break-all">{user.email}</span>
-          </:col>
-          <:col :let={user} label={gettext("Name")}>
-            <span class="text-base-content break-words">{display_name(user)}</span>
-          </:col>
-          <:col :let={user} label={gettext("Type")}>
-            <span class={["badge", user.type == :admin && "badge-primary"]}>
-              {type_label(user.type)}
-            </span>
-          </:col>
-          <:col :let={user} label={gettext("Created")}>
-            <span class="text-base-content tabular-nums">
-              {format_created(user)}
-            </span>
-          </:col>
-          <:col :let={user} label={gettext("Confirmed")}>
-            <span :if={confirmed?(user)} class="badge badge-success">
-              {gettext("Yes")}
-            </span>
-            <span :if={!confirmed?(user)} class="badge badge-ghost">
-              {gettext("No")}
-            </span>
-          </:col>
-          <:col :let={user} label={gettext("Disabled")}>
-            <span :if={disabled?(user)} class="badge badge-error">
-              {gettext("Yes")}
-            </span>
-            <span :if={!disabled?(user)} class="badge badge-ghost">
-              {gettext("No")}
-            </span>
-          </:col>
-          <:col :let={user} label={gettext("Boards")}>
-            <span id={"user-#{user.id}-boards"} class="text-base-content tabular-nums">
-              {board_count(@board_counts, user)}
-            </span>
-          </:col>
-          <:col :let={user} label={gettext("Total Actions")}>
-            <span id={"user-#{user.id}-total-actions"} class="text-base-content tabular-nums">
-              {activity_stat(@user_activity, user, :total_actions)}
-            </span>
-          </:col>
-          <:col :let={user} label={gettext("Tasks Claimed")}>
-            <span id={"user-#{user.id}-tasks-claimed"} class="text-base-content tabular-nums">
-              {activity_stat(@user_activity, user, :tasks_claimed)}
-            </span>
-          </:col>
-          <:col :let={user} label={gettext("Tasks Completed")}>
-            <span id={"user-#{user.id}-tasks-completed"} class="text-base-content tabular-nums">
-              {activity_stat(@user_activity, user, :tasks_completed)}
-            </span>
-          </:col>
-          <:col :let={user} label={gettext("Tasks Created")}>
-            <span id={"user-#{user.id}-tasks-created"} class="text-base-content tabular-nums">
-              {activity_stat(@user_activity, user, :tasks_created)}
-            </span>
-          </:col>
-          <:col :let={user} label={gettext("Last Activity")}>
-            <span id={"user-#{user.id}-last-activity"} class="text-base-content tabular-nums">
-              {format_last_activity(activity_stat(@user_activity, user, :last_activity))}
-            </span>
-          </:col>
-          <:action :let={user}>
-            <.button
-              :if={!disabled?(user)}
-              phx-click="disable"
-              phx-value-id={user.id}
-              data-confirm={
-                gettext("Disable this account? They will be signed out and unable to log in.")
-              }
-              class="btn btn-soft btn-sm"
-            >
-              {gettext("Disable")}
-            </.button>
-            <.button
-              :if={disabled?(user)}
-              phx-click="enable"
-              phx-value-id={user.id}
-              data-confirm={gettext("Enable this account? They will be able to log in again.")}
-              class="btn btn-soft btn-sm"
-            >
-              {gettext("Enable")}
-            </.button>
-            <%!-- Disabled rather than hidden so the reason is discoverable. The
-                  server re-checks the guard regardless. --%>
-            <.button
-              phx-click="resend_confirmation"
-              phx-value-id={user.id}
-              disabled={confirmed?(user)}
-              title={confirmed?(user) && gettext("This account is already confirmed.")}
-              data-confirm={gettext("Send another confirmation email to this account?")}
-              class="btn btn-soft btn-sm"
-            >
-              {gettext("Resend confirmation")}
-            </.button>
-            <%!-- Disabled rather than hidden so the reason is discoverable. The
-                  server re-checks the guard regardless. --%>
-            <.button
-              phx-click="delete"
-              phx-value-id={user.id}
-              disabled={board_count(@board_counts, user) > 0}
-              title={
-                board_count(@board_counts, user) > 0 &&
-                  gettext("This user still belongs to a board and cannot be deleted.")
-              }
-              data-confirm={gettext("Delete this account permanently? This cannot be undone.")}
-              class="btn btn-error btn-sm"
-            >
-              {gettext("Delete")}
-            </.button>
-          </:action>
-        </.table>
+        <table class="table">
+          <%!-- daisyUI underlines every <thead> row, which would rule between the
+                two header bands. Drop its row rules and underline the header as a
+                unit from the band-2 cells instead, in the same token the per-user
+                separators use so the whole table rules consistently. --%>
+          <thead class="[&>tr]:border-b-0 [&>tr:last-child>th]:border-b [&>tr:last-child>th]:border-base-300">
+            <tr>
+              <th>{gettext("Email")}</th>
+              <th>{gettext("Name")}</th>
+              <th>{gettext("Type")}</th>
+              <th>{gettext("Created")}</th>
+              <th>{gettext("Confirmed")}</th>
+              <th>{gettext("Disabled")}</th>
+              <%!-- Spans both header bands, so it sits outside the underline on
+                    band 2 and carries it directly. --%>
+              <th rowspan="2" class="w-0 border-b border-base-300">
+                <span class="sr-only">{gettext("Actions")}</span>
+              </th>
+            </tr>
+            <tr>
+              <th>{gettext("Boards")}</th>
+              <th>{gettext("Total Actions")}</th>
+              <th>{gettext("Tasks Claimed")}</th>
+              <th>{gettext("Tasks Completed")}</th>
+              <th>{gettext("Tasks Created")}</th>
+              <th>{gettext("Last Activity")}</th>
+            </tr>
+          </thead>
+          <%!-- daisyUI scopes both its zebra striping and its row separator to a
+                single <tbody> via :nth-child/:last-child. With one <tbody> per
+                user those rules land per-band instead of per-user: every user
+                would shade identically and the separator would rule between a
+                user's own two rows rather than between users. So striping and
+                separator are driven from the <tbody> here — shading a whole user
+                block (which `table-zebra` cannot express) and ruling under its
+                last row. The separator sits on the cells rather than the row so
+                the rowspan'd action cell, which belongs to row 1, is covered
+                too. --%>
+          <tbody
+            :for={{user, index} <- Enum.with_index(@users)}
+            id={"user-#{user.id}"}
+            class={[
+              "[&>tr]:border-b-0",
+              "[&>tr:last-child>td]:border-b [&>tr:last-child>td]:border-base-300",
+              rem(index, 2) == 1 && "bg-base-200"
+            ]}
+          >
+            <tr>
+              <td>
+                <span class="text-base-content break-all">{user.email}</span>
+              </td>
+              <td>
+                <span class="text-base-content break-words">{display_name(user)}</span>
+              </td>
+              <td>
+                <span class={["badge", user.type == :admin && "badge-primary"]}>
+                  {type_label(user.type)}
+                </span>
+              </td>
+              <td>
+                <span class="text-base-content tabular-nums">
+                  {format_created(user)}
+                </span>
+              </td>
+              <td>
+                <span :if={confirmed?(user)} class="badge badge-success">
+                  {gettext("Yes")}
+                </span>
+                <span :if={!confirmed?(user)} class="badge badge-ghost">
+                  {gettext("No")}
+                </span>
+              </td>
+              <td>
+                <span :if={disabled?(user)} class="badge badge-error">
+                  {gettext("Yes")}
+                </span>
+                <span :if={!disabled?(user)} class="badge badge-ghost">
+                  {gettext("No")}
+                </span>
+              </td>
+              <%!-- Spans both of the user's rows, so it sits outside the
+                    tr:last-child separator above and carries the rule itself. --%>
+              <td rowspan="2" class="w-0 font-semibold border-b border-base-300">
+                <div class="flex gap-4">
+                  <.button
+                    :if={!disabled?(user)}
+                    phx-click="disable"
+                    phx-value-id={user.id}
+                    data-confirm={
+                      gettext(
+                        "Disable this account? They will be signed out and unable to log in."
+                      )
+                    }
+                    class="btn btn-soft btn-sm"
+                  >
+                    {gettext("Disable")}
+                  </.button>
+                  <.button
+                    :if={disabled?(user)}
+                    phx-click="enable"
+                    phx-value-id={user.id}
+                    data-confirm={
+                      gettext("Enable this account? They will be able to log in again.")
+                    }
+                    class="btn btn-soft btn-sm"
+                  >
+                    {gettext("Enable")}
+                  </.button>
+                  <%!-- Disabled rather than hidden so the reason is discoverable. The
+                        server re-checks the guard regardless. --%>
+                  <.button
+                    phx-click="resend_confirmation"
+                    phx-value-id={user.id}
+                    disabled={confirmed?(user)}
+                    title={confirmed?(user) && gettext("This account is already confirmed.")}
+                    data-confirm={gettext("Send another confirmation email to this account?")}
+                    class="btn btn-soft btn-sm"
+                  >
+                    {gettext("Resend confirmation")}
+                  </.button>
+                  <%!-- Disabled rather than hidden so the reason is discoverable. The
+                        server re-checks the guard regardless. --%>
+                  <.button
+                    phx-click="delete"
+                    phx-value-id={user.id}
+                    disabled={board_count(@board_counts, user) > 0}
+                    title={
+                      board_count(@board_counts, user) > 0 &&
+                        gettext("This user still belongs to a board and cannot be deleted.")
+                    }
+                    data-confirm={
+                      gettext("Delete this account permanently? This cannot be undone.")
+                    }
+                    class="btn btn-error btn-sm"
+                  >
+                    {gettext("Delete")}
+                  </.button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span id={"user-#{user.id}-boards"} class="text-base-content tabular-nums">
+                  {board_count(@board_counts, user)}
+                </span>
+              </td>
+              <td>
+                <span id={"user-#{user.id}-total-actions"} class="text-base-content tabular-nums">
+                  {activity_stat(@user_activity, user, :total_actions)}
+                </span>
+              </td>
+              <td>
+                <span id={"user-#{user.id}-tasks-claimed"} class="text-base-content tabular-nums">
+                  {activity_stat(@user_activity, user, :tasks_claimed)}
+                </span>
+              </td>
+              <td>
+                <span
+                  id={"user-#{user.id}-tasks-completed"}
+                  class="text-base-content tabular-nums"
+                >
+                  {activity_stat(@user_activity, user, :tasks_completed)}
+                </span>
+              </td>
+              <td>
+                <span id={"user-#{user.id}-tasks-created"} class="text-base-content tabular-nums">
+                  {activity_stat(@user_activity, user, :tasks_created)}
+                </span>
+              </td>
+              <td>
+                <span id={"user-#{user.id}-last-activity"} class="text-base-content tabular-nums">
+                  {format_last_activity(activity_stat(@user_activity, user, :last_activity))}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
   </div>
