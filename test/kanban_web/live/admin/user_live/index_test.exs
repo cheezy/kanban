@@ -14,6 +14,22 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
     %{conn: log_in_user(conn, admin), user: admin}
   end
 
+  # Seeds a metrics_events row for the activity columns. Mirrors the helper in
+  # test/kanban/metrics/user_activity_test.exs (W1705) — metrics_events has no
+  # Ecto schema, so there is no context writer or fixture to call. `user_id`
+  # must be a numeric string or the aggregation's regex predicate skips the row.
+  defp event!(user, metric_name) do
+    Kanban.Repo.insert_all("metrics_events", [
+      %{
+        metric_name: metric_name,
+        measurement: 1.0,
+        metadata: %{"user_id" => to_string(user.id)},
+        recorded_at: DateTime.utc_now(),
+        inserted_at: DateTime.utc_now()
+      }
+    ])
+  end
+
   describe "access control" do
     setup :register_and_log_in_user
 
@@ -68,8 +84,68 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
 
       {:ok, live, _html} = live(conn, ~p"/admin/users")
 
-      assert has_element?(live, "#user-#{with_boards.id} .tabular-nums", "2")
-      assert has_element?(live, "#user-#{without_boards.id} .tabular-nums", "0")
+      # Target the Boards cell by id: several columns now render tabular-nums,
+      # so a bare .tabular-nums match would pass on any of them.
+      assert has_element?(live, "#user-#{with_boards.id}-boards", "2")
+      assert has_element?(live, "#user-#{without_boards.id}-boards", "0")
+    end
+
+    test "renders a user's activity metrics", %{conn: conn} do
+      active = user_fixture()
+      event!(active, "kanban.api.task_claimed")
+      event!(active, "kanban.api.task_completed")
+      event!(active, "kanban.api.task_created")
+      event!(active, "kanban.api.task_created")
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      # Distinct values per metric, anchored so "1" cannot match "12".
+      assert has_element?(live, "#user-#{active.id}-total-actions", ~r/^\s*4\s*$/)
+      assert has_element?(live, "#user-#{active.id}-tasks-claimed", ~r/^\s*1\s*$/)
+      assert has_element?(live, "#user-#{active.id}-tasks-completed", ~r/^\s*1\s*$/)
+      assert has_element?(live, "#user-#{active.id}-tasks-created", ~r/^\s*2\s*$/)
+
+      # Assert the shape, not a literal clock value, so the test cannot flake on
+      # a rollover. Proves last_activity formatted rather than raising on the
+      # NaiveDateTime or falling through to the placeholder.
+      assert has_element?(
+               live,
+               "#user-#{active.id}-last-activity",
+               ~r/^\s*\w{3} \d{2}, \d{4} \d{2}:\d{2}\s*$/
+             )
+    end
+
+    test "renders zeros and a placeholder for a user with no recorded activity", %{conn: conn} do
+      idle = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      # The aggregate's join is inner, so an idle user is absent from it — the
+      # row must still render rather than being dropped from the table.
+      assert has_element?(live, "#user-#{idle.id}")
+
+      assert has_element?(live, "#user-#{idle.id}-total-actions", ~r/^\s*0\s*$/)
+      assert has_element?(live, "#user-#{idle.id}-tasks-claimed", ~r/^\s*0\s*$/)
+      assert has_element?(live, "#user-#{idle.id}-tasks-completed", ~r/^\s*0\s*$/)
+      assert has_element?(live, "#user-#{idle.id}-tasks-created", ~r/^\s*0\s*$/)
+      assert has_element?(live, "#user-#{idle.id}-last-activity", "N/A")
+    end
+
+    test "a mutating event re-reads the activity metrics", %{conn: conn} do
+      user = user_fixture()
+      event!(user, "kanban.api.task_claimed")
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      assert has_element?(live, "#user-#{user.id}-total-actions", ~r/^\s*1\s*$/)
+
+      # Seed AFTER mount, so the assertion below can only pass if the event
+      # re-runs the fetch. A mount-only assign would survive the click at 1.
+      event!(user, "kanban.api.task_completed")
+
+      live |> element("#user-#{user.id} button", "Disable") |> render_click()
+
+      assert has_element?(live, "#user-#{user.id}-total-actions", ~r/^\s*2\s*$/)
     end
 
     test "renders a user with a nil name without crashing", %{conn: conn} do

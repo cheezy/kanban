@@ -47,8 +47,33 @@
             </span>
           </:col>
           <:col :let={user} label={gettext("Boards")}>
-            <span class="text-base-content tabular-nums">
+            <span id={"user-#{user.id}-boards"} class="text-base-content tabular-nums">
               {board_count(@board_counts, user)}
+            </span>
+          </:col>
+          <:col :let={user} label={gettext("Total Actions")}>
+            <span id={"user-#{user.id}-total-actions"} class="text-base-content tabular-nums">
+              {activity_stat(@user_activity, user, :total_actions)}
+            </span>
+          </:col>
+          <:col :let={user} label={gettext("Tasks Claimed")}>
+            <span id={"user-#{user.id}-tasks-claimed"} class="text-base-content tabular-nums">
+              {activity_stat(@user_activity, user, :tasks_claimed)}
+            </span>
+          </:col>
+          <:col :let={user} label={gettext("Tasks Completed")}>
+            <span id={"user-#{user.id}-tasks-completed"} class="text-base-content tabular-nums">
+              {activity_stat(@user_activity, user, :tasks_completed)}
+            </span>
+          </:col>
+          <:col :let={user} label={gettext("Tasks Created")}>
+            <span id={"user-#{user.id}-tasks-created"} class="text-base-content tabular-nums">
+              {activity_stat(@user_activity, user, :tasks_created)}
+            </span>
+          </:col>
+          <:col :let={user} label={gettext("Last Activity")}>
+            <span id={"user-#{user.id}-last-activity"} class="text-base-content tabular-nums">
+              {format_last_activity(activity_stat(@user_activity, user, :last_activity))}
             </span>
           </:col>
           <:action :let={user}>

@@ -11,18 +11,14 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   alias Kanban.Accounts
   alias Kanban.Accounts.User
   alias Kanban.Boards
+  alias Kanban.Metrics.UserActivity
 
   @impl true
   def mount(_params, _session, socket) do
-    # One query for every row's board count — a per-user count would be an N+1
-    # across the whole user list.
-    board_counts = Boards.board_counts_by_user()
-
     {:ok,
      socket
      |> assign(:page_title, gettext("User Administration"))
-     |> assign(:users, Accounts.list_users())
-     |> assign(:board_counts, board_counts)}
+     |> refresh()}
   end
 
   @impl true
@@ -89,10 +85,23 @@ defmodule KanbanWeb.Admin.UserLive.Index do
     {:noreply, put_flash(socket, :error, error_message(reason))}
   end
 
+  # Mount and every mutating event route through here, so the aggregates can
+  # never go stale against the user list they annotate. Each aggregate is one
+  # query for the whole table — a per-user read would be an N+1 across it.
   defp refresh(socket) do
     socket
     |> assign(:users, Accounts.list_users())
     |> assign(:board_counts, Boards.board_counts_by_user())
+    |> assign(:user_activity, activity_by_user())
+  end
+
+  # list_user_activity/1 joins metrics_events to users, so it returns only the
+  # users that have activity. Index it by id and let activity_stat/3 default the
+  # rest to @empty_activity, rather than filtering the user list down to it.
+  defp activity_by_user do
+    []
+    |> UserActivity.list_user_activity()
+    |> Map.new(&{&1.user_id, &1})
   end
 
   defp error_message(:unauthorized), do: gettext("You must be an admin to perform this action.")
@@ -146,6 +155,33 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   defp fetch_user(_id), do: nil
 
   defp board_count(board_counts, user), do: Map.get(board_counts, user.id, 0)
+
+  # A user with no recorded activity is absent from the aggregate, not zeroed by
+  # it. Map.fetch!/2 on the way out so a mistyped key fails loudly instead of
+  # rendering an empty cell.
+  @empty_activity %{
+    total_actions: 0,
+    tasks_claimed: 0,
+    tasks_completed: 0,
+    tasks_created: 0,
+    last_activity: nil
+  }
+
+  defp activity_stat(user_activity, user, key) do
+    user_activity
+    |> Map.get(user.id, @empty_activity)
+    |> Map.fetch!(key)
+  end
+
+  # metrics_events has no Ecto schema, so last_activity arrives as a
+  # NaiveDateTime rather than a cast DateTime. Both are matched; anything else
+  # (including nil, for a user with no activity) renders the placeholder.
+  defp format_last_activity(%DateTime{} = dt), do: Calendar.strftime(dt, "%b %d, %Y %H:%M")
+
+  defp format_last_activity(%NaiveDateTime{} = ndt),
+    do: Calendar.strftime(ndt, "%b %d, %Y %H:%M")
+
+  defp format_last_activity(_last_activity), do: gettext("N/A")
 
   # The raw :type atom would render as English at every locale.
   defp type_label(:admin), do: gettext("Admin")
