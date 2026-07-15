@@ -171,6 +171,7 @@ msgid "Are you sure you want to delete this board?"
 msgstr "Tem certeza de que deseja excluir este quadro?"
 
 #: lib/kanban_web/live/board_live/form.html.heex:18
+#: lib/kanban_web/live/target_live/archived.html.heex:21
 #: lib/kanban_web/live/target_live/form.html.heex:9
 #: lib/kanban_web/live/target_live/show.html.heex:16
 #, elixir-autogen, elixir-format
@@ -7544,6 +7545,7 @@ msgstr "Use este formulário para gerenciar os alvos de entrega e suas metas."
 msgid "No goals in this target yet."
 msgstr "Ainda não há metas neste alvo."
 
+#: lib/kanban_web/live/target_live/archived.ex:78
 #: lib/kanban_web/live/target_live/show.ex:75
 #, elixir-autogen, elixir-format
 msgid "Target not found"
@@ -8036,3 +8038,44 @@ msgstr "Apenas um alvo concluído pode ser arquivado"
 #, elixir-autogen, elixir-format
 msgid "Target archived successfully"
 msgstr "Alvo arquivado com sucesso"
+
+#: lib/kanban_web/live/target_live/archived.ex:34
+#: lib/kanban_web/live/target_live/archived.html.heex:9
+#, elixir-autogen, elixir-format
+msgid "Archived targets"
+msgstr "Alvos arquivados"
+
+#: lib/kanban_web/live/target_live/archived.ex:80
+#, elixir-autogen, elixir-format
+msgid "Failed to unarchive target"
+msgstr "Falha ao desarquivar o alvo"
+
+#: lib/kanban_web/live/target_live/archived.html.heex:34
+#, elixir-autogen, elixir-format
+msgid "No archived targets."
+msgstr "Nenhum alvo arquivado."
+
+#: lib/kanban_web/live/target_live/archived.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "Target date:"
+msgstr "Data alvo:"
+
+#: lib/kanban_web/live/target_live/archived.ex:72
+#, elixir-autogen, elixir-format
+msgid "Target unarchived successfully"
+msgstr "Alvo desarquivado com sucesso"
+
+#: lib/kanban_web/live/target_live/archived.html.heex:88
+#, elixir-autogen, elixir-format
+msgid "Unarchive"
+msgstr "Desarquivar"
+
+#: lib/kanban_web/live/target_live/archived.html.heex:78
+#, elixir-autogen, elixir-format
+msgid "Unarchive this target? It will appear on your boards again."
+msgstr "Desarquivar este alvo? Ele voltará a aparecer nos seus quadros."
+
+#: lib/kanban_web/live/target_live/archived.html.heex:70
+#, elixir-autogen, elixir-format
+msgid "Archived %{age}"
+msgstr "Arquivado %{age}"

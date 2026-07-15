@@ -162,6 +162,8 @@ defmodule KanbanWeb.Router do
 
       live "/targets/new", TargetLive.Form, :new
       live "/targets/:id/edit", TargetLive.Form, :edit
+      # /targets/archived must precede /targets/:id or "archived" is captured as an id
+      live "/targets/archived", TargetLive.Archived, :index
       live "/targets/:id", TargetLive.Show, :show
 
       live "/agents", AgentsLive, :index
