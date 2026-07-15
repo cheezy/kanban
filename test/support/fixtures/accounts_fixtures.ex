@@ -41,6 +41,21 @@ defmodule Kanban.AccountsFixtures do
     user
   end
 
+  @doc """
+  A confirmed user promoted to `:admin`.
+
+  Each call creates a distinct admin, so passing one as the acting user in a
+  test never trips the last-admin guards.
+  """
+  def admin_fixture(attrs \\ %{}) do
+    {:ok, admin} =
+      attrs
+      |> user_fixture()
+      |> Accounts.update_user_type(:admin)
+
+    admin
+  end
+
   def user_scope_fixture do
     user = user_fixture()
     user_scope_fixture(user)

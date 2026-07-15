@@ -1912,6 +1912,7 @@ msgid "Board:"
 msgstr "ボード:"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
+#: lib/kanban_web/live/admin/user_live/index.html.heex:92
 #: lib/kanban_web/live/board_live/show.html.heex:784
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -3046,6 +3047,8 @@ msgid "You must be a board member to comment on this task"
 msgstr "このタスクにコメントするにはボードメンバーである必要があります"
 
 #: lib/kanban_web/live/admin/message_live/index.ex:85
+#: lib/kanban_web/live/admin/user_live/index.ex:98
+#: lib/kanban_web/live/admin/user_live/index.ex:126
 #, elixir-autogen, elixir-format
 msgid "You must be an admin to perform this action."
 msgstr "この操作を実行するには管理者である必要があります。"
@@ -7837,18 +7840,109 @@ msgstr "いいえ"
 msgid "No users yet."
 msgstr "ユーザーはまだいません。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:22
+#: lib/kanban_web/live/admin/user_live/index.ex:23
 #: lib/kanban_web/live/admin/user_live/index.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "User Administration"
 msgstr "ユーザー管理"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:30
+#: lib/kanban_web/live/admin/user_live/index.ex:151
 #, elixir-autogen, elixir-format
 msgid "Admin"
 msgstr "管理者"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:31
+#: lib/kanban_web/live/admin/user_live/index.ex:152
 #, elixir-autogen, elixir-format
 msgid "User"
 msgstr "ユーザー"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:60
+#, elixir-autogen, elixir-format
+msgid "Account deleted."
+msgstr "アカウントを削除しました。"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:33
+#, elixir-autogen, elixir-format
+msgid "Account disabled."
+msgstr "アカウントを無効にしました。"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:42
+#, elixir-autogen, elixir-format
+msgid "Account enabled."
+msgstr "アカウントを有効にしました。"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:51
+#, elixir-autogen, elixir-format
+msgid "Confirmation email sent."
+msgstr "確認メールを送信しました。"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:89
+#, elixir-autogen, elixir-format
+msgid "Delete this account permanently? This cannot be undone."
+msgstr "このアカウントを完全に削除しますか？この操作は取り消せません。"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:59
+#, elixir-autogen, elixir-format
+msgid "Disable"
+msgstr "無効にする"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:55
+#, elixir-autogen, elixir-format
+msgid "Disable this account? They will be signed out and unable to log in."
+msgstr "このアカウントを無効にしますか？サインアウトされ、ログインできなくなります。"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:68
+#, elixir-autogen, elixir-format
+msgid "Enable"
+msgstr "有効にする"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:65
+#, elixir-autogen, elixir-format
+msgid "Enable this account? They will be able to log in again."
+msgstr "このアカウントを有効にしますか？再びログインできるようになります。"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:77
+#, elixir-autogen, elixir-format
+msgid "Resend confirmation"
+msgstr "確認メールを再送"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:74
+#, elixir-autogen, elixir-format
+msgid "Send another confirmation email to this account?"
+msgstr "このアカウントに確認メールをもう一度送信しますか？"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:107
+#, elixir-autogen, elixir-format
+msgid "Something went wrong. Please try again."
+msgstr "問題が発生しました。もう一度お試しください。"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:106
+#, elixir-autogen, elixir-format
+msgid "This account is already confirmed."
+msgstr "このアカウントはすでに確認済みです。"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:104
+#: lib/kanban_web/live/admin/user_live/index.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "This user still belongs to a board and cannot be deleted."
+msgstr "このユーザーはまだボードに所属しているため削除できません。"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:75
+#, elixir-autogen, elixir-format
+msgid "User not found."
+msgstr "ユーザーが見つかりません。"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:100
+#, elixir-autogen, elixir-format
+msgid "You cannot delete your own account."
+msgstr "自分のアカウントは削除できません。"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:99
+#, elixir-autogen, elixir-format
+msgid "You cannot disable your own account."
+msgstr "自分のアカウントは無効にできません。"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:101
+#, elixir-autogen, elixir-format
+msgid "You cannot remove the last admin."
+msgstr "最後の管理者は削除できません。"

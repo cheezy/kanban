@@ -8,13 +8,14 @@ defmodule Kanban.Accounts.AdminManagementTest do
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserToken
 
-  defp admin_fixture(attrs \\ %{}) do
-    {:ok, admin} =
-      attrs
-      |> user_fixture()
-      |> Accounts.update_user_type(:admin)
-
-    admin
+  # disable_user/2 requires the actor to be a *different* enabled admin, who then
+  # remains enabled — so the API can never leave the system with only one enabled
+  # admin. That is the guard working, but it means the states below (a lone
+  # enabled admin, no enabled admin at all) have to be built directly.
+  defp disable_directly(user) do
+    user
+    |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
+    |> Repo.update!()
   end
 
   describe "list_users/0" do
@@ -41,24 +42,74 @@ defmodule Kanban.Accounts.AdminManagementTest do
 
     test "includes disabled users" do
       user = user_fixture()
-      {:ok, _disabled} = Accounts.disable_user(user)
+      {:ok, _disabled} = Accounts.disable_user(user, admin_fixture())
 
       assert user.id in Enum.map(Accounts.list_users(), & &1.id)
     end
   end
 
-  describe "disable_user/1" do
+  describe "disable_user/2" do
     test "sets disabled_at to the current UTC time and returns {:ok, user}" do
       user = user_fixture()
       assert user.disabled_at == nil
 
-      assert {:ok, %User{disabled_at: %DateTime{} = disabled_at}} = Accounts.disable_user(user)
+      assert {:ok, %User{disabled_at: %DateTime{} = disabled_at}} =
+               Accounts.disable_user(user, admin_fixture())
+
       assert DateTime.diff(DateTime.utc_now(), disabled_at) <= 1
+    end
+
+    test "returns {:error, :unauthorized} when the acting user is not an admin" do
+      user = user_fixture()
+      acting_user = user_fixture()
+
+      assert {:error, :unauthorized} = Accounts.disable_user(user, acting_user)
+      assert Accounts.get_user!(user.id).disabled_at == nil
+    end
+
+    test "returns {:error, :unauthorized} when the acting admin is disabled" do
+      user = user_fixture()
+      acting_admin = disable_directly(admin_fixture())
+
+      assert {:error, :unauthorized} = Accounts.disable_user(user, acting_admin)
+      assert Accounts.get_user!(user.id).disabled_at == nil
+    end
+
+    # This is the lockout vector the guard exists for: a lone admin disabling
+    # themselves would leave nobody able to sign in and re-enable anyone.
+    test "returns {:error, :cannot_disable_self} when the target is the acting user" do
+      admin = admin_fixture()
+
+      assert {:error, :cannot_disable_self} = Accounts.disable_user(admin, admin)
+      assert Accounts.get_user!(admin.id).disabled_at == nil
+    end
+
+    test "returns {:error, :last_admin} when the target is the only enabled admin" do
+      target_admin = admin_fixture()
+      stale_acting_admin = admin_fixture()
+      _ = disable_directly(stale_acting_admin)
+
+      assert {:error, :last_admin} = Accounts.disable_user(target_admin, stale_acting_admin)
+      assert Accounts.get_user!(target_admin.id).disabled_at == nil
+    end
+
+    test "allows disabling an admin when another enabled admin remains" do
+      target_admin = admin_fixture()
+      acting_admin = admin_fixture()
+
+      assert {:ok, %User{disabled_at: %DateTime{}}} =
+               Accounts.disable_user(target_admin, acting_admin)
+    end
+
+    test "checks the unauthorized guard before the self guard" do
+      user = user_fixture()
+
+      assert {:error, :unauthorized} = Accounts.disable_user(user, user)
     end
 
     test "persists disabled_at to the database" do
       user = user_fixture()
-      {:ok, _} = Accounts.disable_user(user)
+      {:ok, _} = Accounts.disable_user(user, admin_fixture())
 
       assert Accounts.get_user!(user.id).disabled_at != nil
     end
@@ -66,22 +117,22 @@ defmodule Kanban.Accounts.AdminManagementTest do
     test "truncates disabled_at to second precision" do
       user = user_fixture()
 
-      assert {:ok, %User{disabled_at: disabled_at}} = Accounts.disable_user(user)
+      assert {:ok, %User{disabled_at: disabled_at}} = Accounts.disable_user(user, admin_fixture())
       assert disabled_at.microsecond == {0, 0}
     end
 
     test "is idempotent when the user is already disabled" do
       user = user_fixture()
 
-      assert {:ok, once} = Accounts.disable_user(user)
-      assert {:ok, twice} = Accounts.disable_user(once)
+      assert {:ok, once} = Accounts.disable_user(user, admin_fixture())
+      assert {:ok, twice} = Accounts.disable_user(once, admin_fixture())
       assert twice.disabled_at != nil
     end
 
     test "does not clear confirmed_at or change the user type" do
       admin = admin_fixture()
 
-      assert {:ok, disabled} = Accounts.disable_user(admin)
+      assert {:ok, disabled} = Accounts.disable_user(admin, admin_fixture())
       assert disabled.confirmed_at == admin.confirmed_at
       assert disabled.type == :admin
     end
@@ -90,7 +141,7 @@ defmodule Kanban.Accounts.AdminManagementTest do
   describe "enable_user/1" do
     test "clears disabled_at to nil and returns {:ok, user}" do
       user = user_fixture()
-      {:ok, disabled} = Accounts.disable_user(user)
+      {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
       assert disabled.disabled_at != nil
 
       assert {:ok, %User{disabled_at: nil}} = Accounts.enable_user(disabled)
@@ -98,7 +149,7 @@ defmodule Kanban.Accounts.AdminManagementTest do
 
     test "persists nil to the database" do
       user = user_fixture()
-      {:ok, disabled} = Accounts.disable_user(user)
+      {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
       {:ok, _} = Accounts.enable_user(disabled)
 
       assert Accounts.get_user!(user.id).disabled_at == nil
@@ -144,7 +195,7 @@ defmodule Kanban.Accounts.AdminManagementTest do
 
     test "returns {:error, :unauthorized} when the acting admin is disabled" do
       user = user_fixture()
-      {:ok, acting_admin} = Accounts.disable_user(admin_fixture())
+      acting_admin = disable_directly(admin_fixture())
 
       assert {:error, :unauthorized} = Accounts.delete_user(user, acting_admin)
       assert Repo.get(User, user.id) != nil
@@ -174,7 +225,7 @@ defmodule Kanban.Accounts.AdminManagementTest do
     test "returns {:error, :last_admin} when the target is the only enabled admin" do
       target_admin = admin_fixture()
       stale_acting_admin = admin_fixture()
-      {:ok, _} = Accounts.disable_user(stale_acting_admin)
+      _ = disable_directly(stale_acting_admin)
 
       assert {:error, :last_admin} = Accounts.delete_user(target_admin, stale_acting_admin)
       assert Repo.get(User, target_admin.id) != nil
@@ -184,9 +235,9 @@ defmodule Kanban.Accounts.AdminManagementTest do
     # admin row leaves nobody who can be promoted, even though that admin was
     # already unable to sign in.
     test "returns {:error, :last_admin} when the target is a disabled admin and no enabled admin remains" do
-      {:ok, target_admin} = Accounts.disable_user(admin_fixture())
+      target_admin = disable_directly(admin_fixture())
       stale_acting_admin = admin_fixture()
-      {:ok, _} = Accounts.disable_user(stale_acting_admin)
+      _ = disable_directly(stale_acting_admin)
 
       assert {:error, :last_admin} = Accounts.delete_user(target_admin, stale_acting_admin)
       assert Repo.get(User, target_admin.id) != nil
@@ -202,8 +253,7 @@ defmodule Kanban.Accounts.AdminManagementTest do
     end
 
     test "allows deleting a disabled admin when an enabled admin remains" do
-      disabled_admin = admin_fixture()
-      {:ok, disabled_admin} = Accounts.disable_user(disabled_admin)
+      disabled_admin = disable_directly(admin_fixture())
       acting_admin = admin_fixture()
 
       assert {:ok, _} = Accounts.delete_user(disabled_admin, acting_admin)
@@ -227,7 +277,7 @@ defmodule Kanban.Accounts.AdminManagementTest do
       target_admin = admin_fixture()
       _board = board_fixture(target_admin)
       stale_acting_admin = admin_fixture()
-      {:ok, _} = Accounts.disable_user(stale_acting_admin)
+      _ = disable_directly(stale_acting_admin)
 
       assert {:error, :user_has_boards} = Accounts.delete_user(target_admin, stale_acting_admin)
     end

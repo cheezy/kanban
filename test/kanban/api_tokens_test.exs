@@ -98,7 +98,7 @@ defmodule Kanban.ApiTokensTest do
 
       assert {:ok, _} = ApiTokens.get_api_token_by_token(plain_text_token)
 
-      {:ok, _} = Kanban.Accounts.disable_user(user)
+      {:ok, _} = Kanban.Accounts.disable_user(user, admin_fixture())
 
       assert {:error, :user_disabled} = ApiTokens.get_api_token_by_token(plain_text_token)
     end
@@ -110,7 +110,7 @@ defmodule Kanban.ApiTokensTest do
       {:ok, {_api_token, plain_text_token}} =
         ApiTokens.create_api_token(user, board, @valid_attrs)
 
-      {:ok, disabled} = Kanban.Accounts.disable_user(user)
+      {:ok, disabled} = Kanban.Accounts.disable_user(user, admin_fixture())
       {:ok, _} = Kanban.Accounts.enable_user(disabled)
 
       assert {:ok, _found} = ApiTokens.get_api_token_by_token(plain_text_token)

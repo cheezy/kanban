@@ -4,16 +4,13 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Swoosh.TestAssertions
 
   alias Kanban.Accounts
-
-  defp promote_to_admin(user) do
-    {:ok, admin} = Accounts.update_user_type(user, :admin)
-    admin
-  end
+  alias Kanban.Accounts.User
 
   defp register_and_log_in_admin(%{conn: conn}) do
-    admin = promote_to_admin(user_fixture())
+    admin = admin_fixture()
     %{conn: log_in_user(conn, admin), user: admin}
   end
 
@@ -118,7 +115,7 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
     test "renders the disabled badge only for a disabled user", %{conn: conn} do
       disabled = user_fixture()
       enabled = user_fixture()
-      {:ok, _} = Accounts.disable_user(disabled)
+      {:ok, _} = Accounts.disable_user(disabled, admin_fixture())
 
       {:ok, live, _html} = live(conn, ~p"/admin/users")
 
@@ -141,7 +138,7 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
       # The name changeset rejects HTML metacharacters, so a hostile name can
       # only reach the table through a direct write. Force one in to prove the
       # template escapes rather than relying on that validation alone.
-      admin = promote_to_admin(user_fixture())
+      admin = admin_fixture()
 
       # change/2 skips the name changeset's validations, which is the point.
       user_fixture()
@@ -153,6 +150,292 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
 
       refute html =~ "<script>alert('xss')</script>"
       assert html =~ "&lt;script&gt;"
+    end
+  end
+
+  describe "disable / enable events" do
+    setup :register_and_log_in_admin
+
+    test "disable sets disabled_at and flips the row's badge", %{conn: conn} do
+      user = user_fixture()
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+      refute has_element?(live, "#user-#{user.id} .badge-error")
+
+      html = live |> element("#user-#{user.id} button", "Disable") |> render_click()
+
+      assert html =~ "Account disabled."
+      assert has_element?(live, "#user-#{user.id} .badge-error", "Yes")
+      assert Accounts.get_user!(user.id).disabled_at != nil
+    end
+
+    test "enable clears disabled_at and flips the row's badge", %{conn: conn} do
+      user = user_fixture()
+      {:ok, _} = Accounts.disable_user(user, admin_fixture())
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+      assert has_element?(live, "#user-#{user.id} .badge-error")
+
+      html = live |> element("#user-#{user.id} button", "Enable") |> render_click()
+
+      assert html =~ "Account enabled."
+      refute has_element?(live, "#user-#{user.id} .badge-error")
+      assert Accounts.get_user!(user.id).disabled_at == nil
+    end
+
+    # The acting admin here is the only admin in the system, so this is also the
+    # last-enabled-admin case as it can actually occur through the UI: because
+    # every event re-reads the actor and requires an enabled admin, a *different*
+    # target can never be the last enabled admin (the actor would be a second
+    # one). The last_admin guard is therefore unreachable from this page and is
+    # covered at the context level in admin_management_test.exs, where a stale
+    # actor struct can reach it.
+    test "an admin cannot disable their own account, which is also the last admin", %{
+      conn: conn,
+      user: admin
+    } do
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html = live |> element("#user-#{admin.id} button", "Disable") |> render_click()
+
+      assert html =~ "You cannot disable your own account."
+      assert Accounts.get_user!(admin.id).disabled_at == nil
+    end
+
+    test "the sole admin remains enabled after a refused self-disable", %{conn: conn, user: admin} do
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      _ = render_click(live, "disable", %{"id" => to_string(admin.id)})
+
+      reloaded = Accounts.get_user!(admin.id)
+      assert reloaded.disabled_at == nil
+      assert reloaded.type == :admin
+    end
+  end
+
+  describe "resend confirmation event" do
+    setup :register_and_log_in_admin
+
+    test "sends a confirmation email to an unconfirmed user", %{conn: conn} do
+      unconfirmed = unconfirmed_user_fixture()
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+      flush_emails()
+
+      html =
+        live
+        |> element("#user-#{unconfirmed.id} button", "Resend confirmation")
+        |> render_click()
+
+      assert html =~ "Confirmation email sent."
+      assert_email_sent(to: [{"", unconfirmed.email}])
+    end
+
+    test "the resend control is absent for a confirmed user", %{conn: conn} do
+      confirmed = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      refute has_element?(live, "#user-#{confirmed.id} button", "Resend confirmation")
+    end
+
+    test "resending to an already-confirmed user is refused without sending", %{conn: conn} do
+      confirmed = user_fixture()
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+      flush_emails()
+
+      html = render_click(live, "resend_confirmation", %{"id" => to_string(confirmed.id)})
+
+      assert html =~ "This account is already confirmed."
+      assert_no_email_sent()
+    end
+  end
+
+  describe "delete event" do
+    setup :register_and_log_in_admin
+
+    test "deletes a user with no boards and drops the row", %{conn: conn} do
+      user = user_fixture()
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html = live |> element("#user-#{user.id} button", "Delete") |> render_click()
+
+      assert html =~ "Account deleted."
+      refute has_element?(live, "#user-#{user.id}")
+      assert Kanban.Repo.get(User, user.id) == nil
+    end
+
+    test "the delete control is disabled for a user with boards", %{conn: conn} do
+      with_board = user_fixture()
+      _board = board_fixture(with_board)
+      without_board = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      assert has_element?(live, "#user-#{with_board.id} button[disabled]", "Delete")
+      refute has_element?(live, "#user-#{without_board.id} button[disabled]", "Delete")
+    end
+
+    # The disabled button is a UI hint; the event is what must refuse.
+    test "delete is refused server-side for a user with boards", %{conn: conn} do
+      user = user_fixture()
+      _board = board_fixture(user)
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html = render_click(live, "delete", %{"id" => to_string(user.id)})
+
+      assert html =~ "This user still belongs to a board and cannot be deleted."
+      assert Kanban.Repo.get(User, user.id) != nil
+    end
+
+    test "an admin cannot delete their own account", %{conn: conn, user: admin} do
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html = live |> element("#user-#{admin.id} button", "Delete") |> render_click()
+
+      assert html =~ "You cannot delete your own account."
+      assert Kanban.Repo.get(User, admin.id) != nil
+    end
+
+    test "a second delete of the same user flashes not-found instead of crashing", %{conn: conn} do
+      user = user_fixture()
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+      _ = render_click(live, "delete", %{"id" => to_string(user.id)})
+
+      html = render_click(live, "delete", %{"id" => to_string(user.id)})
+
+      assert html =~ "User not found."
+    end
+
+    test "a malformed id flashes not-found instead of crashing", %{conn: conn} do
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html = render_click(live, "delete", %{"id" => "not-an-id"})
+
+      assert html =~ "User not found."
+    end
+
+    # Integer.parse/1 accepts this happily; Repo.get/2 raises on bigint overflow.
+    test "an out-of-range numeric id flashes not-found instead of crashing", %{conn: conn} do
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html = render_click(live, "delete", %{"id" => "99999999999999999999"})
+
+      assert html =~ "User not found."
+    end
+
+    test "an integer id from a tampered payload is handled", %{conn: conn} do
+      user = user_fixture()
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html = render_click(live, "delete", %{"id" => user.id})
+
+      assert html =~ "Account deleted."
+      assert Kanban.Repo.get(User, user.id) == nil
+    end
+
+    test "a non-scalar id from a tampered payload flashes not-found", %{conn: conn} do
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html = render_click(live, "delete", %{"id" => %{"nested" => "value"}})
+
+      assert html =~ "User not found."
+    end
+  end
+
+  # An open socket keeps the current_scope it was mounted with, and nothing tears
+  # it down when its user is disabled or demoted. Every event therefore re-reads
+  # the actor from the database; these tests change the actor in the DB behind
+  # the live socket's back and assert the event is refused anyway.
+  describe "per-event actor re-authorization (stale socket)" do
+    setup :register_and_log_in_admin
+
+    defp demote_in_db(admin) do
+      {:ok, _} = Accounts.update_user_type(admin, :user)
+    end
+
+    defp disable_in_db(admin) do
+      admin
+      |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
+      |> Kanban.Repo.update!()
+    end
+
+    # The escalation this guards: enable_user/1 has no context guard, so without
+    # a fresh actor a disabled admin could re-enable their own account and undo
+    # the disable entirely.
+    test "a disabled admin cannot re-enable themselves through an open socket", %{
+      conn: conn,
+      user: admin
+    } do
+      {:ok, view, _html} = live(conn, ~p"/admin/users")
+      disable_in_db(admin)
+
+      render_hook(view, "enable", %{"id" => to_string(admin.id)})
+
+      assert render(view) =~ "admin"
+      assert Accounts.get_user!(admin.id).disabled_at != nil
+    end
+
+    test "a disabled admin cannot disable anyone through an open socket", %{
+      conn: conn,
+      user: admin
+    } do
+      user = user_fixture()
+      {:ok, view, _html} = live(conn, ~p"/admin/users")
+      disable_in_db(admin)
+
+      render_hook(view, "disable", %{"id" => to_string(user.id)})
+
+      assert render(view) =~ "admin"
+      assert Accounts.get_user!(user.id).disabled_at == nil
+    end
+
+    test "a disabled admin cannot delete anyone through an open socket", %{
+      conn: conn,
+      user: admin
+    } do
+      user = user_fixture()
+      {:ok, view, _html} = live(conn, ~p"/admin/users")
+      disable_in_db(admin)
+
+      render_hook(view, "delete", %{"id" => to_string(user.id)})
+
+      assert render(view) =~ "admin"
+      assert Kanban.Repo.get(User, user.id) != nil
+    end
+
+    test "a demoted admin cannot act through an open socket", %{conn: conn, user: admin} do
+      user = user_fixture()
+      {:ok, view, _html} = live(conn, ~p"/admin/users")
+      demote_in_db(admin)
+
+      render_hook(view, "disable", %{"id" => to_string(user.id)})
+
+      assert render(view) =~ "admin"
+      assert Accounts.get_user!(user.id).disabled_at == nil
+    end
+
+    test "a demoted admin cannot resend confirmations through an open socket", %{
+      conn: conn,
+      user: admin
+    } do
+      unconfirmed = unconfirmed_user_fixture()
+      {:ok, view, _html} = live(conn, ~p"/admin/users")
+      demote_in_db(admin)
+      flush_emails()
+
+      render_hook(view, "resend_confirmation", %{"id" => to_string(unconfirmed.id)})
+
+      assert render(view) =~ "admin"
+      assert_no_email_sent()
+    end
+  end
+
+  # The user fixtures deliver their own confirmation emails, so the test
+  # mailbox is not empty by the time an event fires. Drain it first, or the
+  # assertions below match a fixture's email instead of the event's.
+  defp flush_emails do
+    receive do
+      {:email, _} -> flush_emails()
+    after
+      0 -> :ok
     end
   end
 end

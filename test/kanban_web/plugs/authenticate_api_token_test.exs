@@ -89,7 +89,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
       user: user,
       plain_text_token: plain_text_token
     } do
-      {:ok, _} = Kanban.Accounts.disable_user(user)
+      {:ok, _} = Kanban.Accounts.disable_user(user, admin_fixture())
 
       conn =
         conn
@@ -107,7 +107,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
       user: user,
       plain_text_token: plain_text_token
     } do
-      {:ok, disabled} = Kanban.Accounts.disable_user(user)
+      {:ok, disabled} = Kanban.Accounts.disable_user(user, admin_fixture())
       {:ok, _} = Kanban.Accounts.enable_user(disabled)
 
       conn =

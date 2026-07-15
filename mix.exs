@@ -111,6 +111,7 @@ defmodule Kanban.MixProject do
         "compile --warning-as-errors",
         "deps.unlock --unused",
         "format",
+        "gettext.extract --check-up-to-date",
         "dark_mode.scan",
         "dark_mode.contrast --enforce",
         "test",

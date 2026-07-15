@@ -99,7 +99,7 @@ defmodule KanbanWeb.UserSessionControllerTest do
     end
 
     test "refuses a disabled user holding valid credentials", %{conn: conn, user: user} do
-      {:ok, _} = Accounts.disable_user(user)
+      {:ok, _} = Accounts.disable_user(user, admin_fixture())
 
       conn =
         post(conn, ~p"/users/log-in?mode=password", %{
@@ -113,7 +113,7 @@ defmodule KanbanWeb.UserSessionControllerTest do
     # The refusal must be indistinguishable from a wrong password, or it
     # discloses that the address belongs to a real, disabled account.
     test "refuses a disabled user with the same response as a wrong password", %{user: user} do
-      {:ok, _} = Accounts.disable_user(user)
+      {:ok, _} = Accounts.disable_user(user, admin_fixture())
 
       disabled_conn =
         post(build_conn(), ~p"/users/log-in?mode=password", %{
@@ -141,7 +141,7 @@ defmodule KanbanWeb.UserSessionControllerTest do
       conn: conn,
       unconfirmed_user: unconfirmed_user
     } do
-      {:ok, _} = Accounts.disable_user(unconfirmed_user)
+      {:ok, _} = Accounts.disable_user(unconfirmed_user, admin_fixture())
 
       conn =
         post(conn, ~p"/users/log-in?mode=password", %{
@@ -154,7 +154,7 @@ defmodule KanbanWeb.UserSessionControllerTest do
     end
 
     test "logs in a user again once they are re-enabled", %{conn: conn, user: user} do
-      {:ok, disabled} = Accounts.disable_user(user)
+      {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
       {:ok, _} = Accounts.enable_user(disabled)
 
       conn =

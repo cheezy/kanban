@@ -36,15 +36,37 @@ defmodule Kanban.Accounts.AdminManagement do
   @doc """
   Disables a user by setting `disabled_at` to the current UTC time.
 
+  `current_user` is the admin performing the action, passed last to match
+  `delete_user/2` and `Kanban.Boards.remove_user_from_board/3`.
+
   Disabling an already-disabled user is allowed and refreshes the timestamp.
+
+  Changes nothing and returns `{:error, reason}` when:
+
+    * `:unauthorized` - the acting user is not an enabled admin
+    * `:cannot_disable_self` - the target is the acting user, which is the way
+      a lone admin would lock everyone out
+    * `:last_admin` - the target is the last admin
 
   ## Examples
 
-      iex> disable_user(user)
+      iex> disable_user(user, admin)
       {:ok, %User{}}
 
+      iex> disable_user(admin, admin)
+      {:error, :cannot_disable_self}
+
   """
-  def disable_user(%User{} = user) do
+  def disable_user(%User{} = user, %User{} = current_user) do
+    cond do
+      not authorized_admin?(current_user) -> {:error, :unauthorized}
+      user.id == current_user.id -> {:error, :cannot_disable_self}
+      last_admin?(user) -> {:error, :last_admin}
+      true -> do_disable(user)
+    end
+  end
+
+  defp do_disable(user) do
     user
     |> User.disabled_changeset(DateTime.utc_now(:second))
     |> Repo.update()

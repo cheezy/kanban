@@ -188,7 +188,7 @@ defmodule KanbanWeb.UserAuthTest do
       user: user
     } do
       user_token = Accounts.generate_user_session_token(user)
-      {:ok, _} = Accounts.disable_user(user)
+      {:ok, _} = Accounts.disable_user(user, admin_fixture())
 
       conn =
         conn |> put_session(:user_token, user_token) |> UserAuth.fetch_current_scope_for_user([])
@@ -204,7 +204,7 @@ defmodule KanbanWeb.UserAuthTest do
         conn |> fetch_cookies() |> UserAuth.log_in_user(user, %{"remember_me" => "true"})
 
       %{value: signed_token} = logged_in_conn.resp_cookies[@remember_me_cookie]
-      {:ok, _} = Accounts.disable_user(user)
+      {:ok, _} = Accounts.disable_user(user, admin_fixture())
 
       conn =
         conn
@@ -216,7 +216,7 @@ defmodule KanbanWeb.UserAuthTest do
 
     test "authenticates a user again once they are re-enabled", %{conn: conn, user: user} do
       user_token = Accounts.generate_user_session_token(user)
-      {:ok, disabled} = Accounts.disable_user(user)
+      {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
       {:ok, _} = Accounts.enable_user(disabled)
 
       conn =
@@ -273,7 +273,7 @@ defmodule KanbanWeb.UserAuthTest do
     } do
       user_token = Accounts.generate_user_session_token(user)
       session = conn |> put_session(:user_token, user_token) |> get_session()
-      {:ok, _} = Accounts.disable_user(user)
+      {:ok, _} = Accounts.disable_user(user, admin_fixture())
 
       {:cont, updated_socket} =
         UserAuth.on_mount(:mount_current_scope, %{}, session, %LiveView.Socket{})
@@ -328,7 +328,7 @@ defmodule KanbanWeb.UserAuthTest do
     test "redirects a user disabled after the session was issued", %{conn: conn, user: user} do
       user_token = Accounts.generate_user_session_token(user)
       session = conn |> put_session(:user_token, user_token) |> get_session()
-      {:ok, _} = Accounts.disable_user(user)
+      {:ok, _} = Accounts.disable_user(user, admin_fixture())
 
       socket = %LiveView.Socket{
         endpoint: KanbanWeb.Endpoint,

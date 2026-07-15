@@ -335,7 +335,7 @@ defmodule Kanban.Accounts do
   ## Admin user management
 
   defdelegate list_users(), to: AdminManagement
-  defdelegate disable_user(user), to: AdminManagement
+  defdelegate disable_user(user, current_user), to: AdminManagement
   defdelegate enable_user(user), to: AdminManagement
   defdelegate delete_user(user, current_user), to: AdminManagement
 
