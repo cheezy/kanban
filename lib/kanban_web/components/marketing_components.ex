@@ -107,6 +107,13 @@ defmodule KanbanWeb.MarketingComponents do
           >
             {gettext("Error Tracker")}
           </.link>
+          <.link
+            href={~p"/admin/users"}
+            class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
+            style="color: var(--ink-2);"
+          >
+            {gettext("User Admin")}
+          </.link>
         <% end %>
         <.link
           href={~p"/users/log-out"}
@@ -284,6 +291,12 @@ defmodule KanbanWeb.MarketingComponents do
           class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
         >
           {gettext("Error Tracker")}
+        </.link>
+        <.link
+          href={~p"/admin/users"}
+          class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+        >
+          {gettext("User Admin")}
         </.link>
       <% end %>
       <.link

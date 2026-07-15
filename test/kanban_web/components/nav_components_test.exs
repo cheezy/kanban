@@ -64,6 +64,8 @@ defmodule KanbanWeb.NavComponentsTest do
       refute html =~ ~s|href="/boards"|
       refute html =~ ~s|href="/users/settings"|
       refute html =~ ~s|href="/admin/dashboard"|
+      refute html =~ ~s|href="/admin/errors"|
+      refute html =~ ~s|href="/admin/users"|
     end
 
     test "renders the authenticated member link set" do
@@ -86,6 +88,7 @@ defmodule KanbanWeb.NavComponentsTest do
       # Members never see the admin-only links.
       refute html =~ ~s|href="/admin/dashboard"|
       refute html =~ ~s|href="/admin/errors"|
+      refute html =~ ~s|href="/admin/users"|
     end
 
     test "renders admin-only links for admin users" do
@@ -100,7 +103,24 @@ defmodule KanbanWeb.NavComponentsTest do
 
       assert html =~ ~s|href="/admin/dashboard"|
       assert html =~ ~s|href="/admin/errors"|
+      assert html =~ ~s|href="/admin/users"|
       assert html =~ ~s|href="/boards"|
+    end
+
+    test "places the User Admin link immediately after Error Tracker" do
+      assigns = %{
+        current_scope: %{user: %{email: "admin@example.com", type: :admin}}
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <NavComponents.mobile_menu current_scope={@current_scope} />
+        """)
+
+      # Order, not just presence: the task requires User Admin to follow Error
+      # Tracker, and asserting both are present would pass in either order.
+      assert :binary.match(html, ~s|href="/admin/users"|) >
+               :binary.match(html, ~s|href="/admin/errors"|)
     end
 
     test "menu links use theme-aware tokens, not hardcoded colors" do

@@ -168,10 +168,51 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ ~s|href="/admin/dashboard"|
       assert html =~ "Error Tracker"
       assert html =~ ~s|href="/admin/errors"|
+      assert html =~ "User Admin"
+      assert html =~ ~s|href="/admin/users"|
 
       # Sign out and Go to boards still appear for admins
       assert html =~ "Sign out"
       assert html =~ "Go to boards"
+    end
+
+    test "User Admin renders in both desktop nav and mobile menu for admins" do
+      assigns = %{current_scope: %{user: %{email: "admin@example.com", type: :admin}}}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+
+      # Desktop nav + mobile menu = 2 occurrences, matching Error Tracker.
+      assert href_count(html, "/admin/users") == 2
+      assert href_count(html, "/admin/users") == href_count(html, "/admin/errors")
+    end
+
+    test "User Admin follows Error Tracker in the marketing nav" do
+      assigns = %{current_scope: %{user: %{email: "admin@example.com", type: :admin}}}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+
+      # Order, not just presence — asserting both are present would pass either way.
+      assert :binary.match(html, ~s|href="/admin/users"|) >
+               :binary.match(html, ~s|href="/admin/errors"|)
+    end
+
+    test "non-admin and signed-out visitors never see the User Admin link" do
+      for scope <- [%{user: %{email: "member@example.com", type: :member}}, nil] do
+        assigns = %{current_scope: scope}
+
+        html =
+          rendered_to_string(~H"""
+          <MarketingComponents.marketing_nav current_scope={@current_scope} />
+          """)
+
+        assert href_count(html, "/admin/users") == 0
+      end
     end
 
     test "renders the dark pill button using --ink (unauthenticated)" do

@@ -57,8 +57,8 @@ msgstr " · タスク管理"
 msgid "Done"
 msgstr "完了"
 
-#: lib/kanban_web/components/layouts/root.html.heex:104
-#: lib/kanban_web/components/nav_components.ex:141
+#: lib/kanban_web/components/layouts/root.html.heex:107
+#: lib/kanban_web/components/nav_components.ex:144
 #, elixir-autogen, elixir-format
 msgid "Get Started"
 msgstr "始める"
@@ -68,15 +68,15 @@ msgstr "始める"
 msgid "In Progress"
 msgstr "進行中"
 
-#: lib/kanban_web/components/layouts/root.html.heex:101
-#: lib/kanban_web/components/nav_components.ex:139
+#: lib/kanban_web/components/layouts/root.html.heex:104
+#: lib/kanban_web/components/nav_components.ex:142
 #, elixir-autogen, elixir-format
 msgid "Log in"
 msgstr "ログイン"
 
 #: lib/kanban_web/components/layouts.ex:214
-#: lib/kanban_web/components/layouts/root.html.heex:91
-#: lib/kanban_web/components/nav_components.ex:134
+#: lib/kanban_web/components/layouts/root.html.heex:94
+#: lib/kanban_web/components/nav_components.ex:137
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "ログアウト"
@@ -84,8 +84,8 @@ msgstr "ログアウト"
 #: lib/kanban_web/components/board_tabs.ex:143
 #: lib/kanban_web/components/layouts.ex:189
 #: lib/kanban_web/components/layouts.ex:190
-#: lib/kanban_web/components/layouts/root.html.heex:82
-#: lib/kanban_web/components/nav_components.ex:129
+#: lib/kanban_web/components/layouts/root.html.heex:85
+#: lib/kanban_web/components/nav_components.ex:132
 #: lib/kanban_web/live/user_live/settings.ex:16
 #, elixir-autogen, elixir-format
 msgid "Settings"
@@ -449,8 +449,8 @@ msgstr "中"
 msgid "Moved"
 msgstr "移動済み"
 
-#: lib/kanban_web/components/layouts/root.html.heex:79
-#: lib/kanban_web/components/nav_components.ex:128
+#: lib/kanban_web/components/layouts/root.html.heex:82
+#: lib/kanban_web/components/nav_components.ex:131
 #, elixir-autogen, elixir-format
 msgid "My Boards"
 msgstr "マイボード"
@@ -749,7 +749,7 @@ msgstr "確認リンクが無効または期限切れです。"
 
 #: lib/kanban_web/components/layouts/root.html.heex:72
 #: lib/kanban_web/components/marketing_components.ex:101
-#: lib/kanban_web/components/marketing_components.ex:280
+#: lib/kanban_web/components/marketing_components.ex:287
 #: lib/kanban_web/components/nav_components.ex:122
 #, elixir-autogen, elixir-format
 msgid "Dashboard"
@@ -761,12 +761,12 @@ msgid "This account has already been confirmed. You can log in."
 msgstr "このアカウントは既に確認されています。ログインできます。"
 
 #: lib/kanban_web/components/layouts.ex:308
-#: lib/kanban_web/components/layouts/root.html.heex:88
-#: lib/kanban_web/components/layouts/root.html.heex:98
+#: lib/kanban_web/components/layouts/root.html.heex:91
+#: lib/kanban_web/components/layouts/root.html.heex:101
 #: lib/kanban_web/components/marketing_components.ex:88
-#: lib/kanban_web/components/marketing_components.ex:269
-#: lib/kanban_web/components/nav_components.ex:131
-#: lib/kanban_web/components/nav_components.ex:138
+#: lib/kanban_web/components/marketing_components.ex:276
+#: lib/kanban_web/components/nav_components.ex:134
+#: lib/kanban_web/components/nav_components.ex:141
 #: lib/kanban_web/controllers/page_html/about.html.heex:3
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:7
 #: lib/kanban_web/controllers/page_html/tango.html.heex:7
@@ -888,7 +888,7 @@ msgstr "編集アクセス権で追加"
 
 #: lib/kanban_web/components/layouts/root.html.heex:75
 #: lib/kanban_web/components/marketing_components.ex:108
-#: lib/kanban_web/components/marketing_components.ex:286
+#: lib/kanban_web/components/marketing_components.ex:293
 #: lib/kanban_web/components/nav_components.ex:125
 #, elixir-autogen, elixir-format
 msgid "Error Tracker"
@@ -2071,12 +2071,12 @@ msgid "Read more"
 msgstr "続きを読む"
 
 #: lib/kanban_web/components/layouts.ex:301
-#: lib/kanban_web/components/layouts/root.html.heex:85
-#: lib/kanban_web/components/layouts/root.html.heex:95
+#: lib/kanban_web/components/layouts/root.html.heex:88
+#: lib/kanban_web/components/layouts/root.html.heex:98
 #: lib/kanban_web/components/marketing_components.ex:84
-#: lib/kanban_web/components/marketing_components.ex:263
-#: lib/kanban_web/components/nav_components.ex:130
-#: lib/kanban_web/components/nav_components.ex:137
+#: lib/kanban_web/components/marketing_components.ex:270
+#: lib/kanban_web/components/nav_components.ex:133
+#: lib/kanban_web/components/nav_components.ex:140
 #: lib/kanban_web/live/resources_live/show.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Resources"
@@ -3064,12 +3064,12 @@ msgstr "%{n}文字以下である必要があります"
 msgid "must be one of the listed options"
 msgstr "リストされた選択肢のいずれかである必要があります"
 
-#: lib/kanban_web/components/marketing_components.ex:456
+#: lib/kanban_web/components/marketing_components.ex:469
 #, elixir-autogen, elixir-format
 msgid "A new contract"
 msgstr "新しい契約"
 
-#: lib/kanban_web/components/marketing_components.ex:461
+#: lib/kanban_web/components/marketing_components.ex:474
 #, elixir-autogen, elixir-format
 msgid "AI agents are first-class teammates,"
 msgstr "AIエージェントは一級のチームメイト。"
@@ -3079,42 +3079,42 @@ msgstr "AIエージェントは一級のチームメイト。"
 msgid "API · Docs · Changelog"
 msgstr "API · ドキュメント · 変更履歴"
 
-#: lib/kanban_web/components/marketing_components.ex:607
+#: lib/kanban_web/components/marketing_components.ex:620
 #, elixir-autogen, elixir-format
 msgid "Agents declare what they can do. They only see — and can only claim — work that matches."
 msgstr "エージェントは自分にできることを宣言します。マッチしたタスクだけが見え、その仕事だけを引き受けられる。"
 
-#: lib/kanban_web/components/marketing_components.ex:678
+#: lib/kanban_web/components/marketing_components.ex:691
 #, elixir-autogen, elixir-format
 msgid "An agent claims it"
 msgstr "エージェントが引き受ける"
 
-#: lib/kanban_web/components/marketing_components.ex:680
+#: lib/kanban_web/components/marketing_components.ex:693
 #, elixir-autogen, elixir-format
 msgid "Atomic. SKIP LOCKED. Only one agent gets it. They pull latest, set up, then implement."
 msgstr "アトミック。SKIP LOCKED。1つのタスクを取れるのは1エージェントだけ。最新を pull し、セットアップして、実装に入る。"
 
-#: lib/kanban_web/components/marketing_components.ex:605
+#: lib/kanban_web/components/marketing_components.ex:618
 #, elixir-autogen, elixir-format
 msgid "Capability matching"
 msgstr "能力マッチング"
 
-#: lib/kanban_web/components/marketing_components.ex:614
+#: lib/kanban_web/components/marketing_components.ex:627
 #, elixir-autogen, elixir-format
 msgid "Client-side hooks"
 msgstr "クライアントサイド・フック"
 
-#: lib/kanban_web/components/marketing_components.ex:623
+#: lib/kanban_web/components/marketing_components.ex:636
 #, elixir-autogen, elixir-format
 msgid "Conflict prevention"
 msgstr "コンフリクト防止"
 
-#: lib/kanban_web/components/marketing_components.ex:652
+#: lib/kanban_web/components/marketing_components.ex:665
 #, elixir-autogen, elixir-format
 msgid "Cycle time split by agent vs human. Throughput. Where your humans are the bottleneck."
 msgstr "サイクルタイムをエージェントと人で分解。スループット。人がボトルネックになっている箇所が見える。"
 
-#: lib/kanban_web/components/marketing_components.ex:634
+#: lib/kanban_web/components/marketing_components.ex:647
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance, hook telemetry — one pane. Approve with one keystroke."
 msgstr "差分、テスト、受け入れ条件、フックのテレメトリ、すべてをひとつのペインに。キー1つで承認。"
@@ -3131,20 +3131,20 @@ msgstr "差分、テスト、受け入れ条件、フックのテレメトリ、
 msgid "Doing"
 msgstr "進行中"
 
-#: lib/kanban_web/components/marketing_components.ex:604
-#: lib/kanban_web/components/marketing_components.ex:613
-#: lib/kanban_web/components/marketing_components.ex:622
+#: lib/kanban_web/components/marketing_components.ex:617
+#: lib/kanban_web/components/marketing_components.ex:626
+#: lib/kanban_web/components/marketing_components.ex:635
 #, elixir-autogen, elixir-format
 msgid "For agents"
 msgstr "エージェント向け"
 
-#: lib/kanban_web/components/marketing_components.ex:631
-#: lib/kanban_web/components/marketing_components.ex:640
+#: lib/kanban_web/components/marketing_components.ex:644
+#: lib/kanban_web/components/marketing_components.ex:653
 #, elixir-autogen, elixir-format
 msgid "For humans"
 msgstr "人間向け"
 
-#: lib/kanban_web/components/marketing_components.ex:649
+#: lib/kanban_web/components/marketing_components.ex:662
 #, elixir-autogen, elixir-format
 msgid "For teams"
 msgstr "チーム向け"
@@ -3154,33 +3154,33 @@ msgstr "チーム向け"
 msgid "GitHub"
 msgstr "GitHub"
 
-#: lib/kanban_web/components/marketing_components.ex:124
+#: lib/kanban_web/components/marketing_components.ex:131
 #, elixir-autogen, elixir-format
 msgid "Go to boards"
 msgstr "マイボードへ"
 
 #: lib/kanban_web/components/marketing_closing.ex:57
-#: lib/kanban_web/components/marketing_components.ex:383
+#: lib/kanban_web/components/marketing_components.ex:396
 #, elixir-autogen, elixir-format
 msgid "Go to my boards"
 msgstr "マイボードへ"
 
-#: lib/kanban_web/components/marketing_components.ex:641
+#: lib/kanban_web/components/marketing_components.ex:654
 #, elixir-autogen, elixir-format
 msgid "Goals → tasks → outcomes"
 msgstr "ゴール → タスク → アウトカム"
 
-#: lib/kanban_web/components/marketing_components.ex:688
+#: lib/kanban_web/components/marketing_components.ex:701
 #, elixir-autogen, elixir-format
 msgid "Hooks run on their machine"
 msgstr "フックはエージェント側のマシンで実行"
 
-#: lib/kanban_web/components/marketing_components.ex:508
+#: lib/kanban_web/components/marketing_components.ex:521
 #, elixir-autogen, elixir-format
 msgid "How it works"
 msgstr "仕組み"
 
-#: lib/kanban_web/components/marketing_components.ex:473
+#: lib/kanban_web/components/marketing_components.ex:486
 #, elixir-autogen, elixir-format
 msgid "Most tools bolt AI on as a sidebar. Stride was built around the protocol agents need: atomic claims, capability matching, structured task context, and client-side hooks they fully control."
 msgstr "多くのツールはAIをサイドバーとして後付けします。Stride はエージェントが必要とするプロトコル — アトミックな claim、能力マッチング、構造化されたタスクコンテキスト、エージェントが完全に制御できるクライアントサイド・フック — を中心に設計されています。"
@@ -3191,7 +3191,7 @@ msgid "Persist field_visibility on board edit"
 msgstr "ボード編集時に field_visibility を永続化"
 
 #: lib/kanban_web/components/marketing_components.ex:77
-#: lib/kanban_web/components/marketing_components.ex:257
+#: lib/kanban_web/components/marketing_components.ex:264
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Pricing"
@@ -3203,7 +3203,7 @@ msgid "Privacy"
 msgstr "プライバシー"
 
 #: lib/kanban_web/components/marketing_components.ex:67
-#: lib/kanban_web/components/marketing_components.ex:244
+#: lib/kanban_web/components/marketing_components.ex:251
 #: lib/kanban_web/controllers/page_html/product.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Product"
@@ -3220,12 +3220,12 @@ msgstr "プロダクト"
 msgid "Ready"
 msgstr "Ready"
 
-#: lib/kanban_web/components/marketing_components.ex:650
+#: lib/kanban_web/components/marketing_components.ex:663
 #, elixir-autogen, elixir-format
 msgid "Real metrics that include AI"
 msgstr "AIを含めた本物のメトリクス"
 
-#: lib/kanban_web/components/marketing_components.ex:632
+#: lib/kanban_web/components/marketing_components.ex:645
 #, elixir-autogen, elixir-format
 msgid "Review at the speed of approval"
 msgstr "承認するスピードでレビュー"
@@ -3237,8 +3237,8 @@ msgstr "承認するスピードでレビュー"
 msgid "Security"
 msgstr "セキュリティ"
 
-#: lib/kanban_web/components/marketing_components.ex:133
-#: lib/kanban_web/components/marketing_components.ex:301
+#: lib/kanban_web/components/marketing_components.ex:140
+#: lib/kanban_web/components/marketing_components.ex:314
 #: lib/kanban_web/live/user_live/confirmation.ex:143
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:91
@@ -3267,24 +3267,24 @@ msgstr "task_moved を PubSub でストリーミング"
 msgid "Stride core"
 msgstr "Stride"
 
-#: lib/kanban_web/components/marketing_components.ex:361
+#: lib/kanban_web/components/marketing_components.ex:374
 #, elixir-autogen, elixir-format
 msgid "Tasks are conversations."
 msgstr "タスクは会話である。"
 
-#: lib/kanban_web/components/marketing_components.ex:625
+#: lib/kanban_web/components/marketing_components.ex:638
 #, elixir-autogen, elixir-format
 msgid "Tasks declare key_files. Two agents can't touch the same code at the same time."
 msgstr "タスクは key_files を宣言します。2つのエージェントが同じコードに同時に触れることはありません。"
 
 #: lib/kanban_web/components/marketing_components.ex:70
-#: lib/kanban_web/components/marketing_components.ex:250
+#: lib/kanban_web/components/marketing_components.ex:257
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Workflows"
 msgstr "ワークフロー"
 
-#: lib/kanban_web/components/marketing_components.ex:698
+#: lib/kanban_web/components/marketing_components.ex:711
 #, elixir-autogen, elixir-format
 msgid "You approve or send back"
 msgstr "あなたが承認するか、差し戻す"
@@ -3294,28 +3294,28 @@ msgstr "あなたが承認するか、差し戻す"
 msgid "approving them."
 msgstr "承認する仕事だけが残ります。"
 
-#: lib/kanban_web/components/marketing_components.ex:616
+#: lib/kanban_web/components/marketing_components.ex:629
 #, elixir-autogen, elixir-format
 msgid "before_doing, after_doing, before_review, after_review. They run on the agent's machine, not yours."
 msgstr "before_doing、after_doing、before_review、after_review。フックはあなたのマシンではなく、エージェント自身のマシンで実行されます。"
 
-#: lib/kanban_web/components/marketing_components.ex:464
+#: lib/kanban_web/components/marketing_components.ex:477
 #, elixir-autogen, elixir-format
 msgid "not bots you babysit."
 msgstr "お守りが必要なボットではありません。"
 
-#: lib/kanban_web/components/marketing_components.ex:187
+#: lib/kanban_web/components/marketing_components.ex:194
 #, elixir-autogen, elixir-format
 msgid "Change language"
 msgstr "言語を変更"
 
-#: lib/kanban_web/components/marketing_components.ex:117
-#: lib/kanban_web/components/marketing_components.ex:294
+#: lib/kanban_web/components/marketing_components.ex:124
+#: lib/kanban_web/components/marketing_components.ex:307
 #, elixir-autogen, elixir-format
 msgid "Sign out"
 msgstr "サインアウト"
 
-#: lib/kanban_web/components/marketing_components.ex:364
+#: lib/kanban_web/components/marketing_components.ex:377
 #, elixir-autogen, elixir-format
 msgid "Stride can speak both ways."
 msgstr "Stride は両方の言葉を話せます。"
@@ -3326,7 +3326,7 @@ msgstr "Stride は両方の言葉を話せます。"
 msgid "Stride logo"
 msgstr "Stride ロゴ"
 
-#: lib/kanban_web/components/marketing_components.ex:352
+#: lib/kanban_web/components/marketing_components.ex:365
 #, elixir-autogen, elixir-format
 msgid "Now in release →"
 msgstr "リリース中 →"
@@ -5351,7 +5351,7 @@ msgstr "すべてのボード"
 msgid "all boards"
 msgstr "すべてのボード"
 
-#: lib/kanban_web/components/marketing_components.ex:151
+#: lib/kanban_web/components/marketing_components.ex:158
 #: lib/kanban_web/components/nav_components.ex:104
 #, elixir-autogen, elixir-format
 msgid "Toggle menu"
@@ -5853,67 +5853,67 @@ msgstr "検出され、定期的なリズムで更新されます。依存関係
 msgid "on every completed task. Outdated dependencies are surfaced with"
 msgstr "完了したタスクごとに実行されます。古くなった依存関係は次のコマンドで検出されます:"
 
-#: lib/kanban_web/components/marketing_components.ex:404
+#: lib/kanban_web/components/marketing_components.ex:417
 #, elixir-autogen, elixir-format
 msgid "Learn about adding team members"
 msgstr "チームメンバーの追加について学ぶ"
 
-#: lib/kanban_web/components/marketing_components.ex:413
+#: lib/kanban_web/components/marketing_components.ex:426
 #, elixir-autogen, elixir-format
 msgid "Learn about creating a board"
 msgstr "ボードの作成について学ぶ"
 
-#: lib/kanban_web/components/marketing_components.ex:700
+#: lib/kanban_web/components/marketing_components.ex:713
 #, elixir-autogen, elixir-format
 msgid "Diff, tests, acceptance — all in one pane. ⌘Agent responds to your review. Done."
 msgstr "差分、テスト、受け入れ条件をひとつのペインに集約。⌘Agent があなたのレビューに応答。完了。"
 
-#: lib/kanban_web/components/marketing_components.ex:478
+#: lib/kanban_web/components/marketing_components.ex:491
 #, elixir-autogen, elixir-format
 msgid "Humans get a fast, calm board they can use to plan and review. Agents get an API rich enough to complete their work without asking. The same board feels native to both."
 msgstr "人間には、計画とレビューに集中できる速く静かなボードを。エージェントには、いちいち確認せずに出荷できる十分にリッチなAPIを。同じボードが、どちらにとっても自然に感じられる。"
 
-#: lib/kanban_web/components/marketing_components.ex:643
+#: lib/kanban_web/components/marketing_components.ex:656
 #, elixir-autogen, elixir-format
 msgid "Plan at the level you think at. Stride decomposes into the work agents can actually claim with the details they need to be accurate."
 msgstr "考えている粒度のままで計画する。Stride が、エージェントが実際に引き受けられる単位まで——正確に動くために必要なディテール込みで——ブレイクダウンします。"
 
-#: lib/kanban_web/components/marketing_components.ex:668
+#: lib/kanban_web/components/marketing_components.ex:681
 #, elixir-autogen, elixir-format
 msgid "You write or review the task"
 msgstr "あなたがタスクを書く、またはレビューする"
 
-#: lib/kanban_web/components/marketing_components.ex:690
+#: lib/kanban_web/components/marketing_components.ex:703
 #, elixir-autogen, elixir-format
 msgid "running tests, creating PRs, whatever you put in .stride.md. You hold the keys; agents hold the loop."
 msgstr "テストを実行する、PR を作成する、何であれ .stride.md に書いたものが動きます。鍵を握るのはあなた、ループを回すのはエージェント。"
 
-#: lib/kanban_web/components/marketing_components.ex:513
+#: lib/kanban_web/components/marketing_components.ex:526
 #, elixir-autogen, elixir-format
 msgid "One loop."
 msgstr "1つのループ。"
 
-#: lib/kanban_web/components/marketing_components.ex:371
+#: lib/kanban_web/components/marketing_components.ex:384
 #, elixir-autogen, elixir-format
 msgid "Stride is an AI-native work management system. Humans plan, review, and approve. Agents claim, build, and ship. Same board. One workflow. No glue code."
 msgstr "Stride は AI ネイティブな作業管理システムです。人間が計画し、レビューし、承認する。エージェントが引き受け、構築し、出荷する。同じボード、ひとつのワークフロー、グルーコードなし。"
 
-#: lib/kanban_web/components/marketing_components.ex:515
+#: lib/kanban_web/components/marketing_components.ex:528
 #, elixir-autogen, elixir-format
 msgid "Two roles."
 msgstr "2つの役割。"
 
-#: lib/kanban_web/components/marketing_components.ex:670
+#: lib/kanban_web/components/marketing_components.ex:683
 #, elixir-autogen, elixir-format
 msgid "Why, what, where, acceptance criteria, testing strategy, security concerns, etc.. The schema is the conversation."
 msgstr "なぜ、何を、どこで、受け入れ条件、テスト戦略、セキュリティ上の懸念など。スキーマそのものが会話になる。"
 
-#: lib/kanban_web/components/marketing_components.ex:571
+#: lib/kanban_web/components/marketing_components.ex:584
 #, elixir-autogen, elixir-format
 msgid "A few features"
 msgstr "いくつかの機能"
 
-#: lib/kanban_web/components/marketing_components.ex:422
+#: lib/kanban_web/components/marketing_components.ex:435
 #, elixir-autogen, elixir-format
 msgid "Free for you and your teams · self-hosting options available"
 msgstr "あなたとチームに無料 · セルフホスティング対応"
@@ -6491,8 +6491,8 @@ msgid "Human review and completion"
 msgstr "人によるレビューと完了"
 
 #: lib/kanban_web/components/marketing_closing.ex:66
-#: lib/kanban_web/components/marketing_components.ex:140
-#: lib/kanban_web/components/marketing_components.ex:392
+#: lib/kanban_web/components/marketing_components.ex:147
+#: lib/kanban_web/components/marketing_components.ex:405
 #: lib/kanban_web/controllers/page_html/product.html.heex:230
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:495
 #, elixir-autogen, elixir-format
@@ -7946,3 +7946,11 @@ msgstr "自分のアカウントは無効にできません。"
 #, elixir-autogen, elixir-format
 msgid "You cannot remove the last admin."
 msgstr "最後の管理者は削除できません。"
+
+#: lib/kanban_web/components/layouts/root.html.heex:78
+#: lib/kanban_web/components/marketing_components.ex:115
+#: lib/kanban_web/components/marketing_components.ex:299
+#: lib/kanban_web/components/nav_components.ex:128
+#, elixir-autogen, elixir-format
+msgid "User Admin"
+msgstr "ユーザー管理"

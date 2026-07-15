@@ -124,6 +124,9 @@ defmodule KanbanWeb.NavComponents do
             <.mobile_menu_link href={~p"/admin/errors"}>
               {gettext("Error Tracker")}
             </.mobile_menu_link>
+            <.mobile_menu_link href={~p"/admin/users"}>
+              {gettext("User Admin")}
+            </.mobile_menu_link>
           <% end %>
           <.mobile_menu_link href={~p"/boards"}>{gettext("My Boards")}</.mobile_menu_link>
           <.mobile_menu_link href={~p"/users/settings"}>{gettext("Settings")}</.mobile_menu_link>
