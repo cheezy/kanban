@@ -258,12 +258,28 @@ defmodule Kanban.Reviews do
   defp commit_review!(scope, task, user, base_attrs, opts) do
     move? = Keyword.get(opts, :move_after_review?, true)
 
-    with {:ok, _fetched} <- get_pending_review(scope, task.id),
+    with {:ok, fetched} <- get_pending_review(scope, task.id),
+         :ok <- authorize_review_write(fetched, user),
          {:ok, prepared} <- persist_review_fields(task, user, base_attrs),
          {:ok, final} <- maybe_mark_reviewed(prepared, user, move?) do
       final
     else
       {:error, reason} -> Repo.rollback(reason)
+    end
+  end
+
+  # `get_pending_review/2` is membership-scoped (it lists every board member's
+  # queue, read-only included), so it must not double as the write gate. The
+  # request-changes path sets `move_after_review?: false` and never reaches
+  # `AgentWorkflow.mark_reviewed/2`, where board-write access is otherwise
+  # enforced — so we re-run the same check here, inside the transaction, to
+  # close the read-only->write escalation (D138). The check runs before any
+  # review field is persisted, so an unauthorized caller rolls back cleanly.
+  defp authorize_review_write(%Task{column: %{board_id: board_id}}, user) do
+    if AgentWorkflow.authorized_reviewer?(board_id, user) do
+      :ok
+    else
+      {:error, :not_authorized}
     end
   end
 

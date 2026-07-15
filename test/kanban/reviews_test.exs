@@ -374,5 +374,38 @@ defmodule Kanban.ReviewsTest do
       assert {:error, :not_found} =
                Reviews.request_changes_review(other_scope, task, review_notes: "nope")
     end
+
+    test "returns {:error, :not_authorized} for a read-only board member and writes nothing",
+         %{column: column, board: board, user: owner} do
+      task = pending_task!(column)
+      reader = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
+      reader_scope = Scope.for_user(reader)
+
+      assert {:error, :not_authorized} =
+               Reviews.request_changes_review(reader_scope, task, review_notes: "let me in")
+
+      reloaded = Kanban.Repo.get!(Kanban.Tasks.Task, task.id)
+      assert reloaded.review_status == nil
+      assert reloaded.review_notes == nil
+      assert reloaded.reviewed_by_id == nil
+      assert reloaded.reviewed_at == nil
+    end
+
+    test "succeeds for a board member with :modify access",
+         %{column: column, board: board, user: owner} do
+      task = pending_task!(column)
+      modifier = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, modifier, :modify, owner)
+      modifier_scope = Scope.for_user(modifier)
+
+      assert {:ok, changed} =
+               Reviews.request_changes_review(modifier_scope, task, review_notes: "please fix")
+
+      reloaded = Kanban.Repo.get!(Kanban.Tasks.Task, changed.id)
+      assert reloaded.review_status == :changes_requested
+      assert reloaded.review_notes == "please fix"
+      assert reloaded.reviewed_by_id == modifier.id
+    end
   end
 end

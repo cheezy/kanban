@@ -1192,6 +1192,43 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "request_changes authorization (D138)" do
+    setup [:register_and_log_in_user]
+
+    test "a read-only board member cannot request changes and no review fields are written",
+         %{conn: conn, user: reader} do
+      owner = Kanban.AccountsFixtures.user_fixture()
+      board = board_fixture(owner)
+      review_column = column_fixture(board, %{name: "Review", position: 1})
+      _doing = column_fixture(board, %{name: "Doing", position: 2})
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
+      task = pending_task!(review_column, %{identifier: "W305"})
+
+      {:ok, view, _html} = live(conn, ~p"/review")
+
+      view
+      |> element("[data-review-detail-header-request-changes]")
+      |> render_click()
+
+      html =
+        view
+        |> form("[data-review-request-changes-form]", review: %{notes: "let me in"})
+        |> render_submit()
+
+      # The context rejects the write, so the LiveView surfaces the error flash
+      # and the task stays in the queue.
+      assert html =~ "Unable to request changes on task."
+      assert html =~ "data-review-queue-item-id=\"#{task.id}\""
+
+      # Nothing was persisted — the transaction rolled back.
+      reloaded = Kanban.Repo.get!(Kanban.Tasks.Task, task.id)
+      assert reloaded.review_status == nil
+      assert reloaded.review_notes == nil
+      assert reloaded.reviewed_by_id == nil
+      assert reloaded.reviewed_at == nil
+    end
+  end
+
   describe "stats strip — Acceptance cell value derivation" do
     setup [:register_and_log_in_user]
 

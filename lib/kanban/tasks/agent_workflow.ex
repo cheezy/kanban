@@ -311,7 +311,16 @@ defmodule Kanban.Tasks.AgentWorkflow do
     end
   end
 
-  defp authorized_reviewer?(board_id, user), do: board_write_access?(board_id, user)
+  @doc """
+  Returns `true` when `user` currently holds board-write access (`:owner` or
+  `:modify`) on `board_id` — the authorization required to record or advance a
+  review decision.
+
+  Exposed so the `Kanban.Reviews` context can enforce the same check on the
+  request-changes path, which does not route through `mark_reviewed/2` and
+  would otherwise let a read-only member write review fields (D138).
+  """
+  def authorized_reviewer?(board_id, user), do: board_write_access?(board_id, user)
 
   # Live board-write authorization: the user must currently be a member of the
   # board with at least :modify access (owners included). Read-only members and
