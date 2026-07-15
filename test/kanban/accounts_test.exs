@@ -557,11 +557,21 @@ defmodule Kanban.AccountsTest do
     test "deletes all tokens for the given user", %{user: user} do
       _ = Accounts.generate_user_session_token(user)
 
-      {:ok, {_, count}} =
+      {:ok, {_, tokens}} =
         Accounts.reset_user_password(user, %{password: "new valid password"})
 
-      assert count == 1
+      assert length(tokens) == 1
       refute Repo.get_by(UserToken, user_id: user.id)
+    end
+
+    test "returns the deleted token rows so sessions can be disconnected", %{user: user} do
+      session_token = Accounts.generate_user_session_token(user)
+
+      {:ok, {_, tokens}} =
+        Accounts.reset_user_password(user, %{password: "new valid password"})
+
+      assert [%UserToken{token: token}] = tokens
+      assert token == session_token
     end
   end
 

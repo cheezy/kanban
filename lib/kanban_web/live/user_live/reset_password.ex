@@ -5,6 +5,7 @@ defmodule KanbanWeb.UserLive.ResetPassword do
   import KanbanWeb.FormHelpers
 
   alias Kanban.Accounts
+  alias KanbanWeb.UserAuth
 
   @impl true
   def render(assigns) do
@@ -104,7 +105,12 @@ defmodule KanbanWeb.UserLive.ResetPassword do
 
   def handle_event("reset_password", %{"user" => user_params}, socket) do
     case Accounts.reset_user_password(socket.assigns.user, user_params) do
-      {:ok, _} ->
+      {:ok, {_user, expired_tokens}} ->
+        # Evict any already-mounted LiveView sockets for this user — a reset is
+        # an account-recovery action and must end a hijacked session, not just
+        # block future reconnects (W1676 M1).
+        UserAuth.disconnect_sessions(expired_tokens)
+
         {:noreply,
          socket
          |> put_flash(:info, gettext("Password reset successfully."))

@@ -72,6 +72,29 @@ defmodule KanbanWeb.UserLive.ResetPasswordTest do
       assert Accounts.get_user_by_email_and_password(user.email, "new valid password")
     end
 
+    test "disconnects the user's active sockets on reset", %{conn: conn, token: token, user: user} do
+      # An already-mounted session for this user. disconnect_sessions/1
+      # broadcasts on the session topic derived from the raw session token.
+      session_token = Accounts.generate_user_session_token(user)
+      KanbanWeb.Endpoint.subscribe("users_sessions:#{Base.url_encode64(session_token)}")
+
+      {:ok, lv, _html} = live(conn, ~p"/users/reset-password/#{token}")
+
+      lv
+      |> form("#reset_password_form",
+        user: %{
+          password: "new valid password",
+          password_confirmation: "new valid password"
+        }
+      )
+      |> render_submit()
+
+      assert_receive %Phoenix.Socket.Broadcast{
+        event: "disconnect",
+        topic: "users_sessions:" <> _
+      }
+    end
+
     test "does not reset password on invalid data", %{conn: conn, token: token} do
       {:ok, lv, _html} = live(conn, ~p"/users/reset-password/#{token}")
 

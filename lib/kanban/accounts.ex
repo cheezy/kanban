@@ -294,8 +294,14 @@ defmodule Kanban.Accounts do
 
       case result do
         {:ok, user} ->
-          {count, _} = Repo.delete_all(UserToken.by_user_and_contexts_query(user, :all))
-          {user, count}
+          # Collect the token rows before deleting them so the caller can
+          # disconnect any still-mounted LiveView sockets — deleting the rows
+          # alone only stops future HTTP/reconnect attempts (W1676 M1). This
+          # mirrors update_user_and_delete_all_tokens/1.
+          tokens_query = UserToken.by_user_and_contexts_query(user, :all)
+          tokens_to_expire = Repo.all(tokens_query)
+          Repo.delete_all(tokens_query)
+          {user, tokens_to_expire}
 
         {:error, changeset} ->
           Repo.rollback(changeset)
