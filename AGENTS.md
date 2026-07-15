@@ -2,7 +2,6 @@
 
 ## Project guidelines
 
-- Use `mix precommit` alias when you are done with all changes and fix any pending issues
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
 - Use the HexDoc mcp server to read the documentation about project dependencies
 - When you add a new dependency or update an existing dependency run `mix usage_rules.sync` to update the AGENTS.md file and phoenix-framework Skill
@@ -185,9 +184,6 @@ During this session, the following dark mode fixes were applied:
 
 - **IMPORTANT**: When you complete a task that has new functions write unit tests for the new function
 - **IMPORTANT**: When you complete a task that updates code make sure all existing unit tests pass and write new tests if needed
-- Each time you write or update a unit test run them with `mix test` and ensure they pass
-- **IMPORTANT**: When you complete a task run `mix test --cover` and ensure coverage is above the threshold.
-- **IMPORTANT**: When you complete a task run `mix credo --strict` to check for code quality issues and fix them
 
 ### Security guidelines
 
@@ -195,7 +191,6 @@ During this session, the following dark mode fixes were applied:
 
 - **IMPORTANT**: When you add or update a dependency run `mix deps.audit` and `mix hex.audit` to check for security issues
 - **IMPORTANT**: When you add or update a dependency run `mix hex.outdated` to check for outdated dependencies
-- **IMPORTANT**: When you complete a task run `mix sobelow --config` to check for security issues and fix any issue
 
 ### Phoenix v1.8 guidelines
 
