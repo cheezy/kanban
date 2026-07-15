@@ -82,8 +82,15 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     |> halt()
   end
 
-  defp halt_with_auth_error(conn, {:error, :not_found}) do
-    emit_auth_failed_telemetry(conn, "token_not_found")
+  # not_found / revoked / expired all return an IDENTICAL body. Distinct
+  # strings ("Invalid" vs "revoked" vs "expired") told a caller holding a
+  # candidate token whether that string ever corresponded to a real token —
+  # token-lifecycle metadata disclosure (W1676 L2). The specific reason is
+  # preserved only in server-side telemetry. `missing_token` is left distinct
+  # on purpose: it is a request-format signal, not token-state disclosure.
+  defp halt_with_auth_error(conn, {:error, reason})
+       when reason in [:not_found, :revoked, :expired] do
+    emit_auth_failed_telemetry(conn, telemetry_reason(reason))
 
     conn
     |> put_status(:unauthorized)
@@ -91,23 +98,9 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     |> halt()
   end
 
-  defp halt_with_auth_error(conn, {:error, :revoked}) do
-    emit_auth_failed_telemetry(conn, "token_revoked")
-
-    conn
-    |> put_status(:unauthorized)
-    |> json(%{error: "API token has been revoked"})
-    |> halt()
-  end
-
-  defp halt_with_auth_error(conn, {:error, :expired}) do
-    emit_auth_failed_telemetry(conn, "token_expired")
-
-    conn
-    |> put_status(:unauthorized)
-    |> json(%{error: "API token has expired"})
-    |> halt()
-  end
+  defp telemetry_reason(:not_found), do: "token_not_found"
+  defp telemetry_reason(:revoked), do: "token_revoked"
+  defp telemetry_reason(:expired), do: "token_expired"
 
   # The telemetry reason names the disabled owner so operators can see it, while
   # the response stays the generic invalid-token error rather than reporting the
