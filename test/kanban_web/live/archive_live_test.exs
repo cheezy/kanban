@@ -1251,15 +1251,15 @@ defmodule KanbanWeb.ArchiveLiveTest do
       {:ok, _} = Tasks.archive_task(goal)
       {:ok, _} = Tasks.archive_task(child)
 
-      {:ok, view, html} = live(conn, ~p"/boards/#{board}/archive")
-      assert html =~ goal.identifier
-      assert html =~ child.identifier
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
+      assert has_element?(view, archive_row_selector(goal))
+      assert has_element?(view, archive_row_selector(child))
 
       html = toggle_goal_group(view, goal_group_key(goal))
 
       # The child row hides, but the goal's own row stays visible.
-      refute html =~ child.identifier
-      assert html =~ goal.identifier
+      refute has_element?(view, archive_row_selector(child))
+      assert has_element?(view, archive_row_selector(goal))
       assert html =~ "hero-chevron-right"
     end
 
@@ -1402,17 +1402,17 @@ defmodule KanbanWeb.ArchiveLiveTest do
       key = goal_group_key(goal)
 
       # Expanded by default: the child row is visible and the chevron points down.
-      assert html =~ child.identifier
+      assert has_element?(view, archive_row_selector(child))
       assert html =~ "hero-chevron-down"
 
       # Collapsing hides the child row and flips the chevron to point right.
       html = toggle_goal_group(view, key)
-      refute html =~ child.identifier
+      refute has_element?(view, archive_row_selector(child))
       assert html =~ "hero-chevron-right"
 
       # Expanding again brings the child row back.
-      html = toggle_goal_group(view, key)
-      assert html =~ child.identifier
+      _html = toggle_goal_group(view, key)
+      assert has_element?(view, archive_row_selector(child))
     end
 
     test "the Tasks Without Goals group toggles like a goal group",
@@ -1420,14 +1420,14 @@ defmodule KanbanWeb.ArchiveLiveTest do
       standalone = task_fixture(column, %{title: "Lonely task", type: :work})
       {:ok, _} = Tasks.archive_task(standalone)
 
-      {:ok, view, html} = live(conn, ~p"/boards/#{board}/archive")
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/archive")
       key = no_goal_group_key()
 
-      assert html =~ standalone.identifier
+      assert has_element?(view, archive_row_selector(standalone))
 
       html = toggle_goal_group(view, key)
       # The standalone row hides but the group header still renders.
-      refute html =~ standalone.identifier
+      refute has_element?(view, archive_row_selector(standalone))
       assert html =~ "Tasks Without Goals"
     end
 
@@ -1463,6 +1463,16 @@ defmodule KanbanWeb.ArchiveLiveTest do
   defp goal_group_key(goal), do: "goal:#{goal.id}"
 
   defp no_goal_group_key, do: "no_goal"
+
+  # Match the row element itself rather than `html =~ task.identifier`.
+  # Identifiers are per-board `max + 1`, so the first work task in a fresh board
+  # is always the two-character string "W1" — and the sidebar's log-out link
+  # carries a random 56-char CSRF token (`data-csrf=`) that contains "W1" about
+  # 0.7% of the time. A raw substring refute therefore failed at random, roughly
+  # one CI run in 150, even though the row was correctly hidden. This also keeps
+  # "W1" from matching a "W10" row.
+  defp archive_row_selector(task),
+    do: ~s([data-archive-row][data-archive-row-id="#{task.id}"])
 
   defp toggle_goal_group(view, key) do
     view
