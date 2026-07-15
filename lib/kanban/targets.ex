@@ -28,6 +28,7 @@ defmodule Kanban.Targets do
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Boards
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Targets.DeliveryTarget
@@ -178,11 +179,19 @@ defmodule Kanban.Targets do
   non-goal-type task, so a work/defect task yields `{:error, changeset}`.
   """
   @spec assign_goal(Scope.t() | nil, Task.t(), DeliveryTarget.t()) ::
-          {:ok, Task.t()} | {:error, :not_found} | {:error, Ecto.Changeset.t()}
+          {:ok, Task.t()}
+          | {:error, :not_found}
+          | {:error, :not_authorized}
+          | {:error, Ecto.Changeset.t()}
   def assign_goal(scope, %Task{} = goal, %DeliveryTarget{} = target) do
     case fetch_scoped_task(scope, goal.id) do
-      nil -> {:error, :not_found}
-      %Task{} = fetched -> Tasks.update_task(fetched, %{target_id: target.id})
+      nil ->
+        {:error, :not_found}
+
+      %Task{} = fetched ->
+        with :ok <- authorize_goal_board_write(scope, fetched) do
+          Tasks.update_task(fetched, %{target_id: target.id})
+        end
     end
   end
 
@@ -193,11 +202,16 @@ defmodule Kanban.Targets do
   `{:error, :not_found}` when the goal is missing or on an inaccessible board.
   """
   @spec unassign_goal(Scope.t() | nil, Task.t()) ::
-          {:ok, Task.t()} | {:error, :not_found}
+          {:ok, Task.t()} | {:error, :not_found} | {:error, :not_authorized}
   def unassign_goal(scope, %Task{} = goal) do
     case fetch_scoped_task(scope, goal.id) do
-      nil -> {:error, :not_found}
-      %Task{} = fetched -> Tasks.update_task(fetched, %{target_id: nil})
+      nil ->
+        {:error, :not_found}
+
+      %Task{} = fetched ->
+        with :ok <- authorize_goal_board_write(scope, fetched) do
+          Tasks.update_task(fetched, %{target_id: nil})
+        end
     end
   end
 
@@ -546,7 +560,27 @@ defmodule Kanban.Targets do
     Task
     |> where([t], t.id == ^id)
     |> BoardScope.apply_board_scope_with_column_join(scope)
+    |> preload(:column)
     |> Repo.one()
+  end
+
+  # Writing a goal's `target_id` lands on the goal's board, so board-write
+  # access (:owner or :modify) on THAT board is required — membership alone is
+  # not enough. The target-owner check upstream does not cover this: a target
+  # owner who is only a read-only member of the goal's board must not be able
+  # to set or clear the goal's target linkage (W1677 M1).
+  defp authorize_goal_board_write(scope, %Task{column: %{board_id: board_id}}) do
+    case scope_user(scope) do
+      nil ->
+        {:error, :not_authorized}
+
+      %{id: user_id} ->
+        if Boards.get_user_access(board_id, user_id) in [:owner, :modify] do
+          :ok
+        else
+          {:error, :not_authorized}
+        end
+    end
   end
 
   defp scope_user(%Scope{user: %{id: _} = user}), do: user

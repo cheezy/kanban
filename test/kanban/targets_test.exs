@@ -13,6 +13,7 @@ defmodule Kanban.TargetsTest do
   import Kanban.TasksFixtures
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Boards
   alias Kanban.Targets
   alias Kanban.Targets.DeliveryTarget
   alias Kanban.Tasks.Task
@@ -222,6 +223,41 @@ defmodule Kanban.TargetsTest do
       # And nothing was written.
       assert Repo.get!(Task, foreign_goal.id).target_id == nil
     end
+
+    test "rejects a read-only member of the goal's board even if they own the target", %{
+      user: owner,
+      board: board,
+      column: column
+    } do
+      goal = goal_fixture(column)
+      reader = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
+      reader_target = delivery_target_fixture(reader)
+      reader_scope = Scope.for_user(reader)
+
+      assert {:error, :not_authorized} =
+               Targets.assign_goal(reader_scope, goal, reader_target)
+
+      # Nothing was written.
+      assert Repo.get!(Task, goal.id).target_id == nil
+    end
+
+    test "allows a :modify member of the goal's board who owns the target", %{
+      user: owner,
+      board: board,
+      column: column
+    } do
+      goal = goal_fixture(column)
+      modifier = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, modifier, :modify, owner)
+      modifier_target = delivery_target_fixture(modifier)
+      modifier_scope = Scope.for_user(modifier)
+
+      assert {:ok, assigned} =
+               Targets.assign_goal(modifier_scope, goal, modifier_target)
+
+      assert assigned.target_id == modifier_target.id
+    end
   end
 
   describe "unassign_goal/2" do
@@ -245,6 +281,26 @@ defmodule Kanban.TargetsTest do
     } do
       foreign_goal = goal_fixture(other_column)
       assert {:error, :not_found} = Targets.unassign_goal(scope, foreign_goal)
+    end
+
+    test "rejects a read-only member of the goal's board and leaves target_id intact", %{
+      user: owner,
+      board: board,
+      column: column,
+      scope: owner_scope
+    } do
+      goal = goal_fixture(column)
+      target = delivery_target_fixture(owner)
+      assert {:ok, _} = Targets.assign_goal(owner_scope, goal, target)
+
+      reader = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
+      reader_scope = Scope.for_user(reader)
+
+      assert {:error, :not_authorized} = Targets.unassign_goal(reader_scope, goal)
+
+      # The existing linkage is untouched.
+      assert Repo.get!(Task, goal.id).target_id == target.id
     end
   end
 
