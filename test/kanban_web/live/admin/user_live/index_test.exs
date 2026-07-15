@@ -134,6 +134,42 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
       assert has_element?(live, "#user-#{plain.id} .badge", "User")
     end
 
+    test "renders the Created header and each user's formatted creation date", %{
+      conn: conn,
+      user: admin
+    } do
+      # Back-date one user so the assertion pins an exact known string rather
+      # than whatever "now" happens to be, and covers a single-digit day.
+      back_dated =
+        user_fixture()
+        |> Ecto.Changeset.change(inserted_at: ~U[2024-03-05 09:30:00Z])
+        |> Kanban.Repo.update!()
+
+      {:ok, _live, html} = live(conn, ~p"/admin/users")
+
+      assert html =~ "Created"
+      assert html =~ "Mar 05, 2024"
+      assert html =~ Calendar.strftime(admin.inserted_at, "%b %d, %Y")
+      refute html =~ to_string(back_dated.inserted_at)
+    end
+
+    test "renders the Created column between the Type and Confirmed columns", %{conn: conn} do
+      {:ok, _live, html} = live(conn, ~p"/admin/users")
+
+      assert [_ | _] =
+               headers =
+               Regex.scan(~r{<th[^>]*>\s*([^<]+?)\s*</th>}, html, capture: :all_but_first)
+
+      headers = List.flatten(headers)
+
+      type_at = Enum.find_index(headers, &(&1 == "Type"))
+      created_at = Enum.find_index(headers, &(&1 == "Created"))
+      confirmed_at = Enum.find_index(headers, &(&1 == "Confirmed"))
+
+      assert created_at == type_at + 1
+      assert confirmed_at == created_at + 1
+    end
+
     test "escapes a name containing HTML metacharacters" do
       # The name changeset rejects HTML metacharacters, so a hostile name can
       # only reach the table through a direct write. Force one in to prove the

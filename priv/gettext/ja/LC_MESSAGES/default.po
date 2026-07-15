@@ -387,6 +387,7 @@ msgstr "タスクを移動できません：列がWIP制限に達しています
 
 #: lib/kanban_web/components/task_activity_log.ex:93
 #: lib/kanban_web/components/task_metadata_grid.ex:112
+#: lib/kanban_web/live/admin/user_live/index.html.heex:28
 #: lib/kanban_web/live/task_live/components/history_section.ex:41
 #: lib/kanban_web/live/task_live/form_component.html.heex:1036
 #: lib/kanban_web/live/task_live/view_component.ex:420
@@ -1912,7 +1913,7 @@ msgid "Board:"
 msgstr "ボード:"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
-#: lib/kanban_web/live/admin/user_live/index.html.heex:95
+#: lib/kanban_web/live/admin/user_live/index.html.heex:100
 #: lib/kanban_web/live/board_live/show.html.heex:784
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -4107,7 +4108,7 @@ msgid_plural "%{count} active"
 msgstr[0] "%{count}件アクティブ"
 
 #: lib/kanban_web/components/layouts.ex:268
-#: lib/kanban_web/live/admin/user_live/index.html.heex:44
+#: lib/kanban_web/live/admin/user_live/index.html.heex:49
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:74
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4943,8 +4944,8 @@ msgstr "ワークフロー手順"
 msgid "Working"
 msgstr "作業中"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:30
-#: lib/kanban_web/live/admin/user_live/index.html.heex:38
+#: lib/kanban_web/live/admin/user_live/index.html.heex:35
+#: lib/kanban_web/live/admin/user_live/index.html.heex:43
 #: lib/kanban_web/live/task_live/view_component.ex:413
 #, elixir-autogen, elixir-format
 msgid "Yes"
@@ -7814,12 +7815,12 @@ msgstr "試行回数が多すぎます。数分待ってからもう一度お試
 msgid "Too many requests. Please wait a few minutes and try again."
 msgstr "リクエストが多すぎます。数分待ってからもう一度お試しください。"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:28
+#: lib/kanban_web/live/admin/user_live/index.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Confirmed"
 msgstr "確認済み"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:36
+#: lib/kanban_web/live/admin/user_live/index.html.heex:41
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr "無効"
@@ -7829,8 +7830,8 @@ msgstr "無効"
 msgid "Every account registered on this instance."
 msgstr "このインスタンスに登録されているすべてのアカウント。"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:33
-#: lib/kanban_web/live/admin/user_live/index.html.heex:41
+#: lib/kanban_web/live/admin/user_live/index.html.heex:38
+#: lib/kanban_web/live/admin/user_live/index.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "No"
 msgstr "いいえ"
@@ -7876,37 +7877,37 @@ msgstr "アカウントを有効にしました。"
 msgid "Confirmation email sent."
 msgstr "確認メールを送信しました。"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:92
+#: lib/kanban_web/live/admin/user_live/index.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Delete this account permanently? This cannot be undone."
 msgstr "このアカウントを完全に削除しますか？この操作は取り消せません。"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:59
+#: lib/kanban_web/live/admin/user_live/index.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr "無効にする"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:55
+#: lib/kanban_web/live/admin/user_live/index.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "Disable this account? They will be signed out and unable to log in."
 msgstr "このアカウントを無効にしますか？サインアウトされ、ログインできなくなります。"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:68
+#: lib/kanban_web/live/admin/user_live/index.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr "有効にする"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:65
+#: lib/kanban_web/live/admin/user_live/index.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "Enable this account? They will be able to log in again."
 msgstr "このアカウントを有効にしますか？再びログインできるようになります。"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:80
+#: lib/kanban_web/live/admin/user_live/index.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Resend confirmation"
 msgstr "確認メールを再送"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:77
+#: lib/kanban_web/live/admin/user_live/index.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Send another confirmation email to this account?"
 msgstr "このアカウントに確認メールをもう一度送信しますか？"
@@ -7917,13 +7918,13 @@ msgid "Something went wrong. Please try again."
 msgstr "問題が発生しました。もう一度お試しください。"
 
 #: lib/kanban_web/live/admin/user_live/index.ex:106
-#: lib/kanban_web/live/admin/user_live/index.html.heex:76
+#: lib/kanban_web/live/admin/user_live/index.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr "このアカウントはすでに確認済みです。"
 
 #: lib/kanban_web/live/admin/user_live/index.ex:104
-#: lib/kanban_web/live/admin/user_live/index.html.heex:90
+#: lib/kanban_web/live/admin/user_live/index.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr "このユーザーはまだボードに所属しているため削除できません。"

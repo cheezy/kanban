@@ -154,6 +154,9 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   defp display_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp display_name(_user), do: "—"
 
+  defp format_created(%{inserted_at: inserted_at}),
+    do: Calendar.strftime(inserted_at, "%b %d, %Y")
+
   defp disabled?(%{disabled_at: nil}), do: false
   defp disabled?(_user), do: true
 

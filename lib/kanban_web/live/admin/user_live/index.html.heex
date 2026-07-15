@@ -25,6 +25,11 @@
               {type_label(user.type)}
             </span>
           </:col>
+          <:col :let={user} label={gettext("Created")}>
+            <span class="text-base-content tabular-nums">
+              {format_created(user)}
+            </span>
+          </:col>
           <:col :let={user} label={gettext("Confirmed")}>
             <span :if={confirmed?(user)} class="badge badge-success">
               {gettext("Yes")}

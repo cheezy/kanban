@@ -387,6 +387,7 @@ msgstr ""
 
 #: lib/kanban_web/components/task_activity_log.ex:93
 #: lib/kanban_web/components/task_metadata_grid.ex:112
+#: lib/kanban_web/live/admin/user_live/index.html.heex:28
 #: lib/kanban_web/live/task_live/components/history_section.ex:41
 #: lib/kanban_web/live/task_live/form_component.html.heex:1036
 #: lib/kanban_web/live/task_live/view_component.ex:420
@@ -1912,7 +1913,7 @@ msgid "Board:"
 msgstr "Board:"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
-#: lib/kanban_web/live/admin/user_live/index.html.heex:95
+#: lib/kanban_web/live/admin/user_live/index.html.heex:100
 #: lib/kanban_web/live/board_live/show.html.heex:784
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -4111,7 +4112,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: lib/kanban_web/components/layouts.ex:268
-#: lib/kanban_web/live/admin/user_live/index.html.heex:44
+#: lib/kanban_web/live/admin/user_live/index.html.heex:49
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:74
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4951,8 +4952,8 @@ msgstr ""
 msgid "Working"
 msgstr "Working"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:30
-#: lib/kanban_web/live/admin/user_live/index.html.heex:38
+#: lib/kanban_web/live/admin/user_live/index.html.heex:35
+#: lib/kanban_web/live/admin/user_live/index.html.heex:43
 #: lib/kanban_web/live/task_live/view_component.ex:413
 #, elixir-autogen, elixir-format
 msgid "Yes"
@@ -7775,12 +7776,12 @@ msgstr ""
 msgid "Too many requests. Please wait a few minutes and try again."
 msgstr ""
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:28
+#: lib/kanban_web/live/admin/user_live/index.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Confirmed"
 msgstr ""
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:36
+#: lib/kanban_web/live/admin/user_live/index.html.heex:41
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr ""
@@ -7790,8 +7791,8 @@ msgstr ""
 msgid "Every account registered on this instance."
 msgstr ""
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:33
-#: lib/kanban_web/live/admin/user_live/index.html.heex:41
+#: lib/kanban_web/live/admin/user_live/index.html.heex:38
+#: lib/kanban_web/live/admin/user_live/index.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "No"
 msgstr ""
@@ -7837,37 +7838,37 @@ msgstr ""
 msgid "Confirmation email sent."
 msgstr ""
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:92
+#: lib/kanban_web/live/admin/user_live/index.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Delete this account permanently? This cannot be undone."
 msgstr ""
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:59
+#: lib/kanban_web/live/admin/user_live/index.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr ""
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:55
+#: lib/kanban_web/live/admin/user_live/index.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "Disable this account? They will be signed out and unable to log in."
 msgstr ""
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:68
+#: lib/kanban_web/live/admin/user_live/index.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr ""
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:65
+#: lib/kanban_web/live/admin/user_live/index.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "Enable this account? They will be able to log in again."
 msgstr ""
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:80
+#: lib/kanban_web/live/admin/user_live/index.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Resend confirmation"
 msgstr ""
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:77
+#: lib/kanban_web/live/admin/user_live/index.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Send another confirmation email to this account?"
 msgstr ""
@@ -7878,13 +7879,13 @@ msgid "Something went wrong. Please try again."
 msgstr ""
 
 #: lib/kanban_web/live/admin/user_live/index.ex:106
-#: lib/kanban_web/live/admin/user_live/index.html.heex:76
+#: lib/kanban_web/live/admin/user_live/index.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr ""
 
 #: lib/kanban_web/live/admin/user_live/index.ex:104
-#: lib/kanban_web/live/admin/user_live/index.html.heex:90
+#: lib/kanban_web/live/admin/user_live/index.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr ""
