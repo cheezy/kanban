@@ -39,6 +39,12 @@ config :kanban, KanbanWeb.Endpoint,
 # In test we don't send emails
 config :kanban, Kanban.Mailer, adapter: Swoosh.Adapters.Test
 
+# Deliver auth emails inline (not via the supervised Task) in test so the
+# Swoosh test adapter's assert_email_sent/1 assertions are deterministic. The
+# off-request async dispatch (D134) is exercised explicitly by the async:false
+# UserNotifier task-path test.
+config :kanban, :async_email_delivery, false
+
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 

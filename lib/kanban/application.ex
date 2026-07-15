@@ -15,6 +15,9 @@ defmodule Kanban.Application do
       {Kanban.RateLimiter, clean_period: :timer.minutes(10)},
       {DNSCluster, query: Application.get_env(:kanban, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Kanban.PubSub},
+      # Fault-isolated supervisor for fire-and-forget background work, e.g.
+      # off-request auth-email delivery (Kanban.Accounts.UserNotifier, D134).
+      {Task.Supervisor, name: Kanban.TaskSupervisor},
       KanbanWeb.AgentsPresence,
       # Oban runs the after_goal grace-window worker (W493). The queue
       # depth is set deliberately low — these are one-shot timer jobs,

@@ -3,6 +3,8 @@ defmodule Kanban.Accounts.UserNotifier do
 
   alias Kanban.Mailer
 
+  require Logger
+
   # HTML-escapes user-controlled string content before it is interpolated into
   # the raw HTML body heredoc. Without this, a user whose :name contains script
   # or markup escapes would inject arbitrary HTML into the reset-password,
@@ -14,7 +16,16 @@ defmodule Kanban.Accounts.UserNotifier do
     name |> Phoenix.HTML.html_escape() |> Phoenix.HTML.safe_to_string()
   end
 
-  # Delivers the email using the application mailer.
+  # Builds the email and dispatches actual delivery OFF the request path via a
+  # supervised Task, so the response returns immediately and — crucially —
+  # equivalently whether or not the recipient's account exists. A synchronous
+  # send would leak account existence through response latency even though the
+  # flash/redirect are identical (timing-based enumeration, D134 / W1676 L1).
+  #
+  # The email is built synchronously so callers still get `{:ok, email}` with
+  # no delivery dependency. Delivery is dispatched by `dispatch_delivery/1`,
+  # which runs inline in the test environment (see `:async_email_delivery`) so
+  # the Swoosh test adapter's assertions stay deterministic.
   defp deliver(recipient, subject, body) do
     email =
       new()
@@ -24,8 +35,45 @@ defmodule Kanban.Accounts.UserNotifier do
       |> html_body(body)
       |> header("Message-ID", "<#{System.unique_integer([:positive])}@stridelikeaboss.com>")
 
-    with {:ok, _metadata} <- Mailer.deliver(email) do
-      {:ok, email}
+    dispatch_delivery(email)
+    {:ok, email}
+  end
+
+  defp dispatch_delivery(email) do
+    if Application.get_env(:kanban, :async_email_delivery, true) do
+      case Task.Supervisor.start_child(Kanban.TaskSupervisor, fn -> deliver_now(email) end) do
+        {:ok, _pid} ->
+          :ok
+
+        {:error, reason} ->
+          # The email was never dispatched — surface it (without the body) so
+          # the drop is observable rather than silent.
+          Logger.error(
+            "auth email dispatch failed (subject=#{inspect(email.subject)}): #{inspect(reason)}"
+          )
+      end
+    else
+      deliver_now(email)
+    end
+
+    :ok
+  end
+
+  # Performs the actual send and logs failures WITHOUT the token-bearing body,
+  # so bounces are observable without leaking secrets. Runs inside the
+  # supervised Task in prod/dev, inline in test.
+  defp deliver_now(email) do
+    case Mailer.deliver(email) do
+      {:ok, _metadata} = ok ->
+        ok
+
+      {:error, reason} = error ->
+        # Log enough to observe bounces, never the token-bearing body.
+        Logger.error(
+          "auth email delivery failed (subject=#{inspect(email.subject)}): #{inspect(reason)}"
+        )
+
+        error
     end
   end
 
