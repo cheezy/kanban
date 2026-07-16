@@ -599,6 +599,39 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert is_nil(reloaded.assigned_to_id)
     end
 
+    test "strips a client-supplied cross-board parent_id and does not leak the parent's assignee (D153)",
+         %{conn: conn} do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, victim_goal} =
+        Tasks.create_task(other_column, %{
+          "title" => "Victim goal on another board",
+          "type" => "goal",
+          "assigned_to_id" => other_user.id,
+          "created_by_id" => other_user.id
+        })
+
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Sneaky",
+            "type" => "work",
+            "priority" => "medium",
+            "parent_id" => victim_goal.id
+          }
+        )
+
+      response = json_response(conn, 201)["data"]
+      reloaded = Tasks.get_task!(response["id"])
+
+      # parent_id is stripped by the forbidden-field filter, so no cross-board link…
+      assert is_nil(reloaded.parent_id)
+      # …and the victim goal's assignee is not inherited onto the attacker's task.
+      assert is_nil(reloaded.assigned_to_id)
+    end
+
     test "silently strips workflow_steps / explorer_result / reviewer_result",
          %{conn: conn} do
       conn =

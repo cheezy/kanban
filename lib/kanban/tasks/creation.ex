@@ -12,6 +12,7 @@ defmodule Kanban.Tasks.Creation do
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.Identifiers
   alias Kanban.Tasks.Positioning
+  alias Kanban.Tasks.Queries
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
 
@@ -43,7 +44,7 @@ defmodule Kanban.Tasks.Creation do
   end
 
   defp do_create_task(column, attrs, changeset_fn) do
-    attrs = maybe_inherit_assignment_from_parent(attrs)
+    attrs = maybe_inherit_assignment_from_parent(attrs, column.board_id)
     task_type = get_task_type_from_attrs(attrs)
     should_check_wip = task_type in [:work, :defect]
 
@@ -200,21 +201,25 @@ defmodule Kanban.Tasks.Creation do
   # already carry an explicit assigned_to_id key, returns attrs with the
   # parent's assigned_to_id injected. Used by `create_task/2` so a new task
   # added under an existing assigned goal inherits that goal's assignee.
-  defp maybe_inherit_assignment_from_parent(attrs) when is_map(attrs) do
+  defp maybe_inherit_assignment_from_parent(attrs, board_id) when is_map(attrs) do
     if assigned_to_id_explicit?(attrs) do
       attrs
     else
       case fetch_parent_id(attrs) do
         nil -> attrs
-        parent_id -> apply_inheritance_from_parent_id(attrs, parent_id)
+        parent_id -> apply_inheritance_from_parent_id(attrs, parent_id, board_id)
       end
     end
   end
 
-  defp maybe_inherit_assignment_from_parent(attrs), do: attrs
+  defp maybe_inherit_assignment_from_parent(attrs, _board_id), do: attrs
 
-  defp apply_inheritance_from_parent_id(attrs, parent_id) do
-    case Repo.get(Task, parent_id) do
+  # The parent lookup is scoped to the creating task's own board. A parent_id
+  # that names a task on another board (or does not exist) resolves to nil and
+  # yields no inheritance — closing the cross-board assigned_to_id leak a
+  # client-supplied parent_id would otherwise trigger (D153).
+  defp apply_inheritance_from_parent_id(attrs, parent_id, board_id) do
+    case Queries.get_task_for_board(parent_id, board_id) do
       %Task{type: :goal, assigned_to_id: assigned_id} when not is_nil(assigned_id) ->
         put_assigned_to_id(attrs, assigned_id)
 

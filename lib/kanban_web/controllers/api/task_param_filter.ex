@@ -24,6 +24,14 @@ defmodule KanbanWeb.API.TaskParamFilter do
   # created_by_agent are not in this list because the controller helper
   # `build_task_params_with_creator/4` overwrites them server-side after the
   # filter — they need to flow through the changeset's allow-list.
+  #
+  # parent_id is forbidden here even though the changeset casts it: the ONLY
+  # legitimate parent link is the goal id the server injects into child attrs
+  # during batch goal creation (Creation.prepare_child_task_attrs/5). A
+  # client-supplied parent_id would otherwise link the new task under a goal on
+  # another board (cross-board IDOR) and, via assignment inheritance, copy that
+  # goal's assigned_to_id — an indirect write of the forbidden assigned_to_id
+  # field (D153).
   @forbidden_api_create_fields ~w(
     status
     identifier
@@ -47,6 +55,7 @@ defmodule KanbanWeb.API.TaskParamFilter do
     reviewer_result
     archived_at
     assigned_to_id
+    parent_id
   )
 
   # String keys (since params arrive from JSON as strings) that an API client

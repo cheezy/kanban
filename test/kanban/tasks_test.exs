@@ -546,6 +546,29 @@ defmodule Kanban.TasksTest do
 
       assert child.assigned_to_id == alice.id
     end
+
+    test "no inheritance when parent_id names a goal on another board (D153)" do
+      alice = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+
+      other_board = board_fixture(alice)
+      other_column = column_fixture(other_board)
+
+      other_goal =
+        task_fixture(other_column, %{
+          title: "Other-board Goal",
+          type: :goal,
+          assigned_to_id: alice.id
+        })
+
+      # A parent_id pointing at a goal on a DIFFERENT board must not resolve —
+      # the scoped lookup returns nil, so no assigned_to_id is inherited.
+      assert {:ok, child} =
+               Tasks.create_task(column, %{title: "Cross-board child", parent_id: other_goal.id})
+
+      assert is_nil(child.assigned_to_id)
+    end
   end
 
   describe "update_task/2" do

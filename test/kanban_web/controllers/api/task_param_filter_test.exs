@@ -52,6 +52,14 @@ defmodule KanbanWeb.API.TaskParamFilterTest do
     test "passes a non-map through unchanged with no rejections" do
       assert TaskParamFilter.filter_forbidden_create_fields("not a map") == {"not a map", []}
     end
+
+    test "strips a client-supplied parent_id (D153)" do
+      params = %{"title" => "x", "parent_id" => 42}
+      {safe, rejected} = TaskParamFilter.filter_forbidden_create_fields(params)
+
+      refute Map.has_key?(safe, "parent_id")
+      assert "parent_id" in rejected
+    end
   end
 
   describe "filter_child_tasks/1" do
@@ -69,6 +77,14 @@ defmodule KanbanWeb.API.TaskParamFilterTest do
 
     test "passes a non-list through unchanged" do
       assert TaskParamFilter.filter_child_tasks(nil) == {nil, []}
+    end
+
+    test "strips parent_id from child tasks (D153)" do
+      children = [%{"title" => "a", "parent_id" => 7}]
+      {safe, rejected} = TaskParamFilter.filter_child_tasks(children)
+
+      assert safe == [%{"title" => "a"}]
+      assert "parent_id" in rejected
     end
   end
 
