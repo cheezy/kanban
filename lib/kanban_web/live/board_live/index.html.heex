@@ -65,6 +65,25 @@
       <.icon name="hero-plus" class="h-3.5 w-3.5" />
       {gettext("New Target")}
     </.link>
+
+    <%!-- Lives in the always-visible header actions, NOT beside the targets
+    strip: the strip is wrapped in :if={@targets != []} below, so a link placed
+    there would vanish precisely when every target is archived — the moment this
+    link matters most. --%>
+    <.link
+      navigate={~p"/targets/archived"}
+      data-archived-targets-link
+      class="min-h-[44px] md:min-h-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      style={[
+        "display: inline-flex; align-items: center; gap: 4px;",
+        "padding: 4px 10px; border-radius: 5px;",
+        "background: transparent; border: 1px solid var(--line);",
+        "color: var(--ink-2); font-size: 11.5px; font-weight: 600;"
+      ]}
+    >
+      <.icon name="hero-archive-box" class="h-3.5 w-3.5" />
+      {gettext("Archived targets")}
+    </.link>
   </:actions>
 
   <div class="px-4 py-6 sm:px-6 lg:px-8">

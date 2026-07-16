@@ -165,7 +165,7 @@ msgstr "Wird gespeichert..."
 msgid "You need to reauthenticate to perform sensitive actions on your account."
 msgstr "Sie müssen sich erneut authentifizieren, um sensible Aktionen in Ihrem Konto durchzuführen."
 
-#: lib/kanban_web/live/board_live/index.html.heex:106
+#: lib/kanban_web/live/board_live/index.html.heex:125
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "Sind Sie sicher, dass Sie dieses Board löschen möchten?"
@@ -213,7 +213,7 @@ msgstr "Beschreibung"
 msgid "Edit Board"
 msgstr "Board bearbeiten"
 
-#: lib/kanban_web/live/board_live/index.html.heex:99
+#: lib/kanban_web/live/board_live/index.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr "Board bearbeiten"
@@ -4106,7 +4106,7 @@ msgstr "gerade eben"
 msgid "throughput"
 msgstr "Durchsatz"
 
-#: lib/kanban_web/live/board_live/index.html.heex:77
+#: lib/kanban_web/live/board_live/index.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "%{count} active"
 msgid_plural "%{count} active"
@@ -4116,7 +4116,7 @@ msgstr[1] "%{count} aktiv"
 #: lib/kanban_web/components/layouts.ex:268
 #: lib/kanban_web/live/admin/user_live/index.html.heex:43
 #: lib/kanban_web/live/board_live/index.html.heex:5
-#: lib/kanban_web/live/board_live/index.html.heex:74
+#: lib/kanban_web/live/board_live/index.html.heex:93
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
 #, elixir-autogen, elixir-format
@@ -4128,7 +4128,7 @@ msgstr "Boards"
 msgid "Create new board"
 msgstr "Neues Board erstellen"
 
-#: lib/kanban_web/live/board_live/index.html.heex:108
+#: lib/kanban_web/live/board_live/index.html.heex:127
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "Board löschen"
@@ -8069,6 +8069,7 @@ msgstr "Nur eine abgeschlossene Zielvorgabe kann archiviert werden"
 msgid "Target archived successfully"
 msgstr "Zielvorgabe erfolgreich archiviert"
 
+#: lib/kanban_web/live/board_live/index.html.heex:85
 #: lib/kanban_web/live/target_live/archived.ex:34
 #: lib/kanban_web/live/target_live/archived.html.heex:9
 #, elixir-autogen, elixir-format

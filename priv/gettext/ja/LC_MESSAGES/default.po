@@ -165,7 +165,7 @@ msgstr "保存中..."
 msgid "You need to reauthenticate to perform sensitive actions on your account."
 msgstr "アカウントの重要な操作を行うには、再認証が必要です。"
 
-#: lib/kanban_web/live/board_live/index.html.heex:106
+#: lib/kanban_web/live/board_live/index.html.heex:125
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "このボードを削除してもよろしいですか？"
@@ -213,7 +213,7 @@ msgstr "説明"
 msgid "Edit Board"
 msgstr "ボードを編集"
 
-#: lib/kanban_web/live/board_live/index.html.heex:99
+#: lib/kanban_web/live/board_live/index.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr "ボードを編集"
@@ -4103,7 +4103,7 @@ msgstr "たった今"
 msgid "throughput"
 msgstr "スループット"
 
-#: lib/kanban_web/live/board_live/index.html.heex:77
+#: lib/kanban_web/live/board_live/index.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "%{count} active"
 msgid_plural "%{count} active"
@@ -4112,7 +4112,7 @@ msgstr[0] "%{count}件アクティブ"
 #: lib/kanban_web/components/layouts.ex:268
 #: lib/kanban_web/live/admin/user_live/index.html.heex:43
 #: lib/kanban_web/live/board_live/index.html.heex:5
-#: lib/kanban_web/live/board_live/index.html.heex:74
+#: lib/kanban_web/live/board_live/index.html.heex:93
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
 #, elixir-autogen, elixir-format
@@ -4124,7 +4124,7 @@ msgstr "ボード"
 msgid "Create new board"
 msgstr "新しいボードを作成"
 
-#: lib/kanban_web/live/board_live/index.html.heex:108
+#: lib/kanban_web/live/board_live/index.html.heex:127
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "ボードを削除"
@@ -8002,6 +8002,7 @@ msgstr "完了したターゲットのみアーカイブできます"
 msgid "Target archived successfully"
 msgstr "ターゲットをアーカイブしました"
 
+#: lib/kanban_web/live/board_live/index.html.heex:85
 #: lib/kanban_web/live/target_live/archived.ex:34
 #: lib/kanban_web/live/target_live/archived.html.heex:9
 #, elixir-autogen, elixir-format

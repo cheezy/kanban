@@ -165,7 +165,7 @@ msgstr "Guardando..."
 msgid "You need to reauthenticate to perform sensitive actions on your account."
 msgstr "Necesitas volver a autenticarte para realizar acciones sensibles en tu cuenta."
 
-#: lib/kanban_web/live/board_live/index.html.heex:106
+#: lib/kanban_web/live/board_live/index.html.heex:125
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "¿Estás seguro de que quieres eliminar este tablero?"
@@ -213,7 +213,7 @@ msgstr "Descripción"
 msgid "Edit Board"
 msgstr "Editar Tablero"
 
-#: lib/kanban_web/live/board_live/index.html.heex:99
+#: lib/kanban_web/live/board_live/index.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr "Editar tablero"
@@ -4106,7 +4106,7 @@ msgstr "justo ahora"
 msgid "throughput"
 msgstr "Rendimiento"
 
-#: lib/kanban_web/live/board_live/index.html.heex:77
+#: lib/kanban_web/live/board_live/index.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "%{count} active"
 msgid_plural "%{count} active"
@@ -4116,7 +4116,7 @@ msgstr[1] "%{count} activos"
 #: lib/kanban_web/components/layouts.ex:268
 #: lib/kanban_web/live/admin/user_live/index.html.heex:43
 #: lib/kanban_web/live/board_live/index.html.heex:5
-#: lib/kanban_web/live/board_live/index.html.heex:74
+#: lib/kanban_web/live/board_live/index.html.heex:93
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
 #, elixir-autogen, elixir-format
@@ -4128,7 +4128,7 @@ msgstr "Tableros"
 msgid "Create new board"
 msgstr "Crear nuevo tablero"
 
-#: lib/kanban_web/live/board_live/index.html.heex:108
+#: lib/kanban_web/live/board_live/index.html.heex:127
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "Eliminar tablero"
@@ -8062,6 +8062,7 @@ msgstr "Solo se puede archivar una meta completada"
 msgid "Target archived successfully"
 msgstr "Meta archivada correctamente"
 
+#: lib/kanban_web/live/board_live/index.html.heex:85
 #: lib/kanban_web/live/target_live/archived.ex:34
 #: lib/kanban_web/live/target_live/archived.html.heex:9
 #, elixir-autogen, elixir-format

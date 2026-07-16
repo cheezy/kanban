@@ -165,7 +165,7 @@ msgstr "Salvando..."
 msgid "You need to reauthenticate to perform sensitive actions on your account."
 msgstr "Você precisa reautenticar para executar ações sensíveis em sua conta."
 
-#: lib/kanban_web/live/board_live/index.html.heex:106
+#: lib/kanban_web/live/board_live/index.html.heex:125
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "Tem certeza de que deseja excluir este quadro?"
@@ -213,7 +213,7 @@ msgstr "Descrição"
 msgid "Edit Board"
 msgstr "Editar Quadro"
 
-#: lib/kanban_web/live/board_live/index.html.heex:99
+#: lib/kanban_web/live/board_live/index.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr "Editar quadro"
@@ -4106,7 +4106,7 @@ msgstr "agora mesmo"
 msgid "throughput"
 msgstr "Produtividade"
 
-#: lib/kanban_web/live/board_live/index.html.heex:77
+#: lib/kanban_web/live/board_live/index.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "%{count} active"
 msgid_plural "%{count} active"
@@ -4116,7 +4116,7 @@ msgstr[1] "%{count} ativas"
 #: lib/kanban_web/components/layouts.ex:268
 #: lib/kanban_web/live/admin/user_live/index.html.heex:43
 #: lib/kanban_web/live/board_live/index.html.heex:5
-#: lib/kanban_web/live/board_live/index.html.heex:74
+#: lib/kanban_web/live/board_live/index.html.heex:93
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
 #, elixir-autogen, elixir-format
@@ -4128,7 +4128,7 @@ msgstr "Quadros"
 msgid "Create new board"
 msgstr "Criar novo quadro"
 
-#: lib/kanban_web/live/board_live/index.html.heex:108
+#: lib/kanban_web/live/board_live/index.html.heex:127
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "Excluir quadro"
@@ -8039,6 +8039,7 @@ msgstr "Apenas um alvo concluído pode ser arquivado"
 msgid "Target archived successfully"
 msgstr "Alvo arquivado com sucesso"
 
+#: lib/kanban_web/live/board_live/index.html.heex:85
 #: lib/kanban_web/live/target_live/archived.ex:34
 #: lib/kanban_web/live/target_live/archived.html.heex:9
 #, elixir-autogen, elixir-format
