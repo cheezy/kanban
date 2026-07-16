@@ -194,7 +194,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
       plain_text_token: plain_text_token
     } do
       {:ok, disabled} = Kanban.Accounts.disable_user(user, admin_fixture())
-      {:ok, _} = Kanban.Accounts.enable_user(disabled)
+      {:ok, _} = Kanban.Accounts.enable_user(disabled, admin_fixture())
 
       conn =
         conn

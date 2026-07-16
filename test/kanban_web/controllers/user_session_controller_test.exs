@@ -155,7 +155,7 @@ defmodule KanbanWeb.UserSessionControllerTest do
 
     test "logs in a user again once they are re-enabled", %{conn: conn, user: user} do
       {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
-      {:ok, _} = Accounts.enable_user(disabled)
+      {:ok, _} = Accounts.enable_user(disabled, admin_fixture())
 
       conn =
         post(conn, ~p"/users/log-in?mode=password", %{

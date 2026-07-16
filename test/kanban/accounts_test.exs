@@ -45,7 +45,7 @@ defmodule Kanban.AccountsTest do
     test "returns the user once they are re-enabled" do
       %{id: id} = user = user_fixture() |> set_password()
       {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
-      {:ok, _} = Accounts.enable_user(disabled)
+      {:ok, _} = Accounts.enable_user(disabled, admin_fixture())
 
       assert %User{id: ^id} =
                Accounts.get_user_by_email_and_password(user.email, valid_user_password())
@@ -417,7 +417,7 @@ defmodule Kanban.AccountsTest do
 
     test "returns the user again once they are re-enabled", %{user: user, token: token} do
       {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
-      {:ok, _} = Accounts.enable_user(disabled)
+      {:ok, _} = Accounts.enable_user(disabled, admin_fixture())
 
       assert {session_user, _} = Accounts.get_user_by_session_token(token)
       assert session_user.id == user.id

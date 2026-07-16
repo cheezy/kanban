@@ -32,9 +32,9 @@ defmodule KanbanWeb.Admin.UserLive.Index do
 
   @impl true
   def handle_event("enable", %{"id" => id}, socket) do
-    with_user(socket, id, fn user, _actor ->
+    with_user(socket, id, fn user, actor ->
       user
-      |> Accounts.enable_user()
+      |> Accounts.enable_user(actor)
       |> respond(socket, gettext("Account enabled."))
     end)
   end

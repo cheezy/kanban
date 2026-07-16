@@ -217,7 +217,7 @@ defmodule KanbanWeb.UserAuthTest do
     test "authenticates a user again once they are re-enabled", %{conn: conn, user: user} do
       user_token = Accounts.generate_user_session_token(user)
       {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
-      {:ok, _} = Accounts.enable_user(disabled)
+      {:ok, _} = Accounts.enable_user(disabled, admin_fixture())
 
       conn =
         conn |> put_session(:user_token, user_token) |> UserAuth.fetch_current_scope_for_user([])

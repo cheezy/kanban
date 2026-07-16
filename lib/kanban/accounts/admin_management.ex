@@ -75,13 +75,32 @@ defmodule Kanban.Accounts.AdminManagement do
   @doc """
   Enables a user by clearing `disabled_at`.
 
+  `current_user` is the admin performing the action, passed last to match
+  `disable_user/2` and `delete_user/2`. Re-enabling an account is a privilege
+  grant (it undoes an admin lockout), so it is gated on the same enabled-admin
+  check as its siblings. Unlike disable/delete there is no self-target or
+  last-admin guard — enabling is not destructive.
+
+  Returns `{:error, :unauthorized}` when the acting user is not an enabled admin.
+
   ## Examples
 
-      iex> enable_user(user)
+      iex> enable_user(user, admin)
       {:ok, %User{}}
 
+      iex> enable_user(user, non_admin)
+      {:error, :unauthorized}
+
   """
-  def enable_user(%User{} = user) do
+  def enable_user(%User{} = user, %User{} = current_user) do
+    if authorized_admin?(current_user) do
+      do_enable(user)
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  defp do_enable(user) do
     user
     |> User.disabled_changeset(nil)
     |> Repo.update()

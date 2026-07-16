@@ -111,7 +111,7 @@ defmodule Kanban.ApiTokensTest do
         ApiTokens.create_api_token(user, board, @valid_attrs)
 
       {:ok, disabled} = Kanban.Accounts.disable_user(user, admin_fixture())
-      {:ok, _} = Kanban.Accounts.enable_user(disabled)
+      {:ok, _} = Kanban.Accounts.enable_user(disabled, admin_fixture())
 
       assert {:ok, _found} = ApiTokens.get_api_token_by_token(plain_text_token)
     end

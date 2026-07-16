@@ -138,19 +138,19 @@ defmodule Kanban.Accounts.AdminManagementTest do
     end
   end
 
-  describe "enable_user/1" do
+  describe "enable_user/2" do
     test "clears disabled_at to nil and returns {:ok, user}" do
       user = user_fixture()
       {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
       assert disabled.disabled_at != nil
 
-      assert {:ok, %User{disabled_at: nil}} = Accounts.enable_user(disabled)
+      assert {:ok, %User{disabled_at: nil}} = Accounts.enable_user(disabled, admin_fixture())
     end
 
     test "persists nil to the database" do
       user = user_fixture()
       {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
-      {:ok, _} = Accounts.enable_user(disabled)
+      {:ok, _} = Accounts.enable_user(disabled, admin_fixture())
 
       assert Accounts.get_user!(user.id).disabled_at == nil
     end
@@ -158,7 +158,25 @@ defmodule Kanban.Accounts.AdminManagementTest do
     test "is a no-op for an already-enabled user" do
       user = user_fixture()
 
-      assert {:ok, %User{disabled_at: nil}} = Accounts.enable_user(user)
+      assert {:ok, %User{disabled_at: nil}} = Accounts.enable_user(user, admin_fixture())
+    end
+
+    test "returns {:error, :unauthorized} when the acting user is not an admin (D156)" do
+      user = user_fixture()
+      {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
+      acting_user = user_fixture()
+
+      assert {:error, :unauthorized} = Accounts.enable_user(disabled, acting_user)
+      assert Accounts.get_user!(user.id).disabled_at != nil
+    end
+
+    test "returns {:error, :unauthorized} when the acting admin is disabled (D156)" do
+      user = user_fixture()
+      {:ok, disabled} = Accounts.disable_user(user, admin_fixture())
+      acting_admin = disable_directly(admin_fixture())
+
+      assert {:error, :unauthorized} = Accounts.enable_user(disabled, acting_admin)
+      assert Accounts.get_user!(user.id).disabled_at != nil
     end
   end
 
