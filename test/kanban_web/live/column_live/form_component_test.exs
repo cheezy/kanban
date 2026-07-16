@@ -5,6 +5,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
 
+  alias Kanban.Accounts.Scope
   alias Kanban.Columns
   alias KanbanWeb.ColumnLive.FormComponent
 
@@ -253,6 +254,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column,
             board: board,
             action: :new_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
@@ -289,6 +291,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column,
             board: board,
             action: :new_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
@@ -320,6 +323,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column,
             board: board,
             action: :new_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
@@ -352,6 +356,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column,
             board: board,
             action: :new_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
@@ -389,6 +394,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column,
             board: board,
             action: :new_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
@@ -423,6 +429,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column,
             board: board,
             action: :edit_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
@@ -457,6 +464,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column,
             board: board,
             action: :edit_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
@@ -487,6 +495,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column,
             board: board,
             action: :edit_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
@@ -517,6 +526,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column,
             board: board,
             action: :edit_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
@@ -546,6 +556,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column,
             board: board,
             action: :edit_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
@@ -578,6 +589,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column,
             board: board,
             action: :edit_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
@@ -613,6 +625,7 @@ defmodule KanbanWeb.ColumnLive.FormComponentTest do
             column: column2,
             board: board,
             action: :edit_column,
+            current_scope: Scope.for_user(user),
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}

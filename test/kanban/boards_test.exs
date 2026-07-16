@@ -1102,7 +1102,10 @@ defmodule Kanban.BoardsTest do
 
     test "ignores tasks in custom-named columns for the four buckets", %{user: user, now: now} do
       board = board_fixture(user, %{name: "Custom Board"})
-      {:ok, custom_col} = Kanban.Columns.create_column(board, %{name: "Triage", wip_limit: 0})
+
+      {:ok, custom_col} =
+        Kanban.Columns.create_column(board, %{name: "Triage", wip_limit: 0}, user)
+
       _task = task_fixture(custom_col)
 
       [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)

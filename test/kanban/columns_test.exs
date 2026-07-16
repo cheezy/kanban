@@ -60,13 +60,13 @@ defmodule Kanban.ColumnsTest do
     end
   end
 
-  describe "create_column/2" do
+  describe "create_column/3" do
     test "creates a column with valid attributes" do
       user = user_fixture()
       board = board_fixture(user)
 
       assert {:ok, %Column{} = column} =
-               Columns.create_column(board, %{name: "To Do"})
+               Columns.create_column(board, %{name: "To Do"}, user)
 
       assert column.name == "To Do"
       assert column.position == 0
@@ -78,9 +78,9 @@ defmodule Kanban.ColumnsTest do
       user = user_fixture()
       board = board_fixture(user)
 
-      {:ok, column1} = Columns.create_column(board, %{name: "First"})
-      {:ok, column2} = Columns.create_column(board, %{name: "Second"})
-      {:ok, column3} = Columns.create_column(board, %{name: "Third"})
+      {:ok, column1} = Columns.create_column(board, %{name: "First"}, user)
+      {:ok, column2} = Columns.create_column(board, %{name: "Second"}, user)
+      {:ok, column3} = Columns.create_column(board, %{name: "Third"}, user)
 
       assert column1.position == 0
       assert column2.position == 1
@@ -92,7 +92,7 @@ defmodule Kanban.ColumnsTest do
       board = board_fixture(user)
 
       assert {:ok, %Column{} = column} =
-               Columns.create_column(board, %{name: "In Progress", wip_limit: 5})
+               Columns.create_column(board, %{name: "In Progress", wip_limit: 5}, user)
 
       assert column.wip_limit == 5
     end
@@ -102,7 +102,7 @@ defmodule Kanban.ColumnsTest do
       board = board_fixture(user)
 
       assert {:ok, %Column{} = column} =
-               Columns.create_column(board, %{name: "Done"})
+               Columns.create_column(board, %{name: "Done"}, user)
 
       assert column.wip_limit == 0
     end
@@ -111,7 +111,7 @@ defmodule Kanban.ColumnsTest do
       user = user_fixture()
       board = board_fixture(user)
 
-      assert {:error, %Ecto.Changeset{}} = Columns.create_column(board, %{})
+      assert {:error, %Ecto.Changeset{}} = Columns.create_column(board, %{}, user)
     end
 
     test "accepts string-keyed attrs without raising on unknown keys" do
@@ -123,10 +123,14 @@ defmodule Kanban.ColumnsTest do
       board = board_fixture(user)
 
       assert {:ok, %Column{name: "From Strings"}} =
-               Columns.create_column(board, %{
-                 "name" => "From Strings",
-                 "totally_unknown_field" => 42
-               })
+               Columns.create_column(
+                 board,
+                 %{
+                   "name" => "From Strings",
+                   "totally_unknown_field" => 42
+                 },
+                 user
+               )
     end
 
     test "rejects negative wip_limit" do
@@ -134,7 +138,7 @@ defmodule Kanban.ColumnsTest do
       board = board_fixture(user)
 
       assert {:error, changeset} =
-               Columns.create_column(board, %{name: "Test", wip_limit: -1})
+               Columns.create_column(board, %{name: "Test", wip_limit: -1}, user)
 
       assert "must be greater than or equal to 0" in errors_on(changeset).wip_limit
     end
@@ -144,7 +148,7 @@ defmodule Kanban.ColumnsTest do
       board = board_fixture(user)
 
       assert {:ok, %Column{} = column} =
-               Columns.create_column(board, %{name: "Test", wip_limit: 0})
+               Columns.create_column(board, %{name: "Test", wip_limit: 0}, user)
 
       assert column.wip_limit == 0
     end
@@ -154,7 +158,7 @@ defmodule Kanban.ColumnsTest do
       board = board_fixture(user)
 
       assert {:ok, %Column{} = column} =
-               Columns.create_column(board, %{name: "Test", wip_limit: 10})
+               Columns.create_column(board, %{name: "Test", wip_limit: 10}, user)
 
       assert column.wip_limit == 10
     end
@@ -165,24 +169,28 @@ defmodule Kanban.ColumnsTest do
       other_board = board_fixture(user)
 
       assert {:ok, %Column{} = column} =
-               Columns.create_column(board, %{
-                 name: "Sneaky",
-                 board_id: other_board.id
-               })
+               Columns.create_column(
+                 board,
+                 %{
+                   name: "Sneaky",
+                   board_id: other_board.id
+                 },
+                 user
+               )
 
       assert column.board_id == board.id
       refute column.board_id == other_board.id
     end
   end
 
-  describe "update_column/2" do
+  describe "update_column/3" do
     test "updates the column with valid attributes" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "Old Name"})
 
       assert {:ok, %Column{} = updated_column} =
-               Columns.update_column(column, %{name: "New Name"})
+               Columns.update_column(column, %{name: "New Name"}, user)
 
       assert updated_column.name == "New Name"
       assert updated_column.id == column.id
@@ -194,7 +202,7 @@ defmodule Kanban.ColumnsTest do
       column = column_fixture(board, %{wip_limit: 5})
 
       assert {:ok, %Column{} = updated_column} =
-               Columns.update_column(column, %{wip_limit: 10})
+               Columns.update_column(column, %{wip_limit: 10}, user)
 
       assert updated_column.wip_limit == 10
     end
@@ -205,7 +213,7 @@ defmodule Kanban.ColumnsTest do
       column = column_fixture(board)
 
       assert {:error, changeset} =
-               Columns.update_column(column, %{wip_limit: -5})
+               Columns.update_column(column, %{wip_limit: -5}, user)
 
       assert "must be greater than or equal to 0" in errors_on(changeset).wip_limit
     end
@@ -216,7 +224,7 @@ defmodule Kanban.ColumnsTest do
       column = column_fixture(board)
 
       assert {:error, %Ecto.Changeset{}} =
-               Columns.update_column(column, %{name: nil})
+               Columns.update_column(column, %{name: nil}, user)
     end
 
     test "cannot reassign board_id from params (D93)" do
@@ -226,10 +234,14 @@ defmodule Kanban.ColumnsTest do
       column = column_fixture(board, %{name: "Stays Put"})
 
       assert {:ok, %Column{} = updated_column} =
-               Columns.update_column(column, %{
-                 name: "Renamed",
-                 board_id: other_board.id
-               })
+               Columns.update_column(
+                 column,
+                 %{
+                   name: "Renamed",
+                   board_id: other_board.id
+                 },
+                 user
+               )
 
       assert updated_column.name == "Renamed"
       assert updated_column.board_id == board.id
@@ -299,6 +311,49 @@ defmodule Kanban.ColumnsTest do
 
       # Board2's column should be unaffected
       assert Columns.get_column!(column2.id).position == 0
+    end
+  end
+
+  describe "D140: create_column/update_column owner authorization" do
+    setup do
+      owner = user_fixture()
+      stranger = user_fixture()
+      modify_user = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, modify_user, :modify, owner)
+      column = column_fixture(board, %{name: "Guarded"})
+      %{owner: owner, stranger: stranger, modify_user: modify_user, board: board, column: column}
+    end
+
+    test "create_column is rejected for a stranger", %{board: board, stranger: stranger} do
+      assert {:error, :unauthorized} =
+               Columns.create_column(board, %{name: "Sneaky"}, stranger)
+    end
+
+    test "create_column is rejected for a non-owner :modify collaborator", %{
+      board: board,
+      modify_user: modify_user
+    } do
+      assert {:error, :unauthorized} =
+               Columns.create_column(board, %{name: "Sneaky"}, modify_user)
+    end
+
+    test "update_column is rejected for a stranger", %{column: column, stranger: stranger} do
+      assert {:error, :unauthorized} =
+               Columns.update_column(column, %{name: "Hacked"}, stranger)
+    end
+
+    test "update_column is rejected for a non-owner :modify collaborator", %{
+      column: column,
+      modify_user: modify_user
+    } do
+      assert {:error, :unauthorized} =
+               Columns.update_column(column, %{name: "Hacked"}, modify_user)
+    end
+
+    test "both succeed for the board owner", %{board: board, column: column, owner: owner} do
+      assert {:ok, %Column{}} = Columns.create_column(board, %{name: "Allowed"}, owner)
+      assert {:ok, %Column{}} = Columns.update_column(column, %{name: "Renamed"}, owner)
     end
   end
 

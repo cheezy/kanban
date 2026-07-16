@@ -790,7 +790,7 @@ defmodule KanbanWeb.BoardLiveTest do
       _task3 = task_fixture(column, %{title: "Task 3"})
 
       # Lower the WIP limit below current task count to simulate exceeding
-      {:ok, _column} = Kanban.Columns.update_column(column, %{wip_limit: 2})
+      {:ok, _column} = Kanban.Columns.update_column(column, %{wip_limit: 2}, user)
 
       {:ok, _show_live, html} = live(conn, ~p"/boards/#{board}")
 

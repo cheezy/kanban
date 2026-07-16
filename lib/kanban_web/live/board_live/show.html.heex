@@ -363,6 +363,7 @@
       title={@page_title}
       action={@live_action}
       board={@board}
+      current_scope={@current_scope}
       column={(@live_action == :edit_column && @column) || %Kanban.Columns.Column{}}
       patch={~p"/boards/#{@board}"}
     />

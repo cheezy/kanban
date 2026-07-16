@@ -17,7 +17,7 @@ defmodule Kanban.Columns.Column do
   def changeset(column, attrs) do
     column
     # :board_id is intentionally NOT cast — it is the tenant-scoping field and
-    # must be set server-side from the trusted %Board{} (see Columns.create_column/2),
+    # must be set server-side from the trusted %Board{} (see Columns.create_column/3),
     # never from request params. Casting it would allow a cross-tenant write
     # (column[board_id]=<other board>) via the LiveView save handler. The
     # foreign_key_constraint below still guards DB-level integrity.

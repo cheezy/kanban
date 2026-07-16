@@ -589,7 +589,7 @@ defmodule Kanban.Boards do
     ]
 
     Enum.each(default_columns, fn column_attrs ->
-      Columns.create_column(board, column_attrs)
+      Columns.create_column(board, column_attrs, user)
     end)
 
     :telemetry.execute([:kanban, :board, :creation], %{count: 1}, %{

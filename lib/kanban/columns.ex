@@ -5,6 +5,8 @@ defmodule Kanban.Columns do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Boards
+  alias Kanban.Boards.Board
   alias Kanban.Columns.Column
   alias Kanban.Repo
 
@@ -56,49 +58,74 @@ defmodule Kanban.Columns do
   @doc """
   Creates a column for a board with automatic position assignment.
 
+  Only the board owner may create columns; any other user gets
+  `{:error, :unauthorized}`. Columns are owner-only everywhere else
+  (delete/move and the modal `handle_params` gates), so this check makes the
+  context authoritative rather than relying solely on the mount-time
+  redirect (defense-in-depth, W1677 L1 / D140).
+
   ## Examples
 
-      iex> create_column(board, %{name: "To Do"})
+      iex> create_column(board, %{name: "To Do"}, owner)
       {:ok, %Column{}}
 
-      iex> create_column(board, %{name: nil})
+      iex> create_column(board, %{name: nil}, owner)
       {:error, %Ecto.Changeset{}}
 
-  """
-  def create_column(board, attrs \\ %{}) do
-    # Normalize every caller-supplied key to a string. Ecto.Changeset.cast/3
-    # rejects mixed atom/string-keyed maps but is happy with a fully
-    # string-keyed map — it matches each entry against the allowed-fields
-    # list internally and silently ignores unknown fields. Earlier versions
-    # of this function used String.to_existing_atom on every caller-supplied
-    # string key, which raised ArgumentError on any unexpected key and
-    # surfaced as a 500 instead of a controlled changeset error.
-    attrs =
-      attrs
-      |> Enum.into(%{}, fn {k, v} -> {to_string(k), v} end)
-      |> Map.put("position", get_next_position(board))
+      iex> create_column(board, %{name: "To Do"}, non_owner)
+      {:error, :unauthorized}
 
-    %Column{board_id: board.id}
-    |> Column.changeset(attrs)
-    |> Repo.insert()
+  """
+  def create_column(board, attrs, user) do
+    if Boards.owner?(board, user) do
+      # Normalize every caller-supplied key to a string. Ecto.Changeset.cast/3
+      # rejects mixed atom/string-keyed maps but is happy with a fully
+      # string-keyed map — it matches each entry against the allowed-fields
+      # list internally and silently ignores unknown fields. Earlier versions
+      # of this function used String.to_existing_atom on every caller-supplied
+      # string key, which raised ArgumentError on any unexpected key and
+      # surfaced as a 500 instead of a controlled changeset error.
+      attrs =
+        attrs
+        |> Enum.into(%{}, fn {k, v} -> {to_string(k), v} end)
+        |> Map.put("position", get_next_position(board))
+
+      %Column{board_id: board.id}
+      |> Column.changeset(attrs)
+      |> Repo.insert()
+    else
+      {:error, :unauthorized}
+    end
   end
 
   @doc """
   Updates a column.
 
+  Only the board owner may update columns; any other user gets
+  `{:error, :unauthorized}` (defense-in-depth, W1677 L1 / D140).
+
   ## Examples
 
-      iex> update_column(column, %{name: "In Progress"})
+      iex> update_column(column, %{name: "In Progress"}, owner)
       {:ok, %Column{}}
 
-      iex> update_column(column, %{name: nil})
+      iex> update_column(column, %{name: nil}, owner)
       {:error, %Ecto.Changeset{}}
 
+      iex> update_column(column, %{name: "In Progress"}, non_owner)
+      {:error, :unauthorized}
+
   """
-  def update_column(%Column{} = column, attrs) do
-    column
-    |> Column.changeset(attrs)
-    |> Repo.update()
+  def update_column(%Column{} = column, attrs, user) do
+    # owner?/2 only reads board.id, so authorizing against a stub struct
+    # avoids loading the full board record here.
+    if Boards.owner?(%Board{id: column.board_id}, user) do
+      column
+      |> Column.changeset(attrs)
+      |> Repo.update()
+    else
+      {:error, :unauthorized}
+    end
   end
 
   @doc """
@@ -185,9 +212,14 @@ defmodule Kanban.Columns do
 
     columns = Repo.all(query)
 
-    # Decrement the position of each column
+    # Decrement the position of each column directly — this internal
+    # repositioning runs under delete_column, whose caller already
+    # authorized the owner, so it must not re-enter the authorized
+    # public update_column/3.
     Enum.each(columns, fn column ->
-      update_column(column, %{position: column.position - 1})
+      column
+      |> Column.changeset(%{position: column.position - 1})
+      |> Repo.update()
     end)
   end
 end

@@ -28,7 +28,9 @@ defmodule KanbanWeb.ColumnLive.FormComponent do
   end
 
   defp save_column(socket, :edit_column, column_params) do
-    case Columns.update_column(socket.assigns.column, column_params) do
+    user = socket.assigns.current_scope.user
+
+    case Columns.update_column(socket.assigns.column, column_params, user) do
       {:ok, column} ->
         notify_parent({:saved, column})
 
@@ -39,11 +41,16 @@ defmodule KanbanWeb.ColumnLive.FormComponent do
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign_form(socket, changeset)}
+
+      {:error, :unauthorized} ->
+        {:noreply, deny_unauthorized(socket)}
     end
   end
 
   defp save_column(socket, :new_column, column_params) do
-    case Columns.create_column(socket.assigns.board, column_params) do
+    user = socket.assigns.current_scope.user
+
+    case Columns.create_column(socket.assigns.board, column_params, user) do
       {:ok, column} ->
         notify_parent({:saved, column})
 
@@ -54,7 +61,19 @@ defmodule KanbanWeb.ColumnLive.FormComponent do
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign_form(socket, changeset)}
+
+      {:error, :unauthorized} ->
+        {:noreply, deny_unauthorized(socket)}
     end
+  end
+
+  # Only reachable if a non-owner gets past the handle_params redirect (e.g. a
+  # crafted phx-target after a future refactor); the context rejection lands
+  # here instead of crashing the LiveView.
+  defp deny_unauthorized(socket) do
+    socket
+    |> put_flash(:error, gettext("Only the board owner can manage columns"))
+    |> push_patch(to: socket.assigns.patch)
   end
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
