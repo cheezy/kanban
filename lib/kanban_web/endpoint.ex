@@ -4,11 +4,18 @@ defmodule KanbanWeb.Endpoint do
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
+  #
+  # `secure` marks the session cookie Secure so it is never sent over plaintext
+  # HTTP. It is gated on config (default false) so it is on in production and
+  # off in dev/test, where the server runs over http and a Secure cookie would
+  # be dropped by the browser (D158). HSTS + http→https redirect are handled by
+  # `force_ssl` in config/prod.exs.
   @session_options [
     store: :cookie,
     key: "_kanban_key",
     signing_salt: "MkVVRya+",
-    same_site: "Lax"
+    same_site: "Lax",
+    secure: Application.compile_env(:kanban, :session_cookie_secure, false)
   ]
 
   socket "/live", Phoenix.LiveView.Socket,

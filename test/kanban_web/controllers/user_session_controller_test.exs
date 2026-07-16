@@ -73,6 +73,21 @@ defmodule KanbanWeb.UserSessionControllerTest do
       assert redirected_to(conn) == ~p"/boards"
     end
 
+    test "session cookie is not Secure in the test/dev env so http still works (D158)",
+         %{conn: conn, user: user} do
+      conn =
+        post(conn, ~p"/users/log-in", %{
+          "user" => %{"email" => user.email, "password" => valid_user_password()}
+        })
+
+      # The session cookie is written on login; its Secure flag is config-gated
+      # (config :kanban, :session_cookie_secure), true only in prod, so dev/test
+      # over http keep a working (non-Secure) session cookie.
+      session_cookie = conn.resp_cookies["_kanban_key"]
+      assert session_cookie
+      refute Map.get(session_cookie, :secure)
+    end
+
     test "logs the user in with return to", %{conn: conn, user: user} do
       conn =
         conn

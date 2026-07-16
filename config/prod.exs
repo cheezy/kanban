@@ -9,6 +9,11 @@ config :kanban, KanbanWeb.Endpoint,
   cache_static_manifest: "priv/static/cache_manifest.json",
   force_ssl: [hsts: true, preload: true, subdomains: true, rewrite_on: [:x_forwarded_proto]]
 
+# Mark the session cookie Secure in production so it is never transmitted over
+# plaintext HTTP, independent of the Fly edge (D158). Dev/test leave this unset
+# (default false) so the session works over http.
+config :kanban, :session_cookie_secure, true
+
 # Configures Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Req
 
