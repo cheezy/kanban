@@ -181,6 +181,13 @@ if config_env() == :prod do
 
   config :kanban, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  # Trust the Fly-Client-IP header only on a real Fly deploy, where the edge
+  # proxy sets it and strips any client-supplied value. Off everywhere else so
+  # an off-edge request cannot spoof the IP that keys the rate limiter and
+  # audit log (D157).
+  config :kanban, KanbanWeb.Plugs.RemoteClientIp,
+    trust_fly_client_ip: System.get_env("FLY_APP_NAME") != nil
+
   config :kanban, KanbanWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
