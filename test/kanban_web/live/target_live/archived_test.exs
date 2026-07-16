@@ -17,7 +17,7 @@ defmodule KanbanWeb.TargetLive.ArchivedTest do
   alias Kanban.Targets
   alias Kanban.Targets.DeliveryTarget
 
-  defp goal_fixture(column, attrs \\ %{}) do
+  defp goal_fixture(column, attrs) do
     task_fixture(column, Map.merge(%{type: :goal}, attrs))
   end
 
