@@ -98,10 +98,6 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     |> halt()
   end
 
-  defp telemetry_reason(:not_found), do: "token_not_found"
-  defp telemetry_reason(:revoked), do: "token_revoked"
-  defp telemetry_reason(:expired), do: "token_expired"
-
   # The telemetry reason names the disabled owner so operators can see it, while
   # the response stays the generic invalid-token error rather than reporting the
   # account's state back to the caller.
@@ -113,6 +109,10 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     |> json(%{error: "Invalid API token"})
     |> halt()
   end
+
+  defp telemetry_reason(:not_found), do: "token_not_found"
+  defp telemetry_reason(:revoked), do: "token_revoked"
+  defp telemetry_reason(:expired), do: "token_expired"
 
   defp extract_token(conn) do
     case get_req_header(conn, "authorization") do
