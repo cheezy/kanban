@@ -2532,7 +2532,7 @@ msgstr "完了後にレビューを待つ時間"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:456
 #: lib/kanban_web/components/agent_roster_card.ex:237
-#: lib/kanban_web/components/agents_header.ex:437
+#: lib/kanban_web/components/agents_header.ex:438
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -4299,7 +4299,7 @@ msgstr "エージェントはこの列からプルします。ここのタスク
 msgid "Archive"
 msgstr "アーカイブ"
 
-#: lib/kanban_web/components/agents_header.ex:422
+#: lib/kanban_web/components/agents_header.ex:423
 #: lib/kanban_web/components/board_tabs.ex:116
 #: lib/kanban_web/components/task_metadata_grid.ex:69
 #: lib/kanban_web/live/task_live/view_component.ex:382
@@ -4956,13 +4956,13 @@ msgid "Yes"
 msgstr "はい"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:469
-#: lib/kanban_web/components/agents_header.ex:565
+#: lib/kanban_web/components/agents_header.ex:566
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr "%{h}時間 %{m}分"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:473
-#: lib/kanban_web/components/agents_header.ex:568
+#: lib/kanban_web/components/agents_header.ex:569
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr "%{m}分"
@@ -5027,7 +5027,7 @@ msgstr "本日クレーム済み"
 msgid "Completed today"
 msgstr "本日の完了数"
 
-#: lib/kanban_web/components/agents_header.ex:545
+#: lib/kanban_web/components/agents_header.ex:546
 #, elixir-autogen, elixir-format
 msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
@@ -5345,7 +5345,7 @@ msgstr "累積フロー図"
 msgid "work in each column over time"
 msgstr "時系列での各列の作業"
 
-#: lib/kanban_web/components/agents_header.ex:425
+#: lib/kanban_web/components/agents_header.ex:426
 #: lib/kanban_web/live/metrics_live/workspace.ex:344
 #, elixir-autogen, elixir-format
 msgid "All boards"
@@ -7165,17 +7165,17 @@ msgstr "完了 · 30日"
 msgid "Success rate"
 msgstr "成功率"
 
-#: lib/kanban_web/components/agents_header.ex:346
+#: lib/kanban_web/components/agents_header.ex:347
 #, elixir-autogen, elixir-format
 msgid "No completed tasks in this window yet."
 msgstr "この期間に完了したタスクはまだありません。"
 
-#: lib/kanban_web/components/agents_header.ex:575
+#: lib/kanban_web/components/agents_header.ex:576
 #, elixir-autogen, elixir-format
 msgid "%{pct}%"
 msgstr "%{pct}%"
 
-#: lib/kanban_web/components/agents_header.ex:583
+#: lib/kanban_web/components/agents_header.ex:584
 #, elixir-autogen, elixir-format
 msgid "%{date}: %{count} completed"
 msgstr "%{date}: %{count} 件完了"
@@ -7220,7 +7220,7 @@ msgstr "最近のアクティビティ"
 msgid "None"
 msgstr "なし"
 
-#: lib/kanban_web/components/agents_header.ex:388
+#: lib/kanban_web/components/agents_header.ex:389
 #, elixir-autogen, elixir-format
 msgid "vs the prior period"
 msgstr "前の期間との比較"
@@ -7290,7 +7290,7 @@ msgstr "過去%{count}日"
 msgid "No completions in the last %{count} days."
 msgstr "過去%{count}日間に完了はありません。"
 
-#: lib/kanban_web/components/agents_header.ex:434
+#: lib/kanban_web/components/agents_header.ex:435
 #: lib/kanban_web/live/metrics_live/workspace.ex:239
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Time range"
@@ -7516,7 +7516,7 @@ msgstr "このフォームでデリバリーターゲットとそのゴールを
 msgid "No goals in this target yet."
 msgstr "このターゲットにはまだゴールがありません。"
 
-#: lib/kanban_web/live/target_live/archived.ex:78
+#: lib/kanban_web/live/target_live/archived.ex:86
 #: lib/kanban_web/live/target_live/show.ex:88
 #, elixir-autogen, elixir-format
 msgid "Target not found"
@@ -7780,22 +7780,22 @@ msgstr "このタスクはファイルを変更しましたが、差分が届き
 msgid "This task is no longer available for review."
 msgstr "このタスクはレビューできなくなりました。"
 
-#: lib/kanban_web/components/agents_header.ex:448
+#: lib/kanban_web/components/agents_header.ex:449
 #, elixir-autogen, elixir-format
 msgid "All time"
 msgstr "全期間"
 
-#: lib/kanban_web/components/agents_header.ex:442
+#: lib/kanban_web/components/agents_header.ex:443
 #, elixir-autogen, elixir-format
 msgid "Last 30 days"
 msgstr "過去30日間"
 
-#: lib/kanban_web/components/agents_header.ex:439
+#: lib/kanban_web/components/agents_header.ex:440
 #, elixir-autogen, elixir-format
 msgid "Last 7 days"
 msgstr "過去7日間"
 
-#: lib/kanban_web/components/agents_header.ex:445
+#: lib/kanban_web/components/agents_header.ex:446
 #, elixir-autogen, elixir-format
 msgid "Last 90 days"
 msgstr "過去90日間"
@@ -8010,7 +8010,7 @@ msgstr "ターゲットをアーカイブしました"
 msgid "Archived targets"
 msgstr "アーカイブ済みターゲット"
 
-#: lib/kanban_web/live/target_live/archived.ex:80
+#: lib/kanban_web/live/target_live/archived.ex:88
 #, elixir-autogen, elixir-format
 msgid "Failed to unarchive target"
 msgstr "ターゲットのアーカイブ解除に失敗しました"
@@ -8025,7 +8025,7 @@ msgstr "アーカイブ済みのターゲットはありません。"
 msgid "Target date:"
 msgstr "目標日:"
 
-#: lib/kanban_web/live/target_live/archived.ex:72
+#: lib/kanban_web/live/target_live/archived.ex:80
 #, elixir-autogen, elixir-format
 msgid "Target unarchived successfully"
 msgstr "ターゲットのアーカイブを解除しました"

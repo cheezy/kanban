@@ -2534,7 +2534,7 @@ msgstr ""
 
 #: lib/kanban_web/components/agent_activity_feed.ex:456
 #: lib/kanban_web/components/agent_roster_card.ex:237
-#: lib/kanban_web/components/agents_header.ex:437
+#: lib/kanban_web/components/agents_header.ex:438
 #: lib/kanban_web/live/metrics_live/components.ex:385
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -4303,7 +4303,7 @@ msgstr ""
 msgid "Archive"
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:422
+#: lib/kanban_web/components/agents_header.ex:423
 #: lib/kanban_web/components/board_tabs.ex:116
 #: lib/kanban_web/components/task_metadata_grid.ex:69
 #: lib/kanban_web/live/task_live/view_component.ex:382
@@ -4964,13 +4964,13 @@ msgid "Yes"
 msgstr ""
 
 #: lib/kanban_web/components/agent_activity_feed.ex:469
-#: lib/kanban_web/components/agents_header.ex:565
+#: lib/kanban_web/components/agents_header.ex:566
 #, elixir-autogen, elixir-format
 msgid "%{h}h %{m}m"
 msgstr ""
 
 #: lib/kanban_web/components/agent_activity_feed.ex:473
-#: lib/kanban_web/components/agents_header.ex:568
+#: lib/kanban_web/components/agents_header.ex:569
 #, elixir-autogen, elixir-format
 msgid "%{m}m"
 msgstr ""
@@ -5035,7 +5035,7 @@ msgstr ""
 msgid "Completed today"
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:545
+#: lib/kanban_web/components/agents_header.ex:546
 #, elixir-autogen, elixir-format
 msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
@@ -5357,7 +5357,7 @@ msgstr ""
 msgid "work in each column over time"
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:425
+#: lib/kanban_web/components/agents_header.ex:426
 #: lib/kanban_web/live/metrics_live/workspace.ex:344
 #, elixir-autogen, elixir-format
 msgid "All boards"
@@ -7119,17 +7119,17 @@ msgstr ""
 msgid "Success rate"
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:346
+#: lib/kanban_web/components/agents_header.ex:347
 #, elixir-autogen, elixir-format
 msgid "No completed tasks in this window yet."
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:575
+#: lib/kanban_web/components/agents_header.ex:576
 #, elixir-autogen, elixir-format
 msgid "%{pct}%"
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:583
+#: lib/kanban_web/components/agents_header.ex:584
 #, elixir-autogen, elixir-format
 msgid "%{date}: %{count} completed"
 msgstr ""
@@ -7174,7 +7174,7 @@ msgstr ""
 msgid "None"
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:388
+#: lib/kanban_web/components/agents_header.ex:389
 #, elixir-autogen, elixir-format
 msgid "vs the prior period"
 msgstr ""
@@ -7244,7 +7244,7 @@ msgstr ""
 msgid "No completions in the last %{count} days."
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:434
+#: lib/kanban_web/components/agents_header.ex:435
 #: lib/kanban_web/live/metrics_live/workspace.ex:239
 #, elixir-autogen, elixir-format
 msgid "Time range"
@@ -7470,7 +7470,7 @@ msgstr ""
 msgid "No goals in this target yet."
 msgstr ""
 
-#: lib/kanban_web/live/target_live/archived.ex:78
+#: lib/kanban_web/live/target_live/archived.ex:86
 #: lib/kanban_web/live/target_live/show.ex:88
 #, elixir-autogen, elixir-format
 msgid "Target not found"
@@ -7741,22 +7741,22 @@ msgstr ""
 msgid "This task is no longer available for review."
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:448
+#: lib/kanban_web/components/agents_header.ex:449
 #, elixir-autogen, elixir-format
 msgid "All time"
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:442
+#: lib/kanban_web/components/agents_header.ex:443
 #, elixir-autogen, elixir-format
 msgid "Last 30 days"
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:439
+#: lib/kanban_web/components/agents_header.ex:440
 #, elixir-autogen, elixir-format
 msgid "Last 7 days"
 msgstr ""
 
-#: lib/kanban_web/components/agents_header.ex:445
+#: lib/kanban_web/components/agents_header.ex:446
 #, elixir-autogen, elixir-format
 msgid "Last 90 days"
 msgstr ""
@@ -7971,7 +7971,7 @@ msgstr ""
 msgid "Archived targets"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/archived.ex:80
+#: lib/kanban_web/live/target_live/archived.ex:88
 #, elixir-autogen, elixir-format
 msgid "Failed to unarchive target"
 msgstr ""
@@ -7986,7 +7986,7 @@ msgstr ""
 msgid "Target date:"
 msgstr ""
 
-#: lib/kanban_web/live/target_live/archived.ex:72
+#: lib/kanban_web/live/target_live/archived.ex:80
 #, elixir-autogen, elixir-format
 msgid "Target unarchived successfully"
 msgstr ""
