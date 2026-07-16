@@ -173,7 +173,7 @@ msgstr "Tem certeza de que deseja excluir este quadro?"
 #: lib/kanban_web/live/board_live/form.html.heex:18
 #: lib/kanban_web/live/target_live/archived.html.heex:21
 #: lib/kanban_web/live/target_live/form.html.heex:9
-#: lib/kanban_web/live/target_live/show.html.heex:16
+#: lib/kanban_web/live/target_live/show.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr "Voltar aos quadros"
@@ -7541,13 +7541,13 @@ msgstr "Remover"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "Use este formulário para gerenciar os alvos de entrega e suas metas."
 
-#: lib/kanban_web/live/target_live/show.html.heex:63
+#: lib/kanban_web/live/target_live/show.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "Ainda não há metas neste alvo."
 
 #: lib/kanban_web/live/target_live/archived.ex:78
-#: lib/kanban_web/live/target_live/show.ex:75
+#: lib/kanban_web/live/target_live/show.ex:88
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "Alvo não encontrado"
@@ -7568,12 +7568,12 @@ msgstr "Progresso da meta por status dos filhos"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{done} de %{total} concluídos"
 
-#: lib/kanban_web/live/target_live/show.html.heex:58
+#: lib/kanban_web/live/target_live/show.html.heex:74
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "Meta"
 
-#: lib/kanban_web/live/target_live/show.html.heex:31
+#: lib/kanban_web/live/target_live/show.html.heex:47
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit target"
 msgstr "Editar alvo"
@@ -8015,27 +8015,27 @@ msgstr "Tarefas criadas"
 msgid "Total Actions"
 msgstr "Total de ações"
 
-#: lib/kanban_web/live/target_live/show.html.heex:49
+#: lib/kanban_web/live/target_live/show.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Archive target"
 msgstr "Arquivar alvo"
 
-#: lib/kanban_web/live/target_live/show.html.heex:39
+#: lib/kanban_web/live/target_live/show.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Archive this target? It will no longer appear on your boards."
 msgstr "Arquivar este alvo? Ele deixará de aparecer nos seus quadros."
 
-#: lib/kanban_web/live/target_live/show.ex:83
+#: lib/kanban_web/live/target_live/show.ex:96
 #, elixir-autogen, elixir-format
 msgid "Failed to archive target"
 msgstr "Falha ao arquivar o alvo"
 
-#: lib/kanban_web/live/target_live/show.ex:81
+#: lib/kanban_web/live/target_live/show.ex:94
 #, elixir-autogen, elixir-format
 msgid "Only a complete target can be archived"
 msgstr "Apenas um alvo concluído pode ser arquivado"
 
-#: lib/kanban_web/live/target_live/show.ex:67
+#: lib/kanban_web/live/target_live/show.ex:80
 #, elixir-autogen, elixir-format
 msgid "Target archived successfully"
 msgstr "Alvo arquivado com sucesso"
@@ -8057,7 +8057,7 @@ msgstr "Falha ao desarquivar o alvo"
 msgid "No archived targets."
 msgstr "Nenhum alvo arquivado."
 
-#: lib/kanban_web/live/target_live/archived.html.heex:66
+#: lib/kanban_web/live/target_live/archived.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Target date:"
 msgstr "Data alvo:"
@@ -8067,17 +8067,23 @@ msgstr "Data alvo:"
 msgid "Target unarchived successfully"
 msgstr "Alvo desarquivado com sucesso"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:88
+#: lib/kanban_web/live/target_live/archived.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Unarchive"
 msgstr "Desarquivar"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:78
+#: lib/kanban_web/live/target_live/archived.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Unarchive this target? It will appear on your boards again."
 msgstr "Desarquivar este alvo? Ele voltará a aparecer nos seus quadros."
 
-#: lib/kanban_web/live/target_live/archived.html.heex:70
+#: lib/kanban_web/live/target_live/archived.html.heex:78
+#: lib/kanban_web/live/target_live/show.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Archived %{age}"
 msgstr "Arquivado %{age}"
+
+#: lib/kanban_web/live/target_live/show.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "Back to archived targets"
+msgstr "Voltar aos alvos arquivados"

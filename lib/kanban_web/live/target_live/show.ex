@@ -19,18 +19,31 @@ defmodule KanbanWeb.TargetLive.Show do
   derives the aggregate flow (a pure sum across the per-goal flows) for the
   hero's segmented bar.
 
-  The Archive action renders only when the derived status is `:complete`, and
-  delegates to `Kanban.Targets.archive_target/2`, which re-derives that status
-  server-side — the hidden button is a UI affordance, never the gate. On
-  success the page navigates back to `/boards`, since an archived target is
-  filtered out of every active-target listing and its drill-down is no longer
-  a destination the boards page links to.
+  The Archive action renders only when the derived status is `:complete` and
+  the target is not already archived, and delegates to
+  `Kanban.Targets.archive_target/2`, which re-derives that status server-side —
+  the hidden button is a UI affordance, never the gate. On success the page
+  navigates back to `/boards`, since an archived target is filtered out of
+  every active-target listing.
+
+  An archived target remains a valid destination here: `get_owned_target/2`
+  deliberately ignores `archived_at`, so one drill-down serves both states and
+  `KanbanWeb.TargetLive.Archived` links each of its rows straight to this page.
+  When the target being viewed is archived the header says so — an indicator
+  pill carrying the same `TimeAgo` age the archived listing shows — suppresses
+  the Archive button (re-archiving would only re-stamp `archived_at`), and
+  points its back-link at `/targets/archived` rather than `/boards`, returning
+  the reader to the listing they arrived from. That listing is board-scoped
+  while this page stays owner-scoped, so a member can see — and click — a
+  colleague's archived row and land on the not-found flash; the asymmetry is
+  the same one the listing's Unarchive button already carries.
   """
   use KanbanWeb, :live_view
 
   alias Kanban.Targets
   alias KanbanWeb.TargetGoalRow
   alias KanbanWeb.TargetProgressHeader
+  alias KanbanWeb.TimeAgo
 
   @empty_flow %{done: 0, review: 0, doing: 0, ready: 0, backlog: 0, total: 0}
 
@@ -90,6 +103,7 @@ defmodule KanbanWeb.TargetLive.Show do
 
     socket
     |> assign(:target, target)
+    |> assign(:archived?, not is_nil(target.archived_at))
     |> assign(:summary, progress.summary)
     |> assign(:goals, progress.goals)
     |> assign(:aggregate_flow, aggregate_flow(progress.goals))

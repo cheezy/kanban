@@ -227,4 +227,99 @@ defmodule KanbanWeb.TargetLive.ArchivedTest do
       refute has_element?(live, "[data-archived-targets-empty]")
     end
   end
+
+  describe "row navigation" do
+    setup [:register_and_log_in_user]
+
+    test "each archived row links to that target's detail page", %{
+      conn: conn,
+      user: user,
+      scope: scope
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = visible_archived_target(scope, user, column, %{name: "Shipped Q1"})
+
+      {:ok, live, _html} = live(conn, ~p"/targets/archived")
+
+      assert has_element?(
+               live,
+               "[data-archived-target-row][data-target-id='#{target.id}'] " <>
+                 "[data-archived-target-link][href='#{~p"/targets/#{target}"}']"
+             )
+    end
+
+    test "clicking an archived row navigates to that target's detail page", %{
+      conn: conn,
+      user: user,
+      scope: scope
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = visible_archived_target(scope, user, column, %{name: "Shipped Q1"})
+
+      {:ok, live, _html} = live(conn, ~p"/targets/archived")
+
+      # <.link navigate> is a live redirect, so render_click returns the redirect
+      # tuple rather than markup; follow_redirect drives it and proves the detail
+      # page actually mounts at the expected path.
+      assert {:ok, _show_live, html} =
+               live
+               |> element("[data-target-id='#{target.id}'] [data-archived-target-link]")
+               |> render_click()
+               |> follow_redirect(conn, ~p"/targets/#{target}")
+
+      assert html =~ "Shipped Q1"
+      assert html =~ "Member Goal"
+    end
+
+    test "the Unarchive button is a sibling of the row link, never nested inside it", %{
+      conn: conn,
+      user: user,
+      scope: scope
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      visible_archived_target(scope, user, column)
+
+      {:ok, live, _html} = live(conn, ~p"/targets/archived")
+
+      # A button inside the anchor would be invalid markup AND would navigate
+      # instead of unarchiving — the click would never reach phx-click.
+      refute has_element?(live, "[data-archived-target-link] [data-unarchive-target]")
+      assert has_element?(live, "[data-archived-target-row] > [data-unarchive-target]")
+    end
+
+    test "a board-visible but not-owned row still links, and following it lands on not-found",
+         %{conn: conn, user: user, scope: scope} do
+      other_user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      # THE SAME ASYMMETRY the Unarchive button carries: the listing is
+      # board-scoped, the detail page is owner-scoped. The row links regardless
+      # and the server refuses on arrival — by design, not a bug to filter away.
+      target = visible_archived_target(scope, other_user, column, %{name: "Not Mine"})
+
+      {:ok, live, _html} = live(conn, ~p"/targets/archived")
+
+      assert has_element?(
+               live,
+               "[data-target-id='#{target.id}'] " <>
+                 "[data-archived-target-link][href='#{~p"/targets/#{target}"}']"
+             )
+
+      assert {:error, {:live_redirect, %{to: path}}} =
+               live
+               |> element("[data-target-id='#{target.id}'] [data-archived-target-link]")
+               |> render_click()
+
+      assert path == ~p"/targets/#{target}"
+
+      # Arriving there is refused server-side by the owner-scoped loader, so the
+      # link is an affordance only — it never widens what the caller may read.
+      assert {:error, {:live_redirect, %{to: refused_to, flash: flash}}} = live(conn, path)
+      assert refused_to == ~p"/boards"
+      assert flash["error"] =~ "Target not found"
+    end
+  end
 end

@@ -51,24 +51,33 @@
             "padding: 10px 14px; border-bottom: 1px solid var(--line);"
           ]}
         >
-          <div style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
-            <span style="font-size: 13px; font-weight: 600; color: var(--ink);">
-              {target.name}
+          <.link
+            navigate={~p"/targets/#{target}"}
+            data-archived-target-link
+            style={[
+              "flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px;",
+              "text-decoration: none; color: inherit;"
+            ]}
+          >
+            <div style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 13px; font-weight: 600; color: var(--ink);">
+                {target.name}
+              </span>
+              <span :if={target.description} style="font-size: 11.5px; color: var(--ink-3);">
+                {target.description}
+              </span>
+            </div>
+
+            <span style="flex: 1;"></span>
+
+            <span style="font-size: 11.5px; color: var(--ink-2); white-space: nowrap;">
+              {gettext("Target date:")} {format_date(target.target_date)}
             </span>
-            <span :if={target.description} style="font-size: 11.5px; color: var(--ink-3);">
-              {target.description}
+
+            <span style="font-size: 10.5px; color: var(--ink-3); white-space: nowrap;">
+              {gettext("Archived %{age}", age: TimeAgo.format_age(target.archived_at, :coarse))}
             </span>
-          </div>
-
-          <span style="flex: 1;"></span>
-
-          <span style="font-size: 11.5px; color: var(--ink-2); white-space: nowrap;">
-            {gettext("Target date:")} {format_date(target.target_date)}
-          </span>
-
-          <span style="font-size: 10.5px; color: var(--ink-3); white-space: nowrap;">
-            {gettext("Archived %{age}", age: TimeAgo.format_age(target.archived_at, :coarse))}
-          </span>
+          </.link>
 
           <button
             type="button"

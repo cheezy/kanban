@@ -173,7 +173,7 @@ msgstr "¿Estás seguro de que quieres eliminar este tablero?"
 #: lib/kanban_web/live/board_live/form.html.heex:18
 #: lib/kanban_web/live/target_live/archived.html.heex:21
 #: lib/kanban_web/live/target_live/form.html.heex:9
-#: lib/kanban_web/live/target_live/show.html.heex:16
+#: lib/kanban_web/live/target_live/show.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr "Volver a tableros"
@@ -7564,13 +7564,13 @@ msgstr "Desasignar"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "Use este formulario para gestionar las metas de entrega y sus objetivos."
 
-#: lib/kanban_web/live/target_live/show.html.heex:63
+#: lib/kanban_web/live/target_live/show.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "Aún no hay objetivos en esta meta."
 
 #: lib/kanban_web/live/target_live/archived.ex:78
-#: lib/kanban_web/live/target_live/show.ex:75
+#: lib/kanban_web/live/target_live/show.ex:88
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "Meta no encontrada"
@@ -7591,12 +7591,12 @@ msgstr "Progreso del objetivo por estado de hijos"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{done} de %{total} completos"
 
-#: lib/kanban_web/live/target_live/show.html.heex:58
+#: lib/kanban_web/live/target_live/show.html.heex:74
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "Objetivo"
 
-#: lib/kanban_web/live/target_live/show.html.heex:31
+#: lib/kanban_web/live/target_live/show.html.heex:47
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit target"
 msgstr "Editar meta"
@@ -8038,27 +8038,27 @@ msgstr "Tareas creadas"
 msgid "Total Actions"
 msgstr "Acciones totales"
 
-#: lib/kanban_web/live/target_live/show.html.heex:49
+#: lib/kanban_web/live/target_live/show.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Archive target"
 msgstr "Archivar meta"
 
-#: lib/kanban_web/live/target_live/show.html.heex:39
+#: lib/kanban_web/live/target_live/show.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Archive this target? It will no longer appear on your boards."
 msgstr "¿Archivar esta meta? Dejará de aparecer en tus tableros."
 
-#: lib/kanban_web/live/target_live/show.ex:83
+#: lib/kanban_web/live/target_live/show.ex:96
 #, elixir-autogen, elixir-format
 msgid "Failed to archive target"
 msgstr "No se pudo archivar la meta"
 
-#: lib/kanban_web/live/target_live/show.ex:81
+#: lib/kanban_web/live/target_live/show.ex:94
 #, elixir-autogen, elixir-format
 msgid "Only a complete target can be archived"
 msgstr "Solo se puede archivar una meta completada"
 
-#: lib/kanban_web/live/target_live/show.ex:67
+#: lib/kanban_web/live/target_live/show.ex:80
 #, elixir-autogen, elixir-format
 msgid "Target archived successfully"
 msgstr "Meta archivada correctamente"
@@ -8080,7 +8080,7 @@ msgstr "No se pudo desarchivar la meta"
 msgid "No archived targets."
 msgstr "No hay metas archivadas."
 
-#: lib/kanban_web/live/target_live/archived.html.heex:66
+#: lib/kanban_web/live/target_live/archived.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Target date:"
 msgstr "Fecha objetivo:"
@@ -8090,17 +8090,23 @@ msgstr "Fecha objetivo:"
 msgid "Target unarchived successfully"
 msgstr "Meta desarchivada correctamente"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:88
+#: lib/kanban_web/live/target_live/archived.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Unarchive"
 msgstr "Desarchivar"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:78
+#: lib/kanban_web/live/target_live/archived.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Unarchive this target? It will appear on your boards again."
 msgstr "¿Desarchivar esta meta? Volverá a aparecer en tus tableros."
 
-#: lib/kanban_web/live/target_live/archived.html.heex:70
+#: lib/kanban_web/live/target_live/archived.html.heex:78
+#: lib/kanban_web/live/target_live/show.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Archived %{age}"
 msgstr "Archivada %{age}"
+
+#: lib/kanban_web/live/target_live/show.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "Back to archived targets"
+msgstr "Volver a metas archivadas"

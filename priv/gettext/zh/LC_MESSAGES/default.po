@@ -173,7 +173,7 @@ msgstr "您确定要删除此看板吗？"
 #: lib/kanban_web/live/board_live/form.html.heex:18
 #: lib/kanban_web/live/target_live/archived.html.heex:21
 #: lib/kanban_web/live/target_live/form.html.heex:9
-#: lib/kanban_web/live/target_live/show.html.heex:16
+#: lib/kanban_web/live/target_live/show.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr "返回看板"
@@ -7511,13 +7511,13 @@ msgstr "取消分配"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "使用此表单管理交付目标及其目标。"
 
-#: lib/kanban_web/live/target_live/show.html.heex:63
+#: lib/kanban_web/live/target_live/show.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "此交付目标中还没有目标。"
 
 #: lib/kanban_web/live/target_live/archived.ex:78
-#: lib/kanban_web/live/target_live/show.ex:75
+#: lib/kanban_web/live/target_live/show.ex:88
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "未找到交付目标"
@@ -7538,12 +7538,12 @@ msgstr "按子项状态显示的目标进度"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "已完成 %{done}/%{total}"
 
-#: lib/kanban_web/live/target_live/show.html.heex:58
+#: lib/kanban_web/live/target_live/show.html.heex:74
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "目标"
 
-#: lib/kanban_web/live/target_live/show.html.heex:31
+#: lib/kanban_web/live/target_live/show.html.heex:47
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit target"
 msgstr "编辑交付目标"
@@ -7978,27 +7978,27 @@ msgstr "已创建任务"
 msgid "Total Actions"
 msgstr "操作总数"
 
-#: lib/kanban_web/live/target_live/show.html.heex:49
+#: lib/kanban_web/live/target_live/show.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Archive target"
 msgstr "归档交付目标"
 
-#: lib/kanban_web/live/target_live/show.html.heex:39
+#: lib/kanban_web/live/target_live/show.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Archive this target? It will no longer appear on your boards."
 msgstr "归档此交付目标？它将不再显示在您的看板上。"
 
-#: lib/kanban_web/live/target_live/show.ex:83
+#: lib/kanban_web/live/target_live/show.ex:96
 #, elixir-autogen, elixir-format
 msgid "Failed to archive target"
 msgstr "归档交付目标失败"
 
-#: lib/kanban_web/live/target_live/show.ex:81
+#: lib/kanban_web/live/target_live/show.ex:94
 #, elixir-autogen, elixir-format
 msgid "Only a complete target can be archived"
 msgstr "只有已完成的交付目标才能归档"
 
-#: lib/kanban_web/live/target_live/show.ex:67
+#: lib/kanban_web/live/target_live/show.ex:80
 #, elixir-autogen, elixir-format
 msgid "Target archived successfully"
 msgstr "交付目标归档成功"
@@ -8020,7 +8020,7 @@ msgstr "取消归档交付目标失败"
 msgid "No archived targets."
 msgstr "没有已归档的交付目标。"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:66
+#: lib/kanban_web/live/target_live/archived.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Target date:"
 msgstr "目标日期："
@@ -8030,17 +8030,23 @@ msgstr "目标日期："
 msgid "Target unarchived successfully"
 msgstr "已成功取消归档交付目标"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:88
+#: lib/kanban_web/live/target_live/archived.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Unarchive"
 msgstr "取消归档"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:78
+#: lib/kanban_web/live/target_live/archived.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Unarchive this target? It will appear on your boards again."
 msgstr "取消归档此交付目标？它将重新显示在您的看板上。"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:70
+#: lib/kanban_web/live/target_live/archived.html.heex:78
+#: lib/kanban_web/live/target_live/show.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Archived %{age}"
 msgstr "已归档 %{age}"
+
+#: lib/kanban_web/live/target_live/show.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "Back to archived targets"
+msgstr "返回已归档的交付目标"

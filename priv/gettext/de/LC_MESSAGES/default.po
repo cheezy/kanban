@@ -173,7 +173,7 @@ msgstr "Sind Sie sicher, dass Sie dieses Board löschen möchten?"
 #: lib/kanban_web/live/board_live/form.html.heex:18
 #: lib/kanban_web/live/target_live/archived.html.heex:21
 #: lib/kanban_web/live/target_live/form.html.heex:9
-#: lib/kanban_web/live/target_live/show.html.heex:16
+#: lib/kanban_web/live/target_live/show.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr "Zurück zu Boards"
@@ -7571,13 +7571,13 @@ msgstr "Zuweisung aufheben"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "Verwenden Sie dieses Formular, um Zielvorgaben und ihre Ziele zu verwalten."
 
-#: lib/kanban_web/live/target_live/show.html.heex:63
+#: lib/kanban_web/live/target_live/show.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "Noch keine Ziele in dieser Zielvorgabe."
 
 #: lib/kanban_web/live/target_live/archived.ex:78
-#: lib/kanban_web/live/target_live/show.ex:75
+#: lib/kanban_web/live/target_live/show.ex:88
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "Zielvorgabe nicht gefunden"
@@ -7598,12 +7598,12 @@ msgstr "Zielfortschritt nach Status der Unterelemente"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{done} von %{total} abgeschlossen"
 
-#: lib/kanban_web/live/target_live/show.html.heex:58
+#: lib/kanban_web/live/target_live/show.html.heex:74
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "Ziel"
 
-#: lib/kanban_web/live/target_live/show.html.heex:31
+#: lib/kanban_web/live/target_live/show.html.heex:47
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit target"
 msgstr "Zielvorgabe bearbeiten"
@@ -8045,27 +8045,27 @@ msgstr "Erstellte Aufgaben"
 msgid "Total Actions"
 msgstr "Aktionen gesamt"
 
-#: lib/kanban_web/live/target_live/show.html.heex:49
+#: lib/kanban_web/live/target_live/show.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Archive target"
 msgstr "Zielvorgabe archivieren"
 
-#: lib/kanban_web/live/target_live/show.html.heex:39
+#: lib/kanban_web/live/target_live/show.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Archive this target? It will no longer appear on your boards."
 msgstr "Diese Zielvorgabe archivieren? Sie erscheint dann nicht mehr auf Ihren Boards."
 
-#: lib/kanban_web/live/target_live/show.ex:83
+#: lib/kanban_web/live/target_live/show.ex:96
 #, elixir-autogen, elixir-format
 msgid "Failed to archive target"
 msgstr "Zielvorgabe konnte nicht archiviert werden"
 
-#: lib/kanban_web/live/target_live/show.ex:81
+#: lib/kanban_web/live/target_live/show.ex:94
 #, elixir-autogen, elixir-format
 msgid "Only a complete target can be archived"
 msgstr "Nur eine abgeschlossene Zielvorgabe kann archiviert werden"
 
-#: lib/kanban_web/live/target_live/show.ex:67
+#: lib/kanban_web/live/target_live/show.ex:80
 #, elixir-autogen, elixir-format
 msgid "Target archived successfully"
 msgstr "Zielvorgabe erfolgreich archiviert"
@@ -8087,7 +8087,7 @@ msgstr "Zielvorgabe konnte nicht aus dem Archiv geholt werden"
 msgid "No archived targets."
 msgstr "Keine archivierten Zielvorgaben."
 
-#: lib/kanban_web/live/target_live/archived.html.heex:66
+#: lib/kanban_web/live/target_live/archived.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Target date:"
 msgstr "Zieldatum:"
@@ -8097,17 +8097,23 @@ msgstr "Zieldatum:"
 msgid "Target unarchived successfully"
 msgstr "Zielvorgabe erfolgreich aus dem Archiv geholt"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:88
+#: lib/kanban_web/live/target_live/archived.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Unarchive"
 msgstr "Aus dem Archiv holen"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:78
+#: lib/kanban_web/live/target_live/archived.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Unarchive this target? It will appear on your boards again."
 msgstr "Diese Zielvorgabe aus dem Archiv holen? Sie erscheint dann wieder auf Ihren Boards."
 
-#: lib/kanban_web/live/target_live/archived.html.heex:70
+#: lib/kanban_web/live/target_live/archived.html.heex:78
+#: lib/kanban_web/live/target_live/show.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Archived %{age}"
 msgstr "Archiviert %{age}"
+
+#: lib/kanban_web/live/target_live/show.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "Back to archived targets"
+msgstr "Zurück zu archivierten Zielvorgaben"

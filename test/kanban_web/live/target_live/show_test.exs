@@ -52,6 +52,16 @@ defmodule KanbanWeb.TargetLive.ShowTest do
     target
   end
 
+  # archived_at is only castable through archive_changeset/2, so change/2 sets it
+  # directly, bypassing the cast allow-list. This keeps the fixture independent
+  # of the :complete derivation archive_target/2 requires, so a target can be
+  # both :complete and archived — the state that isolates the archived gate.
+  defp archive!(%DeliveryTarget{} = target) do
+    target
+    |> Ecto.Changeset.change(archived_at: DateTime.utc_now())
+    |> Repo.update!()
+  end
+
   defp count_occurrences(haystack, needle) do
     haystack |> String.split(needle) |> length() |> Kernel.-(1)
   end
@@ -409,6 +419,73 @@ defmodule KanbanWeb.TargetLive.ShowTest do
       flash = assert_redirect(live, ~p"/boards")
 
       assert flash["error"] =~ "Target not found"
+    end
+  end
+
+  describe "archived target" do
+    setup [:register_and_log_in_user]
+
+    test "renders the archived indicator in the header", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = Scope.for_user(user) |> complete_target(user, column) |> archive!()
+
+      {:ok, live, _html} = live(conn, ~p"/targets/#{target}")
+
+      # Text-scoped to the pill itself: a page-wide `html =~ "Archived"` would
+      # match unrelated copy and prove nothing about the indicator.
+      assert has_element?(live, "[data-target-archived-indicator]", "Archived")
+    end
+
+    test "does not render the archived indicator for an active target",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = complete_target(Scope.for_user(user), user, column)
+
+      {:ok, live, _html} = live(conn, ~p"/targets/#{target}")
+
+      refute has_element?(live, "[data-target-archived-indicator]")
+    end
+
+    test "does not render the Archive button for an already-archived target",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      # Built :complete THEN archived, so the pre-existing :complete conjunct is
+      # satisfied and only the new archived conjunct can be suppressing it.
+      target = Scope.for_user(user) |> complete_target(user, column) |> archive!()
+
+      {:ok, live, html} = live(conn, ~p"/targets/#{target}")
+
+      refute has_element?(live, "[data-archive-target]")
+      refute html =~ "Archive target"
+    end
+
+    test "the header back-link points at the archived listing", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = Scope.for_user(user) |> complete_target(user, column) |> archive!()
+
+      {:ok, live, html} = live(conn, ~p"/targets/#{target}")
+
+      assert has_element?(live, "[data-target-show] header a[href='#{~p"/targets/archived"}']")
+      assert html =~ "Back to archived targets"
+    end
+
+    test "the header back-link still points at /boards for an active target",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = complete_target(Scope.for_user(user), user, column)
+
+      {:ok, live, html} = live(conn, ~p"/targets/#{target}")
+
+      # Exact href: ~p"/boards" is a prefix of the goal-row hrefs, so a bare
+      # `html =~` substring check would pass vacuously.
+      assert has_element?(live, "[data-target-show] header a[href='#{~p"/boards"}']")
+      refute has_element?(live, "[data-target-show] header a[href='#{~p"/targets/archived"}']")
+      assert html =~ "Back to boards"
     end
   end
 

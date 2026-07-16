@@ -173,7 +173,7 @@ msgstr "このボードを削除してもよろしいですか？"
 #: lib/kanban_web/live/board_live/form.html.heex:18
 #: lib/kanban_web/live/target_live/archived.html.heex:21
 #: lib/kanban_web/live/target_live/form.html.heex:9
-#: lib/kanban_web/live/target_live/show.html.heex:16
+#: lib/kanban_web/live/target_live/show.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Back to boards"
 msgstr "ボードに戻る"
@@ -7511,13 +7511,13 @@ msgstr "割り当て解除"
 msgid "Use this form to manage delivery targets and their goals."
 msgstr "このフォームでデリバリーターゲットとそのゴールを管理します。"
 
-#: lib/kanban_web/live/target_live/show.html.heex:63
+#: lib/kanban_web/live/target_live/show.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "No goals in this target yet."
 msgstr "このターゲットにはまだゴールがありません。"
 
 #: lib/kanban_web/live/target_live/archived.ex:78
-#: lib/kanban_web/live/target_live/show.ex:75
+#: lib/kanban_web/live/target_live/show.ex:88
 #, elixir-autogen, elixir-format
 msgid "Target not found"
 msgstr "ターゲットが見つかりません"
@@ -7538,12 +7538,12 @@ msgstr "子要素の状態別ゴール進捗"
 msgid "%{done} of %{total} (%{pct}%)"
 msgstr "%{total} 中 %{done} 完了"
 
-#: lib/kanban_web/live/target_live/show.html.heex:58
+#: lib/kanban_web/live/target_live/show.html.heex:74
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Goals"
 msgstr "ゴール"
 
-#: lib/kanban_web/live/target_live/show.html.heex:31
+#: lib/kanban_web/live/target_live/show.html.heex:47
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit target"
 msgstr "ターゲットを編集"
@@ -7978,27 +7978,27 @@ msgstr "作成タスク"
 msgid "Total Actions"
 msgstr "総アクション数"
 
-#: lib/kanban_web/live/target_live/show.html.heex:49
+#: lib/kanban_web/live/target_live/show.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Archive target"
 msgstr "ターゲットをアーカイブ"
 
-#: lib/kanban_web/live/target_live/show.html.heex:39
+#: lib/kanban_web/live/target_live/show.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Archive this target? It will no longer appear on your boards."
 msgstr "このターゲットをアーカイブしますか？ボードに表示されなくなります。"
 
-#: lib/kanban_web/live/target_live/show.ex:83
+#: lib/kanban_web/live/target_live/show.ex:96
 #, elixir-autogen, elixir-format
 msgid "Failed to archive target"
 msgstr "ターゲットをアーカイブできませんでした"
 
-#: lib/kanban_web/live/target_live/show.ex:81
+#: lib/kanban_web/live/target_live/show.ex:94
 #, elixir-autogen, elixir-format
 msgid "Only a complete target can be archived"
 msgstr "完了したターゲットのみアーカイブできます"
 
-#: lib/kanban_web/live/target_live/show.ex:67
+#: lib/kanban_web/live/target_live/show.ex:80
 #, elixir-autogen, elixir-format
 msgid "Target archived successfully"
 msgstr "ターゲットをアーカイブしました"
@@ -8020,7 +8020,7 @@ msgstr "ターゲットのアーカイブ解除に失敗しました"
 msgid "No archived targets."
 msgstr "アーカイブ済みのターゲットはありません。"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:66
+#: lib/kanban_web/live/target_live/archived.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "Target date:"
 msgstr "目標日:"
@@ -8030,17 +8030,23 @@ msgstr "目標日:"
 msgid "Target unarchived successfully"
 msgstr "ターゲットのアーカイブを解除しました"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:88
+#: lib/kanban_web/live/target_live/archived.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "Unarchive"
 msgstr "アーカイブを解除"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:78
+#: lib/kanban_web/live/target_live/archived.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "Unarchive this target? It will appear on your boards again."
 msgstr "このターゲットのアーカイブを解除しますか？再びボードに表示されます。"
 
-#: lib/kanban_web/live/target_live/archived.html.heex:70
+#: lib/kanban_web/live/target_live/archived.html.heex:78
+#: lib/kanban_web/live/target_live/show.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Archived %{age}"
 msgstr "アーカイブ済み %{age}"
+
+#: lib/kanban_web/live/target_live/show.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "Back to archived targets"
+msgstr "アーカイブ済みターゲットに戻る"
