@@ -911,16 +911,20 @@ defmodule KanbanWeb.AgentsLiveTest do
       refute html =~ "flex: 1; min-width: 0;"
     end
 
-    test "mobile scroll: outer wrapper has no height:100% lock and re-locks at md+", %{
-      conn: conn
-    } do
+    test "mobile scroll: outer wrapper has no height:100% lock and re-locks only when tall enough",
+         %{
+           conn: conn
+         } do
       {:ok, _view, html} = live(conn, ~p"/agents")
 
       # The /agents content must not clamp itself to viewport height on mobile,
       # so <main> (the one true scroll container) can scroll the whole page.
       refute html =~ "height: 100%; min-height: 0;"
-      # Height is re-locked only at md+ so the desktop two-pane split is unchanged.
-      assert html =~ "stride-screen md:h-full"
+      # Height is re-locked via a utility gated on BOTH width and height, so a
+      # wide-but-short viewport keeps the scrolling fallback.
+      assert html =~ "stride-screen stride-pin-when-tall"
+      # md:h-full would re-pin on width alone and reintroduce the bug.
+      refute html =~ "md:h-full"
     end
 
     test "mobile scroll: roster and feed own-scroll only at md+", %{conn: conn} do

@@ -1108,6 +1108,29 @@
 }
 
 /* ============================================================
+   Height-aware viewport pinning.
+
+   Tailwind's md:h-full pins a screen to the viewport on a
+   width-only breakpoint, so a wide-but-short window (e.g.
+   1440x600) gets a pinned layout with no vertical room left for
+   content after the header bands. This utility gates the pin on
+   height as well as width: below the height threshold the element
+   falls back to auto height and the layout's overflow-auto <main>
+   scrolls the whole page, exactly as it already does under md.
+
+   The 700px threshold is derived from the /agents chrome, which
+   occupies ~520px above the roster/feed panes (win_top 37 +
+   header ~191 + delivery tier ~85 + live indicator ~27 +
+   pm_trends ~179). At 700px the panes still get ~180px of
+   workable room; much below that they would collapse to nothing.
+   ============================================================ */
+@media (min-width: 768px) and (min-height: 700px) {
+  .stride-screen.stride-pin-when-tall {
+    height: 100%;
+  }
+}
+
+/* ============================================================
    Allow chip tooltips on task cards to break out of the columns
    row's overflow context. The kanban columns container needs
    horizontal scrolling but must NOT clip tooltips vertically.

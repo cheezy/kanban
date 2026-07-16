@@ -350,7 +350,7 @@ defmodule KanbanWeb.AgentsLive do
       </:breadcrumbs>
 
       <div
-        class="stride-screen md:h-full"
+        class="stride-screen stride-pin-when-tall"
         style="display: flex; flex-direction: column; min-height: 0;"
       >
         <AgentsHeader.header
