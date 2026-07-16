@@ -40,6 +40,20 @@ defmodule KanbanWeb.TargetLive.ArchivedTest do
     archive!(target)
   end
 
+  # The visible text of each span inside a row's link, in document order, with
+  # runs of whitespace collapsed (HEEx interpolation leaves newlines and indent
+  # between the interpolated parts) and the layout's empty spacer span dropped.
+  defp row_span_texts(live, %DeliveryTarget{} = target) do
+    live
+    |> render()
+    |> LazyHTML.from_fragment()
+    |> LazyHTML.query("[data-target-id='#{target.id}'] [data-archived-target-link] span")
+    |> Enum.map(fn node ->
+      node |> LazyHTML.text() |> String.replace(~r/\s+/, " ") |> String.trim()
+    end)
+    |> Enum.reject(&(&1 == ""))
+  end
+
   describe "routing" do
     setup [:register_and_log_in_user]
 
@@ -107,6 +121,98 @@ defmodule KanbanWeb.TargetLive.ArchivedTest do
 
       refute html =~ "Their Target"
       assert has_element?(live, "[data-archived-targets-empty]")
+    end
+  end
+
+  describe "mount/3 — anonymous" do
+    test "redirects to the login page", %{conn: conn} do
+      # The route lives in the :require_authenticated_user live_session, so an
+      # anonymous caller never reaches load_targets/1 — which would otherwise
+      # raise on a scope with no user.
+      assert {:error, {:redirect, %{to: redirect_to}}} = live(conn, ~p"/targets/archived")
+      assert redirect_to =~ "/users/log-in"
+    end
+  end
+
+  describe "row rendering" do
+    setup [:register_and_log_in_user]
+
+    test "formats the target date and renders the archived age", %{
+      conn: conn,
+      user: user,
+      scope: scope
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      visible_archived_target(scope, user, column, %{name: "Dated", target_date: ~D[2026-03-01]})
+
+      {:ok, _live, html} = live(conn, ~p"/targets/archived")
+
+      # format_date/1 renders the Date through Calendar.strftime with a
+      # day-of-month that is not zero-padded ("%-d"), so the 1st is "Mar 1",
+      # never "Mar 01".
+      assert html =~ "Mar 1, 2026"
+      refute html =~ "Mar 01, 2026"
+      # archive!/1 stamps archived_at at utc_now, which TimeAgo's :coarse
+      # granularity labels "just now" under a minute.
+      assert html =~ "Archived just now"
+    end
+
+    test "renders the description when the target has one", %{
+      conn: conn,
+      user: user,
+      scope: scope
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      target =
+        visible_archived_target(scope, user, column, %{
+          name: "Described",
+          description: "Ships the billing rewrite"
+        })
+
+      {:ok, live, html} = live(conn, ~p"/targets/archived")
+
+      assert html =~ "Ships the billing rewrite"
+      # The description renders directly beneath the name, inside the row link.
+      assert ["Described", "Ships the billing rewrite" | _] = row_span_texts(live, target)
+    end
+
+    test "omits the description element when the target has none", %{
+      conn: conn,
+      user: user,
+      scope: scope
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = visible_archived_target(scope, user, column, %{name: "Bare"})
+
+      assert is_nil(target.description)
+
+      {:ok, live, html} = live(conn, ~p"/targets/archived")
+
+      assert html =~ "Bare"
+      # The :if guard drops the description span entirely rather than rendering
+      # an empty one, so the only non-empty spans left in the row's label stack
+      # are the name, the target date and the archived age.
+      assert ["Bare", "Target date: Dec 31, 2026", "Archived just now"] =
+               row_span_texts(live, target)
+    end
+
+    test "renders the archived target count next to the heading", %{
+      conn: conn,
+      user: user,
+      scope: scope
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      visible_archived_target(scope, user, column, %{name: "One"})
+      visible_archived_target(scope, user, column, %{name: "Two"})
+
+      {:ok, live, _html} = live(conn, ~p"/targets/archived")
+
+      assert live |> element("[data-archived-targets-screen] .ident") |> render() =~ "2"
     end
   end
 
@@ -202,6 +308,68 @@ defmodule KanbanWeb.TargetLive.ArchivedTest do
 
       assert result =~ "Target not found"
       assert result =~ "Untouched"
+    end
+
+    test "an integer id is accepted and unarchives the target", %{
+      conn: conn,
+      user: user,
+      scope: scope
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = visible_archived_target(scope, user, column, %{name: "Integer Id"})
+
+      {:ok, live, _html} = live(conn, ~p"/targets/archived")
+
+      # phx-value-id always arrives as a string from the DOM, but an event pushed
+      # programmatically (a JS hook's pushEvent) carries the id's JSON type — an
+      # integer. parse_id/1 has a clause for it, so it must not fall through to
+      # the not-found branch.
+      result = render_click(live, "unarchive", %{"id" => target.id})
+
+      assert result =~ "Target unarchived successfully"
+      assert is_nil(Repo.get!(DeliveryTarget, target.id).archived_at)
+    end
+
+    test "a non-scalar id flashes an error instead of crashing the LiveView", %{
+      conn: conn,
+      user: user,
+      scope: scope
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = visible_archived_target(scope, user, column, %{name: "Untouched"})
+
+      {:ok, live, _html} = live(conn, ~p"/targets/archived")
+
+      # Neither a binary nor an integer: the catch-all clause refuses it rather
+      # than letting a list reach the context query, where it would raise
+      # Ecto.Query.CastError and take the LiveView down.
+      result = render_click(live, "unarchive", %{"id" => [to_string(target.id)]})
+
+      assert result =~ "Target not found"
+      assert result =~ "Untouched"
+      refute is_nil(Repo.get!(DeliveryTarget, target.id).archived_at)
+    end
+
+    test "an id with a trailing suffix is refused, not truncated to its numeric prefix", %{
+      conn: conn,
+      user: user,
+      scope: scope
+    } do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      target = visible_archived_target(scope, user, column, %{name: "Not Truncated"})
+
+      {:ok, live, _html} = live(conn, ~p"/targets/archived")
+
+      # Integer.parse("12abc") returns {12, "abc"}, so a clause matching {n, _}
+      # instead of {n, ""} would silently unarchive target 12. The remainder must
+      # be empty for the id to be trusted.
+      result = render_click(live, "unarchive", %{"id" => "#{target.id}abc"})
+
+      assert result =~ "Target not found"
+      refute is_nil(Repo.get!(DeliveryTarget, target.id).archived_at)
     end
 
     test "unarchiving a concurrently deleted target flashes an error without crashing",
