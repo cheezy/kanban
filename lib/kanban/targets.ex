@@ -37,10 +37,10 @@ defmodule Kanban.Targets do
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
-  alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Targets.DeliveryTarget
-  alias Kanban.Targets.Status
+  alias Kanban.Targets.Progress
+  alias Kanban.Targets.Queries
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
 
@@ -60,13 +60,7 @@ defmodule Kanban.Targets do
   `list_archived_targets/1` to read them back.
   """
   @spec list_targets(Scope.t() | nil) :: [DeliveryTarget.t()]
-  def list_targets(scope) do
-    DeliveryTarget
-    |> where([dt], dt.id in subquery(member_target_ids_query(scope)))
-    |> where([dt], is_nil(dt.archived_at))
-    |> order_by([dt], asc: dt.target_date, asc: dt.id)
-    |> Repo.all()
-  end
+  def list_targets(scope), do: Queries.list_targets(scope)
 
   @doc """
   Returns every *archived* delivery target visible to the scoped user, newest
@@ -78,13 +72,7 @@ defmodule Kanban.Targets do
   tiebreak.
   """
   @spec list_archived_targets(Scope.t() | nil) :: [DeliveryTarget.t()]
-  def list_archived_targets(scope) do
-    DeliveryTarget
-    |> where([dt], dt.id in subquery(member_target_ids_query(scope)))
-    |> where([dt], not is_nil(dt.archived_at))
-    |> order_by([dt], desc: dt.archived_at, desc: dt.id)
-    |> Repo.all()
-  end
+  def list_archived_targets(scope), do: Queries.list_archived_targets(scope)
 
   @doc """
   Fetches a single delivery target by id, scoped to the caller.
@@ -95,16 +83,7 @@ defmodule Kanban.Targets do
   """
   @spec get_target(Scope.t() | nil, integer() | String.t()) ::
           {:ok, DeliveryTarget.t()} | {:error, :not_found}
-  def get_target(scope, id) do
-    DeliveryTarget
-    |> where([dt], dt.id == ^id)
-    |> where([dt], dt.id in subquery(member_target_ids_query(scope)))
-    |> Repo.one()
-    |> case do
-      nil -> {:error, :not_found}
-      %DeliveryTarget{} = target -> {:ok, target}
-    end
-  end
+  def get_target(scope, id), do: Queries.get_target(scope, id)
 
   @doc """
   Creates a delivery target owned by the scoped user.
@@ -231,7 +210,7 @@ defmodule Kanban.Targets do
           | {:error, Ecto.Changeset.t()}
   def archive_target(scope, id) do
     with {:ok, target} <- get_owned_target(scope, id),
-         :complete <- derive_target_status(scope, target) do
+         :complete <- Progress.derive_target_status(scope, target) do
       target
       |> DeliveryTarget.archive_changeset(%{archived_at: DateTime.utc_now()})
       |> Repo.update()
@@ -276,7 +255,7 @@ defmodule Kanban.Targets do
           | {:error, :not_authorized}
           | {:error, Ecto.Changeset.t()}
   def assign_goal(scope, %Task{} = goal, %DeliveryTarget{} = target) do
-    case fetch_scoped_task(scope, goal.id) do
+    case Queries.fetch_scoped_task(scope, goal.id) do
       nil ->
         {:error, :not_found}
 
@@ -296,7 +275,7 @@ defmodule Kanban.Targets do
   @spec unassign_goal(Scope.t() | nil, Task.t()) ::
           {:ok, Task.t()} | {:error, :not_found} | {:error, :not_authorized}
   def unassign_goal(scope, %Task{} = goal) do
-    case fetch_scoped_task(scope, goal.id) do
+    case Queries.fetch_scoped_task(scope, goal.id) do
       nil ->
         {:error, :not_found}
 
@@ -318,12 +297,7 @@ defmodule Kanban.Targets do
   """
   @spec list_member_goals(Scope.t() | nil, DeliveryTarget.t()) :: [Task.t()]
   def list_member_goals(scope, %DeliveryTarget{} = target) do
-    Task
-    |> where([t], t.type == :goal and t.target_id == ^target.id)
-    |> BoardScope.apply_board_scope_with_column_join(scope)
-    |> preload(:column)
-    |> Repo.all()
-    |> sort_by_identifier()
+    Queries.list_member_goals(scope, target)
   end
 
   @doc """
@@ -349,12 +323,7 @@ defmodule Kanban.Targets do
   """
   @spec list_assignable_goals(Scope.t() | nil, DeliveryTarget.t(), keyword()) :: [Task.t()]
   def list_assignable_goals(scope, %DeliveryTarget{} = _target, opts \\ []) do
-    Task
-    |> where([t], t.type == :goal and is_nil(t.target_id))
-    |> maybe_exclude_archived(Keyword.get(opts, :exclude_archived, false))
-    |> BoardScope.apply_board_scope_with_column_join(scope)
-    |> Repo.all()
-    |> sort_by_identifier()
+    Queries.list_assignable_goals(scope, Keyword.get(opts, :exclude_archived, false))
   end
 
   @doc """
@@ -376,13 +345,9 @@ defmodule Kanban.Targets do
   @spec list_member_goal_details(Scope.t() | nil, DeliveryTarget.t()) ::
           [goal_progress_detail()]
   def list_member_goal_details(scope, %DeliveryTarget{} = target) do
-    Task
-    |> where([t], t.type == :goal and t.target_id == ^target.id)
-    |> BoardScope.apply_board_scope_with_column_join(scope)
-    |> preload([:column, :assigned_to])
-    |> Repo.all()
-    |> sort_by_identifier()
-    |> goal_detail_views()
+    scope
+    |> Queries.list_member_goals_with_owner(target)
+    |> Progress.goal_detail_views()
   end
 
   @doc """
@@ -411,99 +376,25 @@ defmodule Kanban.Targets do
   @spec list_assignable_goal_details(Scope.t() | nil, DeliveryTarget.t(), keyword()) ::
           [goal_progress_detail()]
   def list_assignable_goal_details(scope, %DeliveryTarget{} = _target, opts \\ []) do
-    Task
-    |> where([t], t.type == :goal and is_nil(t.target_id))
-    |> maybe_exclude_archived(Keyword.get(opts, :exclude_archived, false))
-    |> BoardScope.apply_board_scope_with_column_join(scope)
-    |> preload([:column, :assigned_to])
-    |> Repo.all()
-    |> sort_by_identifier()
-    |> goal_detail_views()
+    scope
+    |> Queries.list_assignable_goals_with_owner(Keyword.get(opts, :exclude_archived, false))
+    |> Progress.goal_detail_views()
   end
 
-  # Drops archived goals (those with a set `archived_at`) when asked; a no-op
-  # otherwise. Applied before BoardScope's joins so only the `t` binding exists.
-  defp maybe_exclude_archived(query, true), do: where(query, [t], is_nil(t.archived_at))
-  defp maybe_exclude_archived(query, false), do: query
+  @typedoc "See `Kanban.Targets.Progress.target_summary/0`."
+  @type target_summary :: Progress.target_summary()
 
-  # Orders goals by the integer embedded in their identifier ("G18" -> 18) so
-  # numeric order holds (G18 before G131) instead of the string order the bare
-  # Repo.all() returns. Identifier numbers are generated per board and so are
-  # not globally unique; `id` ascending is the deterministic tie-breaker. Parses
-  # defensively: an identifier with no digits sorts as 0 rather than raising.
-  defp sort_by_identifier(goals) do
-    Enum.sort_by(goals, &{identifier_number(&1.identifier), &1.id})
-  end
+  @typedoc "See `Kanban.Targets.Progress.target_summary_with_goals/0`."
+  @type target_summary_with_goals :: Progress.target_summary_with_goals()
 
-  defp identifier_number(identifier) do
-    case Regex.run(~r/\d+/, identifier || "") do
-      [digits] -> String.to_integer(digits)
-      nil -> 0
-    end
-  end
+  @typedoc "See `Kanban.Targets.Progress.goal_flow/0`."
+  @type goal_flow :: Progress.goal_flow()
 
-  @typedoc """
-  One boards-page summary row for a delivery target: the target itself, its
-  read-time derived `Kanban.Targets.Status`, and the aggregate child-task
-  progress used by the targets strip.
-  """
-  @type target_summary :: %{
-          target: DeliveryTarget.t(),
-          status: Status.status(),
-          completed: non_neg_integer(),
-          total: non_neg_integer(),
-          percentage: 0..100
-        }
+  @typedoc "See `Kanban.Targets.Progress.goal_progress_detail/0`."
+  @type goal_progress_detail :: Progress.goal_progress_detail()
 
-  @typedoc """
-  A `target_summary/0` that also carries the target's member goal tasks under
-  `:goals` (`:column` preloaded, same structs `list_member_goals/2` returns).
-  Returned by `list_targets_with_status_and_goals/2` so a caller needing both
-  the status summary and the raw goal list fetches the member goals once.
-  """
-  @type target_summary_with_goals :: %{
-          target: DeliveryTarget.t(),
-          status: Status.status(),
-          completed: non_neg_integer(),
-          total: non_neg_integer(),
-          percentage: 0..100,
-          goals: [Task.t()]
-        }
-
-  @typedoc """
-  A single goal's child-task flow, bucketed by the child's *column name*
-  (not `task.status`), mirroring the boards Goals view. Every key is present
-  even when zero, and `:total` is the sum of the five column buckets.
-  """
-  @type goal_flow :: %{
-          done: non_neg_integer(),
-          review: non_neg_integer(),
-          doing: non_neg_integer(),
-          ready: non_neg_integer(),
-          backlog: non_neg_integer(),
-          total: non_neg_integer()
-        }
-
-  @typedoc """
-  One member goal's progress detail: the goal task, its column-bucketed
-  `:flow` map, and its completed/total/percentage child fraction.
-  """
-  @type goal_progress_detail :: %{
-          goal: Task.t(),
-          flow: goal_flow(),
-          completed: non_neg_integer(),
-          total: non_neg_integer(),
-          percentage: 0..100
-        }
-
-  @typedoc """
-  The full progress payload for a single target: the same aggregate
-  `target_summary/0` the boards strip uses, plus a per-goal breakdown.
-  """
-  @type target_progress :: %{
-          summary: target_summary(),
-          goals: [goal_progress_detail()]
-        }
+  @typedoc "See `Kanban.Targets.Progress.target_progress/0`."
+  @type target_progress :: Progress.target_progress()
 
   @doc """
   Aggregates every accessible delivery target into the shape the boards-page
@@ -543,7 +434,7 @@ defmodule Kanban.Targets do
   def list_targets_with_status(scope, today \\ Date.utc_today()) do
     scope
     |> list_targets()
-    |> Enum.map(&summarize_target(scope, &1, today))
+    |> Enum.map(&Progress.summarize_target(scope, &1, today))
   end
 
   @doc """
@@ -570,7 +461,7 @@ defmodule Kanban.Targets do
     scope
     |> list_targets()
     |> Enum.map(fn target ->
-      {summary, goals} = summarize_target_with_goals(scope, target, today)
+      {summary, goals} = Progress.summarize_target_with_goals(scope, target, today)
       Map.put(summary, :goals, goals)
     end)
   end
@@ -621,40 +512,17 @@ defmodule Kanban.Targets do
   def get_target_progress(scope, target_or_id, today \\ Date.utc_today())
 
   def get_target_progress(scope, %DeliveryTarget{} = target, today) do
-    build_target_progress(scope, target, today)
+    Progress.build_target_progress(scope, target, today)
   end
 
   def get_target_progress(scope, id, today) when is_integer(id) or is_binary(id) do
     case get_target(scope, id) do
-      {:ok, target} -> build_target_progress(scope, target, today)
+      {:ok, target} -> Progress.build_target_progress(scope, target, today)
       {:error, :not_found} = error -> error
     end
   end
 
   # --- Query / auth helpers -------------------------------------------------
-
-  # Distinct target_ids reachable from the caller's accessible goal-type tasks.
-  # Task-rooted so BoardScope can walk t -> column -> board_users; it adds the
-  # column join itself, so no named binding is required from the caller. Used
-  # as a subquery (`dt.id in subquery(...)`), which cannot fan out — the outer
-  # DeliveryTarget query needs no `distinct`.
-  defp member_target_ids_query(scope) do
-    Task
-    |> where([t], t.type == :goal and not is_nil(t.target_id))
-    |> BoardScope.apply_board_scope_with_column_join(scope)
-    |> select([t], t.target_id)
-  end
-
-  # Fetches a single task by id under the caller's board scope. Returns nil
-  # when the task is missing or on a board the caller cannot access. A nil /
-  # userless scope applies no board filter (BoardScope no-ops).
-  defp fetch_scoped_task(scope, id) do
-    Task
-    |> where([t], t.id == ^id)
-    |> BoardScope.apply_board_scope_with_column_join(scope)
-    |> preload(:column)
-    |> Repo.one()
-  end
 
   # Writing a goal's `target_id` lands on the goal's board, so board-write
   # access (:owner or :modify) on THAT board is required — membership alone is
@@ -677,228 +545,4 @@ defmodule Kanban.Targets do
 
   defp scope_user(%Scope{user: %{id: _} = user}), do: user
   defp scope_user(_), do: nil
-
-  defp summarize_target(scope, %DeliveryTarget{} = target, today) do
-    {summary, _goals} = summarize_target_with_goals(scope, target, today)
-    summary
-  end
-
-  # Summarizes a target AND returns its member goals, fetching the member-goal
-  # list exactly once. Both the aggregate summary (`summarize_target/3`, the
-  # boards strip) and callers that need the raw `[Task.t()]` goal list
-  # (`DeliveryRollup`, via `list_targets_with_status_and_goals/2`) share this
-  # single fetch, so the member-goal query runs once per target instead of
-  # twice. list_member_goals/2 preloads :column, so each goal's own board_id
-  # scopes its batched child-task query in `member_goal_children/1`.
-  defp summarize_target_with_goals(scope, %DeliveryTarget{} = target, today) do
-    {progress, goals} = member_goal_progress(scope, target)
-
-    {summarize_progress(target, progress, today), goals}
-  end
-
-  # The `Status.derive/3` progress shape for each of `target`'s member goals,
-  # plus the goals themselves — one member-goal query and one batched child
-  # query. Shared by `summarize_target_with_goals/3` (the boards strip) and
-  # `derive_target_status/2` (the archive gate) so the assembly lives in exactly
-  # one place and the two can never drift apart on what "complete" means.
-  #
-  # Returns the goals alongside the progress so `summarize_target_with_goals/3`
-  # can hand them to `DeliveryRollup` without a second fetch, preserving the
-  # once-per-target member-goal query this module documents.
-  defp member_goal_progress(scope, %DeliveryTarget{} = target) do
-    goals = list_member_goals(scope, target)
-    children_by_goal = member_goal_children(goals)
-
-    progress =
-      Enum.map(goals, fn goal ->
-        progress_shape(goal, Map.get(children_by_goal, goal.id, []))
-      end)
-
-    {progress, goals}
-  end
-
-  # A target's status derived from its member goals right now, for the archive
-  # gate.
-  #
-  # Unlike `list_targets_with_status/2`, this takes no injectable `today` — it
-  # anchors UTC internally. That is sufficient *here* because the gate reads
-  # only the `:complete` verdict, and `Status.derive/3` decides `:complete`
-  # (all member goals complete) before any `today`-dependent branch. So no
-  # timezone can change whether a target is archivable. A caller that needs a
-  # timezone-sensitive status (`:missed` / `:at_risk`) must go through
-  # `list_targets_with_status/2` and pass its own `today`.
-  defp derive_target_status(scope, %DeliveryTarget{} = target) do
-    {progress, _goals} = member_goal_progress(scope, target)
-
-    Status.derive(target, progress, Date.utc_today())
-  end
-
-  # Fetches every member goal's child tasks (archived included, per D124) in one
-  # query per distinct board instead of one per goal, bounding the per-goal N+1
-  # the rollup used to fire on every /agents refresh (D125). list_member_goals/2
-  # preloads :column, so each goal's board scopes its own children.
-  defp member_goal_children(goals) do
-    goals
-    |> Enum.map(&{&1.id, &1.column.board_id})
-    |> Tasks.get_children_including_archived_by_parent()
-  end
-
-  # The aggregate `target_summary/0` for a target given its member goals'
-  # `Status`-progress shapes. Shared by `summarize_target/3` (the boards strip)
-  # and `build_target_progress/3` (the drill-down) so the status/fraction math
-  # lives in exactly one place.
-  defp summarize_progress(%DeliveryTarget{} = target, progress, today) do
-    {completed, total} = aggregate_children(progress)
-
-    %{
-      target: target,
-      status: Status.derive(target, progress, today),
-      completed: completed,
-      total: total,
-      percentage: percentage(completed, total)
-    }
-  end
-
-  # The `Kanban.Targets.Status.derive/3` progress shape for one goal, computed
-  # once here so the aggregate (`summarize_target/3`, `get_target_progress/3`)
-  # and the per-goal breakdown never duplicate the completed/total math.
-  #
-  # `children` includes archived children (fetched via
-  # `get_task_children_including_archived/2`): archived-completed work is
-  # credited toward the fraction, archived-incomplete work is treated as removed
-  # (dropped from both counts). See D124.
-  defp progress_shape(%Task{} = goal, children) do
-    credited = Enum.filter(children, &credited_child?/1)
-
-    %{
-      completed_children: Enum.count(credited, &(&1.status == :completed)),
-      total_children: length(credited),
-      goal_complete?: goal_complete?(goal)
-    }
-  end
-
-  # A child counts toward the goal's completed/total fraction when it is live
-  # (not archived) or archived-but-completed. Archived-incomplete children
-  # (wontdo/duplicate/deferred/cancelled) are removed work and drop out of the
-  # fraction entirely rather than dragging the denominator down. See D124.
-  defp credited_child?(%Task{archived_at: nil}), do: true
-  defp credited_child?(%Task{status: status}), do: status == :completed
-
-  # A goal is complete when its own status is :completed, or it has been
-  # archived as finished work — archive_reason :completed, or legacy nil. A goal
-  # archived as :wontdo/:duplicate/:deferred/:cancelled is abandoned, not
-  # complete, so it must not credit the target toward :complete. See D124.
-  defp goal_complete?(%Task{status: :completed}), do: true
-  defp goal_complete?(%Task{archived_at: nil}), do: false
-  defp goal_complete?(%Task{archive_reason: reason}), do: reason in [:completed, nil]
-
-  # Builds the full progress payload for one already-resolved target. The
-  # target-level aggregate and the per-goal breakdown both derive from the
-  # single `details` list — one child fetch per goal — reusing the shared
-  # `aggregate_children/1`, `percentage/2`, and `Status.derive/3` helpers.
-  defp build_target_progress(scope, %DeliveryTarget{} = target, today) do
-    details =
-      scope
-      |> list_member_goals(target)
-      |> goal_detail_entries()
-
-    progress = Enum.map(details, & &1.progress)
-
-    %{
-      summary: summarize_progress(target, progress, today),
-      goals: Enum.map(details, &goal_detail_view/1)
-    }
-  end
-
-  # Maps a list of `:column`-preloaded goals to their internal detail entries
-  # (one child fetch each). Shared by `build_target_progress/3` (which also
-  # needs each entry's `:progress`) and `goal_detail_views/1`.
-  defp goal_detail_entries(goals), do: Enum.map(goals, &goal_detail_entry/1)
-
-  # Maps a list of `:column`-preloaded goals to the public
-  # `goal_progress_detail/0` shape. The DRY entry point for
-  # `list_member_goal_details/2` and `list_assignable_goal_details/2`.
-  defp goal_detail_views(goals) do
-    goals
-    |> goal_detail_entries()
-    |> Enum.map(&goal_detail_view/1)
-  end
-
-  # The public per-goal detail shape — drops the internal `:progress` key that
-  # only `Status.derive/3` needs.
-  defp goal_detail_view(detail) do
-    Map.take(detail, [:goal, :flow, :completed, :total, :percentage])
-  end
-
-  # One member goal's detail: fetches its child tasks once (with `:column`
-  # preloaded for flow bucketing), then derives the Status progress shape, the
-  # column-bucketed flow map, and the completed/total/percentage fraction from
-  # that single fetch.
-  defp goal_detail_entry(%Task{} = goal) do
-    children =
-      goal.id
-      |> Tasks.get_task_children_including_archived(goal.column.board_id)
-      |> Repo.preload(:column)
-
-    progress = progress_shape(goal, children)
-
-    %{
-      goal: goal,
-      flow: flow_map(Enum.filter(children, &credited_child?/1)),
-      completed: progress.completed_children,
-      total: progress.total_children,
-      percentage: percentage(progress.completed_children, progress.total_children),
-      progress: progress
-    }
-  end
-
-  # Display fraction across every member goal's child tasks (childless goals
-  # add 0/0). Distinct from Status.derive's work-share, which counts a childless
-  # goal as one unit — the two measures are intentionally separate.
-  defp aggregate_children(progress) do
-    Enum.reduce(progress, {0, 0}, fn gp, {done, total} ->
-      {done + gp.completed_children, total + gp.total_children}
-    end)
-  end
-
-  defp percentage(_completed, 0), do: 0
-  defp percentage(completed, total), do: round(completed / total * 100)
-
-  @empty_flow %{done: 0, review: 0, doing: 0, ready: 0, backlog: 0, total: 0}
-
-  # Buckets a goal's child tasks into %{done, review, doing, ready, backlog,
-  # total} by each child's column NAME (never task.status), matching the boards
-  # Goals view. Children must have :column preloaded.
-  defp flow_map(children) do
-    Enum.reduce(children, @empty_flow, fn child, acc ->
-      bucket = flow_bucket_for(child)
-
-      acc
-      |> Map.update!(bucket, &(&1 + 1))
-      |> Map.update!(:total, &(&1 + 1))
-    end)
-  end
-
-  # Archived-completed children are credited into the progress fraction but are
-  # hidden from the board, so their stale column must not drive a bucket — count
-  # them as :done. Live children bucket by their column name as before. See D124.
-  defp flow_bucket_for(%Task{archived_at: at, column: column}) do
-    if is_nil(at), do: flow_bucket(column), else: :done
-  end
-
-  # Maps a column name to its flow bucket. Duplicates the tiny name→status case
-  # from KanbanWeb.BoardLive.Show.column_status/1 deliberately: a context must
-  # not depend on the web layer. Any unknown/nil column falls back to :backlog.
-  defp flow_bucket(%{name: name}) when is_binary(name) do
-    case String.downcase(name) do
-      "backlog" -> :backlog
-      "ready" -> :ready
-      "doing" -> :doing
-      "review" -> :review
-      "done" -> :done
-      _ -> :backlog
-    end
-  end
-
-  defp flow_bucket(_), do: :backlog
 end
