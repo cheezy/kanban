@@ -5,6 +5,11 @@ defmodule KanbanWeb.UserSessionController do
   alias Kanban.RateLimit
   alias KanbanWeb.UserAuth
 
+  # The settings LiveView is sudo-gated at mount, but the password-change POST
+  # is a separate controller route — re-check sudo here so a direct POST that
+  # bypasses the LiveView also requires recent re-authentication (D155).
+  plug :require_sudo_mode when action in [:update_password]
+
   def register(conn, %{"user" => user_params}) do
     case Accounts.register_user(user_params) do
       {:ok, user} ->
@@ -117,5 +122,28 @@ defmodule KanbanWeb.UserSessionController do
     conn
     |> put_flash(:info, "Logged out successfully.")
     |> UserAuth.log_out_user()
+  end
+
+  # Mirrors the `:require_sudo_mode` LiveView on_mount (user_auth.ex): a
+  # credential change requires a session authenticated within the last 10
+  # minutes. Not in sudo → bounce to the re-auth (log-in) page. The window
+  # matches the on_mount so the two gates behave identically.
+  defp require_sudo_mode(conn, _opts) do
+    user = conn.assigns.current_scope && conn.assigns.current_scope.user
+
+    if user && Accounts.sudo_mode?(user, -10) do
+      conn
+    else
+      Kanban.AuditLog.event(:permission_denied,
+        user_id: user && user.id,
+        ip: conn.remote_ip,
+        gate: :require_sudo_mode
+      )
+
+      conn
+      |> put_flash(:error, "You must re-authenticate to access this page.")
+      |> redirect(to: ~p"/users/log-in")
+      |> halt()
+    end
   end
 end

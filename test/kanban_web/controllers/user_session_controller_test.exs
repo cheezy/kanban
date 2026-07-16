@@ -303,6 +303,53 @@ defmodule KanbanWeb.UserSessionControllerTest do
     end
   end
 
+  describe "POST /users/update-password — sudo gate (D155)" do
+    test "a recently-authenticated (in-sudo) session can change the password", %{
+      conn: conn,
+      user: user
+    } do
+      new_password = "a new valid password"
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> post(~p"/users/update-password", %{
+          "user" => %{
+            "email" => user.email,
+            "password" => new_password,
+            "password_confirmation" => new_password
+          }
+        })
+
+      assert redirected_to(conn) == ~p"/users/settings"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Password updated successfully!"
+      assert Accounts.get_user_by_email_and_password(user.email, new_password)
+    end
+
+    test "a session older than the sudo window is bounced to re-authenticate and does not change the password",
+         %{conn: conn, user: user} do
+      stale = DateTime.utc_now(:second) |> DateTime.add(-11, :minute)
+      new_password = "a new valid password"
+
+      conn =
+        conn
+        |> log_in_user(user, token_authenticated_at: stale)
+        |> post(~p"/users/update-password", %{
+          "user" => %{
+            "email" => user.email,
+            "password" => new_password,
+            "password_confirmation" => new_password
+          }
+        })
+
+      assert redirected_to(conn) == ~p"/users/log-in"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "re-authenticate"
+      # The password was NOT changed — the old one still authenticates.
+      assert Accounts.get_user_by_email_and_password(user.email, valid_user_password())
+      refute Accounts.get_user_by_email_and_password(user.email, new_password)
+    end
+  end
+
   describe "DELETE /users/log-out" do
     test "logs the user out", %{conn: conn, user: user} do
       conn = conn |> log_in_user(user) |> delete(~p"/users/log-out")

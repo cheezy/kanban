@@ -147,6 +147,22 @@ defmodule KanbanWeb.Router do
   scope "/", KanbanWeb do
     pipe_through [:browser, :require_authenticated_user]
 
+    # Account settings mutate the credentials themselves (password, email), so
+    # they sit behind a re-authentication (sudo) gate rather than a plain
+    # authenticated session — a borrowed/hijacked session or the long-lived
+    # remember-me cookie must not be enough to change the password or email
+    # (D155). The re-auth surface is the existing /users/log-in page.
+    live_session :require_sudo_mode,
+      on_mount: [
+        {KanbanWeb.SandboxOnMount, :default},
+        {KanbanWeb.LocaleOnMount, :set_locale},
+        {KanbanWeb.UserAuth, :require_sudo_mode}
+      ],
+      root_layout: {KanbanWeb.Layouts, :app_chrome} do
+      live "/users/settings", UserLive.Settings, :edit
+      live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
+    end
+
     live_session :require_authenticated_user,
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
@@ -154,9 +170,6 @@ defmodule KanbanWeb.Router do
         {KanbanWeb.UserAuth, :require_authenticated}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
-      live "/users/settings", UserLive.Settings, :edit
-      live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
-
       live "/boards", BoardLive.Index, :index
       live "/boards/new", BoardLive.Form, :new
 
