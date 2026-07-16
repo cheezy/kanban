@@ -873,6 +873,29 @@ defmodule KanbanWeb.API.TaskControllerTest do
   end
 
   describe "POST /api/tasks/batch" do
+    test "returns 403 for a read-only board member (D154)", %{board: board, user: owner} do
+      reader = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      {:ok, {_t, reader_token}} =
+        ApiTokens.create_api_token(reader, board, %{"name" => "Reader Token"})
+
+      goals_params = [
+        %{"title" => "Sneaky Goal", "type" => "goal", "priority" => "high", "tasks" => []}
+      ]
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{reader_token}")
+        |> post(~p"/api/tasks/batch", goals: goals_params)
+
+      assert json_response(conn, 403)
+      # No goal was created for the unauthorized caller.
+      goals = Kanban.Tasks.Queries.list_goals_for_board(board.id)
+      assert Enum.all?(goals, &(&1.title != "Sneaky Goal"))
+    end
+
     test "creates multiple goals with child tasks", %{conn: conn} do
       goals_params = [
         %{

@@ -249,25 +249,9 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   def batch_create(conn, %{"goals" => goals} = params) do
-    board = conn.assigns.current_board
-    user = conn.assigns.current_user
-    api_token = conn.assigns.api_token
-    agent_name = params["agent_name"]
-
-    stamp_agent_identity(conn, params)
-
-    column_id = get_default_column_id(board)
-
-    # Board-scoped lookup; default column should always exist on the board, so
-    # this is defense-in-depth in case get_default_column_id returns nil/stale.
-    case column_id && Columns.get_column_for_board(column_id, board.id) do
-      nil ->
-        TaskErrors.handle_task_error(conn, {:error, :not_found})
-
-      column ->
-        goals
-        |> BatchGoalCreation.process_batch_goals(column, user, api_token, agent_name, conn)
-        |> BatchGoalCreation.handle_batch_result(conn)
+    case authorize_board_write(conn) do
+      :ok -> do_batch_create(conn, goals, params)
+      error -> TaskErrors.handle_task_error(conn, error)
     end
   end
 
@@ -296,6 +280,35 @@ defmodule KanbanWeb.API.TaskController do
     conn
     |> put_status(:unprocessable_entity)
     |> json(error_response)
+  end
+
+  # Mirrors the live board-write re-check that create/2, update/2, and
+  # after_goal enforce (D108/D109): a token whose user has only view/read-only
+  # access — or whose owner/modify access was downgraded after the token was
+  # issued — must not bulk-create goals via this endpoint. Called only after
+  # authorize_board_write/1 passes, so no side effect runs for an unauthorized
+  # caller.
+  defp do_batch_create(conn, goals, params) do
+    board = conn.assigns.current_board
+    user = conn.assigns.current_user
+    api_token = conn.assigns.api_token
+    agent_name = params["agent_name"]
+
+    stamp_agent_identity(conn, params)
+
+    column_id = get_default_column_id(board)
+
+    # Board-scoped lookup; default column should always exist on the board, so
+    # this is defense-in-depth in case get_default_column_id returns nil/stale.
+    case column_id && Columns.get_column_for_board(column_id, board.id) do
+      nil ->
+        TaskErrors.handle_task_error(conn, {:error, :not_found})
+
+      column ->
+        goals
+        |> BatchGoalCreation.process_batch_goals(column, user, api_token, agent_name, conn)
+        |> BatchGoalCreation.handle_batch_result(conn)
+    end
   end
 
   def update(conn, %{"id" => _id_or_identifier, "data" => _data}) do
