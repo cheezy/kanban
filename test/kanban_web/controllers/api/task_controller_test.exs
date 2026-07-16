@@ -1843,7 +1843,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
   end
 
   describe "cross-board access protection" do
-    test "cannot access tasks from different board", %{conn: conn, user: _user} do
+    test "a cross-board task id and a nonexistent id both return 404 (no existence oracle, D160)",
+         %{conn: conn, user: _user} do
       other_user = user_fixture()
       other_board = ai_optimized_board_fixture(other_user)
       other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
@@ -1854,8 +1855,14 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "created_by_id" => other_user.id
         })
 
-      conn = get(conn, ~p"/api/tasks/#{other_task.id}")
-      assert json_response(conn, 403)
+      # A task that exists on another board must be indistinguishable from a
+      # task that does not exist: both 404, not 403-vs-404.
+      cross_board = get(conn, ~p"/api/tasks/#{other_task.id}")
+      nonexistent = get(conn, ~p"/api/tasks/#{999_999_999}")
+
+      assert json_response(cross_board, 404)
+      assert json_response(nonexistent, 404)
+      assert json_response(cross_board, 404) == json_response(nonexistent, 404)
     end
   end
 
@@ -3851,7 +3858,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert Kanban.Repo.get!(Kanban.Tasks.Task, review_task.id).changed_files in [nil, []]
     end
 
-    test "returns 403 when the task belongs to a different board", %{conn: conn, user: user} do
+    test "returns 404 when the task belongs to a different board (no existence oracle, D160)", %{
+      conn: conn,
+      user: user
+    } do
       other_board = ai_optimized_board_fixture(user)
       other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
 
@@ -3864,7 +3874,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       conn =
         put(conn, ~p"/api/tasks/#{other_task.id}/changed_files", %{"changed_files" => []})
 
-      assert json_response(conn, 403)["error"] =~ "does not belong to this board"
+      assert json_response(conn, 404)["error"] =~ "Task not found"
     end
 
     test "returns 404 for a task that does not exist", %{conn: conn} do
@@ -4382,7 +4392,9 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 422)["error"] =~ "review status"
     end
 
-    test "returns 403 when task belongs to different board", %{conn: conn} do
+    test "returns 404 when task belongs to different board (no existence oracle, D160)", %{
+      conn: conn
+    } do
       other_user = user_fixture()
       other_board = ai_optimized_board_fixture(other_user)
       review_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Review"))
@@ -4405,7 +4417,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "after_review_result" => valid_after_review_result()
         })
 
-      assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
+      assert json_response(conn, 404)["error"] =~ "Task not found"
     end
 
     test "approved last-child review includes after_goal in hooks payload (W492)",
@@ -4585,7 +4597,9 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 422)["error"] =~ "Task must be in Review column"
     end
 
-    test "returns 403 when task belongs to different board", %{conn: conn} do
+    test "returns 404 when task belongs to different board (no existence oracle, D160)", %{
+      conn: conn
+    } do
       other_user = user_fixture()
       other_board = ai_optimized_board_fixture(other_user)
       review_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Review"))
@@ -4597,7 +4611,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         })
 
       conn = patch(conn, ~p"/api/tasks/#{task.id}/mark_done")
-      assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
+      assert json_response(conn, 404)["error"] =~ "Task not found"
     end
   end
 
@@ -4687,7 +4701,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert hd(response["dependencies"])["task"]["identifier"] == dep_task.identifier
     end
 
-    test "returns 403 for task on different board", %{conn: conn} do
+    test "returns 404 for task on different board (no existence oracle, D160)", %{conn: conn} do
       other_user = user_fixture()
       other_board = ai_optimized_board_fixture(other_user)
       other_column = Columns.list_columns(other_board) |> List.first()
@@ -4698,7 +4712,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         })
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/dependencies")
-      assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
+      assert json_response(conn, 404)["error"] =~ "Task not found"
     end
 
     test "returns 404 for nonexistent task", %{conn: conn} do
@@ -4792,7 +4806,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert hd(response["dependents"])["identifier"] == dependent.identifier
     end
 
-    test "returns 403 for task on different board", %{conn: conn} do
+    test "returns 404 for task on different board (no existence oracle, D160)", %{conn: conn} do
       other_user = user_fixture()
       other_board = ai_optimized_board_fixture(other_user)
       other_column = Columns.list_columns(other_board) |> List.first()
@@ -4803,7 +4817,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         })
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/dependents")
-      assert json_response(conn, 403)["error"] =~ "Task does not belong to this board"
+      assert json_response(conn, 404)["error"] =~ "Task not found"
     end
   end
 
@@ -5048,7 +5062,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
   end
 
   describe "missing 403 tests" do
-    test "PATCH /api/tasks/:id updates task from different board returns 403",
+    test "PATCH /api/tasks/:id updates task from different board returns 404 (no existence oracle, D160)",
          %{conn: conn, user: user} do
       other_board = ai_optimized_board_fixture(user)
       other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
@@ -5061,7 +5075,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
           task: %{title: "Updated"}
         })
 
-      assert json_response(conn, 403)["error"] =~ "does not belong to this board"
+      assert json_response(conn, 404)["error"] =~ "Task not found"
     end
   end
 
@@ -5105,7 +5119,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["data"]["task"]["title"] == "ID Task"
     end
 
-    test "returns 403 for task on different board", %{conn: conn, user: user} do
+    test "returns 404 for task on different board (no existence oracle, D160)", %{
+      conn: conn,
+      user: user
+    } do
       other_board = ai_optimized_board_fixture(user)
       other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
 
@@ -5113,7 +5130,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         Tasks.create_task(other_column, %{title: "Other board task", position: 0})
 
       conn = get(conn, ~p"/api/tasks/#{task.id}/tree")
-      assert json_response(conn, 403)["error"] =~ "does not belong to this board"
+      assert json_response(conn, 404)["error"] =~ "Task not found"
     end
   end
 

@@ -923,8 +923,12 @@ defmodule KanbanWeb.API.TaskController do
   defp get_task_by_id_or_identifier(id_or_identifier, board) do
     case Integer.parse(id_or_identifier) do
       {id, ""} ->
-        # It's a numeric ID
-        Tasks.get_task_for_view(id)
+        # Board-scope the numeric-id lookup so a cross-board id and a
+        # nonexistent id both resolve to nil → 404. Fetching globally and
+        # letting verify_board_ownership distinguish them downstream returned
+        # 403 for a cross-board id vs 404 for a missing one — a task-existence
+        # oracle (D160), the same class W399 closed for column lookups.
+        if Tasks.get_task_for_board(id, board.id), do: Tasks.get_task_for_view(id)
 
       _ ->
         # It's an identifier like "W14"

@@ -513,7 +513,10 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
       refute Map.has_key?(body, "data")
     end
 
-    test "returns 403 for a task on a different board", %{conn: conn, user: user} do
+    test "returns 404 for a task on a different board (no existence oracle, D160)", %{
+      conn: conn,
+      user: user
+    } do
       other_board = ai_optimized_board_fixture(user)
 
       other_column =
@@ -522,8 +525,9 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
       {:ok, task} =
         Tasks.create_task(other_column, %{title: "Other board task", position: 0})
 
+      # A cross-board task id is indistinguishable from an unknown id — both 404.
       conn = get(conn, ~p"/api/tasks/#{task.id}/after_goal_status")
-      assert json_response(conn, 403)["error"] =~ "does not belong to this board"
+      assert json_response(conn, 404)["error"] =~ "Task not found"
     end
 
     test "returns 404 for an unknown id", %{conn: conn} do
