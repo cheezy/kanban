@@ -55,11 +55,13 @@ defmodule KanbanWeb.AgentsHeaderTest do
   end
 
   describe "header/1 — markers and title" do
-    test "outermost element carries data-agents-header and class stride-screen" do
+    test "outermost element carries data-agents-header and the band classes" do
       html = render(stats(), 0)
 
       assert html =~ "data-agents-header"
-      assert html =~ ~s(class="stride-screen")
+      # The band's vertical padding lives on .agents-header-band so a
+      # compression pass can target it from a media query.
+      assert html =~ ~s(class="stride-screen agents-header-band")
     end
 
     test "renders the H1 with the gettext title" do

@@ -46,6 +46,9 @@ defmodule KanbanWeb.DeliveryHealthBandTest do
         ])
 
       assert html =~ "data-delivery-health-band"
+      # The band's vertical padding lives on .agents-health-band so a
+      # compression pass can target it from a media query.
+      assert html =~ ~s(class="stride-screen agents-health-band")
       assert html =~ "Delivery health"
 
       for marker <- ~w(on-track at-risk missed complete) do

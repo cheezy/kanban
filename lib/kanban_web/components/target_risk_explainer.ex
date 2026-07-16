@@ -57,10 +57,10 @@ defmodule KanbanWeb.TargetRiskExplainer do
     <section
       :if={@at_risk != []}
       data-target-risk-explainer
-      class="stride-screen"
+      class="stride-screen agents-risk-band"
       style={[
         "display: flex; flex-direction: column; gap: 12px;",
-        "padding: 12px 24px;",
+        "padding-left: 24px; padding-right: 24px;",
         "border-bottom: 1px solid var(--line);",
         "background: var(--surface);"
       ]}

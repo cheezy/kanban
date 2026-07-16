@@ -53,6 +53,9 @@ defmodule KanbanWeb.TargetRiskExplainerTest do
         ])
 
       assert html =~ "data-target-risk-explainer"
+      # The band's vertical padding lives on .agents-risk-band so a
+      # compression pass can target it from a media query.
+      assert html =~ ~s(class="stride-screen agents-risk-band")
       assert html =~ "Why targets are at risk"
       assert html =~ ~s(data-target-risk-card="1")
       assert html =~ "Launch"

@@ -1108,6 +1108,59 @@
 }
 
 /* ============================================================
+   /agents header bands — vertical padding + trend strip height.
+
+   Extracted verbatim from the inline `style` lists on the four
+   band roots and the throughput series. Inline styles beat
+   stylesheet specificity, so a follow-up compression pass could
+   not write max-height media queries against them without
+   !important on every rule.
+
+   Values are UNCHANGED from the inline originals. Each band owns
+   its own class rather than sharing a value-based one (.pad-12)
+   so the compression pass can tune bands independently without
+   the name becoming a lie. Horizontal padding stays inline: the
+   `padding: <V> 24px` shorthand was split into left/right (inline)
+   and top/bottom (here). The two sets are disjoint, so the cascade
+   never collides and no !important is required.
+
+   The band selectors are COMPOUND (no space): each band root carries
+   stride-screen and its band class on the same element, so a
+   descendant selector would match only via an ancestor's
+   stride-screen and would silently drop the padding if that ancestor
+   ever lost the class. The component tests render bands outside the
+   layout, so nothing would catch it.
+   ============================================================ */
+.stride-screen.agents-header-band {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.stride-screen.agents-trends-band {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.stride-screen.agents-health-band {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.stride-screen.agents-risk-band {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+/* Throughput bar strip — fixed height keeps the bars readable.
+   Split out of the inline string that still carries the strip's
+   overflow-x / min-width / max-width. Descendant selector here (not
+   compound): this strip has no stride-screen of its own, it inherits
+   the scope from the pm_trends band above it. */
+.stride-screen .agents-trends-series {
+  height: 128px;
+}
+
+/* ============================================================
    Height-aware viewport pinning.
 
    Tailwind's md:h-full pins a screen to the viewport on a

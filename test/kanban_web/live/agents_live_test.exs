@@ -1164,8 +1164,13 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert length(Regex.scan(~r/data-agents-pm-trends-bar=/, html)) == 14
       # Bars use the design-system completion token, not a hardcoded color.
       assert html =~ "var(--st-done)"
-      # The strip renders at the taller height for readability.
-      assert html =~ "height: 128px"
+      # The strip's taller readable height now comes from .agents-trends-series
+      # rather than an inline declaration, so a compression pass can target it
+      # from a media query.
+      assert html =~ ~s(class="agents-trends-series")
+      refute html =~ "height: 128px"
+      # The band around it carries its padding class for the same reason.
+      assert html =~ ~s(class="stride-screen agents-trends-band")
     end
 
     test "shows the empty hint and zeroed stats when nothing has completed",

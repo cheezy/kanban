@@ -51,10 +51,10 @@ defmodule KanbanWeb.AgentsHeader do
     ~H"""
     <header
       data-agents-header
-      class="stride-screen"
+      class="stride-screen agents-header-band"
       style={[
         "display: flex; flex-direction: column; gap: 14px;",
-        "padding: 14px 24px;",
+        "padding-left: 24px; padding-right: 24px;",
         "border-bottom: 1px solid var(--line);",
         "background: var(--surface);"
       ]}
@@ -234,10 +234,10 @@ defmodule KanbanWeb.AgentsHeader do
     ~H"""
     <section
       data-agents-pm-trends
-      class="stride-screen"
+      class="stride-screen agents-trends-band"
       style={[
         "display: flex; flex-direction: column; gap: 12px;",
-        "padding: 12px 24px;",
+        "padding-left: 24px; padding-right: 24px;",
         "border-bottom: 1px solid var(--line);",
         "background: var(--surface);"
       ]}
@@ -297,9 +297,10 @@ defmodule KanbanWeb.AgentsHeader do
       <div
         :if={@max_count > 0}
         data-agents-pm-trends-series
+        class="agents-trends-series"
         style={[
           "display: flex; align-items: flex-end; gap: 4px;",
-          "height: 128px; overflow-x: auto; min-width: 0; max-width: 100%;"
+          "overflow-x: auto; min-width: 0; max-width: 100%;"
         ]}
       >
         <div
