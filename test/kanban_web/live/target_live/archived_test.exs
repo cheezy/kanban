@@ -310,6 +310,52 @@ defmodule KanbanWeb.TargetLive.ArchivedTest do
       assert result =~ "Untouched"
     end
 
+    test "an out-of-range id flashes not-found instead of crashing the LiveView",
+         %{conn: conn, user: user, scope: scope} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      visible_archived_target(scope, user, column, %{name: "Out Of Range"})
+
+      {:ok, live, _html} = live(conn, ~p"/targets/archived")
+
+      # Integer.parse/1 is unbounded, so 2^63 parses cleanly and would then raise
+      # DBConnection.EncodeError when Ecto encoded it as a bigint parameter —
+      # taking this LiveView down. Out-of-range is indistinguishable from missing,
+      # so it reuses the not-found branch rather than a new message. (D149)
+      result = render_click(live, "unarchive", %{"id" => "9223372036854775808"})
+
+      assert result =~ "Target not found"
+      assert result =~ "Out Of Range"
+
+      # LiveView params are JSON-decoded, so a crafted event can deliver a bare
+      # number rather than a string — that reaches the is_integer clause, which
+      # Integer.parse never sees. Guarding only the string path leaves this open.
+      result = render_click(live, "unarchive", %{"id" => 9_223_372_036_854_775_808})
+
+      assert result =~ "Target not found"
+      assert result =~ "Out Of Range"
+    end
+
+    test "a zero or negative id flashes not-found",
+         %{conn: conn, user: user, scope: scope} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      visible_archived_target(scope, user, column, %{name: "Still Archived"})
+
+      {:ok, live, _html} = live(conn, ~p"/targets/archived")
+
+      # Ids are positive serials, so the guard's 1.. lower bound rejects 0 and
+      # negatives. This locks in that intent across both the string and
+      # JSON-number shapes — it does not prove the guard is what rejected them:
+      # without it, 0/-1 simply match no row and reach this same branch.
+      for id <- ["0", "-1", 0, -1] do
+        result = render_click(live, "unarchive", %{"id" => id})
+
+        assert result =~ "Target not found"
+        assert result =~ "Still Archived"
+      end
+    end
+
     test "an integer id is accepted and unarchives the target", %{
       conn: conn,
       user: user,

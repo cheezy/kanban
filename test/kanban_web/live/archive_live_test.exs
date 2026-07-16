@@ -291,6 +291,58 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert html =~ "Failed to unarchive task"
     end
 
+    test "an out-of-range id flashes an error instead of crashing the LiveView", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column, %{title: "Out Of Range Task"})
+      {:ok, _archived_task} = Tasks.archive_task(task)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # Integer.parse/1 is unbounded, so 2^63 parses cleanly and would then raise
+      # DBConnection.EncodeError when Ecto encoded it as a bigint parameter —
+      # taking this LiveView down. Out-of-range reuses the existing failure
+      # branch rather than a new message. (D149)
+      index_live |> render_click("unarchive", %{"id" => "9223372036854775808"})
+
+      assert render(index_live) =~ "Failed to unarchive task"
+
+      # LiveView params are JSON-decoded, so a crafted event can deliver a bare
+      # number rather than a string — that reaches the is_integer clause, which
+      # Integer.parse never sees. Guarding only the string path leaves this open.
+      index_live |> render_click("unarchive", %{"id" => 9_223_372_036_854_775_808})
+
+      assert render(index_live) =~ "Failed to unarchive task"
+
+      # The task is still archived — no id ever reached the query.
+      assert render(index_live) =~ "Out Of Range Task"
+    end
+
+    test "a zero or negative id flashes an error", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column, %{title: "Still Archived Task"})
+      {:ok, _archived_task} = Tasks.archive_task(task)
+
+      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+
+      # Ids are positive serials, so the guard's 1.. lower bound rejects 0 and
+      # negatives. This locks in that intent across both the string and
+      # JSON-number shapes — it does not prove the guard is what rejected them:
+      # without it, 0/-1 simply match no row and reach this same branch.
+      for id <- ["0", "-1", 0, -1] do
+        index_live |> render_click("unarchive", %{"id" => id})
+
+        assert render(index_live) =~ "Failed to unarchive task"
+      end
+
+      assert render(index_live) =~ "Still Archived Task"
+    end
+
     test "read-only user is rejected when pushing unarchive event", %{
       conn: conn,
       user: user

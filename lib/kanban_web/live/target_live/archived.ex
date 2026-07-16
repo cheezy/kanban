@@ -56,11 +56,19 @@ defmodule KanbanWeb.TargetLive.Archived do
     end
   end
 
-  defp parse_id(id) when is_integer(id), do: {:ok, id}
+  # Postgres bigint ceiling. Integer.parse/1 is unbounded and LiveView params are
+  # JSON-decoded, so both "9223372036854775808" (a string) and 9223372036854775808
+  # (a JSON number) reach parse_id/1 and would raise DBConnection.EncodeError when
+  # Ecto tried to encode them as a bigint parameter. Ids are positive serials, so
+  # 0 and negatives are rejected here too — every out-of-range value falls through
+  # to the catch-all :error clause and lands in the existing not-found branch.
+  @max_bigint 0x7FFFFFFFFFFFFFFF
+
+  defp parse_id(id) when is_integer(id) and id in 1..@max_bigint, do: {:ok, id}
 
   defp parse_id(id) when is_binary(id) do
     case Integer.parse(id) do
-      {n, ""} -> {:ok, n}
+      {n, ""} when n in 1..@max_bigint -> {:ok, n}
       _ -> :error
     end
   end
