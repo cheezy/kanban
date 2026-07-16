@@ -25,9 +25,16 @@ defmodule Kanban.AuditLog do
 
   @telemetry_prefix [:kanban, :audit]
 
-  # Never emit these, regardless of what a caller passes.
-  @sensitive_keys ~w(password password_confirmation hashed_password token api_token
-                     plain_text_token secret secret_key_base authorization)a
+  # A key is dropped when its name CONTAINS any of these substrings, so
+  # credential-shaped keys the original exact-match list never anticipated
+  # (:reset_token, :api_key, :refresh_token, :session_token, :otp_secret, …)
+  # are redacted too, honoring the moduledoc's never-log guarantee (D159).
+  @sensitive_substrings ~w(password token secret authorization key otp)
+
+  # Keys ending in `_id` are database identifiers (user_id, board_id,
+  # token_id — a row id, not the token value), so they are exempt from the
+  # substring rule even when the substring would otherwise match.
+  @id_suffix "_id"
 
   @doc """
   Emit a security audit event. `action` is a stable atom (e.g. `:login_failed`);
@@ -45,8 +52,15 @@ defmodule Kanban.AuditLog do
 
   defp sanitize(metadata) do
     metadata
-    |> Enum.reject(fn {key, _value} -> key in @sensitive_keys end)
+    |> Enum.reject(fn {key, _value} -> sensitive_key?(key) end)
     |> Enum.map(&format_pair/1)
+  end
+
+  defp sensitive_key?(key) do
+    name = to_string(key)
+
+    not String.ends_with?(name, @id_suffix) and
+      Enum.any?(@sensitive_substrings, &String.contains?(name, &1))
   end
 
   # Format IP address tuples (conn.remote_ip / peer address) to a string.

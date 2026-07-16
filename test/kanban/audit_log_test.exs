@@ -69,6 +69,40 @@ defmodule Kanban.AuditLogTest do
     refute Map.has_key?(metadata, :token)
   end
 
+  test "drops credential-shaped keys the exact-match list never anticipated (D159)" do
+    attach(:password_reset_requested)
+
+    AuditLog.event(:password_reset_requested,
+      user_id: 7,
+      reset_token: "raw-reset-token",
+      api_key: "raw-api-key",
+      refresh_token: "raw-refresh",
+      session_token: "raw-session",
+      otp_secret: "123456"
+    )
+
+    assert_receive {:audit, _m, metadata}
+    # The row id survives; every credential-shaped key is redacted.
+    assert metadata.user_id == 7
+    refute Map.has_key?(metadata, :reset_token)
+    refute Map.has_key?(metadata, :api_key)
+    refute Map.has_key?(metadata, :refresh_token)
+    refute Map.has_key?(metadata, :session_token)
+    refute Map.has_key?(metadata, :otp_secret)
+  end
+
+  test "keeps benign *_id keys even when they contain a sensitive substring (D159)" do
+    attach(:api_token_created)
+
+    AuditLog.event(:api_token_created, user_id: 1, board_id: 2, token_id: 3)
+
+    assert_receive {:audit, _m, metadata}
+    assert metadata.user_id == 1
+    assert metadata.board_id == 2
+    # token_id is a row id, not the token value, so it is not redacted.
+    assert metadata.token_id == 3
+  end
+
   test "writes a structured security_audit log line without interpolating values" do
     log =
       capture_log(fn ->
