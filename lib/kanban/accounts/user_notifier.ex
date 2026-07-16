@@ -149,7 +149,7 @@ defmodule Kanban.Accounts.UserNotifier do
     </p>
 
     <p>
-    This link will expire in 7 days.
+    This link will expire in 15 minutes.
     </p>
 
     Regards,<br/>

@@ -1,10 +1,13 @@
 defmodule KanbanWeb.UserLive.ResetPasswordTest do
   use KanbanWeb.ConnCase, async: true
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
 
   alias Kanban.Accounts
+  alias Kanban.Accounts.UserToken
+  alias Kanban.Repo
 
   setup do
     user = user_fixture()
@@ -27,6 +30,30 @@ defmodule KanbanWeb.UserLive.ResetPasswordTest do
 
     test "does not render reset password page with invalid token", %{conn: conn} do
       {:error, {:redirect, to}} = live(conn, ~p"/users/reset-password/invalid")
+
+      assert to == %{
+               flash: %{"error" => "Reset password link is invalid or it has expired."},
+               to: ~p"/"
+             }
+    end
+
+    test "an expired reset link shows the invalid/expired flash and redirects to / (D136)", %{
+      conn: conn,
+      token: token,
+      user: user
+    } do
+      # A real (not malformed) token pushed just past the enforced 15-minute
+      # window must behave exactly like an invalid one.
+      just_outside =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-(UserToken.reset_password_validity_in_minutes() + 1), :minute)
+        |> NaiveDateTime.truncate(:second)
+
+      {1, nil} =
+        from(t in UserToken, where: t.user_id == ^user.id)
+        |> Repo.update_all(set: [inserted_at: just_outside])
+
+      {:error, {:redirect, to}} = live(conn, ~p"/users/reset-password/#{token}")
 
       assert to == %{
                flash: %{"error" => "Reset password link is invalid or it has expired."},

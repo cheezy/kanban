@@ -489,36 +489,45 @@ defmodule Kanban.AccountsTest do
       assert Repo.get_by(UserToken, user_id: user.id)
     end
 
-    test "rejects a token older than the dedicated 1-day reset window (D105)", %{
+    test "rejects a token just outside the dedicated 15-minute reset window (D105/D136)", %{
       user: user,
       token: token
     } do
-      # 2 days old: still valid under the old 7-day change-email window, but must
-      # be rejected under the dedicated 1-day reset-password window.
-      two_days_ago =
-        NaiveDateTime.utc_now() |> NaiveDateTime.add(-2, :day) |> NaiveDateTime.truncate(:second)
+      # 1 minute past the window: still valid under the old 1-day window, but
+      # must be rejected under the 15-minute window the UI copy promises.
+      just_outside =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-(UserToken.reset_password_validity_in_minutes() + 1), :minute)
+        |> NaiveDateTime.truncate(:second)
 
       {1, nil} =
         from(t in UserToken, where: t.user_id == ^user.id)
-        |> Repo.update_all(set: [inserted_at: two_days_ago])
+        |> Repo.update_all(set: [inserted_at: just_outside])
 
       refute Accounts.get_user_by_reset_password_token(token)
     end
 
-    test "still returns the user for a token within the 1-day reset window (D105)", %{
-      user: %{id: id},
-      token: token
-    } do
-      twelve_hours_ago =
+    test "still returns the user for a token just inside the 15-minute reset window (D105/D136)",
+         %{
+           user: %{id: id},
+           token: token
+         } do
+      just_inside =
         NaiveDateTime.utc_now()
-        |> NaiveDateTime.add(-12, :hour)
+        |> NaiveDateTime.add(-(UserToken.reset_password_validity_in_minutes() - 1), :minute)
         |> NaiveDateTime.truncate(:second)
 
       {1, nil} =
         from(t in UserToken, where: t.user_id == ^id)
-        |> Repo.update_all(set: [inserted_at: twelve_hours_ago])
+        |> Repo.update_all(set: [inserted_at: just_inside])
 
       assert %User{id: ^id} = Accounts.get_user_by_reset_password_token(token)
+    end
+
+    test "the enforced window matches the 15 minutes promised by the user-facing copy" do
+      # The forgot-password page and the reset email both say "15 minutes"
+      # (D136). If the enforced window changes, that copy must change with it.
+      assert UserToken.reset_password_validity_in_minutes() == 15
     end
   end
 
