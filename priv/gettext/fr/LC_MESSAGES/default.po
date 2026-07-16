@@ -12,7 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n>1);\n"
 
 #: lib/kanban_web/components/core_components.ex:464
-#: lib/kanban_web/live/admin/user_live/index.html.heex:33
+#: lib/kanban_web/live/admin/user_live/index.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Actions"
 msgstr "Actions"
@@ -97,7 +97,7 @@ msgstr "Paramètres"
 msgid "A link to confirm your email change has been sent to the new address."
 msgstr "Un lien pour confirmer votre changement d'email a été envoyé à la nouvelle adresse."
 
-#: lib/kanban_web/live/user_live/reset_password.ex:60
+#: lib/kanban_web/live/user_live/reset_password.ex:61
 #: lib/kanban_web/live/user_live/settings.ex:142
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
@@ -113,7 +113,7 @@ msgstr "Créer un compte"
 msgid "Creating account..."
 msgstr "Création du compte en cours..."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:26
+#: lib/kanban_web/live/admin/user_live/index.html.heex:30
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:88
 #: lib/kanban_web/live/user_live/forgot_password.ex:40
 #: lib/kanban_web/live/user_live/forgot_password.ex:47
@@ -134,7 +134,7 @@ msgstr "Le lien de changement d'email est invalide ou a expiré."
 msgid "Email changed successfully."
 msgstr "Email modifié avec succès."
 
-#: lib/kanban_web/live/user_live/reset_password.ex:41
+#: lib/kanban_web/live/user_live/reset_password.ex:42
 #: lib/kanban_web/live/user_live/settings.ex:130
 #, elixir-autogen, elixir-format
 msgid "New password"
@@ -222,7 +222,7 @@ msgstr "Modifier le tableau"
 msgid "Get started by creating columns for your board."
 msgstr "Commencez par créer des colonnes pour votre tableau."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:27
+#: lib/kanban_web/live/admin/user_live/index.html.heex:31
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:78
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
@@ -388,7 +388,7 @@ msgstr "Impossible de déplacer la tâche : la colonne a atteint sa limite WIP"
 
 #: lib/kanban_web/components/task_activity_log.ex:93
 #: lib/kanban_web/components/task_metadata_grid.ex:112
-#: lib/kanban_web/live/admin/user_live/index.html.heex:29
+#: lib/kanban_web/live/admin/user_live/index.html.heex:33
 #: lib/kanban_web/live/task_live/components/history_section.ex:41
 #: lib/kanban_web/live/task_live/form_component.html.heex:1036
 #: lib/kanban_web/live/task_live/view_component.ex:420
@@ -469,7 +469,7 @@ msgstr "Priorité"
 msgid "Task History"
 msgstr "Historique de la tâche"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:28
+#: lib/kanban_web/live/admin/user_live/index.html.heex:32
 #: lib/kanban_web/live/issue_live/form_component.ex:79
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:36
 #: lib/kanban_web/live/task_live/form_component.html.heex:102
@@ -1015,18 +1015,18 @@ msgstr "Travailler avec nous"
 msgid "If your email is in our system, you will receive instructions to reset your password shortly."
 msgstr "Si votre adresse e-mail est dans notre système, vous recevrez sous peu des instructions pour réinitialiser votre mot de passe."
 
-#: lib/kanban_web/live/user_live/reset_password.ex:110
+#: lib/kanban_web/live/user_live/reset_password.ex:116
 #, elixir-autogen, elixir-format
 msgid "Password reset successfully."
 msgstr "Mot de passe réinitialisé avec succès."
 
-#: lib/kanban_web/live/user_live/reset_password.ex:24
-#: lib/kanban_web/live/user_live/reset_password.ex:75
+#: lib/kanban_web/live/user_live/reset_password.ex:25
+#: lib/kanban_web/live/user_live/reset_password.ex:76
 #, elixir-autogen, elixir-format
 msgid "Reset password"
 msgstr "Réinitialiser le mot de passe"
 
-#: lib/kanban_web/live/user_live/reset_password.ex:123
+#: lib/kanban_web/live/user_live/reset_password.ex:129
 #, elixir-autogen, elixir-format
 msgid "Reset password link is invalid or it has expired."
 msgstr "Le lien de réinitialisation du mot de passe est invalide ou a expiré."
@@ -1914,7 +1914,7 @@ msgid "Board:"
 msgstr "Tableau :"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
-#: lib/kanban_web/live/admin/user_live/index.html.heex:141
+#: lib/kanban_web/live/admin/user_live/index.html.heex:158
 #: lib/kanban_web/live/board_live/show.html.heex:784
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -4113,7 +4113,7 @@ msgstr[0] "%{count} actif"
 msgstr[1] "%{count} actifs"
 
 #: lib/kanban_web/components/layouts.ex:268
-#: lib/kanban_web/live/admin/user_live/index.html.heex:37
+#: lib/kanban_web/live/admin/user_live/index.html.heex:43
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:74
 #: lib/kanban_web/live/board_live/show.html.heex:8
@@ -4207,7 +4207,7 @@ msgid "GOAL"
 msgstr "OBJECTIF"
 
 #: lib/kanban_web/components/board_pulse_card.ex:191
-#: lib/kanban_web/live/admin/user_live/index.html.heex:42
+#: lib/kanban_web/live/admin/user_live/index.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Last Activity"
 msgstr "Dernière activité"
@@ -4954,8 +4954,8 @@ msgstr "Étapes du workflow"
 msgid "Working"
 msgstr "Au travail"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:74
-#: lib/kanban_web/live/admin/user_live/index.html.heex:82
+#: lib/kanban_web/live/admin/user_live/index.html.heex:89
+#: lib/kanban_web/live/admin/user_live/index.html.heex:97
 #: lib/kanban_web/live/task_live/view_component.ex:413
 #, elixir-autogen, elixir-format
 msgid "Yes"
@@ -5440,7 +5440,7 @@ msgid "Already have an account?"
 msgstr "Vous avez déjà un compte ?"
 
 #: lib/kanban_web/live/user_live/registration.ex:84
-#: lib/kanban_web/live/user_live/reset_password.ex:53
+#: lib/kanban_web/live/user_live/reset_password.ex:54
 #: lib/kanban_web/live/user_live/settings.ex:130
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
@@ -5452,7 +5452,7 @@ msgid "Audit log for column reordering"
 msgstr "Journal d'audit pour la réorganisation des colonnes"
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:18
-#: lib/kanban_web/live/user_live/reset_password.ex:18
+#: lib/kanban_web/live/user_live/reset_password.ex:19
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to sign in"
 msgstr "Retour à la connexion"
@@ -5468,7 +5468,7 @@ msgstr "Tableau → Jetons"
 msgid "Changelog"
 msgstr "Changer de langue"
 
-#: lib/kanban_web/live/user_live/reset_password.ex:27
+#: lib/kanban_web/live/user_live/reset_password.ex:28
 #, elixir-autogen, elixir-format
 msgid "Choose a new password for your account."
 msgstr "Choisissez un nouveau mot de passe pour votre compte."
@@ -6916,7 +6916,7 @@ msgstr "Votre contenu"
 msgid "Your use of the service is subject to our "
 msgstr "Votre utilisation du service est soumise à notre "
 
-#: lib/kanban_web/controllers/user_session_controller.ex:71
+#: lib/kanban_web/controllers/user_session_controller.ex:63
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "Vous devez confirmer votre compte avant de vous connecter. Vérifiez votre e-mail pour trouver le lien de confirmation."
@@ -6981,11 +6981,6 @@ msgstr "Renvoyer l'e-mail de confirmation"
 #, elixir-autogen, elixir-format
 msgid "Sending…"
 msgstr "Envoi…"
-
-#: lib/kanban_web/controllers/user_session_controller.ex:33
-#, elixir-autogen, elixir-format
-msgid "We couldn't send the confirmation email. Use the resend button to try again."
-msgstr "Nous n'avons pas pu envoyer l'e-mail de confirmation. Utilisez le bouton de renvoi pour réessayer."
 
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:48
 #, elixir-autogen, elixir-format
@@ -7814,7 +7809,7 @@ msgstr "90 derniers jours"
 msgid "New column"
 msgstr "Nouvelle colonne"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:106
+#: lib/kanban_web/controllers/user_session_controller.ex:98
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
 msgstr "Trop de tentatives. Veuillez patienter quelques minutes et réessayer."
@@ -7825,12 +7820,12 @@ msgstr "Trop de tentatives. Veuillez patienter quelques minutes et réessayer."
 msgid "Too many requests. Please wait a few minutes and try again."
 msgstr "Trop de requêtes. Veuillez patienter quelques minutes et réessayer."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:30
+#: lib/kanban_web/live/admin/user_live/index.html.heex:34
 #, elixir-autogen, elixir-format
 msgid "Confirmed"
 msgstr "Confirmé"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:31
+#: lib/kanban_web/live/admin/user_live/index.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr "Désactivé"
@@ -7840,8 +7835,8 @@ msgstr "Désactivé"
 msgid "Every account registered on this instance."
 msgstr "Tous les comptes enregistrés sur cette instance."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:77
-#: lib/kanban_web/live/admin/user_live/index.html.heex:85
+#: lib/kanban_web/live/admin/user_live/index.html.heex:92
+#: lib/kanban_web/live/admin/user_live/index.html.heex:100
 #, elixir-autogen, elixir-format
 msgid "No"
 msgstr "Non"
@@ -7887,37 +7882,37 @@ msgstr "Compte activé."
 msgid "Confirmation email sent."
 msgstr "E-mail de confirmation envoyé."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:137
+#: lib/kanban_web/live/admin/user_live/index.html.heex:154
 #, elixir-autogen, elixir-format
 msgid "Delete this account permanently? This cannot be undone."
 msgstr "Supprimer définitivement ce compte ? Cette action est irréversible."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:101
+#: lib/kanban_web/live/admin/user_live/index.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr "Désactiver"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:95
+#: lib/kanban_web/live/admin/user_live/index.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Disable this account? They will be signed out and unable to log in."
 msgstr "Désactiver ce compte ? L'utilisateur sera déconnecté et ne pourra plus se connecter."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:112
+#: lib/kanban_web/live/admin/user_live/index.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr "Activer"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:108
+#: lib/kanban_web/live/admin/user_live/index.html.heex:125
 #, elixir-autogen, elixir-format
 msgid "Enable this account? They will be able to log in again."
 msgstr "Activer ce compte ? L'utilisateur pourra se reconnecter."
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:124
+#: lib/kanban_web/live/admin/user_live/index.html.heex:141
 #, elixir-autogen, elixir-format
 msgid "Resend confirmation"
 msgstr "Renvoyer la confirmation"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:121
+#: lib/kanban_web/live/admin/user_live/index.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Send another confirmation email to this account?"
 msgstr "Envoyer un autre e-mail de confirmation à ce compte ?"
@@ -7928,13 +7923,13 @@ msgid "Something went wrong. Please try again."
 msgstr "Une erreur s'est produite. Veuillez réessayer."
 
 #: lib/kanban_web/live/admin/user_live/index.ex:115
-#: lib/kanban_web/live/admin/user_live/index.html.heex:120
+#: lib/kanban_web/live/admin/user_live/index.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr "Ce compte est déjà confirmé."
 
 #: lib/kanban_web/live/admin/user_live/index.ex:113
-#: lib/kanban_web/live/admin/user_live/index.html.heex:134
+#: lib/kanban_web/live/admin/user_live/index.html.heex:151
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr "Cet utilisateur appartient encore à un tableau et ne peut pas être supprimé."
@@ -7967,22 +7962,22 @@ msgstr "Vous ne pouvez pas supprimer le dernier administrateur."
 msgid "User Admin"
 msgstr "Utilisateurs"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:39
+#: lib/kanban_web/live/admin/user_live/index.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Tasks Claimed"
 msgstr "Tâches réservées"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:40
+#: lib/kanban_web/live/admin/user_live/index.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "Tasks Completed"
 msgstr "Tâches terminées"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:41
+#: lib/kanban_web/live/admin/user_live/index.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Tasks Created"
 msgstr "Tâches créées"
 
-#: lib/kanban_web/live/admin/user_live/index.html.heex:38
+#: lib/kanban_web/live/admin/user_live/index.html.heex:44
 #, elixir-autogen, elixir-format
 msgid "Total Actions"
 msgstr "Actions totales"

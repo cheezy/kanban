@@ -29,7 +29,11 @@ defmodule KanbanWeb.UserRegistrationDeliveryTest do
       :ok
     end
 
-    test "surfaces the failure to the user and logs the reason", %{conn: conn} do
+    # Delivery is dispatched off the request path (D134), so the response is
+    # identical whether or not the send succeeds — the user lands on the
+    # confirmation-pending page (which offers a resend button) and the failure
+    # reason reaches the logs instead of the response.
+    test "responds uniformly and logs the reason", %{conn: conn} do
       email = unique_user_email()
 
       log =
@@ -39,17 +43,12 @@ defmodule KanbanWeb.UserRegistrationDeliveryTest do
               "user" => %{"email" => email, "password" => valid_user_password()}
             })
 
-          # The user still lands on the confirmation-pending page (with a resend
-          # option) but is told the email could not be sent — not silently led
-          # to believe it was delivered.
           assert redirected_to(conn) == ~p"/users/confirmation-pending?email=#{email}"
-
-          assert Phoenix.Flash.get(conn.assigns.flash, :error) =~
-                   "couldn't send the confirmation email"
+          refute Phoenix.Flash.get(conn.assigns.flash, :error)
         end)
 
-      # The previously-swallowed delivery reason now reaches the logs.
-      assert log =~ "Failed to deliver confirmation email"
+      # The delivery reason is not swallowed — it reaches the logs.
+      assert log =~ "auth email delivery failed"
     end
   end
 end

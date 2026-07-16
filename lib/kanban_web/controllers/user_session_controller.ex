@@ -19,21 +19,13 @@ defmodule KanbanWeb.UserSessionController do
   end
 
   defp deliver_confirmation_and_redirect(conn, user) do
-    case Accounts.deliver_user_confirmation_instructions(
-           user,
-           &url(~p"/users/confirm/#{&1}")
-         ) do
-      {:ok, _} ->
-        redirect(conn, to: ~p"/users/confirmation-pending?email=#{user.email}")
+    # Delivery is dispatched off the request path (UserNotifier), so a mailer
+    # failure cannot be surfaced in-band anymore — it is logged in the delivery
+    # task instead. The user always lands on confirmation-pending, which offers
+    # a resend button if the email never arrives.
+    _ = Accounts.deliver_user_confirmation_instructions(user, &url(~p"/users/confirm/#{&1}"))
 
-      {:error, _reason} ->
-        conn
-        |> put_flash(
-          :error,
-          gettext("We couldn't send the confirmation email. Use the resend button to try again.")
-        )
-        |> redirect(to: ~p"/users/confirmation-pending?email=#{user.email}")
-    end
+    redirect(conn, to: ~p"/users/confirmation-pending?email=#{user.email}")
   end
 
   def create(conn, %{"_action" => "confirmed"} = params) do

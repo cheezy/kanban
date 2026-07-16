@@ -22,7 +22,7 @@ defmodule Kanban.Accounts.ConfirmationDeliveryTest do
         end)
 
       assert_email_sent(subject: "Confirm your Stride account")
-      refute log =~ "Failed to deliver confirmation email"
+      refute log =~ "auth email delivery failed"
     end
   end
 
@@ -34,25 +34,29 @@ defmodule Kanban.Accounts.ConfirmationDeliveryTest do
       :ok
     end
 
-    test "returns the delivery error instead of a false {:ok, _}" do
+    # Delivery is dispatched off the request path (D134), so the caller still
+    # gets {:ok, email} for the built email — the delivery failure cannot be
+    # returned in-band without re-opening the timing side channel.
+    test "still returns {:ok, email} because delivery runs off the request path" do
       user = unconfirmed_user_fixture()
 
       capture_log(fn ->
-        assert {:error, _reason} =
+        assert {:ok, _email} =
                  Accounts.deliver_user_confirmation_instructions(user, &confirm_url/1)
       end)
     end
 
-    test "logs the failure with the user id so it is no longer swallowed" do
+    test "logs the failure so it is not swallowed" do
       user = unconfirmed_user_fixture()
 
       log =
         capture_log(fn ->
-          assert {:error, _reason} =
+          assert {:ok, _email} =
                    Accounts.deliver_user_confirmation_instructions(user, &confirm_url/1)
         end)
 
-      assert log =~ "Failed to deliver confirmation email for user #{user.id}"
+      assert log =~ "auth email delivery failed"
+      assert log =~ "Confirm your Stride account"
     end
   end
 
@@ -66,7 +70,7 @@ defmodule Kanban.Accounts.ConfirmationDeliveryTest do
                    Accounts.deliver_user_confirmation_instructions(user, &confirm_url/1)
         end)
 
-      refute log =~ "Failed to deliver confirmation email"
+      refute log =~ "auth email delivery failed"
     end
   end
 end

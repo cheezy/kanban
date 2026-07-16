@@ -14,8 +14,6 @@ defmodule Kanban.Accounts do
   alias Kanban.Accounts.UserNotifier
   alias Kanban.Accounts.UserToken
 
-  require Logger
-
   ## Database getters
 
   @doc """
@@ -454,24 +452,13 @@ defmodule Kanban.Accounts do
       {encoded_token, user_token} = UserToken.build_email_token(user, "confirm")
       Repo.insert!(user_token)
 
-      user
-      |> UserNotifier.deliver_confirmation_instructions(confirmation_url_fun.(encoded_token))
-      |> log_confirmation_delivery(user)
+      # Delivery runs off the request path (UserNotifier.dispatch_delivery), so
+      # a mailer failure can no longer be returned here — it is logged inside
+      # the delivery task (never the token, confirmation URL, or SMTP
+      # credentials), keeping bounces observable without re-opening the
+      # timing-based enumeration channel closed by D134.
+      UserNotifier.deliver_confirmation_instructions(user, confirmation_url_fun.(encoded_token))
     end
-  end
-
-  # Surfaces confirmation-email delivery failures to the logs. Both callers
-  # (the registration controller and the confirmation-pending resend page)
-  # otherwise swallow the error — the resend page deliberately keeps its flash
-  # identical to avoid an enumeration oracle, so a failed send would be
-  # completely invisible without this. We log the user id and the raw error
-  # only (never the token, confirmation URL, or SMTP credentials).
-  defp log_confirmation_delivery({:ok, _email} = result, _user), do: result
-
-  defp log_confirmation_delivery({:error, reason} = result, user) do
-    Logger.error("Failed to deliver confirmation email for user #{user.id}: #{inspect(reason)}")
-
-    result
   end
 
   @doc """
