@@ -34,6 +34,13 @@ The app uses Tailwind's default `sm`/`md`/`lg` scale. **Do not invent new
 breakpoints** — every responsive rule keys off one of these three values, in
 either the Tailwind-prefix vocabulary or the custom-CSS `@media` vocabulary.
 
+That rule governs the **width** axis. The two `/agents` height tiers
+(`min-height: 700px`, `max-height: 800px`) are a separate axis, not new width
+breakpoints: they answer "is there vertical room to pin?", which the width
+scale cannot express. Both still carry the `min-width: 768px` floor, so they
+only ever apply inside the desktop layout. Keep them ordered — compression
+(800px) must engage at a taller viewport than unpinning (700px).
+
 | Breakpoint | Tailwind prefix | Direction | Mechanism | Role |
 |---|---|---|---|---|
 | 640px | `sm:` | min-width | Tailwind | Marketing nav/hero/features padding step-up, brand name reveal, hero typography |
@@ -42,6 +49,8 @@ either the Tailwind-prefix vocabulary or the custom-CSS `@media` vocabulary.
 | `max-width: 767px` | — | max-width | custom `@media` | Global body font bump (`14.5px`) on narrow mobile |
 | `max-width: 768px` | — | max-width | custom `@media` | `.stride-screen` board header/tabs density |
 | `max-width: 1023px` | — | max-width | custom `@media` | `.stride-screen` task-detail layout stacking (below `lg`) |
+| `min-height: 700px` | — | min-height | custom `@media` | `/agents` height-aware pin — below this the pinned layout falls back to page scroll |
+| `max-height: 800px` | — | max-height | custom `@media` | `/agents` header-band compression — engages above the pin threshold so density sheds first |
 
 > **768px is the master pivot.** It is where the authenticated app transforms
 > from a single-column mobile shell (off-canvas drawer, one snap-scrolled column

@@ -20,6 +20,10 @@ defmodule KanbanWeb.ResponsivePrimitivesTest do
       controls hit the 44px touch target below 768px (W1387).
     * `[data-review-stats-strip]` — review stats strip drops its right-column
       divider in the 2-up mobile layout (W1395).
+    * `.agents-header-band` / `.agents-trends-band` / `.agents-health-band` /
+      `.agents-risk-band` / `.agents-trends-series` — the /agents header chrome
+      compresses on short viewports so the pinned two-pane layout stays usable
+      (W1716). These are height-tier primitives, not width ones.
 
   This is a deliberately simple, stable, substring-level guard (mirroring the
   layering of `mix dark_mode.scan` + `dark_mode_regression_test`): it flags the
@@ -41,7 +45,12 @@ defmodule KanbanWeb.ResponsivePrimitivesTest do
     "[data-changelog]",
     "[data-auth-frame]",
     "[data-settings-panel]",
-    "[data-review-stats-strip]"
+    "[data-review-stats-strip]",
+    ".agents-header-band",
+    ".agents-trends-band",
+    ".agents-health-band",
+    ".agents-risk-band",
+    ".agents-trends-series"
   ]
 
   test "every documented responsive primitive is still present in app.css" do
@@ -65,5 +74,18 @@ defmodule KanbanWeb.ResponsivePrimitivesTest do
 
     assert String.contains?(css, "max-width: 639px"),
            "Missing the <640px media query (goal child-row mobile grid)."
+  end
+
+  test "the /agents height tiers keep compression above unpinning" do
+    css = File.read!(@app_css)
+
+    # Compression must engage at a TALLER viewport than the pin tier gives up
+    # at, so the header chrome sheds density before the layout drops to
+    # full-page scrolling. 800 > 700 — move them together or not at all.
+    assert String.contains?(css, "max-height: 800px"),
+           "Missing the /agents short-viewport compression media query."
+
+    assert String.contains?(css, "min-height: 700px"),
+           "Missing the /agents height-aware pinning media query."
   end
 end

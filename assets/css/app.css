@@ -1184,6 +1184,75 @@
 }
 
 /* ============================================================
+   /agents short-viewport compression.
+
+   Companion tier to the height-aware pin above. The pin gives up
+   below 700px; this tier engages first, at 800px, so the header
+   chrome sheds density BEFORE the layout drops to full-page
+   scrolling. Compression must always trigger at a TALLER viewport
+   than unpinning — 800 > 700 by design. If the panes still feel
+   cramped, raise 800; never lower 700.
+
+   Recovers ~176px (~188px when the risk explainer is present):
+     * the throughput bar strip — 128px plus the band's 12px flex
+       gap, which goes with it once display:none stops the strip
+       being a flex item; and
+     * ~36px of band padding (header 14->8 plus two bands 12->6;
+       ~48px when the risk band renders, which it only does when a
+       target is actually at risk).
+
+   At 1440x750 that takes the roster/feed panes from ~230px to
+   ~406px of workable height, which is the whole point of the tier.
+
+   Only the bar strip is hidden, and it is the one element here
+   carrying no unique information: every bar prints its own count,
+   and the same throughput is aggregated numerically in
+   [data-agents-pm-trends-stats] directly above it. Every stat card,
+   fleet-health count, delivery-health bucket and risk-explainer
+   entry stays rendered. This tier reduces density, not information.
+
+   display: none needs !important: unlike the vertical padding, the
+   strip's `display: flex` is STILL inline on the heex (only its
+   height was extracted), and inline declarations beat non-important
+   author rules at any specificity. Same reason as the task/goal
+   detail aside overrides further down. The padding rules need no
+   !important — the bands' inline style carries only
+   padding-left/right, so the cascade never collides — but this block
+   MUST stay after the base rules above, which it matches at equal
+   specificity and beats on source order alone.
+
+   The min-width floor mirrors the pin's. Below 768px there is no
+   pinned layout to rescue — <main> already scrolls the page — so
+   compressing there would strip a visualisation off short landscape
+   phones for no benefit.
+   ============================================================ */
+@media (min-width: 768px) and (max-height: 800px) {
+  .stride-screen .agents-trends-series {
+    display: none !important;
+  }
+
+  .stride-screen.agents-header-band {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .stride-screen.agents-trends-band {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .stride-screen.agents-health-band {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .stride-screen.agents-risk-band {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+}
+
+/* ============================================================
    Allow chip tooltips on task cards to break out of the columns
    row's overflow context. The kanban columns container needs
    horizontal scrolling but must NOT clip tooltips vertically.
