@@ -16,6 +16,11 @@ defmodule Kanban.Metrics.Workspace do
     * `agent_leaderboard/1` — top 6 contributors (agents before humans)
     * `cumulative_flow/1` — 14 daily snapshots across 5 derived states
 
+  `overview/1` returns all five payloads in one call, deriving the four
+  completed-task-based series from a single projected fetch (the fifth,
+  `flow_snapshots`, keeps `cumulative_flow/1`'s own read). The LiveView
+  uses it so a render issues one completed-task query instead of five.
+
   All five accept `opts` with `:scope` and route through
   `Kanban.Boards.list_boards(scope.user)` to derive the visible board id
   set. A `nil` scope or a scope with `nil` user returns the empty/zero
@@ -49,6 +54,95 @@ defmodule Kanban.Metrics.Workspace do
   @workspace_window_days 14
   @allowed_window_days [7, 14, 30, 90]
   @workspace_agent_leaderboard_limit 6
+
+  @doc """
+  Returns every `/metrics` page payload in one call: `:kpis`,
+  `:cycle_series`, `:throughput_series`, `:leaderboard`, and
+  `:flow_snapshots`. The four completed-task-based payloads are derived
+  from a single projected fetch spanning both the current and previous
+  KPI windows, partitioned in memory — collapsing the five separate
+  fetches the individual reads would otherwise issue. `:flow_snapshots`
+  keeps `cumulative_flow/1`'s own read (a sibling task narrows it).
+
+  Each value is identical to the matching individual public function
+  called with the same `opts`. Accepts the same `:scope`,
+  `:window_days`, `:board_ids`, and `:timezone` options; a `nil` scope
+  or a scope with a `nil` user returns the zero shape without querying.
+  `Kanban.Boards.list_boards/1` is invoked at most once per call.
+  """
+  @spec overview(keyword()) :: %{
+          kpis: map(),
+          cycle_series: [%{date: Date.t(), minutes: non_neg_integer()}],
+          throughput_series: [non_neg_integer()],
+          leaderboard: [map()],
+          flow_snapshots: [map()]
+        }
+  def overview(opts \\ []) do
+    window_days = resolve_window_days(opts)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+
+    case scoped_board_ids(opts) do
+      [] -> zero_overview(window_days, timezone)
+      board_ids -> build_overview(board_ids, window_days, timezone)
+    end
+  end
+
+  defp zero_overview(window_days, timezone) do
+    %{
+      kpis: zero_kpis(),
+      cycle_series: empty_day_series(&zero_cycle_entry/1, window_days, timezone),
+      throughput_series: List.duplicate(0, window_days),
+      leaderboard: [],
+      flow_snapshots: empty_day_series(&zero_flow_snapshot/1, window_days, timezone)
+    }
+  end
+
+  # One fetch covering both KPI windows (previous_start..now), partitioned in
+  # memory into the current and previous sets, then reshaped per payload. The
+  # current set drives cycle-time, throughput and leaderboard exactly as their
+  # single-window fetch would; both sets drive the KPI deltas. `flow_snapshots`
+  # keeps `cumulative_flow`'s own broader read (out of scope here). `board_ids`
+  # is resolved once by the caller and threaded through, so `Boards.list_boards`
+  # runs at most once per overview.
+  defp build_overview(board_ids, window_days, timezone) do
+    now = DateTime.utc_now()
+    current_start = local_day_start(window_days - 1, timezone)
+    previous_start = local_day_start(2 * window_days - 1, timezone)
+
+    {current, previous} =
+      board_ids
+      |> fetch_completed_tasks(previous_start, now)
+      |> partition_windows(current_start)
+
+    %{
+      kpis: build_kpis(current, previous, window_days),
+      cycle_series: cycle_series_from(current, window_days, timezone),
+      throughput_series: throughput_series_from(current, window_days, timezone),
+      leaderboard: leaderboard_from(current),
+      flow_snapshots: build_cumulative_flow(board_ids, window_days, timezone)
+    }
+  end
+
+  # Splits the shared fetch into the current and previous KPI windows. The two
+  # sets overlap on the boundary instant exactly as the original pair of window
+  # queries did (current used `completed_at >= current_start`, previous used
+  # `completed_at <= current_start`), so a task completed precisely at the
+  # boundary lands in both — preserving identical KPI values.
+  defp partition_windows(tasks, current_start) do
+    current = Enum.filter(tasks, &completed_at_on_or_after?(&1, current_start))
+    previous = Enum.filter(tasks, &completed_at_on_or_before?(&1, current_start))
+    {current, previous}
+  end
+
+  defp completed_at_on_or_after?(%{completed_at: %DateTime{} = dt}, boundary),
+    do: DateTime.compare(dt, boundary) != :lt
+
+  defp completed_at_on_or_after?(_, _), do: false
+
+  defp completed_at_on_or_before?(%{completed_at: %DateTime{} = dt}, boundary),
+    do: DateTime.compare(dt, boundary) != :gt
+
+  defp completed_at_on_or_before?(_, _), do: false
 
   @doc """
   Returns the workspace KPI strip — median cycle time, p75 lead time,
@@ -94,8 +188,8 @@ defmodule Kanban.Metrics.Workspace do
         current_start = local_day_start(window_days - 1, timezone)
         previous_start = local_day_start(2 * window_days - 1, timezone)
 
-        current = completed_tasks_in_window(board_ids, current_start, now)
-        previous = completed_tasks_in_window(board_ids, previous_start, current_start)
+        current = fetch_completed_tasks(board_ids, current_start, now)
+        previous = fetch_completed_tasks(board_ids, previous_start, current_start)
 
         build_kpis(current, previous, window_days)
     end
@@ -124,13 +218,15 @@ defmodule Kanban.Metrics.Workspace do
   defp zero_cycle_entry(date), do: %{date: date, minutes: 0}
 
   defp build_cycle_time_daily(board_ids, window_days, timezone) do
-    now = DateTime.utc_now()
-    window_start = local_day_start(window_days - 1, timezone)
+    board_ids
+    |> fetch_current_window(window_days, timezone)
+    |> cycle_series_from(window_days, timezone)
+  end
 
-    per_day =
-      board_ids
-      |> completed_tasks_in_window(window_start, now)
-      |> bucket_cycle_minutes(timezone)
+  # Derives the daily median cycle-time series from an already-fetched set of
+  # completed-task projections. Shared by `cycle_time_daily/1` and `overview/1`.
+  defp cycle_series_from(tasks, window_days, timezone) do
+    per_day = bucket_cycle_minutes(tasks, timezone)
 
     window_days
     |> day_range(timezone)
@@ -171,13 +267,15 @@ defmodule Kanban.Metrics.Workspace do
   end
 
   defp build_throughput_daily(board_ids, window_days, timezone) do
-    now = DateTime.utc_now()
-    window_start = local_day_start(window_days - 1, timezone)
+    board_ids
+    |> fetch_current_window(window_days, timezone)
+    |> throughput_series_from(window_days, timezone)
+  end
 
-    counts =
-      board_ids
-      |> completed_tasks_in_window(window_start, now)
-      |> Enum.frequencies_by(&completed_on_date(&1, timezone))
+  # Derives the daily completion-count series from an already-fetched set of
+  # completed-task projections. Shared by `throughput_daily/1` and `overview/1`.
+  defp throughput_series_from(tasks, window_days, timezone) do
+    counts = Enum.frequencies_by(tasks, &completed_on_date(&1, timezone))
 
     window_days
     |> day_range(timezone)
@@ -214,14 +312,16 @@ defmodule Kanban.Metrics.Workspace do
   end
 
   defp build_agent_leaderboard(board_ids, window_days, timezone) do
-    now = DateTime.utc_now()
-    window_start = local_day_start(window_days - 1, timezone)
+    board_ids
+    |> fetch_current_window(window_days, timezone)
+    |> leaderboard_from()
+  end
 
-    tasks =
-      board_ids
-      |> completed_tasks_in_window(window_start, now)
-      |> Repo.preload(:completed_by)
-
+  # Derives the top-contributor leaderboard from an already-fetched set of
+  # completed-task projections. The completing user's name/email arrive on the
+  # projection via the left join, so no `Repo.preload` is needed. Shared by
+  # `agent_leaderboard/1` and `overview/1`.
+  defp leaderboard_from(tasks) do
     agents = agent_leaderboard_rows(tasks)
     humans = human_leaderboard_rows(tasks)
 
@@ -316,18 +416,46 @@ defmodule Kanban.Metrics.Workspace do
     end
   end
 
-  defp completed_tasks_in_window(board_ids, %DateTime{} = window_start, %DateTime{} = window_end) do
+  # The one shared completed-task read behind every window-based series. Projects
+  # into lightweight maps carrying only the fields the calculations read — no full
+  # `%Task{}` structs and no `Repo.preload` — and resolves the completing user's
+  # name/email through a left join on `:completed_by` rather than a second query.
+  # `reviewed_at` is included because `review_wait_minutes/1` needs it even though
+  # it is not one of the fields the task brief enumerated.
+  defp fetch_completed_tasks(board_ids, %DateTime{} = window_start, %DateTime{} = window_end) do
     Task
     |> join(:inner, [t], c in assoc(t, :column))
-    |> where([t, c], c.board_id in ^board_ids)
-    |> where([t, _c], not is_nil(t.completed_at))
-    |> where([t, _c], t.completed_at >= ^window_start)
-    |> where([t, _c], t.completed_at <= ^window_end)
+    |> join(:left, [t, _c], u in assoc(t, :completed_by))
+    |> where([t, c, _u], c.board_id in ^board_ids)
+    |> where([t, _c, _u], not is_nil(t.completed_at))
+    |> where([t, _c, _u], t.completed_at >= ^window_start)
+    |> where([t, _c, _u], t.completed_at <= ^window_end)
     # Goals get a `completed_at` when their last child finishes; exclude them so
     # workspace throughput/cycle-time/leaderboard count only real work, matching
     # every board-level metric query (which all filter `type != :goal`). See D87.
-    |> where([t, _c], t.type != ^:goal)
+    |> where([t, _c, _u], t.type != ^:goal)
+    |> select([t, _c, u], %{
+      completed_at: t.completed_at,
+      claimed_at: t.claimed_at,
+      inserted_at: t.inserted_at,
+      needs_review: t.needs_review,
+      review_status: t.review_status,
+      reviewed_at: t.reviewed_at,
+      completed_by_agent: t.completed_by_agent,
+      completed_by_id: t.completed_by_id,
+      completed_by_name: u.name,
+      completed_by_email: u.email
+    })
     |> Repo.all()
+  end
+
+  # The current trailing window (the last `window_days` local days), shared by the
+  # three single-window public reads. `overview/1` does not use this — it issues one
+  # wider fetch spanning both KPI windows and partitions in memory instead.
+  defp fetch_current_window(board_ids, window_days, timezone) do
+    now = DateTime.utc_now()
+    window_start = local_day_start(window_days - 1, timezone)
+    fetch_completed_tasks(board_ids, window_start, now)
   end
 
   # Loads every task across every visible board into memory; `cumulative_flow/1`
@@ -444,8 +572,8 @@ defmodule Kanban.Metrics.Workspace do
   defp human_completion?(%{completed_by_id: id}) when is_integer(id), do: true
   defp human_completion?(_), do: false
 
-  defp human_name(%{completed_by: %{name: name}}) when is_binary(name) and name != "", do: name
-  defp human_name(%{completed_by: %{email: email}}) when is_binary(email), do: email
+  defp human_name(%{completed_by_name: name}) when is_binary(name) and name != "", do: name
+  defp human_name(%{completed_by_email: email}) when is_binary(email), do: email
   defp human_name(_), do: "?"
 
   defp group_leaderboard(tasks, kind, name_fun) do

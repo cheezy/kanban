@@ -63,6 +63,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     {:noreply, assign_workspace_metrics(socket, selected_ids)}
   end
 
+  @impl true
   def handle_event("window_change", %{"window_days" => raw}, socket) do
     socket = assign(socket, :selected_window_days, parse_window_days(raw))
     {:noreply, assign_workspace_metrics(socket, socket.assigns.selected_board_ids)}
@@ -83,13 +84,15 @@ defmodule KanbanWeb.MetricsLive.Workspace do
       timezone: Map.get(socket.assigns, :timezone, "Etc/UTC")
     ]
 
+    overview = Workspace.overview(opts)
+
     socket
     |> assign(:selected_board_ids, selected_ids)
-    |> assign(:kpis, Workspace.workspace_kpis(opts))
-    |> assign(:cycle_series, Workspace.cycle_time_daily(opts))
-    |> assign(:throughput_series, Workspace.throughput_daily(opts))
-    |> assign(:leaderboard, Workspace.agent_leaderboard(opts))
-    |> assign(:flow_snapshots, Workspace.cumulative_flow(opts))
+    |> assign(:kpis, overview.kpis)
+    |> assign(:cycle_series, overview.cycle_series)
+    |> assign(:throughput_series, overview.throughput_series)
+    |> assign(:leaderboard, overview.leaderboard)
+    |> assign(:flow_snapshots, overview.flow_snapshots)
     |> assign(:window_label, window_label(window_days, boards, selected_ids))
   end
 

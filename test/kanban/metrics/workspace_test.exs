@@ -770,4 +770,215 @@ defmodule Kanban.Metrics.WorkspaceTest do
       assert done.done == 1
     end
   end
+
+  describe "overview/1 — consolidated read" do
+    setup do
+      ctx = ws_setup()
+      seed_overview_dataset(ctx)
+      ctx
+    end
+
+    test "returns all five payloads", %{scope: scope} do
+      overview = Workspace.overview(scope: scope)
+
+      assert Map.keys(overview) |> Enum.sort() ==
+               [:cycle_series, :flow_snapshots, :kpis, :leaderboard, :throughput_series]
+    end
+
+    test "each payload equals the individual public function for the same opts", %{scope: scope} do
+      assert_overview_matches(scope: scope)
+    end
+
+    test "equivalence holds across every allowed :window_days", %{scope: scope} do
+      for window_days <- [7, 14, 30, 90] do
+        assert_overview_matches(scope: scope, window_days: window_days)
+      end
+    end
+
+    test "equivalence holds for a non-UTC timezone", %{scope: scope} do
+      assert_overview_matches(scope: scope, timezone: "America/Edmonton")
+    end
+
+    test "KPI deltas compare the current window against the previous window", %{scope: scope} do
+      # The shared fetch must retain both windows: a non-zero previous window is
+      # what makes the delta percentages defined (a zero previous collapses to 0.0).
+      overview = Workspace.overview(scope: scope)
+
+      assert overview.kpis == Workspace.workspace_kpis(scope: scope)
+      assert overview.kpis.throughput_per_day > 0.0
+      assert is_float(overview.kpis.throughput_delta_pct)
+    end
+
+    test "leaderboard resolves human names via the join, with email fallback", %{scope: scope} do
+      names =
+        Workspace.overview(scope: scope).leaderboard
+        |> Enum.filter(&(&1.kind == :human))
+        |> Enum.map(& &1.name)
+
+      # One human has a name; the other has none, so the join's email is used.
+      assert "Grace Hopper" in names
+      assert Enum.any?(names, &String.contains?(&1, "@"))
+    end
+
+    test "goal-typed completions stay excluded from every derived series", %{
+      column: column,
+      scope: scope
+    } do
+      before = Workspace.overview(scope: scope)
+
+      # A goal gets a completed_at when its last child finishes; it must never
+      # count toward throughput, cycle time or the leaderboard.
+      column |> task_fixture(%{type: :goal, completed_by_agent: "Claude"}) |> ws_complete!(1)
+
+      after_goal = Workspace.overview(scope: scope)
+
+      assert after_goal.throughput_series == before.throughput_series
+      assert after_goal.cycle_series == before.cycle_series
+      assert after_goal.leaderboard == before.leaderboard
+      # And it still matches the individual reads, which exclude goals identically.
+      assert_overview_matches(scope: scope)
+    end
+
+    test "the completed-task data comes from a single query and boards are listed once", %{
+      scope: scope
+    } do
+      {_overview, queries} = queries_during(fn -> Workspace.overview(scope: scope) end)
+
+      task_queries = Enum.filter(queries, fn {source, _sql} -> source == "tasks" end)
+
+      completed_data_queries =
+        Enum.filter(queries, fn {_source, sql} ->
+          is_binary(sql) and String.contains?(sql, ~s(JOIN "users"))
+        end)
+
+      board_queries = Enum.filter(queries, fn {source, _sql} -> source == "boards" end)
+
+      # Exactly one query carries the completed-task data (the projection that
+      # left-joins the completing user); the second tasks query is
+      # cumulative_flow's separate read, which this task intentionally leaves as-is.
+      assert length(completed_data_queries) == 1
+      assert length(task_queries) == 2
+      # Boards.list_boards runs at most once per overview call.
+      assert length(board_queries) == 1
+    end
+  end
+
+  describe "overview/1 — zero shapes" do
+    test "a nil scope returns the zero shape without querying" do
+      {overview, queries} = queries_during(fn -> Workspace.overview([]) end)
+
+      assert overview == Workspace.overview(scope: nil)
+      assert overview.kpis == Workspace.workspace_kpis([])
+      assert overview.cycle_series == Workspace.cycle_time_daily([])
+      assert overview.throughput_series == Workspace.throughput_daily([])
+      assert overview.leaderboard == Workspace.agent_leaderboard([])
+      assert overview.flow_snapshots == Workspace.cumulative_flow([])
+      assert queries == []
+    end
+
+    test "an empty board_ids filter returns the zero shape" do
+      %{scope: scope} = ws_setup()
+      # An empty visible board set (no boards created here beyond the setup's one,
+      # but a board_ids filter that intersects to empty) yields zero shapes.
+      opts = [scope: scope, board_ids: [-1]]
+
+      overview = Workspace.overview(opts)
+
+      assert overview.kpis == Workspace.workspace_kpis(opts)
+      assert overview.throughput_series == Workspace.throughput_daily(opts)
+      assert overview.leaderboard == []
+    end
+  end
+
+  # --- overview/1 test helpers ----------------------------------------------
+
+  # Seeds a mixed dataset spanning the current and previous 14-day KPI windows:
+  # agent + human completions in the current window (one human named, one relying
+  # on the email fallback), a reviewed needs_review task, and two previous-window
+  # completions so the KPI deltas are defined.
+  defp seed_overview_dataset(%{column: column, user: user}) do
+    seed_current_window_completions(column, user)
+    seed_reviewed_task(column, user)
+    seed_previous_window_completions(column)
+    :ok
+  end
+
+  defp seed_current_window_completions(column, user) do
+    {:ok, named_user} =
+      user |> Ecto.Changeset.change(%{name: "Grace Hopper"}) |> Kanban.Repo.update()
+
+    email_only_user = user_fixture()
+
+    Enum.each(1..3, fn i ->
+      column |> task_fixture(%{completed_by_agent: "Claude"}) |> ws_complete!(i)
+    end)
+
+    column |> task_fixture() |> ws_complete!(1, %{completed_by_id: named_user.id})
+    column |> task_fixture() |> ws_complete!(2, %{completed_by_id: email_only_user.id})
+  end
+
+  defp seed_reviewed_task(column, user) do
+    reviewed = task_fixture(column, %{needs_review: true})
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+    completed_at = DateTime.add(now, -2 * 86_400, :second)
+
+    {:ok, _} =
+      Tasks.update_task(reviewed, %{
+        claimed_at: DateTime.add(completed_at, -3600, :second),
+        completed_at: completed_at,
+        reviewed_at: DateTime.add(completed_at, 90 * 60, :second),
+        review_status: :approved,
+        reviewed_by_id: user.id
+      })
+  end
+
+  defp seed_previous_window_completions(column) do
+    column |> task_fixture(%{completed_by_agent: "Claude"}) |> ws_complete!(16)
+    column |> task_fixture(%{completed_by_agent: "Ada"}) |> ws_complete!(18)
+  end
+
+  defp assert_overview_matches(opts) do
+    overview = Workspace.overview(opts)
+
+    assert overview.kpis == Workspace.workspace_kpis(opts)
+    assert overview.cycle_series == Workspace.cycle_time_daily(opts)
+    assert overview.throughput_series == Workspace.throughput_daily(opts)
+    assert overview.leaderboard == Workspace.agent_leaderboard(opts)
+    assert overview.flow_snapshots == Workspace.cumulative_flow(opts)
+
+    overview
+  end
+
+  # Counts the SQL queries Ecto emits while `fun` runs, returning
+  # `{result, [{source, sql}, ...]}` so a test can assert how many fired.
+  defp queries_during(fun) do
+    ref = make_ref()
+    parent = self()
+
+    :telemetry.attach(
+      {:overview_query_counter, ref},
+      [:kanban, :repo, :query],
+      fn _event, _measurements, metadata, _config ->
+        send(parent, {ref, metadata[:source], metadata[:query]})
+      end,
+      nil
+    )
+
+    result =
+      try do
+        fun.()
+      after
+        :telemetry.detach({:overview_query_counter, ref})
+      end
+
+    {result, collect_queries(ref)}
+  end
+
+  defp collect_queries(ref) do
+    receive do
+      {^ref, source, sql} -> [{source, sql} | collect_queries(ref)]
+    after
+      0 -> []
+    end
+  end
 end
