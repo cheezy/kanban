@@ -32,6 +32,13 @@ defmodule Kanban.Metrics.WorkspaceTest do
     t
   end
 
+  # Sets timestamp/flag fields directly (bypassing the changeset) so tests can
+  # backdate completed_at/claimed_at and set archived_at for cumulative-flow.
+  defp put_fields!(task, fields) do
+    {:ok, t} = task |> Ecto.Changeset.change(fields) |> Kanban.Repo.update()
+    t
+  end
+
   describe "workspace reads — local timezone bucketing (W1267)" do
     # Anchor test data to a fixed day in the middle of the window (computed from
     # the viewer's local "today"), so the assertions are robust to the wall-clock
@@ -771,6 +778,137 @@ defmodule Kanban.Metrics.WorkspaceTest do
     end
   end
 
+  describe "cumulative_flow/1 — bounded projection (W1731)" do
+    test "a pre-window done task with no review is counted via the collapsed baseline every day" do
+      %{column: column, scope: scope} = ws_setup()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      completed = DateTime.add(now, -30 * 86_400, :second)
+
+      task_fixture(column)
+      |> put_fields!(%{
+        claimed_at: DateTime.add(completed, -3600, :second),
+        completed_at: completed,
+        needs_review: false,
+        archived_at: nil
+      })
+
+      flow = Workspace.cumulative_flow(scope: scope)
+
+      assert Enum.all?(flow, &(&1.done == 1)), "collapsed done task must count on every day"
+
+      assert Enum.all?(
+               flow,
+               &(&1.backlog == 0 and &1.doing == 0 and &1.review == 0 and &1.ready == 0)
+             )
+    end
+
+    test "a pre-window done task archived mid-window drops out of done from its archive day" do
+      %{column: column, scope: scope} = ws_setup()
+      tz = "Etc/UTC"
+      day3 = tz |> Kanban.Timezone.local_today() |> Date.add(-11)
+      archived_at = day3 |> Kanban.Timezone.start_of_local_day(tz) |> DateTime.add(3600, :second)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      completed = DateTime.add(now, -30 * 86_400, :second)
+
+      task_fixture(column)
+      |> put_fields!(%{
+        claimed_at: DateTime.add(completed, -3600, :second),
+        completed_at: completed,
+        needs_review: false,
+        archived_at: archived_at
+      })
+
+      flow = Workspace.cumulative_flow(scope: scope)
+
+      # Archived tasks are never collapsed into the baseline; they stay row-level
+      # and drop out of every bucket from their archive day onward.
+      assert Enum.at(flow, 0).done == 1
+      assert Enum.at(flow, 1).done == 1
+      assert Enum.at(flow, 2).done == 0
+      assert List.last(flow).done == 0
+    end
+
+    test "a snapshot mixes the collapsed done baseline with row-level backlog, doing and review" do
+      %{column: column, scope: scope} = ws_setup()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # backlog: inserted, never claimed
+      task_fixture(column)
+      # doing: claimed today, not completed
+      task_fixture(column) |> put_fields!(%{claimed_at: now})
+      # review: completed today, needs review, not reviewed
+      task_fixture(column)
+      |> put_fields!(%{
+        claimed_at: DateTime.add(now, -3600, :second),
+        completed_at: now,
+        needs_review: true
+      })
+
+      # done (collapsed baseline): completed before the window, claimed, no review
+      completed = DateTime.add(now, -30 * 86_400, :second)
+
+      task_fixture(column)
+      |> put_fields!(%{
+        claimed_at: DateTime.add(completed, -3600, :second),
+        completed_at: completed,
+        needs_review: false
+      })
+
+      today = Workspace.cumulative_flow(scope: scope) |> List.last()
+
+      assert today.backlog == 1
+      assert today.doing == 1
+      assert today.review == 1
+      assert today.done == 1
+      assert today.ready == 0
+    end
+
+    test "a task completed and archived before the window is excluded, not collapsed into done" do
+      %{column: column, scope: scope} = ws_setup()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      completed = DateTime.add(now, -30 * 86_400, :second)
+
+      task_fixture(column)
+      |> put_fields!(%{
+        claimed_at: DateTime.add(completed, -3600, :second),
+        completed_at: completed,
+        needs_review: false,
+        archived_at: DateTime.add(completed, 60, :second)
+      })
+
+      flow = Workspace.cumulative_flow(scope: scope)
+
+      assert Enum.all?(flow, &(&1.done == 0))
+    end
+
+    test "the cumulative-flow path projects only classification fields — no full Task structs" do
+      %{scope: scope} = ws_setup()
+      {_flow, queries} = queries_during(fn -> Workspace.cumulative_flow(scope: scope) end)
+
+      task_queries = Enum.filter(queries, fn {source, _sql} -> source == "tasks" end)
+
+      # One projected relevant-rows read + one collapsed done-baseline COUNT.
+      assert length(task_queries) == 2
+
+      # A full-struct load would begin `SELECT t0."id", ...`; the projection never
+      # selects the primary key or the heavy JSONB columns.
+      refute Enum.any?(task_queries, fn {_source, sql} ->
+               is_binary(sql) and String.contains?(sql, ~s(SELECT t0."id"))
+             end)
+    end
+
+    test "an empty board set returns the zero series" do
+      %{scope: scope} = ws_setup()
+      flow = Workspace.cumulative_flow(scope: scope, board_ids: [-1])
+
+      assert length(flow) == 14
+
+      assert Enum.all?(flow, fn s ->
+               s.backlog == 0 and s.ready == 0 and s.doing == 0 and s.review == 0 and s.done == 0
+             end)
+    end
+  end
+
   describe "overview/1 — consolidated read" do
     setup do
       ctx = ws_setup()
@@ -854,10 +992,11 @@ defmodule Kanban.Metrics.WorkspaceTest do
       board_queries = Enum.filter(queries, fn {source, _sql} -> source == "boards" end)
 
       # Exactly one query carries the completed-task data (the projection that
-      # left-joins the completing user); the second tasks query is
-      # cumulative_flow's separate read, which this task intentionally leaves as-is.
+      # left-joins the completing user). cumulative_flow issues two more bounded
+      # tasks queries (its projected relevant-rows read plus the collapsed
+      # done-baseline COUNT, W1731), for three tasks queries total.
       assert length(completed_data_queries) == 1
-      assert length(task_queries) == 2
+      assert length(task_queries) == 3
       # Boards.list_boards runs at most once per overview call.
       assert length(board_queries) == 1
     end

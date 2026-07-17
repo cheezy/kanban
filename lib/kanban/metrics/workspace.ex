@@ -40,6 +40,14 @@ defmodule Kanban.Metrics.Workspace do
   | `:done`     | `reviewed_at <= D` OR (`completed_at <= D` and not `needs_review`) |
 
   Archived tasks (`archived_at <= D`) are excluded from every bucket.
+
+  The snapshots are computed without ever loading full task rows: a
+  projection returns only the seven fields the rules above read, and the
+  stable done history (never-archived, claimed, no-review tasks completed
+  before the window starts) is collapsed into a single `COUNT` added to
+  every day's done bucket, so only tasks whose state can still change
+  within the window are fetched row by row. The bucket rules — this table
+  — remain the single source of truth; the output is identical.
   """
 
   import Ecto.Query, warn: false
@@ -368,11 +376,13 @@ defmodule Kanban.Metrics.Workspace do
   end
 
   defp build_cumulative_flow(board_ids, window_days, timezone) do
-    tasks = workspace_tasks(board_ids)
+    window_start = local_day_start(window_days - 1, timezone)
+    tasks = cfd_relevant_tasks(board_ids, window_start)
+    baseline_done = cfd_done_baseline(board_ids, window_start)
 
     window_days
     |> day_range(timezone)
-    |> Enum.map(&cfd_snapshot(tasks, &1, timezone))
+    |> Enum.map(&cfd_snapshot(tasks, baseline_done, &1, timezone))
   end
 
   # --- Workspace helpers ----------------------------------------------------
@@ -458,16 +468,53 @@ defmodule Kanban.Metrics.Workspace do
     fetch_completed_tasks(board_ids, window_start, now)
   end
 
-  # Loads every task across every visible board into memory; `cumulative_flow/1`
-  # iterates the result 14 times to bucket per-day snapshots. Acceptable at
-  # current workspace sizes — once any workspace exceeds ~10k tasks, push the
-  # bucketing into SQL (or project a daily snapshot table) so the LiveView
-  # mount stays under its budget. Flagged in W579 reviewer notes.
-  defp workspace_tasks(board_ids) do
+  # The cumulative-flow rows whose bucket can still change within the window, or
+  # that were archived (archived tasks need per-day exclusion and must never be
+  # collapsed — see cfd_done_baseline/2). Projects ONLY the seven fields the
+  # classification reads — never full `%Task{}` structs — cutting the transferred
+  # payload by roughly two orders of magnitude. This is the exact De Morgan
+  # complement of the collapsible set in cfd_done_baseline/2, so every visible
+  # task is counted by exactly one of the two queries. Goals are intentionally
+  # NOT filtered out — cumulative flow counts them exactly as before (W579).
+  defp cfd_relevant_tasks(board_ids, %DateTime{} = window_start) do
     Task
     |> join(:inner, [t], c in assoc(t, :column))
     |> where([t, c], c.board_id in ^board_ids)
+    |> where(
+      [t, _c],
+      not is_nil(t.archived_at) or is_nil(t.claimed_at) or t.needs_review == true or
+        is_nil(t.completed_at) or t.completed_at >= ^window_start
+    )
+    |> select([t, _c], %{
+      inserted_at: t.inserted_at,
+      claimed_at: t.claimed_at,
+      completed_at: t.completed_at,
+      reviewed_at: t.reviewed_at,
+      needs_review: t.needs_review,
+      archived_at: t.archived_at,
+      type: t.type
+    })
     |> Repo.all()
+  end
+
+  # Collapses the stable done history into one COUNT instead of fetching it row by
+  # row. A task qualifies only when it is provably in the `done` bucket — and no
+  # other bucket — on every day of the window: never archived (so it is visible
+  # every day and needs no per-day exclusion), claimed (so it is never counted as
+  # backlog), not needing review, and completed strictly before the window starts
+  # (so `done_at?` holds from the first day on via the completed-and-not-reviewed
+  # path). Each such task contributes exactly +1 to every day's done count. Any
+  # task not matching this stays row-level in cfd_relevant_tasks/2, so the
+  # per-day snapshots remain identical to the full-table implementation.
+  defp cfd_done_baseline(board_ids, %DateTime{} = window_start) do
+    Task
+    |> join(:inner, [t], c in assoc(t, :column))
+    |> where([t, c], c.board_id in ^board_ids)
+    |> where([t, _c], is_nil(t.archived_at))
+    |> where([t, _c], not is_nil(t.claimed_at))
+    |> where([t, _c], t.needs_review == false)
+    |> where([t, _c], not is_nil(t.completed_at) and t.completed_at < ^window_start)
+    |> Repo.aggregate(:count)
   end
 
   defp zero_kpis do
@@ -633,12 +680,16 @@ defmodule Kanban.Metrics.Workspace do
     %{date: date, backlog: 0, ready: 0, doing: 0, review: 0, done: 0}
   end
 
-  defp cfd_snapshot(tasks, date, timezone) do
+  defp cfd_snapshot(tasks, baseline_done, date, timezone) do
     eod = Timezone.end_of_local_day(date, timezone)
     visible = Enum.reject(tasks, &archived_before?(&1, eod))
-    counts = cfd_bucket_counts(visible, eod)
 
-    Map.put(counts, :date, date)
+    visible
+    |> cfd_bucket_counts(eod)
+    # The collapsed pre-window done tasks (cfd_done_baseline/2) are done on every
+    # day of the window, so add their constant count to each day's done bucket.
+    |> Map.update!(:done, &(&1 + baseline_done))
+    |> Map.put(:date, date)
   end
 
   defp cfd_bucket_counts(visible, eod) do
