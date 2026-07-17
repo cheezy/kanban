@@ -5,8 +5,9 @@ defmodule KanbanWeb.TargetsStrip do
   read-time status badge, and a single completed/total child-task
   fraction (`"12/20 (60%)"`) with a thin filled progress bar. Inside the
   card the values are grouped into clusters (name | dates | badge |
-  progress) separated by pill-scale 1px `var(--line)` dividers — the same
-  divider treatment the strip header uses, sized down to the card row.
+  progress) separated by pill-scale 1px `var(--ink-4)` dividers —
+  `--ink-4` is the app.css separator token, chosen after the hairline
+  `var(--line)` proved invisible at pill scale (D163).
 
   The strip is a sibling of `KanbanWeb.GoalsStrip` and mirrors its
   structure and token vocabulary: it uses ONLY Stride custom properties
@@ -56,12 +57,13 @@ defmodule KanbanWeb.TargetsStrip do
       }
 
   `:estimated_completion_date` is optional and renders a second mono date
-  ("Est. Mar 3, 2027") next to the target date when present; `nil` (or a
+  ("Est. Mar 3, 2027") after the target date when present, preceded by its
+  own divider so the two dates read as separate values; `nil` (or a
   missing key) renders nothing — no placeholder, no layout shift, and no
-  dangling divider (the cluster dividers are unconditional and never sit
-  adjacent to the optional estimate). The estimate is de-emphasized
-  relative to the fixed target date (italic, reduced opacity) so the
-  committed date stays visually primary.
+  dangling divider (the date separator shares the estimate span's `:if`,
+  while the three cluster dividers are unconditional). The estimate is
+  de-emphasized relative to the fixed target date (italic, reduced
+  opacity) so the committed date stays visually primary.
   """
   use KanbanWeb, :html
 
@@ -128,6 +130,7 @@ defmodule KanbanWeb.TargetsStrip do
       <span style="font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono);">
         {format_date(@entry.target.target_date)}
       </span>
+      <span :if={@estimated_date} style={divider_style()} data-pill-divider aria-hidden="true"></span>
       <span
         :if={@estimated_date}
         style="font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono); font-style: italic; opacity: 0.75;"
@@ -161,7 +164,7 @@ defmodule KanbanWeb.TargetsStrip do
   # goal-pill style but sourced from a dark-mode-safe --st-* token.
   defp card_style(token) do
     [
-      "display: inline-flex; align-items: center; gap: 8px;",
+      "display: inline-flex; align-items: center; gap: 10px;",
       "padding: 5px 10px 5px 8px;",
       "background: var(--surface);",
       "border: 1px solid var(--st-#{token});",
@@ -179,12 +182,14 @@ defmodule KanbanWeb.TargetsStrip do
     ]
   end
 
-  # Pill-scale variant of the strip header's 1px var(--line) divider
-  # (targets_strip/1 above), sized down to fit inside the card row. Placed
-  # between the value clusters (name | dates | badge | progress) so each
-  # reads as a distinct unit.
+  # Pill-scale divider between the value clusters (name | dates | badge |
+  # progress) and, conditionally, between the two dates. Uses var(--ink-4) —
+  # the token app.css earmarks for separators, held to the 3:1 graphical
+  # contrast floor in both themes — because the hairline var(--line) proved
+  # invisible at pill scale (D163). The margins add breathing room on top of
+  # the card's flex gap so the clusters read as separate groups.
   defp divider_style do
-    "width: 1px; height: 12px; background: var(--line); flex-shrink: 0;"
+    "width: 1px; height: 15px; background: var(--ink-4); flex-shrink: 0; margin: 0 2px;"
   end
 
   # atom -> {--st-* token stem, translated label}. See the moduledoc palette.
