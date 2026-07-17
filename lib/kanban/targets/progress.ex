@@ -51,11 +51,30 @@ defmodule Kanban.Targets.Progress do
   `Kanban.Targets.Status.derive/3` stays pure and never reads the clock. The one
   exception is `derive_target_status/2` (the archive gate), which anchors UTC
   internally — see its own comment for why that is sound.
+
+  ## Estimated completion (W1729)
+
+  Every `target_summary/0` carries an `:estimated_completion_date` key, but
+  only the boards-strip path (`summarize_target/3`, behind
+  `Kanban.Targets.list_targets_with_status/2`) computes it — the rollup path
+  (`summarize_target_with_goals/4` without `estimate?: true`) and the
+  drill-down path (`build_target_progress/3`) leave it `nil`. That keeps the
+  /agents rollup's per-target query count flat (the invariant the query-count
+  tests above guard) and means archived targets — which flow through
+  `build_target_progress/3` and are necessarily `:complete` — never estimate.
+
+  The estimate itself is `Kanban.Targets.Estimation` math over the sample
+  `Kanban.Targets.Queries.list_completed_lead_times/1` fetches. It is gated
+  here BEFORE the sample query fires: a `:complete` status or a remaining
+  count of `0` yields `nil` with no query. The remaining count is
+  `total - completed` from the same D124-credited `aggregate_children/1`
+  counts the displayed fraction uses, so the two can never disagree.
   """
 
   alias Kanban.Accounts.Scope
   alias Kanban.Repo
   alias Kanban.Targets.DeliveryTarget
+  alias Kanban.Targets.Estimation
   alias Kanban.Targets.Queries
   alias Kanban.Targets.Status
   alias Kanban.Tasks
@@ -63,15 +82,19 @@ defmodule Kanban.Targets.Progress do
 
   @typedoc """
   One boards-page summary row for a delivery target: the target itself, its
-  read-time derived `Kanban.Targets.Status`, and the aggregate child-task
-  progress used by the targets strip.
+  read-time derived `Kanban.Targets.Status`, the aggregate child-task
+  progress used by the targets strip, and the projected
+  `:estimated_completion_date` (`nil` when the target is `:complete`, nothing
+  remains, there is no historical lead-time sample, or the call path does not
+  estimate — see the moduledoc's "Estimated completion" section).
   """
   @type target_summary :: %{
           target: DeliveryTarget.t(),
           status: Status.status(),
           completed: non_neg_integer(),
           total: non_neg_integer(),
-          percentage: 0..100
+          percentage: 0..100,
+          estimated_completion_date: Date.t() | nil
         }
 
   @typedoc """
@@ -87,6 +110,7 @@ defmodule Kanban.Targets.Progress do
           completed: non_neg_integer(),
           total: non_neg_integer(),
           percentage: 0..100,
+          estimated_completion_date: Date.t() | nil,
           goals: [Task.t()]
         }
 
@@ -130,7 +154,7 @@ defmodule Kanban.Targets.Progress do
   """
   @spec summarize_target(Scope.t() | nil, DeliveryTarget.t(), Date.t()) :: target_summary()
   def summarize_target(scope, %DeliveryTarget{} = target, today) do
-    {summary, _goals} = summarize_target_with_goals(scope, target, today)
+    {summary, _goals} = summarize_target_with_goals(scope, target, today, estimate?: true)
     summary
   end
 
@@ -147,13 +171,29 @@ defmodule Kanban.Targets.Progress do
 
   Do not "simplify" this into a `summarize_target/3` call plus a second goal
   fetch: the values would stay correct and the query count would double.
-  """
-  @spec summarize_target_with_goals(Scope.t() | nil, DeliveryTarget.t(), Date.t()) ::
-          {target_summary(), [Task.t()]}
-  def summarize_target_with_goals(scope, %DeliveryTarget{} = target, today) do
-    {progress, goals} = member_goal_progress(scope, target)
 
-    {summarize_progress(target, progress, today), goals}
+  ## Options
+
+    * `:estimate?` (default `false`) — when `true`, also computes the
+      summary's `:estimated_completion_date`, which may cost one extra
+      lead-time query. Only the boards-strip path opts in; the /agents rollup
+      keeps its per-target query count flat by leaving it `nil` (see the
+      moduledoc's "Estimated completion" section).
+  """
+  @spec summarize_target_with_goals(Scope.t() | nil, DeliveryTarget.t(), Date.t(), keyword()) ::
+          {target_summary(), [Task.t()]}
+  def summarize_target_with_goals(scope, %DeliveryTarget{} = target, today, opts \\ []) do
+    {progress, goals} = member_goal_progress(scope, target)
+    summary = summarize_progress(target, progress, today)
+
+    summary =
+      if Keyword.get(opts, :estimate?, false) do
+        %{summary | estimated_completion_date: estimated_completion_date(summary, goals, today)}
+      else
+        summary
+      end
+
+    {summary, goals}
   end
 
   @doc """
@@ -257,8 +297,32 @@ defmodule Kanban.Targets.Progress do
       status: Status.derive(target, progress, today),
       completed: completed,
       total: total,
-      percentage: percentage(completed, total)
+      percentage: percentage(completed, total),
+      estimated_completion_date: nil
     }
+  end
+
+  # The strip-only estimated completion date. Gates BEFORE the sample query:
+  # a :complete target has nothing left to pace, and a remaining count of 0
+  # (childless 0/0 target, or all credited work done while the derived status
+  # lags) would make `today + 0` a meaningless promise — both yield nil with
+  # no query. Otherwise the sample spans every board backing the target's own
+  # scope-filtered member goals (goal.column.board_id — preloaded, no extra
+  # query), so no inaccessible board's pace can leak in.
+  defp estimated_completion_date(%{status: :complete}, _goals, _today), do: nil
+
+  defp estimated_completion_date(%{completed: completed, total: total}, goals, today) do
+    case total - completed do
+      0 ->
+        nil
+
+      remaining ->
+        goals
+        |> Enum.map(& &1.column.board_id)
+        |> Enum.uniq()
+        |> Queries.list_completed_lead_times()
+        |> Estimation.estimated_completion_date(remaining, today)
+    end
   end
 
   # The `Kanban.Targets.Status.derive/3` progress shape for one goal, computed

@@ -18,7 +18,8 @@ defmodule KanbanWeb.TargetsStripTest do
         status: :on_track,
         completed: 12,
         total: 20,
-        percentage: 60
+        percentage: 60,
+        estimated_completion_date: nil
       },
       overrides
     )
@@ -71,6 +72,32 @@ defmodule KanbanWeb.TargetsStripTest do
 
       assert html =~ ~r/0\/0 \(0%\)/
       assert html =~ "width: 0%"
+    end
+  end
+
+  describe "targets_strip/1 — estimated completion date" do
+    test "renders the estimate next to the target date when present" do
+      html = render_targets([entry(%{estimated_completion_date: ~D[2027-03-03]})])
+
+      assert html =~ "data-estimated-date"
+      assert html =~ "Est. Mar 3, 2027"
+      assert html =~ "Estimated completion"
+      # The target's own date still renders — the estimate sits next to it.
+      assert html =~ "Dec 31, 2026"
+    end
+
+    test "renders no estimate markup at all when the value is nil" do
+      html = render_targets([entry()])
+
+      refute html =~ "data-estimated-date"
+      refute html =~ "Est."
+    end
+
+    test "tolerates an entry missing the key entirely" do
+      html = render_targets([Map.delete(entry(), :estimated_completion_date)])
+
+      assert html =~ "data-target-card"
+      refute html =~ "data-estimated-date"
     end
   end
 

@@ -48,8 +48,13 @@ defmodule KanbanWeb.TargetsStrip do
         status: :complete | :on_track | :at_risk | :missed,
         completed: non_neg_integer(),
         total: non_neg_integer(),
-        percentage: 0..100
+        percentage: 0..100,
+        estimated_completion_date: Date.t() | nil
       }
+
+  `:estimated_completion_date` is optional and renders a second mono date
+  ("Est. Mar 3, 2027") next to the target date when present; `nil` (or a
+  missing key) renders nothing — no placeholder, no layout shift.
   """
   use KanbanWeb, :html
 
@@ -103,6 +108,7 @@ defmodule KanbanWeb.TargetsStrip do
       assigns
       |> assign(:token, token)
       |> assign(:label, label)
+      |> assign(:estimated_date, Map.get(assigns.entry, :estimated_completion_date))
 
     ~H"""
     <.link navigate={~p"/targets/#{@entry.target.id}"} style={card_style(@token)} data-target-card>
@@ -111,6 +117,14 @@ defmodule KanbanWeb.TargetsStrip do
       </span>
       <span style="font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono);">
         {format_date(@entry.target.target_date)}
+      </span>
+      <span
+        :if={@estimated_date}
+        style="font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono);"
+        title={gettext("Estimated completion")}
+        data-estimated-date
+      >
+        {gettext("Est. %{date}", date: format_date(@estimated_date))}
       </span>
 
       <span style={badge_style(@token)}>{@label}</span>

@@ -4732,7 +4732,7 @@ msgstr "平均サイクル"
 #: lib/kanban_web/components/delivery_health_band.ex:173
 #: lib/kanban_web/components/goal_sidebar.ex:58
 #: lib/kanban_web/components/target_progress_header.ex:187
-#: lib/kanban_web/components/targets_strip.ex:155
+#: lib/kanban_web/components/targets_strip.ex:169
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
 msgstr "完了"
@@ -6918,7 +6918,7 @@ msgstr "お客様のコンテンツ"
 msgid "Your use of the service is subject to our "
 msgstr "本サービスの利用には、当社の"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:63
+#: lib/kanban_web/controllers/user_session_controller.ex:68
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "サインインする前にアカウントを確認する必要があります。確認リンクが記載されたメールをご確認ください。"
@@ -7391,26 +7391,26 @@ msgstr "確認リンクを送信"
 #: lib/kanban_web/components/delivery_health_band.ex:171
 #: lib/kanban_web/components/target_progress_header.ex:189
 #: lib/kanban_web/components/target_risk_explainer.ex:118
-#: lib/kanban_web/components/targets_strip.ex:157
+#: lib/kanban_web/components/targets_strip.ex:171
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "リスクあり"
 
 #: lib/kanban_web/components/delivery_health_band.ex:172
 #: lib/kanban_web/components/target_progress_header.ex:190
-#: lib/kanban_web/components/targets_strip.ex:158
+#: lib/kanban_web/components/targets_strip.ex:172
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "未達"
 
 #: lib/kanban_web/components/delivery_health_band.ex:170
 #: lib/kanban_web/components/target_progress_header.ex:188
-#: lib/kanban_web/components/targets_strip.ex:156
+#: lib/kanban_web/components/targets_strip.ex:170
 #, elixir-autogen, elixir-format
 msgid "On-track"
 msgstr "順調"
 
-#: lib/kanban_web/components/targets_strip.ex:82
+#: lib/kanban_web/components/targets_strip.ex:87
 #, elixir-autogen, elixir-format
 msgid "Targets"
 msgstr "ターゲット"
@@ -7805,7 +7805,7 @@ msgstr "過去90日間"
 msgid "New column"
 msgstr "新しい列"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:98
+#: lib/kanban_web/controllers/user_session_controller.ex:103
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
 msgstr "試行回数が多すぎます。数分待ってからもう一度お試しください。"
@@ -8050,3 +8050,13 @@ msgstr "アーカイブ済み %{age}"
 #, elixir-autogen, elixir-format
 msgid "Back to archived targets"
 msgstr "アーカイブ済みターゲットに戻る"
+
+#: lib/kanban_web/components/targets_strip.ex:127
+#, elixir-autogen, elixir-format
+msgid "Est. %{date}"
+msgstr "予定 %{date}"
+
+#: lib/kanban_web/components/targets_strip.ex:124
+#, elixir-autogen, elixir-format
+msgid "Estimated completion"
+msgstr "完了予定"

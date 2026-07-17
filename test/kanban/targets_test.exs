@@ -672,6 +672,131 @@ defmodule Kanban.TargetsTest do
     end
   end
 
+  @estimate_today ~D[2026-07-07]
+
+  # A completed historical (non-child) task with an EXACT lead time of
+  # `days`, both timestamps pinned so assertions never depend on the wall
+  # clock. inserted_at is not castable to the past through the changeset, so
+  # this bypasses the cast allow-list the same way goal_with_identifier/3
+  # does.
+  defp completed_with_lead(column, days) do
+    column
+    |> task_fixture()
+    |> Ecto.Changeset.change(
+      status: :completed,
+      completed_at: ~U[2026-07-01 12:00:00Z],
+      inserted_at: NaiveDateTime.add(~N[2026-07-01 12:00:00], -days * 86_400)
+    )
+    |> Repo.update!()
+  end
+
+  # A target with one member goal carrying `remaining` incomplete children.
+  defp target_with_remaining(scope, column, user, remaining) do
+    goal = goal_fixture(column)
+    for _ <- 1..remaining, do: task_fixture(column, %{parent_id: goal.id})
+    target = delivery_target_fixture(user)
+    assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+    target
+  end
+
+  describe "list_targets_with_status/2 — estimated_completion_date" do
+    test "projects today + remaining * p75 lead time from board history",
+         %{scope: scope, user: user, column: column} do
+      # Historical leads of 1/2/4 days -> p75 = 3.0 days exactly; 2 remaining
+      # children -> today + 6.
+      for days <- [1, 2, 4], do: completed_with_lead(column, days)
+      target_with_remaining(scope, column, user, 2)
+
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert summary.estimated_completion_date == Date.add(@estimate_today, 6)
+    end
+
+    test "is nil when there are no historical completed tasks",
+         %{scope: scope, user: user, column: column} do
+      target_with_remaining(scope, column, user, 2)
+
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert summary.estimated_completion_date == nil
+    end
+
+    test "ignores completed goal-type tasks in the historical sample",
+         %{scope: scope, user: user, column: column} do
+      column |> goal_fixture() |> complete_task()
+      target_with_remaining(scope, column, user, 1)
+
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert summary.estimated_completion_date == nil
+    end
+
+    test "ignores history on boards not backing the target's member goals",
+         %{scope: scope, user: user, column: column, other_column: other_column} do
+      completed_with_lead(other_column, 3)
+      target_with_remaining(scope, column, user, 1)
+
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert summary.estimated_completion_date == nil
+    end
+
+    test "uses all-time history, not a trailing window",
+         %{scope: scope, user: user, column: column} do
+      # Completed ~18 months before `today` with a 2-day lead — far outside
+      # any 30/90-day metrics window, but still the pace sample here.
+      column
+      |> task_fixture()
+      |> Ecto.Changeset.change(
+        status: :completed,
+        completed_at: ~U[2025-01-01 12:00:00Z],
+        inserted_at: ~N[2024-12-30 12:00:00]
+      )
+      |> Repo.update!()
+
+      target_with_remaining(scope, column, user, 1)
+
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert summary.estimated_completion_date == Date.add(@estimate_today, 2)
+    end
+
+    test "is nil for a :complete target even with history present",
+         %{scope: scope, user: user, column: column} do
+      completed_with_lead(column, 2)
+      complete_target(scope, column, user)
+
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert summary.status == :complete
+      assert summary.estimated_completion_date == nil
+    end
+
+    test "is nil when nothing remains (childless 0/0 goal) even with history",
+         %{scope: scope, user: user, column: column} do
+      completed_with_lead(column, 2)
+      goal = goal_fixture(column)
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert summary.status == :on_track
+      assert summary.total == 0
+      assert summary.estimated_completion_date == nil
+    end
+
+    test "the rollup and drill-down paths do not estimate",
+         %{scope: scope, user: user, column: column} do
+      for days <- [1, 2, 4], do: completed_with_lead(column, days)
+      target = target_with_remaining(scope, column, user, 2)
+
+      assert [with_goals] =
+               Targets.list_targets_with_status_and_goals(scope, @estimate_today)
+
+      assert with_goals.estimated_completion_date == nil
+
+      assert %{summary: summary} =
+               Targets.get_target_progress(scope, target, @estimate_today)
+
+      assert summary.estimated_completion_date == nil
+    end
+  end
+
   describe "get_target_progress/3" do
     test "aggregate summary matches list_targets_with_status/2 for the same target",
          %{scope: scope, user: user, column: column} do

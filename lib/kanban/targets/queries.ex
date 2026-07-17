@@ -161,6 +161,42 @@ defmodule Kanban.Targets.Queries do
   end
 
   @doc """
+  Lead times (in seconds, as floats) of every completed non-goal task on the
+  given boards — the historical sample behind a target's estimated completion
+  date (`Kanban.Targets.Estimation`).
+
+  Mirrors the filters of `Kanban.Metrics.get_lead_time_stats/2` (completed
+  only, goal-type excluded, creation-to-completion diffed in SQL) with one
+  deliberate deviation: the sample is **unwindowed** — all history, no
+  `time_range` — because a pace estimate wants the full record, not a trailing
+  window.
+
+  Unlike every other read in this module it takes pre-resolved `board_ids`
+  rather than a `Scope`: the ids come from the caller's already scope-filtered
+  member goals (`goal.column.board_id`), so board scoping is upheld by
+  construction. An empty id list short-circuits to `[]` without a query.
+  """
+  @spec list_completed_lead_times([pos_integer()]) :: [float()]
+  def list_completed_lead_times([]), do: []
+
+  def list_completed_lead_times(board_ids) when is_list(board_ids) do
+    Task
+    |> join(:inner, [t], c in assoc(t, :column))
+    |> where([t, c], c.board_id in ^board_ids)
+    |> where([t], not is_nil(t.completed_at))
+    |> where([t], t.type != ^:goal)
+    |> select([t], fragment("EXTRACT(EPOCH FROM (? - ?))", t.completed_at, t.inserted_at))
+    |> Repo.all()
+    |> Enum.map(&decimal_to_float/1)
+  end
+
+  # EXTRACT(EPOCH ...) comes back as a Postgres numeric -> Decimal; downstream
+  # arithmetic (Kanban.Targets.Estimation) needs plain numbers. Same
+  # normalization Kanban.Metrics applies to its lead-time seconds.
+  defp decimal_to_float(%Decimal{} = seconds), do: Decimal.to_float(seconds)
+  defp decimal_to_float(seconds), do: seconds
+
+  @doc """
   Fetches a single task by id under the caller's board scope, `:column`
   preloaded. Returns `nil` when the task is missing or on a board the caller
   cannot access. A nil / userless scope applies no board filter.

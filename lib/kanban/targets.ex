@@ -410,6 +410,13 @@ defmodule Kanban.Targets do
       member goals' child tasks (a childless goal contributes `0/0` to this
       display fraction; when every goal is childless the fraction is `0/0`).
     * `:percentage` — `round(completed / total * 100)`, or `0` when `total == 0`.
+    * `:estimated_completion_date` — `today` plus remaining tasks × the 75th
+      percentile lead time of ALL historical completed non-goal tasks on the
+      member goals' boards (`Kanban.Targets.Estimation`). `nil` when the
+      target is `:complete`, nothing remains, or there is no historical
+      sample — `nil` means the strip renders no estimate at all. Costs one
+      extra lead-time query per estimable target on top of the N+1 documented
+      below.
 
   ## Scoping / security
 
@@ -451,6 +458,11 @@ defmodule Kanban.Targets do
   `list_targets_with_status/2` row; only the extra `:goals` key is added, so
   existing callers of `list_targets_with_status/2` are unaffected.
 
+  Unlike `list_targets_with_status/2`, `:estimated_completion_date` is always
+  `nil` here — the /agents rollup refreshes constantly, and estimating would
+  add a lead-time query per target (see `Kanban.Targets.Progress`'s
+  "Estimated completion" section).
+
   Board scoping, the per-goal child query (N+1) characteristics, and the
   `today` injection are identical to `list_targets_with_status/2`.
   """
@@ -480,7 +492,9 @@ defmodule Kanban.Targets do
     * `:summary` — identical in shape and meaning to a `list_targets_with_status/2`
       row: `:status` (`Kanban.Targets.Status.derive/3`), the aggregate
       `:completed`/`:total` child fraction across all member goals, and
-      `:percentage`.
+      `:percentage`. Its `:estimated_completion_date` is always `nil` — the
+      drill-down (which also serves archived, necessarily-complete targets)
+      does not estimate.
     * `:goals` — one entry per accessible member goal, each carrying the goal
       task, its column-bucketed `:flow` map (`%{done, review, doing, ready,
       backlog, total}`), and that goal's own `:completed`/`:total`/`:percentage`.

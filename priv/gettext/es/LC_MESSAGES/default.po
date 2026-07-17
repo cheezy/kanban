@@ -4740,7 +4740,7 @@ msgstr "Ciclo prom."
 #: lib/kanban_web/components/delivery_health_band.ex:173
 #: lib/kanban_web/components/goal_sidebar.ex:58
 #: lib/kanban_web/components/target_progress_header.ex:187
-#: lib/kanban_web/components/targets_strip.ex:155
+#: lib/kanban_web/components/targets_strip.ex:169
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
 msgstr "Completo"
@@ -6971,7 +6971,7 @@ msgstr "Su contenido"
 msgid "Your use of the service is subject to our "
 msgstr "Su uso del servicio está sujeto a nuestra "
 
-#: lib/kanban_web/controllers/user_session_controller.ex:63
+#: lib/kanban_web/controllers/user_session_controller.ex:68
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "Debes confirmar tu cuenta antes de iniciar sesión. Revisa tu correo electrónico para encontrar el enlace de confirmación."
@@ -7444,26 +7444,26 @@ msgstr "Enviar enlace de confirmación"
 #: lib/kanban_web/components/delivery_health_band.ex:171
 #: lib/kanban_web/components/target_progress_header.ex:189
 #: lib/kanban_web/components/target_risk_explainer.ex:118
-#: lib/kanban_web/components/targets_strip.ex:157
+#: lib/kanban_web/components/targets_strip.ex:171
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "En riesgo"
 
 #: lib/kanban_web/components/delivery_health_band.ex:172
 #: lib/kanban_web/components/target_progress_header.ex:190
-#: lib/kanban_web/components/targets_strip.ex:158
+#: lib/kanban_web/components/targets_strip.ex:172
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "Incumplido"
 
 #: lib/kanban_web/components/delivery_health_band.ex:170
 #: lib/kanban_web/components/target_progress_header.ex:188
-#: lib/kanban_web/components/targets_strip.ex:156
+#: lib/kanban_web/components/targets_strip.ex:170
 #, elixir-autogen, elixir-format
 msgid "On-track"
 msgstr "En curso"
 
-#: lib/kanban_web/components/targets_strip.ex:82
+#: lib/kanban_web/components/targets_strip.ex:87
 #, elixir-autogen, elixir-format
 msgid "Targets"
 msgstr "Metas"
@@ -7865,7 +7865,7 @@ msgstr "Últimos 90 días"
 msgid "New column"
 msgstr "Nueva columna"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:98
+#: lib/kanban_web/controllers/user_session_controller.ex:103
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
 msgstr "Demasiados intentos. Espera unos minutos e inténtalo de nuevo."
@@ -8110,3 +8110,13 @@ msgstr "Archivada %{age}"
 #, elixir-autogen, elixir-format
 msgid "Back to archived targets"
 msgstr "Volver a metas archivadas"
+
+#: lib/kanban_web/components/targets_strip.ex:127
+#, elixir-autogen, elixir-format
+msgid "Est. %{date}"
+msgstr "Est. %{date}"
+
+#: lib/kanban_web/components/targets_strip.ex:124
+#, elixir-autogen, elixir-format
+msgid "Estimated completion"
+msgstr "Finalización estimada"
