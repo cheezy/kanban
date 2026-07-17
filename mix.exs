@@ -8,6 +8,11 @@ defmodule Kanban.MixProject do
       elixir: "~> 1.20",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      # Consolidation is a runtime optimization tests don't need, and leaving it
+      # on in :test means every recompile of a struct that derives a protocol
+      # impl (e.g. the `redact:`-generated Inspect on Kanban.Accounts.User) warns
+      # "protocol has already been consolidated". Disable it in :test to silence.
+      consolidate_protocols: Mix.env() != :test,
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),

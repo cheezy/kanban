@@ -60,13 +60,13 @@ defmodule KanbanWeb.TargetsStripTest do
   end
 
   describe "targets_strip/1 — target card" do
-    test "renders the name, formatted date and the N/M (P%) fraction" do
+    test "renders the name, Due-labeled date and the N/M (P%) fraction" do
       html = render_targets([entry(%{completed: 12, total: 20, percentage: 60})])
 
       assert html =~ "data-target-card"
       assert html =~ ~s(href="/targets/1")
       assert html =~ "Q3 Launch"
-      assert html =~ "Dec 31, 2026"
+      assert html =~ "Due. Dec 31, 2026"
       assert html =~ ~r/12\/20 \(60%\)/
       assert html =~ "width: 60%"
     end
@@ -88,7 +88,13 @@ defmodule KanbanWeb.TargetsStripTest do
     test "keeps the pill at intrinsic width so nothing clips" do
       html = render_targets([entry()])
 
-      assert html =~ "flex-shrink: 0; white-space: nowrap;"
+      # min-width: max-content pins the pill to its full content width so a long
+      # name cannot squeeze out the first divider (the strip row would otherwise
+      # cap the nested flex pill's width).
+      assert html =~ "flex-shrink: 0; white-space: nowrap; min-width: max-content;"
+      # The name span is itself rigid (flex-shrink: 0) so it never compresses at
+      # the exact-fit boundary and push the first divider out of view.
+      assert html =~ "color: var(--ink); flex-shrink: 0; white-space: nowrap;"
     end
 
     test "renders all dividers for a very long target name" do

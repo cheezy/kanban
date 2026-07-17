@@ -1,8 +1,8 @@
 defmodule KanbanWeb.TargetsStrip do
   @moduledoc """
   Horizontal strip of delivery-target cards displayed above the boards
-  index content. Each card shows the target name, its `target_date`, a
-  read-time status badge, and a single completed/total child-task
+  index content. Each card shows the target name, its `target_date`
+  (labeled "Due."), a read-time status badge, and a single completed/total child-task
   fraction (`"12/20 (60%)"`) with a thin filled progress bar. Inside the
   card the values are grouped into clusters (name | dates | badge |
   progress) separated by pill-scale 1px `var(--ink-4)` dividers —
@@ -55,6 +55,9 @@ defmodule KanbanWeb.TargetsStrip do
         percentage: 0..100,
         estimated_completion_date: Date.t() | nil
       }
+
+  The target date is labeled "Due." ("Due. Dec 31, 2026") so it reads as
+  a distinct value, parallel to the "Est." estimate label.
 
   `:estimated_completion_date` is optional and renders a second mono date
   ("Est. Mar 3, 2027") after the target date when present, preceded by its
@@ -121,14 +124,14 @@ defmodule KanbanWeb.TargetsStrip do
 
     ~H"""
     <.link navigate={~p"/targets/#{@entry.target.id}"} style={card_style(@token)} data-target-card>
-      <span style="font-size: 12px; font-weight: 500; color: var(--ink);">
+      <span style="font-size: 12px; font-weight: 500; color: var(--ink); flex-shrink: 0; white-space: nowrap;">
         {@entry.target.name}
       </span>
 
       <span style={divider_style()} data-pill-divider aria-hidden="true"></span>
 
-      <span style="font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono);">
-        {format_date(@entry.target.target_date)}
+      <span style="font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono); white-space: nowrap;">
+        {gettext("Due. %{date}", date: format_date(@entry.target.target_date))}
       </span>
       <span :if={@estimated_date} style={divider_style()} data-pill-divider aria-hidden="true"></span>
       <span
@@ -162,9 +165,14 @@ defmodule KanbanWeb.TargetsStrip do
 
   # Card border + left stripe use the target's status token, mirroring the
   # goal-pill style but sourced from a dark-mode-safe --st-* token.
-  # flex-shrink 0 + nowrap keep the pill at its intrinsic width: a long name
-  # extends the pill (whole pills wrap via the strip row's flex-wrap) instead
-  # of compressing it and clipping the title or a divider (D164).
+  #
+  # The pill is a nested inline-flex item of the strip's `flex: 1; min-width: 0`
+  # card row, so the row caps the space it offers each pill. flex-shrink 0 +
+  # nowrap alone did not stop a long name from squeezing out the first divider
+  # (Safari caps the pill's computed basis to the row's width, D164 follow-up),
+  # so min-width: max-content pins the pill to its full content width. The name
+  # and every divider stay visible and the whole pill wraps to the next row via
+  # the row's flex-wrap instead of the title/divider being clipped.
   defp card_style(token) do
     [
       "display: inline-flex; align-items: center; gap: 10px;",
@@ -174,7 +182,7 @@ defmodule KanbanWeb.TargetsStrip do
       "border-left: 3px solid var(--st-#{token});",
       "border-radius: 5px;",
       "text-decoration: none;",
-      "flex-shrink: 0; white-space: nowrap;"
+      "flex-shrink: 0; white-space: nowrap; min-width: max-content;"
     ]
   end
 

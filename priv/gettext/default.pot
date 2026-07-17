@@ -4740,7 +4740,7 @@ msgstr ""
 #: lib/kanban_web/components/delivery_health_band.ex:173
 #: lib/kanban_web/components/goal_sidebar.ex:58
 #: lib/kanban_web/components/target_progress_header.ex:187
-#: lib/kanban_web/components/targets_strip.ex:169
+#: lib/kanban_web/components/targets_strip.ex:208
 #, elixir-autogen, elixir-format
 msgid "Complete"
 msgstr ""
@@ -7345,26 +7345,26 @@ msgstr ""
 #: lib/kanban_web/components/delivery_health_band.ex:171
 #: lib/kanban_web/components/target_progress_header.ex:189
 #: lib/kanban_web/components/target_risk_explainer.ex:118
-#: lib/kanban_web/components/targets_strip.ex:171
+#: lib/kanban_web/components/targets_strip.ex:210
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr ""
 
 #: lib/kanban_web/components/delivery_health_band.ex:172
 #: lib/kanban_web/components/target_progress_header.ex:190
-#: lib/kanban_web/components/targets_strip.ex:172
+#: lib/kanban_web/components/targets_strip.ex:211
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr ""
 
 #: lib/kanban_web/components/delivery_health_band.ex:170
 #: lib/kanban_web/components/target_progress_header.ex:188
-#: lib/kanban_web/components/targets_strip.ex:170
+#: lib/kanban_web/components/targets_strip.ex:209
 #, elixir-autogen, elixir-format
 msgid "On-track"
 msgstr ""
 
-#: lib/kanban_web/components/targets_strip.ex:87
+#: lib/kanban_web/components/targets_strip.ex:99
 #, elixir-autogen, elixir-format
 msgid "Targets"
 msgstr ""
@@ -8012,12 +8012,17 @@ msgstr ""
 msgid "Back to archived targets"
 msgstr ""
 
-#: lib/kanban_web/components/targets_strip.ex:127
+#: lib/kanban_web/components/targets_strip.ex:143
 #, elixir-autogen, elixir-format
 msgid "Est. %{date}"
 msgstr ""
 
-#: lib/kanban_web/components/targets_strip.ex:124
+#: lib/kanban_web/components/targets_strip.ex:140
 #, elixir-autogen, elixir-format
 msgid "Estimated completion"
+msgstr ""
+
+#: lib/kanban_web/components/targets_strip.ex:134
+#, elixir-autogen, elixir-format
+msgid "Due. %{date}"
 msgstr ""
