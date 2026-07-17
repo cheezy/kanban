@@ -10,6 +10,7 @@ defmodule Kanban.Tasks.Creation do
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.DbErrors
   alias Kanban.Tasks.Dependencies
+  alias Kanban.Tasks.Goals
   alias Kanban.Tasks.Identifiers
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
@@ -361,6 +362,17 @@ defmodule Kanban.Tasks.Creation do
     |> Ecto.Multi.insert(:task, task_insert_fun(column, attrs, changeset_fn))
     |> Ecto.Multi.insert(:history, fn %{task: task} ->
       TaskHistory.changeset(%TaskHistory{}, %{task_id: task.id, type: :creation})
+    end)
+    |> Ecto.Multi.run(:goal_recalc, fn _repo, %{task: task} ->
+      # Reposition the parent goal now that it has a new child. Reuses the same
+      # recalc entry point as the move (positioning.ex) and status-transition
+      # (agent_workflow.ex) paths so a Done goal that gains a non-Done child is
+      # pulled back to its leftmost occupied child column. The function no-ops
+      # safely for tasks without a goal parent (nil parent_id, or a non-goal
+      # parent), so no parent_id guard is needed here. The 2nd/3rd column args
+      # are unused by the recalc; passing the task's own column is self-documenting.
+      Goals.update_parent_goal_position(task, task.column_id, task.column_id)
+      {:ok, :ok}
     end)
   end
 

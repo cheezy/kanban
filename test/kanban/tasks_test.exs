@@ -37,6 +37,14 @@ defmodule Kanban.TasksTest do
     |> DateTime.add(-days * 86_400, :second)
   end
 
+  defp set_after_goal_pending!(task) do
+    Kanban.Tasks.Task
+    |> where([t], t.id == ^task.id)
+    |> Kanban.Repo.update_all(set: [after_goal_status: :pending])
+
+    Kanban.Tasks.get_task!(task.id)
+  end
+
   describe "list_tasks/1" do
     test "returns all tasks for a column ordered by position" do
       user = user_fixture()
@@ -5684,6 +5692,134 @@ defmodule Kanban.TasksTest do
 
       assert reloaded_goal.column_id == done_column.id,
              "Goal moves to Done when all children are done"
+    end
+
+    test "creating a non-Done child under a Done goal pulls the goal back to the leftmost child column" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo_column = column_fixture(board, %{name: "To Do", position: 0})
+      column_fixture(board, %{name: "Doing", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 2})
+
+      {:ok, goal} =
+        Tasks.create_task(todo_column, %{"title" => "Parent Goal", "type" => "goal"})
+
+      {:ok, child1} =
+        Tasks.create_task(todo_column, %{"title" => "Child 1", "parent_id" => goal.id})
+
+      # Move the only child to Done so the goal auto-promotes to Done.
+      {:ok, _} = Tasks.move_task(child1, done_column, 0)
+
+      assert Tasks.get_task!(goal.id).column_id == done_column.id,
+             "Precondition: goal sits in Done with its only child done"
+
+      # Creating a new non-Done child under the Done goal must immediately pull
+      # the goal back out of Done to the leftmost occupied child column.
+      {:ok, _child2} =
+        Tasks.create_task(todo_column, %{"title" => "Child 2", "parent_id" => goal.id})
+
+      assert Tasks.get_task!(goal.id).column_id == todo_column.id,
+             "Goal is pulled back to To Do (leftmost child column) when a non-Done child is created"
+    end
+
+    test "creating a child that keeps all children Done leaves the goal in Done" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo_column = column_fixture(board, %{name: "To Do", position: 0})
+      column_fixture(board, %{name: "Doing", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 2})
+
+      {:ok, goal} =
+        Tasks.create_task(todo_column, %{"title" => "Parent Goal", "type" => "goal"})
+
+      {:ok, child1} =
+        Tasks.create_task(todo_column, %{"title" => "Child 1", "parent_id" => goal.id})
+
+      {:ok, _} = Tasks.move_task(child1, done_column, 0)
+
+      assert Tasks.get_task!(goal.id).column_id == done_column.id,
+             "Precondition: goal sits in Done"
+
+      # A new child created directly in Done keeps every child Done, so the goal
+      # must stay in Done — no spurious move.
+      {:ok, _child2} =
+        Tasks.create_task(done_column, %{"title" => "Child 2", "parent_id" => goal.id})
+
+      assert Tasks.get_task!(goal.id).column_id == done_column.id,
+             "Goal stays in Done when the new child is itself Done"
+    end
+
+    test "creating a top-level task with no parent_id triggers no goal recalculation" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo_column = column_fixture(board, %{name: "To Do", position: 0})
+
+      {:ok, task} =
+        Tasks.create_task(todo_column, %{"title" => "Standalone Task"})
+
+      assert is_nil(task.parent_id)
+      assert task.column_id == todo_column.id
+    end
+
+    test "creating a child under a goal held by after_goal :pending respects the hold" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column_fixture(board, %{name: "To Do", position: 0})
+      doing_column = column_fixture(board, %{name: "Doing", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 2})
+
+      {:ok, goal} =
+        Tasks.create_task(doing_column, %{"title" => "Parent Goal", "type" => "goal"})
+
+      {:ok, child1} =
+        Tasks.create_task(doing_column, %{"title" => "Child 1", "parent_id" => goal.id})
+
+      # Arm the after_goal lifecycle: a :pending status holds the goal In
+      # Progress even once every child is Done.
+      set_after_goal_pending!(goal)
+
+      # Move-path recalc: all children Done + :pending must hold the goal in
+      # Doing rather than promoting it to Done.
+      {:ok, _} = Tasks.move_task(child1, done_column, 0)
+
+      assert Tasks.get_task!(goal.id).column_id == doing_column.id,
+             "Precondition: a pending goal is held in Doing even with all children Done"
+
+      # Creating another Done child keeps every child Done. The creation-path
+      # recalc must respect the same :pending hold as the move path — the goal
+      # stays in Doing and is NOT promoted to Done.
+      {:ok, _child2} =
+        Tasks.create_task(done_column, %{"title" => "Child 2", "parent_id" => goal.id})
+
+      assert Tasks.get_task!(goal.id).column_id == doing_column.id,
+             "Creation-path recalc respects the after_goal :pending hold"
+    end
+
+    test "creating a child excludes archived children from the goal recalculation" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column_fixture(board, %{name: "To Do", position: 0})
+      doing_column = column_fixture(board, %{name: "Doing", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 2})
+
+      {:ok, goal} =
+        Tasks.create_task(doing_column, %{"title" => "Parent Goal", "type" => "goal"})
+
+      # A non-Done child that is then archived. Once archived it must be
+      # excluded from the recalculation context.
+      {:ok, stale_child} =
+        Tasks.create_task(doing_column, %{"title" => "Stale Child", "parent_id" => goal.id})
+
+      {:ok, _} = Tasks.archive_task(stale_child)
+
+      # Creating a Done child leaves every LIVE child Done, so the goal is
+      # promoted to Done. If the archived child were wrongly counted, its
+      # non-Done state would hold the goal in Doing.
+      {:ok, _live_child} =
+        Tasks.create_task(done_column, %{"title" => "Live Child", "parent_id" => goal.id})
+
+      assert Tasks.get_task!(goal.id).column_id == done_column.id,
+             "Archived children are excluded from the creation-triggered recalculation"
     end
 
     test "goal does not move when child task moves within non-done columns" do
