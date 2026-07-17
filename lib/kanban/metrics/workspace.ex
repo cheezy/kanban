@@ -95,6 +95,28 @@ defmodule Kanban.Metrics.Workspace do
     end
   end
 
+  @doc """
+  Returns the same map shape as `overview/1` filled with the zero/empty
+  payloads, WITHOUT running any query. The disconnected LiveView mount seeds
+  this so the static first render is instant and every assign the template
+  reads is present; the connected mount then replaces it with `overview/1`.
+
+  Only `:window_days` and `:timezone` are read (to size the empty day series);
+  `:scope` and `:board_ids` are ignored because nothing is fetched.
+  """
+  @spec placeholder_overview(keyword()) :: %{
+          kpis: map(),
+          cycle_series: [map()],
+          throughput_series: [non_neg_integer()],
+          leaderboard: [map()],
+          flow_snapshots: [map()]
+        }
+  def placeholder_overview(opts \\ []) do
+    window_days = resolve_window_days(opts)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    zero_overview(window_days, timezone)
+  end
+
   defp zero_overview(window_days, timezone) do
     %{
       kpis: zero_kpis(),

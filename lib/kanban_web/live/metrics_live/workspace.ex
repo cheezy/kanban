@@ -45,16 +45,37 @@ defmodule KanbanWeb.MetricsLive.Workspace do
 
   @impl true
   def mount(_params, _session, socket) do
-    boards = scoped_boards(socket.assigns.current_scope)
-    selected_ids = Enum.map(boards, & &1.id)
+    # The heavy metric reads run ONLY on the connected mount. The static
+    # (disconnected) first render seeds zero placeholders — every data assign the
+    # template reads is present — so first paint is instant; the connected mount
+    # then loads the real data and replaces it. This halves the per-load query
+    # volume the old unconditional load incurred by running on BOTH the
+    # disconnected and connected mount (D120). Boards are still listed on both
+    # paths because the header renders their names before connect.
+    socket = assign(socket, initial_assigns(socket))
+    selected_ids = Enum.map(socket.assigns.boards, & &1.id)
 
-    {:ok,
-     socket
-     |> assign(:page_title, "Stride · Metrics")
-     |> assign(:boards, boards)
-     |> assign(:selected_window_days, @default_window_days)
-     |> assign(:timezone, KanbanWeb.Timezone.browser_timezone(socket))
-     |> assign_workspace_metrics(selected_ids)}
+    socket =
+      if connected?(socket) do
+        assign_workspace_metrics(socket, selected_ids)
+      else
+        assign_placeholder_metrics(socket, selected_ids)
+      end
+
+    {:ok, socket}
+  end
+
+  # Assigns that do not depend on the heavy metric fetch — seeded on both the
+  # disconnected and connected mount so the first render has every selector
+  # assign it needs. Boards are listed here (not gated) because the header
+  # renders their names before connect; only the metric reads are deferred.
+  defp initial_assigns(socket) do
+    %{
+      page_title: "Stride · Metrics",
+      boards: scoped_boards(socket.assigns.current_scope),
+      selected_window_days: @default_window_days,
+      timezone: KanbanWeb.Timezone.browser_timezone(socket)
+    }
   end
 
   @impl true
@@ -70,9 +91,11 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   end
 
   # Re-reads every workspace series for the current selection and refreshes the
-  # selection-dependent assigns. The selected ids are intersected with the
-  # visible boards (see board_ids_filter/2) before reaching Kanban.Metrics, so
-  # an "all selected" or "none selected" state shows all visible boards.
+  # selection-dependent assigns via the single consolidated overview/1 call. The
+  # selected ids are intersected with the visible boards (see board_ids_filter/2)
+  # before reaching Kanban.Metrics, so an "all selected" or "none selected" state
+  # shows all visible boards. Runs on the connected mount and both selector
+  # events — never on the disconnected render (see mount/3, D120).
   defp assign_workspace_metrics(socket, selected_ids) do
     boards = socket.assigns.boards
     window_days = socket.assigns.selected_window_days
@@ -84,7 +107,28 @@ defmodule KanbanWeb.MetricsLive.Workspace do
       timezone: Map.get(socket.assigns, :timezone, "Etc/UTC")
     ]
 
-    overview = Workspace.overview(opts)
+    put_overview(socket, Workspace.overview(opts), selected_ids)
+  end
+
+  # Disconnected-mount stand-in: the zero overview shape with NO query, so the
+  # static first render has every data assign the template reads and never
+  # crashes. Replaced by the real load on the connected mount (D120).
+  defp assign_placeholder_metrics(socket, selected_ids) do
+    overview =
+      Workspace.placeholder_overview(
+        window_days: socket.assigns.selected_window_days,
+        timezone: socket.assigns.timezone
+      )
+
+    put_overview(socket, overview, selected_ids)
+  end
+
+  # Assigns the five overview payloads plus the selection-derived assigns. Shared
+  # by the real load and the disconnected placeholder so both paths emit an
+  # identical set of assign keys.
+  defp put_overview(socket, overview, selected_ids) do
+    boards = socket.assigns.boards
+    window_days = socket.assigns.selected_window_days
 
     socket
     |> assign(:selected_board_ids, selected_ids)

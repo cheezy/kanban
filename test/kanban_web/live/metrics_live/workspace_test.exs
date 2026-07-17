@@ -90,6 +90,56 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
     end
   end
 
+  describe "connected-mount gating (D120/W1732)" do
+    setup [:register_and_log_in_user]
+
+    test "the disconnected static render shows the zero state; the connected mount loads the data",
+         %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      completed_at = DateTime.add(now, -3600, :second)
+      claimed_at = DateTime.add(completed_at, -3600, :second)
+
+      Enum.each(1..2, fn _ ->
+        t = task_fixture(column, %{completed_by_agent: "Zeta"})
+        {:ok, _} = Tasks.update_task(t, %{claimed_at: claimed_at, completed_at: completed_at})
+      end)
+
+      # Disconnected static render: the heavy metric read is gated off, so the
+      # leaderboard shows its empty state and the seeded agent does NOT appear.
+      static_html = conn |> get(~p"/metrics") |> html_response(200)
+      assert static_html =~ "data-metrics-workspace"
+      assert static_html =~ "data-metrics-agent-leaderboard-empty"
+      refute static_html =~ "Zeta"
+
+      # Connected mount: the real load runs and surfaces the seeded data.
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+      assert html =~ "Zeta"
+      refute html =~ "data-metrics-agent-leaderboard-empty"
+    end
+
+    test "a window change still re-renders through the single overview path",
+         %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      completed_at = DateTime.add(now, -3600, :second)
+      claimed_at = DateTime.add(completed_at, -3600, :second)
+      t = task_fixture(column, %{completed_by_agent: "Zeta"})
+      {:ok, _} = Tasks.update_task(t, %{claimed_at: claimed_at, completed_at: completed_at})
+
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      html =
+        view
+        |> element("#window-days-form")
+        |> render_change(%{"window_days" => "30"})
+
+      assert html =~ "Zeta"
+      # 30-day window renders 30 throughput points.
+      assert length(Regex.scan(~r/data-metrics-throughput-point/, html)) == 30
+    end
+  end
+
   describe "data wiring" do
     setup [:register_and_log_in_user]
 

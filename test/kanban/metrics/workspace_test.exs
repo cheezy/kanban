@@ -1029,6 +1029,32 @@ defmodule Kanban.Metrics.WorkspaceTest do
     end
   end
 
+  describe "placeholder_overview/1" do
+    test "returns the overview shape with zero payloads and runs no query" do
+      {overview, queries} =
+        queries_during(fn ->
+          Workspace.placeholder_overview(window_days: 14, timezone: "Etc/UTC")
+        end)
+
+      assert queries == []
+
+      assert overview |> Map.keys() |> Enum.sort() ==
+               [:cycle_series, :flow_snapshots, :kpis, :leaderboard, :throughput_series]
+
+      assert overview.leaderboard == []
+      assert overview.throughput_series == List.duplicate(0, 14)
+      assert length(overview.cycle_series) == 14
+      assert length(overview.flow_snapshots) == 14
+      assert overview.kpis == Workspace.workspace_kpis(scope: nil)
+    end
+
+    test "sizes the empty series to the resolved window_days and clamps forged values" do
+      assert length(Workspace.placeholder_overview(window_days: 30).throughput_series) == 30
+      # Out-of-allow-list values fall back to the 14-day default.
+      assert length(Workspace.placeholder_overview(window_days: 999).throughput_series) == 14
+    end
+  end
+
   # --- overview/1 test helpers ----------------------------------------------
 
   # Seeds a mixed dataset spanning the current and previous 14-day KPI windows:
