@@ -21,29 +21,29 @@ defmodule Kanban.Targets.EstimationTest do
       assert Estimation.estimated_completion_date([@day * 1.0], 0, @today) == nil
     end
 
-    test "single-element sample: p75 is that element" do
-      # p75 of [1 day] is 1 day; 3 remaining -> today + 3.
+    test "single-element sample: p25 is that element" do
+      # p25 of [1 day] is 1 day; 3 remaining -> today + 3.
       assert Estimation.estimated_completion_date([@day * 1.0], 3, @today) ==
                Date.add(@today, 3)
     end
 
-    test "interpolated p75 across the sample drives the projection" do
-      # Leads of 1/2/4 days: rank = 0.75 * 2 = 1.5 -> 2 + 0.5 * (4 - 2) = 3.0
-      # days exactly; 2 remaining -> today + 6.
+    test "interpolated p25 across the sample drives the projection" do
+      # Leads of 1/2/4 days: rank = 0.25 * 2 = 0.5 -> 1 + 0.5 * (2 - 1) = 1.5
+      # days; 2 remaining -> 3.0 days -> today + 3.
       leads = [@day * 1.0, @day * 2.0, @day * 4.0]
 
-      assert Estimation.estimated_completion_date(leads, 2, @today) == Date.add(@today, 6)
+      assert Estimation.estimated_completion_date(leads, 2, @today) == Date.add(@today, 3)
     end
 
     test "fractional day products round up, never down" do
-      # p75 of [1,2,3,4] days: rank = 2.25 -> 3 + 0.25 * (4 - 3) = 3.25 days;
-      # 2 remaining -> 6.5 days -> ceil -> today + 7.
+      # p25 of [1,2,3,4] days: rank = 0.75 -> 1 + 0.75 * (2 - 1) = 1.75 days;
+      # 2 remaining -> 3.5 days -> ceil -> today + 4.
       leads = [@day * 1.0, @day * 2.0, @day * 3.0, @day * 4.0]
 
-      assert Estimation.estimated_completion_date(leads, 2, @today) == Date.add(@today, 7)
+      assert Estimation.estimated_completion_date(leads, 2, @today) == Date.add(@today, 4)
     end
 
-    test "a sub-day p75 with one remaining task still rounds up to tomorrow" do
+    test "a sub-day p25 with one remaining task still rounds up to tomorrow" do
       assert Estimation.estimated_completion_date([@day / 2], 1, @today) ==
                Date.add(@today, 1)
     end
@@ -53,9 +53,10 @@ defmodule Kanban.Targets.EstimationTest do
     end
 
     test "unsorted samples are handled (percentile sorts internally)" do
+      # Same [1,2,4]-day sample as above, shuffled: p25 -> 1.5 days -> today + 3.
       leads = [@day * 4.0, @day * 1.0, @day * 2.0]
 
-      assert Estimation.estimated_completion_date(leads, 2, @today) == Date.add(@today, 6)
+      assert Estimation.estimated_completion_date(leads, 2, @today) == Date.add(@today, 3)
     end
 
     test "integer lead-time seconds work alongside floats" do
