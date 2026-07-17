@@ -701,15 +701,15 @@ defmodule Kanban.TargetsTest do
   end
 
   describe "list_targets_with_status/2 — estimated_completion_date" do
-    test "projects today + remaining * p25 lead time from board history",
+    test "projects today + remaining * p50 lead time from board history",
          %{scope: scope, user: user, column: column} do
-      # Historical leads of 1/2/4 days -> p25 = 1.5 days; 2 remaining
-      # children -> 3.0 days -> today + 3.
+      # Historical leads of 1/2/4 days -> p50 = 2.0 days; 2 remaining
+      # children -> 4.0 days -> today + 4.
       for days <- [1, 2, 4], do: completed_with_lead(column, days)
       target_with_remaining(scope, column, user, 2)
 
       assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
-      assert summary.estimated_completion_date == Date.add(@estimate_today, 3)
+      assert summary.estimated_completion_date == Date.add(@estimate_today, 4)
     end
 
     test "is nil when there are no historical completed tasks",

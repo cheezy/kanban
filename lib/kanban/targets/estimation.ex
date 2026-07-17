@@ -10,7 +10,7 @@ defmodule Kanban.Targets.Estimation do
   ## The estimate
 
   `estimated_completion_date/3` projects when a target's remaining work will
-  finish: the 25th percentile of the historical lead-time sample (seconds from
+  finish: the 50th percentile (median) of the historical lead-time sample (seconds from
   task creation to completion), times the remaining task count, added to
   `today`. Days are rounded UP (`ceil/1`) so the estimate never promises an
   earlier date than the math supports. A degenerate all-zero-lead sample
@@ -38,8 +38,8 @@ defmodule Kanban.Targets.Estimation do
   @seconds_per_day 86_400
 
   @doc """
-  The projected completion date for `remaining` tasks paced by the 25th
-  percentile of `lead_times_seconds`, counted from `today`.
+  The projected completion date for `remaining` tasks paced by the 50th
+  percentile (median) of `lead_times_seconds`, counted from `today`.
 
   Returns `nil` when `remaining` is `0` or the sample is empty — see the
   moduledoc for why `nil` must never be coerced to a date.
@@ -49,9 +49,9 @@ defmodule Kanban.Targets.Estimation do
 
   def estimated_completion_date(lead_times_seconds, remaining, %Date{} = today)
       when is_list(lead_times_seconds) and is_integer(remaining) and remaining > 0 do
-    case Calculations.percentile(lead_times_seconds, 25) do
+    case Calculations.percentile(lead_times_seconds, 50) do
       nil -> nil
-      p25_seconds -> Date.add(today, ceil(remaining * p25_seconds / @seconds_per_day))
+      p50_seconds -> Date.add(today, ceil(remaining * p50_seconds / @seconds_per_day))
     end
   end
 end

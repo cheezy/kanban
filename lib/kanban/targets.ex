@@ -410,8 +410,8 @@ defmodule Kanban.Targets do
       member goals' child tasks (a childless goal contributes `0/0` to this
       display fraction; when every goal is childless the fraction is `0/0`).
     * `:percentage` — `round(completed / total * 100)`, or `0` when `total == 0`.
-    * `:estimated_completion_date` — `today` plus remaining tasks × the 25th
-      percentile lead time of ALL historical completed non-goal tasks on the
+    * `:estimated_completion_date` — `today` plus remaining tasks × the 50th
+      percentile (median) lead time of ALL historical completed non-goal tasks on the
       member goals' boards (`Kanban.Targets.Estimation`). `nil` when the
       target is `:complete`, nothing remains, or there is no historical
       sample — `nil` means the strip renders no estimate at all. Costs one
