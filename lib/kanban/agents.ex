@@ -514,15 +514,52 @@ defmodule Kanban.Agents do
     where(query, [t], t.updated_at >= ^window_start_naive(days_back, timezone))
   end
 
+  @doc false
   # The local-day start of a `days_back`-day trailing window as a `NaiveDateTime`,
-  # to compare against the naive `updated_at` column.
-  defp window_start_naive(days_back, timezone) do
+  # to compare against the naive `updated_at` column. Public (@doc false) so the
+  # in-memory window filters below and the LiveView derive their boundary from the
+  # SAME computation the query path uses — the two can never drift (W1734).
+  def window_start_naive(days_back, timezone) do
     timezone
     |> Timezone.local_today()
     |> Date.add(-days_back)
     |> Timezone.start_of_local_day(timezone)
     |> DateTime.to_naive()
   end
+
+  @doc false
+  # The trailing-window length (days back from local "today") for a selector time
+  # range, or nil for the unbounded `:all_time`/`nil` selector. Lets a caller
+  # compare the selector window against a fixed window to pick the wider one
+  # before fetching (W1734).
+  def time_range_days_back(range) when range in [nil, :all_time], do: nil
+  def time_range_days_back(range), do: Map.get(@time_range_days, range, 29)
+
+  @doc false
+  # In-memory twin of the query-side `filter_by_fixed_window`: keeps the tasks
+  # whose `updated_at` falls within the trailing `days_back`-day window, using the
+  # exact same local-day boundary. Used to derive the fixed-window (throughput)
+  # subset from a wider single fetch (W1734).
+  def within_fixed_window(tasks, days_back, timezone) do
+    boundary = window_start_naive(days_back, timezone)
+    Enum.filter(tasks, &updated_on_or_after?(&1, boundary))
+  end
+
+  @doc false
+  # In-memory twin of the query-side `filter_by_time_range`: keeps the tasks
+  # within the selector window; `:all_time`/`nil` is a no-op (keeps everything),
+  # matching the query path. Used to derive the selector subset from a wider
+  # single fetch (W1734).
+  def within_time_range(tasks, range, _timezone) when range in [nil, :all_time], do: tasks
+
+  def within_time_range(tasks, range, timezone) do
+    within_fixed_window(tasks, Map.get(@time_range_days, range, 29), timezone)
+  end
+
+  defp updated_on_or_after?(%{updated_at: %NaiveDateTime{} = at}, boundary),
+    do: NaiveDateTime.compare(at, boundary) != :lt
+
+  defp updated_on_or_after?(_, _), do: false
 
   # --- Shared identity primitives --------------------------------------------
   # Owner/identity resolution reused by the Roster, Events, and Detail modules,

@@ -318,6 +318,92 @@ defmodule Kanban.AgentsTest do
     end
   end
 
+  describe "single-fetch window derivation (W1734)" do
+    setup %{column: column, user: user} do
+      # Tasks spread across the trailing windows by updated_at.
+      for days <- [3, 20, 50, 80] do
+        column |> task_fixture() |> backdate_updated_at(days_ago_naive(days))
+      end
+
+      %{scope: Scope.for_user(user)}
+    end
+
+    test "within_time_range on a wider fetch equals a direct narrow fetch for each selector",
+         %{scope: scope} do
+      wider = Agents.fetch_tasks(scope: scope, time_range: :all_time)
+
+      for range <- [:today, :last_7_days, :last_30_days, :last_90_days] do
+        assert sorted_ids(Agents.within_time_range(wider, range, "Etc/UTC")) ==
+                 sorted_ids(Agents.fetch_tasks(scope: scope, time_range: range)),
+               "in-memory #{range} filter must equal the query-side fetch"
+      end
+    end
+
+    test "within_fixed_window derives the fixed throughput window from a wider fetch",
+         %{scope: scope} do
+      wider = Agents.fetch_tasks(scope: scope, time_range: :all_time)
+
+      assert sorted_ids(Agents.within_fixed_window(wider, 60, "Etc/UTC")) ==
+               sorted_ids(Agents.fetch_tasks(scope: scope, window_days: 60))
+    end
+
+    test ":all_time / nil is a no-op that keeps every fetched task", %{scope: scope} do
+      wider = Agents.fetch_tasks(scope: scope, time_range: :all_time)
+
+      assert Agents.within_time_range(wider, :all_time, "Etc/UTC") == wider
+      assert Agents.within_time_range(wider, nil, "Etc/UTC") == wider
+    end
+
+    test "with a small max_tasks cap, deriving the narrow set from the wider fetch matches a direct narrow fetch",
+         %{column: column, scope: scope} do
+      # Four tasks inside the 7-day window (more recent than the setup's tasks),
+      # so a cap smaller than that count bites INSIDE the narrow window. Because
+      # the narrow window is the most-recent sub-range, the wider fetch's capped
+      # top rows are exactly the narrow window's most-recent rows — so deriving
+      # the narrow set from the wider fetch equals a direct narrow fetch.
+      for days <- [1, 2, 3, 4] do
+        column |> task_fixture() |> backdate_updated_at(days_ago_naive(days))
+      end
+
+      cap = 3
+      wider = Agents.fetch_tasks(scope: scope, time_range: :all_time, max_tasks: cap)
+      derived = Agents.within_time_range(wider, :last_7_days, "Etc/UTC")
+      direct = Agents.fetch_tasks(scope: scope, time_range: :last_7_days, max_tasks: cap)
+
+      assert sorted_ids(derived) == sorted_ids(direct)
+      assert length(direct) == cap
+    end
+
+    test "the in-memory filters anchor to the viewer's local day, not UTC (non-UTC timezone)",
+         %{column: column, scope: scope} do
+      tz = "America/New_York"
+      # Two hours before the NY-anchored 7-day boundary: a task the local-day
+      # window excludes, but a UTC-naive comparison (whose boundary sits hours
+      # earlier) would wrongly include — the exact drift pitfall #1 forbids.
+      straddler_at = Agents.window_start_naive(6, tz) |> NaiveDateTime.add(-2 * 3600, :second)
+      task = column |> task_fixture() |> backdate_updated_at(straddler_at)
+
+      wider = Agents.fetch_tasks(scope: scope, time_range: :all_time)
+      assert task.id in sorted_ids(wider)
+
+      # The in-memory NY filter must equal the query-side NY fetch (both exclude
+      # the straddler); a UTC-naive within_time_range would include it and break
+      # this equality.
+      assert sorted_ids(Agents.within_time_range(wider, :last_7_days, tz)) ==
+               sorted_ids(
+                 Agents.fetch_tasks(scope: scope, time_range: :last_7_days, timezone: tz)
+               )
+
+      refute task.id in sorted_ids(Agents.within_time_range(wider, :last_7_days, tz))
+
+      # The fixed-window twin agrees with a direct fixed-window fetch for the zone.
+      assert sorted_ids(Agents.within_fixed_window(wider, 7, tz)) ==
+               sorted_ids(Agents.fetch_tasks(scope: scope, window_days: 7, timezone: tz))
+    end
+
+    defp sorted_ids(tasks), do: tasks |> Enum.map(& &1.id) |> Enum.sort()
+  end
+
   describe "fetch_target_bridged_tasks/1 (D122)" do
     setup %{user: user} do
       %{scope: Scope.for_user(user)}

@@ -621,31 +621,46 @@ defmodule KanbanWeb.AgentsLive do
     assign(socket, assigns)
   end
 
-  # The two board-scoped task fetches every derivation shares. The first is the
-  # selector-filtered set that drives the roster, events, and header stats
-  # (fetched ONCE — before W1242 each derivation re-ran the unbounded fetch,
-  # ~24-28 queries per render). The second is a fixed @throughput_window_days
-  # set, independent of the page time-range selector, so a "30D" throughput card
-  # always means 30 days; it stays bounded so it never reintroduces the old
-  # unbounded per-render fetch.
+  # The two board-scoped task sets every derivation shares: the selector-filtered
+  # set that drives the roster, events, and header stats, and a fixed
+  # @throughput_window_days set that feeds the selector-independent throughput
+  # cards (so a "30D" card always means 30 trailing days regardless of the
+  # selector). W1242 already fetched each set ONCE per render; W1734 fetches the
+  # two sets from a SINGLE query: since both windows share the same updated_at
+  # ordering and row cap and the narrower window is the recent sub-range of the
+  # wider, one fetch over the WIDER window plus an in-memory boundary filter for
+  # the narrower yields exactly what two separate fetches did (the max_tasks cap
+  # test in agents_test.exs pins the cap-boundary reasoning). This halves the
+  # query volume on the hottest path — every load and every 250ms-debounced agent
+  # event — on top of the W1733 projection. The boundary math lives in
+  # Kanban.Agents (within_time_range/within_fixed_window) so the memory-side and
+  # query-side filters can never drift.
   defp fetch_task_sets(socket, scope) do
-    tasks =
-      Agents.fetch_tasks(
-        scope: scope,
-        board_id: socket.assigns.board_id,
-        time_range: socket.assigns.time_range,
-        timezone: socket.assigns.timezone
-      )
+    timezone = socket.assigns.timezone
+    time_range = socket.assigns.time_range
 
-    throughput_tasks =
-      Agents.fetch_tasks(
-        scope: scope,
-        board_id: socket.assigns.board_id,
-        window_days: @throughput_window_days,
-        timezone: socket.assigns.timezone
-      )
+    base_opts = [scope: scope, board_id: socket.assigns.board_id, timezone: timezone]
+    fetched = base_opts |> wider_window_opts(time_range) |> Agents.fetch_tasks()
+
+    tasks = Agents.within_time_range(fetched, time_range, timezone)
+    throughput_tasks = Agents.within_fixed_window(fetched, @throughput_window_days, timezone)
 
     {tasks, throughput_tasks}
+  end
+
+  # Fetch opts for the WIDER of the selector window and the fixed throughput
+  # window. When the selector is unbounded (:all_time) or reaches at least as far
+  # back as the throughput window, the selector window is wider — fetch it;
+  # otherwise the @throughput_window_days window is wider, so fetch that. Either
+  # way the narrower set is derived from the result in memory.
+  defp wider_window_opts(base_opts, time_range) do
+    selector_days = Agents.time_range_days_back(time_range)
+
+    if is_nil(selector_days) or selector_days >= @throughput_window_days do
+      Keyword.put(base_opts, :time_range, time_range)
+    else
+      Keyword.put(base_opts, :window_days, @throughput_window_days)
+    end
   end
 
   # The roster, event, and drill-down assigns derived from the shared task fetch.
