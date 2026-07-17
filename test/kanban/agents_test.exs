@@ -461,19 +461,36 @@ defmodule Kanban.AgentsTest do
       assert Enum.map(result, & &1.id) == [kept.id]
     end
 
-    test "preloads column, created_by, and completed_by for roster derivation", %{
-      column: column,
-      scope: scope
-    } do
+    test "returns projected maps (not structs) carrying the column, owners and parent bridge (W1735)",
+         %{column: column, scope: scope} do
       target = delivery_target_fixture(scope.user)
       goal = task_fixture(column, %{type: :goal})
       {:ok, goal} = Tasks.update_task(goal, %{target_id: target.id})
       task_fixture(column, %{parent_id: goal.id, created_by_agent: "Ada"})
 
       [task] = Agents.fetch_target_bridged_tasks(scope: scope)
-      assert %Kanban.Columns.Column{} = task.column
-      refute match?(%Ecto.Association.NotLoaded{}, task.created_by)
-      refute match?(%Ecto.Association.NotLoaded{}, task.completed_by)
+
+      refute match?(%Kanban.Tasks.Task{}, task)
+      # The column name and owners resolve via the join, shape-compatible with
+      # fetch_tasks/1; the parent goal carries only the two fields the bridge reads.
+      assert task.column == %{name: column.name}
+      assert task.created_by == nil
+      assert task.completed_by == nil
+      assert task.parent == %{id: goal.id, target_id: target.id}
+
+      # No heavy JSONB/text columns of the task or the parent goal are selected.
+      refute Map.has_key?(task, :description)
+      refute Map.has_key?(task, :review_report)
+    end
+
+    test "issues exactly one query with no preload (W1735)", %{column: column, scope: scope} do
+      target = delivery_target_fixture(scope.user)
+      goal = task_fixture(column, %{type: :goal})
+      {:ok, _} = Tasks.update_task(goal, %{target_id: target.id})
+      task_fixture(column, %{parent_id: goal.id, created_by_agent: "Ada"})
+
+      assert count_projection_queries(fn -> Agents.fetch_target_bridged_tasks(scope: scope) end) ==
+               1
     end
   end
 

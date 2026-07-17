@@ -61,7 +61,6 @@ defmodule Kanban.Targets.DeliveryRollup do
   alias Kanban.Agents
   alias Kanban.Agents.Agent
   alias Kanban.Agents.Roster
-  alias Kanban.Repo
   alias Kanban.Targets
   alias Kanban.Targets.DeliveryTarget
   alias Kanban.Targets.Status
@@ -150,23 +149,21 @@ defmodule Kanban.Targets.DeliveryRollup do
     }
   end
 
-  # The board-scoped task set the in-memory bridge needs, with each task's
-  # parent goal preloaded so it can walk task -> parent goal -> target without
-  # any further query. `fetch_target_bridged_tasks/1` bounds the fetch to tasks
-  # whose parent goal is assigned to a target (D122) — the only tasks that can
-  # produce a bridge pair — so the query stays within the database statement
-  # timeout at production scale without dropping any attribution. Parent goals
-  # share their children's board, so an already board-scoped task set yields
-  # only accessible goals.
+  # The board-scoped task set the in-memory bridge needs. Each projected task
+  # carries a `parent: %{id, target_id}` map so the bridge can walk task ->
+  # parent goal -> target without any further query. `fetch_target_bridged_tasks/1`
+  # bounds the fetch to tasks whose parent goal is assigned to a target (D122) —
+  # the only tasks that can produce a bridge pair — so the query stays within the
+  # database statement timeout at production scale without dropping any
+  # attribution. Parent goals share their children's board, so an already
+  # board-scoped task set yields only accessible goals.
   #
-  # Only the parent goal's `id` and `target_id` are read (`target_id` is a plain
-  # column on the preloaded parent), so preloading `:parent` alone is enough —
-  # the nested `:target` struct is never read here (the target/status structs
-  # come from `Kanban.Targets`), so it is not preloaded.
+  # Only the parent goal's `id` and `target_id` are read, and the projected fetch
+  # (W1735) resolves them in its join, so no `Repo.preload(:parent)` is needed —
+  # the rollup issues one query. The target/status structs the UI renders come
+  # from `Kanban.Targets`, a separate path this fetch never touches.
   defp fetch_bridged_tasks(scope) do
-    scope
-    |> then(&Agents.fetch_target_bridged_tasks(scope: &1))
-    |> Repo.preload(:parent)
+    Agents.fetch_target_bridged_tasks(scope: scope)
   end
 
   # One rollup entry per accessible target. `list_targets_with_status_and_goals/2`
@@ -294,8 +291,10 @@ defmodule Kanban.Targets.DeliveryRollup do
   end
 
   # The `{goal_id, target_id}` a task reaches, or nil when it has no parent goal
-  # or the parent goal is not assigned to a target.
-  defp task_bridge(%Task{parent: %Task{id: goal_id, target_id: target_id}})
+  # or the parent goal is not assigned to a target. Matches the projected
+  # `parent: %{id, target_id}` map that fetch_target_bridged_tasks/1 now returns
+  # (W1735) — not a `%Task{}` struct.
+  defp task_bridge(%{parent: %{id: goal_id, target_id: target_id}})
        when not is_nil(target_id),
        do: {goal_id, target_id}
 

@@ -441,18 +441,63 @@ defmodule Kanban.Agents do
   #
   # Board scoping only needs to filter the child task: a parent goal shares its
   # children's board, so a board-scoped child set implies accessible parents.
-  # This path keeps loading real preloaded structs; `fetch_tasks/1` now returns
-  # shape-compatible projected maps, and the shared helpers accept both, so the
-  # Roster derivation stays identical across the two fetches.
-  @spec fetch_target_bridged_tasks(keyword()) :: [Task.t()]
+  # Like `fetch_tasks/1` (W1733) this projects into lightweight maps rather than
+  # loading full `%Task{}` structs and preloading four associations — the parent
+  # goal, both owner users, and the column are all joined and projected in the
+  # SINGLE query. The reshaped maps carry the same fields as `fetch_tasks/1` plus
+  # a `parent: %{id, target_id}` map — the only two goal fields `DeliveryRollup`'s
+  # bridge reads (W1735). The heavy JSONB/text columns of both the task and its
+  # parent goal are never transferred.
   def fetch_target_bridged_tasks(opts) do
     Task
     |> where([t], t.type != ^:goal)
-    |> BoardScope.apply_board_scope_with_column_join(Keyword.get(opts, :scope))
+    |> join(:inner, [t], c in assoc(t, :column), as: :column)
+    |> BoardScope.apply_board_scope(Keyword.get(opts, :scope))
     |> join(:inner, [t], parent in assoc(t, :parent), as: :parent)
     |> where([parent: parent], not is_nil(parent.target_id))
+    |> join(:left, [t], cb in assoc(t, :created_by), as: :created_by)
+    |> join(:left, [t], cpb in assoc(t, :completed_by), as: :completed_by)
+    |> select([t, column: c, parent: p, created_by: cb, completed_by: cpb], %{
+      id: t.id,
+      identifier: t.identifier,
+      title: t.title,
+      type: t.type,
+      status: t.status,
+      parent_id: t.parent_id,
+      claimed_at: t.claimed_at,
+      claim_expires_at: t.claim_expires_at,
+      completed_at: t.completed_at,
+      reviewed_at: t.reviewed_at,
+      inserted_at: t.inserted_at,
+      updated_at: t.updated_at,
+      created_by_agent: t.created_by_agent,
+      completed_by_agent: t.completed_by_agent,
+      review_status: t.review_status,
+      needs_review: t.needs_review,
+      time_spent_minutes: t.time_spent_minutes,
+      column_name: c.name,
+      created_by_id: cb.id,
+      created_by_name: cb.name,
+      created_by_email: cb.email,
+      completed_by_id: cpb.id,
+      completed_by_name: cpb.name,
+      completed_by_email: cpb.email,
+      parent_goal_id: p.id,
+      parent_target_id: p.target_id
+    })
     |> Repo.all()
-    |> Repo.preload([:column, :created_by, :completed_by])
+    |> Enum.map(&reshape_bridged_task/1)
+  end
+
+  # Reshapes a projected bridged-task row: the same struct-like shape as
+  # reshape_fetched_task/1 (nested column + owner-map-or-nil) plus a nested
+  # `parent: %{id, target_id}` — the two goal fields DeliveryRollup's task_bridge/1
+  # reads. The parent target_id is never nil here (the query filters on it).
+  defp reshape_bridged_task(row) do
+    row
+    |> reshape_fetched_task()
+    |> Map.put(:parent, %{id: row.parent_goal_id, target_id: row.parent_target_id})
+    |> Map.drop([:parent_goal_id, :parent_target_id])
   end
 
   # Restrict to one board via a column-id subquery. Referencing only the Task
