@@ -222,6 +222,102 @@ defmodule Kanban.AgentsTest do
     end
   end
 
+  describe "fetch_tasks/1 projection (W1733)" do
+    setup %{user: user, column: column} do
+      owned =
+        column
+        |> task_fixture(%{created_by_agent: "Claude", completed_by_agent: "Claude"})
+        |> Ecto.Changeset.change(%{created_by_id: user.id, completed_by_id: user.id})
+        |> Repo.update!()
+
+      _unowned = task_fixture(column, %{created_by_agent: "Codex"})
+
+      %{scope: Scope.for_user(user), owned: owned}
+    end
+
+    test "returns lightweight projected maps, not Task structs, with only the audited keys",
+         %{scope: scope} do
+      task =
+        Agents.fetch_tasks(scope: scope)
+        |> Enum.find(&(&1.created_by_agent == "Claude"))
+
+      refute match?(%Kanban.Tasks.Task{}, task)
+
+      assert task |> Map.keys() |> Enum.sort() ==
+               Enum.sort([
+                 :id,
+                 :identifier,
+                 :title,
+                 :type,
+                 :status,
+                 :parent_id,
+                 :claimed_at,
+                 :claim_expires_at,
+                 :completed_at,
+                 :reviewed_at,
+                 :inserted_at,
+                 :updated_at,
+                 :created_by_agent,
+                 :completed_by_agent,
+                 :review_status,
+                 :needs_review,
+                 :time_spent_minutes,
+                 :column,
+                 :created_by,
+                 :completed_by
+               ])
+
+      # The heavy JSONB/text columns are never transferred.
+      refute Map.has_key?(task, :description)
+      refute Map.has_key?(task, :review_report)
+      refute Map.has_key?(task, :changed_files)
+    end
+
+    test "resolves the column name and owner maps via joins, nil for absent owners",
+         %{scope: scope, user: user, column: column} do
+      tasks = Agents.fetch_tasks(scope: scope)
+      owned = Enum.find(tasks, &(&1.created_by_agent == "Claude"))
+      unowned = Enum.find(tasks, &(&1.created_by_agent == "Codex"))
+
+      assert owned.column == %{name: column.name}
+      assert owned.created_by == %{id: user.id, name: user.name, email: user.email}
+      assert owned.completed_by == %{id: user.id, name: user.name, email: user.email}
+
+      # An absent owner is a genuine nil (not an all-nil map), so the shared
+      # identity helpers still fall back to the "none" sentinel (W1244).
+      assert unowned.created_by == nil
+      assert unowned.completed_by == nil
+      assert Agents.to_owner_map(unowned.created_by) == nil
+
+      assert unowned.created_by |> Agents.to_owner_map() |> Agents.owner_key_for_owner() ==
+               "none"
+    end
+
+    test "issues exactly one query with no preload", %{scope: scope} do
+      assert count_projection_queries(fn -> Agents.fetch_tasks(scope: scope) end) == 1
+    end
+
+    defp count_projection_queries(fun) do
+      ref = :counters.new(1, [])
+      handler_id = "w1733-qc-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :repo, :query],
+        fn _event, _measurements, _metadata, _config -> :counters.add(ref, 1, 1) end,
+        nil
+      )
+
+      try do
+        fun.()
+      after
+        :telemetry.detach(handler_id)
+      end
+
+      :counters.get(ref, 1)
+    end
+  end
+
   describe "fetch_target_bridged_tasks/1 (D122)" do
     setup %{user: user} do
       %{scope: Scope.for_user(user)}

@@ -321,8 +321,15 @@ defmodule Kanban.Agents do
 
   @doc false
   # Exposed (not part of the documented API) so the derivation sibling modules
-  # share the single scoped task fetch. The visible, goal-excluded Task set
-  # with `:column`, `:created_by`, and `:completed_by` preloaded.
+  # share the single scoped task fetch. Returns the visible, goal-excluded task
+  # set as lightweight projected maps — NOT `%Task{}` structs — carrying only the
+  # small scalar fields the derivation modules read, plus a nested `column` map
+  # and `created_by`/`completed_by` as an owner map (or nil), resolved via joins
+  # in the one query rather than `Repo.preload`. The heavy JSONB/text columns
+  # (changed_files, review_report, explorer_result, description, ...) are never
+  # transferred. The reshaped maps are shape-compatible with the preloaded
+  # structs `fetch_target_bridged_tasks/1` still returns, so every shared helper
+  # and derivation module consumes both without change.
   #
   # Options:
   #   * `:scope`      - `Kanban.Accounts.Scope` for board-membership scoping (as before)
@@ -339,18 +346,79 @@ defmodule Kanban.Agents do
   def fetch_tasks(opts) do
     Task
     |> where([t], t.type != ^:goal)
-    |> BoardScope.apply_board_scope_with_column_join(Keyword.get(opts, :scope))
+    # One unconditional column join under the :column binding (the scope filter
+    # below reuses it via apply_board_scope/2), plus a left join per owner
+    # association, so the column name and both owners resolve in this SINGLE
+    # query — no Repo.preload and no per-association batch. The select carries
+    # only the small scalar fields the derivation modules read.
+    |> join(:inner, [t], c in assoc(t, :column), as: :column)
+    |> BoardScope.apply_board_scope(Keyword.get(opts, :scope))
+    |> join(:left, [t], cb in assoc(t, :created_by), as: :created_by)
+    |> join(:left, [t], cpb in assoc(t, :completed_by), as: :completed_by)
     |> filter_by_board(Keyword.get(opts, :board_id))
     |> apply_window(opts)
     |> apply_cap(opts)
+    |> select([t, column: c, created_by: cb, completed_by: cpb], %{
+      id: t.id,
+      identifier: t.identifier,
+      title: t.title,
+      type: t.type,
+      status: t.status,
+      parent_id: t.parent_id,
+      claimed_at: t.claimed_at,
+      claim_expires_at: t.claim_expires_at,
+      completed_at: t.completed_at,
+      reviewed_at: t.reviewed_at,
+      inserted_at: t.inserted_at,
+      updated_at: t.updated_at,
+      created_by_agent: t.created_by_agent,
+      completed_by_agent: t.completed_by_agent,
+      review_status: t.review_status,
+      needs_review: t.needs_review,
+      time_spent_minutes: t.time_spent_minutes,
+      column_name: c.name,
+      created_by_id: cb.id,
+      created_by_name: cb.name,
+      created_by_email: cb.email,
+      completed_by_id: cpb.id,
+      completed_by_name: cpb.name,
+      completed_by_email: cpb.email
+    })
     |> Repo.all()
-    # The column name drives status inference, so preload it (one batched
-    # query for the whole list). The scope join above is filter-only and does
-    # not select the column. The owner associations resolve the human behind
-    # each agent and are likewise batched (one query per association), so no
-    # per-task query leaks into the callers.
-    |> Repo.preload([:column, :created_by, :completed_by])
+    |> Enum.map(&reshape_fetched_task/1)
   end
+
+  # Reshapes a projected row back into the struct-like shape the derivation
+  # modules and shared helpers already consume: a nested `column` map (matched by
+  # in_column?/2) and `created_by`/`completed_by` as an owner map or genuine nil,
+  # so to_owner_map/1 and the `completed_by || created_by` fallback in Events keep
+  # working. Reconstructing nil for an absent owner is why the projection selects
+  # flat owner fields rather than a nested map — a left-joined nested map yields
+  # an all-nil map, not nil, which would defeat that `||` fallback.
+  defp reshape_fetched_task(row) do
+    row
+    |> Map.put(:column, %{name: row.column_name})
+    |> Map.put(
+      :created_by,
+      owner_or_nil(row.created_by_id, row.created_by_name, row.created_by_email)
+    )
+    |> Map.put(
+      :completed_by,
+      owner_or_nil(row.completed_by_id, row.completed_by_name, row.completed_by_email)
+    )
+    |> Map.drop([
+      :column_name,
+      :created_by_id,
+      :created_by_name,
+      :created_by_email,
+      :completed_by_id,
+      :completed_by_name,
+      :completed_by_email
+    ])
+  end
+
+  defp owner_or_nil(nil, _name, _email), do: nil
+  defp owner_or_nil(id, name, email), do: %{id: id, name: name, email: email}
 
   @doc false
   # The board-scoped, goal-excluded task set restricted to tasks whose parent
@@ -373,7 +441,9 @@ defmodule Kanban.Agents do
   #
   # Board scoping only needs to filter the child task: a parent goal shares its
   # children's board, so a board-scoped child set implies accessible parents.
-  # Same preloads as `fetch_tasks/1` so the Roster derivation is identical.
+  # This path keeps loading real preloaded structs; `fetch_tasks/1` now returns
+  # shape-compatible projected maps, and the shared helpers accept both, so the
+  # Roster derivation stays identical across the two fetches.
   @spec fetch_target_bridged_tasks(keyword()) :: [Task.t()]
   def fetch_target_bridged_tasks(opts) do
     Task
@@ -471,6 +541,13 @@ defmodule Kanban.Agents do
   # or nil when unloaded/absent. Shared by Roster (identity resolution) and
   # Events (event owner).
   def to_owner_map(%User{} = user), do: %{id: user.id, name: user.name, email: user.email}
+
+  # The projected fetch (fetch_tasks/1) already carries the owner as a plain
+  # `%{id, name, email}` map for a present owner, or nil for an absent one; keep
+  # it idempotent so the shared call sites work identically on both fetch shapes.
+  def to_owner_map(%{id: id, name: name, email: email}) when not is_nil(id),
+    do: %{id: id, name: name, email: email}
+
   def to_owner_map(_), do: nil
 
   @doc false

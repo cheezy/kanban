@@ -95,13 +95,15 @@ defmodule Kanban.Agents.SharedFetchQueryCountTest do
     keyword_queries = count_queries(fn -> keyword_path(scope) end)
     shared_queries = count_queries(fn -> shared_path(scope) end)
 
-    # The old path re-fetched the task set for each of the 7 consumers
-    # (≈4 queries each: the main task SELECT plus 3 preload batches).
-    assert keyword_queries >= 12
+    # The old path re-fetches the task set for each of the 7 consumers. Since the
+    # W1733 projection each fetch is now a SINGLE joined SELECT (no main-SELECT +
+    # 3 preload batches), so the per-metric path issues about one query per
+    # consumer instead of ~4 — still far more than the shared path.
+    assert keyword_queries >= 7
 
-    # The new path fetches once: one main SELECT plus its preloads, and every
-    # derivation reuses that in-memory list with no further queries.
-    assert shared_queries <= 6
+    # The new path fetches once (one projected SELECT) and every derivation reuses
+    # that in-memory list with no further queries.
+    assert shared_queries <= 3
     assert shared_queries < keyword_queries
   end
 end
