@@ -162,6 +162,9 @@ defmodule KanbanWeb.TargetsStrip do
 
   # Card border + left stripe use the target's status token, mirroring the
   # goal-pill style but sourced from a dark-mode-safe --st-* token.
+  # flex-shrink 0 + nowrap keep the pill at its intrinsic width: a long name
+  # extends the pill (whole pills wrap via the strip row's flex-wrap) instead
+  # of compressing it and clipping the title or a divider (D164).
   defp card_style(token) do
     [
       "display: inline-flex; align-items: center; gap: 10px;",
@@ -170,7 +173,8 @@ defmodule KanbanWeb.TargetsStrip do
       "border: 1px solid var(--st-#{token});",
       "border-left: 3px solid var(--st-#{token});",
       "border-radius: 5px;",
-      "text-decoration: none;"
+      "text-decoration: none;",
+      "flex-shrink: 0; white-space: nowrap;"
     ]
   end
 

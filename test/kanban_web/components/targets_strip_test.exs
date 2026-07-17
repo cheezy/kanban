@@ -84,6 +84,31 @@ defmodule KanbanWeb.TargetsStripTest do
       assert html =~ "width: 1px; height: 15px; background: var(--ink-4);"
       assert count_dividers(html) == 3
     end
+
+    test "keeps the pill at intrinsic width so nothing clips" do
+      html = render_targets([entry()])
+
+      assert html =~ "flex-shrink: 0; white-space: nowrap;"
+    end
+
+    test "renders all dividers for a very long target name" do
+      long_name = "A Very Long Delivery Target Name That Would Squeeze The Pill At Narrow Widths"
+
+      no_estimate =
+        render_targets([entry(%{target: %{id: 1, name: long_name, target_date: ~D[2026-12-31]}})])
+
+      with_estimate =
+        render_targets([
+          entry(%{
+            target: %{id: 1, name: long_name, target_date: ~D[2026-12-31]},
+            estimated_completion_date: ~D[2027-03-03]
+          })
+        ])
+
+      assert no_estimate =~ long_name
+      assert count_dividers(no_estimate) == 3
+      assert count_dividers(with_estimate) == 4
+    end
   end
 
   describe "targets_strip/1 — estimated completion date" do
