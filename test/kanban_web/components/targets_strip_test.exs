@@ -33,6 +33,10 @@ defmodule KanbanWeb.TargetsStripTest do
     """)
   end
 
+  defp count_dividers(html) do
+    html |> String.split("data-pill-divider") |> length() |> Kernel.-(1)
+  end
+
   describe "targets_strip/1 — empty list" do
     test "renders nothing when the targets list is empty" do
       html = render_targets([])
@@ -73,6 +77,13 @@ defmodule KanbanWeb.TargetsStripTest do
       assert html =~ ~r/0\/0 \(0%\)/
       assert html =~ "width: 0%"
     end
+
+    test "separates the value clusters with three pill-scale dividers" do
+      html = render_targets([entry()])
+
+      assert html =~ "width: 1px; height: 12px; background: var(--line);"
+      assert count_dividers(html) == 3
+    end
   end
 
   describe "targets_strip/1 — estimated completion date" do
@@ -86,11 +97,23 @@ defmodule KanbanWeb.TargetsStripTest do
       assert html =~ "Dec 31, 2026"
     end
 
+    test "de-emphasizes the estimate relative to the fixed target date" do
+      html = render_targets([entry(%{estimated_completion_date: ~D[2027-03-03]})])
+
+      assert html =~ "font-style: italic; opacity: 0.75;"
+      # The estimate does not add a fourth divider — the cluster dividers
+      # are unconditional, so nothing dangles either way.
+      assert count_dividers(html) == 3
+    end
+
     test "renders no estimate markup at all when the value is nil" do
       html = render_targets([entry()])
 
       refute html =~ "data-estimated-date"
       refute html =~ "Est."
+      refute html =~ "font-style: italic"
+      # No dangling divider where the estimate would sit.
+      assert count_dividers(html) == 3
     end
 
     test "tolerates an entry missing the key entirely" do
