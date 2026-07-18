@@ -746,7 +746,7 @@ msgstr "无可用历史"
 msgid "Status"
 msgstr "状态"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:427
+#: lib/kanban_web/live/user_live/confirmation.ex:429
 #, elixir-autogen, elixir-format
 msgid "Confirmation link is invalid or has expired."
 msgstr "确认链接无效或已过期。"
@@ -759,7 +759,7 @@ msgstr "确认链接无效或已过期。"
 msgid "Dashboard"
 msgstr "仪表板"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:421
+#: lib/kanban_web/live/user_live/confirmation.ex:423
 #, elixir-autogen, elixir-format
 msgid "This account has already been confirmed. You can log in."
 msgstr "此账户已确认。您可以登录。"
@@ -1599,8 +1599,8 @@ msgstr "确定要撤销此 token 吗?"
 #: lib/kanban_web/live/board_live/show.html.heex:564
 #: lib/kanban_web/live/user_live/confirmation.ex:61
 #: lib/kanban_web/live/user_live/confirmation.ex:87
-#: lib/kanban_web/live/user_live/confirmation.ex:363
-#: lib/kanban_web/live/user_live/confirmation.ex:389
+#: lib/kanban_web/live/user_live/confirmation.ex:365
+#: lib/kanban_web/live/user_live/confirmation.ex:391
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "复制"
@@ -1749,7 +1749,7 @@ msgstr "关闭"
 
 #: lib/kanban_web/live/board_live/show.html.heex:535
 #: lib/kanban_web/live/user_live/confirmation.ex:62
-#: lib/kanban_web/live/user_live/confirmation.ex:364
+#: lib/kanban_web/live/user_live/confirmation.ex:366
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "已复制！"
@@ -1886,7 +1886,7 @@ msgstr "mix test"
 
 #: lib/kanban_web/live/board_live/show.html.heex:536
 #: lib/kanban_web/live/user_live/confirmation.ex:63
-#: lib/kanban_web/live/user_live/confirmation.ex:365
+#: lib/kanban_web/live/user_live/confirmation.ex:367
 #, elixir-autogen, elixir-format
 msgid "Failed to copy"
 msgstr "复制失败"
@@ -3247,7 +3247,7 @@ msgstr "安全"
 
 #: lib/kanban_web/components/marketing_components.ex:140
 #: lib/kanban_web/components/marketing_components.ex:314
-#: lib/kanban_web/live/user_live/confirmation.ex:149
+#: lib/kanban_web/live/user_live/confirmation.ex:151
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:20
@@ -4151,7 +4151,7 @@ msgid "Coming soon"
 msgstr "即将推出"
 
 #: lib/kanban_web/live/board_live/index.ex:43
-#: lib/kanban_web/live/user_live/confirmation.ex:101
+#: lib/kanban_web/live/user_live/confirmation.ex:103
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "创建您的第一个看板"
@@ -5472,7 +5472,7 @@ msgstr "为您的账户选择一个新密码。"
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr "请选择一个强密码并确认。成功更改后,您仍将在此设备上保持登录。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:155
+#: lib/kanban_web/live/user_live/confirmation.ex:157
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Confirming your account…"
 msgstr "正在确认您的账户..."
@@ -5502,7 +5502,7 @@ msgstr "面向 agent"
 msgid "Forgot?"
 msgstr "忘记了?"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:159
+#: lib/kanban_web/live/user_live/confirmation.ex:161
 #, elixir-autogen, elixir-format
 msgid "Hold tight — this will only take a moment."
 msgstr "请稍候 — 这只需一会儿。"
@@ -5589,7 +5589,7 @@ msgstr "Stride 背后的人员及 AI 协作者。"
 msgid "Update profile"
 msgstr "更新个人资料"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:166
+#: lib/kanban_web/live/user_live/confirmation.ex:168
 #, elixir-autogen, elixir-format
 msgid "Verifying your confirmation link…"
 msgstr "正在验证您的确认链接…"
@@ -6993,7 +6993,7 @@ msgstr "发送中…"
 msgid "We sent a confirmation link to %{email}. You won't be able to sign in until your account is confirmed."
 msgstr "我们已向 %{email} 发送了确认链接。在账户确认之前，您将无法登录。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:169
+#: lib/kanban_web/live/user_live/confirmation.ex:171
 #, elixir-autogen, elixir-format
 msgid "you can sign in as soon as it's verified"
 msgstr "验证完成后即可登录"
@@ -7003,17 +7003,17 @@ msgstr "验证完成后即可登录"
 msgid "Return to Stride"
 msgstr "返回 Stride"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:127
+#: lib/kanban_web/live/user_live/confirmation.ex:129
 #, elixir-autogen, elixir-format
 msgid "Add your team"
 msgstr "添加您的团队"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:102
+#: lib/kanban_web/live/user_live/confirmation.ex:104
 #, elixir-autogen, elixir-format
 msgid "Boards are where your work lives — set one up for your team or project."
 msgstr "看板是您工作的所在——为您的团队或项目创建一个吧。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:113
+#: lib/kanban_web/live/user_live/confirmation.ex:115
 #, elixir-autogen, elixir-format
 msgid "Generate an API token"
 msgstr "生成 API 令牌"
@@ -7023,32 +7023,32 @@ msgstr "生成 API 令牌"
 msgid "Getting started"
 msgstr "快速入门"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:135
+#: lib/kanban_web/live/user_live/confirmation.ex:137
 #, elixir-autogen, elixir-format
 msgid "Guide: Adding team members"
 msgstr "指南：添加团队成员"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:109
+#: lib/kanban_web/live/user_live/confirmation.ex:111
 #, elixir-autogen, elixir-format
 msgid "Guide: Creating your first board"
 msgstr "指南：创建您的第一个看板"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:128
+#: lib/kanban_web/live/user_live/confirmation.ex:130
 #, elixir-autogen, elixir-format
 msgid "Invite collaborators to your board and choose what they can do."
 msgstr "邀请协作者加入您的看板，并设置他们的权限。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:114
+#: lib/kanban_web/live/user_live/confirmation.ex:116
 #, elixir-autogen, elixir-format
 msgid "On your board, open the Tokens tab to create one (available on AI-optimized boards). The token is shown only once — copy it and keep it secret."
 msgstr "在您的看板中，打开「API令牌」标签页即可创建令牌（仅适用于 AI 优化看板）。令牌仅显示一次——请复制并妥善保密。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:97
+#: lib/kanban_web/live/user_live/confirmation.ex:99
 #, elixir-autogen, elixir-format
 msgid "Sign in to your account"
 msgstr "登录您的账户"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:98
+#: lib/kanban_web/live/user_live/confirmation.ex:100
 #, elixir-autogen, elixir-format
 msgid "Use the button below to sign in with your new credentials."
 msgstr "使用下方按钮，以您的新凭据登录。"
@@ -7063,12 +7063,12 @@ msgstr "一切就绪。按照以下步骤开始使用。"
 msgid "Your account is confirmed"
 msgstr "您的账户已确认"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:183
+#: lib/kanban_web/live/user_live/confirmation.ex:185
 #, elixir-autogen, elixir-format
 msgid "Fetch %{url} and follow the instructions it returns to set up Stride in this project, creating the .stride_auth.md and .stride.md configuration files."
 msgstr "获取 %{url} 并按照返回的说明在此项目中设置 Stride，创建 .stride_auth.md 和 .stride.md 配置文件。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:123
+#: lib/kanban_web/live/user_live/confirmation.ex:125
 #, elixir-autogen, elixir-format
 msgid "Guide: Configuring API authentication"
 msgstr "指南：配置 API 认证"
@@ -8070,12 +8070,12 @@ msgstr "预计完成"
 msgid "Due. %{date}"
 msgstr "截止 %{date}"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:245
+#: lib/kanban_web/live/user_live/confirmation.ex:247
 #, elixir-autogen, elixir-format
 msgid "Coding agents"
 msgstr "编码代理"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:302
+#: lib/kanban_web/live/user_live/confirmation.ex:304
 #, elixir-autogen, elixir-format
 msgid "Ideation plugin (recommended)"
 msgstr "构思插件（推荐）"
@@ -8085,17 +8085,17 @@ msgstr "构思插件（推荐）"
 msgid "Install the Stride plugin"
 msgstr "安装 Stride 插件"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:295
+#: lib/kanban_web/live/user_live/confirmation.ex:297
 #, elixir-autogen, elixir-format
 msgid "Installs from its own repository — no marketplace."
 msgstr "从其自有仓库安装 — 无应用市场。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:294
+#: lib/kanban_web/live/user_live/confirmation.ex:296
 #, elixir-autogen, elixir-format
 msgid "Installs through the Stride marketplace."
 msgstr "通过 Stride 应用市场安装。"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:327
+#: lib/kanban_web/live/user_live/confirmation.ex:329
 #, elixir-autogen, elixir-format
 msgid "No separate ideation plugin yet."
 msgstr "暂无独立的构思插件。"
@@ -8105,22 +8105,22 @@ msgstr "暂无独立的构思插件。"
 msgid "Pick your coding agent, then run its install command to add the Stride plugin:"
 msgstr "选择您的编码代理，然后运行其安装命令以添加 Stride 插件："
 
-#: lib/kanban_web/live/user_live/confirmation.ex:289
+#: lib/kanban_web/live/user_live/confirmation.ex:291
 #, elixir-autogen, elixir-format
 msgid "View in the marketplace"
 msgstr "在应用市场中查看"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:318
+#: lib/kanban_web/live/user_live/confirmation.ex:320
 #, elixir-autogen, elixir-format
 msgid "View the ideation plugin"
 msgstr "查看构思插件"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:290
+#: lib/kanban_web/live/user_live/confirmation.ex:292
 #, elixir-autogen, elixir-format
 msgid "View the plugin repository"
 msgstr "查看插件仓库"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:272
+#: lib/kanban_web/live/user_live/confirmation.ex:274
 #, elixir-autogen, elixir-format
 msgid "Workflow plugin"
 msgstr "工作流插件"

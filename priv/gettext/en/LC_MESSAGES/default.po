@@ -746,7 +746,7 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:427
+#: lib/kanban_web/live/user_live/confirmation.ex:429
 #, elixir-autogen, elixir-format
 msgid "Confirmation link is invalid or has expired."
 msgstr ""
@@ -759,7 +759,7 @@ msgstr ""
 msgid "Dashboard"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:421
+#: lib/kanban_web/live/user_live/confirmation.ex:423
 #, elixir-autogen, elixir-format
 msgid "This account has already been confirmed. You can log in."
 msgstr ""
@@ -1599,8 +1599,8 @@ msgstr "Are you sure you want to revoke this token?"
 #: lib/kanban_web/live/board_live/show.html.heex:564
 #: lib/kanban_web/live/user_live/confirmation.ex:61
 #: lib/kanban_web/live/user_live/confirmation.ex:87
-#: lib/kanban_web/live/user_live/confirmation.ex:363
-#: lib/kanban_web/live/user_live/confirmation.ex:389
+#: lib/kanban_web/live/user_live/confirmation.ex:365
+#: lib/kanban_web/live/user_live/confirmation.ex:391
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr ""
@@ -1749,7 +1749,7 @@ msgstr ""
 
 #: lib/kanban_web/live/board_live/show.html.heex:535
 #: lib/kanban_web/live/user_live/confirmation.ex:62
-#: lib/kanban_web/live/user_live/confirmation.ex:364
+#: lib/kanban_web/live/user_live/confirmation.ex:366
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr ""
@@ -1886,7 +1886,7 @@ msgstr ""
 
 #: lib/kanban_web/live/board_live/show.html.heex:536
 #: lib/kanban_web/live/user_live/confirmation.ex:63
-#: lib/kanban_web/live/user_live/confirmation.ex:365
+#: lib/kanban_web/live/user_live/confirmation.ex:367
 #, elixir-autogen, elixir-format
 msgid "Failed to copy"
 msgstr ""
@@ -3250,7 +3250,7 @@ msgstr ""
 
 #: lib/kanban_web/components/marketing_components.ex:140
 #: lib/kanban_web/components/marketing_components.ex:314
-#: lib/kanban_web/live/user_live/confirmation.ex:149
+#: lib/kanban_web/live/user_live/confirmation.ex:151
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:20
@@ -4155,7 +4155,7 @@ msgid "Coming soon"
 msgstr ""
 
 #: lib/kanban_web/live/board_live/index.ex:43
-#: lib/kanban_web/live/user_live/confirmation.ex:101
+#: lib/kanban_web/live/user_live/confirmation.ex:103
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "Create your first board"
@@ -5484,7 +5484,7 @@ msgstr ""
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:155
+#: lib/kanban_web/live/user_live/confirmation.ex:157
 #, elixir-autogen, elixir-format
 msgid "Confirming your account…"
 msgstr ""
@@ -5514,7 +5514,7 @@ msgstr ""
 msgid "Forgot?"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:159
+#: lib/kanban_web/live/user_live/confirmation.ex:161
 #, elixir-autogen, elixir-format
 msgid "Hold tight — this will only take a moment."
 msgstr ""
@@ -5601,7 +5601,7 @@ msgstr ""
 msgid "Update profile"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:166
+#: lib/kanban_web/live/user_live/confirmation.ex:168
 #, elixir-autogen, elixir-format
 msgid "Verifying your confirmation link…"
 msgstr ""
@@ -6947,7 +6947,7 @@ msgstr ""
 msgid "We sent a confirmation link to %{email}. You won't be able to sign in until your account is confirmed."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:169
+#: lib/kanban_web/live/user_live/confirmation.ex:171
 #, elixir-autogen, elixir-format
 msgid "you can sign in as soon as it's verified"
 msgstr ""
@@ -6957,17 +6957,17 @@ msgstr ""
 msgid "Return to Stride"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:127
+#: lib/kanban_web/live/user_live/confirmation.ex:129
 #, elixir-autogen, elixir-format
 msgid "Add your team"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:102
+#: lib/kanban_web/live/user_live/confirmation.ex:104
 #, elixir-autogen, elixir-format
 msgid "Boards are where your work lives — set one up for your team or project."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:113
+#: lib/kanban_web/live/user_live/confirmation.ex:115
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Generate an API token"
 msgstr ""
@@ -6977,32 +6977,32 @@ msgstr ""
 msgid "Getting started"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:135
+#: lib/kanban_web/live/user_live/confirmation.ex:137
 #, elixir-autogen, elixir-format
 msgid "Guide: Adding team members"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:109
+#: lib/kanban_web/live/user_live/confirmation.ex:111
 #, elixir-autogen, elixir-format
 msgid "Guide: Creating your first board"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:128
+#: lib/kanban_web/live/user_live/confirmation.ex:130
 #, elixir-autogen, elixir-format
 msgid "Invite collaborators to your board and choose what they can do."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:114
+#: lib/kanban_web/live/user_live/confirmation.ex:116
 #, elixir-autogen, elixir-format
 msgid "On your board, open the Tokens tab to create one (available on AI-optimized boards). The token is shown only once — copy it and keep it secret."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:97
+#: lib/kanban_web/live/user_live/confirmation.ex:99
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Sign in to your account"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:98
+#: lib/kanban_web/live/user_live/confirmation.ex:100
 #, elixir-autogen, elixir-format
 msgid "Use the button below to sign in with your new credentials."
 msgstr ""
@@ -7017,12 +7017,12 @@ msgstr ""
 msgid "Your account is confirmed"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:183
+#: lib/kanban_web/live/user_live/confirmation.ex:185
 #, elixir-autogen, elixir-format
 msgid "Fetch %{url} and follow the instructions it returns to set up Stride in this project, creating the .stride_auth.md and .stride.md configuration files."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/confirmation.ex:123
+#: lib/kanban_web/live/user_live/confirmation.ex:125
 #, elixir-autogen, elixir-format
 msgid "Guide: Configuring API authentication"
 msgstr ""
@@ -8031,12 +8031,12 @@ msgstr "Estimated completion"
 msgid "Due. %{date}"
 msgstr "Due. %{date}"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:245
+#: lib/kanban_web/live/user_live/confirmation.ex:247
 #, elixir-autogen, elixir-format
 msgid "Coding agents"
 msgstr "Coding agents"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:302
+#: lib/kanban_web/live/user_live/confirmation.ex:304
 #, elixir-autogen, elixir-format
 msgid "Ideation plugin (recommended)"
 msgstr "Ideation plugin (recommended)"
@@ -8046,17 +8046,17 @@ msgstr "Ideation plugin (recommended)"
 msgid "Install the Stride plugin"
 msgstr "Install the Stride plugin"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:295
+#: lib/kanban_web/live/user_live/confirmation.ex:297
 #, elixir-autogen, elixir-format
 msgid "Installs from its own repository — no marketplace."
 msgstr "Installs from its own repository — no marketplace."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:294
+#: lib/kanban_web/live/user_live/confirmation.ex:296
 #, elixir-autogen, elixir-format
 msgid "Installs through the Stride marketplace."
 msgstr "Installs through the Stride marketplace."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:327
+#: lib/kanban_web/live/user_live/confirmation.ex:329
 #, elixir-autogen, elixir-format
 msgid "No separate ideation plugin yet."
 msgstr "No separate ideation plugin yet."
@@ -8066,22 +8066,22 @@ msgstr "No separate ideation plugin yet."
 msgid "Pick your coding agent, then run its install command to add the Stride plugin:"
 msgstr "Pick your coding agent, then run its install command to add the Stride plugin:"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:289
+#: lib/kanban_web/live/user_live/confirmation.ex:291
 #, elixir-autogen, elixir-format
 msgid "View in the marketplace"
 msgstr "View in the marketplace"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:318
+#: lib/kanban_web/live/user_live/confirmation.ex:320
 #, elixir-autogen, elixir-format
 msgid "View the ideation plugin"
 msgstr "View the ideation plugin"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:290
+#: lib/kanban_web/live/user_live/confirmation.ex:292
 #, elixir-autogen, elixir-format
 msgid "View the plugin repository"
 msgstr "View the plugin repository"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:272
+#: lib/kanban_web/live/user_live/confirmation.ex:274
 #, elixir-autogen, elixir-format
 msgid "Workflow plugin"
 msgstr "Workflow plugin"
