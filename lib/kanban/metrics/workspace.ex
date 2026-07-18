@@ -123,7 +123,7 @@ defmodule Kanban.Metrics.Workspace do
   end
 
   @doc """
-  Returns the workspace KPI strip — median cycle time, p75 lead time,
+  Returns the workspace KPI strip — median cycle time, median (p50) lead time,
   per-day throughput, and median review wait — with delta percentages
   vs the previous equal-length window.
 
@@ -147,7 +147,7 @@ defmodule Kanban.Metrics.Workspace do
   @spec workspace_kpis(keyword()) :: %{
           cycle_time_median_minutes: non_neg_integer(),
           cycle_time_delta_pct: float(),
-          lead_time_p75_minutes: non_neg_integer(),
+          lead_time_p50_minutes: non_neg_integer(),
           lead_time_delta_pct: float(),
           throughput_per_day: float(),
           throughput_delta_pct: float(),

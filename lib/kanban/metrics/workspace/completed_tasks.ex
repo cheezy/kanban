@@ -114,7 +114,7 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
     %{
       cycle_time_median_minutes: 0,
       cycle_time_delta_pct: 0.0,
-      lead_time_p75_minutes: 0,
+      lead_time_p50_minutes: 0,
       lead_time_delta_pct: 0.0,
       throughput_per_day: 0.0,
       throughput_delta_pct: 0.0,
@@ -265,8 +265,8 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
     cycle_current = median_cycle_minutes(current)
     cycle_previous = median_cycle_minutes(previous)
 
-    lead_current = percentile_lead_minutes(current, 75)
-    lead_previous = percentile_lead_minutes(previous, 75)
+    lead_current = percentile_lead_minutes(current, 50)
+    lead_previous = percentile_lead_minutes(previous, 50)
 
     throughput_current = length(current) / window_days
     throughput_previous = length(previous) / window_days
@@ -277,7 +277,7 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
     %{
       cycle_time_median_minutes: cycle_current,
       cycle_time_delta_pct: delta_pct(cycle_current, cycle_previous),
-      lead_time_p75_minutes: lead_current,
+      lead_time_p50_minutes: lead_current,
       lead_time_delta_pct: delta_pct(lead_current, lead_previous),
       throughput_per_day: throughput_current,
       throughput_delta_pct: delta_pct(throughput_current, throughput_previous),

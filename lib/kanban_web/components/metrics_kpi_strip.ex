@@ -6,7 +6,7 @@ defmodule KanbanWeb.MetricsKpiStrip do
 
       %{
         cycle_time_median_minutes: integer,  cycle_time_delta_pct: float,
-        lead_time_p75_minutes: integer,      lead_time_delta_pct: float,
+        lead_time_p50_minutes: integer,      lead_time_delta_pct: float,
         throughput_per_day: float,           throughput_delta_pct: float,
         review_wait_minutes: integer,        review_wait_delta_pct: float
       }
@@ -55,8 +55,8 @@ defmodule KanbanWeb.MetricsKpiStrip do
       />
       <.cell
         marker="lead-time"
-        label={gettext("Lead time · p75")}
-        value={Duration.format_minutes(@kpis.lead_time_p75_minutes, pad_remainder: true)}
+        label={gettext("Lead time · median")}
+        value={Duration.format_minutes(@kpis.lead_time_p50_minutes, pad_remainder: true)}
         delta_pct={@kpis.lead_time_delta_pct}
         delta_direction={:down}
         sub={gettext("idea → done")}

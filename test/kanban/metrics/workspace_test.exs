@@ -135,7 +135,7 @@ defmodule Kanban.Metrics.WorkspaceTest do
       stats = Workspace.workspace_kpis(scope: scope)
 
       assert stats.cycle_time_median_minutes == 0
-      assert stats.lead_time_p75_minutes == 0
+      assert stats.lead_time_p50_minutes == 0
       assert stats.throughput_per_day == 0.0
       assert stats.review_wait_minutes == 0
       assert stats.cycle_time_delta_pct == 0.0
@@ -666,7 +666,7 @@ defmodule Kanban.Metrics.WorkspaceTest do
       assert Workspace.workspace_kpis() == %{
                cycle_time_median_minutes: 0,
                cycle_time_delta_pct: 0.0,
-               lead_time_p75_minutes: 0,
+               lead_time_p50_minutes: 0,
                lead_time_delta_pct: 0.0,
                throughput_per_day: 0.0,
                throughput_delta_pct: 0.0,

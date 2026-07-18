@@ -17,18 +17,18 @@ msgstr ""
 msgid "Actions"
 msgstr "Actions"
 
-#: lib/kanban_web/components/layouts.ex:417
-#: lib/kanban_web/components/layouts.ex:429
+#: lib/kanban_web/components/layouts.ex:416
+#: lib/kanban_web/components/layouts.ex:428
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "Tentative de reconnexion"
 
-#: lib/kanban_web/components/layouts.ex:424
+#: lib/kanban_web/components/layouts.ex:423
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "Quelque chose s'est mal passé !"
 
-#: lib/kanban_web/components/layouts.ex:412
+#: lib/kanban_web/components/layouts.ex:411
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "Impossible de trouver Internet"
@@ -58,7 +58,6 @@ msgstr " · Gestion des Tâches"
 msgid "Done"
 msgstr "Terminé"
 
-#: lib/kanban_web/components/layouts/root.html.heex:107
 #: lib/kanban_web/components/nav_components.ex:144
 #, elixir-autogen, elixir-format
 msgid "Get Started"
@@ -69,23 +68,20 @@ msgstr "Commencer"
 msgid "In Progress"
 msgstr "En Cours"
 
-#: lib/kanban_web/components/layouts/root.html.heex:104
 #: lib/kanban_web/components/nav_components.ex:142
 #, elixir-autogen, elixir-format
 msgid "Log in"
 msgstr "Se Connecter"
 
-#: lib/kanban_web/components/layouts.ex:214
-#: lib/kanban_web/components/layouts/root.html.heex:94
+#: lib/kanban_web/components/layouts.ex:213
 #: lib/kanban_web/components/nav_components.ex:137
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "Se Déconnecter"
 
 #: lib/kanban_web/components/board_tabs.ex:143
+#: lib/kanban_web/components/layouts.ex:188
 #: lib/kanban_web/components/layouts.ex:189
-#: lib/kanban_web/components/layouts.ex:190
-#: lib/kanban_web/components/layouts/root.html.heex:85
 #: lib/kanban_web/components/nav_components.ex:132
 #: lib/kanban_web/live/user_live/settings.ex:16
 #, elixir-autogen, elixir-format
@@ -370,12 +366,11 @@ msgstr "Mettre à jour les détails de la tâche"
 msgid "WIP limit reached for this column"
 msgstr "Limite WIP atteinte pour cette colonne"
 
-#: lib/kanban_web/components/layouts.ex:150
-#: lib/kanban_web/components/layouts.ex:378
+#: lib/kanban_web/components/layouts.ex:149
+#: lib/kanban_web/components/layouts.ex:377
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
-#: lib/kanban_web/components/layouts/root.html.heex:64
 #: lib/kanban_web/components/marketing_closing.ex:97
 #: lib/kanban_web/components/marketing_components.ex:56
 #, elixir-autogen, elixir-format
@@ -452,7 +447,6 @@ msgstr "Moyen"
 msgid "Moved"
 msgstr "Déplacé"
 
-#: lib/kanban_web/components/layouts/root.html.heex:82
 #: lib/kanban_web/components/nav_components.ex:131
 #, elixir-autogen, elixir-format
 msgid "My Boards"
@@ -751,7 +745,6 @@ msgstr "Statut"
 msgid "Confirmation link is invalid or has expired."
 msgstr "Le lien de confirmation est invalide ou a expiré."
 
-#: lib/kanban_web/components/layouts/root.html.heex:72
 #: lib/kanban_web/components/marketing_components.ex:101
 #: lib/kanban_web/components/marketing_components.ex:287
 #: lib/kanban_web/components/nav_components.ex:122
@@ -764,9 +757,7 @@ msgstr "Tableau de bord"
 msgid "This account has already been confirmed. You can log in."
 msgstr "Ce compte a déjà été confirmé. Vous pouvez vous connecter."
 
-#: lib/kanban_web/components/layouts.ex:308
-#: lib/kanban_web/components/layouts/root.html.heex:91
-#: lib/kanban_web/components/layouts/root.html.heex:101
+#: lib/kanban_web/components/layouts.ex:307
 #: lib/kanban_web/components/marketing_components.ex:88
 #: lib/kanban_web/components/marketing_components.ex:276
 #: lib/kanban_web/components/nav_components.ex:134
@@ -890,7 +881,6 @@ msgstr "Êtes-vous sûr de vouloir supprimer cette colonne ? Toutes les tâches 
 msgid "Add with Edit Access"
 msgstr "Ajouter avec Accès en Modification"
 
-#: lib/kanban_web/components/layouts/root.html.heex:75
 #: lib/kanban_web/components/marketing_components.ex:108
 #: lib/kanban_web/components/marketing_components.ex:293
 #: lib/kanban_web/components/nav_components.ex:125
@@ -2079,9 +2069,7 @@ msgstr "Précédent"
 msgid "Read more"
 msgstr "Lire la suite"
 
-#: lib/kanban_web/components/layouts.ex:301
-#: lib/kanban_web/components/layouts/root.html.heex:88
-#: lib/kanban_web/components/layouts/root.html.heex:98
+#: lib/kanban_web/components/layouts.ex:300
 #: lib/kanban_web/components/marketing_components.ex:84
 #: lib/kanban_web/components/marketing_components.ex:270
 #: lib/kanban_web/components/nav_components.ex:133
@@ -2167,7 +2155,7 @@ msgid "Could not find a user with that email address"
 msgstr "Aucun utilisateur trouvé avec cette adresse e-mail"
 
 #: lib/kanban_web/components/board_tabs.ex:125
-#: lib/kanban_web/components/layouts.ex:289
+#: lib/kanban_web/components/layouts.ex:288
 #: lib/kanban_web/live/metrics_live/workspace.ex:150
 #: lib/kanban_web/live/metrics_live/workspace.ex:168
 #: lib/kanban_web/live/task_live/view_component.ex:249
@@ -4118,7 +4106,7 @@ msgid_plural "%{count} active"
 msgstr[0] "%{count} actif"
 msgstr[1] "%{count} actifs"
 
-#: lib/kanban_web/components/layouts.ex:268
+#: lib/kanban_web/components/layouts.ex:267
 #: lib/kanban_web/live/admin/user_live/index.html.heex:43
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:93
@@ -4201,7 +4189,7 @@ msgstr "À faire"
 msgid "Active goals"
 msgstr "Objectifs actifs"
 
-#: lib/kanban_web/components/layouts.ex:275
+#: lib/kanban_web/components/layouts.ex:274
 #: lib/kanban_web/live/agents_live.ex:349
 #, elixir-autogen, elixir-format
 msgid "Agents"
@@ -4239,7 +4227,7 @@ msgstr "Nouvel objectif"
 msgid "Pre-configured for AI workflow"
 msgstr "Préconfiguré pour le workflow IA"
 
-#: lib/kanban_web/components/layouts.ex:128
+#: lib/kanban_web/components/layouts.ex:127
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr "Navigation principale"
@@ -4249,7 +4237,7 @@ msgstr "Navigation principale"
 msgid "Promote children to Ready"
 msgstr "Promouvoir les enfants vers « Prêt »"
 
-#: lib/kanban_web/components/layouts.ex:282
+#: lib/kanban_web/components/layouts.ex:281
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
 #, elixir-autogen, elixir-format
@@ -4261,7 +4249,7 @@ msgstr "File de relecture"
 msgid "Start with a blank board"
 msgstr "Commencer avec un tableau vierge"
 
-#: lib/kanban_web/components/layouts.ex:137
+#: lib/kanban_web/components/layouts.ex:136
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr "Accueil Stride"
@@ -5306,11 +5294,6 @@ msgstr "Restaurer"
 msgid "Cycle time · median"
 msgstr "Temps de cycle"
 
-#: lib/kanban_web/components/metrics_kpi_strip.ex:58
-#, elixir-autogen, elixir-format, fuzzy
-msgid "Lead time · p75"
-msgstr "Délai"
-
 #: lib/kanban_web/components/metrics_kpi_strip.ex:76
 #, elixir-autogen, elixir-format
 msgid "Wait time · Review"
@@ -5378,7 +5361,7 @@ msgstr "tous les tableaux"
 msgid "Toggle menu"
 msgstr "Basculer le menu"
 
-#: lib/kanban_web/components/layouts.ex:357
+#: lib/kanban_web/components/layouts.ex:356
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr "Basculer la barre latérale"
@@ -7961,7 +7944,6 @@ msgstr "Vous ne pouvez pas désactiver votre propre compte."
 msgid "You cannot remove the last admin."
 msgstr "Vous ne pouvez pas supprimer le dernier administrateur."
 
-#: lib/kanban_web/components/layouts/root.html.heex:78
 #: lib/kanban_web/components/marketing_components.ex:115
 #: lib/kanban_web/components/marketing_components.ex:299
 #: lib/kanban_web/components/nav_components.ex:128
@@ -8131,3 +8113,8 @@ msgstr "Voir le dépôt du plugin"
 #, elixir-autogen, elixir-format
 msgid "Workflow plugin"
 msgstr "Plugin de workflow"
+
+#: lib/kanban_web/components/metrics_kpi_strip.ex:58
+#, elixir-autogen, elixir-format
+msgid "Lead time · median"
+msgstr "Délai"

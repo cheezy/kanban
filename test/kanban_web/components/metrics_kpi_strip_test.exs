@@ -13,7 +13,7 @@ defmodule KanbanWeb.MetricsKpiStripTest do
     base = %{
       cycle_time_median_minutes: 107,
       cycle_time_delta_pct: -12.0,
-      lead_time_p75_minutes: 842,
+      lead_time_p50_minutes: 842,
       lead_time_delta_pct: -4.0,
       throughput_per_day: 23.6,
       throughput_delta_pct: 8.4,
@@ -50,7 +50,7 @@ defmodule KanbanWeb.MetricsKpiStripTest do
     test "renders the four English labels" do
       html = render_strip(%{})
       assert html =~ "Cycle time · median"
-      assert html =~ "Lead time · p75"
+      assert html =~ "Lead time · median"
       assert html =~ "Throughput"
       assert html =~ "Wait time · Review"
     end
