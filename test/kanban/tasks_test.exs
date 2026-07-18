@@ -6209,6 +6209,167 @@ defmodule Kanban.TasksTest do
     end
   end
 
+  describe "update_task/2 parent_id goal recalculation" do
+    test "adding an existing task to a Done goal via update_task pulls the goal back out of Done" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo_column = column_fixture(board, %{name: "To Do", position: 0})
+      column_fixture(board, %{name: "Doing", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 2})
+
+      {:ok, goal} =
+        Tasks.create_task(todo_column, %{"title" => "Parent Goal", "type" => "goal"})
+
+      {:ok, child1} =
+        Tasks.create_task(todo_column, %{"title" => "Child 1", "parent_id" => goal.id})
+
+      {:ok, _} = Tasks.move_task(child1, done_column, 0)
+
+      assert Tasks.get_task!(goal.id).column_id == done_column.id,
+             "Precondition: goal sits in Done with its only child done"
+
+      # An existing standalone task in To Do with no parent yet.
+      {:ok, orphan} = Tasks.create_task(todo_column, %{"title" => "Existing Task"})
+      assert is_nil(orphan.parent_id)
+
+      # Adding it to the Done goal via update_task must pull the goal back out of
+      # Done to the leftmost occupied child column (To Do).
+      {:ok, _} = Tasks.update_task(orphan, %{"parent_id" => goal.id})
+
+      assert Tasks.get_task!(goal.id).column_id == todo_column.id,
+             "Goal is pulled back to To Do when an existing non-Done task is added via update_task"
+    end
+
+    test "moving a task between goals via update_task recalculates both the old and new parent goals" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo_column = column_fixture(board, %{name: "To Do", position: 0})
+      column_fixture(board, %{name: "Doing", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 2})
+
+      # Goal A: child a1 in Done, child a2 in To Do -> Goal A sits in To Do
+      # (its leftmost occupied child column).
+      {:ok, goal_a} =
+        Tasks.create_task(todo_column, %{"title" => "Goal A", "type" => "goal"})
+
+      {:ok, a1} =
+        Tasks.create_task(todo_column, %{"title" => "A1", "parent_id" => goal_a.id})
+
+      {:ok, a2} =
+        Tasks.create_task(todo_column, %{"title" => "A2", "parent_id" => goal_a.id})
+
+      {:ok, _} = Tasks.move_task(a1, done_column, 0)
+
+      assert Tasks.get_task!(goal_a.id).column_id == todo_column.id,
+             "Precondition: Goal A sits in To Do (leftmost occupied child column)"
+
+      # Goal B: child b1 in Done -> Goal B sits in Done.
+      {:ok, goal_b} =
+        Tasks.create_task(done_column, %{"title" => "Goal B", "type" => "goal"})
+
+      {:ok, _b1} =
+        Tasks.create_task(done_column, %{"title" => "B1", "parent_id" => goal_b.id})
+
+      assert Tasks.get_task!(goal_b.id).column_id == done_column.id,
+             "Precondition: Goal B sits in Done"
+
+      # Move a2 (still in To Do) from Goal A to Goal B.
+      {:ok, _} = Tasks.update_task(a2, %{"parent_id" => goal_b.id})
+
+      # Old parent (Goal A) now has only a1 (Done) -> advances to Done.
+      assert Tasks.get_task!(goal_a.id).column_id == done_column.id,
+             "Old parent Goal A recalculates to Done after losing its only non-Done child"
+
+      # New parent (Goal B) now has b1 (Done) + a2 (To Do) -> pulled back to To Do.
+      assert Tasks.get_task!(goal_b.id).column_id == todo_column.id,
+             "New parent Goal B recalculates to To Do after gaining a non-Done child"
+    end
+
+    test "removing a task from a goal via update_task (parent_id -> nil) recalculates the former parent goal" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo_column = column_fixture(board, %{name: "To Do", position: 0})
+      column_fixture(board, %{name: "Doing", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 2})
+
+      # Goal with child1 in Done and child2 in To Do -> goal sits in To Do.
+      {:ok, goal} =
+        Tasks.create_task(todo_column, %{"title" => "Parent Goal", "type" => "goal"})
+
+      {:ok, child1} =
+        Tasks.create_task(todo_column, %{"title" => "Child 1", "parent_id" => goal.id})
+
+      {:ok, child2} =
+        Tasks.create_task(todo_column, %{"title" => "Child 2", "parent_id" => goal.id})
+
+      {:ok, _} = Tasks.move_task(child1, done_column, 0)
+
+      assert Tasks.get_task!(goal.id).column_id == todo_column.id,
+             "Precondition: goal sits in To Do (child2 is the leftmost occupied column)"
+
+      # Removing child2 leaves only child1 (Done) -> the goal advances to Done.
+      {:ok, updated_child2} = Tasks.update_task(child2, %{"parent_id" => nil})
+
+      assert is_nil(updated_child2.parent_id)
+
+      assert Tasks.get_task!(goal.id).column_id == done_column.id,
+             "Former parent goal advances to Done after its only non-Done child is removed"
+    end
+
+    test "changing parent_id to a non-goal task is a safe no-op" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo_column = column_fixture(board, %{name: "To Do", position: 0})
+      column_fixture(board, %{name: "Doing", position: 1})
+      column_fixture(board, %{name: "Done", position: 2})
+
+      {:ok, not_a_goal} = Tasks.create_task(todo_column, %{"title" => "Regular Task"})
+      {:ok, mover} = Tasks.create_task(todo_column, %{"title" => "Mover"})
+
+      # Pointing parent_id at a non-goal task must not crash; the recalc no-ops
+      # (update_parent_goal_position only acts on :goal parents) and the
+      # non-goal "parent" is left untouched.
+      assert {:ok, updated} = Tasks.update_task(mover, %{"parent_id" => not_a_goal.id})
+      assert updated.parent_id == not_a_goal.id
+
+      assert Tasks.get_task!(not_a_goal.id).column_id == todo_column.id,
+             "The non-goal 'parent' is untouched by the recalc no-op"
+    end
+
+    test "an update changing parent_id and another field together fires both side effects" do
+      user = user_fixture()
+      board = board_fixture(user)
+      todo_column = column_fixture(board, %{name: "To Do", position: 0})
+      column_fixture(board, %{name: "Doing", position: 1})
+      done_column = column_fixture(board, %{name: "Done", position: 2})
+
+      {:ok, goal} =
+        Tasks.create_task(todo_column, %{"title" => "Parent Goal", "type" => "goal"})
+
+      {:ok, child1} =
+        Tasks.create_task(todo_column, %{"title" => "Child 1", "parent_id" => goal.id})
+
+      {:ok, _} = Tasks.move_task(child1, done_column, 0)
+
+      assert Tasks.get_task!(goal.id).column_id == done_column.id,
+             "Precondition: goal sits in Done"
+
+      {:ok, orphan} =
+        Tasks.create_task(todo_column, %{"title" => "Existing Task", "priority" => "low"})
+
+      # A single update that changes parent_id AND priority must run the goal
+      # recalc (goal pulled out of Done) AND persist the priority change.
+      {:ok, updated} =
+        Tasks.update_task(orphan, %{"parent_id" => goal.id, "priority" => "high"})
+
+      assert updated.priority == :high,
+             "The priority change is persisted alongside the parent_id change"
+
+      assert Tasks.get_task!(goal.id).column_id == todo_column.id,
+             "The goal recalc fires even when parent_id changes in the same update as another field"
+    end
+  end
+
   describe "create_goal_with_tasks/3" do
     test "creates a goal with multiple child tasks in a single transaction" do
       user = user_fixture()
