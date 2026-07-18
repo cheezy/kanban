@@ -88,6 +88,10 @@ Stride ships a per-agent plugin for each supported AI coding agent. Each plugin 
 
 The Pi edition ships the same 11 lifecycle skills as the other plugins plus two Pi-specific TypeScript extensions: `hook-bridge` (automatic `.stride.md` hook execution intercepting Pi's `tool_call` events) and `subagent-dispatch` (inline sub-agent skill dispatch). See the [stride-pi v1.0.0 release notes](https://github.com/cheezy/stride-pi/releases/tag/v1.0.0) for the feature matrix.
 
+**In-app onboarding picker**
+
+New users don't have to hunt for these commands: after confirming their email, the account-confirmation page's "Getting started" checklist includes an **Install the Stride plugin** step with a per-agent picker. Selecting an agent (Claude Code, Copilot, Gemini, Codex, OpenCode, or Pi) shows that agent's workflow-plugin install command with a copy button and a link to its marketplace/repository, plus a recommended **ideation-plugin** install command and link where one exists. Pi is shown as an individual-repository install with no marketplace, and — because it has no separate ideation port yet — its panel notes that no ideation plugin is available. The picker is driven by a single source-of-truth registry, so these instructions always match the table above.
+
 **Recommended: Use the Workflow Orchestrator**
 
 For agents using Stride plugins (Claude Code, Gemini CLI, Copilot CLI, Codex CLI, OpenCode, Pi Coding Agent), the `stride-workflow` skill is the recommended entry point. It walks through the complete lifecycle — claiming, codebase exploration, implementation, code review, hooks, and completion — in a single skill. The orchestrator ensures no mandatory steps are skipped.
