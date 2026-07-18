@@ -5,7 +5,6 @@ defmodule KanbanWeb.Layouts do
   """
   use KanbanWeb, :html
 
-  import KanbanWeb.NavComponents
   import KanbanWeb.MarketingComponents
   import KanbanWeb.MarketingClosing
 

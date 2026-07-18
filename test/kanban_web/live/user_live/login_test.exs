@@ -57,6 +57,24 @@ defmodule KanbanWeb.UserLive.LoginTest do
     end
   end
 
+  describe "homepage marketing nav on auth pages" do
+    test "logged-out auth page renders the homepage nav, not the stale top nav", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/log-in")
+
+      # The shared marketing_nav (same as the homepage) renders its logged-out
+      # CTAs and top-level links...
+      assert html =~ "Start now"
+      assert html =~ "Product"
+      assert html =~ "Workflows"
+
+      # ...and the stale inline root-layout nav (with its "Get Started" CTA and
+      # flat "My Boards"/"Settings" links) is gone.
+      refute html =~ "Get Started"
+      refute html =~ "My Boards"
+      refute html =~ ~s(href="/users/settings")
+    end
+  end
+
   describe "user login - password" do
     test "redirects if user logs in with valid credentials", %{conn: conn} do
       user = user_fixture()
@@ -118,6 +136,21 @@ defmodule KanbanWeb.UserLive.LoginTest do
 
       assert html =~
                ~s(<input type="email" name="user[email]" id="login_form_password_email" value="#{user.email}")
+    end
+
+    test "logged-in auth page renders the homepage nav, not the stale flat links", %{conn: conn} do
+      {:ok, _lv, html} = live(conn, ~p"/users/log-in")
+
+      # A logged-in user on an auth page sees the shared homepage nav's
+      # logged-in affordances ("Go to boards"/"Sign out")...
+      assert html =~ "Go to boards"
+      assert html =~ "Sign out"
+
+      # ...and never the stale flat top-nav links that were moved to the
+      # sidebar drawer long ago.
+      refute html =~ "My Boards"
+      refute html =~ ~s(href="/users/settings")
+      refute html =~ "Log out"
     end
   end
 end
