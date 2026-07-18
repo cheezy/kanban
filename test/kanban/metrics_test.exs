@@ -7,6 +7,7 @@ defmodule Kanban.MetricsTest do
   import Kanban.TasksFixtures
 
   alias Kanban.Metrics
+  alias Kanban.Metrics.TaskQueries
   alias Kanban.Tasks
 
   describe "get_dashboard_summary/2" do
@@ -692,7 +693,264 @@ defmodule Kanban.MetricsTest do
     end
   end
 
+  # D161: the summary statistics used to bound the reporting window on the
+  # START of each wait interval while the task lists bounded it on the END, so
+  # the page showed real task rows under four zeros. Both sides now bound on
+  # the timestamp that CLOSES the wait.
+  describe "get_wait_time_stats/2 reporting window" do
+    test "counts a review wait that started before the window but ended inside it" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, _} =
+        Tasks.update_task(task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -40, :day),
+          reviewed_at: DateTime.add(DateTime.utc_now(), -1, :day)
+        })
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id, time_range: :last_30_days)
+
+      assert stats.review_wait.count == 1
+      assert stats.review_wait.average_hours > 0
+      assert stats.review_wait.median_hours > 0
+      assert stats.review_wait.min_hours > 0
+      assert stats.review_wait.max_hours > 0
+    end
+
+    test "excludes a review wait that ended outside the window" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+
+      {:ok, _} =
+        Tasks.update_task(task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -60, :day),
+          reviewed_at: DateTime.add(DateTime.utc_now(), -40, :day)
+        })
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id, time_range: :last_30_days)
+
+      assert stats.review_wait.count == 0
+    end
+
+    test "counts a backlog wait that started before the window but ended inside it" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+
+      task = backdate_insertion(task_fixture(column), 40)
+
+      {:ok, _} =
+        Tasks.update_task(task, %{claimed_at: DateTime.add(DateTime.utc_now(), -1, :day)})
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id, time_range: :last_30_days)
+
+      assert stats.backlog_wait.count == 1
+      assert stats.backlog_wait.average_hours > 0
+      assert stats.backlog_wait.median_hours > 0
+      assert stats.backlog_wait.min_hours > 0
+      assert stats.backlog_wait.max_hours > 0
+    end
+
+    test "excludes a backlog wait that ended outside the window" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+
+      task = backdate_insertion(task_fixture(column), 60)
+
+      {:ok, _} =
+        Tasks.update_task(task, %{claimed_at: DateTime.add(DateTime.utc_now(), -40, :day)})
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id, time_range: :last_30_days)
+
+      assert stats.backlog_wait.count == 0
+    end
+
+    test "counts a regular-board backlog wait whose first move landed inside the window" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task = backdate_insertion(task_fixture(column), 60)
+
+      first_moved_at =
+        DateTime.utc_now()
+        |> DateTime.add(-2, :day)
+        |> DateTime.to_naive()
+        |> NaiveDateTime.truncate(:second)
+
+      create_move_history(task, "Backlog", "Doing", first_moved_at)
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id, time_range: :last_30_days)
+
+      assert stats.backlog_wait.count == 1
+      assert stats.backlog_wait.average_hours > 0
+      assert stats.backlog_wait.median_hours > 0
+      assert stats.backlog_wait.min_hours > 0
+      assert stats.backlog_wait.max_hours > 0
+    end
+
+    test "review wait summary count matches the review wait task list" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+
+      # Two waits ending inside the window.
+      for hours <- [6, 18] do
+        {:ok, _} =
+          column
+          |> task_fixture()
+          |> Tasks.update_task(%{
+            completed_at: DateTime.add(DateTime.utc_now(), -40, :day),
+            reviewed_at: DateTime.add(DateTime.utc_now(), -hours, :hour)
+          })
+      end
+
+      # One ending outside the window.
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_at: DateTime.add(DateTime.utc_now(), -60, :day),
+          reviewed_at: DateTime.add(DateTime.utc_now(), -45, :day)
+        })
+
+      # A goal, which neither side may count.
+      {:ok, _} =
+        column
+        |> task_fixture(%{type: :goal})
+        |> Tasks.update_task(%{
+          completed_at: DateTime.add(DateTime.utc_now(), -20, :hour),
+          reviewed_at: DateTime.add(DateTime.utc_now(), -2, :hour)
+        })
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id)
+      rows = TaskQueries.get_review_wait_tasks(board.id)
+
+      assert stats.review_wait.count == 2
+      assert stats.review_wait.count == length(rows)
+    end
+
+    test "backlog wait summary count matches the backlog wait task list" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+
+      # Two waits ending inside the window.
+      for hours <- [6, 18] do
+        task = backdate_insertion(task_fixture(column), 40)
+
+        {:ok, _} =
+          Tasks.update_task(task, %{claimed_at: DateTime.add(DateTime.utc_now(), -hours, :hour)})
+      end
+
+      # One ending outside the window.
+      outside = backdate_insertion(task_fixture(column), 60)
+
+      {:ok, _} =
+        Tasks.update_task(outside, %{claimed_at: DateTime.add(DateTime.utc_now(), -45, :day)})
+
+      # A goal, which neither side may count.
+      goal = backdate_insertion(task_fixture(column, %{type: :goal}), 5)
+      {:ok, _} = Tasks.update_task(goal, %{claimed_at: DateTime.utc_now()})
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id)
+      rows = TaskQueries.get_backlog_wait_tasks(board.id)
+
+      assert stats.backlog_wait.count == 2
+      assert stats.backlog_wait.count == length(rows)
+    end
+
+    test "summary count matches the task list when the agent filter is applied" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+
+      # Completed by the filtered agent.
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_by_agent: "Claude Sonnet 4.5",
+          completed_at: DateTime.add(DateTime.utc_now(), -12, :hour),
+          reviewed_at: DateTime.utc_now()
+        })
+
+      # Created by the filtered agent but completed by another one. The task
+      # lists attribute rows to the completing agent, so the summary must not
+      # count this row either.
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude Sonnet 4.5",
+          completed_by_agent: "GPT-4",
+          completed_at: DateTime.add(DateTime.utc_now(), -12, :hour),
+          reviewed_at: DateTime.utc_now()
+        })
+
+      opts = [agent_name: "Claude Sonnet 4.5"]
+
+      {:ok, stats} = Metrics.get_wait_time_stats(board.id, opts)
+      rows = TaskQueries.get_review_wait_tasks(board.id, opts)
+
+      assert stats.review_wait.count == 1
+      assert stats.review_wait.count == length(rows)
+    end
+  end
+
   describe "get_wait_time_stats/2 with weekend exclusion" do
+    # D161: subtracting a whole calendar day for every weekend date the
+    # interval touched collapsed any weekend-touching wait shorter than the
+    # subtracted total to exactly zero.
+    test "keeps a weekend-spanning sub-weekend review wait positive" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+
+      # Saturday 20:00 -> Monday 08:00: 36 elapsed hours, 28 of them on the
+      # weekend, leaving 8 business hours.
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          completed_at: ~U[2026-01-31 20:00:00Z],
+          reviewed_at: ~U[2026-02-02 08:00:00Z]
+        })
+
+      {:ok, stats} =
+        Metrics.get_wait_time_stats(board.id, exclude_weekends: true, time_range: :all_time)
+
+      assert stats.review_wait.count == 1
+      assert_in_delta stats.review_wait.average_hours, 8.0, 0.01
+    end
+
+    test "keeps a weekend-spanning sub-weekend backlog wait positive" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column)
+        |> Ecto.Changeset.change(%{
+          inserted_at:
+            ~U[2026-01-31 20:00:00Z] |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+        })
+        |> Kanban.Repo.update!()
+
+      {:ok, _} = Tasks.update_task(task, %{claimed_at: ~U[2026-02-02 08:00:00Z]})
+
+      {:ok, stats} =
+        Metrics.get_wait_time_stats(board.id, exclude_weekends: true, time_range: :all_time)
+
+      assert stats.backlog_wait.count == 1
+      assert_in_delta stats.backlog_wait.average_hours, 8.0, 0.01
+    end
+
     test "excludes weekends from review wait time" do
       user = user_fixture()
       board = ai_optimized_board_fixture(user)
@@ -1556,6 +1814,20 @@ defmodule Kanban.MetricsTest do
     })
     |> Ecto.Changeset.force_change(:inserted_at, inserted_at)
     |> Kanban.Repo.insert!()
+  end
+
+  # `inserted_at` is set by the database, so backdating it needs a direct
+  # changeset update rather than `Tasks.update_task/2`.
+  defp backdate_insertion(task, days_ago) do
+    inserted_at =
+      DateTime.utc_now()
+      |> DateTime.add(-days_ago, :day)
+      |> DateTime.to_naive()
+      |> NaiveDateTime.truncate(:second)
+
+    task
+    |> Ecto.Changeset.change(%{inserted_at: inserted_at})
+    |> Kanban.Repo.update!()
   end
 
   defp complete_task_with_timestamps(task, attrs \\ %{}) do

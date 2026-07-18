@@ -97,7 +97,10 @@
       </div>
     </div>
 
-    <div class="section">
+    <%!-- Only AI-optimized boards have a review step. Regular boards get a
+    not-applicable zero placeholder from get_wait_time_stats/2, so the whole
+    section is omitted rather than published as a measured zero. --%>
+    <div :if={@board.ai_optimized_board} class="section">
       <div class="section-header">Review Wait Time</div>
       <div class="section-description">
         <strong>Review Wait Time</strong> measures how long completed tasks wait for human review.

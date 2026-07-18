@@ -13,6 +13,7 @@ defmodule Kanban.Metrics do
   import Ecto.Query, warn: false
 
   alias Kanban.Boards.Board
+  alias Kanban.Metrics.BusinessTime
   alias Kanban.Repo
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
@@ -352,6 +353,19 @@ defmodule Kanban.Metrics do
   * Review wait time - Time from `completed_at` to `reviewed_at`
   * Backlog wait time - Time from creation to being claimed (if applicable)
 
+  The `:time_range` window bounds the **end** of each wait interval — the
+  timestamp that closes the wait (`reviewed_at` for review wait, `claimed_at`
+  or the first column move for backlog wait). This is the same bound the
+  matching task-list queries in `Kanban.Metrics.TaskQueries` apply, so the
+  statistics and the listed tasks always describe the same population. A long
+  wait that *started* before the window but ended inside it is counted.
+
+  Regular (non AI-optimized) boards have no review step, so `:review_wait`
+  is an explicit not-applicable placeholder of zeros for them — mirroring
+  `TaskQueries.get_review_wait_tasks/2`, which returns `[]`. Every consumer
+  must guard the review-wait section on `board.ai_optimized_board` rather than
+  render the placeholder as a real measurement.
+
   ## Options
 
   * `:time_range` - One of `:today`, `:last_7_days`, `:last_30_days`, `:last_90_days`, `:all_time` (default: `:last_30_days`)
@@ -405,9 +419,9 @@ defmodule Kanban.Metrics do
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], not is_nil(t.completed_at))
       |> where([t], not is_nil(t.reviewed_at))
-      |> where([t], t.completed_at >= ^start_date)
+      |> where([t], t.reviewed_at >= ^start_date)
       |> where([t], t.type != ^:goal)
-      |> maybe_filter_by_agent(agent_name)
+      |> maybe_filter_by_completing_agent(agent_name)
       |> select([t], %{
         wait_time_seconds:
           fragment(
@@ -430,9 +444,9 @@ defmodule Kanban.Metrics do
       |> join(:inner, [t], c in assoc(t, :column))
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], not is_nil(t.claimed_at))
-      |> where([t], t.inserted_at >= ^start_date)
+      |> where([t], t.claimed_at >= ^start_date)
       |> where([t], t.type != ^:goal)
-      |> maybe_filter_by_agent(agent_name)
+      |> maybe_filter_by_completing_agent(agent_name)
       |> select([t], %{
         wait_time_seconds:
           fragment(
@@ -470,7 +484,7 @@ defmodule Kanban.Metrics do
       |> join(:inner, [t], c in assoc(t, :column))
       |> join(:inner, [t], fm in subquery(first_move_subquery), on: fm.task_id == t.id)
       |> where([t, c], c.board_id == ^board_id)
-      |> where([t], t.inserted_at >= ^start_date)
+      |> where([t, _c, fm], fm.first_moved_at >= ^start_date)
       |> where([t], t.type != ^:goal)
       |> select([t, _c, fm], %{
         wait_time_seconds:
@@ -491,10 +505,21 @@ defmodule Kanban.Metrics do
       end)
       |> apply_weekend_filter(exclude_weekends)
 
-    empty_stats = %{average_hours: 0, median_hours: 0, min_hours: 0, max_hours: 0, count: 0}
+    # Regular boards have no review step, so review wait is not measurable
+    # rather than measured-as-zero. Consumers guard this section on
+    # `board.ai_optimized_board` (the Wait Time page, the dashboard card, the
+    # Excel export and the PDF export all do) so the placeholder is never
+    # published as a real figure.
+    not_applicable_stats = %{
+      average_hours: 0,
+      median_hours: 0,
+      min_hours: 0,
+      max_hours: 0,
+      count: 0
+    }
 
     with {:ok, backlog_stats} <- calculate_wait_time_stats(backlog_results) do
-      {:ok, %{review_wait: empty_stats, backlog_wait: backlog_stats}}
+      {:ok, %{review_wait: not_applicable_stats, backlog_wait: backlog_stats}}
     end
   end
 
@@ -510,6 +535,18 @@ defmodule Kanban.Metrics do
 
   defp maybe_filter_by_agent(query, agent_name) do
     where(query, [t], t.completed_by_agent == ^agent_name or t.created_by_agent == ^agent_name)
+  end
+
+  # The wait-time statistics must describe exactly the population the wait-time
+  # task lists render, under every filter the page exposes — including the agent
+  # filter. `Kanban.Metrics.TaskQueries` matches the completing agent only, so
+  # the wait-time stats do the same. The broader creator-OR-completer predicate
+  # above is deliberate for throughput, cycle time and lead time (see the "agent
+  # filtering edge cases" tests) and is left alone.
+  defp maybe_filter_by_completing_agent(query, nil), do: query
+
+  defp maybe_filter_by_completing_agent(query, agent_name) do
+    where(query, [t], t.completed_by_agent == ^agent_name)
   end
 
   defp calculate_time_stats([]),
@@ -590,35 +627,12 @@ defmodule Kanban.Metrics do
     end
   end
 
-  # Calculate business time (excluding weekends) between two DateTimes or NaiveDateTimes
+  # Elapsed seconds minus the part of the interval that falls on a weekend.
+  # See `Kanban.Metrics.BusinessTime` for the overlap arithmetic and the zero
+  # clamp that keeps out-of-order timestamps non-negative.
   defp calculate_business_time(start_time, end_time) do
-    # Normalize to DateTime if needed
-    start_dt = normalize_to_datetime(start_time)
-    end_dt = normalize_to_datetime(end_time)
-
-    # Convert to Date for day-of-week checking
-    start_date = DateTime.to_date(start_dt)
-    end_date = DateTime.to_date(end_dt)
-
-    # Calculate total seconds
-    total_seconds = DateTime.diff(end_dt, start_dt, :second)
-
-    # Count weekend days in the range
-    step = if Date.compare(start_date, end_date) == :gt, do: -1, else: 1
-
-    weekend_days =
-      Date.range(start_date, end_date, step)
-      |> Enum.count(fn date -> Date.day_of_week(date) in [6, 7] end)
-
-    # Subtract weekend time (assuming 24-hour days)
-    business_seconds = total_seconds - weekend_days * 86_400
-
-    max(business_seconds, 0)
+    BusinessTime.business_seconds(start_time, end_time)
   end
 
-  defp normalize_to_datetime(%DateTime{} = dt), do: dt
-
-  defp normalize_to_datetime(%NaiveDateTime{} = ndt) do
-    DateTime.from_naive!(ndt, "Etc/UTC")
-  end
+  defp normalize_to_datetime(value), do: BusinessTime.to_utc_datetime(value)
 end

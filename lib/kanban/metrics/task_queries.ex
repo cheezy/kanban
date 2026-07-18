@@ -262,6 +262,7 @@ defmodule Kanban.Metrics.TaskQueries do
     |> where([t], not is_nil(t.completed_at))
     |> where([t], not is_nil(t.reviewed_at))
     |> where([t], t.reviewed_at >= ^start_date)
+    |> where([t], t.type != ^:goal)
     |> order_by([t], desc: t.reviewed_at)
     |> select([t], %{
       id: t.id,
@@ -286,6 +287,7 @@ defmodule Kanban.Metrics.TaskQueries do
     |> where([t, c], c.board_id == ^board_id)
     |> where([t], not is_nil(t.claimed_at))
     |> where([t], t.claimed_at >= ^start_date)
+    |> where([t], t.type != ^:goal)
     |> order_by([t], desc: t.claimed_at)
     |> select([t], %{
       id: t.id,

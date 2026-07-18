@@ -17,7 +17,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
   defp base_assigns(overrides) do
     Map.merge(
       %{
-        board: %{name: "Test Board", id: 1},
+        board: %{name: "Test Board", id: 1, ai_optimized_board: true},
         time_range: :last_30_days,
         agent_name: nil,
         exclude_weekends: false,
@@ -545,7 +545,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
     test "renders wait_time template with complete data" do
       assigns =
         wait_time_assigns(%{
-          board: %{name: "Wait Board", id: 4},
+          board: %{name: "Wait Board", id: 4, ai_optimized_board: true},
           time_range: :last_7_days,
           exclude_weekends: true
         })
@@ -559,10 +559,26 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ "Jan 15, 2024"
     end
 
+    # D161: regular boards have no review step, so get_wait_time_stats/2 hands
+    # back a not-applicable zero placeholder for review wait. The page, the
+    # dashboard card and the Excel export all guard on the board type; the PDF
+    # used to publish the placeholder as four measured zeros.
+    test "omits the review wait section for a regular board" do
+      assigns =
+        wait_time_assigns(%{
+          board: %{name: "Regular Board", id: 9, ai_optimized_board: false}
+        })
+
+      html = render_to_string(MetricsPdfHTML.wait_time(assigns))
+
+      refute html =~ "Review Wait Time"
+      assert html =~ "Backlog Wait Time"
+    end
+
     test "renders wait_time template with nil generated_at" do
       assigns =
         wait_time_assigns(%{
-          board: %{name: "Wait Board", id: 4},
+          board: %{name: "Wait Board", id: 4, ai_optimized_board: true},
           time_range: :today,
           agent_name: "Test Agent",
           generated_at: nil,

@@ -540,6 +540,111 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
     end
   end
 
+  # D161: the page rendered four zeros above a list of real tasks because the
+  # summary and the list disagreed about which end of the wait the reporting
+  # window bounds. These assert on rendered VALUES, not just on labels.
+  describe "Wait Time - Rendered Summary Values" do
+    setup [:register_and_log_in_user, :create_board_with_column]
+
+    test "renders non-zero review wait values", %{conn: conn, board: board, column: column} do
+      {:ok, _} =
+        add_review_wait(task_fixture(column), %{
+          completed_at: DateTime.add(DateTime.utc_now(), -8, :hour),
+          reviewed_at: DateTime.utc_now()
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      for cell <- ~w(average median min max) do
+        assert has_element?(view, review_cell(cell), "8.0h")
+      end
+    end
+
+    test "counts a wait that started before the window but ended inside it",
+         %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+
+      {:ok, _} =
+        add_review_wait(task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -40, :day),
+          reviewed_at: DateTime.add(DateTime.utc_now(), -1, :day)
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      # The task is listed, so the summary above it must not read zero.
+      assert has_element?(view, "[data-wait-section='review']", task.identifier)
+      refute has_element?(view, review_cell("average"), "0.0m")
+      # 40 days ago -> 1 day ago is a 39-day wait.
+      assert has_element?(view, review_cell("average"), "39.0d")
+    end
+
+    test "excludes a wait that ended outside the window",
+         %{conn: conn, board: board, column: column} do
+      task = task_fixture(column)
+
+      {:ok, _} =
+        add_review_wait(task, %{
+          completed_at: DateTime.add(DateTime.utc_now(), -60, :day),
+          reviewed_at: DateTime.add(DateTime.utc_now(), -40, :day)
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      refute has_element?(view, "[data-wait-section='review']", task.identifier)
+      assert has_element?(view, review_cell("average"), "0.0m")
+    end
+
+    test "keeps a weekend-spanning wait positive with weekends excluded",
+         %{conn: conn, board: board, column: column} do
+      # Saturday 20:00 -> Monday 08:00: 8 business hours.
+      {:ok, _} =
+        add_review_wait(task_fixture(column), %{
+          completed_at: ~U[2026-01-31 20:00:00Z],
+          reviewed_at: ~U[2026-02-02 08:00:00Z]
+        })
+
+      {:ok, view, _html} =
+        live(
+          conn,
+          ~p"/boards/#{board}/metrics/wait-time?time_range=all_time&exclude_weekends=true"
+        )
+
+      assert has_element?(view, review_cell("average"), "8.0h")
+      refute has_element?(view, review_cell("average"), "0.0m")
+    end
+  end
+
+  describe "Wait Time - Rendered Summary Values (regular board)" do
+    setup [:register_and_log_in_user, :create_regular_board_with_column]
+
+    test "renders non-zero queue wait values on a regular board",
+         %{conn: conn, board: board, column: column} do
+      task =
+        task_fixture(column)
+        |> Ecto.Changeset.change(%{
+          inserted_at:
+            DateTime.utc_now()
+            |> DateTime.add(-8, :hour)
+            |> DateTime.to_naive()
+            |> NaiveDateTime.truncate(:second)
+        })
+        |> Kanban.Repo.update!()
+
+      create_move_history(task, "Backlog", "In Progress", DateTime.utc_now())
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}/metrics/wait-time")
+
+      assert html =~ task.identifier
+
+      for cell <- ~w(average median min max) do
+        assert has_element?(view, backlog_cell(cell), "8.0h")
+      end
+
+      refute has_element?(view, backlog_cell("average"), "0.0m")
+    end
+  end
+
   describe "Wait Time - Task Grouping" do
     setup [:register_and_log_in_user, :create_board_with_column]
 
@@ -909,6 +1014,14 @@ defmodule KanbanWeb.MetricsLive.WaitTimeTest do
       refute html =~ "No tasks started in this time range"
     end
   end
+
+  # The page renders two summary grids, so assertions on rendered values must
+  # name which section they mean.
+  defp review_cell(marker),
+    do: "[data-wait-section='review'] [data-metric-summary-cell='#{marker}']"
+
+  defp backlog_cell(marker),
+    do: "[data-wait-section='backlog'] [data-metric-summary-cell='#{marker}']"
 
   defp create_regular_board_with_column(%{user: user}) do
     board = board_fixture(user)

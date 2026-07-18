@@ -60,6 +60,7 @@
 
       <section
         :if={@board.ai_optimized_board}
+        data-wait-section="review"
         style={[
           "padding: 18px;",
           "background: var(--surface);",
@@ -115,11 +116,14 @@
         </.task_list_panel>
       </section>
 
-      <section style={[
-        "padding: 18px;",
-        "background: var(--surface);",
-        "border: 1px solid var(--line); border-radius: 8px;"
-      ]}>
+      <section
+        data-wait-section="backlog"
+        style={[
+          "padding: 18px;",
+          "background: var(--surface);",
+          "border: 1px solid var(--line); border-radius: 8px;"
+        ]}
+      >
         <header style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
           <span style="display: inline-flex; color: var(--stride-orange);">
             <.icon name="hero-queue-list" class="h-4 w-4" />
