@@ -189,7 +189,7 @@ msgstr "Tableau créé avec succès"
 msgid "Board updated successfully"
 msgstr "Tableau mis à jour avec succès"
 
-#: lib/kanban_web/live/agents_live.ex:1103
+#: lib/kanban_web/live/agents_live.ex:1118
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
@@ -398,7 +398,7 @@ msgid "Created"
 msgstr "Créé"
 
 #: lib/kanban_web/components/review_report_panel.ex:403
-#: lib/kanban_web/live/agents_live.ex:829
+#: lib/kanban_web/live/agents_live.ex:844
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -419,21 +419,21 @@ msgstr "Défaut"
 msgid "Failed to move task"
 msgstr "Échec du déplacement de la tâche"
 
-#: lib/kanban_web/live/agents_live.ex:828
+#: lib/kanban_web/live/agents_live.ex:843
 #: lib/kanban_web/live/task_live/form_component.html.heex:121
 #: lib/kanban_web/task_tokens.ex:56
 #, elixir-autogen, elixir-format
 msgid "High"
 msgstr "Élevé"
 
-#: lib/kanban_web/live/agents_live.ex:826
+#: lib/kanban_web/live/agents_live.ex:841
 #: lib/kanban_web/live/task_live/form_component.html.heex:119
 #: lib/kanban_web/task_tokens.ex:58
 #, elixir-autogen, elixir-format
 msgid "Low"
 msgstr "Bas"
 
-#: lib/kanban_web/live/agents_live.ex:827
+#: lib/kanban_web/live/agents_live.ex:842
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:25
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:32
 #: lib/kanban_web/live/task_live/form_component.html.heex:120
@@ -746,7 +746,7 @@ msgstr "Aucun historique disponible"
 msgid "Status"
 msgstr "Statut"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:232
+#: lib/kanban_web/live/user_live/confirmation.ex:427
 #, elixir-autogen, elixir-format
 msgid "Confirmation link is invalid or has expired."
 msgstr "Le lien de confirmation est invalide ou a expiré."
@@ -759,7 +759,7 @@ msgstr "Le lien de confirmation est invalide ou a expiré."
 msgid "Dashboard"
 msgstr "Tableau de bord"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:226
+#: lib/kanban_web/live/user_live/confirmation.ex:421
 #, elixir-autogen, elixir-format
 msgid "This account has already been confirmed. You can log in."
 msgstr "Ce compte a déjà été confirmé. Vous pouvez vous connecter."
@@ -1597,8 +1597,10 @@ msgstr "Êtes-vous sûr de vouloir révoquer ce token ?"
 
 #: lib/kanban_web/live/board_live/show.html.heex:534
 #: lib/kanban_web/live/board_live/show.html.heex:564
-#: lib/kanban_web/live/user_live/confirmation.ex:60
-#: lib/kanban_web/live/user_live/confirmation.ex:86
+#: lib/kanban_web/live/user_live/confirmation.ex:61
+#: lib/kanban_web/live/user_live/confirmation.ex:87
+#: lib/kanban_web/live/user_live/confirmation.ex:363
+#: lib/kanban_web/live/user_live/confirmation.ex:389
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "Copier"
@@ -1746,7 +1748,8 @@ msgid "Dismiss"
 msgstr "Rejeter"
 
 #: lib/kanban_web/live/board_live/show.html.heex:535
-#: lib/kanban_web/live/user_live/confirmation.ex:61
+#: lib/kanban_web/live/user_live/confirmation.ex:62
+#: lib/kanban_web/live/user_live/confirmation.ex:364
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "Copié!"
@@ -1882,7 +1885,8 @@ msgid "mix test"
 msgstr "mix test"
 
 #: lib/kanban_web/live/board_live/show.html.heex:536
-#: lib/kanban_web/live/user_live/confirmation.ex:62
+#: lib/kanban_web/live/user_live/confirmation.ex:63
+#: lib/kanban_web/live/user_live/confirmation.ex:365
 #, elixir-autogen, elixir-format
 msgid "Failed to copy"
 msgstr "Échec de la copie"
@@ -2164,8 +2168,8 @@ msgstr "Aucun utilisateur trouvé avec cette adresse e-mail"
 
 #: lib/kanban_web/components/board_tabs.ex:125
 #: lib/kanban_web/components/layouts.ex:289
-#: lib/kanban_web/live/metrics_live/workspace.ex:103
-#: lib/kanban_web/live/metrics_live/workspace.ex:121
+#: lib/kanban_web/live/metrics_live/workspace.ex:150
+#: lib/kanban_web/live/metrics_live/workspace.ex:168
 #: lib/kanban_web/live/task_live/view_component.ex:249
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -3246,7 +3250,7 @@ msgstr "Sécurité"
 
 #: lib/kanban_web/components/marketing_components.ex:140
 #: lib/kanban_web/components/marketing_components.ex:314
-#: lib/kanban_web/live/user_live/confirmation.ex:143
+#: lib/kanban_web/live/user_live/confirmation.ex:149
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:20
@@ -4151,7 +4155,7 @@ msgid "Coming soon"
 msgstr "Bientôt disponible"
 
 #: lib/kanban_web/live/board_live/index.ex:43
-#: lib/kanban_web/live/user_live/confirmation.ex:95
+#: lib/kanban_web/live/user_live/confirmation.ex:101
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "Créez votre premier tableau"
@@ -4266,7 +4270,7 @@ msgstr "Accueil Stride"
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
-#: lib/kanban_web/live/metrics_live/workspace.ex:101
+#: lib/kanban_web/live/metrics_live/workspace.ex:148
 #: lib/kanban_web/live/review_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Workspace"
@@ -5042,7 +5046,7 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] "dernières 24 h · %{count} événement"
 msgstr[1] "dernières 24 h · %{count} événements"
 
-#: lib/kanban_web/live/agents_live.ex:1232
+#: lib/kanban_web/live/agents_live.ex:1247
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
@@ -5358,12 +5362,12 @@ msgid "work in each column over time"
 msgstr "travail dans chaque colonne au fil du temps"
 
 #: lib/kanban_web/components/agents_header.ex:426
-#: lib/kanban_web/live/metrics_live/workspace.ex:344
+#: lib/kanban_web/live/metrics_live/workspace.ex:391
 #, elixir-autogen, elixir-format
 msgid "All boards"
 msgstr "Tous les tableaux"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:336
+#: lib/kanban_web/live/metrics_live/workspace.ex:383
 #, elixir-autogen, elixir-format
 msgid "all boards"
 msgstr "tous les tableaux"
@@ -5480,7 +5484,7 @@ msgstr "Choisissez un nouveau mot de passe pour votre compte."
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr "Choisissez un mot de passe fort et confirmez-le. Vous resterez connecté sur cet appareil après un changement réussi."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:149
+#: lib/kanban_web/live/user_live/confirmation.ex:155
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Confirming your account…"
 msgstr "Confirmation de votre compte..."
@@ -5510,7 +5514,7 @@ msgstr "Pour les agents"
 msgid "Forgot?"
 msgstr "Oublié ?"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:153
+#: lib/kanban_web/live/user_live/confirmation.ex:159
 #, elixir-autogen, elixir-format
 msgid "Hold tight — this will only take a moment."
 msgstr "Veuillez patienter — cela ne prendra qu'un instant."
@@ -5597,7 +5601,7 @@ msgstr "Les personnes et le collaborateur IA derrière Stride."
 msgid "Update profile"
 msgstr "Mettre à jour le profil"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:160
+#: lib/kanban_web/live/user_live/confirmation.ex:166
 #, elixir-autogen, elixir-format
 msgid "Verifying your confirmation link…"
 msgstr "Vérification de votre lien de confirmation…"
@@ -6989,7 +6993,7 @@ msgstr "Envoi…"
 msgid "We sent a confirmation link to %{email}. You won't be able to sign in until your account is confirmed."
 msgstr "Nous avons envoyé un lien de confirmation à %{email}. Vous ne pourrez pas vous connecter tant que votre compte n'est pas confirmé."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:163
+#: lib/kanban_web/live/user_live/confirmation.ex:169
 #, elixir-autogen, elixir-format
 msgid "you can sign in as soon as it's verified"
 msgstr "vous pourrez vous connecter dès qu'il sera vérifié"
@@ -6999,82 +7003,82 @@ msgstr "vous pourrez vous connecter dès qu'il sera vérifié"
 msgid "Return to Stride"
 msgstr "Retour à Stride"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:121
+#: lib/kanban_web/live/user_live/confirmation.ex:127
 #, elixir-autogen, elixir-format
 msgid "Add your team"
 msgstr "Ajoutez votre équipe"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:96
+#: lib/kanban_web/live/user_live/confirmation.ex:102
 #, elixir-autogen, elixir-format
 msgid "Boards are where your work lives — set one up for your team or project."
 msgstr "Les tableaux sont le cœur de votre travail — créez-en un pour votre équipe ou votre projet."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:107
+#: lib/kanban_web/live/user_live/confirmation.ex:113
 #, elixir-autogen, elixir-format
 msgid "Generate an API token"
 msgstr "Générez un jeton API"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:41
+#: lib/kanban_web/live/user_live/confirmation.ex:42
 #, elixir-autogen, elixir-format
 msgid "Getting started"
 msgstr "Premiers pas"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:129
+#: lib/kanban_web/live/user_live/confirmation.ex:135
 #, elixir-autogen, elixir-format
 msgid "Guide: Adding team members"
 msgstr "Guide : Ajouter des membres à l'équipe"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:103
+#: lib/kanban_web/live/user_live/confirmation.ex:109
 #, elixir-autogen, elixir-format
 msgid "Guide: Creating your first board"
 msgstr "Guide : Créer votre premier tableau"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:122
+#: lib/kanban_web/live/user_live/confirmation.ex:128
 #, elixir-autogen, elixir-format
 msgid "Invite collaborators to your board and choose what they can do."
 msgstr "Invitez des collaborateurs sur votre tableau et choisissez leurs permissions."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:108
+#: lib/kanban_web/live/user_live/confirmation.ex:114
 #, elixir-autogen, elixir-format
 msgid "On your board, open the Tokens tab to create one (available on AI-optimized boards). The token is shown only once — copy it and keep it secret."
 msgstr "Sur votre tableau, ouvrez l'onglet « Jetons API » pour en créer un (disponible sur les tableaux optimisés pour l'IA). Le jeton n'est affiché qu'une seule fois — copiez-le et gardez-le secret."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:91
+#: lib/kanban_web/live/user_live/confirmation.ex:97
 #, elixir-autogen, elixir-format
 msgid "Sign in to your account"
 msgstr "Connectez-vous à votre compte"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:92
+#: lib/kanban_web/live/user_live/confirmation.ex:98
 #, elixir-autogen, elixir-format
 msgid "Use the button below to sign in with your new credentials."
 msgstr "Utilisez le bouton ci-dessous pour vous connecter avec vos nouveaux identifiants."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:36
+#: lib/kanban_web/live/user_live/confirmation.ex:37
 #, elixir-autogen, elixir-format
 msgid "You're all set. Follow these steps to get up and running."
 msgstr "Tout est prêt. Suivez ces étapes pour bien démarrer."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:32
+#: lib/kanban_web/live/user_live/confirmation.ex:33
 #, elixir-autogen, elixir-format
 msgid "Your account is confirmed"
 msgstr "Votre compte est confirmé"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:177
+#: lib/kanban_web/live/user_live/confirmation.ex:183
 #, elixir-autogen, elixir-format
 msgid "Fetch %{url} and follow the instructions it returns to set up Stride in this project, creating the .stride_auth.md and .stride.md configuration files."
 msgstr "Récupère %{url} et suis les instructions retournées pour configurer Stride dans ce projet, en créant les fichiers de configuration .stride_auth.md et .stride.md."
 
-#: lib/kanban_web/live/user_live/confirmation.ex:117
+#: lib/kanban_web/live/user_live/confirmation.ex:123
 #, elixir-autogen, elixir-format
 msgid "Guide: Configuring API authentication"
 msgstr "Guide : Configurer l'authentification API"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:49
+#: lib/kanban_web/live/user_live/confirmation.ex:50
 #, elixir-autogen, elixir-format
 msgid "Paste this prompt into your agent to configure Stride in your project:"
 msgstr "Collez ce prompt dans votre agent pour configurer Stride dans votre projet :"
 
-#: lib/kanban_web/live/user_live/confirmation.ex:48
+#: lib/kanban_web/live/user_live/confirmation.ex:49
 #, elixir-autogen, elixir-format
 msgid "Set up your coding agent"
 msgstr "Configurez votre agent de codage"
@@ -7190,7 +7194,7 @@ msgstr "dont"
 msgid "Dormant (%{count})"
 msgstr "Inactifs (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:1287
+#: lib/kanban_web/live/agents_live.ex:1302
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "Vu il y a %{days} j"
@@ -7250,22 +7254,22 @@ msgstr "Aucune activité pour le moment."
 msgid "Cycle time · today"
 msgstr "Temps de cycle · aujourd'hui"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:338
+#: lib/kanban_web/live/metrics_live/workspace.ex:385
 #, elixir-autogen, elixir-format
 msgid "%{count} boards"
 msgstr "%{count} tableaux"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:345
+#: lib/kanban_web/live/metrics_live/workspace.ex:392
 #, elixir-autogen, elixir-format
 msgid "%{count} of %{total} boards"
 msgstr "%{count} sur %{total} tableaux"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:337
+#: lib/kanban_web/live/metrics_live/workspace.ex:384
 #, elixir-autogen, elixir-format
 msgid "1 board"
 msgstr "1 tableau"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:195
+#: lib/kanban_web/live/metrics_live/workspace.ex:242
 #, elixir-autogen, elixir-format
 msgid "No boards yet"
 msgstr "Aucun tableau pour le moment"
@@ -7280,7 +7284,7 @@ msgstr "%{count} j"
 msgid "Agents · last %{count} days"
 msgstr "Agents · %{count} derniers jours"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:257
+#: lib/kanban_web/live/metrics_live/workspace.ex:304
 #, elixir-autogen, elixir-format
 msgid "Last %{count} days"
 msgstr "%{count} derniers jours"
@@ -7291,7 +7295,7 @@ msgid "No completions in the last %{count} days."
 msgstr "Aucune complétion lors des %{count} derniers jours."
 
 #: lib/kanban_web/components/agents_header.ex:435
-#: lib/kanban_web/live/metrics_live/workspace.ex:239
+#: lib/kanban_web/live/metrics_live/workspace.ex:286
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Time range"
 msgstr "Période"
@@ -7584,7 +7588,7 @@ msgstr "Cible de livraison et objectif en cours"
 msgid "Hide archived goals"
 msgstr "Masquer les objectifs archivés"
 
-#: lib/kanban_web/live/agents_live.ex:1013
+#: lib/kanban_web/live/agents_live.ex:1028
 #, elixir-autogen, elixir-format
 msgid "Choose a new owner"
 msgstr "Choisir un nouveau responsable"
@@ -7594,49 +7598,49 @@ msgstr "Choisir un nouveau responsable"
 msgid "Choose a new owner first."
 msgstr "Choisissez d'abord un nouveau responsable."
 
-#: lib/kanban_web/live/agents_live.ex:719
+#: lib/kanban_web/live/agents_live.ex:734
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Could not reassign the goal. Please try again."
 msgstr "Impossible d'assigner l'objectif"
 
-#: lib/kanban_web/live/agents_live.ex:1011
+#: lib/kanban_web/live/agents_live.ex:1026
 #, elixir-autogen, elixir-format
 msgid "New owner"
 msgstr "Nouveau responsable"
 
 #: lib/kanban_web/components/target_risk_explainer.ex:162
-#: lib/kanban_web/live/agents_live.ex:1004
+#: lib/kanban_web/live/agents_live.ex:1019
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reassign"
 msgstr "Réaffecté"
 
-#: lib/kanban_web/live/agents_live.ex:994
+#: lib/kanban_web/live/agents_live.ex:1009
 #, elixir-autogen, elixir-format
 msgid "Reassign %{goal}"
 msgstr "Réattribuer %{goal}"
 
-#: lib/kanban_web/live/agents_live.ex:759
-#: lib/kanban_web/live/agents_live.ex:765
+#: lib/kanban_web/live/agents_live.ex:774
+#: lib/kanban_web/live/agents_live.ex:780
 #, elixir-autogen, elixir-format
 msgid "Reassigned %{count} task."
 msgid_plural "Reassigned %{count} tasks."
 msgstr[0] "%{count} tâche réattribuée."
 msgstr[1] "%{count} tâches réattribuées."
 
-#: lib/kanban_web/live/agents_live.ex:768
-#: lib/kanban_web/live/agents_live.ex:844
+#: lib/kanban_web/live/agents_live.ex:783
+#: lib/kanban_web/live/agents_live.ex:859
 #, elixir-autogen, elixir-format
 msgid "Skipped %{count} task already claimed: %{ids}."
 msgid_plural "Skipped %{count} tasks already claimed: %{ids}."
 msgstr[0] "%{count} tâche déjà réclamée ignorée : %{ids}."
 msgstr[1] "%{count} tâches déjà réclamées ignorées : %{ids}."
 
-#: lib/kanban_web/live/agents_live.ex:715
+#: lib/kanban_web/live/agents_live.ex:730
 #, elixir-autogen, elixir-format
 msgid "That user is not a member of this board."
 msgstr "Cet utilisateur n'est pas membre de ce tableau."
 
-#: lib/kanban_web/live/agents_live.ex:996
+#: lib/kanban_web/live/agents_live.ex:1011
 #, elixir-autogen, elixir-format
 msgid "This will move 1 task to the new owner:"
 msgid_plural "This will move %{count} tasks to the new owner:"
@@ -7644,12 +7648,12 @@ msgstr[0] "Cela déplacera 1 tâche vers le nouveau responsable :"
 msgstr[1] "Cela déplacera %{count} tâches vers le nouveau responsable :"
 
 #: lib/kanban_web/live/agents_live.ex:227
-#: lib/kanban_web/live/agents_live.ex:711
+#: lib/kanban_web/live/agents_live.ex:726
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to reassign this goal."
 msgstr "Vous n'êtes pas autorisé à réattribuer cet objectif."
 
-#: lib/kanban_web/live/agents_live.ex:1051
+#: lib/kanban_web/live/agents_live.ex:1066
 #, elixir-autogen, elixir-format
 msgid "Choose a new priority"
 msgstr "Choisissez une nouvelle priorité"
@@ -7659,41 +7663,41 @@ msgstr "Choisissez une nouvelle priorité"
 msgid "Choose a new priority first."
 msgstr "Choisissez d'abord une nouvelle priorité."
 
-#: lib/kanban_web/live/agents_live.ex:812
+#: lib/kanban_web/live/agents_live.ex:827
 #, elixir-autogen, elixir-format
 msgid "Could not reprioritize the goal. Please try again."
 msgstr "Impossible de redéfinir la priorité de l'objectif. Veuillez réessayer."
 
-#: lib/kanban_web/live/agents_live.ex:1049
+#: lib/kanban_web/live/agents_live.ex:1064
 #, elixir-autogen, elixir-format
 msgid "New priority"
 msgstr "Nouvelle priorité"
 
 #: lib/kanban_web/components/target_risk_explainer.ex:172
-#: lib/kanban_web/live/agents_live.ex:1042
+#: lib/kanban_web/live/agents_live.ex:1057
 #, elixir-autogen, elixir-format
 msgid "Reprioritize"
 msgstr "Redéfinir la priorité"
 
-#: lib/kanban_web/live/agents_live.ex:1032
+#: lib/kanban_web/live/agents_live.ex:1047
 #, elixir-autogen, elixir-format
 msgid "Reprioritize %{goal}"
 msgstr "Redéfinir la priorité de %{goal}"
 
-#: lib/kanban_web/live/agents_live.ex:834
-#: lib/kanban_web/live/agents_live.ex:841
+#: lib/kanban_web/live/agents_live.ex:849
+#: lib/kanban_web/live/agents_live.ex:856
 #, elixir-autogen, elixir-format
 msgid "Reprioritized %{count} task."
 msgid_plural "Reprioritized %{count} tasks."
 msgstr[0] "Priorité modifiée pour %{count} tâche."
 msgstr[1] "Priorité modifiée pour %{count} tâches."
 
-#: lib/kanban_web/live/agents_live.ex:808
+#: lib/kanban_web/live/agents_live.ex:823
 #, elixir-autogen, elixir-format
 msgid "That is not a valid priority."
 msgstr "Cette priorité n'est pas valide."
 
-#: lib/kanban_web/live/agents_live.ex:1034
+#: lib/kanban_web/live/agents_live.ex:1049
 #, elixir-autogen, elixir-format
 msgid "This will change the priority of 1 task:"
 msgid_plural "This will change the priority of %{count} tasks:"
@@ -7701,47 +7705,47 @@ msgstr[0] "Cela changera la priorité de 1 tâche :"
 msgstr[1] "Cela changera la priorité de %{count} tâches :"
 
 #: lib/kanban_web/live/agents_live.ex:271
-#: lib/kanban_web/live/agents_live.ex:804
+#: lib/kanban_web/live/agents_live.ex:819
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to reprioritize this goal."
 msgstr "Vous n'êtes pas autorisé à redéfinir la priorité de cet objectif."
 
-#: lib/kanban_web/live/agents_live.ex:941
+#: lib/kanban_web/live/agents_live.ex:956
 #, elixir-autogen, elixir-format
 msgid "Could not restore %{count} task claimed since: %{ids}."
 msgid_plural "Could not restore %{count} tasks claimed since: %{ids}."
 msgstr[0] "Impossible de restaurer %{count} tâche réclamée depuis : %{ids}."
 msgstr[1] "Impossible de restaurer %{count} tâches réclamées depuis : %{ids}."
 
-#: lib/kanban_web/live/agents_live.ex:954
+#: lib/kanban_web/live/agents_live.ex:969
 #, elixir-autogen, elixir-format
 msgid "Could not undo the change. Please try again."
 msgstr "Impossible d'annuler la modification. Veuillez réessayer."
 
-#: lib/kanban_web/live/agents_live.ex:978
+#: lib/kanban_web/live/agents_live.ex:993
 #, elixir-autogen, elixir-format
 msgid "Goal reassigned."
 msgstr "Objectif réattribué."
 
-#: lib/kanban_web/live/agents_live.ex:979
+#: lib/kanban_web/live/agents_live.ex:994
 #, elixir-autogen, elixir-format
 msgid "Goal reprioritized."
 msgstr "Priorité de l'objectif modifiée."
 
-#: lib/kanban_web/live/agents_live.ex:972
+#: lib/kanban_web/live/agents_live.ex:987
 #, elixir-autogen, elixir-format
 msgid "Undo"
 msgstr "Annuler"
 
-#: lib/kanban_web/live/agents_live.ex:923
-#: lib/kanban_web/live/agents_live.ex:934
+#: lib/kanban_web/live/agents_live.ex:938
+#: lib/kanban_web/live/agents_live.ex:949
 #, elixir-autogen, elixir-format
 msgid "Undone: restored %{count} task."
 msgid_plural "Undone: restored %{count} tasks."
 msgstr[0] "Annulé : %{count} tâche restaurée."
 msgstr[1] "Annulé : %{count} tâches restaurées."
 
-#: lib/kanban_web/live/agents_live.ex:952
+#: lib/kanban_web/live/agents_live.ex:967
 #, elixir-autogen, elixir-format
 msgid "You are no longer allowed to undo this change."
 msgstr "Vous n'êtes plus autorisé à annuler cette modification."
@@ -8072,3 +8076,58 @@ msgstr "Achèvement estimé"
 #, elixir-autogen, elixir-format
 msgid "Due. %{date}"
 msgstr "Due. %{date}"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:245
+#, elixir-autogen, elixir-format
+msgid "Coding agents"
+msgstr "Agents de codage"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:302
+#, elixir-autogen, elixir-format
+msgid "Ideation plugin (recommended)"
+msgstr "Plugin d'idéation (recommandé)"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:92
+#, elixir-autogen, elixir-format
+msgid "Install the Stride plugin"
+msgstr "Installez le plugin Stride"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:295
+#, elixir-autogen, elixir-format
+msgid "Installs from its own repository — no marketplace."
+msgstr "S'installe depuis son propre dépôt — pas de marketplace."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:294
+#, elixir-autogen, elixir-format
+msgid "Installs through the Stride marketplace."
+msgstr "S'installe via le marketplace Stride."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:327
+#, elixir-autogen, elixir-format
+msgid "No separate ideation plugin yet."
+msgstr "Pas encore de plugin d'idéation distinct."
+
+#: lib/kanban_web/live/user_live/confirmation.ex:93
+#, elixir-autogen, elixir-format
+msgid "Pick your coding agent, then run its install command to add the Stride plugin:"
+msgstr "Choisissez votre agent de codage, puis exécutez sa commande d'installation pour ajouter le plugin Stride :"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:289
+#, elixir-autogen, elixir-format
+msgid "View in the marketplace"
+msgstr "Voir dans le marketplace"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:318
+#, elixir-autogen, elixir-format
+msgid "View the ideation plugin"
+msgstr "Voir le plugin d'idéation"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:290
+#, elixir-autogen, elixir-format
+msgid "View the plugin repository"
+msgstr "Voir le dépôt du plugin"
+
+#: lib/kanban_web/live/user_live/confirmation.ex:272
+#, elixir-autogen, elixir-format
+msgid "Workflow plugin"
+msgstr "Plugin de workflow"

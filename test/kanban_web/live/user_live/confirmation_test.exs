@@ -168,4 +168,106 @@ defmodule KanbanWeb.UserLive.ConfirmationTest do
       assert flash["error"] =~ "Confirmation link is invalid or has expired"
     end
   end
+
+  describe "Install the Stride plugin picker" do
+    setup %{conn: conn, unconfirmed_user: user} do
+      token =
+        extract_user_token(fn url ->
+          Accounts.deliver_user_confirmation_instructions(user, url)
+        end)
+
+      {:ok, lv, _html} = live(conn, ~p"/users/confirm/#{token}")
+      %{lv: lv}
+    end
+
+    test "renders the new step with a tab for each of the six agents", %{lv: lv} do
+      html = render(lv)
+
+      assert html =~ "Install the Stride plugin"
+
+      for {key, label} <- [
+            {"claude_code", "Claude Code"},
+            {"copilot", "Copilot"},
+            {"gemini", "Gemini"},
+            {"codex", "Codex"},
+            {"opencode", "OpenCode"},
+            {"pi", "Pi"}
+          ] do
+        assert has_element?(lv, ~s{button[role="tab"][phx-value-agent="#{key}"]}, label)
+      end
+    end
+
+    test "renumbers the getting-started steps sequentially after inserting the new step", %{
+      lv: lv
+    } do
+      html = render(lv)
+
+      titles = [
+        "Set up your coding agent",
+        "Install the Stride plugin",
+        "Sign in to your account",
+        "Create your first board",
+        "Generate an API token",
+        "Add your team"
+      ]
+
+      positions = Enum.map(titles, fn title -> :binary.match(html, title) |> elem(0) end)
+      assert positions == Enum.sort(positions), "onboarding steps are out of order"
+    end
+
+    test "defaults to Claude Code and shows its workflow + ideation commands and links", %{lv: lv} do
+      html = render(lv)
+
+      assert html =~ "/plugin install stride@stride-marketplace"
+      assert html =~ "/plugin install stride-ideation@stride-marketplace"
+
+      assert has_element?(
+               lv,
+               ~s{a[href="https://github.com/cheezy/stride-marketplace"][target="_blank"]}
+             )
+
+      assert has_element?(
+               lv,
+               ~s{a[href="https://github.com/cheezy/stride-ideation"][target="_blank"]}
+             )
+
+      assert html =~ "Installs through the Stride marketplace."
+      assert has_element?(lv, "#workflow-copy-claude_code")
+      assert has_element?(lv, "#ideation-copy-claude_code")
+    end
+
+    test "selecting a tab swaps the panel to that agent's commands", %{lv: lv} do
+      html = lv |> element(~s{button[phx-value-agent="copilot"]}) |> render_click()
+
+      assert html =~ "copilot plugin install https://github.com/cheezy/stride-copilot"
+      assert html =~ "copilot plugin install https://github.com/cheezy/stride-copilot-ideation"
+
+      assert has_element?(
+               lv,
+               ~s{a[href="https://github.com/cheezy/stride-copilot"][target="_blank"]}
+             )
+
+      # The default agent's command is no longer in the DOM (only the selected panel renders).
+      refute html =~ "/plugin install stride@stride-marketplace"
+    end
+
+    test "Pi renders as an individual plugin with no marketplace and no ideation plugin", %{
+      lv: lv
+    } do
+      html = lv |> element(~s{button[phx-value-agent="pi"]}) |> render_click()
+
+      assert html =~ "https://raw.githubusercontent.com/cheezy/stride-pi/main/install.sh"
+      assert html =~ "Installs from its own repository — no marketplace."
+      refute html =~ "Installs through the Stride marketplace."
+      assert html =~ "No separate ideation plugin yet."
+      refute has_element?(lv, "#ideation-copy-pi")
+    end
+
+    test "leaves the selection unchanged when given an unknown agent key", %{lv: lv} do
+      # get/1 is nil-safe; a tampered phx-value must not crash or blank the panel.
+      html = render_click(lv, "select_agent", %{"agent" => "not-a-real-agent"})
+
+      assert html =~ "/plugin install stride@stride-marketplace"
+    end
+  end
 end
