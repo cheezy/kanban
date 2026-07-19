@@ -207,9 +207,9 @@ defmodule KanbanWeb.MetricsLive.Workspace do
             {@window_label}
           </span>
           <span style="flex: 1;" />
+          <.window_selector selected_window_days={@selected_window_days} />
           <.board_selector boards={@boards} selected_board_ids={@selected_board_ids} />
           <.weekend_selector exclude_weekends={@exclude_weekends} />
-          <.window_selector selected_window_days={@selected_window_days} />
         </header>
 
         <div class="flex-1 overflow-y-auto px-3 md:px-7 pt-2 pb-7 flex flex-col gap-3.5">
