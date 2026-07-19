@@ -1122,6 +1122,92 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
     end
   end
 
+  describe "workspace_export_dropdown/1" do
+    defp workspace_dropdown(overrides) do
+      assigns =
+        Map.merge(
+          %{
+            export_base_path: "/metrics/export",
+            window_days: 14,
+            board_ids: [],
+            exclude_weekends: false,
+            timezone: "Etc/UTC"
+          },
+          overrides
+        )
+
+      rendered_to_string(~H"""
+      <Components.workspace_export_dropdown
+        export_base_path={@export_base_path}
+        window_days={@window_days}
+        board_ids={@board_ids}
+        exclude_weekends={@exclude_weekends}
+        timezone={@timezone}
+      />
+      """)
+    end
+
+    test "renders PDF and Excel links against the workspace export route" do
+      html = workspace_dropdown(%{})
+
+      assert html =~ "PDF"
+      assert html =~ "Excel"
+      assert html =~ "/metrics/export?"
+      assert html =~ "phx-hook=\"Dropdown\""
+    end
+
+    test "includes the window parameter" do
+      assert workspace_dropdown(%{window_days: 30}) =~ "window_days=30"
+    end
+
+    test "includes one board_ids pair per selected board" do
+      html = workspace_dropdown(%{board_ids: [7, 9]})
+
+      # URI.encode_query/1 percent-encodes the brackets; Plug decodes the
+      # repeated key back into a list (asserted end-to-end in the controller
+      # test), so this is the shape the route actually receives.
+      assert html =~ "board_ids%5B%5D=7"
+      assert html =~ "board_ids%5B%5D=9"
+    end
+
+    test "omits board_ids entirely when no board is selected" do
+      # An absent parameter is what the export route reads as "all visible
+      # boards" — the same meaning the page gives an empty selection.
+      refute workspace_dropdown(%{board_ids: []}) =~ "board_ids"
+    end
+
+    test "includes the timezone parameter" do
+      assert workspace_dropdown(%{timezone: "America/Toronto"}) =~ "timezone=America%2FToronto"
+    end
+
+    test "includes the exclude_weekends parameter" do
+      assert workspace_dropdown(%{exclude_weekends: true}) =~ "exclude_weekends=true"
+    end
+
+    test "the Excel link carries the format parameter and the PDF link does not" do
+      # The shell renders the PDF link first, then the Excel link.
+      [[pdf], [excel]] =
+        Regex.scan(~r/href="([^"]+)"/, workspace_dropdown(%{}), capture: :all_but_first)
+
+      assert excel =~ "format=excel"
+      refute pdf =~ "format=excel"
+
+      # Both still carry the page's filters.
+      assert pdf =~ "window_days=14"
+      assert excel =~ "window_days=14"
+      assert pdf =~ "timezone=Etc%2FUTC"
+      assert excel =~ "timezone=Etc%2FUTC"
+    end
+
+    test "dropdown menu uses stride-screen theme tokens" do
+      html = workspace_dropdown(%{})
+
+      assert html =~ "background: var(--surface)"
+      assert html =~ "border: 1px solid var(--line)"
+      refute html =~ "dark:bg-zinc-800"
+    end
+  end
+
   describe "task_list_panel/1" do
     test "renders title, subtitle, tasks, slots, and identifiers" do
       assigns = %{

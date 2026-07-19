@@ -745,7 +745,57 @@ defmodule KanbanWeb.MetricsLive.Components do
       )
 
     ~H"""
-    <div style="position: relative; margin-left: 8px;" id="export-dropdown" phx-hook="Dropdown">
+    <.export_dropdown_shell pdf_href={@pdf_href} excel_href={@excel_href} />
+    """
+  end
+
+  @doc """
+  Renders the workspace metrics export dropdown (PDF + Excel).
+
+  The workspace sibling of `export_dropdown/1`. The two are deliberately
+  separate components rather than one parameterized by both pages' filters:
+  the board pages filter by time range and agent and have no board subset,
+  while the workspace page filters by a day window and a board subset and has
+  no agent. A single component taking the union would make every caller pass
+  parameters that do not apply to it. Only the markup is shared, through
+  `export_dropdown_shell/1`.
+
+  `board_ids` is omitted from the links when the selection is empty, which the
+  export route reads as "every visible board" — the same meaning the page gives
+  an empty selection. The subset is only ever a hint: the route intersects it
+  with the boards the caller may actually see.
+  """
+  attr :export_base_path, :string, required: true
+  attr :window_days, :integer, required: true
+  attr :board_ids, :list, default: []
+  attr :exclude_weekends, :boolean, default: false
+  attr :timezone, :string, required: true
+
+  def workspace_export_dropdown(assigns) do
+    assigns =
+      assign(assigns,
+        pdf_href: build_workspace_export_href(assigns, :pdf),
+        excel_href: build_workspace_export_href(assigns, :excel)
+      )
+
+    ~H"""
+    <.export_dropdown_shell
+      id="workspace-export-dropdown"
+      pdf_href={@pdf_href}
+      excel_href={@excel_href}
+    />
+    """
+  end
+
+  # The markup both dropdowns render. Kept private and href-only so neither
+  # page's filter vocabulary leaks into the shared shell.
+  attr :id, :string, default: "export-dropdown"
+  attr :pdf_href, :string, required: true
+  attr :excel_href, :string, required: true
+
+  defp export_dropdown_shell(assigns) do
+    ~H"""
+    <div style="position: relative; margin-left: 8px;" id={@id} phx-hook="Dropdown">
       <button
         type="button"
         data-dropdown-toggle
@@ -819,6 +869,36 @@ defmodule KanbanWeb.MetricsLive.Components do
       end
 
     "#{assigns.export_base_path}?#{URI.encode_query(params)}"
+  end
+
+  # The timezone is the parameter most easily forgotten here: unlike the other
+  # filters it is not a URL parameter on the page, it is read from the browser
+  # at mount. Omitting it makes the export bucket days in UTC and disagree with
+  # the charts on screen, silently and with no error.
+  #
+  # Each selected board contributes its own `board_ids[]` pair rather than one
+  # joined value. URI.encode_query/1 percent-encodes the brackets, which Plug
+  # still decodes back into a list, so the repeated key round-trips.
+  defp build_workspace_export_href(assigns, format) do
+    params =
+      [{"window_days", to_string(assigns.window_days)}] ++
+        board_id_params(assigns.board_ids) ++
+        [
+          {"exclude_weekends", to_string(assigns.exclude_weekends)},
+          {"timezone", assigns.timezone}
+        ]
+
+    params =
+      case format do
+        :excel -> [{"format", "excel"} | params]
+        _ -> params
+      end
+
+    "#{assigns.export_base_path}?#{URI.encode_query(params)}"
+  end
+
+  defp board_id_params(board_ids) do
+    Enum.map(board_ids || [], fn id -> {"board_ids[]", to_string(id)} end)
   end
 
   @doc """

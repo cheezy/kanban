@@ -762,6 +762,127 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
   end
 
   # A completed task whose claimed-to-completed span is `minutes`, landing on
+  describe "export dropdown" do
+    setup [:register_and_log_in_user]
+
+    # Both export hrefs in render order: the PDF link first, then the Excel
+    # link, which differs only by the `format` parameter.
+    defp export_hrefs(html) do
+      ~r/href="(\/metrics\/export\?[^"]+)"/
+      |> Regex.scan(html, capture: :all_but_first)
+      |> List.flatten()
+    end
+
+    test "renders the dropdown in the page header offering PDF and Excel", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "workspace-export-dropdown"
+      assert [pdf, excel] = export_hrefs(html)
+      refute pdf =~ "format=excel"
+      assert excel =~ "format=excel"
+    end
+
+    test "both links carry the current window and the browser timezone", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      for href <- export_hrefs(html) do
+        assert href =~ "window_days=14"
+        # Without a tz connect param the page falls back to Etc/UTC; the link
+        # must still carry it, or the export buckets days in UTC by accident
+        # rather than by agreement with the page.
+        assert href =~ "timezone=Etc%2FUTC"
+      end
+    end
+
+    test "changing the window selector updates both links", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      html =
+        view
+        |> element("#window-days-form")
+        |> render_change(%{"window_days" => "30"})
+
+      assert [_pdf, _excel] = hrefs = export_hrefs(html)
+
+      for href <- hrefs do
+        assert href =~ "window_days=30"
+        refute href =~ "window_days=14"
+      end
+    end
+
+    test "changing the board selector updates both links", %{conn: conn, user: user} do
+      board = board_fixture(user, %{name: "Alpha Board"})
+      other = board_fixture(user, %{name: "Beta Board"})
+
+      {:ok, view, html} = live(conn, ~p"/metrics")
+
+      # The page mounts with EVERY board selected, which it treats as "all
+      # visible boards" — so the links carry no subset at all, matching the
+      # scope the page itself queries with.
+      for href <- export_hrefs(html), do: refute(href =~ "board_ids")
+
+      updated =
+        view
+        |> element("#board-filter-form")
+        |> render_change(%{"board_ids" => [to_string(board.id)]})
+
+      # Narrowing to a real subset puts it on both links.
+      for href <- export_hrefs(updated) do
+        assert href =~ "board_ids%5B%5D=#{board.id}"
+        refute href =~ "board_ids%5B%5D=#{other.id}"
+      end
+    end
+
+    test "the links carry no subset when the selection is cleared", %{conn: conn, user: user} do
+      _board = board_fixture(user, %{name: "Alpha Board"})
+
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      # Deselecting everything also means "all visible boards" on the page,
+      # which the export route reads from the ABSENCE of the parameter.
+      cleared = render_change(view, "board_filter_change", %{})
+
+      for href <- export_hrefs(cleared), do: refute(href =~ "board_ids")
+    end
+
+    test "re-selecting every board drops the subset again, matching the page's own scope",
+         %{conn: conn, user: user} do
+      board = board_fixture(user, %{name: "Alpha Board"})
+      other = board_fixture(user, %{name: "Beta Board"})
+
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      narrowed =
+        view
+        |> element("#board-filter-form")
+        |> render_change(%{"board_ids" => [to_string(board.id)]})
+
+      for href <- export_hrefs(narrowed), do: assert(href =~ "board_ids")
+
+      widened =
+        view
+        |> element("#board-filter-form")
+        |> render_change(%{"board_ids" => [to_string(board.id), to_string(other.id)]})
+
+      # An all-selected state is "all boards" on screen; the export must say the
+      # same thing rather than pinning today's ids.
+      for href <- export_hrefs(widened), do: refute(href =~ "board_ids")
+    end
+
+    test "changing the weekend filter updates both links", %{conn: conn} do
+      {:ok, view, html} = live(conn, ~p"/metrics")
+
+      for href <- export_hrefs(html), do: assert(href =~ "exclude_weekends=false")
+
+      updated =
+        view
+        |> element("#weekend-filter-form")
+        |> render_change(%{"exclude_weekends" => "true"})
+
+      for href <- export_hrefs(updated), do: assert(href =~ "exclude_weekends=true")
+    end
+  end
+
   # the day `days_ago` back so it falls inside or outside a chosen window.
   defp seed_cycle_time(column, opts) do
     minutes = Keyword.fetch!(opts, :minutes)

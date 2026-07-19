@@ -49,6 +49,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   alias KanbanWeb.MetricsCumulativeFlow
   alias KanbanWeb.MetricsCycleTimeChart
   alias KanbanWeb.MetricsKpiStrip
+  alias KanbanWeb.MetricsLive.Components
   alias KanbanWeb.MetricsLive.Helpers
   alias KanbanWeb.MetricsThroughputChart
 
@@ -166,6 +167,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
 
     socket
     |> assign(:selected_board_ids, selected_ids)
+    |> assign(:export_board_ids, export_board_ids(boards, selected_ids))
     |> assign(:kpis, overview.kpis)
     |> assign(:cycle_series, overview.cycle_series)
     |> assign(:lead_series, Map.fetch!(overview, :lead_series))
@@ -209,6 +211,13 @@ defmodule KanbanWeb.MetricsLive.Workspace do
           <.window_selector selected_window_days={@selected_window_days} />
           <.board_selector boards={@boards} selected_board_ids={@selected_board_ids} />
           <.weekend_selector exclude_weekends={@exclude_weekends} />
+          <Components.workspace_export_dropdown
+            export_base_path={~p"/metrics/export"}
+            window_days={@selected_window_days}
+            board_ids={@export_board_ids}
+            exclude_weekends={@exclude_weekends}
+            timezone={@timezone}
+          />
         </header>
 
         <div class="flex-1 overflow-y-auto px-3 md:px-7 pt-2 pb-7 flex flex-col gap-3.5">
@@ -431,6 +440,17 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   end
 
   defp parse_board_id(_value), do: nil
+
+  # The board subset the export links carry — the SAME value the page queries
+  # with, not the raw checkbox state. The page mounts with every board selected,
+  # and board_ids_filter/2 collapses that to "every visible board"; passing the
+  # raw selection instead would make the report's header say "3 boards" where
+  # the screen says "all boards", and would pin a bookmarked link to today's
+  # board ids. An empty list is how the export route is told "no subset", since
+  # it reads an absent parameter as every visible board.
+  defp export_board_ids(boards, selected_ids) do
+    board_ids_filter(boards, selected_ids) || []
+  end
 
   # Returns nil (no filter — all visible boards) when the selection is empty or
   # covers every visible board; otherwise the strict subset. Passing nil is a
