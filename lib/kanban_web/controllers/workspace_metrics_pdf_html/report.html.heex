@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang={Gettext.get_locale(KanbanWeb.Gettext)}>
+  <head>
+    <meta charset="utf-8" />
+    <title>{gettext("Metrics")}</title>
+    <%!-- The ONLY raw/1 in this document, and it carries no user input: pdf_css/0
+    returns a literal, code-authored string defined in this module. The headless
+    renderer receives standalone markup with no asset pipeline behind it, so the
+    stylesheet has to be inlined; this mirrors metrics_pdf_html/cycle_time.html.heex.
+    Every user-controlled value in this template — only the leaderboard agent name —
+    renders through {...} interpolation, which escapes. --%>
+    {Phoenix.HTML.raw("<style>" <> pdf_css() <> "</style>")}
+  </head>
+  <body>
+    <div class="header">
+      <h1>{gettext("Metrics")}</h1>
+    </div>
+
+    <div class="meta">
+      <div :for={{label, value} <- filter_rows(assigns)} class="meta-item">
+        <span class="meta-label">{label}</span>
+        <span class="meta-value">{value}</span>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div
+        :for={card <- kpi_cards(@overview, @window_days)}
+        class={"stat-card stat-card-#{card.tone}"}
+      >
+        <div class="stat-label">{card.label}</div>
+        <div class="stat-value">{card.value}</div>
+        <div class="stat-delta">{format_delta(card.delta)}</div>
+        <div class="stat-sub">{card.sub}</div>
+      </div>
+    </div>
+
+    <h2 class="section-title">{gettext("Cycle time · daily median (min)")}</h2>
+    <.line_chart
+      series={@overview.cycle_series}
+      stroke="#f59e0b"
+      marker_prefix="cycle-time"
+    />
+
+    <h2 class="section-title">{gettext("Lead time · daily median (min)")}</h2>
+    <.line_chart series={@overview.lead_series} stroke="#8b5cf6" marker_prefix="lead-time" />
+
+    <h2 class="section-title">{gettext("Throughput · tasks completed per day")}</h2>
+    <.bar_chart
+      counts={@overview.throughput_series}
+      dates={Enum.map(@overview.cycle_series, & &1.date)}
+    />
+
+    <h2 class="section-title">{gettext("Agents · last %{count} days", count: @window_days)}</h2>
+    <div :if={@overview.leaderboard == []} class="no-data">
+      {gettext("No completions in the last %{count} days.", count: @window_days)}
+    </div>
+    <table :if={@overview.leaderboard != []} class="leaderboard-table">
+      <thead>
+        <tr>
+          <th>{gettext("Agent")}</th>
+          <th>{gettext("Completed")}</th>
+          <th>{gettext("Success")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr :for={row <- @overview.leaderboard}>
+          <td>{row.name}</td>
+          <td>{row.completed}</td>
+          <td>{format_pct(row.success_pct)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 class="section-title">{gettext("Cumulative flow")}</h2>
+    <.cumulative_flow snapshots={@overview.flow_snapshots} />
+  </body>
+</html>

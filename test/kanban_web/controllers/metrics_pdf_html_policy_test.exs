@@ -1,18 +1,25 @@
 defmodule KanbanWeb.MetricsPdfHTMLPolicyTest do
   @moduledoc """
-  Guards the fixed-palette policy for the PDF metrics export.
+  Guards the fixed-palette policy for BOTH PDF metrics exports.
 
   PDFs must render identically regardless of the active daisyUI / Stride
-  theme. The policy comment in `KanbanWeb.MetricsPdfHTML`'s moduledoc
-  forbids any `var(--…)` reference inside the PDF module source and the
-  embedded templates. This test enumerates those files and fails the
-  build if a CSS custom-property reference slips in.
+  theme. The policy comments in `KanbanWeb.MetricsPdfHTML`'s and
+  `KanbanWeb.WorkspaceMetricsPdfHTML`'s moduledocs forbid any `var(--…)`
+  reference inside the PDF module sources and their embedded templates.
+  This test enumerates those files and fails the build if a CSS
+  custom-property reference slips in.
+
+  The paths below are hardcoded, so a NEW PDF module or template directory
+  is silently unguarded until it is added here. Adding a PDF surface means
+  adding it to this test.
   """
 
   use ExUnit.Case, async: true
 
   @pdf_module_path "lib/kanban_web/controllers/metrics_pdf_html.ex"
   @pdf_templates_dir "lib/kanban_web/controllers/metrics_pdf_html"
+  @workspace_pdf_module_path "lib/kanban_web/controllers/workspace_metrics_pdf_html.ex"
+  @workspace_pdf_templates_dir "lib/kanban_web/controllers/workspace_metrics_pdf_html"
 
   describe "PDF fixed-palette policy" do
     test "metrics_pdf_html.ex contains no var(--…) references" do
@@ -25,6 +32,23 @@ defmodule KanbanWeb.MetricsPdfHTMLPolicyTest do
 
       assert templates != [],
              "expected PDF templates under #{@pdf_templates_dir}/*.heex, found none"
+
+      for path <- templates do
+        contents = File.read!(path)
+        refute_var_custom_property(contents, path)
+      end
+    end
+
+    test "workspace_metrics_pdf_html.ex contains no var(--…) references" do
+      contents = File.read!(@workspace_pdf_module_path)
+      refute_var_custom_property(contents, @workspace_pdf_module_path)
+    end
+
+    test "every workspace_metrics_pdf_html template contains no var(--…) references" do
+      templates = @workspace_pdf_templates_dir |> Path.join("*.heex") |> Path.wildcard()
+
+      assert templates != [],
+             "expected PDF templates under #{@workspace_pdf_templates_dir}/*.heex, found none"
 
       for path <- templates do
         contents = File.read!(path)

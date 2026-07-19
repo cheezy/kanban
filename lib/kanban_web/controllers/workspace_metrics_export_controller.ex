@@ -82,13 +82,18 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
     ]
   end
 
+  # `board_ids` travels through so the report can state which board selection
+  # was applied. It is passed as the resolved id LIST, and the report renders a
+  # COUNT from it — never names, which would require the board query this
+  # module is documented as never performing.
   defp build_report_assigns(opts) do
     %{
       overview: Workspace.overview(opts),
       window_days: opts[:window_days],
       timezone: opts[:timezone],
       exclude_weekends: opts[:exclude_weekends],
-      generated_at: DateTime.utc_now()
+      generated_at: DateTime.utc_now(),
+      board_ids: opts[:board_ids]
     }
   end
 

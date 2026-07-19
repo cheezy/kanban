@@ -52,6 +52,7 @@ msgstr " · Gestión de Tareas"
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:79
 #: lib/kanban_web/components/target_progress_header.ex:181
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:613
 #: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
@@ -1075,6 +1076,7 @@ msgstr "Agregar tecnología"
 msgid "Add Verification Step"
 msgstr "Agregar paso de verificación"
 
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:61
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:173
 #: lib/kanban_web/live/task_live/components/completion_section.ex:29
 #, elixir-autogen, elixir-format
@@ -1147,6 +1149,7 @@ msgstr "Trampa común a evitar"
 #: lib/kanban_web/components/archive_filter_chips.ex:417
 #: lib/kanban_web/components/archive_stats_strip.ex:48
 #: lib/kanban_web/components/task_metadata_grid.ex:124
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:62
 #: lib/kanban_web/live/task_live/form_component.html.heex:135
 #: lib/kanban_web/live/task_live/view_component.ex:428
 #: lib/kanban_web/task_tokens.ex:78
@@ -2156,8 +2159,8 @@ msgstr "No se encontró ningún usuario con esa dirección de correo"
 
 #: lib/kanban_web/components/board_tabs.ex:125
 #: lib/kanban_web/components/layouts.ex:288
-#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:71
-#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:84
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:5
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:63
 #: lib/kanban_web/export/workspace_metrics_excel.ex:71
 #: lib/kanban_web/live/metrics_live/workspace.ex:185
@@ -2217,6 +2220,7 @@ msgstr "Volver al panel"
 #: lib/kanban_web/components/marketing_mini_board.ex:188
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:75
 #: lib/kanban_web/components/target_progress_header.ex:177
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:609
 #: lib/kanban_web/live/goal_live/show.ex:287
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
 #, elixir-autogen, elixir-format
@@ -2289,6 +2293,7 @@ msgstr "Gráfico de barras de tareas diarias completadas"
 msgid "Excel"
 msgstr "Excel"
 
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:571
 #: lib/kanban_web/live/metrics_live/components.ex:314
 #: lib/kanban_web/live/metrics_live/components.ex:444
 #: lib/kanban_web/live/metrics_live/workspace.ex:361
@@ -2449,6 +2454,7 @@ msgstr "Análisis de cola y tiempo de espera"
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:78
 #: lib/kanban_web/components/target_progress_header.ex:180
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:312
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:612
 #: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
 #: lib/kanban_web/task_tokens.ex:22
@@ -2483,7 +2489,7 @@ msgid "Tasks completed per day with detailed breakdown"
 msgstr "Tareas completadas por día con desglose detallado"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:67
-#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:118
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:542
 #: lib/kanban_web/export/workspace_metrics_excel.ex:85
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:81
 #, elixir-autogen, elixir-format
@@ -2860,7 +2866,7 @@ msgid "Build what's next. Together."
 msgstr "Construye lo que sigue. Juntos."
 
 #: lib/kanban_web/controllers/metrics_pdf_controller.ex:147
-#: lib/kanban_web/controllers/workspace_metrics_export_controller.ex:202
+#: lib/kanban_web/controllers/workspace_metrics_export_controller.ex:207
 #, elixir-autogen, elixir-format
 msgid "Failed to generate the export. Please try again or contact support."
 msgstr "Error al generar la exportación. Inténtalo de nuevo o contacta con soporte."
@@ -3132,6 +3138,7 @@ msgstr "Diff, pruebas, aceptación, telemetría de hooks — un solo panel. Apru
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:77
 #: lib/kanban_web/components/target_progress_header.ex:179
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:611
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
@@ -3221,6 +3228,7 @@ msgstr "Producto"
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:76
 #: lib/kanban_web/components/target_progress_header.ex:178
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:610
 #: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/task_tokens.ex:20
 #, elixir-autogen, elixir-format
@@ -4115,6 +4123,7 @@ msgstr[0] "%{count} activo"
 msgstr[1] "%{count} activos"
 
 #: lib/kanban_web/components/layouts.ex:267
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:568
 #: lib/kanban_web/live/admin/user_live/index.html.heex:43
 #: lib/kanban_web/live/board_live/index.html.heex:5
 #: lib/kanban_web/live/board_live/index.html.heex:93
@@ -4923,6 +4932,7 @@ msgstr "Estado de revisión"
 
 #: lib/kanban_web/components/agent_detail_panel.ex:236
 #: lib/kanban_web/components/agent_roster_card.ex:239
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Success"
 msgstr "Éxito"
@@ -4956,6 +4966,7 @@ msgstr "Pasos del flujo de trabajo"
 msgid "Working"
 msgstr "Trabajando"
 
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:605
 #: lib/kanban_web/live/admin/user_live/index.html.heex:89
 #: lib/kanban_web/live/admin/user_live/index.html.heex:97
 #: lib/kanban_web/live/task_live/view_component.ex:413
@@ -5298,30 +5309,33 @@ msgid "Restore"
 msgstr "Restaurar"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:49
-#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:116
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:522
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Cycle time · median"
 msgstr "Tiempo de ciclo"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:76
-#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:119
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:552
 #: lib/kanban_web/export/workspace_metrics_excel.ex:86
 #, elixir-autogen, elixir-format
 msgid "Wait time · Review"
 msgstr "Tiempo de espera · Revisión"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:80
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:554
 #, elixir-autogen, elixir-format
 msgid "human response avg"
 msgstr "respuesta humana prom."
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:62
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:534
 #, elixir-autogen, elixir-format
 msgid "idea → done"
 msgstr "idea → hecho"
 
 #: lib/kanban_web/components/metrics_cycle_time_chart.ex:266
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:38
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Cycle time · daily median (min)"
 msgstr "Tiempo de ciclo"
@@ -5332,6 +5346,7 @@ msgid "Throughput sparkline"
 msgstr "Métricas de rendimiento"
 
 #: lib/kanban_web/components/metrics_throughput_chart.ex:63
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:48
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Throughput · tasks completed per day"
 msgstr "Throughput · tareas completadas por día"
@@ -5342,6 +5357,7 @@ msgid "by completed"
 msgstr "por completadas"
 
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:69
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Cumulative flow"
 msgstr "Flujo acumulado"
@@ -5357,6 +5373,7 @@ msgid "work in each column over time"
 msgstr "trabajo en cada columna a lo largo del tiempo"
 
 #: lib/kanban_web/components/agents_header.ex:426
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:581
 #: lib/kanban_web/live/metrics_live/workspace.ex:470
 #, elixir-autogen, elixir-format
 msgid "All boards"
@@ -7302,6 +7319,7 @@ msgstr "Sin actividad todavía."
 msgid "Cycle time · today"
 msgstr "Tiempo de ciclo · hoy"
 
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:583
 #: lib/kanban_web/live/metrics_live/workspace.ex:464
 #, elixir-autogen, elixir-format
 msgid "%{count} boards"
@@ -7312,6 +7330,7 @@ msgstr "%{count} tableros"
 msgid "%{count} of %{total} boards"
 msgstr "%{count} de %{total} tableros"
 
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:582
 #: lib/kanban_web/live/metrics_live/workspace.ex:463
 #, elixir-autogen, elixir-format
 msgid "1 board"
@@ -7328,11 +7347,12 @@ msgid "%{count} days"
 msgstr "%{count} días"
 
 #: lib/kanban_web/components/metrics_agent_leaderboard.ex:55
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:54
 #, elixir-autogen, elixir-format
 msgid "Agents · last %{count} days"
 msgstr "Agentes · últimos %{count} días"
 
-#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:86
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:569
 #: lib/kanban_web/export/workspace_metrics_excel.ex:65
 #: lib/kanban_web/live/metrics_live/workspace.ex:398
 #, elixir-autogen, elixir-format
@@ -7340,6 +7360,7 @@ msgid "Last %{count} days"
 msgstr "Últimos %{count} días"
 
 #: lib/kanban_web/components/metrics_agent_leaderboard.ex:70
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "No completions in the last %{count} days."
 msgstr "Sin finalizaciones en los últimos %{count} días."
@@ -7352,6 +7373,7 @@ msgstr "Período de tiempo"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:53
 #: lib/kanban_web/components/metrics_kpi_strip.ex:71
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:510
 #, elixir-autogen, elixir-format
 msgid "vs prev %{count}d"
 msgstr "vs. ant. %{count}d"
@@ -7892,6 +7914,7 @@ msgstr "Deshabilitado"
 msgid "Every account registered on this instance."
 msgstr "Todas las cuentas registradas en esta instancia."
 
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:606
 #: lib/kanban_web/live/admin/user_live/index.html.heex:92
 #: lib/kanban_web/live/admin/user_live/index.html.heex:100
 #, elixir-autogen, elixir-format
@@ -8182,13 +8205,24 @@ msgid "Workflow plugin"
 msgstr "Plugin de flujo de trabajo"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:58
-#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:117
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:532
 #: lib/kanban_web/export/workspace_metrics_excel.ex:84
 #, elixir-autogen, elixir-format
 msgid "Lead time · median"
 msgstr "Tiempo de entrega"
 
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:45
 #: lib/kanban_web/live/metrics_live/workspace.ex:232
 #, elixir-autogen, elixir-format
 msgid "Lead time · daily median (min)"
 msgstr "Tiempo de entrega · mediana diaria (min)"
+
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:573
+#, elixir-autogen, elixir-format
+msgid "Generated"
+msgstr "Generado"
+
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:572
+#, elixir-autogen, elixir-format
+msgid "Time zone"
+msgstr "Zona horaria"
