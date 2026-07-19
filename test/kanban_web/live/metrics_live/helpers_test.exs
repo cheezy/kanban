@@ -621,4 +621,35 @@ defmodule KanbanWeb.MetricsLive.HelpersTest do
       assert_in_delta day.average_hours, 1.0, 0.001
     end
   end
+
+  describe "parse_window_days/1" do
+    test "accepts the allow-listed values as integers and as strings" do
+      for days <- Helpers.window_options() do
+        as_string = to_string(days)
+
+        assert Helpers.parse_window_days(days) == days
+        assert Helpers.parse_window_days(as_string) == days
+      end
+    end
+
+    test "falls back to the default for out-of-range, non-numeric, and nil values" do
+      default = Helpers.default_window_days()
+
+      assert Helpers.parse_window_days("99999") == default
+      assert Helpers.parse_window_days(99_999) == default
+      assert Helpers.parse_window_days("abc") == default
+      assert Helpers.parse_window_days("30x") == default
+      assert Helpers.parse_window_days("") == default
+      assert Helpers.parse_window_days(nil) == default
+      assert Helpers.parse_window_days(%{}) == default
+    end
+
+    test "window_options/0 matches the allow-list the context enforces" do
+      # Kanban.Metrics.Workspace re-validates independently; if these two drift,
+      # the page would offer a window the context silently rewrites.
+      assert Helpers.window_options() == [7, 14, 30, 90]
+      assert Helpers.default_window_days() == 14
+      assert Helpers.default_window_days() in Helpers.window_options()
+    end
+  end
 end

@@ -114,6 +114,44 @@ defmodule KanbanWeb.MetricsLive.Helpers do
   def parse_exclude_weekends("false"), do: false
   def parse_exclude_weekends(_), do: false
 
+  @window_options [7, 14, 30, 90]
+  @default_window_days 14
+
+  @doc """
+  The trailing-window lengths (in days) the workspace metrics surfaces offer.
+
+  Mirrors `Kanban.Metrics.Workspace`'s own allow-list. Kept in sync by
+  `parse_window_days/1`'s tests rather than by a shared attribute, since the
+  context deliberately re-validates every option it is handed.
+  """
+  def window_options, do: @window_options
+
+  @doc """
+  The window length used when none is supplied or the supplied one is rejected.
+  """
+  def default_window_days, do: @default_window_days
+
+  @doc """
+  Parse a window length from a param or an assign, falling back to
+  `default_window_days/0`.
+
+  This is a param-parsing convenience, NOT a security boundary: it exists so
+  callers hold a resolved value they can render (a chart label, an export
+  filename) without echoing raw input. `Kanban.Metrics.Workspace` re-validates
+  `:window_days` against the same allow-list on every read, so a value that
+  slipped past here still cannot reach a query.
+  """
+  def parse_window_days(value) when is_integer(value) and value in @window_options, do: value
+
+  def parse_window_days(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {days, ""} when days in @window_options -> days
+      _ -> @default_window_days
+    end
+  end
+
+  def parse_window_days(_value), do: @default_window_days
+
   def extract_time_seconds(%Decimal{} = seconds), do: Decimal.to_float(seconds)
   def extract_time_seconds(seconds) when is_number(seconds), do: seconds
   def extract_time_seconds(_), do: 0.0

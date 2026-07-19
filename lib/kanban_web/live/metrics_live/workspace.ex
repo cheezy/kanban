@@ -52,11 +52,10 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   alias KanbanWeb.MetricsLive.Helpers
   alias KanbanWeb.MetricsThroughputChart
 
-  # Allow-list of supported window sizes — single source of truth for both the
-  # selector options and the param parser. Mirrors Kanban.Metrics'
-  # @allowed_window_days; an unsupported value falls back to the 14-day default.
-  @window_options [7, 14, 30, 90]
-  @default_window_days 14
+  # The window allow-list, its default, and the param parser live in
+  # `Helpers` so the export controller (which has no socket) resolves a window
+  # exactly the way this page does. Mirrors Kanban.Metrics' @allowed_window_days;
+  # an unsupported value falls back to the 14-day default.
 
   @impl true
   def mount(_params, _session, socket) do
@@ -88,7 +87,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     %{
       page_title: "Stride · Metrics",
       boards: scoped_boards(socket.assigns.current_scope),
-      selected_window_days: @default_window_days,
+      selected_window_days: Helpers.default_window_days(),
       exclude_weekends: false,
       timezone: KanbanWeb.Timezone.browser_timezone(socket)
     }
@@ -102,7 +101,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
 
   @impl true
   def handle_event("window_change", %{"window_days" => raw}, socket) do
-    socket = assign(socket, :selected_window_days, parse_window_days(raw))
+    socket = assign(socket, :selected_window_days, Helpers.parse_window_days(raw))
     {:noreply, assign_workspace_metrics(socket, socket.assigns.selected_board_ids)}
   end
 
@@ -371,7 +370,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   attr :selected_window_days, :integer, required: true
 
   defp window_selector(assigns) do
-    assigns = assign(assigns, :window_options, @window_options)
+    assigns = assign(assigns, :window_options, Helpers.window_options())
 
     ~H"""
     <form id="window-days-form" phx-change="window_change" style="margin: 0;">
@@ -454,21 +453,6 @@ defmodule KanbanWeb.MetricsLive.Workspace do
 
     "#{range} · #{board_scope_label(boards, selected_ids)}"
   end
-
-  # Parses the selector param into a supported window size, falling back to the
-  # 14-day default for anything outside the allow-list. Keeping the stored value
-  # valid drives both the <select> selected state and the rendered labels;
-  # Kanban.Metrics independently clamps the value before any query runs.
-  defp parse_window_days(value) when is_integer(value) and value in @window_options, do: value
-
-  defp parse_window_days(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {days, ""} when days in @window_options -> days
-      _ -> @default_window_days
-    end
-  end
-
-  defp parse_window_days(_value), do: @default_window_days
 
   # Human label for how many boards currently feed the page. An all/none
   # selection reads as "all boards" (the default); a strict subset reads as the

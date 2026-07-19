@@ -2156,8 +2156,12 @@ msgstr "Es wurde kein Benutzer mit dieser E-Mail-Adresse gefunden"
 
 #: lib/kanban_web/components/board_tabs.ex:125
 #: lib/kanban_web/components/layouts.ex:288
-#: lib/kanban_web/live/metrics_live/workspace.ex:182
-#: lib/kanban_web/live/metrics_live/workspace.ex:200
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:71
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:84
+#: lib/kanban_web/export/workspace_metrics_excel.ex:63
+#: lib/kanban_web/export/workspace_metrics_excel.ex:71
+#: lib/kanban_web/live/metrics_live/workspace.ex:185
+#: lib/kanban_web/live/metrics_live/workspace.ex:203
 #: lib/kanban_web/live/task_live/view_component.ex:249
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -2287,7 +2291,7 @@ msgstr "Excel"
 
 #: lib/kanban_web/live/metrics_live/components.ex:314
 #: lib/kanban_web/live/metrics_live/components.ex:444
-#: lib/kanban_web/live/metrics_live/workspace.ex:358
+#: lib/kanban_web/live/metrics_live/workspace.ex:361
 #, elixir-autogen, elixir-format
 msgid "Exclude Weekends"
 msgstr "Wochenenden ausschließen"
@@ -2479,6 +2483,8 @@ msgid "Tasks completed per day with detailed breakdown"
 msgstr "Aufgaben pro Tag mit detaillierter Aufschlüsselung"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:67
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:118
+#: lib/kanban_web/export/workspace_metrics_excel.ex:85
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Throughput"
@@ -2854,6 +2860,7 @@ msgid "Build what's next. Together."
 msgstr "Bauen Sie das Nächste. Gemeinsam."
 
 #: lib/kanban_web/controllers/metrics_pdf_controller.ex:147
+#: lib/kanban_web/controllers/workspace_metrics_export_controller.ex:202
 #, elixir-autogen, elixir-format
 msgid "Failed to generate the export. Please try again or contact support."
 msgstr "Erstellen des Exports fehlgeschlagen. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support."
@@ -4259,7 +4266,7 @@ msgstr "Stride-Startseite"
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
-#: lib/kanban_web/live/metrics_live/workspace.ex:180
+#: lib/kanban_web/live/metrics_live/workspace.ex:183
 #: lib/kanban_web/live/review_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Workspace"
@@ -5291,11 +5298,15 @@ msgid "Restore"
 msgstr "Wiederherstellen"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:49
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:116
+#: lib/kanban_web/export/workspace_metrics_excel.ex:83
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Cycle time · median"
 msgstr "Zykluszeit"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:76
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:119
+#: lib/kanban_web/export/workspace_metrics_excel.ex:86
 #, elixir-autogen, elixir-format
 msgid "Wait time · Review"
 msgstr "Wartezeit · Prüfung"
@@ -5315,12 +5326,12 @@ msgstr "Idee → erledigt"
 msgid "Cycle time · daily median (min)"
 msgstr "Zykluszeit"
 
-#: lib/kanban_web/components/metrics_throughput_chart.ex:96
+#: lib/kanban_web/components/metrics_throughput_chart.ex:80
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Throughput sparkline"
 msgstr "Durchsatz-Metriken"
 
-#: lib/kanban_web/components/metrics_throughput_chart.ex:79
+#: lib/kanban_web/components/metrics_throughput_chart.ex:63
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Throughput · tasks completed per day"
 msgstr "Durchsatz · pro Tag abgeschlossene Aufgaben"
@@ -5346,12 +5357,12 @@ msgid "work in each column over time"
 msgstr "Arbeit in jeder Spalte im Zeitverlauf"
 
 #: lib/kanban_web/components/agents_header.ex:426
-#: lib/kanban_web/live/metrics_live/workspace.ex:482
+#: lib/kanban_web/live/metrics_live/workspace.ex:470
 #, elixir-autogen, elixir-format
 msgid "All boards"
 msgstr "Alle Boards"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:474
+#: lib/kanban_web/live/metrics_live/workspace.ex:462
 #, elixir-autogen, elixir-format
 msgid "all boards"
 msgstr "alle Boards"
@@ -7298,27 +7309,27 @@ msgstr "Noch keine Aktivität."
 msgid "Cycle time · today"
 msgstr "Zykluszeit · heute"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:476
+#: lib/kanban_web/live/metrics_live/workspace.ex:464
 #, elixir-autogen, elixir-format
 msgid "%{count} boards"
 msgstr "%{count} Boards"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:483
+#: lib/kanban_web/live/metrics_live/workspace.ex:471
 #, elixir-autogen, elixir-format
 msgid "%{count} of %{total} boards"
 msgstr "%{count} von %{total} Boards"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:475
+#: lib/kanban_web/live/metrics_live/workspace.ex:463
 #, elixir-autogen, elixir-format
 msgid "1 board"
 msgstr "1 Board"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:297
+#: lib/kanban_web/live/metrics_live/workspace.ex:300
 #, elixir-autogen, elixir-format
 msgid "No boards yet"
 msgstr "Noch keine Boards"
 
-#: lib/kanban_web/components/metrics_throughput_chart.ex:82
+#: lib/kanban_web/components/metrics_throughput_chart.ex:66
 #, elixir-autogen, elixir-format
 msgid "%{count} days"
 msgstr "%{count} Tg."
@@ -7328,7 +7339,9 @@ msgstr "%{count} Tg."
 msgid "Agents · last %{count} days"
 msgstr "Agenten · letzte %{count} Tage"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:395
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:86
+#: lib/kanban_web/export/workspace_metrics_excel.ex:65
+#: lib/kanban_web/live/metrics_live/workspace.ex:398
 #, elixir-autogen, elixir-format
 msgid "Last %{count} days"
 msgstr "Letzte %{count} Tage"
@@ -7339,7 +7352,7 @@ msgid "No completions in the last %{count} days."
 msgstr "Keine Abschlüsse in den letzten %{count} Tagen."
 
 #: lib/kanban_web/components/agents_header.ex:435
-#: lib/kanban_web/live/metrics_live/workspace.ex:377
+#: lib/kanban_web/live/metrics_live/workspace.ex:380
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Time range"
 msgstr "Zeitraum"
@@ -8176,11 +8189,13 @@ msgid "Workflow plugin"
 msgstr "Workflow-Plugin"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:58
+#: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:117
+#: lib/kanban_web/export/workspace_metrics_excel.ex:84
 #, elixir-autogen, elixir-format
 msgid "Lead time · median"
 msgstr "Durchlaufzeit"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:229
+#: lib/kanban_web/live/metrics_live/workspace.ex:232
 #, elixir-autogen, elixir-format
 msgid "Lead time · daily median (min)"
 msgstr "Durchlaufzeit · Tagesmedian (Min.)"
