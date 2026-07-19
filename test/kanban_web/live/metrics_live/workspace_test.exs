@@ -140,6 +140,46 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
     end
   end
 
+  # W1719: the cycle time chart's y-axis is fitted to the data it plots
+  # instead of a fixed 0/50/100/150 tick list on a 150-minute floor.
+  describe "cycle time chart scale" do
+    setup [:register_and_log_in_user]
+
+    test "renders gridlines derived from the plotted series rather than a fixed scale",
+         %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+      seed_cycle_time(column, minutes: 60, days_ago: 0)
+
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      # A 60-minute median scales to a 60-minute maximum in 20m steps.
+      assert html =~ ~s(data-metrics-cycle-time-gridline="60")
+      refute html =~ ~s(data-metrics-cycle-time-gridline="150")
+    end
+
+    test "refits the scale when the window selector changes the plotted series",
+         %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+      seed_cycle_time(column, minutes: 30, days_ago: 0)
+      seed_cycle_time(column, minutes: 300, days_ago: 40)
+
+      {:ok, view, html} = live(conn, ~p"/metrics")
+
+      # The default window sees only the recent 30-minute day.
+      assert html =~ ~s(data-metrics-cycle-time-gridline="30")
+      refute html =~ ~s(data-metrics-cycle-time-gridline="300")
+
+      widened =
+        view
+        |> element("#window-days-form")
+        |> render_change(%{"window_days" => "90"})
+
+      # Widening pulls in the 300-minute day, and the axis grows to match.
+      assert widened =~ ~s(data-metrics-cycle-time-gridline="300")
+      refute widened =~ ~s(data-metrics-cycle-time-gridline="30")
+    end
+  end
+
   describe "data wiring" do
     setup [:register_and_log_in_user]
 
@@ -404,5 +444,26 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert html =~ "7 days"
       assert html =~ "1 of 2 boards"
     end
+  end
+
+  # A completed task whose claimed-to-completed span is `minutes`, landing on
+  # the day `days_ago` back so it falls inside or outside a chosen window.
+  defp seed_cycle_time(column, opts) do
+    minutes = Keyword.fetch!(opts, :minutes)
+    days_ago = Keyword.fetch!(opts, :days_ago)
+
+    completed_at =
+      DateTime.utc_now()
+      |> DateTime.add(-days_ago, :day)
+      |> DateTime.truncate(:second)
+
+    claimed_at = DateTime.add(completed_at, -minutes * 60, :second)
+
+    {:ok, task} =
+      column
+      |> task_fixture()
+      |> Tasks.update_task(%{claimed_at: claimed_at, completed_at: completed_at})
+
+    task
   end
 end

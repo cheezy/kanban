@@ -9,10 +9,10 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
 
   Renders a 180px-tall plot with:
 
-    * A four-line dashed gridline at 0 / 50 / 100 / 150 minutes (the
-      fixed Y-axis ticks). If any day exceeds 150 minutes the chart's
-      internal max scales to the actual data max so no bar clips, while
-      the labelled ticks stay anchored at the four values.
+    * Dashed gridlines at the tick values `KanbanWeb.MetricsYAxisScale`
+      derives from the data, spanning zero to a rounded maximum that
+      always covers the peak. The maximum and the labelled ticks come
+      from the same scale, so a label can never disagree with a bar.
     * One column per entry — a single bar (`var(--stride-orange)`,
       rounded top) whose height is that day's median cycle time.
     * A single-letter day-of-week label under each column.
@@ -22,10 +22,10 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
   """
   use KanbanWeb, :html
 
+  alias KanbanWeb.MetricsYAxisScale
+
   @chart_height_px 180
   @bars_area_px 170
-  @y_axis_ticks [0, 50, 100, 150]
-  @minimum_max 150
 
   @doc """
   Renders the chart.
@@ -40,12 +40,12 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
   attr :window_days, :integer, default: 14
 
   def cycle_time_chart(assigns) do
-    chart_max = chart_max(assigns.data)
+    scale = scale(assigns.data)
 
     assigns =
       assigns
-      |> assign(:chart_max, chart_max)
-      |> assign(:ticks, @y_axis_ticks)
+      |> assign(:chart_max, scale.max)
+      |> assign(:ticks, scale.ticks)
       |> assign(:chart_height_px, @chart_height_px)
       |> assign(:bars_area_px, @bars_area_px)
 
@@ -104,7 +104,9 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
   end
 
   attr :entry, :map, required: true
-  attr :chart_max, :integer, required: true
+  # The derived maximum is a number rather than strictly an integer: a
+  # peak of one minute scales in sub-unit steps.
+  attr :chart_max, :any, required: true
   attr :bars_area_px, :integer, required: true
 
   defp bar(assigns) do
@@ -146,24 +148,22 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
 
   # --- Math ---------------------------------------------------------------
 
-  # Scales the chart's max-y so the labelled 150m gridline stays inside
-  # the plot. If the data exceeds 150 we promote the max to the actual
-  # peak so no bar clips; the 0/50/100/150 ticks then render below the
-  # peak rather than at the top edge.
-  defp chart_max(data) do
-    peak =
-      data
-      |> Enum.map(fn entry -> entry.minutes end)
-      |> Enum.max(fn -> 0 end)
-
-    max(peak, @minimum_max)
+  # The rounded maximum and its tick list, fitted to the data. Both the
+  # bar heights and the gridline positions read the same `max`, so labels
+  # and bars cannot disagree. Entries carrying no median are dropped so a
+  # sparse series still scales to the days that do have one.
+  defp scale(data) do
+    data
+    |> Enum.map(fn entry -> entry.minutes end)
+    |> Enum.reject(&is_nil/1)
+    |> MetricsYAxisScale.scale()
   end
 
   defp segment_height_px(_minutes, 0, _area), do: 0
   defp segment_height_px(nil, _max, _area), do: 0
 
   defp segment_height_px(minutes, chart_max, area)
-       when is_integer(minutes) and is_integer(chart_max) and is_integer(area) do
+       when is_number(minutes) and is_number(chart_max) and is_number(area) do
     minutes
     |> Kernel./(chart_max)
     |> Kernel.*(area)
