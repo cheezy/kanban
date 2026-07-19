@@ -17,7 +17,27 @@ defmodule KanbanWeb.MetricsLive.Helpers do
   `Kanban.Timezone`; `"Etc/UTC"` reproduces the prior UTC behavior exactly.
   """
 
+  use Gettext, backend: KanbanWeb.Gettext
+
   alias Kanban.Timezone
+
+  @doc """
+  The translated label for a time-range atom, or `nil` when the atom is not one
+  of the five known ranges.
+
+  Returning `nil` rather than a default is deliberate: the two board export
+  modules disagree about what an unrecognized range should read as — the PDF
+  says "Custom Range" while the Excel export falls back to the 30-day label —
+  and that difference is pre-existing behavior this function must not silently
+  unify. Callers supply their own fallback with `||`, so the five shared labels
+  live in one place and cannot drift while each caller keeps its own tail.
+  """
+  def time_range_label(:today), do: gettext("Today")
+  def time_range_label(:last_7_days), do: gettext("Last 7 Days")
+  def time_range_label(:last_30_days), do: gettext("Last 30 Days")
+  def time_range_label(:last_90_days), do: gettext("Last 90 Days")
+  def time_range_label(:all_time), do: gettext("All Time")
+  def time_range_label(_other), do: nil
 
   def format_time(%Decimal{} = seconds) do
     seconds

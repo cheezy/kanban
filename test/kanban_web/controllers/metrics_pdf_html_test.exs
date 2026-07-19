@@ -3,6 +3,12 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
   alias KanbanWeb.MetricsPdfHTML
 
+  # Look the string up the way the export does, so these assertions keep
+  # asserting the right thing under any locale. Runtime lookup rather than
+  # the gettext/1 macro: a macro call here would add test-only references
+  # to the extracted catalog.
+  defp t(msgid), do: Gettext.gettext(KanbanWeb.Gettext, msgid)
+
   defp render_to_string(rendered) do
     rendered
     |> Phoenix.HTML.Safe.to_iodata()
@@ -136,10 +142,10 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
       assert html =~ "Test Board"
-      assert html =~ "Throughput Metrics"
-      assert html =~ "Last 30 Days"
-      assert html =~ "All Agents"
-      assert html =~ "Weekends Included"
+      assert html =~ t("Throughput Metrics")
+      assert html =~ t("Last 30 Days")
+      assert html =~ t("All Agents")
+      assert html =~ t("Weekends Included")
       assert html =~ "Jan 15, 2024"
     end
 
@@ -154,8 +160,8 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
       assert html =~ "Claude Sonnet 4.5"
-      assert html =~ "Weekends Excluded"
-      assert html =~ "Last 7 Days"
+      assert html =~ t("Weekends Excluded")
+      assert html =~ t("Last 7 Days")
     end
 
     test "renders throughput template with nil values" do
@@ -164,7 +170,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
       assert html =~ "Test Board"
-      assert html =~ "Today"
+      assert html =~ t("Today")
     end
   end
 
@@ -192,8 +198,8 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
       assert html =~ "My Board"
-      assert html =~ "Cycle Time Metrics"
-      assert html =~ "Last 90 Days"
+      assert html =~ t("Cycle Time Metrics")
+      assert html =~ t("Last 90 Days")
       assert html =~ "Jan 15, 2024"
     end
 
@@ -218,8 +224,8 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
       assert html =~ "GPT-4"
-      assert html =~ "All Time"
-      assert html =~ "Weekends Excluded"
+      assert html =~ t("All Time")
+      assert html =~ t("Weekends Excluded")
     end
   end
 
@@ -246,8 +252,8 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
       assert html =~ "Project Board"
-      assert html =~ "Lead Time Metrics"
-      assert html =~ "Last 30 Days"
+      assert html =~ t("Lead Time Metrics")
+      assert html =~ t("Last 30 Days")
       assert html =~ "Jan 15, 2024"
     end
 
@@ -270,7 +276,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
-      assert html =~ "Custom Range"
+      assert html =~ t("Custom Range")
       assert html =~ "Agent X"
     end
   end
@@ -298,7 +304,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
-      assert html =~ "Lead Time Trend"
+      assert html =~ t("Lead Time Trend")
       assert html =~ "<svg"
       assert html =~ "<polyline"
       assert html =~ "Jan 01"
@@ -328,7 +334,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
-      assert html =~ "Lead Time Trend"
+      assert html =~ t("Lead Time Trend")
       assert html =~ "<svg"
       assert html =~ "<circle"
     end
@@ -351,7 +357,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
-      refute html =~ "Lead Time Trend"
+      refute html =~ t("Lead Time Trend")
       refute html =~ "<polyline"
     end
 
@@ -360,7 +366,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
-      refute html =~ "Lead Time Trend"
+      refute html =~ t("Lead Time Trend")
     end
 
     test "renders line chart with zero average_hours" do
@@ -384,7 +390,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
-      assert html =~ "Lead Time Trend"
+      assert html =~ t("Lead Time Trend")
       assert html =~ "<svg"
     end
   end
@@ -428,7 +434,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
-      assert html =~ "Completed Tasks"
+      assert html =~ t("Completed Tasks")
       assert html =~ "Jan 10, 2024"
       assert html =~ "W42"
       assert html =~ "Implement auth module"
@@ -492,7 +498,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
-      refute html =~ "Completed Tasks"
+      refute html =~ t("Completed Tasks")
     end
 
     test "hides completed tasks when grouped_tasks key is missing" do
@@ -500,7 +506,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
-      refute html =~ "Completed Tasks"
+      refute html =~ t("Completed Tasks")
     end
   end
 
@@ -530,10 +536,10 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ "fill=\"#dc2626\""
 
       # Check stat labels
-      assert html =~ "Average"
-      assert html =~ "Median"
-      assert html =~ "Minimum"
-      assert html =~ "Maximum"
+      assert html =~ t("Average")
+      assert html =~ t("Median")
+      assert html =~ t("Minimum")
+      assert html =~ t("Maximum")
     end
   end
 
@@ -553,9 +559,9 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
       assert html =~ "Wait Board"
-      assert html =~ "Wait Time Metrics"
-      assert html =~ "Last 7 Days"
-      assert html =~ "Weekends Excluded"
+      assert html =~ t("Wait Time Metrics")
+      assert html =~ t("Last 7 Days")
+      assert html =~ t("Weekends Excluded")
       assert html =~ "Jan 15, 2024"
     end
 
@@ -571,8 +577,8 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
-      refute html =~ "Review Wait Time"
-      assert html =~ "Backlog Wait Time"
+      refute html =~ t("Review Wait Time")
+      assert html =~ t("Backlog Wait Time")
     end
 
     test "renders wait_time template with nil generated_at" do
@@ -666,21 +672,21 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assigns = throughput_assigns()
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
-      assert html =~ "All Agents"
+      assert html =~ t("All Agents")
     end
 
     test "weekend_filter_label shows correct text for true" do
       assigns = throughput_assigns(%{exclude_weekends: true})
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
-      assert html =~ "Weekends Excluded"
+      assert html =~ t("Weekends Excluded")
     end
 
     test "weekend_filter_label shows correct text for false" do
       assigns = throughput_assigns()
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
-      assert html =~ "Weekends Included"
+      assert html =~ t("Weekends Included")
     end
   end
 
@@ -717,7 +723,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
-      assert html =~ "Completed Goals"
+      assert html =~ t("Completed Goals")
       assert html =~ "G1"
       assert html =~ "Major Feature Release"
       assert html =~ "Claude Sonnet 4.5"
@@ -738,7 +744,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
-      refute html =~ "Completed Goals"
+      refute html =~ t("Completed Goals")
     end
 
     test "hides completed goals section when key is missing" do
@@ -746,7 +752,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
-      refute html =~ "Completed Goals"
+      refute html =~ t("Completed Goals")
     end
   end
 
@@ -788,7 +794,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
-      assert html =~ "Completed Tasks"
+      assert html =~ t("Completed Tasks")
       assert html =~ "Jan 10, 2024"
       assert html =~ "2 tasks"
       assert html =~ "W42"
@@ -873,7 +879,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
-      refute html =~ "Completed Tasks"
+      refute html =~ t("Completed Tasks")
     end
   end
 
@@ -959,7 +965,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
       assert html =~ "No cycle time data available"
-      refute html =~ "Average"
+      refute html =~ t("Average")
     end
   end
 
@@ -970,7 +976,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
       assert html =~ "No lead time data available"
-      refute html =~ "Average"
+      refute html =~ t("Average")
     end
   end
 
@@ -1055,7 +1061,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
-      assert html =~ "Cycle Time Trend"
+      assert html =~ t("Cycle Time Trend")
       assert html =~ "<svg"
       assert html =~ "<polyline"
       assert html =~ "Jan 01"
@@ -1083,7 +1089,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
-      assert html =~ "Cycle Time Trend"
+      assert html =~ t("Cycle Time Trend")
       assert html =~ "<svg"
       assert html =~ "<circle"
     end
@@ -1106,7 +1112,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
-      refute html =~ "Cycle Time Trend"
+      refute html =~ t("Cycle Time Trend")
       refute html =~ "<polyline"
     end
 
@@ -1115,7 +1121,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
-      refute html =~ "Cycle Time Trend"
+      refute html =~ t("Cycle Time Trend")
     end
 
     test "renders line chart with zero average_hours" do
@@ -1139,7 +1145,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
-      assert html =~ "Cycle Time Trend"
+      assert html =~ t("Cycle Time Trend")
       assert html =~ "<svg"
     end
   end
@@ -1187,7 +1193,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
-      assert html =~ "Completed Tasks"
+      assert html =~ t("Completed Tasks")
       assert html =~ "Jan 10, 2024"
       assert html =~ "W42"
       assert html =~ "Implement auth module"
@@ -1251,7 +1257,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
-      refute html =~ "Completed Tasks"
+      refute html =~ t("Completed Tasks")
     end
 
     test "hides completed tasks when grouped_tasks key is missing" do
@@ -1259,7 +1265,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
-      refute html =~ "Completed Tasks"
+      refute html =~ t("Completed Tasks")
     end
   end
 
@@ -1304,10 +1310,10 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ "fill=\"#dc2626\""
 
       # Check stat labels
-      assert html =~ "Average"
-      assert html =~ "Median"
-      assert html =~ "Minimum"
-      assert html =~ "Maximum"
+      assert html =~ t("Average")
+      assert html =~ t("Median")
+      assert html =~ t("Minimum")
+      assert html =~ t("Maximum")
     end
   end
 
@@ -1343,10 +1349,10 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ "stroke=\"#d97706\""
 
       # Check stat labels
-      assert html =~ "Total Tasks"
-      assert html =~ "Avg Per Day"
-      assert html =~ "Peak Day"
-      assert html =~ "Peak Count"
+      assert html =~ t("Total Tasks")
+      assert html =~ t("Avg Per Day")
+      assert html =~ t("Peak Day")
+      assert html =~ t("Peak Count")
     end
   end
 
@@ -1361,7 +1367,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
 
       assert html =~ "@bottom-center"
-      assert html =~ "Generated by Stride"
+      assert html =~ t("Generated by Stride")
     end
 
     test "cycle_time template includes Generated by Stride in page CSS" do
@@ -1370,7 +1376,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
 
       assert html =~ "@bottom-center"
-      assert html =~ "Generated by Stride"
+      assert html =~ t("Generated by Stride")
     end
 
     test "wait_time template includes Generated by Stride in page CSS" do
@@ -1379,7 +1385,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
       assert html =~ "@bottom-center"
-      assert html =~ "Generated by Stride"
+      assert html =~ t("Generated by Stride")
       refute html =~ "Generated by Kanban"
     end
 
@@ -1389,7 +1395,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       html = render_to_string(MetricsPdfHTML.lead_time(assigns))
 
       assert html =~ "@bottom-center"
-      assert html =~ "Generated by Stride"
+      assert html =~ t("Generated by Stride")
     end
   end
 
@@ -1423,10 +1429,10 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
       assert html =~ "fill=\"#dc2626\""
 
       # Check stat labels
-      assert html =~ "Average"
-      assert html =~ "Median"
-      assert html =~ "Minimum"
-      assert html =~ "Maximum"
+      assert html =~ t("Average")
+      assert html =~ t("Median")
+      assert html =~ t("Minimum")
+      assert html =~ t("Maximum")
     end
   end
 
@@ -1474,7 +1480,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
-      assert html =~ "Reviewed Tasks"
+      assert html =~ t("Reviewed Tasks")
       assert html =~ "Jan 10, 2024"
       assert html =~ "W42"
       assert html =~ "Implement auth module"
@@ -1506,7 +1512,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
-      refute html =~ "Reviewed Tasks"
+      refute html =~ t("Reviewed Tasks")
     end
 
     test "hides review tasks when grouped_review_tasks key is missing" do
@@ -1526,7 +1532,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
-      refute html =~ "Reviewed Tasks"
+      refute html =~ t("Reviewed Tasks")
     end
   end
 
@@ -1574,7 +1580,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
-      assert html =~ "Claimed Tasks"
+      assert html =~ t("Claimed Tasks")
       assert html =~ "Jan 10, 2024"
       assert html =~ "W55"
       assert html =~ "Build dashboard"
@@ -1605,7 +1611,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
-      refute html =~ "Claimed Tasks"
+      refute html =~ t("Claimed Tasks")
     end
 
     test "hides backlog tasks when grouped_backlog_tasks key is missing" do
@@ -1625,7 +1631,7 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
-      refute html =~ "Claimed Tasks"
+      refute html =~ t("Claimed Tasks")
     end
 
     test "renders both review and backlog tasks together" do
@@ -1677,10 +1683,10 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.wait_time(assigns))
 
-      assert html =~ "Reviewed Tasks"
+      assert html =~ t("Reviewed Tasks")
       assert html =~ "W70"
       assert html =~ "Review task"
-      assert html =~ "Claimed Tasks"
+      assert html =~ t("Claimed Tasks")
       assert html =~ "W71"
       assert html =~ "Backlog task"
     end
@@ -1710,6 +1716,55 @@ defmodule KanbanWeb.MetricsPdfHTMLTest do
 
       html = render_to_string(MetricsPdfHTML.throughput(assigns))
       assert is_binary(html)
+    end
+  end
+
+  describe "translation" do
+    setup do
+      on_exit(fn -> Gettext.put_locale(KanbanWeb.Gettext, "en") end)
+      :ok
+    end
+
+    test "renders the document body in the active locale" do
+      assigns = cycle_time_assigns(%{})
+
+      Gettext.put_locale(KanbanWeb.Gettext, "de")
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      # Title, filter labels and stat labels all follow the locale.
+      assert html =~ "Zykluszeit"
+      assert html =~ "Zeitraum:"
+      assert html =~ "Wochenenden:"
+      assert html =~ "Minimum"
+
+      # The English source strings are gone — proving the strings really are
+      # translated rather than merely wrapped.
+      refute html =~ "Cycle Time Metrics"
+      refute html =~ "Time Range:"
+      refute html =~ "Weekends:"
+    end
+
+    test "translates the filter labels the module itself builds" do
+      assigns = cycle_time_assigns(%{exclude_weekends: true, agent_name: nil})
+
+      Gettext.put_locale(KanbanWeb.Gettext, "de")
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      assert html =~ "Wochenenden ausgeschlossen"
+      refute html =~ "Weekends Excluded"
+    end
+
+    test "falls back to the source string for a locale with no translation" do
+      assigns = cycle_time_assigns(%{})
+
+      # "en" ships empty msgstrs by convention, so every lookup falls back to
+      # the msgid rather than rendering blank.
+      Gettext.put_locale(KanbanWeb.Gettext, "en")
+      html = render_to_string(MetricsPdfHTML.cycle_time(assigns))
+
+      assert html =~ "Cycle Time Metrics"
+      assert html =~ "Time Range:"
+      refute html =~ "<h1></h1>"
     end
   end
 end

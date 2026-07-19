@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lead Time Metrics - {@board.name}</title>
+    <title>{gettext("Lead Time Metrics")} - {@board.name}</title>
     {Phoenix.HTML.raw("<style>" <> shared_pdf_css() <> "</style>")}
     <style>
       .header { border-bottom: 3px solid #10b981; }
@@ -60,34 +60,34 @@
   </head>
   <body>
     <div class="header">
-      <h1>Lead Time Metrics</h1>
+      <h1>{gettext("Lead Time Metrics")}</h1>
       <div class="subtitle">{@board.name}</div>
     </div>
 
     <div class="meta">
       <div>
-        <span class="meta-label">Time Range:</span>
+        <span class="meta-label">{gettext("Time Range:")}</span>
         <span class="meta-value">{format_time_range(@time_range)}</span>
       </div>
       <div>
-        <span class="meta-label">Agent:</span>
+        <span class="meta-label">{gettext("Agent:")}</span>
         <span class="meta-value">{agent_filter_label(@agent_name)}</span>
       </div>
       <div>
-        <span class="meta-label">Weekends:</span>
+        <span class="meta-label">{gettext("Weekends:")}</span>
         <span class="meta-value">{weekend_filter_label(@exclude_weekends)}</span>
       </div>
       <div>
-        <span class="meta-label">Generated:</span>
+        <span class="meta-label">{gettext("Generated:")}</span>
         <span class="meta-value">{format_datetime(@generated_at)}</span>
       </div>
     </div>
 
     <div class="description">
       <div class="description-text">
-        <strong>Lead Time</strong> measures the total time from task creation to completion.
-        This metric reflects the customer's perspective and includes both waiting time and active work time.
-        It's essential for setting accurate delivery expectations.
+        {gettext(
+          "Lead Time measures the total time from task creation to completion. This metric reflects the customer's perspective and includes both waiting time and active work time. It's essential for setting accurate delivery expectations."
+        )}
       </div>
     </div>
 
@@ -104,7 +104,7 @@
                 />
               </svg>
             </div>
-            <div class="stat-label">Average</div>
+            <div class="stat-label">{gettext("Average")}</div>
           </div>
           <div class="stat-value">{format_time(@data.summary_stats.average_hours * 3600)}</div>
         </div>
@@ -115,7 +115,7 @@
                 <path d="M18.375 2.25c-1.035 0-1.875.84-1.875 1.875v15.75c0 1.035.84 1.875 1.875 1.875h.75c1.035 0 1.875-.84 1.875-1.875V4.125c0-1.036-.84-1.875-1.875-1.875h-.75ZM9.75 8.625c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-.75a1.875 1.875 0 0 1-1.875-1.875V8.625ZM3 13.125c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v6.75c0 1.035-.84 1.875-1.875 1.875h-.75A1.875 1.875 0 0 1 3 19.875v-6.75Z" />
               </svg>
             </div>
-            <div class="stat-label">Median</div>
+            <div class="stat-label">{gettext("Median")}</div>
           </div>
           <div class="stat-value">{format_time(@data.summary_stats.median_hours * 3600)}</div>
         </div>
@@ -130,7 +130,7 @@
                 />
               </svg>
             </div>
-            <div class="stat-label">Minimum</div>
+            <div class="stat-label">{gettext("Minimum")}</div>
           </div>
           <div class="stat-value">{format_time(@data.summary_stats.min_hours * 3600)}</div>
         </div>
@@ -145,19 +145,19 @@
                 />
               </svg>
             </div>
-            <div class="stat-label">Maximum</div>
+            <div class="stat-label">{gettext("Maximum")}</div>
           </div>
           <div class="stat-value">{format_time(@data.summary_stats.max_hours * 3600)}</div>
         </div>
       </div>
     <% else %>
       <div class="no-data">
-        No lead time data available for the selected time range.
+        {gettext("No lead time data available for the selected time range.")}
       </div>
     <% end %>
 
     <%= if Map.get(@data, :daily_lead_times, []) != [] do %>
-      <h2 class="section-title">Lead Time Trend</h2>
+      <h2 class="section-title">{gettext("Lead Time Trend")}</h2>
       <% chart_w = 560
       chart_h = 200
       sorted_times = Enum.sort_by(@data.daily_lead_times, & &1.date, Date)
@@ -237,7 +237,7 @@
     <% end %>
 
     <%= if Map.get(@data, :grouped_tasks, []) != [] do %>
-      <h2 class="section-title">Completed Tasks</h2>
+      <h2 class="section-title">{gettext("Completed Tasks")}</h2>
       <%= for {date, day_tasks} <- Map.get(@data, :grouped_tasks, []) do %>
         <div class="task-group">
           <div class="task-group-header">
@@ -251,9 +251,9 @@
                 <span class="task-lead-time">{format_time(task.lead_time_seconds)}</span>
               </div>
               <div class="task-meta">
-                <span>Created: {format_datetime(task.inserted_at)}</span>
-                <span>Completed: {format_datetime(task.completed_at)}</span>
-                <span>{task.completed_by_agent || "N/A"}</span>
+                <span>{gettext("Created: %{value}", value: format_datetime(task.inserted_at))}</span>
+                <span>{gettext("Completed: %{value}", value: format_datetime(task.completed_at))}</span>
+                <span>{task.completed_by_agent || gettext("N/A")}</span>
               </div>
             </div>
           <% end %>

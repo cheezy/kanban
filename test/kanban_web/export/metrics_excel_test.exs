@@ -502,4 +502,74 @@ defmodule KanbanWeb.MetricsExcelExportTest do
       refute xml =~ "'Normal Task"
     end
   end
+
+  # The workbook's single sheet name, read back out of the written file.
+  defp sheet_name({:ok, bytes}) do
+    {:ok, handle} = :zip.zip_open(bytes, [:memory])
+    {:ok, {_path, xml}} = :zip.zip_get(~c"xl/workbook.xml", handle)
+    :zip.zip_close(handle)
+    [_, name] = Regex.run(~r/<sheet name="([^"]*)"/, to_string(xml))
+    name
+  end
+
+  describe "generate/4 - translation" do
+    setup do
+      on_exit(fn -> Gettext.put_locale(KanbanWeb.Gettext, "en") end)
+      :ok
+    end
+
+    test "sheet names, column headers and filter labels follow the active locale" do
+      data = %{tasks: [make_task()], completed_goals: []}
+
+      Gettext.put_locale(KanbanWeb.Gettext, "de")
+
+      xml =
+        extract_shared_strings(
+          MetricsExcelExport.generate(@ai_board, "throughput", @default_opts, data)
+        )
+
+      # Header block, column headers and the filter row are all translated.
+      assert xml =~ "Kennung"
+      assert xml =~ "Zeitraum: Letzte 30 Tage"
+      assert xml =~ "Erstellt von Stride"
+
+      refute xml =~ "Identifier"
+      refute xml =~ "Time Range:"
+    end
+
+    test "every translated sheet name is one a spreadsheet accepts" do
+      data = %{tasks: [], completed_goals: []}
+
+      for locale <- ~w(de es fr ja pt zh en),
+          metric <- ~w(throughput cycle-time lead-time wait-time) do
+        Gettext.put_locale(KanbanWeb.Gettext, locale)
+        result = MetricsExcelExport.generate(@ai_board, metric, @default_opts, data)
+        assert_valid_xlsx(result)
+
+        name = sheet_name(result)
+
+        # Elixlsx does not police either rule, so translating a sheet name is
+        # exactly how an unopenable workbook would slip through.
+        assert String.length(name) in 1..31,
+               "#{locale}/#{metric} sheet name #{inspect(name)} is #{String.length(name)} chars"
+
+        refute name =~ ~r|[:\\\\/?*\\[\\]]|,
+               "#{locale}/#{metric} sheet name #{inspect(name)} has a forbidden character"
+      end
+    end
+
+    test "falls back to the source string for a locale with no translation" do
+      data = %{tasks: [make_task()], completed_goals: []}
+
+      Gettext.put_locale(KanbanWeb.Gettext, "en")
+
+      xml =
+        extract_shared_strings(
+          MetricsExcelExport.generate(@ai_board, "throughput", @default_opts, data)
+        )
+
+      assert xml =~ "Identifier"
+      assert xml =~ "Time Range:"
+    end
+  end
 end

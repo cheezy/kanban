@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Throughput Metrics - {@board.name}</title>
+    <title>{gettext("Throughput Metrics")} - {@board.name}</title>
     {Phoenix.HTML.raw("<style>" <> shared_pdf_css() <> "</style>")}
     <style>
       .header { border-bottom: 3px solid #3b82f6; }
@@ -114,25 +114,25 @@
   </head>
   <body>
     <div class="header">
-      <h1>Throughput Metrics</h1>
+      <h1>{gettext("Throughput Metrics")}</h1>
       <div class="subtitle">{@board.name}</div>
     </div>
 
     <div class="meta">
       <div>
-        <span class="meta-label">Time Range:</span>
+        <span class="meta-label">{gettext("Time Range:")}</span>
         <span class="meta-value">{format_time_range(@time_range)}</span>
       </div>
       <div>
-        <span class="meta-label">Agent:</span>
+        <span class="meta-label">{gettext("Agent:")}</span>
         <span class="meta-value">{agent_filter_label(@agent_name)}</span>
       </div>
       <div>
-        <span class="meta-label">Weekends:</span>
+        <span class="meta-label">{gettext("Weekends:")}</span>
         <span class="meta-value">{weekend_filter_label(@exclude_weekends)}</span>
       </div>
       <div>
-        <span class="meta-label">Generated:</span>
+        <span class="meta-label">{gettext("Generated:")}</span>
         <span class="meta-value">{format_datetime(@generated_at)}</span>
       </div>
     </div>
@@ -155,7 +155,7 @@
               />
             </svg>
           </div>
-          <div class="stat-label">Total Tasks</div>
+          <div class="stat-label">{gettext("Total Tasks")}</div>
         </div>
         <div class="stat-value">{@data.summary_stats.total}</div>
       </div>
@@ -176,7 +176,7 @@
               />
             </svg>
           </div>
-          <div class="stat-label">Avg Per Day</div>
+          <div class="stat-label">{gettext("Avg Per Day")}</div>
         </div>
         <div class="stat-value">{@data.summary_stats.avg_per_day}</div>
       </div>
@@ -197,7 +197,7 @@
               />
             </svg>
           </div>
-          <div class="stat-label">Peak Day</div>
+          <div class="stat-label">{gettext("Peak Day")}</div>
         </div>
         <div class="stat-value">{format_date(@data.summary_stats.peak_day)}</div>
       </div>
@@ -218,14 +218,14 @@
               />
             </svg>
           </div>
-          <div class="stat-label">Peak Count</div>
+          <div class="stat-label">{gettext("Peak Count")}</div>
         </div>
         <div class="stat-value">{@data.summary_stats.peak_count}</div>
       </div>
     </div>
 
     <%= if @data.throughput != [] do %>
-      <h2 class="section-title">Daily Throughput</h2>
+      <h2 class="section-title">{gettext("Daily Throughput")}</h2>
       <div class="chart">
         <%= for day <- @data.throughput do %>
           <div class="chart-bar">
@@ -239,18 +239,20 @@
                 &nbsp;
               </div>
             </div>
-            <div class="chart-count">{day.count} tasks</div>
+            <div class="chart-count">
+              {ngettext("%{count} task", "%{count} tasks", day.count)}
+            </div>
           </div>
         <% end %>
       </div>
     <% else %>
       <div class="no-data">
-        No throughput data available for the selected time range.
+        {gettext("No throughput data available for the selected time range.")}
       </div>
     <% end %>
 
     <%= if Map.get(@data, :completed_goals, []) != [] do %>
-      <h2 class="section-title">Completed Goals</h2>
+      <h2 class="section-title">{gettext("Completed Goals")}</h2>
       <%= for goal <- Map.get(@data, :completed_goals, []) do %>
         <div class="goal-item">
           <div class="goal-header">
@@ -258,10 +260,12 @@
             <span class="goal-title">{goal.title}</span>
           </div>
           <div class="goal-meta">
-            Completed: {format_datetime(goal.completed_at)} •
-            Created: {format_datetime(goal.inserted_at)}
+            {gettext("Completed: %{value}", value: format_datetime(goal.completed_at))} • {gettext(
+              "Created: %{value}",
+              value: format_datetime(goal.inserted_at)
+            )}
             <%= if goal.completed_by_agent do %>
-              • Agent: {goal.completed_by_agent}
+              • {gettext("Agent: %{value}", value: goal.completed_by_agent)}
             <% end %>
           </div>
         </div>
@@ -269,13 +273,13 @@
     <% end %>
 
     <%= if Map.get(@data, :grouped_tasks, []) != [] do %>
-      <h2 class="section-title">Completed Tasks</h2>
+      <h2 class="section-title">{gettext("Completed Tasks")}</h2>
       <%= for {date, day_tasks} <- Map.get(@data, :grouped_tasks, []) do %>
         <div class="task-group">
           <div class="task-group-header">
             <span class="task-group-date">{format_date(date)}</span>
             <span class="task-group-count">
-              {length(day_tasks)} {if length(day_tasks) == 1, do: "task", else: "tasks"}
+              {ngettext("%{count} task", "%{count} tasks", length(day_tasks))}
             </span>
           </div>
           <%= for task <- day_tasks do %>
@@ -288,11 +292,11 @@
                 <% end %>
               </div>
               <div class="task-meta">
-                <span>Created: {format_datetime(task.inserted_at)}</span>
+                <span>{gettext("Created: %{value}", value: format_datetime(task.inserted_at))}</span>
                 <%= if task.claimed_at do %>
-                  <span>Claimed: {format_datetime(task.claimed_at)}</span>
+                  <span>{gettext("Claimed: %{value}", value: format_datetime(task.claimed_at))}</span>
                 <% end %>
-                <span>Completed: {format_datetime(task.completed_at)}</span>
+                <span>{gettext("Completed: %{value}", value: format_datetime(task.completed_at))}</span>
               </div>
             </div>
           <% end %>
