@@ -129,12 +129,26 @@ defmodule KanbanWeb.MetricsLive.Helpers do
     |> Enum.max(fn -> 0 end)
   end
 
-  def calculate_trend_line([]), do: nil
-  def calculate_trend_line([_single]), do: nil
+  @doc """
+  Least-squares linear regression over a daily metrics series.
 
-  def calculate_trend_line(daily_times) do
+  Returns `%{slope: slope, intercept: intercept}`, or `nil` for a series
+  with fewer than two points (no line can be fitted through one point).
+
+  `value_key` names the field holding each day's value, so one regression
+  serves series in different units — the board charts pass the default
+  `:average_hours`, the workspace cycle time chart passes `:minutes`. It is
+  a field name rather than an arbitrary accessor function, so a caller can
+  only read fields of the series it already supplied.
+  """
+  def calculate_trend_line(daily_times, value_key \\ :average_hours)
+
+  def calculate_trend_line([], _value_key), do: nil
+  def calculate_trend_line([_single], _value_key), do: nil
+
+  def calculate_trend_line(daily_times, value_key) do
     n = length(daily_times)
-    {sum_x, sum_y, sum_xy, sum_x_squared} = calculate_regression_sums(daily_times)
+    {sum_x, sum_y, sum_xy, sum_x_squared} = calculate_regression_sums(daily_times, value_key)
 
     slope = calculate_slope(n, sum_x, sum_y, sum_xy, sum_x_squared)
     intercept = calculate_intercept(n, sum_x, sum_y, slope)
@@ -142,15 +156,17 @@ defmodule KanbanWeb.MetricsLive.Helpers do
     %{slope: slope, intercept: intercept}
   end
 
-  defp calculate_regression_sums(daily_times) do
+  defp calculate_regression_sums(daily_times, value_key) do
     daily_times
     |> Enum.with_index()
-    |> Enum.reduce({0.0, 0.0, 0.0, 0.0}, &accumulate_regression_sums/2)
+    |> Enum.reduce({0.0, 0.0, 0.0, 0.0}, fn entry, sums ->
+      accumulate_regression_sums(entry, sums, value_key)
+    end)
   end
 
-  defp accumulate_regression_sums({day, index}, {sx, sy, sxy, sx2}) do
+  defp accumulate_regression_sums({day, index}, {sx, sy, sxy, sx2}, value_key) do
     x = index * 1.0
-    y = day.average_hours
+    y = Map.fetch!(day, value_key) * 1.0
     {sx + x, sy + y, sxy + x * y, sx2 + x * x}
   end
 

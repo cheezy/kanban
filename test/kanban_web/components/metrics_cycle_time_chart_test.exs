@@ -171,6 +171,168 @@ defmodule KanbanWeb.MetricsCycleTimeChartTest do
     end
   end
 
+  # W1720: a least-squares trend line overlays the bars so the direction of
+  # travel is readable without comparing individual days.
+  describe "cycle_time_chart/1 — trend line" do
+    defp trend_line(html) do
+      [line] = Regex.run(~r/<line data-metrics-cycle-time-trend-line[^>]*>/, html)
+      line
+    end
+
+    defp rising_data(count) do
+      base = ~D[2026-05-01]
+
+      for i <- 0..(count - 1) do
+        %{date: Date.add(base, i), minutes: 10 + i * 10}
+      end
+    end
+
+    test "renders a trend line for a series of two or more points" do
+      html = render_chart(rising_data(14))
+
+      assert html =~ "data-metrics-cycle-time-trend"
+      assert html =~ "data-metrics-cycle-time-trend-line"
+      assert html =~ "stroke-dasharray"
+    end
+
+    test "renders a trend line for exactly two points" do
+      html = render_chart(rising_data(2))
+
+      assert html =~ "data-metrics-cycle-time-trend-line"
+    end
+
+    test "renders no trend line for a single data point" do
+      html = render_chart([%{date: ~D[2026-05-01], minutes: 30}])
+
+      refute html =~ "data-metrics-cycle-time-trend"
+    end
+
+    test "renders no trend line for an empty series and does not raise" do
+      html = render_chart([])
+
+      assert html =~ "data-metrics-cycle-time-chart"
+      refute html =~ "data-metrics-cycle-time-trend"
+    end
+
+    test "a rising series slopes upward and a falling series slopes downward" do
+      rising = render_chart(rising_data(14))
+      falling = 14 |> rising_data() |> Enum.reverse() |> render_chart()
+
+      # y is measured from the top in the overlay, so a smaller y2 than y1
+      # is a line travelling upward across the plot.
+      assert [[_, y1, y2]] = Regex.scan(~r/y1="([\d.]+)"[\s\S]*?y2="([\d.]+)"/, rising)
+      assert String.to_float(y2) < String.to_float(y1)
+
+      assert [[_, fy1, fy2]] = Regex.scan(~r/y1="([\d.]+)"[\s\S]*?y2="([\d.]+)"/, falling)
+      assert String.to_float(fy2) > String.to_float(fy1)
+    end
+
+    test "a flat series renders a level trend line" do
+      flat = for i <- 0..13, do: %{date: Date.add(~D[2026-05-01], i), minutes: 20}
+      html = render_chart(flat)
+
+      assert [[_, y1, y2]] = Regex.scan(~r/y1="([\d.]+)"[\s\S]*?y2="([\d.]+)"/, html)
+      assert_in_delta String.to_float(y1), String.to_float(y2), 0.01
+    end
+
+    test "the trend overlay shares the bars' baseline and span, not the plot floor" do
+      # A bar column reserves the day-label row below the bar, so a bar's
+      # zero is 16px (12px label + 4px gap) above the plot floor. The overlay
+      # must start from that same baseline and cover the same 170px bar area,
+      # or the line renders offset from the bars it tracks.
+      html = render_chart(rising_data(14))
+
+      assert html =~ "bottom: 16px"
+      assert html =~ "height: 170px"
+      assert html =~ "height: 12px; line-height: 12px"
+    end
+
+    test "the trend endpoints are inset to the first and last bar centres" do
+      # 14 bars, so the first centre is at 0.5/14 and the last at 13.5/14 of
+      # the width - not the plot edges, which would overhang by half a bar.
+      html = render_chart(rising_data(14))
+
+      assert html =~ ~s(x1="3.57")
+      assert html =~ ~s(x2="96.43")
+    end
+
+    test "a day with no median contributes zero without shifting the other days" do
+      sparse = [
+        %{date: ~D[2026-05-01], minutes: 10},
+        %{date: ~D[2026-05-02], minutes: nil},
+        %{date: ~D[2026-05-03], minutes: 30}
+      ]
+
+      zeroed = [
+        %{date: ~D[2026-05-01], minutes: 10},
+        %{date: ~D[2026-05-02], minutes: 0},
+        %{date: ~D[2026-05-03], minutes: 30}
+      ]
+
+      assert trend_line(render_chart(sparse)) == trend_line(render_chart(zeroed))
+    end
+
+    test "the trend line is positioned against the same maximum as the bars" do
+      # A flat 20-minute series scales to a 20m maximum, so the trend sits
+      # at the top of the plot — y = 0 — exactly where the full-height bars
+      # end.
+      flat = for i <- 0..13, do: %{date: Date.add(~D[2026-05-01], i), minutes: 20}
+      html = render_chart(flat)
+
+      assert html =~ ~s(data-metrics-cycle-time-gridline="20")
+      assert html =~ "height: 170.0px"
+      assert html =~ ~s(y1="0.0")
+      assert html =~ ~s(y2="0.0")
+    end
+
+    test "an extrapolation below zero is pinned to the plot floor" do
+      # 300/200/0/0 fits slope -110, intercept 290, so the line projects to
+      # -40 at the last point. It must land exactly on the floor (y = 100)
+      # rather than below it.
+      steep = [
+        %{date: ~D[2026-05-01], minutes: 300},
+        %{date: ~D[2026-05-02], minutes: 200},
+        %{date: ~D[2026-05-03], minutes: 0},
+        %{date: ~D[2026-05-04], minutes: 0}
+      ]
+
+      html = render_chart(steep)
+
+      assert [[_, y1, y2]] = Regex.scan(~r/y1="([\d.]+)"[\s\S]*?y2="([\d.]+)"/, html)
+      assert y2 == "100.0"
+      # 290 of a 300-minute maximum, so the start is near the plot top.
+      assert_in_delta String.to_float(y1), 3.33, 0.01
+    end
+
+    test "an extrapolation above the maximum is pinned to the plot top" do
+      # 50/100/90/100 fits slope 14, intercept 64, projecting to 106 at the
+      # last point against a derived 100-minute maximum. It must land exactly
+      # on the top (y = 0) rather than above it.
+      overshooting = [
+        %{date: ~D[2026-05-01], minutes: 50},
+        %{date: ~D[2026-05-02], minutes: 100},
+        %{date: ~D[2026-05-03], minutes: 90},
+        %{date: ~D[2026-05-04], minutes: 100}
+      ]
+
+      html = render_chart(overshooting)
+
+      assert html =~ ~s(data-metrics-cycle-time-gridline="100")
+
+      assert [[_, y1, y2]] = Regex.scan(~r/y1="([\d.]+)"[\s\S]*?y2="([\d.]+)"/, html)
+      assert y2 == "0.0"
+      # 64 of a 100-minute maximum leaves the start inside the plot.
+      assert_in_delta String.to_float(y1), 36.0, 0.01
+    end
+
+    test "the trend line uses a theme token rather than a hardcoded color" do
+      html = render_chart(rising_data(14))
+
+      assert html =~ "stroke=\"var(--ink-4)\""
+      refute html =~ "stroke=\"#"
+    end
+  end
+
   describe "cycle_time_chart/1 — header and labels" do
     test "renders no agent/human legend" do
       html = render_chart(data())

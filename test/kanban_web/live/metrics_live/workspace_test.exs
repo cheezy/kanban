@@ -157,6 +157,18 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       refute html =~ ~s(data-metrics-cycle-time-gridline="150")
     end
 
+    test "renders a trend line over the cycle time chart", %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+      # Two days with different medians, so the regression has a line to fit.
+      seed_cycle_time(column, minutes: 10, days_ago: 0)
+      seed_cycle_time(column, minutes: 40, days_ago: 2)
+
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "data-metrics-cycle-time-trend"
+      assert html =~ "data-metrics-cycle-time-trend-line"
+    end
+
     test "refits the scale when the window selector changes the plotted series",
          %{conn: conn, user: user} do
       column = user |> board_fixture() |> column_fixture()

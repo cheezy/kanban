@@ -423,6 +423,74 @@ defmodule KanbanWeb.MetricsLive.HelpersTest do
     end
   end
 
+  # W1720: the regression is shared with the workspace cycle time chart,
+  # whose series carries :minutes rather than :average_hours. The field name
+  # is now a parameter defaulting to the board series' field.
+  describe "calculate_trend_line/2 with an explicit value field" do
+    test "the default field yields the same result as the explicit hours field" do
+      daily_times = [
+        %{date: ~D[2024-01-01], average_hours: 2.0},
+        %{date: ~D[2024-01-02], average_hours: 4.0},
+        %{date: ~D[2024-01-03], average_hours: 9.0}
+      ]
+
+      assert Helpers.calculate_trend_line(daily_times) ==
+               Helpers.calculate_trend_line(daily_times, :average_hours)
+    end
+
+    test "computes slope and intercept for a minutes-based series" do
+      daily_times = [
+        %{date: ~D[2024-01-01], minutes: 10},
+        %{date: ~D[2024-01-02], minutes: 20},
+        %{date: ~D[2024-01-03], minutes: 30}
+      ]
+
+      result = Helpers.calculate_trend_line(daily_times, :minutes)
+
+      assert_in_delta result.slope, 10.0, 0.0001
+      assert_in_delta result.intercept, 10.0, 0.0001
+    end
+
+    test "an integer-valued series yields the same line as its float twin" do
+      integer_series = [
+        %{minutes: 10},
+        %{minutes: 20},
+        %{minutes: 30}
+      ]
+
+      float_series = [
+        %{average_hours: 10.0},
+        %{average_hours: 20.0},
+        %{average_hours: 30.0}
+      ]
+
+      assert Helpers.calculate_trend_line(integer_series, :minutes) ==
+               Helpers.calculate_trend_line(float_series)
+    end
+
+    test "a rising minutes series slopes up and a falling one slopes down" do
+      rising = [%{minutes: 5}, %{minutes: 12}, %{minutes: 30}]
+      falling = [%{minutes: 30}, %{minutes: 12}, %{minutes: 5}]
+
+      assert Helpers.calculate_trend_line(rising, :minutes).slope > 0
+      assert Helpers.calculate_trend_line(falling, :minutes).slope < 0
+    end
+
+    test "a flat minutes series yields a slope of approximately zero" do
+      flat = [%{minutes: 7}, %{minutes: 7}, %{minutes: 7}]
+
+      result = Helpers.calculate_trend_line(flat, :minutes)
+
+      assert_in_delta result.slope, 0.0, 0.0001
+      assert_in_delta result.intercept, 7.0, 0.0001
+    end
+
+    test "still returns nil for empty and single-point series" do
+      assert Helpers.calculate_trend_line([], :minutes) == nil
+      assert Helpers.calculate_trend_line([%{minutes: 10}], :minutes) == nil
+    end
+  end
+
   describe "group_tasks_by_completion_date/1" do
     test "groups tasks by completion date" do
       tasks = [
