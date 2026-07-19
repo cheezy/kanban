@@ -40,6 +40,49 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
     board
   end
 
+  # The workbook's data sections: the section strings AND every numeric cell.
+  #
+  # Two separately-issued requests can never be byte-identical — elixlsx stamps
+  # a second-resolution `dcterms:created` into docProps/core.xml on every write,
+  # and since W1726 the header block also carries the generation time and the
+  # REQUESTED board count, which differs whenever one request names a forged id
+  # the other does not. None of that is what the authorization tests assert;
+  # they are about the DATA the report exposes.
+  #
+  # Both halves are required. Elixlsx interns strings in sharedStrings.xml but
+  # writes numbers inline into the worksheet, so comparing strings alone would
+  # miss a leak that shows up only in a count — and the fixtures here stamp the
+  # same timestamps and set no agent name, so a leaked board would differ
+  # NUMERICALLY and not otherwise.
+  defp data_sections(resp_body) do
+    {section_strings(resp_body), numeric_cells(resp_body)}
+  end
+
+  defp section_strings(resp_body) do
+    # Shared strings are stored in first-occurrence order, so the header block's
+    # strings precede every section string. "Summary" titles the first section.
+    [_header, sections] =
+      resp_body |> zip_entry(~c"xl/sharedStrings.xml") |> String.split("Summary", parts: 2)
+
+    sections
+  end
+
+  # Every cell EXCEPT the shared-string ones, whose `<v>` holds a table index
+  # rather than a value — those are already covered by section_strings/1, and
+  # their indices shift whenever a header string changes.
+  defp numeric_cells(resp_body) do
+    ~r/<c(?![^>]*t="s")[^>]*>\s*<v>([^<]*)<\/v>/
+    |> Regex.scan(zip_entry(resp_body, ~c"xl/worksheets/sheet1.xml"), capture: :all_but_first)
+    |> List.flatten()
+  end
+
+  defp zip_entry(resp_body, path) do
+    {:ok, handle} = :zip.zip_open(resp_body, [:memory])
+    {:ok, {_path, xml}} = :zip.zip_get(path, handle)
+    :zip.zip_close(handle)
+    to_string(xml)
+  end
+
   describe "authentication" do
     test "an unauthenticated request is redirected by the plug and never reaches the controller" do
       conn = get(build_conn(), ~p"/metrics/export")
@@ -208,9 +251,12 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
 
       assert both.status == 200
       assert only_a.status == 200
-      # The unfiltered export aggregates both boards' completed work, so it
-      # cannot be byte-identical to the single-board export.
-      refute both.resp_body == only_a.resp_body
+      # The unfiltered export aggregates both boards' completed work, so its
+      # data must differ from the single-board export. Asserted on the data
+      # sections rather than the raw bytes: elixlsx stamps a timestamp into
+      # every workbook, so byte-inequality would hold even if the aggregation
+      # were identical, making the original assertion vacuous.
+      refute data_sections(both.resp_body) == data_sections(only_a.resp_body)
     end
   end
 
@@ -229,8 +275,10 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
 
       assert forged.status == 200
       assert nonexistent.status == 200
-      # Byte-identical: the response reveals nothing about whether the board exists.
-      assert forged.resp_body == nonexistent.resp_body
+      # Identical data sections: the response reveals nothing about whether the
+      # board exists. Both requests name exactly one board id, so their header
+      # blocks agree too — only the generation timestamp separates the bytes.
+      assert data_sections(forged.resp_body) == data_sections(nonexistent.resp_body)
     end
 
     test "a forged id alongside a visible one drops only the forged board",
@@ -250,7 +298,11 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
         get(second_conn, ~p"/metrics/export?format=excel&board_ids[]=#{visible.id}")
 
       assert both.status == 200
-      assert both.resp_body == visible_only.resp_body
+      # The forged board contributes no data, so the sections match. The header
+      # blocks deliberately do NOT: the report states the board selection that
+      # was REQUESTED ("2 boards" vs "1 board"), echoing the caller's own input
+      # rather than disclosing which ids resolved.
+      assert data_sections(both.resp_body) == data_sections(visible_only.resp_body)
     end
   end
 
