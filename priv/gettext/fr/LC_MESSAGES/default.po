@@ -5309,7 +5309,7 @@ msgstr "réponse humaine moy."
 msgid "idea → done"
 msgstr "idée → terminé"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:75
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:263
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Cycle time · daily median (min)"
 msgstr "Temps de cycle"
@@ -7289,7 +7289,7 @@ msgstr "Période"
 msgid "vs prev %{count}d"
 msgstr "vs %{count}j préc."
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:78
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:108
 #, elixir-autogen, elixir-format, fuzzy
 msgid "last %{count} days"
 msgstr "%{count} derniers jours"

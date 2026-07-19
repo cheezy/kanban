@@ -26,6 +26,23 @@ defmodule KanbanWeb.MetricsCycleTimeChartTest do
     """)
   end
 
+  # The lead-time configuration: the same component with every series-specific
+  # attribute supplied, which is how the workspace page renders the second
+  # series without a cloned module.
+  defp render_lead_chart(data) do
+    assigns = %{data: data}
+
+    rendered_to_string(~H"""
+    <MetricsCycleTimeChart.cycle_time_chart
+      data={@data}
+      color="var(--stride-violet)"
+      title="Lead time · daily median (min)"
+      marker_prefix="lead-time"
+      series_name="lead"
+    />
+    """)
+  end
+
   describe "cycle_time_chart/1 — markers and structure" do
     test "renders the root marker" do
       assert render_chart(data()) =~ "data-metrics-cycle-time-chart"
@@ -373,6 +390,196 @@ defmodule KanbanWeb.MetricsCycleTimeChartTest do
 
       assert html =~ ~s(data-metrics-cycle-time-gridline="4")
       assert html =~ "height: 0.0px"
+      assert length(Regex.scan(~r/data-metrics-cycle-time-bar(?!-)/, html)) == 14
+    end
+  end
+
+  # W1722: the component is parameterized so one module renders both the cycle
+  # and lead series. Every attribute defaults to its cycle value, which is what
+  # the whole suite above proves by passing unchanged.
+  describe "cycle_time_chart/1 — parameterized series" do
+    test "with no color attribute supplied the bar keeps the cycle orange token" do
+      html = render_chart(data())
+
+      assert html =~ "background: var(--stride-orange)"
+      refute html =~ "var(--stride-violet)"
+    end
+
+    test "a supplied color drives the bar and the default token disappears" do
+      html = render_lead_chart(data())
+
+      assert html =~ "background: var(--stride-violet)"
+      refute html =~ "var(--stride-orange)"
+    end
+
+    test "the color is a CSS custom property reference, never a raw literal" do
+      html = render_lead_chart(data())
+
+      # Raw hex/oklch literals in a style attribute would break the dark-mode
+      # contract, which is exactly why the color is passed as a token.
+      refute html =~ ~r/background: #[0-9a-fA-F]{3,8}/
+      refute html =~ ~r/background: oklch\(/
+    end
+
+    test "with no marker prefix supplied the existing cycle markers are emitted" do
+      html = render_chart(data())
+
+      assert html =~ "data-metrics-cycle-time-chart"
+      assert html =~ "data-metrics-cycle-time-plot"
+      assert html =~ ~s(data-metrics-cycle-time-segment="cycle")
+      refute html =~ "data-metrics-lead-time-"
+    end
+
+    test "a supplied marker prefix derives every marker the component emits" do
+      html = render_lead_chart(data())
+
+      for suffix <- ~w(chart plot gridline bar bar-date segment trend trend-line) do
+        assert html =~ "data-metrics-lead-time-#{suffix}"
+      end
+
+      # No marker leaks the cycle prefix, so two charts on one page stay
+      # unambiguous to both tests and tooling.
+      refute html =~ "data-metrics-cycle-time-"
+    end
+
+    test "the segment marker carries the supplied series name" do
+      html = render_lead_chart(data())
+
+      assert length(Regex.scan(~r/data-metrics-lead-time-segment="lead"/, html)) == 14
+      refute html =~ ~s(data-metrics-lead-time-segment="cycle")
+    end
+
+    test "with no title supplied the existing cycle title renders" do
+      assert render_chart(data()) =~ "Cycle time · daily median (min)"
+    end
+
+    test "a supplied title replaces it and the default disappears" do
+      html = render_lead_chart(data())
+
+      assert html =~ "Lead time · daily median (min)"
+      refute html =~ "Cycle time · daily median (min)"
+    end
+
+    test "the subtitle still reflects the window in both configurations" do
+      assert render_chart(data()) =~ "last 14 days"
+      assert render_lead_chart(data()) =~ "last 14 days"
+    end
+
+    test "the tick unit defaults to minutes and is overridable" do
+      assert render_chart(data(minutes: 60)) =~ "60m"
+
+      assigns = %{data: data(minutes: 60)}
+
+      html =
+        rendered_to_string(~H"""
+        <MetricsCycleTimeChart.cycle_time_chart data={@data} tick_unit="h" />
+        """)
+
+      assert html =~ "60h"
+      refute html =~ "60m"
+    end
+
+    test "the auto-fitting rounded scale behaves identically in both configurations" do
+      cycle = render_chart(data(minutes: 12))
+      lead = render_lead_chart(data(minutes: 12))
+
+      # Peak 12 rounds up to a 15m maximum in 5m steps in both, and the bar
+      # fills the same 12/15 * 170 = 136px.
+      assert cycle =~ ~s(data-metrics-cycle-time-gridline="15")
+      assert lead =~ ~s(data-metrics-lead-time-gridline="15")
+      assert cycle =~ "height: 136.0px"
+      assert lead =~ "height: 136.0px"
+    end
+
+    test "the trend line renders in both configurations" do
+      rising = for i <- 0..13, do: %{date: Date.add(~D[2026-05-01], i), minutes: 10 + i * 10}
+
+      cycle = render_chart(rising)
+      lead = render_lead_chart(rising)
+
+      assert cycle =~ "data-metrics-cycle-time-trend-line"
+      assert lead =~ "data-metrics-lead-time-trend-line"
+
+      # The regression is identical for identical data — only the markers move.
+      assert [[_, cy1, cy2]] = Regex.scan(~r/y1="([\d.]+)"[\s\S]*?y2="([\d.]+)"/, cycle)
+      assert [[_, ly1, ly2]] = Regex.scan(~r/y1="([\d.]+)"[\s\S]*?y2="([\d.]+)"/, lead)
+      assert {cy1, cy2} == {ly1, ly2}
+    end
+
+    test "the trend line keeps its theme token in the parameterized configuration" do
+      rising = for i <- 0..13, do: %{date: Date.add(~D[2026-05-01], i), minutes: 10 + i * 10}
+      html = render_lead_chart(rising)
+
+      assert html =~ "stroke=\"var(--ink-4)\""
+      refute html =~ "stroke=\"#"
+    end
+
+    test "an empty series renders the empty-state axis and no bars in either configuration" do
+      cycle = render_chart([])
+      lead = render_lead_chart([])
+
+      assert cycle =~ ~s(data-metrics-cycle-time-gridline="4")
+      assert lead =~ ~s(data-metrics-lead-time-gridline="4")
+      assert Regex.scan(~r/data-metrics-lead-time-bar(?!-)/, lead) == []
+      refute lead =~ "data-metrics-lead-time-trend"
+    end
+
+    test "an all-zero series renders zero-height bars in either configuration" do
+      lead = render_lead_chart(data(minutes: 0))
+
+      assert lead =~ ~s(data-metrics-lead-time-gridline="4")
+      assert lead =~ "height: 0.0px"
+      assert length(Regex.scan(~r/data-metrics-lead-time-bar(?!-)/, lead)) == 14
+    end
+
+    test "neither configuration emits hardcoded Tailwind greys or daisyUI base colors" do
+      for html <- [render_chart(data()), render_lead_chart(data())] do
+        refute html =~ "text-gray-"
+        refute html =~ "bg-gray-"
+        refute html =~ "bg-white"
+        refute html =~ "bg-base-100"
+      end
+    end
+
+    test "a title needing escaping is escaped rather than injected as markup" do
+      assigns = %{data: data(), title: "<script>alert(1)</script>"}
+
+      html =
+        rendered_to_string(~H"""
+        <MetricsCycleTimeChart.cycle_time_chart data={@data} title={@title} />
+        """)
+
+      refute html =~ "<script>"
+      assert html =~ "&lt;script&gt;"
+    end
+
+    # The marker prefix lands in an attribute NAME, the one position HEEx
+    # cannot escape: whitespace would close the marker and open a second,
+    # caller-chosen attribute. The component rejects it outright rather than
+    # relying on callers never passing one.
+    test "a marker prefix outside the safe charset raises rather than injecting an attribute" do
+      for bad <- ["evil\" onload=\"alert(1)", "has space", "UPPER", "under_score", ""] do
+        assigns = %{data: data(), prefix: bad}
+
+        assert_raise ArgumentError, ~r/marker_prefix must match/, fn ->
+          rendered_to_string(~H"""
+          <MetricsCycleTimeChart.cycle_time_chart data={@data} marker_prefix={@prefix} />
+          """)
+        end
+      end
+    end
+
+    test "a color naming a token that does not exist renders inertly without raising" do
+      assigns = %{data: data()}
+
+      html =
+        rendered_to_string(~H"""
+        <MetricsCycleTimeChart.cycle_time_chart data={@data} color="var(--does-not-exist)" />
+        """)
+
+      # The browser falls back to no background; the component does not guess
+      # or raise. The bars and scale still render.
+      assert html =~ "background: var(--does-not-exist)"
       assert length(Regex.scan(~r/data-metrics-cycle-time-bar(?!-)/, html)) == 14
     end
   end

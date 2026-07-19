@@ -1,9 +1,14 @@
 defmodule KanbanWeb.MetricsCycleTimeChart do
   @moduledoc """
-  Bar chart rendering the trailing-14-day overall daily median cycle
-  time as a single series.
+  Bar chart rendering a trailing-14-day daily series of minute values.
 
-  Consumes the list shape returned by `Kanban.Metrics.Workspace.cycle_time_daily/1`:
+  Defaults to the overall daily median cycle time, and is parameterized
+  (colour, title, marker prefix, series name, tick unit) so the same
+  component renders the daily p50 lead-time series without a near-identical
+  clone — keeping the scale, bar, gridline and trend maths in one place.
+
+  Consumes the list shape returned by `Kanban.Metrics.Workspace.cycle_time_daily/1`
+  and `Kanban.Metrics.Workspace.lead_time_daily/1`:
 
       [%{date: Date.t(), minutes: integer()}, ...]
 
@@ -13,8 +18,8 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
       derives from the data, spanning zero to a rounded maximum that
       always covers the peak. The maximum and the labelled ticks come
       from the same scale, so a label can never disagree with a bar.
-    * One column per entry — a single bar (`var(--stride-orange)`,
-      rounded top) whose height is that day's median cycle time.
+    * One column per entry — a single bar (`var(--stride-orange)` by
+      default, rounded top) whose height is that day's value.
     * A single-letter day-of-week label under each column.
     * A title + subtitle in the header row.
 
@@ -40,14 +45,38 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
   @doc """
   Renders the chart.
 
+  Every series-specific value is an attribute defaulting to the cycle-time
+  configuration, so the existing call site renders identically without
+  passing any of them. A second series (lead time) supplies its own colour,
+  title and marker prefix and reuses all of the scale, bar, gridline and
+  trend maths unchanged.
+
   ## Attrs
 
     * `data` — required. List of `%{date: Date.t(), minutes: integer()}`
       entries. The chart adapts to any length, though
       `Kanban.Metrics.Workspace.cycle_time_daily/1` always returns exactly 14.
+    * `window_days` — the trailing window named in the subtitle.
+    * `color` — the bar fill, as a CSS custom property reference. Keeping it
+      a token (never a Tailwind class) is what lets the dark theme override
+      it with no component-side branching. Unlike `marker_prefix` this needs
+      no charset guard: it lands in an attribute *value*, which HEEx escapes,
+      so it cannot break out of the tag — at worst a caller-set value adds
+      CSS declarations to the bar it already styles.
+    * `title` — the header label. Defaults to the cycle-time title.
+    * `marker_prefix` — the infix in every `data-metrics-*` marker this
+      component emits, so two instances on one page stay distinguishable to
+      tests and tooling.
+    * `series_name` — the value stamped on the per-bar segment marker.
+    * `tick_unit` — the unit suffix on the y-axis tick labels.
   """
   attr :data, :list, required: true
   attr :window_days, :integer, default: 14
+  attr :color, :string, default: "var(--stride-orange)"
+  attr :title, :string, default: nil
+  attr :marker_prefix, :string, default: "cycle-time"
+  attr :series_name, :string, default: "cycle"
+  attr :tick_unit, :string, default: "m"
 
   def cycle_time_chart(assigns) do
     scale = scale(assigns.data)
@@ -60,10 +89,11 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
       |> assign(:chart_height_px, @chart_height_px)
       |> assign(:bars_area_px, @bars_area_px)
       |> assign(:label_row_px, @label_row_px)
+      |> assign(:title, assigns.title || default_title())
 
     ~H"""
     <section
-      data-metrics-cycle-time-chart
+      {marker(@marker_prefix, "chart")}
       style={[
         "background: var(--surface);",
         "border: 1px solid var(--line); border-radius: 8px;",
@@ -72,7 +102,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
     >
       <header class="flex flex-wrap items-baseline gap-3 md:gap-3.5 mb-3.5">
         <span style="font-size: 13.5px; font-weight: 600; color: var(--ink);">
-          {gettext("Cycle time · daily median (min)")}
+          {@title}
         </span>
         <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
           {gettext("last %{count} days", count: @window_days)}
@@ -81,7 +111,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
 
       <div class="overflow-x-auto md:overflow-visible">
         <div
-          data-metrics-cycle-time-plot
+          {marker(@marker_prefix, "plot")}
           class="min-w-[320px]"
           style={[
             "position: relative;",
@@ -91,7 +121,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
         >
           <span
             :for={tick <- @ticks}
-            data-metrics-cycle-time-gridline={tick}
+            {marker(@marker_prefix, "gridline", tick)}
             style={[
               "position: absolute; left: 0; right: 0;",
               "bottom: #{gridline_bottom_pct(tick, @chart_max)}%;",
@@ -100,7 +130,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
               "color: var(--ink-4); padding-left: 2px;"
             ]}
           >
-            {tick}m
+            {tick}{@tick_unit}
           </span>
 
           <.bar
@@ -108,6 +138,9 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
             entry={entry}
             chart_max={@chart_max}
             bars_area_px={@bars_area_px}
+            color={@color}
+            marker_prefix={@marker_prefix}
+            series_name={@series_name}
           />
 
           <%!-- The least-squares trend, drawn over the same box the bars
@@ -117,10 +150,10 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
           inset to the first and last bar centres, because the regression's
           first and last points describe those bars rather than the plot
           edges. A non-scaling dashed stroke keeps it legible and distinct
-          from the solid orange bars in both themes. --%>
+          from the solid coloured bars in both themes. --%>
           <svg
             :if={@trend}
-            data-metrics-cycle-time-trend
+            {marker(@marker_prefix, "trend")}
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
             aria-hidden="true"
@@ -132,7 +165,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
             ]}
           >
             <line
-              data-metrics-cycle-time-trend-line
+              {marker(@marker_prefix, "trend-line")}
               x1={@trend.start_x}
               y1={100 - @trend.start_pct}
               x2={@trend.end_x}
@@ -154,6 +187,9 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
   # peak of one minute scales in sub-unit steps.
   attr :chart_max, :any, required: true
   attr :bars_area_px, :integer, required: true
+  attr :color, :string, required: true
+  attr :marker_prefix, :string, required: true
+  attr :series_name, :string, required: true
 
   defp bar(assigns) do
     bar_h =
@@ -168,8 +204,8 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
 
     ~H"""
     <div
-      data-metrics-cycle-time-bar
-      data-metrics-cycle-time-bar-date={Date.to_iso8601(@entry.date)}
+      {marker(@marker_prefix, "bar")}
+      {marker(@marker_prefix, "bar-date", Date.to_iso8601(@entry.date))}
       style={[
         "flex: 1;",
         "display: flex; flex-direction: column;",
@@ -179,10 +215,10 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
     >
       <div style="width: 70%; min-width: 14px; display: flex; flex-direction: column;">
         <div
-          data-metrics-cycle-time-segment="cycle"
+          {marker(@marker_prefix, "segment", @series_name)}
           style={[
             "height: #{@bar_h}px;",
-            "background: var(--stride-orange);",
+            "background: #{@color};",
             "border-radius: 3px 3px 0 0;"
           ]}
         />
@@ -196,6 +232,35 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
     </div>
     """
   end
+
+  # --- Markers and labels --------------------------------------------------
+
+  # Builds one `data-metrics-<prefix>-<suffix>` attribute. The prefix is an
+  # attribute rather than a literal so two instances of this component on the
+  # same page emit distinguishable markers; a value of `true` renders the bare
+  # attribute the cycle configuration has always emitted. Returned as a
+  # dynamic-attribute list so the name itself can vary.
+  #
+  # The prefix lands in an attribute NAME, which is the one position HEEx
+  # cannot escape its way out of: a prefix containing whitespace would close
+  # the marker and open a second, attacker-chosen attribute. The prefix is
+  # component configuration set in code and never user input, so this guard
+  # should be unreachable — it is here so that stays true by construction
+  # rather than by convention. Values are escaped by HEEx as normal.
+  defp marker(prefix, suffix, value \\ true) do
+    unless prefix =~ ~r/\A[a-z0-9-]+\z/ do
+      raise ArgumentError,
+            "marker_prefix must match /[a-z0-9-]+/, got: #{inspect(prefix)}. " <>
+              "It is interpolated into an HTML attribute name and must never " <>
+              "carry user-supplied input."
+    end
+
+    [{"data-metrics-#{prefix}-#{suffix}", value}]
+  end
+
+  # Kept as a function rather than an `attr` default because `gettext/1`
+  # resolves against the request's locale at render time, not at compile time.
+  defp default_title, do: gettext("Cycle time · daily median (min)")
 
   # --- Math ---------------------------------------------------------------
 

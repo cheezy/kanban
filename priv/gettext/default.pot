@@ -5309,7 +5309,7 @@ msgstr ""
 msgid "idea → done"
 msgstr ""
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:75
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:263
 #, elixir-autogen, elixir-format
 msgid "Cycle time · daily median (min)"
 msgstr ""
@@ -7243,7 +7243,7 @@ msgstr ""
 msgid "vs prev %{count}d"
 msgstr ""
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:78
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:108
 #, elixir-autogen, elixir-format
 msgid "last %{count} days"
 msgstr ""

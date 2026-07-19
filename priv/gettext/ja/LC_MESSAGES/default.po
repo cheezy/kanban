@@ -5297,7 +5297,7 @@ msgstr "人間の応答平均"
 msgid "idea → done"
 msgstr "アイデア → 完了"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:75
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:263
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Cycle time · daily median (min)"
 msgstr "サイクルタイム"
@@ -7289,7 +7289,7 @@ msgstr "期間"
 msgid "vs prev %{count}d"
 msgstr "前%{count}日比"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:78
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:108
 #, elixir-autogen, elixir-format, fuzzy
 msgid "last %{count} days"
 msgstr "過去%{count}日"
