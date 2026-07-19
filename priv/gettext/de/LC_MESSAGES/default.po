@@ -2172,8 +2172,8 @@ msgstr "Agentenfilter"
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:98
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:92
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:333
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:102
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:176
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:103
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:180
 #, elixir-autogen, elixir-format
 msgid "Agent Unknown"
 msgstr "Agent unbekannt"
@@ -2219,14 +2219,14 @@ msgstr "Zurück zum Dashboard"
 msgid "Backlog"
 msgstr "Backlog"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:129
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Backlog Wait Time"
 msgstr "Backlog-Wartezeit"
 
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:85
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:317
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:167
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:171
 #, elixir-autogen, elixir-format
 msgid "Claimed:"
 msgstr "Übernommen:"
@@ -2247,7 +2247,7 @@ msgstr "Abgeschlossene Aufgaben"
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:85
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:285
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:321
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:94
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Completed:"
 msgstr "Abgeschlossen:"
@@ -2255,7 +2255,7 @@ msgstr "Abgeschlossen:"
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:81
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:288
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:310
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:161
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Created:"
 msgstr "Erstellt:"
@@ -2379,7 +2379,7 @@ msgstr "Min"
 msgid "No data available"
 msgstr "Keine Daten verfügbar"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:154
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:158
 #, elixir-autogen, elixir-format
 msgid "No tasks claimed in this time range"
 msgstr "Keine Aufgaben in diesem Zeitraum übernommen"
@@ -2392,12 +2392,12 @@ msgstr "Keine Aufgaben in diesem Zeitraum übernommen"
 msgid "No tasks completed in this time range"
 msgstr "Keine Aufgaben in diesem Zeitraum abgeschlossen"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:155
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "No tasks started in this time range"
 msgstr "Keine Aufgaben in diesem Zeitraum gestartet"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:89
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "No tasks waiting for review in this time range"
 msgstr "Keine Aufgaben warten in diesem Zeitraum auf Überprüfung"
@@ -2427,7 +2427,7 @@ msgstr "Leistungskennzahlen und Einblicke für Ihr Board"
 msgid "Queue"
 msgstr "Warteschlange"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:130
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Queue Wait Time"
 msgstr "Wartezeit in der Warteschlange"
@@ -2451,18 +2451,18 @@ msgstr "Warteschlangen- und Wartezeit-Analyse"
 msgid "Review"
 msgstr "Überprüfung"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:74
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Review Wait Time"
 msgstr "Überprüfungs-Wartezeit"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:98
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:99
 #, elixir-autogen, elixir-format
 msgid "Reviewed:"
 msgstr "Überprüft:"
 
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:86
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:168
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:172
 #, elixir-autogen, elixir-format
 msgid "Started:"
 msgstr "Gestartet:"
@@ -2509,17 +2509,17 @@ msgstr "Zeit von der Erstellung bis zum Abschluss"
 msgid "Time from start to completion"
 msgstr "Zeit vom Start bis zum Abschluss"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:135
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Time tasks spend in the backlog before being claimed"
 msgstr "Zeit, die Aufgaben im Backlog verbringen, bevor sie übernommen werden"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:136
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Time tasks spend in the queue before work begins"
 msgstr "Zeit, die Aufgaben in der Warteschlange verbringen, bevor die Arbeit beginnt"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:78
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "Zeit, die Aufgaben nach dem Abschluss auf eine Überprüfung warten"
@@ -2975,7 +2975,7 @@ msgstr "entstand aus unserer praktischen Arbeit mit zwei KI-Tools —"
 msgid "Assignee does not have access to this board"
 msgstr "Der Zugewiesene hat keinen Zugriff auf dieses Board"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:144
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Backlog Wait Tasks"
 msgstr "Aufgaben in Backlog-Wartezeit"
@@ -3015,12 +3015,12 @@ msgstr "Übergeordnetes Ziel gehört nicht zu diesem Board"
 msgid "Please wait a moment before submitting another issue."
 msgstr "Bitte warten Sie einen Moment, bevor Sie ein weiteres Problem einreichen."
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:145
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Queue Wait Tasks"
 msgstr "Aufgaben in der Warteschlange"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:84
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Review Wait Tasks"
 msgstr "Aufgaben in Review-Wartezeit"
@@ -5309,7 +5309,7 @@ msgstr "Ø menschliche Antwortzeit"
 msgid "idea → done"
 msgstr "Idee → erledigt"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:63
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:75
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Cycle time · daily median (min)"
 msgstr "Zykluszeit"
@@ -7349,7 +7349,7 @@ msgstr "Zeitraum"
 msgid "vs prev %{count}d"
 msgstr "vs. vorh. %{count}T"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:66
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:78
 #, elixir-autogen, elixir-format, fuzzy
 msgid "last %{count} days"
 msgstr "Letzte %{count} Tage"

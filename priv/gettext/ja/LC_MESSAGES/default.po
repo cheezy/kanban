@@ -2170,8 +2170,8 @@ msgstr "エージェントフィルター"
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:98
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:92
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:333
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:102
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:176
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:103
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:180
 #, elixir-autogen, elixir-format
 msgid "Agent Unknown"
 msgstr "不明なエージェント"
@@ -2217,14 +2217,14 @@ msgstr "ダッシュボードに戻る"
 msgid "Backlog"
 msgstr "バックログ"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:129
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Backlog Wait Time"
 msgstr "バックログ待ち時間"
 
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:85
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:317
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:167
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:171
 #, elixir-autogen, elixir-format
 msgid "Claimed:"
 msgstr "担当開始:"
@@ -2245,7 +2245,7 @@ msgstr "完了したタスク"
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:85
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:285
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:321
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:94
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Completed:"
 msgstr "完了:"
@@ -2253,7 +2253,7 @@ msgstr "完了:"
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:81
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:288
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:310
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:161
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Created:"
 msgstr "作成:"
@@ -2377,7 +2377,7 @@ msgstr "最小"
 msgid "No data available"
 msgstr "データがありません"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:154
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:158
 #, elixir-autogen, elixir-format
 msgid "No tasks claimed in this time range"
 msgstr "この期間に担当されたタスクはありません"
@@ -2390,12 +2390,12 @@ msgstr "この期間に担当されたタスクはありません"
 msgid "No tasks completed in this time range"
 msgstr "この期間に完了したタスクはありません"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:155
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "No tasks started in this time range"
 msgstr "この期間に開始されたタスクはありません"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:89
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "No tasks waiting for review in this time range"
 msgstr "この期間にレビュー待ちのタスクはありません"
@@ -2425,7 +2425,7 @@ msgstr "ボードのパフォーマンスメトリクスとインサイト"
 msgid "Queue"
 msgstr "キュー"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:130
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Queue Wait Time"
 msgstr "キュー待ち時間"
@@ -2449,18 +2449,18 @@ msgstr "キューと待ち時間の分析"
 msgid "Review"
 msgstr "レビュー"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:74
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Review Wait Time"
 msgstr "レビュー待ち時間"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:98
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:99
 #, elixir-autogen, elixir-format
 msgid "Reviewed:"
 msgstr "レビュー完了:"
 
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:86
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:168
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:172
 #, elixir-autogen, elixir-format
 msgid "Started:"
 msgstr "開始:"
@@ -2507,17 +2507,17 @@ msgstr "作成から完了までの時間"
 msgid "Time from start to completion"
 msgstr "開始から完了までの時間"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:135
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Time tasks spend in the backlog before being claimed"
 msgstr "タスクが担当されるまでバックログで待機する時間"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:136
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Time tasks spend in the queue before work begins"
 msgstr "作業が始まるまでキューで待機する時間"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:78
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:79
 #, elixir-autogen, elixir-format
 msgid "Time tasks spend waiting for human review after completion"
 msgstr "完了後にレビューを待つ時間"
@@ -2972,7 +2972,7 @@ msgstr "は私たちの2つのAIツールでの実践的な作業から生まれ
 msgid "Assignee does not have access to this board"
 msgstr "担当者はこのボードへのアクセス権がありません"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:144
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Backlog Wait Tasks"
 msgstr "Backlog で待機中のタスク"
@@ -3012,12 +3012,12 @@ msgstr "親ゴールはこのボードに属していません"
 msgid "Please wait a moment before submitting another issue."
 msgstr "別の問題を送信する前に少しお待ちください。"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:145
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Queue Wait Tasks"
 msgstr "キューで待機中のタスク"
 
-#: lib/kanban_web/live/metrics_live/wait_time.html.heex:84
+#: lib/kanban_web/live/metrics_live/wait_time.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Review Wait Tasks"
 msgstr "Review で待機中のタスク"
@@ -5297,7 +5297,7 @@ msgstr "人間の応答平均"
 msgid "idea → done"
 msgstr "アイデア → 完了"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:63
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:75
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Cycle time · daily median (min)"
 msgstr "サイクルタイム"
@@ -7289,7 +7289,7 @@ msgstr "期間"
 msgid "vs prev %{count}d"
 msgstr "前%{count}日比"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:66
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:78
 #, elixir-autogen, elixir-format, fuzzy
 msgid "last %{count} days"
 msgstr "過去%{count}日"
