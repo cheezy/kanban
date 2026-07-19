@@ -4,10 +4,34 @@ defmodule Kanban.Metrics.Workspace.CumulativeFlow do
   `Kanban.Metrics.Workspace` (W1737) to keep that façade under the module-size
   guideline.
 
-  `snapshots/3` returns one snapshot per local day in the trailing window, each
+  `snapshots/4` returns one snapshot per local day in the trailing window, each
   with integer counts for `:backlog`, `:ready`, `:doing`, `:review`, and
   `:done`. The façade resolves scope and options, then hands this module the
-  already-resolved `board_ids`, `window_days`, and `timezone`.
+  already-resolved `board_ids`, `window_days`, `timezone`, and
+  `exclude_weekends?` flag.
+
+  ### Weekend exclusion is bucket-dropping ONLY — deliberately
+
+  Saturdays and Sundays are removed from the day range; the remaining snapshots
+  are otherwise unchanged. Two rules that `CompletedTasks` applies are
+  deliberately NOT applied here:
+
+    * **No business-time adjustment** — this module computes no durations, so
+      there is nothing to adjust.
+    * **No dropping of weekend-completed tasks.** `CompletedTasks` removes them
+      from its set so its flow measures (throughput, the leaderboard, the daily
+      medians) agree with each other. Doing the same here would be wrong,
+      because cumulative flow is a *stock*, not a *flow*: each snapshot
+      partitions every visible task into exactly one of the five buckets by its
+      state at end-of-day. A task completed on Saturday genuinely IS done on the
+      following Monday, so excluding it would leave it in no bucket at all — the
+      stacked total would silently shrink by one and the bands would stop
+      summing to the visible task count.
+
+  So the two charts answer different questions and are not expected to
+  reconcile: throughput counts events that happened *in* a bucket, while the
+  done band counts everything finished *by* that day (which already includes the
+  whole pre-window history via `cfd_done_baseline/2`).
 
   ### Cumulative-flow approximation
 
@@ -46,7 +70,7 @@ defmodule Kanban.Metrics.Workspace.CumulativeFlow do
   `:review`, and `:done`, plus its `:date`. See the `@moduledoc` for the
   per-state approximation rules.
   """
-  @spec snapshots([integer()], pos_integer(), String.t()) :: [
+  @spec snapshots([integer()], pos_integer(), String.t(), boolean()) :: [
           %{
             date: Date.t(),
             backlog: non_neg_integer(),
@@ -56,21 +80,21 @@ defmodule Kanban.Metrics.Workspace.CumulativeFlow do
             done: non_neg_integer()
           }
         ]
-  def snapshots(board_ids, window_days, timezone) do
+  def snapshots(board_ids, window_days, timezone, exclude_weekends? \\ false) do
     window_start = Windows.local_day_start(window_days - 1, timezone)
     tasks = cfd_relevant_tasks(board_ids, window_start)
     baseline_done = cfd_done_baseline(board_ids, window_start)
 
     window_days
-    |> Windows.day_range(timezone)
+    |> Windows.day_range(timezone, exclude_weekends?)
     |> Enum.map(&cfd_snapshot(tasks, baseline_done, &1, timezone))
   end
 
   @doc "The zero cumulative-flow snapshots (all buckets 0) for the trailing window."
-  @spec empty_snapshots(pos_integer(), String.t()) :: [map()]
-  def empty_snapshots(window_days, timezone) do
+  @spec empty_snapshots(pos_integer(), String.t(), boolean()) :: [map()]
+  def empty_snapshots(window_days, timezone, exclude_weekends? \\ false) do
     window_days
-    |> Windows.day_range(timezone)
+    |> Windows.day_range(timezone, exclude_weekends?)
     |> Enum.map(&zero_flow_snapshot/1)
   end
 

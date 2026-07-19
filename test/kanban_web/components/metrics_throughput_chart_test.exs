@@ -261,4 +261,59 @@ defmodule KanbanWeb.MetricsThroughputChartTest do
       assert length(Regex.scan(~r/data-metrics-throughput-value-label/, html)) == 30
     end
   end
+
+  describe "throughput_chart/1 — explicit dates (W1743)" do
+    defp render_chart_with_dates(series, dates) do
+      assigns = %{series: series, dates: dates}
+
+      rendered_to_string(~H"""
+      <MetricsThroughputChart.throughput_chart series={@series} dates={@dates} />
+      """)
+    end
+
+    test "labels each point with its own date rather than counting back from today" do
+      # Non-consecutive days, as produced when weekends are excluded. The
+      # fallback would label these as the last 3 consecutive days, which is the
+      # mislabeling this attr exists to prevent.
+      dates = [~D[2026-01-30], ~D[2026-02-02], ~D[2026-02-03]]
+
+      html = render_chart_with_dates([1, 2, 3], dates)
+
+      assert html =~ "Jan 30"
+      assert html =~ "Feb 2"
+      assert html =~ "Feb 3"
+      # The skipped weekend must not appear.
+      refute html =~ "Jan 31"
+      refute html =~ "Feb 1"
+    end
+
+    test "falls back to consecutive days when no dates are supplied" do
+      html = render_chart([1, 2, 3])
+
+      assert html =~ day_label(2)
+      assert html =~ day_label(0)
+    end
+
+    test "falls back when the dates do not line up with the series" do
+      # A mismatched length means the pairing cannot be trusted, so inferring is
+      # safer than labelling points with someone else's date.
+      html = render_chart_with_dates([1, 2, 3], [~D[2026-01-30]])
+
+      assert html =~ day_label(0)
+      refute html =~ "Jan 30"
+    end
+
+    test "an explicit-date series still thins its axis labels" do
+      dates = for i <- 0..29, do: Date.add(~D[2026-01-01], i)
+
+      html = render_chart_with_dates(List.duplicate(1, 30), dates)
+
+      # Thinned to at most 8 ticks, exactly as the inferred path is.
+      count = length(Regex.scan(~r/data-metrics-throughput-date-label/, html))
+      assert count <= 8
+      # Endpoints are always kept.
+      assert html =~ "Jan 1"
+      assert html =~ "Jan 30"
+    end
+  end
 end

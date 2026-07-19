@@ -54,9 +54,12 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
   ## Attrs
 
     * `data` — required. List of `%{date: Date.t(), minutes: integer()}`
-      entries. The chart adapts to any length, though
-      `Kanban.Metrics.Workspace.cycle_time_daily/1` always returns exactly 14.
-    * `window_days` — the trailing window named in the subtitle.
+      entries. The chart adapts to any length:
+      `Kanban.Metrics.Workspace.cycle_time_daily/1` returns one entry per day in
+      the window, which is fewer than `window_days` when weekends are excluded.
+    * `window_days` — the trailing window named in the subtitle. This is the
+      window's length in *calendar* days, so it can exceed the number of bars
+      rendered (excluding weekends drops days without shortening the window).
     * `color` — the bar fill, as a CSS custom property reference. Keeping it
       a token (never a Tailwind class) is what lets the dark theme override
       it with no component-side branching. Unlike `marker_prefix` this needs

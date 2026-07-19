@@ -64,6 +64,33 @@ defmodule Kanban.Metrics.WorkspaceTest do
     put_fields!(task, %{inserted_at: inserted_at})
   end
 
+  # The most recent local date falling on `dow` (1=Mon..7=Sun) STRICTLY BEFORE
+  # the viewer's local today — so 1 to 7 days back, always inside a 14-day
+  # trailing window and always wholly in the past.
+  #
+  # Weekend assertions need exact weekday control, which ws_complete!/3's
+  # days-ago arithmetic cannot give. Hardcoded literals like ~U[2026-01-30Z]
+  # are not an option either: every workspace read is a TRAILING window anchored
+  # on local today, so a fixed past date falls outside it and every assertion
+  # silently reads zero. Excluding today matters too: a timestamp at 10:00 on a
+  # date that happens to be today is in the FUTURE when the suite runs earlier
+  # than that, and the `completed_at <= now` filter would drop it.
+  defp anchor_dow(timezone, dow) do
+    today = Kanban.Timezone.local_today(timezone)
+
+    back = Enum.find(1..7, fn n -> today |> Date.add(-n) |> Date.day_of_week() == dow end)
+
+    Date.add(today, -back)
+  end
+
+  # A UTC instant at `hour` on the given local date.
+  defp local_at(date, timezone, hour) do
+    date
+    |> Kanban.Timezone.start_of_local_day(timezone)
+    |> DateTime.add(hour * 3600, :second)
+    |> DateTime.truncate(:second)
+  end
+
   describe "workspace reads — local timezone bucketing (W1267)" do
     # Anchor test data to a fixed day in the middle of the window (computed from
     # the viewer's local "today"), so the assertions are robust to the wall-clock
@@ -1358,6 +1385,328 @@ defmodule Kanban.Metrics.WorkspaceTest do
   defp seed_previous_window_completions(column) do
     column |> task_fixture(%{completed_by_agent: "Claude"}) |> ws_complete!(16)
     column |> task_fixture(%{completed_by_agent: "Ada"}) |> ws_complete!(18)
+  end
+
+  describe "workspace reads — exclude_weekends (W1743)" do
+    # A trailing 14-day window is exactly two calendar weeks, so it always holds
+    # exactly 10 weekdays and 4 weekend days no matter which day the suite runs
+    # on; a 7-day window always holds exactly 5. 30 and 90 vary (20-22, 64-66),
+    # so those are asserted structurally rather than by an exact count.
+    @tz "Etc/UTC"
+
+    test "day-bucketed series drop Saturday and Sunday buckets" do
+      %{scope: scope} = ws_setup()
+
+      for {window, weekdays} <- [{7, 5}, {14, 10}] do
+        opts = [scope: scope, window_days: window, exclude_weekends: true, timezone: @tz]
+
+        assert length(Workspace.cycle_time_daily(opts)) == weekdays
+        assert length(Workspace.lead_time_daily(opts)) == weekdays
+        assert length(Workspace.throughput_daily(opts)) == weekdays
+        assert length(Workspace.cumulative_flow(opts)) == weekdays
+      end
+    end
+
+    test "no series contains a weekend date, at any window size" do
+      %{scope: scope} = ws_setup()
+
+      for window <- [7, 14, 30, 90] do
+        opts = [scope: scope, window_days: window, exclude_weekends: true, timezone: @tz]
+
+        for entry <- Workspace.cycle_time_daily(opts) ++ Workspace.lead_time_daily(opts),
+            do: assert(Date.day_of_week(entry.date) not in [6, 7])
+
+        for snapshot <- Workspace.cumulative_flow(opts),
+            do: assert(Date.day_of_week(snapshot.date) not in [6, 7])
+      end
+    end
+
+    test "the window still spans the same calendar days — it is not extended" do
+      %{scope: scope} = ws_setup()
+      opts = [scope: scope, window_days: 14, exclude_weekends: true, timezone: @tz]
+
+      dates = opts |> Workspace.cycle_time_daily() |> Enum.map(& &1.date)
+      oldest = Enum.min(dates, Date)
+      today = Kanban.Timezone.local_today(@tz)
+
+      # Oldest retained day is still within the 14 calendar days back from today
+      # (a Monday start), never 14 *business* days back.
+      assert Date.diff(today, oldest) <= 13
+    end
+
+    test "defaults to false — an absent or non-boolean option keeps every day" do
+      %{scope: scope} = ws_setup()
+      base = [scope: scope, window_days: 14, timezone: @tz]
+
+      assert length(Workspace.cycle_time_daily(base)) == 14
+
+      for forged <- ["true", 1, nil, "1"] do
+        opts = Keyword.put(base, :exclude_weekends, forged)
+        assert length(Workspace.cycle_time_daily(opts)) == 14
+      end
+    end
+
+    test "cycle time subtracts the weekend portion of a Friday-to-Monday span" do
+      %{column: column, scope: scope} = ws_setup()
+
+      monday = anchor_dow(@tz, 1)
+      friday = Date.add(monday, -3)
+
+      column
+      |> task_fixture()
+      |> put_fields!(%{
+        claimed_at: local_at(friday, @tz, 18),
+        completed_at: local_at(monday, @tz, 10)
+      })
+
+      opts = [scope: scope, window_days: 14, timezone: @tz]
+      monday_minutes = fn series -> Enum.find(series, &(&1.date == monday)).minutes end
+
+      included = Workspace.cycle_time_daily(opts)
+      excluded = opts |> Keyword.put(:exclude_weekends, true) |> Workspace.cycle_time_daily()
+
+      # Fri 18:00 -> Mon 10:00 is 64h wall-clock; removing the full Sat+Sun
+      # leaves 16h of business time.
+      assert monday_minutes.(included) == 64 * 60
+      assert monday_minutes.(excluded) == 16 * 60
+    end
+
+    test "lead time subtracts weekend time too" do
+      %{column: column, scope: scope} = ws_setup()
+
+      monday = anchor_dow(@tz, 1)
+      friday = Date.add(monday, -3)
+      completed_at = local_at(monday, @tz, 10)
+
+      column
+      |> task_fixture()
+      |> put_fields!(%{
+        claimed_at: completed_at,
+        completed_at: completed_at,
+        inserted_at:
+          friday |> local_at(@tz, 18) |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+      })
+
+      opts = [scope: scope, window_days: 14, timezone: @tz]
+      monday_minutes = fn series -> Enum.find(series, &(&1.date == monday)).minutes end
+
+      included = Workspace.lead_time_daily(opts)
+      excluded = opts |> Keyword.put(:exclude_weekends, true) |> Workspace.lead_time_daily()
+
+      assert monday_minutes.(included) == 64 * 60
+      assert monday_minutes.(excluded) == 16 * 60
+    end
+
+    test "a span falling entirely inside a weekend clamps to zero, never negative" do
+      %{column: column, scope: scope} = ws_setup()
+
+      saturday = anchor_dow(@tz, 6)
+
+      column
+      |> task_fixture()
+      |> put_fields!(%{
+        claimed_at: local_at(saturday, @tz, 9),
+        completed_at: local_at(saturday, @tz, 17)
+      })
+
+      kpis =
+        Workspace.workspace_kpis(
+          scope: scope,
+          window_days: 14,
+          exclude_weekends: true,
+          timezone: @tz
+        )
+
+      assert kpis.cycle_time_median_minutes == 0
+    end
+
+    test "review wait uses business time as well, so the KPI strip agrees with the charts" do
+      %{column: column, scope: scope} = ws_setup()
+
+      monday = anchor_dow(@tz, 1)
+      friday = Date.add(monday, -3)
+
+      column
+      |> task_fixture(%{needs_review: true})
+      |> put_fields!(%{
+        claimed_at: local_at(friday, @tz, 17),
+        completed_at: local_at(friday, @tz, 18),
+        reviewed_at: local_at(monday, @tz, 10),
+        needs_review: true
+      })
+
+      opts = [scope: scope, window_days: 14, timezone: @tz]
+
+      included = Workspace.workspace_kpis(opts)
+      excluded = opts |> Keyword.put(:exclude_weekends, true) |> Workspace.workspace_kpis()
+
+      assert included.review_wait_minutes == 64 * 60
+      assert excluded.review_wait_minutes == 16 * 60
+    end
+
+    test "a weekend completion disappears from every payload at once" do
+      %{column: column, scope: scope} = ws_setup()
+
+      saturday = anchor_dow(@tz, 6)
+      wednesday = anchor_dow(@tz, 3)
+
+      for {date, agent} <- [{saturday, "Weekend Agent"}, {wednesday, "Weekday Agent"}] do
+        column
+        |> task_fixture(%{completed_by_agent: agent})
+        |> put_fields!(%{
+          claimed_at: local_at(date, @tz, 9),
+          completed_at: local_at(date, @tz, 10),
+          completed_by_agent: agent
+        })
+      end
+
+      opts = [scope: scope, window_days: 14, exclude_weekends: true, timezone: @tz]
+
+      # The throughput bars, the KPI count, and the leaderboard must all agree
+      # that only the weekday completion counts — otherwise the page contradicts
+      # itself (acceptance criterion 6).
+      assert opts |> Workspace.throughput_daily() |> Enum.sum() == 1
+
+      leaderboard_names = opts |> Workspace.agent_leaderboard() |> Enum.map(& &1.name)
+      assert leaderboard_names == ["Weekday Agent"]
+
+      # And with the flag off, both are counted everywhere.
+      included = Keyword.put(opts, :exclude_weekends, false)
+      assert included |> Workspace.throughput_daily() |> Enum.sum() == 2
+      assert included |> Workspace.agent_leaderboard() |> length() == 2
+    end
+
+    test "a weekend-completed task still contributes its business time to the duration KPIs" do
+      %{column: column, scope: scope} = ws_setup()
+
+      # Claimed Friday 16:00, completed Saturday 10:00. The weekend-completion
+      # rule must NOT reach the duration KPIs: the board pages report this
+      # task's business-time cycle (the 8h from 16:00 to midnight Friday; the
+      # 10h that fall on Saturday are subtracted), so the workspace must too, or
+      # the two pages disagree about the same task.
+      monday = anchor_dow(@tz, 1)
+      friday = Date.add(monday, -3)
+      saturday = Date.add(monday, -2)
+
+      column
+      |> task_fixture()
+      |> put_fields!(%{
+        claimed_at: local_at(friday, @tz, 16),
+        completed_at: local_at(saturday, @tz, 10)
+      })
+
+      opts = [scope: scope, window_days: 14, exclude_weekends: true, timezone: @tz]
+      kpis = Workspace.workspace_kpis(opts)
+
+      # Fri 16:00 -> Sat 10:00 is 18h wall-clock; the 10h falling on Saturday
+      # are subtracted, leaving 8h of business time.
+      assert kpis.cycle_time_median_minutes == 8 * 60
+
+      # But it is still absent from the count-based throughput KPI, which must
+      # keep matching the sum of the (weekend-free) chart bars.
+      assert kpis.throughput_per_day == 0.0
+    end
+
+    test "cumulative flow still counts a weekend completion as done on the following weekday" do
+      %{column: column, scope: scope} = ws_setup()
+
+      # Deliberate asymmetry with throughput: cumulative flow is a STOCK, so
+      # every visible task must land in exactly one bucket each day. A task
+      # completed on Saturday really is done on Monday — dropping it the way the
+      # flow measures do would leave it in no bucket and shrink the stacked
+      # total. See the CumulativeFlow moduledoc.
+      # Derived from a Monday anchor rather than anchor_dow(@tz, 6) so there is
+      # always a retained weekday AFTER it inside the window — the most recent
+      # Saturday can be yesterday, leaving only a (dropped) Sunday behind it.
+      monday = anchor_dow(@tz, 1)
+      saturday = Date.add(monday, -2)
+
+      column
+      |> task_fixture()
+      |> put_fields!(%{
+        claimed_at: local_at(saturday, @tz, 9),
+        completed_at: local_at(saturday, @tz, 10)
+      })
+
+      opts = [scope: scope, window_days: 14, exclude_weekends: true, timezone: @tz]
+      snapshots = Workspace.cumulative_flow(opts)
+
+      # No weekend buckets remain...
+      assert Enum.all?(snapshots, &(Date.day_of_week(&1.date) not in [6, 7]))
+
+      # ...but the weekday snapshots after that Saturday still count it as done.
+      after_saturday = Enum.filter(snapshots, &(Date.compare(&1.date, saturday) == :gt))
+      assert after_saturday != []
+      assert Enum.all?(after_saturday, &(&1.done >= 1))
+
+      # And it is absent from the flow measures, which is the intended split.
+      assert opts |> Workspace.throughput_daily() |> Enum.sum() == 0
+    end
+
+    test "per-day throughput divides by the days actually counted" do
+      %{column: column, scope: scope} = ws_setup()
+
+      wednesday = anchor_dow(@tz, 3)
+
+      column
+      |> task_fixture()
+      |> put_fields!(%{
+        claimed_at: local_at(wednesday, @tz, 9),
+        completed_at: local_at(wednesday, @tz, 10)
+      })
+
+      opts = [scope: scope, window_days: 14, exclude_weekends: true, timezone: @tz]
+
+      # One completion over the 10 weekdays in the window, not over 14 calendar
+      # days — dividing by 14 would understate the working-day rate.
+      assert_in_delta Workspace.workspace_kpis(opts).throughput_per_day, 1 / 10, 0.0001
+    end
+
+    test "overview/1 matches the individual reads when weekends are excluded" do
+      context = ws_setup()
+      seed_overview_dataset(context)
+      scope = context.scope
+
+      assert_overview_matches(scope: scope, exclude_weekends: true, timezone: @tz)
+
+      assert_overview_matches(
+        scope: scope,
+        exclude_weekends: true,
+        window_days: 7,
+        timezone: @tz
+      )
+    end
+
+    test "placeholder_overview/1 matches the real series lengths, so connecting does not reflow" do
+      %{scope: scope} = ws_setup()
+
+      for window <- [7, 14, 30, 90] do
+        opts = [scope: scope, window_days: window, exclude_weekends: true, timezone: @tz]
+        real = Workspace.overview(opts)
+        placeholder = Workspace.placeholder_overview(opts)
+
+        assert length(placeholder.cycle_series) == length(real.cycle_series)
+        assert length(placeholder.lead_series) == length(real.lead_series)
+        assert length(placeholder.throughput_series) == length(real.throughput_series)
+        assert length(placeholder.flow_snapshots) == length(real.flow_snapshots)
+      end
+    end
+
+    test "excluding weekends does not change the query shape or count" do
+      %{scope: scope} = ws_setup()
+
+      {_result, queries} =
+        queries_during(fn ->
+          Workspace.overview(scope: scope, exclude_weekends: true, timezone: @tz)
+        end)
+
+      {_result, baseline} =
+        queries_during(fn -> Workspace.overview(scope: scope, timezone: @tz) end)
+
+      # All weekend filtering is in-memory, so the flag must not add, remove, or
+      # reshape a single query.
+      assert length(queries) == length(baseline)
+    end
   end
 
   defp assert_overview_matches(opts) do

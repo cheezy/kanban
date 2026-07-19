@@ -36,6 +36,12 @@ defmodule Kanban.Metrics.Workspace do
   `lead_time_daily/1` remains available as a standalone read for callers
   that want only that series.
 
+  The day counts above describe the default (weekends included). All six
+  accept an `:exclude_weekends` option (W1743); when it is `true` the day
+  series drop their Saturday and Sunday buckets and so become shorter than
+  the resolved `:window_days`, which continues to mean calendar days. See
+  `workspace_kpis/1` for the full option documentation.
+
   All six accept `opts` with `:scope` and route through
   `Kanban.Boards.list_boards(scope.user)` to derive the visible board id
   set. A `nil` scope or a scope with `nil` user returns the empty/zero
@@ -76,10 +82,11 @@ defmodule Kanban.Metrics.Workspace do
   def overview(opts \\ []) do
     window_days = resolve_window_days(opts)
     timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    exclude_weekends? = resolve_exclude_weekends(opts)
 
     case scoped_board_ids(opts) do
-      [] -> zero_overview(window_days, timezone)
-      board_ids -> build_overview(board_ids, window_days, timezone)
+      [] -> zero_overview(window_days, timezone, exclude_weekends?)
+      board_ids -> build_overview(board_ids, window_days, timezone, exclude_weekends?)
     end
   end
 
@@ -103,17 +110,18 @@ defmodule Kanban.Metrics.Workspace do
   def placeholder_overview(opts \\ []) do
     window_days = resolve_window_days(opts)
     timezone = Keyword.get(opts, :timezone, "Etc/UTC")
-    zero_overview(window_days, timezone)
+    zero_overview(window_days, timezone, resolve_exclude_weekends(opts))
   end
 
-  defp zero_overview(window_days, timezone) do
+  defp zero_overview(window_days, timezone, exclude_weekends?) do
     %{
       kpis: CompletedTasks.zero_kpis(),
-      cycle_series: CompletedTasks.empty_cycle_series(window_days, timezone),
-      lead_series: CompletedTasks.empty_lead_series(window_days, timezone),
-      throughput_series: CompletedTasks.empty_throughput_series(window_days),
+      cycle_series: CompletedTasks.empty_cycle_series(window_days, timezone, exclude_weekends?),
+      lead_series: CompletedTasks.empty_lead_series(window_days, timezone, exclude_weekends?),
+      throughput_series:
+        CompletedTasks.empty_throughput_series(window_days, timezone, exclude_weekends?),
       leaderboard: [],
-      flow_snapshots: CumulativeFlow.empty_snapshots(window_days, timezone)
+      flow_snapshots: CumulativeFlow.empty_snapshots(window_days, timezone, exclude_weekends?)
     }
   end
 
@@ -122,10 +130,13 @@ defmodule Kanban.Metrics.Workspace do
   # with `flow_snapshots` from `cumulative_flow`'s own broader read. `board_ids`
   # is resolved once by the caller and threaded through, so `Boards.list_boards`
   # runs at most once per overview.
-  defp build_overview(board_ids, window_days, timezone) do
+  defp build_overview(board_ids, window_days, timezone, exclude_weekends?) do
     board_ids
-    |> CompletedTasks.overview_series(window_days, timezone)
-    |> Map.put(:flow_snapshots, CumulativeFlow.snapshots(board_ids, window_days, timezone))
+    |> CompletedTasks.overview_series(window_days, timezone, exclude_weekends?)
+    |> Map.put(
+      :flow_snapshots,
+      CumulativeFlow.snapshots(board_ids, window_days, timezone, exclude_weekends?)
+    )
   end
 
   @doc """
@@ -149,6 +160,14 @@ defmodule Kanban.Metrics.Workspace do
       when omitted or unknown; the day-boundary conversion that consumes
       it is layered on in later work, so the option is currently a
       no-op pass-through.
+    * `:exclude_weekends` — when strictly `true`, removes non-working days
+      from every payload (W1743). Saturdays and Sundays drop out of the day
+      range, tasks completed on a weekend are excluded from the counted set,
+      and every remaining duration (cycle, lead, review wait) is measured in
+      business time via `Kanban.Metrics.BusinessTime.business_seconds/2`.
+      The window still spans the same number of *calendar* days — it is not
+      extended to reach that many business days — so the day series simply
+      get shorter. Any non-boolean value falls back to `false`.
   """
   @spec workspace_kpis(keyword()) :: %{
           cycle_time_median_minutes: non_neg_integer(),
@@ -168,7 +187,7 @@ defmodule Kanban.Metrics.Workspace do
       board_ids ->
         window_days = resolve_window_days(opts)
         timezone = Keyword.get(opts, :timezone, "Etc/UTC")
-        CompletedTasks.kpis(board_ids, window_days, timezone)
+        CompletedTasks.kpis(board_ids, window_days, timezone, resolve_exclude_weekends(opts))
     end
   end
 
@@ -185,10 +204,14 @@ defmodule Kanban.Metrics.Workspace do
   def cycle_time_daily(opts \\ []) do
     window_days = resolve_window_days(opts)
     timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    exclude_weekends? = resolve_exclude_weekends(opts)
 
     case scoped_board_ids(opts) do
-      [] -> CompletedTasks.empty_cycle_series(window_days, timezone)
-      board_ids -> CompletedTasks.cycle_time_daily(board_ids, window_days, timezone)
+      [] ->
+        CompletedTasks.empty_cycle_series(window_days, timezone, exclude_weekends?)
+
+      board_ids ->
+        CompletedTasks.cycle_time_daily(board_ids, window_days, timezone, exclude_weekends?)
     end
   end
 
@@ -209,10 +232,14 @@ defmodule Kanban.Metrics.Workspace do
   def lead_time_daily(opts \\ []) do
     window_days = resolve_window_days(opts)
     timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    exclude_weekends? = resolve_exclude_weekends(opts)
 
     case scoped_board_ids(opts) do
-      [] -> CompletedTasks.empty_lead_series(window_days, timezone)
-      board_ids -> CompletedTasks.lead_time_daily(board_ids, window_days, timezone)
+      [] ->
+        CompletedTasks.empty_lead_series(window_days, timezone, exclude_weekends?)
+
+      board_ids ->
+        CompletedTasks.lead_time_daily(board_ids, window_days, timezone, exclude_weekends?)
     end
   end
 
@@ -226,10 +253,14 @@ defmodule Kanban.Metrics.Workspace do
   def throughput_daily(opts \\ []) do
     window_days = resolve_window_days(opts)
     timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    exclude_weekends? = resolve_exclude_weekends(opts)
 
     case scoped_board_ids(opts) do
-      [] -> CompletedTasks.empty_throughput_series(window_days)
-      board_ids -> CompletedTasks.throughput_daily(board_ids, window_days, timezone)
+      [] ->
+        CompletedTasks.empty_throughput_series(window_days, timezone, exclude_weekends?)
+
+      board_ids ->
+        CompletedTasks.throughput_daily(board_ids, window_days, timezone, exclude_weekends?)
     end
   end
 
@@ -257,8 +288,16 @@ defmodule Kanban.Metrics.Workspace do
     timezone = Keyword.get(opts, :timezone, "Etc/UTC")
 
     case scoped_board_ids(opts) do
-      [] -> []
-      board_ids -> CompletedTasks.leaderboard(board_ids, window_days, timezone)
+      [] ->
+        []
+
+      board_ids ->
+        CompletedTasks.leaderboard(
+          board_ids,
+          window_days,
+          timezone,
+          resolve_exclude_weekends(opts)
+        )
     end
   end
 
@@ -282,10 +321,14 @@ defmodule Kanban.Metrics.Workspace do
   def cumulative_flow(opts \\ []) do
     window_days = resolve_window_days(opts)
     timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    exclude_weekends? = resolve_exclude_weekends(opts)
 
     case scoped_board_ids(opts) do
-      [] -> CumulativeFlow.empty_snapshots(window_days, timezone)
-      board_ids -> CumulativeFlow.snapshots(board_ids, window_days, timezone)
+      [] ->
+        CumulativeFlow.empty_snapshots(window_days, timezone, exclude_weekends?)
+
+      board_ids ->
+        CumulativeFlow.snapshots(board_ids, window_days, timezone, exclude_weekends?)
     end
   end
 
@@ -329,4 +372,10 @@ defmodule Kanban.Metrics.Workspace do
       _ -> @workspace_window_days
     end
   end
+
+  # Resolve the weekend-exclusion flag from an untrusted client option. Strictly
+  # `true` — the string "true", 1, nil, or an absent option all collapse to
+  # false — so the same defensive posture `resolve_window_days/1` takes applies
+  # here: only an already-parsed boolean can turn the filter on.
+  defp resolve_exclude_weekends(opts), do: Keyword.get(opts, :exclude_weekends) === true
 end

@@ -29,8 +29,16 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   (W1260): it offers 7/14/30/90-day windows (default 14) and re-renders
   every series and KPI through the `:window_days` option on the
   `Kanban.Metrics` reads. Like the board selection it lives in assigns
-  only — a page reload resets to 14 days. The toolbar carries only these
-  two working controls — there are no decorative placeholder buttons.
+  only — a page reload resets to 14 days.
+
+  The "Exclude Weekends" checkbox (W1743) mirrors the board metrics pages'
+  control: when checked, Saturdays and Sundays drop out of every series, tasks
+  completed on a weekend stop counting, and the remaining durations are measured
+  in business time. Note that the window keeps meaning *calendar* days, so a
+  14-day window renders 10 bars under a "last 14 days" subtitle — the subtitle
+  describes the span, not the bar count. Like the other two controls the state
+  lives in assigns only, so a reload resets it to unchecked. The toolbar carries
+  only these three working controls — there are no decorative placeholder buttons.
   """
   use KanbanWeb, :live_view
 
@@ -41,6 +49,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   alias KanbanWeb.MetricsCumulativeFlow
   alias KanbanWeb.MetricsCycleTimeChart
   alias KanbanWeb.MetricsKpiStrip
+  alias KanbanWeb.MetricsLive.Helpers
   alias KanbanWeb.MetricsThroughputChart
 
   # Allow-list of supported window sizes — single source of truth for both the
@@ -80,6 +89,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
       page_title: "Stride · Metrics",
       boards: scoped_boards(socket.assigns.current_scope),
       selected_window_days: @default_window_days,
+      exclude_weekends: false,
       timezone: KanbanWeb.Timezone.browser_timezone(socket)
     }
   end
@@ -93,6 +103,21 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   @impl true
   def handle_event("window_change", %{"window_days" => raw}, socket) do
     socket = assign(socket, :selected_window_days, parse_window_days(raw))
+    {:noreply, assign_workspace_metrics(socket, socket.assigns.selected_board_ids)}
+  end
+
+  # An unchecked box omits the key entirely, so the absent param parses to false
+  # — which is why no hidden "false" companion input is needed (or wanted) on the
+  # checkbox itself.
+  @impl true
+  def handle_event("weekend_filter_change", params, socket) do
+    socket =
+      assign(
+        socket,
+        :exclude_weekends,
+        Helpers.parse_exclude_weekends(params["exclude_weekends"])
+      )
+
     {:noreply, assign_workspace_metrics(socket, socket.assigns.selected_board_ids)}
   end
 
@@ -110,6 +135,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
       scope: socket.assigns.current_scope,
       board_ids: board_ids_filter(boards, selected_ids),
       window_days: window_days,
+      exclude_weekends: socket.assigns.exclude_weekends,
       timezone: Map.get(socket.assigns, :timezone, "Etc/UTC")
     ]
 
@@ -123,6 +149,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     overview =
       Workspace.placeholder_overview(
         window_days: socket.assigns.selected_window_days,
+        exclude_weekends: socket.assigns.exclude_weekends,
         timezone: socket.assigns.timezone
       )
 
@@ -181,6 +208,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
           </span>
           <span style="flex: 1;" />
           <.board_selector boards={@boards} selected_board_ids={@selected_board_ids} />
+          <.weekend_selector exclude_weekends={@exclude_weekends} />
           <.window_selector selected_window_days={@selected_window_days} />
         </header>
 
@@ -208,8 +236,15 @@ defmodule KanbanWeb.MetricsLive.Workspace do
           />
 
           <div class="flex flex-col md:grid md:grid-cols-[1.4fr_1fr] gap-3.5">
+            <%!-- The throughput series is bare counts, so its x-axis dates come
+            from the cycle series. Both are bucketed over the same day range
+            (same window, timezone, and weekend flag), so they are always the
+            same length and order. Passing them explicitly matters once weekends
+            are excluded: the chart's fallback infers consecutive calendar days
+            back from today, which would mislabel every weekday point. --%>
             <MetricsThroughputChart.throughput_chart
               series={@throughput_series}
+              dates={Enum.map(@cycle_series, & &1.date)}
               window_days={@selected_window_days}
             />
             <MetricsAgentLeaderboard.leaderboard
@@ -292,6 +327,42 @@ defmodule KanbanWeb.MetricsLive.Workspace do
         </label>
       </form>
     </details>
+    """
+  end
+
+  # --- Exclude-weekends selector ------------------------------------------
+
+  attr :exclude_weekends, :boolean, required: true
+
+  # Mirrors the board metrics pages' checkbox (MetricsLive.Components.metric_filters/1)
+  # so the two pages read as one control. A raw checkbox rather than
+  # core_components' <.input type="checkbox"> for the same reason the board
+  # selector above documents: <.input> emits a hidden value="false" companion,
+  # and here the absent-key-means-false semantics are what the handler relies on.
+  # Every colour is a theme token, so the pill tracks light and dark mode.
+  defp weekend_selector(assigns) do
+    ~H"""
+    <form id="weekend-filter-form" phx-change="weekend_filter_change" style="margin: 0;">
+      <label style={[
+        "display: inline-flex; align-items: center; gap: 8px;",
+        "padding: 4px 10px; border-radius: 5px;",
+        "background: var(--surface); border: 1px solid var(--line);",
+        "cursor: pointer; user-select: none;"
+      ]}>
+        <input
+          type="checkbox"
+          id="exclude_weekends"
+          name="exclude_weekends"
+          value="true"
+          checked={@exclude_weekends}
+          data-metrics-weekend-selector
+          style="width: 14px; height: 14px; accent-color: var(--stride-orange);"
+        />
+        <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+          {gettext("Exclude Weekends")}
+        </span>
+      </label>
+    </form>
     """
   end
 

@@ -635,6 +635,132 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
     end
   end
 
+  describe "exclude-weekends filter (W1743)" do
+    setup [:register_and_log_in_user]
+
+    defp weekend_checked?(html) do
+      Regex.match?(~r/id="exclude_weekends"[^>]*\schecked/, html)
+    end
+
+    defp throughput_points(html), do: length(Regex.scan(~r/data-metrics-throughput-point/, html))
+    defp lead_bars(html), do: length(Regex.scan(~r/data-metrics-lead-time-bar(?!-)/, html))
+
+    test "renders an unchecked Exclude Weekends checkbox by default", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "data-metrics-weekend-selector"
+      assert html =~ "Exclude Weekends"
+      refute weekend_checked?(html)
+    end
+
+    test "checking it drops the weekend buckets from every chart", %{conn: conn} do
+      {:ok, view, html} = live(conn, ~p"/metrics")
+
+      # A 14-day window is two calendar weeks: 14 buckets, of which 10 are
+      # weekdays — so the counts below hold whichever day the suite runs on.
+      assert throughput_points(html) == 14
+      assert lead_bars(html) == 14
+
+      html =
+        view
+        |> element("#weekend-filter-form")
+        |> render_change(%{"exclude_weekends" => "true"})
+
+      assert weekend_checked?(html)
+      assert throughput_points(html) == 10
+      assert lead_bars(html) == 10
+    end
+
+    test "the subtitle keeps naming calendar days even though fewer bars render",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      html =
+        view
+        |> element("#weekend-filter-form")
+        |> render_change(%{"exclude_weekends" => "true"})
+
+      # 10 bars under a "last 14 days" subtitle is intentional: window_days
+      # means CALENDAR days, and excluding weekends removes days rather than
+      # reaching further back. Asserted explicitly so it is not "fixed" later.
+      assert lead_bars(html) == 10
+      assert lead_chart_section(html) =~ "last 14 days"
+      assert html =~ "14 days"
+    end
+
+    test "unchecking restores the full window", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      view
+      |> element("#weekend-filter-form")
+      |> render_change(%{"exclude_weekends" => "true"})
+
+      # An unchecked box omits the key entirely — this is the payload the
+      # browser actually sends, and it must parse back to false. The event is
+      # sent to the view directly rather than through element/2, because
+      # element-based render_change merges the params with the rendered DOM,
+      # which still carries checked="checked" and would mask the omission.
+      html = render_change(view, "weekend_filter_change", %{})
+
+      refute weekend_checked?(html)
+      assert throughput_points(html) == 14
+      assert lead_bars(html) == 14
+    end
+
+    test "composes with the window selector", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      view
+      |> element("#window-days-form")
+      |> render_change(%{"window_days" => "7"})
+
+      html =
+        view
+        |> element("#weekend-filter-form")
+        |> render_change(%{"exclude_weekends" => "true"})
+
+      # A 7-day window always contains exactly 5 weekdays.
+      assert selected_window(html) == 7
+      assert throughput_points(html) == 5
+      assert lead_bars(html) == 5
+    end
+
+    test "the selection survives a board-filter change", %{conn: conn, user: user} do
+      board1 = board_fixture(user)
+      _board2 = board_fixture(user)
+
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      view
+      |> element("#weekend-filter-form")
+      |> render_change(%{"exclude_weekends" => "true"})
+
+      html =
+        view
+        |> element("#board-filter-form")
+        |> render_change(%{"board_ids" => [to_string(board1.id)]})
+
+      assert weekend_checked?(html)
+      assert throughput_points(html) == 10
+      assert html =~ "1 of 2 boards"
+    end
+
+    test "a fresh mount resets the checkbox (session-only)", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      view
+      |> element("#weekend-filter-form")
+      |> render_change(%{"exclude_weekends" => "true"})
+
+      # A page reload is a fresh mount — the filter resets, matching the board
+      # metrics pages (no push_patch, no URL persistence).
+      {:ok, _view2, html2} = live(conn, ~p"/metrics")
+
+      refute weekend_checked?(html2)
+      assert throughput_points(html2) == 14
+    end
+  end
+
   # A completed task whose claimed-to-completed span is `minutes`, landing on
   # the day `days_ago` back so it falls inside or outside a chosen window.
   defp seed_cycle_time(column, opts) do

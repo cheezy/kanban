@@ -32,30 +32,22 @@ defmodule KanbanWeb.MetricsThroughputChart do
 
   ## Attrs
 
-    * `series` — required. List of non-negative integers (any length,
-      though `Kanban.Metrics.Workspace.throughput_daily/1` always returns 14).
+    * `series` — required. List of non-negative integers (any length;
+      `Kanban.Metrics.Workspace.throughput_daily/1` returns one entry per day
+      in the window, which is shorter than `window_days` when weekends are
+      excluded).
+    * `dates` — optional. The `Date` each series entry belongs to, same length
+      and order as `series`. Supply this whenever the days are not consecutive
+      — with weekends excluded they are not — because the fallback derives the
+      x-axis labels by counting back one calendar day per point from today,
+      which would mislabel every point. Defaults to `nil` (that fallback).
   """
   attr :series, :list, required: true
+  attr :dates, :list, default: nil
   attr :window_days, :integer, default: 14
 
   def throughput_chart(assigns) do
-    series = assigns.series
-    geometry = compute_geometry(series)
-    peak = Enum.max(series, fn -> 0 end)
-
-    assigns =
-      assigns
-      |> assign(:view_w, @view_w)
-      |> assign(:view_h, @view_h)
-      |> assign(:line_color, @line_color)
-      |> assign(:gradient_id, @gradient_id)
-      |> assign(:points, geometry.points)
-      |> assign(:area_path, geometry.area_path)
-      |> assign(:line_path, geometry.line_path)
-      |> assign(:peak, peak)
-      |> assign(:y_ticks, y_ticks(peak))
-      |> assign(:value_labels, value_labels(series, geometry.points))
-      |> assign(:date_labels, date_labels(geometry.points))
+    assigns = assign_chart(assigns)
 
     ~H"""
     <section
@@ -250,30 +242,61 @@ defmodule KanbanWeb.MetricsThroughputChart do
   defp label_shift_x(index, total) when index == total - 1, do: "-100%"
   defp label_shift_x(_index, _total), do: "-50%"
 
+  # Derives every geometry and label assign the sparkline markup reads. Split out
+  # of throughput_chart/1 so the render function stays a template rather than a
+  # calculation.
+  defp assign_chart(assigns) do
+    series = assigns.series
+    geometry = compute_geometry(series)
+    peak = Enum.max(series, fn -> 0 end)
+
+    assigns
+    |> assign(:view_w, @view_w)
+    |> assign(:view_h, @view_h)
+    |> assign(:line_color, @line_color)
+    |> assign(:gradient_id, @gradient_id)
+    |> assign(:points, geometry.points)
+    |> assign(:area_path, geometry.area_path)
+    |> assign(:line_path, geometry.line_path)
+    |> assign(:peak, peak)
+    |> assign(:y_ticks, y_ticks(peak))
+    |> assign(:value_labels, value_labels(series, geometry.points))
+    |> assign(:date_labels, date_labels(geometry.points, assigns[:dates]))
+  end
+
   # --- X-axis date labels --------------------------------------------------
 
   # One x-axis date label per retained point, thinned for longer windows so the
-  # ticks never overlap. The dates are the trailing window ending today (today
-  # going back length-1 days) — the same ordered window
-  # `Kanban.Metrics.Workspace.throughput_daily/1` builds its counts from — so each label
-  # sits under the point for that day. left_pct/shift_x mirror the value labels
-  # so the ticks align to the points and the first/last stay inside the plot.
-  defp date_labels([]), do: []
+  # ticks never overlap. When the caller supplies `dates`, each label is the date
+  # of its own point. Otherwise the dates are inferred as the trailing window
+  # ending today (today going back length-1 days), which is only correct while
+  # the series covers consecutive calendar days. left_pct/shift_x mirror the
+  # value labels so the ticks align to the points and the first/last stay inside
+  # the plot.
+  defp date_labels([], _dates), do: []
 
-  defp date_labels(points) do
+  defp date_labels(points, dates) do
     total = length(points)
-    today = Date.utc_today()
+    labelled = Enum.zip(points, point_dates(dates, total))
     keep = total |> label_indices() |> MapSet.new()
 
-    points
+    labelled
     |> Enum.with_index()
-    |> Enum.filter(fn {_point, index} -> MapSet.member?(keep, index) end)
-    |> Enum.map(fn {point, index} -> date_label(point, index, total, today) end)
+    |> Enum.filter(fn {_labelled, index} -> MapSet.member?(keep, index) end)
+    |> Enum.map(fn {{point, date}, index} -> date_label(point, date, index, total) end)
   end
 
-  defp date_label({x, _y}, index, total, today) do
-    date = Date.add(today, -(total - 1 - index))
+  # Falls back to consecutive days ending today when the caller supplies no
+  # dates, or supplies a list that does not line up with the points (a mismatched
+  # length means we cannot trust the pairing, so infer rather than mislabel).
+  defp point_dates(dates, total) when is_list(dates) and length(dates) == total, do: dates
 
+  defp point_dates(_dates, total) do
+    today = Date.utc_today()
+    Enum.map(0..(total - 1)//1, &Date.add(today, -(total - 1 - &1)))
+  end
+
+  defp date_label({x, _y}, date, index, total) do
     %{
       label: Calendar.strftime(date, "%b %-d"),
       left_pct: Float.round(x / @view_w * 100, 2),

@@ -15,12 +15,40 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
   than five. Each public function returns the exact shape its
   `Kanban.Metrics.Workspace` counterpart documents; the façade resolves scope
   and options, then hands this module the already-resolved `board_ids`,
-  `window_days`, and `timezone`.
+  `window_days`, `timezone`, and `exclude_weekends?` flag.
+
+  ### Weekend exclusion
+
+  `exclude_weekends?` applies the same two strategies the board-level reads in
+  `Kanban.Metrics` use, because the two kinds of number need different treatment:
+
+    * **Durations** (cycle, lead, review wait) subtract the weekend *portion* of
+      each individual interval. That math lives in
+      `Kanban.Metrics.Workspace.Durations`, which this module delegates every
+      per-task statistic to. A task claimed Friday and completed Monday keeps
+      its weekday hours rather than being counted whole.
+    * **Day-bucketed series** (cycle, lead, throughput) drop whole Saturday and
+      Sunday buckets via the shared `Windows.day_range/3`. The series therefore
+      gets shorter; the window still spans the same calendar days.
+
+  A third rule applies to **count-based** measures only: tasks *completed* on a
+  weekend are dropped (`reject_weekend_completions/3`) from the throughput count
+  and the leaderboard. Without it a weekend completion would be invisible in the
+  throughput chart — its bucket having been removed — while still inflating the
+  per-day throughput KPI and a contributor's leaderboard tally.
+
+  That rule deliberately does NOT reach the duration statistics. A task claimed
+  Friday and completed Saturday still contributes its business-time cycle to the
+  KPI strip, exactly as it does on the board pages, because dropping it would
+  make the workspace and board report different numbers for the same task — the
+  mismatch this feature exists to remove. (The day series need no such filter
+  either way: they look up per-day buckets, so a weekend key is simply never
+  read once the weekend days are gone from the range.)
   """
 
   import Ecto.Query, warn: false
 
-  alias Kanban.Metrics.Calculations
+  alias Kanban.Metrics.Workspace.Durations
   alias Kanban.Metrics.Workspace.Windows
   alias Kanban.Repo
   alias Kanban.Tasks.Task
@@ -36,14 +64,14 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
   projected fetch covering `previous_start..now` replaces the six the
   individual reads would issue.
   """
-  @spec overview_series([integer()], pos_integer(), String.t()) :: %{
+  @spec overview_series([integer()], pos_integer(), String.t(), boolean()) :: %{
           kpis: map(),
           cycle_series: [%{date: Date.t(), minutes: non_neg_integer()}],
           lead_series: [%{date: Date.t(), minutes: non_neg_integer()}],
           throughput_series: [non_neg_integer()],
           leaderboard: [map()]
         }
-  def overview_series(board_ids, window_days, timezone) do
+  def overview_series(board_ids, window_days, timezone, exclude_weekends? \\ false) do
     now = DateTime.utc_now()
     current_start = Windows.local_day_start(window_days - 1, timezone)
     previous_start = Windows.local_day_start(2 * window_days - 1, timezone)
@@ -53,12 +81,23 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
       |> fetch(previous_start, now)
       |> partition_windows(current_start)
 
+    current
+    |> reject_weekend_completions(exclude_weekends?, timezone)
+    |> series_bundle(window_days, timezone, exclude_weekends?)
+    |> Map.put(:kpis, build_kpis(current, previous, window_days, timezone, exclude_weekends?))
+  end
+
+  # The four counted-set payloads. Takes the already weekend-filtered set, so
+  # every measure here derives from exactly the same tasks; the KPI strip is
+  # merged in by the caller because its durations deliberately use the
+  # unfiltered set (see `build_kpis/5`).
+  defp series_bundle(counted, window_days, timezone, exclude_weekends?) do
     %{
-      kpis: build_kpis(current, previous, window_days),
-      cycle_series: cycle_series_from(current, window_days, timezone),
-      lead_series: lead_series_from(current, window_days, timezone),
-      throughput_series: throughput_series_from(current, window_days, timezone),
-      leaderboard: leaderboard_from(current)
+      cycle_series: cycle_series_from(counted, window_days, timezone, exclude_weekends?),
+      lead_series: lead_series_from(counted, window_days, timezone, exclude_weekends?),
+      throughput_series:
+        throughput_series_from(counted, window_days, timezone, exclude_weekends?),
+      leaderboard: leaderboard_from(counted)
     }
   end
 
@@ -67,8 +106,8 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
   vs the previous equal-length window. Issues two window fetches (current and
   previous), mirroring `workspace_kpis/1`'s standalone read.
   """
-  @spec kpis([integer()], pos_integer(), String.t()) :: map()
-  def kpis(board_ids, window_days, timezone) do
+  @spec kpis([integer()], pos_integer(), String.t(), boolean()) :: map()
+  def kpis(board_ids, window_days, timezone, exclude_weekends? \\ false) do
     now = DateTime.utc_now()
     current_start = Windows.local_day_start(window_days - 1, timezone)
     previous_start = Windows.local_day_start(2 * window_days - 1, timezone)
@@ -76,20 +115,21 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
     current = fetch(board_ids, current_start, now)
     previous = fetch(board_ids, previous_start, current_start)
 
-    build_kpis(current, previous, window_days)
+    build_kpis(current, previous, window_days, timezone, exclude_weekends?)
   end
 
   @doc """
   Derives the daily median cycle-time series (oldest-to-newest) from the current
   trailing window's completed tasks.
   """
-  @spec cycle_time_daily([integer()], pos_integer(), String.t()) :: [
+  @spec cycle_time_daily([integer()], pos_integer(), String.t(), boolean()) :: [
           %{date: Date.t(), minutes: non_neg_integer()}
         ]
-  def cycle_time_daily(board_ids, window_days, timezone) do
+  def cycle_time_daily(board_ids, window_days, timezone, exclude_weekends? \\ false) do
     board_ids
     |> fetch_current_window(window_days, timezone)
-    |> cycle_series_from(window_days, timezone)
+    |> reject_weekend_completions(exclude_weekends?, timezone)
+    |> cycle_series_from(window_days, timezone, exclude_weekends?)
   end
 
   @doc """
@@ -100,34 +140,37 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
   statistic differs (lead minutes, measured from `inserted_at`, rather than
   cycle minutes, measured from `claimed_at`).
   """
-  @spec lead_time_daily([integer()], pos_integer(), String.t()) :: [
+  @spec lead_time_daily([integer()], pos_integer(), String.t(), boolean()) :: [
           %{date: Date.t(), minutes: non_neg_integer()}
         ]
-  def lead_time_daily(board_ids, window_days, timezone) do
+  def lead_time_daily(board_ids, window_days, timezone, exclude_weekends? \\ false) do
     board_ids
     |> fetch_current_window(window_days, timezone)
-    |> lead_series_from(window_days, timezone)
+    |> reject_weekend_completions(exclude_weekends?, timezone)
+    |> lead_series_from(window_days, timezone, exclude_weekends?)
   end
 
   @doc """
   Derives the daily completion-count series (oldest-to-newest) from the current
   trailing window's completed tasks.
   """
-  @spec throughput_daily([integer()], pos_integer(), String.t()) :: [non_neg_integer()]
-  def throughput_daily(board_ids, window_days, timezone) do
+  @spec throughput_daily([integer()], pos_integer(), String.t(), boolean()) :: [non_neg_integer()]
+  def throughput_daily(board_ids, window_days, timezone, exclude_weekends? \\ false) do
     board_ids
     |> fetch_current_window(window_days, timezone)
-    |> throughput_series_from(window_days, timezone)
+    |> reject_weekend_completions(exclude_weekends?, timezone)
+    |> throughput_series_from(window_days, timezone, exclude_weekends?)
   end
 
   @doc """
   Derives the top-contributor leaderboard (agents before humans, capped at six)
   from the current trailing window's completed tasks.
   """
-  @spec leaderboard([integer()], pos_integer(), String.t()) :: [map()]
-  def leaderboard(board_ids, window_days, timezone) do
+  @spec leaderboard([integer()], pos_integer(), String.t(), boolean()) :: [map()]
+  def leaderboard(board_ids, window_days, timezone, exclude_weekends? \\ false) do
     board_ids
     |> fetch_current_window(window_days, timezone)
+    |> reject_weekend_completions(exclude_weekends?, timezone)
     |> leaderboard_from()
   end
 
@@ -147,19 +190,31 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
   end
 
   @doc "The zero cycle-time series (all-zero minutes) for the trailing window."
-  @spec empty_cycle_series(pos_integer(), String.t()) :: [%{date: Date.t(), minutes: 0}]
-  def empty_cycle_series(window_days, timezone), do: zero_day_series(window_days, timezone)
+  @spec empty_cycle_series(pos_integer(), String.t(), boolean()) :: [
+          %{date: Date.t(), minutes: 0}
+        ]
+  def empty_cycle_series(window_days, timezone, exclude_weekends? \\ false),
+    do: zero_day_series(window_days, timezone, exclude_weekends?)
 
-  # Kept as its own name rather than folded into `empty_cycle_series/2`: the two
+  # Kept as its own name rather than folded into `empty_cycle_series/3`: the two
   # zero paths happen to share a value today, but the façade should not name a
   # *cycle* function on the lead zero-path, and either series may diverge later.
   @doc "The zero lead-time series (all-zero minutes) for the trailing window."
-  @spec empty_lead_series(pos_integer(), String.t()) :: [%{date: Date.t(), minutes: 0}]
-  def empty_lead_series(window_days, timezone), do: zero_day_series(window_days, timezone)
+  @spec empty_lead_series(pos_integer(), String.t(), boolean()) :: [%{date: Date.t(), minutes: 0}]
+  def empty_lead_series(window_days, timezone, exclude_weekends? \\ false),
+    do: zero_day_series(window_days, timezone, exclude_weekends?)
 
-  @doc "The zero throughput series (a `window_days`-long list of zeros)."
-  @spec empty_throughput_series(pos_integer()) :: [non_neg_integer()]
-  def empty_throughput_series(window_days), do: List.duplicate(0, window_days)
+  # Sized off the same day range as the real series rather than `window_days`, so
+  # the placeholder and loaded renders agree on length when weekends are excluded
+  # (a mismatch would visibly reflow the chart on connect). This is why it needs
+  # the timezone the bare-count version never did.
+  @doc "The zero throughput series (one zero per day in the trailing window)."
+  @spec empty_throughput_series(pos_integer(), String.t(), boolean()) :: [non_neg_integer()]
+  def empty_throughput_series(window_days, timezone, exclude_weekends? \\ false) do
+    window_days
+    |> Windows.day_range(timezone, exclude_weekends?)
+    |> Enum.map(fn _date -> 0 end)
+  end
 
   # Splits the shared fetch into the current and previous KPI windows. The two
   # sets overlap on the boundary instant exactly as the original pair of window
@@ -182,50 +237,80 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
 
   defp completed_at_on_or_before?(_, _), do: false
 
-  defp zero_day_series(window_days, timezone) do
+  defp zero_day_series(window_days, timezone, exclude_weekends?) do
     window_days
-    |> Windows.day_range(timezone)
+    |> Windows.day_range(timezone, exclude_weekends?)
     |> Enum.map(&%{date: &1, minutes: 0})
   end
 
+  # Drops tasks completed on a Saturday or Sunday (in the viewer's timezone) when
+  # weekends are excluded. Applied once, immediately after the fetch, so every
+  # downstream derivation — KPIs, all three day series, and the leaderboard —
+  # sees the same set of tasks. Filtering here rather than per-derivation is what
+  # keeps the page internally consistent: a weekend completion cannot be missing
+  # from the throughput chart while still moving the KPI strip or the leaderboard.
+  defp reject_weekend_completions(tasks, false, _timezone), do: tasks
+
+  defp reject_weekend_completions(tasks, true, timezone) do
+    Enum.reject(tasks, fn task ->
+      case completed_on_date(task, timezone) do
+        %Date{} = date -> Date.day_of_week(date) in [6, 7]
+        nil -> false
+      end
+    end)
+  end
+
   # Derives the daily median cycle-time series from an already-fetched set of
-  # completed-task projections. Shared by `cycle_time_daily/3` and
-  # `overview_series/3`.
-  defp cycle_series_from(tasks, window_days, timezone) do
-    daily_minutes_series(tasks, window_days, timezone, &median_cycle_minutes/1)
+  # completed-task projections. Shared by `cycle_time_daily/4` and
+  # `overview_series/4`.
+  defp cycle_series_from(tasks, window_days, timezone, exclude_weekends?) do
+    daily_minutes_series(
+      tasks,
+      window_days,
+      timezone,
+      exclude_weekends?,
+      &Durations.median_cycle_minutes(&1, exclude_weekends?)
+    )
   end
 
   # Derives the daily p50 lead-time series from an already-fetched set of
-  # completed-task projections. Shared by `lead_time_daily/3` and
-  # `overview_series/3`, so the overview path derives it from the window fetch
+  # completed-task projections. Shared by `lead_time_daily/4` and
+  # `overview_series/4`, so the overview path derives it from the window fetch
   # it has already made rather than issuing a second one.
-  defp lead_series_from(tasks, window_days, timezone) do
-    daily_minutes_series(tasks, window_days, timezone, &median_lead_minutes/1)
+  defp lead_series_from(tasks, window_days, timezone, exclude_weekends?) do
+    daily_minutes_series(
+      tasks,
+      window_days,
+      timezone,
+      exclude_weekends?,
+      &Durations.median_lead_minutes(&1, exclude_weekends?)
+    )
   end
 
   # The shared per-day builder behind both minute-valued series. `minutes_fun`
   # collapses one local day's completed tasks into that day's statistic — the
   # only thing the cycle and lead series differ by. Days with no completions
-  # zero-fill, so the result always spans the full window oldest-to-newest.
-  defp daily_minutes_series(tasks, window_days, timezone, minutes_fun) do
+  # zero-fill, so the result always spans the full window oldest-to-newest
+  # (minus the weekend days when they are excluded).
+  defp daily_minutes_series(tasks, window_days, timezone, exclude_weekends?, minutes_fun) do
     per_day =
       tasks
       |> Enum.group_by(&completed_on_date(&1, timezone))
       |> Map.new(fn {date, day_tasks} -> {date, minutes_fun.(day_tasks)} end)
 
     window_days
-    |> Windows.day_range(timezone)
+    |> Windows.day_range(timezone, exclude_weekends?)
     |> Enum.map(&%{date: &1, minutes: Map.get(per_day, &1, 0)})
   end
 
   # Derives the daily completion-count series from an already-fetched set of
-  # completed-task projections. Shared by `throughput_daily/3` and
-  # `overview_series/3`.
-  defp throughput_series_from(tasks, window_days, timezone) do
+  # completed-task projections. Shared by `throughput_daily/4` and
+  # `overview_series/4`.
+  defp throughput_series_from(tasks, window_days, timezone, exclude_weekends?) do
     counts = Enum.frequencies_by(tasks, &completed_on_date(&1, timezone))
 
     window_days
-    |> Windows.day_range(timezone)
+    |> Windows.day_range(timezone, exclude_weekends?)
     |> Enum.map(&Map.get(counts, &1, 0))
   end
 
@@ -294,18 +379,25 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
     fetch(board_ids, window_start, now)
   end
 
-  defp build_kpis(current, previous, window_days) do
-    cycle_current = median_cycle_minutes(current)
-    cycle_previous = median_cycle_minutes(previous)
+  # `current`/`previous` arrive UNFILTERED. The weekend-completion rule applies
+  # only to the count-based measures below, never to the durations: a task
+  # claimed Friday and completed Saturday must contribute its business-time
+  # cycle here exactly as it does on the board pages (Kanban.Metrics
+  # apply_weekend_filter/2 adjusts durations and drops no task). Dropping it
+  # would put the workspace KPI and the board KPI back into disagreement — the
+  # very mismatch this feature exists to remove.
+  defp build_kpis(current, previous, window_days, timezone, exclude_weekends?) do
+    cycle_current = Durations.median_cycle_minutes(current, exclude_weekends?)
+    cycle_previous = Durations.median_cycle_minutes(previous, exclude_weekends?)
 
-    lead_current = percentile_lead_minutes(current, 50)
-    lead_previous = percentile_lead_minutes(previous, 50)
+    lead_current = Durations.percentile_lead_minutes(current, 50, exclude_weekends?)
+    lead_previous = Durations.percentile_lead_minutes(previous, 50, exclude_weekends?)
 
-    throughput_current = length(current) / window_days
-    throughput_previous = length(previous) / window_days
+    {throughput_current, throughput_previous} =
+      throughput_rates(current, previous, window_days, timezone, exclude_weekends?)
 
-    review_current = median_review_wait_minutes(current)
-    review_previous = median_review_wait_minutes(previous)
+    review_current = Durations.median_review_wait_minutes(current, exclude_weekends?)
+    review_previous = Durations.median_review_wait_minutes(previous, exclude_weekends?)
 
     %{
       cycle_time_median_minutes: cycle_current,
@@ -319,67 +411,33 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
     }
   end
 
+  # The per-day completion rate for each window. Throughput is a COUNT, so this
+  # is the one place the weekend-completion rule applies — keeping the KPI equal
+  # to the sum of the throughput chart's bars.
+  #
+  # Each window divides by the days actually counted rather than the raw window
+  # length: with weekends excluded, dividing by all 14 calendar days would
+  # understate the rate. The two are counted separately because they can hold
+  # different numbers of weekdays — a 30- or 90-day window's weekday count varies
+  # with where it starts — and sharing one divisor would skew the delta.
+  defp throughput_rates(current, previous, window_days, timezone, exclude_weekends?) do
+    counted_days = window_days |> Windows.day_range(timezone, exclude_weekends?) |> length()
+
+    previous_counted_days =
+      window_days |> Windows.previous_day_range(timezone, exclude_weekends?) |> length()
+
+    counted_current = reject_weekend_completions(current, exclude_weekends?, timezone)
+    counted_previous = reject_weekend_completions(previous, exclude_weekends?, timezone)
+
+    {length(counted_current) / counted_days, length(counted_previous) / previous_counted_days}
+  end
+
   # Implements divide-by-zero safety: a 0 previous window collapses to 0.0%.
   defp delta_pct(_current, previous) when previous == 0 or previous == 0.0, do: 0.0
 
   defp delta_pct(current, previous) when is_number(current) and is_number(previous) do
     (current - previous) / previous * 100.0
   end
-
-  defp median_cycle_minutes(tasks) do
-    tasks
-    |> Enum.map(&cycle_minutes/1)
-    |> Enum.reject(&is_nil/1)
-    |> Calculations.median()
-    |> round_or_zero()
-  end
-
-  # The per-day lead statistic. p50 (the median) is deliberate: it matches the
-  # KPI strip's lead-time cell and makes the lead and cycle series — which both
-  # report a median — directly comparable.
-  defp median_lead_minutes(tasks), do: percentile_lead_minutes(tasks, 50)
-
-  defp percentile_lead_minutes(tasks, p) do
-    tasks
-    |> Enum.map(&lead_minutes/1)
-    |> Enum.reject(&is_nil/1)
-    |> Calculations.percentile(p)
-    |> round_or_zero()
-  end
-
-  defp median_review_wait_minutes(tasks) do
-    tasks
-    |> Enum.map(&review_wait_minutes/1)
-    |> Enum.reject(&is_nil/1)
-    |> Calculations.median()
-    |> round_or_zero()
-  end
-
-  defp cycle_minutes(%{claimed_at: %DateTime{} = c, completed_at: %DateTime{} = d}) do
-    DateTime.diff(d, c, :second) |> max(0) |> div(60)
-  end
-
-  defp cycle_minutes(_), do: nil
-
-  defp lead_minutes(%{inserted_at: %NaiveDateTime{} = i, completed_at: %DateTime{} = d}) do
-    inserted = DateTime.from_naive!(i, "Etc/UTC")
-    DateTime.diff(d, inserted, :second) |> max(0) |> div(60)
-  end
-
-  defp lead_minutes(_), do: nil
-
-  defp review_wait_minutes(%{
-         needs_review: true,
-         completed_at: %DateTime{} = c,
-         reviewed_at: %DateTime{} = r
-       }) do
-    DateTime.diff(r, c, :second) |> max(0) |> div(60)
-  end
-
-  defp review_wait_minutes(_), do: nil
-
-  defp round_or_zero(nil), do: 0
-  defp round_or_zero(value) when is_number(value), do: round(value)
 
   defp human_completion?(%{completed_by_agent: agent}) when is_binary(agent) and agent != "",
     do: false

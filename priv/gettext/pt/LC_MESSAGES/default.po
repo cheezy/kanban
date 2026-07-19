@@ -50,7 +50,7 @@ msgstr " · Gerenciamento de Tarefas"
 #: lib/kanban_web/components/board_pulse_card.ex:151
 #: lib/kanban_web/components/goal_progress_header.ex:208
 #: lib/kanban_web/components/marketing_mini_board.ex:288
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:78
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:79
 #: lib/kanban_web/components/target_progress_header.ex:181
 #: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/task_tokens.ex:23
@@ -2156,8 +2156,8 @@ msgstr "Não foi possível encontrar um usuário com esse e-mail"
 
 #: lib/kanban_web/components/board_tabs.ex:125
 #: lib/kanban_web/components/layouts.ex:288
-#: lib/kanban_web/live/metrics_live/workspace.ex:159
-#: lib/kanban_web/live/metrics_live/workspace.ex:177
+#: lib/kanban_web/live/metrics_live/workspace.ex:182
+#: lib/kanban_web/live/metrics_live/workspace.ex:200
 #: lib/kanban_web/live/task_live/view_component.ex:249
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -2211,7 +2211,7 @@ msgstr "Voltar ao painel"
 
 #: lib/kanban_web/components/goal_progress_header.ex:204
 #: lib/kanban_web/components/marketing_mini_board.ex:188
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:74
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:75
 #: lib/kanban_web/components/target_progress_header.ex:177
 #: lib/kanban_web/live/goal_live/show.ex:287
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
@@ -2287,6 +2287,7 @@ msgstr "Excel"
 
 #: lib/kanban_web/live/metrics_live/components.ex:314
 #: lib/kanban_web/live/metrics_live/components.ex:444
+#: lib/kanban_web/live/metrics_live/workspace.ex:358
 #, elixir-autogen, elixir-format
 msgid "Exclude Weekends"
 msgstr "Excluir fins de semana"
@@ -2441,7 +2442,7 @@ msgstr "Análise de fila e tempo de espera"
 #: lib/kanban_web/components/board_pulse_card.ex:150
 #: lib/kanban_web/components/goal_progress_header.ex:207
 #: lib/kanban_web/components/marketing_mini_board.ex:270
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:77
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:78
 #: lib/kanban_web/components/target_progress_header.ex:180
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:312
 #: lib/kanban_web/live/goal_live/show.ex:290
@@ -3122,7 +3123,7 @@ msgstr "Diff, testes, aceitação, telemetria dos hooks — num só painel. Apro
 #: lib/kanban_web/components/board_pulse_card.ex:149
 #: lib/kanban_web/components/goal_progress_header.ex:206
 #: lib/kanban_web/components/marketing_mini_board.ex:242
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:76
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:77
 #: lib/kanban_web/components/target_progress_header.ex:179
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:21
@@ -3211,7 +3212,7 @@ msgstr "Produto"
 #: lib/kanban_web/components/goal_progress_header.ex:205
 #: lib/kanban_web/components/goal_sidebar.ex:65
 #: lib/kanban_web/components/marketing_mini_board.ex:215
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:75
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:76
 #: lib/kanban_web/components/target_progress_header.ex:178
 #: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/task_tokens.ex:20
@@ -4258,7 +4259,7 @@ msgstr "Início do Stride"
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
-#: lib/kanban_web/live/metrics_live/workspace.ex:157
+#: lib/kanban_web/live/metrics_live/workspace.ex:180
 #: lib/kanban_web/live/review_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Workspace"
@@ -5309,17 +5310,17 @@ msgstr "resposta humana média"
 msgid "idea → done"
 msgstr "ideia → concluído"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:263
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:266
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Cycle time · daily median (min)"
 msgstr "Tempo de ciclo"
 
-#: lib/kanban_web/components/metrics_throughput_chart.ex:88
+#: lib/kanban_web/components/metrics_throughput_chart.ex:96
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Throughput sparkline"
 msgstr "Métricas de produtividade"
 
-#: lib/kanban_web/components/metrics_throughput_chart.ex:71
+#: lib/kanban_web/components/metrics_throughput_chart.ex:79
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Throughput · tasks completed per day"
 msgstr "Throughput · tarefas concluídas por dia"
@@ -5329,28 +5330,28 @@ msgstr "Throughput · tarefas concluídas por dia"
 msgid "by completed"
 msgstr "por concluídas"
 
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:68
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:69
 #, elixir-autogen, elixir-format
 msgid "Cumulative flow"
 msgstr "Fluxo cumulativo"
 
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:91
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:92
 #, elixir-autogen, elixir-format
 msgid "Cumulative flow diagram"
 msgstr "Diagrama de fluxo cumulativo"
 
-#: lib/kanban_web/components/metrics_cumulative_flow.ex:71
+#: lib/kanban_web/components/metrics_cumulative_flow.ex:72
 #, elixir-autogen, elixir-format
 msgid "work in each column over time"
 msgstr "trabalho em cada coluna ao longo do tempo"
 
 #: lib/kanban_web/components/agents_header.ex:426
-#: lib/kanban_web/live/metrics_live/workspace.ex:415
+#: lib/kanban_web/live/metrics_live/workspace.ex:482
 #, elixir-autogen, elixir-format
 msgid "All boards"
 msgstr "Todos os quadros"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:407
+#: lib/kanban_web/live/metrics_live/workspace.ex:474
 #, elixir-autogen, elixir-format
 msgid "all boards"
 msgstr "todos os quadros"
@@ -7267,27 +7268,27 @@ msgstr "Ainda sem atividade."
 msgid "Cycle time · today"
 msgstr "Tempo de ciclo · hoje"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:409
+#: lib/kanban_web/live/metrics_live/workspace.ex:476
 #, elixir-autogen, elixir-format
 msgid "%{count} boards"
 msgstr "%{count} quadros"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:416
+#: lib/kanban_web/live/metrics_live/workspace.ex:483
 #, elixir-autogen, elixir-format
 msgid "%{count} of %{total} boards"
 msgstr "%{count} de %{total} quadros"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:408
+#: lib/kanban_web/live/metrics_live/workspace.ex:475
 #, elixir-autogen, elixir-format
 msgid "1 board"
 msgstr "1 quadro"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:266
+#: lib/kanban_web/live/metrics_live/workspace.ex:297
 #, elixir-autogen, elixir-format
 msgid "No boards yet"
 msgstr "Ainda não há quadros"
 
-#: lib/kanban_web/components/metrics_throughput_chart.ex:74
+#: lib/kanban_web/components/metrics_throughput_chart.ex:82
 #, elixir-autogen, elixir-format
 msgid "%{count} days"
 msgstr "%{count} dias"
@@ -7297,7 +7298,7 @@ msgstr "%{count} dias"
 msgid "Agents · last %{count} days"
 msgstr "Agentes · últimos %{count} dias"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:328
+#: lib/kanban_web/live/metrics_live/workspace.ex:395
 #, elixir-autogen, elixir-format
 msgid "Last %{count} days"
 msgstr "Últimos %{count} dias"
@@ -7308,7 +7309,7 @@ msgid "No completions in the last %{count} days."
 msgstr "Nenhuma conclusão nos últimos %{count} dias."
 
 #: lib/kanban_web/components/agents_header.ex:435
-#: lib/kanban_web/live/metrics_live/workspace.ex:310
+#: lib/kanban_web/live/metrics_live/workspace.ex:377
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Time range"
 msgstr "Período"
@@ -7319,7 +7320,7 @@ msgstr "Período"
 msgid "vs prev %{count}d"
 msgstr "vs. ant. %{count}d"
 
-#: lib/kanban_web/components/metrics_cycle_time_chart.ex:108
+#: lib/kanban_web/components/metrics_cycle_time_chart.ex:111
 #, elixir-autogen, elixir-format, fuzzy
 msgid "last %{count} days"
 msgstr "Últimos %{count} dias"
@@ -8149,7 +8150,7 @@ msgstr "Plugin de fluxo de trabalho"
 msgid "Lead time · median"
 msgstr "Tempo de entrega"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:205
+#: lib/kanban_web/live/metrics_live/workspace.ex:229
 #, elixir-autogen, elixir-format
 msgid "Lead time · daily median (min)"
 msgstr "Tempo de entrega · mediana diária (min)"

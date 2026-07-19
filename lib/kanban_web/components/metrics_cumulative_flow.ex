@@ -37,9 +37,10 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
 
   ## Attrs
 
-    * `snapshots` — required. List of daily snapshot maps. The chart
-      adapts to any length, though `Kanban.Metrics.Workspace.cumulative_flow/1`
-      always returns 14.
+    * `snapshots` — required. List of daily snapshot maps. The chart adapts to
+      any length: `Kanban.Metrics.Workspace.cumulative_flow/1` returns one
+      snapshot per day in the window, which is fewer than the window's calendar
+      length when weekends are excluded.
   """
   attr :snapshots, :list, required: true
 
