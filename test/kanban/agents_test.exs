@@ -361,7 +361,13 @@ defmodule Kanban.AgentsTest do
       # the narrow window is the most-recent sub-range, the wider fetch's capped
       # top rows are exactly the narrow window's most-recent rows — so deriving
       # the narrow set from the wider fetch equals a direct narrow fetch.
-      for days <- [1, 2, 3, 4] do
+      #
+      # The offsets deliberately skip 3 to avoid colliding with the setup block's
+      # 3-days-ago task: `days_ago_naive/1` truncates to the second and setup runs
+      # milliseconds earlier, so a shared offset yields an exact `updated_at` tie.
+      # `apply_cap/2` orders by `updated_at` alone, so a tie straddling the cap
+      # boundary lets the two fetches keep different rows and this assertion flakes.
+      for days <- [1, 2, 4, 5] do
         column |> task_fixture() |> backdate_updated_at(days_ago_naive(days))
       end
 
