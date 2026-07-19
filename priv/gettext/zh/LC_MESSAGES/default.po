@@ -2154,8 +2154,8 @@ msgstr "未找到使用该邮箱的用户"
 
 #: lib/kanban_web/components/board_tabs.ex:125
 #: lib/kanban_web/components/layouts.ex:288
-#: lib/kanban_web/live/metrics_live/workspace.ex:150
-#: lib/kanban_web/live/metrics_live/workspace.ex:168
+#: lib/kanban_web/live/metrics_live/workspace.ex:159
+#: lib/kanban_web/live/metrics_live/workspace.ex:177
 #: lib/kanban_web/live/task_live/view_component.ex:249
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -4254,7 +4254,7 @@ msgstr "Stride 首页"
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
-#: lib/kanban_web/live/metrics_live/workspace.ex:148
+#: lib/kanban_web/live/metrics_live/workspace.ex:157
 #: lib/kanban_web/live/review_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Workspace"
@@ -5333,12 +5333,12 @@ msgid "work in each column over time"
 msgstr "每列在时间维度上的工作量"
 
 #: lib/kanban_web/components/agents_header.ex:426
-#: lib/kanban_web/live/metrics_live/workspace.ex:391
+#: lib/kanban_web/live/metrics_live/workspace.ex:415
 #, elixir-autogen, elixir-format
 msgid "All boards"
 msgstr "所有看板"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:383
+#: lib/kanban_web/live/metrics_live/workspace.ex:407
 #, elixir-autogen, elixir-format
 msgid "all boards"
 msgstr "所有看板"
@@ -7237,22 +7237,22 @@ msgstr "暂无活动。"
 msgid "Cycle time · today"
 msgstr "周期时间 · 今天"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:385
+#: lib/kanban_web/live/metrics_live/workspace.ex:409
 #, elixir-autogen, elixir-format
 msgid "%{count} boards"
 msgstr "%{count} 个看板"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:392
+#: lib/kanban_web/live/metrics_live/workspace.ex:416
 #, elixir-autogen, elixir-format
 msgid "%{count} of %{total} boards"
 msgstr "%{total} 个看板中的 %{count} 个"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:384
+#: lib/kanban_web/live/metrics_live/workspace.ex:408
 #, elixir-autogen, elixir-format
 msgid "1 board"
 msgstr "1 个看板"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:242
+#: lib/kanban_web/live/metrics_live/workspace.ex:266
 #, elixir-autogen, elixir-format
 msgid "No boards yet"
 msgstr "暂无看板"
@@ -7267,7 +7267,7 @@ msgstr "%{count} 天"
 msgid "Agents · last %{count} days"
 msgstr "代理 · 最近 %{count} 天"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:304
+#: lib/kanban_web/live/metrics_live/workspace.ex:328
 #, elixir-autogen, elixir-format
 msgid "Last %{count} days"
 msgstr "最近 %{count} 天"
@@ -7278,7 +7278,7 @@ msgid "No completions in the last %{count} days."
 msgstr "最近 %{count} 天没有完成项。"
 
 #: lib/kanban_web/components/agents_header.ex:435
-#: lib/kanban_web/live/metrics_live/workspace.ex:286
+#: lib/kanban_web/live/metrics_live/workspace.ex:310
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Time range"
 msgstr "时间范围"
@@ -8111,3 +8111,8 @@ msgstr "工作流插件"
 #, elixir-autogen, elixir-format
 msgid "Lead time · median"
 msgstr "前置时间"
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:205
+#, elixir-autogen, elixir-format
+msgid "Lead time · daily median (min)"
+msgstr "前置时间 · 每日中位数（分钟）"

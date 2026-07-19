@@ -29,11 +29,12 @@ defmodule Kanban.Metrics.Workspace do
     * `agent_leaderboard/1` — top 6 contributors (agents before humans)
     * `cumulative_flow/1` — 14 daily snapshots across 5 derived states
 
-  `overview/1` returns five of those payloads in one call, deriving the four
-  completed-task-based series from a single projected fetch (the fifth,
+  `overview/1` returns all six payloads in one call, deriving the five
+  completed-task-based series from a single projected fetch (the sixth,
   `flow_snapshots`, keeps `cumulative_flow/1`'s own read). The LiveView
-  uses it so a render issues one completed-task query instead of five.
-  `lead_time_daily/1` is not part of that bundle and issues its own read.
+  uses it so a render issues one completed-task query instead of six.
+  `lead_time_daily/1` remains available as a standalone read for callers
+  that want only that series.
 
   All six accept `opts` with `:scope` and route through
   `Kanban.Boards.list_boards(scope.user)` to derive the visible board id
@@ -50,10 +51,9 @@ defmodule Kanban.Metrics.Workspace do
   @allowed_window_days [7, 14, 30, 90]
 
   @doc """
-  Returns the five bundled `/metrics` page payloads in one call: `:kpis`,
-  `:cycle_series`, `:throughput_series`, `:leaderboard`, and
-  `:flow_snapshots`. `lead_time_daily/1` is deliberately not part of this
-  bundle and issues its own read. The four completed-task-based payloads are derived
+  Returns every `/metrics` page payload in one call: `:kpis`,
+  `:cycle_series`, `:lead_series`, `:throughput_series`, `:leaderboard`, and
+  `:flow_snapshots`. The five completed-task-based payloads are derived
   from a single projected fetch spanning both the current and previous
   KPI windows, partitioned in memory — collapsing the five separate
   fetches the individual reads would otherwise issue. `:flow_snapshots`
@@ -68,6 +68,7 @@ defmodule Kanban.Metrics.Workspace do
   @spec overview(keyword()) :: %{
           kpis: map(),
           cycle_series: [%{date: Date.t(), minutes: non_neg_integer()}],
+          lead_series: [%{date: Date.t(), minutes: non_neg_integer()}],
           throughput_series: [non_neg_integer()],
           leaderboard: [map()],
           flow_snapshots: [map()]
@@ -94,6 +95,7 @@ defmodule Kanban.Metrics.Workspace do
   @spec placeholder_overview(keyword()) :: %{
           kpis: map(),
           cycle_series: [map()],
+          lead_series: [map()],
           throughput_series: [non_neg_integer()],
           leaderboard: [map()],
           flow_snapshots: [map()]
@@ -108,6 +110,7 @@ defmodule Kanban.Metrics.Workspace do
     %{
       kpis: CompletedTasks.zero_kpis(),
       cycle_series: CompletedTasks.empty_cycle_series(window_days, timezone),
+      lead_series: CompletedTasks.empty_lead_series(window_days, timezone),
       throughput_series: CompletedTasks.empty_throughput_series(window_days),
       leaderboard: [],
       flow_snapshots: CumulativeFlow.empty_snapshots(window_days, timezone)

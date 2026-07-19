@@ -1157,11 +1157,18 @@ defmodule Kanban.Metrics.WorkspaceTest do
       ctx
     end
 
-    test "returns all five payloads", %{scope: scope} do
+    test "returns all six payloads", %{scope: scope} do
       overview = Workspace.overview(scope: scope)
 
       assert Map.keys(overview) |> Enum.sort() ==
-               [:cycle_series, :flow_snapshots, :kpis, :leaderboard, :throughput_series]
+               [
+                 :cycle_series,
+                 :flow_snapshots,
+                 :kpis,
+                 :lead_series,
+                 :leaderboard,
+                 :throughput_series
+               ]
     end
 
     test "each payload equals the individual public function for the same opts", %{scope: scope} do
@@ -1250,6 +1257,7 @@ defmodule Kanban.Metrics.WorkspaceTest do
       assert overview == Workspace.overview(scope: nil)
       assert overview.kpis == Workspace.workspace_kpis([])
       assert overview.cycle_series == Workspace.cycle_time_daily([])
+      assert overview.lead_series == Workspace.lead_time_daily([])
       assert overview.throughput_series == Workspace.throughput_daily([])
       assert overview.leaderboard == Workspace.agent_leaderboard([])
       assert overview.flow_snapshots == Workspace.cumulative_flow([])
@@ -1280,11 +1288,20 @@ defmodule Kanban.Metrics.WorkspaceTest do
       assert queries == []
 
       assert overview |> Map.keys() |> Enum.sort() ==
-               [:cycle_series, :flow_snapshots, :kpis, :leaderboard, :throughput_series]
+               [
+                 :cycle_series,
+                 :flow_snapshots,
+                 :kpis,
+                 :lead_series,
+                 :leaderboard,
+                 :throughput_series
+               ]
 
       assert overview.leaderboard == []
       assert overview.throughput_series == List.duplicate(0, 14)
       assert length(overview.cycle_series) == 14
+      assert length(overview.lead_series) == 14
+      assert Enum.all?(overview.lead_series, &(&1.minutes == 0))
       assert length(overview.flow_snapshots) == 14
       assert overview.kpis == Workspace.workspace_kpis(scope: nil)
     end
@@ -1348,6 +1365,7 @@ defmodule Kanban.Metrics.WorkspaceTest do
 
     assert overview.kpis == Workspace.workspace_kpis(opts)
     assert overview.cycle_series == Workspace.cycle_time_daily(opts)
+    assert overview.lead_series == Workspace.lead_time_daily(opts)
     assert overview.throughput_series == Workspace.throughput_daily(opts)
     assert overview.leaderboard == Workspace.agent_leaderboard(opts)
     assert overview.flow_snapshots == Workspace.cumulative_flow(opts)

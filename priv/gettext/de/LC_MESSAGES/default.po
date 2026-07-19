@@ -2156,8 +2156,8 @@ msgstr "Es wurde kein Benutzer mit dieser E-Mail-Adresse gefunden"
 
 #: lib/kanban_web/components/board_tabs.ex:125
 #: lib/kanban_web/components/layouts.ex:288
-#: lib/kanban_web/live/metrics_live/workspace.ex:150
-#: lib/kanban_web/live/metrics_live/workspace.ex:168
+#: lib/kanban_web/live/metrics_live/workspace.ex:159
+#: lib/kanban_web/live/metrics_live/workspace.ex:177
 #: lib/kanban_web/live/task_live/view_component.ex:249
 #, elixir-autogen, elixir-format
 msgid "Metrics"
@@ -4258,7 +4258,7 @@ msgstr "Stride-Startseite"
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
-#: lib/kanban_web/live/metrics_live/workspace.ex:148
+#: lib/kanban_web/live/metrics_live/workspace.ex:157
 #: lib/kanban_web/live/review_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Workspace"
@@ -5345,12 +5345,12 @@ msgid "work in each column over time"
 msgstr "Arbeit in jeder Spalte im Zeitverlauf"
 
 #: lib/kanban_web/components/agents_header.ex:426
-#: lib/kanban_web/live/metrics_live/workspace.ex:391
+#: lib/kanban_web/live/metrics_live/workspace.ex:415
 #, elixir-autogen, elixir-format
 msgid "All boards"
 msgstr "Alle Boards"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:383
+#: lib/kanban_web/live/metrics_live/workspace.ex:407
 #, elixir-autogen, elixir-format
 msgid "all boards"
 msgstr "alle Boards"
@@ -7297,22 +7297,22 @@ msgstr "Noch keine Aktivität."
 msgid "Cycle time · today"
 msgstr "Zykluszeit · heute"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:385
+#: lib/kanban_web/live/metrics_live/workspace.ex:409
 #, elixir-autogen, elixir-format
 msgid "%{count} boards"
 msgstr "%{count} Boards"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:392
+#: lib/kanban_web/live/metrics_live/workspace.ex:416
 #, elixir-autogen, elixir-format
 msgid "%{count} of %{total} boards"
 msgstr "%{count} von %{total} Boards"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:384
+#: lib/kanban_web/live/metrics_live/workspace.ex:408
 #, elixir-autogen, elixir-format
 msgid "1 board"
 msgstr "1 Board"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:242
+#: lib/kanban_web/live/metrics_live/workspace.ex:266
 #, elixir-autogen, elixir-format
 msgid "No boards yet"
 msgstr "Noch keine Boards"
@@ -7327,7 +7327,7 @@ msgstr "%{count} Tg."
 msgid "Agents · last %{count} days"
 msgstr "Agenten · letzte %{count} Tage"
 
-#: lib/kanban_web/live/metrics_live/workspace.ex:304
+#: lib/kanban_web/live/metrics_live/workspace.ex:328
 #, elixir-autogen, elixir-format
 msgid "Last %{count} days"
 msgstr "Letzte %{count} Tage"
@@ -7338,7 +7338,7 @@ msgid "No completions in the last %{count} days."
 msgstr "Keine Abschlüsse in den letzten %{count} Tagen."
 
 #: lib/kanban_web/components/agents_header.ex:435
-#: lib/kanban_web/live/metrics_live/workspace.ex:286
+#: lib/kanban_web/live/metrics_live/workspace.ex:310
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Time range"
 msgstr "Zeitraum"
@@ -8178,3 +8178,8 @@ msgstr "Workflow-Plugin"
 #, elixir-autogen, elixir-format
 msgid "Lead time · median"
 msgstr "Durchlaufzeit"
+
+#: lib/kanban_web/live/metrics_live/workspace.ex:205
+#, elixir-autogen, elixir-format
+msgid "Lead time · daily median (min)"
+msgstr "Durchlaufzeit · Tagesmedian (Min.)"

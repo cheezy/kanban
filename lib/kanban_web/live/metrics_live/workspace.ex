@@ -9,6 +9,12 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   (`Kanban.Metrics.workspace_kpis/1` and the four daily/per-bucket
   helpers).
 
+  `MetricsCycleTimeChart` is rendered twice (W1723): once with its cycle
+  defaults, and once parameterized for the daily p50 lead-time series in the
+  violet brand accent directly below it. Both series come out of the same
+  `Workspace.overview/1` bundle, so the board and window selectors drive them
+  together and the pair still costs a single completed-task read.
+
   All data flows through `Kanban.Metrics`; no Ecto in this module
   per project rules. Distinct from `KanbanWeb.MetricsLive.Dashboard`
   (board-scoped) — the existing dashboard LiveView is unchanged.
@@ -123,9 +129,11 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     put_overview(socket, overview, selected_ids)
   end
 
-  # Assigns the five overview payloads plus the selection-derived assigns. Shared
+  # Assigns the six series payloads plus the selection-derived assigns. Shared
   # by the real load and the disconnected placeholder so both paths emit an
-  # identical set of assign keys.
+  # identical set of assign keys. `:lead_series` is read with `Map.fetch!/2`
+  # rather than dot access so a caller that forgets to supply it fails loudly
+  # here instead of rendering a page missing an assign the template reads.
   defp put_overview(socket, overview, selected_ids) do
     boards = socket.assigns.boards
     window_days = socket.assigns.selected_window_days
@@ -134,6 +142,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
     |> assign(:selected_board_ids, selected_ids)
     |> assign(:kpis, overview.kpis)
     |> assign(:cycle_series, overview.cycle_series)
+    |> assign(:lead_series, Map.fetch!(overview, :lead_series))
     |> assign(:throughput_series, overview.throughput_series)
     |> assign(:leaderboard, overview.leaderboard)
     |> assign(:flow_snapshots, overview.flow_snapshots)
@@ -181,6 +190,21 @@ defmodule KanbanWeb.MetricsLive.Workspace do
           <MetricsCycleTimeChart.cycle_time_chart
             data={@cycle_series}
             window_days={@selected_window_days}
+          />
+
+          <%!-- The same component as the cycle chart above, parameterized for
+          the lead series (W1722): violet rather than orange so the two are
+          distinguishable, and its own marker prefix so both charts stay
+          unambiguous to tests and tooling. Every value is a literal set here
+          in code — never user input — because the colour and prefix reach
+          markup attributes. --%>
+          <MetricsCycleTimeChart.cycle_time_chart
+            data={@lead_series}
+            window_days={@selected_window_days}
+            color="var(--stride-violet)"
+            title={gettext("Lead time · daily median (min)")}
+            marker_prefix="lead-time"
+            series_name="lead"
           />
 
           <div class="flex flex-col md:grid md:grid-cols-[1.4fr_1fr] gap-3.5">

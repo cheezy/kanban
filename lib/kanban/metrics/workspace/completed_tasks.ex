@@ -29,15 +29,17 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
   @workspace_agent_leaderboard_limit 6
 
   @doc """
-  Derives the four completed-task payloads (`:kpis`, `:cycle_series`,
-  `:throughput_series`, `:leaderboard`) from a single window-spanning fetch,
-  partitioned in memory into the current and previous KPI windows. This is the
-  read-collapsing path behind `overview/1`: one projected fetch covering
-  `previous_start..now` replaces the five the individual reads would issue.
+  Derives the five completed-task payloads (`:kpis`, `:cycle_series`,
+  `:lead_series`, `:throughput_series`, `:leaderboard`) from a single
+  window-spanning fetch, partitioned in memory into the current and previous
+  KPI windows. This is the read-collapsing path behind `overview/1`: one
+  projected fetch covering `previous_start..now` replaces the six the
+  individual reads would issue.
   """
   @spec overview_series([integer()], pos_integer(), String.t()) :: %{
           kpis: map(),
           cycle_series: [%{date: Date.t(), minutes: non_neg_integer()}],
+          lead_series: [%{date: Date.t(), minutes: non_neg_integer()}],
           throughput_series: [non_neg_integer()],
           leaderboard: [map()]
         }
@@ -54,6 +56,7 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
     %{
       kpis: build_kpis(current, previous, window_days),
       cycle_series: cycle_series_from(current, window_days, timezone),
+      lead_series: lead_series_from(current, window_days, timezone),
       throughput_series: throughput_series_from(current, window_days, timezone),
       leaderboard: leaderboard_from(current)
     }
@@ -103,7 +106,7 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
   def lead_time_daily(board_ids, window_days, timezone) do
     board_ids
     |> fetch_current_window(window_days, timezone)
-    |> daily_minutes_series(window_days, timezone, &median_lead_minutes/1)
+    |> lead_series_from(window_days, timezone)
   end
 
   @doc """
@@ -190,6 +193,14 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
   # `overview_series/3`.
   defp cycle_series_from(tasks, window_days, timezone) do
     daily_minutes_series(tasks, window_days, timezone, &median_cycle_minutes/1)
+  end
+
+  # Derives the daily p50 lead-time series from an already-fetched set of
+  # completed-task projections. Shared by `lead_time_daily/3` and
+  # `overview_series/3`, so the overview path derives it from the window fetch
+  # it has already made rather than issuing a second one.
+  defp lead_series_from(tasks, window_days, timezone) do
+    daily_minutes_series(tasks, window_days, timezone, &median_lead_minutes/1)
   end
 
   # The shared per-day builder behind both minute-valued series. `minutes_fun`

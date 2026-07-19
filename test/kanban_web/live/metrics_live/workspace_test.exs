@@ -30,6 +30,7 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert html =~ "data-metrics-header"
       assert html =~ "data-metrics-kpi-strip"
       assert html =~ "data-metrics-cycle-time-chart"
+      assert html =~ "data-metrics-lead-time-chart"
       assert html =~ "data-metrics-throughput-chart"
       assert html =~ "data-metrics-agent-leaderboard"
       assert html =~ "data-metrics-cumulative-flow"
@@ -227,6 +228,166 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
     end
   end
 
+  # W1723: the lead-time series renders through the same chart component as the
+  # cycle series, parameterized for violet, and sits directly below it.
+  describe "lead time chart" do
+    setup [:register_and_log_in_user]
+
+    test "assigns :lead_series from the same overview bundle as :cycle_series",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      # Pitfall 1: the lead series must ride the shared options rather than a
+      # second map, or it would silently ignore the board/window/timezone
+      # selectors. Both assigns come from one Workspace.overview/1 call, so
+      # they are necessarily the same length and window.
+      assigns = :sys.get_state(view.pid).socket.assigns
+
+      assert length(assigns.lead_series) == length(assigns.cycle_series)
+      assert Enum.map(assigns.lead_series, & &1.date) == Enum.map(assigns.cycle_series, & &1.date)
+    end
+
+    test "renders directly below the cycle time chart in document order",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      cycle_at = :binary.match(html, "data-metrics-cycle-time-chart") |> elem(0)
+      lead_at = :binary.match(html, "data-metrics-lead-time-chart") |> elem(0)
+      throughput_at = :binary.match(html, "data-metrics-throughput-chart") |> elem(0)
+
+      # Below the cycle chart, and still above the throughput/leaderboard grid
+      # — i.e. in the stacked container, not inside the two-column row.
+      assert cycle_at < lead_at
+      assert lead_at < throughput_at
+    end
+
+    test "renders the violet accent while the cycle chart keeps the orange one",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "var(--stride-violet)"
+      assert html =~ "var(--stride-orange)"
+
+      # Each token belongs to its own chart's bars, so the two are visually
+      # distinct rather than both rendering the same accent.
+      assert html =~ ~s(data-metrics-lead-time-segment="lead")
+      assert html =~ ~s(data-metrics-cycle-time-segment="cycle")
+    end
+
+    test "renders the lead time title with the sibling middot convention",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "Lead time · daily median (min)"
+      # The cycle title is unchanged alongside it.
+      assert html =~ "Cycle time · daily median (min)"
+      # The statistic is the median, never p75.
+      refute html =~ "p75"
+    end
+
+    test "passes the accent as a brand token, not a hardcoded color", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      # Scoped to this chart's own bars: other components on the page carry
+      # their own literals, so a page-wide assertion would prove nothing here.
+      lead_segments =
+        Regex.scan(~r/data-metrics-lead-time-segment="lead"[^>]*style="([^"]*)"/, html)
+        |> Enum.map(&List.last/1)
+
+      assert length(lead_segments) == 14
+
+      for style <- lead_segments do
+        assert style =~ "background: var(--stride-violet)"
+        refute style =~ ~r/background: #[0-9a-fA-F]{3,8}/
+        refute style =~ ~r/background: oklch\(/
+      end
+    end
+
+    test "an empty workspace renders the lead chart without raising", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "data-metrics-lead-time-chart"
+      assert length(Regex.scan(~r/data-metrics-lead-time-bar(?!-)/, html)) == 14
+    end
+
+    test "reflects lead times on days the cycle series reads zero", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      completed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # Completed but never claimed: it has a lead time but no cycle time.
+      task = task_fixture(column)
+
+      {:ok, task} =
+        task
+        |> Ecto.Changeset.change(%{completed_at: completed_at, claimed_at: nil})
+        |> Kanban.Repo.update()
+
+      # Backdate creation so the lead time is a genuine 120 minutes rather than
+      # being clamped to zero by the max-of-zero guard.
+      {:ok, _} =
+        task
+        |> Ecto.Changeset.change(%{
+          inserted_at:
+            completed_at
+            |> DateTime.add(-120 * 60, :second)
+            |> DateTime.to_naive()
+            |> NaiveDateTime.truncate(:second)
+        })
+        |> Kanban.Repo.update()
+
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      # The lead chart scales to cover the 120-minute peak (rounding to a 150m
+      # axis), while the cycle chart — the task was never claimed, so it has no
+      # cycle time at all — falls back to its 0..4 empty-state axis. That
+      # divergence is the whole point: lead time exists where cycle time cannot.
+      assert html =~ ~s(data-metrics-lead-time-gridline="150")
+      refute html =~ ~s(data-metrics-lead-time-gridline="4")
+      assert html =~ ~s(data-metrics-cycle-time-gridline="4")
+    end
+
+    test "follows the board selector", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      other_board = board_fixture(user)
+      completed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      task = task_fixture(column)
+
+      {:ok, task} =
+        task
+        |> Ecto.Changeset.change(%{completed_at: completed_at, claimed_at: nil})
+        |> Kanban.Repo.update()
+
+      {:ok, _} =
+        task
+        |> Ecto.Changeset.change(%{
+          inserted_at:
+            completed_at
+            |> DateTime.add(-120 * 60, :second)
+            |> DateTime.to_naive()
+            |> NaiveDateTime.truncate(:second)
+        })
+        |> Kanban.Repo.update()
+
+      {:ok, view, html} = live(conn, ~p"/metrics")
+
+      # The 120-minute lead scales the axis to a 150m maximum.
+      assert html =~ ~s(data-metrics-lead-time-gridline="150")
+
+      # Filtering to the other board drops the completion, so the lead chart
+      # falls back to its empty-state axis rather than ignoring the filter.
+      html =
+        view
+        |> element("#board-filter-form")
+        |> render_change(%{"board_ids" => ["#{other_board.id}"]})
+
+      refute html =~ ~s(data-metrics-lead-time-gridline="150")
+      assert html =~ ~s(data-metrics-lead-time-gridline="4")
+    end
+  end
+
   describe "board selector" do
     setup [:register_and_log_in_user]
 
@@ -347,6 +508,15 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
   describe "time-range selector" do
     setup [:register_and_log_in_user]
 
+    # The lead chart's own <section>, so a subtitle assertion cannot be
+    # satisfied by a sibling chart's copy of the shared subtitle string.
+    defp lead_chart_section(html) do
+      [section] =
+        Regex.run(~r/<section data-metrics-lead-time-chart.*?<\/section>/s, html)
+
+      section
+    end
+
     defp selected_window(html) do
       case Regex.run(~r/<option value="(\d+)"\s+selected/, html) do
         [_, days] -> String.to_integer(days)
@@ -373,6 +543,7 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
 
       # Default 14-day window: 14 throughput points and 14-day subtitles.
       assert length(Regex.scan(~r/data-metrics-throughput-point/, html)) == 14
+      assert length(Regex.scan(~r/data-metrics-lead-time-bar(?!-)/, html)) == 14
       assert html =~ "14 days"
 
       html =
@@ -382,7 +553,13 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
 
       assert selected_window(html) == 7
       assert length(Regex.scan(~r/data-metrics-throughput-point/, html)) == 7
-      # Throughput, cycle-time, leaderboard, and KPI subtitles all follow.
+      # The lead chart follows the window too. Its bar count carries the real
+      # weight; the subtitle is asserted inside the lead chart's own section
+      # rather than page-wide, since every chart shares the subtitle msgid and
+      # a page-wide match would pass even with the lead subtitle stuck.
+      assert length(Regex.scan(~r/data-metrics-lead-time-bar(?!-)/, html)) == 7
+      assert lead_chart_section(html) =~ "last 7 days"
+      # Throughput, cycle-time, lead-time, leaderboard, and KPI subtitles all follow.
       assert html =~ "7 days"
       # The cycle-time chart is now a single series — no agent/human split.
       refute html =~ "agent vs human"
