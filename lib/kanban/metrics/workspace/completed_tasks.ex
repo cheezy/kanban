@@ -5,9 +5,12 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
   under the module-size guideline.
 
   One projected query (`fetch/3`) is the single source of completed-task data;
-  four in-memory derivations reshape it into the KPI strip, the daily median
-  cycle-time series, the daily throughput series, and the contributor
-  leaderboard. `overview_series/3` derives all four from a single window-spanning
+  five in-memory derivations reshape it into the KPI strip, the daily median
+  cycle-time series, the daily p50 lead-time series, the daily throughput
+  series, and the contributor leaderboard. The cycle-time and lead-time series
+  share one bucketing builder (`daily_minutes_series/4`) parameterized by the
+  per-day statistic, so the two differ only in which minutes function they
+  apply. `overview_series/3` derives its four payloads from a single window-spanning
   fetch partitioned in memory, so a render issues one completed-task query rather
   than five. Each public function returns the exact shape its
   `Kanban.Metrics.Workspace` counterpart documents; the façade resolves scope
@@ -87,6 +90,23 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
   end
 
   @doc """
+  Derives the daily p50 (median) lead-time series (oldest-to-newest) from the
+  current trailing window's completed tasks.
+
+  Reuses `cycle_time_daily/3`'s window fetch and bucketing; only the per-day
+  statistic differs (lead minutes, measured from `inserted_at`, rather than
+  cycle minutes, measured from `claimed_at`).
+  """
+  @spec lead_time_daily([integer()], pos_integer(), String.t()) :: [
+          %{date: Date.t(), minutes: non_neg_integer()}
+        ]
+  def lead_time_daily(board_ids, window_days, timezone) do
+    board_ids
+    |> fetch_current_window(window_days, timezone)
+    |> daily_minutes_series(window_days, timezone, &median_lead_minutes/1)
+  end
+
+  @doc """
   Derives the daily completion-count series (oldest-to-newest) from the current
   trailing window's completed tasks.
   """
@@ -125,11 +145,14 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
 
   @doc "The zero cycle-time series (all-zero minutes) for the trailing window."
   @spec empty_cycle_series(pos_integer(), String.t()) :: [%{date: Date.t(), minutes: 0}]
-  def empty_cycle_series(window_days, timezone) do
-    window_days
-    |> Windows.day_range(timezone)
-    |> Enum.map(&zero_cycle_entry/1)
-  end
+  def empty_cycle_series(window_days, timezone), do: zero_day_series(window_days, timezone)
+
+  # Kept as its own name rather than folded into `empty_cycle_series/2`: the two
+  # zero paths happen to share a value today, but the façade should not name a
+  # *cycle* function on the lead zero-path, and either series may diverge later.
+  @doc "The zero lead-time series (all-zero minutes) for the trailing window."
+  @spec empty_lead_series(pos_integer(), String.t()) :: [%{date: Date.t(), minutes: 0}]
+  def empty_lead_series(window_days, timezone), do: zero_day_series(window_days, timezone)
 
   @doc "The zero throughput series (a `window_days`-long list of zeros)."
   @spec empty_throughput_series(pos_integer()) :: [non_neg_integer()]
@@ -156,33 +179,32 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
 
   defp completed_at_on_or_before?(_, _), do: false
 
-  defp zero_cycle_entry(date), do: %{date: date, minutes: 0}
+  defp zero_day_series(window_days, timezone) do
+    window_days
+    |> Windows.day_range(timezone)
+    |> Enum.map(&%{date: &1, minutes: 0})
+  end
 
   # Derives the daily median cycle-time series from an already-fetched set of
   # completed-task projections. Shared by `cycle_time_daily/3` and
   # `overview_series/3`.
   defp cycle_series_from(tasks, window_days, timezone) do
-    per_day = bucket_cycle_minutes(tasks, timezone)
+    daily_minutes_series(tasks, window_days, timezone, &median_cycle_minutes/1)
+  end
+
+  # The shared per-day builder behind both minute-valued series. `minutes_fun`
+  # collapses one local day's completed tasks into that day's statistic — the
+  # only thing the cycle and lead series differ by. Days with no completions
+  # zero-fill, so the result always spans the full window oldest-to-newest.
+  defp daily_minutes_series(tasks, window_days, timezone, minutes_fun) do
+    per_day =
+      tasks
+      |> Enum.group_by(&completed_on_date(&1, timezone))
+      |> Map.new(fn {date, day_tasks} -> {date, minutes_fun.(day_tasks)} end)
 
     window_days
     |> Windows.day_range(timezone)
-    |> Enum.map(&cycle_entry_for(&1, per_day))
-  end
-
-  defp cycle_entry_for(date, per_day) do
-    per_day
-    |> Map.get(date, %{minutes: 0})
-    |> Map.put(:date, date)
-  end
-
-  defp bucket_cycle_minutes(tasks, timezone) do
-    tasks
-    |> Enum.group_by(&completed_on_date(&1, timezone))
-    |> Map.new(&cycle_bucket_entry/1)
-  end
-
-  defp cycle_bucket_entry({date, tasks}) do
-    {date, %{minutes: median_cycle_minutes(tasks)}}
+    |> Enum.map(&%{date: &1, minutes: Map.get(per_day, &1, 0)})
   end
 
   # Derives the daily completion-count series from an already-fetched set of
@@ -300,6 +322,11 @@ defmodule Kanban.Metrics.Workspace.CompletedTasks do
     |> Calculations.median()
     |> round_or_zero()
   end
+
+  # The per-day lead statistic. p50 (the median) is deliberate: it matches the
+  # KPI strip's lead-time cell and makes the lead and cycle series — which both
+  # report a median — directly comparable.
+  defp median_lead_minutes(tasks), do: percentile_lead_minutes(tasks, 50)
 
   defp percentile_lead_minutes(tasks, p) do
     tasks

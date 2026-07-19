@@ -19,21 +19,23 @@ defmodule Kanban.Metrics.Workspace do
     * `Kanban.Metrics.Workspace.Windows` — the shared local-day window helpers
       both sibling modules use
 
-  Five workspace-scoped functions back the `/metrics` page and aggregate
+  Six workspace-scoped functions back the `/metrics` page and aggregate
   across every board the scoped user can access:
 
     * `workspace_kpis/1` — KPI strip with delta-vs-previous-14-day percentages
     * `cycle_time_daily/1` — 14 daily median cycle times
+    * `lead_time_daily/1` — 14 daily p50 (median) lead times
     * `throughput_daily/1` — 14 daily completion counts
     * `agent_leaderboard/1` — top 6 contributors (agents before humans)
     * `cumulative_flow/1` — 14 daily snapshots across 5 derived states
 
-  `overview/1` returns all five payloads in one call, deriving the four
+  `overview/1` returns five of those payloads in one call, deriving the four
   completed-task-based series from a single projected fetch (the fifth,
   `flow_snapshots`, keeps `cumulative_flow/1`'s own read). The LiveView
   uses it so a render issues one completed-task query instead of five.
+  `lead_time_daily/1` is not part of that bundle and issues its own read.
 
-  All five accept `opts` with `:scope` and route through
+  All six accept `opts` with `:scope` and route through
   `Kanban.Boards.list_boards(scope.user)` to derive the visible board id
   set. A `nil` scope or a scope with `nil` user returns the empty/zero
   shape — never raises.
@@ -48,9 +50,10 @@ defmodule Kanban.Metrics.Workspace do
   @allowed_window_days [7, 14, 30, 90]
 
   @doc """
-  Returns every `/metrics` page payload in one call: `:kpis`,
+  Returns the five bundled `/metrics` page payloads in one call: `:kpis`,
   `:cycle_series`, `:throughput_series`, `:leaderboard`, and
-  `:flow_snapshots`. The four completed-task-based payloads are derived
+  `:flow_snapshots`. `lead_time_daily/1` is deliberately not part of this
+  bundle and issues its own read. The four completed-task-based payloads are derived
   from a single projected fetch spanning both the current and previous
   KPI windows, partitioned in memory — collapsing the five separate
   fetches the individual reads would otherwise issue. `:flow_snapshots`
@@ -183,6 +186,30 @@ defmodule Kanban.Metrics.Workspace do
     case scoped_board_ids(opts) do
       [] -> CompletedTasks.empty_cycle_series(window_days, timezone)
       board_ids -> CompletedTasks.cycle_time_daily(board_ids, window_days, timezone)
+    end
+  end
+
+  @doc """
+  Returns the most recent days of overall p50 (median) lead time.
+
+  Each entry is `%{date: Date.t(), minutes: integer()}` ordered
+  oldest-to-newest, where `minutes` is the 50th-percentile lead time —
+  measured from task creation to completion — across all tasks completed
+  that day. Days with no completed tasks render zero. The series length is
+  the resolved `:window_days` option (default #{@workspace_window_days}).
+
+  Lead time spans a task's whole life, so it is always greater than or equal
+  to the same task's cycle time, and unlike cycle time it is defined for a
+  task completed without ever having been claimed.
+  """
+  @spec lead_time_daily(keyword()) :: [%{date: Date.t(), minutes: non_neg_integer()}]
+  def lead_time_daily(opts \\ []) do
+    window_days = resolve_window_days(opts)
+    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+
+    case scoped_board_ids(opts) do
+      [] -> CompletedTasks.empty_lead_series(window_days, timezone)
+      board_ids -> CompletedTasks.lead_time_daily(board_ids, window_days, timezone)
     end
   end
 

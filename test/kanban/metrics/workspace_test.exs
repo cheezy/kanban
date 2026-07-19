@@ -39,6 +39,31 @@ defmodule Kanban.Metrics.WorkspaceTest do
     t
   end
 
+  # Completes a task `days_ago` AND backdates its creation so it has a genuine
+  # `lead_minutes`-long lead time.
+  #
+  # ws_complete!/3 sets only claimed_at/completed_at, leaving inserted_at at the
+  # fixture's real insert time (~now). For any days_ago > 0 that makes
+  # completed_at EARLIER than inserted_at, so the computed lead time is negative
+  # and the max(0) guard silently clamps it to zero — every lead-time assertion
+  # would then pass while asserting nothing. inserted_at is a timestamps()-managed
+  # NaiveDateTime that Task.changeset/2 does not cast, so it can only be backdated
+  # directly, via put_fields!/2.
+  defp ws_complete_with_lead!(task, days_ago, lead_minutes) do
+    task |> ws_complete!(days_ago) |> backdate_created!(lead_minutes)
+  end
+
+  # Moves inserted_at to `lead_minutes` before the task's completed_at.
+  defp backdate_created!(%{completed_at: %DateTime{} = completed_at} = task, lead_minutes) do
+    inserted_at =
+      completed_at
+      |> DateTime.add(-lead_minutes * 60, :second)
+      |> DateTime.to_naive()
+      |> NaiveDateTime.truncate(:second)
+
+    put_fields!(task, %{inserted_at: inserted_at})
+  end
+
   describe "workspace reads — local timezone bucketing (W1267)" do
     # Anchor test data to a fixed day in the middle of the window (computed from
     # the viewer's local "today"), so the assertions are robust to the wall-clock
@@ -342,6 +367,218 @@ defmodule Kanban.Metrics.WorkspaceTest do
       entries = Workspace.cycle_time_daily(scope: scope)
       assert length(entries) == 14
       assert Enum.all?(entries, &(&1.minutes == 0))
+    end
+  end
+
+  describe "lead_time_daily/1" do
+    test "returns 14 entries ordered oldest-to-newest with date keys" do
+      %{scope: scope} = ws_setup()
+      entries = Workspace.lead_time_daily(scope: scope)
+
+      assert length(entries) == 14
+      dates = Enum.map(entries, & &1.date)
+      assert dates == Enum.sort(dates, Date)
+
+      for %{date: d, minutes: m} <- entries do
+        assert %Date{} = d
+        assert is_integer(m)
+      end
+    end
+
+    test "a day's entry is the p50 lead time across that day's completions" do
+      %{column: column, scope: scope} = ws_setup()
+
+      # Leads of 60, 120 and 240 minutes completed today; p50 of the three is 120.
+      for lead <- [60, 120, 240] do
+        column |> task_fixture() |> ws_complete_with_lead!(0, lead)
+      end
+
+      entries = Workspace.lead_time_daily(scope: scope)
+      today = List.last(entries)
+
+      assert today.minutes == 120
+    end
+
+    test "an even-sized day interpolates the median rather than picking a side" do
+      %{column: column, scope: scope} = ws_setup()
+
+      for lead <- [60, 240] do
+        column |> task_fixture() |> ws_complete_with_lead!(0, lead)
+      end
+
+      entries = Workspace.lead_time_daily(scope: scope)
+      today = List.last(entries)
+
+      assert today.minutes == 150
+    end
+
+    test "days with no completions are zero-filled rather than omitted" do
+      %{column: column, scope: scope} = ws_setup()
+
+      column |> task_fixture() |> ws_complete_with_lead!(3, 180)
+
+      entries = Workspace.lead_time_daily(scope: scope)
+      three_days_ago = Enum.at(entries, length(entries) - 1 - 3)
+
+      assert length(entries) == 14
+      # The one populated day carries a genuine non-zero lead; every other day
+      # zero-fills. This is also the regression guard for the inserted_at
+      # clamping trap: a backdated completion whose creation was NOT backdated
+      # would read 0 here and the test would pass vacuously.
+      assert three_days_ago.minutes == 180
+      assert Enum.count(entries, &(&1.minutes > 0)) == 1
+    end
+
+    test "returns 14 zero entries for an empty workspace" do
+      scope = Scope.for_user(user_fixture())
+      entries = Workspace.lead_time_daily(scope: scope)
+
+      assert length(entries) == 14
+      assert Enum.all?(entries, &(&1.minutes == 0))
+    end
+
+    test "returns a zero-filled series for a board with no completions in the window" do
+      %{column: column, scope: scope} = ws_setup()
+
+      # An open task and a completion far outside the 14-day window.
+      task_fixture(column)
+      column |> task_fixture() |> ws_complete_with_lead!(40, 300)
+
+      entries = Workspace.lead_time_daily(scope: scope)
+
+      assert length(entries) == 14
+      assert Enum.all?(entries, &(&1.minutes == 0))
+    end
+
+    test "lead time is measured from creation, so it is >= the same task's cycle time" do
+      %{column: column, scope: scope} = ws_setup()
+
+      # ws_complete! sets a 60-minute cycle; created 5 hours before completion.
+      column |> task_fixture() |> ws_complete_with_lead!(0, 300)
+
+      lead_entries = Workspace.lead_time_daily(scope: scope)
+      cycle_entries = Workspace.cycle_time_daily(scope: scope)
+      lead = List.last(lead_entries).minutes
+      cycle = List.last(cycle_entries).minutes
+
+      assert lead == 300
+      assert cycle == 60
+      assert lead >= cycle
+    end
+
+    test "a task completed without ever being claimed still has a lead time" do
+      %{column: column, scope: scope} = ws_setup()
+
+      completed_at = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      column
+      |> task_fixture()
+      |> put_fields!(%{completed_at: completed_at, claimed_at: nil})
+      |> backdate_created!(90)
+
+      lead_entries = Workspace.lead_time_daily(scope: scope)
+      cycle_entries = Workspace.cycle_time_daily(scope: scope)
+
+      # Lead time is defined (creation is never null); cycle time is not.
+      assert List.last(lead_entries).minutes == 90
+      assert List.last(cycle_entries).minutes == 0
+    end
+
+    test "excludes completed goals, consistent with every other workspace metric" do
+      %{column: column, scope: scope} = ws_setup()
+
+      column |> task_fixture() |> ws_complete_with_lead!(0, 60)
+      # A goal gets a completed_at when its last child finishes; a 600-minute
+      # lead would drag the median well off 60 if it were counted.
+      column |> task_fixture(%{type: :goal}) |> ws_complete_with_lead!(0, 600)
+
+      entries = Workspace.lead_time_daily(scope: scope)
+
+      assert List.last(entries).minutes == 60
+    end
+
+    test "honors the :board_ids filter" do
+      user = user_fixture()
+      board1 = board_fixture(user)
+      board2 = board_fixture(user)
+      col1 = column_fixture(board1)
+      col2 = column_fixture(board2)
+      scope = Scope.for_user(user)
+
+      col1 |> task_fixture() |> ws_complete_with_lead!(0, 60)
+      col2 |> task_fixture() |> ws_complete_with_lead!(0, 600)
+
+      all_entries = Workspace.lead_time_daily(scope: scope)
+      board1_entries = Workspace.lead_time_daily(scope: scope, board_ids: [board1.id])
+      board2_entries = Workspace.lead_time_daily(scope: scope, board_ids: [board2.id])
+
+      # Unfiltered: p50 of [60, 600] is 330. Filtered to one board: that board only.
+      assert List.last(all_entries).minutes == 330
+      assert List.last(board1_entries).minutes == 60
+      assert List.last(board2_entries).minutes == 600
+    end
+
+    test "board ids the user cannot see are dropped" do
+      %{scope: scope} = ws_setup()
+      other_board = board_fixture(user_fixture())
+      other_col = column_fixture(other_board)
+
+      other_col |> task_fixture() |> ws_complete_with_lead!(0, 600)
+
+      entries = Workspace.lead_time_daily(scope: scope, board_ids: [other_board.id])
+
+      assert Enum.all?(entries, &(&1.minutes == 0))
+    end
+
+    test "the :window_days option sets the series length and bounds the completions" do
+      %{column: column, scope: scope} = ws_setup()
+
+      for w <- [7, 14, 30, 90] do
+        entries = Workspace.lead_time_daily(scope: scope, window_days: w)
+        assert length(entries) == w
+      end
+
+      # An unsupported value clamps to the 14-day default.
+      clamped = Workspace.lead_time_daily(scope: scope, window_days: 5)
+      assert length(clamped) == 14
+
+      # 20 days back: outside the 7- and 14-day windows, inside the 30-day one.
+      column |> task_fixture() |> ws_complete_with_lead!(20, 180)
+
+      within_7 = Workspace.lead_time_daily(scope: scope, window_days: 7)
+      within_30 = Workspace.lead_time_daily(scope: scope, window_days: 30)
+
+      assert Enum.all?(within_7, &(&1.minutes == 0))
+      assert Enum.count(within_30, &(&1.minutes == 180)) == 1
+    end
+
+    test "the :timezone option buckets completions into the correct local day" do
+      %{column: column, scope: scope} = ws_setup()
+      tz = "America/Edmonton"
+      d = tz |> Kanban.Timezone.local_today() |> Date.add(-7)
+      midnight = Kanban.Timezone.start_of_local_day(d, tz)
+
+      # Straddling local midnight: one hour before (local day d-1), one after (d).
+      column
+      |> task_fixture()
+      |> put_fields!(%{completed_at: DateTime.add(midnight, -3600, :second)})
+      |> backdate_created!(120)
+
+      column
+      |> task_fixture()
+      |> put_fields!(%{completed_at: DateTime.add(midnight, 3600, :second)})
+      |> backdate_created!(240)
+
+      local = Workspace.lead_time_daily(scope: scope, timezone: tz)
+      utc = Workspace.lead_time_daily(scope: scope)
+
+      # Edmonton: two separate local days, each keeping its own lead time.
+      assert Enum.find(local, &(&1.date == Date.add(d, -1))).minutes == 120
+      assert Enum.find(local, &(&1.date == d)).minutes == 240
+
+      # UTC: both fall on the same UTC calendar day -> one bucket, p50 of both.
+      assert Enum.count(utc, &(&1.minutes > 0)) == 1
+      assert Enum.find(utc, &(&1.minutes > 0)).minutes == 180
     end
   end
 
@@ -677,6 +914,10 @@ defmodule Kanban.Metrics.WorkspaceTest do
       cycle = Workspace.cycle_time_daily()
       assert length(cycle) == 14
       assert Enum.all?(cycle, &(&1.minutes == 0))
+
+      lead = Workspace.lead_time_daily()
+      assert length(lead) == 14
+      assert Enum.all?(lead, &(&1.minutes == 0))
 
       assert Workspace.throughput_daily() == List.duplicate(0, 14)
       assert Workspace.agent_leaderboard() == []
