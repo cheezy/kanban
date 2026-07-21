@@ -71,7 +71,7 @@ stride-lite/
 stride-copilot-lite/
 stride-security-review/
 stride-copilot-security-review/
-exploratory-testing/
+stride-exploratory-testing/
 launchdarkly/
 
 # Per-developer Claude Code permission allow-list. Untracked so each
