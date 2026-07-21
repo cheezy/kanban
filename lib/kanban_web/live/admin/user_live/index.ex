@@ -18,6 +18,7 @@ defmodule KanbanWeb.Admin.UserLive.Index do
     {:ok,
      socket
      |> assign(:page_title, gettext("User Administration"))
+     |> assign(:active_tab, :users)
      |> assign(:hide_users_without_boards, false)
      |> refresh()}
   end
@@ -66,6 +67,14 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   def handle_event("toggle_hide_users_without_boards", params, socket) do
     {:noreply,
      assign(socket, :hide_users_without_boards, params["hide_users_without_boards"] == "true")}
+  end
+
+  # In-page tab switch (no route change). The incoming value is mapped to a
+  # fixed set of known atoms — never String.to_atom on user input — and any
+  # unrecognized value falls back to the default :users tab.
+  @impl true
+  def handle_event("select_tab", %{"tab" => tab}, socket) do
+    {:noreply, assign(socket, :active_tab, tab_atom(tab))}
   end
 
   # Every event re-resolves BOTH the actor and the target from the database. The
@@ -164,6 +173,11 @@ defmodule KanbanWeb.Admin.UserLive.Index do
     do: Accounts.get_user(id)
 
   defp fetch_user(_id), do: nil
+
+  # Maps the phx-value-tab string to a known atom, defaulting to :users for any
+  # unrecognized value — a hardcoded allow-list, never String.to_atom/1.
+  defp tab_atom("agents"), do: :agents
+  defp tab_atom(_tab), do: :users
 
   defp board_count(board_counts, user), do: Map.get(board_counts, user.id, 0)
 

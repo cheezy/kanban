@@ -618,6 +618,55 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
     end
   end
 
+  describe "tabbed view" do
+    setup :register_and_log_in_admin
+
+    test "renders a tab bar with Users and Agents tabs, Users active by default", %{conn: conn} do
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      assert has_element?(live, "#tab-users", "Users")
+      assert has_element?(live, "#tab-agents", "Agents")
+      # The Users panel (with the existing user list) shows by default; the
+      # Agents panel is not rendered.
+      assert has_element?(live, "#hide-users-without-boards-form")
+      refute has_element?(live, "#agents-tab-panel")
+    end
+
+    test "clicking the Agents tab switches to it, and clicking Users switches back",
+         %{conn: conn} do
+      user = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      # Users tab active by default: the user row shows, the Agents panel does not.
+      assert has_element?(live, "#user-#{user.id}")
+      refute has_element?(live, "#agents-tab-panel")
+
+      # Switch to the Agents tab: its panel shows, the user list is hidden.
+      live |> element("#tab-agents") |> render_click()
+      assert has_element?(live, "#agents-tab-panel")
+      refute has_element?(live, "#user-#{user.id}")
+      refute has_element?(live, "#hide-users-without-boards-form")
+
+      # Switch back to the Users tab.
+      live |> element("#tab-users") |> render_click()
+      assert has_element?(live, "#user-#{user.id}")
+      refute has_element?(live, "#agents-tab-panel")
+    end
+
+    test "an unrecognized tab value falls back to the Users tab", %{conn: conn} do
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      live |> element("#tab-agents") |> render_click()
+      assert has_element?(live, "#agents-tab-panel")
+
+      # A garbage phx-value-tab maps to the default :users tab, never crashes.
+      render_hook(live, "select_tab", %{"tab" => "bogus"})
+      refute has_element?(live, "#agents-tab-panel")
+      assert has_element?(live, "#hide-users-without-boards-form")
+    end
+  end
+
   describe "hide users with no boards filter" do
     setup :register_and_log_in_admin
 

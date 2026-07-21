@@ -7,8 +7,49 @@
       </:subtitle>
     </.header>
 
-    <% shown_users = visible_users(@users, @board_counts, @hide_users_without_boards) %>
-    <section class="mt-8">
+    <div
+      role="tablist"
+      aria-label={gettext("User administration sections")}
+      class="mt-6 flex gap-1 border-b border-base-300"
+    >
+      <button
+        type="button"
+        role="tab"
+        id="tab-users"
+        aria-selected={if @active_tab == :users, do: "true", else: "false"}
+        phx-click="select_tab"
+        phx-value-tab="users"
+        class={[
+          "-mb-px cursor-pointer border-b-2 px-4 py-2 text-sm font-medium",
+          if(@active_tab == :users,
+            do: "border-primary text-base-content",
+            else: "border-transparent text-base-content opacity-60 hover:opacity-100"
+          )
+        ]}
+      >
+        {gettext("Users")}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="tab-agents"
+        aria-selected={if @active_tab == :agents, do: "true", else: "false"}
+        phx-click="select_tab"
+        phx-value-tab="agents"
+        class={[
+          "-mb-px cursor-pointer border-b-2 px-4 py-2 text-sm font-medium",
+          if(@active_tab == :agents,
+            do: "border-primary text-base-content",
+            else: "border-transparent text-base-content opacity-60 hover:opacity-100"
+          )
+        ]}
+      >
+        {gettext("Agents")}
+      </button>
+    </div>
+
+    <section :if={@active_tab == :users} class="mt-8">
+      <% shown_users = visible_users(@users, @board_counts, @hide_users_without_boards) %>
       <form
         id="hide-users-without-boards-form"
         phx-change="toggle_hide_users_without_boards"
@@ -221,6 +262,11 @@
           </tbody>
         </table>
       </div>
+    </section>
+
+    <section :if={@active_tab == :agents} id="agents-tab-panel" class="mt-8">
+      <%!-- The Agents tab content (a per-agent completed-task-count table) is
+            added by a later task; this is the panel container it renders into. --%>
     </section>
   </div>
 </Layouts.app>
