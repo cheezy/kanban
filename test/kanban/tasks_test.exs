@@ -9768,4 +9768,50 @@ defmodule Kanban.TasksTest do
                Tasks.group_rows_by_goal([goal])
     end
   end
+
+  describe "completed_task_counts_by_agent/0" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      %{column: column_fixture(board)}
+    end
+
+    test "counts completed tasks per agent, excluding goals and nil-agent tasks, ordered by count desc",
+         %{column: column} do
+      complete!(task_fixture(column, %{title: "A1"}), "Agent A")
+      complete!(task_fixture(column, %{title: "A2"}), "Agent A")
+      complete!(task_fixture(column, %{title: "B1"}), "Agent B")
+      # Completed with no agent — excluded from the counts.
+      complete!(task_fixture(column, %{title: "No agent"}), nil)
+      # A goal completed by an agent — excluded (goals inherit completed_at when
+      # their last child finishes; counting them double-counts real work, D87).
+      complete!(task_fixture(column, %{title: "Goal", type: :goal}), "Agent A")
+
+      assert Tasks.completed_task_counts_by_agent() == [
+               %{agent_name: "Agent A", completed_count: 2},
+               %{agent_name: "Agent B", completed_count: 1}
+             ]
+    end
+
+    test "returns an empty list when no completed task has an agent", %{column: column} do
+      _open = task_fixture(column, %{title: "Open"})
+      complete!(task_fixture(column, %{title: "No agent"}), nil)
+
+      assert Tasks.completed_task_counts_by_agent() == []
+    end
+  end
+
+  # Marks a task completed, optionally attributing it to an agent — mirrors the
+  # Tasks.update_task/2 attribution pattern used in metrics_test.exs.
+  defp complete!(task, nil) do
+    {:ok, completed} = Tasks.update_task(task, %{completed_at: DateTime.utc_now()})
+    completed
+  end
+
+  defp complete!(task, agent) do
+    {:ok, completed} =
+      Tasks.update_task(task, %{completed_at: DateTime.utc_now(), completed_by_agent: agent})
+
+    completed
+  end
 end

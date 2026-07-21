@@ -282,6 +282,30 @@ defmodule Kanban.Tasks.Queries do
     |> Repo.all()
   end
 
+  @doc """
+  Counts completed tasks grouped by the agent that completed them.
+
+  Returns one map per distinct non-nil `completed_by_agent`, shaped
+  `%{agent_name: String.t(), completed_count: non_neg_integer()}`, ordered by
+  `completed_count` descending (ties broken by `agent_name` ascending).
+
+  All boards, all time — deliberately unscoped, since the admin surface that
+  consumes it wants a global per-agent tally. Goals are excluded: a goal
+  inherits a `completed_at` when its last child finishes, so counting them
+  would double-count real work (the same `type != :goal` guard every
+  board-level metric query uses — see D87).
+  """
+  def completed_task_counts_by_agent do
+    from(t in Task,
+      where: not is_nil(t.completed_by_agent),
+      where: t.type != ^:goal,
+      group_by: t.completed_by_agent,
+      order_by: [desc: count(t.id), asc: t.completed_by_agent],
+      select: %{agent_name: t.completed_by_agent, completed_count: count(t.id)}
+    )
+    |> Repo.all()
+  end
+
   defp goal_with_board(goal_id) do
     query =
       from t in Task,

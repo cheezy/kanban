@@ -39,6 +39,7 @@ defmodule Kanban.Tasks do
   defdelegate sort_by_goal_hierarchy(tasks), to: Queries
   defdelegate group_rows_by_goal(tasks), to: Queries
   defdelegate list_children_for_goal(user, goal_id), to: Queries
+  defdelegate completed_task_counts_by_agent, to: Queries
   defdelegate list_archived_tasks(column), to: Queries
   defdelegate list_archived_tasks_for_board(board_id), to: Queries
   defdelegate get_archived_task_for_board(id, board_id), to: Queries
