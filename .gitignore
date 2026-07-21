@@ -68,9 +68,9 @@ stride-opencode-ideation/
 stride-codex/
 stride-pi/
 stride-lite/
-stride-lite-copilot/
+stride-copilot-lite/
 stride-security-review/
-stride-security-review-copilot/
+stride-copilot-security-review/
 exploratory-testing/
 launchdarkly/
 
