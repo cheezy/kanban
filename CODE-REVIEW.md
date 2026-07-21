@@ -66,4 +66,4 @@ already catch automatically, leave it out: those tools run in the
 
 ## Cross-plugin compatibility
 
-- New text rendered into goal/task markdown files (via stride-lite or stride-lite-copilot skill output) avoids Claude Code-specific tool names (`Edit`, `Write`, `Bash`, `Agent`, `Skill`, `Grep`, `Glob`). The same markdown is consumed by Copilot's task-reviewer agent and PascalCase tool nouns confuse cross-runtime users.
+- New text rendered into goal/task markdown files (via stride-lite or stride-copilot-lite skill output) avoids Claude Code-specific tool names (`Edit`, `Write`, `Bash`, `Agent`, `Skill`, `Grep`, `Glob`). The same markdown is consumed by Copilot's task-reviewer agent and PascalCase tool nouns confuse cross-runtime users.
