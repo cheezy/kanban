@@ -265,8 +265,36 @@
     </section>
 
     <section :if={@active_tab == :agents} id="agents-tab-panel" class="mt-8">
-      <%!-- The Agents tab content (a per-agent completed-task-count table) is
-            added by a later task; this is the panel container it renders into. --%>
+      <div :if={@agent_completion_counts == []} class="text-base-content opacity-70">
+        {gettext("No agents have completed any tasks yet.")}
+      </div>
+
+      <div :if={@agent_completion_counts != []} class="overflow-x-auto">
+        <table class="table">
+          <thead class="[&>tr>th]:border-b [&>tr>th]:border-base-300">
+            <tr>
+              <th>{gettext("Agent")}</th>
+              <th>{gettext("Tasks Completed")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%!-- Row id is index-based rather than agent-name-based: a stored
+                  agent name can be an `ai_agent:<model>` token whose colon is an
+                  awkward CSS-selector id. Names render as text (HEEx escapes). --%>
+            <tr
+              :for={{row, index} <- Enum.with_index(@agent_completion_counts)}
+              id={"agent-row-#{index}"}
+            >
+              <td>
+                <span class="text-base-content break-all">{row.agent_name}</span>
+              </td>
+              <td>
+                <span class="text-base-content tabular-nums">{row.completed_count}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   </div>
 </Layouts.app>

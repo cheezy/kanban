@@ -1087,6 +1087,7 @@ msgstr "Agregar paso de verificación"
 #: lib/kanban_web/export/metrics_excel.ex:150
 #: lib/kanban_web/export/metrics_excel.ex:286
 #: lib/kanban_web/export/workspace_metrics_excel.ex:188
+#: lib/kanban_web/live/admin/user_live/index.html.heex:276
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:173
 #: lib/kanban_web/live/task_live/components/completion_section.ex:29
 #, elixir-autogen, elixir-format
@@ -3123,8 +3124,8 @@ msgid "You must be a board member to comment on this task"
 msgstr "Debes ser miembro del tablero para comentar en esta tarea"
 
 #: lib/kanban_web/live/admin/message_live/index.ex:85
-#: lib/kanban_web/live/admin/user_live/index.ex:127
-#: lib/kanban_web/live/admin/user_live/index.ex:155
+#: lib/kanban_web/live/admin/user_live/index.ex:129
+#: lib/kanban_web/live/admin/user_live/index.ex:157
 #, elixir-autogen, elixir-format
 msgid "You must be an admin to perform this action."
 msgstr "Debes ser administrador para realizar esta acción."
@@ -6731,7 +6732,7 @@ msgstr "es obligatorio en una revisión despachada: falta el campo estructurado 
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:302
 #: lib/kanban_web/export/metrics_excel.ex:360
 #: lib/kanban_web/export/metrics_excel.ex:363
-#: lib/kanban_web/live/admin/user_live/index.ex:218
+#: lib/kanban_web/live/admin/user_live/index.ex:220
 #, elixir-autogen, elixir-format
 msgid "N/A"
 msgstr "N/D"
@@ -8006,38 +8007,38 @@ msgstr "No"
 msgid "No users yet."
 msgstr "Aún no hay usuarios."
 
-#: lib/kanban_web/live/admin/user_live/index.ex:20
+#: lib/kanban_web/live/admin/user_live/index.ex:21
 #: lib/kanban_web/live/admin/user_live/index.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "User Administration"
 msgstr "Administración de usuarios"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:221
+#: lib/kanban_web/live/admin/user_live/index.ex:223
 #, elixir-autogen, elixir-format
 msgid "Admin"
 msgstr "Administrador"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:222
+#: lib/kanban_web/live/admin/user_live/index.ex:224
 #, elixir-autogen, elixir-format
 msgid "User"
 msgstr "Usuario"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:58
+#: lib/kanban_web/live/admin/user_live/index.ex:59
 #, elixir-autogen, elixir-format
 msgid "Account deleted."
 msgstr "Cuenta eliminada."
 
-#: lib/kanban_web/live/admin/user_live/index.ex:31
+#: lib/kanban_web/live/admin/user_live/index.ex:32
 #, elixir-autogen, elixir-format
 msgid "Account disabled."
 msgstr "Cuenta deshabilitada."
 
-#: lib/kanban_web/live/admin/user_live/index.ex:40
+#: lib/kanban_web/live/admin/user_live/index.ex:41
 #, elixir-autogen, elixir-format
 msgid "Account enabled."
 msgstr "Cuenta habilitada."
 
-#: lib/kanban_web/live/admin/user_live/index.ex:49
+#: lib/kanban_web/live/admin/user_live/index.ex:50
 #, elixir-autogen, elixir-format
 msgid "Confirmation email sent."
 msgstr "Correo de confirmación enviado."
@@ -8077,39 +8078,39 @@ msgstr "Reenviar confirmación"
 msgid "Send another confirmation email to this account?"
 msgstr "¿Enviar otro correo de confirmación a esta cuenta?"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:136
+#: lib/kanban_web/live/admin/user_live/index.ex:138
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
 msgstr "Algo salió mal. Inténtalo de nuevo."
 
-#: lib/kanban_web/live/admin/user_live/index.ex:135
+#: lib/kanban_web/live/admin/user_live/index.ex:137
 #: lib/kanban_web/live/admin/user_live/index.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr "Esta cuenta ya está confirmada."
 
-#: lib/kanban_web/live/admin/user_live/index.ex:133
+#: lib/kanban_web/live/admin/user_live/index.ex:135
 #: lib/kanban_web/live/admin/user_live/index.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr "Este usuario todavía pertenece a un tablero y no se puede eliminar."
 
-#: lib/kanban_web/live/admin/user_live/index.ex:91
+#: lib/kanban_web/live/admin/user_live/index.ex:92
 #, elixir-autogen, elixir-format
 msgid "User not found."
 msgstr "Usuario no encontrado."
 
-#: lib/kanban_web/live/admin/user_live/index.ex:129
+#: lib/kanban_web/live/admin/user_live/index.ex:131
 #, elixir-autogen, elixir-format
 msgid "You cannot delete your own account."
 msgstr "No puedes eliminar tu propia cuenta."
 
-#: lib/kanban_web/live/admin/user_live/index.ex:128
+#: lib/kanban_web/live/admin/user_live/index.ex:130
 #, elixir-autogen, elixir-format
 msgid "You cannot disable your own account."
 msgstr "No puedes deshabilitar tu propia cuenta."
 
-#: lib/kanban_web/live/admin/user_live/index.ex:130
+#: lib/kanban_web/live/admin/user_live/index.ex:132
 #, elixir-autogen, elixir-format
 msgid "You cannot remove the last admin."
 msgstr "No puedes eliminar al último administrador."
@@ -8127,6 +8128,7 @@ msgid "Tasks Claimed"
 msgstr "Tareas reclamadas"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:110
+#: lib/kanban_web/live/admin/user_live/index.html.heex:277
 #, elixir-autogen, elixir-format
 msgid "Tasks Completed"
 msgstr "Tareas completadas"
@@ -8596,3 +8598,8 @@ msgstr "Secciones de administración de usuarios"
 #, elixir-autogen, elixir-format
 msgid "Users"
 msgstr "Usuarios"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:269
+#, elixir-autogen, elixir-format
+msgid "No agents have completed any tasks yet."
+msgstr "Ningún agente ha completado tareas todavía."

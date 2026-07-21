@@ -1087,6 +1087,7 @@ msgstr "添加验证步骤"
 #: lib/kanban_web/export/metrics_excel.ex:150
 #: lib/kanban_web/export/metrics_excel.ex:286
 #: lib/kanban_web/export/workspace_metrics_excel.ex:188
+#: lib/kanban_web/live/admin/user_live/index.html.heex:276
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:173
 #: lib/kanban_web/live/task_live/components/completion_section.ex:29
 #, elixir-autogen, elixir-format
@@ -3120,8 +3121,8 @@ msgid "You must be a board member to comment on this task"
 msgstr "您必须是看板成员才能对此任务发表评论"
 
 #: lib/kanban_web/live/admin/message_live/index.ex:85
-#: lib/kanban_web/live/admin/user_live/index.ex:127
-#: lib/kanban_web/live/admin/user_live/index.ex:155
+#: lib/kanban_web/live/admin/user_live/index.ex:129
+#: lib/kanban_web/live/admin/user_live/index.ex:157
 #, elixir-autogen, elixir-format
 msgid "You must be an admin to perform this action."
 msgstr "您必须是管理员才能执行此操作。"
@@ -6678,7 +6679,7 @@ msgstr "在已派发的评审中为必填项：评审队列渲染的结构化字
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:302
 #: lib/kanban_web/export/metrics_excel.ex:360
 #: lib/kanban_web/export/metrics_excel.ex:363
-#: lib/kanban_web/live/admin/user_live/index.ex:218
+#: lib/kanban_web/live/admin/user_live/index.ex:220
 #, elixir-autogen, elixir-format
 msgid "N/A"
 msgstr "不适用"
@@ -7946,38 +7947,38 @@ msgstr "否"
 msgid "No users yet."
 msgstr "暂无用户。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:20
+#: lib/kanban_web/live/admin/user_live/index.ex:21
 #: lib/kanban_web/live/admin/user_live/index.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "User Administration"
 msgstr "用户管理"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:221
+#: lib/kanban_web/live/admin/user_live/index.ex:223
 #, elixir-autogen, elixir-format
 msgid "Admin"
 msgstr "管理员"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:222
+#: lib/kanban_web/live/admin/user_live/index.ex:224
 #, elixir-autogen, elixir-format
 msgid "User"
 msgstr "用户"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:58
+#: lib/kanban_web/live/admin/user_live/index.ex:59
 #, elixir-autogen, elixir-format
 msgid "Account deleted."
 msgstr "账户已删除。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:31
+#: lib/kanban_web/live/admin/user_live/index.ex:32
 #, elixir-autogen, elixir-format
 msgid "Account disabled."
 msgstr "账户已停用。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:40
+#: lib/kanban_web/live/admin/user_live/index.ex:41
 #, elixir-autogen, elixir-format
 msgid "Account enabled."
 msgstr "账户已启用。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:49
+#: lib/kanban_web/live/admin/user_live/index.ex:50
 #, elixir-autogen, elixir-format
 msgid "Confirmation email sent."
 msgstr "确认邮件已发送。"
@@ -8017,39 +8018,39 @@ msgstr "重新发送确认邮件"
 msgid "Send another confirmation email to this account?"
 msgstr "向此账户再发送一封确认邮件？"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:136
+#: lib/kanban_web/live/admin/user_live/index.ex:138
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
 msgstr "出了点问题。请重试。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:135
+#: lib/kanban_web/live/admin/user_live/index.ex:137
 #: lib/kanban_web/live/admin/user_live/index.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr "此账户已确认。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:133
+#: lib/kanban_web/live/admin/user_live/index.ex:135
 #: lib/kanban_web/live/admin/user_live/index.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr "该用户仍属于某个看板，无法删除。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:91
+#: lib/kanban_web/live/admin/user_live/index.ex:92
 #, elixir-autogen, elixir-format
 msgid "User not found."
 msgstr "未找到用户。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:129
+#: lib/kanban_web/live/admin/user_live/index.ex:131
 #, elixir-autogen, elixir-format
 msgid "You cannot delete your own account."
 msgstr "您不能删除自己的账户。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:128
+#: lib/kanban_web/live/admin/user_live/index.ex:130
 #, elixir-autogen, elixir-format
 msgid "You cannot disable your own account."
 msgstr "您不能停用自己的账户。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:130
+#: lib/kanban_web/live/admin/user_live/index.ex:132
 #, elixir-autogen, elixir-format
 msgid "You cannot remove the last admin."
 msgstr "您不能移除最后一位管理员。"
@@ -8067,6 +8068,7 @@ msgid "Tasks Claimed"
 msgstr "已认领任务"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:110
+#: lib/kanban_web/live/admin/user_live/index.html.heex:277
 #, elixir-autogen, elixir-format
 msgid "Tasks Completed"
 msgstr "已完成任务"
@@ -8535,3 +8537,8 @@ msgstr "用户管理板块"
 #, elixir-autogen, elixir-format
 msgid "Users"
 msgstr "用户"
+
+#: lib/kanban_web/live/admin/user_live/index.html.heex:269
+#, elixir-autogen, elixir-format
+msgid "No agents have completed any tasks yet."
+msgstr "还没有代理完成任何任务。"

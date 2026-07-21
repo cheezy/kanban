@@ -4,10 +4,13 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.ColumnsFixtures
+  import Kanban.TasksFixtures
   import Swoosh.TestAssertions
 
   alias Kanban.Accounts
   alias Kanban.Accounts.User
+  alias Kanban.Tasks
 
   defp register_and_log_in_admin(%{conn: conn}) do
     admin = admin_fixture()
@@ -667,6 +670,40 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
     end
   end
 
+  describe "agents tab" do
+    setup :register_and_log_in_admin
+
+    test "shows an empty-state message when no agent has completed any tasks", %{conn: conn} do
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      live |> element("#tab-agents") |> render_click()
+
+      assert has_element?(live, "#agents-tab-panel")
+      assert render(live) =~ "No agents have completed any tasks yet."
+      refute has_element?(live, "#agents-tab-panel table")
+    end
+
+    test "lists each agent and its completed-task count, ordered by count descending",
+         %{conn: conn} do
+      owner = user_fixture()
+      column = column_fixture(board_fixture(owner))
+      complete_by_agent!(task_fixture(column, %{title: "t1"}), "Agent A")
+      complete_by_agent!(task_fixture(column, %{title: "t2"}), "Agent A")
+      complete_by_agent!(task_fixture(column, %{title: "t3"}), "Agent B")
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      live |> element("#tab-agents") |> render_click()
+
+      assert has_element?(live, "#agents-tab-panel table")
+      # Ordered by completed_count descending: Agent A (2) then Agent B (1).
+      assert has_element?(live, "#agent-row-0", "Agent A")
+      assert has_element?(live, "#agent-row-0", "2")
+      assert has_element?(live, "#agent-row-1", "Agent B")
+      assert has_element?(live, "#agent-row-1", "1")
+    end
+  end
+
   describe "hide users with no boards filter" do
     setup :register_and_log_in_admin
 
@@ -744,6 +781,16 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
       assert html =~ "No users have boards."
       refute has_element?(live, "table")
     end
+  end
+
+  # Marks a task completed and attributes it to an agent, so
+  # completed_task_counts_by_agent/0 counts it. Mirrors the Tasks.update_task/2
+  # attribution pattern used in the Tasks context tests.
+  defp complete_by_agent!(task, agent) do
+    {:ok, completed} =
+      Tasks.update_task(task, %{completed_at: DateTime.utc_now(), completed_by_agent: agent})
+
+    completed
   end
 
   # The user fixtures deliver their own confirmation emails, so the test

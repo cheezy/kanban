@@ -12,6 +12,7 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   alias Kanban.Accounts.User
   alias Kanban.Boards
   alias Kanban.Metrics.UserActivity
+  alias Kanban.Tasks
 
   @impl true
   def mount(_params, _session, socket) do
@@ -113,6 +114,7 @@ defmodule KanbanWeb.Admin.UserLive.Index do
     |> assign(:users, Accounts.list_users())
     |> assign(:board_counts, Boards.board_counts_by_user())
     |> assign(:user_activity, activity_by_user())
+    |> assign(:agent_completion_counts, Tasks.completed_task_counts_by_agent())
   end
 
   # list_user_activity/1 joins metrics_events to users, so it returns only the
