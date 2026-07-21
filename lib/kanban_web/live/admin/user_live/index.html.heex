@@ -7,9 +7,32 @@
       </:subtitle>
     </.header>
 
+    <% shown_users = visible_users(@users, @board_counts, @hide_users_without_boards) %>
     <section class="mt-8">
+      <form
+        id="hide-users-without-boards-form"
+        phx-change="toggle_hide_users_without_boards"
+        class="mb-4"
+      >
+        <label class="flex w-fit cursor-pointer items-center gap-2 text-base-content">
+          <input
+            type="checkbox"
+            id="hide_users_without_boards"
+            name="hide_users_without_boards"
+            value="true"
+            checked={@hide_users_without_boards}
+            class="checkbox checkbox-sm"
+          />
+          <span class="text-sm">{gettext("Hide users with no boards")}</span>
+        </label>
+      </form>
+
       <div :if={@users == []} class="text-base-content opacity-70">
         {gettext("No users yet.")}
+      </div>
+
+      <div :if={@users != [] and shown_users == []} class="text-base-content opacity-70">
+        {gettext("No users have boards.")}
       </div>
 
       <%!-- Each user spans two rows, so this table is hand-rolled rather than
@@ -19,7 +42,7 @@
             tests select on — user-<id> and the six per-stat spans — is
             preserved, with user-<id> on the <tbody> so it stays an ancestor of
             both rows. --%>
-      <div :if={@users != []} class="overflow-x-auto">
+      <div :if={shown_users != []} class="overflow-x-auto">
         <table class="table">
           <%!-- daisyUI underlines every <thead> row, which would rule between the
                 two header bands. Drop its row rules and underline the header as a
@@ -59,7 +82,7 @@
                 the rowspan'd action cell, which belongs to row 1, is covered
                 too. --%>
           <tbody
-            :for={{user, index} <- Enum.with_index(@users)}
+            :for={{user, index} <- Enum.with_index(shown_users)}
             id={"user-#{user.id}"}
             class={[
               "[&>tr]:border-b-0",

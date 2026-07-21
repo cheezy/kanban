@@ -18,6 +18,7 @@ defmodule KanbanWeb.Admin.UserLive.Index do
     {:ok,
      socket
      |> assign(:page_title, gettext("User Administration"))
+     |> assign(:hide_users_without_boards, false)
      |> refresh()}
   end
 
@@ -55,6 +56,16 @@ defmodule KanbanWeb.Admin.UserLive.Index do
       |> Accounts.delete_user(actor)
       |> respond(socket, gettext("Account deleted."))
     end)
+  end
+
+  # A pure view-only filter over the already-loaded @board_counts — no refresh,
+  # no query. The checkbox omits its key when unchecked, so an absent param
+  # parses to false, mirroring the metrics weekend filter. Comparing the literal
+  # "true" string keeps this off the String.to_atom-on-user-input footgun.
+  @impl true
+  def handle_event("toggle_hide_users_without_boards", params, socket) do
+    {:noreply,
+     assign(socket, :hide_users_without_boards, params["hide_users_without_boards"] == "true")}
   end
 
   # Every event re-resolves BOTH the actor and the target from the database. The
@@ -155,6 +166,15 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   defp fetch_user(_id), do: nil
 
   defp board_count(board_counts, user), do: Map.get(board_counts, user.id, 0)
+
+  # View-only filter: when the admin ticks "hide users with no boards", drop
+  # every user whose already-loaded board count is zero. Filtering here — before
+  # Enum.with_index in the template — keeps the zebra striping contiguous over
+  # the rows actually shown. No new query; reuses @board_counts.
+  defp visible_users(users, board_counts, true),
+    do: Enum.reject(users, &(board_count(board_counts, &1) == 0))
+
+  defp visible_users(users, _board_counts, false), do: users
 
   # A user with no recorded activity is absent from the aggregate, not zeroed by
   # it. Map.fetch!/2 on the way out so a mistyped key fails loudly instead of

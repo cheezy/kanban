@@ -618,6 +618,85 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
     end
   end
 
+  describe "hide users with no boards filter" do
+    setup :register_and_log_in_admin
+
+    test "the checkbox is present, wired, and unchecked by default with all users shown",
+         %{conn: conn} do
+      with_boards = user_fixture()
+      _board = board_fixture(with_boards)
+      without_boards = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      # The filter checkbox exists and its form is wired to the toggle event.
+      assert has_element?(
+               live,
+               "form#hide-users-without-boards-form[phx-change='toggle_hide_users_without_boards']"
+             )
+
+      assert has_element?(live, "#hide_users_without_boards")
+      # Unchecked by default — no `checked` attribute on first render.
+      refute has_element?(live, "#hide_users_without_boards[checked]")
+
+      # Both the board-owning and board-less users are visible.
+      assert has_element?(live, "#user-#{with_boards.id}")
+      assert has_element?(live, "#user-#{without_boards.id}")
+    end
+
+    test "checking the box hides users with no boards and keeps users with boards",
+         %{conn: conn} do
+      with_boards = user_fixture()
+      _board = board_fixture(with_boards)
+      without_boards = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      render_hook(live, "toggle_hide_users_without_boards", %{
+        "hide_users_without_boards" => "true"
+      })
+
+      assert has_element?(live, "#user-#{with_boards.id}")
+      refute has_element?(live, "#user-#{without_boards.id}")
+    end
+
+    test "unchecking the box shows the zero-board users again", %{conn: conn} do
+      with_boards = user_fixture()
+      _board = board_fixture(with_boards)
+      without_boards = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      render_hook(live, "toggle_hide_users_without_boards", %{
+        "hide_users_without_boards" => "true"
+      })
+
+      refute has_element?(live, "#user-#{without_boards.id}")
+
+      # An unchecked box omits the param entirely, so the toggle parses to false.
+      render_hook(live, "toggle_hide_users_without_boards", %{})
+
+      assert has_element?(live, "#user-#{with_boards.id}")
+      assert has_element?(live, "#user-#{without_boards.id}")
+    end
+
+    test "shows an all-filtered message when the filter hides every user", %{conn: conn} do
+      # The admin (no boards) plus this board-less user means checking the filter
+      # empties the visible list even though users still exist.
+      _without_boards = user_fixture()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html =
+        render_hook(live, "toggle_hide_users_without_boards", %{
+          "hide_users_without_boards" => "true"
+        })
+
+      assert html =~ "No users have boards."
+      refute has_element?(live, "table")
+    end
+  end
+
   # The user fixtures deliver their own confirmation emails, so the test
   # mailbox is not empty by the time an event fires. Drain it first, or the
   # assertions below match a fixture's email instead of the event's.
