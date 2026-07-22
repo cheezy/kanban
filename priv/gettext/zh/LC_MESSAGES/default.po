@@ -6660,12 +6660,12 @@ msgstr "设置部分"
 msgid "Review data unavailable"
 msgstr "审查数据不可用"
 
-#: lib/kanban/tasks/completion_validation.ex:686
+#: lib/kanban/tasks/completion_validation.ex:774
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "在已派发的评审中为必填项：请包含 status 或 issue_counts，以便评审队列能够渲染评审结论"
 
-#: lib/kanban/tasks/completion_validation.ex:679
+#: lib/kanban/tasks/completion_validation.ex:767
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "在已派发的评审中为必填项：评审队列渲染的结构化字段 %{field} 缺失"
@@ -6684,22 +6684,22 @@ msgstr "在已派发的评审中为必填项：评审队列渲染的结构化字
 msgid "N/A"
 msgstr "不适用"
 
-#: lib/kanban/tasks/completion_validation.ex:698
+#: lib/kanban/tasks/completion_validation.ex:786
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "不完整：project_checks 仅覆盖了项目检查清单 %{expected} 个条目中的 %{supplied} 个；每个清单条目都必须评估"
 
-#: lib/kanban/tasks/completion_validation.ex:692
+#: lib/kanban/tasks/completion_validation.ex:780
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "在已执行的审查中为必填项：project_checks 必须是涵盖项目检查清单的非空列表"
 
-#: lib/kanban/tasks/completion_validation/task_consistency.ex:123
+#: lib/kanban/tasks/completion_validation/task_consistency.ex:170
 #, elixir-autogen, elixir-format
 msgid "is incomplete: the review checked %{supplied} of the task's %{expected} acceptance criteria; every acceptance criterion must be assessed"
 msgstr "不完整：审查检查了任务 %{expected} 条验收标准中的 %{supplied} 条；每条验收标准都必须评估"
 
-#: lib/kanban/tasks/completion_validation/task_consistency.ex:116
+#: lib/kanban/tasks/completion_validation/task_consistency.ex:163
 #, elixir-autogen, elixir-format
 msgid "must be a real assessment: the task supplied %{field}, so the review must record a passed/failed verdict for it, not not_assessed or absent"
 msgstr "必须是实际评估：任务提供了 %{field}，因此审查必须为其记录 passed/failed 判定，而不能是 not_assessed 或缺失"
@@ -7180,12 +7180,12 @@ msgstr "设置您的编码代理"
 msgid "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
 msgstr "记录的审查数量与此任务的验收标准不匹配；显示任务的数量。"
 
-#: lib/kanban/tasks/completion_validation.ex:344
+#: lib/kanban/tasks/completion_validation.ex:365
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match"
 msgstr "与任务不一致：审查列出了 %{supplied} 个验收标准条目，但任务定义了 %{expected} 个；数量必须匹配"
 
-#: lib/kanban/tasks/completion_validation.ex:352
+#: lib/kanban/tasks/completion_validation.ex:373
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "与任务不一致：审查报告已检查 %{checked} 个验收标准，但任务定义了 %{expected} 个；数量必须匹配"
@@ -8542,3 +8542,8 @@ msgstr "用户"
 #, elixir-autogen, elixir-format
 msgid "No agents have completed any tasks yet."
 msgstr "还没有代理完成任何任务。"
+
+#: lib/kanban/tasks/completion_validation/task_consistency.ex:178
+#, elixir-autogen, elixir-format
+msgid "is inconsistent: the considerations breakdown marks an item partial or unmitigated, so the security_considerations verdict must be failed"
+msgstr "不一致：考量事项明细中有条目被标记为部分缓解或未缓解，因此 security_considerations 的判定必须为 failed"

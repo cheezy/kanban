@@ -1018,6 +1018,215 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     end
   end
 
+  describe "validate_reviewer_result/1 — nested security_considerations.considerations[] (W1866)" do
+    test "accepts a well-formed considerations[] array" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "failed",
+          "considerations" => [
+            %{
+              "consideration" => "Untrusted status is never String.to_atom'd",
+              "status" => "mitigated"
+            },
+            %{
+              "consideration" => "Diff cap enforced on considerations text",
+              "status" => "partial"
+            }
+          ]
+        })
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts all three status enum values" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "failed",
+          "considerations" => [
+            %{"consideration" => "a", "status" => "mitigated"},
+            %{"consideration" => "b", "status" => "partial"},
+            %{"consideration" => "c", "status" => "unmitigated"}
+          ]
+        })
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "absent considerations key carries no obligation" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{"status" => "passed"})
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "nil considerations carries no obligation" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "passed",
+          "considerations" => nil
+        })
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts an empty considerations list" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "passed",
+          "considerations" => []
+        })
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "rejects an entry with an invalid status enum value" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "failed",
+          "considerations" => [%{"consideration" => "a", "status" => "resolved"}]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :consideration_status)
+      assert msg =~ "considerations[0]"
+      assert msg =~ "mitigated, partial, unmitigated"
+    end
+
+    test "rejects an entry missing status" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "failed",
+          "considerations" => [%{"consideration" => "a"}]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :consideration_status)
+      assert msg =~ "considerations[0]"
+      assert msg =~ "missing status"
+    end
+
+    test "rejects an entry with an empty consideration string" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "failed",
+          "considerations" => [%{"consideration" => "   ", "status" => "mitigated"}]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :consideration_text)
+      assert msg =~ "considerations[0]"
+      assert msg =~ "non-empty string"
+    end
+
+    test "rejects an entry with a missing consideration string" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "failed",
+          "considerations" => [%{"status" => "mitigated"}]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert error_for(errors, :consideration_text)
+    end
+
+    test "rejects a non-map entry" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "failed",
+          "considerations" => ["not a map"]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :consideration_entry)
+      assert msg =~ "considerations[0] must be a map"
+    end
+
+    test "rejects a non-list considerations value" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "failed",
+          "considerations" => %{"consideration" => "a", "status" => "mitigated"}
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :considerations)
+      assert msg =~ "must be a list"
+    end
+
+    test "reports the offending index for a bad entry among good ones" do
+      payload =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "failed",
+          "considerations" => [
+            %{"consideration" => "ok", "status" => "mitigated"},
+            %{"consideration" => "bad", "status" => "nope"}
+          ]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :consideration_status)
+      assert msg =~ "considerations[1]"
+    end
+  end
+
+  describe "considerations_status_consistency_failures/1 (W1866)" do
+    test "flags a partial item when the section verdict is not failed" do
+      result =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "passed",
+          "considerations" => [%{"consideration" => "a", "status" => "partial"}]
+        })
+
+      assert [{:security_considerations, msg}] =
+               CompletionValidation.considerations_status_consistency_failures(result)
+
+      assert msg =~ "must be failed"
+    end
+
+    test "flags an unmitigated item when the section verdict is not_assessed" do
+      result =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "not_assessed",
+          "considerations" => [%{"consideration" => "a", "status" => "unmitigated"}]
+        })
+
+      assert [{:security_considerations, _msg}] =
+               CompletionValidation.considerations_status_consistency_failures(result)
+    end
+
+    test "passes when a partial item coexists with a failed verdict" do
+      result =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "failed",
+          "considerations" => [%{"consideration" => "a", "status" => "partial"}]
+        })
+
+      assert CompletionValidation.considerations_status_consistency_failures(result) == []
+    end
+
+    test "passes when every item is mitigated regardless of verdict" do
+      result =
+        Map.put(base_reviewer_payload(), "security_considerations", %{
+          "status" => "passed",
+          "considerations" => [%{"consideration" => "a", "status" => "mitigated"}]
+        })
+
+      assert CompletionValidation.considerations_status_consistency_failures(result) == []
+    end
+
+    test "carries no obligation when the breakdown is absent" do
+      result =
+        Map.put(base_reviewer_payload(), "security_considerations", %{"status" => "passed"})
+
+      assert CompletionValidation.considerations_status_consistency_failures(result) == []
+    end
+
+    test "carries no obligation for a skip-form (non-dispatched) review" do
+      result = %{"dispatched" => false, "reason" => "small_task_0_1_key_files"}
+      assert CompletionValidation.considerations_status_consistency_failures(result) == []
+    end
+  end
+
   describe "validate_reviewer_result/2 — require_structured_block (D55)" do
     test "accepts a dispatched payload carrying the full structured block" do
       assert {:ok, _} =

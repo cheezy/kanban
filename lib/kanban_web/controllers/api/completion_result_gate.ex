@@ -82,9 +82,25 @@ defmodule KanbanWeb.API.CompletionResultGate do
         &CompletionValidation.validate_reviewer_result/1
       ),
       evaluate_changed_files(params),
-      evaluate_criteria_consistency(params, task)
+      evaluate_criteria_consistency(params, task),
+      evaluate_considerations_consistency(params)
     ]
     |> Enum.reject(&is_nil/1)
+  end
+
+  # W1866: when the reviewer's optional security_considerations.considerations[]
+  # breakdown marks any item partial/unmitigated, the security verdict must be
+  # failed. Grace-gated (warn in grace mode, reject only in strict) and folded
+  # into the same "reviewer_result" field the controller already renders. Needs
+  # no task — it is a self-consistency check within the review. Returns nil when
+  # consistent / not applicable.
+  defp evaluate_considerations_consistency(params) do
+    case CompletionValidation.considerations_status_consistency_failures(
+           params["reviewer_result"]
+         ) do
+      [] -> nil
+      errors -> %{field: "reviewer_result", errors: errors}
+    end
   end
 
   # W1102: the reviewer's acceptance-criteria counts (structured array length and

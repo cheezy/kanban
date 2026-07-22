@@ -1710,7 +1710,8 @@ defmodule KanbanWeb.AgentsLiveTest do
     test "renders the band populated from the scoped delivery rollup", %{conn: conn, user: user} do
       board = board_fixture(user)
       doing = column_fixture(board, %{name: "Doing"})
-      target = delivery_target_fixture(user, %{target_date: ~D[2026-07-21]})
+      target_date = soon_target_date()
+      target = delivery_target_fixture(user, %{target_date: target_date})
 
       goal = task_fixture(doing, %{type: :goal})
       {:ok, _} = Tasks.update_task(goal, %{target_id: target.id})
@@ -1729,7 +1730,7 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert html =~ "data-delivery-health-band"
       # A freshly-created target with incomplete work reads :on_track.
       assert band_count(html, "on-track") == 1
-      assert html =~ "Jul 21, 2026"
+      assert html =~ Calendar.strftime(target_date, "%b %-d, %Y")
 
       # The band sits at the top of the page — above the roster.
       band_pos = :binary.match(html, "data-delivery-health-band") |> elem(0)
@@ -1745,7 +1746,7 @@ defmodule KanbanWeb.AgentsLiveTest do
       # non-target work is never scanned into the rollup, so the page loads.
       board = board_fixture(user)
       doing = column_fixture(board, %{name: "Doing"})
-      target = delivery_target_fixture(user, %{target_date: ~D[2026-07-21]})
+      target = delivery_target_fixture(user, %{target_date: soon_target_date()})
       goal = task_fixture(doing, %{type: :goal})
       {:ok, _} = Tasks.update_task(goal, %{target_id: target.id})
 
@@ -1790,7 +1791,7 @@ defmodule KanbanWeb.AgentsLiveTest do
       # The signed-in user's own on-track target.
       board = board_fixture(user)
       doing = column_fixture(board, %{name: "Doing"})
-      target = delivery_target_fixture(user, %{target_date: ~D[2026-07-21]})
+      target = delivery_target_fixture(user, %{target_date: soon_target_date()})
       goal = task_fixture(doing, %{type: :goal})
       {:ok, _} = Tasks.update_task(goal, %{target_id: target.id})
 

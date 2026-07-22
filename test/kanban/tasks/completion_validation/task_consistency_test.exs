@@ -12,6 +12,7 @@ defmodule Kanban.Tasks.CompletionValidation.TaskConsistencyTest do
 
   @security_msg "must be a real assessment: the task supplied security_considerations, so the review must record a passed/failed verdict for it, not not_assessed or absent"
   @testing_msg "must be a real assessment: the task supplied testing_strategy, so the review must record a passed/failed verdict for it, not not_assessed or absent"
+  @considerations_msg "is inconsistent: the considerations breakdown marks an item partial or unmitigated, so the security_considerations verdict must be failed"
 
   describe "cross_check/2 — pass-through" do
     test "a non-dispatched (skip-form) review passes through untouched" do
@@ -111,6 +112,109 @@ defmodule Kanban.Tasks.CompletionValidation.TaskConsistencyTest do
       result = %{"dispatched" => true}
 
       assert TaskConsistency.cross_check(result, task) == {:ok, result}
+    end
+  end
+
+  describe "considerations_status_consistency_failures/1 (W1866)" do
+    test "flags a partial item when the section verdict is passed" do
+      result = %{
+        "dispatched" => true,
+        "security_considerations" => %{
+          "status" => "passed",
+          "considerations" => [%{"consideration" => "a", "status" => "partial"}]
+        }
+      }
+
+      assert [{:security_considerations, msg}] =
+               TaskConsistency.considerations_status_consistency_failures(result)
+
+      assert msg == @considerations_msg
+    end
+
+    test "flags an unmitigated item when the section verdict is not_assessed" do
+      result = %{
+        "dispatched" => true,
+        "security_considerations" => %{
+          "status" => "not_assessed",
+          "considerations" => [%{"consideration" => "a", "status" => "unmitigated"}]
+        }
+      }
+
+      assert [{:security_considerations, @considerations_msg}] =
+               TaskConsistency.considerations_status_consistency_failures(result)
+    end
+
+    test "flags a partial item when the section verdict is absent" do
+      result = %{
+        "dispatched" => true,
+        "security_considerations" => %{
+          "considerations" => [%{"consideration" => "a", "status" => "partial"}]
+        }
+      }
+
+      assert [{:security_considerations, @considerations_msg}] =
+               TaskConsistency.considerations_status_consistency_failures(result)
+    end
+
+    test "passes when a partial item coexists with a failed verdict" do
+      result = %{
+        "dispatched" => true,
+        "security_considerations" => %{
+          "status" => "failed",
+          "considerations" => [
+            %{"consideration" => "a", "status" => "partial"},
+            %{"consideration" => "b", "status" => "unmitigated"}
+          ]
+        }
+      }
+
+      assert TaskConsistency.considerations_status_consistency_failures(result) == []
+    end
+
+    test "passes when every item is mitigated regardless of verdict" do
+      result = %{
+        "dispatched" => true,
+        "security_considerations" => %{
+          "status" => "passed",
+          "considerations" => [
+            %{"consideration" => "a", "status" => "mitigated"},
+            %{"consideration" => "b", "status" => "mitigated"}
+          ]
+        }
+      }
+
+      assert TaskConsistency.considerations_status_consistency_failures(result) == []
+    end
+
+    test "carries no obligation when the breakdown is absent" do
+      result = %{"dispatched" => true, "security_considerations" => %{"status" => "passed"}}
+      assert TaskConsistency.considerations_status_consistency_failures(result) == []
+    end
+
+    test "carries no obligation when security_considerations verdict is absent" do
+      result = %{"dispatched" => true}
+      assert TaskConsistency.considerations_status_consistency_failures(result) == []
+    end
+
+    test "carries no obligation for a non-list considerations value (shape validator owns it)" do
+      result = %{
+        "dispatched" => true,
+        "security_considerations" => %{"status" => "passed", "considerations" => "nope"}
+      }
+
+      assert TaskConsistency.considerations_status_consistency_failures(result) == []
+    end
+
+    test "carries no obligation for a skip-form (non-dispatched) review" do
+      result = %{
+        "dispatched" => false,
+        "security_considerations" => %{
+          "status" => "passed",
+          "considerations" => [%{"consideration" => "a", "status" => "unmitigated"}]
+        }
+      }
+
+      assert TaskConsistency.considerations_status_consistency_failures(result) == []
     end
   end
 end

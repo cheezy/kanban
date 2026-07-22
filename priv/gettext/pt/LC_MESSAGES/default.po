@@ -6690,12 +6690,12 @@ msgstr "Seções de configurações"
 msgid "Review data unavailable"
 msgstr "Dados de revisão indisponíveis"
 
-#: lib/kanban/tasks/completion_validation.ex:686
+#: lib/kanban/tasks/completion_validation.ex:774
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "é obrigatório em uma revisão despachada: inclua status ou issue_counts para que a fila de revisão possa exibir o veredito"
 
-#: lib/kanban/tasks/completion_validation.ex:679
+#: lib/kanban/tasks/completion_validation.ex:767
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "é obrigatório em uma revisão despachada: o campo estruturado %{field} que a fila de revisão exibe está ausente"
@@ -6714,22 +6714,22 @@ msgstr "é obrigatório em uma revisão despachada: o campo estruturado %{field}
 msgid "N/A"
 msgstr "N/D"
 
-#: lib/kanban/tasks/completion_validation.ex:698
+#: lib/kanban/tasks/completion_validation.ex:786
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "está incompleto: project_checks cobre %{supplied} dos %{expected} itens da lista de verificação do projeto; cada item da lista deve ser avaliado"
 
-#: lib/kanban/tasks/completion_validation.ex:692
+#: lib/kanban/tasks/completion_validation.ex:780
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "é obrigatório em uma revisão realizada: project_checks deve ser uma lista não vazia que cubra a lista de verificação do projeto"
 
-#: lib/kanban/tasks/completion_validation/task_consistency.ex:123
+#: lib/kanban/tasks/completion_validation/task_consistency.ex:170
 #, elixir-autogen, elixir-format
 msgid "is incomplete: the review checked %{supplied} of the task's %{expected} acceptance criteria; every acceptance criterion must be assessed"
 msgstr "está incompleto: a revisão verificou %{supplied} dos %{expected} critérios de aceitação da tarefa; cada critério de aceitação deve ser avaliado"
 
-#: lib/kanban/tasks/completion_validation/task_consistency.ex:116
+#: lib/kanban/tasks/completion_validation/task_consistency.ex:163
 #, elixir-autogen, elixir-format
 msgid "must be a real assessment: the task supplied %{field}, so the review must record a passed/failed verdict for it, not not_assessed or absent"
 msgstr "deve ser uma avaliação real: a tarefa forneceu %{field}, portanto a revisão deve registrar um veredito passed/failed para isso, não not_assessed ou ausente"
@@ -7210,12 +7210,12 @@ msgstr "Configure seu agente de programação"
 msgid "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
 msgstr "A contagem de revisão registrada não corresponde aos critérios de aceitação desta tarefa; mostrando a contagem da tarefa."
 
-#: lib/kanban/tasks/completion_validation.ex:344
+#: lib/kanban/tasks/completion_validation.ex:365
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match"
 msgstr "é inconsistente com a tarefa: a revisão lista %{supplied} entradas de critérios de aceitação, mas a tarefa define %{expected}; as contagens devem corresponder"
 
-#: lib/kanban/tasks/completion_validation.ex:352
+#: lib/kanban/tasks/completion_validation.ex:373
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "é inconsistente com a tarefa: a revisão relata %{checked} critérios de aceitação verificados, mas a tarefa define %{expected}; as contagens devem corresponder"
@@ -8580,3 +8580,8 @@ msgstr "Usuários"
 #, elixir-autogen, elixir-format
 msgid "No agents have completed any tasks yet."
 msgstr "Nenhum agente concluiu tarefas ainda."
+
+#: lib/kanban/tasks/completion_validation/task_consistency.ex:178
+#, elixir-autogen, elixir-format
+msgid "is inconsistent: the considerations breakdown marks an item partial or unmitigated, so the security_considerations verdict must be failed"
+msgstr "é inconsistente: o detalhamento das considerações marca um item como parcial ou não mitigado, portanto o veredito de security_considerations deve ser failed"

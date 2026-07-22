@@ -53,6 +53,53 @@ defmodule Kanban.Tasks.CompletionValidation.TaskConsistency do
 
   def cross_check(result, _task), do: {:ok, result}
 
+  @doc """
+  W1866 — **grace-gated** self-consistency check on a dispatched
+  `reviewer_result`'s optional `security_considerations.considerations[]`
+  breakdown.
+
+  When the breakdown is present and any entry is marked `partial` or
+  `unmitigated`, the `security_considerations` section verdict must be `failed`
+  — an outstanding or partial mitigation cannot coexist with a passing security
+  verdict. When it is not, this returns a single `{:security_considerations, msg}`
+  failure so the gate can record a structured warning (grace) and only reject in
+  strict mode — unlike `cross_check/2`, whose failures always reject.
+
+  Returns a bare list (`[]` when consistent / not applicable), matching the
+  grace-gated shape `CompletionValidation.acceptance_criteria_count_failures/2`
+  uses. The rule is self-consistency within the review, so no `task` argument is
+  needed. Only a dispatched review carries the obligation; a skip-form review, an
+  absent/nil breakdown, and a non-list `considerations` value all yield `[]` (the
+  shape validator owns the non-list rejection). Known status strings are matched
+  literally — never `String.to_atom`ed.
+  """
+  def considerations_status_consistency_failures(%{"dispatched" => true} = result) do
+    case Map.get(result, "security_considerations") do
+      %{"considerations" => considerations} = section when is_list(considerations) ->
+        check_considerations_consistency(section, considerations)
+
+      _ ->
+        []
+    end
+  end
+
+  def considerations_status_consistency_failures(_result), do: []
+
+  defp check_considerations_consistency(section, considerations) do
+    if Enum.any?(considerations, &partial_or_unmitigated?/1) and
+         Map.get(section, "status") != "failed" do
+      [{:security_considerations, considerations_status_message()}]
+    else
+      []
+    end
+  end
+
+  defp partial_or_unmitigated?(%{"status" => status})
+       when status in ["partial", "unmitigated"],
+       do: true
+
+  defp partial_or_unmitigated?(_), do: false
+
   # When the task supplied content for the section, the review's verdict for it
   # must be a real assessment, not "not_assessed"/absent.
   defp check_section(errors, result, task, result_key, task_field) do
@@ -124,6 +171,12 @@ defmodule Kanban.Tasks.CompletionValidation.TaskConsistency do
       "is incomplete: the review checked %{supplied} of the task's %{expected} acceptance criteria; every acceptance criterion must be assessed",
       expected: expected,
       supplied: supplied
+    )
+  end
+
+  defp considerations_status_message do
+    gettext(
+      "is inconsistent: the considerations breakdown marks an item partial or unmitigated, so the security_considerations verdict must be failed"
     )
   end
 end

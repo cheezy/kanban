@@ -6614,12 +6614,12 @@ msgstr ""
 msgid "Review data unavailable"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:686
+#: lib/kanban/tasks/completion_validation.ex:774
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:679
+#: lib/kanban/tasks/completion_validation.ex:767
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr ""
@@ -6638,22 +6638,22 @@ msgstr ""
 msgid "N/A"
 msgstr "N/A"
 
-#: lib/kanban/tasks/completion_validation.ex:698
+#: lib/kanban/tasks/completion_validation.ex:786
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:692
+#: lib/kanban/tasks/completion_validation.ex:780
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation/task_consistency.ex:123
+#: lib/kanban/tasks/completion_validation/task_consistency.ex:170
 #, elixir-autogen, elixir-format
 msgid "is incomplete: the review checked %{supplied} of the task's %{expected} acceptance criteria; every acceptance criterion must be assessed"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation/task_consistency.ex:116
+#: lib/kanban/tasks/completion_validation/task_consistency.ex:163
 #, elixir-autogen, elixir-format
 msgid "must be a real assessment: the task supplied %{field}, so the review must record a passed/failed verdict for it, not not_assessed or absent"
 msgstr ""
@@ -7134,12 +7134,12 @@ msgstr ""
 msgid "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:344
+#: lib/kanban/tasks/completion_validation.ex:365
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:352
+#: lib/kanban/tasks/completion_validation.ex:373
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr ""
@@ -8503,4 +8503,9 @@ msgstr ""
 #: lib/kanban_web/live/admin/user_live/index.html.heex:269
 #, elixir-autogen, elixir-format
 msgid "No agents have completed any tasks yet."
+msgstr ""
+
+#: lib/kanban/tasks/completion_validation/task_consistency.ex:178
+#, elixir-autogen, elixir-format
+msgid "is inconsistent: the considerations breakdown marks an item partial or unmitigated, so the security_considerations verdict must be failed"
 msgstr ""

@@ -123,6 +123,59 @@ defmodule KanbanWeb.API.CompletionResultGateTest do
     end
   end
 
+  # W1866: the nested security_considerations.considerations[] consistency check
+  # is grace-GATED — a partial/unmitigated item with a non-failed verdict warns in
+  # grace mode and rejects only in strict mode.
+  describe "gate/2 — considerations[] consistency (W1866)" do
+    test "an inconsistent breakdown warns in grace mode (does not reject)" do
+      request = build_request(inconsistent_considerations_reviewer())
+
+      assert {:warn, failures} = CompletionResultGate.gate(request, strict: false)
+      assert "reviewer_result" in Enum.map(failures, & &1.field)
+    end
+
+    test "an inconsistent breakdown rejects with strict mode ON" do
+      request = build_request(inconsistent_considerations_reviewer())
+
+      assert {:reject, body} = CompletionResultGate.gate(request, strict: true)
+      assert "security_considerations" in reviewer_failure_fields(body)
+    end
+
+    test "a consistent breakdown (partial item with a failed verdict) passes in both modes" do
+      request = build_request(consistent_considerations_reviewer())
+
+      assert :ok = CompletionResultGate.gate(request, strict: false)
+      assert :ok = CompletionResultGate.gate(request, strict: true)
+    end
+
+    test "a fully-mitigated breakdown passes in both modes" do
+      reviewer =
+        Map.put(full_reviewer(), "security_considerations", %{
+          "status" => "passed",
+          "considerations" => [%{"consideration" => "scoped to board", "status" => "mitigated"}]
+        })
+
+      request = build_request(reviewer)
+
+      assert :ok = CompletionResultGate.gate(request, strict: false)
+      assert :ok = CompletionResultGate.gate(request, strict: true)
+    end
+  end
+
+  defp inconsistent_considerations_reviewer do
+    Map.put(full_reviewer(), "security_considerations", %{
+      "status" => "passed",
+      "considerations" => [%{"consideration" => "input not sanitized", "status" => "unmitigated"}]
+    })
+  end
+
+  defp consistent_considerations_reviewer do
+    Map.put(full_reviewer(), "security_considerations", %{
+      "status" => "failed",
+      "considerations" => [%{"consideration" => "input not sanitized", "status" => "partial"}]
+    })
+  end
+
   defp task_with_one_criterion, do: %{acceptance_criteria: "Only one criterion"}
 
   defp over_count_reviewer do

@@ -34,6 +34,12 @@ defmodule Kanban.Tasks.CompletionValidation do
   @status_enum [:met, :not_met]
   @section_status_enum [:passed, :failed, :not_assessed]
 
+  # W1866: the per-item status enum for the OPTIONAL nested
+  # `security_considerations.considerations[]` breakdown. Distinct from
+  # `@section_status_enum` — a per-consideration mitigation verdict, not a
+  # section pass/fail. Absent/nil `considerations` carries no obligation.
+  @consideration_status_enum [:mitigated, :partial, :unmitigated]
+
   # The canonical, single-source-of-truth list of structured review sections a
   # fully-populated `reviewer_result` must carry on a dispatched review. The
   # strict structured-block check (W1066) and every downstream consumer MUST
@@ -216,6 +222,21 @@ defmodule Kanban.Tasks.CompletionValidation do
   defdelegate cross_check_reviewer_result(result, task),
     to: Kanban.Tasks.CompletionValidation.TaskConsistency,
     as: :cross_check
+
+  @doc """
+  Returns **grace-gated** self-consistency failures for a dispatched
+  `reviewer_result` whose optional `security_considerations.considerations[]`
+  breakdown contradicts its section verdict (W1866): a `partial`/`unmitigated`
+  item cannot coexist with a non-`failed` security verdict.
+
+  Delegates to `Kanban.Tasks.CompletionValidation.TaskConsistency`. Returns a
+  bare list (`[]` when consistent / not applicable), mirroring
+  `acceptance_criteria_count_failures/2`: the gate warns on these in grace mode
+  and rejects only in strict mode. The rule is self-consistency within the
+  review, so it needs no `task` argument.
+  """
+  defdelegate considerations_status_consistency_failures(result),
+    to: Kanban.Tasks.CompletionValidation.TaskConsistency
 
   @doc """
   Returns the **always-reject** "fully populated + consistent" review-contract
@@ -424,6 +445,15 @@ defmodule Kanban.Tasks.CompletionValidation do
     |> check_nn_int(result, "issues_found", :issues_found)
     |> check_issues(result)
     |> check_acceptance_criteria(result)
+    |> check_review_sections(result)
+    |> check_schema_version(result)
+  end
+
+  # Per-section verdicts plus the nested security_considerations.considerations[]
+  # breakdown. Extracted from check_by_dispatched/3 to keep that function's
+  # complexity within the credo ABC ceiling.
+  defp check_review_sections(errors, result) do
+    errors
     |> check_section_verdict(
       result,
       "testing_strategy",
@@ -438,7 +468,7 @@ defmodule Kanban.Tasks.CompletionValidation do
       :security_considerations_status,
       :security_considerations_entry
     )
-    |> check_schema_version(result)
+    |> check_considerations_array(result)
   end
 
   defp check_by_dispatched(errors, %{"dispatched" => true} = result, :explorer) do
@@ -585,6 +615,72 @@ defmodule Kanban.Tasks.CompletionValidation do
       _ -> [{:notes, "#{key}.notes must be a string"} | errors]
     end
   end
+
+  # W1866: optional nested `security_considerations.considerations[]` breakdown.
+  # When the security_considerations verdict is a map carrying a `considerations`
+  # key, it must be a list whose entries are each a map with a non-empty
+  # `consideration` string and a `status` in @consideration_status_enum. Absent
+  # or nil `considerations` (or a non-map / absent security_considerations
+  # verdict) carries no obligation — the array is backwards-compatible. Entry
+  # errors use static atom keys with the index embedded in the message, matching
+  # `check_issue_entry/3`, so no runtime atoms are created per index.
+  defp check_considerations_array(
+         errors,
+         %{"security_considerations" => %{"considerations" => considerations}}
+       )
+       when is_list(considerations) do
+    considerations
+    |> Enum.with_index()
+    |> Enum.reduce(errors, fn {entry, idx}, acc -> check_consideration_entry(acc, entry, idx) end)
+  end
+
+  # An explicit nil `considerations` is treated exactly like an absent key —
+  # backwards-compatible, no obligation.
+  defp check_considerations_array(
+         errors,
+         %{"security_considerations" => %{"considerations" => nil}}
+       ),
+       do: errors
+
+  defp check_considerations_array(
+         errors,
+         %{"security_considerations" => %{"considerations" => _}}
+       ),
+       do: [{:considerations, "security_considerations.considerations must be a list"} | errors]
+
+  defp check_considerations_array(errors, _), do: errors
+
+  defp check_consideration_entry(errors, entry, idx) when is_map(entry) do
+    errors
+    |> check_consideration_text(entry, idx)
+    |> check_enum(
+      entry,
+      "status",
+      @consideration_status_enum,
+      :consideration_status,
+      "considerations[#{idx}]"
+    )
+  end
+
+  defp check_consideration_entry(errors, _entry, idx),
+    do: [{:consideration_entry, "considerations[#{idx}] must be a map"} | errors]
+
+  defp check_consideration_text(errors, entry, idx) do
+    case Map.get(entry, "consideration") do
+      text when is_binary(text) ->
+        if String.trim(text) != "" do
+          errors
+        else
+          [{:consideration_text, consideration_text_message(idx)} | errors]
+        end
+
+      _ ->
+        [{:consideration_text, consideration_text_message(idx)} | errors]
+    end
+  end
+
+  defp consideration_text_message(idx),
+    do: "considerations[#{idx}] must have a non-empty string \"consideration\""
 
   # Optional `schema_version` — permissive semver shape, gates nothing on
   # specific version values. Tolerates absence entirely.
