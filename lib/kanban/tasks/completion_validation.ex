@@ -449,6 +449,16 @@ defmodule Kanban.Tasks.CompletionValidation do
     |> check_schema_version(result)
   end
 
+  defp check_by_dispatched(errors, %{"dispatched" => true} = result, :explorer) do
+    check_duration_ms(errors, result)
+  end
+
+  defp check_by_dispatched(errors, %{"dispatched" => false} = result, _role) do
+    check_reason(errors, result)
+  end
+
+  defp check_by_dispatched(errors, _result, _role), do: errors
+
   # Per-section verdicts plus the nested security_considerations.considerations[]
   # breakdown. Extracted from check_by_dispatched/3 to keep that function's
   # complexity within the credo ABC ceiling.
@@ -470,16 +480,6 @@ defmodule Kanban.Tasks.CompletionValidation do
     )
     |> check_considerations_array(result)
   end
-
-  defp check_by_dispatched(errors, %{"dispatched" => true} = result, :explorer) do
-    check_duration_ms(errors, result)
-  end
-
-  defp check_by_dispatched(errors, %{"dispatched" => false} = result, _role) do
-    check_reason(errors, result)
-  end
-
-  defp check_by_dispatched(errors, _result, _role), do: errors
 
   defp check_duration_ms(errors, %{"duration_ms" => d}) when is_integer(d) and d >= 0, do: errors
 

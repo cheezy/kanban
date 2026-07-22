@@ -1498,6 +1498,7 @@ msgid "Time Spent (minutes)"
 msgstr ""
 
 #: lib/kanban_web/components/code_review_panel.ex:188
+#: lib/kanban_web/components/code_review_panel.ex:301
 #: lib/kanban_web/components/task_activity_log.ex:187
 #: lib/kanban_web/components/task_metadata_grid.ex:247
 #: lib/kanban_web/export/metrics_excel.ex:76
@@ -6301,7 +6302,7 @@ msgstr "Patterns followed"
 msgid "TST"
 msgstr "TST"
 
-#: lib/kanban_web/live/review_live.html.heex:472
+#: lib/kanban_web/live/review_live.html.heex:473
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr "Changed files"
@@ -6599,7 +6600,7 @@ msgstr ""
 msgid "Stride wraps every task in a four-stage lifecycle. Humans choose when to be involved and when to allow the agent to work independently. The board drives a real codebase, not a vibe."
 msgstr "Stride wraps every task in a four-stage lifecycle. Humans choose when to be involved and when to allow the agent to work independently. The board drives a real codebase, not a vibe."
 
-#: lib/kanban_web/live/review_live.html.heex:528
+#: lib/kanban_web/live/review_live.html.heex:529
 #, elixir-autogen, elixir-format
 msgid "Code review"
 msgstr "Code review"
@@ -6614,12 +6615,12 @@ msgstr ""
 msgid "Review data unavailable"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:774
+#: lib/kanban/tasks/completion_validation.ex:782
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:767
+#: lib/kanban/tasks/completion_validation.ex:775
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr ""
@@ -6638,12 +6639,12 @@ msgstr ""
 msgid "N/A"
 msgstr "N/A"
 
-#: lib/kanban/tasks/completion_validation.ex:786
+#: lib/kanban/tasks/completion_validation.ex:794
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:780
+#: lib/kanban/tasks/completion_validation.ex:788
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr ""
@@ -6673,12 +6674,12 @@ msgstr ""
 msgid "Not assessed — this task specified security considerations, but the review did not record a verdict for them."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.html.heex:381
+#: lib/kanban_web/live/review_live.html.heex:382
 #, elixir-autogen, elixir-format
 msgid "Not assessed — this task specified this check, but the review did not record a verdict for it."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.html.heex:360
+#: lib/kanban_web/live/review_live.html.heex:361
 #, elixir-autogen, elixir-format
 msgid "Review checks"
 msgstr ""
@@ -7815,7 +7816,7 @@ msgstr ""
 msgid "You do not have permission to modify tasks on this board"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.html.heex:487
+#: lib/kanban_web/live/review_live.html.heex:488
 #, elixir-autogen, elixir-format
 msgid "Diff not uploaded"
 msgstr ""
@@ -7825,7 +7826,7 @@ msgstr ""
 msgid "Diff reloaded."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.html.heex:497
+#: lib/kanban_web/live/review_live.html.heex:498
 #, elixir-autogen, elixir-format
 msgid "Re-fetch diff"
 msgstr ""
@@ -7835,7 +7836,7 @@ msgstr ""
 msgid "The diff has not been re-uploaded yet — re-run the task's completion to send it."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.html.heex:489
+#: lib/kanban_web/live/review_live.html.heex:490
 #, elixir-autogen, elixir-format
 msgid "This task changed files, but no diff arrived — the upload was lost in transit, so there is nothing to review here yet. Re-fetch to check whether the diff has since been uploaded."
 msgstr ""
@@ -8508,4 +8509,19 @@ msgstr ""
 #: lib/kanban/tasks/completion_validation/task_consistency.ex:178
 #, elixir-autogen, elixir-format
 msgid "is inconsistent: the considerations breakdown marks an item partial or unmitigated, so the security_considerations verdict must be failed"
+msgstr ""
+
+#: lib/kanban_web/components/code_review_panel.ex:297
+#, elixir-autogen, elixir-format
+msgid "Mitigated"
+msgstr ""
+
+#: lib/kanban_web/components/code_review_panel.ex:298
+#, elixir-autogen, elixir-format
+msgid "Partial"
+msgstr ""
+
+#: lib/kanban_web/components/code_review_panel.ex:299
+#, elixir-autogen, elixir-format
+msgid "Unmitigated"
 msgstr ""

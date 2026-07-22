@@ -197,4 +197,142 @@ defmodule KanbanWeb.CodeReviewPanelTest do
       assert [%{"check" => "single"}] = CodeReviewPanel.checks_for(task)
     end
   end
+
+  defp render_breakdown(task) do
+    assigns = %{task: task}
+
+    rendered_to_string(~H"""
+    <CodeReviewPanel.security_considerations_breakdown task={@task} />
+    """)
+  end
+
+  describe "security_considerations_breakdown/1 (W1867)" do
+    test "renders one row per consideration with the right pill and text" do
+      task = %{
+        reviewer_result: %{
+          "security_considerations" => %{
+            "status" => "failed",
+            "considerations" => [
+              %{"consideration" => "Untrusted status never atom-ized", "status" => "mitigated"},
+              %{
+                "consideration" => "Diff text is unbounded",
+                "status" => "partial",
+                "evidence" => "capped at 500 lines"
+              },
+              %{"consideration" => "Input not sanitized", "status" => "unmitigated"}
+            ]
+          }
+        }
+      }
+
+      html = render_breakdown(task)
+
+      assert html =~ "data-review-security-considerations-breakdown"
+      assert length(Regex.scan(~r/data-review-security-consideration-row/, html)) == 3
+      assert html =~ ~s(data-review-security-consideration-status="mitigated")
+      assert html =~ ~s(data-review-security-consideration-status="partial")
+      assert html =~ ~s(data-review-security-consideration-status="unmitigated")
+
+      assert html =~ "Untrusted status never atom-ized"
+      assert html =~ "Diff text is unbounded"
+      assert html =~ "Input not sanitized"
+
+      assert html =~ ~r/Mitigated\s*<\/span>/
+      assert html =~ ~r/Partial\s*<\/span>/
+      assert html =~ ~r/Unmitigated\s*<\/span>/
+
+      # Evidence renders as the secondary detail line.
+      assert html =~ "data-review-security-consideration-detail"
+      assert html =~ "capped at 500 lines"
+    end
+
+    test "renders a consideration without evidence/note without the detail line" do
+      task = %{
+        reviewer_result: %{
+          "security_considerations" => %{
+            "considerations" => [%{"consideration" => "No detail here", "status" => "mitigated"}]
+          }
+        }
+      }
+
+      html = render_breakdown(task)
+
+      assert html =~ "No detail here"
+      refute html =~ "data-review-security-consideration-detail"
+    end
+
+    test "renders nothing when the breakdown is absent (graceful degradation)" do
+      task = %{reviewer_result: %{"security_considerations" => %{"status" => "passed"}}}
+
+      html = render_breakdown(task)
+
+      refute html =~ "data-review-security-considerations-breakdown"
+      refute html =~ "data-review-security-consideration-row"
+    end
+
+    test "renders nothing when reviewer_result is nil (legacy completion)" do
+      html = render_breakdown(%{reviewer_result: nil})
+
+      refute html =~ "data-review-security-considerations-breakdown"
+    end
+
+    test "renders an unknown status verbatim with a neutral pill" do
+      task = %{
+        reviewer_result: %{
+          "security_considerations" => %{
+            "considerations" => [%{"consideration" => "Weird", "status" => "deferred"}]
+          }
+        }
+      }
+
+      html = render_breakdown(task)
+
+      assert html =~ ~s(data-review-security-consideration-status="deferred")
+      assert html =~ ~r/deferred\s*<\/span>/
+    end
+
+    test "escapes agent-supplied consideration and detail strings (no XSS)" do
+      task = %{
+        reviewer_result: %{
+          "security_considerations" => %{
+            "considerations" => [
+              %{
+                "consideration" => "<script>alert('xss')</script>",
+                "status" => "unmitigated",
+                "evidence" => "<img src=x onerror=alert(1)>"
+              }
+            ]
+          }
+        }
+      }
+
+      html = render_breakdown(task)
+
+      refute html =~ "<script>alert('xss')</script>"
+      refute html =~ "<img src=x onerror=alert(1)>"
+      assert html =~ "&lt;script&gt;"
+      assert html =~ "&lt;img src=x onerror=alert(1)&gt;"
+    end
+
+    test "uses only theme-aware tokens (no hardcoded grays/whites)" do
+      task = %{
+        reviewer_result: %{
+          "security_considerations" => %{
+            "considerations" => [
+              %{"consideration" => "a", "status" => "mitigated"},
+              %{"consideration" => "b", "status" => "partial"},
+              %{"consideration" => "c", "status" => "unmitigated"}
+            ]
+          }
+        }
+      }
+
+      html = render_breakdown(task)
+
+      refute html =~ "text-gray-"
+      refute html =~ "bg-gray-"
+      refute html =~ "bg-white"
+      refute html =~ ~r/border-gray-\d+/
+    end
+  end
 end

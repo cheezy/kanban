@@ -851,4 +851,133 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
                nil
     end
   end
+
+  describe "security_considerations_breakdown/1 (W1867)" do
+    test "returns one normalized entry per well-formed consideration" do
+      task = %{
+        reviewer_result: %{
+          "security_considerations" => %{
+            "status" => "failed",
+            "considerations" => [
+              %{"consideration" => "Untrusted status never atom-ized", "status" => "mitigated"},
+              %{
+                "consideration" => "Diff text unbounded",
+                "status" => "partial",
+                "evidence" => "capped at 500 lines"
+              }
+            ]
+          }
+        }
+      }
+
+      assert ReviewReportHelpers.security_considerations_breakdown(task) == [
+               %{
+                 consideration: "Untrusted status never atom-ized",
+                 status: "mitigated",
+                 detail: nil
+               },
+               %{
+                 consideration: "Diff text unbounded",
+                 status: "partial",
+                 detail: "capped at 500 lines"
+               }
+             ]
+    end
+
+    test "accepts a string-keyed reviewer_result" do
+      task = %{
+        "reviewer_result" => %{
+          "security_considerations" => %{
+            "considerations" => [%{"consideration" => "a", "status" => "unmitigated"}]
+          }
+        }
+      }
+
+      assert [%{consideration: "a", status: "unmitigated"}] =
+               ReviewReportHelpers.security_considerations_breakdown(task)
+    end
+
+    test "prefers evidence over note for the detail line" do
+      task = %{
+        reviewer_result: %{
+          "security_considerations" => %{
+            "considerations" => [
+              %{
+                "consideration" => "a",
+                "status" => "mitigated",
+                "evidence" => "ev",
+                "note" => "nt"
+              }
+            ]
+          }
+        }
+      }
+
+      assert [%{detail: "ev"}] = ReviewReportHelpers.security_considerations_breakdown(task)
+    end
+
+    test "falls back to note when evidence is absent" do
+      task = %{
+        reviewer_result: %{
+          "security_considerations" => %{
+            "considerations" => [%{"consideration" => "a", "status" => "partial", "note" => "nt"}]
+          }
+        }
+      }
+
+      assert [%{detail: "nt"}] = ReviewReportHelpers.security_considerations_breakdown(task)
+    end
+
+    test "drops entries whose consideration string is blank or missing" do
+      task = %{
+        reviewer_result: %{
+          "security_considerations" => %{
+            "considerations" => [
+              %{"consideration" => "   ", "status" => "mitigated"},
+              %{"status" => "partial"},
+              %{"consideration" => "kept", "status" => "unmitigated"}
+            ]
+          }
+        }
+      }
+
+      assert [%{consideration: "kept"}] =
+               ReviewReportHelpers.security_considerations_breakdown(task)
+    end
+
+    test "carries a nil status through rather than crashing" do
+      task = %{
+        reviewer_result: %{
+          "security_considerations" => %{
+            "considerations" => [%{"consideration" => "a"}]
+          }
+        }
+      }
+
+      assert [%{consideration: "a", status: nil}] =
+               ReviewReportHelpers.security_considerations_breakdown(task)
+    end
+
+    test "returns [] when the breakdown is absent" do
+      task = %{reviewer_result: %{"security_considerations" => %{"status" => "passed"}}}
+      assert ReviewReportHelpers.security_considerations_breakdown(task) == []
+    end
+
+    test "returns [] when considerations is not a list" do
+      task = %{
+        reviewer_result: %{"security_considerations" => %{"considerations" => "nope"}}
+      }
+
+      assert ReviewReportHelpers.security_considerations_breakdown(task) == []
+    end
+
+    test "returns [] when security_considerations is absent" do
+      task = %{reviewer_result: %{"issues" => []}}
+      assert ReviewReportHelpers.security_considerations_breakdown(task) == []
+    end
+
+    test "returns [] when reviewer_result is nil" do
+      assert ReviewReportHelpers.security_considerations_breakdown(%{reviewer_result: nil}) == []
+    end
+  end
 end

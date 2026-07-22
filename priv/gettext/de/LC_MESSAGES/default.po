@@ -1498,6 +1498,7 @@ msgid "Time Spent (minutes)"
 msgstr "Aufgewendete Zeit (Minuten)"
 
 #: lib/kanban_web/components/code_review_panel.ex:188
+#: lib/kanban_web/components/code_review_panel.ex:301
 #: lib/kanban_web/components/task_activity_log.ex:187
 #: lib/kanban_web/components/task_metadata_grid.ex:247
 #: lib/kanban_web/export/metrics_excel.ex:76
@@ -6301,7 +6302,7 @@ msgstr "Befolgte Muster"
 msgid "TST"
 msgstr "TST"
 
-#: lib/kanban_web/live/review_live.html.heex:472
+#: lib/kanban_web/live/review_live.html.heex:473
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr "Geänderte Dateien"
@@ -6705,7 +6706,7 @@ msgstr "Stride umschließt jede Aufgabe in einem vierstufigen Lebenszyklus. Mens
 "eigenständig arbeiten lassen. Das Board steuert eine echte Codebasis, kein "
 "bloßes Bauchgefühl."
 
-#: lib/kanban_web/live/review_live.html.heex:528
+#: lib/kanban_web/live/review_live.html.heex:529
 #, elixir-autogen, elixir-format
 msgid "Code review"
 msgstr "Code-Review"
@@ -6720,12 +6721,12 @@ msgstr "Einstellungsbereiche"
 msgid "Review data unavailable"
 msgstr "Überprüfungsdaten nicht verfügbar"
 
-#: lib/kanban/tasks/completion_validation.ex:774
+#: lib/kanban/tasks/completion_validation.ex:782
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "ist bei einem durchgeführten Review erforderlich: Geben Sie entweder status oder issue_counts an, damit die Review-Queue das Ergebnis darstellen kann"
 
-#: lib/kanban/tasks/completion_validation.ex:767
+#: lib/kanban/tasks/completion_validation.ex:775
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "ist bei einem durchgeführten Review erforderlich: das strukturierte Feld %{field}, das die Review-Queue darstellt, fehlt"
@@ -6744,12 +6745,12 @@ msgstr "ist bei einem durchgeführten Review erforderlich: das strukturierte Fel
 msgid "N/A"
 msgstr "k. A."
 
-#: lib/kanban/tasks/completion_validation.ex:786
+#: lib/kanban/tasks/completion_validation.ex:794
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "ist unvollständig: project_checks deckt %{supplied} von %{expected} Punkten der Projekt-Checkliste ab; jeder Punkt der Checkliste muss bewertet werden"
 
-#: lib/kanban/tasks/completion_validation.ex:780
+#: lib/kanban/tasks/completion_validation.ex:788
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "ist bei einem durchgeführten Review erforderlich: project_checks muss eine nicht leere Liste sein, die die Projekt-Checkliste abdeckt"
@@ -6779,12 +6780,12 @@ msgstr "Unvollständiges Review: Nur %{supplied} von %{expected} Projektprüfung
 msgid "Not assessed — this task specified security considerations, but the review did not record a verdict for them."
 msgstr "Nicht bewertet – diese Aufgabe hat Sicherheitsaspekte angegeben, aber das Review hat dafür kein Urteil erfasst."
 
-#: lib/kanban_web/live/review_live.html.heex:381
+#: lib/kanban_web/live/review_live.html.heex:382
 #, elixir-autogen, elixir-format
 msgid "Not assessed — this task specified this check, but the review did not record a verdict for it."
 msgstr "Nicht bewertet – diese Aufgabe hat diese Prüfung angegeben, aber das Review hat dafür kein Urteil erfasst."
 
-#: lib/kanban_web/live/review_live.html.heex:360
+#: lib/kanban_web/live/review_live.html.heex:361
 #, elixir-autogen, elixir-format
 msgid "Review checks"
 msgstr "Review-Prüfungen"
@@ -7921,7 +7922,7 @@ msgstr "Agentendaten konnten gerade nicht aktualisiert werden. Es werden die zul
 msgid "You do not have permission to modify tasks on this board"
 msgstr "Sie sind nicht berechtigt, Aufgaben auf diesem Board zu verschieben"
 
-#: lib/kanban_web/live/review_live.html.heex:487
+#: lib/kanban_web/live/review_live.html.heex:488
 #, elixir-autogen, elixir-format
 msgid "Diff not uploaded"
 msgstr "Diff nicht hochgeladen"
@@ -7931,7 +7932,7 @@ msgstr "Diff nicht hochgeladen"
 msgid "Diff reloaded."
 msgstr "Diff neu geladen."
 
-#: lib/kanban_web/live/review_live.html.heex:497
+#: lib/kanban_web/live/review_live.html.heex:498
 #, elixir-autogen, elixir-format
 msgid "Re-fetch diff"
 msgstr "Diff erneut abrufen"
@@ -7941,7 +7942,7 @@ msgstr "Diff erneut abrufen"
 msgid "The diff has not been re-uploaded yet — re-run the task's completion to send it."
 msgstr "Der Diff wurde noch nicht erneut hochgeladen – führen Sie den Abschluss der Aufgabe erneut aus, um ihn zu senden."
 
-#: lib/kanban_web/live/review_live.html.heex:489
+#: lib/kanban_web/live/review_live.html.heex:490
 #, elixir-autogen, elixir-format
 msgid "This task changed files, but no diff arrived — the upload was lost in transit, so there is nothing to review here yet. Re-fetch to check whether the diff has since been uploaded."
 msgstr "Diese Aufgabe hat Dateien geändert, aber es ist kein Diff angekommen – der Upload ging unterwegs verloren, daher gibt es hier noch nichts zu überprüfen. Rufen Sie den Diff erneut ab, um zu prüfen, ob er inzwischen hochgeladen wurde."
@@ -8615,3 +8616,18 @@ msgstr "Noch hat kein Agent Aufgaben abgeschlossen."
 #, elixir-autogen, elixir-format
 msgid "is inconsistent: the considerations breakdown marks an item partial or unmitigated, so the security_considerations verdict must be failed"
 msgstr "ist inkonsistent: Die Aufschlüsselung der Sicherheitsaspekte kennzeichnet einen Punkt als teilweise oder nicht behoben, daher muss das security_considerations-Urteil failed lauten"
+
+#: lib/kanban_web/components/code_review_panel.ex:297
+#, elixir-autogen, elixir-format
+msgid "Mitigated"
+msgstr "Entschärft"
+
+#: lib/kanban_web/components/code_review_panel.ex:298
+#, elixir-autogen, elixir-format
+msgid "Partial"
+msgstr "Teilweise"
+
+#: lib/kanban_web/components/code_review_panel.ex:299
+#, elixir-autogen, elixir-format
+msgid "Unmitigated"
+msgstr "Nicht entschärft"

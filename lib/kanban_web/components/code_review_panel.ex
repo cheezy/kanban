@@ -186,4 +186,117 @@ defmodule KanbanWeb.CodeReviewPanel do
   defp project_check_status_label("not_applicable"), do: gettext("N/A")
   defp project_check_status_label(other) when is_binary(other), do: other
   defp project_check_status_label(_), do: gettext("Unknown")
+
+  # --- Security-considerations mitigation breakdown (W1867) ----------------
+
+  @doc """
+  Renders the always-visible per-consideration mitigation breakdown that sits
+  beneath the security_considerations verdict tile on the Review queue.
+
+  Reads `reviewer_result["security_considerations"]["considerations"]` via
+  `KanbanWeb.ReviewReportHelpers.security_considerations_breakdown/1`. Each entry
+  renders as a row with a mitigated/partial/unmitigated status pill, the
+  consideration text, and its optional evidence/note. Older completions with no
+  breakdown render nothing, leaving the tile exactly as before. Agent-supplied
+  strings are rendered through HEEx auto-escaping — never `raw/1` (XSS).
+
+  ## Attrs
+
+    * `task` — the task map (also accepts a top-level atom `:reviewer_result`).
+  """
+  attr :task, :map, required: true
+
+  def security_considerations_breakdown(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :considerations,
+        KanbanWeb.ReviewReportHelpers.security_considerations_breakdown(assigns.task)
+      )
+
+    ~H"""
+    <ul
+      :if={@considerations != []}
+      data-review-security-considerations-breakdown
+      class="list-none p-0 m-0 flex flex-col gap-1.5"
+      style="margin-top: 4px;"
+    >
+      <li :for={item <- @considerations}>
+        <.consideration_row item={item} />
+      </li>
+    </ul>
+    """
+  end
+
+  attr :item, :map, required: true
+
+  defp consideration_row(assigns) do
+    status = assigns.item.status
+
+    assigns =
+      assigns
+      |> assign(:status, status)
+      |> assign(:pill_style, consideration_status_style(status))
+      |> assign(:status_label, consideration_status_label(status))
+      |> assign(:consideration_text, assigns.item.consideration)
+      |> assign(:detail, assigns.item.detail)
+
+    ~H"""
+    <div
+      data-review-security-consideration-row
+      data-review-security-consideration-status={@status || "unknown"}
+      style={[
+        "display: flex; flex-direction: column; gap: 4px;",
+        "padding: 8px 10px; border-radius: 5px;",
+        "background: var(--surface-2); border: 1px solid var(--line);"
+      ]}
+    >
+      <div style="display: flex; align-items: flex-start; gap: 8px;">
+        <span
+          data-review-security-consideration-pill
+          style={[
+            "flex-shrink: 0; display: inline-flex; align-items: center;",
+            "padding: 1px 7px; border-radius: 999px;",
+            "font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em;",
+            "text-transform: uppercase; line-height: 1.5;",
+            @pill_style
+          ]}
+        >
+          {@status_label}
+        </span>
+        <span style="font-size: 12.5px; color: var(--ink); line-height: 1.45;">
+          {@consideration_text}
+        </span>
+      </div>
+      <p
+        :if={is_binary(@detail) and @detail != ""}
+        data-review-security-consideration-detail
+        style="margin: 0 0 0 calc(7px + 7px + 7px); font-size: 11.5px; color: var(--ink-3); line-height: 1.45;"
+      >
+        {@detail}
+      </p>
+    </div>
+    """
+  end
+
+  # mitigated → green (resolved), partial → amber (in-between), unmitigated → red
+  # (outstanding). Uses the same W900-tuned status tokens as the verdict pills so
+  # they read in both light and dark mode; unknown falls back to a neutral pill.
+  defp consideration_status_style("mitigated"),
+    do: "background: var(--st-done-soft); color: var(--st-done);"
+
+  defp consideration_status_style("partial"),
+    do: "background: var(--stride-orange-soft); color: var(--stride-orange-ink);"
+
+  defp consideration_status_style("unmitigated"),
+    do: "background: var(--st-blocked-soft); color: var(--st-blocked);"
+
+  defp consideration_status_style(_),
+    do: "background: var(--surface-sunken); color: var(--ink-2);"
+
+  defp consideration_status_label("mitigated"), do: gettext("Mitigated")
+  defp consideration_status_label("partial"), do: gettext("Partial")
+  defp consideration_status_label("unmitigated"), do: gettext("Unmitigated")
+  defp consideration_status_label(other) when is_binary(other), do: other
+  defp consideration_status_label(_), do: gettext("Unknown")
 end

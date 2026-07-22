@@ -1498,6 +1498,7 @@ msgid "Time Spent (minutes)"
 msgstr "Tiempo invertido (minutos)"
 
 #: lib/kanban_web/components/code_review_panel.ex:188
+#: lib/kanban_web/components/code_review_panel.ex:301
 #: lib/kanban_web/components/task_activity_log.ex:187
 #: lib/kanban_web/components/task_metadata_grid.ex:247
 #: lib/kanban_web/export/metrics_excel.ex:76
@@ -6301,7 +6302,7 @@ msgstr "Patrones seguidos"
 msgid "TST"
 msgstr "TST"
 
-#: lib/kanban_web/live/review_live.html.heex:472
+#: lib/kanban_web/live/review_live.html.heex:473
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr "Archivos modificados"
@@ -6698,7 +6699,7 @@ msgstr "Stride envuelve cada tarea en un ciclo de vida de cuatro etapas. Las per
 "eligen cuándo participar y cuándo permitir que el agente trabaje de forma "
 "independiente. El tablero impulsa una base de código real, no una vibra."
 
-#: lib/kanban_web/live/review_live.html.heex:528
+#: lib/kanban_web/live/review_live.html.heex:529
 #, elixir-autogen, elixir-format
 msgid "Code review"
 msgstr "Revisión de código"
@@ -6713,12 +6714,12 @@ msgstr "Secciones de configuración"
 msgid "Review data unavailable"
 msgstr "Datos de revisión no disponibles"
 
-#: lib/kanban/tasks/completion_validation.ex:774
+#: lib/kanban/tasks/completion_validation.ex:782
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "es obligatorio en una revisión despachada: incluya status o issue_counts para que la cola de revisión pueda mostrar el veredicto"
 
-#: lib/kanban/tasks/completion_validation.ex:767
+#: lib/kanban/tasks/completion_validation.ex:775
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "es obligatorio en una revisión despachada: falta el campo estructurado %{field} que muestra la cola de revisión"
@@ -6737,12 +6738,12 @@ msgstr "es obligatorio en una revisión despachada: falta el campo estructurado 
 msgid "N/A"
 msgstr "N/D"
 
-#: lib/kanban/tasks/completion_validation.ex:786
+#: lib/kanban/tasks/completion_validation.ex:794
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "está incompleto: project_checks cubre %{supplied} de los %{expected} puntos de la lista de verificación del proyecto; cada punto de la lista debe evaluarse"
 
-#: lib/kanban/tasks/completion_validation.ex:780
+#: lib/kanban/tasks/completion_validation.ex:788
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "es obligatorio en una revisión realizada: project_checks debe ser una lista no vacía que cubra la lista de verificación del proyecto"
@@ -6772,12 +6773,12 @@ msgstr "Revisión incompleta: solo se registraron %{supplied} de las %{expected}
 msgid "Not assessed — this task specified security considerations, but the review did not record a verdict for them."
 msgstr "No evaluado: esta tarea especificó consideraciones de seguridad, pero la revisión no registró un veredicto para ellas."
 
-#: lib/kanban_web/live/review_live.html.heex:381
+#: lib/kanban_web/live/review_live.html.heex:382
 #, elixir-autogen, elixir-format
 msgid "Not assessed — this task specified this check, but the review did not record a verdict for it."
 msgstr "No evaluado: esta tarea especificó esta verificación, pero la revisión no registró un veredicto para ella."
 
-#: lib/kanban_web/live/review_live.html.heex:360
+#: lib/kanban_web/live/review_live.html.heex:361
 #, elixir-autogen, elixir-format
 msgid "Review checks"
 msgstr "Verificaciones de la Revisión"
@@ -7914,7 +7915,7 @@ msgstr "No se pudieron actualizar los datos de los agentes en este momento. Se m
 msgid "You do not have permission to modify tasks on this board"
 msgstr "No tienes permiso para mover tareas en este tablero"
 
-#: lib/kanban_web/live/review_live.html.heex:487
+#: lib/kanban_web/live/review_live.html.heex:488
 #, elixir-autogen, elixir-format
 msgid "Diff not uploaded"
 msgstr "Diff no subido"
@@ -7924,7 +7925,7 @@ msgstr "Diff no subido"
 msgid "Diff reloaded."
 msgstr "Diff recargado."
 
-#: lib/kanban_web/live/review_live.html.heex:497
+#: lib/kanban_web/live/review_live.html.heex:498
 #, elixir-autogen, elixir-format
 msgid "Re-fetch diff"
 msgstr "Recuperar diff"
@@ -7934,7 +7935,7 @@ msgstr "Recuperar diff"
 msgid "The diff has not been re-uploaded yet — re-run the task's completion to send it."
 msgstr "El diff aún no se ha vuelto a subir: vuelve a ejecutar la finalización de la tarea para enviarlo."
 
-#: lib/kanban_web/live/review_live.html.heex:489
+#: lib/kanban_web/live/review_live.html.heex:490
 #, elixir-autogen, elixir-format
 msgid "This task changed files, but no diff arrived — the upload was lost in transit, so there is nothing to review here yet. Re-fetch to check whether the diff has since been uploaded."
 msgstr "Esta tarea cambió archivos, pero no llegó ningún diff: la subida se perdió en el camino, así que todavía no hay nada que revisar aquí. Vuelve a recuperarlo para comprobar si el diff ya se ha subido."
@@ -8608,3 +8609,18 @@ msgstr "Ningún agente ha completado tareas todavía."
 #, elixir-autogen, elixir-format
 msgid "is inconsistent: the considerations breakdown marks an item partial or unmitigated, so the security_considerations verdict must be failed"
 msgstr "es inconsistente: el desglose de consideraciones marca un elemento como parcial o no mitigado, por lo que el veredicto de security_considerations debe ser failed"
+
+#: lib/kanban_web/components/code_review_panel.ex:297
+#, elixir-autogen, elixir-format
+msgid "Mitigated"
+msgstr "Mitigado"
+
+#: lib/kanban_web/components/code_review_panel.ex:298
+#, elixir-autogen, elixir-format
+msgid "Partial"
+msgstr "Parcial"
+
+#: lib/kanban_web/components/code_review_panel.ex:299
+#, elixir-autogen, elixir-format
+msgid "Unmitigated"
+msgstr "No mitigado"
