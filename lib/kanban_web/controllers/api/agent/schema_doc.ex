@@ -131,7 +131,7 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
       },
       reviewer_result_format: %{
         description:
-          "Required format for reviewer_result on /complete. Two accepted shapes: dispatched (subagent ran) or skip_form (not dispatched). Beyond the required legacy fields, the dispatched form accepts a richer structured schema (issues[], acceptance_criteria[], section verdicts, schema_version) — all optional and backwards-compatible. The canonical schema of record lives in the stride plugin repo at stride/agents/task-reviewer.md; this documentation mirrors what the server validator (Kanban.Tasks.CompletionValidation) accepts.",
+          "Required format for reviewer_result on /complete. Two accepted shapes: dispatched (subagent ran) or skip_form (not dispatched). Beyond the required legacy fields, the dispatched form accepts a richer structured schema (issues[], acceptance_criteria[], the testing_strategy/patterns/pitfalls/security_considerations section verdicts — where the security_considerations verdict may carry an optional nested considerations[] mitigation breakdown — and schema_version) — all optional and backwards-compatible. The canonical schema of record lives in the stride plugin repo at stride/agents/task-reviewer.md; this documentation mirrors what the server validator (Kanban.Tasks.CompletionValidation) accepts.",
         backwards_compatibility:
           "Legacy summary-only payloads (the five required dispatched_fields without any structured_fields) remain fully valid. The structured fields are additive — emitters that do not populate them stay accepted by the validator.",
         dispatched_fields: %{
@@ -270,6 +270,53 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
             required: false,
             description: "Verdict on the pitfalls review step."
           },
+          security_considerations: %{
+            type: "section_verdict",
+            required: false,
+            description:
+              "Verdict on the security-considerations review step (see section_verdict_shape: status enum passed/failed/not_assessed plus an optional note). Beyond the shared section-verdict shape, this verdict object MAY additionally carry an OPTIONAL nested `considerations` array (see considerations_breakdown below) giving a per-item mitigation breakdown of the task's security_considerations list. Both the verdict and the nested array are optional and backwards-compatible — an absent array carries no obligation.",
+            considerations_breakdown: %{
+              type: "array_of_objects",
+              required: false,
+              description:
+                "Optional per-consideration mitigation breakdown, added in schema_version 1.5 (additive). Each entry documents one of the task's security considerations and how the diff addressed it. Populated only on the Claude Code reviewer path today and absent otherwise; never required. Consistency rule (fail-closed): when the array is present, any entry with status `partial` or `unmitigated` forces the parent security_considerations.status to `failed` and should be backed by a matching issues[] entry with category `security`. Keep each entry to a short evidence reference and one-line note — never embed diff contents or secrets.",
+              entry_fields: %{
+                consideration: %{
+                  type: "string",
+                  required: true,
+                  description:
+                    "The task's security consideration string (verbatim). Must be a non-empty string; blank/absent entries are rejected."
+                },
+                status: %{
+                  type: "enum",
+                  values: ["mitigated", "partial", "unmitigated"],
+                  required: true,
+                  description:
+                    "Per-consideration mitigation verdict. `mitigated` = fully addressed by the diff; `partial` = partially addressed; `unmitigated` = not addressed. `partial`/`unmitigated` force the section status to `failed` (see consistency rule)."
+                },
+                evidence: %{
+                  type: "string",
+                  required: false,
+                  description:
+                    "Short backing reference (a file:line pointer or brief note). Never the diff contents or a secret."
+                },
+                note: %{
+                  type: "string",
+                  required: false,
+                  description: "Optional one-line rationale for the per-consideration verdict."
+                }
+              },
+              example: [
+                %{
+                  consideration:
+                    "Agent-supplied status values are untrusted — never String.to_atom them",
+                  status: "mitigated",
+                  evidence: "lib/kanban/tasks/completion_validation.ex:718",
+                  note: "Decoded via String.to_existing_atom with an ArgumentError rescue."
+                }
+              ]
+            }
+          },
           section_verdict_shape: %{
             description:
               "Object shape used by testing_strategy, patterns, and pitfalls. Status is enum-validated; notes is an optional string (empty string allowed). Non-map values are rejected.",
@@ -312,7 +359,7 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
           duration_ms: 8_000,
           acceptance_criteria_checked: 4,
           issues_found: 1,
-          schema_version: "1.0",
+          schema_version: "1.5",
           status: "changes_requested",
           issue_counts: %{critical: 0, important: 1, minor: 0},
           issues: [
@@ -334,7 +381,19 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
             notes: "All 5 required test cases present in the new describe block."
           },
           patterns: %{status: "passed"},
-          pitfalls: %{status: "passed", notes: "None violated."}
+          pitfalls: %{status: "passed", notes: "None violated."},
+          security_considerations: %{
+            status: "passed",
+            note: "Board-scoped query; no new input surface.",
+            considerations: [
+              %{
+                consideration: "Move query scoped to the requesting user's board",
+                status: "mitigated",
+                evidence: "lib/kanban/tasks.ex:142",
+                note: "Query filters by current_scope.user.id."
+              }
+            ]
+          }
         }
       },
       workflow_steps_format: %{

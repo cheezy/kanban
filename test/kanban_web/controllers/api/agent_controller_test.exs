@@ -779,6 +779,33 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_list(schema["valid_capabilities"])
     end
 
+    test "reviewer_result_format documents the optional security_considerations considerations[] breakdown (W1868)",
+         %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      fmt = json_response(conn, 200)["api_schema"]["reviewer_result_format"]
+
+      # Top-level description enumerates the breakdown and keeps the canonical pointer.
+      assert fmt["description"] =~ "considerations[]"
+      assert fmt["description"] =~ "stride/agents/task-reviewer.md"
+
+      sec = fmt["structured_fields"]["security_considerations"]
+      assert sec["type"] == "section_verdict"
+      assert sec["required"] == false
+
+      breakdown = sec["considerations_breakdown"]
+      assert breakdown["type"] == "array_of_objects"
+      # Documented as optional / backwards-compatible and added in schema 1.5.
+      assert breakdown["required"] == false
+      assert breakdown["description"] =~ "schema_version 1.5"
+
+      # Entry shape: non-empty consideration string + status enum.
+      assert breakdown["entry_fields"]["consideration"]["required"] == true
+      status_values = breakdown["entry_fields"]["status"]["values"]
+      assert "mitigated" in status_values
+      assert "partial" in status_values
+      assert "unmitigated" in status_values
+    end
+
     test "api_schema request_formats covers all endpoints", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       schema = json_response(conn, 200)["api_schema"]
