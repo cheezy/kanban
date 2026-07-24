@@ -5,7 +5,7 @@ defmodule KanbanWeb.AvatarPalette do
   Anywhere a person or agent renders as an avatar — board member stack,
   goal-view member stack, child-row table, task-detail metadata grid —
   the same identity must map to the same colour. This module is the
-  single source of truth; `Kanban.Boards.members_by_board/1` and
+  single source of truth; `Kanban.Boards.list_board_members/1` and
   `KanbanWeb.BoardLive.Show` both route through `for_human/1` and
   `for_agent/1` so the goal view inherits the exact same palette the
   board uses.

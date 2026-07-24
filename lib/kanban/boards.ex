@@ -16,16 +16,7 @@ defmodule Kanban.Boards do
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Boards.Membership
-  alias Kanban.Columns.Column
-  alias Kanban.Tasks.Task
-
-  alias KanbanWeb.AvatarPalette
-
-  @pulse_window_days 14
-  @open_columns ~w(Backlog Ready)
-  @doing_column "Doing"
-  @review_column "Review"
-  @done_column "Done"
+  alias Kanban.Boards.Metrics
 
   @doc """
   Returns the list of boards for a given user with their access level.
@@ -137,13 +128,13 @@ defmodule Kanban.Boards do
         []
 
       board_ids ->
-        metrics_by_board = build_metrics(board_ids, now)
-        members_by_board = members_by_board(board_ids)
+        metrics_by_board = Metrics.build_metrics(board_ids, now)
+        members_by_board = Metrics.members_by_board(board_ids)
 
         Enum.map(boards, fn board ->
           %{
             board
-            | metrics: Map.get(metrics_by_board, board.id, empty_metrics(now)),
+            | metrics: Map.get(metrics_by_board, board.id, Metrics.empty_metrics(now)),
               members: Map.get(members_by_board, board.id, [])
           }
         end)
@@ -171,221 +162,141 @@ defmodule Kanban.Boards do
     case get_board(board_id, user) do
       {:ok, board} ->
         now = Keyword.get(opts, :now, DateTime.utc_now())
-        metrics_by_board = build_metrics([board.id], now)
-        {:ok, Map.get(metrics_by_board, board.id, empty_metrics(now))}
+        metrics_by_board = Metrics.build_metrics([board.id], now)
+        {:ok, Map.get(metrics_by_board, board.id, Metrics.empty_metrics(now))}
 
       {:error, :not_found} ->
         {:error, :not_found}
     end
   end
 
-  # Returns %{board_id => [%{kind: :human, name: string, palette: string}]}
-  # built from the users on each board's `board_users` join. Used to render
-  # the avatar stack in the Boards index pulse card. The Avatar component
-  # accepts at most 5 visible avatars before showing a +N overflow chip,
-  # so this query intentionally returns all members and the component
-  # handles truncation.
+  @doc """
+  Returns the workspace-wide task counts, summed across every board the
+  user can access:
+
+      %{open: n, doing: n, review: n, done: n}
+
+  The keys and their bucketing rules are exactly those of the per-board
+  `:metrics` map from `list_boards_with_metrics/2` — `Backlog`/`Ready`
+  roll up to `:open`, archived and goal-type tasks are excluded, and
+  columns with custom names are counted in no bucket.
+
+  Scope-filtered through `list_boards/1`, so the sum covers the user's
+  owner, modify, AND read-only memberships and nothing else. A user with
+  no boards gets the zero map.
+
+  The 14-day metrics are deliberately absent. `:active_agents_14d` cannot
+  be summed — an agent working on three boards would count three times;
+  use `list_workspace_members/2` and count the `:agent` entries instead.
+  `:throughput_14d` and `:pulse_14d` are legitimately summable but no
+  caller needs them yet.
+
+  ## Examples
+
+      iex> workspace_metrics(user)
+      %{open: 12, doing: 3, review: 1, done: 40}
+
+  """
+  def workspace_metrics(user, opts \\ []) do
+    user
+    |> list_boards_with_metrics(opts)
+    |> workspace_metrics_from()
+  end
+
+  @doc """
+  The pure fold behind `workspace_metrics/2`, for callers that already
+  hold the output of `list_boards_with_metrics/2` — the Boards index
+  LiveView loads it to render the cards, so rolling it up costs no
+  additional queries.
+
+  Boards whose virtual `:metrics` field was never populated (the output of
+  `list_boards/1`, where it defaults to `nil`) contribute zeros rather
+  than raising.
+
+  This function performs NO scope filtering — it sums whatever it is
+  given. Only ever hand it boards from a scoped read, exactly as with
+  `Kanban.Agents.list_agents_from/2`.
+
+  ## Examples
+
+      iex> user |> list_boards_with_metrics() |> workspace_metrics_from()
+      %{open: 12, doing: 3, review: 1, done: 40}
+
+  """
+  def workspace_metrics_from(boards) when is_list(boards) do
+    Metrics.workspace_totals(boards)
+  end
+
+  @doc """
+  Returns every person and agent across the boards the user can access,
+  deduplicated, as a list of maps ready to pass straight to
+  `KanbanWeb.Avatar.avatar_stack/1`:
+
+      [%{kind: :human | :agent, name: String.t(), palette: String.t()}]
+
+  Human entries additionally carry `:user_id` (see `list_board_members/1`);
+  `avatar_stack/1` ignores it.
+
+  Deduplication is by identity, not by appearance: humans collapse on
+  `:user_id` so two different people who share a display name both
+  survive, and agents collapse on their exact name.
+
+  "Agent" means a distinct, non-blank `completed_by_agent` on a task
+  completed within the last 14 days — the same predicate and the same
+  window as the per-board `:active_agents_14d`
+  count, so the two can never disagree. As noted on
+  `list_boards_with_metrics/2`, no per-claim agent identity is stored
+  anywhere in the schema, so a completion stamp is the closest available
+  proxy. Matching is case-sensitive, mirroring that count's SQL
+  `DISTINCT`.
+
+  Ordered humans first, then agents, case-insensitively by name within
+  each kind (tie-broken by `:user_id`) so the avatar stack's five-visible
+  cap shows people before bots and the order is stable across calls.
+
+  Costs a fixed three queries regardless of how many boards the user has
+  — no N+1 — and queries nothing beyond `list_boards/1` when the user has
+  no boards. The optional `:now` overrides `DateTime.utc_now/0` for
+  deterministic tests. The aggregation itself lives in
+  `Kanban.Boards.Metrics.workspace_members/2`; this function owns the
+  scoping.
+
+  ## Examples
+
+      iex> list_workspace_members(user)
+      [%{kind: :human, name: "ada", palette: "human-blue", user_id: 1},
+       %{kind: :agent, name: "Claude", palette: "agent-claude"}]
+
+  """
+  def list_workspace_members(user, opts \\ []) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+
+    case user |> list_boards() |> Enum.map(& &1.id) do
+      [] -> []
+      board_ids -> Metrics.workspace_members(board_ids, now)
+    end
+  end
+
   @doc """
   Returns the human members for a single board, shaped as a list of
   `%{kind: :human, name, palette}` maps ready to pass to
   `KanbanWeb.Avatar.avatar_stack/1`. Mirrors the per-board entry from
   `list_boards_with_metrics/2` so the same component code works on
   single-board pages.
+
+  Returns every member and lets the component handle its five-visible
+  truncation.
+
+  Each map also carries `:user_id`, which `avatar_stack/1` ignores. It is
+  the identity key `list_workspace_members/2` dedups on: two distinct users
+  can share a display name, and `KanbanWeb.AvatarPalette.for_human/1` is
+  `rem(id, 4)`, so neither name nor palette identifies a person on its own.
   """
   def list_board_members(board_id) when is_integer(board_id) do
     [board_id]
-    |> members_by_board()
+    |> Metrics.members_by_board()
     |> Map.get(board_id, [])
   end
-
-  defp members_by_board(board_ids) do
-    BoardUser
-    |> join(:inner, [bu], u in User, on: u.id == bu.user_id)
-    |> where([bu], bu.board_id in ^board_ids)
-    |> select([bu, u], {bu.board_id, u.id, u.name, u.email})
-    |> Repo.all()
-    |> Enum.reduce(%{}, fn row, acc ->
-      {board_id, user_id, name, email} = row
-
-      member = %{
-        kind: :human,
-        name: member_display_name(name, email),
-        palette: AvatarPalette.for_human(user_id)
-      }
-
-      Map.update(acc, board_id, [member], &(&1 ++ [member]))
-    end)
-  end
-
-  defp member_display_name(name, email) when is_binary(name) do
-    case String.trim(name) do
-      "" -> email_local_part(email)
-      trimmed -> trimmed
-    end
-  end
-
-  defp member_display_name(_name, email), do: email_local_part(email)
-
-  defp email_local_part(email) when is_binary(email) do
-    email |> String.split("@", parts: 2) |> List.first()
-  end
-
-  defp email_local_part(_), do: "?"
-
-  defp build_metrics(board_ids, now) do
-    today = DateTime.to_date(now)
-    cutoff_dt = today |> Date.add(-(@pulse_window_days - 1)) |> DateTime.new!(~T[00:00:00])
-
-    aggregates = %{
-      column_counts: column_counts_by_board(board_ids),
-      pulse_rows: pulse_rows_by_board(board_ids, cutoff_dt),
-      throughput: throughput_by_board(board_ids, cutoff_dt),
-      active_agents: active_agents_by_board(board_ids, cutoff_dt),
-      last_activity: last_activity_by_board(board_ids),
-      pulse_dates: pulse_date_range(today)
-    }
-
-    Map.new(board_ids, &{&1, metrics_for_board(&1, aggregates)})
-  end
-
-  defp metrics_for_board(board_id, agg) do
-    %{
-      open: Map.get(agg.column_counts, {board_id, :open}, 0),
-      doing: Map.get(agg.column_counts, {board_id, :doing}, 0),
-      review: Map.get(agg.column_counts, {board_id, :review}, 0),
-      done: Map.get(agg.column_counts, {board_id, :done}, 0),
-      throughput_14d: Map.get(agg.throughput, board_id, 0),
-      pulse_14d: build_pulse_array(Map.get(agg.pulse_rows, board_id, %{}), agg.pulse_dates),
-      active_agents_14d: Map.get(agg.active_agents, board_id, 0),
-      last_activity_at: Map.get(agg.last_activity, board_id)
-    }
-  end
-
-  defp empty_metrics(now) do
-    %{
-      open: 0,
-      doing: 0,
-      review: 0,
-      done: 0,
-      throughput_14d: 0,
-      pulse_14d: zero_pulse(now),
-      active_agents_14d: 0,
-      last_activity_at: nil
-    }
-  end
-
-  defp zero_pulse(now) do
-    now |> DateTime.to_date() |> pulse_date_range() |> Enum.map(fn _ -> 0 end)
-  end
-
-  defp pulse_date_range(today) do
-    today
-    |> Date.add(-(@pulse_window_days - 1))
-    |> Date.range(today)
-    |> Enum.to_list()
-  end
-
-  defp build_pulse_array(counts_by_date, pulse_dates) do
-    Enum.map(pulse_dates, fn date -> Map.get(counts_by_date, date, 0) end)
-  end
-
-  # Returns %{{board_id, :open | :doing | :review | :done} => count}.
-  # Archived tasks (those with a non-nil `archived_at`) and goal-type tasks
-  # are excluded so the board card stats reflect actionable work only.
-  defp column_counts_by_board(board_ids) do
-    Task
-    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
-    |> where([t, c], c.board_id in ^board_ids)
-    |> where([t, _c], is_nil(t.archived_at))
-    |> where([t, _c], t.type != :goal)
-    |> where(
-      [_t, c],
-      c.name in ^@open_columns or c.name in [@doing_column, @review_column, @done_column]
-    )
-    |> group_by([_t, c], [c.board_id, c.name])
-    |> select([_t, c], {c.board_id, c.name, count()})
-    |> Repo.all()
-    |> Enum.reduce(%{}, fn {board_id, name, count}, acc ->
-      # Backlog and Ready both bucket to :open, so accumulate when two
-      # column names roll up to the same bucket on the same board.
-      Map.update(acc, {board_id, bucket_for(name)}, count, &(&1 + count))
-    end)
-  end
-
-  defp bucket_for(name) when name in @open_columns, do: :open
-  defp bucket_for(@doing_column), do: :doing
-  defp bucket_for(@review_column), do: :review
-  defp bucket_for(@done_column), do: :done
-
-  # Returns %{board_id => %{Date => count}}.
-  defp pulse_rows_by_board(board_ids, cutoff_dt) do
-    board_ids
-    |> pulse_query(cutoff_dt)
-    |> Repo.all()
-    |> Enum.reduce(%{}, fn {board_id, date, count}, acc ->
-      Map.update(acc, board_id, %{date => count}, &Map.put(&1, date, count))
-    end)
-  end
-
-  defp pulse_query(board_ids, cutoff_dt) do
-    Task
-    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
-    |> where([t, c], c.board_id in ^board_ids)
-    |> where([t], not is_nil(t.completed_at))
-    |> where([t], t.completed_at >= ^cutoff_dt)
-    |> group_by([t, c], [c.board_id, fragment("DATE(?)", t.completed_at)])
-    |> select([t, c], {c.board_id, fragment("DATE(?)", t.completed_at), count(t.id)})
-  end
-
-  # Returns %{board_id => total_count}.
-  defp throughput_by_board(board_ids, cutoff_dt) do
-    Task
-    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
-    |> where([t, c], c.board_id in ^board_ids)
-    |> where([t], not is_nil(t.completed_at))
-    |> where([t], t.completed_at >= ^cutoff_dt)
-    |> group_by([_t, c], c.board_id)
-    |> select([t, c], {c.board_id, count(t.id)})
-    |> Repo.all()
-    |> Map.new()
-  end
-
-  # Returns %{board_id => distinct_agent_count}.
-  defp active_agents_by_board(board_ids, cutoff_dt) do
-    Task
-    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
-    |> where([t, c], c.board_id in ^board_ids)
-    |> where([t], not is_nil(t.completed_by_agent))
-    |> where([t], not is_nil(t.completed_at))
-    |> where([t], t.completed_at >= ^cutoff_dt)
-    |> group_by([_t, c], c.board_id)
-    |> select([t, c], {c.board_id, count(t.completed_by_agent, :distinct)})
-    |> Repo.all()
-    |> Map.new()
-  end
-
-  # Returns %{board_id => DateTime}. Picks the later of max(claimed_at)
-  # and max(completed_at). Boards with neither timestamp anywhere are
-  # absent from the map; the caller defaults them to nil.
-  defp last_activity_by_board(board_ids) do
-    Task
-    |> join(:inner, [t], c in Column, on: c.id == t.column_id)
-    |> where([t, c], c.board_id in ^board_ids)
-    |> group_by([_t, c], c.board_id)
-    |> select([t, c], {c.board_id, max(t.claimed_at), max(t.completed_at)})
-    |> Repo.all()
-    |> Enum.reduce(%{}, fn {board_id, max_claimed, max_completed}, acc ->
-      case latest(max_claimed, max_completed) do
-        nil -> acc
-        dt -> Map.put(acc, board_id, dt)
-      end
-    end)
-  end
-
-  defp latest(nil, nil), do: nil
-  defp latest(nil, dt), do: dt
-  defp latest(dt, nil), do: dt
-  defp latest(a, b), do: if(DateTime.compare(a, b) == :gt, do: a, else: b)
 
   @doc """
   Gets a single board with authorization check.

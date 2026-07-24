@@ -8,6 +8,7 @@ defmodule Kanban.BoardsTest do
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Tasks
+  alias KanbanWeb.AvatarPalette
 
   describe "user_has_boards?/1" do
     test "returns false for a user with no board memberships" do
@@ -1211,6 +1212,26 @@ defmodule Kanban.BoardsTest do
       assert metrics.active_agents_14d == 2
     end
 
+    test "active_agents_14d excludes blank and whitespace-only agent names", %{
+      user: user,
+      now: now
+    } do
+      board = ai_optimized_board_fixture(user, %{name: "Blank Agents Board"})
+      cols = columns_by_name(board)
+
+      real = task_fixture(cols["Done"], %{title: "Real"})
+      empty = task_fixture(cols["Done"], %{title: "Empty"})
+      spaces = task_fixture(cols["Done"], %{title: "Spaces"})
+
+      {:ok, _} = Tasks.update_task(real, %{completed_at: now, completed_by_agent: "Claude"})
+      {:ok, _} = Tasks.update_task(empty, %{completed_at: now, completed_by_agent: ""})
+      {:ok, _} = Tasks.update_task(spaces, %{completed_at: now, completed_by_agent: "   "})
+
+      [%Board{metrics: metrics}] = Boards.list_boards_with_metrics(user, now: now)
+
+      assert metrics.active_agents_14d == 1
+    end
+
     test "last_activity_at picks the latest of claimed_at and completed_at", %{
       user: user,
       now: now
@@ -1365,6 +1386,296 @@ defmodule Kanban.BoardsTest do
       |> Kanban.Repo.preload(:columns)
       |> Map.fetch!(:columns)
       |> Map.new(fn col -> {col.name, col} end)
+    end
+  end
+
+  describe "workspace_metrics/2" do
+    setup do
+      user = user_fixture()
+      now = ~U[2026-05-15 12:00:00Z]
+      %{user: user, now: now}
+    end
+
+    test "returns zeroed counts when the user has no boards", %{user: user, now: now} do
+      assert Boards.workspace_metrics(user, now: now) == %{open: 0, doing: 0, review: 0, done: 0}
+    end
+
+    test "sums open/doing/review/done across every board", %{user: user, now: now} do
+      a = ai_optimized_board_fixture(user, %{name: "Board A"})
+      b = ai_optimized_board_fixture(user, %{name: "Board B"})
+      _empty = ai_optimized_board_fixture(user, %{name: "Board C"})
+
+      cols_a = columns_by_name(a)
+      cols_b = columns_by_name(b)
+
+      _ = task_fixture(cols_a["Backlog"], %{title: "A backlog"})
+      _ = task_fixture(cols_a["Ready"], %{title: "A ready 1"})
+      _ = task_fixture(cols_a["Ready"], %{title: "A ready 2"})
+      _ = task_fixture(cols_a["Doing"], %{title: "A doing"})
+
+      _ = task_fixture(cols_b["Ready"], %{title: "B ready"})
+      _ = task_fixture(cols_b["Review"], %{title: "B review 1"})
+      _ = task_fixture(cols_b["Review"], %{title: "B review 2"})
+      _ = task_fixture(cols_b["Done"], %{title: "B done"})
+
+      assert Boards.workspace_metrics(user, now: now) ==
+               %{open: 4, doing: 1, review: 2, done: 1}
+    end
+
+    test "totals equal the sum of the per-board metrics", %{user: user, now: now} do
+      a = ai_optimized_board_fixture(user, %{name: "Sum A"})
+      b = ai_optimized_board_fixture(user, %{name: "Sum B"})
+
+      _ = task_fixture(columns_by_name(a)["Ready"], %{title: "A open"})
+      _ = task_fixture(columns_by_name(b)["Doing"], %{title: "B doing"})
+
+      boards = Boards.list_boards_with_metrics(user, now: now)
+
+      expected =
+        Enum.reduce(boards, %{open: 0, doing: 0, review: 0, done: 0}, fn board, acc ->
+          Map.new(acc, fn {bucket, total} -> {bucket, total + board.metrics[bucket]} end)
+        end)
+
+      assert Boards.workspace_metrics(user, now: now) == expected
+    end
+
+    test "excludes boards the user has no access to", %{user: user, now: now} do
+      mine = ai_optimized_board_fixture(user, %{name: "Mine Board"})
+      _ = task_fixture(columns_by_name(mine)["Ready"], %{title: "Mine open"})
+
+      other = user_fixture()
+      theirs = ai_optimized_board_fixture(other, %{name: "Theirs"})
+      _ = task_fixture(columns_by_name(theirs)["Doing"], %{title: "Theirs doing"})
+      _ = task_fixture(columns_by_name(theirs)["Doing"], %{title: "Theirs doing 2"})
+
+      assert Boards.workspace_metrics(user, now: now) ==
+               %{open: 1, doing: 0, review: 0, done: 0}
+    end
+
+    test "is isolated between two users", %{user: user, now: now} do
+      mine = ai_optimized_board_fixture(user, %{name: "Mine Board"})
+      _ = task_fixture(columns_by_name(mine)["Ready"], %{title: "Mine open"})
+
+      other = user_fixture()
+      theirs = ai_optimized_board_fixture(other, %{name: "Theirs"})
+      _ = task_fixture(columns_by_name(theirs)["Doing"], %{title: "Theirs doing"})
+
+      assert Boards.workspace_metrics(other, now: now) ==
+               %{open: 0, doing: 1, review: 0, done: 0}
+    end
+
+    test "includes boards shared with the user", %{user: user, now: now} do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner, %{name: "Shared"})
+      {:ok, _} = Boards.add_user_to_board(board, user, :read_only, owner)
+
+      _ = task_fixture(columns_by_name(board)["Review"], %{title: "Shared review"})
+
+      assert Boards.workspace_metrics(user, now: now) ==
+               %{open: 0, doing: 0, review: 1, done: 0}
+    end
+
+    test "excludes archived and goal tasks", %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Filtered"})
+      cols = columns_by_name(board)
+
+      _active = task_fixture(cols["Ready"], %{title: "Active"})
+      archived = task_fixture(cols["Ready"], %{title: "Archived"})
+      {:ok, _} = Tasks.update_task(archived, %{archived_at: now})
+      _goal = task_fixture(cols["Ready"], %{title: "Goal", type: :goal})
+
+      assert Boards.workspace_metrics(user, now: now) ==
+               %{open: 1, doing: 0, review: 0, done: 0}
+    end
+  end
+
+  describe "workspace_metrics_from/1" do
+    setup do
+      user = user_fixture()
+      now = ~U[2026-05-15 12:00:00Z]
+      %{user: user, now: now}
+    end
+
+    test "returns zeros for an empty list" do
+      assert Boards.workspace_metrics_from([]) == %{open: 0, doing: 0, review: 0, done: 0}
+    end
+
+    test "agrees with workspace_metrics/2 for the same boards", %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Agree"})
+      cols = columns_by_name(board)
+      _ = task_fixture(cols["Ready"], %{title: "open"})
+      _ = task_fixture(cols["Done"], %{title: "done"})
+
+      boards = Boards.list_boards_with_metrics(user, now: now)
+
+      assert Boards.workspace_metrics_from(boards) == Boards.workspace_metrics(user, now: now)
+    end
+
+    test "sums plain maps carrying a :metrics key" do
+      boards = [
+        %{metrics: %{open: 1, doing: 2, review: 3, done: 4}},
+        %{metrics: %{open: 10, doing: 20, review: 30, done: 40}}
+      ]
+
+      assert Boards.workspace_metrics_from(boards) ==
+               %{open: 11, doing: 22, review: 33, done: 44}
+    end
+
+    test "treats boards without loaded metrics as zeros", %{user: user} do
+      _ = ai_optimized_board_fixture(user, %{name: "No metrics"})
+
+      boards = Boards.list_boards(user)
+      assert Enum.all?(boards, &is_nil(&1.metrics))
+
+      assert Boards.workspace_metrics_from(boards) == %{open: 0, doing: 0, review: 0, done: 0}
+    end
+  end
+
+  describe "list_workspace_members/2" do
+    setup do
+      user = user_fixture()
+      now = ~U[2026-05-15 12:00:00Z]
+      %{user: user, now: now}
+    end
+
+    defp complete_task_by(column, agent_name, completed_at) do
+      task = task_fixture(column, %{title: "Done by #{agent_name} #{System.unique_integer()}"})
+
+      {:ok, task} =
+        Tasks.update_task(task, %{completed_at: completed_at, completed_by_agent: agent_name})
+
+      task
+    end
+
+    test "returns an empty list when the user has no boards", %{user: user, now: now} do
+      assert Boards.list_workspace_members(user, now: now) == []
+    end
+
+    test "returns one avatar-stack entry per person across boards", %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "People"})
+      teammate = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, teammate, :modify, user)
+
+      members = Boards.list_workspace_members(user, now: now)
+
+      assert length(members) == 2
+      assert Enum.all?(members, &(&1.kind == :human))
+      assert Enum.all?(members, &is_binary(&1.name))
+      assert Enum.all?(members, &(&1.palette in AvatarPalette.human_palettes()))
+    end
+
+    test "deduplicates a person who belongs to more than one board", %{user: user, now: now} do
+      a = ai_optimized_board_fixture(user, %{name: "Dedup A"})
+      b = ai_optimized_board_fixture(user, %{name: "Dedup B"})
+
+      teammate = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(a, teammate, :modify, user)
+      {:ok, _} = Boards.add_user_to_board(b, teammate, :modify, user)
+
+      members = Boards.list_workspace_members(user, now: now)
+
+      assert length(members) == 2
+      assert Enum.count(members, &(&1.user_id == teammate.id)) == 1
+    end
+
+    test "keeps two different people who share a display name", %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Same Name"})
+
+      alex_one = user_fixture(%{name: "Alex"})
+      alex_two = user_fixture(%{name: "Alex"})
+      {:ok, _} = Boards.add_user_to_board(board, alex_one, :modify, user)
+      {:ok, _} = Boards.add_user_to_board(board, alex_two, :modify, user)
+
+      members = Boards.list_workspace_members(user, now: now)
+      alexes = Enum.filter(members, &(&1.name == "Alex"))
+
+      assert length(alexes) == 2
+
+      assert alexes |> Enum.map(& &1.user_id) |> Enum.sort() ==
+               Enum.sort([alex_one.id, alex_two.id])
+    end
+
+    test "deduplicates an agent that completed work on multiple boards", %{user: user, now: now} do
+      a = ai_optimized_board_fixture(user, %{name: "Agent A"})
+      b = ai_optimized_board_fixture(user, %{name: "Agent B"})
+
+      _ = complete_task_by(columns_by_name(a)["Done"], "Claude", now)
+      _ = complete_task_by(columns_by_name(b)["Done"], "Claude", now)
+
+      agents =
+        user |> Boards.list_workspace_members(now: now) |> Enum.filter(&(&1.kind == :agent))
+
+      assert agents == [%{kind: :agent, name: "Claude", palette: "agent-claude"}]
+    end
+
+    test "excludes agents whose completions fall outside the 14-day window",
+         %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Window"})
+      cols = columns_by_name(board)
+
+      _ = complete_task_by(cols["Done"], "Claude", now)
+      _ = complete_task_by(cols["Done"], "Aider", DateTime.add(now, -20, :day))
+
+      names =
+        user
+        |> Boards.list_workspace_members(now: now)
+        |> Enum.filter(&(&1.kind == :agent))
+        |> Enum.map(& &1.name)
+
+      assert names == ["Claude"]
+    end
+
+    test "ignores blank and whitespace-only agent names", %{user: user, now: now} do
+      board = ai_optimized_board_fixture(user, %{name: "Blank"})
+      cols = columns_by_name(board)
+
+      _ = complete_task_by(cols["Done"], "", now)
+      _ = complete_task_by(cols["Done"], "   ", now)
+
+      members = Boards.list_workspace_members(user, now: now)
+
+      assert Enum.all?(members, &(&1.kind == :human))
+    end
+
+    test "excludes agents from boards the user cannot access", %{user: user, now: now} do
+      mine = ai_optimized_board_fixture(user, %{name: "Mine Board"})
+      _ = complete_task_by(columns_by_name(mine)["Done"], "Claude", now)
+
+      other = user_fixture()
+      theirs = ai_optimized_board_fixture(other, %{name: "Theirs"})
+      _ = complete_task_by(columns_by_name(theirs)["Done"], "Cursor", now)
+
+      assert agent_names(user, now) == ["Claude"]
+      assert agent_names(other, now) == ["Cursor"]
+    end
+
+    test "orders humans before agents, alphabetically within each kind",
+         %{user: _user, now: now} do
+      owner = user_fixture(%{name: "Zoe"})
+      board = ai_optimized_board_fixture(owner, %{name: "Ordered"})
+
+      teammate = user_fixture(%{name: "amy"})
+      {:ok, _} = Boards.add_user_to_board(board, teammate, :modify, owner)
+
+      cols = columns_by_name(board)
+      _ = complete_task_by(cols["Done"], "Cursor", now)
+      _ = complete_task_by(cols["Done"], "Claude", now)
+
+      members = Boards.list_workspace_members(owner, now: now)
+
+      assert Enum.map(members, &{&1.kind, &1.name}) == [
+               {:human, "amy"},
+               {:human, "Zoe"},
+               {:agent, "Claude"},
+               {:agent, "Cursor"}
+             ]
+    end
+
+    defp agent_names(user, now) do
+      user
+      |> Boards.list_workspace_members(now: now)
+      |> Enum.filter(&(&1.kind == :agent))
+      |> Enum.map(& &1.name)
     end
   end
 end
