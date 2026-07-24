@@ -5,6 +5,8 @@ defmodule KanbanWeb.BoardLive.Index do
   alias Kanban.Targets
   alias KanbanWeb.BoardAccent
   alias KanbanWeb.BoardPulseCard
+  alias KanbanWeb.BoardsHeader
+  alias KanbanWeb.BoardsNavStrip
   alias KanbanWeb.TargetsStrip
 
   defp empty_state(assigns) do
@@ -175,6 +177,7 @@ defmodule KanbanWeb.BoardLive.Index do
      |> assign(:nav_active, :boards)
      |> assign(:timezone, timezone)
      |> assign(:targets, targets)
+     |> assign_workspace_header(scope.user, boards)
      |> stream(:boards, boards)}
   end
 
@@ -204,6 +207,7 @@ defmodule KanbanWeb.BoardLive.Index do
      |> assign(:has_boards, not Enum.empty?(boards))
      |> assign(:active_count, length(boards))
      |> assign(:targets, targets)
+     |> assign_workspace_header(scope.user, boards)
      |> stream(:boards, boards, reset: true)}
   end
 
@@ -211,6 +215,24 @@ defmodule KanbanWeb.BoardLive.Index do
     user
     |> Boards.list_boards_with_metrics()
     |> BoardAccent.assign_to_boards()
+  end
+
+  # Both header aggregates in one place so mount/3, the :refresh_metrics poll
+  # and the post-delete reload cannot drift apart — a header left stale after
+  # the first poll is exactly the failure this prevents.
+  #
+  # The counts fold over the boards the caller ALREADY loaded, which preserves
+  # workspace_metrics_from/1's zero-query property; the roster is not derivable
+  # from them and costs a fixed three queries.
+  #
+  # Both arguments must come from the current scope: workspace_metrics_from/1
+  # does no scope filtering of its own — it sums whatever it is handed — and
+  # `user` is what scopes the roster, so the header can never aggregate across
+  # users.
+  defp assign_workspace_header(socket, user, boards) do
+    socket
+    |> assign(:workspace_metrics, Boards.workspace_metrics_from(boards))
+    |> assign(:workspace_members, Boards.list_workspace_members(user))
   end
 
   # Anchor delivery-target status on the viewer's local calendar day (not the
@@ -245,6 +267,7 @@ defmodule KanbanWeb.BoardLive.Index do
          socket
          |> assign(:has_boards, not Enum.empty?(boards))
          |> assign(:active_count, length(boards))
+         |> assign_workspace_header(user, boards)
          |> stream_delete(:boards, board)}
 
       {:error, :unauthorized} ->

@@ -96,6 +96,26 @@
           {ngettext("%{count} active", "%{count} active", @active_count, count: @active_count)}
         </span>
       </div>
+
+      <%!-- The missing right side of this justify-between row. Gated on
+      @has_boards for the same reason the "N active" chip above it is: with no
+      boards there is nothing to aggregate, and four zeros over an empty avatar
+      stack above the "create your first board" hero reads as broken rather
+      than empty. --%>
+      <BoardsHeader.boards_header
+        :if={@has_boards}
+        metrics={@workspace_metrics}
+        members={@workspace_members}
+      />
+    </div>
+
+    <%!-- Unconditional: this is navigation, not statistics. A user with zero
+    boards is exactly who most needs to find Agents / Review queue / Metrics.
+    No `active` attr — none of the three is current on this page, and passing
+    @nav_active (:boards) would encode a claim the strip's own item list
+    denies. --%>
+    <div class="mb-6">
+      <BoardsNavStrip.boards_nav_strip />
     </div>
 
     <div :if={@targets != []} class="mb-6">

@@ -163,7 +163,7 @@ msgstr ""
 msgid "You need to reauthenticate to perform sensitive actions on your account."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:125
+#: lib/kanban_web/live/board_live/index.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr ""
@@ -211,7 +211,7 @@ msgstr ""
 msgid "Edit Board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:118
+#: lib/kanban_web/live/board_live/index.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr ""
@@ -604,7 +604,7 @@ msgstr ""
 msgid "Manage Users"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:253
+#: lib/kanban_web/live/board_live/index.ex:276
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete this board"
 msgstr ""
@@ -2663,7 +2663,7 @@ msgstr ""
 #: lib/kanban_web/controllers/archive_export_controller.ex:34
 #: lib/kanban_web/live/archive_live/index.ex:33
 #: lib/kanban_web/live/board_live/form.ex:124
-#: lib/kanban_web/live/board_live/index.ex:261
+#: lib/kanban_web/live/board_live/index.ex:284
 #: lib/kanban_web/live/board_live/show.ex:1072
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
@@ -4201,64 +4201,64 @@ msgstr[1] ""
 msgid "Boards"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:112
+#: lib/kanban_web/live/board_live/index.ex:114
 #, elixir-autogen, elixir-format
 msgid "Create new board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.html.heex:127
+#: lib/kanban_web/live/board_live/index.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "Delete board"
 
-#: lib/kanban_web/live/board_live/index.ex:123
+#: lib/kanban_web/live/board_live/index.ex:125
 #: lib/kanban_web/live/board_live/index.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "New board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:32
+#: lib/kanban_web/live/board_live/index.ex:34
 #, elixir-autogen, elixir-format
 msgid "A board is a workspace for a single product or codebase. Stride gives you the 5-column AI flow out of the box — your agents pull from Ready, humans approve in Review. You can change the columns later."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:49
+#: lib/kanban_web/live/board_live/index.ex:51
 #, elixir-autogen, elixir-format
 msgid "Coming soon"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:43
+#: lib/kanban_web/live/board_live/index.ex:45
 #: lib/kanban_web/live/user_live/confirmation.ex:103
 #, elixir-autogen, elixir-format
 msgid "Create your first board"
 msgstr "Create your first board"
 
-#: lib/kanban_web/live/board_live/index.ex:54
+#: lib/kanban_web/live/board_live/index.ex:56
 #, elixir-autogen, elixir-format
 msgid "Import from Linear or Jira"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:29
+#: lib/kanban_web/live/board_live/index.ex:31
 #, elixir-autogen, elixir-format
 msgid "Let's start with one."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:29
+#: lib/kanban_web/live/board_live/index.ex:31
 #, elixir-autogen, elixir-format
 msgid "No boards yet."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:61
+#: lib/kanban_web/live/board_live/index.ex:63
 #, elixir-autogen, elixir-format
 msgid "Tip: start with the board your team already works in. Stride can backfill history."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:150
+#: lib/kanban_web/live/board_live/index.ex:152
 #, elixir-autogen, elixir-format
 msgid "AI Optimized"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/index.ex:137
+#: lib/kanban_web/live/board_live/index.ex:139
 #, elixir-autogen, elixir-format
 msgid "Empty Board"
 msgstr "Empty Board"
