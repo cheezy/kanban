@@ -48,6 +48,7 @@ msgstr " · 任务管理"
 
 #: lib/kanban_web/components/board_header.ex:74
 #: lib/kanban_web/components/board_pulse_card.ex:151
+#: lib/kanban_web/components/boards_header.ex:107
 #: lib/kanban_web/components/goal_progress_header.ex:208
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:79
@@ -2502,6 +2503,7 @@ msgstr "队列和等待时间分析"
 
 #: lib/kanban_web/components/board_header.ex:73
 #: lib/kanban_web/components/board_pulse_card.ex:150
+#: lib/kanban_web/components/boards_header.ex:106
 #: lib/kanban_web/components/goal_progress_header.ex:207
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:78
@@ -3196,6 +3198,7 @@ msgstr "Diff、测试、验收、hook 遥测——同一面板。一键批准。
 
 #: lib/kanban_web/components/board_header.ex:72
 #: lib/kanban_web/components/board_pulse_card.ex:149
+#: lib/kanban_web/components/boards_header.ex:105
 #: lib/kanban_web/components/goal_progress_header.ex:206
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:77
@@ -4258,6 +4261,7 @@ msgstr "空白看板"
 
 #: lib/kanban_web/components/board_header.ex:71
 #: lib/kanban_web/components/board_pulse_card.ex:148
+#: lib/kanban_web/components/boards_header.ex:104
 #, elixir-autogen, elixir-format
 msgid "To Do"
 msgstr "待办"
