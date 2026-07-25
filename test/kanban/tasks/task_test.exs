@@ -12,6 +12,7 @@ defmodule Kanban.Tasks.TaskTest do
   import Kanban.TargetsFixtures
   import Kanban.TasksFixtures
 
+  alias Kanban.Schemas.Task.BehaviourTestRow
   alias Kanban.Tasks.Task
 
   setup do
@@ -419,6 +420,187 @@ defmodule Kanban.Tasks.TaskTest do
 
       loaded = Repo.preload(updated, :duplicate_of)
       assert loaded.duplicate_of.id == canonical.id
+    end
+  end
+
+  describe "behaviour_test_matrix embed (W1916)" do
+    @valid_row %{
+      "category" => "Happy path",
+      "behaviour" => "claims an open task",
+      "test_name" => "claims an open task",
+      "type" => "unit / integration",
+      "status" => "planned",
+      "position" => 0
+    }
+
+    @invalid_row %{
+      "category" => "Sad path",
+      "behaviour" => "claims an open task",
+      "test_name" => "claims an open task",
+      "type" => "unit",
+      "status" => "planned",
+      "position" => 0
+    }
+
+    defp api_attrs(column, overrides) do
+      Map.merge(
+        %{
+          "title" => "Matrix task",
+          "position" => 99,
+          "column_id" => column.id,
+          "type" => :work,
+          "priority" => :medium
+        },
+        overrides
+      )
+    end
+
+    test "changeset/2 casts rows to structs and persists them through the jsonb column",
+         %{column: column} do
+      task = task_fixture(column)
+
+      {:ok, updated} =
+        task
+        |> Task.changeset(base_attrs(%{"behaviour_test_matrix" => [@valid_row]}))
+        |> Repo.update()
+
+      assert [%BehaviourTestRow{} = row] = Repo.reload!(updated).behaviour_test_matrix
+      assert row.category == "Happy path"
+      assert row.type == "unit / integration"
+      assert row.status == "planned"
+    end
+
+    test "changeset/2 surfaces per-row errors from the embed", %{column: column} do
+      task = task_fixture(column)
+      changeset = Task.changeset(task, base_attrs(%{"behaviour_test_matrix" => [@invalid_row]}))
+
+      refute changeset.valid?
+      assert %{behaviour_test_matrix: [%{category: [message]}]} = errors_on(changeset)
+      assert message =~ "must be one of: Happy path"
+    end
+
+    test "changeset/2 accepts an absent or empty matrix", %{column: column} do
+      task = task_fixture(column)
+
+      assert Task.changeset(task, base_attrs(%{})).valid?
+      assert Task.changeset(task, base_attrs(%{"behaviour_test_matrix" => []})).valid?
+    end
+
+    test "api_create_changeset/2 casts the embed", %{column: column} do
+      changeset =
+        Task.api_create_changeset(
+          %Task{},
+          api_attrs(column, %{"behaviour_test_matrix" => [@valid_row]})
+        )
+
+      assert changeset.valid?
+      assert [%BehaviourTestRow{category: "Happy path"}] = apply_matrix(changeset)
+    end
+
+    test "api_create_changeset/2 rejects an invalid row", %{column: column} do
+      changeset =
+        Task.api_create_changeset(
+          %Task{},
+          api_attrs(column, %{"behaviour_test_matrix" => [@invalid_row]})
+        )
+
+      refute changeset.valid?
+      assert %{behaviour_test_matrix: [%{category: [_message]}]} = errors_on(changeset)
+    end
+
+    test "api_update_changeset/2 casts the embed", %{column: column} do
+      task = task_fixture(column)
+
+      changeset =
+        Task.api_update_changeset(task, %{"behaviour_test_matrix" => [@valid_row]})
+
+      assert changeset.valid?
+      assert [%BehaviourTestRow{category: "Happy path"}] = apply_matrix(changeset)
+    end
+
+    test "api_update_changeset/2 rejects an invalid row", %{column: column} do
+      task = task_fixture(column)
+      changeset = Task.api_update_changeset(task, %{"behaviour_test_matrix" => [@invalid_row]})
+
+      refute changeset.valid?
+      assert %{behaviour_test_matrix: [%{category: [_message]}]} = errors_on(changeset)
+    end
+
+    test "on_replace: :delete swaps the stored rows on update", %{column: column} do
+      task = task_fixture(column)
+
+      {:ok, with_rows} =
+        task
+        |> Task.changeset(
+          base_attrs(%{
+            "behaviour_test_matrix" => [
+              @valid_row,
+              Map.merge(@valid_row, %{"category" => "Boundary", "position" => 1})
+            ]
+          })
+        )
+        |> Repo.update()
+
+      assert length(with_rows.behaviour_test_matrix) == 2
+
+      {:ok, replaced} =
+        with_rows
+        |> Task.changeset(
+          base_attrs(%{
+            "behaviour_test_matrix" => [Map.put(@valid_row, "category", "Concurrency")]
+          })
+        )
+        |> Repo.update()
+
+      assert [%BehaviourTestRow{category: "Concurrency"}] =
+               Repo.reload!(replaced).behaviour_test_matrix
+    end
+
+    test "all three changesets reject a non-array matrix with the shape message",
+         %{column: column} do
+      task = task_fixture(column)
+      attrs = %{"behaviour_test_matrix" => "not a list"}
+      expected = "must be an array of objects with category"
+
+      for changeset <- [
+            Task.changeset(task, attrs),
+            Task.api_create_changeset(%Task{}, api_attrs(column, attrs)),
+            Task.api_update_changeset(task, attrs)
+          ] do
+        refute changeset.valid?
+        assert %{behaviour_test_matrix: messages} = errors_on(changeset)
+        assert Enum.any?(messages, &String.contains?(&1, expected))
+      end
+    end
+
+    test "allows duplicate category rows and very long behaviour text", %{column: column} do
+      task = task_fixture(column)
+      long_behaviour = String.duplicate("a", 1_000)
+
+      {:ok, updated} =
+        task
+        |> Task.changeset(
+          base_attrs(%{
+            "behaviour_test_matrix" => [
+              @valid_row,
+              Map.merge(@valid_row, %{"behaviour" => long_behaviour, "position" => 1})
+            ]
+          })
+        )
+        |> Repo.update()
+
+      assert [first, second] = Repo.reload!(updated).behaviour_test_matrix
+      assert first.category == second.category
+      assert second.behaviour == long_behaviour
+    end
+
+    test "behaviour_test_categories/0 exposes the single source of truth" do
+      assert Task.behaviour_test_categories() == BehaviourTestRow.categories()
+      assert length(Task.behaviour_test_categories()) == 7
+    end
+
+    defp apply_matrix(changeset) do
+      changeset |> Ecto.Changeset.apply_changes() |> Map.fetch!(:behaviour_test_matrix)
     end
   end
 

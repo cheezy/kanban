@@ -135,11 +135,14 @@ defmodule Kanban.Tasks.Task do
   - `validate_testing_strategy/1` - Proper JSON structure
   - `validate_key_files` - Array of objects with required fields
   - `validate_verification_steps` - Array of objects with step_type/step_text
+  - `validate_behaviour_test_matrix` - Rows with fixed category/status/type
+    vocabularies and a test_name-or-na_reason rule
   """
 
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.Schemas.Task.BehaviourTestRow
   alias Kanban.Schemas.Task.KeyFile
   alias Kanban.Schemas.Task.VerificationStep
   alias Kanban.Tasks.Task.ArchiveChangeset
@@ -279,6 +282,15 @@ defmodule Kanban.Tasks.Task do
     # Format: [%{step_type: "command", step_text: "mix test", expected_result: "All pass", position: 0}, ...]
     # Validates: step_type must be "command" or "manual", all fields required
     embeds_many :verification_steps, VerificationStep, on_replace: :delete
+
+    # Behaviour/Test Matrix (Embedded Array of Objects)
+    # Format: [%{category: "Happy path", behaviour: "claims an open task",
+    #           test_name: "claims an open task", type: "unit",
+    #           status: "planned", na_reason: nil, position: 0}, ...]
+    # Validates: category from BehaviourTestRow.categories/0, status from
+    # BehaviourTestRow.statuses/0, type a '/'-combination of unit/integration/manual,
+    # and a real test_name unless the row is waived (then na_reason is required)
+    embeds_many :behaviour_test_matrix, BehaviourTestRow, on_replace: :delete
 
     # Specific tools/libraries - Validated: Array of strings, Example: ["bcrypt", "jason", "ecto"]
     field :technology_requirements, {:array, :string}
@@ -492,6 +504,15 @@ defmodule Kanban.Tasks.Task do
   """
   def varchar_255_array_fields, do: @varchar_255_array_fields
 
+  @doc """
+  The seven fixed behaviour/test-matrix categories.
+
+  Single source of truth for the category vocabulary — matrix-level validations
+  and any UI must call this rather than redefining the list. Delegates to
+  `Kanban.Schemas.Task.BehaviourTestRow`.
+  """
+  defdelegate behaviour_test_categories, to: BehaviourTestRow, as: :categories
+
   @doc false
   # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   def changeset(task, attrs) do
@@ -578,8 +599,12 @@ defmodule Kanban.Tasks.Task do
     ])
     |> EmbedValidations.validate_embed_type(:key_files, attrs)
     |> EmbedValidations.validate_embed_type(:verification_steps, attrs)
+    |> EmbedValidations.validate_embed_type(:behaviour_test_matrix, attrs)
     |> cast_embed(:key_files, with: &EmbedValidations.validate_key_file_embed/2)
     |> cast_embed(:verification_steps, with: &EmbedValidations.validate_verification_step_embed/2)
+    |> cast_embed(:behaviour_test_matrix,
+      with: &EmbedValidations.validate_behaviour_test_row_embed/2
+    )
     |> normalize_ai_context_fields()
     |> validate_required([:title, :position, :type, :priority, :status])
     |> validate_inclusion(:type, [:work, :defect, :goal],
@@ -637,6 +662,13 @@ defmodule Kanban.Tasks.Task do
   # column_id, created_by_id, time_spent_minutes, archived_at, …) are intentionally
   # omitted — those are set only by the dedicated workflow endpoints
   # (claim/complete/mark_reviewed/unclaim), which bypass this changeset entirely.
+  #
+  # The embeds (key_files, verification_steps, behaviour_test_matrix) are
+  # deliberately absent: `cast/3` raises "casting embeds with cast/4 ... is not
+  # supported, use cast_embed/3 instead" for any embed in its permitted list.
+  # Both API paths cast them through the explicit `cast_embed/3` calls in
+  # `api_create_changeset/2` and `api_update_changeset/2`, which read straight
+  # from the changeset params and need no entry here.
   @api_update_fields [
     # Descriptive
     :title,
@@ -709,8 +741,12 @@ defmodule Kanban.Tasks.Task do
     |> cast(attrs, @api_create_fields)
     |> EmbedValidations.validate_embed_type(:key_files, attrs)
     |> EmbedValidations.validate_embed_type(:verification_steps, attrs)
+    |> EmbedValidations.validate_embed_type(:behaviour_test_matrix, attrs)
     |> cast_embed(:key_files, with: &EmbedValidations.validate_key_file_embed/2)
     |> cast_embed(:verification_steps, with: &EmbedValidations.validate_verification_step_embed/2)
+    |> cast_embed(:behaviour_test_matrix,
+      with: &EmbedValidations.validate_behaviour_test_row_embed/2
+    )
     |> normalize_ai_context_fields()
     |> validate_required([:title, :position, :type, :priority])
     |> validate_inclusion(:type, [:work, :defect, :goal],
@@ -749,8 +785,12 @@ defmodule Kanban.Tasks.Task do
     |> cast(attrs, @api_update_fields)
     |> EmbedValidations.validate_embed_type(:key_files, attrs)
     |> EmbedValidations.validate_embed_type(:verification_steps, attrs)
+    |> EmbedValidations.validate_embed_type(:behaviour_test_matrix, attrs)
     |> cast_embed(:key_files, with: &EmbedValidations.validate_key_file_embed/2)
     |> cast_embed(:verification_steps, with: &EmbedValidations.validate_verification_step_embed/2)
+    |> cast_embed(:behaviour_test_matrix,
+      with: &EmbedValidations.validate_behaviour_test_row_embed/2
+    )
     |> normalize_ai_context_fields()
     |> validate_required([:title, :type, :priority])
     |> validate_inclusion(:type, [:work, :defect, :goal],

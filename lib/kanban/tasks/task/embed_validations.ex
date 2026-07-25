@@ -1,11 +1,12 @@
 defmodule Kanban.Tasks.Task.EmbedValidations do
   @moduledoc """
-  Embed type-checking and error-message enhancement for the `key_files` and
-  `verification_steps` embeds on `Kanban.Tasks.Task`, extracted from the schema
-  module (W1445).
+  Embed type-checking and error-message enhancement for the `key_files`,
+  `verification_steps`, and `behaviour_test_matrix` embeds on
+  `Kanban.Tasks.Task`, extracted from the schema module (W1445).
 
   `validate_embed_type/3` guards the raw attrs shape before `cast_embed`, and
-  `validate_key_file_embed/2` / `validate_verification_step_embed/2` are the
+  `validate_key_file_embed/2` / `validate_verification_step_embed/2` /
+  `validate_behaviour_test_row_embed/2` are the
   `cast_embed(:field, with: ...)` callbacks that rewrite Ecto's generic
   "can't be blank"/"is invalid" messages into the API's friendlier wording.
   The error strings are asserted verbatim by the schema tests and shown to API
@@ -14,6 +15,7 @@ defmodule Kanban.Tasks.Task.EmbedValidations do
 
   import Ecto.Changeset
 
+  alias Kanban.Schemas.Task.BehaviourTestRow
   alias Kanban.Schemas.Task.KeyFile
   alias Kanban.Schemas.Task.VerificationStep
 
@@ -56,6 +58,9 @@ defmodule Kanban.Tasks.Task.EmbedValidations do
       {:verification_steps, :not_objects} ->
         "must be an array of objects with step_type, step_text, expected_result, and position fields"
 
+      {:behaviour_test_matrix, :not_objects} ->
+        behaviour_test_matrix_shape_message()
+
       {_, :not_objects} ->
         "must be an array of objects"
 
@@ -65,9 +70,16 @@ defmodule Kanban.Tasks.Task.EmbedValidations do
       {:verification_steps, :not_array} ->
         "must be an array of objects with step_type, step_text, expected_result, and position fields"
 
+      {:behaviour_test_matrix, :not_array} ->
+        behaviour_test_matrix_shape_message()
+
       {_, :not_array} ->
         "must be an array"
     end
+  end
+
+  defp behaviour_test_matrix_shape_message do
+    "must be an array of objects with category, behaviour, test_name, type, status, and position fields"
   end
 
   @doc "cast_embed callback for `:key_files` with improved error messages."
@@ -82,6 +94,12 @@ defmodule Kanban.Tasks.Task.EmbedValidations do
     |> improve_embed_errors(:verification_steps)
   end
 
+  @doc "cast_embed callback for `:behaviour_test_matrix` with improved error messages."
+  def validate_behaviour_test_row_embed(row, attrs) do
+    BehaviourTestRow.changeset(row, attrs)
+    |> improve_embed_errors(:behaviour_test_matrix)
+  end
+
   defp improve_embed_errors(changeset, field_name) do
     # If the changeset is valid, return it as-is
     if changeset.valid? do
@@ -94,6 +112,9 @@ defmodule Kanban.Tasks.Task.EmbedValidations do
 
         :verification_steps ->
           enhance_verification_step_errors(changeset)
+
+        :behaviour_test_matrix ->
+          enhance_behaviour_test_row_errors(changeset)
 
         _ ->
           changeset
@@ -117,6 +138,23 @@ defmodule Kanban.Tasks.Task.EmbedValidations do
     |> update_error_message(:step_text, "can't be blank", "is required (command or instruction)")
     |> update_error_message(:position, "can't be blank", "is required (integer starting from 0)")
     |> update_error_message(:step_type, "is invalid", "must be 'command' or 'manual'")
+  end
+
+  defp enhance_behaviour_test_row_errors(changeset) do
+    changeset
+    |> update_error_message(:category, "can't be blank", "is required (#{category_options()})")
+    |> update_error_message(:category, "is invalid", "must be #{category_options()}")
+    |> update_error_message(:behaviour, "can't be blank", "is required (what the code should do)")
+    |> update_error_message(:status, "can't be blank", "is required (#{status_options()})")
+    |> update_error_message(:status, "is invalid", "must be #{status_options()}")
+  end
+
+  defp category_options do
+    "one of: " <> Enum.join(BehaviourTestRow.categories(), ", ")
+  end
+
+  defp status_options do
+    "one of: " <> Enum.join(BehaviourTestRow.statuses(), ", ")
   end
 
   defp update_error_message(changeset, field, old_msg, new_msg) do
