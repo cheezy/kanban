@@ -194,7 +194,11 @@ defmodule KanbanWeb.MetricsLive.Workspace do
       >
         <header
           data-metrics-header
-          class="flex flex-wrap items-baseline gap-3 px-3 md:px-7 pt-5 pb-2"
+          class="flex flex-wrap items-baseline gap-3 px-3 md:px-7 py-4"
+          style={[
+            "border-bottom: 1px solid var(--line);",
+            "background: var(--surface);"
+          ]}
         >
           <h1 style={[
             "margin: 0;",
