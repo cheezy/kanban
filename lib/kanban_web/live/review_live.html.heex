@@ -457,6 +457,26 @@
           </section>
 
           <section
+            :if={ReviewBehaviourMatrix.rows(@selected) != []}
+            data-review-behaviour-matrix-section
+            style={[
+              "margin: 12px 16px 0; padding: 10px 12px;",
+              "border-radius: 6px;",
+              "background: var(--surface); border: 1px solid var(--line);",
+              "color: var(--ink); font-size: 12.5px; line-height: 1.5;",
+              "display: flex; flex-direction: column; gap: 8px;"
+            ]}
+          >
+            <span style={[
+              "font-size: 11px; font-weight: 600; letter-spacing: 0.04em;",
+              "text-transform: uppercase; color: var(--ink-3);"
+            ]}>
+              {gettext("Behaviour/Test Matrix")}
+            </span>
+            <ReviewBehaviourMatrixPanel.review_behaviour_matrix task={@selected} />
+          </section>
+
+          <section
             data-review-changed-files
             style={[
               "margin: 12px 16px 0; padding: 10px 12px;",

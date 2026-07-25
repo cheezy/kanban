@@ -1550,6 +1550,86 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "behaviour/test matrix area (W1921)" do
+    setup [:register_and_log_in_user]
+
+    test "renders the matrix section with one row per reviewer-supplied row",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "behaviour_test_matrix" => %{
+              "status" => "passed",
+              "rows" => [
+                %{
+                  "category" => "Happy path",
+                  "behaviour" => "renders the matrix section",
+                  "test_name" => "renders the matrix section test",
+                  "type" => "unit",
+                  "status" => "passing"
+                },
+                %{
+                  "category" => "Null / empty",
+                  "behaviour" => "hides the section when empty",
+                  "status" => "planned"
+                }
+              ]
+            }
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      assert html =~ "data-review-behaviour-matrix-section"
+      assert html =~ "Behaviour/Test Matrix"
+      # Not the bare "data-review-behaviour-matrix" prefix — the section
+      # attribute above contains it, so that assertion could never fail.
+      assert html =~ ~s(data-review-behaviour-matrix=")
+      assert length(Regex.scan(~r/data-review-behaviour-row/, html)) == 2
+      assert html =~ ~s(data-review-behaviour-status="passing")
+      assert html =~ ~s(data-review-behaviour-status="planned")
+      assert html =~ "renders the matrix section"
+      assert html =~ "hides the section when empty"
+    end
+
+    test "omits the section when the reviewer supplied no matrix verdict",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{"dispatched" => true, "status" => "approved"}
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      refute html =~ "data-review-behaviour-matrix-section"
+      refute html =~ "data-review-behaviour-row"
+    end
+
+    test "omits the section when every supplied row is malformed",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "behaviour_test_matrix" => %{"rows" => [%{"behaviour" => "no category"}]}
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
+      refute html =~ "data-review-behaviour-matrix-section"
+    end
+  end
+
   describe "security considerations area" do
     setup [:register_and_log_in_user]
 

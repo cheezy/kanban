@@ -23,6 +23,8 @@ defmodule KanbanWeb.ReviewLive do
   alias KanbanWeb.AcceptanceChecklist
   alias KanbanWeb.CodeReviewPanel
   alias KanbanWeb.ReviewAcceptance
+  alias KanbanWeb.ReviewBehaviourMatrix
+  alias KanbanWeb.ReviewBehaviourMatrixPanel
   alias KanbanWeb.ReviewDetailHeader
   alias KanbanWeb.ReviewDiffPanel
   alias KanbanWeb.ReviewQueueItem
