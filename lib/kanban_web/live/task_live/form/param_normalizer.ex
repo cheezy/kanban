@@ -43,6 +43,7 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
     params
     |> normalize_embedded_field("key_files")
     |> normalize_embedded_field("verification_steps")
+    |> normalize_embedded_field("behaviour_test_matrix")
   end
 
   defp normalize_embedded_field(params, field_name) do

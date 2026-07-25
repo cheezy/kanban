@@ -45,6 +45,7 @@ defmodule Kanban.Boards.BoardTest do
                "context" => false,
                "key_files" => false,
                "verification_steps" => false,
+               "behaviour_test_matrix" => false,
                "technical_notes" => false,
                "observability" => false,
                "error_handling" => false,

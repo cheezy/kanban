@@ -178,6 +178,33 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     {:noreply, assign_form(socket, changeset)}
   end
 
+  def handle_event("add-behaviour-test-row", _params, socket) do
+    existing = Ecto.Changeset.get_field(socket.assigns.form.source, :behaviour_test_matrix) || []
+    rows = existing ++ [%Kanban.Schemas.Task.BehaviourTestRow{position: length(existing)}]
+
+    changeset =
+      socket.assigns.task
+      |> Tasks.Task.changeset(%{})
+      |> Ecto.Changeset.put_embed(:behaviour_test_matrix, rows)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
+  def handle_event("remove-behaviour-test-row", %{"index" => index}, socket) do
+    {index, _} = Integer.parse(index)
+
+    rows =
+      (Ecto.Changeset.get_field(socket.assigns.form.source, :behaviour_test_matrix) || [])
+      |> List.delete_at(index)
+
+    changeset =
+      socket.assigns.task
+      |> Tasks.Task.changeset(%{})
+      |> Ecto.Changeset.put_embed(:behaviour_test_matrix, rows)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
   def handle_event("add-technology", _params, socket),
     do: handle_add_to_array(socket, :technology_requirements)
 

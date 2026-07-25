@@ -7,6 +7,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
+  alias Kanban.Schemas.Task.BehaviourTestRow
   alias Kanban.Tasks
   alias KanbanWeb.TaskLive.FormComponent
 
@@ -4030,6 +4031,178 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
 
       assert updated_socket.assigns.flash["error"] =~ "permission to modify"
       assert Kanban.Repo.get!(Tasks.Task, task.id).title == "Public Read-Only Task"
+    end
+  end
+
+  describe "behaviour_test_matrix editor (W1919)" do
+    # A persisted matrix must cover all seven categories (W1917), so fixtures
+    # that save start from a complete one.
+    defp matrix_rows do
+      BehaviourTestRow.categories()
+      |> Enum.with_index()
+      |> Enum.map(fn {category, index} ->
+        %{
+          "category" => category,
+          "behaviour" => "claims an open task",
+          "test_name" => "claims an open task",
+          "type" => "unit",
+          "status" => "planned",
+          "position" => index
+        }
+      end)
+    end
+
+    defp form_socket(user, board, column, task, action) do
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: user},
+            task: task,
+            board: board,
+            action: action,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+    end
+
+    test "add-behaviour-test-row appends an empty row" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      socket = form_socket(user, board, column, %Tasks.Task{column_id: column.id}, :new_task)
+
+      {:noreply, updated} =
+        FormComponent.handle_event("add-behaviour-test-row", %{}, socket)
+
+      rows = Ecto.Changeset.get_field(updated.assigns.form.source, :behaviour_test_matrix)
+
+      assert length(rows) == 1
+      assert hd(rows).position == 0
+      assert hd(rows).category == nil
+    end
+
+    test "add-behaviour-test-row positions each new row after the last" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      socket = form_socket(user, board, column, %Tasks.Task{column_id: column.id}, :new_task)
+
+      {:noreply, once} = FormComponent.handle_event("add-behaviour-test-row", %{}, socket)
+      {:noreply, twice} = FormComponent.handle_event("add-behaviour-test-row", %{}, once)
+
+      rows = Ecto.Changeset.get_field(twice.assigns.form.source, :behaviour_test_matrix)
+
+      assert Enum.map(rows, & &1.position) == [0, 1]
+    end
+
+    test "remove-behaviour-test-row deletes the row at the given index" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Matrix task", behaviour_test_matrix: matrix_rows()})
+      socket = form_socket(user, board, column, task, :edit_task)
+
+      {:noreply, updated} =
+        FormComponent.handle_event("remove-behaviour-test-row", %{"index" => "0"}, socket)
+
+      rows = Ecto.Changeset.get_field(updated.assigns.form.source, :behaviour_test_matrix)
+
+      assert length(rows) == 6
+      assert hd(rows).category == "Boundary"
+    end
+
+    test "saving persists the matrix rows from inputs_for params" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      socket = form_socket(user, board, column, %Tasks.Task{column_id: column.id}, :new_task)
+
+      # inputs_for submits a numeric-keyed map, which ParamNormalizer converts
+      # back into an ordered list — this exercises that registration.
+      indexed_rows =
+        matrix_rows()
+        |> Enum.with_index()
+        |> Map.new(fn {row, index} -> {to_string(index), row} end)
+
+      task_params = %{
+        "title" => "Matrix Save Task",
+        "behaviour_test_matrix" => indexed_rows
+      }
+
+      {:noreply, _updated} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      created = Kanban.Repo.get_by(Tasks.Task, title: "Matrix Save Task")
+
+      assert created
+      assert length(created.behaviour_test_matrix) == 7
+
+      assert Enum.map(created.behaviour_test_matrix, & &1.category) ==
+               BehaviourTestRow.categories()
+    end
+
+    test "saving an incomplete matrix surfaces the completeness error on the form" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      socket = form_socket(user, board, column, %Tasks.Task{column_id: column.id}, :new_task)
+
+      partial = %{"0" => matrix_rows() |> hd()}
+
+      task_params = %{
+        "title" => "Incomplete Matrix Task",
+        "behaviour_test_matrix" => partial
+      }
+
+      {:noreply, updated} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      refute Kanban.Repo.get_by(Tasks.Task, title: "Incomplete Matrix Task")
+
+      assert {message, _opts} =
+               updated.assigns.form.source.errors[:behaviour_test_matrix]
+
+      assert message =~ "must include at least one row for every category"
+    end
+
+    test "the section renders only when the board enables the field" do
+      user = user_fixture()
+      column = column_fixture(board_fixture(user))
+
+      task =
+        task_fixture(column, %{title: "Matrix render", behaviour_test_matrix: matrix_rows()})
+
+      hidden_board = board_fixture(user, %{field_visibility: %{"key_files" => true}})
+
+      visible_board =
+        board_fixture(user, %{field_visibility: %{"behaviour_test_matrix" => true}})
+
+      render_form = fn board ->
+        render_component(FormComponent,
+          id: "form-#{board.id}",
+          title: "Edit Task",
+          action: :edit_task,
+          board: board,
+          task: task,
+          column_id: nil,
+          current_scope: user_scope_fixture(user),
+          patch: "/boards/#{board.id}"
+        )
+      end
+
+      hidden_html = render_form.(hidden_board)
+      visible_html = render_form.(visible_board)
+
+      refute hidden_html =~ "add-behaviour-test-row"
+      assert visible_html =~ "add-behaviour-test-row"
+      assert visible_html =~ "remove-behaviour-test-row"
+      # Category and Status render as selects carrying the canonical values.
+      assert visible_html =~ "Contract / serialization"
+      assert visible_html =~ "not_applicable"
     end
   end
 end

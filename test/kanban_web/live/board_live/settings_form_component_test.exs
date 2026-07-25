@@ -281,4 +281,29 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponentTest do
       myself: %Phoenix.LiveComponent.CID{cid: 1}
     }
   end
+
+  describe "toggleable field checkbox parity (W1919)" do
+    setup [:setup_owner]
+
+    # The settings checkboxes come from a hand-maintained label list. A key in
+    # Board.toggleable_fields/0 with no entry here renders no checkbox, so the
+    # field can never be switched on and its form section is unreachable —
+    # exactly the silent drift that hid behaviour_test_matrix until it was
+    # added by hand. Fail here instead of shipping a dead section.
+    test "every toggleable board field renders a settings checkbox", %{
+      board: board,
+      scope: scope
+    } do
+      html =
+        render_component(
+          &SettingsFormComponent.render/1,
+          assign_for_render(board, scope)
+        )
+
+      for field <- Boards.Board.toggleable_fields() do
+        assert html =~ ~s(phx-value-field="#{field}"),
+               "no settings checkbox renders for the toggleable field #{inspect(field)}"
+      end
+    end
+  end
 end
