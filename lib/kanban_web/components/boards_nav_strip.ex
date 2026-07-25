@@ -17,7 +17,11 @@ defmodule KanbanWeb.BoardsNavStrip do
   content well, where the gutters would double up, the surface fill would
   read as a stray panel, and `flex-shrink` is inert. The `border-bottom` is
   kept — it is what the active tab's `margin-bottom: -1px` underline sits
-  on, so dropping it would break the tab metaphor.
+  on, so dropping it would break the tab metaphor. A `border-top` is also
+  drawn: on the board-scoped screens the `BoardHeader` band's own
+  `border-bottom` paints a line directly above the `BoardTabs` row, so the
+  workspace strip mirrors that with a top line of its own for a consistent
+  over-and-under rule on the Boards index.
 
   ## Contrast
 
@@ -80,6 +84,7 @@ defmodule KanbanWeb.BoardsNavStrip do
       aria-label={gettext("Workspace sections")}
       style={[
         "display: flex; align-items: stretch; gap: 0;",
+        "border-top: 1px solid var(--line);",
         "border-bottom: 1px solid var(--line);",
         "overflow-x: auto;"
       ]}

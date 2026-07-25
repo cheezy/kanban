@@ -119,13 +119,24 @@ defmodule KanbanWeb.BoardsHeader do
     """
   end
 
+  # The 1px `var(--line)` rule is identical to `BoardHeader`'s, but on the Boards
+  # index it sits directly on the `bg-base-100` canvas (~rgb(248) off-white),
+  # where a `var(--line)` (~rgb(201)) hairline drops to ~1.5:1 and vanishes —
+  # especially at a fractional device-pixel ratio. `BoardHeader`'s copy reads
+  # because it sits inside that header's pure-white `var(--surface)` band. We
+  # reproduce that condition locally with a thin `var(--surface)` backing (a
+  # ~3px strip that is itself ~1.03:1 against the canvas, so it adds no visible
+  # panel) so the line renders on white and matches the board page. The line
+  # colour is unchanged.
   defp members_divider(assigns) do
     ~H"""
     <span
       data-boards-header-divider
       aria-hidden="true"
-      style="width: 1px; height: 24px; background: var(--line);"
-    ></span>
+      style="display: inline-flex; align-items: center; padding: 0 1px; background: var(--surface);"
+    >
+      <span style="width: 1px; height: 24px; background: var(--line);"></span>
+    </span>
     """
   end
 

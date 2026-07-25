@@ -86,8 +86,13 @@
     </.link>
   </:actions>
 
-  <div class="px-4 py-6 sm:px-6 lg:px-8">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6">
+  <%!-- Fixed 22px horizontal gutter to match the board-scoped chrome
+  (BoardHeader `padding: 14px 22px`, BoardTabs `padding: 0 22px`), so the
+  Boards title + workspace nav strip line up with the board name + BoardTabs
+  across page types at every breakpoint rather than drifting with a responsive
+  px-4/6/8 well. --%>
+  <div class="px-[22px] py-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3">
       <div class="flex items-baseline gap-3">
         <h1 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em;">
           {gettext("Boards")}
