@@ -93,6 +93,7 @@ defmodule KanbanWeb.API.TaskJSON do
       error_on_failure: task.error_on_failure,
       key_files: render_key_files(task),
       verification_steps: render_verification_steps(task),
+      behaviour_test_matrix: render_behaviour_test_matrix(task),
       technology_requirements: task.technology_requirements,
       pitfalls: task.pitfalls,
       out_of_scope: task.out_of_scope,
@@ -154,6 +155,22 @@ defmodule KanbanWeb.API.TaskJSON do
   end
 
   defp render_verification_steps(_), do: []
+
+  defp render_behaviour_test_matrix(%Task{behaviour_test_matrix: rows}) when is_list(rows) do
+    Enum.map(rows, fn row ->
+      %{
+        category: row.category,
+        behaviour: row.behaviour,
+        test_name: row.test_name,
+        type: row.type,
+        status: row.status,
+        na_reason: row.na_reason,
+        position: row.position
+      }
+    end)
+  end
+
+  defp render_behaviour_test_matrix(_), do: []
 
   defp maybe_add_skills_version(response, assigns) do
     current = KanbanWeb.API.AgentJSON.skills_version()

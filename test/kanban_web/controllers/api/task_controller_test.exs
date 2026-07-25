@@ -6,6 +6,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
   alias Kanban.ApiTokens
   alias Kanban.Columns
+  alias Kanban.Schemas.Task.BehaviourTestRow
   alias Kanban.Tasks
 
   @moduletag capture_log: true
@@ -141,6 +142,61 @@ defmodule KanbanWeb.API.TaskControllerTest do
       "after_doing_result" => valid_after_doing_result(),
       "before_review_result" => valid_before_review_result()
     }
+  end
+
+  # Behaviour/test-matrix helpers (W1918). A NON-EMPTY matrix must cover all
+  # seven categories (W1917), so every valid payload starts from a full matrix.
+  @behaviour_row_template %{
+    "behaviour" => "claims an open task",
+    "test_name" => "claims an open task",
+    "type" => "unit",
+    "status" => "planned"
+  }
+
+  defp behaviour_rows_for(categories) do
+    categories
+    |> Enum.with_index()
+    |> Enum.map(fn {category, index} ->
+      Map.merge(@behaviour_row_template, %{"category" => category, "position" => index})
+    end)
+  end
+
+  defp full_behaviour_matrix, do: behaviour_rows_for(BehaviourTestRow.categories())
+
+  # A complete matrix whose first ("Happy path") row carries the given overrides.
+  defp full_behaviour_matrix_with(overrides) do
+    [first | rest] = full_behaviour_matrix()
+    [Map.merge(first, overrides) | rest]
+  end
+
+  # A complete matrix in which `category`'s row is waived: status
+  # "not_applicable" + na_reason, and no test_name.
+  defp full_behaviour_matrix_waiving(category, na_reason) do
+    Enum.map(full_behaviour_matrix(), fn
+      %{"category" => ^category} = row ->
+        row
+        |> Map.drop(["test_name"])
+        |> Map.merge(%{"status" => "not_applicable", "na_reason" => na_reason})
+
+      row ->
+        row
+    end)
+  end
+
+  # The serialized form of a request matrix: every row echoes all seven row
+  # fields, with absent ones as nil (TaskJSON.render_behaviour_test_matrix/1).
+  defp expected_behaviour_matrix_json(rows) do
+    Enum.map(rows, fn row ->
+      %{
+        "category" => row["category"],
+        "behaviour" => row["behaviour"],
+        "test_name" => row["test_name"],
+        "type" => row["type"],
+        "status" => row["status"],
+        "na_reason" => row["na_reason"],
+        "position" => row["position"]
+      }
+    end)
   end
 
   describe "POST /api/tasks" do
@@ -5426,6 +5482,248 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       conn = get(conn, ~p"/api/tasks/#{child_id}")
       assert json_response(conn, 200)["data"]["technical_details"] == td
+    end
+  end
+
+  # Round-trip coverage for the behaviour/test matrix through the JSON API
+  # (W1918). These tests also prove NO KanbanWeb.API.TaskParamFilter change was
+  # needed: the field is in neither forbidden list, so it survives the create,
+  # update and batch-child filters untouched.
+  describe "behaviour_test_matrix API (W1918)" do
+    test "POST /api/tasks persists and echoes behaviour_test_matrix",
+         %{conn: conn, column: column} do
+      matrix = full_behaviour_matrix()
+
+      created =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "BTM Task",
+            "column_id" => column.id,
+            "behaviour_test_matrix" => matrix
+          }
+        )
+
+      body = json_response(created, 201)["data"]
+      assert body["behaviour_test_matrix"] == expected_behaviour_matrix_json(matrix)
+
+      fetched = get(conn, ~p"/api/tasks/#{body["id"]}")
+
+      assert json_response(fetched, 200)["data"]["behaviour_test_matrix"] ==
+               expected_behaviour_matrix_json(matrix)
+    end
+
+    test "GET /api/tasks includes behaviour_test_matrix on each task",
+         %{conn: conn, column: column} do
+      matrix = full_behaviour_matrix()
+
+      created =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "BTM Index",
+            "column_id" => column.id,
+            "behaviour_test_matrix" => matrix
+          }
+        )
+
+      id = json_response(created, 201)["data"]["id"]
+
+      listed = get(conn, ~p"/api/tasks")
+      task = json_response(listed, 200)["data"] |> Enum.find(&(&1["id"] == id))
+
+      assert task["behaviour_test_matrix"] == expected_behaviour_matrix_json(matrix)
+    end
+
+    test "a task without behaviour_test_matrix serializes an empty array, not null",
+         %{conn: conn, column: column} do
+      created = post(conn, ~p"/api/tasks", task: %{"title" => "No BTM", "column_id" => column.id})
+
+      assert json_response(created, 201)["data"]["behaviour_test_matrix"] == []
+    end
+
+    test "POST /api/tasks accepts an explicitly empty behaviour_test_matrix",
+         %{conn: conn, column: column} do
+      created =
+        post(conn, ~p"/api/tasks",
+          task: %{"title" => "Empty BTM", "column_id" => column.id, "behaviour_test_matrix" => []}
+        )
+
+      assert json_response(created, 201)["data"]["behaviour_test_matrix"] == []
+    end
+
+    test "POST /api/tasks rejects a row with an unknown category with 422",
+         %{conn: conn, column: column} do
+      bad_row = Map.merge(@behaviour_row_template, %{"category" => "Bogus", "position" => 0})
+
+      created =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Bad BTM",
+            "column_id" => column.id,
+            "behaviour_test_matrix" => [bad_row]
+          }
+        )
+
+      body = json_response(created, 422)
+      assert [%{"category" => [message]}] = body["errors"]["behaviour_test_matrix"]
+      assert message =~ "must be one of:"
+    end
+
+    test "POST /api/tasks rejects an incomplete matrix with 422 naming the missing categories",
+         %{conn: conn, column: column} do
+      partial = behaviour_rows_for(["Happy path", "Boundary"])
+
+      created =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Partial BTM",
+            "column_id" => column.id,
+            "behaviour_test_matrix" => partial
+          }
+        )
+
+      assert [message] = json_response(created, 422)["errors"]["behaviour_test_matrix"]
+      assert message =~ "must include at least one row for every category. Missing:"
+      assert message =~ "Concurrency"
+    end
+
+    test "POST /api/tasks rejects a non-array behaviour_test_matrix with 422",
+         %{conn: conn, column: column} do
+      created =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Scalar BTM",
+            "column_id" => column.id,
+            "behaviour_test_matrix" => "nope"
+          }
+        )
+
+      messages = json_response(created, 422)["errors"]["behaviour_test_matrix"]
+
+      assert Enum.any?(
+               messages,
+               &String.contains?(&1, "must be an array of objects with category, behaviour")
+             )
+    end
+
+    test "PATCH /api/tasks/:id replaces behaviour_test_matrix",
+         %{conn: conn, column: column, user: user} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Patch BTM",
+          "created_by_id" => user.id,
+          "behaviour_test_matrix" => full_behaviour_matrix()
+        })
+
+      updated =
+        full_behaviour_matrix_with(%{
+          "test_name" => "the replacement row",
+          "status" => "passing"
+        })
+
+      patched =
+        patch(conn, ~p"/api/tasks/#{task.id}", task: %{"behaviour_test_matrix" => updated})
+
+      rows = json_response(patched, 200)["data"]["behaviour_test_matrix"]
+
+      assert rows == expected_behaviour_matrix_json(updated)
+      assert length(rows) == 7
+      assert hd(rows)["test_name"] == "the replacement row"
+    end
+
+    test "PATCH /api/tasks/:id rejects an incomplete matrix and leaves the stored one intact",
+         %{conn: conn, column: column, user: user} do
+      original = full_behaviour_matrix()
+
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Patch Bad BTM",
+          "created_by_id" => user.id,
+          "behaviour_test_matrix" => original
+        })
+
+      patched =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"behaviour_test_matrix" => behaviour_rows_for(["Happy path"])}
+        )
+
+      assert [message] = json_response(patched, 422)["errors"]["behaviour_test_matrix"]
+      assert message =~ "Missing:"
+
+      fetched = get(conn, ~p"/api/tasks/#{task.id}")
+
+      assert json_response(fetched, 200)["data"]["behaviour_test_matrix"] ==
+               expected_behaviour_matrix_json(original)
+    end
+
+    test "POST /api/tasks/batch persists behaviour_test_matrix on a nested task", %{conn: conn} do
+      matrix = full_behaviour_matrix()
+
+      goals_params = [
+        %{
+          "title" => "BTM Goal",
+          "type" => "goal",
+          "tasks" => [
+            %{"title" => "BTM Child", "type" => "work", "behaviour_test_matrix" => matrix}
+          ]
+        }
+      ]
+
+      created = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+      response = json_response(created, 201)
+
+      assert %{"success" => true, "goals" => goals} = response
+
+      # The batch response renders only a minimal child summary, so persistence
+      # is proven by fetching the child through the full task JSON.
+      child_id =
+        goals |> Enum.at(0) |> Map.fetch!("child_tasks") |> Enum.at(0) |> Map.fetch!("id")
+
+      fetched = get(conn, ~p"/api/tasks/#{child_id}")
+
+      assert json_response(fetched, 200)["data"]["behaviour_test_matrix"] ==
+               expected_behaviour_matrix_json(matrix)
+    end
+
+    test "a waived (not_applicable) row round-trips with na_reason and a null test_name",
+         %{conn: conn, column: column} do
+      matrix = full_behaviour_matrix_waiving("Concurrency", "single-process code path")
+
+      created =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "NA BTM",
+            "column_id" => column.id,
+            "behaviour_test_matrix" => matrix
+          }
+        )
+
+      rows = json_response(created, 201)["data"]["behaviour_test_matrix"]
+      waived = Enum.find(rows, &(&1["category"] == "Concurrency"))
+
+      assert waived["status"] == "not_applicable"
+      assert waived["na_reason"] == "single-process code path"
+      assert waived["test_name"] == nil
+      assert rows == expected_behaviour_matrix_json(matrix)
+    end
+
+    test "a '/'-combined type token round-trips verbatim", %{conn: conn, column: column} do
+      matrix = full_behaviour_matrix_with(%{"type" => "unit / manual"})
+
+      created =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Combo BTM",
+            "column_id" => column.id,
+            "behaviour_test_matrix" => matrix
+          }
+        )
+
+      id = json_response(created, 201)["data"]["id"]
+      fetched = get(conn, ~p"/api/tasks/#{id}")
+      rows = json_response(fetched, 200)["data"]["behaviour_test_matrix"]
+
+      # No normalization: BehaviourTestRow validates the combination only.
+      assert hd(rows)["type"] == "unit / manual"
     end
   end
 end
