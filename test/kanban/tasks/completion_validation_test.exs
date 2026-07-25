@@ -1,6 +1,7 @@
 defmodule Kanban.Tasks.CompletionValidationTest do
   use ExUnit.Case, async: true
 
+  alias Kanban.Schemas.Task.BehaviourTestRow
   alias Kanban.Tasks.CompletionValidation
 
   @valid_summary "A substantive summary explaining what was explored in detail."
@@ -1169,6 +1170,264 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     end
   end
 
+  describe "validate_reviewer_result/1 — nested behaviour_test_matrix.rows[] (W1920)" do
+    test "accepts a well-formed behaviour_test_matrix verdict" do
+      payload =
+        matrix_payload(%{
+          "status" => "passed",
+          "notes" => "Every behaviour is covered by a named test.",
+          "rows" => [
+            behaviour_test_row(),
+            behaviour_test_row(%{
+              "category" => "Boundary",
+              "behaviour" => "rejects a row list that is not a list",
+              "test_name" => "rejects a non-list rows value",
+              "type" => "unit / manual",
+              "status" => "failing"
+            })
+          ]
+        })
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts every status the BehaviourTestRow schema allows" do
+      rows =
+        Enum.map(BehaviourTestRow.statuses(), fn status ->
+          behaviour_test_row(%{"status" => status})
+        end)
+
+      payload = matrix_payload(%{"status" => "passed", "rows" => rows})
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "absent behaviour_test_matrix carries no obligation" do
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(base_reviewer_payload())
+    end
+
+    test "nil behaviour_test_matrix carries no obligation" do
+      payload = matrix_payload(nil)
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "a partial verdict carrying only a status is grace-gated" do
+      payload = matrix_payload(%{"status" => "passed"})
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "a partial verdict carrying only rows is grace-gated" do
+      payload = matrix_payload(%{"rows" => [behaviour_test_row()]})
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "an empty verdict map is grace-gated" do
+      payload = matrix_payload(%{})
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "nil rows carries no obligation" do
+      payload = matrix_payload(%{"status" => "passed", "rows" => nil})
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts an empty rows list" do
+      payload = matrix_payload(%{"status" => "passed", "rows" => []})
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "rejects a non-map verdict" do
+      payload = matrix_payload("passed")
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :behaviour_test_matrix_entry)
+      assert msg =~ "behaviour_test_matrix must be a map"
+    end
+
+    test "rejects an invalid top-level status" do
+      payload = matrix_payload(%{"status" => "approved", "rows" => []})
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :behaviour_test_matrix_status)
+      assert msg =~ "passed, failed, not_assessed"
+    end
+
+    test "rejects non-string notes" do
+      payload = matrix_payload(%{"status" => "passed", "notes" => 42})
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :notes)
+      assert msg =~ "behaviour_test_matrix.notes must be a string"
+    end
+
+    test "rejects a non-list rows value" do
+      payload = matrix_payload(%{"status" => "passed", "rows" => behaviour_test_row()})
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :behaviour_test_matrix_rows)
+      assert msg =~ "behaviour_test_matrix.rows must be a list"
+    end
+
+    test "rejects a non-map row" do
+      payload = matrix_payload(%{"status" => "passed", "rows" => ["not a map"]})
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :behaviour_test_row_entry)
+      assert msg =~ "behaviour_test_matrix.rows[0] must be a map"
+    end
+
+    test "rejects a row with an invalid status enum value" do
+      payload =
+        matrix_payload(%{
+          "status" => "passed",
+          "rows" => [behaviour_test_row(%{"status" => "done"})]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :behaviour_test_row_status)
+      assert msg =~ "behaviour_test_matrix.rows[0]"
+      assert msg =~ Enum.join(BehaviourTestRow.statuses(), ", ")
+    end
+
+    test "rejects a row missing status" do
+      payload =
+        matrix_payload(%{
+          "status" => "passed",
+          "rows" => [Map.delete(behaviour_test_row(), "status")]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :behaviour_test_row_status)
+      assert msg =~ "behaviour_test_matrix.rows[0]"
+      assert msg =~ "missing status"
+    end
+
+    test "rejects a row missing a required string key" do
+      for key <- ~w(category behaviour) do
+        payload =
+          matrix_payload(%{
+            "status" => "passed",
+            "rows" => [Map.delete(behaviour_test_row(), key)]
+          })
+
+        assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+        assert {_field, msg} = error_for(errors, :behaviour_test_row_field)
+        assert msg =~ "behaviour_test_matrix.rows[0]"
+        assert msg =~ ~s(non-empty string "#{key}")
+      end
+    end
+
+    # Schema parity: BehaviourTestRow.changeset/2 requires only
+    # [:category, :behaviour, :status] and lets a waived row carry an na_reason
+    # instead of a test_name. Requiring more here would hard-reject a reviewer
+    # faithfully echoing a row the server itself persisted.
+    test "accepts a waived row that carries na_reason instead of test_name" do
+      row = %{
+        "category" => "Concurrency",
+        "behaviour" => "serializes concurrent claims on one task",
+        "status" => "not_applicable",
+        "na_reason" => "no concurrency surface in this change"
+      }
+
+      payload = matrix_payload(%{"status" => "passed", "rows" => [row]})
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts a row omitting the optional type column" do
+      payload =
+        matrix_payload(%{
+          "status" => "passed",
+          "rows" => [Map.delete(behaviour_test_row(), "type")]
+        })
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "accepts a row with an explicitly nil optional column" do
+      payload =
+        matrix_payload(%{
+          "status" => "passed",
+          "rows" => [behaviour_test_row(%{"test_name" => nil})]
+        })
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
+    test "rejects a row whose optional column is supplied but not a string" do
+      payload =
+        matrix_payload(%{
+          "status" => "passed",
+          "rows" => [behaviour_test_row(%{"type" => 42})]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :behaviour_test_row_field)
+      assert msg =~ "behaviour_test_matrix.rows[0]"
+      assert msg =~ ~s("type" must be a string when supplied)
+    end
+
+    test "the row status enum stays in lockstep with BehaviourTestRow.statuses/0" do
+      assert Enum.map(CompletionValidation.behaviour_test_statuses(), &Atom.to_string/1) ==
+               BehaviourTestRow.statuses()
+    end
+
+    test "rejects a row with a blank string field" do
+      payload =
+        matrix_payload(%{
+          "status" => "passed",
+          "rows" => [behaviour_test_row(%{"behaviour" => "   "})]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :behaviour_test_row_field)
+      assert msg =~ ~s(non-empty string "behaviour")
+    end
+
+    test "rejects a row whose string field is not a string" do
+      payload =
+        matrix_payload(%{
+          "status" => "passed",
+          "rows" => [behaviour_test_row(%{"category" => ["Happy path"]})]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :behaviour_test_row_field)
+      assert msg =~ ~s(non-empty string "category")
+    end
+
+    test "reports the offending index for a bad row among good ones" do
+      payload =
+        matrix_payload(%{
+          "status" => "passed",
+          "rows" => [
+            behaviour_test_row(),
+            behaviour_test_row(),
+            behaviour_test_row(%{"status" => "nope"})
+          ]
+        })
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :behaviour_test_row_status)
+      assert msg =~ "behaviour_test_matrix.rows[2]"
+    end
+
+    test "a matrix verdict is never required by the structured-block check" do
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(full_structured_payload(),
+                 require_structured_block: true
+               )
+
+      refute :behaviour_test_matrix in CompletionValidation.required_review_sections()
+    end
+  end
+
   describe "considerations_status_consistency_failures/1 (W1866)" do
     test "flags a partial item when the section verdict is not failed" do
       result =
@@ -1536,6 +1795,25 @@ defmodule Kanban.Tasks.CompletionValidationTest do
 
   defp error_for(errors, field) do
     Enum.find(errors, fn {f, _msg} -> f == field end)
+  end
+
+  # A reviewer payload carrying the optional W1920 behaviour_test_matrix verdict.
+  defp matrix_payload(verdict) do
+    Map.put(base_reviewer_payload(), "behaviour_test_matrix", verdict)
+  end
+
+  # A well-formed matrix row; `overrides` swaps or (with Map.delete) removes keys.
+  defp behaviour_test_row(overrides \\ %{}) do
+    Map.merge(
+      %{
+        "category" => "Happy path",
+        "behaviour" => "accepts a well-formed matrix verdict",
+        "test_name" => "accepts a well-formed behaviour_test_matrix verdict",
+        "type" => "unit",
+        "status" => "passing"
+      },
+      overrides
+    )
   end
 
   defp base_reviewer_payload do
