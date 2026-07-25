@@ -5,6 +5,14 @@ defmodule Kanban.Tasks.Task.MapFieldValidations do
   `integration_points`, and `technical_details` — extracted from the schema
   module (W1445).
 
+  Also hosts the matrix-level `behaviour_test_matrix` completeness rule, which
+  spans rows and so cannot live in the per-row embed validation. That rule reads
+  the field with `get_field/2`, so it sees the persisted matrix as well as an
+  incoming one: a row whose stored matrix is partial stays invalid until the
+  matrix is completed, even on an update that does not touch it. No write path
+  can produce a partial matrix, but a seed or backfill that sets the column
+  directly must write a complete matrix or leave it empty.
+
   Each `validate_*/1` is a changeset-in / changeset-out pipeline stage. The
   error strings (including the JSON-object examples) are asserted verbatim by
   the AI-context-fields tests and shown to API clients, so they must not drift.
@@ -14,6 +22,14 @@ defmodule Kanban.Tasks.Task.MapFieldValidations do
   """
 
   import Ecto.Changeset
+
+  alias Kanban.Schemas.Task.BehaviourTestRow
+
+  # Bound from the row schema's single source of truth. Safe as a compile-time
+  # constant: BehaviourTestRow depends on neither this module nor Kanban.Tasks.Task,
+  # so the edge added here keeps the dependency graph acyclic (reaching for
+  # Task.behaviour_test_categories/0 instead WOULD cycle, since Task calls us).
+  @behaviour_test_categories BehaviourTestRow.categories()
 
   @doc "Validates `security_considerations` is nil, empty, or a list of strings."
   def validate_security_considerations(changeset) do
@@ -112,6 +128,49 @@ defmodule Kanban.Tasks.Task.MapFieldValidations do
         add_error(changeset, :technical_details, "must be a JSON object")
     end
   end
+
+  @doc """
+  Validates that a non-empty `behaviour_test_matrix` covers every one of the
+  seven fixed categories at least once, naming any that are missing.
+
+  The field stays optional: an absent, nil, or empty matrix passes. Row-level
+  rules (category vocabulary, status, type, test_name-or-na_reason) belong to
+  `Kanban.Tasks.Task.EmbedValidations`; only the cross-row completeness rule
+  lives here.
+  """
+  def validate_behaviour_test_matrix_completeness(changeset) do
+    case get_field(changeset, :behaviour_test_matrix) do
+      rows when is_list(rows) and rows != [] ->
+        validate_categories_covered(changeset, rows)
+
+      _nil_or_empty_or_uncastable ->
+        changeset
+    end
+  end
+
+  defp validate_categories_covered(changeset, rows) do
+    covered = MapSet.new(rows, &row_category/1)
+
+    case Enum.reject(@behaviour_test_categories, &MapSet.member?(covered, &1)) do
+      [] ->
+        changeset
+
+      missing ->
+        # One static error key with the missing names listed in the message —
+        # never an atom built from a category string.
+        add_error(
+          changeset,
+          :behaviour_test_matrix,
+          "must include at least one row for every category. Missing: #{Enum.join(missing, ", ")}"
+        )
+    end
+  end
+
+  # `get_field/2` applies embedded changes, so a row is always a
+  # %BehaviourTestRow{} here — even when its own nested changeset is invalid.
+  # The catch-all only guards a future caller that reads rows some other way.
+  defp row_category(%{category: category}), do: category
+  defp row_category(_row), do: nil
 
   defp validate_string_or_string_list_map(changeset, field, map) do
     invalid_values =

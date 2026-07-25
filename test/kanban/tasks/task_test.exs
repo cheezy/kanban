@@ -29,6 +29,32 @@ defmodule Kanban.Tasks.TaskTest do
   # constraint when we later persist via Repo.update/1.
   defp base_attrs(overrides), do: overrides
 
+  # Behaviour-test-matrix helpers, shared by the W1916 (embed) and W1917
+  # (completeness) blocks. A persisted matrix must cover all seven categories,
+  # so most fixtures start from a complete one.
+  @matrix_row_template %{
+    "behaviour" => "claims an open task",
+    "test_name" => "claims an open task",
+    "type" => "unit",
+    "status" => "planned"
+  }
+
+  defp rows_for(categories) do
+    categories
+    |> Enum.with_index()
+    |> Enum.map(fn {category, index} ->
+      Map.merge(@matrix_row_template, %{"category" => category, "position" => index})
+    end)
+  end
+
+  defp full_matrix, do: rows_for(BehaviourTestRow.categories())
+
+  # A complete matrix whose first ("Happy path") row carries the given overrides.
+  defp full_matrix_with(overrides) do
+    [first | rest] = full_matrix()
+    [Map.merge(first, overrides) | rest]
+  end
+
   describe "varchar(255) length validation (D81)" do
     @over String.duplicate("a", 256)
     @at_limit String.duplicate("a", 255)
@@ -424,15 +450,6 @@ defmodule Kanban.Tasks.TaskTest do
   end
 
   describe "behaviour_test_matrix embed (W1916)" do
-    @valid_row %{
-      "category" => "Happy path",
-      "behaviour" => "claims an open task",
-      "test_name" => "claims an open task",
-      "type" => "unit / integration",
-      "status" => "planned",
-      "position" => 0
-    }
-
     @invalid_row %{
       "category" => "Sad path",
       "behaviour" => "claims an open task",
@@ -461,10 +478,15 @@ defmodule Kanban.Tasks.TaskTest do
 
       {:ok, updated} =
         task
-        |> Task.changeset(base_attrs(%{"behaviour_test_matrix" => [@valid_row]}))
+        |> Task.changeset(
+          base_attrs(%{
+            "behaviour_test_matrix" => full_matrix_with(%{"type" => "unit / integration"})
+          })
+        )
         |> Repo.update()
 
-      assert [%BehaviourTestRow{} = row] = Repo.reload!(updated).behaviour_test_matrix
+      assert [%BehaviourTestRow{} = row | _rest] = Repo.reload!(updated).behaviour_test_matrix
+      assert length(Repo.reload!(updated).behaviour_test_matrix) == 7
       assert row.category == "Happy path"
       assert row.type == "unit / integration"
       assert row.status == "planned"
@@ -490,11 +512,11 @@ defmodule Kanban.Tasks.TaskTest do
       changeset =
         Task.api_create_changeset(
           %Task{},
-          api_attrs(column, %{"behaviour_test_matrix" => [@valid_row]})
+          api_attrs(column, %{"behaviour_test_matrix" => full_matrix()})
         )
 
       assert changeset.valid?
-      assert [%BehaviourTestRow{category: "Happy path"}] = apply_matrix(changeset)
+      assert [%BehaviourTestRow{category: "Happy path"} | _rest] = apply_matrix(changeset)
     end
 
     test "api_create_changeset/2 rejects an invalid row", %{column: column} do
@@ -511,11 +533,10 @@ defmodule Kanban.Tasks.TaskTest do
     test "api_update_changeset/2 casts the embed", %{column: column} do
       task = task_fixture(column)
 
-      changeset =
-        Task.api_update_changeset(task, %{"behaviour_test_matrix" => [@valid_row]})
+      changeset = Task.api_update_changeset(task, %{"behaviour_test_matrix" => full_matrix()})
 
       assert changeset.valid?
-      assert [%BehaviourTestRow{category: "Happy path"}] = apply_matrix(changeset)
+      assert [%BehaviourTestRow{category: "Happy path"} | _rest] = apply_matrix(changeset)
     end
 
     test "api_update_changeset/2 rejects an invalid row", %{column: column} do
@@ -533,27 +554,26 @@ defmodule Kanban.Tasks.TaskTest do
         task
         |> Task.changeset(
           base_attrs(%{
-            "behaviour_test_matrix" => [
-              @valid_row,
-              Map.merge(@valid_row, %{"category" => "Boundary", "position" => 1})
-            ]
+            "behaviour_test_matrix" => full_matrix() ++ rows_for(["Boundary"])
           })
         )
         |> Repo.update()
 
-      assert length(with_rows.behaviour_test_matrix) == 2
+      assert length(with_rows.behaviour_test_matrix) == 8
 
       {:ok, replaced} =
         with_rows
         |> Task.changeset(
           base_attrs(%{
-            "behaviour_test_matrix" => [Map.put(@valid_row, "category", "Concurrency")]
+            "behaviour_test_matrix" => full_matrix_with(%{"test_name" => "the replacement row"})
           })
         )
         |> Repo.update()
 
-      assert [%BehaviourTestRow{category: "Concurrency"}] =
-               Repo.reload!(replaced).behaviour_test_matrix
+      reloaded = Repo.reload!(replaced).behaviour_test_matrix
+
+      assert length(reloaded) == 7
+      assert [%BehaviourTestRow{test_name: "the replacement row"} | _rest] = reloaded
     end
 
     test "all three changesets reject a non-array matrix with the shape message",
@@ -577,21 +597,25 @@ defmodule Kanban.Tasks.TaskTest do
       task = task_fixture(column)
       long_behaviour = String.duplicate("a", 1_000)
 
+      duplicate = %{
+        "category" => "Happy path",
+        "behaviour" => long_behaviour,
+        "test_name" => "a second happy-path test",
+        "type" => "unit",
+        "status" => "planned",
+        "position" => 7
+      }
+
       {:ok, updated} =
         task
-        |> Task.changeset(
-          base_attrs(%{
-            "behaviour_test_matrix" => [
-              @valid_row,
-              Map.merge(@valid_row, %{"behaviour" => long_behaviour, "position" => 1})
-            ]
-          })
-        )
+        |> Task.changeset(base_attrs(%{"behaviour_test_matrix" => full_matrix() ++ [duplicate]}))
         |> Repo.update()
 
-      assert [first, second] = Repo.reload!(updated).behaviour_test_matrix
-      assert first.category == second.category
-      assert second.behaviour == long_behaviour
+      rows = Repo.reload!(updated).behaviour_test_matrix
+
+      assert length(rows) == 8
+      assert List.first(rows).category == List.last(rows).category
+      assert List.last(rows).behaviour == long_behaviour
     end
 
     test "behaviour_test_categories/0 exposes the single source of truth" do
@@ -601,6 +625,117 @@ defmodule Kanban.Tasks.TaskTest do
 
     defp apply_matrix(changeset) do
       changeset |> Ecto.Changeset.apply_changes() |> Map.fetch!(:behaviour_test_matrix)
+    end
+  end
+
+  describe "behaviour_test_matrix completeness (W1917)" do
+    test "a matrix covering all seven categories is valid", %{column: column} do
+      task = task_fixture(column)
+
+      changeset = Task.changeset(task, base_attrs(%{"behaviour_test_matrix" => full_matrix()}))
+
+      assert changeset.valid?
+      assert {:ok, updated} = Repo.update(changeset)
+      assert length(updated.behaviour_test_matrix) == 7
+    end
+
+    test "a matrix missing one category is invalid and the error names it", %{column: column} do
+      task = task_fixture(column)
+      categories = BehaviourTestRow.categories() -- ["Concurrency"]
+
+      changeset =
+        Task.changeset(task, base_attrs(%{"behaviour_test_matrix" => rows_for(categories)}))
+
+      refute changeset.valid?
+
+      assert "must include at least one row for every category. Missing: Concurrency" in errors_on(
+               changeset
+             ).behaviour_test_matrix
+    end
+
+    test "every missing category is listed, in canonical order", %{column: column} do
+      task = task_fixture(column)
+      categories = ["Happy path", "Boundary", "Null / empty", "Lifecycle / wiring"]
+
+      changeset =
+        Task.changeset(task, base_attrs(%{"behaviour_test_matrix" => rows_for(categories)}))
+
+      refute changeset.valid?
+
+      assert ("must include at least one row for every category. " <>
+                "Missing: Error / exception, Concurrency, Contract / serialization") in errors_on(
+               changeset
+             ).behaviour_test_matrix
+    end
+
+    test "an absent or empty matrix stays valid — the field is optional", %{column: column} do
+      task = task_fixture(column)
+
+      assert Task.changeset(task, base_attrs(%{})).valid?
+      assert Task.changeset(task, base_attrs(%{"behaviour_test_matrix" => []})).valid?
+    end
+
+    test "duplicated rows still satisfy completeness", %{column: column} do
+      task = task_fixture(column)
+      rows = rows_for(BehaviourTestRow.categories() ++ ["Happy path", "Boundary"])
+
+      assert Task.changeset(task, base_attrs(%{"behaviour_test_matrix" => rows})).valid?
+    end
+
+    test "a single-category matrix lists the other six", %{column: column} do
+      task = task_fixture(column)
+
+      changeset =
+        Task.changeset(task, base_attrs(%{"behaviour_test_matrix" => rows_for(["Happy path"])}))
+
+      refute changeset.valid?
+      [message] = errors_on(changeset).behaviour_test_matrix
+
+      for missing <- BehaviourTestRow.categories() -- ["Happy path"] do
+        assert String.contains?(message, missing)
+      end
+    end
+
+    test "category matching is exact — case and whitespace variants do not count",
+         %{column: column} do
+      task = task_fixture(column)
+      rows = rows_for(BehaviourTestRow.categories() -- ["Boundary"]) ++ rows_for([" boundary "])
+
+      changeset = Task.changeset(task, base_attrs(%{"behaviour_test_matrix" => rows}))
+
+      refute changeset.valid?
+
+      # The variant is rejected by the row vocabulary and still leaves Boundary
+      # uncovered — the completeness error lands on the parent changeset while
+      # the row error stays on the nested embed changeset.
+      assert {message, _opts} = changeset.errors[:behaviour_test_matrix]
+      assert message =~ "Missing: Boundary"
+    end
+
+    test "the rule runs on all three changesets", %{column: column} do
+      task = task_fixture(column)
+      incomplete = %{"behaviour_test_matrix" => rows_for(["Happy path"])}
+      complete = %{"behaviour_test_matrix" => full_matrix()}
+
+      invalid = [
+        Task.changeset(task, incomplete),
+        Task.api_create_changeset(%Task{}, api_attrs(column, incomplete)),
+        Task.api_update_changeset(task, incomplete)
+      ]
+
+      for changeset <- invalid do
+        refute changeset.valid?
+        assert %{behaviour_test_matrix: [message]} = errors_on(changeset)
+        assert String.starts_with?(message, "must include at least one row for every category")
+      end
+
+      valid = [
+        Task.changeset(task, complete),
+        Task.api_create_changeset(%Task{}, api_attrs(column, complete)),
+        Task.api_update_changeset(task, complete)
+      ]
+
+      for changeset <- valid, do: assert(changeset.valid?)
     end
   end
 

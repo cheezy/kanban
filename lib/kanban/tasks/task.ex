@@ -640,6 +640,7 @@ defmodule Kanban.Tasks.Task do
     |> MapFieldValidations.validate_testing_strategy()
     |> MapFieldValidations.validate_integration_points()
     |> MapFieldValidations.validate_technical_details()
+    |> MapFieldValidations.validate_behaviour_test_matrix_completeness()
     |> foreign_key_constraint(:column_id)
     |> foreign_key_constraint(:assigned_to_id)
     |> foreign_key_constraint(:created_by_id)
@@ -765,6 +766,7 @@ defmodule Kanban.Tasks.Task do
     |> MapFieldValidations.validate_testing_strategy()
     |> MapFieldValidations.validate_integration_points()
     |> MapFieldValidations.validate_technical_details()
+    |> MapFieldValidations.validate_behaviour_test_matrix_completeness()
     |> validate_varchar_255_lengths()
     |> validate_varchar_255_array_element_lengths()
     |> foreign_key_constraint(:column_id)
@@ -809,6 +811,7 @@ defmodule Kanban.Tasks.Task do
     |> MapFieldValidations.validate_testing_strategy()
     |> MapFieldValidations.validate_integration_points()
     |> MapFieldValidations.validate_technical_details()
+    |> MapFieldValidations.validate_behaviour_test_matrix_completeness()
     |> validate_varchar_255_lengths()
     |> validate_varchar_255_array_element_lengths()
   end
