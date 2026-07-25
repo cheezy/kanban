@@ -7,50 +7,25 @@ defmodule KanbanWeb.TaskLive.Form.OptionBuilders do
   use KanbanWeb, :verified_routes
   use Gettext, backend: KanbanWeb.Gettext
 
-  import Ecto.Query
-
-  alias Kanban.Repo
-  alias Kanban.Schemas.Task.BehaviourTestRow
   alias Kanban.Tasks
+  alias KanbanWeb.BehaviourTestLabels
 
   @doc """
   Options for a behaviour/test-matrix row's category select.
 
-  Labels are translated; the submitted values stay the canonical category
-  strings the changeset validates against (`BehaviourTestRow.categories/0`),
-  so switching locale never changes what is stored.
+  Labels come from `KanbanWeb.BehaviourTestLabels` (shared with the task detail
+  view); the submitted values stay the canonical category strings the changeset
+  validates against, so switching locale never changes what is stored.
   """
-  def build_behaviour_test_category_options do
-    Enum.map(BehaviourTestRow.categories(), &{translate_behaviour_test_category(&1), &1})
-  end
+  defdelegate build_behaviour_test_category_options,
+    to: BehaviourTestLabels,
+    as: :category_options
 
   @doc """
   Options for a behaviour/test-matrix row's status select. Labels translated,
-  values canonical (`BehaviourTestRow.statuses/0`).
+  values canonical.
   """
-  def build_behaviour_test_status_options do
-    Enum.map(BehaviourTestRow.statuses(), &{translate_behaviour_test_status(&1), &1})
-  end
-
-  # Each canonical value is matched literally so gettext can extract every
-  # msgid; a runtime-interpolated gettext/1 would extract nothing.
-  defp translate_behaviour_test_category("Happy path"), do: gettext("Happy path")
-  defp translate_behaviour_test_category("Boundary"), do: gettext("Boundary")
-  defp translate_behaviour_test_category("Error / exception"), do: gettext("Error / exception")
-  defp translate_behaviour_test_category("Null / empty"), do: gettext("Null / empty")
-  defp translate_behaviour_test_category("Concurrency"), do: gettext("Concurrency")
-  defp translate_behaviour_test_category("Lifecycle / wiring"), do: gettext("Lifecycle / wiring")
-
-  defp translate_behaviour_test_category("Contract / serialization"),
-    do: gettext("Contract / serialization")
-
-  defp translate_behaviour_test_category(category), do: category
-
-  defp translate_behaviour_test_status("planned"), do: gettext("Planned")
-  defp translate_behaviour_test_status("passing"), do: gettext("Passing")
-  defp translate_behaviour_test_status("failing"), do: gettext("Failing")
-  defp translate_behaviour_test_status("not_applicable"), do: gettext("Not applicable")
-  defp translate_behaviour_test_status(status), do: status
+  defdelegate build_behaviour_test_status_options, to: BehaviourTestLabels, as: :status_options
 
   @doc """
   Pick the column_id for the new changeset: prefer an explicit assign,
@@ -135,16 +110,8 @@ defmodule KanbanWeb.TaskLive.Form.OptionBuilders do
   """
   def build_goal_options(board, task) do
     goals =
-      from(t in Tasks.Task,
-        join: c in assoc(t, :column),
-        where: c.board_id == ^board.id,
-        where: t.type == :goal,
-        where: t.id != ^(task.id || 0),
-        where: is_nil(t.archived_at),
-        order_by: [asc: t.identifier],
-        select: {t.identifier, t.title, t.id}
-      )
-      |> Repo.all()
+      board.id
+      |> Tasks.list_goal_choices_for_board(task.id)
       |> Enum.map(fn {identifier, title, id} ->
         {"#{identifier} - #{title}", id}
       end)

@@ -8,6 +8,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
   import Kanban.AccountsFixtures
 
   alias Kanban.Repo
+  alias Kanban.Schemas.Task.BehaviourTestRow
   alias Kanban.Tasks
   alias Kanban.Tasks.TaskComment
   alias Kanban.Tasks.TaskHistory
@@ -29,8 +30,24 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       "security_considerations" => true,
       "testing_strategy" => true,
       "integration_points" => true,
-      "technical_details" => true
+      "technical_details" => true,
+      "behaviour_test_matrix" => true
     }
+  end
+
+  defp full_matrix_rows do
+    BehaviourTestRow.categories()
+    |> Enum.with_index()
+    |> Enum.map(fn {category, index} ->
+      %{
+        "category" => category,
+        "behaviour" => "behaviour for #{category}",
+        "test_name" => "test for #{category}",
+        "type" => "unit",
+        "status" => "planned",
+        "position" => index
+      }
+    end)
   end
 
   describe "ViewComponent" do
@@ -41,6 +58,81 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       task = task_fixture(column)
 
       %{user: user, board: board, column: column, task: task}
+    end
+
+    test "renders the behaviour_test_matrix rows when the board enables the field",
+         %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{behaviour_test_matrix: full_matrix_rows()})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Behaviour/Test Matrix"
+
+      for category <- BehaviourTestRow.categories() do
+        assert result =~ "behaviour for #{category}"
+        assert result =~ "test for #{category}"
+      end
+    end
+
+    test "hides the behaviour_test_matrix section when the board disables the field",
+         %{board: board} do
+      column = column_fixture(board)
+      task = task_fixture(column, %{behaviour_test_matrix: full_matrix_rows()})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: Map.put(all_fields_visible(), "behaviour_test_matrix", false)
+        )
+
+      refute result =~ "Behaviour/Test Matrix"
+      refute result =~ "behaviour for Happy path"
+    end
+
+    test "shows a waived row's reason instead of a test name", %{board: board} do
+      column = column_fixture(board)
+
+      rows =
+        Enum.map(full_matrix_rows(), fn
+          %{"category" => "Concurrency"} = row ->
+            row
+            |> Map.drop(["test_name"])
+            |> Map.merge(%{"status" => "not_applicable", "na_reason" => "single-process path"})
+
+          row ->
+            row
+        end)
+
+      task = task_fixture(column, %{behaviour_test_matrix: rows})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "single-process path"
+      assert result =~ "Not applicable"
+      refute result =~ "test for Concurrency"
+    end
+
+    test "omits the section entirely when the task has no matrix rows", %{task: task} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      refute result =~ "Behaviour/Test Matrix"
     end
 
     test "renders task details", %{task: task} do

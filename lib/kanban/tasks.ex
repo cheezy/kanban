@@ -19,6 +19,7 @@ defmodule Kanban.Tasks do
 
   alias Kanban.Tasks.AgentQueries
   alias Kanban.Tasks.AgentWorkflow
+  alias Kanban.Tasks.Comments
   alias Kanban.Tasks.Creation
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.GoalCompletion
@@ -39,6 +40,9 @@ defmodule Kanban.Tasks do
   defdelegate sort_by_goal_hierarchy(tasks), to: Queries
   defdelegate group_rows_by_goal(tasks), to: Queries
   defdelegate list_children_for_goal(user, goal_id), to: Queries
+  defdelegate list_goal_choices_for_board(board_id, exclude_task_id), to: Queries
+  defdelegate get_task_with_comments!(id), to: Queries
+  defdelegate create_comment(task_id, attrs), to: Comments
   defdelegate completed_task_counts_by_agent, to: Queries
   defdelegate list_archived_tasks(column), to: Queries
   defdelegate list_archived_tasks_for_board(board_id), to: Queries

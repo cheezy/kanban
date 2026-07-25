@@ -283,6 +283,39 @@ defmodule Kanban.Tasks.Queries do
   end
 
   @doc """
+  Like `get_task_with_history!/1`, but also preloads comments newest-first —
+  the order the task form's comment thread renders (the other preloads in this
+  module order comments ascending for the read views).
+  """
+  def get_task_with_comments!(id) do
+    id
+    |> get_task_with_history!()
+    |> Repo.preload(comments: from(c in TaskComment, order_by: [desc: c.id]))
+  end
+
+  @doc """
+  Returns `{identifier, title, id}` tuples for the non-archived goals on a
+  board, ordered by identifier, excluding `exclude_task_id` so a task is never
+  offered as its own parent.
+
+  Deliberately a lean select rather than `list_goals_for_board/1`: the
+  parent-goal picker needs only these three columns, so it skips loading full
+  structs and the `:assigned_to` preload.
+  """
+  def list_goal_choices_for_board(board_id, exclude_task_id \\ nil) do
+    from(t in Task,
+      join: c in assoc(t, :column),
+      where: c.board_id == ^board_id,
+      where: t.type == :goal,
+      where: t.id != ^(exclude_task_id || 0),
+      where: is_nil(t.archived_at),
+      order_by: [asc: t.identifier],
+      select: {t.identifier, t.title, t.id}
+    )
+    |> Repo.all()
+  end
+
+  @doc """
   Counts completed tasks grouped by the agent that completed them.
 
   Returns one map per distinct non-nil `completed_by_agent`, shaped

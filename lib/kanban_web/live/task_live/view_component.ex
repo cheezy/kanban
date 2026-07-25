@@ -4,6 +4,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   import KanbanWeb.ReviewReportHelpers, only: [review_panel_visible?: 1]
 
   import KanbanWeb.TaskLive.Components.ActualVsEstimatedSection
+  import KanbanWeb.TaskLive.Components.BehaviourTestMatrixSection
   import KanbanWeb.TaskLive.Components.ChecklistSection
   import KanbanWeb.TaskLive.Components.ChildTasksSection
   import KanbanWeb.TaskLive.Components.CommentsSection
@@ -199,6 +200,15 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
                   </div>
                 </li>
               </ol>
+            <% end %>
+
+            <%= if @task.behaviour_test_matrix && !Enum.empty?(@task.behaviour_test_matrix) &&
+                     field_visible?(@field_visibility, "behaviour_test_matrix") do %>
+              <SectionHead.section_head
+                title={gettext("Behaviour/Test Matrix")}
+                count_label={Integer.to_string(length(@task.behaviour_test_matrix))}
+              />
+              <.behaviour_test_matrix_section rows={@task.behaviour_test_matrix} />
             <% end %>
 
             <%= if @task.pitfalls && !Enum.empty?(@task.pitfalls) && field_visible?(@field_visibility, "pitfalls") do %>

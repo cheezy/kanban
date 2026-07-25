@@ -1,17 +1,22 @@
 defmodule KanbanWeb.TaskLive.FormComponent do
   use KanbanWeb, :live_component
 
-  import Ecto.Query
   import KanbanWeb.ReviewReportHelpers, only: [review_panel_visible?: 1]
+  import KanbanWeb.TaskLive.Form.EmbedSections, only: [embed_sections: 1]
+  import KanbanWeb.TaskLive.Form.GuidanceSections, only: [guidance_sections: 1]
+  import KanbanWeb.TaskLive.Form.PlanningSections, only: [planning_sections: 1]
 
   alias Kanban.Columns
-  alias Kanban.Repo
   alias Kanban.Tasks
   alias Kanban.Tasks.TaskComment
   alias KanbanWeb.ReviewReportPanel
+  alias KanbanWeb.TaskLive.Form.FieldEvents
   alias KanbanWeb.TaskLive.Form.OptionBuilders
   alias KanbanWeb.TaskLive.Form.ParamNormalizer
   alias KanbanWeb.TaskLive.Form.TaskParams
+  alias KanbanWeb.TaskLive.Form.TechnicalDetails
+
+  @field_events FieldEvents.events()
 
   @impl true
   def update(%{task: task, board: board, action: action} = assigns, socket) do
@@ -27,18 +32,8 @@ defmodule KanbanWeb.TaskLive.FormComponent do
      |> assign(:goal_options, task_data.goal_options)
      |> assign(:field_visibility, board.field_visibility || %{})
      |> assign(:error_message, nil)
-     |> assign(:technical_details_raw, encode_technical_details(task_data.changeset))
+     |> assign(:technical_details_raw, TechnicalDetails.encode(task_data.changeset))
      |> assign_form(task_data.changeset)}
-  end
-
-  # Render the current technical_details map as the textarea's initial value:
-  # an empty map shows an empty textarea; any populated map is pretty-printed.
-  defp encode_technical_details(%Ecto.Changeset{} = changeset) do
-    case Ecto.Changeset.get_field(changeset, :technical_details) do
-      map when map == %{} -> ""
-      map when is_map(map) -> Jason.encode!(map, pretty: true)
-      _ -> ""
-    end
   end
 
   defp prepare_task_data(task, board, action, assigns) do
@@ -66,8 +61,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   defp load_task_associations(task, :edit_task) when not is_nil(task.id) do
-    Tasks.get_task_with_history!(task.id)
-    |> Repo.preload(comments: from(c in TaskComment, order_by: [desc: c.id]))
+    Tasks.get_task_with_comments!(task.id)
   end
 
   defp load_task_associations(task, _action), do: task
@@ -83,12 +77,12 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     task_params = ParamNormalizer.normalize_array_params(task_params)
     raw = Map.get(task_params, "technical_details")
 
-    {decoded_params, td_error} = decode_technical_details_for_changeset(task_params)
+    {decoded_params, td_error} = TechnicalDetails.decode_for_changeset(task_params)
 
     changeset =
       socket.assigns.task
       |> Tasks.Task.changeset(decoded_params)
-      |> maybe_add_technical_details_error(td_error)
+      |> TechnicalDetails.maybe_add_error(td_error)
       |> Map.put(:action, :validate)
 
     {:noreply,
@@ -205,32 +199,6 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     {:noreply, assign_form(socket, changeset)}
   end
 
-  def handle_event("add-technology", _params, socket),
-    do: handle_add_to_array(socket, :technology_requirements)
-
-  def handle_event("remove-technology", %{"index" => index}, socket),
-    do: handle_remove_from_array(socket, :technology_requirements, index)
-
-  def handle_event("add-pitfall", _params, socket), do: handle_add_to_array(socket, :pitfalls)
-
-  def handle_event("remove-pitfall", %{"index" => index}, socket),
-    do: handle_remove_from_array(socket, :pitfalls, index)
-
-  def handle_event("add-out-of-scope", _params, socket),
-    do: handle_add_to_array(socket, :out_of_scope)
-
-  def handle_event("remove-out-of-scope", %{"index" => index}, socket),
-    do: handle_remove_from_array(socket, :out_of_scope, index)
-
-  def handle_event("add-dependency", _params, socket),
-    do: handle_add_to_array(socket, :dependencies)
-
-  def handle_event("remove-dependency", %{"index" => index}, socket),
-    do: handle_remove_from_array(socket, :dependencies, index)
-
-  def handle_event("add-capability", _params, socket),
-    do: handle_add_to_array(socket, :required_capabilities)
-
   def handle_event("add-capability-from-select", %{"new_capability" => capability}, socket)
       when capability != "" do
     changeset = socket.assigns.form.source
@@ -252,157 +220,11 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   def handle_event("add-capability-from-select", _params, socket), do: {:noreply, socket}
 
-  def handle_event("remove-capability", %{"index" => index}, socket),
-    do: handle_remove_from_array(socket, :required_capabilities, index)
-
-  def handle_event("add-security-consideration", _params, socket),
-    do: handle_add_to_array(socket, :security_considerations)
-
-  def handle_event("remove-security-consideration", %{"index" => index}, socket),
-    do: handle_remove_from_array(socket, :security_considerations, index)
-
-  def handle_event("add-unit-test", _params, socket),
-    do: handle_add_to_map_array(socket, :testing_strategy, "unit_tests")
-
-  def handle_event("remove-unit-test", %{"index" => index}, socket),
-    do: handle_remove_from_map_array(socket, :testing_strategy, "unit_tests", index)
-
-  def handle_event("add-integration-test", _params, socket),
-    do: handle_add_to_map_array(socket, :testing_strategy, "integration_tests")
-
-  def handle_event("remove-integration-test", %{"index" => index}, socket),
-    do: handle_remove_from_map_array(socket, :testing_strategy, "integration_tests", index)
-
-  def handle_event("add-manual-test", _params, socket),
-    do: handle_add_to_map_array(socket, :testing_strategy, "manual_tests")
-
-  def handle_event("remove-manual-test", %{"index" => index}, socket),
-    do: handle_remove_from_map_array(socket, :testing_strategy, "manual_tests", index)
-
-  def handle_event("add-telemetry-event", _params, socket),
-    do: handle_add_to_map_array(socket, :integration_points, "telemetry_events")
-
-  def handle_event("remove-telemetry-event", %{"index" => index}, socket),
-    do: handle_remove_from_map_array(socket, :integration_points, "telemetry_events", index)
-
-  def handle_event("add-pubsub-broadcast", _params, socket),
-    do: handle_add_to_map_array(socket, :integration_points, "pubsub_broadcasts")
-
-  def handle_event("remove-pubsub-broadcast", %{"index" => index}, socket),
-    do: handle_remove_from_map_array(socket, :integration_points, "pubsub_broadcasts", index)
-
-  def handle_event("add-phoenix-channel", _params, socket),
-    do: handle_add_to_map_array(socket, :integration_points, "phoenix_channels")
-
-  def handle_event("remove-phoenix-channel", %{"index" => index}, socket),
-    do: handle_remove_from_map_array(socket, :integration_points, "phoenix_channels", index)
-
-  def handle_event("add-external-api", _params, socket),
-    do: handle_add_to_map_array(socket, :integration_points, "external_apis")
-
-  def handle_event("remove-external-api", %{"index" => index}, socket),
-    do: handle_remove_from_map_array(socket, :integration_points, "external_apis", index)
-
-  defp handle_add_to_array(socket, field) do
-    existing = Ecto.Changeset.get_field(socket.assigns.form.source, field) || []
-    new_list = existing ++ [""]
-
-    changeset =
-      socket.assigns.task
-      |> Tasks.Task.changeset(%{})
-      |> Ecto.Changeset.put_change(field, new_list)
-
-    {:noreply, assign_form(socket, changeset)}
-  end
-
-  defp handle_remove_from_array(socket, field, index) do
-    {index, _} = Integer.parse(index)
-
-    list =
-      (Ecto.Changeset.get_field(socket.assigns.form.source, field) || []) |> List.delete_at(index)
-
-    changeset =
-      socket.assigns.task
-      |> Tasks.Task.changeset(%{})
-      |> Ecto.Changeset.put_change(field, list)
-
-    {:noreply, assign_form(socket, changeset)}
-  end
-
-  defp handle_add_to_map_array(socket, field, key) do
-    existing_map = Ecto.Changeset.get_field(socket.assigns.form.source, field) || %{}
-    existing_list = Map.get(existing_map, key, [])
-    new_list = existing_list ++ [""]
-    new_map = Map.put(existing_map, key, new_list)
-
-    changeset =
-      socket.assigns.task
-      |> Tasks.Task.changeset(%{})
-      |> Ecto.Changeset.put_change(field, new_map)
-
-    {:noreply, assign_form(socket, changeset)}
-  end
-
-  defp handle_remove_from_map_array(socket, field, key, index) do
-    {index, _} = Integer.parse(index)
-    existing_map = Ecto.Changeset.get_field(socket.assigns.form.source, field) || %{}
-    existing_list = Map.get(existing_map, key, [])
-    new_list = List.delete_at(existing_list, index)
-    new_map = Map.put(existing_map, key, new_list)
-
-    changeset =
-      socket.assigns.task
-      |> Tasks.Task.changeset(%{})
-      |> Ecto.Changeset.put_change(field, new_map)
-
-    {:noreply, assign_form(socket, changeset)}
-  end
-
-  # Convert the technical_details textarea string into a map for the changeset.
-  #   - key absent (field hidden) or already a map (API path): passthrough
-  #   - empty / whitespace-only string: %{}
-  #   - valid JSON object: the decoded map
-  #   - valid JSON non-object (array/scalar) or invalid JSON: {:error, raw}
-  # Jason.decode/1 returns {:error, _} on garbage and never raises, so a
-  # malformed entry becomes a friendly changeset error rather than a crash.
-  defp decode_technical_details(task_params) do
-    case Map.fetch(task_params, "technical_details") do
-      :error -> {:ok, task_params}
-      {:ok, value} when is_map(value) -> {:ok, task_params}
-      {:ok, value} when is_binary(value) -> decode_technical_details_string(task_params, value)
-    end
-  end
-
-  defp decode_technical_details_string(task_params, raw) do
-    case String.trim(raw) do
-      "" ->
-        {:ok, Map.put(task_params, "technical_details", %{})}
-
-      trimmed ->
-        case Jason.decode(trimmed) do
-          {:ok, decoded} when is_map(decoded) ->
-            {:ok, Map.put(task_params, "technical_details", decoded)}
-
-          _ ->
-            {:error, raw}
-        end
-    end
-  end
-
-  # Variant for the validate path: on error, drop the uncastable string from the
-  # params (so Ecto does not emit a generic "is invalid" cast error) and signal
-  # :error so the caller can attach the friendly message.
-  defp decode_technical_details_for_changeset(task_params) do
-    case decode_technical_details(task_params) do
-      {:ok, params} -> {params, nil}
-      {:error, _raw} -> {Map.delete(task_params, "technical_details"), :error}
-    end
-  end
-
-  defp maybe_add_technical_details_error(changeset, nil), do: changeset
-
-  defp maybe_add_technical_details_error(changeset, :error) do
-    Ecto.Changeset.add_error(changeset, :technical_details, "must be a JSON object")
+  # Every remaining add-/remove- row event is table-driven; see
+  # KanbanWeb.TaskLive.Form.FieldEvents. Guarding on the table keeps unmapped
+  # events a FunctionClauseError instead of silently doing nothing.
+  def handle_event(event, params, socket) when is_map_key(@field_events, event) do
+    FieldEvents.handle(event, params, socket)
   end
 
   # Only refresh the raw assign when the textarea actually posted (field visible);
@@ -419,7 +241,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     task_params = ParamNormalizer.normalize_array_params(task_params)
     raw = Map.get(task_params, "technical_details")
 
-    case decode_technical_details(task_params) do
+    case TechnicalDetails.decode(task_params) do
       {:ok, decoded_params} ->
         save_task(socket, socket.assigns.action, decoded_params)
 
@@ -662,12 +484,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 
   defp do_add_comment(socket, comment_params) do
-    # D111: task_id is set on the server-held struct, never cast from client
-    # params, so a comment cannot be redirected to another task/board. content is
-    # the only client-controlled field the changeset casts.
-    case %TaskComment{task_id: socket.assigns.task.id}
-         |> TaskComment.changeset(comment_params)
-         |> Repo.insert() do
+    case Tasks.create_comment(socket.assigns.task.id, comment_params) do
       {:ok, _comment} ->
         {:noreply, assign_after_comment_added(socket)}
 
@@ -677,10 +494,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   defp assign_after_comment_added(socket) do
-    task =
-      Tasks.get_task_with_history!(socket.assigns.task.id)
-      |> Repo.preload(comments: from(c in TaskComment, order_by: [desc: c.id]))
-
+    task = Tasks.get_task_with_comments!(socket.assigns.task.id)
     comment_changeset = TaskComment.changeset(%TaskComment{}, %{})
 
     socket
@@ -726,8 +540,4 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   # Used in form_component.html.heex (analyzer does not scan HEEx files).
-  defp ensure_list(nil), do: []
-  defp ensure_list(value) when is_list(value), do: value
-  defp ensure_list(value) when is_binary(value), do: [value]
-  defp ensure_list(_value), do: []
 end
