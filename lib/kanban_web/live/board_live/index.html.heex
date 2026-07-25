@@ -86,13 +86,14 @@
     </.link>
   </:actions>
 
-  <%!-- Fixed 22px horizontal gutter to match the board-scoped chrome
-  (BoardHeader `padding: 14px 22px`, BoardTabs `padding: 0 22px`), so the
-  Boards title + workspace nav strip line up with the board name + BoardTabs
-  across page types at every breakpoint rather than drifting with a responsive
-  px-4/6/8 well. --%>
-  <div class="px-[22px] py-6">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3">
+  <%!-- Full-bleed white header band matching the board-scoped BoardHeader
+  (`padding: 14px 22px`, `background: var(--surface)`), so the Boards index
+  header reads with the same white chrome as a board page's header. The
+  workspace nav strip that used to sit below the title was removed — those
+  Agents / Review queue / Metrics links duplicate the left SideNav, which emits
+  them on every page. --%>
+  <div style="padding: 14px 22px; border-bottom: 1px solid var(--line); background: var(--surface);">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
       <div class="flex items-baseline gap-3">
         <h1 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em;">
           {gettext("Boards")}
@@ -113,16 +114,9 @@
         members={@workspace_members}
       />
     </div>
+  </div>
 
-    <%!-- Unconditional: this is navigation, not statistics. A user with zero
-    boards is exactly who most needs to find Agents / Review queue / Metrics.
-    No `active` attr — none of the three is current on this page, and passing
-    @nav_active (:boards) would encode a claim the strip's own item list
-    denies. --%>
-    <div class="mb-6">
-      <BoardsNavStrip.boards_nav_strip />
-    </div>
-
+  <div class="px-[22px] py-6">
     <div :if={@targets != []} class="mb-6">
       <TargetsStrip.targets_strip targets={@targets} />
     </div>

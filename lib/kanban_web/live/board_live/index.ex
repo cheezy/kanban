@@ -6,7 +6,6 @@ defmodule KanbanWeb.BoardLive.Index do
   alias KanbanWeb.BoardAccent
   alias KanbanWeb.BoardPulseCard
   alias KanbanWeb.BoardsHeader
-  alias KanbanWeb.BoardsNavStrip
   alias KanbanWeb.TargetsStrip
 
   defp empty_state(assigns) do

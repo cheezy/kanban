@@ -266,8 +266,7 @@ defmodule KanbanWeb.Layouts do
 
   Each entry is a `%{id:, label:, icon:, path:, badge:}` map. This is the
   single source of truth for those labels, icons and routes — `side_nav/1`
-  renders all four, and `KanbanWeb.BoardsNavStrip` selects a subset for the
-  Boards index strip. Anything that needs one of these destinations must
+  renders all four. Anything that needs one of these destinations must
   read it from here rather than re-declaring the literal, so a route or
   label change lands everywhere at once.
 

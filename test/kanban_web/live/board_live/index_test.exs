@@ -179,7 +179,7 @@ defmodule KanbanWeb.BoardLive.IndexTest do
       assert header_count(html, "done") == 7
     end
 
-    test "renders the stat cluster in the title row, above the nav strip",
+    test "renders the stat cluster in the title row, after the title",
          %{conn: conn, user: user} do
       _board = ai_optimized_board_fixture(user, %{name: "Order Board"})
 
@@ -187,10 +187,8 @@ defmodule KanbanWeb.BoardLive.IndexTest do
 
       {title, _} = :binary.match(html, "</h1>")
       {stats, _} = :binary.match(html, ~s(data-boards-header-kv="to-do"))
-      {strip, _} = :binary.match(html, "boards-nav-strip")
 
       assert title < stats
-      assert stats < strip
     end
 
     test "a single board's counts are its own", %{conn: conn, user: user} do
@@ -234,21 +232,17 @@ defmodule KanbanWeb.BoardLive.IndexTest do
       assert occurrences(members_html, ~s(title="Claude">)) == 1
     end
 
-    test "renders the three workspace links in the nav strip", %{conn: conn, user: user} do
+    test "does not render the removed workspace nav strip (duplicated the SideNav)", %{
+      conn: conn,
+      user: user
+    } do
       _board = ai_optimized_board_fixture(user, %{name: "Links Board"})
 
       {:ok, live, _html} = live(conn, ~p"/boards")
 
-      # Scoped to the strip deliberately: Layouts.app's side nav already emits
-      # all three hrefs on this page, so a bare `html =~ href="/agents"` would
-      # pass even with the strip absent entirely.
-      assert has_element?(live, ~s(nav.boards-nav-strip a[href="/agents"]))
-      assert has_element?(live, ~s(nav.boards-nav-strip a[href="/review"]))
-      assert has_element?(live, ~s(nav.boards-nav-strip a[href="/metrics"]))
-
-      # No self-link back to the page it sits on, and nothing marked current.
-      refute has_element?(live, ~s(nav.boards-nav-strip a[href="/boards"]))
-      refute has_element?(live, ~s(nav.boards-nav-strip a[aria-current="page"]))
+      # The below-title Agents/Review queue/Metrics strip was removed because it
+      # duplicated the left SideNav (which emits those hrefs on every page).
+      refute has_element?(live, ~s(nav.boards-nav-strip))
     end
 
     test "the refresh poll recomputes the counts without a remount",
@@ -315,12 +309,11 @@ defmodule KanbanWeb.BoardLive.IndexTest do
       assert header_count(html, "to-do") == 1
     end
 
-    test "zero boards: no stat cluster, but the nav strip and empty state remain",
+    test "zero boards: no stat cluster, but the empty state remains",
          %{conn: conn} do
       {:ok, live, html} = live(conn, ~p"/boards")
 
       refute html =~ "data-boards-header-kv"
-      assert has_element?(live, ~s(nav.boards-nav-strip a[href="/agents"]))
 
       # Assert on empty-state-specific markup: the literal "Boards" also
       # appears in the breadcrumb, the h1 and the page title, so it would
@@ -370,13 +363,10 @@ defmodule KanbanWeb.BoardLive.IndexTest do
       {:ok, live, html} = live(conn, ~p"/boards")
 
       assert html =~ "data-boards-header-kv"
-      assert html =~ "boards-nav-strip"
 
       header_html = live |> element("[data-boards-header]") |> render()
-      strip_html = live |> element("nav.boards-nav-strip") |> render()
 
       refute Regex.match?(class_violation, header_html)
-      refute Regex.match?(class_violation, strip_html)
     end
 
     test "an agent name containing markup is escaped", %{conn: conn, user: user} do
