@@ -851,10 +851,19 @@
   /* Borders — W940 darkened --line/--line-2 from 93%/89% so light hairlines
      clear the 1.5:1 perceptibility floor on every light surface (they were
      1.16-1.39:1 — barely visible). Still subtle; ordered line < line-2 <
-     line-strong by visibility. */
-  --line: oklch(84% 0.004 270);
-  --line-2: oklch(82% 0.005 270);
-  --line-strong: oklch(80% 0.005 270);
+     line-strong by visibility.
+
+     W1922 darkened the whole ladder another 3 points (84/82/80 -> 81/79/77).
+     W940 only ever measured hairlines against --bg/--surface/--surface-2, so
+     the two lightest backgrounds a hairline actually sits on went unchecked:
+     --surface-sunken (1.498:1) and the --st-*-soft chip fills (1.42-1.47:1)
+     were all fractionally BELOW the floor W940 set out to clear. Those pairs
+     are gated now, so the ladder is tuned against them; the spacing and
+     ordering are unchanged. Dark-theme hairlines already cleared (1.70-1.75:1)
+     and are untouched. */
+  --line: oklch(81% 0.004 270);
+  --line-2: oklch(79% 0.005 270);
+  --line-strong: oklch(77% 0.005 270);
 
   /* Status foreground — calm. W902 darkened from ~60% L (failed WCAG AA at
      2.74-3.69:1 on white) and W907 darkened further from 50% L to 45% L so

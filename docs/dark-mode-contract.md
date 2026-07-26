@@ -83,9 +83,48 @@ by brightness as well as hue): critical 64% · high 72% · medium 80% · low 74%
 The light palette is largely unchanged; W940 made small light tweaks so it also
 clears the contrast gate — `--line`/`--line-2` darkened so light hairlines clear
 the 1.5:1 floor, and `--ink-4` (→64%) and `--stride-orange` (→66%) nudged to
-clear the 3:1 floor. The dark overrides live in the
+clear the 3:1 floor. W1922 darkened the light border ladder a further 3 points
+(84/82/80 → 81/79/77): W940 only measured hairlines against `--bg`,
+`--surface` and `--surface-2`, so the two lightest backgrounds a hairline
+actually sits on — `--surface-sunken` and the `--st-*-soft` chip fills — went
+unchecked and were all fractionally *below* the floor W940 meant to clear
+(1.42–1.50:1). Both are gated now; see **Chip delineation** below. The dark
+overrides live in the
 `:where([data-theme="dark"]) .stride-marketing, .stride-screen` block and the
 daisyUI `@plugin "…" { name: "dark"; … }` block in `assets/css/app.css`.
+
+### Chip delineation: a soft fill needs a border
+
+**New chips, pills and badges filled with an `--st-*-soft` token must also carry
+a `1px solid var(--line)` border.** The fill alone does not delineate it: a soft
+status fill measures only ~1.05:1 against the `--surface`/`--surface-2` card it
+sits on, in *both* themes. Without the border the chip reads as bare coloured
+uppercase text rather than a capsule.
+
+This is a going-forward rule, and it is **not yet true of the whole codebase** —
+several existing chips fill with a soft token and carry no border, and a few use
+`border: 1px solid var(--st-blocked-soft)`, a border the same colour as its own
+fill. Those predate the rule and are tracked separately.
+
+Note what the gate can and cannot see: `chip-border` proves the *token pair*
+(`--line` against each soft fill) is perceivable. It cannot prove a given
+component actually uses that pair — a chip that omits the border, or borders
+itself in its own fill colour, references no `--line` and so is invisible to
+`dark_mode.contrast`. Catching those is a `mix dark_mode.scan` job ("soft fill
+without a contrasting border"), not a contrast-pair job.
+
+`mix dark_mode.contrast` therefore gates the pair that is actually load-bearing
+— `--line` against every `--st-*-soft` fill, at the 1.5:1 border floor (the
+`chip-border` category). It deliberately does **not** gate `--st-*-soft` against
+a surface: those pairs measure ~1.05:1 by design and always will, so gating them
+would fail the build app-wide and force a retint of every status token for no
+readability gain.
+
+This rule exists because the gap was exploitable in practice — a status pill
+shipped to review with `border: 1px solid transparent` over a soft fill, passing
+every automated gate while being effectively shapeless, because no spec measured
+element-vs-element delineation. Green gates on a chip are not evidence the chip
+was checked unless a `chip-border` pair covers it.
 
 ## Theme activation mechanism
 

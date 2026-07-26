@@ -73,6 +73,61 @@ defmodule Mix.Tasks.DarkMode.ContrastTest do
     end
   end
 
+  describe "spec coverage (W1922)" do
+    test "border specs cover --surface-sunken, matching the quiet-ink specs" do
+      borders = specs_in("border-vs-surface")
+
+      for fg <- ~w(--line --line-2 --line-strong) do
+        assert Enum.any?(borders, &(&1.fg == fg and &1.bg == "--surface-sunken")),
+               "#{fg} must be checked against --surface-sunken"
+      end
+    end
+
+    test "every status soft fill is checked against the border token" do
+      chip = specs_in("chip-border")
+
+      for s <- ~w(backlog ready doing review done blocked) do
+        assert Enum.any?(chip, &(&1.fg == "--line" and &1.bg == "--st-#{s}-soft")),
+               "--st-#{s}-soft must be checked for chip delineation"
+      end
+    end
+
+    test "chip-border specs use the border floor, not a text floor" do
+      for spec <- specs_in("chip-border"), do: assert(spec.threshold == 1.5)
+    end
+
+    # The soft fill alone is ~1.05:1 against the card it sits on, so the border
+    # is what delineates the chip. Gating the fill would fail app-wide and force
+    # a retint of every status token; the contract is "soft fill PLUS border".
+    # Contrast is symmetric and spec/4 accepts either ordering, so both
+    # orientations must be rejected — checking only fg would let the same pair
+    # through written backwards.
+    test "a soft fill is deliberately never gated against a surface, in either orientation" do
+      surfaces = ~w(--bg --surface --surface-2 --surface-sunken)
+      soft_vs_surface? = &(String.ends_with?(&1, "-soft") and &2 in surfaces)
+
+      refute Enum.any?(
+               Contrast.__pair_specs__(),
+               &(soft_vs_surface?.(&1.fg, &1.bg) or soft_vs_surface?.(&1.bg, &1.fg))
+             )
+    end
+
+    # An unresolvable token is not reported — evaluate_pair/3 returns nil and the
+    # pair is silently dropped, so the only visible symptom is a smaller count.
+    # Assert the count so a spec that stops resolving fails loudly instead.
+    test "every spec resolves to real tokens in both themes" do
+      output = capture_io(fn -> Contrast.run([]) end)
+      expected = length(Contrast.__pair_specs__()) * 2
+
+      assert output =~ "#{expected} pairs checked",
+             "every spec must resolve in both themes; a dropped pair shrinks the count"
+    end
+
+    defp specs_in(category) do
+      Enum.filter(Contrast.__pair_specs__(), &(&1.category == category))
+    end
+  end
+
   describe "mix task integration" do
     test "report-only mode prints a both-theme report and returns :ok" do
       output = capture_io(fn -> assert Contrast.run([]) == :ok end)

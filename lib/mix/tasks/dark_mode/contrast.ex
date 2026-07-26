@@ -66,6 +66,11 @@ defmodule Mix.Tasks.DarkMode.Contrast do
   @aa_graphical 3.0
   @border_min 1.5
 
+  # The status tokens, each of which defines a `--st-<name>` ink and a
+  # `--st-<name>-soft` fill. Single source of truth for `status_specs/0` and
+  # `chip_border_specs/0` so the two families can never drift apart.
+  @status_tokens ~w(backlog ready doing review done blocked)
+
   # Selectors that anchor each token-defining block in app.css. The light Stride
   # block opens with `.stride-marketing,` at the start of a line; the dark block
   # is prefixed with the `:where([data-theme="dark"])` guard. The daisyUI themes
@@ -207,6 +212,7 @@ defmodule Mix.Tasks.DarkMode.Contrast do
       quiet_ink_specs(),
       border_specs(),
       status_specs(),
+      chip_border_specs(),
       brand_specs(),
       daisy_specs()
     ])
@@ -231,16 +237,39 @@ defmodule Mix.Tasks.DarkMode.Contrast do
     end
   end
 
+  # `--surface-sunken` belongs here for the same reason it belongs in
+  # `quiet_ink_specs/0`: it is a real surface that content sits on. Leaving it
+  # out meant the hairline around a sunken-filled chip was never verified
+  # against the fill it actually sits on — and in the light theme that pair sits
+  # at exactly the floor, so it is one token retune away from disappearing with
+  # no gate to catch it (W1922).
   defp border_specs do
     for fg <- ~w(--line --line-2 --line-strong),
-        bg <- ~w(--bg --surface --surface-2) do
+        bg <- ~w(--bg --surface --surface-2 --surface-sunken) do
       spec("border-vs-surface", fg, bg, @border_min)
     end
   end
 
   defp status_specs do
-    for s <- ~w(backlog ready doing review done blocked) do
+    for s <- @status_tokens do
       spec("status", "--st-#{s}", "--st-#{s}-soft", @aa_text)
+    end
+  end
+
+  # W1922: a soft status fill is only ~1.05:1 against the surface it sits on, in
+  # BOTH themes, so a soft-filled chip is delineated by its BORDER, never by its
+  # fill. That makes `--line`-vs-soft-fill load-bearing for every status chip in
+  # the app, and it was previously unchecked — which is how a shapeless-pill
+  # defect reached review behind a green gate.
+  #
+  # Deliberately NOT gated: `--st-*-soft` against a surface. Those pairs measure
+  # ~1.05:1 by design and always will; a soft fill is not meant to delineate on
+  # its own. Gating them would fail precommit app-wide and demand retinting every
+  # status token to no benefit. The contract is "soft fill PLUS border" — see
+  # docs/dark-mode-contract.md.
+  defp chip_border_specs do
+    for s <- @status_tokens do
+      spec("chip-border", "--line", "--st-#{s}-soft", @border_min)
     end
   end
 
@@ -377,5 +406,6 @@ defmodule Mix.Tasks.DarkMode.Contrast do
     # depending on the live token palette.
     def __finish__(enforce?, failures), do: finish(enforce?, failures)
     def __evaluate_pair__(spec, tokens, theme), do: evaluate_pair(spec, tokens, theme)
+    def __pair_specs__, do: pair_specs()
   end
 end
