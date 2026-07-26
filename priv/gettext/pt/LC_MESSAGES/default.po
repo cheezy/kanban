@@ -1503,7 +1503,7 @@ msgstr "Tempo gasto (minutos)"
 
 #: lib/kanban_web/components/code_review_panel.ex:188
 #: lib/kanban_web/components/code_review_panel.ex:301
-#: lib/kanban_web/components/review_behaviour_matrix_panel.ex:160
+#: lib/kanban_web/components/review_behaviour_matrix_panel.ex:190
 #: lib/kanban_web/components/task_activity_log.ex:187
 #: lib/kanban_web/components/task_metadata_grid.ex:247
 #: lib/kanban_web/export/metrics_excel.ex:76
