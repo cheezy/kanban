@@ -5,8 +5,8 @@ defmodule Kanban.Targets.CrossPageStatusAgreementTest do
   and the same viewer.
 
   All three surfaces route through the single shared derivation
-  `Kanban.Targets.Status.derive/3`; the only divergent input was `today`. The
-  boards/target-detail paths anchored on the server's UTC day
+  `Kanban.Targets.Status.derive/4`; the divergent input D123 was filed for was
+  `today`. The boards/target-detail paths anchored on the server's UTC day
   (`Date.utc_today/0`) while the agents band anchored on the viewer's
   browser-local day (`Kanban.Timezone.local_today/1`). For a viewer west of UTC
   near UTC midnight those two calendar days differ by one, which flips
@@ -15,6 +15,23 @@ defmodule Kanban.Targets.CrossPageStatusAgreementTest do
   These tests pin the fix at the context layer using the explicit `today` seam
   the three read paths already expose, so the discrepancy cannot silently
   return.
+
+  ## A second divergent input, deliberately transient (D182)
+
+  `today` is no longer the only input that can differ across the three paths.
+  D182 made the estimated completion date a derivation input, and only the
+  boards strip computes one — the rollup and drill-down pass `nil` to keep the
+  /agents per-target query count flat. So a target whose estimate slips past
+  its target date can read `:at_risk` on the boards strip while the other two
+  surfaces read `:on_track`.
+
+  These tests do NOT catch that: their fixtures contain no completed tasks, so
+  the lead-time sample is empty and every path sees a `nil` estimate. The
+  agreement they assert is real for the `today` seam and vacuous for the
+  estimate seam — do not read a green run here as proof the estimate agrees.
+  W1951 closes the gap by supplying the estimate on every badge read path with
+  a batched lead-time query; extend these tests to cover a non-nil estimate
+  then.
   """
   use Kanban.DataCase, async: true
 

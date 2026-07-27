@@ -10,23 +10,26 @@ defmodule Kanban.Targets.Status do
     * `:complete`  — every member goal is complete.
     * `:missed`    — `today` is strictly past the `target_date` and the target
       is not complete.
-    * `:at_risk`   — the share of goal *work* completed lags the share of
-      *calendar time* elapsed (from the target's creation date to its
-      `target_date`) by more than `@lag_threshold`.
+    * `:at_risk`   — EITHER the share of goal *work* completed lags the share
+      of *calendar time* elapsed (from the target's creation date to its
+      `target_date`) by more than `@lag_threshold`, OR the caller-supplied
+      estimated completion date falls strictly after the `target_date`. Either
+      condition alone is sufficient; neither requires the other.
     * `:on_track`  — everything else.
 
   ## Purity
 
-  This module is pure: `derive/3` takes `today` as a required `Date`. It never
+  This module is pure: `derive/4` takes `today` as a required `Date`. It never
   calls `Date.utc_today/0`. Anchoring "now" is the caller's job (mirroring the
   `_from`/`today` split in `Kanban.Agents.Metrics`), which keeps the derivation
-  deterministic and trivially testable. A future task wires this into
-  `Kanban.Targets` by building the `goal_progress` list from already board-
-  scoped data; this module implements only the pure computation.
+  deterministic and trivially testable. The estimated completion date is
+  injected exactly the same way: this module never computes an estimate, never
+  queries a lead-time sample, and never reads a clock — `Kanban.Targets.Progress`
+  computes the estimate at its impure boundary and passes it down.
 
   ## Input shape
 
-  `derive/3` receives one `t:goal_progress/0` map per member goal:
+  `derive/4` receives one `t:goal_progress/0` map per member goal:
 
       %{
         completed_children: non_neg_integer(),
@@ -84,23 +87,56 @@ defmodule Kanban.Targets.Status do
   the comparison — far finer than any meaningful lag, but coarse enough to
   erase last-bit subtraction noise so the boundary is exact.
 
+  ## Estimated completion slip (D182)
+
+  The fourth argument is the target's estimated completion date, `Date.t()` or
+  `nil`. An estimate strictly after the `target_date` is a *slip*, and a slip
+  raises `:at_risk` on its own — it is the earliest concrete signal a target
+  will be late, and it fires even when the work share is high enough to
+  suppress the lag check.
+
+    * `nil` means "this caller does not estimate" and reproduces the pre-D182
+      behaviour exactly, so a caller that supplies none sees no change.
+    * The test is `Date.compare(estimate, target_date) == :gt` — strictly
+      after, the same strictness `past_target?/2` and the lag threshold use, so
+      an estimate landing exactly ON the target date is not a slip.
+    * Only the boards-strip path supplies a real estimate today (see the
+      "Estimated completion" section of `Kanban.Targets.Progress`); the rollup,
+      drill-down, and archive-gate paths pass `nil`.
+    * Because an estimate is always `today + n` for `n >= 0`, a slip can only
+      be observed while `today <= target_date` — that is, on a target that is
+      not already `:missed`. No extra guard is needed for that.
+
   ## Edge cases
 
     * **No member goals** → `:on_track`. A target with no goals is neutral, not
-      vacuously `:complete` (an empty target has delivered nothing).
+      vacuously `:complete` (an empty target has delivered nothing). The empty
+      arm precedes both `:at_risk` causes, so such a target stays `:on_track`
+      even if a slipping estimate is supplied — and `Progress` never produces
+      that pair anyway, because a childless target's remaining count is `0` and
+      its estimate is therefore `nil`.
     * **Degenerate window** — if `Date.diff(target_date, created_on) <= 0`
       (target created on or after its own target date), the elapsed-share
-      division is undefined, so the `:at_risk` math is skipped and the result
-      is `:on_track`. This branch is only reachable when the target is not
-      complete and `today` is not past the target date (otherwise `:complete`
-      or `:missed` already won).
+      division is undefined, so the lag *math* is skipped. Such a target is
+      `:on_track` unless its estimate slips: the slip check is independent of
+      the creation→target window, so it still fires here. This branch is only
+      reachable when the target is not complete and `today` is not past the
+      target date (otherwise `:complete` or `:missed` already won).
+    * **Estimate exactly on the target date** → not a slip, so the target
+      derives whatever it would with no estimate at all.
 
   ## Branch precedence
 
-  `derive/3` evaluates, in order: empty list → all complete → past target date
-  → lagging → else. Order matters: an all-complete target past its date is
-  `:complete` (completion beats missed), and `:missed` is checked before the
-  `:at_risk` lag math.
+  `derive/4` evaluates, in order: empty list → all complete → past target date
+  → (lagging OR estimate slip) → else. The order is deliberate: an all-complete
+  target past its date is still `:complete` (completion beats missed, and beats
+  a slipping estimate); `:missed` is still checked before either `:at_risk`
+  cause, so a target already past its date is missed, not at risk; and the two
+  `:at_risk` causes share a SINGLE arm as a disjunction rather than occupying
+  two arms, because they are independent sufficient conditions for the same
+  verdict. Keeping them in one arm is also what lets an estimate slip raise
+  `:at_risk` when the window is degenerate and `lagging?/3` short-circuits to
+  `false` before its division.
   """
 
   alias Kanban.Targets.DeliveryTarget
@@ -123,19 +159,24 @@ defmodule Kanban.Targets.Status do
   @lag_precision 9
 
   @doc """
-  Derives the status of `target` from a per-goal `goal_progress` snapshot and an
-  explicit `today`.
+  Derives the status of `target` from a per-goal `goal_progress` snapshot, an
+  explicit `today`, and the target's estimated completion date.
+
+  `estimate` defaults to `nil`, which means "this caller does not estimate" and
+  reproduces the pre-D182 result exactly. A non-nil estimate strictly after the
+  `target_date` raises `:at_risk` on its own — see the moduledoc's "Estimated
+  completion slip" section.
 
   See the moduledoc for the full semantics, the work-share definition, the
   `0.15` lag threshold, and the empty-list / degenerate-window edge cases.
   """
-  @spec derive(DeliveryTarget.t(), [goal_progress()], Date.t()) :: status()
-  def derive(%DeliveryTarget{} = target, goal_progress, %Date{} = today) do
+  @spec derive(DeliveryTarget.t(), [goal_progress()], Date.t(), Date.t() | nil) :: status()
+  def derive(%DeliveryTarget{} = target, goal_progress, %Date{} = today, estimate \\ nil) do
     cond do
       goal_progress == [] -> :on_track
       all_complete?(goal_progress) -> :complete
       past_target?(target, today) -> :missed
-      lagging?(target, goal_progress, today) -> :at_risk
+      lagging?(target, goal_progress, today) or slipped?(target, estimate) -> :at_risk
       true -> :on_track
     end
   end
@@ -149,9 +190,23 @@ defmodule Kanban.Targets.Status do
     Date.compare(today, target_date) == :gt
   end
 
+  # The caller-supplied estimated completion date lands strictly after the
+  # target date (D182). nil — no estimate available, or a caller that does not
+  # estimate — is never a slip, so the pre-D182 behaviour is reproduced exactly.
+  # Independent of the creation->target window, so it still fires when
+  # lagging?/3's degenerate guard short-circuits to false. The nil clause comes
+  # first so Date.compare/2 is never handed a nil.
+  defp slipped?(_target, nil), do: false
+
+  defp slipped?(%DeliveryTarget{target_date: target_date}, %Date{} = estimate) do
+    Date.compare(estimate, target_date) == :gt
+  end
+
   # Work completion trails calendar elapsed by more than @lag_threshold. Guards
   # the degenerate creation->target window (<= 0 days) so the elapsed-share
-  # division is never undefined; a degenerate window is treated as not lagging.
+  # division is never undefined; a degenerate window is treated as not lagging —
+  # but it can still be :at_risk via slipped?/2, so do not "fix" this guard by
+  # hoisting it into derive/4.
   defp lagging?(target, goal_progress, today) do
     created_on = DateTime.to_date(target.inserted_at)
     window_days = Date.diff(target.target_date, created_on)

@@ -149,4 +149,106 @@ defmodule Kanban.Targets.StatusTest do
       assert Status.derive(t, goals, ~D[2026-05-15]) == :on_track
     end
   end
+
+  describe "derive/4 estimate slip" do
+    # Baseline: the on-track fixture above (window 10, elapsed 0.5, work 0.5,
+    # gap 0.0), so any :at_risk verdict here comes from the estimate, not lag.
+    setup do
+      %{
+        target: target(~D[2026-01-01], ~D[2026-01-11]),
+        goals: [goal(5, 10, false)],
+        today: ~D[2026-01-06]
+      }
+    end
+
+    test "estimate one day past the target date -> :at_risk", ctx do
+      assert Status.derive(ctx.target, ctx.goals, ctx.today, ~D[2026-01-12]) == :at_risk
+    end
+
+    test "estimate exactly ON the target date is not a slip -> :on_track", ctx do
+      # Date.compare(estimate, target_date) == :eq, not :gt — the same strict
+      # boundary past_target?/2 and the lag threshold use.
+      assert Status.derive(ctx.target, ctx.goals, ctx.today, ~D[2026-01-11]) == :on_track
+    end
+
+    test "estimate before the target date -> :on_track", ctx do
+      assert Status.derive(ctx.target, ctx.goals, ctx.today, ~D[2026-01-05]) == :on_track
+    end
+
+    test "nil estimate reproduces the no-estimate result (non-lagging)", ctx do
+      # The back-compat contract itself: the 4-arity nil form and the 3-arity
+      # form must agree, not merely both happen to be :on_track.
+      assert Status.derive(ctx.target, ctx.goals, ctx.today, nil) ==
+               Status.derive(ctx.target, ctx.goals, ctx.today)
+
+      assert Status.derive(ctx.target, ctx.goals, ctx.today, nil) == :on_track
+    end
+
+    test "nil estimate reproduces the no-estimate result (lagging)", ctx do
+      # elapsed 0.8 vs work 0.2 -> gap 0.6 > 0.15, so :at_risk from lag alone.
+      goals = [goal(2, 10, false)]
+
+      assert Status.derive(ctx.target, goals, ~D[2026-01-09], nil) ==
+               Status.derive(ctx.target, goals, ~D[2026-01-09])
+
+      assert Status.derive(ctx.target, goals, ~D[2026-01-09], nil) == :at_risk
+    end
+
+    test "a lagging target with an on-time estimate is still :at_risk", ctx do
+      # Proves the arm is a disjunction, not a conjunction: lag alone suffices
+      # even when the estimate lands before the target date.
+      goals = [goal(2, 10, false)]
+
+      assert Status.derive(ctx.target, goals, ~D[2026-01-09], ~D[2026-01-10]) == :at_risk
+    end
+
+    test "all goals complete beats a slipping estimate -> :complete" do
+      t = target(~D[2026-01-01], ~D[2026-01-10])
+      goals = [goal(3, 3, true)]
+
+      assert Status.derive(t, goals, ~D[2026-02-01], ~D[2026-03-01]) == :complete
+    end
+
+    test "past the target date beats a slipping estimate -> :missed" do
+      t = target(~D[2026-01-01], ~D[2026-01-10])
+      goals = [goal(1, 3, false)]
+
+      assert Status.derive(t, goals, ~D[2026-01-20], ~D[2026-01-25]) == :missed
+    end
+
+    test "zero-length window with a slipping estimate -> :at_risk" do
+      # Same fixture as the zero-window :on_track case above: lagging?/3 skips
+      # the division and returns false, so the slip is what raises :at_risk.
+      t = target(~D[2026-05-01], ~D[2026-05-01])
+      goals = [goal(0, 2, false)]
+
+      assert Status.derive(t, goals, ~D[2026-05-01]) == :on_track
+      assert Status.derive(t, goals, ~D[2026-05-01], ~D[2026-05-02]) == :at_risk
+    end
+
+    test "negative window with a slipping estimate -> :at_risk" do
+      t = target(~D[2026-05-10], ~D[2026-05-01])
+      goals = [goal(0, 4, false)]
+
+      assert Status.derive(t, goals, ~D[2026-04-25]) == :on_track
+      assert Status.derive(t, goals, ~D[2026-04-25], ~D[2026-05-02]) == :at_risk
+    end
+
+    test "empty goal list stays :on_track even with a slipping estimate" do
+      # The empty arm precedes both :at_risk causes. Unreachable from Progress
+      # (a childless target's remaining count is 0, so its estimate is nil),
+      # pinned here for direct callers.
+      t = target(~D[2026-01-01], ~D[2026-01-11])
+
+      assert Status.derive(t, [], ~D[2026-01-20], ~D[2026-02-01]) == :on_track
+    end
+
+    test "childless goals with a slipping estimate -> :at_risk", ctx do
+      # work 0.5 vs elapsed 0.5 -> not lagging; the slip alone raises :at_risk.
+      goals = [goal(0, 0, true), goal(0, 0, false)]
+
+      assert Status.derive(ctx.target, goals, ctx.today) == :on_track
+      assert Status.derive(ctx.target, goals, ctx.today, ~D[2026-01-12]) == :at_risk
+    end
+  end
 end

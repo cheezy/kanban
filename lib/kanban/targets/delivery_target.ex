@@ -8,7 +8,7 @@ defmodule Kanban.Targets.DeliveryTarget do
 
   `archived_at` is the archive flag: `nil` means active, a timestamp means
   archived. There is no stored status column — a target's delivery status is
-  always derived at read time by `Kanban.Targets.Status.derive/3`.
+  always derived at read time by `Kanban.Targets.Status.derive/4`.
   """
   use Ecto.Schema
   import Ecto.Changeset

@@ -185,7 +185,7 @@ defmodule Kanban.Targets do
   Archives a target the scoped user owns, stamping `archived_at`.
 
   Only a `:complete` target may be archived: completeness is derived at archive
-  time from the target's member goals via `Kanban.Targets.Status.derive/3` —
+  time from the target's member goals via `Kanban.Targets.Status.derive/4` —
   there is no stored status column to trust. The gate lives here in the context,
   not in the UI, so no LiveView or API caller can archive an incomplete target.
 
@@ -197,7 +197,7 @@ defmodule Kanban.Targets do
       distinguish "exists but incomplete" from "does not exist".
     * `{:error, :not_complete}` — owned, but its derived status is not
       `:complete`. A target with **no** member goals derives `:on_track` (an
-      empty target has delivered nothing — see `Status.derive/3`), so it lands
+      empty target has delivered nothing — see `Status.derive/4`), so it lands
       here too and can never be archived.
 
   Archiving is idempotent in effect: re-archiving an already-archived complete
@@ -404,7 +404,7 @@ defmodule Kanban.Targets do
   target's board-scoped member goals (`list_member_goals/2`) and, per goal, its
   board-scoped child tasks (`Kanban.Tasks.get_task_children/2`) to produce:
 
-    * `:status` — the read-time `Kanban.Targets.Status.derive/3` verdict
+    * `:status` — the read-time `Kanban.Targets.Status.derive/4` verdict
       (`:complete | :on_track | :at_risk | :missed`).
     * `:completed` / `:total` — the single completed/total fraction across ALL
       member goals' child tasks (a childless goal contributes `0/0` to this
@@ -416,7 +416,11 @@ defmodule Kanban.Targets do
       member goal is complete, nothing remains, or there is no historical
       sample — `nil` means the strip renders no estimate at all. Costs one
       extra lead-time query per estimable target on top of the N+1 documented
-      below.
+      below. This is also the only path that feeds the estimate into the
+      derivation, so an estimate later than the target date reads `:at_risk`
+      here (D182) while the estimate-free paths below derive as they always
+      have — see `Kanban.Targets.Progress`'s "Estimate-driven :at_risk"
+      section for why that asymmetry is accepted.
 
   ## Scoping / security
 
@@ -430,7 +434,7 @@ defmodule Kanban.Targets do
 
   `today` is injected here at the impure context boundary (defaulting to
   `Date.utc_today/0`, mirroring the `_from`/`today` split in
-  `Kanban.Agents.Metrics`). `Kanban.Targets.Status.derive/3` stays pure — it
+  `Kanban.Agents.Metrics`). `Kanban.Targets.Status.derive/4` stays pure — it
   never reads the clock.
 
   This issues one member-goal query per target and one child query per goal
@@ -461,7 +465,8 @@ defmodule Kanban.Targets do
   Unlike `list_targets_with_status/2`, `:estimated_completion_date` is always
   `nil` here — the /agents rollup refreshes constantly, and estimating would
   add a lead-time query per target (see `Kanban.Targets.Progress`'s
-  "Estimated completion" section).
+  "Estimated completion" section). With no estimate there is no estimate slip,
+  so `:status` here is exactly what it was before D182.
 
   Board scoping, the per-goal child query (N+1) characteristics, and the
   `today` injection are identical to `list_targets_with_status/2`.
@@ -490,11 +495,11 @@ defmodule Kanban.Targets do
   Returns `%{summary: target_summary(), goals: [goal_progress_detail()]}`:
 
     * `:summary` — identical in shape and meaning to a `list_targets_with_status/2`
-      row: `:status` (`Kanban.Targets.Status.derive/3`), the aggregate
+      row: `:status` (`Kanban.Targets.Status.derive/4`), the aggregate
       `:completed`/`:total` child fraction across all member goals, and
       `:percentage`. Its `:estimated_completion_date` is always `nil` — the
       drill-down (which also serves archived, necessarily-complete targets)
-      does not estimate.
+      does not estimate — so no estimate slip can raise `:at_risk` here.
     * `:goals` — one entry per accessible member goal, each carrying the goal
       task, its column-bucketed `:flow` map (`%{done, review, doing, ready,
       backlog, total}`), and that goal's own `:completed`/`:total`/`:percentage`.
@@ -513,7 +518,7 @@ defmodule Kanban.Targets do
   visibility through `get_target/2` before any child read.
 
   Like `list_targets_with_status/2`, `today` is injected at this impure
-  boundary (defaulting to `Date.utc_today/0`) so `Kanban.Targets.Status.derive/3`
+  boundary (defaulting to `Date.utc_today/0`) so `Kanban.Targets.Status.derive/4`
   stays pure. One member-goal query per call plus one child query per goal
   (N+1) — acceptable for a single drill-down page, matching the module's
   documented stance.

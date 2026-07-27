@@ -17,7 +17,7 @@ defmodule Kanban.Targets.Progress do
 
     * The **display fraction** (`aggregate_children/1`) counts child tasks. A
       childless goal contributes `0/0` — it does not move the fraction.
-    * `Kanban.Targets.Status.derive/3`'s **work-share** counts a childless goal
+    * `Kanban.Targets.Status.derive/4`'s **work-share** counts a childless goal
       as one unit.
 
   Both are derived from the same `progress_shape/2` output, computed once per
@@ -48,7 +48,7 @@ defmodule Kanban.Targets.Progress do
   ## Time injection
 
   `today` is passed in by `Kanban.Targets` at its impure boundary so
-  `Kanban.Targets.Status.derive/3` stays pure and never reads the clock. The one
+  `Kanban.Targets.Status.derive/4` stays pure and never reads the clock. The one
   exception is `derive_target_status/2` (the archive gate), which anchors UTC
   internally — see its own comment for why that is sound.
 
@@ -76,6 +76,30 @@ defmodule Kanban.Targets.Progress do
   only on that snapshot, the member goals, and `today` — it is computed
   independently of the status rather than after it, so the status is free to
   become a consumer of the estimate without creating a cycle.
+
+  ## Estimate-driven :at_risk (D182)
+
+  On the estimating path the estimate is computed FIRST and then passed into
+  `Kanban.Targets.Status.derive/4`, so an estimate later than the target date
+  reads `:at_risk` — the earliest concrete signal a target will be late, and
+  one that fires even when a high work share suppresses the lag check. The
+  rollup, drill-down, and archive-gate paths pass `nil` and derive exactly what
+  they did before.
+
+  That asymmetry is deliberate, transient, and has a visible consequence: for a
+  target whose estimate slips, the boards strip can read `:at_risk` while the
+  target-detail page and the /agents delivery-health band still read
+  `:on_track`, because only the strip has an estimate to slip. That is the
+  cross-page disagreement D123 was filed for, and
+  `test/kanban/targets/cross_page_status_agreement_test.exs` does NOT guard it
+  — its fixtures have no completed tasks, so every path sees a `nil` estimate.
+
+  It is accepted here only because closing it properly is a separate change:
+  estimating per target on the /agents rollup would break the flat per-target
+  query count above, and estimating on the drill-down would contradict the
+  W1729 contract asserted by the "rollup and drill-down paths do not estimate"
+  test. W1951 supplies the estimate on every badge read path with a single
+  batched lead-time query, which closes the gap without either cost.
   """
 
   alias Kanban.Accounts.Scope
@@ -181,26 +205,25 @@ defmodule Kanban.Targets.Progress do
 
   ## Options
 
-    * `:estimate?` (default `false`) — when `true`, also computes the
-      summary's `:estimated_completion_date`, which may cost one extra
-      lead-time query. Only the boards-strip path opts in; the /agents rollup
-      keeps its per-target query count flat by leaving it `nil` (see the
-      moduledoc's "Estimated completion" section).
+    * `:estimate?` (default `false`) — when `true`, computes the summary's
+      `:estimated_completion_date`, which may cost one extra lead-time query,
+      and feeds that same estimate into the status derivation so a slip past
+      the target date reads `:at_risk` (D182). Only the boards-strip path opts
+      in; the /agents rollup keeps its per-target query count flat by leaving
+      the estimate `nil`, which also leaves its status exactly as it was (see
+      the moduledoc's "Estimated completion" sections).
   """
   @spec summarize_target_with_goals(Scope.t() | nil, DeliveryTarget.t(), Date.t(), keyword()) ::
           {target_summary(), [Task.t()]}
   def summarize_target_with_goals(scope, %DeliveryTarget{} = target, today, opts \\ []) do
     {progress, goals} = member_goal_progress(scope, target)
-    summary = summarize_progress(target, progress, today)
 
-    summary =
+    estimate =
       if Keyword.get(opts, :estimate?, false) do
-        %{summary | estimated_completion_date: estimated_completion_date(progress, goals, today)}
-      else
-        summary
+        estimated_completion_date(progress, goals, today)
       end
 
-    {summary, goals}
+    {summarize_progress(target, progress, today, estimate), goals}
   end
 
   @doc """
@@ -209,11 +232,15 @@ defmodule Kanban.Targets.Progress do
 
   Unlike `Kanban.Targets.list_targets_with_status/2`, this takes no injectable
   `today` — it anchors UTC internally. That is sufficient *here* because the gate
-  reads only the `:complete` verdict, and `Status.derive/3` decides `:complete`
+  reads only the `:complete` verdict, and `Status.derive/4` decides `:complete`
   (all member goals complete) before any `today`-dependent branch. So no
   timezone can change whether a target is archivable. A caller that needs a
   timezone-sensitive status (`:missed` / `:at_risk`) must go through
   `Kanban.Targets.list_targets_with_status/2` and pass its own `today`.
+
+  It passes no estimate either, which cannot affect the `:complete` verdict the
+  gate reads: the estimate slip only ever raises `:at_risk`, a branch below
+  `:complete` in the precedence order.
   """
   @spec derive_target_status(Scope.t() | nil, DeliveryTarget.t()) :: Status.status()
   def derive_target_status(scope, %DeliveryTarget{} = target) do
@@ -228,7 +255,7 @@ defmodule Kanban.Targets.Progress do
 
   The target-level aggregate and the per-goal breakdown both derive from the
   single `details` list — one child fetch per goal — reusing the shared
-  `aggregate_children/1`, `percentage/2`, and `Status.derive/3` helpers.
+  `aggregate_children/1`, `percentage/2`, and `Status.derive/4` helpers.
   """
   @spec build_target_progress(Scope.t() | nil, DeliveryTarget.t(), Date.t()) :: target_progress()
   def build_target_progress(scope, %DeliveryTarget{} = target, today) do
@@ -260,7 +287,7 @@ defmodule Kanban.Targets.Progress do
     |> Enum.map(&goal_detail_view/1)
   end
 
-  # The `Status.derive/3` progress shape for each of `target`'s member goals,
+  # The `Status.derive/4` progress shape for each of `target`'s member goals,
   # plus the goals themselves — one member-goal query and one batched child
   # query. Shared by `summarize_target_with_goals/3` (the boards strip) and
   # `derive_target_status/2` (the archive gate) so the assembly lives in exactly
@@ -296,16 +323,23 @@ defmodule Kanban.Targets.Progress do
   # `Status`-progress shapes. Shared by `summarize_target/3` (the boards strip)
   # and `build_target_progress/3` (the drill-down) so the status/fraction math
   # lives in exactly one place.
-  defp summarize_progress(%DeliveryTarget{} = target, progress, today) do
+  #
+  # `estimate` is the already-computed estimated completion date, or `nil` for
+  # the paths that do not estimate (the drill-down, the rollup, and the archive
+  # gate). The single value both feeds `Status.derive/4` — an estimate past the
+  # target date reads :at_risk (D182) — and becomes the summary's
+  # `:estimated_completion_date`, so the badge and the displayed date can never
+  # disagree about which estimate they saw.
+  defp summarize_progress(%DeliveryTarget{} = target, progress, today, estimate \\ nil) do
     {completed, total} = aggregate_children(progress)
 
     %{
       target: target,
-      status: Status.derive(target, progress, today),
+      status: Status.derive(target, progress, today, estimate),
       completed: completed,
       total: total,
       percentage: percentage(completed, total),
-      estimated_completion_date: nil
+      estimated_completion_date: estimate
     }
   end
 
@@ -340,15 +374,15 @@ defmodule Kanban.Targets.Progress do
   end
 
   # Every member goal complete, per the same stored goal_complete? flag
-  # `Kanban.Targets.Status.derive/3` reads for its :complete verdict — so this
+  # `Kanban.Targets.Status.derive/4` reads for its :complete verdict — so this
   # gate suppresses exactly the targets the old `%{status: :complete}` match
   # did. The one input the two read differently is an empty progress list, which
-  # `derive/3` calls :on_track while `Enum.all?/2` is vacuously true; that is
+  # `derive/4` calls :on_track while `Enum.all?/2` is vacuously true; that is
   # output-neutral, because a childless target's remaining count is 0 and the
   # next gate returns nil down either path.
   defp all_goals_complete?(progress), do: Enum.all?(progress, & &1.goal_complete?)
 
-  # The `Kanban.Targets.Status.derive/3` progress shape for one goal, computed
+  # The `Kanban.Targets.Status.derive/4` progress shape for one goal, computed
   # once here so the aggregate (`summarize_target/3`, `build_target_progress/3`)
   # and the per-goal breakdown never duplicate the completed/total math.
   #
@@ -387,7 +421,7 @@ defmodule Kanban.Targets.Progress do
   defp goal_detail_entries(goals), do: Enum.map(goals, &goal_detail_entry/1)
 
   # The public per-goal detail shape — drops the internal `:progress` key that
-  # only `Status.derive/3` needs.
+  # only `Status.derive/4` needs.
   defp goal_detail_view(detail) do
     Map.take(detail, [:goal, :flow, :completed, :total, :percentage])
   end

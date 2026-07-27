@@ -58,7 +58,7 @@ defmodule Kanban.TargetsTest do
   end
 
   # A target whose single member goal is complete — the minimal shape
-  # `Status.derive/3` reads as `:complete` (all_complete?/1 trusts the goal's
+  # `Status.derive/4` reads as `:complete` (all_complete?/1 trusts the goal's
   # stored status; a childless completed goal needs no children).
   defp complete_target(scope, column, user) do
     target = delivery_target_fixture(user)
@@ -208,7 +208,7 @@ defmodule Kanban.TargetsTest do
       scope: scope,
       user: user
     } do
-      # Status.derive/3 reads an empty goal list as :on_track, never a vacuous
+      # Status.derive/4 reads an empty goal list as :on_track, never a vacuous
       # :complete — an empty target has delivered nothing, so it cannot archive.
       target = delivery_target_fixture(user)
 
@@ -830,6 +830,94 @@ defmodule Kanban.TargetsTest do
                Targets.get_target_progress(scope, target, @estimate_today)
 
       assert summary.estimated_completion_date == nil
+    end
+  end
+
+  # The reported D182 production shape: a target whose estimate lands Jul 27,
+  # evaluated on Jul 26. Work share is high enough (0.9 completed against a
+  # fully elapsed 30-day window — a 0.10 gap, under the 0.15 threshold) that
+  # the lag check does NOT fire, so any :at_risk verdict comes from the slip.
+  #
+  # `target_date` is a parameter because the same fixture proves the
+  # non-slipping cases: with a later due date the estimate is unchanged but the
+  # status must stay :on_track.
+  defp slipping_target(scope, column, user, target_date) do
+    target = delivery_target_fixture(user, %{target_date: target_date})
+
+    # Backdate creation to open a 30-day window ending Jul 26. inserted_at is
+    # not castable through the changeset, so this bypasses the cast allow-list
+    # the same way goal_with_identifier/3 does.
+    target =
+      target
+      |> Ecto.Changeset.change(inserted_at: ~U[2026-06-26 00:00:00.000000Z])
+      |> Repo.update!()
+
+    goal = goal_fixture(column)
+
+    # 9 children completed with an EXACT 1-day lead — they are also the
+    # historical sample, so p50 == 1 day — and 1 still open -> remaining == 1,
+    # putting the estimate at Jul 26 + 1 = Jul 27.
+    for _ <- 1..9 do
+      column
+      |> task_fixture(%{parent_id: goal.id})
+      |> Ecto.Changeset.change(
+        status: :completed,
+        completed_at: ~U[2026-07-01 12:00:00Z],
+        inserted_at: ~N[2026-06-30 12:00:00]
+      )
+      |> Repo.update!()
+    end
+
+    task_fixture(column, %{parent_id: goal.id})
+    assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+    target
+  end
+
+  describe "list_targets_with_status/2 — estimate slip raises :at_risk (D182)" do
+    test "a boards-strip target whose estimate slips past its target date reads :at_risk",
+         %{scope: scope, user: user, column: column} do
+      slipping_target(scope, column, user, ~D[2026-07-26])
+
+      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-26])
+      # Assert the estimate first: it proves the verdict came from the slip and
+      # not from a lag miscalculation.
+      assert summary.estimated_completion_date == ~D[2026-07-27]
+      assert summary.completed == 9 and summary.total == 10
+      assert summary.status == :at_risk
+    end
+
+    test "an estimate ON the target date leaves the status unchanged",
+         %{scope: scope, user: user, column: column} do
+      slipping_target(scope, column, user, ~D[2026-07-27])
+
+      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-26])
+      assert summary.estimated_completion_date == ~D[2026-07-27]
+      assert summary.status == :on_track
+    end
+
+    test "an estimate before the target date leaves the status unchanged",
+         %{scope: scope, user: user, column: column} do
+      slipping_target(scope, column, user, ~D[2026-07-28])
+
+      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-26])
+      assert summary.estimated_completion_date == ~D[2026-07-27]
+      assert summary.status == :on_track
+    end
+
+    test "the non-estimating paths derive the same target without the slip",
+         %{scope: scope, user: user, column: column} do
+      # The rollup and drill-down pass no estimate, so they keep deriving
+      # exactly what they did before D182 — the documented asymmetry.
+      target = slipping_target(scope, column, user, ~D[2026-07-26])
+
+      assert [with_goals] = Targets.list_targets_with_status_and_goals(scope, ~D[2026-07-26])
+      assert with_goals.estimated_completion_date == nil
+      assert with_goals.status == :on_track
+
+      assert %{summary: summary} = Targets.get_target_progress(scope, target, ~D[2026-07-26])
+      assert summary.estimated_completion_date == nil
+      assert summary.status == :on_track
     end
   end
 
