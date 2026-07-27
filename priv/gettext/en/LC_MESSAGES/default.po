@@ -6624,12 +6624,12 @@ msgstr ""
 msgid "Review data unavailable"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:979
+#: lib/kanban/tasks/completion_validation/review_contract.ex:256
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:972
+#: lib/kanban/tasks/completion_validation/review_contract.ex:249
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr ""
@@ -6648,12 +6648,12 @@ msgstr ""
 msgid "N/A"
 msgstr "N/A"
 
-#: lib/kanban/tasks/completion_validation.ex:991
+#: lib/kanban/tasks/completion_validation/review_contract.ex:268
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:985
+#: lib/kanban/tasks/completion_validation/review_contract.ex:262
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr ""
@@ -7144,12 +7144,12 @@ msgstr ""
 msgid "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:432
+#: lib/kanban/tasks/completion_validation/acceptance_counts.ex:108
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation.ex:440
+#: lib/kanban/tasks/completion_validation/acceptance_counts.ex:116
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr ""

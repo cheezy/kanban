@@ -6670,12 +6670,12 @@ msgstr "Sections des paramètres"
 msgid "Review data unavailable"
 msgstr "Données de revue indisponibles"
 
-#: lib/kanban/tasks/completion_validation.ex:979
+#: lib/kanban/tasks/completion_validation/review_contract.ex:256
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "est requis pour une revue exécutée : incluez status ou issue_counts afin que la file de revue puisse afficher le verdict"
 
-#: lib/kanban/tasks/completion_validation.ex:972
+#: lib/kanban/tasks/completion_validation/review_contract.ex:249
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "est requis pour une revue exécutée : le champ structuré %{field} affiché par la file de revue est manquant"
@@ -6694,12 +6694,12 @@ msgstr "est requis pour une revue exécutée : le champ structuré %{field} aff
 msgid "N/A"
 msgstr "S.O."
 
-#: lib/kanban/tasks/completion_validation.ex:991
+#: lib/kanban/tasks/completion_validation/review_contract.ex:268
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "est incomplet : project_checks couvre %{supplied} des %{expected} points de la liste de contrôle du projet ; chaque point de la liste doit être évalué"
 
-#: lib/kanban/tasks/completion_validation.ex:985
+#: lib/kanban/tasks/completion_validation/review_contract.ex:262
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "est requis lors d'une revue effectuée : project_checks doit être une liste non vide couvrant la liste de contrôle du projet"
@@ -7190,12 +7190,12 @@ msgstr "Configurez votre agent de codage"
 msgid "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
 msgstr "Le nombre de revue enregistré ne correspond pas aux critères d'acceptation de cette tâche ; le nombre de la tâche est affiché."
 
-#: lib/kanban/tasks/completion_validation.ex:432
+#: lib/kanban/tasks/completion_validation/acceptance_counts.ex:108
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match"
 msgstr "est incohérent avec la tâche : la revue liste %{supplied} entrées de critères d'acceptation mais la tâche en définit %{expected} ; les nombres doivent correspondre"
 
-#: lib/kanban/tasks/completion_validation.ex:440
+#: lib/kanban/tasks/completion_validation/acceptance_counts.ex:116
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "est incohérent avec la tâche : la revue indique %{checked} critères d'acceptation vérifiés mais la tâche en définit %{expected} ; les nombres doivent correspondre"

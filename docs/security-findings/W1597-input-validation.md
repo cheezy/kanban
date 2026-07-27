@@ -17,7 +17,7 @@
 ## D114 — path traversal in `changed_files[].path` (MEDIUM, needs_review)
 
 **Verified.** `CompletionValidation.check_changed_file_path/3`
-(`completion_validation.ex:744`) accepts any non-empty string — it enforces only
+(now `completion_validation/changed_files.ex`, extracted in W1953) accepts any non-empty string — it enforces only
 `is_binary(path) and byte_size(path) > 0`. The sibling `KeyFile.validate_file_path/1`
 (`key_file.ex:29`) rejects both a leading `/` and any `..`. The public
 `PUT /api/tasks/:id/changed_files` payload is fully attacker-controlled, so

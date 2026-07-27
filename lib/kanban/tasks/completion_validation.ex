@@ -15,11 +15,35 @@ defmodule Kanban.Tasks.CompletionValidation do
   length are also rejected. Friction is intentional: it is the cost of a
   hard gate that accepts evidence from every platform without letting
   anyone paper over a skipped step with a one-word excuse.
+
+  ## Module organization (W1953)
+
+  This module is the single public entry point. The validators themselves live
+  in focused siblings under `Kanban.Tasks.CompletionValidation.*`, reached from
+  here by `defdelegate` so no caller ever names them directly:
+
+    * `Fields` — the shared leaf-level primitives (enum decoding, section
+      notes) every other validator builds on.
+    * `ChangedFiles` — the optional `changed_files` array, including the D114
+      path-safety guarantee.
+    * `BehaviourTestMatrix` — the optional `behaviour_test_matrix` verdict and
+      its rows (W1920).
+    * `ReviewContract` — the always-reject completeness contract for a
+      dispatched review, and the compile-time checklist count (D55, W1940).
+    * `AcceptanceCounts` — the grace-gated acceptance-criteria count agreement
+      (W1099).
+    * `TaskConsistency` — the review-versus-task cross-field rules (W1448).
+
+  What stays here is the envelope: the skip-reason and summary rules every
+  result shares, the shape of the optional structured arrays, and the dispatch
+  that routes a payload through the siblings.
   """
 
-  use Gettext, backend: KanbanWeb.Gettext
-
-  alias Kanban.Tasks.PathSafety
+  alias Kanban.Tasks.CompletionValidation.AcceptanceCounts
+  alias Kanban.Tasks.CompletionValidation.BehaviourTestMatrix
+  alias Kanban.Tasks.CompletionValidation.ChangedFiles
+  alias Kanban.Tasks.CompletionValidation.Fields
+  alias Kanban.Tasks.CompletionValidation.ReviewContract
 
   @skip_reasons [
     :no_subagent_support,
@@ -53,7 +77,6 @@ defmodule Kanban.Tasks.CompletionValidation do
   ]
 
   @status_enum [:met, :not_met]
-  @section_status_enum [:passed, :failed, :not_assessed]
 
   # W1866: the per-item status enum for the OPTIONAL nested
   # `security_considerations.considerations[]` breakdown. Distinct from
@@ -61,95 +84,11 @@ defmodule Kanban.Tasks.CompletionValidation do
   # section pass/fail. Absent/nil `considerations` carries no obligation.
   @consideration_status_enum [:mitigated, :partial, :unmitigated]
 
-  # W1920: the per-row status enum for the OPTIONAL nested
-  # `behaviour_test_matrix.rows[]` breakdown. Mirrors
-  # `Kanban.Schemas.Task.BehaviourTestRow.statuses/0`, kept here as a literal
-  # atom list because this module is deliberately Ecto-free and must not depend
-  # on an embedded schema; `completion_validation_test.exs` asserts the two
-  # lists stay in agreement.
-  @behaviour_test_status_enum [:planned, :passing, :failing, :not_applicable]
-
-  # Row keys that must be non-empty strings when a row is supplied, and keys that
-  # must be strings only when supplied. Deliberately mirrors
-  # `Kanban.Schemas.Task.BehaviourTestRow.changeset/2`'s
-  # `validate_required([:category, :behaviour, :status])`: a waived row
-  # (`status: "not_applicable"`) legitimately carries no `test_name` — it carries
-  # `na_reason` instead — and `type` is never required there. Demanding more of
-  # the reviewer's report than the schema demands of the persisted row would
-  # reject a faithful echo of a valid matrix. Both lists are fixed and
-  # compile-time; row keys are never derived from reviewer input.
-  @behaviour_test_row_required_keys ~w(category behaviour)
-  @behaviour_test_row_optional_keys ~w(test_name type)
-
-  # The canonical, single-source-of-truth list of structured review sections a
-  # fully-populated `reviewer_result` must carry on a dispatched review. The
-  # strict structured-block check (W1066) and every downstream consumer MUST
-  # reference this list rather than re-enumerating the keys inline — an inline
-  # allow-list is exactly how `project_checks` came to be silently dropped.
-  #
-  # `status` / `issue_counts` is required in addition to these sections, but as
-  # an either/or pair it is enforced separately by `require_status_or_issue_counts/2`
-  # rather than listed here.
-  @required_review_sections [
-    # the categorized issues array — may be empty, but must be present
-    :issues,
-    # per-criterion acceptance-criteria results the review queue renders
-    :acceptance_criteria,
-    # the full project checklist verdicts (CODE-REVIEW.md coverage, W1067)
-    :project_checks,
-    # per-section verdict: were the task's specified tests written
-    :testing_strategy,
-    # per-section verdict: was `patterns_to_follow` honored
-    :patterns,
-    # per-section verdict: were the task's `pitfalls` avoided
-    :pitfalls,
-    # per-section verdict: were the task's `security_considerations` addressed
-    :security_considerations,
-    # the reviewer schema version that produced this structured block
-    :schema_version
-  ]
-
   # Permissive semver: MAJOR.MINOR with optional .PATCH, pre-release, and
   # build metadata. Accepts "1.0", "1.2.3", "2.0.0-beta.1", "1.0+build.7".
   @semver_regex ~r/^\d+\.\d+(\.\d+)?(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/
 
   @min_summary_length 40
-
-  @max_diff_lines 500
-
-  # The project checklist count is read ONCE, at compile time, from a copy of
-  # `CODE-REVIEW.md` kept under `priv/` — NOT from the repo-root doc.
-  #
-  # Why `priv/` and not the root: `priv/` is a standard mix application directory
-  # that is reliably present in the source tree at compile time AND copied into
-  # `mix release` artifacts; a repo-root doc is not an app file and can be absent
-  # from a release/Docker build context. Reading the root doc at compile time
-  # baked `nil` in production, which — with the unconditional coverage gate —
-  # rejected every dispatched-review completion (incident: "checklist could not
-  # be read"). `priv/CODE-REVIEW.md` is a verbatim copy of the root checklist,
-  # kept in sync by a drift-guard test; the root doc remains the human-facing
-  # canonical checklist the reviewer agent reads.
-  #
-  # @external_resource makes the module recompile when the checklist changes. A
-  # top-level bullet is a line beginning with "- " (CRITICAL bullets included);
-  # indented context lines and "##" headings are not checks. If the file STILL
-  # cannot be read at build time the count is nil and the coverage check FAILS
-  # OPEN (coverage simply not enforced) rather than blocking every completion —
-  # the other contract checks (section presence, non-empty project_checks,
-  # cross-field consistency) keep enforcing. See coverage_shortfall/2.
-  @code_review_path [__DIR__, "..", "..", "..", "priv", "CODE-REVIEW.md"]
-                    |> Path.join()
-                    |> Path.expand()
-  @external_resource @code_review_path
-  @project_checklist_count (case File.read(@code_review_path) do
-                              {:ok, content} ->
-                                content
-                                |> String.split("\n")
-                                |> Enum.count(&String.starts_with?(&1, "- "))
-
-                              {:error, _} ->
-                                nil
-                            end)
 
   @doc """
   The exhaustive list of allowed skip-reason atoms.
@@ -173,7 +112,29 @@ defmodule Kanban.Tasks.CompletionValidation do
   See `docs/completion-contract.md` for the full fully-populated-report contract,
   including the task cross-field rules.
   """
-  def required_review_sections, do: @required_review_sections
+  defdelegate required_review_sections(), to: ReviewContract, as: :sections
+
+  @doc """
+  The number of top-level bullets in the project code-review checklist, baked
+  at compile time from `priv/CODE-REVIEW.md`.
+
+  `nil` when the file could not be read at build time — coverage is then not
+  enforced (it FAILS OPEN). See
+  `Kanban.Tasks.CompletionValidation.ReviewContract`.
+  """
+  defdelegate project_checklist_count(), to: ReviewContract, as: :checklist_count
+
+  @doc false
+  defdelegate coverage_shortfall(expected, supplied), to: ReviewContract
+
+  @doc """
+  Every always-reject completeness failure for a dispatched `reviewer_result`.
+
+  Returns `{field, message}` tuples in report order, or `[]` when the review is
+  complete or was never dispatched. See
+  `Kanban.Tasks.CompletionValidation.ReviewContract` for the contract itself.
+  """
+  defdelegate review_contract_failures(result, task \\ nil), to: ReviewContract, as: :failures
 
   @doc """
   The allowed per-row `status` values for the OPTIONAL `behaviour_test_matrix`
@@ -185,7 +146,7 @@ defmodule Kanban.Tasks.CompletionValidation do
   Ecto-free (see the moduledoc) and must not depend on an embedded schema — so
   the two lists are kept honest by a test rather than by a call.
   """
-  def behaviour_test_statuses, do: @behaviour_test_status_enum
+  defdelegate behaviour_test_statuses(), to: BehaviourTestMatrix, as: :statuses
 
   @doc """
   The recognized `reviewer_result.issues[].category` values, as atoms (W1940).
@@ -200,42 +161,6 @@ defmodule Kanban.Tasks.CompletionValidation do
   behaviour-test-matrix rows.
   """
   def issue_categories, do: @category_enum
-
-  @doc """
-  The number of top-level bullets in the canonical project checklist
-  (`CODE-REVIEW.md`), read once at compile time. This is the coverage floor a
-  dispatched review's `project_checks` must meet — it is derived from the
-  checklist file, never supplied by the client.
-
-  Returns `nil` only if the checklist file could not be read at build time, in
-  which case the coverage check FAILS OPEN (coverage is not enforced) rather
-  than blocking every completion — the other contract checks still run.
-  """
-  def project_checklist_count, do: @project_checklist_count
-
-  @doc false
-  # The pure coverage decision, exposed for direct testing of every branch
-  # (pass, shortfall, and the FAIL-OPEN "checklist unavailable" case). Returns
-  # `nil` when coverage is satisfied OR when it cannot be verified, and a
-  # human-readable failure message only on a genuine shortfall. `expected` is the
-  # baked checklist bullet count; `supplied` is the number of project_checks
-  # entries in the review.
-  #
-  # FAIL OPEN (not closed) when `expected` is unavailable (nil / non-positive):
-  # an unreadable checklist must never block every completion in an environment
-  # where the file is missing — that bricked production once. Coverage is simply
-  # not enforced there; the other contract checks still run.
-  def coverage_shortfall(expected, supplied)
-
-  def coverage_shortfall(expected, supplied)
-      when is_integer(expected) and expected > 0 and is_integer(supplied) and supplied >= expected,
-      do: nil
-
-  def coverage_shortfall(expected, supplied)
-      when is_integer(expected) and expected > 0,
-      do: coverage_shortfall_message(expected, supplied)
-
-  def coverage_shortfall(_expected, _supplied), do: nil
 
   @doc """
   Validates an `explorer_result` payload.
@@ -306,143 +231,20 @@ defmodule Kanban.Tasks.CompletionValidation do
     to: Kanban.Tasks.CompletionValidation.TaskConsistency
 
   @doc """
-  Returns the **always-reject** "fully populated + consistent" review-contract
-  failures for a completion's `reviewer_result` — the subset the gate enforces
-  unconditionally (W1070), independent of the `:strict_completion_validation`
-  grace flag. Returns `[]` when the contract holds.
-
-  The contract covers exactly the *completeness and consistency* failures, never
-  legacy *shape* nits (a malformed issue entry, a bad `schema_version` format) —
-  those stay grace-gated in `validate_reviewer_result/2`:
-
-    * a dispatched review must carry every required structured section
-      (`required_review_sections/0`) with a non-empty `project_checks` list that
-      covers the full checklist; and
-    * when a `task` is given, the review must be consistent with it
-      (`cross_check_reviewer_result/2`).
-
-  Only a **present, dispatched** review is contract-checked here. A valid
-  skip-form review (`"dispatched" => false`), a malformed-`dispatched` map, and
-  an absent/nil `reviewer_result` carry no always-reject completeness obligation:
-  the first is a legitimate review-less completion, and the latter two remain
-  under the grace flag (the `:strict_completion_validation` rollout enforces a
-  required review post-rollout, and the plugin-side fix G222 guarantees a
-  complete review is always sent). This keeps the grace rollout intact for
-  not-yet-updated clients while making an *incomplete present* review
-  non-completable in any mode.
-  """
-  def review_contract_failures(result, task \\ nil)
-
-  def review_contract_failures(%{"dispatched" => true} = result, task) do
-    structural =
-      []
-      |> check_required_structured_block(result, :reviewer, require_structured_block: true)
-      |> Enum.reverse()
-
-    structural ++ cross_failures(result, task)
-  end
-
-  def review_contract_failures(_result, _task), do: []
-
-  defp cross_failures(_result, nil), do: []
-
-  defp cross_failures(result, task) do
-    case cross_check_reviewer_result(result, task) do
-      {:ok, _} -> []
-      {:error, errors} -> errors
-    end
-  end
-
-  @doc """
   Returns **grace-gated** acceptance-criteria count failures for a dispatched
   `reviewer_result`, measured against the `task` it describes.
 
   Unlike `review_contract_failures/2` (which rejects unconditionally), these
   failures follow the `:strict_completion_validation` flag: the gate warns in
   grace mode and rejects with a 422 only in strict mode, matching the documented
-  rollout. The check compares the review's structured `acceptance_criteria` array
-  length AND its legacy `acceptance_criteria_checked` integer — each only when
-  present and well-typed — to the task's criterion-line count. A disagreement in
-  either is reported as `{field, message}`.
+  rollout.
 
-  This closes the W1099 "6/5" gap that `TaskConsistency.cross_check/2` misses:
-  that rule only flags a *shortfall* (the review checked fewer criteria than the
-  task lists), so an over-count slips through. Here any inequality is flagged.
-
-  Returns `[]` (consistent / not applicable) when the task defines no acceptance
-  criteria, when the review was not dispatched, or when `task` is nil. Malformed
-  shapes (a non-list array, a non-integer count) are left to the shape validator
-  and never raise here — the field simply contributes no count failure.
+  See `Kanban.Tasks.CompletionValidation.AcceptanceCounts` for the comparison
+  rules and the W1099 gap this closes.
   """
-  def acceptance_criteria_count_failures(result, task)
-
-  def acceptance_criteria_count_failures(%{"dispatched" => true} = result, %{} = task) do
-    expected = task |> Map.get(:acceptance_criteria) |> acceptance_line_count()
-
-    if expected > 0 do
-      []
-      |> check_structured_criteria_count(result, expected)
-      |> check_legacy_checked_count(result, expected)
-      |> Enum.reverse()
-    else
-      []
-    end
-  end
-
-  def acceptance_criteria_count_failures(_result, _task), do: []
-
-  defp check_structured_criteria_count(errors, %{"acceptance_criteria" => list}, expected)
-       when is_list(list) do
-    supplied = length(list)
-
-    if supplied == expected do
-      errors
-    else
-      [{:acceptance_criteria, acceptance_count_mismatch_message(expected, supplied)} | errors]
-    end
-  end
-
-  defp check_structured_criteria_count(errors, _result, _expected), do: errors
-
-  defp check_legacy_checked_count(errors, %{"acceptance_criteria_checked" => checked}, expected)
-       when is_integer(checked) do
-    if checked == expected do
-      errors
-    else
-      [
-        {:acceptance_criteria_checked, acceptance_checked_mismatch_message(expected, checked)}
-        | errors
-      ]
-    end
-  end
-
-  defp check_legacy_checked_count(errors, _result, _expected), do: errors
-
-  # Counts non-blank acceptance-criterion lines, matching the TaskConsistency and
-  # ReviewLive parse semantics so the three count consistently.
-  defp acceptance_line_count(value) when is_binary(value) do
-    value
-    |> String.split("\n")
-    |> Enum.count(&(String.trim(&1) != ""))
-  end
-
-  defp acceptance_line_count(_), do: 0
-
-  defp acceptance_count_mismatch_message(expected, supplied) do
-    gettext(
-      "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match",
-      expected: expected,
-      supplied: supplied
-    )
-  end
-
-  defp acceptance_checked_mismatch_message(expected, checked) do
-    gettext(
-      "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match",
-      expected: expected,
-      checked: checked
-    )
-  end
+  defdelegate acceptance_criteria_count_failures(result, task),
+    to: AcceptanceCounts,
+    as: :failures
 
   @doc """
   Validates the optional `changed_files` array on the completion payload.
@@ -451,27 +253,10 @@ defmodule Kanban.Tasks.CompletionValidation do
   that omit the field entirely and `[]` for empty arrays), or
   `{:error, [{field, message}, ...]}` listing every failing entry.
 
-  Each entry must be a map with a non-empty string `"path"`. The `"diff"`
-  field is optional; when present it must be a string of at most
-  #{@max_diff_lines} lines. The line cap is a defensive backstop — plugins
-  are expected to truncate before sending, per `docs/diff-contract.md`.
+  See `Kanban.Tasks.CompletionValidation.ChangedFiles` for the entry rules and
+  the path-safety guarantee.
   """
-  def validate_changed_files(nil),
-    do: {:error, [{:changed_files, "must be present (send [] to clear)"}]}
-
-  def validate_changed_files(value) when is_list(value) do
-    errors =
-      value
-      |> Enum.with_index()
-      |> Enum.reduce([], fn {entry, idx}, acc -> check_changed_file_entry(acc, entry, idx) end)
-
-    case errors do
-      [] -> {:ok, value}
-      _ -> {:error, Enum.reverse(errors)}
-    end
-  end
-
-  def validate_changed_files(_value), do: {:error, [{:changed_files, "must be a list"}]}
+  defdelegate validate_changed_files(value), to: ChangedFiles, as: :validate
 
   defp validate(nil, _role, _opts), do: {:error, [{:result, "can't be blank"}]}
 
@@ -484,7 +269,7 @@ defmodule Kanban.Tasks.CompletionValidation do
       |> check_dispatched(result)
       |> check_summary(result)
       |> check_by_dispatched(result, role)
-      |> check_required_structured_block(result, role, opts)
+      |> ReviewContract.check_structured_block(result, role, opts)
 
     case errors do
       [] -> {:ok, result}
@@ -547,7 +332,7 @@ defmodule Kanban.Tasks.CompletionValidation do
       :security_considerations_entry
     )
     |> check_considerations_array(result)
-    |> check_behaviour_test_matrix(result)
+    |> BehaviourTestMatrix.check(result)
   end
 
   defp check_duration_ms(errors, %{"duration_ms" => d}) when is_integer(d) and d >= 0, do: errors
@@ -624,8 +409,8 @@ defmodule Kanban.Tasks.CompletionValidation do
 
   defp check_issue_entry(errors, entry, idx) when is_map(entry) do
     errors
-    |> check_enum(entry, "severity", @severity_enum, :issue_severity, "issues[#{idx}]")
-    |> check_enum(entry, "category", @category_enum, :issue_category, "issues[#{idx}]")
+    |> Fields.check_enum(entry, "severity", @severity_enum, :issue_severity, "issues[#{idx}]")
+    |> Fields.check_enum(entry, "category", @category_enum, :issue_category, "issues[#{idx}]")
   end
 
   defp check_issue_entry(errors, _entry, idx),
@@ -646,7 +431,7 @@ defmodule Kanban.Tasks.CompletionValidation do
   defp check_acceptance_criteria(errors, _), do: errors
 
   defp check_criterion_entry(errors, entry, idx) when is_map(entry) do
-    check_enum(
+    Fields.check_enum(
       errors,
       entry,
       "status",
@@ -669,19 +454,11 @@ defmodule Kanban.Tasks.CompletionValidation do
 
       verdict when is_map(verdict) ->
         errors
-        |> check_enum(verdict, "status", @section_status_enum, status_field, key)
-        |> check_section_notes(verdict, key)
+        |> Fields.check_section_status(verdict, status_field, key)
+        |> Fields.check_section_notes(verdict, key)
 
       _ ->
         [{entry_field, "#{key} must be a map"} | errors]
-    end
-  end
-
-  defp check_section_notes(errors, verdict, key) do
-    case Map.get(verdict, "notes") do
-      nil -> errors
-      notes when is_binary(notes) -> errors
-      _ -> [{:notes, "#{key}.notes must be a string"} | errors]
     end
   end
 
@@ -722,7 +499,7 @@ defmodule Kanban.Tasks.CompletionValidation do
   defp check_consideration_entry(errors, entry, idx) when is_map(entry) do
     errors
     |> check_consideration_text(entry, idx)
-    |> check_enum(
+    |> Fields.check_enum(
       entry,
       "status",
       @consideration_status_enum,
@@ -751,134 +528,6 @@ defmodule Kanban.Tasks.CompletionValidation do
   defp consideration_text_message(idx),
     do: "considerations[#{idx}] must have a non-empty string \"consideration\""
 
-  # W1920: OPTIONAL `behaviour_test_matrix` verdict — the reviewer's echo of the
-  # task's behaviour/test matrix. It is never listed in @required_review_sections,
-  # so an absent verdict carries no obligation. A *partial* verdict is equally
-  # free: a map with no `status` and no `rows` (or explicit nils) passes
-  # untouched, matching the `security_considerations.considerations[]` precedent.
-  #
-  # Emitting no error is the only way to let a verdict through: these failures
-  # are NOT soft. `AgentWorkflow.validate_reviewer_result_payload/2` folds every
-  # `{field, message}` into the `/complete` changeset unconditionally (W398), so
-  # anything flagged here is a hard completion failure in every mode — which is
-  # why the required row keys mirror `BehaviourTestRow.changeset/2` exactly
-  # rather than demanding every column.
-  #
-  # What IS checked is the shape of what was actually supplied: a present
-  # `status` must be a recognized section verdict, `rows` must be a list, and
-  # each supplied row must be a map carrying non-empty strings for
-  # @behaviour_test_row_required_keys, strings for any supplied
-  # @behaviour_test_row_optional_keys, and a `status` in
-  # @behaviour_test_status_enum. Row errors use static atom keys with the index
-  # embedded in the message, matching `check_consideration_entry/3`, so no
-  # runtime atoms are created per index — reviewer-supplied rows are untrusted
-  # data and are never converted to atoms.
-  defp check_behaviour_test_matrix(errors, %{"behaviour_test_matrix" => verdict})
-       when is_map(verdict) do
-    errors
-    |> check_matrix_status(verdict)
-    |> check_section_notes(verdict, "behaviour_test_matrix")
-    |> check_matrix_rows(verdict)
-  end
-
-  # An explicit nil verdict is treated exactly like an absent key.
-  defp check_behaviour_test_matrix(errors, %{"behaviour_test_matrix" => nil}), do: errors
-
-  defp check_behaviour_test_matrix(errors, %{"behaviour_test_matrix" => _}),
-    do: [{:behaviour_test_matrix_entry, "behaviour_test_matrix must be a map"} | errors]
-
-  defp check_behaviour_test_matrix(errors, _result), do: errors
-
-  # Absent or nil `status` is a partial verdict, not an error — only a supplied
-  # value is enum-checked.
-  defp check_matrix_status(errors, %{"status" => status} = verdict) when not is_nil(status) do
-    check_enum(
-      errors,
-      verdict,
-      "status",
-      @section_status_enum,
-      :behaviour_test_matrix_status,
-      "behaviour_test_matrix"
-    )
-  end
-
-  defp check_matrix_status(errors, _verdict), do: errors
-
-  defp check_matrix_rows(errors, %{"rows" => rows}) when is_list(rows) do
-    rows
-    |> Enum.with_index()
-    |> Enum.reduce(errors, fn {row, idx}, acc -> check_behaviour_test_row(acc, row, idx) end)
-  end
-
-  # Absent or nil `rows` is a partial verdict, not an error.
-  defp check_matrix_rows(errors, %{"rows" => nil}), do: errors
-
-  defp check_matrix_rows(errors, %{"rows" => _}),
-    do: [{:behaviour_test_matrix_rows, "behaviour_test_matrix.rows must be a list"} | errors]
-
-  defp check_matrix_rows(errors, _verdict), do: errors
-
-  defp check_behaviour_test_row(errors, row, idx) when is_map(row) do
-    errors
-    |> check_behaviour_test_row_fields(row, idx)
-    |> check_enum(
-      row,
-      "status",
-      @behaviour_test_status_enum,
-      :behaviour_test_row_status,
-      behaviour_test_row_prefix(idx)
-    )
-  end
-
-  defp check_behaviour_test_row(errors, _row, idx),
-    do: [
-      {:behaviour_test_row_entry, "#{behaviour_test_row_prefix(idx)} must be a map"} | errors
-    ]
-
-  defp check_behaviour_test_row_fields(errors, row, idx) do
-    errors
-    |> check_required_row_strings(row, idx)
-    |> check_optional_row_strings(row, idx)
-  end
-
-  defp check_required_row_strings(errors, row, idx) do
-    Enum.reduce(@behaviour_test_row_required_keys, errors, fn key, acc ->
-      if present_string?(Map.get(row, key)) do
-        acc
-      else
-        [{:behaviour_test_row_field, behaviour_test_row_field_message(idx, key)} | acc]
-      end
-    end)
-  end
-
-  # Absent or nil is a partial row, not a malformed one — only a supplied value
-  # is type-checked.
-  defp check_optional_row_strings(errors, row, idx) do
-    Enum.reduce(@behaviour_test_row_optional_keys, errors, fn key, acc ->
-      check_optional_row_string(acc, Map.get(row, key), key, idx)
-    end)
-  end
-
-  defp check_optional_row_string(errors, nil, _key, _idx), do: errors
-  defp check_optional_row_string(errors, value, _key, _idx) when is_binary(value), do: errors
-
-  defp check_optional_row_string(errors, _value, key, idx),
-    do: [{:behaviour_test_row_field, optional_row_field_message(idx, key)} | errors]
-
-  defp present_string?(value) when is_binary(value), do: String.trim(value) != ""
-  defp present_string?(_value), do: false
-
-  # Both message builders interpolate only `idx` (an integer) and `key` (a
-  # compile-time literal), never a row value — these strings are echoed verbatim
-  # in the 422 body and in the gate's warning log.
-  defp behaviour_test_row_field_message(idx, key),
-    do: "#{behaviour_test_row_prefix(idx)} must have a non-empty string \"#{key}\""
-
-  defp optional_row_field_message(idx, key),
-    do: "#{behaviour_test_row_prefix(idx)} \"#{key}\" must be a string when supplied"
-
-  defp behaviour_test_row_prefix(idx), do: "behaviour_test_matrix.rows[#{idx}]"
-
   # Optional `schema_version` — permissive semver shape, gates nothing on
   # specific version values. Tolerates absence entirely.
   defp check_schema_version(errors, %{"schema_version" => v}) when is_binary(v) do
@@ -893,203 +542,4 @@ defmodule Kanban.Tasks.CompletionValidation do
     do: [{:schema_version, "must be a semver-shaped string"} | errors]
 
   defp check_schema_version(errors, _), do: errors
-
-  # D55: when opted in (the strict-validation gate), a dispatched reviewer
-  # review must carry the structured block the review queue renders — not
-  # merely the legacy summary envelope. Each absent field is named so the
-  # client can fix the payload. Presence is the gate; the type checks above
-  # still validate the values when the fields are present, and an empty
-  # `issues: []` with a `status` is a valid, passing review (not "missing").
-  # Only fires for `dispatched: true`; the skip path is untouched.
-  defp check_required_structured_block(errors, %{"dispatched" => true} = result, :reviewer, opts) do
-    if Keyword.get(opts, :require_structured_block, false) do
-      # Drive the presence checks from the single source of truth
-      # (@required_review_sections) rather than re-enumerating the keys inline —
-      # an inline allow-list is exactly how project_checks came to be dropped.
-      @required_review_sections
-      |> Enum.reduce(errors, fn section, acc ->
-        require_structured_field(acc, result, Atom.to_string(section), section)
-      end)
-      |> require_status_or_issue_counts(result)
-      |> require_non_empty_project_checks(result)
-      |> require_project_checks_coverage(result)
-    else
-      errors
-    end
-  end
-
-  defp check_required_structured_block(errors, _result, _role, _opts), do: errors
-
-  defp require_structured_field(errors, result, key, field) do
-    if Map.has_key?(result, key) do
-      errors
-    else
-      [{field, missing_structured_field_message(key)} | errors]
-    end
-  end
-
-  defp require_status_or_issue_counts(errors, result) do
-    if Map.has_key?(result, "status") or Map.has_key?(result, "issue_counts") do
-      errors
-    else
-      [{:status, missing_status_or_issue_counts_message()} | errors]
-    end
-  end
-
-  # An empty (or non-list) project_checks is the truncation failure mode: a bare
-  # presence check passes an empty list, but an empty list is a dropped/trimmed
-  # review. Absence is already reported by the presence check above, so only flag
-  # a present-but-empty or present-but-non-list value here. (W1067 adds the
-  # full-checklist coverage check on top of this non-empty floor.)
-  defp require_non_empty_project_checks(errors, result) do
-    case Map.get(result, "project_checks") do
-      [_ | _] -> errors
-      nil -> errors
-      _ -> [{:project_checks, empty_project_checks_message()} | errors]
-    end
-  end
-
-  # project_checks must account for EVERY top-level checklist bullet, not merely
-  # be non-empty — a short count is the D60 truncation defect (3 of 25). The
-  # expected count is the compile-time-baked @project_checklist_count, never a
-  # client value. Only runs on a non-empty list (absence/empty already reported
-  # above), so it never double-reports. A nil baked count (checklist unreadable
-  # at build time) fails closed via coverage_shortfall/2.
-  defp require_project_checks_coverage(errors, result) do
-    case Map.get(result, "project_checks") do
-      [_ | _] = checks ->
-        case coverage_shortfall(@project_checklist_count, length(checks)) do
-          nil -> errors
-          message -> [{:project_checks, message} | errors]
-        end
-
-      _ ->
-        errors
-    end
-  end
-
-  defp missing_structured_field_message(key) do
-    gettext(
-      "is required on a dispatched review: the structured %{field} field the review queue renders is missing",
-      field: key
-    )
-  end
-
-  defp missing_status_or_issue_counts_message do
-    gettext(
-      "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
-    )
-  end
-
-  defp empty_project_checks_message do
-    gettext(
-      "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
-    )
-  end
-
-  defp coverage_shortfall_message(expected, supplied) do
-    gettext(
-      "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated",
-      expected: expected,
-      supplied: supplied
-    )
-  end
-
-  # Validates that `map[key]` is present and decodes to a member of `allowed`.
-  # Mirrors the binary-or-atom acceptance pattern used by `check_reason/2`.
-  # `prefix` is the entry locator (e.g., `"issues[0]"`) used in messages.
-  defp check_enum(errors, map, key, allowed, field, prefix) do
-    case decode_enum_field(Map.get(map, key), allowed) do
-      :ok -> errors
-      :missing -> [{field, "#{prefix} is missing #{key}"} | errors]
-      :invalid -> [{field, "#{prefix} #{key} #{enum_message(allowed)}"} | errors]
-    end
-  end
-
-  defp decode_enum_field(nil, _allowed), do: :missing
-
-  defp decode_enum_field(value, allowed) when is_binary(value) do
-    atom = String.to_existing_atom(value)
-    if atom in allowed, do: :ok, else: :invalid
-  rescue
-    ArgumentError -> :invalid
-  end
-
-  defp decode_enum_field(value, allowed) when is_atom(value) do
-    if value in allowed, do: :ok, else: :invalid
-  end
-
-  defp decode_enum_field(_value, _allowed), do: :invalid
-
-  defp enum_message(allowed),
-    do: "must be one of: " <> Enum.map_join(allowed, ", ", &Atom.to_string/1)
-
-  # Per-entry validator for `changed_files`. Uses the same static-atom +
-  # index-in-message pattern as `check_issue_entry/3` so we do not create
-  # runtime atoms per array index.
-  defp check_changed_file_entry(errors, entry, idx) when is_map(entry) do
-    errors
-    |> check_changed_file_path(entry, idx)
-    |> check_changed_file_diff(entry, idx)
-  end
-
-  defp check_changed_file_entry(errors, _entry, idx),
-    do: [{:changed_file_entry, "changed_files[#{idx}] must be a map"} | errors]
-
-  # D114: the changed_files path is fully attacker-controlled (public
-  # PUT /api/tasks/:id/changed_files). Reject absolute paths, `..` traversal, and
-  # null bytes so a stored path cannot escape the repo root — parity with the
-  # key_files embed, via the shared Kanban.Tasks.PathSafety predicate.
-  defp check_changed_file_path(errors, entry, idx) do
-    case entry |> Map.get("path") |> PathSafety.validate() do
-      :ok ->
-        errors
-
-      {:error, reason} ->
-        [{:changed_file_path, changed_file_path_error(idx, reason)} | errors]
-    end
-  end
-
-  defp changed_file_path_error(idx, reason) when reason in [:empty, :not_a_string],
-    do: "changed_files[#{idx}] must have a non-empty string \"path\""
-
-  defp changed_file_path_error(idx, :absolute),
-    do: "changed_files[#{idx}] \"path\" must be a relative path, not absolute"
-
-  defp changed_file_path_error(idx, :traversal),
-    do: "changed_files[#{idx}] \"path\" must not contain .. path traversal"
-
-  defp changed_file_path_error(idx, :null_byte),
-    do: "changed_files[#{idx}] \"path\" must not contain a null byte"
-
-  defp check_changed_file_diff(errors, entry, idx) do
-    case Map.get(entry, "diff") do
-      nil ->
-        errors
-
-      diff when is_binary(diff) ->
-        if diff_line_count(diff) > @max_diff_lines do
-          [
-            {:changed_file_diff,
-             "changed_files[#{idx}].diff exceeds the #{@max_diff_lines}-line cap"}
-            | errors
-          ]
-        else
-          errors
-        end
-
-      _ ->
-        [{:changed_file_diff, "changed_files[#{idx}].diff must be a string"} | errors]
-    end
-  end
-
-  # Counts logical lines in a diff. A trailing newline is treated as a
-  # line terminator, not a separator — so a 500-line patch with or
-  # without a trailing newline reports 500 lines.
-  defp diff_line_count(diff) do
-    diff
-    |> String.trim_trailing("\n")
-    |> String.split("\n")
-    |> length()
-  end
 end

@@ -16,7 +16,7 @@ report; this contract is what "fully populated" means.
 
 When a `reviewer_result` is marked `"dispatched": true`, it must carry **every**
 section below. The canonical list is the `@required_review_sections` attribute in
-`lib/kanban/tasks/completion_validation.ex`, exposed as
+`lib/kanban/tasks/completion_validation/review_contract.ex`, re-exported as
 `CompletionValidation.required_review_sections/0` — it is the single source of
 truth, and no caller may re-enumerate the keys inline (an inline allow-list is
 exactly how `project_checks` came to be silently dropped).
