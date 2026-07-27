@@ -4,8 +4,11 @@ defmodule Kanban.Targets.Estimation do
 
   Sibling of `Kanban.Targets.Status` and `Kanban.Targets.Progress`: no Ecto,
   no clock reads — `today` is always injected by `Kanban.Targets` at its impure
-  boundary. `Kanban.Targets.Queries.list_completed_lead_times/1` fetches the
-  historical sample; this module turns it into a date.
+  boundary. `Kanban.Targets.Queries.list_completed_lead_times_by_board/1`
+  fetches one query's worth of history for a whole set of boards, and
+  `Kanban.Targets.Progress` re-pools a single target's own boards out of that
+  by-board map before handing the sample here; this module turns it into a
+  date.
 
   ## The estimate
 

@@ -54,6 +54,12 @@ defmodule Kanban.Targets.DeliveryRollupQueryCountTest do
     # second time per target, adding another main+preload pair (delta 5). The
     # `<= 4` ceiling sits between the two, catching the regression while
     # tolerating incidental single-query drift.
+    #
+    # W1951's lead-time sample is inside the counted region for BOTH runs but
+    # is fetched once per build/2 regardless of target count, so it contributes
+    # 0 to this delta. Note that this ceiling alone would tolerate a per-target
+    # lead-time query (delta 4) — the "fetched once for the whole target set"
+    # test below is what actually pins the batching.
     assert two_targets - one_target <= 4,
            "adding a target added #{two_targets - one_target} queries — the duplicate " <>
              "member-goal fetch appears to have regressed (expected <= 4, deduped is 3)"
@@ -85,15 +91,47 @@ defmodule Kanban.Targets.DeliveryRollupQueryCountTest do
              "fetch is not batched (expected <= 1)"
   end
 
+  test "the lead-time sample is fetched once for the whole target set",
+       %{scope: scope, doing: doing} do
+    # W1951. The delta guard above cannot see this: a per-target lead-time query
+    # would move the delta from 3 to 4, which still satisfies `<= 4`. Counting
+    # the sample query's own SQL is what distinguishes "one batched sample" from
+    # "one sample per target".
+    for name <- ["T1", "T2", "T3"] do
+      target = delivery_target_fixture(scope.user, %{name: name})
+      goal = goal_on_target(doing, target)
+      agent_task(doing, %{created_by_agent: name, parent_id: goal.id})
+    end
+
+    assert count_matching(fn -> DeliveryRollup.build(scope) end, "EXTRACT(EPOCH") == 1
+  end
+
+  test "no estimable target issues no lead-time query at all", %{scope: scope} do
+    # The gate runs before the batched fetch, so a set with nothing to pace —
+    # here, no targets at all — never touches the sample query.
+    assert count_matching(fn -> DeliveryRollup.build(scope) end, "EXTRACT(EPOCH") == 0
+  end
+
   # Counts the Repo query telemetry events emitted while `fun` runs.
   defp count_queries(fun) do
+    count_with(fun, fn _query -> true end)
+  end
+
+  # Counts only the Repo queries whose SQL contains `fragment`.
+  defp count_matching(fun, fragment) do
+    count_with(fun, &String.contains?(&1 || "", fragment))
+  end
+
+  defp count_with(fun, counted?) do
     ref = :counters.new(1, [])
     handler_id = "d125-rollup-qc-#{System.unique_integer([:positive])}"
 
     :telemetry.attach(
       handler_id,
       [:kanban, :repo, :query],
-      fn _event, _measurements, _metadata, _config -> :counters.add(ref, 1, 1) end,
+      fn _event, _measurements, metadata, _config ->
+        if counted?.(metadata[:query]), do: :counters.add(ref, 1, 1)
+      end,
       nil
     )
 

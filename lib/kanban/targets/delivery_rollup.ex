@@ -171,6 +171,12 @@ defmodule Kanban.Targets.DeliveryRollup do
   # target's member goals exactly once — previously the rollup called
   # `list_member_goals/2` a second time per target on top of the fetch inside
   # the status summary (a redundant query per target on every /agents refresh).
+  #
+  # Since W1951 that status also accounts for the estimated completion date,
+  # computed from one batched lead-time query for the whole target list, so the
+  # band badges a target exactly as the boards strip does at no per-target query
+  # cost. The entry deliberately carries no estimate DATE: the band renders a
+  # badge, not a projection.
   defp build_target_rollups(scope, today, agents, bridges) do
     scope
     |> Targets.list_targets_with_status_and_goals(today)

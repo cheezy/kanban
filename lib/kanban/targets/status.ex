@@ -100,9 +100,10 @@ defmodule Kanban.Targets.Status do
     * The test is `Date.compare(estimate, target_date) == :gt` — strictly
       after, the same strictness `past_target?/2` and the lag threshold use, so
       an estimate landing exactly ON the target date is not a slip.
-    * Only the boards-strip path supplies a real estimate today (see the
-      "Estimated completion" section of `Kanban.Targets.Progress`); the rollup,
-      drill-down, and archive-gate paths pass `nil`.
+    * Every badge-rendering read path supplies a real estimate, from one
+      batched sample (see the "Estimated completion" and "Batched lead-time
+      sample" sections of `Kanban.Targets.Progress`). The archive gate is the
+      one caller that passes `nil`, deliberately — it reads only `:complete`.
     * Because an estimate is always `today + n` for `n >= 0`, a slip can only
       be observed while `today <= target_date` — that is, on a target that is
       not already `:missed`. No extra guard is needed for that.

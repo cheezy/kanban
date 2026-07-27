@@ -162,8 +162,15 @@ defmodule Kanban.Targets.Queries do
 
   @doc """
   Lead times (in seconds, as floats) of every completed non-goal task on the
-  given boards — the historical sample behind a target's estimated completion
-  date (`Kanban.Targets.Estimation`).
+  given boards, **grouped by board id** — the historical sample behind a
+  target's estimated completion date (`Kanban.Targets.Estimation`).
+
+  Returns one query's worth of history for a whole SET of boards, so a caller
+  summarizing many targets fetches the sample once and re-pools each target
+  from only that target's own boards (W1951). Grouping rather than pooling is
+  load-bearing: a flat sample across every summarized target's boards would
+  let one target's history pace another. A board with no completed non-goal
+  work is simply absent from the map — callers default it to `[]`.
 
   Mirrors the filters of `Kanban.Metrics.get_lead_time_stats/2` (completed
   only, goal-type excluded, creation-to-completion diffed in SQL) with one
@@ -174,20 +181,24 @@ defmodule Kanban.Targets.Queries do
   Unlike every other read in this module it takes pre-resolved `board_ids`
   rather than a `Scope`: the ids come from the caller's already scope-filtered
   member goals (`goal.column.board_id`), so board scoping is upheld by
-  construction. An empty id list short-circuits to `[]` without a query.
+  construction — this function never widens the set it is handed. An empty id
+  list short-circuits to `%{}` without a query.
   """
-  @spec list_completed_lead_times([pos_integer()]) :: [float()]
-  def list_completed_lead_times([]), do: []
+  @spec list_completed_lead_times_by_board([pos_integer()]) :: %{pos_integer() => [float()]}
+  def list_completed_lead_times_by_board([]), do: %{}
 
-  def list_completed_lead_times(board_ids) when is_list(board_ids) do
+  def list_completed_lead_times_by_board(board_ids) when is_list(board_ids) do
     Task
     |> join(:inner, [t], c in assoc(t, :column))
     |> where([t, c], c.board_id in ^board_ids)
     |> where([t], not is_nil(t.completed_at))
     |> where([t], t.type != ^:goal)
-    |> select([t], fragment("EXTRACT(EPOCH FROM (? - ?))", t.completed_at, t.inserted_at))
+    |> select(
+      [t, c],
+      {c.board_id, fragment("EXTRACT(EPOCH FROM (? - ?))", t.completed_at, t.inserted_at)}
+    )
     |> Repo.all()
-    |> Enum.map(&decimal_to_float/1)
+    |> Enum.group_by(&elem(&1, 0), &decimal_to_float(elem(&1, 1)))
   end
 
   # EXTRACT(EPOCH ...) comes back as a Postgres numeric -> Decimal; downstream

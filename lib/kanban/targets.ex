@@ -414,13 +414,12 @@ defmodule Kanban.Targets do
       percentile (median) lead time of ALL historical completed non-goal tasks on the
       member goals' boards (`Kanban.Targets.Estimation`). `nil` when every
       member goal is complete, nothing remains, or there is no historical
-      sample — `nil` means the strip renders no estimate at all. Costs one
-      extra lead-time query per estimable target on top of the N+1 documented
-      below. This is also the only path that feeds the estimate into the
-      derivation, so an estimate later than the target date reads `:at_risk`
-      here (D182) while the estimate-free paths below derive as they always
-      have — see `Kanban.Targets.Progress`'s "Estimate-driven :at_risk"
-      section for why that asymmetry is accepted.
+      sample — `nil` means the strip renders no estimate at all. The sample
+      costs ONE query for the whole list, not one per target (W1951), on top
+      of the N+1 documented below. The estimate also feeds the derivation, so
+      an estimate later than the target date reads `:at_risk` (D182) — and
+      because every badge read path now supplies the same batched estimate,
+      the three surfaces cannot badge one target differently.
 
   ## Scoping / security
 
@@ -445,7 +444,8 @@ defmodule Kanban.Targets do
   def list_targets_with_status(scope, today \\ Date.utc_today()) do
     scope
     |> list_targets()
-    |> Enum.map(&Progress.summarize_target(scope, &1, today))
+    |> then(&Progress.summarize_targets(scope, &1, today))
+    |> Enum.map(fn {summary, _goals} -> summary end)
   end
 
   @doc """
@@ -462,11 +462,11 @@ defmodule Kanban.Targets do
   `list_targets_with_status/2` row; only the extra `:goals` key is added, so
   existing callers of `list_targets_with_status/2` are unaffected.
 
-  Unlike `list_targets_with_status/2`, `:estimated_completion_date` is always
-  `nil` here — the /agents rollup refreshes constantly, and estimating would
-  add a lead-time query per target (see `Kanban.Targets.Progress`'s
-  "Estimated completion" section). With no estimate there is no estimate slip,
-  so `:status` here is exactly what it was before D182.
+  `:estimated_completion_date` is identical to `list_targets_with_status/2`'s,
+  computed from the same single batched lead-time sample (W1951), so the
+  /agents band and the boards strip can never badge the same target
+  differently. The per-target query count is unchanged: the sample costs one
+  query for the whole list, not one per target.
 
   Board scoping, the per-goal child query (N+1) characteristics, and the
   `today` injection are identical to `list_targets_with_status/2`.
@@ -477,10 +477,8 @@ defmodule Kanban.Targets do
   def list_targets_with_status_and_goals(scope, today \\ Date.utc_today()) do
     scope
     |> list_targets()
-    |> Enum.map(fn target ->
-      {summary, goals} = Progress.summarize_target_with_goals(scope, target, today)
-      Map.put(summary, :goals, goals)
-    end)
+    |> then(&Progress.summarize_targets(scope, &1, today))
+    |> Enum.map(fn {summary, goals} -> Map.put(summary, :goals, goals) end)
   end
 
   @doc """
@@ -497,9 +495,11 @@ defmodule Kanban.Targets do
     * `:summary` — identical in shape and meaning to a `list_targets_with_status/2`
       row: `:status` (`Kanban.Targets.Status.derive/4`), the aggregate
       `:completed`/`:total` child fraction across all member goals, and
-      `:percentage`. Its `:estimated_completion_date` is always `nil` — the
-      drill-down (which also serves archived, necessarily-complete targets)
-      does not estimate — so no estimate slip can raise `:at_risk` here.
+      `:percentage`. Its `:estimated_completion_date` is computed exactly as
+      the boards strip computes it (W1951 — a batch of one, so one lead-time
+      query when the target is estimable and none otherwise), so the drill-down
+      badge always matches the strip. Archived targets, being necessarily
+      `:complete`, still read `nil` through the all-complete gate.
     * `:goals` — one entry per accessible member goal, each carrying the goal
       task, its column-bucketed `:flow` map (`%{done, review, doing, ready,
       backlog, total}`), and that goal's own `:completed`/`:total`/`:percentage`.

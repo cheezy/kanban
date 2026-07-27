@@ -700,6 +700,75 @@ defmodule Kanban.TargetsTest do
     target
   end
 
+  describe "every read path estimates from one batched sample (W1951)" do
+    test "ignores history on boards outside the viewer's scope, on every read path",
+         %{scope: scope, user: user, column: column, other_column: other_column} do
+      # The batched union may only ever contain boards the viewer can reach.
+      # other_column belongs to a board the viewer is not a member of, so its
+      # history must not pace this target on ANY path.
+      completed_with_lead(other_column, 3)
+      target = target_with_remaining(scope, column, user, 1)
+
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert summary.estimated_completion_date == nil
+
+      assert [with_goals] = Targets.list_targets_with_status_and_goals(scope, @estimate_today)
+      assert with_goals.estimated_completion_date == nil
+
+      assert %{summary: drill_down} =
+               Targets.get_target_progress(scope, target, @estimate_today)
+
+      assert drill_down.estimated_completion_date == nil
+    end
+
+    test "a target is not paced by another target's boards",
+         %{scope: scope, user: user, column: column} do
+      # Both targets are summarized in ONE call, so they share one query — but
+      # each must still be paced only by its own boards. Flattening the by-board
+      # sample across the batch would give the history-less target B's pace.
+      second_board = board_fixture(user)
+      second_column = column_fixture(second_board)
+      completed_with_lead(second_column, 3)
+
+      _history_less = target_with_remaining(scope, column, user, 1)
+      _with_history = target_with_remaining(scope, second_column, user, 1)
+
+      assert [a, b] = Targets.list_targets_with_status(scope, @estimate_today)
+
+      assert Enum.sort([a.estimated_completion_date, b.estimated_completion_date]) ==
+               Enum.sort([nil, Date.add(@estimate_today, 3)])
+    end
+
+    test "pools history across every board backing a target's member goals",
+         %{scope: scope, user: user, column: column} do
+      # One target, two goals on two different boards the viewer owns: leads of
+      # 1 and 3 days pool to a p50 of 2 days, 1 remaining -> today + 2.
+      second_board = board_fixture(user)
+      second_column = column_fixture(second_board)
+      completed_with_lead(column, 1)
+      completed_with_lead(second_column, 3)
+
+      target = delivery_target_fixture(user)
+      first_goal = goal_fixture(column)
+      second_goal = goal_fixture(second_column)
+      task_fixture(second_column, %{parent_id: second_goal.id})
+      assert {:ok, _} = Targets.assign_goal(scope, first_goal, target)
+      assert {:ok, _} = Targets.assign_goal(scope, second_goal, target)
+
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert summary.estimated_completion_date == Date.add(@estimate_today, 2)
+    end
+
+    test "a viewer with access to no boards summarizes nothing",
+         %{scope: scope, user: user, column: column, other_scope: other_scope} do
+      completed_with_lead(column, 2)
+      target_with_remaining(scope, column, user, 1)
+
+      assert Targets.list_targets_with_status(other_scope, @estimate_today) == []
+      assert Targets.list_targets_with_status_and_goals(other_scope, @estimate_today) == []
+    end
+  end
+
   describe "list_targets_with_status/2 — estimated_completion_date" do
     test "projects today + remaining * p50 lead time from board history",
          %{scope: scope, user: user, column: column} do
@@ -816,20 +885,22 @@ defmodule Kanban.TargetsTest do
       assert summary.estimated_completion_date == nil
     end
 
-    test "the rollup and drill-down paths do not estimate",
+    test "the rollup and drill-down paths estimate from the same batched sample",
          %{scope: scope, user: user, column: column} do
+      # W1951 flipped this: every badge-rendering read path now estimates, and
+      # all three read the same value the boards strip does above.
       for days <- [1, 2, 4], do: completed_with_lead(column, days)
       target = target_with_remaining(scope, column, user, 2)
 
       assert [with_goals] =
                Targets.list_targets_with_status_and_goals(scope, @estimate_today)
 
-      assert with_goals.estimated_completion_date == nil
+      assert with_goals.estimated_completion_date == Date.add(@estimate_today, 4)
 
       assert %{summary: summary} =
                Targets.get_target_progress(scope, target, @estimate_today)
 
-      assert summary.estimated_completion_date == nil
+      assert summary.estimated_completion_date == Date.add(@estimate_today, 4)
     end
   end
 
@@ -905,19 +976,20 @@ defmodule Kanban.TargetsTest do
       assert summary.status == :on_track
     end
 
-    test "the non-estimating paths derive the same target without the slip",
+    test "every read path derives :at_risk from the same slip",
          %{scope: scope, user: user, column: column} do
-      # The rollup and drill-down pass no estimate, so they keep deriving
-      # exactly what they did before D182 — the documented asymmetry.
+      # W1951 flipped this: the rollup and drill-down now receive the same
+      # estimate the boards strip does, so the badge is no longer
+      # path-dependent — the asymmetry D182 documented is gone.
       target = slipping_target(scope, column, user, ~D[2026-07-26])
 
       assert [with_goals] = Targets.list_targets_with_status_and_goals(scope, ~D[2026-07-26])
-      assert with_goals.estimated_completion_date == nil
-      assert with_goals.status == :on_track
+      assert with_goals.estimated_completion_date == ~D[2026-07-27]
+      assert with_goals.status == :at_risk
 
       assert %{summary: summary} = Targets.get_target_progress(scope, target, ~D[2026-07-26])
-      assert summary.estimated_completion_date == nil
-      assert summary.status == :on_track
+      assert summary.estimated_completion_date == ~D[2026-07-27]
+      assert summary.status == :at_risk
     end
   end
 

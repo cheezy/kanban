@@ -32,7 +32,7 @@ defmodule Kanban.Targets.Progress do
   which needs the raw `[Task.t()]`.
 
   This is a load-bearing invariant, not an optimization detail. Splitting
-  `summarize_target_with_goals/3` into a summarize call plus a second goal fetch
+  `summarize_targets/3` into per-target summarize calls plus a second goal fetch
   returns identical *values* while doubling the query count — a regression only
   `test/kanban/targets/delivery_rollup_query_count_test.exs` and
   `test/kanban_web/live/agents_live_query_count_test.exs` can see.
@@ -52,19 +52,17 @@ defmodule Kanban.Targets.Progress do
   exception is `derive_target_status/2` (the archive gate), which anchors UTC
   internally — see its own comment for why that is sound.
 
-  ## Estimated completion (W1729)
+  ## Estimated completion (W1729, batched in W1951)
 
-  Every `target_summary/0` carries an `:estimated_completion_date` key, but
-  only the boards-strip path (`summarize_target/3`, behind
-  `Kanban.Targets.list_targets_with_status/2`) computes it — the rollup path
-  (`summarize_target_with_goals/4` without `estimate?: true`) and the
-  drill-down path (`build_target_progress/3`) leave it `nil`. That keeps the
-  /agents rollup's per-target query count flat (the invariant the query-count
-  tests above guard) and means archived targets — which flow through
-  `build_target_progress/3` and are necessarily `:complete` — never estimate.
+  Every `target_summary/0` carries an `:estimated_completion_date` key, and
+  **every badge-rendering read path computes it** — the boards strip, the
+  /agents rollup, and the target-detail drill-down all route through
+  `summarize_batch/2`. A badge derived from an estimate on one surface and
+  from no estimate on another is the cross-page divergence D123 was filed for,
+  so the estimate is not an opt-in.
 
   The estimate itself is `Kanban.Targets.Estimation` math over the sample
-  `Kanban.Targets.Queries.list_completed_lead_times/1` fetches. It is gated
+  `Kanban.Targets.Queries.list_completed_lead_times_by_board/1` fetches. It is gated
   here BEFORE the sample query fires: a target whose every member goal is
   complete, or a remaining count of `0`, yields `nil` with no query. The
   remaining count is `total - completed` from the same D124-credited
@@ -79,27 +77,45 @@ defmodule Kanban.Targets.Progress do
 
   ## Estimate-driven :at_risk (D182)
 
-  On the estimating path the estimate is computed FIRST and then passed into
+  The estimate is computed BEFORE the status and passed into
   `Kanban.Targets.Status.derive/4`, so an estimate later than the target date
   reads `:at_risk` — the earliest concrete signal a target will be late, and
-  one that fires even when a high work share suppresses the lag check. The
-  rollup, drill-down, and archive-gate paths pass `nil` and derive exactly what
-  they did before.
+  one that fires even when a high work share suppresses the lag check.
 
-  That asymmetry is deliberate, transient, and has a visible consequence: for a
-  target whose estimate slips, the boards strip can read `:at_risk` while the
-  target-detail page and the /agents delivery-health band still read
-  `:on_track`, because only the strip has an estimate to slip. That is the
-  cross-page disagreement D123 was filed for, and
-  `test/kanban/targets/cross_page_status_agreement_test.exs` does NOT guard it
-  — its fixtures have no completed tasks, so every path sees a `nil` estimate.
+  ## Batched lead-time sample (W1951)
 
-  It is accepted here only because closing it properly is a separate change:
-  estimating per target on the /agents rollup would break the flat per-target
-  query count above, and estimating on the drill-down would contradict the
-  W1729 contract asserted by the "rollup and drill-down paths do not estimate"
-  test. W1951 supplies the estimate on every badge read path with a single
-  batched lead-time query, which closes the gap without either cost.
+  `summarize_batch/2` gathers, gates, queries once, then re-pools:
+
+    1. **Gather** — `member_goal_progress/2` per target (unchanged, still one
+       member-goal query per target), because a target's boards are only
+       knowable once its member goals are fetched.
+    2. **Gate** — `remaining_to_pace/1` per target, BEFORE any sample query, so
+       a batch in which nothing is estimable (and an empty batch) still issues
+       zero lead-time queries.
+    3. **One query** — the union of the estimable targets' board ids goes to
+       `Queries.list_completed_lead_times_by_board/1` exactly once per batch,
+       so the marginal per-target cost of the estimate is **zero queries**
+       (the budget the query-count tests above pin).
+    4. **Re-pool** — each target's estimate is paced only by the boards backing
+       its OWN member goals, read back out of the by-board map.
+
+  Step 4 is load-bearing: pooling the map's values across the batch would let
+  one target's history pace another, which
+  `test/kanban/targets_test.exs`'s "ignores history on boards not backing the
+  target's member goals" exists to catch. The union in step 3 is built only
+  from ids read off scope-filtered member goals, so batching never widens the
+  viewer's board scope.
+
+  ## Paths that do not estimate
+
+  Two paths derive no estimate, deliberately, because neither renders a badge:
+
+    * `derive_target_status/2` — the archive gate. It reads only the
+      `:complete` verdict, which `Kanban.Targets.Status.derive/4` resolves
+      before any `:at_risk` branch, so an estimate could not change its answer.
+    * `goal_detail_views/1` — per-*goal* detail shapes. They carry no
+      `:status` key and derive no target status at all, so there is no badge
+      to be inconsistent about.
   """
 
   alias Kanban.Accounts.Scope
@@ -116,8 +132,8 @@ defmodule Kanban.Targets.Progress do
   read-time derived `Kanban.Targets.Status`, the aggregate child-task
   progress used by the targets strip, and the projected
   `:estimated_completion_date` (`nil` when every member goal is complete,
-  nothing remains, there is no historical lead-time sample, or the call path
-  does not estimate — see the moduledoc's "Estimated completion" section).
+  nothing remains, or there is no historical lead-time sample — see the
+  moduledoc's "Estimated completion" section).
   """
   @type target_summary :: %{
           target: DeliveryTarget.t(),
@@ -181,49 +197,32 @@ defmodule Kanban.Targets.Progress do
         }
 
   @doc """
-  The aggregate `target_summary/0` for one target — the boards-strip row.
-  """
-  @spec summarize_target(Scope.t() | nil, DeliveryTarget.t(), Date.t()) :: target_summary()
-  def summarize_target(scope, %DeliveryTarget{} = target, today) do
-    {summary, _goals} = summarize_target_with_goals(scope, target, today, estimate?: true)
-    summary
-  end
+  Summarizes a whole list of targets — the shape every badge-rendering read
+  path uses — fetching each target's member goals exactly once AND the
+  historical lead-time sample exactly ONCE for the entire list.
 
-  @doc """
-  Summarizes a target AND returns its member goals, fetching the member-goal
-  list exactly once.
-
-  Both the aggregate summary (the boards strip) and callers that need the raw
-  `[Task.t()]` goal list (`Kanban.Targets.DeliveryRollup`, via
-  `Kanban.Targets.list_targets_with_status_and_goals/2`) share this single
-  fetch, so the member-goal query runs once per target instead of twice.
+  Returns `{summary, goals}` per target, in the order given. Callers that need
+  only the summary drop the goals; `Kanban.Targets.DeliveryRollup` (via
+  `Kanban.Targets.list_targets_with_status_and_goals/2`) keeps them, so the
+  member-goal query runs once per target instead of twice.
   `Queries.list_member_goals/2` preloads `:column`, so each goal's own board_id
   scopes its batched child-task query in `member_goal_children/1`.
 
-  Do not "simplify" this into a `summarize_target/3` call plus a second goal
-  fetch: the values would stay correct and the query count would double.
-
-  ## Options
-
-    * `:estimate?` (default `false`) — when `true`, computes the summary's
-      `:estimated_completion_date`, which may cost one extra lead-time query,
-      and feeds that same estimate into the status derivation so a slip past
-      the target date reads `:at_risk` (D182). Only the boards-strip path opts
-      in; the /agents rollup keeps its per-target query count flat by leaving
-      the estimate `nil`, which also leaves its status exactly as it was (see
-      the moduledoc's "Estimated completion" sections).
+  Do not "simplify" this into a per-target summarize call: the values would
+  stay correct while the member-goal query count doubled and the lead-time
+  query went from one per request to one per target — a regression only
+  `test/kanban/targets/delivery_rollup_query_count_test.exs` and
+  `test/kanban_web/live/agents_live_query_count_test.exs` can see.
   """
-  @spec summarize_target_with_goals(Scope.t() | nil, DeliveryTarget.t(), Date.t(), keyword()) ::
-          {target_summary(), [Task.t()]}
-  def summarize_target_with_goals(scope, %DeliveryTarget{} = target, today, opts \\ []) do
-    {progress, goals} = member_goal_progress(scope, target)
-
-    estimate =
-      if Keyword.get(opts, :estimate?, false) do
-        estimated_completion_date(progress, goals, today)
-      end
-
-    {summarize_progress(target, progress, today, estimate), goals}
+  @spec summarize_targets(Scope.t() | nil, [DeliveryTarget.t()], Date.t()) ::
+          [{target_summary(), [Task.t()]}]
+  def summarize_targets(scope, targets, today) do
+    targets
+    |> Enum.map(fn %DeliveryTarget{} = target ->
+      {progress, goals} = member_goal_progress(scope, target)
+      {target, progress, goals}
+    end)
+    |> summarize_batch(today)
   end
 
   @doc """
@@ -238,9 +237,10 @@ defmodule Kanban.Targets.Progress do
   timezone-sensitive status (`:missed` / `:at_risk`) must go through
   `Kanban.Targets.list_targets_with_status/2` and pass its own `today`.
 
-  It passes no estimate either, which cannot affect the `:complete` verdict the
-  gate reads: the estimate slip only ever raises `:at_risk`, a branch below
-  `:complete` in the precedence order.
+  It is also the one read path that deliberately derives WITHOUT an estimate
+  (see the moduledoc's "Paths that do not estimate"), which cannot affect the
+  `:complete` verdict the gate reads: the estimate slip only ever raises
+  `:at_risk`, a branch below `:complete` in the precedence order.
   """
   @spec derive_target_status(Scope.t() | nil, DeliveryTarget.t()) :: Status.status()
   def derive_target_status(scope, %DeliveryTarget{} = target) do
@@ -256,6 +256,12 @@ defmodule Kanban.Targets.Progress do
   The target-level aggregate and the per-goal breakdown both derive from the
   single `details` list — one child fetch per goal — reusing the shared
   `aggregate_children/1`, `percentage/2`, and `Status.derive/4` helpers.
+
+  The summary is built through the same `summarize_batch/2` the list paths use,
+  as a batch of one, so the drill-down badge is derived from an estimate
+  computed exactly the way the boards strip and the /agents band compute
+  theirs. That structural sharing — not a duplicated helper the two paths must
+  keep in step — is what makes the badge path-independent (W1951).
   """
   @spec build_target_progress(Scope.t() | nil, DeliveryTarget.t(), Date.t()) :: target_progress()
   def build_target_progress(scope, %DeliveryTarget{} = target, today) do
@@ -265,9 +271,12 @@ defmodule Kanban.Targets.Progress do
       |> goal_detail_entries()
 
     progress = Enum.map(details, & &1.progress)
+    goals = Enum.map(details, & &1.goal)
+
+    [{summary, _goals}] = summarize_batch([{target, progress, goals}], today)
 
     %{
-      summary: summarize_progress(target, progress, today),
+      summary: summary,
       goals: Enum.map(details, &goal_detail_view/1)
     }
   end
@@ -289,11 +298,11 @@ defmodule Kanban.Targets.Progress do
 
   # The `Status.derive/4` progress shape for each of `target`'s member goals,
   # plus the goals themselves — one member-goal query and one batched child
-  # query. Shared by `summarize_target_with_goals/3` (the boards strip) and
+  # query. Shared by `summarize_targets/3` (every badge read path) and
   # `derive_target_status/2` (the archive gate) so the assembly lives in exactly
   # one place and the two can never drift apart on what "complete" means.
   #
-  # Returns the goals alongside the progress so `summarize_target_with_goals/3`
+  # Returns the goals alongside the progress so `summarize_targets/3`
   # can hand them to `DeliveryRollup` without a second fetch, preserving the
   # once-per-target member-goal query this module documents.
   defp member_goal_progress(scope, %DeliveryTarget{} = target) do
@@ -320,7 +329,7 @@ defmodule Kanban.Targets.Progress do
   end
 
   # The aggregate `target_summary/0` for a target given its member goals'
-  # `Status`-progress shapes. Shared by `summarize_target/3` (the boards strip)
+  # `Status`-progress shapes. Shared by `summarize_batch/2` (the list paths)
   # and `build_target_progress/3` (the drill-down) so the status/fraction math
   # lives in exactly one place.
   #
@@ -330,7 +339,7 @@ defmodule Kanban.Targets.Progress do
   # target date reads :at_risk (D182) — and becomes the summary's
   # `:estimated_completion_date`, so the badge and the displayed date can never
   # disagree about which estimate they saw.
-  defp summarize_progress(%DeliveryTarget{} = target, progress, today, estimate \\ nil) do
+  defp summarize_progress(%DeliveryTarget{} = target, progress, today, estimate) do
     {completed, total} = aggregate_children(progress)
 
     %{
@@ -343,35 +352,82 @@ defmodule Kanban.Targets.Progress do
     }
   end
 
-  # The strip-only estimated completion date, derived from the member-goal
-  # progress snapshot alone — never from the summary's derived status (W1950),
-  # so the estimate can be computed before the status rather than from it.
+  # Summarizes already-fetched {target, progress, goals} triples, fetching the
+  # historical lead-time sample ONCE for the whole batch. Every badge-rendering
+  # read path funnels through here — the boards strip, the /agents rollup, and
+  # the target-detail drill-down (a batch of one) — so the estimate a badge is
+  # derived from can never be path-dependent (D123 / W1951).
+  defp summarize_batch(triples, today) do
+    paced = Enum.map(triples, &pace/1)
+    sample = batched_lead_times(paced)
+
+    Enum.map(paced, &summarize_paced(&1, sample, today))
+  end
+
+  # Tags a fetched triple with what it has left to pace, so the gate is decided
+  # once — before the batched fetch reads it, and again when each estimate is
+  # computed.
+  defp pace({target, progress, goals}) do
+    {target, progress, goals, remaining_to_pace(progress)}
+  end
+
+  # One summary from a paced triple plus the batch's shared by-board sample.
+  defp summarize_paced({target, progress, goals, remaining}, sample, today) do
+    estimate = estimate(remaining, goals, sample, today)
+
+    {summarize_progress(target, progress, today, estimate), goals}
+  end
+
+  # One query for the union of the boards backing the member goals of the
+  # targets that still have work to pace. The gate runs FIRST, so a batch with
+  # nothing estimable — and an empty batch — issues no query at all, preserving
+  # the "gate before the sample query" property at the set level.
   #
-  # Gates BEFORE the sample query: a target whose every member goal is complete
-  # has nothing left to pace, and a remaining count of 0 (childless 0/0 target,
-  # or all credited work done while a goal is still open) would make `today + 0`
-  # a meaningless promise — both yield nil with no query. Otherwise the sample
-  # spans every board backing the target's own scope-filtered member goals
-  # (goal.column.board_id — preloaded, no extra query), so no inaccessible
-  # board's pace can leak in.
+  # The union can only ever contain board ids read off scope-filtered member
+  # goals, so it never widens the caller's board scope.
+  defp batched_lead_times(paced) do
+    paced
+    |> Enum.flat_map(fn
+      {_target, _progress, _goals, nil} -> []
+      {_target, _progress, goals, _remaining} -> board_ids(goals)
+    end)
+    |> Enum.uniq()
+    |> Queries.list_completed_lead_times_by_board()
+  end
+
+  # One target's estimate, paced ONLY by the boards backing its own member goals
+  # — never by the rest of the batch. Re-pooling per target from the shared
+  # by-board sample is what makes the batched fetch observationally identical to
+  # the per-target fetch it replaced; flattening the map across targets instead
+  # (Map.values/1) would let one target's history pace another.
+  defp estimate(nil, _goals, _sample, _today), do: nil
+
+  defp estimate(remaining, goals, sample, today) do
+    goals
+    |> board_ids()
+    |> Enum.flat_map(&Map.get(sample, &1, []))
+    |> Estimation.estimated_completion_date(remaining, today)
+  end
+
+  # The remaining child-task count to pace, or nil when there is nothing to
+  # estimate. A target whose every member goal is complete has nothing left to
+  # pace, and a remaining count of 0 (childless 0/0 target, or all credited work
+  # done while a goal is still open) would make `today + 0` a meaningless
+  # promise.
   #
-  # `completed`/`total` come from the same `aggregate_children/1` call
-  # `summarize_progress/3` uses, so the estimate and the displayed fraction
-  # still read one set of counts.
-  defp estimated_completion_date(progress, goals, today) do
+  # Read from the member-goal progress snapshot alone, never from the derived
+  # status (W1950), and from the same `aggregate_children/1` counts the
+  # displayed fraction uses, so the estimate and the fraction can never disagree.
+  defp remaining_to_pace(progress) do
     {completed, total} = aggregate_children(progress)
     remaining = total - completed
 
-    if all_goals_complete?(progress) or remaining == 0 do
-      nil
-    else
-      goals
-      |> Enum.map(& &1.column.board_id)
-      |> Enum.uniq()
-      |> Queries.list_completed_lead_times()
-      |> Estimation.estimated_completion_date(remaining, today)
-    end
+    if all_goals_complete?(progress) or remaining == 0, do: nil, else: remaining
   end
+
+  # The distinct boards backing a target's member goals. `:column` is preloaded
+  # by `Queries.list_member_goals/2`, so this costs no query.
+  defp board_ids(goals), do: goals |> Enum.map(& &1.column.board_id) |> Enum.uniq()
 
   # Every member goal complete, per the same stored goal_complete? flag
   # `Kanban.Targets.Status.derive/4` reads for its :complete verdict — so this
@@ -383,7 +439,7 @@ defmodule Kanban.Targets.Progress do
   defp all_goals_complete?(progress), do: Enum.all?(progress, & &1.goal_complete?)
 
   # The `Kanban.Targets.Status.derive/4` progress shape for one goal, computed
-  # once here so the aggregate (`summarize_target/3`, `build_target_progress/3`)
+  # once here so the aggregate (`summarize_targets/3`, `build_target_progress/3`)
   # and the per-goal breakdown never duplicate the completed/total math.
   #
   # `children` includes archived children (fetched via

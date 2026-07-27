@@ -16,22 +16,22 @@ defmodule Kanban.Targets.CrossPageStatusAgreementTest do
   the three read paths already expose, so the discrepancy cannot silently
   return.
 
-  ## A second divergent input, deliberately transient (D182)
+  ## The second divergent input: the estimate (D182, closed by W1951)
 
-  `today` is no longer the only input that can differ across the three paths.
-  D182 made the estimated completion date a derivation input, and only the
-  boards strip computes one — the rollup and drill-down pass `nil` to keep the
-  /agents per-target query count flat. So a target whose estimate slips past
-  its target date can read `:at_risk` on the boards strip while the other two
-  surfaces read `:on_track`.
+  `today` is no longer the only input the three paths must share. D182 made the
+  estimated completion date a derivation input, and for one task only the
+  boards strip computed one — so a target whose estimate slipped past its date
+  read `:at_risk` there while the other two surfaces read `:on_track`. W1951
+  closed that by supplying the estimate on every badge read path from a single
+  batched lead-time query.
 
-  These tests do NOT catch that: their fixtures contain no completed tasks, so
-  the lead-time sample is empty and every path sees a `nil` estimate. The
-  agreement they assert is real for the `today` seam and vacuous for the
-  estimate seam — do not read a green run here as proof the estimate agrees.
-  W1951 closes the gap by supplying the estimate on every badge read path with
-  a batched lead-time query; extend these tests to cover a non-nil estimate
-  then.
+  The D123 fixtures cannot see the estimate seam: they contain no completed
+  tasks, so the sample is empty and every path sees a `nil` estimate — their
+  agreement is real for `today` and vacuous for the estimate. The
+  "cross-page estimate agreement (W1951)" describe below is what covers it
+  non-vacuously, with a fixture whose badge is decided by the estimate alone
+  (the lag check is deliberately kept under its threshold) plus a control case
+  proving the `:at_risk` came from the slip and not from lag drift.
   """
   use Kanban.DataCase, async: true
 
@@ -59,6 +59,18 @@ defmodule Kanban.Targets.CrossPageStatusAgreementTest do
   @on_track_day ~D[2026-06-08]
   @at_risk_day ~D[2026-06-09]
 
+  # A target whose ESTIMATE — not its lag — decides its badge. Created Jun 26,
+  # evaluated Jul 26: a 30-day window, fully elapsed, with 9 of 10 children
+  # complete => work_share 0.9 and a 0.10 gap, UNDER the 0.15 lag threshold, so
+  # the lag check does not fire. today == the Jul 26 target date, so it is not
+  # :missed either. The 9 completed children ARE the lead-time sample, each an
+  # exact 1-day lead => p50 = 1 day; remaining = 1 => the estimate is Jul 27,
+  # strictly after Jul 26, and therefore the only possible cause of :at_risk.
+  @slip_created ~N[2026-06-26 00:00:00]
+  @slip_today ~D[2026-07-26]
+  @slip_target_date ~D[2026-07-26]
+  @slip_estimate ~D[2026-07-27]
+
   setup do
     user = user_fixture()
     board = board_fixture(user)
@@ -78,7 +90,7 @@ defmodule Kanban.Targets.CrossPageStatusAgreementTest do
     goal = goal_on_target(doing, target)
     _incomplete_child = task_fixture(doing, %{parent_id: goal.id})
 
-    %{scope: scope, target: target}
+    %{scope: scope, target: target, user: user, doing: doing}
   end
 
   describe "cross-page status agreement (D123)" do
@@ -130,6 +142,36 @@ defmodule Kanban.Targets.CrossPageStatusAgreementTest do
     end
   end
 
+  describe "cross-page estimate agreement (W1951)" do
+    test "all three read paths read :at_risk from the same slipping estimate", ctx do
+      target = slipping_target(ctx.user, ctx.doing, @slip_target_date)
+
+      assert status_via_boards(ctx.scope, target, @slip_today) == :at_risk
+      assert status_via_target_detail(ctx.scope, target, @slip_today) == :at_risk
+      assert status_via_agents(ctx.scope, target, @slip_today) == :at_risk
+    end
+
+    test "all three read paths report the same estimate", ctx do
+      target = slipping_target(ctx.user, ctx.doing, @slip_target_date)
+
+      assert estimate_via_boards(ctx.scope, target, @slip_today) == @slip_estimate
+      assert estimate_via_target_detail(ctx.scope, target, @slip_today) == @slip_estimate
+      assert estimate_via_agents_source(ctx.scope, target, @slip_today) == @slip_estimate
+    end
+
+    test "with a later target date the same estimate is no slip, on every path", ctx do
+      # The non-vacuity control: the estimate is unchanged at Jul 27, but Jul 27
+      # is no longer past the target date, so every path reads :on_track. If the
+      # :at_risk above came from lag drift rather than the slip, this fails too.
+      target = slipping_target(ctx.user, ctx.doing, ~D[2026-07-28])
+
+      assert estimate_via_boards(ctx.scope, target, @slip_today) == @slip_estimate
+      assert status_via_boards(ctx.scope, target, @slip_today) == :on_track
+      assert status_via_target_detail(ctx.scope, target, @slip_today) == :on_track
+      assert status_via_agents(ctx.scope, target, @slip_today) == :on_track
+    end
+  end
+
   # The three read paths, each fed the same explicit `today`. These mirror the
   # exact context calls the boards page, target-detail page, and agents band
   # make (see lib/kanban_web/live/{board_live/index,target_live/show,agents_live}.ex).
@@ -150,6 +192,52 @@ defmodule Kanban.Targets.CrossPageStatusAgreementTest do
   defp status_via_agents(scope, target, today) do
     rollup = DeliveryRollup.build(scope, today: today)
     Enum.find(rollup.targets, &(&1.target.id == target.id)).status
+  end
+
+  # The same three paths, read for their estimate rather than their status. The
+  # agents band renders a badge and no date, so its rollup entry carries no
+  # estimate key — assert on its SOURCE, the summary DeliveryRollup consumes.
+  defp estimate_via_boards(scope, target, today) do
+    [summary] =
+      scope
+      |> Targets.list_targets_with_status(today)
+      |> Enum.filter(&(&1.target.id == target.id))
+
+    summary.estimated_completion_date
+  end
+
+  defp estimate_via_target_detail(scope, target, today) do
+    Targets.get_target_progress(scope, target, today).summary.estimated_completion_date
+  end
+
+  defp estimate_via_agents_source(scope, target, today) do
+    scope
+    |> Targets.list_targets_with_status_and_goals(today)
+    |> Enum.find(&(&1.target.id == target.id))
+    |> Map.fetch!(:estimated_completion_date)
+  end
+
+  defp slipping_target(user, doing, target_date) do
+    target = delivery_target_fixture(user, %{name: "Slipping", target_date: target_date})
+    backdate_target(target, @slip_created)
+    target = Repo.get!(DeliveryTarget, target.id)
+
+    goal = goal_on_target(doing, target)
+
+    for _ <- 1..9 do
+      doing
+      |> task_fixture(%{parent_id: goal.id})
+      |> Ecto.Changeset.change(
+        status: :completed,
+        completed_at: ~U[2026-07-01 12:00:00Z],
+        inserted_at: ~N[2026-06-30 12:00:00]
+      )
+      |> Repo.update!()
+    end
+
+    task_fixture(doing, %{parent_id: goal.id})
+
+    target
   end
 
   defp goal_on_target(column, target) do
