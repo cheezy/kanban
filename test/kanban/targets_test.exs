@@ -767,6 +767,42 @@ defmodule Kanban.TargetsTest do
       assert summary.estimated_completion_date == nil
     end
 
+    test "is nil for an all-complete target that still has remaining children",
+         %{scope: scope, user: user, column: column} do
+      # The only shape that isolates the all-goals-complete gate from the
+      # remaining == 0 gate: the goal itself is complete, so the target is
+      # :complete, but its children are not — remaining is 2, and without the
+      # first gate the sample query would project a date.
+      completed_with_lead(column, 2)
+      goal = column |> goal_fixture() |> complete_task()
+      for _ <- 1..2, do: task_fixture(column, %{parent_id: goal.id})
+      target = delivery_target_fixture(user)
+      assert {:ok, _} = Targets.assign_goal(scope, goal, target)
+
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert summary.status == :complete
+      assert summary.total - summary.completed == 2
+      assert summary.estimated_completion_date == nil
+    end
+
+    test "still estimates when only some member goals are complete",
+         %{scope: scope, user: user, column: column} do
+      # Two member goals — one complete, one carrying 2 incomplete children.
+      # Suppression requires EVERY goal complete: an any-complete reading of
+      # the gate would wrongly suppress a still-valid estimate here.
+      for days <- [1, 2, 4], do: completed_with_lead(column, days)
+      target = delivery_target_fixture(user)
+      done_goal = column |> goal_fixture() |> complete_task()
+      open_goal = goal_fixture(column)
+      for _ <- 1..2, do: task_fixture(column, %{parent_id: open_goal.id})
+      assert {:ok, _} = Targets.assign_goal(scope, done_goal, target)
+      assert {:ok, _} = Targets.assign_goal(scope, open_goal, target)
+
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      refute summary.status == :complete
+      assert summary.estimated_completion_date == Date.add(@estimate_today, 4)
+    end
+
     test "is nil when nothing remains (childless 0/0 goal) even with history",
          %{scope: scope, user: user, column: column} do
       completed_with_lead(column, 2)

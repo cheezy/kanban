@@ -65,10 +65,17 @@ defmodule Kanban.Targets.Progress do
 
   The estimate itself is `Kanban.Targets.Estimation` math over the sample
   `Kanban.Targets.Queries.list_completed_lead_times/1` fetches. It is gated
-  here BEFORE the sample query fires: a `:complete` status or a remaining
-  count of `0` yields `nil` with no query. The remaining count is
-  `total - completed` from the same D124-credited `aggregate_children/1`
-  counts the displayed fraction uses, so the two can never disagree.
+  here BEFORE the sample query fires: a target whose every member goal is
+  complete, or a remaining count of `0`, yields `nil` with no query. The
+  remaining count is `total - completed` from the same D124-credited
+  `aggregate_children/1` counts the displayed fraction uses, so the two can
+  never disagree.
+
+  Both gate conditions read the member-goal progress snapshot directly, never
+  the derived `Kanban.Targets.Status` (W1950). The estimate therefore depends
+  only on that snapshot, the member goals, and `today` — it is computed
+  independently of the status rather than after it, so the status is free to
+  become a consumer of the estimate without creating a cycle.
   """
 
   alias Kanban.Accounts.Scope
@@ -84,9 +91,9 @@ defmodule Kanban.Targets.Progress do
   One boards-page summary row for a delivery target: the target itself, its
   read-time derived `Kanban.Targets.Status`, the aggregate child-task
   progress used by the targets strip, and the projected
-  `:estimated_completion_date` (`nil` when the target is `:complete`, nothing
-  remains, there is no historical lead-time sample, or the call path does not
-  estimate — see the moduledoc's "Estimated completion" section).
+  `:estimated_completion_date` (`nil` when every member goal is complete,
+  nothing remains, there is no historical lead-time sample, or the call path
+  does not estimate — see the moduledoc's "Estimated completion" section).
   """
   @type target_summary :: %{
           target: DeliveryTarget.t(),
@@ -188,7 +195,7 @@ defmodule Kanban.Targets.Progress do
 
     summary =
       if Keyword.get(opts, :estimate?, false) do
-        %{summary | estimated_completion_date: estimated_completion_date(summary, goals, today)}
+        %{summary | estimated_completion_date: estimated_completion_date(progress, goals, today)}
       else
         summary
       end
@@ -302,28 +309,44 @@ defmodule Kanban.Targets.Progress do
     }
   end
 
-  # The strip-only estimated completion date. Gates BEFORE the sample query:
-  # a :complete target has nothing left to pace, and a remaining count of 0
-  # (childless 0/0 target, or all credited work done while the derived status
-  # lags) would make `today + 0` a meaningless promise — both yield nil with
-  # no query. Otherwise the sample spans every board backing the target's own
-  # scope-filtered member goals (goal.column.board_id — preloaded, no extra
-  # query), so no inaccessible board's pace can leak in.
-  defp estimated_completion_date(%{status: :complete}, _goals, _today), do: nil
+  # The strip-only estimated completion date, derived from the member-goal
+  # progress snapshot alone — never from the summary's derived status (W1950),
+  # so the estimate can be computed before the status rather than from it.
+  #
+  # Gates BEFORE the sample query: a target whose every member goal is complete
+  # has nothing left to pace, and a remaining count of 0 (childless 0/0 target,
+  # or all credited work done while a goal is still open) would make `today + 0`
+  # a meaningless promise — both yield nil with no query. Otherwise the sample
+  # spans every board backing the target's own scope-filtered member goals
+  # (goal.column.board_id — preloaded, no extra query), so no inaccessible
+  # board's pace can leak in.
+  #
+  # `completed`/`total` come from the same `aggregate_children/1` call
+  # `summarize_progress/3` uses, so the estimate and the displayed fraction
+  # still read one set of counts.
+  defp estimated_completion_date(progress, goals, today) do
+    {completed, total} = aggregate_children(progress)
+    remaining = total - completed
 
-  defp estimated_completion_date(%{completed: completed, total: total}, goals, today) do
-    case total - completed do
-      0 ->
-        nil
-
-      remaining ->
-        goals
-        |> Enum.map(& &1.column.board_id)
-        |> Enum.uniq()
-        |> Queries.list_completed_lead_times()
-        |> Estimation.estimated_completion_date(remaining, today)
+    if all_goals_complete?(progress) or remaining == 0 do
+      nil
+    else
+      goals
+      |> Enum.map(& &1.column.board_id)
+      |> Enum.uniq()
+      |> Queries.list_completed_lead_times()
+      |> Estimation.estimated_completion_date(remaining, today)
     end
   end
+
+  # Every member goal complete, per the same stored goal_complete? flag
+  # `Kanban.Targets.Status.derive/3` reads for its :complete verdict — so this
+  # gate suppresses exactly the targets the old `%{status: :complete}` match
+  # did. The one input the two read differently is an empty progress list, which
+  # `derive/3` calls :on_track while `Enum.all?/2` is vacuously true; that is
+  # output-neutral, because a childless target's remaining count is 0 and the
+  # next gate returns nil down either path.
+  defp all_goals_complete?(progress), do: Enum.all?(progress, & &1.goal_complete?)
 
   # The `Kanban.Targets.Status.derive/3` progress shape for one goal, computed
   # once here so the aggregate (`summarize_target/3`, `build_target_progress/3`)

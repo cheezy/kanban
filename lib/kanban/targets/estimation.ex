@@ -24,10 +24,10 @@ defmodule Kanban.Targets.Estimation do
       `nil` for `[]`, and that `nil` is passed through, never defaulted to `0`
       (a `0` would render a same-day estimate instead of suppressing it).
     * `remaining == 0` — either nothing was ever planned (a `0/0` childless
-      target) or everything credited is done while the derived status lags;
-      `today + 0` would be a meaningless promise either way. The `:complete`
-      status gate lives upstream in `Kanban.Targets.Progress`, which skips the
-      sample query entirely.
+      target) or everything credited is done while a goal is still open;
+      `today + 0` would be a meaningless promise either way. The
+      all-goals-complete gate lives upstream in `Kanban.Targets.Progress`,
+      which skips the sample query entirely.
 
   `Calculations.percentile/2` is deliberately reused across contexts — it is a
   pure math utility, and duplicating it here would only invite drift.
