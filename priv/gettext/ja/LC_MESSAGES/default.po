@@ -3315,6 +3315,7 @@ msgid "Review at the speed of approval"
 msgstr "承認するスピードでレビュー"
 
 #: lib/kanban_web/components/marketing_closing.ex:113
+#: lib/kanban_web/components/review_report_panel.ex:415
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:162
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
 #, elixir-autogen, elixir-format
@@ -6232,7 +6233,7 @@ msgstr "（説明なし）"
 msgid "Changes requested"
 msgstr "変更要求あり"
 
-#: lib/kanban_web/components/review_report_panel.ex:415
+#: lib/kanban_web/components/review_report_panel.ex:416
 #, elixir-autogen, elixir-format
 msgid "Code quality"
 msgstr "コード品質"
@@ -6360,7 +6361,7 @@ msgstr "30日以上前に完了したタスクは見つかりませんでした�
 msgid "Met"
 msgstr "達成"
 
-#: lib/kanban_web/components/review_report_panel.ex:416
+#: lib/kanban_web/components/review_report_panel.ex:417
 #, elixir-autogen, elixir-format
 msgid "Project check"
 msgstr "プロジェクトチェック"
@@ -6669,12 +6670,12 @@ msgstr "設定セクション"
 msgid "Review data unavailable"
 msgstr "レビューデータがありません"
 
-#: lib/kanban/tasks/completion_validation.ex:944
+#: lib/kanban/tasks/completion_validation.ex:979
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "ディスパッチされたレビューでは必須です: レビューキューが判定を表示できるよう status または issue_counts のいずれかを含めてください"
 
-#: lib/kanban/tasks/completion_validation.ex:937
+#: lib/kanban/tasks/completion_validation.ex:972
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "ディスパッチされたレビューでは必須です: レビューキューが表示する構造化フィールド %{field} がありません"
@@ -6693,12 +6694,12 @@ msgstr "ディスパッチされたレビューでは必須です: レビュー�
 msgid "N/A"
 msgstr "該当なし"
 
-#: lib/kanban/tasks/completion_validation.ex:956
+#: lib/kanban/tasks/completion_validation.ex:991
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "は不完全です: project_checks はプロジェクトチェックリストの %{expected} 項目のうち %{supplied} 項目のみを対象としています。すべてのチェックリスト項目を評価する必要があります"
 
-#: lib/kanban/tasks/completion_validation.ex:950
+#: lib/kanban/tasks/completion_validation.ex:985
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "実施済みレビューでは必須です: project_checks はプロジェクトチェックリストを網羅する空でないリストである必要があります"
@@ -7189,12 +7190,12 @@ msgstr "コーディングエージェントをセットアップする"
 msgid "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
 msgstr "記録されたレビュー数がこのタスクの受け入れ基準と一致しません。タスクの数を表示しています。"
 
-#: lib/kanban/tasks/completion_validation.ex:397
+#: lib/kanban/tasks/completion_validation.ex:432
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match"
 msgstr "タスクと矛盾しています: レビューには %{supplied} 件の受け入れ基準が記載されていますが、タスクは %{expected} 件を定義しています。件数は一致する必要があります"
 
-#: lib/kanban/tasks/completion_validation.ex:405
+#: lib/kanban/tasks/completion_validation.ex:440
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "タスクと矛盾しています: レビューは %{checked} 件の受け入れ基準を確認済みと報告していますが、タスクは %{expected} 件を定義しています。件数は一致する必要があります"

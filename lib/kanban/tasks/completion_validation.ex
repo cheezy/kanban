@@ -30,7 +30,28 @@ defmodule Kanban.Tasks.CompletionValidation do
   ]
 
   @severity_enum [:critical, :important, :minor]
-  @category_enum [:acceptance_criteria, :pitfall, :pattern, :testing, :code_quality]
+
+  # W1940: the seven recognized `issues[].category` values. The reviewer prompts
+  # have always documented seven — `security` for an unmitigated security
+  # consideration and `project_check` for a `not_met` CODE-REVIEW.md bullet — but
+  # this list carried only five, so a faithful reviewer report was rejected with a
+  # hard 422 on the changeset path regardless of the strict feature flag.
+  #
+  # Order follows the review methodology, with the two additions slotted beside
+  # the step they report on. Nothing indexes this list positionally: the sole
+  # consumer is the `in`-membership test in `check_enum/6`, and `reviewer_result`
+  # persists the *string* value into a `:jsonb` column with no Ecto.Enum and no
+  # CHECK constraint — so widening it re-interprets no persisted row.
+  @category_enum [
+    :acceptance_criteria,
+    :pitfall,
+    :pattern,
+    :testing,
+    :security,
+    :code_quality,
+    :project_check
+  ]
+
   @status_enum [:met, :not_met]
   @section_status_enum [:passed, :failed, :not_assessed]
 
@@ -165,6 +186,20 @@ defmodule Kanban.Tasks.CompletionValidation do
   the two lists are kept honest by a test rather than by a call.
   """
   def behaviour_test_statuses, do: @behaviour_test_status_enum
+
+  @doc """
+  The recognized `reviewer_result.issues[].category` values, as atoms (W1940).
+
+  Exposed as the single source of truth for the surfaces that restate the list
+  rather than derive it — the published API schema, the 422 error docs, and the
+  markdown API reference. Each of those is hand-maintained, so a drift guard
+  asserts them against this function instead of against a duplicated literal.
+
+  Not to be confused with `Kanban.Schemas.Task.BehaviourTestRow.categories/0`,
+  which is an unrelated seven-value taxonomy ("Happy path", "Boundary", ...) for
+  behaviour-test-matrix rows.
+  """
+  def issue_categories, do: @category_enum
 
   @doc """
   The number of top-level bullets in the canonical project checklist

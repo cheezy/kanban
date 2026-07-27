@@ -3318,6 +3318,7 @@ msgid "Review at the speed of approval"
 msgstr "Revisa a la velocidad de la aprobación"
 
 #: lib/kanban_web/components/marketing_closing.ex:113
+#: lib/kanban_web/components/review_report_panel.ex:415
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:162
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
 #, elixir-autogen, elixir-format
@@ -6247,7 +6248,7 @@ msgstr "(sin descripción)"
 msgid "Changes requested"
 msgstr "Cambios solicitados"
 
-#: lib/kanban_web/components/review_report_panel.ex:415
+#: lib/kanban_web/components/review_report_panel.ex:416
 #, elixir-autogen, elixir-format
 msgid "Code quality"
 msgstr "Calidad de código"
@@ -6375,7 +6376,7 @@ msgstr "No se encontraron tareas completadas hace más de 30 días."
 msgid "Met"
 msgstr "Cumplido"
 
-#: lib/kanban_web/components/review_report_panel.ex:416
+#: lib/kanban_web/components/review_report_panel.ex:417
 #, elixir-autogen, elixir-format
 msgid "Project check"
 msgstr "Verificación de proyecto"
@@ -6722,12 +6723,12 @@ msgstr "Secciones de configuración"
 msgid "Review data unavailable"
 msgstr "Datos de revisión no disponibles"
 
-#: lib/kanban/tasks/completion_validation.ex:944
+#: lib/kanban/tasks/completion_validation.ex:979
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "es obligatorio en una revisión despachada: incluya status o issue_counts para que la cola de revisión pueda mostrar el veredicto"
 
-#: lib/kanban/tasks/completion_validation.ex:937
+#: lib/kanban/tasks/completion_validation.ex:972
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "es obligatorio en una revisión despachada: falta el campo estructurado %{field} que muestra la cola de revisión"
@@ -6746,12 +6747,12 @@ msgstr "es obligatorio en una revisión despachada: falta el campo estructurado 
 msgid "N/A"
 msgstr "N/D"
 
-#: lib/kanban/tasks/completion_validation.ex:956
+#: lib/kanban/tasks/completion_validation.ex:991
 #, elixir-autogen, elixir-format
 msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
 msgstr "está incompleto: project_checks cubre %{supplied} de los %{expected} puntos de la lista de verificación del proyecto; cada punto de la lista debe evaluarse"
 
-#: lib/kanban/tasks/completion_validation.ex:950
+#: lib/kanban/tasks/completion_validation.ex:985
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
 msgstr "es obligatorio en una revisión realizada: project_checks debe ser una lista no vacía que cubra la lista de verificación del proyecto"
@@ -7242,12 +7243,12 @@ msgstr "Configura tu agente de programación"
 msgid "The recorded review count doesn't match this task's acceptance criteria; showing the task's count."
 msgstr "El recuento de revisión registrado no coincide con los criterios de aceptación de esta tarea; se muestra el recuento de la tarea."
 
-#: lib/kanban/tasks/completion_validation.ex:397
+#: lib/kanban/tasks/completion_validation.ex:432
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review lists %{supplied} acceptance-criteria entries but the task defines %{expected}; the counts must match"
 msgstr "es incoherente con la tarea: la revisión enumera %{supplied} entradas de criterios de aceptación, pero la tarea define %{expected}; los recuentos deben coincidir"
 
-#: lib/kanban/tasks/completion_validation.ex:405
+#: lib/kanban/tasks/completion_validation.ex:440
 #, elixir-autogen, elixir-format
 msgid "is inconsistent with the task: the review reports %{checked} acceptance criteria checked but the task defines %{expected}; the counts must match"
 msgstr "es incoherente con la tarea: la revisión informa %{checked} criterios de aceptación verificados, pero la tarea define %{expected}; los recuentos deben coincidir"

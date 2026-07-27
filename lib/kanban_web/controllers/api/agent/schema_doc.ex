@@ -201,11 +201,13 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
                   "pitfall",
                   "pattern",
                   "testing",
-                  "code_quality"
+                  "security",
+                  "code_quality",
+                  "project_check"
                 ],
                 required: true,
                 description:
-                  "Which review step surfaced this issue — mirrors the five-step review methodology."
+                  "Which review step surfaced this issue — one of the seven recognized review categories. Use `security` for an unmitigated security consideration and `project_check` for a `not_met` project checklist bullet."
               },
               file: %{
                 type: "string",

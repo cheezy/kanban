@@ -412,6 +412,7 @@ defmodule KanbanWeb.ReviewReportPanel do
   defp category_label("pitfall"), do: gettext("Pitfalls")
   defp category_label("pattern"), do: gettext("Patterns")
   defp category_label("testing"), do: gettext("Testing")
+  defp category_label("security"), do: gettext("Security")
   defp category_label("code_quality"), do: gettext("Code quality")
   defp category_label("project_check"), do: gettext("Project check")
   defp category_label(other) when is_binary(other), do: other

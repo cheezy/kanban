@@ -177,6 +177,33 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       assert html =~ "Missing @doc"
     end
 
+    # W1940: `security` was a documented reviewer category that the panel had no
+    # clause for, so it fell through to the binary passthrough and rendered as
+    # the raw untranslated literal "security".
+    test "renders security category in the issues list with localized label" do
+      task = %{
+        id: 876_009,
+        identifier: "W876i",
+        reviewer_result: %{
+          "schema_version" => "1.1",
+          "issues" => [
+            %{
+              "severity" => "critical",
+              "category" => "security",
+              "description" => "Unmitigated consideration"
+            }
+          ]
+        }
+      }
+
+      html = render_with(task)
+
+      assert html =~ "data-review-report-issue"
+      assert html =~ "Security:"
+      assert html =~ "Unmitigated consideration"
+      refute html =~ "security:"
+    end
+
     test "uses theme-aware tokens only — no hardcoded grays" do
       task = %{
         id: 876_005,

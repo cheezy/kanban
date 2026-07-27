@@ -705,10 +705,32 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
     end
 
+    test "accepts the security and project_check categories" do
+      payload =
+        Map.put(base_reviewer_payload(), "issues", [
+          %{
+            "severity" => "critical",
+            "category" => "security",
+            "description" => "Consideration 2 is not mitigated by the diff"
+          },
+          %{
+            "severity" => "important",
+            "category" => "project_check",
+            "description" => "CODE-REVIEW.md bullet 7 is not_met"
+          }
+        ])
+
+      assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
+    end
+
     test "accepts severity and category as atoms" do
       payload =
         base_reviewer_payload()
-        |> Map.put("issues", [%{"severity" => :important, "category" => :testing}])
+        |> Map.put("issues", [
+          %{"severity" => :important, "category" => :testing},
+          %{"severity" => :critical, "category" => :security},
+          %{"severity" => :minor, "category" => :project_check}
+        ])
 
       assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
     end
@@ -759,6 +781,12 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
       assert {_field, msg} = error_for(errors, :issue_category)
       assert msg =~ "issues[0]"
+
+      # W1940: the rejection message must name all seven recognized categories,
+      # so an agent that sent a wrong one can read the full allowed set off the
+      # error rather than guessing. Pins the enum order too.
+      assert msg =~
+               "acceptance_criteria, pitfall, pattern, testing, security, code_quality, project_check"
     end
 
     test "rejects issue entry missing severity" do
@@ -767,6 +795,14 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
       assert {_field, msg} = error_for(errors, :issue_severity)
       assert msg =~ "missing severity"
+    end
+
+    test "rejects issue entry missing category" do
+      payload = Map.put(base_reviewer_payload(), "issues", [%{"severity" => "minor"}])
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {_field, msg} = error_for(errors, :issue_category)
+      assert msg =~ "missing category"
     end
 
     test "rejects non-map issue entry" do

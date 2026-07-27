@@ -111,7 +111,7 @@ defmodule KanbanWeb.API.ErrorDocs do
         "dispatched=true without duration_ms (or reviewer counts)",
         "dispatched=false without a reason",
         "reviewer_result.issues entry missing severity or category " <>
-          "(severity: critical|important|minor; category: acceptance_criteria|pitfall|pattern|testing|code_quality)",
+          "(severity: critical|important|minor; category: acceptance_criteria|pitfall|pattern|testing|security|code_quality|project_check)",
         "reviewer_result.acceptance_criteria entry status uses space form 'not met' instead of underscore 'not_met'",
         "reviewer_result.testing_strategy / patterns / pitfalls section-verdict status not in passed|failed|not_assessed",
         "reviewer_result.schema_version present but not a semver-shaped string (e.g. '1.0' or '1.2.3')",

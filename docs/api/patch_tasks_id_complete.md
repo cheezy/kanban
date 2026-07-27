@@ -101,7 +101,7 @@ Per-entry enums:
 | Entry field | Enum values |
 |---|---|
 | `issues[].severity` | `critical`, `important`, `minor` |
-| `issues[].category` | `acceptance_criteria`, `pitfall`, `pattern`, `testing`, `code_quality` |
+| `issues[].category` | `acceptance_criteria`, `pitfall`, `pattern`, `testing`, `security`, `code_quality`, `project_check` |
 | `acceptance_criteria[].status` | `met`, `not_met` |
 | `testing_strategy.status`, `patterns.status`, `pitfalls.status` | `passed`, `failed`, `not_assessed` |
 

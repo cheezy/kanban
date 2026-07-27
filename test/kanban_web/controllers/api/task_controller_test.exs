@@ -3274,6 +3274,77 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["reviewer_result"] == valid_reviewer_result()
     end
 
+    # W1940: the two categories the reviewer prompts have always documented but
+    # the server rejected. These two tests pin BOTH enforcement paths, because
+    # they are independent: CompletionResultGate is grace-flag-gated at the HTTP
+    # boundary, while AgentWorkflow.validate_reviewer_result_payload runs the
+    # same validator from the changeset with no strict opt. A test that only
+    # exercised the gate would prove nothing about dev-environment behaviour.
+    test "strict mode: accepts a security-category issue through /complete (W1940)",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, true)
+
+      reviewer =
+        valid_reviewer_result()
+        |> Map.put("status", "changes_requested")
+        |> Map.put("issues_found", 2)
+        |> Map.put("issue_counts", %{"critical" => 1, "important" => 1, "minor" => 0})
+        |> Map.put("security_considerations", %{"status" => "failed"})
+        |> Map.put("issues", [
+          %{
+            "severity" => "critical",
+            "category" => "security",
+            "description" => "Listed consideration is not mitigated by the diff"
+          },
+          %{
+            "severity" => "important",
+            "category" => "project_check",
+            "description" => "A CODE-REVIEW.md bullet came back not_met"
+          }
+        ])
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", reviewer)
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["id"] == task.id
+      assert [security_issue, project_check_issue] = response["reviewer_result"]["issues"]
+      assert security_issue["category"] == "security"
+      assert project_check_issue["category"] == "project_check"
+    end
+
+    test "grace mode: an unrecognized issue category still 422s via the changeset path (W1940)",
+         %{conn: conn, task: task} do
+      Application.put_env(:kanban, :strict_completion_validation, false)
+
+      reviewer =
+        Map.put(valid_reviewer_result(), "issues", [
+          %{"severity" => "minor", "category" => "performance"}
+        ])
+
+      params =
+        base_completion_params()
+        |> Map.put("explorer_result", valid_explorer_result())
+        |> Map.put("reviewer_result", reviewer)
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", params)
+      response = json_response(conn, 422)
+
+      # Pin the assertion to the ENUM rejection specifically, not merely to
+      # "some reviewer_result error". Any grace-gated shape rule this payload
+      # tripped would 422 through the same changeset and the same field, so a
+      # bare non-nil check would keep passing even if the enum were re-narrowed.
+      messages = response["errors"]["reviewer_result"] |> List.wrap() |> Enum.join(" ")
+
+      assert messages =~ "issues[0] category must be one of"
+      assert messages =~ "security"
+      assert messages =~ "project_check"
+    end
+
     test "strict mode: valid skip-form reason is accepted", %{conn: conn, task: task} do
       Application.put_env(:kanban, :strict_completion_validation, true)
 
