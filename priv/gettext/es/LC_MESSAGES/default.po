@@ -52,7 +52,7 @@ msgstr " · Gestión de Tareas"
 #: lib/kanban_web/components/goal_progress_header.ex:208
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:79
-#: lib/kanban_web/components/target_progress_header.ex:181
+#: lib/kanban_web/components/target_progress_header.ex:211
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:613
 #: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/task_tokens.ex:23
@@ -2253,7 +2253,7 @@ msgstr "Volver al panel"
 #: lib/kanban_web/components/goal_progress_header.ex:204
 #: lib/kanban_web/components/marketing_mini_board.ex:188
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:75
-#: lib/kanban_web/components/target_progress_header.ex:177
+#: lib/kanban_web/components/target_progress_header.ex:207
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:609
 #: lib/kanban_web/live/goal_live/show.ex:287
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:227
@@ -2513,7 +2513,7 @@ msgstr "Análisis de cola y tiempo de espera"
 #: lib/kanban_web/components/goal_progress_header.ex:207
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:78
-#: lib/kanban_web/components/target_progress_header.ex:180
+#: lib/kanban_web/components/target_progress_header.ex:210
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:312
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:612
 #: lib/kanban_web/live/goal_live/show.ex:290
@@ -3209,7 +3209,7 @@ msgstr "Diff, pruebas, aceptación, telemetría de hooks — un solo panel. Apru
 #: lib/kanban_web/components/goal_progress_header.ex:206
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:77
-#: lib/kanban_web/components/target_progress_header.ex:179
+#: lib/kanban_web/components/target_progress_header.ex:209
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:611
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:21
@@ -3299,7 +3299,7 @@ msgstr "Producto"
 #: lib/kanban_web/components/goal_sidebar.ex:65
 #: lib/kanban_web/components/marketing_mini_board.ex:215
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:76
-#: lib/kanban_web/components/target_progress_header.ex:178
+#: lib/kanban_web/components/target_progress_header.ex:208
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:610
 #: lib/kanban_web/live/goal_live/show.ex:288
 #: lib/kanban_web/task_tokens.ex:20
@@ -4627,7 +4627,7 @@ msgid "Goal progress by status"
 msgstr "Progreso del objetivo por estado"
 
 #: lib/kanban_web/components/goal_progress_header.ex:105
-#: lib/kanban_web/components/target_progress_header.ex:99
+#: lib/kanban_web/components/target_progress_header.ex:115
 #, elixir-autogen, elixir-format
 msgid "%{done} of %{total} complete"
 msgstr "%{done} de %{total} completos"
@@ -4825,8 +4825,8 @@ msgstr "Ciclo prom."
 
 #: lib/kanban_web/components/delivery_health_band.ex:173
 #: lib/kanban_web/components/goal_sidebar.ex:58
-#: lib/kanban_web/components/target_progress_header.ex:187
-#: lib/kanban_web/components/targets_strip.ex:208
+#: lib/kanban_web/components/target_progress_header.ex:217
+#: lib/kanban_web/components/targets_strip.ex:222
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Complete"
 msgstr "Completo"
@@ -7294,7 +7294,7 @@ msgid "Operator"
 msgstr "Operador"
 
 #: lib/kanban_web/components/agents_header.ex:190
-#: lib/kanban_web/components/target_risk_explainer.ex:221
+#: lib/kanban_web/components/target_risk_explainer.ex:245
 #, elixir-autogen, elixir-format
 msgid "Stuck"
 msgstr "Atascado"
@@ -7556,28 +7556,28 @@ msgid "Send confirmation link"
 msgstr "Enviar enlace de confirmación"
 
 #: lib/kanban_web/components/delivery_health_band.ex:171
-#: lib/kanban_web/components/target_progress_header.ex:189
-#: lib/kanban_web/components/target_risk_explainer.ex:118
-#: lib/kanban_web/components/targets_strip.ex:210
+#: lib/kanban_web/components/target_progress_header.ex:219
+#: lib/kanban_web/components/target_risk_explainer.ex:124
+#: lib/kanban_web/components/targets_strip.ex:224
 #, elixir-autogen, elixir-format
 msgid "At-risk"
 msgstr "En riesgo"
 
 #: lib/kanban_web/components/delivery_health_band.ex:172
-#: lib/kanban_web/components/target_progress_header.ex:190
-#: lib/kanban_web/components/targets_strip.ex:211
+#: lib/kanban_web/components/target_progress_header.ex:220
+#: lib/kanban_web/components/targets_strip.ex:225
 #, elixir-autogen, elixir-format
 msgid "Missed"
 msgstr "Incumplido"
 
 #: lib/kanban_web/components/delivery_health_band.ex:170
-#: lib/kanban_web/components/target_progress_header.ex:188
-#: lib/kanban_web/components/targets_strip.ex:209
+#: lib/kanban_web/components/target_progress_header.ex:218
+#: lib/kanban_web/components/targets_strip.ex:223
 #, elixir-autogen, elixir-format
 msgid "On-track"
 msgstr "En curso"
 
-#: lib/kanban_web/components/targets_strip.ex:99
+#: lib/kanban_web/components/targets_strip.ex:101
 #, elixir-autogen, elixir-format
 msgid "Targets"
 msgstr "Metas"
@@ -7689,12 +7689,12 @@ msgstr "Aún no hay objetivos en esta meta."
 msgid "Target not found"
 msgstr "Meta no encontrada"
 
-#: lib/kanban_web/components/target_progress_header.ex:64
+#: lib/kanban_web/components/target_progress_header.ex:66
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Target"
 msgstr "Metas"
 
-#: lib/kanban_web/components/target_progress_header.ex:105
+#: lib/kanban_web/components/target_progress_header.ex:121
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Target progress by child status"
 msgstr "Progreso del objetivo por estado de hijos"
@@ -7730,12 +7730,12 @@ msgstr "Aún no hay metas de entrega."
 msgid "Soonest target date"
 msgstr "Fecha de meta más próxima"
 
-#: lib/kanban_web/components/target_risk_explainer.ex:224
+#: lib/kanban_web/components/target_risk_explainer.ex:248
 #, elixir-autogen, elixir-format
 msgid "Dormant"
 msgstr "Inactivo"
 
-#: lib/kanban_web/components/target_risk_explainer.ex:74
+#: lib/kanban_web/components/target_risk_explainer.ex:76
 #, elixir-autogen, elixir-format
 msgid "Why targets are at risk"
 msgstr "Por qué las metas están en riesgo"
@@ -7771,7 +7771,7 @@ msgstr "No se pudo asignar el objetivo"
 msgid "New owner"
 msgstr "Nuevo responsable"
 
-#: lib/kanban_web/components/target_risk_explainer.ex:162
+#: lib/kanban_web/components/target_risk_explainer.ex:186
 #: lib/kanban_web/live/agents_live.ex:1019
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reassign"
@@ -7836,7 +7836,7 @@ msgstr "No se pudo volver a priorizar el objetivo. Inténtalo de nuevo."
 msgid "New priority"
 msgstr "Nueva prioridad"
 
-#: lib/kanban_web/components/target_risk_explainer.ex:172
+#: lib/kanban_web/components/target_risk_explainer.ex:196
 #: lib/kanban_web/live/agents_live.ex:1057
 #, elixir-autogen, elixir-format
 msgid "Reprioritize"
@@ -8226,17 +8226,19 @@ msgstr "Archivada %{age}"
 msgid "Back to archived targets"
 msgstr "Volver a metas archivadas"
 
-#: lib/kanban_web/components/targets_strip.ex:143
+#: lib/kanban_web/components/target_progress_header.ex:80
+#: lib/kanban_web/components/targets_strip.ex:149
 #, elixir-autogen, elixir-format
 msgid "Est. %{date}"
 msgstr "Est. %{date}"
 
-#: lib/kanban_web/components/targets_strip.ex:140
+#: lib/kanban_web/components/target_progress_header.ex:252
+#: lib/kanban_web/components/targets_strip.ex:264
 #, elixir-autogen, elixir-format
 msgid "Estimated completion"
 msgstr "Finalización estimada"
 
-#: lib/kanban_web/components/targets_strip.ex:134
+#: lib/kanban_web/components/targets_strip.ex:139
 #, elixir-autogen, elixir-format
 msgid "Due. %{date}"
 msgstr "Due. %{date}"
@@ -8735,3 +8737,26 @@ msgstr "nombre de prueba planificado"
 #, elixir-autogen, elixir-format
 msgid "unit / manual"
 msgstr "unit / manual"
+
+#: lib/kanban_web/components/targets_strip.ex:154
+#: lib/kanban_web/components/targets_strip.ex:259
+#, elixir-autogen, elixir-format
+msgid "Estimated completion — after the %{target_date} target"
+msgstr "Finalización estimada: posterior a la fecha objetivo del %{target_date}"
+
+#: lib/kanban_web/components/target_progress_header.ex:84
+#: lib/kanban_web/components/target_progress_header.ex:251
+#, elixir-autogen, elixir-format
+msgid "Estimated completion — after the target date"
+msgstr "Finalización estimada: posterior a la fecha objetivo"
+
+#: lib/kanban_web/components/target_risk_explainer.ex:139
+#, elixir-autogen, elixir-format
+msgid "Finishing at the current pace would land %{estimate}, after the %{target_date} target. Reduce remaining work or move the target date."
+msgstr "Al ritmo actual, la finalización sería el %{estimate}, posterior a la fecha objetivo del %{target_date}. Reduce el trabajo restante o cambia la fecha objetivo."
+
+#: lib/kanban_web/components/target_progress_header.ex:83
+#: lib/kanban_web/components/targets_strip.ex:152
+#, elixir-autogen, elixir-format
+msgid "Slipped"
+msgstr "Retrasado"

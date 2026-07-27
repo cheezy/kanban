@@ -20,6 +20,8 @@ defmodule KanbanWeb.TargetProgressHeader do
   """
   use KanbanWeb, :html
 
+  alias Kanban.Targets.Status
+
   alias KanbanWeb.SegmentedProgressBar
 
   @doc """
@@ -67,6 +69,20 @@ defmodule KanbanWeb.TargetProgressHeader do
           {@target_date}
         </span>
         <span style={badge_style(@status_token)} data-target-status-badge>{@status_label}</span>
+        <span
+          :if={@estimate}
+          class="ident"
+          style={estimate_style(@estimate_slipped?)}
+          title={estimate_title(@estimate_slipped?)}
+          data-target-estimate
+          data-estimate-slipped={@estimate_slipped?}
+        >
+          {gettext("Est. %{date}", date: @estimate)}
+        </span>
+        <span :if={@estimate_slipped?} style={slip_chip_style()} data-estimate-slip-chip>
+          {gettext("Slipped")}
+          <span class="sr-only">{gettext("Estimated completion — after the target date")}</span>
+        </span>
       </div>
 
       <h1 style={[
@@ -143,6 +159,7 @@ defmodule KanbanWeb.TargetProgressHeader do
     |> assign_target_fields(summary.target)
     |> assign_status(summary.status)
     |> assign_progress(summary)
+    |> assign_estimate(summary)
     |> assign(:kv_rows, kv_rows(assigns.flow))
   end
 
@@ -172,6 +189,19 @@ defmodule KanbanWeb.TargetProgressHeader do
     |> assign(:pct, pct)
   end
 
+  # The projected completion date, and whether it lands after the target date.
+  # A slip is what makes the badge read At-risk when nothing is stalled, so the
+  # hero has to show it or the badge is unexplained on this page (W1952). Read
+  # from the summary the context supplies; never re-derived here.
+  defp assign_estimate(assigns, summary) do
+    estimate = Map.get(summary, :estimated_completion_date)
+    target_date = Map.get(summary.target, :target_date)
+
+    assigns
+    |> assign(:estimate, format_target_date(estimate))
+    |> assign(:estimate_slipped?, Status.slipped?(estimate, target_date))
+  end
+
   defp kv_rows(flow) do
     [
       {gettext("Backlog"), Map.get(flow, :backlog, 0), "var(--st-backlog)"},
@@ -196,6 +226,30 @@ defmodule KanbanWeb.TargetProgressHeader do
       "font-family: var(--font-mono); font-weight: 600;"
     ]
   end
+
+  # A slipping estimate stops being muted — it is the reason the badge beside it
+  # reads At-risk. It uses --ink-2, a gate-measured text-on-surface pair, rather
+  # than a status token as body text (the contrast gate measures --st-* only
+  # against its own -soft fill). The amber lives in the adjacent chip, where the
+  # pair IS measured.
+  defp estimate_style(true), do: "font-size: 11.5px; color: var(--ink-2); font-weight: 600;"
+
+  defp estimate_style(false), do: "font-size: 11.5px; color: var(--ink-3);"
+
+  # Same slip marker the targets strip uses: a translated label so colour is
+  # never the only signal, --st-doing on --st-doing-soft (a measured 9.09:1
+  # pair), and the --line border the chip-delineation rule requires.
+  defp slip_chip_style do
+    [
+      "font-size: 9.5px; padding: 0 5px; border-radius: 3px;",
+      "background: var(--st-doing-soft); color: var(--st-doing);",
+      "border: 1px solid var(--line);",
+      "font-family: var(--font-mono); font-weight: 600;"
+    ]
+  end
+
+  defp estimate_title(true), do: gettext("Estimated completion — after the target date")
+  defp estimate_title(false), do: gettext("Estimated completion")
 
   defp format_target_date(%Date{} = date), do: Calendar.strftime(date, "%b %-d, %Y")
   defp format_target_date(_), do: nil

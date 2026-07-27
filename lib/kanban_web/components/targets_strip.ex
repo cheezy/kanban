@@ -70,6 +70,8 @@ defmodule KanbanWeb.TargetsStrip do
   """
   use KanbanWeb, :html
 
+  alias Kanban.Targets.Status
+
   @doc """
   Renders the targets strip.
 
@@ -121,6 +123,9 @@ defmodule KanbanWeb.TargetsStrip do
       |> assign(:token, token)
       |> assign(:label, label)
       |> assign(:estimated_date, Map.get(assigns.entry, :estimated_completion_date))
+      |> then(
+        &assign(&1, :slipped?, Status.slipped?(&1.estimated_date, &1.entry.target.target_date))
+      )
 
     ~H"""
     <.link navigate={~p"/targets/#{@entry.target.id}"} style={card_style(@token)} data-target-card>
@@ -136,11 +141,20 @@ defmodule KanbanWeb.TargetsStrip do
       <span :if={@estimated_date} style={divider_style()} data-pill-divider aria-hidden="true"></span>
       <span
         :if={@estimated_date}
-        style="font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono); font-style: italic; opacity: 0.75;"
-        title={gettext("Estimated completion")}
+        style={estimated_date_style(@slipped?)}
+        title={estimated_date_title(@slipped?, @entry.target.target_date)}
         data-estimated-date
+        data-estimate-slipped={@slipped?}
       >
         {gettext("Est. %{date}", date: format_date(@estimated_date))}
+      </span>
+      <span :if={@slipped?} style={slip_chip_style()} data-estimate-slip-chip>
+        {gettext("Slipped")}
+        <span class="sr-only">
+          {gettext("Estimated completion — after the %{target_date} target",
+            target_date: format_date(@entry.target.target_date)
+          )}
+        </span>
       </span>
 
       <span style={divider_style()} data-pill-divider aria-hidden="true"></span>
@@ -211,4 +225,41 @@ defmodule KanbanWeb.TargetsStrip do
   defp status_badge(:missed), do: {"blocked", gettext("Missed")}
 
   defp format_date(%Date{} = date), do: Calendar.strftime(date, "%b %-d, %Y")
+
+  # A slipping estimate stops being de-emphasized: it is the reason the badge
+  # beside it reads At-risk. It takes --ink-2 (a measured text-on-surface pair)
+  # at full opacity rather than a status token as body text — the contrast gate
+  # measures --st-* only against its own -soft fill, so a status token used as
+  # text on --surface would be an unvalidated pair. The amber lives in the
+  # adjacent chip instead, where the pair IS measured.
+  defp estimated_date_style(true) do
+    "font-size: 10.5px; color: var(--ink-2); font-family: var(--font-mono); font-style: italic; font-weight: 600;"
+  end
+
+  defp estimated_date_style(false) do
+    "font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono); font-style: italic; opacity: 0.75;"
+  end
+
+  # The slip marker. Colour alone must not carry the meaning, so the state is
+  # spelled out in a translated label; the soft fill + --line border follow the
+  # chip-delineation rule in docs/dark-mode-contract.md, and
+  # --st-doing on --st-doing-soft is a gate-measured pair (9.09:1).
+  defp slip_chip_style do
+    [
+      "font-size: 9.5px; padding: 0 5px; border-radius: 3px;",
+      "background: var(--st-doing-soft); color: var(--st-doing);",
+      "border: 1px solid var(--line);",
+      "font-family: var(--font-mono); font-weight: 600; white-space: nowrap;"
+    ]
+  end
+
+  # The title is what makes the due-vs-estimate relationship legible rather than
+  # something the reader has to infer from two dates sitting next to each other.
+  defp estimated_date_title(true, %Date{} = target_date) do
+    gettext("Estimated completion — after the %{target_date} target",
+      target_date: format_date(target_date)
+    )
+  end
+
+  defp estimated_date_title(false, _target_date), do: gettext("Estimated completion")
 end

@@ -92,6 +92,56 @@ defmodule KanbanWeb.TargetProgressHeaderTest do
     end
   end
 
+  describe "target_progress_header/1 — estimated completion (W1952)" do
+    test "renders no estimate markup when the summary carries none" do
+      html = render_header(summary(), flow())
+
+      refute html =~ "data-target-estimate"
+      refute html =~ "Est."
+    end
+
+    test "renders an on-time estimate muted, without a slip marker" do
+      html =
+        render_header(
+          summary(%{status: :on_track, estimated_completion_date: ~D[2026-12-20]}),
+          flow()
+        )
+
+      assert html =~ "data-target-estimate"
+      assert html =~ "Est. Dec 20, 2026"
+      refute html =~ "data-estimate-slipped"
+      refute html =~ "data-estimate-slip-chip"
+    end
+
+    test "marks an estimate past the target date as a slip, explaining the badge" do
+      html =
+        render_header(
+          summary(%{status: :at_risk, estimated_completion_date: ~D[2027-03-03]}),
+          flow()
+        )
+
+      assert html =~ "data-estimate-slipped"
+      assert html =~ "Est. Mar 3, 2027"
+      # Colour is never the only signal: the state is spelled out in a chip,
+      # using the gate-measured --st-doing/--st-doing-soft pair plus the border
+      # the chip-delineation rule requires.
+      assert html =~ "data-estimate-slip-chip"
+      assert html =~ "Slipped"
+      assert html =~ "background: var(--st-doing-soft); color: var(--st-doing);"
+      assert html =~ "border: 1px solid var(--line);"
+      assert html =~ "after the target date"
+      # The target date it slipped past is right there in the same row.
+      assert html =~ "Dec 31, 2026"
+    end
+
+    test "tolerates a summary missing the estimate key entirely" do
+      html = render_header(summary(), flow())
+
+      assert html =~ "data-target-progress-header"
+      refute html =~ "data-target-estimate"
+    end
+  end
+
   describe "target_progress_header/1 — progress" do
     test "renders the aggregate percentage and the N-of-M complete count" do
       html = render_header(summary(%{completed: 3, total: 10}), flow())

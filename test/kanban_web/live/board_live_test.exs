@@ -215,6 +215,42 @@ defmodule KanbanWeb.BoardLiveTest do
       assert title_pos < strip_pos
     end
 
+    test "the strip shows the slip relationship when the estimate is past the due date",
+         %{conn: conn, user: user} do
+      # End to end: a target due in the past-relative sense — 4 of 5 children
+      # done at an exact 1-day pace, so the estimate lands one day past the due
+      # date — must reach the strip carrying both the slip marker and the
+      # relationship in the estimate's title (W1952).
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal = task_fixture(column, %{title: "Launch Goal", type: :goal})
+
+      for _ <- 1..4 do
+        column
+        |> task_fixture(%{parent_id: goal.id})
+        |> Ecto.Changeset.change(
+          status: :completed,
+          completed_at: ~U[2026-07-01 12:00:00Z],
+          inserted_at: ~N[2026-06-30 12:00:00]
+        )
+        |> Kanban.Repo.update!()
+      end
+
+      _remaining = task_fixture(column, %{parent_id: goal.id})
+
+      target =
+        delivery_target_fixture(user, %{name: "Slipping Launch", target_date: Date.utc_today()})
+
+      scope = Kanban.Accounts.Scope.for_user(user)
+      {:ok, _goal} = Kanban.Targets.assign_goal(scope, goal, target)
+
+      {:ok, _index_live, html} = live(conn, ~p"/boards")
+
+      assert html =~ "Slipping Launch"
+      assert html =~ "data-estimate-slipped"
+      assert html =~ "after the #{Calendar.strftime(Date.utc_today(), "%b %-d, %Y")} target"
+    end
+
     test "renders no targets strip when the user has no targets", %{conn: conn, user: user} do
       _board = board_fixture(user)
 

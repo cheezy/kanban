@@ -85,6 +85,7 @@ defmodule Kanban.Targets.DeliveryRollup do
   @type target_rollup :: %{
           target: DeliveryTarget.t(),
           status: Status.status(),
+          estimated_completion_date: Date.t() | nil,
           goals: [Task.t()],
           agents: [Agent.t()],
           stalled_goals: [Task.t()],
@@ -175,15 +176,18 @@ defmodule Kanban.Targets.DeliveryRollup do
   # Since W1951 that status also accounts for the estimated completion date,
   # computed from one batched lead-time query for the whole target list, so the
   # band badges a target exactly as the boards strip does at no per-target query
-  # cost. The entry deliberately carries no estimate DATE: the band renders a
-  # badge, not a projection.
+  # cost. The entry also carries the estimate DATE itself (W1952): the health
+  # band renders only a badge, but `KanbanWeb.TargetRiskExplainer` has to name
+  # the projected date alongside the target date to explain a slip-driven
+  # :at_risk. It is the same value the status was derived from, passed through
+  # rather than recomputed.
   defp build_target_rollups(scope, today, agents, bridges) do
     scope
     |> Targets.list_targets_with_status_and_goals(today)
     |> Enum.map(&target_rollup(&1, agents, bridges))
   end
 
-  defp target_rollup(%{target: target, status: status, goals: goals}, agents, bridges) do
+  defp target_rollup(%{target: target, status: status, goals: goals} = summary, agents, bridges) do
     target_agents = Enum.filter(agents, &active_on_target?(&1, target.id, bridges))
     stalled_agents = Enum.filter(target_agents, &stalled?/1)
     stalled_goals = stalled_goals(goals, stalled_agents, target.id, bridges)
@@ -191,6 +195,7 @@ defmodule Kanban.Targets.DeliveryRollup do
     %{
       target: target,
       status: status,
+      estimated_completion_date: Map.get(summary, :estimated_completion_date),
       goals: goals,
       agents: target_agents,
       stalled_goals: stalled_goals,

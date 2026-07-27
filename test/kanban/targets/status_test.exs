@@ -150,6 +150,41 @@ defmodule Kanban.Targets.StatusTest do
     end
   end
 
+  describe "slipped?/2" do
+    # Public since W1952 so the badge and the three surfaces that explain it
+    # share one comparison instead of three copies of it.
+    test "an estimate strictly after the target date is a slip" do
+      assert Status.slipped?(~D[2026-07-27], ~D[2026-07-26])
+    end
+
+    test "an estimate exactly on the target date is not a slip" do
+      refute Status.slipped?(~D[2026-07-26], ~D[2026-07-26])
+    end
+
+    test "an estimate before the target date is not a slip" do
+      refute Status.slipped?(~D[2026-07-25], ~D[2026-07-26])
+    end
+
+    test "a nil on either side is never a slip" do
+      refute Status.slipped?(nil, ~D[2026-07-26])
+      refute Status.slipped?(~D[2026-07-27], nil)
+      refute Status.slipped?(nil, nil)
+    end
+
+    test "agrees with the verdict derive/4 reaches for the same dates" do
+      # The whole point of making it public: a target the badge calls :at_risk
+      # for a slip must be one the predicate also calls slipped.
+      t = target(~D[2026-01-01], ~D[2026-01-11])
+      goals = [goal(5, 10, false)]
+
+      assert Status.slipped?(~D[2026-01-12], ~D[2026-01-11])
+      assert Status.derive(t, goals, ~D[2026-01-06], ~D[2026-01-12]) == :at_risk
+
+      refute Status.slipped?(~D[2026-01-11], ~D[2026-01-11])
+      assert Status.derive(t, goals, ~D[2026-01-06], ~D[2026-01-11]) == :on_track
+    end
+  end
+
   describe "derive/4 estimate slip" do
     # Baseline: the on-track fixture above (window 10, elapsed 0.5, work 0.5,
     # gap 0.0), so any :at_risk verdict here comes from the estimate, not lag.

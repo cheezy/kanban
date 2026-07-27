@@ -33,6 +33,18 @@ defmodule KanbanWeb.TargetRiskExplainerTest do
   end
 
   defp target(id, name), do: %{id: id, name: name}
+
+  # A target carrying its own due date, plus the projected completion date the
+  # rollup entry has carried since W1952 — the pair the slip reason names.
+  defp dated_entry(status, id, name, opts) do
+    status
+    |> entry(
+      %{id: id, name: name, target_date: Keyword.fetch!(opts, :target_date)},
+      Keyword.get(opts, :details, [])
+    )
+    |> Map.put(:estimated_completion_date, Keyword.get(opts, :estimate))
+  end
+
   defp goal(id, title), do: %{id: id, title: title}
 
   defp agent(name, opts) do
@@ -96,6 +108,68 @@ defmodule KanbanWeb.TargetRiskExplainerTest do
       refute html =~ "text-gray-"
       refute html =~ "bg-white"
       refute html =~ "#fff"
+    end
+  end
+
+  describe "target_risk_explainer/1 with an estimate slip (W1952)" do
+    test "explains an at-risk target whose only problem is a slipping estimate" do
+      html =
+        render_explainer([
+          dated_entry(:at_risk, 1, "Launch",
+            target_date: ~D[2026-07-26],
+            estimate: ~D[2026-08-10]
+          )
+        ])
+
+      # Before W1952 this entry was filtered out entirely: no stalled details
+      # meant the badge changed with no explanation anywhere in the UI.
+      assert html =~ "data-target-risk-explainer"
+      assert html =~ ~s(data-target-risk-slip="1")
+      # The reason names BOTH dates, so the user can see the relationship.
+      assert html =~ "Aug 10, 2026"
+      assert html =~ "Jul 26, 2026"
+      assert html =~ "Reduce remaining work or move the target date"
+    end
+
+    test "shows the slip reason alongside stalled goals when a target has both" do
+      html =
+        render_explainer([
+          dated_entry(:at_risk, 1, "Launch",
+            target_date: ~D[2026-07-26],
+            estimate: ~D[2026-08-10],
+            details: [%{goal: goal(10, "Ship API"), agents: [agent("Ada", stuck: true)]}]
+          )
+        ])
+
+      assert html =~ ~s(data-target-risk-slip="1")
+      assert html =~ ~s(data-target-risk-goal="10")
+      assert html =~ "Ship API"
+    end
+
+    test "an estimate on or before the target date is not a slip" do
+      html =
+        render_explainer([
+          dated_entry(:at_risk, 1, "Launch",
+            target_date: ~D[2026-07-26],
+            estimate: ~D[2026-07-26]
+          )
+        ])
+
+      # Nothing stalled and nothing slipped — no reason to give, so nothing is
+      # rendered, exactly as before W1952.
+      refute html =~ "data-target-risk-explainer"
+    end
+
+    test "an on-track target with a slipping estimate is not explained" do
+      html =
+        render_explainer([
+          dated_entry(:on_track, 1, "Launch",
+            target_date: ~D[2026-07-26],
+            estimate: ~D[2026-08-10]
+          )
+        ])
+
+      refute html =~ "data-target-risk-explainer"
     end
   end
 

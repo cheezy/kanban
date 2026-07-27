@@ -130,12 +130,39 @@ defmodule KanbanWeb.TargetsStripTest do
       assert count_dividers(html) == 4
     end
 
-    test "de-emphasizes the estimate relative to the fixed target date" do
-      html = render_targets([entry(%{estimated_completion_date: ~D[2027-03-03]})])
+    test "de-emphasizes an on-time estimate relative to the fixed target date" do
+      # On or before the target date, so it is not a slip and stays muted.
+      html = render_targets([entry(%{estimated_completion_date: ~D[2026-12-30]})])
 
       assert html =~ "font-style: italic; opacity: 0.75;"
+      refute html =~ "data-estimate-slipped"
       # 3 cluster dividers + the conditional separator between the dates.
       assert count_dividers(html) == 4
+    end
+
+    test "marks an estimate that lands after the target date as a slip" do
+      html = render_targets([entry(%{estimated_completion_date: ~D[2027-03-03]})])
+
+      assert html =~ "data-estimate-slipped"
+      # Colour is never the only signal: the state is spelled out in a chip.
+      assert html =~ "data-estimate-slip-chip"
+      assert html =~ "Slipped"
+      # The chip uses the gate-measured --st-doing/--st-doing-soft pair and
+      # carries the border the chip-delineation rule requires.
+      assert html =~ "background: var(--st-doing-soft); color: var(--st-doing);"
+      assert html =~ "border: 1px solid var(--line);"
+      # The estimate itself stops being de-emphasized.
+      refute html =~ "font-style: italic; opacity: 0.75;"
+      # The title spells out the relationship rather than leaving it inferred.
+      assert html =~ "after the Dec 31, 2026 target"
+    end
+
+    test "an estimate landing exactly on the target date is not a slip" do
+      html = render_targets([entry(%{estimated_completion_date: ~D[2026-12-31]})])
+
+      refute html =~ "data-estimate-slipped"
+      refute html =~ "data-estimate-slip-chip"
+      assert html =~ "font-style: italic; opacity: 0.75;"
     end
 
     test "renders no estimate markup at all when the value is nil" do

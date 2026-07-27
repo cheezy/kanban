@@ -271,6 +271,39 @@ defmodule Kanban.Targets.DeliveryRollupTest do
              } = entry
 
       assert status in [:complete, :missed, :at_risk, :on_track]
+      assert Map.has_key?(entry, :estimated_completion_date)
+    end
+
+    test "carries the summary's estimated completion date so a slip can be explained",
+         %{scope: scope, doing: doing} do
+      # W1952: KanbanWeb.TargetRiskExplainer names both dates when a target is
+      # at risk from an estimate slip, so the rollup entry has to forward the
+      # date the status was derived from — not just the status.
+      target =
+        delivery_target_fixture(scope.user, %{name: "Slipping", target_date: ~D[2026-07-26]})
+
+      goal = goal_on_target(doing, target)
+
+      # 4 children completed at an exact 1-day lead (the pace sample) + 1 open,
+      # so remaining is 1 and the projection is today + 1 day.
+      for _ <- 1..4 do
+        doing
+        |> task_fixture(%{parent_id: goal.id})
+        |> Ecto.Changeset.change(
+          status: :completed,
+          completed_at: ~U[2026-07-01 12:00:00Z],
+          inserted_at: ~N[2026-06-30 12:00:00]
+        )
+        |> Repo.update!()
+      end
+
+      task_fixture(doing, %{parent_id: goal.id})
+
+      [entry] = DeliveryRollup.build(scope, today: ~D[2026-07-26]).targets
+
+      assert entry.estimated_completion_date == ~D[2026-07-27]
+      # The same value the status was derived from — a slip past Jul 26.
+      assert entry.status == :at_risk
     end
   end
 

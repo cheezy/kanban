@@ -21,6 +21,7 @@ defmodule KanbanWeb.TargetRiskExplainer do
   """
   use KanbanWeb, :html
 
+  alias Kanban.Targets.Status
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
 
@@ -30,9 +31,10 @@ defmodule KanbanWeb.TargetRiskExplainer do
   ## Attrs
 
     * `targets` — the `:targets` list from `Kanban.Targets.DeliveryRollup.build/2`.
-      Required. Only entries whose `:status` is `:at_risk` and that have a
-      non-empty `:stalled_details` are shown; when none qualify the component
-      renders nothing.
+      Required. An entry is shown when its `:status` is `:at_risk` AND there is
+      a reason to give: stalled goals, an `:estimated_completion_date` past the
+      target date, or both. An at-risk entry with neither — and the component
+      as a whole when nothing qualifies — renders nothing.
   """
   attr :targets, :list, required: true
 
@@ -51,7 +53,7 @@ defmodule KanbanWeb.TargetRiskExplainer do
       "handle_event name pushed (with phx-value-goal-id) when a Reprioritize control is clicked."
 
   def target_risk_explainer(assigns) do
-    assigns = assign(assigns, :at_risk, Enum.filter(assigns.targets, &at_risk_with_stall?/1))
+    assigns = assign(assigns, :at_risk, Enum.filter(assigns.targets, &explainable?/1))
 
     ~H"""
     <section
@@ -92,8 +94,12 @@ defmodule KanbanWeb.TargetRiskExplainer do
   attr :on_reassign, :string, default: nil
   attr :on_reprioritize, :string, default: nil
 
-  # One at-risk target: its name, an At-risk badge, and a block per stalled goal.
+  # One at-risk target: its name, an At-risk badge, the estimate-slip reason
+  # when its projected date is past its target date, and a block per stalled
+  # goal. An entry can show either reason, or both.
   defp target_card(assigns) do
+    assigns = assign(assigns, :slipped?, slipped?(assigns.entry))
+
     ~H"""
     <div
       data-target-risk-card={@entry.target.id}
@@ -118,6 +124,24 @@ defmodule KanbanWeb.TargetRiskExplainer do
           {gettext("At-risk")}
         </span>
       </div>
+
+      <p
+        :if={@slipped?}
+        data-target-risk-slip={@entry.target.id}
+        style={[
+          "margin: 0;",
+          "padding: 4px 0 4px 10px;",
+          "font-size: 11.5px; line-height: 1.45;",
+          "color: var(--ink-2);",
+          "border-left: 2px solid var(--st-doing);"
+        ]}
+      >
+        {gettext(
+          "Finishing at the current pace would land %{estimate}, after the %{target_date} target. Reduce remaining work or move the target date.",
+          estimate: format_date(@entry.estimated_completion_date),
+          target_date: format_date(@entry.target.target_date)
+        )}
+      </p>
 
       <.goal_block
         :for={detail <- @entry.stalled_details}
@@ -236,6 +260,33 @@ defmodule KanbanWeb.TargetRiskExplainer do
     ]
   end
 
-  defp at_risk_with_stall?(%{status: :at_risk, stalled_details: [_ | _]}), do: true
-  defp at_risk_with_stall?(_), do: false
+  # An at-risk target is explained when there is something to say about it:
+  # stalled work, OR an estimate that has slipped past the target date. A
+  # target can be at risk for either of two independent reasons (see
+  # `Kanban.Targets.Status`), and filtering to stalled entries alone hid the
+  # second one entirely — the badge changed with no explanation anywhere in the
+  # UI. An entry with neither still renders nothing, exactly as before: a card
+  # with no reason in it explains less than no card at all.
+  defp explainable?(%{status: :at_risk} = entry) do
+    stalled?(entry) or slipped?(entry)
+  end
+
+  defp explainable?(_), do: false
+
+  defp stalled?(%{stalled_details: [_ | _]}), do: true
+  defp stalled?(_), do: false
+
+  # Reads the two dates the context already supplied and asks the derivation's
+  # own predicate whether that is a slip — never its own copy of the comparison,
+  # so the explanation cannot recognise a different set of targets than the
+  # badge does.
+  defp slipped?(%{estimated_completion_date: estimate, target: %{target_date: target_date}}) do
+    Status.slipped?(estimate, target_date)
+  end
+
+  defp slipped?(_), do: false
+
+  # Same format the targets strip and the target header use for both dates, so
+  # the three surfaces read identically.
+  defp format_date(%Date{} = date), do: Calendar.strftime(date, "%b %-d, %Y")
 end

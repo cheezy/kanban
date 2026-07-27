@@ -177,10 +177,31 @@ defmodule Kanban.Targets.Status do
       goal_progress == [] -> :on_track
       all_complete?(goal_progress) -> :complete
       past_target?(target, today) -> :missed
-      lagging?(target, goal_progress, today) or slipped?(target, estimate) -> :at_risk
+      lagging?(target, goal_progress, today) or slipped?(estimate, target.target_date) -> :at_risk
       true -> :on_track
     end
   end
+
+  @doc """
+  Whether `estimate` is a *slip* — strictly after `target_date` (D182).
+
+  Public because the badge and the three surfaces that explain it must make
+  exactly this comparison, never their own copy of it: `KanbanWeb.TargetsStrip`,
+  `KanbanWeb.TargetProgressHeader`, and `KanbanWeb.TargetRiskExplainer` all call
+  it so a target can never be badged `:at_risk` for a slip the explanation does
+  not recognise (W1952). D123 and D182 were both defects of exactly that shape.
+
+  `nil` on either side — no estimate available, or a caller that does not
+  estimate — is never a slip, which is what reproduces the pre-D182 behaviour
+  for callers that supply none. The comparison is strictly `:gt`, so an estimate
+  landing exactly ON the target date is not a slip.
+  """
+  @spec slipped?(Date.t() | nil, Date.t() | nil) :: boolean()
+  def slipped?(%Date{} = estimate, %Date{} = target_date) do
+    Date.compare(estimate, target_date) == :gt
+  end
+
+  def slipped?(_estimate, _target_date), do: false
 
   # Every member goal complete, per the stored goal_complete? flag (never
   # re-derived from children). Only reached for a non-empty list.
@@ -189,18 +210,6 @@ defmodule Kanban.Targets.Status do
   # today strictly after the target date.
   defp past_target?(%DeliveryTarget{target_date: target_date}, today) do
     Date.compare(today, target_date) == :gt
-  end
-
-  # The caller-supplied estimated completion date lands strictly after the
-  # target date (D182). nil — no estimate available, or a caller that does not
-  # estimate — is never a slip, so the pre-D182 behaviour is reproduced exactly.
-  # Independent of the creation->target window, so it still fires when
-  # lagging?/3's degenerate guard short-circuits to false. The nil clause comes
-  # first so Date.compare/2 is never handed a nil.
-  defp slipped?(_target, nil), do: false
-
-  defp slipped?(%DeliveryTarget{target_date: target_date}, %Date{} = estimate) do
-    Date.compare(estimate, target_date) == :gt
   end
 
   # Work completion trails calendar elapsed by more than @lag_threshold. Guards
