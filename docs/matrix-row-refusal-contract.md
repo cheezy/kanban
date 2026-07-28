@@ -272,6 +272,34 @@ the gate checks for. Pass it through untouched.
 Every existing gate check still runs unchanged. The third exit is an exit from the loop,
 not a relaxation of the gate.
 
+## The PATCH round trip is not a new copy (decided, D185)
+
+The driver bullet mandates recording a row's status advance by PATCHing the matrix, and
+in the same breath forbids letting a credential reach "the matrix PATCH body". On a task
+whose matrix carries a credential-bearing row those were unsatisfiable together, because
+the PATCH is a whole-array replace (`embeds_many :behaviour_test_matrix, BehaviourTestRow,
+on_replace: :delete`) and `validate_behaviour_test_matrix_completeness/1` rejects a
+non-empty matrix missing any of the seven categories. Verified against the schema, not
+assumed: a subset PATCH fails completeness, and `[]` only "succeeds" by destroying every
+recorded status.
+
+**Decision: re-sending row text the task record already stores, byte-for-byte unchanged,
+back onto that same record's own `behaviour_test_matrix` is not a new copy, and the secret
+rule does not forbid it.** The agent has exactly one correct action when a matrix carries a
+credential-bearing row and a different row legitimately advances: PATCH the whole array with
+every row's text byte-identical to what is already stored, carrying only the status advances
+actually made, and leave the credential-bearing row exactly as the task authored it.
+
+The carve-out is deliberately narrow — one field, that task's own record, already-stored
+text, unchanged. It is not licence to put credential material into any other request body,
+field, or endpoint, and every other sink in the never-reach list (code, tests, commit
+messages, `completion_notes`, the reviewer prompt) still binds in full.
+
+**The redaction sentinel stays reviewer-echo-only.** Substituting it into the task record
+would rewrite the author's row and desynchronise it from the verbatim row-for-row echo the
+reviewer emits and the completion self-check enforces — which is why redacting was rejected
+as the resolution.
+
 ## What actually defends the render path (verified, W1947)
 
 Row text is **attacker-controlled at the API boundary** — anyone POSTing directly to the
