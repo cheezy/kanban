@@ -5,6 +5,216 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.0] - 2026-07-28
+
+Agent-authored findings now reach a human, and a delivery target tells you it is going to be late before the date arrives.
+
+### Added
+
+#### Completion notes are persisted and shown on the Review queue
+
+`completion_notes` had been documented as the place an agent records findings a human needs to read — exploratory-testing results, a refused behaviour-matrix row — but it was never a field on the task. The completion endpoint accepted it, the changeset silently discarded it, and the agent got a success response with no signal that its report had vanished. It is now a real column, cast on the completion path, returned by the API, and rendered on the Review queue beside the completion summary. It stays optional: omitting it leaves any stored value untouched.
+
+Because the field is agent-authored free text now shown to humans, the completion path also scans it for credential *shapes* — token formats, key blocks, opaque secret assignments — and raises a security audit event without ever logging the matched text. The scan deliberately detects rather than blocks or rewrites: a legitimate refusal narrative is *about* credentials, so rejecting on that vocabulary would break the workflow the field exists to serve.
+
+#### A target warns you when its own estimate slips past its date
+
+A delivery target now derives `at_risk` from its estimated completion date rather than waiting for the target date to pass. When the estimate — projected from median lead time across the target's member goals — lands after the target date, the badge reads at risk, and the reason is surfaced wherever the status is explained rather than left as an unexplained colour change.
+
+### Fixed
+
+#### Matrix row text is confirmed escaped, and the rule that says so is now true
+
+Behaviour-matrix row text is attacker-controlled at the API boundary — anyone posting directly to the API never sees the authoring guidance. Every render surface was read and confirmed to interpolate row values through auto-escaped templates with no raw-HTML helper anywhere on the path, and the seven category strings and four row statuses were confirmed to be hard-rejected server-side rather than merely documented as such. Escaping tests were added for the surfaces that lacked them, including attribute context and an unrecognized category. The agent-facing guidance was reworded to cite the real render-side control instead of implying the "don't type raw HTML" convention was the defense.
+
+#### The matrix secret rule no longer contradicts itself
+
+The implementation-driver guidance mandated recording a row's status advance by PATCHing the matrix, and in the same breath forbade letting a credential reach the PATCH body. On a task whose matrix carried a credential-bearing row those were unsatisfiable together: the PATCH replaces the whole array, and a partial matrix is rejected for not covering every category, so advancing any row re-sends them all. The guidance now states that re-sending already-stored row text back onto its own record is not a new copy, and names one correct action — scoped narrowly enough that it is not a general licence to put credential material in a request body.
+
+## [2.12.0] - 2026-07-25
+
+Tasks gained a behaviour/test matrix, and the workspace gained a navigation spine.
+
+### Added
+
+#### Behaviour/test matrix on tasks
+
+A task can now carry a **behaviour/test matrix**: a list of rows pairing a behaviour the change must satisfy with the real test that covers it, or an explicit reason the row is waived. Each row carries a category drawn from seven fixed values (happy path, boundary, error/exception, null/empty, concurrency, lifecycle/wiring, contract/serialization), a status (planned, passing, failing, not applicable), and an optional test name and type.
+
+The field is optional, but a non-empty matrix must cover all seven categories — a partial matrix is rejected naming the ones missing. It is editable from the task create/edit form, accepted and serialized through the JSON API, rendered on the task detail view, and echoed by the reviewer into a verdict shown on the Review queue.
+
+#### A workspace navigation spine
+
+The boards index gained a header showing aggregated workspace stats and an avatar stack of active agents, plus a nav strip linking the Agents page, Review queue, and Metrics from every page — so the workspace-level views are reachable without going through a board first.
+
+#### Per-consideration security mitigation breakdown
+
+When a task lists security considerations, the Review queue now shows an always-visible per-consideration breakdown of whether each one was actually mitigated, rather than a single rolled-up verdict.
+
+### Changed
+
+#### Admin pages became tabbed, with an agent view
+
+The admin user administration page was converted into an in-page tabbed view, and gained an **Agents** tab showing completed-task counts per agent. A "hide users with zero boards" filter was added to the user list.
+
+### Fixed
+
+#### The dark-mode contrast checker had blind spots
+
+The contrast tooling missed the pairs that hid a status-chip delineation defect, so a real visual problem passed the automated gate. The checked pair set was widened to close those gaps.
+
+## [2.11.0] - 2026-07-19
+
+Workspace metrics gained exports, better charts, and a large speed-up.
+
+### Added
+
+#### Export workspace metrics to PDF and Excel
+
+The workspace metrics page gained an export dropdown that carries the page's active filters and the viewer's timezone into the generated file. Both a PDF report and an Excel workbook are produced, fully translated across all locales, behind a scope-authorized route. The existing board-level metrics export was translated to match.
+
+#### Lead time charting and an exclude-weekends filter
+
+A daily median (p50) lead-time series was added and rendered as its own chart below the cycle-time chart. Both charts gained a trend line and an auto-fitting rounded y-axis that picks readable tick values instead of arbitrary ones. A filter to exclude weekends was added, and the KPI strip's lead-time figure moved from p75 to p50 so it agrees with the chart.
+
+#### Targets show an estimated completion date
+
+A delivery target's pill now shows an estimated completion date derived from the median lead time of its member goals, so the target communicates a projection rather than only a deadline.
+
+#### Plugin install picker during onboarding
+
+The confirmation onboarding page gained a tabbed picker for installing the agent plugin matching the user's coding agent, backed by a registry of the supported runtimes.
+
+### Changed
+
+#### Workspace metrics load once, and read far less
+
+The metrics pages were reading more than they rendered. Reads were consolidated into a single narrow fetch of completed tasks, the cumulative-flow view's full-table load was replaced with a bounded projection, the Agents page fetch was projected down to the fields it derives from and reused across both time windows, and a composite index was added for the board-scoped fetch. Metrics now load once per visit on the connected mount rather than on every mount.
+
+### Fixed
+
+#### Wait Time metrics reported zero for every summary value
+
+The Wait Time page's summary figures were all zero regardless of data. They now reflect real measurements.
+
+#### A goal's column no longer goes stale when its children change
+
+Adding an existing task to a goal, or creating a child under a goal already in Done, left the parent goal in the wrong column. The parent's column is now recalculated in both cases.
+
+#### Auth pages showed a stale top nav
+
+The registration, login, and confirmation pages rendered the old root-layout navigation instead of the homepage nav.
+
+## [2.10.0] - 2026-07-16
+
+Operators gained the ability to act on the Agents page, administer users, and a large security-remediation wave landed.
+
+### Added
+
+#### Reassign and reprioritize a goal without leaving the Agents page
+
+The Agents page gained in-page interventions: **Reassign** moves an unstarted goal to a different agent, and **Reprioritize** changes its priority, each behind a confirmation dialog and an undo window. Both operations are concurrency-safe and only apply to unstarted work, and both are gated on being the target owner or the board owner. Agent claim order was verified and regression-tested to respect priority, so a reprioritization actually changes what gets picked up next.
+
+#### User administration
+
+A new admin-only **User Administration** page lists every user with per-user actions: disable, enable, resend confirmation, and delete. Disabled accounts are blocked from logging in and have their existing sessions invalidated. The page shows per-user activity metrics and a Created column, and the older LiveDashboard user-activity report was removed in favour of it.
+
+#### Archive a delivery target
+
+Delivery targets can now be archived once complete, with a dedicated Archived Targets page and an Unarchive action, both owner-gated.
+
+### Changed
+
+#### Authentication surfaces are rate limited and audited
+
+Rate limiting was added to the authentication surfaces, and security audit logging now records authentication and authorization events. A systematic authorization sweep went through every LiveView event handler, and a host allow-list was added for task diff URLs. A scheduled dependency-audit CI run was added.
+
+### Fixed
+
+#### A large security-remediation wave
+
+Roughly two dozen findings from the security review were remediated. The most significant: sudo re-authentication was **restored** on account settings and password/email change — it had been defined but silently dropped from the router by an unrelated earlier change, so a borrowed session or stolen remember-me cookie could change a password or email with no re-auth. Beyond that: authentication emails are delivered asynchronously to close a timing-based user-enumeration channel; active LiveView sessions are disconnected on password reset; the session cookie is marked Secure in production; the audit-log sensitive-key filter became substring-based so credential-shaped keys it never anticipated are redacted; the numeric API task lookup is board-scoped, closing a 403-vs-404 existence oracle; and API token authentication returns a uniform error rather than distinct state strings. Dependency bumps cleared three CVEs in `mint`, including an HTTP response-smuggling issue.
+
+#### Review diffs showed the wrong task's files
+
+A hook-uploaded `changed_files` payload could surface another task's diffs in review. Alongside that fix, a review-bound task completing with an empty `changed_files` is now detected and flagged, the review UI renders an explicit diff-unavailable state with a re-fetch action instead of a blank panel, and a supported backfill path with alerting was added.
+
+#### Confirmation emails never arrived
+
+New users were not receiving the confirmation email after registration. The delivery failure is now surfaced rather than swallowed, and SMTP TLS hostname verification was corrected.
+
+## [2.9.0] - 2026-07-09
+
+**Delivery Targets** arrived: a way to group goals under a dated commitment and see whether it is going to be met.
+
+### Added
+
+#### Delivery Targets
+
+A delivery target is a named, dated commitment owned by a user, to which goals are assigned. Targets are board-scoped with full CRUD, a strip on the boards page showing each target's status at a glance, a create/edit page for managing goal assignment, and a detail page with a progress hero — aggregate percentage, segmented progress bar, status badge — above a table of member goals showing per-goal progress, count, priority, and owner. On-track status is derived from the member goals rather than entered by hand.
+
+#### The Agents page was restructured around delivery
+
+The Agents page was reframed delivery-first: a delivery-health band at the top, an explainer for why a target is at risk, and a roster annotated with the targets each agent is working toward and ordered risk-first. A delivery rollup derives the agent-to-target bridge that makes this possible.
+
+### Fixed
+
+#### A second security-remediation wave
+
+API tokens gained expiration — a nullable expiry with a 90-day default on new tokens, enforced at authentication, with existing tokens unaffected. Password-reset tokens were shortened to a dedicated one-day window. The email-confirmation gate is now enforced in admin and sudo authorization paths. Live board-write authorization was added to the API unclaim, create, update, and after-goal endpoints, and modify-access is enforced on the task create/edit save path. Path traversal in `changed_files` paths is rejected, the content-security policy was tightened with `base-uri`, `form-action`, and `object-src`, production database connections are guarded against cleartext to a public host, and the development secret-key placeholder now fails closed for a running server.
+
+#### The Agents page was slow, reloaded continuously, and could crash
+
+The Agents page suffered an unbounded fetch, a global refresh, and an N+1 — together producing slow loads, continuous re-loading, and a crash loop in production, plus a SQL error in the delivery rollup's task fetch. It also attributed tasks to the wrong goal for agents working across several goals. All were fixed.
+
+#### Target status disagreed with itself
+
+The boards page and the Agents delivery band reported different statuses for the same target, archived goals were not counted as complete in the progress view, and target goal rows showed unassigned instead of the agent who worked the goal.
+
+#### Flash messages were unreadable
+
+Flash messages rendered with a near-transparent, low-contrast background.
+
+## [2.8.0] - 2026-07-03
+
+A full security review of the application, a large internal refactor, and a responsive-layout sweep across every page.
+
+### Added
+
+#### A returning-user resend journey
+
+An unconfirmed account attempting to log in is now redirected to a confirmation-pending page where the confirmation email can be resent, with an email-entry fallback and a link from the login page, so a user whose confirmation email went missing has a way back in.
+
+### Changed
+
+#### Ten-part security review
+
+The application was reviewed end to end against a documented scope inventory: authentication and session management, API token authentication and capability authorization, IDOR and cross-board access scoping, injection and data-access safety, cross-site scripting and output encoding, input validation and file-path handling, secrets and deployment configuration, dependencies and supply-chain risk, and server-side request forgery in the hook and file transports. Findings were triaged and prioritized; remediation ran through the following releases.
+
+The first remediation batch landed here: live board-access enforcement on agent claim and complete, a scheme allow-list on review diff URLs, metric-parameter validation in the PDF and Excel exports, `changed_files` write authorization scoped to the assignee or reviewer, an owner gate on board member search, a hardcoded audit credential moved to environment variables, and mass-assignment blocks on the column and message changesets. Base images in the Dockerfiles were digest-pinned and the Chrome install hardened.
+
+#### Responsive layout audit across every page
+
+Every surface was audited for responsive layout at the project's breakpoints — global navigation and the sidebar drawer, authentication pages, the boards index and board form, the kanban board view and its column scrolling, board modals, the task form and detail view, goal detail, the metrics landing and chart pages, agents and the review queue, and the archive, resources, issue, and admin pages — followed by a cross-page regression sweep.
+
+#### Internal: large modules split along their seams
+
+Several oversized modules were broken up: metrics queries moved out of LiveViews into a `Kanban.Metrics.TaskQueries` context and workspace functions into `Kanban.Metrics.Workspace`; the API `TaskController` shed its changed-files transport decoding, param filtering, and batch goal creation; `Kanban.Tasks.Task`'s validation helpers were split into focused modules; `BoardLive.Show` shed task-card presentation, goals-strip computation, and API token management; and `ReviewLive`'s inline render moved to a co-located template with its acceptance-criteria and verdict helpers extracted. `credo --strict` was added to the precommit alias.
+
+#### Elixir 1.20 and Erlang 28.5
+
+The project was upgraded to Elixir 1.20 on Erlang 28.5, with the compiler warnings the new version surfaced fixed.
+
+### Fixed
+
+#### Over-length field values crashed instead of returning a validation error
+
+A value exceeding a length-bounded column raised a Postgrex error rather than a validation failure. Over-length values are now translated into a 422 at the task API boundary, and a regression guard ensures every length-bounded column has a matching changeset validator.
+
+#### Agents throughput cards followed the wrong control
+
+The Agents page throughput cards were driven by the page time-range selector when they should not have been. Board and time-range filter placement was also standardized across the Agents and Metrics views.
+
 ## [2.7.0] - 2026-06-26
 
 The board **Archive** page (`/boards/:id/archive`) was reorganized around goals and gained real filtering, search, and a working CSV export.
