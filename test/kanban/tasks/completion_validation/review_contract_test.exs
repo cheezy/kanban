@@ -23,51 +23,44 @@ defmodule Kanban.Tasks.CompletionValidation.ReviewContractTest do
     end
   end
 
-  describe "checklist_count/0" do
-    test "returns the bullet count baked from priv/CODE-REVIEW.md" do
-      expected =
-        "priv/CODE-REVIEW.md"
-        |> File.read!()
-        |> String.split("\n")
-        |> Enum.count(&String.starts_with?(&1, "- "))
+  # Regression guard for the cross-tenant defect: the contract must never
+  # measure a caller's project_checks against a checklist size the server
+  # invented. Any list length is acceptable, including zero.
+  describe "project_checks length is never gated" do
+    @dispatched_sections %{
+      "dispatched" => true,
+      "issues" => [],
+      "acceptance_criteria" => [],
+      "testing_strategy" => %{"status" => "passed"},
+      "patterns" => %{"status" => "passed"},
+      "pitfalls" => %{"status" => "passed"},
+      "security_considerations" => %{"status" => "passed"},
+      "schema_version" => "1.6",
+      "status" => "approved"
+    }
 
-      assert ReviewContract.checklist_count() == expected
-      assert ReviewContract.checklist_count() > 0
-    end
-  end
+    test "no checklist length produces a project_checks failure" do
+      for count <- [0, 1, 3, 9, 25, 40] do
+        checks = for i <- 1..count//1, do: %{"check" => "c#{i}", "status" => "met"}
+        result = Map.put(@dispatched_sections, "project_checks", checks)
 
-  describe "coverage_shortfall/2 — fail open" do
-    test "a nil expected count enforces nothing" do
-      # The documented incident: an unreadable checklist must never block every
-      # completion. nil in, nil out.
-      assert ReviewContract.coverage_shortfall(nil, 0) == nil
-    end
+        failures = ReviewContract.failures(result)
 
-    test "a non-positive expected count enforces nothing" do
-      assert ReviewContract.coverage_shortfall(0, 0) == nil
-      assert ReviewContract.coverage_shortfall(-1, 0) == nil
-    end
-
-    test "a readable checklist with an unusable supplied count still reports" do
-      # Pre-existing contract, preserved verbatim by the split: fail-open keys
-      # off `expected`, not `supplied`. In practice `supplied` is always
-      # `length(checks)`, so this shape is unreachable from the validator.
-      assert ReviewContract.coverage_shortfall(25, nil) =~ "of the 25 project checklist bullets"
-    end
-  end
-
-  describe "coverage_shortfall/2 — enforcement" do
-    test "full coverage returns nil" do
-      assert ReviewContract.coverage_shortfall(25, 25) == nil
+        refute Enum.any?(failures, fn {field, _} -> field == :project_checks end),
+               "a #{count}-entry project_checks must not be rejected on length"
+      end
     end
 
-    test "over-coverage returns nil" do
-      assert ReviewContract.coverage_shortfall(25, 26) == nil
-    end
+    test "a present-but-non-list project_checks is still rejected" do
+      result = Map.put(@dispatched_sections, "project_checks", "nine checks")
 
-    test "a shortfall returns a message naming both counts" do
-      assert ReviewContract.coverage_shortfall(25, 3) ==
-               "is incomplete: project_checks covers 3 of the 25 project checklist bullets; every checklist bullet must be evaluated"
+      failures =
+        result
+        |> ReviewContract.failures()
+        |> Enum.filter(fn {field, _} -> field == :project_checks end)
+
+      assert [{:project_checks, message}] = failures
+      assert message =~ "list"
     end
   end
 

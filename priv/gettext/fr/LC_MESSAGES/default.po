@@ -1100,7 +1100,7 @@ msgstr "Agent"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:401
-#: lib/kanban_web/review_report_helpers.ex:599
+#: lib/kanban_web/review_report_helpers.ex:579
 #, elixir-autogen, elixir-format
 msgid "Approved"
 msgstr "Approuvé"
@@ -1388,7 +1388,7 @@ msgstr "En attente"
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:247
 #: lib/kanban_web/live/task_live/view_component.ex:215
-#: lib/kanban_web/review_report_helpers.ex:51
+#: lib/kanban_web/review_report_helpers.ex:49
 #, elixir-autogen, elixir-format
 msgid "Pitfalls"
 msgstr "Pièges"
@@ -1501,8 +1501,8 @@ msgstr "Temps passé"
 msgid "Time Spent (minutes)"
 msgstr "Temps passé (minutes)"
 
-#: lib/kanban_web/components/code_review_panel.ex:188
-#: lib/kanban_web/components/code_review_panel.ex:301
+#: lib/kanban_web/components/code_review_panel.ex:152
+#: lib/kanban_web/components/code_review_panel.ex:265
 #: lib/kanban_web/components/review_behaviour_matrix_panel.ex:190
 #: lib/kanban_web/components/task_activity_log.ex:187
 #: lib/kanban_web/components/task_metadata_grid.ex:247
@@ -4904,7 +4904,7 @@ msgstr "Rapport de revue"
 
 #: lib/kanban_web/live/review_live.html.heex:299
 #: lib/kanban_web/live/task_live/view_component.ex:229
-#: lib/kanban_web/review_report_helpers.ex:52
+#: lib/kanban_web/review_report_helpers.ex:50
 #, elixir-autogen, elixir-format
 msgid "Security considerations"
 msgstr "Considérations de Sécurité"
@@ -5021,7 +5021,7 @@ msgstr "Succès"
 #: lib/kanban_web/components/review_queue_item.ex:254
 #: lib/kanban_web/components/review_stats_strip.ex:72
 #: lib/kanban_web/live/task_live/view_component.ex:286
-#: lib/kanban_web/review_report_helpers.ex:49
+#: lib/kanban_web/review_report_helpers.ex:47
 #, elixir-autogen, elixir-format
 msgid "Testing strategy"
 msgstr "Stratégie de tests"
@@ -5100,7 +5100,7 @@ msgstr "terminé"
 msgid "created"
 msgstr "Créé"
 
-#: lib/kanban_web/review_report_helpers.ex:196
+#: lib/kanban_web/review_report_helpers.ex:176
 #: lib/kanban_web/task_tokens.ex:154
 #, elixir-autogen, elixir-format
 msgid "reviewed"
@@ -6171,31 +6171,31 @@ msgstr[0] "%{checked}/%{total} · %{n} problème"
 msgstr[1] "%{checked}/%{total} · %{n} problèmes"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:229
-#: lib/kanban_web/components/code_review_panel.ex:183
+#: lib/kanban_web/components/code_review_panel.ex:147
 #, elixir-autogen, elixir-format
 msgid "Not met"
 msgstr "Non rempli"
 
-#: lib/kanban_web/review_report_helpers.ex:193
+#: lib/kanban_web/review_report_helpers.ex:173
 #, elixir-autogen, elixir-format
 msgid "%{n} case"
 msgid_plural "%{n} cases"
 msgstr[0] "%{n} cas"
 msgstr[1] "%{n} cas"
 
-#: lib/kanban_web/review_report_helpers.ex:185
+#: lib/kanban_web/review_report_helpers.ex:165
 #, elixir-autogen, elixir-format
 msgid "%{n} case · all present"
 msgid_plural "%{n} cases · all present"
 msgstr[0] "%{n} cas · tous présents"
 msgstr[1] "%{n} cas · tous présents"
 
-#: lib/kanban_web/review_report_helpers.ex:352
+#: lib/kanban_web/review_report_helpers.ex:332
 #, elixir-autogen, elixir-format
 msgid "none violated"
 msgstr "aucun violé"
 
-#: lib/kanban_web/review_report_helpers.ex:350
+#: lib/kanban_web/review_report_helpers.ex:330
 #, elixir-autogen, elixir-format
 msgid "violated"
 msgstr "violé"
@@ -6217,12 +6217,12 @@ msgstr "Complétée par %{name}"
 
 #: lib/kanban_web/components/review_report_panel.ex:413
 #: lib/kanban_web/components/review_stats_strip.ex:79
-#: lib/kanban_web/review_report_helpers.ex:50
+#: lib/kanban_web/review_report_helpers.ex:48
 #, elixir-autogen, elixir-format
 msgid "Patterns"
 msgstr "Modèles"
 
-#: lib/kanban_web/review_report_helpers.ex:314
+#: lib/kanban_web/review_report_helpers.ex:294
 #, elixir-autogen, elixir-format
 msgid "followed"
 msgstr "suivis"
@@ -6237,13 +6237,13 @@ msgstr "Le relecteur a demandé des modifications — en attente de l'agent"
 msgid "changes requested"
 msgstr "modifications demandées"
 
-#: lib/kanban_web/components/code_review_panel.ex:123
+#: lib/kanban_web/components/code_review_panel.ex:87
 #: lib/kanban_web/components/review_report_panel.ex:169
 #, elixir-autogen, elixir-format
 msgid "(no description)"
 msgstr "(aucune description)"
 
-#: lib/kanban_web/review_report_helpers.ex:609
+#: lib/kanban_web/review_report_helpers.ex:589
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
 msgstr "Modifications demandées"
@@ -6268,20 +6268,20 @@ msgstr "Mineur"
 msgid "Testing"
 msgstr "Tests"
 
-#: lib/kanban_web/review_report_helpers.ex:490
-#: lib/kanban_web/review_report_helpers.ex:741
+#: lib/kanban_web/review_report_helpers.ex:470
+#: lib/kanban_web/review_report_helpers.ex:721
 #, elixir-autogen, elixir-format
 msgid "failed"
 msgstr "échoué"
 
-#: lib/kanban_web/review_report_helpers.ex:491
-#: lib/kanban_web/review_report_helpers.ex:742
+#: lib/kanban_web/review_report_helpers.ex:471
+#: lib/kanban_web/review_report_helpers.ex:722
 #, elixir-autogen, elixir-format
 msgid "not assessed"
 msgstr "Non évalué"
 
-#: lib/kanban_web/review_report_helpers.ex:489
-#: lib/kanban_web/review_report_helpers.ex:740
+#: lib/kanban_web/review_report_helpers.ex:469
+#: lib/kanban_web/review_report_helpers.ex:720
 #, elixir-autogen, elixir-format
 msgid "passed"
 msgstr "réussi"
@@ -6371,7 +6371,7 @@ msgstr "1 tâche terminée depuis plus de 30 jours archivée."
 msgid "No completed tasks older than 30 days were found."
 msgstr "Aucune tâche terminée depuis plus de 30 jours n'a été trouvée."
 
-#: lib/kanban_web/components/code_review_panel.ex:182
+#: lib/kanban_web/components/code_review_panel.ex:146
 #, elixir-autogen, elixir-format
 msgid "Met"
 msgstr "Rempli"
@@ -6655,7 +6655,7 @@ msgstr "Stride enveloppe chaque tâche dans un cycle de vie en quatre étapes. L
 "manière autonome. Le tableau pilote une véritable base de code, pas une "
 "intuition."
 
-#: lib/kanban_web/live/review_live.html.heex:571
+#: lib/kanban_web/live/review_live.html.heex:568
 #, elixir-autogen, elixir-format
 msgid "Code review"
 msgstr "Revue de code"
@@ -6665,22 +6665,22 @@ msgstr "Revue de code"
 msgid "Settings sections"
 msgstr "Sections des paramètres"
 
-#: lib/kanban_web/review_report_helpers.ex:619
+#: lib/kanban_web/review_report_helpers.ex:599
 #, elixir-autogen, elixir-format
 msgid "Review data unavailable"
 msgstr "Données de revue indisponibles"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:256
+#: lib/kanban/tasks/completion_validation/review_contract.ex:180
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "est requis pour une revue exécutée : incluez status ou issue_counts afin que la file de revue puisse afficher le verdict"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:249
+#: lib/kanban/tasks/completion_validation/review_contract.ex:173
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "est requis pour une revue exécutée : le champ structuré %{field} affiché par la file de revue est manquant"
 
-#: lib/kanban_web/components/code_review_panel.ex:186
+#: lib/kanban_web/components/code_review_panel.ex:150
 #: lib/kanban_web/controllers/metrics_pdf_html.ex:88
 #: lib/kanban_web/controllers/metrics_pdf_html.ex:94
 #: lib/kanban_web/controllers/metrics_pdf_html/cycle_time.html.heex:256
@@ -6693,16 +6693,6 @@ msgstr "est requis pour une revue exécutée : le champ structuré %{field} aff
 #, elixir-autogen, elixir-format
 msgid "N/A"
 msgstr "S.O."
-
-#: lib/kanban/tasks/completion_validation/review_contract.ex:268
-#, elixir-autogen, elixir-format
-msgid "is incomplete: project_checks covers %{supplied} of the %{expected} project checklist bullets; every checklist bullet must be evaluated"
-msgstr "est incomplet : project_checks couvre %{supplied} des %{expected} points de la liste de contrôle du projet ; chaque point de la liste doit être évalué"
-
-#: lib/kanban/tasks/completion_validation/review_contract.ex:262
-#, elixir-autogen, elixir-format
-msgid "is required on a dispatched review: project_checks must be a non-empty list covering the project checklist"
-msgstr "est requis lors d'une revue effectuée : project_checks doit être une liste non vide couvrant la liste de contrôle du projet"
 
 #: lib/kanban/tasks/completion_validation/task_consistency.ex:170
 #, elixir-autogen, elixir-format
@@ -6718,11 +6708,6 @@ msgstr "doit être une véritable évaluation : la tâche a fourni %{field}, la 
 #, elixir-autogen, elixir-format
 msgid "Incomplete review — the task specified these sections, but the review did not assess them:"
 msgstr "Revue incomplète – la tâche a spécifié ces sections, mais la revue ne les a pas évaluées :"
-
-#: lib/kanban_web/components/code_review_panel.ex:86
-#, elixir-autogen, elixir-format
-msgid "Incomplete review: only %{supplied} of the %{expected} project checks were recorded. Every checklist item must be evaluated."
-msgstr "Revue incomplète : seules %{supplied} des %{expected} vérifications de projet ont été enregistrées. Chaque élément de la liste de contrôle doit être évalué."
 
 #: lib/kanban_web/live/review_live.html.heex:313
 #, elixir-autogen, elixir-format
@@ -7037,27 +7022,27 @@ msgstr "Vous devez confirmer votre compte avant de vous connecter. Vérifiez vot
 msgid "You must confirm your account to access this page."
 msgstr "Vous devez confirmer votre compte pour accéder à cette page."
 
-#: lib/kanban_web/review_report_helpers.ex:285
+#: lib/kanban_web/review_report_helpers.ex:265
 #, elixir-autogen, elixir-format
 msgid "Coverage target"
 msgstr "Objectif de couverture"
 
-#: lib/kanban_web/review_report_helpers.ex:284
+#: lib/kanban_web/review_report_helpers.ex:264
 #, elixir-autogen, elixir-format
 msgid "Edge cases"
 msgstr "Cas limites"
 
-#: lib/kanban_web/review_report_helpers.ex:282
+#: lib/kanban_web/review_report_helpers.ex:262
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Integration tests"
 msgstr "Tests d'intégration"
 
-#: lib/kanban_web/review_report_helpers.ex:283
+#: lib/kanban_web/review_report_helpers.ex:263
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Manual tests"
 msgstr "Tests manuels"
 
-#: lib/kanban_web/review_report_helpers.ex:281
+#: lib/kanban_web/review_report_helpers.ex:261
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Unit tests"
 msgstr "Tests unitaires"
@@ -8568,17 +8553,17 @@ msgstr "Aucun agent n'a encore terminé de tâches."
 msgid "is inconsistent: the considerations breakdown marks an item partial or unmitigated, so the security_considerations verdict must be failed"
 msgstr "est incohérent : la ventilation des considérations marque un élément comme partiel ou non atténué, donc le verdict de security_considerations doit être failed"
 
-#: lib/kanban_web/components/code_review_panel.ex:297
+#: lib/kanban_web/components/code_review_panel.ex:261
 #, elixir-autogen, elixir-format
 msgid "Mitigated"
 msgstr "Atténué"
 
-#: lib/kanban_web/components/code_review_panel.ex:298
+#: lib/kanban_web/components/code_review_panel.ex:262
 #, elixir-autogen, elixir-format
 msgid "Partial"
 msgstr "Partiel"
 
-#: lib/kanban_web/components/code_review_panel.ex:299
+#: lib/kanban_web/components/code_review_panel.ex:263
 #, elixir-autogen, elixir-format
 msgid "Unmitigated"
 msgstr "Non atténué"
@@ -8712,3 +8697,8 @@ msgstr "En retard"
 #, elixir-autogen, elixir-format
 msgid "Completion notes"
 msgstr "Notes de complétion"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:186
+#, elixir-autogen, elixir-format
+msgid "must be a list on a dispatched review: one entry per project checklist bullet, or an empty list when the project has no CODE-REVIEW.md"
+msgstr "doit être une liste pour une revue exécutée : une entrée par point de la liste de contrôle du projet, ou une liste vide lorsque le projet n'a pas de CODE-REVIEW.md"

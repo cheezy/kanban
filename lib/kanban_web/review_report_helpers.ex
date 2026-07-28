@@ -13,8 +13,6 @@ defmodule KanbanWeb.ReviewReportHelpers do
   """
   use Gettext, backend: KanbanWeb.Gettext
 
-  alias Kanban.Tasks.CompletionValidation
-
   @incomplete_sections [:testing_strategy, :patterns, :pitfalls, :security_considerations]
 
   # Sections rendered as generic check rows in the review report panel
@@ -104,28 +102,10 @@ defmodule KanbanWeb.ReviewReportHelpers do
 
   def has_review_report?(_), do: false
 
-  @doc """
-  The project-checks coverage gap for a dispatched review: `{supplied, expected}`
-  when the review's `project_checks` covers fewer than the canonical checklist
-  (`CODE-REVIEW.md`) expects, or `nil` when the coverage is complete, the review
-  was not dispatched, or the checklist count is unavailable. Drives the Code
-  Review panel's incomplete warning (W1071). Pure; the expected count is the
-  compile-time-baked checklist size, not a DB read.
-  """
-  def project_checks_gap(task) do
-    with %{"dispatched" => true} = result <- reviewer_result(task),
-         expected when is_integer(expected) and expected > 0 <-
-           CompletionValidation.project_checklist_count() do
-      coverage_gap(result, expected)
-    else
-      _ -> nil
-    end
-  end
-
-  defp coverage_gap(result, expected) do
-    supplied = result |> Map.get("project_checks", []) |> List.wrap() |> length()
-    if supplied < expected, do: {supplied, expected}, else: nil
-  end
+  # `project_checks_gap/1` was removed with the checklist-coverage gate: it
+  # compared a review's project_checks count against Kanban's OWN checklist size,
+  # so every project with a shorter (or absent) CODE-REVIEW.md saw a bogus
+  # "N of 25 checks" warning. The caller's checklist length is not knowable here.
 
   defp effective_section_status(task, :testing_strategy),
     do:

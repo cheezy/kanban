@@ -68,18 +68,6 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       assert error_for(errors, :project_checks)
     end
 
-    test "rejects a dispatched review with an empty project_checks list" do
-      payload = Map.put(full_structured_payload(), "project_checks", [])
-
-      assert {:error, errors} =
-               CompletionValidation.validate_reviewer_result(payload,
-                 require_structured_block: true
-               )
-
-      assert {:project_checks, msg} = error_for(errors, :project_checks)
-      assert msg =~ "non-empty"
-    end
-
     test "rejects a dispatched review missing each section verdict, named" do
       for section <- ["testing_strategy", "patterns", "pitfalls", "security_considerations"] do
         payload = Map.delete(full_structured_payload(), section)
@@ -112,52 +100,22 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     end
   end
 
-  # W1067: project_checks must cover EVERY top-level bullet of the canonical
-  # checklist (CODE-REVIEW.md), not merely be non-empty. The expected count is
-  # read once at compile time from the file, never from the client.
-  describe "project_checklist_count/0 and coverage (W1067)" do
-    test "reads the bullet count from the priv checklist copy (build-reliable source)" do
-      file_count =
-        File.cwd!()
-        |> Path.join("priv/CODE-REVIEW.md")
-        |> File.read!()
-        |> String.split("\n")
-        |> Enum.count(&String.starts_with?(&1, "- "))
+  # The project checklist is OPTIONAL and belongs to the CALLING project. The
+  # server receives only the resulting array — never that project's
+  # CODE-REVIEW.md — so it validates that project_checks is a list and nothing
+  # more. It must never gate on the array's length: a baked-in count from
+  # Kanban's own checklist once rejected every caller with a shorter one.
+  describe "project_checks is optional and length is never judged" do
+    test "accepts an empty project_checks (the project has no CODE-REVIEW.md)" do
+      payload = Map.put(full_structured_payload(), "project_checks", [])
 
-      assert CompletionValidation.project_checklist_count() == file_count
-      assert CompletionValidation.project_checklist_count() > 0
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
     end
 
-    test "priv/CODE-REVIEW.md is a verbatim copy of the root checklist (drift guard)" do
-      root = File.cwd!() |> Path.join("CODE-REVIEW.md") |> File.read!()
-      priv = File.cwd!() |> Path.join("priv/CODE-REVIEW.md") |> File.read!()
-
-      assert priv == root,
-             "priv/CODE-REVIEW.md must stay in sync with CODE-REVIEW.md — re-copy it: cp CODE-REVIEW.md priv/CODE-REVIEW.md"
-    end
-
-    test "coverage_shortfall/2 returns nil when supplied meets or exceeds expected" do
-      assert CompletionValidation.coverage_shortfall(25, 25) == nil
-      assert CompletionValidation.coverage_shortfall(25, 30) == nil
-    end
-
-    test "coverage_shortfall/2 names expected and supplied on a shortfall" do
-      message = CompletionValidation.coverage_shortfall(25, 3)
-
-      assert is_binary(message)
-      assert message =~ "3"
-      assert message =~ "25"
-    end
-
-    test "coverage_shortfall/2 fails OPEN (returns nil) when the expected count is unavailable" do
-      # An unreadable/unavailable checklist must NOT block completion (it bricked
-      # production once); coverage is simply not enforced. Other contract checks
-      # still run.
-      assert CompletionValidation.coverage_shortfall(nil, 30) == nil
-      assert CompletionValidation.coverage_shortfall(0, 30) == nil
-    end
-
-    test "rejects a dispatched review whose project_checks fall short (D60 3-of-N)" do
+    test "accepts a short project_checks list (a project with a 3-bullet checklist)" do
       payload =
         Map.put(full_structured_payload(), "project_checks", [
           %{"check" => "a", "status" => "met"},
@@ -165,21 +123,32 @@ defmodule Kanban.Tasks.CompletionValidationTest do
           %{"check" => "c", "status" => "met"}
         ])
 
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+    end
+
+    test "accepts a long project_checks list (a project with a 40-bullet checklist)" do
+      checks = for i <- 1..40, do: %{"check" => "check #{i}", "status" => "met"}
+      payload = Map.put(full_structured_payload(), "project_checks", checks)
+
+      assert {:ok, _} =
+               CompletionValidation.validate_reviewer_result(payload,
+                 require_structured_block: true
+               )
+    end
+
+    test "rejects a present-but-non-list project_checks" do
+      payload = Map.put(full_structured_payload(), "project_checks", "three checks")
+
       assert {:error, errors} =
                CompletionValidation.validate_reviewer_result(payload,
                  require_structured_block: true
                )
 
       assert {:project_checks, msg} = error_for(errors, :project_checks)
-      assert msg =~ "3"
-      assert msg =~ to_string(CompletionValidation.project_checklist_count())
-    end
-
-    test "accepts a dispatched review whose project_checks cover the full checklist" do
-      assert {:ok, _} =
-               CompletionValidation.validate_reviewer_result(full_structured_payload(),
-                 require_structured_block: true
-               )
+      assert msg =~ "list"
     end
   end
 
@@ -1885,10 +1854,10 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     )
   end
 
-  # A project_checks list that covers the full checklist (W1067), sized from the
-  # canonical count so it stays correct as the checklist grows.
+  # A representative project_checks list. Any non-empty length is valid — the
+  # server never judges the count — so this is a plausible checklist, not a
+  # magic number that must track any file.
   defp full_project_checks do
-    for i <- 1..CompletionValidation.project_checklist_count(),
-        do: %{"check" => "check #{i}", "status" => "met"}
+    for i <- 1..5, do: %{"check" => "check #{i}", "status" => "met"}
   end
 end

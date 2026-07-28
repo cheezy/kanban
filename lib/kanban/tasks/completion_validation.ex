@@ -115,19 +115,6 @@ defmodule Kanban.Tasks.CompletionValidation do
   defdelegate required_review_sections(), to: ReviewContract, as: :sections
 
   @doc """
-  The number of top-level bullets in the project code-review checklist, baked
-  at compile time from `priv/CODE-REVIEW.md`.
-
-  `nil` when the file could not be read at build time — coverage is then not
-  enforced (it FAILS OPEN). See
-  `Kanban.Tasks.CompletionValidation.ReviewContract`.
-  """
-  defdelegate project_checklist_count(), to: ReviewContract, as: :checklist_count
-
-  @doc false
-  defdelegate coverage_shortfall(expected, supplied), to: ReviewContract
-
-  @doc """
   Every always-reject completeness failure for a dispatched `reviewer_result`.
 
   Returns `{field, message}` tuples in report order, or `[]` when the review is

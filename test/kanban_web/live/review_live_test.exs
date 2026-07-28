@@ -2433,7 +2433,7 @@ defmodule KanbanWeb.ReviewLiveTest do
       assert length(Regex.scan(~r/data-review-code-review-row/, html)) == 2
     end
 
-    test "warns when a dispatched review's project_checks is an empty list (W1071)",
+    test "hides the section for an empty project_checks — the project has no CODE-REVIEW.md",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
@@ -2444,13 +2444,15 @@ defmodule KanbanWeb.ReviewLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/review")
 
-      # W1071: a thin dispatched review now surfaces the gap instead of hiding it.
-      assert html =~ "data-review-code-review-section"
-      assert html =~ "data-review-code-review-incomplete"
+      # The checklist is optional. An empty list means "this project has no
+      # checklist", not "the reviewer truncated the list" — render nothing
+      # rather than an incomplete-review warning.
+      refute html =~ "data-review-code-review-section"
+      refute html =~ "data-review-code-review-incomplete"
       refute html =~ "data-review-code-review-row"
     end
 
-    test "warns when a dispatched review has no project_checks key (W1071)",
+    test "hides the section when a dispatched review has no project_checks key",
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
 
@@ -2461,8 +2463,30 @@ defmodule KanbanWeb.ReviewLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/review")
 
+      refute html =~ "data-review-code-review-section"
+      refute html =~ "data-review-code-review-incomplete"
+    end
+
+    test "renders a short project_checks in full — no truncation warning",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "approved",
+            "project_checks" => [
+              %{"check" => "No secret is committed", "status" => "met", "evidence" => "n/a"}
+            ]
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+
       assert html =~ "data-review-code-review-section"
-      assert html =~ "data-review-code-review-incomplete"
+      assert html =~ "No secret is committed"
+      refute html =~ "data-review-code-review-incomplete"
     end
 
     test "does NOT warn about project_checks for a skip-form (non-dispatched) review (W1071)",

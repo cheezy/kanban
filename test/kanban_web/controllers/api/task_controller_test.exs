@@ -84,14 +84,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
       "acceptance_criteria" => [
         %{"criterion" => "Validator rejects legacy-only reviewer_result", "status" => "met"}
       ],
-      # W1066/W1067: a fully-populated review must carry every section verdict
-      # AND a project_checks list that covers the full checklist (sized from the
-      # canonical count so it stays correct as the checklist grows).
-      "project_checks" =>
-        for(
-          i <- 1..Kanban.Tasks.CompletionValidation.project_checklist_count(),
-          do: %{"check" => "check #{i}", "status" => "met"}
-        ),
+      # W1066: a fully-populated review must carry every section verdict. The
+      # project_checks list may be any length (including empty) — it mirrors the
+      # CALLING project's optional CODE-REVIEW.md, which this server never sees.
+      "project_checks" => for(i <- 1..5, do: %{"check" => "check #{i}", "status" => "met"}),
       "testing_strategy" => %{"status" => "passed"},
       "patterns" => %{"status" => "passed"},
       "pitfalls" => %{"status" => "passed"},

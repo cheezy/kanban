@@ -551,10 +551,7 @@
           </section>
 
           <section
-            :if={
-              CodeReviewPanel.checks_for(@selected) != [] or
-                ReviewReportHelpers.project_checks_gap(@selected) != nil
-            }
+            :if={CodeReviewPanel.checks_for(@selected) != []}
             data-review-code-review-section
             style={[
               "margin: 12px 16px 16px; padding: 10px 12px;",

@@ -1,7 +1,6 @@
 defmodule KanbanWeb.API.CompletionResultGateTest do
   use ExUnit.Case, async: false
 
-  alias Kanban.Tasks.CompletionValidation
   alias KanbanWeb.API.CompletionResultGate
 
   # Several tests intentionally drive the gate down its reject/grace paths,
@@ -59,14 +58,24 @@ defmodule KanbanWeb.API.CompletionResultGateTest do
       assert "project_checks" in fields
     end
 
-    test "a short project_checks coverage rejects in grace mode" do
-      thin_coverage =
-        Map.put(full_reviewer(), "project_checks", [%{"check" => "x", "status" => "met"}])
+    test "a short project_checks does NOT reject — the caller's checklist may be short" do
+      # Regression guard for the cross-tenant defect: a caller whose
+      # CODE-REVIEW.md has one bullet is complete, not truncated.
+      request =
+        full_reviewer()
+        |> Map.put("project_checks", [%{"check" => "x", "status" => "met"}])
+        |> build_request()
 
-      request = build_request(thin_coverage)
-      assert {:reject, body} = CompletionResultGate.gate(request, strict: false)
-      fields = reviewer_failure_fields(body)
-      assert "project_checks" in fields
+      assert :ok = CompletionResultGate.gate(request, strict: true)
+    end
+
+    test "an empty project_checks does NOT reject — the caller has no CODE-REVIEW.md" do
+      request =
+        full_reviewer()
+        |> Map.put("project_checks", [])
+        |> build_request()
+
+      assert :ok = CompletionResultGate.gate(request, strict: true)
     end
 
     test "a purely legacy-shape difference still follows the grace path (warn, not reject)" do
@@ -204,8 +213,7 @@ defmodule KanbanWeb.API.CompletionResultGateTest do
   end
 
   defp full_reviewer do
-    count = CompletionValidation.project_checklist_count()
-    checks = for i <- 1..count, do: %{"check" => "c#{i}", "status" => "met"}
+    checks = for i <- 1..5, do: %{"check" => "c#{i}", "status" => "met"}
 
     %{
       "dispatched" => true,

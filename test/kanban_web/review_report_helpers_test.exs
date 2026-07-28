@@ -413,7 +413,7 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
     end
   end
 
-  describe "section_incomplete?/2 and project_checks_gap/1 (W1071)" do
+  describe "section_incomplete?/2 (W1071)" do
     test "flags a section the task supplied but the review left unassessed" do
       task = %{
         security_considerations: ["Keep board scoping intact"],
@@ -463,25 +463,12 @@ defmodule KanbanWeb.ReviewReportHelpersTest do
       assert ReviewReportHelpers.incomplete_sections(task) == [:security_considerations]
     end
 
-    test "project_checks_gap returns {supplied, expected} for a short dispatched review" do
-      expected = Kanban.Tasks.CompletionValidation.project_checklist_count()
-      task = %{reviewer_result: %{"dispatched" => true, "project_checks" => [%{"check" => "a"}]}}
-
-      assert {1, ^expected} = ReviewReportHelpers.project_checks_gap(task)
-    end
-
-    test "project_checks_gap returns nil for a full dispatched review" do
-      expected = Kanban.Tasks.CompletionValidation.project_checklist_count()
-      checks = for i <- 1..expected, do: %{"check" => "c#{i}"}
-      task = %{reviewer_result: %{"dispatched" => true, "project_checks" => checks}}
-
-      assert ReviewReportHelpers.project_checks_gap(task) == nil
-    end
-
-    test "project_checks_gap returns nil for a skip-form (non-dispatched) review" do
-      task = %{reviewer_result: %{"dispatched" => false, "reason" => "small_task_0_1_key_files"}}
-
-      assert ReviewReportHelpers.project_checks_gap(task) == nil
+    test "project_checks_gap/1 is gone — a short project_checks is not a defect" do
+      # It compared a review's project_checks count against Kanban's OWN
+      # checklist size, so every caller with a shorter or absent CODE-REVIEW.md
+      # got a bogus "N of 25 checks" warning. The caller's checklist length is
+      # not knowable server-side; do not reintroduce it.
+      refute function_exported?(ReviewReportHelpers, :project_checks_gap, 1)
     end
   end
 
