@@ -223,6 +223,28 @@ defmodule KanbanWeb.ReviewBehaviourMatrixPanelTest do
       assert html =~ "&lt;b&gt;unit&lt;/b&gt;"
     end
 
+    test "escapes an unrecognized category (W1947)" do
+      # `category` is NOT enum-checked on the completion-echo path (only
+      # non-blank), and an unknown value falls through BehaviourTestLabels'
+      # catch-all clause unchanged — so the render site is the only thing
+      # escaping it. (`na_reason` is not rendered by this panel; its escaping is
+      # covered on the persisted path in view_component_test.exs.)
+      html = render_matrix([row(%{"category" => "<script>alert('cat')</script>"})])
+
+      refute html =~ "<script>alert('cat')</script>"
+      assert html =~ "&lt;script&gt;alert(&#39;cat&#39;)&lt;/script&gt;"
+    end
+
+    test "escapes a row value interpolated into an attribute (W1947)" do
+      # `status` is the one row value that reaches an attribute
+      # (data-review-behaviour-status), so a quote-breaking payload must not be
+      # able to close the attribute and open a new one.
+      html = render_matrix([row(%{"status" => ~s|" onmouseover="alert(1)|})])
+
+      refute html =~ ~s|onmouseover="alert(1)"|
+      assert html =~ "&quot;"
+    end
+
     test "uses only theme-aware tokens (no hardcoded grays or whites)" do
       html =
         render_matrix([

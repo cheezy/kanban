@@ -124,6 +124,51 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       refute result =~ "test for Concurrency"
     end
 
+    test "escapes markup in agent-supplied row text rather than executing it (W1947)", %{
+      board: board
+    } do
+      column = column_fixture(board)
+
+      rows =
+        Enum.map(full_matrix_rows(), fn
+          %{"category" => "Concurrency"} = row ->
+            row
+            |> Map.drop(["test_name"])
+            |> Map.merge(%{
+              "status" => "not_applicable",
+              "na_reason" => "<img src=x onerror=alert(1)>"
+            })
+
+          %{"category" => "Happy path"} = row ->
+            Map.merge(row, %{
+              "behaviour" => "<script>alert('xss')</script>",
+              "test_name" => "<b>bold</b>"
+            })
+
+          row ->
+            row
+        end)
+
+      task = task_fixture(column, %{behaviour_test_matrix: rows})
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      # Row text is attacker-controlled at the API boundary, so the render-side
+      # escaping — not the authoring convention — is the control that matters.
+      refute result =~ "<script>alert('xss')</script>"
+      refute result =~ "<img src=x onerror=alert(1)>"
+      refute result =~ "<b>bold</b>"
+
+      assert result =~ "&lt;script&gt;"
+      assert result =~ "&lt;img src=x onerror=alert(1)&gt;"
+      assert result =~ "&lt;b&gt;bold&lt;/b&gt;"
+    end
+
     test "omits the section entirely when the task has no matrix rows", %{task: task} do
       result =
         render_component(KanbanWeb.TaskLive.ViewComponent,

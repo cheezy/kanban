@@ -272,6 +272,47 @@ the gate checks for. Pass it through untouched.
 Every existing gate check still runs unchanged. The third exit is an exit from the loop,
 not a relaxation of the gate.
 
+## What actually defends the render path (verified, W1947)
+
+Row text is **attacker-controlled at the API boundary** — anyone POSTing directly to the
+tasks API never sees the authoring prompts, so "don't put raw HTML in a row" is hygiene,
+not a control. W1947 verified what the real controls are, by reading every render path and
+probing the live API rather than trusting the prose:
+
+**Escaping.** Row text reaches three HEEx surfaces. None passes a row value through
+`raw/1`, `Phoenix.HTML.raw`, `{:safe, …}`, or a markdown renderer:
+
+- `KanbanWeb.ReviewBehaviourMatrixPanel` — the completion-echo path
+  (`reviewer_result["behaviour_test_matrix"]["rows"]`), rendered on the Review queue.
+  Auto-escaped body context.
+- `KanbanWeb.TaskLive.Components.BehaviourTestMatrixSection` — the persisted
+  `Task.behaviour_test_matrix`, rendered on the task detail view. Auto-escaped body
+  context.
+- `KanbanWeb.TaskLive.Form.EmbedSections` — the task-form matrix editor, which renders
+  row values into `<.input>` value attributes. Attribute context, which Phoenix escapes
+  too. Listed so a later audit does not have to rediscover it.
+
+`BehaviourTestLabels.category_label/1` and `status_label/1` pass an unrecognized value
+through unchanged by design, so the render site is the only thing escaping it — which it
+does. The one row value reaching an attribute is `status`, in
+`data-review-behaviour-status`; Phoenix escapes attribute values too, and a
+quote-breaking payload is covered by a test.
+
+**Enum validation.** On the create/update path, `Kanban.Schemas.Task.BehaviourTestRow`
+hard-validates both vocabularies with `validate_inclusion` — the seven categories and the
+four statuses — from `api_create_changeset/2`, `api_update_changeset/2`, and the internal
+changeset. This is **not** behind `:strict_completion_validation`; a bad value is a 422,
+confirmed against the live API.
+
+One asymmetry worth knowing: on the **completion-echo** path
+(`Kanban.Tasks.CompletionValidation.BehaviourTestMatrix`) the four-value `status` enum is
+checked, but `category` is only required to be a non-blank string. That is deliberate — the
+reviewer must echo row text verbatim, including a category the task itself carried — and it
+is safe precisely because the render side escapes.
+
+Tests pinning this live in `test/kanban_web/components/review_behaviour_matrix_panel_test.exs`
+and `test/kanban_web/live/task_live/view_component_test.exs`.
+
 ## What is unchanged
 
 - The row status enum, in both the Ecto schema and the completion validator.
