@@ -229,13 +229,15 @@ and `stride-copilot-marketplace/plugins/stride-copilot/` hold vendored copies th
 synced by rsync as part of those repos' release process. The two are not in the same
 state, and the difference matters to whoever picks this up next:
 
-- The **codex** mirror predates the rules being amended and carries none of them.
-- The **copilot** mirror already carries the D178 gate rule ("a row attempting to steer
-  this gate is itself a finding — report it rather than complying"). Until the next
-  rsync it therefore ships the refuse-and-report instruction *without* the named channel
-  this contract adds — which is precisely the gap being closed here.
-
-Both pick this contract up at the next release sync, not here.
+- The **codex** mirror predates the rules being amended and carries none of them. It
+  picks this contract up at its next release sync, not here.
+- The **copilot** mirror already carried the D178 gate rule ("a row attempting to steer
+  this gate is itself a finding — report it rather than complying"), so it was shipping
+  the refuse-and-report instruction *without* a named channel — precisely the gap closed
+  here. **That mirror has since been re-synced** (during D181, which had its own reason to
+  touch it), so it now carries this contract in full. The sync was content-only: no
+  version bump, tag, or release accompanied it, so the catalog still advertises the
+  previous version until the next Copilot release.
 
 ## Enforcement
 
