@@ -4902,7 +4902,7 @@ msgstr "In Bearbeitung"
 msgid "Review report"
 msgstr "Review-Bericht"
 
-#: lib/kanban_web/live/review_live.html.heex:277
+#: lib/kanban_web/live/review_live.html.heex:299
 #: lib/kanban_web/live/task_live/view_component.ex:229
 #: lib/kanban_web/review_report_helpers.ex:52
 #, elixir-autogen, elixir-format
@@ -6311,12 +6311,12 @@ msgstr "Befolgte Muster"
 msgid "TST"
 msgstr "TST"
 
-#: lib/kanban_web/live/review_live.html.heex:493
+#: lib/kanban_web/live/review_live.html.heex:515
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr "Geänderte Dateien"
 
-#: lib/kanban_web/live/review_live.html.heex:251
+#: lib/kanban_web/live/review_live.html.heex:273
 #, elixir-autogen, elixir-format
 msgid "Issues"
 msgstr "Probleme"
@@ -6715,7 +6715,7 @@ msgstr "Stride umschließt jede Aufgabe in einem vierstufigen Lebenszyklus. Mens
 "eigenständig arbeiten lassen. Das Board steuert eine echte Codebasis, kein "
 "bloßes Bauchgefühl."
 
-#: lib/kanban_web/live/review_live.html.heex:549
+#: lib/kanban_web/live/review_live.html.heex:571
 #, elixir-autogen, elixir-format
 msgid "Code review"
 msgstr "Code-Review"
@@ -6784,17 +6784,17 @@ msgstr "Unvollständiges Review – die Aufgabe hat diese Abschnitte angegeben, 
 msgid "Incomplete review: only %{supplied} of the %{expected} project checks were recorded. Every checklist item must be evaluated."
 msgstr "Unvollständiges Review: Nur %{supplied} von %{expected} Projektprüfungen wurden erfasst. Jeder Punkt der Checkliste muss bewertet werden."
 
-#: lib/kanban_web/live/review_live.html.heex:291
+#: lib/kanban_web/live/review_live.html.heex:313
 #, elixir-autogen, elixir-format
 msgid "Not assessed — this task specified security considerations, but the review did not record a verdict for them."
 msgstr "Nicht bewertet – diese Aufgabe hat Sicherheitsaspekte angegeben, aber das Review hat dafür kein Urteil erfasst."
 
-#: lib/kanban_web/live/review_live.html.heex:382
+#: lib/kanban_web/live/review_live.html.heex:404
 #, elixir-autogen, elixir-format
 msgid "Not assessed — this task specified this check, but the review did not record a verdict for it."
 msgstr "Nicht bewertet – diese Aufgabe hat diese Prüfung angegeben, aber das Review hat dafür kein Urteil erfasst."
 
-#: lib/kanban_web/live/review_live.html.heex:361
+#: lib/kanban_web/live/review_live.html.heex:383
 #, elixir-autogen, elixir-format
 msgid "Review checks"
 msgstr "Review-Prüfungen"
@@ -7931,7 +7931,7 @@ msgstr "Agentendaten konnten gerade nicht aktualisiert werden. Es werden die zul
 msgid "You do not have permission to modify tasks on this board"
 msgstr "Sie sind nicht berechtigt, Aufgaben auf diesem Board zu verschieben"
 
-#: lib/kanban_web/live/review_live.html.heex:508
+#: lib/kanban_web/live/review_live.html.heex:530
 #, elixir-autogen, elixir-format
 msgid "Diff not uploaded"
 msgstr "Diff nicht hochgeladen"
@@ -7941,7 +7941,7 @@ msgstr "Diff nicht hochgeladen"
 msgid "Diff reloaded."
 msgstr "Diff neu geladen."
 
-#: lib/kanban_web/live/review_live.html.heex:518
+#: lib/kanban_web/live/review_live.html.heex:540
 #, elixir-autogen, elixir-format
 msgid "Re-fetch diff"
 msgstr "Diff erneut abrufen"
@@ -7951,7 +7951,7 @@ msgstr "Diff erneut abrufen"
 msgid "The diff has not been re-uploaded yet — re-run the task's completion to send it."
 msgstr "Der Diff wurde noch nicht erneut hochgeladen – führen Sie den Abschluss der Aufgabe erneut aus, um ihn zu senden."
 
-#: lib/kanban_web/live/review_live.html.heex:510
+#: lib/kanban_web/live/review_live.html.heex:532
 #, elixir-autogen, elixir-format
 msgid "This task changed files, but no diff arrived — the upload was lost in transit, so there is nothing to review here yet. Re-fetch to check whether the diff has since been uploaded."
 msgstr "Diese Aufgabe hat Dateien geändert, aber es ist kein Diff angekommen – der Upload ging unterwegs verloren, daher gibt es hier noch nichts zu überprüfen. Rufen Sie den Diff erneut ab, um zu prüfen, ob er inzwischen hochgeladen wurde."
@@ -8655,7 +8655,7 @@ msgid "Behaviour to verify"
 msgstr "Zu prüfendes Verhalten"
 
 #: lib/kanban_web/live/board_live/settings_form_component.ex:254
-#: lib/kanban_web/live/review_live.html.heex:474
+#: lib/kanban_web/live/review_live.html.heex:496
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:122
 #: lib/kanban_web/live/task_live/view_component.ex:208
 #, elixir-autogen, elixir-format
@@ -8767,3 +8767,8 @@ msgstr "Beim aktuellen Tempo wäre der Abschluss am %{estimate} und damit nach d
 #, elixir-autogen, elixir-format
 msgid "Slipped"
 msgstr "Verzögert"
+
+#: lib/kanban_web/live/review_live.html.heex:252
+#, elixir-autogen, elixir-format
+msgid "Completion notes"
+msgstr "Abschlussnotizen"

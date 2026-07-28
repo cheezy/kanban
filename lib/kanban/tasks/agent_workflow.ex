@@ -17,6 +17,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   alias Kanban.Tasks.AgentQueries
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.ChangedFilesAudit
+  alias Kanban.Tasks.CompletionNotesScan
   alias Kanban.Tasks.CompletionValidation
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.GoalCompletion
@@ -194,6 +195,17 @@ defmodule Kanban.Tasks.AgentWorkflow do
         {:error, :not_authorized}
 
       true ->
+        # `completion_notes` is agent-authored free text that D188 made durable
+        # and human-rendered. The redaction rule that governs it is prompt text
+        # in five external plugin repos, so scan server-side and emit a security
+        # audit event when the value looks credential-bearing. Detect-only: the
+        # completion still proceeds and the narrative is preserved verbatim.
+        CompletionNotesScan.audit(
+          params["completion_notes"] || params[:completion_notes],
+          task.id,
+          agent_name
+        )
+
         do_complete_task(task, user, params, board, board_id, agent_name)
     end
   end
@@ -582,10 +594,17 @@ defmodule Kanban.Tasks.AgentWorkflow do
   # `:changed_files` is owned by `PUT /api/tasks/:id/changed_files`
   # (hook-uploaded); do not cast here, even if the legacy completion body
   # includes it. The PUT endpoint is the only writer.
+  #
+  # `:completion_notes` IS cast here (D188). It is the documented long-form
+  # findings channel alongside the required one-line `:completion_summary`, and
+  # was previously dropped silently because `cast/3` ignores unknown keys. It
+  # stays out of `validate_required/2` below: omitting it must leave the stored
+  # value untouched rather than fail or blank the field.
   defp completion_changeset(task, user, params, review_column, next_position) do
     task
     |> Ecto.Changeset.cast(params, [
       :completion_summary,
+      :completion_notes,
       :actual_complexity,
       :actual_files_changed,
       :time_spent_minutes,
@@ -606,6 +625,9 @@ defmodule Kanban.Tasks.AgentWorkflow do
       :time_spent_minutes
     ])
     |> Ecto.Changeset.validate_inclusion(:actual_complexity, [:small, :medium, :large])
+    # Generous bound: long-form findings are the point of the field, but an
+    # unbounded value is persisted AND re-rendered into the Review queue (D188).
+    |> Ecto.Changeset.validate_length(:completion_notes, max: 65_535)
     |> Ecto.Changeset.validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
     |> validate_explorer_result_payload(params)
     |> validate_reviewer_result_payload(params)

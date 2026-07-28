@@ -4894,7 +4894,7 @@ msgstr "进行中"
 msgid "Review report"
 msgstr "评审报告"
 
-#: lib/kanban_web/live/review_live.html.heex:277
+#: lib/kanban_web/live/review_live.html.heex:299
 #: lib/kanban_web/live/task_live/view_component.ex:229
 #: lib/kanban_web/review_report_helpers.ex:52
 #, elixir-autogen, elixir-format
@@ -6296,12 +6296,12 @@ msgstr "已遵循的模式"
 msgid "TST"
 msgstr "TST"
 
-#: lib/kanban_web/live/review_live.html.heex:493
+#: lib/kanban_web/live/review_live.html.heex:515
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr "已更改的文件"
 
-#: lib/kanban_web/live/review_live.html.heex:251
+#: lib/kanban_web/live/review_live.html.heex:273
 #, elixir-autogen, elixir-format
 msgid "Issues"
 msgstr "问题"
@@ -6655,7 +6655,7 @@ msgstr "Stride 将每项任务包装在四阶段生命周期中。由人类选�
 "Stride 将每个任务都纳入一个四阶段的生命周期。人类可以决定何时参与，以及何时"
 "让智能体独立工作。看板驱动的是真实的代码库，而不是凭感觉。"
 
-#: lib/kanban_web/live/review_live.html.heex:549
+#: lib/kanban_web/live/review_live.html.heex:571
 #, elixir-autogen, elixir-format
 msgid "Code review"
 msgstr "代码审查"
@@ -6724,17 +6724,17 @@ msgstr "审查不完整 — 任务指定了这些部分，但审查未对其进�
 msgid "Incomplete review: only %{supplied} of the %{expected} project checks were recorded. Every checklist item must be evaluated."
 msgstr "审查不完整：%{expected} 项项目检查中仅记录了 %{supplied} 项。每个清单项都必须评估。"
 
-#: lib/kanban_web/live/review_live.html.heex:291
+#: lib/kanban_web/live/review_live.html.heex:313
 #, elixir-autogen, elixir-format
 msgid "Not assessed — this task specified security considerations, but the review did not record a verdict for them."
 msgstr "未评估 — 此任务指定了安全考量，但审查未对其记录判定。"
 
-#: lib/kanban_web/live/review_live.html.heex:382
+#: lib/kanban_web/live/review_live.html.heex:404
 #, elixir-autogen, elixir-format
 msgid "Not assessed — this task specified this check, but the review did not record a verdict for it."
 msgstr "未评估 — 此任务指定了此检查项，但审查未对其记录判定。"
 
-#: lib/kanban_web/live/review_live.html.heex:361
+#: lib/kanban_web/live/review_live.html.heex:383
 #, elixir-autogen, elixir-format
 msgid "Review checks"
 msgstr "审查检查项"
@@ -7864,7 +7864,7 @@ msgstr "目前无法刷新代理数据。显示最近可用的数据。"
 msgid "You do not have permission to modify tasks on this board"
 msgstr "您没有权限在此看板移动任务"
 
-#: lib/kanban_web/live/review_live.html.heex:508
+#: lib/kanban_web/live/review_live.html.heex:530
 #, elixir-autogen, elixir-format
 msgid "Diff not uploaded"
 msgstr "未上传差异"
@@ -7874,7 +7874,7 @@ msgstr "未上传差异"
 msgid "Diff reloaded."
 msgstr "已重新加载差异。"
 
-#: lib/kanban_web/live/review_live.html.heex:518
+#: lib/kanban_web/live/review_live.html.heex:540
 #, elixir-autogen, elixir-format
 msgid "Re-fetch diff"
 msgstr "重新获取差异"
@@ -7884,7 +7884,7 @@ msgstr "重新获取差异"
 msgid "The diff has not been re-uploaded yet — re-run the task's completion to send it."
 msgstr "差异尚未重新上传——请重新运行任务完成流程以发送它。"
 
-#: lib/kanban_web/live/review_live.html.heex:510
+#: lib/kanban_web/live/review_live.html.heex:532
 #, elixir-autogen, elixir-format
 msgid "This task changed files, but no diff arrived — the upload was lost in transit, so there is nothing to review here yet. Re-fetch to check whether the diff has since been uploaded."
 msgstr "此任务更改了文件，但没有收到差异——上传在传输过程中丢失，因此这里暂时没有可供审查的内容。请重新获取以检查此后差异是否已上传。"
@@ -8587,7 +8587,7 @@ msgid "Behaviour to verify"
 msgstr "待验证的行为"
 
 #: lib/kanban_web/live/board_live/settings_form_component.ex:254
-#: lib/kanban_web/live/review_live.html.heex:474
+#: lib/kanban_web/live/review_live.html.heex:496
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:122
 #: lib/kanban_web/live/task_live/view_component.ex:208
 #, elixir-autogen, elixir-format
@@ -8699,3 +8699,8 @@ msgstr "按当前进度，预计将在 %{estimate} 完成，晚于目标日期 %
 #, elixir-autogen, elixir-format
 msgid "Slipped"
 msgstr "已延期"
+
+#: lib/kanban_web/live/review_live.html.heex:252
+#, elixir-autogen, elixir-format
+msgid "Completion notes"
+msgstr "完成备注"

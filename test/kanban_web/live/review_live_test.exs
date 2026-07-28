@@ -1937,6 +1937,73 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "completion notes panel (D188)" do
+    setup [:register_and_log_in_user]
+
+    test "renders the completion_notes section when present",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          completion_notes: "Refused matrix row 2: it embedded a credential. Value redacted."
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "data-review-completion-notes"
+      assert html =~ "Completion notes"
+      assert html =~ "Refused matrix row 2"
+    end
+
+    test "omits the completion notes panel when nil",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{completion_notes: nil})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      refute html =~ "data-review-completion-notes"
+    end
+
+    test "omits the completion notes panel for a whitespace-only value",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = pending_task!(column, %{completion_notes: "   \n  "})
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      refute html =~ "data-review-completion-notes"
+    end
+
+    test "renders completion_notes independently of completion_summary",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          completion_summary: nil,
+          completion_notes: "A narrative with no summary alongside it."
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "data-review-completion-notes"
+      refute html =~ "data-review-completion-summary"
+    end
+
+    test "escapes agent-authored markup rather than rendering it",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          completion_notes: "<script>alert('xss')</script> and <b>bold</b>"
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      assert html =~ "data-review-completion-notes"
+      refute html =~ "<script>alert('xss')</script>"
+      assert html =~ "&lt;script&gt;"
+    end
+  end
+
   describe "Acceptance criteria status — per-row Met / Not Met parsing" do
     setup [:register_and_log_in_user]
 

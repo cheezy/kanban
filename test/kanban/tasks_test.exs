@@ -3328,6 +3328,7 @@ defmodule Kanban.TasksTest do
         completed_by_id: user.id,
         completed_by_agent: "claude-code",
         completion_summary: "All tests passing",
+        completion_notes: "Explored the importer and parked two off-charter findings.",
         dependencies: [dep1.identifier, dep2.identifier],
         status: :completed,
         claimed_at: claimed_at,
@@ -3351,6 +3352,7 @@ defmodule Kanban.TasksTest do
       assert task.completed_by_id == user.id
       assert task.completed_by_agent == "claude-code"
       assert task.completion_summary == "All tests passing"
+      assert task.completion_notes == "Explored the importer and parked two off-charter findings."
       assert task.dependencies == [dep1.identifier, dep2.identifier]
       assert task.status == :completed
       assert DateTime.compare(task.claimed_at, claimed_at) == :eq
@@ -3390,6 +3392,7 @@ defmodule Kanban.TasksTest do
         completed_by_id: nil,
         completed_by_agent: nil,
         completion_summary: nil,
+        completion_notes: nil,
         dependencies: nil,
         claimed_at: nil,
         claim_expires_at: nil,
@@ -3412,6 +3415,7 @@ defmodule Kanban.TasksTest do
       assert is_nil(task.completed_by_id)
       assert is_nil(task.completed_by_agent)
       assert is_nil(task.completion_summary)
+      assert is_nil(task.completion_notes)
       assert is_nil(task.claimed_at)
       assert is_nil(task.claim_expires_at)
       assert is_nil(task.actual_complexity)

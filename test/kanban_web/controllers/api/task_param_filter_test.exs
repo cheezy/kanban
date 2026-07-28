@@ -35,6 +35,20 @@ defmodule KanbanWeb.API.TaskParamFilterTest do
       assert safe == %{"title" => "x", "description" => "y"}
       assert rejected == []
     end
+
+    test "strips completion_notes alongside completion_summary (D188)" do
+      params = %{
+        "title" => "x",
+        "completion_summary" => "summary",
+        "completion_notes" => "notes"
+      }
+
+      {safe, rejected} = TaskParamFilter.filter_forbidden_update_fields(params)
+
+      assert safe == %{"title" => "x"}
+      assert "completion_notes" in rejected
+      assert "completion_summary" in rejected
+    end
   end
 
   describe "filter_forbidden_create_fields/1" do
@@ -51,6 +65,20 @@ defmodule KanbanWeb.API.TaskParamFilterTest do
 
     test "passes a non-map through unchanged with no rejections" do
       assert TaskParamFilter.filter_forbidden_create_fields("not a map") == {"not a map", []}
+    end
+
+    test "strips completion_notes alongside completion_summary (D188)" do
+      params = %{
+        "title" => "x",
+        "completion_summary" => "summary",
+        "completion_notes" => "notes"
+      }
+
+      {safe, rejected} = TaskParamFilter.filter_forbidden_create_fields(params)
+
+      refute Map.has_key?(safe, "completion_notes")
+      assert "completion_notes" in rejected
+      assert "completion_summary" in rejected
     end
 
     test "strips a client-supplied parent_id (D153)" do

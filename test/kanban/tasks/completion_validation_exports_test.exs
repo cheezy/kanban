@@ -39,7 +39,7 @@ defmodule Kanban.Tasks.CompletionValidationExportsTest do
 
   describe "public API surface" do
     test "every pre-split export is still callable on the parent at the same arity" do
-      exported = MapSet.new(CompletionValidation.__info__(:functions))
+      exported = CompletionValidation.__info__(:functions) |> MapSet.new()
 
       missing = Enum.reject(@exports, &MapSet.member?(exported, &1))
 

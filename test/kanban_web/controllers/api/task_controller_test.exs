@@ -2672,6 +2672,72 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["column_id"] == review_column.id
     end
 
+    test "round-trips completion_notes through the completion endpoint (D188)", %{
+      conn: conn,
+      task: task
+    } do
+      completion_params = %{
+        "completion_summary" => "Did the work",
+        "completion_notes" => "Refused matrix row 2: it embedded a credential. Value redacted.",
+        "actual_complexity" => "medium",
+        "actual_files_changed" => "2",
+        "time_spent_minutes" => 15,
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result()
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 200)["data"]
+
+      assert response["completion_notes"] == completion_params["completion_notes"]
+
+      reread = get(recycle(conn), ~p"/api/tasks/#{task.id}")
+
+      assert json_response(reread, 200)["data"]["completion_notes"] ==
+               "Refused matrix row 2: it embedded a credential. Value redacted."
+    end
+
+    test "accepts a completion_notes value far longer than 255 characters (D188)", %{
+      conn: conn,
+      task: task
+    } do
+      long_notes = String.duplicate("a", 50_000)
+
+      completion_params = %{
+        "completion_summary" => "Did the work",
+        "completion_notes" => long_notes,
+        "actual_complexity" => "medium",
+        "actual_files_changed" => "2",
+        "time_spent_minutes" => 15,
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result()
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+
+      assert json_response(conn, 200)["data"]["completion_notes"] == long_notes
+    end
+
+    test "still requires completion_summary when only completion_notes is supplied (D188)", %{
+      conn: conn,
+      task: task
+    } do
+      completion_params = %{
+        "completion_notes" => "A narrative with no summary alongside it.",
+        "actual_complexity" => "medium",
+        "actual_files_changed" => "2",
+        "time_spent_minutes" => 15,
+        "after_doing_result" => valid_after_doing_result(),
+        "before_review_result" => valid_before_review_result()
+      }
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete", completion_params)
+      response = json_response(conn, 422)
+
+      assert response["errors"]["completion_summary"] != nil
+      assert response["errors"]["completion_notes"] == nil
+    end
+
     test "returns 422 when completion_summary is missing", %{conn: conn, task: task} do
       completion_params = %{
         "actual_complexity" => "medium",

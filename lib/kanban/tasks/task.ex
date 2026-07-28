@@ -334,6 +334,14 @@ defmodule Kanban.Tasks.Task do
     # Work summary - Example: "Implemented JWT auth with refresh tokens. All tests passing."
     field :completion_summary, :string
 
+    # Long-form completion narrative, distinct from the required one-line
+    # `completion_summary`. Optional and agent-authored; it is the named channel
+    # for findings a human must read (exploratory-testing results, a refused
+    # behaviour-matrix row). Rendered to humans on the Review queue, so it is
+    # escaped like any other user-supplied string (D188).
+    # Example: "Parser rejects UTF-16 input; parked as an off-charter finding."
+    field :completion_notes, :string
+
     # Task Relationships
     # Tasks that must finish first - Validated: Array of identifiers, no circular deps
     # Example: ["W1", "W5", "D3"]
@@ -562,6 +570,7 @@ defmodule Kanban.Tasks.Task do
       :completed_by_id,
       :completed_by_agent,
       :completion_summary,
+      :completion_notes,
       # Task relationships (02)
       :dependencies,
       :parent_id,
@@ -627,6 +636,10 @@ defmodule Kanban.Tasks.Task do
     )
     |> validate_varchar_255_lengths()
     |> validate_varchar_255_array_element_lengths()
+    # Field-level invariant, not endpoint-level: `completion_notes` is durable
+    # and re-rendered into the Review queue, and this changeset is a second
+    # writer (the task form) besides the completion endpoint (D188).
+    |> validate_length(:completion_notes, max: 65_535)
     |> validate_number(:time_spent_minutes, greater_than_or_equal_to: 0)
     |> validate_technology_requirements()
     |> validate_required_capabilities()

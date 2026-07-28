@@ -42,6 +42,7 @@ defmodule KanbanWeb.API.TaskParamFilter do
     completed_by_id
     completed_by_agent
     completion_summary
+    completion_notes
     actual_complexity
     actual_files_changed
     time_spent_minutes
@@ -76,6 +77,7 @@ defmodule KanbanWeb.API.TaskParamFilter do
     completed_by_id
     completed_by_agent
     completion_summary
+    completion_notes
     actual_complexity
     actual_files_changed
     time_spent_minutes

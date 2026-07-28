@@ -34,11 +34,11 @@ Authorization: Bearer <your_api_token>
 | `reviewer_result` | object | **Yes** (grace-warned, strict-rejected) | Review outcome — same two shapes as `explorer_result`. Dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found`, and **optionally accepts** the structured schema (`schema_version`, `status`, `issue_counts`, `issues[]`, `acceptance_criteria[]`, `testing_strategy`, `patterns`, `pitfalls`). See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
 | `workflow_steps` | array | Recommended (telemetry) | Six-entry telemetry array, one object per workflow phase. Cast onto the task struct for aggregation. See [Completion Validation Format (G65)](#completion-validation-format-g65) below. |
 | `agent_name` | string | No | Name of the agent completing the task (e.g., "Claude Sonnet 4.5"). Defaults to "Unknown". |
-| `time_spent_minutes` | integer | No | Time spent on the task in minutes |
-| `completion_notes` | string | No | Notes about the completion |
-| `completion_summary` | string | No | JSON-encoded summary of changes made |
-| `actual_complexity` | string | No | Actual complexity experienced ("small", "medium", "large") |
-| `actual_files_changed` | string | No | Actual number of files changed |
+| `time_spent_minutes` | integer | **Yes** | Time spent on the task in minutes |
+| `completion_notes` | string | No | Long-form completion narrative, distinct from the one-line `completion_summary`. Persisted on the task, returned by this endpoint and by `GET /api/tasks/:id`, and rendered on the Review queue — this is the channel for findings a human must read. Omitting it leaves any previously stored value unchanged. Bounded at 65535 characters. Redact credentials before writing: the value is durable and shown to humans, and the server raises a security audit event (without logging the value) when it looks credential-bearing. |
+| `completion_summary` | string | **Yes** | JSON-encoded summary of changes made |
+| `actual_complexity` | string | **Yes** | Actual complexity experienced ("small", "medium", "large") |
+| `actual_files_changed` | string | **Yes** | Actual number of files changed |
 | `review_report` | string | No | Structured review report from task-reviewer agent (persisted on the task for traceability) |
 
 **IMPORTANT:** You must execute BOTH the `after_doing` AND `before_review` hooks BEFORE calling this endpoint and include both execution results in your request.
@@ -178,7 +178,10 @@ Free-form reasons are rejected — the enum is the contract.
 {
   "agent_name": "Claude Sonnet 4.5",
   "time_spent_minutes": 45,
+  "completion_summary": "Added JWT auth with refresh tokens",
   "completion_notes": "Implemented JWT authentication with refresh tokens. All tests passing.",
+  "actual_complexity": "medium",
+  "actual_files_changed": "lib/my_app/auth.ex, test/my_app/auth_test.exs",
   "after_doing_result": {
     "exit_code": 0,
     "output": "Running tests...\n230 tests, 0 failures\nmix format --check-formatted\nAll files formatted correctly\nmix credo --strict\nNo issues found",
@@ -432,7 +435,10 @@ curl -X PATCH \
   -d "{
     \"agent_name\": \"Claude Sonnet 4.5\",
     \"time_spent_minutes\": 45,
+    \"completion_summary\": \"Added JWT auth with refresh tokens\",
     \"completion_notes\": \"All tests passing. PR created. Ready for review.\",
+    \"actual_complexity\": \"medium\",
+    \"actual_files_changed\": \"lib/my_app/auth.ex, test/my_app/auth_test.exs\",
     \"after_doing_result\": {
       \"exit_code\": $EXIT_CODE_1,
       \"output\": \"$OUTPUT_1\",

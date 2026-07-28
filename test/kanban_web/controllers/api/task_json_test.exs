@@ -9,6 +9,10 @@ defmodule KanbanWeb.API.TaskJSONTest do
   and `KanbanWeb.API.CompletionResultGate` runs the validator without
   mutating the payload. These tests guard against any regression that
   would narrow that contract.
+
+  Also covers `completion_notes` serialization (D188) — the field was
+  historically absent from the serializer, so a submitted value could not
+  be read back.
   """
 
   use KanbanWeb.ConnCase
@@ -73,6 +77,39 @@ defmodule KanbanWeb.API.TaskJSONTest do
       "patterns" => %{"status" => "passed"},
       "pitfalls" => %{"status" => "failed", "notes" => "One pitfall violated."}
     }
+  end
+
+  describe "completion_notes serialization (D188)" do
+    test "the serializer returns completion_notes for a completed task", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Task with completion notes"})
+
+      {:ok, task} =
+        task
+        |> Ecto.Changeset.change(completion_notes: "Explored the importer; parked 2 findings.")
+        |> Kanban.Repo.update()
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert Map.has_key?(response, "completion_notes")
+      assert response["completion_notes"] == "Explored the importer; parked 2 findings."
+    end
+
+    test "the serializer includes the key as null when no notes were recorded", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Task without completion notes"})
+
+      conn = get(conn, ~p"/api/tasks/#{task.id}")
+      response = json_response(conn, 200)["data"]
+
+      assert Map.has_key?(response, "completion_notes")
+      assert is_nil(response["completion_notes"])
+    end
   end
 
   describe "reviewer_result round trip via API JSON" do

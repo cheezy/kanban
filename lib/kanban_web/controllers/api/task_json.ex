@@ -107,6 +107,7 @@ defmodule KanbanWeb.API.TaskJSON do
       completed_by_id: task.completed_by_id,
       completed_by_agent: task.completed_by_agent,
       completion_summary: task.completion_summary,
+      completion_notes: task.completion_notes,
       dependencies: task.dependencies,
       status: task.status,
       claimed_at: task.claimed_at,

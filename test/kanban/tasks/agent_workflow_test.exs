@@ -240,6 +240,107 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
     end
   end
 
+  describe "complete_task/4 — completion_notes (D188)" do
+    setup :setup_board
+
+    test "persists a submitted completion_notes value", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      params =
+        Map.put(valid_complete_params(), "completion_notes", "Parser rejects UTF-16 input.")
+
+      assert {:ok, completed, _hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, params, "Claude")
+
+      assert completed.completion_notes == "Parser rejects UTF-16 input."
+      assert Repo.get!(Task, task.id).completion_notes == "Parser rejects UTF-16 input."
+    end
+
+    test "leaves an existing completion_notes value unchanged when the key is omitted", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      {:ok, seeded} =
+        claimed
+        |> Ecto.Changeset.change(completion_notes: "Recorded on an earlier pass.")
+        |> Repo.update()
+
+      assert {:ok, completed, _hooks} =
+               AgentWorkflow.complete_task(seeded, ctx.user, valid_complete_params(), "Claude")
+
+      assert completed.completion_notes == "Recorded on an earlier pass."
+    end
+
+    test "accepts a very long completion_notes value without truncating it", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+      long_notes = String.duplicate("finding ", 2_000)
+      params = Map.put(valid_complete_params(), "completion_notes", long_notes)
+
+      assert {:ok, _completed, _hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, params, "Claude")
+
+      assert Repo.get!(Task, task.id).completion_notes == long_notes
+    end
+
+    test "rejects a completion_notes value beyond the length bound", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+      params = Map.put(valid_complete_params(), "completion_notes", String.duplicate("a", 65_536))
+
+      assert {:error, %Ecto.Changeset{valid?: false} = cs} =
+               AgentWorkflow.complete_task(claimed, ctx.user, params, "Claude")
+
+      assert :completion_notes in Keyword.keys(cs.errors)
+    end
+
+    test "emits a security audit event when completion_notes looks credential-bearing", ctx do
+      ref = make_ref()
+      test_pid = self()
+      handler = "aw-completion-notes-#{inspect(ref)}"
+
+      :telemetry.attach(
+        handler,
+        [:kanban, :audit, :completion_notes_credential_suspected],
+        fn _event, _measurements, metadata, _config ->
+          send(test_pid, {:telemetry, ref, metadata})
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler) end)
+
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+      task_id = task.id
+
+      params =
+        Map.put(
+          valid_complete_params(),
+          "completion_notes",
+          "the fixture hard-codes ghp_abcdefghij0123456789"
+        )
+
+      assert {:ok, _completed, _hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, params, "Claude")
+
+      # Detect-only: the completion still succeeds and the narrative is kept.
+      assert_receive {:telemetry, ^ref, %{task_id: ^task_id}}
+      assert Repo.get!(Task, task_id).completion_notes =~ "ghp_"
+    end
+
+    test "is optional — a completion without it still succeeds", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      assert {:ok, completed, _hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert is_nil(completed.completion_notes)
+    end
+  end
+
   describe "complete_task/4 — needs_review=true" do
     setup :setup_board
 
@@ -387,6 +488,8 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert :completion_summary in errors
       assert :actual_complexity in errors
       assert :time_spent_minutes in errors
+      # completion_notes is cast but deliberately optional (D188)
+      refute :completion_notes in errors
     end
 
     test "rejects negative time_spent_minutes", ctx do

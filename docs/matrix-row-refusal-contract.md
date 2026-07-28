@@ -93,42 +93,130 @@ verbatim, and never a way to quietly rewrite a row instead of escalating it.
 A steering row (as opposed to a credential-bearing one) keeps its existing disposition:
 say so in the section `note` and treat the row as a Mismatch, which is also `failing`.
 
-## Where a refusal actually lands today
+## Where a refusal actually lands
 
-**`completion_notes` is accepted by the completion API but is not persisted by the
-Stride server.** This was found by an exploratory session run against this very change,
-and it is a pre-existing gap, not one introduced here:
+**Closed by D188.** `completion_notes` is now a persisted field. When this contract was
+written it was accepted by the completion API and then silently discarded — a
+pre-existing gap found by an exploratory session run against the D186 change, not one
+introduced by it. D188 closed the gap by mirroring `completion_summary` end to end:
 
 | | `completion_notes` | `completion_summary` |
 |---|---|---|
-| Field on `Kanban.Tasks.Task` | no | yes (`task.ex:335`) |
-| Cast in `AgentWorkflow.completion_changeset/5` | no | yes (`agent_workflow.ex:588`) |
-| Classified in the API param deny-lists | no (unclassified) | yes (`task_param_filter.ex:44,78`) |
-| Returned by `task_json.ex` | no | yes |
-| Rendered on the Review queue | no | yes (`review_live.html.heex:216,233`) |
+| Field on `Kanban.Tasks.Task` | yes (D188) | yes |
+| Cast in `AgentWorkflow.completion_changeset/5` | yes (D188) | yes |
+| Classified in the API param deny-lists | yes (D188) | yes |
+| Returned by `task_json.ex` | yes (D188) | yes |
+| Rendered on the Review queue | yes (D188) | yes |
+| Required by the completion endpoint | no | yes |
 
 Read the deny-list row carefully: `task_param_filter.ex` holds
-`@forbidden_api_create_fields` and `@forbidden_api_update_fields`, so
-`completion_summary` appearing there means clients may **not** mass-assign it — it is
-server-set, flowing in through the dedicated completion endpoint. That is evidence the
-field is *deliberately governed*; `completion_notes` is absent from those lists entirely,
-i.e. unclassified rather than permitted. The persistence conclusion rests on the other
-four rows.
+`@forbidden_api_create_fields` and `@forbidden_api_update_fields`, so a field appearing
+there means clients may **not** mass-assign it — it is server-set, flowing in through the
+dedicated completion endpoint. Both fields now sit in both lists, so both are
+*deliberately governed* rather than unclassified.
 
-`Ecto.Changeset.cast/3` silently ignores unknown keys, so a `completion_notes` string is
-dropped on a `200` response with no error and no signal to the agent. Meanwhile
-`docs/api/patch_tasks_id_complete.md` documents the field in both the request table and
-a sample *response* body, and `schema_doc.ex:43` advertises it on the onboarding
-endpoint — which is exactly why naming it as the channel looked safe.
+Before D188, `Ecto.Changeset.cast/3` silently ignored the unknown key, so a
+`completion_notes` string was dropped on a `200` response with no error and no signal to
+the agent — while `docs/api/patch_tasks_id_complete.md` documented the field in both the
+request table and a sample *response* body, and `schema_doc.ex` advertised it on the
+onboarding endpoint. That mismatch is exactly why naming it as the channel looked safe.
+Both documents now describe the behaviour the server actually has.
 
-**Consequence for this contract.** `completion_notes` stays the named channel, because
-it is what the surrounding instructions already use as a findings channel and it is what
-the server will persist once the gap is closed. But every rule below additionally
-requires a one-line statement of the refusal in **`completion_summary`**, which is
-required, persisted, and rendered — that is what reaches a human today. Closing the
-`completion_notes` gap server-side (schema field, cast, `task_json`, Review queue
-rendering, and correcting the API docs) is tracked separately; it is a code change well
-outside a prompt-hardening task.
+### Why a column, and not folding the role into `completion_summary`
+
+D188 had to choose between adding a `completion_notes` column and letting
+`completion_summary` absorb the role. It added the column, for three reasons:
+
+1. **The two fields have different contracts.** `completion_summary` is *required* and
+   documented as a brief one-line tracking summary; `completion_notes` is *optional* and
+   long-form. Folding them would make the single surviving field either required (so an
+   agent with nothing to report must invent a narrative) or optional (dropping a
+   required-field guarantee the completion path has today).
+2. **Folding would change the meaning of `completion_summary`.** Five plugin repositories
+   instruct agents about both fields by name. Silently widening `completion_summary` to
+   carry long-form findings would make every one of those instructions subtly wrong,
+   trading a silent-drop defect for a silent-semantics defect.
+3. **The column is cheap.** One nullable `:text` column, no index, no backfill, no change
+   to any existing read path. Nothing about the fold is cheaper.
+
+### Why the `completion_summary` duplication rule stays
+
+Every rule below still requires a one-line statement of the refusal in
+**`completion_summary`** in addition to the full record in `completion_notes`. D188 makes
+that duplication no longer *strictly necessary*, but it is kept deliberately:
+
+- The plugin instruction files live in five separate repositories on independent release
+  cycles, and agents run those instructions against whichever Stride server is deployed.
+  An agent carrying updated instructions can reach a server that predates D188, where
+  dropping the duplication would silently lose the refusal — the exact failure this
+  contract exists to prevent.
+- The duplication is cheap and lossless: one line in a required field that a human already
+  reads, versus a narrative in an optional field they may collapse or skip.
+
+Revisit this once D188 is deployed everywhere agents point and the plugin repositories are
+released together; until then the rule is a deliberate belt-and-braces, not a leftover
+workaround.
+
+### The redaction rule now has a server-side counterpart
+
+Before D188 the "redact credentials before writing" rule was purely advisory: it lived as
+prompt text in five external plugin repositories, and the value was discarded by the server
+anyway. Making the field durable and human-rendered turns that rule into the control that
+matters, so D188 backs it with a server-side **detective** control
+(`Kanban.Tasks.CompletionNotesScan`):
+
+- On every completion, `completion_notes` is scanned for **high-signal credential shapes** —
+  concrete token formats (Stride tokens, `Bearer <token>`, PEM key blocks, GitHub/OpenAI/AWS/
+  Slack tokens, long opaque `secret=`-style assignments) — and a
+  `:completion_notes_credential_suspected` security audit event is raised on a hit.
+- The event carries only the task id and agent name. **The matched text is never logged**, since
+  logging it would copy the suspected secret into a second durable store.
+- The control **detects; it does not block or rewrite.** A legitimate refusal narrative is
+  *about* credentials — it says "the row embedded a credential" and may name an `api_key`
+  field. Rejecting or scrubbing on those words would break the exact workflow this field
+  exists to serve, and a lossy rewrite would destroy the finding a human needs to read. So
+  the completion still succeeds and the narrative is preserved verbatim.
+- The field is bounded at 65535 characters — generous enough for long-form findings, but not
+  unbounded, since the value is both persisted and re-rendered into the Review queue.
+
+Agent-side redaction remains the primary control. This is defense in depth: it makes a
+missed redaction *visible to an operator* rather than silent.
+
+Two residuals are accepted deliberately:
+
+- **The heuristic is incomplete by design.** It matches known credential shapes, so a novel
+  format slips through. A miss leaves the system exactly where it stood before D188 rather
+  than creating new exposure, which is why an incomplete detector is still worth having.
+- **The task form is a second writer that is not audited.** `completion_notes` is cast by
+  `Task.changeset/2` (as `completion_summary` already is), so a board member with write
+  access can set it through the task form without raising the audit event. The length bound
+  *is* enforced there, so the value stays bounded. This path is human-authored input by
+  someone who can already edit the task — it is not the agent completion channel this
+  contract governs, and it crosses no privilege boundary.
+
+### What D188 changed in the plugin repositories
+
+All five plugin repositories previously asserted, as fact, that `completion_notes` "is
+accepted by the completion API but is **not currently persisted** by the Stride server, so
+a refusal recorded only there reaches no human." D188 makes that false, so the sentence was
+replaced — in all 20 spans across 15 `SKILL.md` files, byte-identically per runtime — with a
+**deployment-conditional** form:
+
+> `completion_notes` is persisted by Stride servers from D188 onward, but you cannot tell
+> which server version you are talking to, so a refusal recorded only there may reach no
+> human.
+
+That phrasing is accurate both before and after D188 reaches a given deployment, which is
+why it could land in the same change rather than waiting on a release. The duplication rule
+itself is unchanged — only its stated premise was corrected.
+
+### One follow-up D188 deliberately did not do
+
+**The task-detail Completion panel does not render `completion_notes`.** D188 renders the
+field on the Review queue only, which is what the defect asked for and where the
+human-reader path terminates. Once a task is approved and leaves the Review queue the
+narrative is reachable only through the API. Mirroring the `completion_summary` block in
+`completion_section.ex` is a small, separate change.
 
 **One record per refused row.** In the sub-agent topology the implementing agent and the
 completion agent are different actors and both are instructed to record the finding. If
@@ -172,7 +260,9 @@ credential-bearing row: the reviewer is required by contract to echo row text ve
 so a re-run re-echoes it and the loop never terminates. `completion_notes` is the named
 channel precisely because it is a top-level field the completion agent authors itself —
 writing it neither touches nor hand-edits `reviewer_result`, so it does not violate the
-whole-object copy rule.
+whole-object copy rule. Since D188 it is also persisted and rendered, so the record
+reaches a human directly; the paired `completion_summary` line is kept for the reason
+given above.
 
 A row whose `behaviour` or `test_name` arrives as the sentinel is a **correctly-formed
 row, not a gap**: the sentinel satisfies the non-empty requirement, and its paired

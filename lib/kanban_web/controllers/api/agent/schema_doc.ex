@@ -40,7 +40,8 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
           required_body: %{
             agent_name: "string",
             time_spent_minutes: "integer",
-            completion_notes: "string",
+            completion_notes:
+              "string — OPTIONAL: long-form narrative; persisted, returned by the API, and rendered on the Review queue",
             completion_summary: "string (brief summary for tracking)",
             actual_complexity: "enum: 'small', 'medium', 'large'",
             actual_files_changed:
