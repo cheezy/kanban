@@ -11,11 +11,18 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
          doing: integer(), review: integer(), done: integer()}, ...]
 
   Renders an 800x200 responsive SVG (preserveAspectRatio='none') with
-  five stacked layers — bottom-to-top: Done, Review, Doing, Ready,
-  Backlog. Each layer is a closed path tinted by its status token
+  stacked layers — bottom-to-top: Done, Review, Doing, Ready, Backlog.
+  Each layer is a closed path tinted by its status token
   (var(--st-done) / --st-review / --st-doing / --st-ready /
   --st-backlog) at 0.8 opacity. A header carries the title, subtitle,
-  and a five-swatch legend.
+  and one legend swatch per rendered band.
+
+  Because the done bucket folds in the whole pre-window completed
+  history, its magnitude compresses the four in-flight bands into a
+  sliver. Passing `show_done={false}` drops the Done band, re-bases the
+  remaining four onto the zero baseline, and rescales the y-axis to the
+  four-band peak so those bands use the full plot height. The default
+  `show_done={true}` renders all five bands and five swatches.
 
   Mirrors `design_handoff_stride/design_source/screens/extras.jsx`
   lines 934-973 (CFDChart). The layer-stacking math is extracted to a
@@ -41,11 +48,17 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
       any length: `Kanban.Metrics.Workspace.cumulative_flow/1` returns one
       snapshot per day in the window, which is fewer than the window's calendar
       length when weekends are excluded.
+    * `show_done` — optional, defaults to `true`. When `false`, the Done band is
+      omitted, the four remaining bands are re-based onto the zero baseline, and
+      the y-axis is rescaled to the four-band peak. The Done legend swatch is
+      omitted to match. The `true` default keeps every existing caller rendering
+      exactly as before.
   """
   attr :snapshots, :list, required: true
+  attr :show_done, :boolean, default: true
 
   def cumulative_flow(assigns) do
-    {layers, peak} = build_geometry(assigns.snapshots)
+    {layers, peak} = build_geometry(assigns.snapshots, assigns.show_done)
 
     assigns =
       assigns
@@ -76,7 +89,7 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
         <.legend_swatch label={gettext("Ready")} color="var(--st-ready)" />
         <.legend_swatch label={gettext("Doing")} color="var(--st-doing)" />
         <.legend_swatch label={gettext("Review")} color="var(--st-review)" />
-        <.legend_swatch label={gettext("Done")} color="var(--st-done)" />
+        <.legend_swatch :if={@show_done} label={gettext("Done")} color="var(--st-done)" />
       </header>
 
       <div
@@ -121,8 +134,8 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
 
   # --- Geometry ------------------------------------------------------------
 
-  defp build_geometry(snapshots) do
-    layers = build_layers(snapshots)
+  defp build_geometry(snapshots, show_done) do
+    layers = snapshots |> build_layers() |> visible_layers(show_done)
     peak = Enum.max([build_peak(layers), 0]) |> max(1)
 
     layers_with_paths =
@@ -131,6 +144,39 @@ defmodule KanbanWeb.MetricsCumulativeFlow do
       end)
 
     {layers_with_paths, peak}
+  end
+
+  defp visible_layers(layers, true), do: layers
+  defp visible_layers(layers, false), do: exclude_done_layer(layers)
+
+  @doc """
+  Drops the `:done` band and re-bases the remaining four onto the zero
+  baseline. Exposed for unit testing.
+
+  `:done` is the bottom-most layer, so its `:bottom` is all zeros and its
+  `:top` IS the per-day done count. Subtracting that vector from every
+  survivor's `:top` and `:bottom` slides the whole stack down, so `:review`
+  starts at zero while every band's thickness is preserved.
+
+  Returns the survivors bottom-to-top (`:review` first, `:backlog` last).
+
+  Expects a list produced by `build_layers/1`, which always leads with `:done`.
+  Anything else fails closed with a `FunctionClauseError` rather than silently
+  returning an unfiltered stack.
+  """
+  @spec exclude_done_layer([%{name: atom(), top: [integer()], bottom: [integer()]}]) ::
+          [%{name: atom(), top: [integer()], bottom: [integer()]}]
+  def exclude_done_layer([]), do: []
+
+  def exclude_done_layer([%{name: :done, top: baseline} | rest]),
+    do: Enum.map(rest, &rebase_layer(&1, baseline))
+
+  defp rebase_layer(layer, baseline) do
+    %{layer | top: subtract(layer.top, baseline), bottom: subtract(layer.bottom, baseline)}
+  end
+
+  defp subtract(values, baseline) do
+    values |> Enum.zip(baseline) |> Enum.map(fn {value, base} -> value - base end)
   end
 
   # --- Y-axis scale --------------------------------------------------------
