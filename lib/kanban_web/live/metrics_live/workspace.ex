@@ -39,6 +39,14 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   describes the span, not the bar count. Like the other two controls the state
   lives in assigns only, so a reload resets it to unchecked. The toolbar carries
   only these three working controls — there are no decorative placeholder buttons.
+
+  The cumulative-flow "Show Done" checkbox (W1956) is deliberately NOT a toolbar
+  control: it sits directly above the CFD card because it changes only how that
+  one chart is drawn, through the component's `show_done` attr (W1955).
+  Unchecking it drops the Done band so the four in-flight bands use the full plot
+  height. Unlike the three toolbar controls it never reaches a `Kanban.Metrics`
+  option — its handler assigns and stops, so toggling it costs zero queries. Like
+  them the state lives in assigns only, so a reload resets it to checked.
   """
   use KanbanWeb, :live_view
 
@@ -90,6 +98,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
       boards: scoped_boards(socket.assigns.current_scope),
       selected_window_days: Helpers.default_window_days(),
       exclude_weekends: false,
+      cfd_show_done: true,
       timezone: KanbanWeb.Timezone.browser_timezone(socket)
     }
   end
@@ -119,6 +128,16 @@ defmodule KanbanWeb.MetricsLive.Workspace do
       )
 
     {:noreply, assign_workspace_metrics(socket, socket.assigns.selected_board_ids)}
+  end
+
+  # Display-only toggle: it changes how the CFD is DRAWN, not what any query
+  # reads, so this handler assigns and stops — deliberately no
+  # assign_workspace_metrics/2 call, and therefore no re-read. Same
+  # absent-key-means-false contract as the weekend box above: an unchecked box
+  # omits the key, which Helpers.parse_show_done/1 resolves to false.
+  @impl true
+  def handle_event("cfd_done_filter_change", params, socket) do
+    {:noreply, assign(socket, :cfd_show_done, Helpers.parse_show_done(params["cfd_show_done"]))}
   end
 
   # Re-reads every workspace series for the current selection and refreshes the
@@ -265,7 +284,17 @@ defmodule KanbanWeb.MetricsLive.Workspace do
             />
           </div>
 
-          <MetricsCumulativeFlow.cumulative_flow snapshots={@flow_snapshots} />
+          <%!-- The Done-band toggle is grouped WITH the chart rather than placed
+          in the header toolbar: the toolbar controls change the data every chart
+          reads, this one only changes how this single chart is drawn. The wrapper
+          is layout only — the toggle reaches the chart as a plain boolean attr. --%>
+          <div data-metrics-cfd-group class="flex flex-col gap-2">
+            <.cfd_done_selector show_done={@cfd_show_done} />
+            <MetricsCumulativeFlow.cumulative_flow
+              snapshots={@flow_snapshots}
+              show_done={@cfd_show_done}
+            />
+          </div>
         </div>
       </div>
     </Layouts.app>
@@ -411,6 +440,48 @@ defmodule KanbanWeb.MetricsLive.Workspace do
           {gettext("Last %{count} days", count: days)}
         </option>
       </select>
+    </form>
+    """
+  end
+
+  # --- CFD Done-band selector ---------------------------------------------
+
+  attr :show_done, :boolean, required: true
+
+  # Rendered above the cumulative flow card, NOT in the header toolbar (see
+  # render/1), because it changes only how that one chart is drawn. A raw
+  # checkbox rather than core_components' <.input type="checkbox"> for the same
+  # reason the board and weekend selectors document: <.input> emits a hidden
+  # value="false" companion, and the absent-key-means-false semantics are what
+  # the handler relies on. Every colour is a theme token, so the pill tracks
+  # light and dark mode.
+  defp cfd_done_selector(assigns) do
+    ~H"""
+    <form
+      id="cfd-done-filter-form"
+      phx-change="cfd_done_filter_change"
+      class="self-end"
+      style="margin: 0;"
+    >
+      <label style={[
+        "display: inline-flex; align-items: center; gap: 8px;",
+        "padding: 4px 10px; border-radius: 5px;",
+        "background: var(--surface); border: 1px solid var(--line);",
+        "cursor: pointer; user-select: none;"
+      ]}>
+        <input
+          type="checkbox"
+          id="cfd_show_done"
+          name="cfd_show_done"
+          value="true"
+          checked={@show_done}
+          data-metrics-cfd-done-selector
+          style="width: 14px; height: 14px; accent-color: var(--stride-orange);"
+        />
+        <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
+          {gettext("Show Done")}
+        </span>
+      </label>
     </form>
     """
   end

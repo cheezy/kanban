@@ -761,6 +761,312 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
     end
   end
 
+  describe "cumulative-flow Done-band toggle (W1956)" do
+    setup [:register_and_log_in_user]
+
+    defp cfd_done_checked?(html) do
+      Regex.match?(~r/id="cfd_show_done"[^>]*\schecked/, html)
+    end
+
+    # Scoped to the CFD card, because the page legitimately contains the word
+    # "Done" elsewhere — this control's own label.
+    defp cfd_section(html) do
+      [section] = Regex.run(~r/<section[^>]*data-metrics-cumulative-flow\b.*?<\/section>/s, html)
+      section
+    end
+
+    defp cfd_layer_names(html) do
+      ~r/data-metrics-cumulative-flow-layer="(\w+)"/
+      |> Regex.scan(html, capture: :all_but_first)
+      |> List.flatten()
+    end
+
+    defp marker_index(html, regex) do
+      [{index, _len} | _] = Regex.run(regex, html, return: :index)
+      index
+    end
+
+    test "renders the checkbox in the chart group, not the header toolbar", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "data-metrics-cfd-group"
+      assert html =~ "data-metrics-cfd-done-selector"
+
+      # The three data-scope selectors live in the header; this display-only one
+      # must not.
+      [header] = Regex.run(~r/<header[^>]*data-metrics-header\b.*?<\/header>/s, html)
+      refute header =~ "data-metrics-cfd-done-selector"
+      refute header =~ "cfd-done-filter-form"
+
+      # Ordering: after the leaderboard, and above the CFD card it controls.
+      assert marker_index(html, ~r/data-metrics-agent-leaderboard/) <
+               marker_index(html, ~r/data-metrics-cfd-done-selector/)
+
+      assert marker_index(html, ~r/data-metrics-cfd-done-selector/) <
+               marker_index(html, ~r/<section[^>]*data-metrics-cumulative-flow\b/)
+
+      assert html =~ ~r/data-metrics-cfd-group[^>]*>\s*<form id="cfd-done-filter-form"/
+    end
+
+    test "the box is checked on the connected mount and all five bands render",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert cfd_done_checked?(html)
+      assert cfd_layer_names(html) == ~w(done review doing ready backlog)
+      assert cfd_section(html) =~ "var(--st-done)"
+    end
+
+    test "the box is checked on the disconnected static render too", %{conn: conn} do
+      # The placeholder path seeds one zero-filled snapshot per day, and the
+      # component emits a path for all five bands regardless of magnitude — so
+      # "checked" is provable on chart markup here, not just on the input.
+      static_html = conn |> get(~p"/metrics") |> html_response(200)
+
+      assert cfd_done_checked?(static_html)
+      assert cfd_layer_names(static_html) == ~w(done review doing ready backlog)
+    end
+
+    test "unchecking removes the Done band and its legend swatch", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      # An unchecked box omits the key entirely — this is the payload the browser
+      # actually sends. Sent to the view directly rather than through element/2,
+      # because element-based render_change merges the params with the rendered
+      # DOM, which still carries checked="checked" and would mask the omission.
+      html = render_change(view, "cfd_done_filter_change", %{})
+
+      refute cfd_done_checked?(html)
+      refute html =~ ~s(data-metrics-cumulative-flow-layer="done")
+      assert cfd_layer_names(html) == ~w(review doing ready backlog)
+      refute cfd_section(html) =~ "var(--st-done)"
+
+      for token <- ~w(--st-backlog --st-ready --st-doing --st-review) do
+        assert cfd_section(html) =~ "var(#{token})"
+      end
+    end
+
+    test "re-checking restores the five-band chart", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      render_change(view, "cfd_done_filter_change", %{})
+
+      html =
+        view
+        |> element("#cfd-done-filter-form")
+        |> render_change(%{"cfd_show_done" => "true"})
+
+      assert cfd_done_checked?(html)
+      assert cfd_layer_names(html) == ~w(done review doing ready backlog)
+      assert cfd_section(html) =~ "var(--st-done)"
+    end
+
+    test "toggling the Done band does not re-read the workspace metrics",
+         %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+
+      # Mounted with no completed work: the leaderboard is in its empty state.
+      {:ok, view, html} = live(conn, ~p"/metrics")
+      assert html =~ "data-metrics-agent-leaderboard-empty"
+      refute html =~ "Zeta"
+
+      # Insert completed work AFTER the mount. The LiveView shares this test's
+      # sandbox connection, so ANY subsequent read would surface it.
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      completed_at = DateTime.add(now, -3600, :second)
+      claimed_at = DateTime.add(completed_at, -3600, :second)
+      t = task_fixture(column, %{completed_by_agent: "Zeta"})
+      {:ok, _} = Tasks.update_task(t, %{claimed_at: claimed_at, completed_at: completed_at})
+
+      # The toggle assigns only, so the render still shows the pre-insert data.
+      html = render_change(view, "cfd_done_filter_change", %{})
+      assert cfd_layer_names(html) == ~w(review doing ready backlog)
+      assert html =~ "data-metrics-agent-leaderboard-empty"
+      refute html =~ "Zeta"
+
+      # Control: a selector that DOES re-read surfaces the row — proving the
+      # assertions above are not a false pass on invisible data.
+      html = view |> element("#window-days-form") |> render_change(%{"window_days" => "30"})
+      assert html =~ "Zeta"
+      refute html =~ "data-metrics-agent-leaderboard-empty"
+    end
+
+    test "toggling the box issues no database query at all", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      test_pid = self()
+      handler_id = "w1956-cfd-toggle-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :repo, :query],
+        fn _event, _measure, meta, _cfg -> send(test_pid, {:repo_query, meta[:query]}) end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
+      render_change(view, "cfd_done_filter_change", %{})
+
+      refute_received {:repo_query, _}
+    end
+
+    test "the toggle survives a board-filter change in every shape", %{conn: conn, user: user} do
+      board1 = board_fixture(user)
+      _board2 = board_fixture(user)
+
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      render_change(view, "cfd_done_filter_change", %{})
+
+      all_ids = user |> Kanban.Boards.list_boards() |> Enum.map(&to_string(&1.id))
+
+      # A strict subset, then all boards.
+      for params <- [%{"board_ids" => [to_string(board1.id)]}, %{"board_ids" => all_ids}] do
+        html = view |> element("#board-filter-form") |> render_change(params)
+
+        refute cfd_done_checked?(html)
+        assert cfd_layer_names(html) == ~w(review doing ready backlog)
+      end
+
+      # Then none. Sent to the view directly rather than through element/2:
+      # element-based render_change merges the rendered DOM, whose boxes are
+      # still checked from the iteration above, so it would never deliver the
+      # omitted-key payload a real browser sends when every box is unchecked.
+      html = render_change(view, "board_filter_change", %{})
+
+      assert :sys.get_state(view.pid).socket.assigns.selected_board_ids == []
+      refute cfd_done_checked?(html)
+      assert cfd_layer_names(html) == ~w(review doing ready backlog)
+    end
+
+    test "the toggle survives an exclude-weekends change in both directions",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      render_change(view, "cfd_done_filter_change", %{})
+
+      html =
+        view |> element("#weekend-filter-form") |> render_change(%{"exclude_weekends" => "true"})
+
+      assert weekend_checked?(html)
+      refute cfd_done_checked?(html)
+      assert cfd_layer_names(html) == ~w(review doing ready backlog)
+
+      html = render_change(view, "weekend_filter_change", %{})
+
+      refute weekend_checked?(html)
+      refute cfd_done_checked?(html)
+      assert cfd_layer_names(html) == ~w(review doing ready backlog)
+    end
+
+    test "the handler touches exactly one assign and nothing else", %{conn: conn, user: user} do
+      _board = board_fixture(user)
+
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      view |> element("#window-days-form") |> render_change(%{"window_days" => "7"})
+      view |> element("#weekend-filter-form") |> render_change(%{"exclude_weekends" => "true"})
+
+      before = :sys.get_state(view.pid).socket.assigns
+      render_change(view, "cfd_done_filter_change", %{})
+      later = :sys.get_state(view.pid).socket.assigns
+
+      # The symmetric difference of the WHOLE assigns map across the toggle must
+      # be exactly this one key: no assign is added, none is removed, and no
+      # unrelated assign changes to a DIFFERENT value — so the handler cannot
+      # quietly reset the window, weekend, or board selection (both of which the
+      # setup above deliberately perturbs first).
+      #
+      # Note what this does NOT prove: comparison is by value, so a handler that
+      # called assign_workspace_metrics/2 and got byte-equal series back would
+      # still pass here. The no-re-read guarantee is held by the telemetry test
+      # above ("issues no database query at all"), which observes the query
+      # attempt rather than its result — do not delete it as redundant.
+      diff =
+        before
+        |> Map.merge(later, fn _k, a, b -> if a == b, do: :__same__, else: {a, b} end)
+        |> Enum.reject(fn {_k, v} -> v == :__same__ end)
+        |> Enum.map(&elem(&1, 0))
+        |> Enum.reject(&(&1 == :__changed__))
+
+      assert diff == [:cfd_show_done]
+    end
+
+    test "the toggle survives a selector change that DOES re-read", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      render_change(view, "cfd_done_filter_change", %{})
+
+      html = view |> element("#window-days-form") |> render_change(%{"window_days" => "30"})
+
+      # put_overview/3 must not clobber the display-only assign.
+      refute cfd_done_checked?(html)
+      assert cfd_layer_names(html) == ~w(review doing ready backlog)
+      assert throughput_points(html) == 30
+    end
+
+    test "a fresh mount resets the box to checked (session-only)", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      render_change(view, "cfd_done_filter_change", %{})
+
+      {:ok, _view2, html2} = live(conn, ~p"/metrics")
+
+      assert cfd_done_checked?(html2)
+      assert cfd_layer_names(html2) == ~w(done review doing ready backlog)
+    end
+
+    test "a hostile param value resolves to false and never reaches the markup",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/metrics")
+
+      html =
+        render_change(view, "cfd_done_filter_change", %{
+          "cfd_show_done" => "\"><script>alert(1)</script>"
+        })
+
+      assert :sys.get_state(view.pid).socket.assigns.cfd_show_done == false
+      refute html =~ "alert(1)"
+      assert cfd_layer_names(html) == ~w(review doing ready backlog)
+    end
+
+    test "the control uses only theme tokens so it reads in light and dark mode",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      [form] = Regex.run(~r/<form id="cfd-done-filter-form".*?<\/form>/s, html)
+
+      for token <- ~w(--surface --line --ink-2 --stride-orange) do
+        assert form =~ "var(#{token})"
+      end
+
+      refute form =~ ~r/#[0-9a-fA-F]{3,6}\b/
+      refute form =~ "text-gray-"
+      refute form =~ "bg-white"
+    end
+
+    test "the checkbox label renders through gettext/1", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/metrics")
+
+      assert html =~ "Show Done"
+    end
+
+    test "the label is actually translated, not hardcoded English", %{conn: conn} do
+      # The LiveView runs in its own process, so put_locale/2 in the test process
+      # would not reach it — KanbanWeb.LocaleOnMount reads session["locale"].
+      {:ok, _view, html} =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "fr"})
+        |> live(~p"/metrics")
+
+      [form] = Regex.run(~r/<form id="cfd-done-filter-form".*?<\/form>/s, html)
+
+      assert form =~ "Afficher Terminé"
+      refute form =~ "Show Done"
+    end
+  end
+
   # A completed task whose claimed-to-completed span is `minutes`, landing on
   describe "export dropdown" do
     setup [:register_and_log_in_user]

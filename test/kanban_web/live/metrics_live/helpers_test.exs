@@ -282,6 +282,40 @@ defmodule KanbanWeb.MetricsLive.HelpersTest do
     end
   end
 
+  describe "parse_show_done/1" do
+    test "returns false for nil" do
+      assert Helpers.parse_show_done(nil) == false
+    end
+
+    test "returns false for empty string" do
+      assert Helpers.parse_show_done("") == false
+    end
+
+    test "returns true for 'true' string" do
+      assert Helpers.parse_show_done("true") == true
+    end
+
+    test "returns false for 'false' string" do
+      assert Helpers.parse_show_done("false") == false
+    end
+
+    test "returns false for invalid input" do
+      assert Helpers.parse_show_done("invalid") == false
+      assert Helpers.parse_show_done("1") == false
+      assert Helpers.parse_show_done("yes") == false
+      # The allow-list is case-sensitive — only the exact "true" checks the box.
+      assert Helpers.parse_show_done("TRUE") == false
+    end
+
+    test "falls through to false for a non-param term rather than creating an atom" do
+      # Only param strings and nil ever reach this function; the catch-all keeps
+      # it total so a crafted value can never reach the atom table.
+      assert Helpers.parse_show_done(:nonexistent_atom_xyz) == false
+      assert Helpers.parse_show_done(true) == false
+      assert Helpers.parse_show_done(%{}) == false
+    end
+  end
+
   describe "extract_time_seconds/1" do
     test "converts Decimal to float" do
       result =

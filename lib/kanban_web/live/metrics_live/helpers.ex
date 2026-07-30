@@ -134,6 +134,17 @@ defmodule KanbanWeb.MetricsLive.Helpers do
   def parse_exclude_weekends("false"), do: false
   def parse_exclude_weekends(_), do: false
 
+  # Absent, blank and unrecognized all mean "unchecked": an unchecked box omits
+  # the key entirely. An explicit-clause allow-list with a false catch-all, so a
+  # crafted param can never reach the atom table. Note the page DEFAULT is true —
+  # that asymmetry is deliberate and lives with the assign in
+  # Workspace.initial_assigns/1, not here.
+  def parse_show_done(nil), do: false
+  def parse_show_done(""), do: false
+  def parse_show_done("true"), do: true
+  def parse_show_done("false"), do: false
+  def parse_show_done(_), do: false
+
   @window_options [7, 14, 30, 90]
   @default_window_days 14
 
