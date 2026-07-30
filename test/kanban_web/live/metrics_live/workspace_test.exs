@@ -1065,6 +1065,50 @@ defmodule KanbanWeb.MetricsLive.WorkspaceTest do
       assert form =~ "Afficher Terminé"
       refute form =~ "Show Done"
     end
+
+    test "the label renders translated in every supported locale", %{conn: conn} do
+      translations = [
+        {"de", "Fertig anzeigen"},
+        {"es", "Mostrar Hecho"},
+        {"fr", "Afficher Terminé"},
+        {"ja", "完了を表示"},
+        {"pt", "Mostrar Concluído"},
+        {"zh", "显示完成"}
+      ]
+
+      for {locale, translation} <- translations do
+        {:ok, _view, html} =
+          conn
+          |> Plug.Test.init_test_session(%{"locale" => locale})
+          |> live(~p"/metrics")
+
+        [form] = Regex.run(~r/<form id="cfd-done-filter-form".*?<\/form>/s, html)
+
+        assert form =~ translation, "#{locale} did not render its translation"
+        refute form =~ "Show Done"
+      end
+    end
+
+    test "the label pill can grow, so a longer translation cannot clip", %{conn: conn} do
+      # The rendering edge cases (a long de/pt translation, CJK width divergence)
+      # cannot be measured without a browser. What IS assertable server-side is
+      # that the pill imposes no constraint that could clip: it is an inline-flex
+      # box with no width, max-width, or overflow rule, so it grows to fit.
+      {:ok, _view, html} =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "de"})
+        |> live(~p"/metrics")
+
+      [form] = Regex.run(~r/<form id="cfd-done-filter-form".*?<\/form>/s, html)
+
+      assert form =~ "display: inline-flex"
+      refute form =~ ~r/\bmax-width:/
+      refute form =~ ~r/\boverflow:/
+      refute form =~ ~r/\bwhite-space:\s*nowrap/
+      refute form =~ ~r/\btext-overflow:/
+      # The label span sets font-size and colour only — no width constraint.
+      refute form =~ ~r/<span[^>]*style="[^"]*\bwidth:[^"]*"[^>]*>\s*Fertig/
+    end
   end
 
   # A completed task whose claimed-to-completed span is `minutes`, landing on
