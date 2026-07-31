@@ -13,6 +13,8 @@ defmodule KanbanWeb.ReviewReportHelpers.Explorer do
   """
   use Gettext, backend: KanbanWeb.Gettext
 
+  alias KanbanWeb.ReviewReportHelpers
+
   @doc """
   True when the task carries a non-empty `explorer_result` map.
 
@@ -29,38 +31,20 @@ defmodule KanbanWeb.ReviewReportHelpers.Explorer do
 
   @doc """
   True when the explorer-result section should render: the task carries a
-  non-empty `explorer_result` AND the task has reached review or done —
-  `review_status` is set, or `status` is `:completed`.
+  non-empty `explorer_result` AND the task has reached review or done.
 
-  The gate is deliberately NOT keyed off the column name or `needs_review`;
-  a task that has not yet reached review never shows the section even when its
-  `explorer_result` is populated.
+  The review-or-done half is `KanbanWeb.ReviewReportHelpers.review_or_done?/1`
+  — the single definition of that gate, shared with the completion and
+  changed-files panels (W1962). See its `@doc` for why the rule is keyed off
+  `review_status`/`status` rather than the column name or `needs_review`, and
+  why an `:in_progress` task with a `review_status` counts.
 
-  Note `status` and `review_status` are independent, so an `:in_progress` task
-  DOES render the section once `review_status` is set — which is the intended
-  behaviour, not an oversight: `AgentWorkflow.move_to_doing/3` returns a
-  `changes_requested` or `rejected` task to Doing without clearing
-  `review_status`, and its exploration record stays relevant to the reviewer
-  across that round trip. Pure; no DB access.
+  A task that has not yet reached review never shows the section even when its
+  `explorer_result` is populated. Pure; no DB access.
   """
   @spec explorer_panel_visible?(map()) :: boolean()
   def explorer_panel_visible?(task) do
-    has_explorer_result?(task) and reviewed_or_done?(task)
-  end
-
-  defp reviewed_or_done?(task) do
-    not is_nil(task_field(task, :review_status)) or
-      task_field(task, :status) in [:completed, "completed"]
-  end
-
-  # Only ever reached through `explorer_panel_visible?/1`, whose `and`
-  # short-circuits on `has_explorer_result?/1` — so `task` is always a map
-  # and `key` always a literal atom. No catch-all clause is reachable here.
-  defp task_field(task, key) when is_map(task) and is_atom(key) do
-    case Map.fetch(task, key) do
-      {:ok, value} -> value
-      :error -> Map.get(task, Atom.to_string(key))
-    end
+    has_explorer_result?(task) and ReviewReportHelpers.review_or_done?(task)
   end
 
   @doc """
