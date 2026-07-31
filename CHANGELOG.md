@@ -5,6 +5,18 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.0] - 2026-07-31
+
+The cumulative flow diagram stopped being dominated by its own history, and the review contract stopped judging every project by Kanban's checklist.
+
+### Added
+
+#### A Done toggle for the cumulative flow diagram
+
+The workspace cumulative flow diagram folds the entire pre-window completed history into its Done band, so that one band's magnitude compressed Backlog, Ready, Doing, and Review into a sliver at the bottom of the plot — the four bands you actually watch for flow problems were the four you could not read.
+
+A **Show Done** checkbox now sits above the chart. Unchecking it drops the Done band, re-bases the remaining four onto the zero baseline, and rescales the y-axis to their own peak, so the in-flight bands use the full plot height. The legend drops its Done swatch to match. The toggle sits above that card rather than in the page's header toolbar because it changes only how that one chart is drawn, and it defaults to on — every existing view renders exactly as it did before.
+
 ## [2.13.0] - 2026-07-28
 
 Agent-authored findings now reach a human, and a delivery target tells you it is going to be late before the date arrives.
