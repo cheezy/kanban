@@ -28,8 +28,8 @@ defmodule KanbanWeb.ReviewReportHelpers do
   # Completion section worth showing. The first four are exactly the set the
   # inline guard in `KanbanWeb.TaskLive.ViewComponent` requires today;
   # `completion_notes` widens it by one so a task carrying only notes still
-  # renders (W1962). That call site still carries its own inline guard — the
-  # swap onto this predicate is a follow-up.
+  # renders (W1962). That call site was swapped onto this predicate in W1963,
+  # so this list is now the only place the field set is written.
   @completion_fields [
     :completed_at,
     :completed_by,
@@ -159,8 +159,9 @@ defmodule KanbanWeb.ReviewReportHelpers do
   `KanbanWeb.TaskLive.ViewComponent` requires today — `completed_at`,
   `completed_by`, `completed_by_agent`, `completion_summary` — and widens it
   by one, `completion_notes`, so a task carrying only notes still renders.
-  That call site is not yet wired to this predicate; the swap is a follow-up.
-  An unloaded `completed_by` association reads as absent
+  That call site was swapped onto this predicate in W1963, which is also what
+  makes the whole Completion section visible during Review and not only once
+  the task is Done. An unloaded `completed_by` association reads as absent
   rather than as content, since a not-yet-preloaded assoc is no evidence the
   task was completed by anyone.
 

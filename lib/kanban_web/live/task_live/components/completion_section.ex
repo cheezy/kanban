@@ -1,7 +1,15 @@
 defmodule KanbanWeb.TaskLive.Components.CompletionSection do
   @moduledoc """
-  Renders the completion details panel (timestamp, completer, agent, summary).
-  Caller is responsible for the outer status/presence guard.
+  Renders the completion details panel (timestamp, completer, agent, summary,
+  notes). Caller is responsible for the outer status/presence guard — see
+  `KanbanWeb.ReviewReportHelpers.completion_panel_visible?/1`, which is what
+  gates this section in the task view.
+
+  `completion_notes` is agent-authored free text and is interpolated through
+  HEEx, which auto-escapes it — never render it through a raw-HTML helper, and
+  do not parse it: agents are instructed to record refusals there, so it can
+  quote task content that must stay literal.
+
   """
   use KanbanWeb, :html
 
@@ -34,6 +42,14 @@ defmodule KanbanWeb.TaskLive.Components.CompletionSection do
           <div>
             <p class="font-semibold text-[var(--st-done)] mb-1">{gettext("Summary")}:</p>
             <p class="text-[var(--st-done)] whitespace-pre-wrap">{@task.completion_summary}</p>
+          </div>
+        <% end %>
+        <%= if @task.completion_notes do %>
+          <div>
+            <p class="font-semibold text-[var(--st-done)] mb-1">{gettext("Completion notes")}:</p>
+            <p class="text-[var(--st-done)] whitespace-pre-wrap break-words">
+              {@task.completion_notes}
+            </p>
           </div>
         <% end %>
       </div>

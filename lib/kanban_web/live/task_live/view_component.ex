@@ -1,7 +1,9 @@
 defmodule KanbanWeb.TaskLive.ViewComponent do
   use KanbanWeb, :live_component
 
-  import KanbanWeb.ReviewReportHelpers, only: [review_panel_visible?: 1]
+  import KanbanWeb.ReviewReportHelpers,
+    only: [review_panel_visible?: 1, completion_panel_visible?: 1]
+
   import KanbanWeb.ReviewReportHelpers.Explorer, only: [explorer_panel_visible?: 1]
 
   import KanbanWeb.TaskLive.Components.ActualVsEstimatedSection
@@ -324,7 +326,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
               <.workflow_steps_section steps={@task.workflow_steps} />
             <% end %>
 
-            <%= if @task.status == :completed && (@task.completed_at || @task.completed_by || @task.completed_by_agent || @task.completion_summary) do %>
+            <%= if completion_panel_visible?(@task) do %>
               <SectionHead.section_head title={gettext("Completion")} />
               <.completion_section task={@task} />
             <% end %>

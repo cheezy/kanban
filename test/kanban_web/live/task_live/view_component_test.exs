@@ -1313,6 +1313,225 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "Implemented OAuth with Google and GitHub providers"
     end
 
+    test "displays completion notes in the completion section (W1963)", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :completed,
+          completed_at: ~U[2024-01-15 15:00:00Z],
+          completion_summary: "Short one-liner",
+          completion_notes: "The longer narrative the agent recorded."
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Short one-liner"
+      assert result =~ "Completion notes"
+      assert result =~ "The longer narrative the agent recorded."
+
+      # Summary reads first, notes second. elem/2 raises on :nomatch rather than
+      # letting the comparison pass vacuously — :binary.match/2 returns the atom
+      # :nomatch when absent, and atoms sort before tuples in Erlang term order.
+      summary_at = result |> :binary.match("Short one-liner") |> elem(0)
+      notes_at = result |> :binary.match("The longer narrative the agent recorded.") |> elem(0)
+
+      assert summary_at < notes_at
+    end
+
+    test "omits the notes block when completion_notes is nil (W1963)", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :completed,
+          completed_at: ~U[2024-01-15 15:00:00Z],
+          completion_summary: "Only a summary"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "Summary"
+      refute result =~ "Completion notes"
+    end
+
+    test "completion notes preserve line breaks and wrap long unbroken strings (W1963)", %{
+      board: board
+    } do
+      column = column_fixture(board)
+
+      notes =
+        "First paragraph.\n\nSecond paragraph.\nlib/kanban_web/live/task_live/view_component.ex"
+
+      task =
+        task_fixture(column, %{
+          status: :completed,
+          completed_at: ~U[2024-01-15 15:00:00Z],
+          completion_notes: notes
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "whitespace-pre-wrap break-words"
+      assert result =~ "First paragraph."
+      assert result =~ "Second paragraph."
+      assert result =~ "lib/kanban_web/live/task_live/view_component.ex"
+    end
+
+    test "completion notes render markup-like text literally rather than as markup (W1963)", %{
+      board: board
+    } do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :completed,
+          completed_at: ~U[2024-01-15 15:00:00Z],
+          completion_notes: "Refused row 3 <script>alert('x')</script> & <b>bold</b>"
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      refute result =~ "<script>alert('x')</script>"
+      assert result =~ "&lt;script&gt;"
+      assert result =~ "&lt;b&gt;bold&lt;/b&gt;"
+    end
+
+    test "displays the completion section for a review-bound task that never reached :completed (W1963)",
+         %{board: board} do
+      reviewer = user_fixture(%{name: "Reviewer User"})
+      completer = user_fixture(%{name: "Dave Completer"})
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :in_progress,
+          needs_review: true,
+          review_status: :changes_requested,
+          reviewed_by_id: reviewer.id,
+          reviewed_at: ~U[2024-01-15 14:00:00Z],
+          completed_at: ~U[2024-01-15 13:00:00Z],
+          completed_by_id: completer.id,
+          completed_by_agent: "Claude Opus 5",
+          completion_summary: "Ready for review",
+          completion_notes: "What the agent actually did."
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      # The whole section — not just the notes — is now visible during Review.
+      # Assert on the section head rather than the panel's bg token: the Review
+      # Status panel reuses --st-done-soft, so that class cannot tell them apart.
+      assert result =~ "<span>Completion</span>"
+      assert result =~ "Completed by"
+      assert result =~ "Dave Completer"
+      assert result =~ "Claude Opus 5"
+      assert result =~ "Ready for review"
+      assert result =~ "Completion notes"
+      assert result =~ "What the agent actually did."
+      # It coexists with the review sections rather than replacing them.
+      assert result =~ "Review Status"
+    end
+
+    test "displays the completion section for a review-bound task carrying only completion_notes (W1963)",
+         %{board: board} do
+      reviewer = user_fixture(%{name: "Reviewer User"})
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :in_progress,
+          needs_review: true,
+          review_status: :approved,
+          reviewed_by_id: reviewer.id,
+          reviewed_at: ~U[2024-01-15 14:00:00Z],
+          completion_notes: "Notes are the only completion field set."
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "<span>Completion</span>"
+      assert result =~ "Completion notes"
+      assert result =~ "Notes are the only completion field set."
+    end
+
+    test "does not display the completion section for a review-or-done task with no completion fields (W1963)",
+         %{board: board} do
+      reviewer = user_fixture(%{name: "Reviewer User"})
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :in_progress,
+          needs_review: true,
+          review_status: :approved,
+          reviewed_by_id: reviewer.id,
+          reviewed_at: ~U[2024-01-15 14:00:00Z]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      refute result =~ "<span>Completion</span>"
+      refute result =~ "Completion notes"
+    end
+
+    test "does not display the completion section for an open task carrying completion fields (W1963)",
+         %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :open,
+          completion_summary: "Somehow set",
+          completion_notes: "Should stay hidden."
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      refute result =~ "<span>Completion</span>"
+      refute result =~ "Should stay hidden."
+    end
+
     test "displays review_report section via ReviewReportPanel when review_report is present",
          %{board: board} do
       column = column_fixture(board)
