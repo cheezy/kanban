@@ -1100,7 +1100,7 @@ msgstr "代理"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:401
-#: lib/kanban_web/review_report_helpers.ex:647
+#: lib/kanban_web/review_report_helpers.ex:584
 #, elixir-autogen, elixir-format
 msgid "Approved"
 msgstr "已批准"
@@ -5096,7 +5096,7 @@ msgstr "已完成"
 msgid "created"
 msgstr "创建时间"
 
-#: lib/kanban_web/review_report_helpers.ex:244
+#: lib/kanban_web/review_report_helpers.ex:181
 #: lib/kanban_web/task_tokens.ex:154
 #, elixir-autogen, elixir-format
 msgid "reviewed"
@@ -6167,24 +6167,24 @@ msgstr[0] "%{checked}/%{total} · %{n} 个问题"
 msgid "Not met"
 msgstr "未达成"
 
-#: lib/kanban_web/review_report_helpers.ex:241
+#: lib/kanban_web/review_report_helpers.ex:178
 #, elixir-autogen, elixir-format
 msgid "%{n} case"
 msgid_plural "%{n} cases"
 msgstr[0] "%{n} 个用例"
 
-#: lib/kanban_web/review_report_helpers.ex:233
+#: lib/kanban_web/review_report_helpers.ex:170
 #, elixir-autogen, elixir-format
 msgid "%{n} case · all present"
 msgid_plural "%{n} cases · all present"
 msgstr[0] "%{n} 个 · 全部齐备"
 
-#: lib/kanban_web/review_report_helpers.ex:400
+#: lib/kanban_web/review_report_helpers.ex:337
 #, elixir-autogen, elixir-format
 msgid "none violated"
 msgstr "未违反"
 
-#: lib/kanban_web/review_report_helpers.ex:398
+#: lib/kanban_web/review_report_helpers.ex:335
 #, elixir-autogen, elixir-format
 msgid "violated"
 msgstr "违反"
@@ -6211,7 +6211,7 @@ msgstr "完成人:%{name}"
 msgid "Patterns"
 msgstr "模式"
 
-#: lib/kanban_web/review_report_helpers.ex:362
+#: lib/kanban_web/review_report_helpers.ex:299
 #, elixir-autogen, elixir-format
 msgid "followed"
 msgstr "已遵循"
@@ -6232,7 +6232,7 @@ msgstr "已请求修改"
 msgid "(no description)"
 msgstr "（无描述）"
 
-#: lib/kanban_web/review_report_helpers.ex:657
+#: lib/kanban_web/review_report_helpers.ex:594
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
 msgstr "已请求修改"
@@ -6257,20 +6257,20 @@ msgstr "轻微"
 msgid "Testing"
 msgstr "测试"
 
-#: lib/kanban_web/review_report_helpers.ex:538
-#: lib/kanban_web/review_report_helpers.ex:789
+#: lib/kanban_web/review_report_helpers.ex:475
+#: lib/kanban_web/review_report_helpers.ex:726
 #, elixir-autogen, elixir-format
 msgid "failed"
 msgstr "未通过"
 
-#: lib/kanban_web/review_report_helpers.ex:539
-#: lib/kanban_web/review_report_helpers.ex:790
+#: lib/kanban_web/review_report_helpers.ex:476
+#: lib/kanban_web/review_report_helpers.ex:727
 #, elixir-autogen, elixir-format
 msgid "not assessed"
 msgstr "未评估"
 
-#: lib/kanban_web/review_report_helpers.ex:537
-#: lib/kanban_web/review_report_helpers.ex:788
+#: lib/kanban_web/review_report_helpers.ex:474
+#: lib/kanban_web/review_report_helpers.ex:725
 #, elixir-autogen, elixir-format
 msgid "passed"
 msgstr "通过"
@@ -6669,7 +6669,7 @@ msgstr "代码审查"
 msgid "Settings sections"
 msgstr "设置部分"
 
-#: lib/kanban_web/review_report_helpers.ex:667
+#: lib/kanban_web/review_report_helpers.ex:604
 #, elixir-autogen, elixir-format
 msgid "Review data unavailable"
 msgstr "审查数据不可用"
@@ -7026,27 +7026,27 @@ msgstr "您必须先确认您的账户才能登录。请检查您的电子邮件
 msgid "You must confirm your account to access this page."
 msgstr "您必须确认您的账户才能访问此页面。"
 
-#: lib/kanban_web/review_report_helpers.ex:333
+#: lib/kanban_web/review_report_helpers.ex:270
 #, elixir-autogen, elixir-format
 msgid "Coverage target"
 msgstr "覆盖率目标"
 
-#: lib/kanban_web/review_report_helpers.ex:332
+#: lib/kanban_web/review_report_helpers.ex:269
 #, elixir-autogen, elixir-format
 msgid "Edge cases"
 msgstr "边界情况"
 
-#: lib/kanban_web/review_report_helpers.ex:330
+#: lib/kanban_web/review_report_helpers.ex:267
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Integration tests"
 msgstr "集成测试"
 
-#: lib/kanban_web/review_report_helpers.ex:331
+#: lib/kanban_web/review_report_helpers.ex:268
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Manual tests"
 msgstr "手动测试"
 
-#: lib/kanban_web/review_report_helpers.ex:329
+#: lib/kanban_web/review_report_helpers.ex:266
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Unit tests"
 msgstr "单元测试"
@@ -8704,27 +8704,27 @@ msgstr "在已派发的评审中必须为列表：项目检查清单的每个条
 msgid "Show Done"
 msgstr "显示完成"
 
-#: lib/kanban_web/review_report_helpers.ex:165
+#: lib/kanban_web/review_report_helpers/explorer.ex:76
 #, elixir-autogen, elixir-format
 msgid "No subagent support"
 msgstr "不支持子代理"
 
-#: lib/kanban_web/review_report_helpers.ex:168
+#: lib/kanban_web/review_report_helpers/explorer.ex:79
 #, elixir-autogen, elixir-format
 msgid "Self-reported exploration"
 msgstr "自行探索（自述）"
 
-#: lib/kanban_web/review_report_helpers.ex:169
+#: lib/kanban_web/review_report_helpers/explorer.ex:80
 #, elixir-autogen, elixir-format
 msgid "Self-reported review"
 msgstr "自行审核（自述）"
 
-#: lib/kanban_web/review_report_helpers.ex:166
+#: lib/kanban_web/review_report_helpers/explorer.ex:77
 #, elixir-autogen, elixir-format
 msgid "Small task (0-1 key files)"
 msgstr "小任务（0-1 个关键文件）"
 
-#: lib/kanban_web/review_report_helpers.ex:167
+#: lib/kanban_web/review_report_helpers/explorer.ex:78
 #, elixir-autogen, elixir-format
 msgid "Trivial change (docs only)"
 msgstr "琐碎更改（仅文档）"

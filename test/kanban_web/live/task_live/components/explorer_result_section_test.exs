@@ -106,7 +106,7 @@ defmodule KanbanWeb.TaskLive.Components.ExplorerResultSectionTest do
   end
 
   describe "malformed and legacy input" do
-    # Presence is the CALLER's guard (ReviewReportHelpers.explorer_panel_visible?/1),
+    # Presence is the CALLER's guard (ReviewReportHelpers.Explorer.explorer_panel_visible?/1),
     # matching WorkflowStepsSection — the component itself must not gate on it.
     # These two only pin down that a caller mistake degrades rather than crashes.
     test "renders without raising for an empty map" do

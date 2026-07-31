@@ -1,8 +1,8 @@
 defmodule KanbanWeb.TaskLive.ViewComponent do
   use KanbanWeb, :live_component
 
-  import KanbanWeb.ReviewReportHelpers,
-    only: [explorer_panel_visible?: 1, review_panel_visible?: 1]
+  import KanbanWeb.ReviewReportHelpers, only: [review_panel_visible?: 1]
+  import KanbanWeb.ReviewReportHelpers.Explorer, only: [explorer_panel_visible?: 1]
 
   import KanbanWeb.TaskLive.Components.ActualVsEstimatedSection
   import KanbanWeb.TaskLive.Components.BehaviourTestMatrixSection

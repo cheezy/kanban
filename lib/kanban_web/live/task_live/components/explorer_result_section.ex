@@ -5,7 +5,7 @@ defmodule KanbanWeb.TaskLive.Components.ExplorerResultSection do
   shape (summary plus the translated skip reason).
 
   Caller is responsible for the outer presence/visibility guard —
-  `KanbanWeb.ReviewReportHelpers.explorer_panel_visible?/1`.
+  `KanbanWeb.ReviewReportHelpers.Explorer.explorer_panel_visible?/1`.
 
   Every field is optional at render time. Legacy grace-mode rows may omit
   the summary, the duration, or the reason, so each is rendered only when
@@ -13,7 +13,7 @@ defmodule KanbanWeb.TaskLive.Components.ExplorerResultSection do
   """
   use KanbanWeb, :html
 
-  alias KanbanWeb.ReviewReportHelpers
+  alias KanbanWeb.ReviewReportHelpers.Explorer
 
   attr :explorer_result, :map, required: true
 
@@ -89,7 +89,7 @@ defmodule KanbanWeb.TaskLive.Components.ExplorerResultSection do
   defp reason_label(result) do
     case field(result, "reason", :reason) do
       reason when is_binary(reason) and reason != "" ->
-        case ReviewReportHelpers.skip_reason_label(reason) do
+        case Explorer.skip_reason_label(reason) do
           "" -> nil
           label -> label
         end
