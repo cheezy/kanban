@@ -2215,4 +2215,194 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "Render Branch Board"
     end
   end
+
+  describe "explorer-result section visibility gate (W1960)" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      reviewer = user_fixture()
+
+      %{user: user, board: board, column: column, reviewer: reviewer}
+    end
+
+    # The schema requires reviewed_by_id and reviewed_at whenever review_status
+    # is anything other than :pending, and completed_at whenever status is
+    # :completed — so these fixtures must supply them.
+    defp approved_review(reviewer) do
+      %{
+        needs_review: true,
+        review_status: :approved,
+        reviewed_by_id: reviewer.id,
+        reviewed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      }
+    end
+
+    defp completed do
+      %{
+        status: :completed,
+        completed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      }
+    end
+
+    # The explorer_result summary doubles as the content-level probe. Asserting
+    # only on a heading would not prove the component actually received the map.
+    @explorer_result %{
+      "dispatched" => true,
+      "summary" => "Explored the three key_files and identified the pattern to mirror.",
+      "duration_ms" => 12_500
+    }
+
+    defp render_task(task) do
+      render_component(KanbanWeb.TaskLive.ViewComponent,
+        id: "test-view",
+        task_id: task.id,
+        field_visibility: all_fields_visible()
+      )
+    end
+
+    # Both spellings are checked deliberately: the SectionHead title is
+    # "Explorer result" (sibling convention) while the component's own h4 is
+    # "Explorer Result". Refuting only one would let the other leak through.
+    defp assert_explorer_section(result) do
+      assert result =~ "Explorer result"
+      assert result =~ "Explorer Result"
+      assert result =~ "Explored the three key_files"
+    end
+
+    defp refute_explorer_section(result) do
+      refute result =~ "Explorer result"
+      refute result =~ "Explorer Result"
+      refute result =~ "Explored the three key_files"
+    end
+
+    test "renders the section for a task with review_status set",
+         %{column: column, reviewer: reviewer} do
+      task =
+        reviewer
+        |> approved_review()
+        |> Map.put(:explorer_result, @explorer_result)
+        |> then(&task_fixture(column, &1))
+
+      assert_explorer_section(render_task(task))
+    end
+
+    test "renders the section for a task with review_status set but still in progress",
+         %{column: column} do
+      task =
+        task_fixture(column, %{
+          explorer_result: @explorer_result,
+          status: :in_progress,
+          needs_review: true,
+          review_status: :pending
+        })
+
+      assert_explorer_section(render_task(task))
+    end
+
+    test "renders the section for a completed task", %{column: column} do
+      task =
+        task_fixture(column, Map.merge(completed(), %{explorer_result: @explorer_result}))
+
+      assert_explorer_section(render_task(task))
+    end
+
+    test "does not render the section for an open task with a populated explorer_result",
+         %{column: column} do
+      task =
+        task_fixture(column, %{
+          explorer_result: @explorer_result,
+          status: :open,
+          review_status: nil
+        })
+
+      refute_explorer_section(render_task(task))
+    end
+
+    test "does not render the section for an in-progress task with review_status nil",
+         %{column: column} do
+      task =
+        task_fixture(column, %{
+          explorer_result: @explorer_result,
+          status: :in_progress,
+          review_status: nil
+        })
+
+      refute_explorer_section(render_task(task))
+    end
+
+    test "does not render the section when explorer_result is nil", %{column: column} do
+      task =
+        task_fixture(column, Map.merge(completed(), %{explorer_result: nil}))
+
+      refute_explorer_section(render_task(task))
+    end
+
+    test "does not render the section when explorer_result is an empty map",
+         %{column: column, reviewer: reviewer} do
+      task =
+        task_fixture(
+          column,
+          approved_review(reviewer) |> Map.merge(completed()) |> Map.put(:explorer_result, %{})
+        )
+
+      refute_explorer_section(render_task(task))
+    end
+
+    test "renders the skip shape with its translated reason label", %{column: column} do
+      task =
+        task_fixture(
+          column,
+          Map.merge(completed(), %{
+            explorer_result: %{
+              "dispatched" => false,
+              "reason" => "small_task_0_1_key_files",
+              "summary" => "Read the single key file directly; no dispatch was warranted."
+            }
+          })
+        )
+
+      result = render_task(task)
+
+      assert result =~ "Explorer result"
+      assert result =~ "Not dispatched"
+      assert result =~ "Small task (0-1 key files)"
+      refute result =~ "small_task_0_1_key_files"
+    end
+
+    test "renders alongside the review report and workflow steps without disturbing order",
+         %{column: column} do
+      task =
+        task_fixture(
+          column,
+          Map.merge(completed(), %{
+            explorer_result: @explorer_result,
+            reviewer_result: %{
+              "dispatched" => true,
+              "summary" => "Reviewed all acceptance criteria; approved.",
+              "issues" => []
+            },
+            workflow_steps: [
+              %{"name" => "explorer", "dispatched" => true, "duration_ms" => 12_500}
+            ]
+          })
+        )
+
+      result = render_task(task)
+
+      assert result =~ "Review report"
+      assert result =~ "Explorer result"
+      assert result =~ "Workflow steps"
+
+      review_at = :binary.match(result, "Review report") |> elem(0)
+      explorer_at = :binary.match(result, "Explorer result") |> elem(0)
+      workflow_at = :binary.match(result, "Workflow steps") |> elem(0)
+
+      assert review_at < explorer_at,
+             "the explorer section must follow the review report"
+
+      assert explorer_at < workflow_at,
+             "the explorer section must precede workflow steps"
+    end
+  end
 end

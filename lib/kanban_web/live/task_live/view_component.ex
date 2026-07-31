@@ -1,7 +1,8 @@
 defmodule KanbanWeb.TaskLive.ViewComponent do
   use KanbanWeb, :live_component
 
-  import KanbanWeb.ReviewReportHelpers, only: [review_panel_visible?: 1]
+  import KanbanWeb.ReviewReportHelpers,
+    only: [explorer_panel_visible?: 1, review_panel_visible?: 1]
 
   import KanbanWeb.TaskLive.Components.ActualVsEstimatedSection
   import KanbanWeb.TaskLive.Components.BehaviourTestMatrixSection
@@ -10,6 +11,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   import KanbanWeb.TaskLive.Components.CommentsSection
   import KanbanWeb.TaskLive.Components.CompletionSection
   import KanbanWeb.TaskLive.Components.DependenciesSection
+  import KanbanWeb.TaskLive.Components.ExplorerResultSection
   import KanbanWeb.TaskLive.Components.IntegrationPointsSection
   import KanbanWeb.TaskLive.Components.ReviewStatusSection
   import KanbanWeb.TaskLive.Components.TechnicalDetailsSection
@@ -310,6 +312,11 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             <%= if review_panel_visible?(@task) do %>
               <SectionHead.section_head title={gettext("Review report")} />
               <ReviewReportPanel.review_report_panel task={@task} />
+            <% end %>
+
+            <%= if explorer_panel_visible?(@task) do %>
+              <SectionHead.section_head title={gettext("Explorer result")} />
+              <.explorer_result_section explorer_result={@task.explorer_result} />
             <% end %>
 
             <%= if @task.workflow_steps && @task.workflow_steps != [] do %>
