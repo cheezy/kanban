@@ -34,7 +34,7 @@ defmodule KanbanWeb.ReviewBehaviourMatrixPanel do
 
   alias KanbanWeb.BehaviourTestLabels
   alias KanbanWeb.ReviewBehaviourMatrix
-  alias KanbanWeb.ReviewReportHelpers
+  alias KanbanWeb.ReviewReportHelpers.Tokens
 
   @doc """
   Renders the behaviour/test matrix rows for a task.
@@ -166,8 +166,8 @@ defmodule KanbanWeb.ReviewBehaviourMatrixPanel do
   # status, so `planned` (neutral, outlined) and `not_applicable` (muted) are
   # spelled out here against the same theme tokens. An unrecognized status falls
   # through to the neutral pill.
-  defp row_status_style("passing"), do: ReviewReportHelpers.verdict_tone_style(true)
-  defp row_status_style("failing"), do: ReviewReportHelpers.verdict_tone_style(false)
+  defp row_status_style("passing"), do: Tokens.verdict_tone_style(true)
+  defp row_status_style("failing"), do: Tokens.verdict_tone_style(false)
   defp row_status_style("planned"), do: neutral_pill_style("var(--ink-2)")
   defp row_status_style("not_applicable"), do: neutral_pill_style("var(--ink-3)")
   defp row_status_style(_), do: neutral_pill_style("var(--ink-2)")

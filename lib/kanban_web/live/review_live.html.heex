@@ -160,10 +160,8 @@
             ]}
           >
             <span
-              :if={ReviewReportHelpers.review_status_pill(@selected)}
-              data-review-detail-summary-status={
-                ReviewReportHelpers.review_status_pill(@selected).status
-              }
+              :if={Tokens.review_status_pill(@selected)}
+              data-review-detail-summary-status={Tokens.review_status_pill(@selected).status}
               style={[
                 "flex-shrink: 0;",
                 "display: inline-flex; align-items: center; gap: 6px;",
@@ -171,14 +169,14 @@
                 "font-size: 13px; font-weight: 600;",
                 "letter-spacing: 0.02em;",
                 "margin-top: 6px;",
-                ReviewReportHelpers.review_status_pill(@selected).style
+                Tokens.review_status_pill(@selected).style
               ]}
             >
               <.icon
-                name={ReviewReportHelpers.review_status_pill(@selected).icon}
+                name={Tokens.review_status_pill(@selected).icon}
                 class="w-4 h-4"
               />
-              {ReviewReportHelpers.review_status_pill(@selected).label}
+              {Tokens.review_status_pill(@selected).label}
             </span>
             <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
               <h2
@@ -282,7 +280,7 @@
             }
             data-review-security-considerations
             data-review-security-status={
-              ReviewReportHelpers.section_status_key(@selected, :security_considerations)
+              Tokens.section_status_key(@selected, :security_considerations)
             }
             style={[
               "margin: 12px 16px 0; padding: 10px 12px;",
@@ -322,14 +320,14 @@
                   "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
                   "padding: 2px 10px; border-radius: 999px;",
                   "font-size: 12px; font-weight: 600; text-transform: capitalize;",
-                  ReviewReportHelpers.verdict_tone_style(
+                  Tokens.verdict_tone_style(
                     ReviewReportHelpers.security_considerations_passed(@selected)
                   )
                 ]}
               >
                 <.icon
                   name={
-                    ReviewReportHelpers.verdict_icon(
+                    Tokens.verdict_icon(
                       :security_considerations,
                       ReviewReportHelpers.security_considerations_passed(@selected)
                     )
@@ -366,7 +364,7 @@
           </section>
 
           <section
-            :if={ReviewReportHelpers.review_check_rows(@selected) != []}
+            :if={Tokens.review_check_rows(@selected) != []}
             data-review-checks
             style={[
               "margin: 12px 16px 0; padding: 10px 12px;",
@@ -383,7 +381,7 @@
               {gettext("Review checks")}
             </span>
             <div
-              :for={row <- ReviewReportHelpers.review_check_rows(@selected)}
+              :for={row <- Tokens.review_check_rows(@selected)}
               data-review-check-row={Atom.to_string(row.section)}
               data-review-check-status={row.status}
               style="display: flex; flex-direction: column; gap: 4px; margin-top: 14px;"
@@ -414,11 +412,11 @@
                     "display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;",
                     "padding: 2px 10px; border-radius: 999px;",
                     "font-size: 12px; font-weight: 600; text-transform: capitalize;",
-                    ReviewReportHelpers.verdict_tone_style(row.passed)
+                    Tokens.verdict_tone_style(row.passed)
                   ]}
                 >
                   <.icon
-                    name={ReviewReportHelpers.verdict_icon(row.section, row.passed)}
+                    name={Tokens.verdict_icon(row.section, row.passed)}
                     class="w-4 h-4"
                   />
                   {row.value}
@@ -439,9 +437,7 @@
                 <div
                   :for={category <- row.breakdown}
                   data-review-check-category={category.key}
-                  data-review-check-category-status={
-                    ReviewReportHelpers.category_status_key(category.passed)
-                  }
+                  data-review-check-category-status={Tokens.category_status_key(category.passed)}
                   style="display: flex; flex-direction: column; gap: 3px;"
                 >
                   <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -457,14 +453,14 @@
                         "display: inline-flex; align-items: center; gap: 4px;",
                         "padding: 0 8px; border-radius: 999px;",
                         "font-size: 11px; font-weight: 600; text-transform: capitalize;",
-                        ReviewReportHelpers.verdict_tone_style(category.passed)
+                        Tokens.verdict_tone_style(category.passed)
                       ]}
                     >
                       <.icon
-                        name={ReviewReportHelpers.verdict_icon(row.section, category.passed)}
+                        name={Tokens.verdict_icon(row.section, category.passed)}
                         class="w-3.5 h-3.5"
                       />
-                      {ReviewReportHelpers.category_verdict_label(category.passed)}
+                      {Tokens.category_verdict_label(category.passed)}
                     </span>
                   </div>
                   <ul style={[

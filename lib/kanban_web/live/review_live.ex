@@ -29,6 +29,7 @@ defmodule KanbanWeb.ReviewLive do
   alias KanbanWeb.ReviewDiffPanel
   alias KanbanWeb.ReviewQueueItem
   alias KanbanWeb.ReviewReportHelpers
+  alias KanbanWeb.ReviewReportHelpers.Tokens
   alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.ReviewStatsStrip
 

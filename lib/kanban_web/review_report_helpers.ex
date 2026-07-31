@@ -1,10 +1,17 @@
 defmodule KanbanWeb.ReviewReportHelpers do
   @moduledoc """
-  Regex-based extractors for the legacy markdown `review_report` field on a
-  task. Centralises the parsing logic so both `KanbanWeb.ReviewLive` and the
-  shared `KanbanWeb.ReviewReportPanel` component can derive the testing,
+  Verdict derivation for a task's review, read from the structured
+  `reviewer_result` field with a fallback to the legacy markdown
+  `review_report`. Centralises that logic so both `KanbanWeb.ReviewLive` and
+  the shared `KanbanWeb.ReviewReportPanel` component derive the testing,
   patterns, pitfalls, and security-considerations verdict cells from the same
   source of truth.
+
+  This module owns the structured-field reads, the incomplete-section rules
+  and the per-section value/passed accessors. Three siblings carry the rest:
+  `MarkdownReport` does the legacy markdown parsing this module delegates to,
+  `Tokens` renders the pills and check rows and calls back into the public API
+  here, and `Explorer` holds the explorer-result predicates (W2003/W2004).
 
   Every function is pure. Pass a map that may contain a `:review_report`
   string key (the LiveView struct) or a binary `"review_report"` key (raw
@@ -13,11 +20,9 @@ defmodule KanbanWeb.ReviewReportHelpers do
   """
   use Gettext, backend: KanbanWeb.Gettext
 
-  @incomplete_sections [:testing_strategy, :patterns, :pitfalls, :security_considerations]
+  alias KanbanWeb.ReviewReportHelpers.MarkdownReport
 
-  # Sections rendered as generic check rows in the review report panel
-  # (security_considerations gets its own dedicated row above these).
-  @review_check_sections [:testing_strategy, :patterns, :pitfalls]
+  @incomplete_sections [:testing_strategy, :patterns, :pitfalls, :security_considerations]
 
   @doc """
   Returns `true` when a review section is a genuine gap: the task supplied
@@ -158,15 +163,18 @@ defmodule KanbanWeb.ReviewReportHelpers do
   end
 
   defp testing_strategy_value_from_report(task) do
-    case report_section(task, ~r/required\s+test\s+cases|testing\s+strategy/i) do
+    case MarkdownReport.report_section(task, ~r/required\s+test\s+cases|testing\s+strategy/i) do
       nil ->
         nil
 
       body ->
-        n = count_list_items(body)
+        n = MarkdownReport.count_list_items(body)
 
         cond do
-          all_present_heading?(task, ~r/required\s+test\s+cases|testing\s+strategy/i) ->
+          MarkdownReport.all_present_heading?(
+            task,
+            ~r/required\s+test\s+cases|testing\s+strategy/i
+          ) ->
             ngettext(
               "%{n} case · all present",
               "%{n} cases · all present",
@@ -202,9 +210,14 @@ defmodule KanbanWeb.ReviewReportHelpers do
 
   defp testing_strategy_passed_from_report(task) do
     cond do
-      all_present_heading?(task, ~r/required\s+test\s+cases|testing\s+strategy/i) -> true
-      report_section(task, ~r/required\s+test\s+cases|testing\s+strategy/i) -> true
-      true -> nil
+      MarkdownReport.all_present_heading?(task, ~r/required\s+test\s+cases|testing\s+strategy/i) ->
+        true
+
+      MarkdownReport.report_section(task, ~r/required\s+test\s+cases|testing\s+strategy/i) ->
+        true
+
+      true ->
+        nil
     end
   end
 
@@ -294,7 +307,7 @@ defmodule KanbanWeb.ReviewReportHelpers do
   def patterns_value(task) do
     case structured_or_derived(task, "patterns", "pattern", patterns_present?(task)) do
       nil ->
-        case report_section(task, ~r/patterns\s+followed/i) do
+        case MarkdownReport.report_section(task, ~r/patterns\s+followed/i) do
           nil -> nil
           _body -> gettext("followed")
         end
@@ -311,7 +324,7 @@ defmodule KanbanWeb.ReviewReportHelpers do
   def patterns_passed(task) do
     case structured_or_derived(task, "patterns", "pattern", patterns_present?(task)) do
       nil ->
-        if report_section(task, ~r/patterns\s+followed/i), do: true, else: nil
+        if MarkdownReport.report_section(task, ~r/patterns\s+followed/i), do: true, else: nil
 
       status ->
         structured_status_passed(status)
@@ -326,12 +339,12 @@ defmodule KanbanWeb.ReviewReportHelpers do
   def pitfalls_value(task) do
     case structured_or_derived(task, "pitfalls", "pitfall", pitfalls_present?(task)) do
       nil ->
-        case report_section(task, ~r/pitfalls/i) do
+        case MarkdownReport.report_section(task, ~r/pitfalls/i) do
           nil ->
             nil
 
           body ->
-            if pitfalls_violated?(body) do
+            if MarkdownReport.pitfalls_violated?(body) do
               gettext("violated")
             else
               gettext("none violated")
@@ -350,9 +363,9 @@ defmodule KanbanWeb.ReviewReportHelpers do
   def pitfalls_passed(task) do
     case structured_or_derived(task, "pitfalls", "pitfall", pitfalls_present?(task)) do
       nil ->
-        case report_section(task, ~r/pitfalls/i) do
+        case MarkdownReport.report_section(task, ~r/pitfalls/i) do
           nil -> nil
-          body -> not pitfalls_violated?(body)
+          body -> not MarkdownReport.pitfalls_violated?(body)
         end
 
       status ->
@@ -480,251 +493,11 @@ defmodule KanbanWeb.ReviewReportHelpers do
   defp structured_status_passed("failed"), do: false
   defp structured_status_passed(_), do: nil
 
-  @doc """
-  Extracts the body of a markdown heading matching the given regex —
-  everything between the matched `###`/`##` line and the next heading.
-  Returns `nil` when the report is missing or the section is absent.
-  """
-  def report_section(%{review_report: report}, heading_regex)
-      when is_binary(report) and report != "" do
-    report
-    |> String.split(~r/\r?\n/)
-    |> Enum.split_while(fn line -> not heading_match?(line, heading_regex) end)
-    |> extract_section_body()
-  end
-
-  def report_section(%{"review_report" => report}, heading_regex)
-      when is_binary(report) and report != "" do
-    report_section(%{review_report: report}, heading_regex)
-  end
-
-  def report_section(_, _), do: nil
-
-  defp extract_section_body({_, []}), do: nil
-
-  defp extract_section_body({_, [_heading | rest]}) do
-    rest
-    |> Enum.take_while(fn line -> not heading_line?(line) end)
-    |> Enum.join("\n")
-    |> String.trim()
-    |> nil_if_empty()
-  end
-
-  defp nil_if_empty(""), do: nil
-  defp nil_if_empty(text), do: text
-
-  defp heading_match?(line, regex) do
-    trimmed = String.trim(line)
-    String.starts_with?(trimmed, "#") and Regex.match?(regex, trimmed)
-  end
-
-  defp heading_line?(line), do: line |> String.trim() |> String.starts_with?("#")
-
-  defp all_present_heading?(%{review_report: report}, regex)
-       when is_binary(report) and report != "" do
-    report
-    |> String.split(~r/\r?\n/)
-    |> Enum.any?(fn line ->
-      trimmed = String.trim(line)
-
-      String.starts_with?(trimmed, "#") and Regex.match?(regex, trimmed) and
-        Regex.match?(~r/all\s+(present|covered|met)/i, trimmed)
-    end)
-  end
-
-  defp all_present_heading?(%{"review_report" => report}, regex) do
-    all_present_heading?(%{review_report: report}, regex)
-  end
-
-  defp all_present_heading?(_, _), do: false
-
-  defp count_list_items(body) when is_binary(body) do
-    body
-    |> String.split(~r/\r?\n/)
-    |> Enum.count(fn line ->
-      trimmed = String.trim_leading(line)
-
-      String.starts_with?(trimmed, "- ") or String.starts_with?(trimmed, "* ") or
-        Regex.match?(~r/^\d+\.\s+/, trimmed)
-    end)
-  end
-
-  defp count_list_items(_), do: 0
-
-  defp pitfalls_violated?(body) when is_binary(body) do
-    cond do
-      Regex.match?(~r/(none\s+violated|no\s+violations|all\s+(honored|honoured))/i, body) ->
-        false
-
-      Regex.match?(~r/(violated|violations?)/i, body) ->
-        true
-
-      true ->
-        false
-    end
-  end
-
-  defp pitfalls_violated?(_), do: false
-
-  @doc """
-  Pill rendered next to the review summary blurb. The verdict is derived SOLELY
-  from the structured `reviewer_result.status` field. When a review was
-  dispatched but carries no recognized structured status (a legacy/thin
-  `reviewer_result`), the pill renders a neutral "Review data unavailable" state
-  — it never fabricates "changes_requested"/"approved" from legacy
-  `issues_found` counts or `acceptance_criteria` heuristics (D56). Returns `nil`
-  when the reviewer was skipped, never ran, or reported an unrecognized status.
-  """
-  @spec review_status_pill(map()) :: map() | nil
-  def review_status_pill(task) do
-    case derive_review_status(task) do
-      "approved" ->
-        %{
-          status: "approved",
-          label: gettext("Approved"),
-          icon: "hero-check-circle",
-          style:
-            "background: var(--st-done-soft, oklch(96% 0.05 155)); " <>
-              "color: var(--st-done, oklch(50% 0.14 155));"
-        }
-
-      "changes_requested" ->
-        %{
-          status: "changes_requested",
-          label: gettext("Changes requested"),
-          icon: "hero-arrow-uturn-left",
-          style:
-            "background: var(--st-blocked-soft, oklch(96% 0.04 25)); " <>
-              "color: var(--st-blocked, oklch(50% 0.18 25));"
-        }
-
-      :unavailable ->
-        %{
-          status: "unavailable",
-          label: gettext("Review data unavailable"),
-          icon: "hero-question-mark-circle",
-          style: "background: var(--surface-2); color: var(--ink-2);"
-        }
-
-      _ ->
-        nil
-    end
-  end
-
-  defp derive_review_status(%{reviewer_result: %{"status" => status}})
-       when status in ["approved", "changes_requested"],
-       do: status
-
-  # A review was dispatched but carries no recognized structured status
-  # (legacy/thin reviewer_result). Show a neutral "data unavailable" state
-  # rather than inferring a verdict from legacy issues_found/acceptance
-  # heuristics — those inferences are exactly what produced false
-  # "Changes requested" pills (D56).
-  defp derive_review_status(%{reviewer_result: %{"dispatched" => true}}), do: :unavailable
-
-  defp derive_review_status(_), do: nil
-
-  @doc """
-  Maps a section verdict tone to the same soft-background / ink token pairs the
-  review status pill uses, so the area stays legible in both light and dark mode
-  (the tokens have per-theme definitions in app.css). `true` → green, `false` →
-  red, anything else → neutral.
-  """
-  @spec verdict_tone_style(boolean() | nil) :: String.t()
-  def verdict_tone_style(true) do
-    "background: var(--st-done-soft, oklch(96% 0.05 155)); " <>
-      "color: var(--st-done, oklch(50% 0.14 155));"
-  end
-
-  def verdict_tone_style(false) do
-    "background: var(--st-blocked-soft, oklch(96% 0.04 25)); " <>
-      "color: var(--st-blocked, oklch(50% 0.18 25));"
-  end
-
-  def verdict_tone_style(_), do: "background: var(--surface-2); color: var(--ink-2);"
-
-  @doc """
-  Hero icon name for a section verdict. Security keeps its shield iconography;
-  generic check rows use neutral pass/fail/unknown circles.
-  """
-  @spec verdict_icon(atom(), boolean() | nil) :: String.t()
-  def verdict_icon(:security_considerations, false), do: "hero-shield-exclamation"
-  def verdict_icon(:security_considerations, _), do: "hero-shield-check"
-  def verdict_icon(_section, true), do: "hero-check-circle"
-  def verdict_icon(_section, false), do: "hero-x-circle"
-  def verdict_icon(_section, _), do: "hero-question-mark-circle"
-
-  @doc """
-  A stable status key (`"passed"` / `"failed"` / `"not_assessed"`) for data
-  attributes and tests, derived from the same pass/fail/neutral semantics as
-  `verdict_tone_style/1`.
-  """
-  @spec section_status_key(map(), atom()) :: String.t()
-  def section_status_key(task, section) do
-    case section_passed(task, section) do
-      true -> "passed"
-      false -> "failed"
-      _ -> "not_assessed"
-    end
-  end
-
-  defp section_passed(task, :testing_strategy), do: testing_strategy_passed(task)
-  defp section_passed(task, :patterns), do: patterns_passed(task)
-  defp section_passed(task, :pitfalls), do: pitfalls_passed(task)
-  defp section_passed(task, :security_considerations), do: security_considerations_passed(task)
-
-  defp section_value(task, :testing_strategy), do: testing_strategy_value(task)
-  defp section_value(task, :patterns), do: patterns_value(task)
-  defp section_value(task, :pitfalls), do: pitfalls_value(task)
-
-  @doc """
-  One map per renderable check row. A row is visible when it has a verdict
-  value, a reviewer note, an incomplete flag, or a per-category breakdown —
-  legacy tasks with none of these get no rows, and the section hides entirely.
-  Pure; safe to call twice from the template (once for the section guard, once
-  for `:for`).
-  """
-  @spec review_check_rows(map()) :: [map()]
-  def review_check_rows(task) do
-    @review_check_sections
-    |> Enum.map(&review_check_row(task, &1))
-    |> Enum.filter(fn row -> row.value || row.note || row.incomplete? || row.breakdown != [] end)
-  end
-
-  defp review_check_row(task, section) do
-    %{
-      section: section,
-      label: section_label(section),
-      value: section_value(task, section),
-      passed: section_passed(task, section),
-      status: section_status_key(task, section),
-      note: section_note(task, section),
-      incomplete?: section_incomplete?(task, section),
-      breakdown: section_breakdown(task, section)
-    }
-  end
-
-  # The testing-strategy row expands into the task's own per-category strategy
-  # entries; the other sections have no structured breakdown.
-  defp section_breakdown(task, :testing_strategy), do: testing_strategy_breakdown(task)
-  defp section_breakdown(_task, _section), do: []
-
-  @doc """
-  Stable status key (`"passed"` / `"failed"` / `"not_assessed"`) for a
-  per-category boolean verdict.
-  """
-  @spec category_status_key(boolean() | nil) :: String.t()
-  def category_status_key(true), do: "passed"
-  def category_status_key(false), do: "failed"
-  def category_status_key(_), do: "not_assessed"
-
-  @doc """
-  Human-readable, translated verdict label for a per-category boolean verdict.
-  """
-  @spec category_verdict_label(boolean() | nil) :: String.t()
-  def category_verdict_label(true), do: gettext("passed")
-  def category_verdict_label(false), do: gettext("failed")
-  def category_verdict_label(_), do: gettext("not assessed")
+  # The legacy markdown/regex parsing layer moved to
+  # KanbanWeb.ReviewReportHelpers.MarkdownReport, and the presentation-token
+  # layer to KanbanWeb.ReviewReportHelpers.Tokens, both in W2004 to bring this
+  # module under the size guidance in AGENTS.md. This module still CALLS
+  # MarkdownReport for its regex fallbacks; Tokens calls back into here.
 
   @doc """
   Reads the reviewer's one-line security rationale. Returns `nil` for
