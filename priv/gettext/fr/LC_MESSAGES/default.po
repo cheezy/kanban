@@ -2705,6 +2705,7 @@ msgstr "Déplacer l'objectif et les tâches vers « Prêt »"
 msgid "Only goals can be promoted"
 msgstr "Seuls les objectifs peuvent être promus"
 
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:111
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:30
 #, elixir-autogen, elixir-format
 msgid "%{ms} ms"
@@ -2716,17 +2717,20 @@ msgid "(unnamed step)"
 msgstr "(étape sans nom)"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:62
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:72
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:68
 #, elixir-autogen, elixir-format
 msgid "Dispatched"
 msgstr "Déclenché"
 
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:71
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:57
 #, elixir-autogen, elixir-format
 msgid "Not dispatched"
 msgstr "Non déclenché"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:189
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:35
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:35
 #, elixir-autogen, elixir-format
 msgid "Reason"
@@ -8732,3 +8736,18 @@ msgstr "Petite tâche (0-1 fichiers clés)"
 #, elixir-autogen, elixir-format
 msgid "Trivial change (docs only)"
 msgstr "Changement trivial (documentation uniquement)"
+
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:127
+#, elixir-autogen, elixir-format
+msgid "%{minutes}m %{seconds}s"
+msgstr "%{minutes}m %{seconds}s"
+
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:123
+#, elixir-autogen, elixir-format
+msgid "%{seconds}s"
+msgstr "%{seconds}s"
+
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:24
+#, elixir-autogen, elixir-format
+msgid "Explorer Result"
+msgstr "Résultat de l'explorateur"

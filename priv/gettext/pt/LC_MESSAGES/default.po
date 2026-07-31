@@ -2705,6 +2705,7 @@ msgstr "Mover meta e tarefas para Pronto"
 msgid "Only goals can be promoted"
 msgstr "Apenas metas podem ser promovidas"
 
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:111
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:30
 #, elixir-autogen, elixir-format
 msgid "%{ms} ms"
@@ -2716,17 +2717,20 @@ msgid "(unnamed step)"
 msgstr "(etapa sem nome)"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:62
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:72
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:68
 #, elixir-autogen, elixir-format
 msgid "Dispatched"
 msgstr "Disparado"
 
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:71
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:57
 #, elixir-autogen, elixir-format
 msgid "Not dispatched"
 msgstr "Não disparado"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:189
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:35
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:35
 #, elixir-autogen, elixir-format
 msgid "Reason"
@@ -8762,3 +8766,18 @@ msgstr "Tarefa pequena (0-1 arquivos principais)"
 #, elixir-autogen, elixir-format
 msgid "Trivial change (docs only)"
 msgstr "Mudança trivial (apenas documentação)"
+
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:127
+#, elixir-autogen, elixir-format
+msgid "%{minutes}m %{seconds}s"
+msgstr "%{minutes}m %{seconds}s"
+
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:123
+#, elixir-autogen, elixir-format
+msgid "%{seconds}s"
+msgstr "%{seconds}s"
+
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:24
+#, elixir-autogen, elixir-format
+msgid "Explorer Result"
+msgstr "Resultado do explorador"

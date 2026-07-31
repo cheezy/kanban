@@ -2703,6 +2703,7 @@ msgstr "将目标和任务移到「就绪」"
 msgid "Only goals can be promoted"
 msgstr "只有目标可以被提升"
 
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:111
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:30
 #, elixir-autogen, elixir-format
 msgid "%{ms} ms"
@@ -2714,17 +2715,20 @@ msgid "(unnamed step)"
 msgstr "(未命名步骤)"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:62
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:72
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:68
 #, elixir-autogen, elixir-format
 msgid "Dispatched"
 msgstr "已派发"
 
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:71
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:57
 #, elixir-autogen, elixir-format
 msgid "Not dispatched"
 msgstr "未派发"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:189
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:35
 #: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:35
 #, elixir-autogen, elixir-format
 msgid "Reason"
@@ -8724,3 +8728,18 @@ msgstr "小任务（0-1 个关键文件）"
 #, elixir-autogen, elixir-format
 msgid "Trivial change (docs only)"
 msgstr "琐碎更改（仅文档）"
+
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:127
+#, elixir-autogen, elixir-format
+msgid "%{minutes}m %{seconds}s"
+msgstr "%{minutes}分%{seconds}秒"
+
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:123
+#, elixir-autogen, elixir-format
+msgid "%{seconds}s"
+msgstr "%{seconds}秒"
+
+#: lib/kanban_web/live/task_live/components/explorer_result_section.ex:24
+#, elixir-autogen, elixir-format
+msgid "Explorer Result"
+msgstr "探索器结果"
