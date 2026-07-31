@@ -122,8 +122,15 @@ defmodule KanbanWeb.ReviewReportHelpers do
   `review_status` is set, or `status` is `:completed`.
 
   The gate is deliberately NOT keyed off the column name or `needs_review`;
-  an open or in-progress task never shows the section even when its
-  `explorer_result` is populated. Pure; no DB access.
+  a task that has not yet reached review never shows the section even when its
+  `explorer_result` is populated.
+
+  Note `status` and `review_status` are independent, so an `:in_progress` task
+  DOES render the section once `review_status` is set — which is the intended
+  behaviour, not an oversight: `AgentWorkflow.move_to_doing/3` returns a
+  `changes_requested` or `rejected` task to Doing without clearing
+  `review_status`, and its exploration record stays relevant to the reviewer
+  across that round trip. Pure; no DB access.
   """
   @spec explorer_panel_visible?(map()) :: boolean()
   def explorer_panel_visible?(task) do

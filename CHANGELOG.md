@@ -17,6 +17,14 @@ The workspace cumulative flow diagram folds the entire pre-window completed hist
 
 A **Show Done** checkbox now sits above the chart. Unchecking it drops the Done band, re-bases the remaining four onto the zero baseline, and rescales the y-axis to their own peak, so the in-flight bands use the full plot height. The legend drops its Done swatch to match. The toggle sits above that card rather than in the page's header toolbar because it changes only how that one chart is drawn, and it defaults to on — every existing view renders exactly as it did before.
 
+#### Exploration evidence on the task view
+
+An agent's review report and its workflow-step telemetry each have a panel on the task view. Its exploration record did not: an agent could claim it explored the codebase, or claim one of the five sanctioned reasons for skipping, and no reviewer had a way to see which — the field was captured, validated, and then invisible.
+
+An **Explorer result** section now appears on the task view, between the review report and the workflow steps. It reads the two shapes the completion contract actually allows: a dispatched exploration shows its summary and how long it took, and a skipped one shows its summary alongside a translated label for the reason claimed, so "self-reported exploration" no longer reaches a human as `self_reported_exploration`. The summary, the duration and the reason are each rendered only when usable, since `explorer_result` is castable on the ordinary update changeset without validation — a direct `PATCH`, or a row predating the field's validation, can leave any of them missing.
+
+The section is gated to tasks that have reached review or done. Exploration evidence is something a reviewer reads when judging finished work, and showing it earlier would present a half-written record as though it were a finished one — so a task that has not yet reached review does not render the section even when the field is populated. A task sent back to Doing for changes keeps its review status, and so keeps showing its exploration record, which is the point: the reviewer who asked for the changes is the one who still needs it. The gate is a pure predicate rather than a template condition, which is what lets the negative cases be tested directly.
+
 ## [2.13.0] - 2026-07-28
 
 Agent-authored findings now reach a human, and a delivery target tells you it is going to be late before the date arrives.

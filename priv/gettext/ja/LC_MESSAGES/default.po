@@ -1100,7 +1100,7 @@ msgstr "エージェント"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:401
-#: lib/kanban_web/review_report_helpers.ex:640
+#: lib/kanban_web/review_report_helpers.ex:647
 #, elixir-autogen, elixir-format
 msgid "Approved"
 msgstr "承認済み"
@@ -5096,7 +5096,7 @@ msgstr "完了"
 msgid "created"
 msgstr "作成日"
 
-#: lib/kanban_web/review_report_helpers.ex:237
+#: lib/kanban_web/review_report_helpers.ex:244
 #: lib/kanban_web/task_tokens.ex:154
 #, elixir-autogen, elixir-format
 msgid "reviewed"
@@ -6167,24 +6167,24 @@ msgstr[0] "%{checked}/%{total} · %{n} 件の問題"
 msgid "Not met"
 msgstr "未達成"
 
-#: lib/kanban_web/review_report_helpers.ex:234
+#: lib/kanban_web/review_report_helpers.ex:241
 #, elixir-autogen, elixir-format
 msgid "%{n} case"
 msgid_plural "%{n} cases"
 msgstr[0] "%{n}件"
 
-#: lib/kanban_web/review_report_helpers.ex:226
+#: lib/kanban_web/review_report_helpers.ex:233
 #, elixir-autogen, elixir-format
 msgid "%{n} case · all present"
 msgid_plural "%{n} cases · all present"
 msgstr[0] "%{n} 件 · すべて記載済み"
 
-#: lib/kanban_web/review_report_helpers.ex:393
+#: lib/kanban_web/review_report_helpers.ex:400
 #, elixir-autogen, elixir-format
 msgid "none violated"
 msgstr "違反なし"
 
-#: lib/kanban_web/review_report_helpers.ex:391
+#: lib/kanban_web/review_report_helpers.ex:398
 #, elixir-autogen, elixir-format
 msgid "violated"
 msgstr "違反"
@@ -6211,7 +6211,7 @@ msgstr "完了者: %{name}"
 msgid "Patterns"
 msgstr "パターン"
 
-#: lib/kanban_web/review_report_helpers.ex:355
+#: lib/kanban_web/review_report_helpers.ex:362
 #, elixir-autogen, elixir-format
 msgid "followed"
 msgstr "準拠"
@@ -6232,7 +6232,7 @@ msgstr "変更要求あり"
 msgid "(no description)"
 msgstr "（説明なし）"
 
-#: lib/kanban_web/review_report_helpers.ex:650
+#: lib/kanban_web/review_report_helpers.ex:657
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
 msgstr "変更要求あり"
@@ -6257,20 +6257,20 @@ msgstr "軽微"
 msgid "Testing"
 msgstr "テスト"
 
-#: lib/kanban_web/review_report_helpers.ex:531
-#: lib/kanban_web/review_report_helpers.ex:782
+#: lib/kanban_web/review_report_helpers.ex:538
+#: lib/kanban_web/review_report_helpers.ex:789
 #, elixir-autogen, elixir-format
 msgid "failed"
 msgstr "不合格"
 
-#: lib/kanban_web/review_report_helpers.ex:532
-#: lib/kanban_web/review_report_helpers.ex:783
+#: lib/kanban_web/review_report_helpers.ex:539
+#: lib/kanban_web/review_report_helpers.ex:790
 #, elixir-autogen, elixir-format
 msgid "not assessed"
 msgstr "未評価"
 
-#: lib/kanban_web/review_report_helpers.ex:530
-#: lib/kanban_web/review_report_helpers.ex:781
+#: lib/kanban_web/review_report_helpers.ex:537
+#: lib/kanban_web/review_report_helpers.ex:788
 #, elixir-autogen, elixir-format
 msgid "passed"
 msgstr "合格"
@@ -6669,7 +6669,7 @@ msgstr "コードレビュー"
 msgid "Settings sections"
 msgstr "設定セクション"
 
-#: lib/kanban_web/review_report_helpers.ex:660
+#: lib/kanban_web/review_report_helpers.ex:667
 #, elixir-autogen, elixir-format
 msgid "Review data unavailable"
 msgstr "レビューデータがありません"
@@ -7026,27 +7026,27 @@ msgstr "サインインする前にアカウントを確認する必要があり
 msgid "You must confirm your account to access this page."
 msgstr "このページにアクセスするには、アカウントを確認する必要があります。"
 
-#: lib/kanban_web/review_report_helpers.ex:326
+#: lib/kanban_web/review_report_helpers.ex:333
 #, elixir-autogen, elixir-format
 msgid "Coverage target"
 msgstr "カバレッジ目標"
 
-#: lib/kanban_web/review_report_helpers.ex:325
+#: lib/kanban_web/review_report_helpers.ex:332
 #, elixir-autogen, elixir-format
 msgid "Edge cases"
 msgstr "エッジケース"
 
-#: lib/kanban_web/review_report_helpers.ex:323
+#: lib/kanban_web/review_report_helpers.ex:330
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Integration tests"
 msgstr "統合テスト"
 
-#: lib/kanban_web/review_report_helpers.ex:324
+#: lib/kanban_web/review_report_helpers.ex:331
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Manual tests"
 msgstr "手動テスト"
 
-#: lib/kanban_web/review_report_helpers.ex:322
+#: lib/kanban_web/review_report_helpers.ex:329
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Unit tests"
 msgstr "ユニットテスト"
@@ -8704,27 +8704,27 @@ msgstr "ディスパッチされたレビューではリストである必要が
 msgid "Show Done"
 msgstr "完了を表示"
 
-#: lib/kanban_web/review_report_helpers.ex:158
+#: lib/kanban_web/review_report_helpers.ex:165
 #, elixir-autogen, elixir-format
 msgid "No subagent support"
 msgstr "サブエージェント非対応"
 
-#: lib/kanban_web/review_report_helpers.ex:161
+#: lib/kanban_web/review_report_helpers.ex:168
 #, elixir-autogen, elixir-format
 msgid "Self-reported exploration"
 msgstr "自己申告による探索"
 
-#: lib/kanban_web/review_report_helpers.ex:162
+#: lib/kanban_web/review_report_helpers.ex:169
 #, elixir-autogen, elixir-format
 msgid "Self-reported review"
 msgstr "自己申告によるレビュー"
 
-#: lib/kanban_web/review_report_helpers.ex:159
+#: lib/kanban_web/review_report_helpers.ex:166
 #, elixir-autogen, elixir-format
 msgid "Small task (0-1 key files)"
 msgstr "小さなタスク (キーファイル 0〜1 件)"
 
-#: lib/kanban_web/review_report_helpers.ex:160
+#: lib/kanban_web/review_report_helpers.ex:167
 #, elixir-autogen, elixir-format
 msgid "Trivial change (docs only)"
 msgstr "些細な変更 (ドキュメントのみ)"

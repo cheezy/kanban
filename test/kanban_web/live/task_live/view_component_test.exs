@@ -2370,6 +2370,86 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       refute result =~ "small_task_0_1_key_files"
     end
 
+    # Locale note (W1961): render_component/2 renders in the TEST process, so
+    # Gettext.put_locale/2 does reach it. That is NOT true of a live/2 test,
+    # where the LiveView runs in its own process and the locale must arrive
+    # through the session — see the session-based test in
+    # test/kanban_web/live/metrics_live/workspace_test.exs. Both the SectionHead
+    # title and the component's own labels are exercised here in one render.
+    test "renders the section title and skip-reason label translated in every locale",
+         %{column: column} do
+      task =
+        task_fixture(
+          column,
+          Map.merge(completed(), %{
+            explorer_result: %{
+              "dispatched" => false,
+              "reason" => "small_task_0_1_key_files",
+              "summary" => "Read the single key file directly."
+            }
+          })
+        )
+
+      expected = [
+        {"de", "Explorer-Ergebnis", "Kleine Aufgabe (0–1 wichtige Dateien)"},
+        {"es", "Resultado del explorador", "Tarea pequeña (0-1 archivos clave)"},
+        {"fr", "Résultat de l&#39;explorateur", "Petite tâche (0-1 fichiers clés)"},
+        {"ja", "エクスプローラー結果", "小さなタスク (キーファイル 0〜1 件)"},
+        {"pt", "Resultado do explorador", "Tarefa pequena (0-1 arquivos principais)"},
+        {"zh", "探索器结果", "小任务（0-1 个关键文件）"}
+      ]
+
+      original = Gettext.get_locale(KanbanWeb.Gettext)
+
+      try do
+        for {locale, title, reason_label} <- expected do
+          Gettext.put_locale(KanbanWeb.Gettext, locale)
+          result = render_task(task)
+
+          assert result =~ title, "#{locale} did not render the translated section title"
+
+          assert result =~ reason_label,
+                 "#{locale} did not render the translated skip-reason label"
+
+          refute result =~ "Explorer Result",
+                 "#{locale} leaked the untranslated English heading"
+
+          refute result =~ "Small task (0-1 key files)",
+                 "#{locale} leaked the untranslated English skip-reason label"
+        end
+      after
+        Gettext.put_locale(KanbanWeb.Gettext, original)
+      end
+    end
+
+    test "renders the English source strings under the en locale", %{column: column} do
+      task =
+        task_fixture(
+          column,
+          Map.merge(completed(), %{
+            explorer_result: %{
+              "dispatched" => false,
+              "reason" => "trivial_change_docs_only",
+              "summary" => "Docs-only change."
+            }
+          })
+        )
+
+      original = Gettext.get_locale(KanbanWeb.Gettext)
+
+      try do
+        Gettext.put_locale(KanbanWeb.Gettext, "en")
+        result = render_task(task)
+
+        # English msgstr values are intentionally empty so gettext falls back to
+        # the msgid — the locale-completeness guard exempts en for this reason.
+        assert result =~ "Explorer Result"
+        assert result =~ "Trivial change (docs only)"
+      after
+        Gettext.put_locale(KanbanWeb.Gettext, original)
+      end
+    end
+
     test "renders alongside the review report and workflow steps without disturbing order",
          %{column: column} do
       task =

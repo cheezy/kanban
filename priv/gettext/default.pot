@@ -1100,7 +1100,7 @@ msgstr ""
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:401
-#: lib/kanban_web/review_report_helpers.ex:640
+#: lib/kanban_web/review_report_helpers.ex:647
 #, elixir-autogen, elixir-format
 msgid "Approved"
 msgstr ""
@@ -5104,7 +5104,7 @@ msgstr ""
 msgid "created"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:237
+#: lib/kanban_web/review_report_helpers.ex:244
 #: lib/kanban_web/task_tokens.ex:154
 #, elixir-autogen, elixir-format
 msgid "reviewed"
@@ -6180,26 +6180,26 @@ msgstr[1] ""
 msgid "Not met"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:234
+#: lib/kanban_web/review_report_helpers.ex:241
 #, elixir-autogen, elixir-format
 msgid "%{n} case"
 msgid_plural "%{n} cases"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/review_report_helpers.ex:226
+#: lib/kanban_web/review_report_helpers.ex:233
 #, elixir-autogen, elixir-format
 msgid "%{n} case · all present"
 msgid_plural "%{n} cases · all present"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/review_report_helpers.ex:393
+#: lib/kanban_web/review_report_helpers.ex:400
 #, elixir-autogen, elixir-format
 msgid "none violated"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:391
+#: lib/kanban_web/review_report_helpers.ex:398
 #, elixir-autogen, elixir-format
 msgid "violated"
 msgstr ""
@@ -6226,7 +6226,7 @@ msgstr ""
 msgid "Patterns"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:355
+#: lib/kanban_web/review_report_helpers.ex:362
 #, elixir-autogen, elixir-format
 msgid "followed"
 msgstr ""
@@ -6247,7 +6247,7 @@ msgstr ""
 msgid "(no description)"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:650
+#: lib/kanban_web/review_report_helpers.ex:657
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
 msgstr ""
@@ -6272,20 +6272,20 @@ msgstr ""
 msgid "Testing"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:531
-#: lib/kanban_web/review_report_helpers.ex:782
+#: lib/kanban_web/review_report_helpers.ex:538
+#: lib/kanban_web/review_report_helpers.ex:789
 #, elixir-autogen, elixir-format
 msgid "failed"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:532
-#: lib/kanban_web/review_report_helpers.ex:783
+#: lib/kanban_web/review_report_helpers.ex:539
+#: lib/kanban_web/review_report_helpers.ex:790
 #, elixir-autogen, elixir-format
 msgid "not assessed"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:530
-#: lib/kanban_web/review_report_helpers.ex:781
+#: lib/kanban_web/review_report_helpers.ex:537
+#: lib/kanban_web/review_report_helpers.ex:788
 #, elixir-autogen, elixir-format
 msgid "passed"
 msgstr ""
@@ -6623,7 +6623,7 @@ msgstr ""
 msgid "Settings sections"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:660
+#: lib/kanban_web/review_report_helpers.ex:667
 #, elixir-autogen, elixir-format
 msgid "Review data unavailable"
 msgstr ""
@@ -6980,27 +6980,27 @@ msgstr ""
 msgid "You must confirm your account to access this page."
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:326
+#: lib/kanban_web/review_report_helpers.ex:333
 #, elixir-autogen, elixir-format
 msgid "Coverage target"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:325
+#: lib/kanban_web/review_report_helpers.ex:332
 #, elixir-autogen, elixir-format
 msgid "Edge cases"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:323
+#: lib/kanban_web/review_report_helpers.ex:330
 #, elixir-autogen, elixir-format
 msgid "Integration tests"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:324
+#: lib/kanban_web/review_report_helpers.ex:331
 #, elixir-autogen, elixir-format
 msgid "Manual tests"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:322
+#: lib/kanban_web/review_report_helpers.ex:329
 #, elixir-autogen, elixir-format
 msgid "Unit tests"
 msgstr ""
@@ -8666,27 +8666,27 @@ msgstr ""
 msgid "Show Done"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:158
+#: lib/kanban_web/review_report_helpers.ex:165
 #, elixir-autogen, elixir-format
 msgid "No subagent support"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:161
+#: lib/kanban_web/review_report_helpers.ex:168
 #, elixir-autogen, elixir-format
 msgid "Self-reported exploration"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:162
+#: lib/kanban_web/review_report_helpers.ex:169
 #, elixir-autogen, elixir-format
 msgid "Self-reported review"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:159
+#: lib/kanban_web/review_report_helpers.ex:166
 #, elixir-autogen, elixir-format
 msgid "Small task (0-1 key files)"
 msgstr ""
 
-#: lib/kanban_web/review_report_helpers.ex:160
+#: lib/kanban_web/review_report_helpers.ex:167
 #, elixir-autogen, elixir-format
 msgid "Trivial change (docs only)"
 msgstr ""
