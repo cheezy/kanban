@@ -102,6 +102,67 @@ defmodule KanbanWeb.ReviewReportHelpers do
 
   def has_review_report?(_), do: false
 
+  @doc """
+  True when the task carries a non-empty `explorer_result` map.
+
+  Mirrors `has_reviewer_result?/1` — the `map_size/1` guard is what rejects
+  the empty map, since `%{}` matches ANY map in Elixir. Tolerates both the
+  atom-keyed task struct and a raw string-keyed task map, matching the
+  key-tolerance convention the module's other accessors follow. Pure; no DB
+  access.
+  """
+  @spec has_explorer_result?(map()) :: boolean()
+  def has_explorer_result?(%{explorer_result: %{} = result}), do: map_size(result) > 0
+  def has_explorer_result?(%{"explorer_result" => %{} = result}), do: map_size(result) > 0
+  def has_explorer_result?(_), do: false
+
+  @doc """
+  True when the explorer-result section should render: the task carries a
+  non-empty `explorer_result` AND the task has reached review or done —
+  `review_status` is set, or `status` is `:completed`.
+
+  The gate is deliberately NOT keyed off the column name or `needs_review`;
+  an open or in-progress task never shows the section even when its
+  `explorer_result` is populated. Pure; no DB access.
+  """
+  @spec explorer_panel_visible?(map()) :: boolean()
+  def explorer_panel_visible?(task) do
+    has_explorer_result?(task) and reviewed_or_done?(task)
+  end
+
+  defp reviewed_or_done?(task) do
+    not is_nil(task_field(task, :review_status)) or
+      task_field(task, :status) in [:completed, "completed"]
+  end
+
+  # Only ever reached through `explorer_panel_visible?/1`, whose `and`
+  # short-circuits on `has_explorer_result?/1` — so `task` is always a map
+  # and `key` always a literal atom. No catch-all clause is reachable here.
+  defp task_field(task, key) when is_map(task) and is_atom(key) do
+    case Map.fetch(task, key) do
+      {:ok, value} -> value
+      :error -> Map.get(task, Atom.to_string(key))
+    end
+  end
+
+  @doc """
+  User-visible label for an `explorer_result`/`reviewer_result` skip reason.
+
+  Matches on the five binary enum values as they arrive from the JSONB
+  column. An unrecognized binary falls through to itself rather than
+  raising, so a legacy or future enum entry never crashes the task view —
+  the same passthrough shape as `KanbanWeb.TaskTokens.hook_stage_label/1`.
+  Never converts the incoming value to an atom.
+  """
+  @spec skip_reason_label(term()) :: String.t()
+  def skip_reason_label("no_subagent_support"), do: gettext("No subagent support")
+  def skip_reason_label("small_task_0_1_key_files"), do: gettext("Small task (0-1 key files)")
+  def skip_reason_label("trivial_change_docs_only"), do: gettext("Trivial change (docs only)")
+  def skip_reason_label("self_reported_exploration"), do: gettext("Self-reported exploration")
+  def skip_reason_label("self_reported_review"), do: gettext("Self-reported review")
+  def skip_reason_label(other) when is_binary(other), do: other
+  def skip_reason_label(_), do: ""
+
   # `project_checks_gap/1` was removed with the checklist-coverage gate: it
   # compared a review's project_checks count against Kanban's OWN checklist size,
   # so every project with a shorter (or absent) CODE-REVIEW.md saw a bogus
