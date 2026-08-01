@@ -2946,4 +2946,77 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       end
     end
   end
+
+  describe "translated labels for this goal's new strings (W1966)" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      %{user: user, board: board, column: column}
+    end
+
+    # render_component/2 renders in the TEST process, so Gettext.put_locale/2
+    # reaches it. That is NOT true of a live/2 test, where the LiveView runs in
+    # its own process and the locale has to arrive through the session for
+    # KanbanWeb.LocaleOnMount to apply it.
+    defp with_locale(locale, fun) do
+      original = Gettext.get_locale(KanbanWeb.Gettext)
+      Gettext.put_locale(KanbanWeb.Gettext, locale)
+
+      try do
+        fun.()
+      after
+        Gettext.put_locale(KanbanWeb.Gettext, original)
+      end
+    end
+
+    @completion_notes_labels [
+      {"de", "Abschlussnotizen"},
+      {"es", "Notas de la finalización"},
+      {"fr", "Notes de complétion"},
+      {"ja", "完了メモ"},
+      {"pt", "Notas da conclusão"},
+      {"zh", "完成备注"}
+    ]
+
+    @changed_files_titles [
+      {"de", "Geänderte Dateien"},
+      {"es", "Archivos modificados"},
+      {"fr", "Fichiers modifiés"},
+      {"ja", "変更されたファイル"},
+      {"pt", "Arquivos alterados"},
+      {"zh", "已更改的文件"}
+    ]
+
+    test "the completion-notes label renders translated in every non-English locale",
+         %{column: column} do
+      task =
+        task_fixture(
+          column,
+          Map.merge(completed(), %{completion_notes: "What the agent actually did."})
+        )
+
+      for {locale, label} <- @completion_notes_labels do
+        # render_task/1 is module-scoped (ExUnit defp is not describe-scoped),
+        # so reuse it rather than making a fourth copy of the same render call.
+        html = with_locale(locale, fn -> render_task(task) end)
+
+        assert html =~ label, "#{locale} did not render the translated completion-notes label"
+        refute html =~ "Completion notes", "#{locale} leaked the untranslated English label"
+      end
+    end
+
+    test "the changed-files section title renders translated in every non-English locale",
+         %{column: column} do
+      task = changed_files_task(column, completed())
+
+      for {locale, title} <- @changed_files_titles do
+        html = with_locale(locale, fn -> render_changed_files_task(task) end)
+
+        assert html =~ title, "#{locale} did not render the translated changed-files title"
+        refute html =~ "Changed files", "#{locale} leaked the untranslated English title"
+      end
+    end
+  end
 end
