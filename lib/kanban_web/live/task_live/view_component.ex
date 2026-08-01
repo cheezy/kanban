@@ -2,7 +2,14 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   use KanbanWeb, :live_component
 
   import KanbanWeb.ReviewReportHelpers,
-    only: [review_panel_visible?: 1, completion_panel_visible?: 1]
+    only: [
+      review_panel_visible?: 1,
+      completion_panel_visible?: 1,
+      changed_files_panel_visible?: 1
+    ]
+
+  import KanbanWeb.ReviewReportHelpers.ChangedFiles,
+    only: [changed_file_paths: 1, lookup_changed_file: 2]
 
   import KanbanWeb.ReviewReportHelpers.Explorer, only: [explorer_panel_visible?: 1]
 
@@ -26,6 +33,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   alias KanbanWeb.Avatar
   alias KanbanWeb.AvatarPalette
   alias KanbanWeb.MetaItem
+  alias KanbanWeb.ReviewDiffPanel
   alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.SectionHead
   alias KanbanWeb.TaskActivityLog
@@ -36,15 +44,66 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
     expected_board_id = Map.get(assigns, :board_id)
     task = load_task_for_board(task_id, expected_board_id)
 
+    # Read the PREVIOUS task_id before `assign(assigns)` overwrites it below —
+    # afterwards there is no evidence left that the task changed.
+    same_task? = Map.get(socket.assigns, :task_id) == task_id
+
+    # Selection is component-owned. Dropping the key here is what actually makes
+    # that true: without it a caller could set :selected_changed_file through
+    # the assigns map on a same-task update and `assign_new/3` below would
+    # preserve it, bypassing the changed_files lookup entirely. The only way in
+    # is handle_event/3, which resolves the path against the task's own list.
+    incoming = Map.drop(assigns, [:selected_changed_file])
+
     {:ok,
      socket
-     |> assign(assigns)
+     |> assign(incoming)
      |> assign(:task, task)
      |> assign(:board_id, expected_board_id)
-     |> assign(:ai_optimized_board, Map.get(assigns, :ai_optimized_board, false))
-     |> assign(:can_modify, Map.get(assigns, :can_modify, false))
-     |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))}
+     |> assign_caller_defaults(assigns)
+     |> reset_or_keep_selection(same_task?)}
   end
+
+  # Callers may omit any of these; extracted from update/2 to keep it under the
+  # ABC-size limit rather than because they are a meaningful group.
+  defp assign_caller_defaults(socket, assigns) do
+    socket
+    |> assign(:ai_optimized_board, Map.get(assigns, :ai_optimized_board, false))
+    |> assign(:can_modify, Map.get(assigns, :can_modify, false))
+    |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))
+  end
+
+  # A re-render for the SAME task (a changed can_modify, field_visibility, …)
+  # must not close the file the user has open, so only initialise it.
+  defp reset_or_keep_selection(socket, true),
+    do: assign_new(socket, :selected_changed_file, fn -> nil end)
+
+  # A different task clears the selection outright. This also runs on the very
+  # first update, since a fresh socket has no stored task_id.
+  defp reset_or_keep_selection(socket, false),
+    do: assign(socket, :selected_changed_file, nil)
+
+  @impl true
+  def handle_event("select_changed_file", %{"path" => path}, socket) when is_binary(path) do
+    selected = next_selection(socket.assigns.selected_changed_file, socket.assigns.task, path)
+
+    {:noreply, assign(socket, :selected_changed_file, selected)}
+  end
+
+  # Fail closed on a missing or non-binary "path" rather than crashing the
+  # parent LiveView; the current selection is left untouched.
+  @impl true
+  def handle_event("select_changed_file", _params, socket), do: {:noreply, socket}
+
+  # Clicking the file that is already open collapses it, matching what the
+  # Review queue does with the same panel and the same click.
+  defp next_selection(%{"path" => path}, _task, path), do: nil
+
+  # Otherwise resolve the caller-supplied path against THIS task's own
+  # changed_files. An unknown path yields nil and renders nothing — the path is
+  # never echoed back into a payload, never logged, and never touches the
+  # filesystem or another task.
+  defp next_selection(_current, task, path), do: lookup_changed_file(task, path)
 
   # Defense-in-depth: even if a caller forgets to scope the task lookup at the
   # parent LiveView, the component must not render a task that doesn't belong
@@ -329,6 +388,16 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             <%= if completion_panel_visible?(@task) do %>
               <SectionHead.section_head title={gettext("Completion")} />
               <.completion_section task={@task} />
+            <% end %>
+
+            <%= if changed_files_panel_visible?(@task) do %>
+              <SectionHead.section_head title={gettext("Changed files")} />
+              <ReviewDiffPanel.review_diff_panel
+                files={changed_file_paths(@task)}
+                selected_file={@selected_changed_file}
+                on_file_click="select_changed_file"
+                target={@myself}
+              />
             <% end %>
 
             <%= if @task.type == :goal && length(@task.children || []) > 0 do %>

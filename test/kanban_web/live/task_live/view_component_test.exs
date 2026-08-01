@@ -2704,4 +2704,246 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
              "the explorer section must precede workflow steps"
     end
   end
+
+  describe "changed-files diff panel (W1965)" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      reviewer = user_fixture()
+
+      %{user: user, board: board, column: column, reviewer: reviewer}
+    end
+
+    @changed_files [
+      %{"path" => "lib/foo.ex", "diff" => "@@ -1 +1 @@\n-old foo\n+new foo"},
+      %{"path" => "test/foo_test.exs", "diff" => "@@ -1 +1 @@\n+added assertion"}
+    ]
+
+    # actual_files_changed is deliberately left nil: the "Actual vs estimated"
+    # section renders it verbatim, which would make a `refute html =~ path`
+    # assertion pass or fail for the wrong reason.
+    defp changed_files_task(column, attrs) do
+      task_fixture(column, Map.merge(%{changed_files: @changed_files}, attrs))
+    end
+
+    defp render_changed_files_task(task) do
+      render_component(KanbanWeb.TaskLive.ViewComponent,
+        id: "test-view",
+        task_id: task.id,
+        field_visibility: all_fields_visible()
+      )
+    end
+
+    # Direct update/handle_event unit harness — render_component cannot dispatch
+    # events to a live_component, and this is the convention the board and task
+    # form-component tests already use.
+    defp build_view_socket(task_id, extra \\ %{}) do
+      base = %{%Phoenix.LiveView.Socket{} | assigns: %{flash: %{}, __changed__: %{}}}
+
+      assigns =
+        Map.merge(
+          %{id: "test-view", task_id: task_id, field_visibility: all_fields_visible()},
+          extra
+        )
+
+      {:ok, socket} = KanbanWeb.TaskLive.ViewComponent.update(assigns, base)
+      socket
+    end
+
+    defp select_file(socket, path) do
+      {:noreply, socket} =
+        KanbanWeb.TaskLive.ViewComponent.handle_event(
+          "select_changed_file",
+          %{"path" => path},
+          socket
+        )
+
+      socket
+    end
+
+    test "renders the section and every changed file for a completed task", %{column: column} do
+      task = changed_files_task(column, completed())
+
+      html = render_changed_files_task(task)
+
+      assert html =~ "Changed files"
+      assert html =~ "data-review-diff-panel"
+      assert html =~ "lib/foo.ex"
+      assert html =~ "test/foo_test.exs"
+    end
+
+    test "renders the section for a task in review that never reached :completed",
+         %{column: column, reviewer: reviewer} do
+      task = changed_files_task(column, approved_review(reviewer))
+
+      html = render_changed_files_task(task)
+
+      assert html =~ "Changed files"
+      assert html =~ "data-review-diff-panel"
+    end
+
+    test "omits the section for an :open task carrying changed files", %{column: column} do
+      task = changed_files_task(column, %{status: :open})
+
+      html = render_changed_files_task(task)
+
+      refute html =~ "data-review-diff-panel"
+      refute html =~ "lib/foo.ex"
+    end
+
+    test "omits the section for an :in_progress task with review_status nil", %{column: column} do
+      task = changed_files_task(column, %{status: :in_progress, review_status: nil})
+
+      html = render_changed_files_task(task)
+
+      refute html =~ "data-review-diff-panel"
+    end
+
+    test "omits the section for a completed task whose changed_files is empty",
+         %{column: column} do
+      task = task_fixture(column, Map.merge(%{changed_files: []}, completed()))
+
+      html = render_changed_files_task(task)
+
+      refute html =~ "data-review-diff-panel"
+    end
+
+    test "file rows are targeted at this component, not the parent LiveView",
+         %{column: column} do
+      task = changed_files_task(column, completed())
+
+      html = render_changed_files_task(task)
+
+      assert html =~ "data-review-diff-panel-file-button"
+      assert html =~ ~s(phx-click="select_changed_file")
+      # Presence, not the value: render_component supplies a harness CID.
+      assert html =~ "phx-target"
+    end
+
+    test "the panel inherits the theme-aware diff tokens from the task view root",
+         %{column: column} do
+      task = changed_files_task(column, completed())
+
+      html = render_changed_files_task(task)
+
+      # The dark-mode diff-line tokens are scoped to .stride-screen in app.css.
+      assert html =~ ~s(class="stride-screen")
+      refute html =~ "bg-gray-"
+      refute html =~ "text-gray-"
+      refute html =~ "bg-white"
+    end
+
+    test "selecting a file stores that file's whole changed_files entry",
+         %{column: column} do
+      task = changed_files_task(column, completed())
+
+      socket = task.id |> build_view_socket() |> select_file("lib/foo.ex")
+
+      assert %{"path" => "lib/foo.ex", "diff" => diff} = socket.assigns.selected_changed_file
+      assert diff =~ "+new foo"
+    end
+
+    test "a path absent from the task's changed_files selects nothing and is not echoed",
+         %{column: column} do
+      task = changed_files_task(column, completed())
+
+      socket = task.id |> build_view_socket() |> select_file("lib/ghost.ex")
+
+      assert socket.assigns.selected_changed_file == nil
+      refute inspect(socket.assigns) =~ "lib/ghost.ex"
+    end
+
+    test "clicking the already-selected file collapses it", %{column: column} do
+      task = changed_files_task(column, completed())
+
+      socket = task.id |> build_view_socket() |> select_file("lib/foo.ex")
+      assert socket.assigns.selected_changed_file
+
+      socket = select_file(socket, "lib/foo.ex")
+      assert socket.assigns.selected_changed_file == nil
+    end
+
+    test "the selection is cleared when the component is updated for a different task",
+         %{column: column} do
+      task = changed_files_task(column, completed())
+      other = changed_files_task(column, completed())
+
+      socket = task.id |> build_view_socket() |> select_file("lib/foo.ex")
+      assert socket.assigns.selected_changed_file
+
+      {:ok, socket} =
+        KanbanWeb.TaskLive.ViewComponent.update(
+          %{id: "test-view", task_id: other.id, field_visibility: all_fields_visible()},
+          socket
+        )
+
+      assert socket.assigns.selected_changed_file == nil
+    end
+
+    test "the selection survives a re-render of the SAME task with other assigns changed",
+         %{column: column} do
+      task = changed_files_task(column, completed())
+
+      socket = task.id |> build_view_socket() |> select_file("lib/foo.ex")
+
+      {:ok, socket} =
+        KanbanWeb.TaskLive.ViewComponent.update(
+          %{
+            id: "test-view",
+            task_id: task.id,
+            can_modify: true,
+            field_visibility: all_fields_visible()
+          },
+          socket
+        )
+
+      assert %{"path" => "lib/foo.ex"} = socket.assigns.selected_changed_file
+    end
+
+    test "a caller cannot seed the selection through the assigns map", %{column: column} do
+      task = changed_files_task(column, completed())
+      injected = %{"path" => "lib/injected.ex", "diff" => "+ never resolved"}
+
+      # On first mount the caller's value is dropped outright.
+      socket = build_view_socket(task.id, %{selected_changed_file: injected})
+      assert socket.assigns.selected_changed_file == nil
+
+      # And on a same-task re-render it cannot overwrite the component's own
+      # selection either — handle_event/3 is the only way in.
+      socket = select_file(socket, "lib/foo.ex")
+
+      {:ok, socket} =
+        KanbanWeb.TaskLive.ViewComponent.update(
+          %{
+            id: "test-view",
+            task_id: task.id,
+            field_visibility: all_fields_visible(),
+            selected_changed_file: injected
+          },
+          socket
+        )
+
+      assert %{"path" => "lib/foo.ex"} = socket.assigns.selected_changed_file
+      refute inspect(socket.assigns) =~ "lib/injected.ex"
+    end
+
+    test "an event with a missing or non-binary path leaves the selection untouched",
+         %{column: column} do
+      task = changed_files_task(column, completed())
+
+      socket = task.id |> build_view_socket() |> select_file("lib/foo.ex")
+
+      for params <- [%{}, %{"path" => nil}, %{"path" => 42}] do
+        {:noreply, unchanged} =
+          KanbanWeb.TaskLive.ViewComponent.handle_event(
+            "select_changed_file",
+            params,
+            socket
+          )
+
+        assert %{"path" => "lib/foo.ex"} = unchanged.assigns.selected_changed_file
+      end
+    end
+  end
 end

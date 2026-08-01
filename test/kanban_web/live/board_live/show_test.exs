@@ -2773,6 +2773,53 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
+  describe "task-view changed-files panel (W1965)" do
+    setup [:register_and_log_in_user]
+
+    # This is the only test that proves the click is handled by the
+    # ViewComponent rather than escaping to BoardLive.Show. Show has no
+    # catch-all handle_event/3 — its last clause is "delete_token" — so if
+    # target={@myself} were ever dropped from the panel call, render_click/1
+    # would raise here rather than quietly doing nothing.
+    test "clicking a changed file in the task modal renders its diff in place",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :completed,
+          completed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+          changed_files: [
+            %{"path" => "lib/foo.ex", "diff" => "@@ -1 +1 @@\n-old foo\n+new foo"},
+            %{"path" => "test/foo_test.exs", "diff" => "@@ -1 +1 @@\n+added assertion"}
+          ]
+        })
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> element("[phx-click='view_task'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      # The task modal is delayed (100ms) — same wait the sibling tests use.
+      :timer.sleep(200)
+
+      html = render(show_live)
+      assert html =~ "Changed files"
+      assert html =~ "lib/foo.ex"
+      refute html =~ "data-review-diff-panel-inline-diff"
+
+      diff_html =
+        show_live
+        |> element(~s([data-review-diff-panel-file-path="lib/foo.ex"] button))
+        |> render_click()
+
+      assert diff_html =~ "data-review-diff-panel-inline-diff"
+      assert diff_html =~ "+new foo"
+    end
+  end
+
   defp message_fixture(sender, attrs) do
     Kanban.MessagesFixtures.message_fixture(sender, attrs)
   end
