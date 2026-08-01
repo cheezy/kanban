@@ -13,19 +13,23 @@ defmodule KanbanWeb.ReviewReportHelpers.ChangedFiles do
   therefore returns the stored entry unchanged rather than building a payload:
   the entry already IS the panel's `selected_file` shape.
 
-  ## Why `KanbanWeb.ReviewLive` still has its own copies
+  ## Both hosts share this module
 
-  `ReviewLive` keeps private near-duplicates of both functions. W1965 marks
-  `review_live.ex` read-only, so collapsing the Review queue onto this module
-  would have put an unreviewed edit into the one file whose behaviour the task
-  most needed to leave alone. That collapse is **tracked as W2007**, not an
-  oversight — fix path parsing or entry matching here and the copies in
-  `review_live.ex` need the same fix until W2007 lands.
+  The task view and `KanbanWeb.ReviewLive` both call these two accessors, so a
+  fix to path parsing or entry matching here reaches both. W1965 had marked
+  `review_live.ex` read-only and left it carrying private near-duplicates;
+  W2007 deleted those and routed the Review queue through this module.
 
-  Note the Review queue's list also unions the legacy comma-separated
-  `actual_files_changed` string, which this module intentionally does NOT — see
-  `changed_file_paths/1`. That union, and the payload merge that supports it,
-  stay in `ReviewLive` even after W2007.
+  Two Review-queue behaviours deliberately did NOT move here, and should not:
+
+    * Its file list unions the legacy comma-separated `actual_files_changed`
+      string, which `changed_file_paths/1` intentionally omits — see that
+      function's `@doc` for why.
+    * Because of that union it merges a `%{"path" => path, "diff" => nil}`
+      fallback over an unresolved lookup, so a legacy-only path still renders a
+      row. That merge lives in `ReviewLive.selected_file_payload/2`. Keeping it
+      out of here is what lets `lookup_changed_file/2` return `nil` and fail
+      closed for the task view.
 
   Every function is pure: no DB access, no scope resolution. These must not
   become an authorization decision point.

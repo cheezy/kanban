@@ -4179,7 +4179,7 @@ msgstr "您的权利"
 #: lib/kanban_web/components/goal_sidebar.ex:204
 #: lib/kanban_web/components/time_ago.ex:37
 #: lib/kanban_web/components/time_ago.ex:40
-#: lib/kanban_web/live/review_live.ex:343
+#: lib/kanban_web/live/review_live.ex:344
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "刚刚"
@@ -5146,19 +5146,19 @@ msgid "live"
 msgstr "实时"
 
 #: lib/kanban_web/components/time_ago.ex:48
-#: lib/kanban_web/live/review_live.ex:349
+#: lib/kanban_web/live/review_live.ex:350
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "%{d} 天前"
 
 #: lib/kanban_web/components/time_ago.ex:46
-#: lib/kanban_web/live/review_live.ex:347
+#: lib/kanban_web/live/review_live.ex:348
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "%{h} 小时前"
 
 #: lib/kanban_web/components/time_ago.ex:43
-#: lib/kanban_web/live/review_live.ex:344
+#: lib/kanban_web/live/review_live.ex:345
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "%{m} 分钟前"
@@ -5207,18 +5207,18 @@ msgstr[0] "%{count} 个失败的测试"
 msgid "No files changed."
 msgstr "未更改任何文件。"
 
-#: lib/kanban_web/live/review_live.ex:328
+#: lib/kanban_web/live/review_live.ex:329
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] "来自 %{agents} 个代理的 %{count} 个任务正在等待您"
 
-#: lib/kanban_web/live/review_live.ex:323
+#: lib/kanban_web/live/review_live.ex:324
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr "暂无任务等待您处理。"
 
-#: lib/kanban_web/live/review_live.ex:92
+#: lib/kanban_web/live/review_live.ex:93
 #, elixir-autogen, elixir-format
 msgid "Approved %{ident}"
 msgstr "已批准 %{ident}"
@@ -5233,7 +5233,7 @@ msgstr "平均审核时间 · 17 分钟"
 msgid "Inbox zero — nothing is waiting for review."
 msgstr "收件箱清空 — 没有等待审核的内容。"
 
-#: lib/kanban_web/live/review_live.ex:154
+#: lib/kanban_web/live/review_live.ex:155
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr "请求更改时必须填写备注。"
@@ -5243,7 +5243,7 @@ msgstr "请求更改时必须填写备注。"
 msgid "Notes for the agent"
 msgstr "给代理的备注"
 
-#: lib/kanban_web/live/review_live.ex:149
+#: lib/kanban_web/live/review_live.ex:150
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr "已对 %{ident} 请求更改"
@@ -5258,17 +5258,17 @@ msgstr "请从队列中选择一个任务开始审核。"
 msgid "Send request"
 msgstr "发送请求"
 
-#: lib/kanban_web/live/review_live.ex:96
+#: lib/kanban_web/live/review_live.ex:97
 #, elixir-autogen, elixir-format
 msgid "Unable to approve task."
 msgstr "无法批准任务。"
 
-#: lib/kanban_web/live/review_live.ex:158
+#: lib/kanban_web/live/review_live.ex:159
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr "无法对任务请求更改。"
 
-#: lib/kanban_web/live/review_live.ex:338
+#: lib/kanban_web/live/review_live.ex:339
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr "最早 %{age}"
@@ -7859,7 +7859,7 @@ msgstr "您没有权限在此看板移动任务"
 msgid "Diff not uploaded"
 msgstr "未上传差异"
 
-#: lib/kanban_web/live/review_live.ex:207
+#: lib/kanban_web/live/review_live.ex:208
 #, elixir-autogen, elixir-format
 msgid "Diff reloaded."
 msgstr "已重新加载差异。"
@@ -7869,7 +7869,7 @@ msgstr "已重新加载差异。"
 msgid "Re-fetch diff"
 msgstr "重新获取差异"
 
-#: lib/kanban_web/live/review_live.ex:202
+#: lib/kanban_web/live/review_live.ex:203
 #, elixir-autogen, elixir-format
 msgid "The diff has not been re-uploaded yet — re-run the task's completion to send it."
 msgstr "差异尚未重新上传——请重新运行任务完成流程以发送它。"
@@ -7879,7 +7879,7 @@ msgstr "差异尚未重新上传——请重新运行任务完成流程以发送
 msgid "This task changed files, but no diff arrived — the upload was lost in transit, so there is nothing to review here yet. Re-fetch to check whether the diff has since been uploaded."
 msgstr "此任务更改了文件，但没有收到差异——上传在传输过程中丢失，因此这里暂时没有可供审查的内容。请重新获取以检查此后差异是否已上传。"
 
-#: lib/kanban_web/live/review_live.ex:181
+#: lib/kanban_web/live/review_live.ex:182
 #, elixir-autogen, elixir-format
 msgid "This task is no longer available for review."
 msgstr "此任务不再可供审查。"

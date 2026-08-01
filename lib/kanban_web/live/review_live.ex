@@ -29,6 +29,7 @@ defmodule KanbanWeb.ReviewLive do
   alias KanbanWeb.ReviewDiffPanel
   alias KanbanWeb.ReviewQueueItem
   alias KanbanWeb.ReviewReportHelpers
+  alias KanbanWeb.ReviewReportHelpers.ChangedFiles
   alias KanbanWeb.ReviewReportHelpers.Tokens
   alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.ReviewStatsStrip
@@ -376,16 +377,14 @@ defmodule KanbanWeb.ReviewLive do
   # Used in review_live.html.heex (analyzer does not scan HEEx files).
   defp selected_file_payload(_task, nil), do: nil
 
+  # The merge fallback is deliberately HERE and not in ChangedFiles: that
+  # module's lookup returns nil for an unknown path so the task view fails
+  # closed, and the Review queue needs the opposite only because task_files/1
+  # below unions in legacy paths that have no entry to resolve (W2007).
   defp selected_file_payload(task, path) when is_binary(path) do
-    entry = lookup_changed_file(task, path) || %{}
+    entry = ChangedFiles.lookup_changed_file(task, path) || %{}
     Map.merge(%{"path" => path, "diff" => nil}, entry)
   end
-
-  defp lookup_changed_file(%{changed_files: list}, path) when is_list(list) do
-    Enum.find(list, fn entry -> is_map(entry) and entry["path"] == path end)
-  end
-
-  defp lookup_changed_file(_task, _path), do: nil
 
   # Source of truth for the diff-panel file list. Unions the schema-1.0
   # `changed_files` jsonb array (`[%{"path", "diff", "diff_url"}]`) with
@@ -394,21 +393,14 @@ defmodule KanbanWeb.ReviewLive do
   # paths are appended afterwards so the panel still lists them even
   # when the new plugin omitted them from the structured payload.
   # Used in review_live.html.heex (analyzer does not scan HEEx files).
+  # The structured half comes from ChangedFiles; only the legacy union below
+  # is ReviewLive's own, because that module deliberately omits it (W2007).
   defp task_files(task) do
-    structured_paths = changed_file_paths(task)
+    structured_paths = ChangedFiles.changed_file_paths(task)
     legacy_paths = parse_files(Map.get(task, :actual_files_changed))
 
     structured_paths ++ Enum.reject(legacy_paths, &(&1 in structured_paths))
   end
-
-  defp changed_file_paths(%{changed_files: list}) when is_list(list),
-    do: Enum.flat_map(list, &changed_file_path/1)
-
-  defp changed_file_paths(_), do: []
-
-  defp changed_file_path(%{"path" => path}) when is_binary(path) and path != "", do: [path]
-  defp changed_file_path(%{path: path}) when is_binary(path) and path != "", do: [path]
-  defp changed_file_path(_), do: []
 
   defp parse_files(nil), do: []
   defp parse_files(""), do: []

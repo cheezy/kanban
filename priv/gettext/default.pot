@@ -4182,7 +4182,7 @@ msgstr ""
 #: lib/kanban_web/components/goal_sidebar.ex:204
 #: lib/kanban_web/components/time_ago.ex:37
 #: lib/kanban_web/components/time_ago.ex:40
-#: lib/kanban_web/live/review_live.ex:343
+#: lib/kanban_web/live/review_live.ex:344
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr ""
@@ -5156,19 +5156,19 @@ msgid "live"
 msgstr ""
 
 #: lib/kanban_web/components/time_ago.ex:48
-#: lib/kanban_web/live/review_live.ex:349
+#: lib/kanban_web/live/review_live.ex:350
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr ""
 
 #: lib/kanban_web/components/time_ago.ex:46
-#: lib/kanban_web/live/review_live.ex:347
+#: lib/kanban_web/live/review_live.ex:348
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr ""
 
 #: lib/kanban_web/components/time_ago.ex:43
-#: lib/kanban_web/live/review_live.ex:344
+#: lib/kanban_web/live/review_live.ex:345
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr ""
@@ -5218,19 +5218,19 @@ msgstr[1] ""
 msgid "No files changed."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:328
+#: lib/kanban_web/live/review_live.ex:329
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/review_live.ex:323
+#: lib/kanban_web/live/review_live.ex:324
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:92
+#: lib/kanban_web/live/review_live.ex:93
 #, elixir-autogen, elixir-format
 msgid "Approved %{ident}"
 msgstr ""
@@ -5245,7 +5245,7 @@ msgstr ""
 msgid "Inbox zero — nothing is waiting for review."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:154
+#: lib/kanban_web/live/review_live.ex:155
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr ""
@@ -5255,7 +5255,7 @@ msgstr ""
 msgid "Notes for the agent"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:149
+#: lib/kanban_web/live/review_live.ex:150
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr ""
@@ -5270,17 +5270,17 @@ msgstr ""
 msgid "Send request"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:96
+#: lib/kanban_web/live/review_live.ex:97
 #, elixir-autogen, elixir-format
 msgid "Unable to approve task."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:158
+#: lib/kanban_web/live/review_live.ex:159
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:338
+#: lib/kanban_web/live/review_live.ex:339
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr ""
@@ -7820,7 +7820,7 @@ msgstr ""
 msgid "Diff not uploaded"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:207
+#: lib/kanban_web/live/review_live.ex:208
 #, elixir-autogen, elixir-format
 msgid "Diff reloaded."
 msgstr ""
@@ -7830,7 +7830,7 @@ msgstr ""
 msgid "Re-fetch diff"
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:202
+#: lib/kanban_web/live/review_live.ex:203
 #, elixir-autogen, elixir-format
 msgid "The diff has not been re-uploaded yet — re-run the task's completion to send it."
 msgstr ""
@@ -7840,7 +7840,7 @@ msgstr ""
 msgid "This task changed files, but no diff arrived — the upload was lost in transit, so there is nothing to review here yet. Re-fetch to check whether the diff has since been uploaded."
 msgstr ""
 
-#: lib/kanban_web/live/review_live.ex:181
+#: lib/kanban_web/live/review_live.ex:182
 #, elixir-autogen, elixir-format
 msgid "This task is no longer available for review."
 msgstr ""

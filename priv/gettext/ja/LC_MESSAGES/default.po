@@ -4179,7 +4179,7 @@ msgstr "あなたの権利"
 #: lib/kanban_web/components/goal_sidebar.ex:204
 #: lib/kanban_web/components/time_ago.ex:37
 #: lib/kanban_web/components/time_ago.ex:40
-#: lib/kanban_web/live/review_live.ex:343
+#: lib/kanban_web/live/review_live.ex:344
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "たった今"
@@ -5146,19 +5146,19 @@ msgid "live"
 msgstr "ライブ"
 
 #: lib/kanban_web/components/time_ago.ex:48
-#: lib/kanban_web/live/review_live.ex:349
+#: lib/kanban_web/live/review_live.ex:350
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "%{d}日前"
 
 #: lib/kanban_web/components/time_ago.ex:46
-#: lib/kanban_web/live/review_live.ex:347
+#: lib/kanban_web/live/review_live.ex:348
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "%{h}時間前"
 
 #: lib/kanban_web/components/time_ago.ex:43
-#: lib/kanban_web/live/review_live.ex:344
+#: lib/kanban_web/live/review_live.ex:345
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "%{m}分前"
@@ -5207,18 +5207,18 @@ msgstr[0] "%{count}件のテストが失敗"
 msgid "No files changed."
 msgstr "変更されたファイルはありません。"
 
-#: lib/kanban_web/live/review_live.ex:328
+#: lib/kanban_web/live/review_live.ex:329
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] "%{agents}人のエージェントからの%{count}件のタスクがあなた待ちです"
 
-#: lib/kanban_web/live/review_live.ex:323
+#: lib/kanban_web/live/review_live.ex:324
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr "あなた待ちのタスクは0件です。"
 
-#: lib/kanban_web/live/review_live.ex:92
+#: lib/kanban_web/live/review_live.ex:93
 #, elixir-autogen, elixir-format
 msgid "Approved %{ident}"
 msgstr "%{ident} を承認"
@@ -5233,7 +5233,7 @@ msgstr "平均レビュー時間 · 17分"
 msgid "Inbox zero — nothing is waiting for review."
 msgstr "受信箱ゼロ — レビュー待ちはありません。"
 
-#: lib/kanban_web/live/review_live.ex:154
+#: lib/kanban_web/live/review_live.ex:155
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr "変更を依頼する際はメモが必須です。"
@@ -5243,7 +5243,7 @@ msgstr "変更を依頼する際はメモが必須です。"
 msgid "Notes for the agent"
 msgstr "エージェントへのメモ"
 
-#: lib/kanban_web/live/review_live.ex:149
+#: lib/kanban_web/live/review_live.ex:150
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr "%{ident} に変更を依頼しました"
@@ -5258,17 +5258,17 @@ msgstr "レビューを始めるにはキューからタスクを選択してく
 msgid "Send request"
 msgstr "依頼を送信"
 
-#: lib/kanban_web/live/review_live.ex:96
+#: lib/kanban_web/live/review_live.ex:97
 #, elixir-autogen, elixir-format
 msgid "Unable to approve task."
 msgstr "タスクを承認できませんでした。"
 
-#: lib/kanban_web/live/review_live.ex:158
+#: lib/kanban_web/live/review_live.ex:159
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr "タスクに変更を依頼できませんでした。"
 
-#: lib/kanban_web/live/review_live.ex:338
+#: lib/kanban_web/live/review_live.ex:339
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr "最古 %{age}"
@@ -7859,7 +7859,7 @@ msgstr "このボードでタスクを移動する権限がありません"
 msgid "Diff not uploaded"
 msgstr "差分がアップロードされていません"
 
-#: lib/kanban_web/live/review_live.ex:207
+#: lib/kanban_web/live/review_live.ex:208
 #, elixir-autogen, elixir-format
 msgid "Diff reloaded."
 msgstr "差分を再読み込みしました。"
@@ -7869,7 +7869,7 @@ msgstr "差分を再読み込みしました。"
 msgid "Re-fetch diff"
 msgstr "差分を再取得"
 
-#: lib/kanban_web/live/review_live.ex:202
+#: lib/kanban_web/live/review_live.ex:203
 #, elixir-autogen, elixir-format
 msgid "The diff has not been re-uploaded yet — re-run the task's completion to send it."
 msgstr "差分はまだ再アップロードされていません。送信するにはタスクの完了を再実行してください。"
@@ -7879,7 +7879,7 @@ msgstr "差分はまだ再アップロードされていません。送信する
 msgid "This task changed files, but no diff arrived — the upload was lost in transit, so there is nothing to review here yet. Re-fetch to check whether the diff has since been uploaded."
 msgstr "このタスクはファイルを変更しましたが、差分が届きませんでした。アップロードが途中で失われたため、ここにはまだレビューする内容がありません。差分がその後アップロードされたかどうかを確認するには、再取得してください。"
 
-#: lib/kanban_web/live/review_live.ex:181
+#: lib/kanban_web/live/review_live.ex:182
 #, elixir-autogen, elixir-format
 msgid "This task is no longer available for review."
 msgstr "このタスクはレビューできなくなりました。"
