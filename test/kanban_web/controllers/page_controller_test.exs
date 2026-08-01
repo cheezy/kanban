@@ -103,6 +103,49 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "after_review"
   end
 
+  # D210 was filed reporting empty msgstr entries for this page in all six
+  # non-English locales. The premise did not hold — the reported counts came
+  # from `grep -B 4 'msgstr ""'`, which false-positives on the multi-line
+  # `msgstr ""` opening Gettext writes for every long string, so a fully
+  # translated paragraph looks empty to that grep. Consult this test rather
+  # than that grep for whether the page renders translated at all — but note
+  # it samples two phrases per locale, not all 54 entries, so it guards
+  # against the page falling back to English rather than proving every string
+  # is translated. For that use `msgattrib --untranslated`, which is what
+  # actually settled this defect.
+  #
+  # /workflows is a plain controller page whose locale comes from the session
+  # via KanbanWeb.Plugs.Locale, so the locale is seeded into the session
+  # rather than set with Gettext.put_locale/2 — that exercises the real
+  # production path instead of bypassing the plug.
+  @workflows_translations %{
+    "de" => ["Anforderungen", "Menschliche Prüfung und Abschluss"],
+    "es" => ["Requisitos", "Revisión humana y finalización"],
+    "fr" => ["Exigences", "Revue humaine et complétion"],
+    "ja" => ["要件", "人によるレビューと完了"],
+    "pt" => ["Requisitos", "Revisão humana e conclusão"],
+    "zh" => ["需求", "人工审查与完成"]
+  }
+
+  for {locale, expected} <- @workflows_translations do
+    test "GET /workflows renders translated copy under #{locale}", %{conn: conn} do
+      body =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => unquote(locale)})
+        |> get(~p"/workflows")
+        |> html_response(200)
+
+      for phrase <- unquote(expected) do
+        assert body =~ phrase,
+               "expected #{unquote(locale)} translation #{inspect(phrase)} on /workflows"
+      end
+
+      # The English source of the second phrase must be gone, which is what
+      # separates "translated" from "the catalog merely has an entry".
+      refute body =~ "Human review and completion"
+    end
+  end
+
   test "GET /tango", %{conn: conn} do
     conn = get(conn, ~p"/tango")
     assert html_response(conn, 200)
