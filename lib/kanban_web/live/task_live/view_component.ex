@@ -23,6 +23,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   import KanbanWeb.TaskLive.Components.ExplorerResultSection
   import KanbanWeb.TaskLive.Components.IntegrationPointsSection
   import KanbanWeb.TaskLive.Components.ReviewStatusSection
+  import KanbanWeb.TaskLive.Components.TaskDetailAside
   import KanbanWeb.TaskLive.Components.TechnicalDetailsSection
   import KanbanWeb.TaskLive.Components.WorkflowStepsSection
 
@@ -30,9 +31,6 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
   alias Kanban.Tasks
   alias KanbanWeb.AcceptanceChecklist
-  alias KanbanWeb.Avatar
-  alias KanbanWeb.AvatarPalette
-  alias KanbanWeb.MetaItem
   alias KanbanWeb.ReviewDiffPanel
   alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.SectionHead
@@ -128,9 +126,6 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   defp field_visible?(field_visibility, field_name) do
     Map.get(field_visibility, field_name, false)
   end
-
-  defp board_name_for(%{column: %{board: %{name: name}}}) when is_binary(name), do: name
-  defp board_name_for(_), do: nil
 
   @impl true
   def render(assigns) do
@@ -415,127 +410,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             <.comments_section comments={@task.comments} />
           </div>
 
-          <aside
-            data-task-detail-aside
-            class="task-detail-aside"
-            style={[
-              "width: 280px; flex-shrink: 0;",
-              "border-left: 1px solid var(--line);",
-              "background: var(--surface-2);",
-              "padding: 20px 18px;",
-              "display: flex; flex-direction: column; gap: 16px;"
-            ]}
-          >
-            <MetaItem.meta_item label={gettext("Status")}>
-              <.status_pill status={@task.status} variant={:base} />
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item :if={@task.assigned_to || @task.created_by} label={gettext("Author")}>
-              <.author_avatar user={@task.assigned_to || @task.created_by} />
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item :if={parent_goal_loaded?(@task)} label={gettext("Goal")}>
-              <span style="color: var(--stride-violet); display: inline-flex;">
-                <.icon name="hero-flag" class="w-3 h-3" />
-              </span>
-              <span class="ident">{@task.parent.identifier}</span>
-              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                {@task.parent.title}
-              </span>
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item label={gettext("Type")}>
-              <span>{TaskTokens.type_label(@task.type)}</span>
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item :if={@task.priority} label={gettext("Priority")}>
-              <span
-                aria-hidden="true"
-                style={[
-                  "width: 6px; height: 6px; border-radius: 50%;",
-                  "background: #{TaskTokens.priority_color(@task.priority)};"
-                ]}
-              ></span>
-              <span>{TaskTokens.priority_word(@task.priority)}</span>
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item :if={@task.complexity} label={gettext("Complexity")}>
-              {TaskTokens.complexity_word(@task.complexity)}
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item :if={@task.column} label={gettext("Column")}>
-              {@task.column.name}
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item :if={board_name_for(@task)} label={gettext("Board")}>
-              {board_name_for(@task)}
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item label={gettext("Needs review")}>
-              <span :if={@task.needs_review} style={needs_review_pill_style()}>
-                {gettext("Required")}
-              </span>
-              <span :if={!@task.needs_review} style="color: var(--ink-3); font-style: italic;">
-                {gettext("Auto")}
-              </span>
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item
-              :if={@task.required_capabilities && @task.required_capabilities != []}
-              label={gettext("Capabilities")}
-            >
-              <span
-                :for={capability <- @task.required_capabilities}
-                style={[
-                  "display: inline-flex; align-items: center;",
-                  "padding: 1px 6px; border-radius: 999px;",
-                  "background: var(--stride-violet-soft); color: var(--stride-violet-ink);",
-                  "font-size: 10.5px; font-weight: 600;"
-                ]}
-              >
-                {capability}
-              </span>
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item :if={@task.human_task} label={gettext("Human task")}>
-              {gettext("Yes")}
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item :if={@task.estimated_files} label={gettext("Estimated files")}>
-              {@task.estimated_files}
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item :if={@task.inserted_at} label={gettext("Created")} mono>
-              {Calendar.strftime(@task.inserted_at, "%b %d, %Y")}
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item :if={@task.claimed_at} label={gettext("Claimed")} mono>
-              {Calendar.strftime(@task.claimed_at, "%b %d, %Y %H:%M")}
-            </MetaItem.meta_item>
-
-            <MetaItem.meta_item :if={@task.completed_at} label={gettext("Completed")} mono>
-              {Calendar.strftime(@task.completed_at, "%b %d, %Y")}
-            </MetaItem.meta_item>
-
-            <div
-              :if={@can_modify && @board_id}
-              style="margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--line);"
-            >
-              <.link
-                patch={~p"/boards/#{@board_id}/tasks/#{@task}/edit"}
-                style={[
-                  "display: inline-flex; align-items: center; gap: 6px;",
-                  "padding: 6px 10px; border-radius: 5px;",
-                  "background: var(--surface); border: 1px solid var(--line);",
-                  "color: var(--ink-2); text-decoration: none;",
-                  "font-size: 11.5px; font-weight: 500;"
-                ]}
-              >
-                <.icon name="hero-pencil" class="w-3 h-3" />
-                <span>{gettext("Edit task")}</span>
-              </.link>
-            </div>
-          </aside>
+          <.task_detail_aside task={@task} can_modify={@can_modify} board_id={@board_id} />
         </div>
       <% end %>
     </div>
@@ -580,24 +455,6 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
     """
   end
 
-  attr :user, :map, required: true
-
-  defp author_avatar(assigns) do
-    user = assigns.user
-    name = user_display_name(user)
-    palette = palette_for_user(user)
-
-    assigns =
-      assigns
-      |> assign(:name, name)
-      |> assign(:palette, palette)
-
-    ~H"""
-    <Avatar.avatar kind={:human} name={@name} palette={@palette} size={16} />
-    <span style="font-size: 11.5px; color: var(--ink-2);">{@name}</span>
-    """
-  end
-
   attr :label, :string, required: true
   attr :mono, :boolean, default: false
   slot :inner_block, required: true
@@ -623,13 +480,6 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
   # --- Helpers ------------------------------------------------------------
 
-  defp user_display_name(%{name: name}) when is_binary(name) and name != "", do: name
-  defp user_display_name(%{email: email}) when is_binary(email), do: email
-  defp user_display_name(_), do: "?"
-
-  defp palette_for_user(%{id: id}) when is_integer(id), do: AvatarPalette.for_human(id)
-  defp palette_for_user(_), do: "human-blue"
-
   defp pretty_meta(nil, nil), do: ""
   defp pretty_meta(priority, nil), do: TaskTokens.priority_word(priority)
   defp pretty_meta(nil, complexity), do: TaskTokens.complexity_word(complexity)
@@ -651,17 +501,11 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
   defp acceptance_count_label(_), do: nil
 
-  defp parent_goal_loaded?(%{parent: %Ecto.Association.NotLoaded{}}), do: false
-  defp parent_goal_loaded?(%{parent: nil}), do: false
-  defp parent_goal_loaded?(%{parent: _}), do: true
-  defp parent_goal_loaded?(_), do: false
-
-  defp needs_review_pill_style do
-    [
-      "display: inline-flex; align-items: center;",
-      "padding: 1px 6px; border-radius: 999px;",
-      "background: var(--st-review-soft); color: var(--st-review);",
-      "font-size: 10.5px; font-weight: 600;"
-    ]
-  end
+  # The right-rail metadata aside — and the helpers only it used:
+  # author_avatar/1, user_display_name/1, palette_for_user/1,
+  # parent_goal_loaded?/1, board_name_for/1 and needs_review_pill_style/0 —
+  # moved to KanbanWeb.TaskLive.Components.TaskDetailAside in W2006 to bring
+  # this module back under the size guidance in AGENTS.md. Import from there,
+  # not from here. The interactive surface deliberately stayed: handle_event/3
+  # and the selected_changed_file state cannot live in a function component.
 end
