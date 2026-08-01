@@ -4446,7 +4446,7 @@ msgid_plural "%{count} criteria"
 msgstr[0] "%{count} criterio"
 msgstr[1] "%{count} criterios"
 
-#: lib/kanban_web/components/review_diff_panel.ex:120
+#: lib/kanban_web/components/review_diff_panel.ex:131
 #: lib/kanban_web/components/review_queue_item.ex:176
 #: lib/kanban_web/components/task_card.ex:265
 #: lib/kanban_web/components/task_card.ex:309
@@ -5206,14 +5206,14 @@ msgstr "Agente desconocido"
 msgid "needs attention"
 msgstr "requiere atención"
 
-#: lib/kanban_web/components/review_diff_panel.ex:134
+#: lib/kanban_web/components/review_diff_panel.ex:145
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} failing test"
 msgid_plural "%{count} failing tests"
 msgstr[0] "%{count} prueba fallando"
 msgstr[1] "%{count} pruebas fallando"
 
-#: lib/kanban_web/components/review_diff_panel.ex:151
+#: lib/kanban_web/components/review_diff_panel.ex:162
 #, elixir-autogen, elixir-format
 msgid "No files changed."
 msgstr "No hay archivos modificados."
@@ -6325,17 +6325,17 @@ msgstr "Archivos modificados"
 msgid "Issues"
 msgstr "Problemas"
 
-#: lib/kanban_web/components/review_diff_panel.ex:232
+#: lib/kanban_web/components/review_diff_panel.ex:244
 #, elixir-autogen, elixir-format
 msgid "Binary file changed — no diff preview."
 msgstr "Archivo binario modificado: sin vista previa del diff."
 
-#: lib/kanban_web/components/review_diff_panel.ex:285
+#: lib/kanban_web/components/review_diff_panel.ex:297
 #, elixir-autogen, elixir-format
 msgid "Diff truncated at 500 lines."
 msgstr "Diff truncado a 500 líneas."
 
-#: lib/kanban_web/components/review_diff_panel.ex:248
+#: lib/kanban_web/components/review_diff_panel.ex:260
 #, elixir-autogen, elixir-format
 msgid "No diff available for this file."
 msgstr "No hay diff disponible para este archivo."
@@ -6345,7 +6345,7 @@ msgstr "No hay diff disponible para este archivo."
 msgid "No issues"
 msgstr "Sin problemas"
 
-#: lib/kanban_web/components/review_diff_panel.ex:295
+#: lib/kanban_web/components/review_diff_panel.ex:307
 #, elixir-autogen, elixir-format
 msgid "View full diff in repo"
 msgstr "Ver diff completo en el repo"

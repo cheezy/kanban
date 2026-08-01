@@ -10,9 +10,12 @@ defmodule KanbanWeb.ReviewDiffPanel do
   in `KanbanWeb.ReviewLive`).
 
   When given `on_file_click`, each file row becomes a button that emits
-  the named phx-click event with a `path` value; the parent LiveView
-  manages `selected_changed_file` selection state. When the LiveView
-  passes a per-file payload via `selected_file`, that file's unified
+  the named phx-click event with a `path` value; the host manages
+  `selected_changed_file` selection state. By default that event reaches
+  the parent LiveView — which is what the Review queue relies on — or the
+  given `target` when one is supplied, so the panel can equally be driven
+  from a live_component that owns the selection state itself. When the
+  host passes a per-file payload via `selected_file`, that file's unified
   diff is rendered inline, directly below its row in the list.
 
   ## Per-file diff contract
@@ -87,11 +90,19 @@ defmodule KanbanWeb.ReviewDiffPanel do
     * `on_file_click` — optional `phx-click` event name. When set, each
       row becomes a button that pushes `{event, %{"path" => path}}`. When
       `nil`, rows render as plain `<span>` (legacy display behavior).
+    * `target` — optional `phx-target` for the file-row buttons. Omit it
+      (the default `nil`) and the event reaches the parent LiveView, which
+      is what the Review queue wants. Pass a live_component's `@myself`
+      to route the event to that component instead. Typed `:any` because
+      a live_component target is a `Phoenix.LiveComponent.CID` struct, not
+      a binary. When `nil` the attribute is omitted from the rendered
+      markup entirely, so existing call sites are unaffected.
   """
   attr :files, :list, required: true
   attr :failing_tests_count, :integer, default: nil
   attr :selected_file, :map, default: nil
   attr :on_file_click, :string, default: nil
+  attr :target, :any, default: nil
 
   def review_diff_panel(assigns) do
     assigns =
@@ -178,6 +189,7 @@ defmodule KanbanWeb.ReviewDiffPanel do
             :if={@on_file_click}
             type="button"
             phx-click={@on_file_click}
+            phx-target={@target}
             phx-value-path={file}
             aria-pressed={if file == @selected_file_path, do: "true", else: "false"}
             data-review-diff-panel-file-button

@@ -25,6 +25,43 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
     """)
   end
 
+  # The Review queue's exact call shape (W1964): files, selected_file,
+  # on_file_click, and NO target attr at all. This is the rendering that must
+  # stay byte-identical after the optional target attr was added.
+  defp render_untargeted(files, opts \\ []) do
+    assigns = %{
+      files: files,
+      selected_file: Keyword.get(opts, :selected_file),
+      on_file_click: Keyword.get(opts, :on_file_click, "select_changed_file")
+    }
+
+    rendered_to_string(~H"""
+    <ReviewDiffPanel.review_diff_panel
+      files={@files}
+      selected_file={@selected_file}
+      on_file_click={@on_file_click}
+    />
+    """)
+  end
+
+  defp render_targeted(files, target, opts \\ []) do
+    assigns = %{
+      files: files,
+      selected_file: Keyword.get(opts, :selected_file),
+      on_file_click: Keyword.get(opts, :on_file_click, "select_changed_file"),
+      target: target
+    }
+
+    rendered_to_string(~H"""
+    <ReviewDiffPanel.review_diff_panel
+      files={@files}
+      selected_file={@selected_file}
+      on_file_click={@on_file_click}
+      target={@target}
+    />
+    """)
+  end
+
   describe "review_diff_panel/1 — base rendering" do
     test "has the data-review-diff-panel marker on the root" do
       assert render_panel(["lib/a.ex"]) =~ "data-review-diff-panel"
@@ -391,6 +428,81 @@ defmodule KanbanWeb.ReviewDiffPanelTest do
       html = render_panel([long_path])
       assert html =~ long_path
       assert html =~ "overflow-wrap: anywhere"
+    end
+  end
+
+  describe "review_diff_panel/1 — event target (W1964)" do
+    test "with no target, file rows carry no phx-target attribute" do
+      html = render_untargeted(["lib/a.ex", "lib/b.ex"])
+
+      assert html =~ "data-review-diff-panel-file-button"
+      assert html =~ ~s(phx-click="select_changed_file")
+      refute html =~ "phx-target"
+    end
+
+    test "the attr default and an explicit nil target are equivalent, and neither emits phx-target" do
+      files = ["lib/a.ex", "lib/b.ex"]
+      selected = %{"path" => "lib/a.ex", "diff" => "@@ -1 +1 @@\n-old\n+new"}
+
+      omitted = render_untargeted(files, selected_file: selected)
+      explicit_nil = render_targeted(files, nil, selected_file: selected)
+
+      # Equivalence only — NOT a before-vs-after byte-identity claim. Phoenix's
+      # `default: nil` injects target: nil for the omitted case, so both renders
+      # receive identical assigns and this can never fail. The assertions that
+      # actually carry "the Review queue is unaffected" are the two below: no
+      # phx-target is emitted at all, and phx-click is still immediately
+      # followed by phx-value-path, so nothing was injected between them.
+      assert omitted == explicit_nil
+
+      refute omitted =~ "phx-target"
+      assert omitted =~ ~s(phx-click="select_changed_file" phx-value-path="lib/a.ex")
+    end
+
+    test "with a target, every file-row button carries that phx-target" do
+      files = ["lib/a.ex", "lib/b.ex", "test/a_test.exs"]
+      html = render_targeted(files, "#some-component")
+
+      assert html =~ ~s(phx-target="#some-component")
+      # One per file row, not just the first.
+      assert html |> String.split(~s(phx-target="#some-component")) |> length() ==
+               length(files) + 1
+    end
+
+    test "accepts a live_component CID as the target without raising" do
+      html = render_targeted(["lib/a.ex"], %Phoenix.LiveComponent.CID{cid: 7})
+
+      assert html =~ ~s(phx-target="7")
+    end
+
+    test "with on_file_click nil, rows stay non-interactive spans regardless of target" do
+      html = render_targeted(["lib/a.ex"], "#some-component", on_file_click: nil)
+
+      refute html =~ "data-review-diff-panel-file-button"
+      refute html =~ "phx-target"
+      assert html =~ "lib/a.ex"
+    end
+
+    test "an empty files list renders the empty state even with a target" do
+      html = render_targeted([], "#some-component")
+
+      refute html =~ "phx-target"
+      assert html =~ "data-review-diff-panel"
+    end
+
+    test "a path needing escaping survives phx-value-path round-tripping with a target" do
+      path = ~s(lib/foo "bar" & <baz>.ex)
+      html = render_targeted([path], "#some-component")
+
+      assert html =~ ~s(phx-target="#some-component")
+      assert html =~ "phx-value-path"
+      # Escaped in the attribute rather than injected as markup. The double
+      # quote is the character that actually matters here — it is what would
+      # break out of the attribute — so assert it explicitly, not just the
+      # angle brackets.
+      refute html =~ "<baz>"
+      assert html =~ "&lt;baz&gt;"
+      assert html =~ "&quot;bar&quot;"
     end
   end
 end

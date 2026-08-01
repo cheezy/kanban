@@ -4441,7 +4441,7 @@ msgid "%{count} criterion"
 msgid_plural "%{count} criteria"
 msgstr[0] "%{count} 项标准"
 
-#: lib/kanban_web/components/review_diff_panel.ex:120
+#: lib/kanban_web/components/review_diff_panel.ex:131
 #: lib/kanban_web/components/review_queue_item.ex:176
 #: lib/kanban_web/components/task_card.ex:265
 #: lib/kanban_web/components/task_card.ex:309
@@ -5196,13 +5196,13 @@ msgstr "未知代理"
 msgid "needs attention"
 msgstr "需要关注"
 
-#: lib/kanban_web/components/review_diff_panel.ex:134
+#: lib/kanban_web/components/review_diff_panel.ex:145
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} failing test"
 msgid_plural "%{count} failing tests"
 msgstr[0] "%{count} 个失败的测试"
 
-#: lib/kanban_web/components/review_diff_panel.ex:151
+#: lib/kanban_web/components/review_diff_panel.ex:162
 #, elixir-autogen, elixir-format
 msgid "No files changed."
 msgstr "未更改任何文件。"
@@ -6310,17 +6310,17 @@ msgstr "已更改的文件"
 msgid "Issues"
 msgstr "问题"
 
-#: lib/kanban_web/components/review_diff_panel.ex:232
+#: lib/kanban_web/components/review_diff_panel.ex:244
 #, elixir-autogen, elixir-format
 msgid "Binary file changed — no diff preview."
 msgstr "二进制文件已更改 — 无差异预览。"
 
-#: lib/kanban_web/components/review_diff_panel.ex:285
+#: lib/kanban_web/components/review_diff_panel.ex:297
 #, elixir-autogen, elixir-format
 msgid "Diff truncated at 500 lines."
 msgstr "差异在第 500 行处截断。"
 
-#: lib/kanban_web/components/review_diff_panel.ex:248
+#: lib/kanban_web/components/review_diff_panel.ex:260
 #, elixir-autogen, elixir-format
 msgid "No diff available for this file."
 msgstr "此文件无可用差异。"
@@ -6330,7 +6330,7 @@ msgstr "此文件无可用差异。"
 msgid "No issues"
 msgstr "无问题"
 
-#: lib/kanban_web/components/review_diff_panel.ex:295
+#: lib/kanban_web/components/review_diff_panel.ex:307
 #, elixir-autogen, elixir-format
 msgid "View full diff in repo"
 msgstr "在仓库中查看完整差异"

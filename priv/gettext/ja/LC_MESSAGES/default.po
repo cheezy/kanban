@@ -4441,7 +4441,7 @@ msgid "%{count} criterion"
 msgid_plural "%{count} criteria"
 msgstr[0] "%{count}件の基準"
 
-#: lib/kanban_web/components/review_diff_panel.ex:120
+#: lib/kanban_web/components/review_diff_panel.ex:131
 #: lib/kanban_web/components/review_queue_item.ex:176
 #: lib/kanban_web/components/task_card.ex:265
 #: lib/kanban_web/components/task_card.ex:309
@@ -5196,13 +5196,13 @@ msgstr "不明なエージェント"
 msgid "needs attention"
 msgstr "対応が必要"
 
-#: lib/kanban_web/components/review_diff_panel.ex:134
+#: lib/kanban_web/components/review_diff_panel.ex:145
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} failing test"
 msgid_plural "%{count} failing tests"
 msgstr[0] "%{count}件のテストが失敗"
 
-#: lib/kanban_web/components/review_diff_panel.ex:151
+#: lib/kanban_web/components/review_diff_panel.ex:162
 #, elixir-autogen, elixir-format
 msgid "No files changed."
 msgstr "変更されたファイルはありません。"
@@ -6310,17 +6310,17 @@ msgstr "変更されたファイル"
 msgid "Issues"
 msgstr "問題"
 
-#: lib/kanban_web/components/review_diff_panel.ex:232
+#: lib/kanban_web/components/review_diff_panel.ex:244
 #, elixir-autogen, elixir-format
 msgid "Binary file changed — no diff preview."
 msgstr "バイナリファイルが変更されました — 差分プレビューはありません。"
 
-#: lib/kanban_web/components/review_diff_panel.ex:285
+#: lib/kanban_web/components/review_diff_panel.ex:297
 #, elixir-autogen, elixir-format
 msgid "Diff truncated at 500 lines."
 msgstr "差分は 500 行で切り捨てられました。"
 
-#: lib/kanban_web/components/review_diff_panel.ex:248
+#: lib/kanban_web/components/review_diff_panel.ex:260
 #, elixir-autogen, elixir-format
 msgid "No diff available for this file."
 msgstr "このファイルの差分はありません。"
@@ -6330,7 +6330,7 @@ msgstr "このファイルの差分はありません。"
 msgid "No issues"
 msgstr "問題なし"
 
-#: lib/kanban_web/components/review_diff_panel.ex:295
+#: lib/kanban_web/components/review_diff_panel.ex:307
 #, elixir-autogen, elixir-format
 msgid "View full diff in repo"
 msgstr "リポジトリで全差分を表示"

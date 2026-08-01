@@ -4446,7 +4446,7 @@ msgid_plural "%{count} criteria"
 msgstr[0] "%{count} Kriterium"
 msgstr[1] "%{count} Kriterien"
 
-#: lib/kanban_web/components/review_diff_panel.ex:120
+#: lib/kanban_web/components/review_diff_panel.ex:131
 #: lib/kanban_web/components/review_queue_item.ex:176
 #: lib/kanban_web/components/task_card.ex:265
 #: lib/kanban_web/components/task_card.ex:309
@@ -5206,14 +5206,14 @@ msgstr "Unbekannter Agent"
 msgid "needs attention"
 msgstr "benötigt Aufmerksamkeit"
 
-#: lib/kanban_web/components/review_diff_panel.ex:134
+#: lib/kanban_web/components/review_diff_panel.ex:145
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} failing test"
 msgid_plural "%{count} failing tests"
 msgstr[0] "%{count} fehlgeschlagener Test"
 msgstr[1] "%{count} fehlgeschlagene Tests"
 
-#: lib/kanban_web/components/review_diff_panel.ex:151
+#: lib/kanban_web/components/review_diff_panel.ex:162
 #, elixir-autogen, elixir-format
 msgid "No files changed."
 msgstr "Keine Dateien geändert."
@@ -6325,17 +6325,17 @@ msgstr "Geänderte Dateien"
 msgid "Issues"
 msgstr "Probleme"
 
-#: lib/kanban_web/components/review_diff_panel.ex:232
+#: lib/kanban_web/components/review_diff_panel.ex:244
 #, elixir-autogen, elixir-format
 msgid "Binary file changed — no diff preview."
 msgstr "Binärdatei geändert – keine Diff-Vorschau."
 
-#: lib/kanban_web/components/review_diff_panel.ex:285
+#: lib/kanban_web/components/review_diff_panel.ex:297
 #, elixir-autogen, elixir-format
 msgid "Diff truncated at 500 lines."
 msgstr "Diff bei 500 Zeilen abgeschnitten."
 
-#: lib/kanban_web/components/review_diff_panel.ex:248
+#: lib/kanban_web/components/review_diff_panel.ex:260
 #, elixir-autogen, elixir-format
 msgid "No diff available for this file."
 msgstr "Für diese Datei ist kein Diff verfügbar."
@@ -6345,7 +6345,7 @@ msgstr "Für diese Datei ist kein Diff verfügbar."
 msgid "No issues"
 msgstr "Keine Probleme"
 
-#: lib/kanban_web/components/review_diff_panel.ex:295
+#: lib/kanban_web/components/review_diff_panel.ex:307
 #, elixir-autogen, elixir-format
 msgid "View full diff in repo"
 msgstr "Vollständigen Diff im Repo ansehen"
