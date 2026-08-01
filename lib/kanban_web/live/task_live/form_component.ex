@@ -1,7 +1,7 @@
 defmodule KanbanWeb.TaskLive.FormComponent do
   use KanbanWeb, :live_component
 
-  import KanbanWeb.ReviewReportHelpers, only: [review_panel_visible?: 1]
+  import KanbanWeb.ReviewReportHelpers.Panels, only: [review_panel_visible?: 1]
   import KanbanWeb.TaskLive.Form.EmbedSections, only: [embed_sections: 1]
   import KanbanWeb.TaskLive.Form.GuidanceSections, only: [guidance_sections: 1]
   import KanbanWeb.TaskLive.Form.PlanningSections, only: [planning_sections: 1]

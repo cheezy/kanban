@@ -1,17 +1,17 @@
 defmodule KanbanWeb.TaskLive.ViewComponent do
   use KanbanWeb, :live_component
 
-  import KanbanWeb.ReviewReportHelpers,
+  import KanbanWeb.ReviewReportHelpers.ChangedFiles,
+    only: [changed_file_paths: 1, lookup_changed_file: 2]
+
+  import KanbanWeb.ReviewReportHelpers.Explorer, only: [explorer_panel_visible?: 1]
+
+  import KanbanWeb.ReviewReportHelpers.Panels,
     only: [
       review_panel_visible?: 1,
       completion_panel_visible?: 1,
       changed_files_panel_visible?: 1
     ]
-
-  import KanbanWeb.ReviewReportHelpers.ChangedFiles,
-    only: [changed_file_paths: 1, lookup_changed_file: 2]
-
-  import KanbanWeb.ReviewReportHelpers.Explorer, only: [explorer_panel_visible?: 1]
 
   import KanbanWeb.TaskLive.Components.ActualVsEstimatedSection
   import KanbanWeb.TaskLive.Components.BehaviourTestMatrixSection

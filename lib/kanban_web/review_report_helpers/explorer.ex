@@ -4,21 +4,22 @@ defmodule KanbanWeb.ReviewReportHelpers.Explorer do
 
   Split out of `KanbanWeb.ReviewReportHelpers` (W2003), which had grown past
   the module-size guidance in `AGENTS.md`. The reviewer-side surface —
-  `review_panel_visible?/1`, `has_reviewer_result?/1`, `section_note/2` and
-  the structured-status machinery — stays in the parent module; everything
-  here reads `explorer_result` only.
+  `section_note/2` and the structured-status machinery — stays in the parent
+  module, and the panel-visibility predicates it shares the review-or-done
+  gate with live in the `Panels` sibling (W2005); everything here reads
+  `explorer_result` only.
 
   Every function is pure: no DB access, no scope resolution. These are
   display predicates and must not become an authorization decision point.
   """
   use Gettext, backend: KanbanWeb.Gettext
 
-  alias KanbanWeb.ReviewReportHelpers
+  alias KanbanWeb.ReviewReportHelpers.Panels
 
   @doc """
   True when the task carries a non-empty `explorer_result` map.
 
-  Mirrors `KanbanWeb.ReviewReportHelpers.has_reviewer_result?/1` — the
+  Mirrors `KanbanWeb.ReviewReportHelpers.Panels.has_reviewer_result?/1` — the
   `map_size/1` guard is what rejects the empty map, since `%{}` matches ANY
   map in Elixir. Tolerates both the atom-keyed task struct and a raw
   string-keyed task map, matching the key-tolerance convention the parent
@@ -33,9 +34,10 @@ defmodule KanbanWeb.ReviewReportHelpers.Explorer do
   True when the explorer-result section should render: the task carries a
   non-empty `explorer_result` AND the task has reached review or done.
 
-  The review-or-done half is `KanbanWeb.ReviewReportHelpers.review_or_done?/1`
-  — the single definition of that gate, shared with the completion and
-  changed-files panels (W1962). See its `@doc` for why the rule is keyed off
+  The review-or-done half is
+  `KanbanWeb.ReviewReportHelpers.Panels.review_or_done?/1` — the single
+  definition of that gate, shared with the completion and changed-files
+  panels (W1962). See its `@doc` for why the rule is keyed off
   `review_status`/`status` rather than the column name or `needs_review`, and
   why an `:in_progress` task with a `review_status` counts.
 
@@ -44,7 +46,7 @@ defmodule KanbanWeb.ReviewReportHelpers.Explorer do
   """
   @spec explorer_panel_visible?(map()) :: boolean()
   def explorer_panel_visible?(task) do
-    has_explorer_result?(task) and ReviewReportHelpers.review_or_done?(task)
+    has_explorer_result?(task) and Panels.review_or_done?(task)
   end
 
   @doc """

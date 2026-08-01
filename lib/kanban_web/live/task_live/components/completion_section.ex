@@ -2,7 +2,7 @@ defmodule KanbanWeb.TaskLive.Components.CompletionSection do
   @moduledoc """
   Renders the completion details panel (timestamp, completer, agent, summary,
   notes). Caller is responsible for the outer status/presence guard — see
-  `KanbanWeb.ReviewReportHelpers.completion_panel_visible?/1`, which is what
+  `KanbanWeb.ReviewReportHelpers.Panels.completion_panel_visible?/1`, which is what
   gates this section in the task view.
 
   `completion_notes` is agent-authored free text and is interpolated through
