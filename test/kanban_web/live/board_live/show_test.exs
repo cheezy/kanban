@@ -1498,6 +1498,78 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ board.description
     end
 
+    # D209 pins a DECISION, not merely an observed behaviour. The agent's
+    # completion narrative is deliberately visible to non-members here, because
+    # read_only boards are a share-outward feature — unlike the Review queue,
+    # which is membership-scoped through BoardScope.apply_board_scope/2. If a
+    # later change gates this on membership, these two tests are what should
+    # fail, forcing the decision to be re-made explicitly rather than drifting.
+    # See KanbanWeb.TaskLive.Components.CompletionSection's moduledoc.
+    test "a non-member on a read-only board sees the completion narrative (D209)",
+         %{conn: conn} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true}, owner)
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :completed,
+          completed_at: ~U[2024-01-15 15:00:00Z],
+          completion_summary: "Short one-liner",
+          completion_notes: "The longer narrative the agent recorded."
+        })
+
+      non_member = user_fixture()
+      conn = log_in_user(conn, non_member)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> element("[phx-click='view_task'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      # The task modal is delayed (100ms) — same wait the sibling tests use.
+      :timer.sleep(200)
+
+      html = render(show_live)
+
+      assert html =~ "Completion notes"
+      assert html =~ "The longer narrative the agent recorded."
+      assert html =~ "Short one-liner"
+    end
+
+    test "a member of a read-only board sees the same completion narrative (D209)",
+         %{conn: conn} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      {:ok, board} = Kanban.Boards.update_board(board, %{read_only: true}, owner)
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          status: :completed,
+          completed_at: ~U[2024-01-15 15:00:00Z],
+          completion_summary: "Short one-liner",
+          completion_notes: "The longer narrative the agent recorded."
+        })
+
+      conn = log_in_user(conn, owner)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live
+      |> element("[phx-click='view_task'][phx-value-id='#{task.id}']")
+      |> render_click()
+
+      :timer.sleep(200)
+
+      html = render(show_live)
+
+      assert html =~ "Completion notes"
+      assert html =~ "The longer narrative the agent recorded."
+    end
+
     test "non-member cannot access private board", %{conn: conn} do
       # Create a private board (read_only: false)
       owner = user_fixture()

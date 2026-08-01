@@ -210,13 +210,20 @@ That phrasing is accurate both before and after D188 reaches a given deployment,
 why it could land in the same change rather than waiting on a release. The duplication rule
 itself is unchanged — only its stated premise was corrected.
 
-### One follow-up D188 deliberately did not do
+### The follow-up D188 deferred, and what became of it
 
-**The task-detail Completion panel does not render `completion_notes`.** D188 renders the
-field on the Review queue only, which is what the defect asked for and where the
-human-reader path terminates. Once a task is approved and leaves the Review queue the
-narrative is reachable only through the API. Mirroring the `completion_summary` block in
-`completion_section.ex` is a small, separate change.
+**D188 rendered `completion_notes` on the Review queue only** — what the defect asked for,
+and where the human-reader path terminates. Mirroring the `completion_summary` block in
+`completion_section.ex` was left as a small, separate change. W1963 made that change, so
+the task-detail Completion panel renders the field too.
+
+The second render site does not share the Review queue's audience. The Review queue is
+membership-scoped through `Kanban.Queries.BoardScope.apply_board_scope/2`, an inner join
+that requires a real membership row; the task detail view loads through
+`Kanban.Boards.get_board/2`, which admits a non-member whenever the board is `read_only`.
+D209 recorded the resulting decision — the wider reach is intended, because `read_only`
+boards are a share-outward feature — in the moduledocs of `Kanban.Tasks.CompletionNotesScan`
+and `KanbanWeb.TaskLive.Components.CompletionSection`.
 
 **One record per refused row.** In the sub-agent topology the implementing agent and the
 completion agent are different actors and both are instructed to record the finding. If
