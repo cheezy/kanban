@@ -65,8 +65,9 @@ defmodule KanbanWeb.TargetsStrip do
   missing key) renders nothing — no placeholder, no layout shift, and no
   dangling divider (the date separator shares the estimate span's `:if`,
   while the three cluster dividers are unconditional). The estimate is
-  de-emphasized relative to the fixed target date (italic, reduced
-  opacity) so the committed date stays visually primary.
+  de-emphasized relative to the fixed target date (italic, plus its "Est."
+  label) so the committed date stays visually primary. That de-emphasis is
+  deliberately not carried by opacity — see `estimated_date_style/1`.
   """
   use KanbanWeb, :html
 
@@ -236,8 +237,15 @@ defmodule KanbanWeb.TargetsStrip do
     "font-size: 10.5px; color: var(--ink-2); font-family: var(--font-mono); font-style: italic; font-weight: 600;"
   end
 
+  # De-emphasized by italic and the "Est." label, NOT by opacity (D213). An
+  # opacity here composites against --surface at the usage site, which the
+  # contrast gate cannot see: it measures --ink-3 on --surface (5.51:1 light)
+  # and passes the pair, while the rendered pixels sat at 3.26:1 — under the
+  # 4.5:1 floor this token carries for 10.5px text. --ink-3 at full opacity
+  # clears it in both themes (5.51:1 light, 8.14:1 dark) and stays quieter
+  # than the target name, which is --ink.
   defp estimated_date_style(false) do
-    "font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono); font-style: italic; opacity: 0.75;"
+    "font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono); font-style: italic;"
   end
 
   # The slip marker. Colour alone must not carry the meaning, so the state is

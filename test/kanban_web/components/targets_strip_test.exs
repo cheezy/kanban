@@ -134,7 +134,12 @@ defmodule KanbanWeb.TargetsStripTest do
       # On or before the target date, so it is not a slip and stays muted.
       html = render_targets([entry(%{estimated_completion_date: ~D[2026-12-30]})])
 
-      assert html =~ "font-style: italic; opacity: 0.75;"
+      assert html =~ "color: var(--ink-3); font-family: var(--font-mono); font-style: italic;"
+      # D213: the de-emphasis is carried by italic and the "Est." label, never
+      # by opacity. An opacity here composites against --surface where the
+      # contrast gate cannot see it, passing the token pair while the rendered
+      # text sits under its 4.5:1 floor.
+      refute html =~ "font-style: italic; opacity"
       refute html =~ "data-estimate-slipped"
       # 3 cluster dividers + the conditional separator between the dates.
       assert count_dividers(html) == 4
@@ -151,8 +156,9 @@ defmodule KanbanWeb.TargetsStripTest do
       # carries the border the chip-delineation rule requires.
       assert html =~ "background: var(--st-doing-soft); color: var(--st-doing);"
       assert html =~ "border: 1px solid var(--line);"
-      # The estimate itself stops being de-emphasized.
-      refute html =~ "font-style: italic; opacity: 0.75;"
+      # The estimate itself stops being de-emphasized: --ink-2 and bold, not
+      # the muted --ink-3 treatment.
+      refute html =~ "color: var(--ink-3); font-family: var(--font-mono); font-style: italic;"
       # The title spells out the relationship rather than leaving it inferred.
       assert html =~ "after the Dec 31, 2026 target"
     end
@@ -162,7 +168,8 @@ defmodule KanbanWeb.TargetsStripTest do
 
       refute html =~ "data-estimate-slipped"
       refute html =~ "data-estimate-slip-chip"
-      assert html =~ "font-style: italic; opacity: 0.75;"
+      assert html =~ "color: var(--ink-3); font-family: var(--font-mono); font-style: italic;"
+      refute html =~ "font-style: italic; opacity"
     end
 
     test "renders no estimate markup at all when the value is nil" do

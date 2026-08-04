@@ -198,7 +198,7 @@ about scope and consistency, not color:
 | Hardcoded class | Replace with |
 |---|---|
 | `text-gray-900` | `text-base-content` (daisyUI) or `var(--ink)` (Stride) |
-| `text-gray-600` | `text-base-content opacity-70` or `var(--ink-2)` |
+| `text-gray-600` | `var(--ink-2)` — **not** `text-base-content opacity-70`, see [opacity on text](#known-contrast-limitation-opacity-on-text-d213) |
 | `text-gray-500` | `var(--ink-3)` |
 | `text-gray-400` | `var(--ink-4)` |
 | `bg-white` | `bg-base-100` or `var(--surface)` |
@@ -300,6 +300,42 @@ Two limitations remain **by design**:
 When adding a multi-line inline gradient, prefer a composite gradient token (see
 the **Composite gradient tokens** table); if a fixed-palette literal is genuinely
 intentional (like the auth-frame gradient), allow-list it with a real reason.
+
+### Known contrast limitation: opacity on text (D213)
+
+`mix dark_mode.contrast` reads **only** `assets/css/app.css`. It measures token
+*pairs* as declared and never looks at markup, so it cannot see an `opacity`
+applied at the point of use. Layering one onto a text token therefore produces a
+**green scanner and a green contrast run while the rendered pixels fail** — a
+third way to be theme-correct in vocabulary and wrong in values, alongside the
+two the **Definition of done** already names.
+
+D213 was exactly this: the targets-strip estimate used `var(--ink-3)` (5.51:1 on
+`--surface` in light, comfortably passing) and then `opacity: 0.75`, compositing
+to **3.26:1** for 10.5px text — under the 4.5:1 floor `--ink-3` carries. Dark
+mode passed throughout, because a light foreground composited toward a dark
+surface loses far less.
+
+**The rule: do not use `opacity` to de-emphasize text.** Reach for a quieter
+token instead — that is what the ink ladder is for, and only a token can be
+measured. `--ink-4` is the quiet/incidental ink and is gated at 3.0:1, so it is
+the right choice for genuinely incidental text; anything a user actually reads
+belongs on `--ink-3` or above at full opacity. Carry emphasis differences with
+italic, weight, size, or a label, all of which cost no contrast.
+
+This applies equally to the daisyUI vocabulary. `text-base-content opacity-70`
+was previously offered in the token-mapping table above as an equivalent of
+`var(--ink-2)`; it is not equivalent, because only the token is measured, so
+that row now names the token alone.
+
+Usages predating this rule remain in the tree and are **not** allow-listed —
+they are tracked under **D214** rather than treated as sanctioned. That
+follow-up also covers `AGENTS.md`, which carries its own copy of the mapping
+table and still offers the `opacity-70` form; until it lands, prefer this
+document where the two disagree.
+
+Opacity on non-text (backdrops, dividers, hover states, disabled affordances)
+is unaffected by this rule.
 
 ## Allow-listing
 
