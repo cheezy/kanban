@@ -47,10 +47,18 @@ defmodule Kanban.Targets.Progress do
 
   ## Time injection
 
-  `today` is passed in by `Kanban.Targets` at its impure boundary so
-  `Kanban.Targets.Status.derive/4` stays pure and never reads the clock. The one
+  `now` — a timezone-aware `DateTime` — is passed in by `Kanban.Targets` at its
+  impure boundary so `Kanban.Targets.Status.derive/4` and
+  `Kanban.Targets.Estimation` stay pure and never read the clock. The one
   exception is `derive_target_status/2` (the archive gate), which anchors UTC
   internally — see its own comment for why that is sound.
+
+  The anchor is a single instant, not an instant *and* a date. `Status` needs a
+  `Date` and `Estimation` needs the time of day, so `summarize_batch/2` derives
+  `today` from `now` in exactly one place. Two independently-supplied time
+  values is the shape of D123 (paths disagreeing about `today`) and of D212
+  (the time of day silently discarded) — deriving one from the other is what
+  makes those disagreements unrepresentable rather than merely unlikely.
 
   ## Estimated completion (W1729, batched in W1951)
 
@@ -71,7 +79,7 @@ defmodule Kanban.Targets.Progress do
 
   Both gate conditions read the member-goal progress snapshot directly, never
   the derived `Kanban.Targets.Status` (W1950). The estimate therefore depends
-  only on that snapshot, the member goals, and `today` — it is computed
+  only on that snapshot, the member goals, and `now` — it is computed
   independently of the status rather than after it, so the status is free to
   become a consumer of the estimate without creating a cycle.
 
@@ -214,15 +222,15 @@ defmodule Kanban.Targets.Progress do
   `test/kanban/targets/delivery_rollup_query_count_test.exs` and
   `test/kanban_web/live/agents_live_query_count_test.exs` can see.
   """
-  @spec summarize_targets(Scope.t() | nil, [DeliveryTarget.t()], Date.t()) ::
+  @spec summarize_targets(Scope.t() | nil, [DeliveryTarget.t()], DateTime.t()) ::
           [{target_summary(), [Task.t()]}]
-  def summarize_targets(scope, targets, today) do
+  def summarize_targets(scope, targets, now) do
     targets
     |> Enum.map(fn %DeliveryTarget{} = target ->
       {progress, goals} = member_goal_progress(scope, target)
       {target, progress, goals}
     end)
-    |> summarize_batch(today)
+    |> summarize_batch(now)
   end
 
   @doc """
@@ -235,7 +243,7 @@ defmodule Kanban.Targets.Progress do
   (all member goals complete) before any `today`-dependent branch. So no
   timezone can change whether a target is archivable. A caller that needs a
   timezone-sensitive status (`:missed` / `:at_risk`) must go through
-  `Kanban.Targets.list_targets_with_status/2` and pass its own `today`.
+  `Kanban.Targets.list_targets_with_status/2` and pass its own `now`.
 
   It is also the one read path that deliberately derives WITHOUT an estimate
   (see the moduledoc's "Paths that do not estimate"), which cannot affect the
@@ -263,8 +271,9 @@ defmodule Kanban.Targets.Progress do
   theirs. That structural sharing — not a duplicated helper the two paths must
   keep in step — is what makes the badge path-independent (W1951).
   """
-  @spec build_target_progress(Scope.t() | nil, DeliveryTarget.t(), Date.t()) :: target_progress()
-  def build_target_progress(scope, %DeliveryTarget{} = target, today) do
+  @spec build_target_progress(Scope.t() | nil, DeliveryTarget.t(), DateTime.t()) ::
+          target_progress()
+  def build_target_progress(scope, %DeliveryTarget{} = target, now) do
     details =
       scope
       |> Queries.list_member_goals(target)
@@ -273,7 +282,7 @@ defmodule Kanban.Targets.Progress do
     progress = Enum.map(details, & &1.progress)
     goals = Enum.map(details, & &1.goal)
 
-    [{summary, _goals}] = summarize_batch([{target, progress, goals}], today)
+    [{summary, _goals}] = summarize_batch([{target, progress, goals}], now)
 
     %{
       summary: summary,
@@ -357,11 +366,17 @@ defmodule Kanban.Targets.Progress do
   # read path funnels through here — the boards strip, the /agents rollup, and
   # the target-detail drill-down (a batch of one) — so the estimate a badge is
   # derived from can never be path-dependent (D123 / W1951).
-  defp summarize_batch(triples, today) do
+  defp summarize_batch(triples, now) do
     paced = Enum.map(triples, &pace/1)
     sample = batched_lead_times(paced)
 
-    Enum.map(paced, &summarize_paced(&1, sample, today))
+    # The ONE place `now` becomes a `Date`. Status needs the calendar day and
+    # Estimation needs the time of day; deriving the former from the latter here
+    # is what makes them structurally unable to disagree. A future caller that
+    # reintroduces a separately-supplied `today` reintroduces D123 with it.
+    today = DateTime.to_date(now)
+
+    Enum.map(paced, &summarize_paced(&1, sample, now, today))
   end
 
   # Tags a fetched triple with what it has left to pace, so the gate is decided
@@ -372,8 +387,10 @@ defmodule Kanban.Targets.Progress do
   end
 
   # One summary from a paced triple plus the batch's shared by-board sample.
-  defp summarize_paced({target, progress, goals, remaining}, sample, today) do
-    estimate = estimate(remaining, goals, sample, today)
+  # Takes both halves of the single anchor: `now` paces the estimate, `today`
+  # (derived from it in summarize_batch/2) is what Status derives against.
+  defp summarize_paced({target, progress, goals, remaining}, sample, now, today) do
+    estimate = estimate(remaining, goals, sample, now)
 
     {summarize_progress(target, progress, today, estimate), goals}
   end
@@ -400,19 +417,19 @@ defmodule Kanban.Targets.Progress do
   # by-board sample is what makes the batched fetch observationally identical to
   # the per-target fetch it replaced; flattening the map across targets instead
   # (Map.values/1) would let one target's history pace another.
-  defp estimate(nil, _goals, _sample, _today), do: nil
+  defp estimate(nil, _goals, _sample, _now), do: nil
 
-  defp estimate(remaining, goals, sample, today) do
+  defp estimate(remaining, goals, sample, now) do
     goals
     |> board_ids()
     |> Enum.flat_map(&Map.get(sample, &1, []))
-    |> Estimation.estimated_completion_date(remaining, today)
+    |> Estimation.estimated_completion_date(remaining, now)
   end
 
   # The remaining child-task count to pace, or nil when there is nothing to
   # estimate. A target whose every member goal is complete has nothing left to
   # pace, and a remaining count of 0 (childless 0/0 target, or all credited work
-  # done while a goal is still open) would make `today + 0` a meaningless
+  # done while a goal is still open) would make an unmoved projection a meaningless
   # promise.
   #
   # Read from the member-goal progress snapshot alone, never from the derived

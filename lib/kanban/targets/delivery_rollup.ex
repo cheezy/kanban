@@ -51,10 +51,17 @@ defmodule Kanban.Targets.DeliveryRollup do
 
   ## Purity / time injection
 
-  `today` (for status derivation) and `timezone` (for the roster's stuck/dormant
-  clock) are injected at this impure boundary — `today` defaults to the local
-  day in `timezone`. The pure derivation is deterministic and testable by
-  passing an explicit `today`.
+  `now` (for status derivation and for pacing the completion estimate) and
+  `timezone` (for the roster's stuck/dormant clock) are injected at this impure
+  boundary — `now` defaults to the local *instant* in `timezone`. The pure
+  derivation is deterministic and testable by passing an explicit `now`.
+
+  It is an instant rather than a calendar day because the estimate needs the
+  time of day to tell whether the remaining work fits inside the rest of the
+  local day (D212); the date the status derives against is taken from that same
+  value downstream. Note the option is `:now` — a `:today` key is silently
+  ignored and leaves the anchor on the wall clock, so a test passing one would
+  be non-deterministic while still looking green.
   """
 
   alias Kanban.Accounts.Scope
@@ -126,22 +133,25 @@ defmodule Kanban.Targets.DeliveryRollup do
   ## Options
 
     * `:timezone` — IANA zone anchoring the roster's stuck/dormant clock and the
-      default `today` (default `"Etc/UTC"`).
-    * `:today` — the `Date` used for status derivation (default: the local day
-      in `:timezone`). Pass an explicit value to keep derivation deterministic
-      in tests.
+      default `now` (default `"Etc/UTC"`).
+    * `:now` — the `DateTime` used for status derivation and for pacing the
+      completion estimate (default: the local instant in `:timezone`). It is an
+      instant rather than a date because the estimate needs the time of day to
+      know how much of the local day is left (D212); the calendar day used for
+      status derivation is taken from this same value downstream. Pass an
+      explicit value to keep derivation deterministic in tests.
 
   Returns `%{targets: [target_rollup()], unrolled_agents: [Agent.t()]}`.
   """
   @spec build(Scope.t() | nil, keyword()) :: t()
   def build(scope, opts \\ []) do
     timezone = Keyword.get(opts, :timezone, "Etc/UTC")
-    today = Keyword.get(opts, :today, Timezone.local_today(timezone))
+    now = Keyword.get(opts, :now, Timezone.local_now(timezone))
 
     tasks = fetch_bridged_tasks(scope)
     agents = Roster.from_tasks(tasks, timezone)
     bridges = agent_bridges(agents, tasks)
-    target_rollups = build_target_rollups(scope, today, agents, bridges)
+    target_rollups = build_target_rollups(scope, now, agents, bridges)
 
     %{
       targets: target_rollups,
@@ -181,9 +191,9 @@ defmodule Kanban.Targets.DeliveryRollup do
   # the projected date alongside the target date to explain a slip-driven
   # :at_risk. It is the same value the status was derived from, passed through
   # rather than recomputed.
-  defp build_target_rollups(scope, today, agents, bridges) do
+  defp build_target_rollups(scope, now, agents, bridges) do
     scope
-    |> Targets.list_targets_with_status_and_goals(today)
+    |> Targets.list_targets_with_status_and_goals(now)
     |> Enum.map(&target_rollup(&1, agents, bridges))
   end
 

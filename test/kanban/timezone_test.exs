@@ -3,6 +3,47 @@ defmodule Kanban.TimezoneTest do
 
   alias Kanban.Timezone
 
+  describe "local_now/1" do
+    test "returns a DateTime carrying the requested zone" do
+      now = Timezone.local_now("America/Edmonton")
+
+      assert %DateTime{} = now
+      assert now.time_zone == "America/Edmonton"
+    end
+
+    test "returns the viewer's local date for a zone east of UTC" do
+      expected = "Asia/Tokyo" |> DateTime.now!() |> DateTime.to_date()
+
+      assert Timezone.local_now("Asia/Tokyo") |> DateTime.to_date() == expected
+    end
+
+    test "preserves the time of day, unlike local_today/1" do
+      # The whole reason this function exists (D212): the estimate needs to know
+      # how much of the local day is left, which a Date cannot express.
+      #
+      # Asserted as a bounded difference from a fresh read rather than by
+      # comparing hour fields, which would flake whenever the two reads straddle
+      # the top of an hour.
+      now = Timezone.local_now("Etc/UTC")
+
+      assert abs(DateTime.diff(DateTime.utc_now(), now, :second)) < 5
+    end
+
+    test "falls back to a UTC DateTime for an unknown zone" do
+      now = Timezone.local_now("Not/ARealZone")
+
+      assert now.time_zone == "Etc/UTC"
+      assert DateTime.to_date(now) == Date.utc_today()
+    end
+
+    test "falls back to a UTC DateTime for an empty zone string" do
+      now = Timezone.local_now("")
+
+      assert now.time_zone == "Etc/UTC"
+      assert DateTime.to_date(now) == Date.utc_today()
+    end
+  end
+
   describe "local_today/1" do
     test "returns the viewer's local date for a valid zone" do
       expected = "America/Edmonton" |> DateTime.now!() |> DateTime.to_date()

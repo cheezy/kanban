@@ -626,7 +626,7 @@ defmodule Kanban.TargetsTest do
 
       # today early in the target's window (created ~now, target_date 2026-12-31)
       # with work at 1/2 = 0.5 => work leads elapsed => :on_track.
-      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-07])
+      assert [summary] = Targets.list_targets_with_status(scope, ~U[2026-07-07 00:00:00Z])
 
       assert summary.target.id == target.id
       assert summary.completed == 1
@@ -639,7 +639,7 @@ defmodule Kanban.TargetsTest do
          %{scope: scope, user: user, column: column} do
       target = complete_target(scope, column, user)
 
-      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-07])
+      assert [summary] = Targets.list_targets_with_status(scope, ~U[2026-07-07 00:00:00Z])
       assert summary.target.id == target.id
       assert summary.status == :complete
 
@@ -647,7 +647,7 @@ defmodule Kanban.TargetsTest do
 
       # The boards feed is built on list_targets/1, so the is_nil filter there
       # is what removes an archived target from the boards page.
-      assert Targets.list_targets_with_status(scope, ~D[2026-07-07]) == []
+      assert Targets.list_targets_with_status(scope, ~U[2026-07-07 00:00:00Z]) == []
     end
 
     test "reports 0/0 (0%) progress when a member goal has no children",
@@ -656,7 +656,7 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       assert {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-07])
+      assert [summary] = Targets.list_targets_with_status(scope, ~U[2026-07-07 00:00:00Z])
       assert summary.completed == 0
       assert summary.total == 0
       assert summary.percentage == 0
@@ -668,10 +668,16 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       assert {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      assert Targets.list_targets_with_status(other_scope, ~D[2026-07-07]) == []
+      assert Targets.list_targets_with_status(other_scope, ~U[2026-07-07 00:00:00Z]) == []
     end
   end
 
+  # The anchor is an instant (D212); @estimate_today stays a Date because the
+  # expectations below are built with Date.add/2. Midnight is deliberate: every
+  # fixture here uses whole-day leads, and a whole-day product from a midnight
+  # anchor lands exactly on midnight N days on — so these expected values are
+  # unchanged by the move from date arithmetic to instant projection.
+  @estimate_now ~U[2026-07-07 00:00:00Z]
   @estimate_today ~D[2026-07-07]
 
   # A completed historical (non-child) task with an EXACT lead time of
@@ -679,13 +685,20 @@ defmodule Kanban.TargetsTest do
   # clock. inserted_at is not castable to the past through the changeset, so
   # this bypasses the cast allow-list the same way goal_with_identifier/3
   # does.
-  defp completed_with_lead(column, days) do
+  defp completed_with_lead(column, days), do: completed_with_lead_seconds(column, days * 86_400)
+
+  # The seconds-granularity form, and the one that does the work — the
+  # whole-day helper above delegates here. Sub-day leads exist for the D212
+  # cases: a whole-day lead cannot distinguish an instant projection from the
+  # old whole-day arithmetic, because it lands on the same calendar day either
+  # way. A sub-day lead is the only kind that can.
+  defp completed_with_lead_seconds(column, seconds) do
     column
     |> task_fixture()
     |> Ecto.Changeset.change(
       status: :completed,
       completed_at: ~U[2026-07-01 12:00:00Z],
-      inserted_at: NaiveDateTime.add(~N[2026-07-01 12:00:00], -days * 86_400)
+      inserted_at: NaiveDateTime.add(~N[2026-07-01 12:00:00], -seconds)
     )
     |> Repo.update!()
   end
@@ -709,14 +722,14 @@ defmodule Kanban.TargetsTest do
       completed_with_lead(other_column, 3)
       target = target_with_remaining(scope, column, user, 1)
 
-      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_now)
       assert summary.estimated_completion_date == nil
 
-      assert [with_goals] = Targets.list_targets_with_status_and_goals(scope, @estimate_today)
+      assert [with_goals] = Targets.list_targets_with_status_and_goals(scope, @estimate_now)
       assert with_goals.estimated_completion_date == nil
 
       assert %{summary: drill_down} =
-               Targets.get_target_progress(scope, target, @estimate_today)
+               Targets.get_target_progress(scope, target, @estimate_now)
 
       assert drill_down.estimated_completion_date == nil
     end
@@ -733,7 +746,7 @@ defmodule Kanban.TargetsTest do
       _history_less = target_with_remaining(scope, column, user, 1)
       _with_history = target_with_remaining(scope, second_column, user, 1)
 
-      assert [a, b] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [a, b] = Targets.list_targets_with_status(scope, @estimate_now)
 
       assert Enum.sort([a.estimated_completion_date, b.estimated_completion_date]) ==
                Enum.sort([nil, Date.add(@estimate_today, 3)])
@@ -755,7 +768,7 @@ defmodule Kanban.TargetsTest do
       assert {:ok, _} = Targets.assign_goal(scope, first_goal, target)
       assert {:ok, _} = Targets.assign_goal(scope, second_goal, target)
 
-      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_now)
       assert summary.estimated_completion_date == Date.add(@estimate_today, 2)
     end
 
@@ -764,8 +777,8 @@ defmodule Kanban.TargetsTest do
       completed_with_lead(column, 2)
       target_with_remaining(scope, column, user, 1)
 
-      assert Targets.list_targets_with_status(other_scope, @estimate_today) == []
-      assert Targets.list_targets_with_status_and_goals(other_scope, @estimate_today) == []
+      assert Targets.list_targets_with_status(other_scope, @estimate_now) == []
+      assert Targets.list_targets_with_status_and_goals(other_scope, @estimate_now) == []
     end
   end
 
@@ -777,15 +790,45 @@ defmodule Kanban.TargetsTest do
       for days <- [1, 2, 4], do: completed_with_lead(column, days)
       target_with_remaining(scope, column, user, 2)
 
-      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_now)
       assert summary.estimated_completion_date == Date.add(@estimate_today, 4)
+    end
+
+    test "D212: remaining work that fits inside today estimates TODAY end to end",
+         %{scope: scope, user: user, column: column} do
+      # The reported symptom, reproduced through the real read path rather than
+      # the pure math: a 6-hour median with one task left, anchored at 08:00,
+      # finishes at 14:00 the same day. Pre-fix this reported tomorrow.
+      #
+      # This case is what a fix confined to Kanban.Targets.Estimation would not
+      # satisfy — if Progress still handed a bare date down, the unit suite
+      # would be green and this would fail.
+      for _ <- 1..3, do: completed_with_lead_seconds(column, 6 * 3_600)
+      target_with_remaining(scope, column, user, 1)
+
+      morning = ~U[2026-07-07 08:00:00Z]
+
+      assert [summary] = Targets.list_targets_with_status(scope, morning)
+      assert summary.estimated_completion_date == @estimate_today
+    end
+
+    test "D212: the same remaining work rolls to tomorrow from a late anchor",
+         %{scope: scope, user: user, column: column} do
+      # Non-vacuity control for the case above: identical fixture, later anchor.
+      for _ <- 1..3, do: completed_with_lead_seconds(column, 6 * 3_600)
+      target_with_remaining(scope, column, user, 1)
+
+      evening = ~U[2026-07-07 20:00:00Z]
+
+      assert [summary] = Targets.list_targets_with_status(scope, evening)
+      assert summary.estimated_completion_date == Date.add(@estimate_today, 1)
     end
 
     test "is nil when there are no historical completed tasks",
          %{scope: scope, user: user, column: column} do
       target_with_remaining(scope, column, user, 2)
 
-      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_now)
       assert summary.estimated_completion_date == nil
     end
 
@@ -794,7 +837,7 @@ defmodule Kanban.TargetsTest do
       column |> goal_fixture() |> complete_task()
       target_with_remaining(scope, column, user, 1)
 
-      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_now)
       assert summary.estimated_completion_date == nil
     end
 
@@ -803,7 +846,7 @@ defmodule Kanban.TargetsTest do
       completed_with_lead(other_column, 3)
       target_with_remaining(scope, column, user, 1)
 
-      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_now)
       assert summary.estimated_completion_date == nil
     end
 
@@ -822,7 +865,7 @@ defmodule Kanban.TargetsTest do
 
       target_with_remaining(scope, column, user, 1)
 
-      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_now)
       assert summary.estimated_completion_date == Date.add(@estimate_today, 2)
     end
 
@@ -831,7 +874,7 @@ defmodule Kanban.TargetsTest do
       completed_with_lead(column, 2)
       complete_target(scope, column, user)
 
-      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_now)
       assert summary.status == :complete
       assert summary.estimated_completion_date == nil
     end
@@ -848,7 +891,7 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       assert {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_now)
       assert summary.status == :complete
       assert summary.total - summary.completed == 2
       assert summary.estimated_completion_date == nil
@@ -867,7 +910,7 @@ defmodule Kanban.TargetsTest do
       assert {:ok, _} = Targets.assign_goal(scope, done_goal, target)
       assert {:ok, _} = Targets.assign_goal(scope, open_goal, target)
 
-      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_now)
       refute summary.status == :complete
       assert summary.estimated_completion_date == Date.add(@estimate_today, 4)
     end
@@ -879,7 +922,7 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       assert {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      assert [summary] = Targets.list_targets_with_status(scope, @estimate_today)
+      assert [summary] = Targets.list_targets_with_status(scope, @estimate_now)
       assert summary.status == :on_track
       assert summary.total == 0
       assert summary.estimated_completion_date == nil
@@ -893,12 +936,12 @@ defmodule Kanban.TargetsTest do
       target = target_with_remaining(scope, column, user, 2)
 
       assert [with_goals] =
-               Targets.list_targets_with_status_and_goals(scope, @estimate_today)
+               Targets.list_targets_with_status_and_goals(scope, @estimate_now)
 
       assert with_goals.estimated_completion_date == Date.add(@estimate_today, 4)
 
       assert %{summary: summary} =
-               Targets.get_target_progress(scope, target, @estimate_today)
+               Targets.get_target_progress(scope, target, @estimate_now)
 
       assert summary.estimated_completion_date == Date.add(@estimate_today, 4)
     end
@@ -912,7 +955,7 @@ defmodule Kanban.TargetsTest do
   # `target_date` is a parameter because the same fixture proves the
   # non-slipping cases: with a later due date the estimate is unchanged but the
   # status must stay :on_track.
-  defp slipping_target(scope, column, user, target_date) do
+  defp slipping_target(scope, column, user, target_date, lead_seconds \\ 86_400) do
     target = delivery_target_fixture(user, %{target_date: target_date})
 
     # Backdate creation to open a 30-day window ending Jul 26. inserted_at is
@@ -925,16 +968,17 @@ defmodule Kanban.TargetsTest do
 
     goal = goal_fixture(column)
 
-    # 9 children completed with an EXACT 1-day lead — they are also the
-    # historical sample, so p50 == 1 day — and 1 still open -> remaining == 1,
-    # putting the estimate at Jul 26 + 1 = Jul 27.
+    # 9 children completed with an EXACT `lead_seconds` lead — they are also the
+    # historical sample, so p50 == lead_seconds — and 1 still open ->
+    # remaining == 1. At the default 1-day lead that puts the estimate at
+    # Jul 26 + 1 = Jul 27; a sub-day lead keeps it inside Jul 26 (D212).
     for _ <- 1..9 do
       column
       |> task_fixture(%{parent_id: goal.id})
       |> Ecto.Changeset.change(
         status: :completed,
         completed_at: ~U[2026-07-01 12:00:00Z],
-        inserted_at: ~N[2026-06-30 12:00:00]
+        inserted_at: NaiveDateTime.add(~N[2026-07-01 12:00:00], -lead_seconds)
       )
       |> Repo.update!()
     end
@@ -950,7 +994,7 @@ defmodule Kanban.TargetsTest do
          %{scope: scope, user: user, column: column} do
       slipping_target(scope, column, user, ~D[2026-07-26])
 
-      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-26])
+      assert [summary] = Targets.list_targets_with_status(scope, ~U[2026-07-26 00:00:00Z])
       # Assert the estimate first: it proves the verdict came from the slip and
       # not from a lag miscalculation.
       assert summary.estimated_completion_date == ~D[2026-07-27]
@@ -958,11 +1002,45 @@ defmodule Kanban.TargetsTest do
       assert summary.status == :at_risk
     end
 
+    test "D212: a target finishing inside today is no longer badged :at_risk on its target date",
+         %{scope: scope, user: user, column: column} do
+      # The user-visible payoff of D212, and the second half of acceptance
+      # criterion 6. Identical shape to the slip case above — 9 of 10 done,
+      # one task left, evaluated ON the target date — but with a 6-hour median
+      # instead of a 1-day one.
+      #
+      # Pre-fix, the whole-day ceil put the estimate at Jul 27, one day past the
+      # Jul 26 target, so a target that would plainly finish by lunchtime was
+      # badged at-risk. The estimate must now land on Jul 26 and the badge must
+      # not fire.
+      slipping_target(scope, column, user, ~D[2026-07-26], 6 * 3_600)
+
+      assert [summary] = Targets.list_targets_with_status(scope, ~U[2026-07-26 08:00:00Z])
+
+      assert summary.estimated_completion_date == ~D[2026-07-26]
+      assert summary.completed == 9 and summary.total == 10
+      refute summary.status == :at_risk
+    end
+
+    test "D212: the same target IS still badged :at_risk from a late-evening anchor",
+         %{scope: scope, user: user, column: column} do
+      # Non-vacuity control: the same fixture whose estimate fits inside the day
+      # at 08:00 genuinely does not fit at 20:00, so the slip — and the badge —
+      # must return. Without this, a fix that simply stopped slipping would pass
+      # the case above.
+      slipping_target(scope, column, user, ~D[2026-07-26], 6 * 3_600)
+
+      assert [summary] = Targets.list_targets_with_status(scope, ~U[2026-07-26 20:00:00Z])
+
+      assert summary.estimated_completion_date == ~D[2026-07-27]
+      assert summary.status == :at_risk
+    end
+
     test "an estimate ON the target date leaves the status unchanged",
          %{scope: scope, user: user, column: column} do
       slipping_target(scope, column, user, ~D[2026-07-27])
 
-      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-26])
+      assert [summary] = Targets.list_targets_with_status(scope, ~U[2026-07-26 00:00:00Z])
       assert summary.estimated_completion_date == ~D[2026-07-27]
       assert summary.status == :on_track
     end
@@ -971,7 +1049,7 @@ defmodule Kanban.TargetsTest do
          %{scope: scope, user: user, column: column} do
       slipping_target(scope, column, user, ~D[2026-07-28])
 
-      assert [summary] = Targets.list_targets_with_status(scope, ~D[2026-07-26])
+      assert [summary] = Targets.list_targets_with_status(scope, ~U[2026-07-26 00:00:00Z])
       assert summary.estimated_completion_date == ~D[2026-07-27]
       assert summary.status == :on_track
     end
@@ -983,11 +1061,15 @@ defmodule Kanban.TargetsTest do
       # path-dependent — the asymmetry D182 documented is gone.
       target = slipping_target(scope, column, user, ~D[2026-07-26])
 
-      assert [with_goals] = Targets.list_targets_with_status_and_goals(scope, ~D[2026-07-26])
+      assert [with_goals] =
+               Targets.list_targets_with_status_and_goals(scope, ~U[2026-07-26 00:00:00Z])
+
       assert with_goals.estimated_completion_date == ~D[2026-07-27]
       assert with_goals.status == :at_risk
 
-      assert %{summary: summary} = Targets.get_target_progress(scope, target, ~D[2026-07-26])
+      assert %{summary: summary} =
+               Targets.get_target_progress(scope, target, ~U[2026-07-26 00:00:00Z])
+
       assert summary.estimated_completion_date == ~D[2026-07-27]
       assert summary.status == :at_risk
     end
@@ -1003,8 +1085,10 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       assert {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      [expected] = Targets.list_targets_with_status(scope, ~D[2026-07-07])
-      assert %{summary: summary} = Targets.get_target_progress(scope, target, ~D[2026-07-07])
+      [expected] = Targets.list_targets_with_status(scope, ~U[2026-07-07 00:00:00Z])
+
+      assert %{summary: summary} =
+               Targets.get_target_progress(scope, target, ~U[2026-07-07 00:00:00Z])
 
       assert summary.target.id == target.id
       assert summary.status == expected.status
@@ -1032,7 +1116,8 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       assert {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      assert %{goals: [entry]} = Targets.get_target_progress(scope, target, ~D[2026-07-07])
+      assert %{goals: [entry]} =
+               Targets.get_target_progress(scope, target, ~U[2026-07-07 00:00:00Z])
 
       assert entry.goal.id == goal.id
       assert entry.flow == %{backlog: 1, ready: 1, doing: 1, review: 1, done: 1, total: 5}
@@ -1052,7 +1137,9 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       assert {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      assert %{goals: [entry]} = Targets.get_target_progress(scope, target, ~D[2026-07-07])
+      assert %{goals: [entry]} =
+               Targets.get_target_progress(scope, target, ~U[2026-07-07 00:00:00Z])
+
       assert entry.flow == %{backlog: 0, ready: 1, doing: 0, review: 0, done: 0, total: 1}
       assert entry.completed == 1
       assert entry.total == 1
@@ -1064,7 +1151,9 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       assert {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      assert %{goals: [entry]} = Targets.get_target_progress(scope, target, ~D[2026-07-07])
+      assert %{goals: [entry]} =
+               Targets.get_target_progress(scope, target, ~U[2026-07-07 00:00:00Z])
+
       assert entry.flow == %{backlog: 0, ready: 0, doing: 0, review: 0, done: 0, total: 0}
       assert entry.completed == 0
       assert entry.total == 0
@@ -1097,7 +1186,7 @@ defmodule Kanban.TargetsTest do
 
       # Its three active children are counted: the target reports 0 of 3, not 0 of 0.
       assert %{summary: summary, goals: [entry]} =
-               Targets.get_target_progress(scope, target, ~D[2026-07-07])
+               Targets.get_target_progress(scope, target, ~U[2026-07-07 00:00:00Z])
 
       assert summary.completed == 0
       assert summary.total == 3
@@ -1111,7 +1200,7 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
 
       assert %{summary: summary, goals: []} =
-               Targets.get_target_progress(scope, target, ~D[2026-07-07])
+               Targets.get_target_progress(scope, target, ~U[2026-07-07 00:00:00Z])
 
       assert summary.target.id == target.id
       assert summary.completed == 0
@@ -1131,7 +1220,7 @@ defmodule Kanban.TargetsTest do
       assert {:ok, _} = Targets.assign_goal(scope, goal, target)
 
       assert %{summary: summary, goals: [entry]} =
-               Targets.get_target_progress(scope, target, ~D[2026-07-07])
+               Targets.get_target_progress(scope, target, ~U[2026-07-07 00:00:00Z])
 
       assert summary.completed == 2
       assert summary.total == 2
@@ -1154,7 +1243,7 @@ defmodule Kanban.TargetsTest do
       assert {:ok, _} = Targets.assign_goal(scope, goal_b, target)
 
       assert %{summary: summary, goals: goals} =
-               Targets.get_target_progress(scope, target, ~D[2026-07-07])
+               Targets.get_target_progress(scope, target, ~U[2026-07-07 00:00:00Z])
 
       assert summary.completed == 2
       assert summary.total == 3
@@ -1170,7 +1259,7 @@ defmodule Kanban.TargetsTest do
       assert {:ok, _} = Targets.assign_goal(scope, goal, target)
 
       assert %{summary: summary, goals: []} =
-               Targets.get_target_progress(other_scope, target, ~D[2026-07-07])
+               Targets.get_target_progress(other_scope, target, ~U[2026-07-07 00:00:00Z])
 
       assert summary.total == 0
     end
@@ -1182,8 +1271,8 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       assert {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      by_struct = Targets.get_target_progress(scope, target, ~D[2026-07-07])
-      by_id = Targets.get_target_progress(scope, target.id, ~D[2026-07-07])
+      by_struct = Targets.get_target_progress(scope, target, ~U[2026-07-07 00:00:00Z])
+      by_id = Targets.get_target_progress(scope, target.id, ~U[2026-07-07 00:00:00Z])
 
       assert by_id.summary.target.id == target.id
       assert by_id.summary.completed == by_struct.summary.completed
@@ -1576,7 +1665,7 @@ defmodule Kanban.TargetsTest do
   end
 
   describe "get_target_progress/3 — archived work crediting (D124)" do
-    @today ~D[2026-07-07]
+    @now ~U[2026-07-07 00:00:00Z]
 
     test "a fully-archived, finished goal reads complete (100%) and the target status is :complete",
          %{scope: scope, user: user, column: column} do
@@ -1591,7 +1680,7 @@ defmodule Kanban.TargetsTest do
       {:ok, _} = Kanban.Tasks.archive_task(goal)
 
       %{summary: summary, goals: [entry]} =
-        Targets.get_target_progress(scope, target, @today)
+        Targets.get_target_progress(scope, target, @now)
 
       assert entry.completed == 2
       assert entry.total == 2
@@ -1615,7 +1704,7 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      %{goals: [entry]} = Targets.get_target_progress(scope, target, @today)
+      %{goals: [entry]} = Targets.get_target_progress(scope, target, @now)
 
       # 1 archived-completed + 1 live-incomplete => 1 of 2 (not 0 of 1).
       assert entry.completed == 1
@@ -1639,7 +1728,7 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      %{goals: [entry]} = Targets.get_target_progress(scope, target, @today)
+      %{goals: [entry]} = Targets.get_target_progress(scope, target, @now)
 
       # The archived-cancelled child leaves the fraction entirely: 1 of 1, not
       # 1 of 2 (which would understate) and not 2 of 2 (which would over-credit).
@@ -1661,7 +1750,7 @@ defmodule Kanban.TargetsTest do
       target = delivery_target_fixture(user)
       {:ok, _} = Targets.assign_goal(scope, goal, target)
 
-      %{summary: summary} = Targets.get_target_progress(scope, target, @today)
+      %{summary: summary} = Targets.get_target_progress(scope, target, @now)
 
       refute summary.status == :complete
     end
@@ -1679,7 +1768,7 @@ defmodule Kanban.TargetsTest do
       {:ok, _} = Targets.assign_goal(scope, open_goal, target)
       {:ok, _} = Kanban.Tasks.archive_task(done_goal)
 
-      %{summary: summary, goals: goals} = Targets.get_target_progress(scope, target, @today)
+      %{summary: summary, goals: goals} = Targets.get_target_progress(scope, target, @now)
 
       refute summary.status == :complete
 

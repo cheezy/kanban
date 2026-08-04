@@ -95,11 +95,16 @@ defmodule KanbanWeb.TargetLive.Show do
 
   defp archive_failed_message, do: gettext("Failed to archive target")
 
-  # Anchor status on the viewer's local calendar day (not the server's UTC day)
+  # Anchor status on the viewer's local instant (not the server's UTC clock)
   # so the target-detail badge agrees with the boards TargetsStrip and the
   # agents delivery-health band. See D123.
+  #
+  # An instant, not a bare local date: the completion estimate needs the time of
+  # day to tell whether the remaining work fits inside the rest of the local day
+  # (D212). The calendar day the status derives against comes from this same
+  # value downstream, so the two cannot disagree.
   defp assign_target_progress(socket, scope, target, timezone) do
-    progress = Targets.get_target_progress(scope, target, Kanban.Timezone.local_today(timezone))
+    progress = Targets.get_target_progress(scope, target, Kanban.Timezone.local_now(timezone))
 
     socket
     |> assign(:target, target)

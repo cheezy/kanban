@@ -7,10 +7,36 @@ defmodule Kanban.Timezone do
   *viewer's* local wall clock instead of UTC — otherwise late-evening work west
   of UTC rolls into the next UTC day and lands on the wrong bar/row.
 
-  These two primitives are the single source of truth for that conversion. Both
-  fall back to the UTC date when the zone is unknown/empty, so a malformed
+  These primitives are the single source of truth for that conversion. All of
+  them fall back to UTC when the zone is unknown/empty, so a malformed
   browser-supplied zone can never crash a caller.
+
+  `local_now/1` is the one clock read; `local_today/1` is defined on top of it
+  rather than beside it, so the two can never disagree about what "now" is or
+  about how a bad zone falls back.
   """
+
+  @doc """
+  The viewer's local "now" in `timezone`, time of day included.
+
+  Callers that need only the calendar day want `local_today/1`. This exists for
+  the ones that must know how much of the local day is left — notably the
+  delivery-target completion estimate, which projects an instant forward and
+  then reads the calendar day it lands on (D212). Collapsing to a `Date` first
+  discards exactly the information that projection needs.
+
+  Falls back to `DateTime.utc_now/0` when the zone is unknown or empty. On that
+  path the returned `DateTime` carries `"Etc/UTC"`, so a malformed zone degrades
+  to UTC calendar days — the same semantics `local_today/1` has always had, not
+  a new failure mode.
+  """
+  @spec local_now(String.t()) :: DateTime.t()
+  def local_now(timezone) do
+    case DateTime.now(timezone) do
+      {:ok, now} -> now
+      {:error, _reason} -> DateTime.utc_now()
+    end
+  end
 
   @doc """
   The viewer's local calendar date "today" in `timezone`.
@@ -19,10 +45,9 @@ defmodule Kanban.Timezone do
   """
   @spec local_today(String.t()) :: Date.t()
   def local_today(timezone) do
-    case DateTime.now(timezone) do
-      {:ok, now} -> DateTime.to_date(now)
-      {:error, _reason} -> Date.utc_today()
-    end
+    timezone
+    |> local_now()
+    |> DateTime.to_date()
   end
 
   @doc """

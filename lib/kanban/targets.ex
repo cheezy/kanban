@@ -410,9 +410,12 @@ defmodule Kanban.Targets do
       member goals' child tasks (a childless goal contributes `0/0` to this
       display fraction; when every goal is childless the fraction is `0/0`).
     * `:percentage` — `round(completed / total * 100)`, or `0` when `total == 0`.
-    * `:estimated_completion_date` — `today` plus remaining tasks × the 50th
-      percentile (median) lead time of ALL historical completed non-goal tasks on the
-      member goals' boards (`Kanban.Targets.Estimation`). `nil` when every
+    * `:estimated_completion_date` — the calendar day the projection lands on
+      when `now` is advanced by remaining tasks × the 50th percentile (median)
+      lead time of ALL historical completed non-goal tasks on the
+      member goals' boards (`Kanban.Targets.Estimation`). Because the anchor is
+      an instant rather than a bare date, work that fits inside the rest of the
+      local day estimates *today* (D212). `nil` when every
       member goal is complete, nothing remains, or there is no historical
       sample — `nil` means the strip renders no estimate at all. The sample
       costs ONE query for the whole list, not one per target (W1951), on top
@@ -431,20 +434,28 @@ defmodule Kanban.Targets do
 
   ## Time injection
 
-  `today` is injected here at the impure context boundary (defaulting to
-  `Date.utc_today/0`, mirroring the `_from`/`today` split in
-  `Kanban.Agents.Metrics`). `Kanban.Targets.Status.derive/4` stays pure — it
-  never reads the clock.
+  `now` — a timezone-aware `DateTime` — is injected here at the impure context
+  boundary (defaulting to `DateTime.utc_now/0`). `Kanban.Targets.Status.derive/4`
+  and `Kanban.Targets.Estimation` stay pure — neither reads the clock.
+
+  The anchor is an instant, not a date, because the estimate needs the time of
+  day to know how much of the local day is left (D212). The calendar day
+  `Status` derives against is taken from that same instant inside
+  `Kanban.Targets.Progress`, so the two can never disagree. Callers that have a
+  viewer timezone should pass `Kanban.Timezone.local_now/1`; the
+  `DateTime.utc_now/0` default is the exact analogue of the previous
+  `Date.utc_today/0` one, since `DateTime.to_date(DateTime.utc_now())` is
+  `Date.utc_today()`.
 
   This issues one member-goal query per target and one child query per goal
   (N+1). That is acceptable for the boards index, which refreshes only every
   30s; a batched version can replace it later without changing the shape.
   """
-  @spec list_targets_with_status(Scope.t() | nil, Date.t()) :: [target_summary()]
-  def list_targets_with_status(scope, today \\ Date.utc_today()) do
+  @spec list_targets_with_status(Scope.t() | nil, DateTime.t()) :: [target_summary()]
+  def list_targets_with_status(scope, now \\ DateTime.utc_now()) do
     scope
     |> list_targets()
-    |> then(&Progress.summarize_targets(scope, &1, today))
+    |> then(&Progress.summarize_targets(scope, &1, now))
     |> Enum.map(fn {summary, _goals} -> summary end)
   end
 
@@ -469,15 +480,15 @@ defmodule Kanban.Targets do
   query for the whole list, not one per target.
 
   Board scoping, the per-goal child query (N+1) characteristics, and the
-  `today` injection are identical to `list_targets_with_status/2`.
+  `now` injection are identical to `list_targets_with_status/2`.
   """
-  @spec list_targets_with_status_and_goals(Scope.t() | nil, Date.t()) :: [
+  @spec list_targets_with_status_and_goals(Scope.t() | nil, DateTime.t()) :: [
           target_summary_with_goals()
         ]
-  def list_targets_with_status_and_goals(scope, today \\ Date.utc_today()) do
+  def list_targets_with_status_and_goals(scope, now \\ DateTime.utc_now()) do
     scope
     |> list_targets()
-    |> then(&Progress.summarize_targets(scope, &1, today))
+    |> then(&Progress.summarize_targets(scope, &1, now))
     |> Enum.map(fn {summary, goals} -> Map.put(summary, :goals, goals) end)
   end
 
@@ -517,26 +528,27 @@ defmodule Kanban.Targets do
   cross-board child counts can leak. The id form additionally re-checks target
   visibility through `get_target/2` before any child read.
 
-  Like `list_targets_with_status/2`, `today` is injected at this impure
-  boundary (defaulting to `Date.utc_today/0`) so `Kanban.Targets.Status.derive/4`
-  stays pure. One member-goal query per call plus one child query per goal
+  Like `list_targets_with_status/2`, `now` is injected at this impure
+  boundary (defaulting to `DateTime.utc_now/0`) so
+  `Kanban.Targets.Status.derive/4` and `Kanban.Targets.Estimation` stay pure.
+  One member-goal query per call plus one child query per goal
   (N+1) — acceptable for a single drill-down page, matching the module's
   documented stance.
   """
   @spec get_target_progress(
           Scope.t() | nil,
           DeliveryTarget.t() | integer() | String.t(),
-          Date.t()
+          DateTime.t()
         ) :: target_progress() | {:error, :not_found}
-  def get_target_progress(scope, target_or_id, today \\ Date.utc_today())
+  def get_target_progress(scope, target_or_id, now \\ DateTime.utc_now())
 
-  def get_target_progress(scope, %DeliveryTarget{} = target, today) do
-    Progress.build_target_progress(scope, target, today)
+  def get_target_progress(scope, %DeliveryTarget{} = target, now) do
+    Progress.build_target_progress(scope, target, now)
   end
 
-  def get_target_progress(scope, id, today) when is_integer(id) or is_binary(id) do
+  def get_target_progress(scope, id, now) when is_integer(id) or is_binary(id) do
     case get_target(scope, id) do
-      {:ok, target} -> Progress.build_target_progress(scope, target, today)
+      {:ok, target} -> Progress.build_target_progress(scope, target, now)
       {:error, :not_found} = error -> error
     end
   end

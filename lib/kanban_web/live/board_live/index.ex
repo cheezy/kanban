@@ -234,12 +234,17 @@ defmodule KanbanWeb.BoardLive.Index do
     |> assign(:workspace_members, Boards.list_workspace_members(user))
   end
 
-  # Anchor delivery-target status on the viewer's local calendar day (not the
-  # server's UTC day) so the boards TargetsStrip agrees with the agents
+  # Anchor delivery-target status on the viewer's local instant (not the
+  # server's UTC clock) so the boards TargetsStrip agrees with the agents
   # delivery-health band, which already anchors on the viewer's timezone via
   # Kanban.Targets.DeliveryRollup. See D123.
+  #
+  # The anchor is an instant rather than a bare local date because the
+  # completion estimate needs the time of day to tell whether the remaining
+  # work fits inside the rest of the local day (D212). The calendar day the
+  # status derives against is taken from this same value downstream.
   defp load_targets(scope, timezone) do
-    Targets.list_targets_with_status(scope, Kanban.Timezone.local_today(timezone))
+    Targets.list_targets_with_status(scope, Kanban.Timezone.local_now(timezone))
   end
 
   @impl true
