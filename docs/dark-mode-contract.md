@@ -170,7 +170,7 @@ documents and use the same resolve-to-explicit core, minus the toggle machinery
 |---|---|---|
 | **daisyUI tokens** | Inside daisyUI components and form controls; works everywhere `data-theme` is set | `bg-base-100`, `text-base-content`, `border-base-300`, `btn-primary` |
 | **Stride custom tokens** | Inside `.stride-screen` or `.stride-marketing` for app chrome, panels, typography | `var(--ink)`, `var(--surface)`, `var(--line)`, `var(--stride-orange)` |
-| **Tailwind `dark:` variant** | When you need a one-off override that the daisyUI/Stride tokens don't cover | `dark:opacity-80`, `dark:shadow-none` (rare — prefer the tokens) |
+| **Tailwind `dark:` variant** | When you need a one-off override that the daisyUI/Stride tokens don't cover | `dark:shadow-none`, `dark:border-0` (rare — prefer the tokens). Never an opacity on text — see [opacity on text](#known-contrast-limitation-opacity-on-text-d213) |
 
 ### Choosing daisyUI base-\* vs Stride `--surface`/`--ink`
 
@@ -328,14 +328,65 @@ was previously offered in the token-mapping table above as an equivalent of
 `var(--ink-2)`; it is not equivalent, because only the token is measured, so
 that row now names the token alone.
 
-Usages predating this rule remain in the tree and are **not** allow-listed —
-they are tracked under **D214** rather than treated as sanctioned. That
-follow-up also covers `AGENTS.md`, which carries its own copy of the mapping
-table and still offers the `opacity-70` form; until it lands, prefer this
-document where the two disagree.
+Opacity on non-text (backdrops, dividers, hover and focus states, disabled
+affordances, progress fills, icons, SVG chart fills) is unaffected by this rule.
 
-Opacity on non-text (backdrops, dividers, hover states, disabled affordances)
-is unaffected by this rule.
+#### What D214 measured, and where the line was drawn
+
+D214 measured the custom-token opacity-on-text sites named in its own scope and
+removed the opacity from all five components that had one: `agent_roster_card.ex`,
+`task_card.ex`, `integration_points_section.ex`, `explorer_result_section.ex`,
+and `technical_details_section.ex`. Three were
+genuinely under floor in **light** mode — `task_card` at 3.99:1, the four
+`integration_points` labels at 4.16:1, and the `explorer_result` duration at
+4.00:1 — while every one of them passed in dark. `technical_details_section`
+measures the same 4.16:1 as `integration_points` (identical token, alpha and
+panel); the `explorer_result` reason and summary were the two that already
+cleared, at 4.93:1 light / 6.05:1 dark, and lost their opacity anyway so the
+component reads consistently. That asymmetry is the rule of
+thumb worth remembering: a dark foreground composited toward a white surface
+loses far more contrast than a light foreground toward a dark one, so **light
+mode is where opacity-on-text fails first.**
+
+`agent_roster_card` was fixed even though it measured 4.82:1 and cleared its
+floor, because the pair it dimmed (`--st-doing` on `--st-doing-soft`) is one the
+contrast gate actively reports as passing at 6.70:1. A usage that makes a green
+gate reading wrong is worse than one the gate never claimed to cover.
+
+The daisyUI `text-base-content opacity-NN` family was measured and **left as
+is** — the in-app sites range 4.55–8.10:1 and the seven in `nav_components.ex`
+measure 8.72:1 light / 10.81:1 dark, so all clear their floor in both themes.
+That is because `--color-base-content` starts from a much higher raw ratio
+(16.74:1 light) than the custom ink tokens. It is not sanctioned, just not
+broken; prefer a token in new code.
+
+**This sweep was scoped, not exhaustive.** D214 covered the sites its own
+description named. Roughly 140 further `text-base-content opacity-NN` usages
+remain across the marketing and legal pages, and more across in-app sections
+(`workflow_steps_section`, `actual_vs_estimated_section`, `checklist_section`,
+`child_tasks_section`, `history_section`, `dependencies_section`, and several
+form and admin templates). They are the same daisyUI shape measured above and so
+are very likely to clear their floor for the same reason, but **they were not
+individually measured** — do not read this section as a clean bill of health for
+them.
+
+One custom-token site is also outside this sweep and unmeasured:
+`board_live/show.html.heex:707` puts `opacity: 0.55` on a whole revoked-API-token
+row, whose descendants carry `var(--ink)` and `var(--ink-3)` at 11.5px. It is
+arguably an inactive-state affordance rather than de-emphasized text, which is
+why D214 left it, but at that alpha the `--ink-3` child would land well below the
+sites this task fixed. It is a genuine open question, not a considered pass.
+
+**No automated guard was added, deliberately.** `contrast` owns the ratio math
+but reads only `app.css` and never markup; `scan` reads markup but has no notion
+of what colour the text is — and in the parent/child cases (`agent_roster_card`,
+`task_card`) the colour is not even on the element carrying the opacity, so a
+line-based rule cannot resolve it. A regex could catch only the same-element and
+same-class shapes, and could never assert a ratio, so it would report green on
+exactly the cases that motivated this rule. Teaching `contrast` to parse HEEx
+would give it a second responsibility and a template-resolution problem for one
+class of bug. The rule above plus review is the stopping point until something
+cheaper appears.
 
 ## Allow-listing
 

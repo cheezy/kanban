@@ -59,8 +59,12 @@ This approach improves:
 - **Issue**: Using hardcoded Tailwind colors like `text-gray-900`, `bg-white`, `border-gray-200`
 - **Fix**: Replace with theme-aware daisyUI colors:
   - `text-gray-900` → `text-base-content`
-  - `text-gray-600` → `text-base-content opacity-70`
-  - `text-gray-500` → `text-base-content opacity-60`
+  - `text-gray-600` → `var(--ink-2)` inside `.stride-screen` / `.stride-marketing`,
+    else `text-base-content` — **not** `text-base-content opacity-70` (D214: an
+    opacity is invisible to `mix dark_mode.contrast`, so it can drop below the
+    floor while the gate stays green)
+  - `text-gray-500` → `var(--ink-3)` inside `.stride-screen` / `.stride-marketing`,
+    else `text-base-content` — **not** `text-base-content opacity-60` (D214)
   - `bg-white` → `bg-base-100`
   - `bg-gray-50` → `bg-base-200`
   - `border-gray-200` → `border-base-300`
@@ -155,9 +159,9 @@ await page.eval(() => {
 
 **In templates:**
 ```heex
-<!-- Use theme-aware classes -->
+<!-- Use theme-aware classes and tokens -->
 <h1 class="text-base-content">Title</h1>
-<p class="text-base-content opacity-70">Subtitle</p>
+<p style="color: var(--ink-2);">Subtitle</p>  <!-- token, not opacity (D214) -->
 <div class="bg-base-100 border-base-300">Content</div>
 ```
 

@@ -17,7 +17,7 @@ defmodule KanbanWeb.TaskLive.Components.IntegrationPointsSection do
       <div class="space-y-3">
         <%= if Map.has_key?(@integration_points, "telemetry_events") && !Enum.empty?(@integration_points["telemetry_events"]) do %>
           <div>
-            <p class="text-xs font-semibold text-[var(--stride-violet-ink)] opacity-70 mb-1">
+            <p class="text-xs font-semibold text-[var(--stride-violet-ink)] mb-1">
               {gettext("Telemetry Events")}
             </p>
             <ul class="list-disc list-inside space-y-1">
@@ -29,7 +29,7 @@ defmodule KanbanWeb.TaskLive.Components.IntegrationPointsSection do
         <% end %>
         <%= if Map.has_key?(@integration_points, "pubsub_broadcasts") && !Enum.empty?(@integration_points["pubsub_broadcasts"]) do %>
           <div>
-            <p class="text-xs font-semibold text-[var(--stride-violet-ink)] opacity-70 mb-1">
+            <p class="text-xs font-semibold text-[var(--stride-violet-ink)] mb-1">
               {gettext("PubSub Broadcasts")}
             </p>
             <ul class="list-disc list-inside space-y-1">
@@ -41,7 +41,7 @@ defmodule KanbanWeb.TaskLive.Components.IntegrationPointsSection do
         <% end %>
         <%= if Map.has_key?(@integration_points, "phoenix_channels") && !Enum.empty?(@integration_points["phoenix_channels"]) do %>
           <div>
-            <p class="text-xs font-semibold text-[var(--stride-violet-ink)] opacity-70 mb-1">
+            <p class="text-xs font-semibold text-[var(--stride-violet-ink)] mb-1">
               {gettext("Phoenix Channels")}
             </p>
             <ul class="list-disc list-inside space-y-1">
@@ -53,7 +53,7 @@ defmodule KanbanWeb.TaskLive.Components.IntegrationPointsSection do
         <% end %>
         <%= if Map.has_key?(@integration_points, "external_apis") && !Enum.empty?(@integration_points["external_apis"]) do %>
           <div>
-            <p class="text-xs font-semibold text-[var(--stride-violet-ink)] opacity-70 mb-1">
+            <p class="text-xs font-semibold text-[var(--stride-violet-ink)] mb-1">
               {gettext("External APIs")}
             </p>
             <ul class="list-disc list-inside space-y-1">

@@ -11,10 +11,16 @@ defmodule KanbanWeb.TaskLive.Components.ExplorerResultSectionTest do
     "duration_ms" => 12_500
   }
 
-  # The duration span is the only element carrying this class, so it is a
-  # precise probe for "no duration was rendered" — unlike matching on "ms",
-  # which also appears inside the "items-baseline" utility class.
-  @duration_class "opacity-70"
+  # The duration is the only <span> carrying exactly this class — the reason and
+  # summary are <p> — so it is a precise probe for "no duration was rendered",
+  # unlike matching on "ms", which also appears inside the "items-baseline"
+  # utility class.
+  #
+  # D214 note: this probe was previously "opacity-70", which that task removed
+  # from the span. A class the component no longer renders makes every refute
+  # below pass unconditionally, so the probe must name something the duration
+  # actually still has. The "duration probe integrity" test below guards that.
+  @duration_class ~s(<span class="text-xs")
 
   @skipped %{
     "dispatched" => false,
@@ -102,6 +108,22 @@ defmodule KanbanWeb.TaskLive.Components.ExplorerResultSectionTest do
       html = render_section(%{@skipped | "reason" => "some_future_reason"})
 
       assert html =~ "some_future_reason"
+    end
+  end
+
+  describe "duration probe integrity" do
+    # Guards every `refute html =~ @duration_class` below. Those refutes are only
+    # meaningful while the probe matches markup the component still emits; if a
+    # styling change removes it, they all pass unconditionally and five tests go
+    # silently vacuous. That is precisely what happened in D214, and this test is
+    # the thing that would have caught it.
+    test "the probe matches when a duration IS rendered" do
+      html = render_section(@dispatched)
+
+      assert html =~ @duration_class,
+             "@duration_class no longer matches the rendered duration — every " <>
+               "refute using it is now vacuous. Re-point it at markup the " <>
+               "duration span actually emits."
     end
   end
 

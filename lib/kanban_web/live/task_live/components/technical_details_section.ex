@@ -22,7 +22,10 @@ defmodule KanbanWeb.TaskLive.Components.TechnicalDetailsSection do
         <%!-- Keys are free-form agent-supplied data, not UI chrome, so they are
         rendered verbatim (auto-escaped) and intentionally not wrapped in gettext. --%>
         <div :for={{key, value} <- @technical_details}>
-          <p class="text-xs font-semibold text-[var(--stride-violet-ink)] opacity-70 mb-1">
+          <%!-- D214: no opacity — this composited --stride-violet-ink to 4.16:1
+          in light mode, under its 4.5:1 floor. font-semibold carries the label
+          emphasis instead. --%>
+          <p class="text-xs font-semibold text-[var(--stride-violet-ink)] mb-1">
             {key}
           </p>
           {render_value(value)}

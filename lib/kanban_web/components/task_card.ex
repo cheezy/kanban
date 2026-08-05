@@ -174,7 +174,10 @@ defmodule KanbanWeb.TaskCard do
       ]}
     >
       <.icon name="hero-flag" class="w-2.5 h-2.5" />
-      <span class="ident" style="font-size: 10px; opacity: 0.85;">
+      <%!-- D214: no opacity on this identifier — it composited --ink-3 to 3.99:1
+      in light mode, under the 4.5:1 floor that token carries. The chip already
+      reads quieter than the card title via size (10px) and the muted token. --%>
+      <span class="ident" style="font-size: 10px;">
         {Map.get(@goal, :identifier) || @goal_id}
       </span>
       <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px;">

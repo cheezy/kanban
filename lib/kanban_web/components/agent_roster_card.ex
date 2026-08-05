@@ -195,7 +195,12 @@ defmodule KanbanWeb.AgentRosterCard do
       ]}
     >
       <span style="font-weight: 600; letter-spacing: 0.02em;">{@task.identifier}</span>
-      <span style="opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+      <%!-- D214: the title is separated from the identifier by weight alone, never
+      opacity. An opacity here composited --st-doing to 4.82:1 while the contrast
+      gate reported the underlying pair as 6.70:1 — the gate reads only app.css,
+      so it cannot see a usage-site alpha and was reporting green on a ratio the
+      markup degraded. --%>
+      <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
         {@task.title}
       </span>
     </div>

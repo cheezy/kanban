@@ -28,16 +28,16 @@ defmodule KanbanWeb.TaskLive.Components.ExplorerResultSection do
           <span class="font-semibold break-words">
             {status_label(@explorer_result)}
           </span>
-          <span :if={duration_label(@explorer_result)} class="text-xs opacity-70">
+          <span :if={duration_label(@explorer_result)} class="text-xs">
             {duration_label(@explorer_result)}
           </span>
-          <p :if={reason_label(@explorer_result)} class="w-full text-xs opacity-80 break-words">
+          <p :if={reason_label(@explorer_result)} class="w-full text-xs break-words">
             <span class="font-semibold">{gettext("Reason")}:</span> {reason_label(@explorer_result)}
           </p>
         </div>
         <p
           :if={summary(@explorer_result)}
-          class="text-xs opacity-80 whitespace-pre-wrap break-words"
+          class="text-xs whitespace-pre-wrap break-words"
         >
           {summary(@explorer_result)}
         </p>
