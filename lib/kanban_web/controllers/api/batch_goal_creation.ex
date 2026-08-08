@@ -15,7 +15,9 @@ defmodule KanbanWeb.API.BatchGoalCreation do
   (`build_task_params_with_creator/4`, `log_create_forbidden_fields/3`,
   `emit_telemetry/3`, `render_goal_with_children/1`, `render_task_summary/1`),
   which stay in `TaskController` because they are shared with the single-create
-  and dependency-listing actions.
+  and dependency-listing actions — except `render_task_summary/1`, whose shape
+  is owned by `KanbanWeb.API.TaskJSON`; the controller keeps a delegate under
+  that name so the call below resolves unchanged.
   """
 
   import Plug.Conn, only: [put_status: 2]

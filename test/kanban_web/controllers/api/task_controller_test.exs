@@ -5108,6 +5108,30 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "TaskController.render_task_summary/1 delegation (W2055)" do
+    test "the public arity BatchGoalCreation calls still resolves" do
+      Code.ensure_loaded!(KanbanWeb.API.TaskController)
+
+      assert function_exported?(KanbanWeb.API.TaskController, :render_task_summary, 1)
+    end
+
+    test "the delegate returns exactly what TaskJSON returns", %{column: column} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Delegation parity task",
+          "priority" => "high",
+          "complexity" => "medium",
+          "dependencies" => ["W900"],
+          "created_by_agent" => "Claude Opus 5"
+        })
+
+      # Fails loudest if a second, divergent definition is ever reintroduced
+      # in the controller — the duplication this move removed.
+      assert KanbanWeb.API.TaskController.render_task_summary(task) ==
+               KanbanWeb.API.TaskJSON.render_task_summary(task)
+    end
+  end
+
   describe "GET /api/tasks/:id/dependencies" do
     test "returns dependency tree for task without dependencies", %{conn: conn, column: column} do
       {:ok, task} =

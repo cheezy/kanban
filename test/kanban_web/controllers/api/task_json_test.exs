@@ -31,6 +31,8 @@ defmodule KanbanWeb.API.TaskJSONTest do
   alias Kanban.ApiTokens
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias Kanban.Tasks.Task
+  alias KanbanWeb.API.TaskJSON
 
   @moduletag capture_log: true
 
@@ -85,6 +87,71 @@ defmodule KanbanWeb.API.TaskJSONTest do
       "patterns" => %{"status" => "passed"},
       "pitfalls" => %{"status" => "failed", "notes" => "One pitfall violated."}
     }
+  end
+
+  describe "render_task_summary/1 — canonical summary shape (W2055)" do
+    test "renders exactly the eight summary keys and nothing wider", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Summary shape task"})
+
+      summary = TaskJSON.render_task_summary(task)
+
+      assert summary |> Map.keys() |> Enum.sort() == [
+               :complexity,
+               :created_by_agent,
+               :dependencies,
+               :id,
+               :identifier,
+               :priority,
+               :status,
+               :title
+             ]
+
+      # The summary is deliberately narrower than data/1. These three are
+      # rendered by the full view and must never leak into the compact row.
+      refute Map.has_key?(summary, :description)
+      refute Map.has_key?(summary, :key_files)
+      refute Map.has_key?(summary, :reviewer_result)
+    end
+
+    test "passes every field through verbatim", %{column: column} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Verbatim passthrough task",
+          "priority" => "critical",
+          "complexity" => "large",
+          "dependencies" => ["W900", "W901"],
+          "created_by_agent" => "Claude Opus 5"
+        })
+
+      summary = TaskJSON.render_task_summary(task)
+
+      assert summary.id == task.id
+      assert summary.identifier == task.identifier
+      assert summary.title == "Verbatim passthrough task"
+      assert summary.status == task.status
+      assert summary.priority == :critical
+      assert summary.complexity == :large
+      assert summary.dependencies == ["W900", "W901"]
+      assert summary.created_by_agent == "Claude Opus 5"
+    end
+
+    # Built as a bare struct rather than a persisted task on purpose: the
+    # schema defaults dependencies to [], so a DB-loaded task never carries
+    # nil and the `|| []` branch would otherwise go uncovered.
+    test "defaults nil dependencies to an empty list" do
+      summary = TaskJSON.render_task_summary(%Task{id: 1, dependencies: nil})
+
+      assert summary.dependencies == []
+    end
+
+    test "keeps a nil created_by_agent as a present nil key", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Unattributed task"})
+
+      summary = TaskJSON.render_task_summary(task)
+
+      assert Map.has_key?(summary, :created_by_agent)
+      assert is_nil(summary.created_by_agent)
+    end
   end
 
   describe "completion_notes serialization (D188)" do

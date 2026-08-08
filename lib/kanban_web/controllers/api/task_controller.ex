@@ -10,6 +10,7 @@ defmodule KanbanWeb.API.TaskController do
   alias KanbanWeb.API.CompletionResultGate
   alias KanbanWeb.API.ErrorDocs
   alias KanbanWeb.API.TaskErrors
+  alias KanbanWeb.API.TaskJSON
   alias KanbanWeb.API.TaskParamFilter
 
   require Logger
@@ -883,7 +884,7 @@ defmodule KanbanWeb.API.TaskController do
         emit_telemetry(conn, :dependencies_fetched, %{task_id: task.id})
 
         json(conn, %{
-          task: render_task_summary(task),
+          task: TaskJSON.render_task_summary(task),
           dependencies: render_dependency_tree(dependency_tree.dependencies)
         })
 
@@ -905,8 +906,8 @@ defmodule KanbanWeb.API.TaskController do
         })
 
         json(conn, %{
-          task: render_task_summary(task),
-          dependents: Enum.map(dependent_tasks, &render_task_summary/1)
+          task: TaskJSON.render_task_summary(task),
+          dependents: Enum.map(dependent_tasks, &TaskJSON.render_task_summary/1)
         })
 
       error ->
@@ -1031,7 +1032,7 @@ defmodule KanbanWeb.API.TaskController do
     |> put_resp_header("location", ~p"/api/tasks/#{goal}")
     |> json(%{
       goal: render_goal_with_children(goal),
-      child_tasks: Enum.map(child_tasks, &render_task_summary/1)
+      child_tasks: Enum.map(child_tasks, &TaskJSON.render_task_summary/1)
     })
   end
 
@@ -1074,9 +1075,10 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   # Exposed (with build_task_params_with_creator/4, log_create_forbidden_fields/3,
-  # render_goal_with_children/1, render_task_summary/1) so KanbanWeb.API.BatchGoalCreation
-  # can compose them; they remain owned here because the single-create and
-  # dependency-listing actions share them.
+  # render_goal_with_children/1) so KanbanWeb.API.BatchGoalCreation can compose
+  # them; they remain owned here because the single-create and dependency-listing
+  # actions share them. render_task_summary/1 is also exposed for the same caller
+  # but is no longer owned here — it delegates to KanbanWeb.API.TaskJSON.
   @doc false
   def emit_telemetry(conn, event_name, metadata) do
     :telemetry.execute(
@@ -1091,24 +1093,16 @@ defmodule KanbanWeb.API.TaskController do
     )
   end
 
+  # The summary shape itself lives in KanbanWeb.API.TaskJSON, which owns it.
+  # This delegate exists solely so KanbanWeb.API.BatchGoalCreation, which calls
+  # TaskController.render_task_summary/1 by name, keeps resolving unchanged.
   @doc false
-  def render_task_summary(task) do
-    %{
-      id: task.id,
-      identifier: task.identifier,
-      title: task.title,
-      status: task.status,
-      priority: task.priority,
-      complexity: task.complexity,
-      dependencies: task.dependencies || [],
-      created_by_agent: task.created_by_agent
-    }
-  end
+  defdelegate render_task_summary(task), to: TaskJSON
 
   defp render_dependency_tree(dependencies) do
     Enum.map(dependencies, fn dep_tree ->
       %{
-        task: render_task_summary(dep_tree.task),
+        task: TaskJSON.render_task_summary(dep_tree.task),
         dependencies: render_dependency_tree(dep_tree.dependencies)
       }
     end)

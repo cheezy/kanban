@@ -97,6 +97,36 @@ defmodule KanbanWeb.API.TaskJSON do
   """
   def changed_files_ack(assigns), do: ack(assigns)
 
+  @doc """
+  Canonical compact summary shape for a single task.
+
+  Three responses render it byte-for-byte — `GET /api/tasks/:id/dependencies`
+  (both the subject task and every node of the dependency tree), `GET
+  /api/tasks/:id/dependents`, and the `child_tasks` entries of goal creation
+  (single `POST /api/tasks` and `POST /api/tasks/batch`) — so widening it
+  widens all of them at once. It is deliberately narrower than `data/1`:
+  anything added here is exposed on endpoints that were only ever meant to
+  return a compact row.
+
+  Unlike the other public functions in this module it is **not** a Phoenix
+  template: it takes a task, not an assigns map, and is called directly rather
+  than through `render/3`. `KanbanWeb.API.TaskController.render_task_summary/1`
+  delegates here so that `KanbanWeb.API.BatchGoalCreation`, which calls it by
+  that name, keeps resolving unchanged.
+  """
+  def render_task_summary(task) do
+    %{
+      id: task.id,
+      identifier: task.identifier,
+      title: task.title,
+      status: task.status,
+      priority: task.priority,
+      complexity: task.complexity,
+      dependencies: task.dependencies || [],
+      created_by_agent: task.created_by_agent
+    }
+  end
+
   defp ack_data(%Task{} = task) do
     %{
       id: task.id,
