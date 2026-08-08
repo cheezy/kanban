@@ -13,6 +13,14 @@ defmodule KanbanWeb.API.TaskJSONTest do
   Also covers `completion_notes` serialization (D188) — the field was
   historically absent from the serializer, so a submitted value could not
   be read back.
+
+  Finally, guards the two properties the `response_view=slim` work (W2054,
+  W2056, W2059) depends on but never asserted: that slimming the *echo*
+  changes neither what is **persisted** nor what reaches the **review
+  queue** (W2060). Both are structurally true — the write completes before
+  the view is resolved, and `KanbanWeb.ReviewLive` loads through
+  `Kanban.Reviews.list_pending_reviews/1` rather than through any API view
+  — but a structural argument is not a regression test, and these two are.
   """
 
   use KanbanWeb.ConnCase
@@ -43,7 +51,7 @@ defmodule KanbanWeb.API.TaskJSONTest do
       |> put_req_header("accept", "application/json")
       |> put_req_header("authorization", "Bearer #{plain_token}")
 
-    %{conn: conn, column: column}
+    %{conn: conn, column: column, user: user, board: board}
   end
 
   defp structured_reviewer_result do
@@ -221,6 +229,134 @@ defmodule KanbanWeb.API.TaskJSONTest do
       reloaded = Kanban.Repo.get!(Kanban.Tasks.Task, task.id)
 
       assert reloaded.reviewer_result == payload
+    end
+  end
+
+  # W2060: the slim response views must never affect what is persisted or what
+  # the review queue displays. Both tests below complete a task through
+  # `response_view=slim` — the view that does NOT echo these fields back — and
+  # then read them from somewhere else entirely. Reading them from the
+  # completion response would defeat the point: that is the path being removed.
+  describe "review fields survive a slim completion (W2060)" do
+    # The single source of truth for both assertions below. Deriving both from
+    # one map is deliberate: two hand-maintained field lists would drift, and a
+    # field silently dropped from one list is exactly the regression these
+    # tests exist to catch.
+    defp slimmed_review_fields do
+      %{
+        # Extended here rather than in structured_reviewer_result/0, which
+        # other tests in this file assert against verbatim. The completion
+        # gate requires both of these on a dispatched review.
+        "reviewer_result" =>
+          Map.merge(structured_reviewer_result(), %{
+            "project_checks" => [
+              %{
+                "check" => "No String.to_atom/1 on user input",
+                "source" => "CODE-REVIEW.md",
+                "status" => "met",
+                "evidence" => "lib/foo.ex:12 uses a literal-string allow-list"
+              }
+            ],
+            "security_considerations" => %{
+              "status" => "passed",
+              "note" => "No new authorization, injection or disclosure surface in the diff."
+            }
+          }),
+        "explorer_result" => %{
+          "dispatched" => true,
+          "duration_ms" => 12_450,
+          "summary" =>
+            "Explored the controller and its sibling view module, then traced " <>
+              "the completion write path end to end before implementing."
+        },
+        "review_report" =>
+          "## Review Summary\n\nApproved — 0 issues found.\n\n- criterion 1: met",
+        "completion_notes" => "Implemented the change; all tests passing. See the review report."
+      }
+    end
+
+    defp complete_via_slim!(conn, user, board) do
+      columns = Columns.list_columns(board)
+      doing = Enum.find(columns, &(&1.name == "Doing"))
+
+      {:ok, task} =
+        Tasks.create_task(doing, %{
+          "title" => "Slim completion round-trip",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id,
+          "needs_review" => true
+        })
+
+      params =
+        Map.merge(slimmed_review_fields(), %{
+          "agent_name" => "Claude Opus 5",
+          "completion_summary" => "Completed through the slim view for the W2060 guard.",
+          "actual_complexity" => "small",
+          "actual_files_changed" => "lib/foo.ex, test/foo_test.exs",
+          "time_spent_minutes" => 12,
+          "after_doing_result" => %{"exit_code" => 0, "output" => "ok", "duration_ms" => 100},
+          "before_review_result" => %{"exit_code" => 0, "output" => "ok", "duration_ms" => 100}
+        })
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete?response_view=slim", params)
+      body = json_response(conn, 200)
+
+      # Precondition, not the assertion under test: prove we really exercised
+      # the slim view, so neither test below can pass by reading an echo.
+      refute Map.has_key?(body["data"], "reviewer_result")
+
+      {conn, task}
+    end
+
+    test "every review field round-trips verbatim through GET /api/tasks/:id", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      {conn, task} = complete_via_slim!(conn, user, board)
+
+      response = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)["data"]
+
+      for {field, submitted} <- slimmed_review_fields() do
+        assert response[field] == submitted,
+               "#{field} did not round-trip verbatim through a slim completion"
+      end
+    end
+
+    test "the review queue still sees every review field", %{
+      conn: conn,
+      user: user,
+      board: board
+    } do
+      {_conn, task} = complete_via_slim!(conn, user, board)
+
+      # Scoped exactly as ReviewLive.load_queue/1 calls it — an unscoped call
+      # would exercise a different query and could mask a scope-filtering leak.
+      scope = Kanban.Accounts.Scope.for_user(user)
+      queued = Kanban.Reviews.list_pending_reviews(scope: scope)
+
+      assert queued_task = Enum.find(queued, &(&1.id == task.id)),
+             "a task completed through the slim view never reached the review queue"
+
+      for {field, submitted} <- slimmed_review_fields() do
+        actual = Map.fetch!(queued_task, String.to_existing_atom(field))
+
+        assert actual == submitted,
+               "#{field} did not reach the review queue after a slim completion"
+      end
+
+      # Negative half of the scope contract. Without this the test would stay
+      # green even if apply_board_scope/2 became a no-op — passing a scope
+      # would be satisfied syntactically while masking exactly the cross-board
+      # leak the scope exists to prevent.
+      outsider_scope = user_fixture() |> Kanban.Accounts.Scope.for_user()
+      outsider_queue = Kanban.Reviews.list_pending_reviews(scope: outsider_scope)
+
+      refute Enum.any?(outsider_queue, &(&1.id == task.id)),
+             "a user with no membership on the board saw the task in the review queue"
     end
   end
 end
