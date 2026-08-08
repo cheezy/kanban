@@ -4205,6 +4205,39 @@ defmodule KanbanWeb.API.TaskControllerTest do
       end
     end
 
+    test "response_view=slim is honoured from the JSON body as well as the query string",
+         %{conn: conn, task: task} do
+      # Phoenix merges body and query params, so the body is an equally valid
+      # channel. Pinned because the endpoint doc now documents both.
+      conn =
+        put(conn, ~p"/api/tasks/#{task.id}/changed_files", %{
+          "response_view" => "slim",
+          "changed_files" => [%{"path" => "lib/body.ex", "diff" => "@@ -1 +1 @@\n-a\n+b"}]
+        })
+
+      response = json_response(conn, 200)
+      refute Map.has_key?(response["data"], "changed_files")
+      assert response["data"]["id"] == task.id
+    end
+
+    test "the slim envelope carries data alone, without current_skills_version",
+         %{conn: conn, task: task} do
+      payload = %{"changed_files" => [%{"path" => "lib/env.ex", "diff" => "@@ -1 +1 @@\n-a\n+b"}]}
+
+      full = json_response(put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload), 200)
+
+      slim =
+        json_response(
+          put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=slim", payload),
+          200
+        )
+
+      # The slim view drops the envelope key too, matching the other compact
+      # views (index, tree, after_goal_status). Documented; pinned here.
+      assert Map.keys(slim) == ["data"]
+      assert Map.has_key?(full, "current_skills_version")
+    end
+
     test "response_view=slim does not bypass authorization", %{task: task, board: board} do
       other_user = user_fixture(%{email: "diff-slim-other@example.com"})
 

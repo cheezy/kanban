@@ -73,7 +73,7 @@ The caller must satisfy **one** of these conditions:
 
 Otherwise the endpoint returns 403.
 
-## Query parameters
+## Selecting the response view
 
 | Parameter | Values | Default | Effect |
 |---|---|---|---|
@@ -83,6 +83,17 @@ Only the exact lowercase string `slim` opts in; `SLIM`, `" slim"`, `true`, `1` a
 `yes` all resolve to the full view. The parameter changes only what is echoed —
 never what is stored. The snapshot is persisted identically under both views and
 is always served in full by `GET /api/tasks/:id`.
+
+`response_view` may be sent **either as a query-string parameter or as a
+top-level key in the JSON request body** — Phoenix merges the two into the same
+params map, and the endpoint reads it from there:
+
+```json
+{ "response_view": "slim", "changed_files": [ ... ] }
+```
+
+The one exception is the bare top-level JSON array payload shape, which has no
+room for a sibling key; there the query string is the only channel.
 
 Opting in is worthwhile because the full response echoes the diff you just
 uploaded — up to 500 lines per file — straight back to the caller.
@@ -124,6 +135,11 @@ Returns an acknowledgement carrying the task's identity and status fields.
 `changed_files` is **omitted from the response only** — it is still persisted,
 and `GET /api/tasks/:id` still returns it in full.
 
+The slim envelope is a bare `{"data": {...}}` — it also omits the top-level
+`current_skills_version` key that the full view carries, matching the other
+compact views in this API (`GET /api/tasks`, `.../tree`, `.../after_goal_status`
+all omit it too).
+
 ```json
 {
   "data": {
@@ -136,8 +152,7 @@ and `GET /api/tasks/:id` still returns it in full.
     "review_status": null,
     "complexity": "small",
     "priority": "high"
-  },
-  "current_skills_version": "1.0"
+  }
 }
 ```
 
