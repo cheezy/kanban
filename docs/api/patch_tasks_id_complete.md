@@ -232,6 +232,59 @@ Example using the self-reported skip form (for platforms without subagent dispat
 }
 ```
 
+## Selecting the response view
+
+| Parameter | Values | Default | Effect |
+|---|---|---|---|
+| `response_view` | `slim` | absent (full) | `slim` returns a compact acknowledgement instead of echoing the completed task back. Any other value — including `full`, an unrecognised string, or the parameter being absent — returns the unchanged full response. |
+
+Only the exact lowercase string `slim` opts in. `response_view` is accepted
+either as a query-string parameter or as a top-level key in the JSON request
+body, since Phoenix merges the two into the same params map.
+
+**Why you would want it.** The full response echoes back everything you just
+submitted — `reviewer_result` with its 25 `project_checks`, plus
+`explorer_result`, `review_report`, `workflow_steps` and the completion fields.
+That is the largest response in the workflow, and a response that large can
+exceed an agent harness's output-truncation threshold, cutting the JSON
+mid-string so `after_goal` detection silently fails and the goal-completion
+push never fires. The slim view removes that condition at the source.
+
+**What still rides along.** `hooks` and the skills-version keys
+(`current_skills_version`, and `skills_update_required` when your
+`skills_version` is stale) are present under **both** views — the hook contract
+is unaffected. `response_view` changes only what is echoed: it never changes
+what is validated, what is stored, or the authorization required. Error
+responses (403, 404, 422) are identical under both views, because the view is
+selected only after the completion succeeds.
+
+### Success (200 OK) — `?response_view=slim`
+
+```json
+{
+  "data": {
+    "id": 2819,
+    "identifier": "W777",
+    "title": "...",
+    "status": "completed",
+    "parent_id": 2800,
+    "needs_review": false,
+    "review_status": null,
+    "complexity": "small",
+    "priority": "high"
+  },
+  "hooks": [
+    { "name": "after_doing", "timeout": 120000, "blocking": true, "env": { "...": "..." } },
+    { "name": "before_review", "timeout": 60000, "blocking": true, "env": { "...": "..." } }
+  ],
+  "current_skills_version": "1.0"
+}
+```
+
+The full record — including `reviewer_result`, `explorer_result`,
+`review_report` and `workflow_steps` — remains readable via
+`GET /api/tasks/:id`.
+
 ## Response
 
 ### Success (200 OK)

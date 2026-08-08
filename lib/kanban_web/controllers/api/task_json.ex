@@ -77,14 +77,25 @@ defmodule KanbanWeb.API.TaskJSON do
   removes. The bare clause is deliberately left envelope-free for the
   changed_files endpoint, which passes no `hooks` and no `skills_version`.
   """
-  def changed_files_ack(%{task: %Task{} = task, hooks: hooks} = assigns) do
+  def ack(%{task: %Task{} = task, hook: hook} = assigns) do
+    %{data: ack_data(task), hook: hook}
+    |> maybe_add_skills_version(assigns)
+  end
+
+  def ack(%{task: %Task{} = task, hooks: hooks} = assigns) do
     %{data: ack_data(task), hooks: hooks}
     |> maybe_add_skills_version(assigns)
   end
 
-  def changed_files_ack(%{task: %Task{} = task}) do
+  def ack(%{task: %Task{} = task}) do
     %{data: ack_data(task)}
   end
+
+  @doc """
+  Back-compatible alias for `ack/1`, kept because the view was introduced under
+  this name by W2056 and is still referenced by name in its tests.
+  """
+  def changed_files_ack(assigns), do: ack(assigns)
 
   defp ack_data(%Task{} = task) do
     %{

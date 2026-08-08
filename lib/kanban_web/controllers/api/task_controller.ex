@@ -587,7 +587,7 @@ defmodule KanbanWeb.API.TaskController do
     assigns = [task: task, hooks: hooks, agent_skills_version: agent.skills_version]
 
     case view do
-      :slim -> render(conn, :changed_files_ack, assigns)
+      :slim -> render(conn, :ack, assigns)
       :full -> render(conn, :show, assigns)
     end
   end
@@ -636,7 +636,7 @@ defmodule KanbanWeb.API.TaskController do
     })
 
     case view do
-      :slim -> render(conn, :changed_files_ack, task: task)
+      :slim -> render(conn, :ack, task: task)
       :full -> render(conn, :show, task: task)
     end
   end

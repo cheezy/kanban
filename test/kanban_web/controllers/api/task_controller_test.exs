@@ -3188,6 +3188,120 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert hook_names == ["after_doing", "before_review", "after_review"]
       refute Enum.any?(response["hooks"], &(&1["name"] == "after_goal"))
     end
+
+    # W2059: the slim completion acknowledgement.
+    test "response_view=slim omits the echoed review payload but keeps the hooks",
+         %{conn: conn, task: task} do
+      conn =
+        patch(
+          conn,
+          ~p"/api/tasks/#{task.id}/complete?response_view=slim",
+          base_completion_params()
+        )
+
+      body = json_response(conn, 200)
+
+      # The hook contract survives (this task has needs_review: true, so it
+      # routes to Review and the after_review entry is not yet emitted) ...
+      assert Enum.map(body["hooks"], & &1["name"]) == ["after_doing", "before_review"]
+
+      # ... and the nine identity fields are all present ...
+      for field <- ~w(id identifier title status parent_id needs_review review_status
+                      complexity priority) do
+        assert Map.has_key?(body["data"], field), "slim completion must carry #{field}"
+      end
+
+      # ... while the echoed payload that risks truncation is gone.
+      for field <- ~w(reviewer_result explorer_result review_report workflow_steps) do
+        refute Map.has_key?(body["data"], field), "slim completion must not echo #{field}"
+      end
+    end
+
+    test "response_view=slim still carries current_skills_version",
+         %{conn: conn, task: task} do
+      conn =
+        patch(
+          conn,
+          ~p"/api/tasks/#{task.id}/complete?response_view=slim",
+          base_completion_params()
+        )
+
+      assert json_response(conn, 200)["current_skills_version"]
+    end
+
+    test "response_view=slim still carries skills_update_required for a stale version",
+         %{conn: conn, task: task} do
+      params = Map.put(base_completion_params(), "skills_version", "0.0.1-stale")
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete?response_view=slim", params)
+      body = json_response(conn, 200)
+
+      # Reusing the bare changed_files ack here would have silently dropped
+      # this, since that clause never pipes through maybe_add_skills_version.
+      assert body["skills_update_required"]
+    end
+
+    test "response_view=slim does not change what is validated or stored",
+         %{conn: conn, task: task} do
+      params = base_completion_params()
+
+      conn = patch(conn, ~p"/api/tasks/#{task.id}/complete?response_view=slim", params)
+      assert json_response(conn, 200)
+
+      # Only the echo changed — the record carries everything submitted.
+      stored = Tasks.get_task!(task.id)
+      assert stored.completion_summary == params["completion_summary"]
+      assert stored.actual_complexity == :small
+      assert stored.time_spent_minutes == params["time_spent_minutes"]
+      assert stored.actual_files_changed == params["actual_files_changed"]
+    end
+
+    test "an unrecognised response_view still returns the full completion echo",
+         %{conn: conn, task: task} do
+      conn =
+        patch(
+          conn,
+          ~p"/api/tasks/#{task.id}/complete?response_view=SLIM",
+          base_completion_params()
+        )
+
+      data = json_response(conn, 200)["data"]
+
+      assert Map.has_key?(data, "completion_summary")
+      assert Map.has_key?(data, "workflow_steps")
+    end
+
+    test "a completion that fails validation returns the same body in both views",
+         %{conn: conn, task: task, user: user, doing_column: doing_column} do
+      {:ok, other} =
+        Tasks.create_task(doing_column, %{
+          "title" => "Second in-progress task",
+          "status" => "in_progress",
+          "claimed_at" => DateTime.utc_now(),
+          "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+          "assigned_to_id" => user.id,
+          "created_by_id" => user.id
+        })
+
+      bad = Map.delete(base_completion_params(), "completion_summary")
+
+      full = patch(conn, ~p"/api/tasks/#{task.id}/complete", bad)
+      slim = patch(conn, ~p"/api/tasks/#{other.id}/complete?response_view=slim", bad)
+
+      # Pin the status explicitly: without this the test would still pass if
+      # these params ever stopped being rejected, asserting nothing about the
+      # 422 body the testing strategy actually asks about.
+      assert full.status == 422
+
+      # The view is resolved only on the success path, so an error body is
+      # identical under both — same status, same shape.
+      assert full.status == slim.status
+
+      full_keys = full |> json_response(full.status) |> Map.keys()
+      slim_keys = slim |> json_response(slim.status) |> Map.keys()
+
+      assert full_keys == slim_keys
+    end
   end
 
   describe "PATCH /api/tasks/:id/complete explorer/reviewer validation gate" do
