@@ -61,20 +61,42 @@ defmodule KanbanWeb.API.TaskJSON do
 
   This changes only the echo, never the storage: the field is still persisted,
   and `GET /api/tasks/:id` still serves it in full.
+
+  W2059 reuses this same view for `PATCH /api/tasks/:id/complete`, where the
+  echoed payload (`reviewer_result` with its 25 `project_checks`, plus
+  `explorer_result`, `review_report` and `workflow_steps`) is large enough to
+  push the response past the harness truncation threshold — cutting the JSON
+  mid-string so `after_goal` detection silently fails and the goal-completion
+  push never fires. That is the root cause `D118` and `D119` work around.
+
+  The `hooks`-bearing clause below exists because that endpoint MUST keep its
+  envelope: `stride-hook.sh` reads `.hooks[].name`, `.hooks[].env` and, as the
+  `GOAL_ID` fallback, `.data.parent_id`. Rendering the bare clause there would
+  match (Elixir map patterns match subsets) and silently drop `hooks` and the
+  skills-version keys — reintroducing the exact silent failure this change
+  removes. The bare clause is deliberately left envelope-free for the
+  changed_files endpoint, which passes no `hooks` and no `skills_version`.
   """
+  def changed_files_ack(%{task: %Task{} = task, hooks: hooks} = assigns) do
+    %{data: ack_data(task), hooks: hooks}
+    |> maybe_add_skills_version(assigns)
+  end
+
   def changed_files_ack(%{task: %Task{} = task}) do
+    %{data: ack_data(task)}
+  end
+
+  defp ack_data(%Task{} = task) do
     %{
-      data: %{
-        id: task.id,
-        identifier: task.identifier,
-        title: task.title,
-        status: task.status,
-        parent_id: task.parent_id,
-        needs_review: task.needs_review,
-        review_status: task.review_status,
-        complexity: task.complexity,
-        priority: task.priority
-      }
+      id: task.id,
+      identifier: task.identifier,
+      title: task.title,
+      status: task.status,
+      parent_id: task.parent_id,
+      needs_review: task.needs_review,
+      review_status: task.review_status,
+      complexity: task.complexity,
+      priority: task.priority
     }
   end
 

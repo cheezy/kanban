@@ -547,7 +547,7 @@ defmodule KanbanWeb.API.TaskController do
 
     case Tasks.complete_task(task, user, params_with_agent, agent.name) do
       {:ok, task, hooks} ->
-        render_completed_task(conn, task, hooks, agent)
+        render_completed_task(conn, task, hooks, agent, view_for(params))
 
       {:error, :invalid_status} ->
         TaskErrors.error_response(
@@ -572,17 +572,24 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp render_completed_task(conn, task, hooks, agent) do
+  # W2059: the view is resolved from the request but applied HERE, on the
+  # success path only — Tasks.complete_task/4 has already authorized and
+  # persisted the completion, so the choice cannot widen what a caller reads
+  # and cannot change what is validated or stored. Both branches are handed the
+  # SAME assigns, so `hooks` (which stride-hook.sh reads for before_review and
+  # after_goal detection) and the skills-version keys ride along either way.
+  defp render_completed_task(conn, task, hooks, agent, view) do
     emit_telemetry(conn, :task_completed, %{
       task_id: task.id,
       time_spent_minutes: task.time_spent_minutes
     })
 
-    render(conn, :show,
-      task: task,
-      hooks: hooks,
-      agent_skills_version: agent.skills_version
-    )
+    assigns = [task: task, hooks: hooks, agent_skills_version: agent.skills_version]
+
+    case view do
+      :slim -> render(conn, :changed_files_ack, assigns)
+      :full -> render(conn, :show, assigns)
+    end
   end
 
   def put_changed_files(conn, %{"id" => id_or_identifier} = params) do

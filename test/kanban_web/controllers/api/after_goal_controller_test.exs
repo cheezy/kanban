@@ -115,6 +115,83 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
     end
   end
 
+  # W2059: the slim completion view exists to stop the echoed review payload
+  # truncating the response and silently killing after_goal detection. These
+  # tests pin the hook contract stride-hook.sh actually depends on:
+  # `.hooks[].name`, `.hooks[].env`, and `.data.parent_id` as the GOAL_ID
+  # fallback. If any of them stops surviving the slim view, the goal-completion
+  # push stops firing with no error anywhere — the exact silent failure D118
+  # and D119 were written to work around.
+  describe "last-child completion under response_view=slim" do
+    test "the after_goal hook entry still rides on the slim response", ctx do
+      %{conn: conn} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+
+      conn =
+        patch(
+          conn,
+          ~p"/api/tasks/#{child.id}/complete?response_view=slim",
+          valid_completion_params()
+        )
+
+      body = json_response(conn, 200)
+
+      after_goal = Enum.find(body["hooks"] || [], &(&1["name"] == "after_goal"))
+      assert after_goal, "after_goal hook entry must survive the slim view"
+      assert after_goal["env"], "the hook's env block must survive"
+
+      # The GOAL_ID fallback path the hook uses when env omits it.
+      assert body["data"]["parent_id"] == goal.id
+    end
+
+    test "the slim response omits the echoed review payload", ctx do
+      %{conn: conn} = ctx
+      %{child: child} = create_goal_with_single_child(ctx)
+
+      conn =
+        patch(
+          conn,
+          ~p"/api/tasks/#{child.id}/complete?response_view=slim",
+          valid_completion_params()
+        )
+
+      data = json_response(conn, 200)["data"]
+
+      for field <- ~w(reviewer_result explorer_result review_report workflow_steps
+                      completion_notes completion_summary changed_files) do
+        refute Map.has_key?(data, field), "slim completion must not echo #{field}"
+      end
+    end
+
+    test "the goal still transitions exactly as it does under the full view", ctx do
+      %{conn: conn, done_column: done_column} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+
+      patch(
+        conn,
+        ~p"/api/tasks/#{child.id}/complete?response_view=slim",
+        valid_completion_params()
+      )
+
+      reloaded_goal = Tasks.get_task!(goal.id)
+      assert reloaded_goal.after_goal_status == :pending
+      refute reloaded_goal.column_id == done_column.id
+      assert_enqueued(worker: GraceWorker, args: %{"goal_id" => goal.id})
+    end
+
+    test "the full view still carries the after_goal entry too", ctx do
+      %{conn: conn} = ctx
+      %{child: child} = create_goal_with_single_child(ctx)
+
+      conn = patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+      body = json_response(conn, 200)
+
+      assert Enum.find(body["hooks"] || [], &(&1["name"] == "after_goal"))
+      # ... and still echoes the full task, unchanged.
+      assert Map.has_key?(body["data"], "completion_summary")
+    end
+  end
+
   describe "PATCH /api/tasks/:id/after_goal — success path" do
     test "exit_code 0 flips status to :succeeded and promotes goal to Done", ctx do
       %{conn: conn, done_column: done_column} = ctx
