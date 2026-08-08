@@ -4092,6 +4092,163 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 200)["data"]["status"] == "in_progress"
       assert Tasks.get_task!(task.id).status == :in_progress
     end
+
+    # W2056: the slim acknowledgement view. The default response echoes the
+    # uploaded diff straight back; response_view=slim acknowledges instead.
+    test "the acknowledgement view carries the nine identity and status fields", %{task: task} do
+      %{data: ack} = KanbanWeb.API.TaskJSON.changed_files_ack(%{task: task})
+
+      assert Map.keys(ack) |> Enum.sort() == [
+               :complexity,
+               :id,
+               :identifier,
+               :needs_review,
+               :parent_id,
+               :priority,
+               :review_status,
+               :status,
+               :title
+             ]
+
+      assert ack.id == task.id
+      assert ack.identifier == task.identifier
+      assert ack.title == task.title
+      assert ack.status == task.status
+      assert ack.needs_review == task.needs_review
+    end
+
+    test "the acknowledgement view omits changed_files", %{task: task} do
+      {:ok, task} =
+        Tasks.update_changed_files(task, [
+          %{"path" => "lib/a.ex", "diff" => "@@ -1 +1 @@\n-a\n+b"}
+        ])
+
+      %{data: ack} = KanbanWeb.API.TaskJSON.changed_files_ack(%{task: task})
+
+      refute Map.has_key?(ack, :changed_files)
+      # The field is populated on the struct — the view drops it, not the store.
+      assert length(task.changed_files) == 1
+    end
+
+    test "response_view=slim omits changed_files but keeps the identity fields",
+         %{conn: conn, task: task} do
+      payload = %{"changed_files" => [%{"path" => "lib/foo.ex", "diff" => "@@ -1 +1 @@\n-a\n+b"}]}
+
+      conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=slim", payload)
+      response = json_response(conn, 200)["data"]
+
+      refute Map.has_key?(response, "changed_files")
+
+      for field <- ~w(id identifier title status parent_id needs_review review_status
+                      complexity priority) do
+        assert Map.has_key?(response, field), "slim ack must carry #{field}"
+      end
+
+      assert response["id"] == task.id
+    end
+
+    test "response_view=slim still persists the diff, readable in full via GET",
+         %{conn: conn, task: task} do
+      payload = %{
+        "changed_files" => [
+          %{"path" => "lib/persisted.ex", "diff" => "@@ -1 +1 @@\n-old\n+new"}
+        ]
+      }
+
+      slim = put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=slim", payload)
+      refute Map.has_key?(json_response(slim, 200)["data"], "changed_files")
+
+      # Only the echo changed — the store did not.
+      assert [stored] = Tasks.get_task!(task.id).changed_files
+      assert stored["path"] == "lib/persisted.ex"
+
+      fetched = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)["data"]
+      assert [served] = fetched["changed_files"]
+      assert served["path"] == "lib/persisted.ex"
+      assert served["diff"] == "@@ -1 +1 @@\n-old\n+new"
+    end
+
+    test "an absent response_view returns a body identical to an explicit full",
+         %{conn: conn, task: task} do
+      payload = %{"changed_files" => [%{"path" => "lib/foo.ex", "diff" => "@@ -1 +1 @@\n-a\n+b"}]}
+
+      absent = json_response(put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload), 200)
+
+      explicit =
+        json_response(
+          put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=full", payload),
+          200
+        )
+
+      # The compatibility guarantee: absent and full are the same response, and
+      # both still echo the diff exactly as they did before this task.
+      assert absent == explicit
+      assert [%{"path" => "lib/foo.ex"}] = absent["data"]["changed_files"]
+
+      # Pinned against the unchanged show/1 view rather than only against each
+      # other, so a future edit that quietly slims the DEFAULT response fails
+      # here instead of passing because both sides shrank together.
+      shown = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)["data"]
+      assert Map.keys(absent["data"]) |> Enum.sort() == Map.keys(shown) |> Enum.sort()
+    end
+
+    test "an unrecognised response_view falls back to the full echo",
+         %{conn: conn, task: task} do
+      payload = %{"changed_files" => [%{"path" => "lib/foo.ex", "diff" => "@@ -1 +1 @@\n-a\n+b"}]}
+
+      for value <- ["SLIM", " slim", "true", "1", "compact", ""] do
+        conn = put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=#{value}", payload)
+        response = json_response(conn, 200)["data"]
+
+        assert Map.has_key?(response, "changed_files"),
+               "#{inspect(value)} must not opt in to the slim view"
+      end
+    end
+
+    test "response_view=slim does not bypass authorization", %{task: task, board: board} do
+      other_user = user_fixture(%{email: "diff-slim-other@example.com"})
+
+      {:ok, {_token_struct, plain_token}} =
+        ApiTokens.create_api_token(other_user, board, %{"name" => "Slim Other Token"})
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain_token}")
+
+      conn =
+        put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=slim", %{
+          "changed_files" => [%{"path" => "lib/a.ex"}]
+        })
+
+      # The view is chosen after authorization, so slim rejects exactly as full does.
+      response = json_response(conn, 403)
+      assert response["error"] =~ "you are assigned to"
+      assert Tasks.get_task!(task.id).changed_files in [nil, []]
+    end
+
+    test "response_view=slim acknowledges a base64 envelope and an empty list",
+         %{conn: conn, task: task} do
+      files = [%{"path" => "lib/enc.ex", "diff" => "@@ -1 +1 @@\n-a\n+b"}]
+      encoded = files |> Jason.encode!() |> Base.encode64()
+
+      conn1 =
+        put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=slim", %{
+          "changed_files" => %{"encoding" => "base64", "data" => encoded}
+        })
+
+      refute Map.has_key?(json_response(conn1, 200)["data"], "changed_files")
+      assert [stored] = Tasks.get_task!(task.id).changed_files
+      assert stored["path"] == "lib/enc.ex"
+
+      conn2 =
+        put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=slim", %{
+          "changed_files" => []
+        })
+
+      refute Map.has_key?(json_response(conn2, 200)["data"], "changed_files")
+      assert Tasks.get_task!(task.id).changed_files == []
+    end
   end
 
   describe "dependency filtering" do

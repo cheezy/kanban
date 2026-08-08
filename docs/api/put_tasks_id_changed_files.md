@@ -73,9 +73,23 @@ The caller must satisfy **one** of these conditions:
 
 Otherwise the endpoint returns 403.
 
+## Query parameters
+
+| Parameter | Values | Default | Effect |
+|---|---|---|---|
+| `response_view` | `slim` | absent (full) | `slim` returns a compact acknowledgement instead of echoing the uploaded snapshot back. Any other value — including `full`, an unrecognised string, or the parameter being absent — returns the unchanged full response. |
+
+Only the exact lowercase string `slim` opts in; `SLIM`, `" slim"`, `true`, `1` and
+`yes` all resolve to the full view. The parameter changes only what is echoed —
+never what is stored. The snapshot is persisted identically under both views and
+is always served in full by `GET /api/tasks/:id`.
+
+Opting in is worthwhile because the full response echoes the diff you just
+uploaded — up to 500 lines per file — straight back to the caller.
+
 ## Response
 
-### Success (200 OK)
+### Success (200 OK) — default (full) view
 
 Returns the updated task. The persisted snapshot appears under `data.changed_files`.
 
@@ -103,6 +117,32 @@ Returns the updated task. The persisted snapshot appears under `data.changed_fil
 ```
 
 The task is not transitioned. `status` and `column_id` are unchanged by this endpoint.
+
+### Success (200 OK) — `?response_view=slim`
+
+Returns an acknowledgement carrying the task's identity and status fields.
+`changed_files` is **omitted from the response only** — it is still persisted,
+and `GET /api/tasks/:id` still returns it in full.
+
+```json
+{
+  "data": {
+    "id": 2819,
+    "identifier": "W777",
+    "title": "...",
+    "status": "in_progress",
+    "parent_id": 2800,
+    "needs_review": true,
+    "review_status": null,
+    "complexity": "small",
+    "priority": "high"
+  },
+  "current_skills_version": "1.0"
+}
+```
+
+Authorization is unaffected: the view is selected after the write is authorized,
+so an unauthorized caller receives the same 403 under either view.
 
 ### Unauthorized (401)
 

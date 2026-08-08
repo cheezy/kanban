@@ -48,6 +48,36 @@ defmodule KanbanWeb.API.TaskJSON do
     }
   end
 
+  @doc """
+  Acknowledgement view for `PUT /api/tasks/:id/changed_files`, selected only by
+  an explicit `response_view=slim`.
+
+  Deliberately minimal, for the same reason as `after_goal_status/1`: the whole
+  point of that endpoint is to *receive* a diff, and the default `show/1` view
+  echoes the very same diff straight back — up to 500 lines per file — into the
+  caller's context, where an agent then re-sends it on every later request.
+  Nothing reads the echo, so the slim view acknowledges the write with the
+  task's identity and status fields and omits `changed_files` entirely.
+
+  This changes only the echo, never the storage: the field is still persisted,
+  and `GET /api/tasks/:id` still serves it in full.
+  """
+  def changed_files_ack(%{task: %Task{} = task}) do
+    %{
+      data: %{
+        id: task.id,
+        identifier: task.identifier,
+        title: task.title,
+        status: task.status,
+        parent_id: task.parent_id,
+        needs_review: task.needs_review,
+        review_status: task.review_status,
+        complexity: task.complexity,
+        priority: task.priority
+      }
+    }
+  end
+
   # The GOAL_* env block the after_goal hook exports (mirrors the keys the
   # plugin's export_after_goal_env reads: GOAL_ID/GOAL_IDENTIFIER/GOAL_TITLE/
   # GOAL_DESCRIPTION), plus BOARD_* and HOOK_NAME. Values are strings — the hook

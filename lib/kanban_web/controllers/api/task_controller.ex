@@ -597,7 +597,7 @@ defmodule KanbanWeb.API.TaskController do
     payload = params["changed_files"] || params["_json"]
 
     case persist_changed_files(conn, id_or_identifier, payload) do
-      {:ok, task, value} -> render_changed_files_response(conn, task, value)
+      {:ok, task, value} -> render_changed_files_response(conn, task, value, view_for(params))
       error -> TaskErrors.handle_task_error(conn, error)
     end
   end
@@ -614,7 +614,12 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp render_changed_files_response(conn, task, value) do
+  # W2056: the view is resolved from the request but applied HERE, on the
+  # success path only — `persist_changed_files/2` has already authorized the
+  # write, so an unauthorized caller is rejected before any view exists to
+  # choose. Slim never widens what a caller can read: it strictly removes the
+  # echoed `changed_files` from a response that caller was already entitled to.
+  defp render_changed_files_response(conn, task, value, view) do
     # `task` is already preloaded (column, assigned_to, …) because
     # `fetch_and_verify_task/2` loads via `get_task_for_view`; the no-op
     # `Ecto.Changeset.change/2` preserves those associations. No refetch.
@@ -623,7 +628,10 @@ defmodule KanbanWeb.API.TaskController do
       file_count: length(value || [])
     })
 
-    render(conn, :show, task: task)
+    case view do
+      :slim -> render(conn, :changed_files_ack, task: task)
+      :full -> render(conn, :show, task: task)
+    end
   end
 
   # changed_files write access: the task's assignee, OR an authorized reviewer
