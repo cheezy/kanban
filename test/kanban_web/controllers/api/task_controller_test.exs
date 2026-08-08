@@ -5846,6 +5846,313 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  # W2058: the byte caps that stop the fat shape creeping back one field at a
+  # time. Every field in every slim shape is a scalar, and every field the slim
+  # views removed is KB-scale — a 500-line-per-file diff, a reviewer_result with
+  # 25 project_checks, a review_report. So each cap sits at roughly 3-5x the
+  # measured slim shape and far below the smallest blob that could re-enter: it
+  # has room for ordinary content growth but none for a blob.
+  #
+  # Each cap test pairs three assertions against ONE fixture that puts a large
+  # blob in a field the slim view omits: the slim body is under the cap, the
+  # full body is over it (so the cap discriminates rather than passing
+  # vacuously), and — the assertion that proves the cap is on the SHAPE and not
+  # the DATA — growing the blob by kilobytes does not move the slim number.
+  #
+  # If one of these goes red, the fix is to find which blob re-entered the slim
+  # shape. It is NOT to raise the number. A failing guard is the guard working.
+  describe "slim response byte caps (W2058)" do
+    # Measured slim shapes at the time of writing: changed_files ack 194 B,
+    # complete ack 1_475 B, summary row ~166 B, tree root ~1_371 B.
+    #
+    # The complete and tree caps are deliberately tighter than a flat 4 KB
+    # would be, because at 4 KB each stops discriminating against a realistic
+    # regression: a re-added `review_report` is ~2.6 KB, which would still fit
+    # under a 4 KB complete cap, and a 4 KB root allowance is ~3x the measured
+    # root, so a full tree with LEAN children would fit too — leaving the tree
+    # cap's discrimination supplied by the fixture's fat children rather than
+    # by the shape difference it is meant to assert.
+    @changed_files_ack_cap 1_024
+    @complete_ack_cap 2_560
+    @summary_row_cap 512
+    @index_envelope 128
+    @tree_root_allowance 2_048
+
+    # Tolerance for the shape-not-data assertions: an id or identifier can gain
+    # a digit as the DB sequence advances across a suite run.
+    @width_tolerance 64
+
+    defp cap_violation(body, cap) do
+      bytes = byte_size(body)
+      if bytes <= cap, do: nil, else: {bytes, cap}
+    end
+
+    defp fat_reviewer_result(pad_bytes) do
+      Map.merge(valid_reviewer_result(), %{
+        "project_checks" =>
+          for(
+            i <- 1..25,
+            do: %{
+              "check" => "check #{i} #{String.duplicate("x", 80)}",
+              "status" => "met",
+              "evidence" => String.duplicate("e", pad_bytes)
+            }
+          )
+      })
+    end
+
+    defp claimed_task(column, user, attrs) do
+      {:ok, task} = Tasks.create_task(column, attrs)
+
+      {:ok, task} =
+        task
+        |> Ecto.Changeset.change(
+          status: :in_progress,
+          claimed_at: DateTime.utc_now(:second),
+          assigned_to_id: user.id
+        )
+        |> Kanban.Repo.update()
+
+      task
+    end
+
+    defp diff_payload(lines) do
+      %{
+        "changed_files" =>
+          for(
+            i <- 1..5,
+            do: %{
+              "path" => "lib/file_#{i}.ex",
+              "diff" => String.duplicate("@@ -1 +1 @@\n-a\n+b\n", lines)
+            }
+          )
+      }
+    end
+
+    # AC3, second half: proof the cap actually goes red. Same helper, same
+    # shape, one body padded past the cap.
+    test "the cap check fails when a slim body is padded past its cap", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Cap red-proof task"})
+
+      conn =
+        put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=slim", diff_payload(10))
+
+      # Without this, a request that started failing would leave the whole test
+      # green: a small 4xx error body fits under the cap just as happily as a
+      # slim ack, and the padded leg below would then be pure arithmetic on it.
+      assert conn.status == 200
+
+      body = conn.resp_body
+
+      assert is_nil(cap_violation(body, @changed_files_ack_cap))
+
+      padded = body <> String.duplicate("x", @changed_files_ack_cap)
+      assert {bytes, @changed_files_ack_cap} = cap_violation(padded, @changed_files_ack_cap)
+      assert bytes > @changed_files_ack_cap
+    end
+
+    test "PUT /changed_files stays under its cap, and the cap discriminates", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Diff cap task"})
+      payload = diff_payload(40)
+
+      slim = put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=slim", payload)
+      full = put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload)
+
+      assert slim.status == 200
+      assert full.status == 200
+
+      assert is_nil(cap_violation(slim.resp_body, @changed_files_ack_cap)),
+             "slim changed_files ack grew past its cap: #{byte_size(slim.resp_body)} > #{@changed_files_ack_cap}"
+
+      refute is_nil(cap_violation(full.resp_body, @changed_files_ack_cap)),
+             "the cap no longer discriminates — even the FULL body fits under it"
+    end
+
+    test "the slim changed_files ack does not grow when the uploaded diff does", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Diff invariance task"})
+
+      small =
+        put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=slim", diff_payload(5))
+
+      # 150 repetitions is 450 lines per file — deliberately just under the
+      # 500-line-per-file cap in docs/diff-contract.md. Over it, the endpoint
+      # 422s and the ERROR body is what grows, which would leave this assertion
+      # measuring something entirely different while still looking meaningful.
+      big =
+        put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=slim", diff_payload(150))
+
+      assert small.status == 200
+      assert big.status == 200
+
+      # The DATA grew by kilobytes; the capped number must not have moved. This
+      # is what makes the cap a shape assertion rather than a content one.
+      assert byte_size(big.resp_body) - byte_size(small.resp_body) <= @width_tolerance
+    end
+
+    # The slim /complete body carries `hooks`, whose env embeds TASK_TITLE and
+    # TASK_DESCRIPTION verbatim — so its size is a linear function of the task's
+    # description. This fixture is therefore local with a pinned short title and
+    # description rather than reusing a describe-level one, and pins
+    # needs_review: true (two hooks; false appends after_review, adding a third).
+    test "PATCH /complete stays under its cap, and the cap discriminates", %{
+      conn: conn,
+      column: column,
+      user: user
+    } do
+      params = fn ->
+        Map.merge(base_completion_params(), %{
+          "explorer_result" => valid_explorer_result(),
+          "reviewer_result" => fat_reviewer_result(80),
+          "review_report" => String.duplicate("report line\n", 200)
+        })
+      end
+
+      slim_task =
+        claimed_task(column, user, %{
+          "title" => "Cap task",
+          "description" => "Short.",
+          "needs_review" => true
+        })
+
+      full_task =
+        claimed_task(column, user, %{
+          "title" => "Cap task",
+          "description" => "Short.",
+          "needs_review" => true
+        })
+
+      slim = patch(conn, ~p"/api/tasks/#{slim_task.id}/complete?response_view=slim", params.())
+      full = patch(conn, ~p"/api/tasks/#{full_task.id}/complete", params.())
+
+      assert slim.status == 200
+      assert full.status == 200
+
+      assert is_nil(cap_violation(slim.resp_body, @complete_ack_cap)),
+             "slim complete ack grew past its cap: #{byte_size(slim.resp_body)} > #{@complete_ack_cap}"
+
+      refute is_nil(cap_violation(full.resp_body, @complete_ack_cap)),
+             "the cap no longer discriminates — even the FULL body fits under it"
+    end
+
+    test "the slim complete ack does not grow when reviewer_result does", %{
+      conn: conn,
+      column: column,
+      user: user
+    } do
+      params = fn pad ->
+        Map.merge(base_completion_params(), %{
+          "explorer_result" => valid_explorer_result(),
+          "reviewer_result" => fat_reviewer_result(pad)
+        })
+      end
+
+      small_task =
+        claimed_task(column, user, %{
+          "title" => "Inv",
+          "description" => "Short.",
+          "needs_review" => true
+        })
+
+      big_task =
+        claimed_task(column, user, %{
+          "title" => "Inv",
+          "description" => "Short.",
+          "needs_review" => true
+        })
+
+      small =
+        patch(conn, ~p"/api/tasks/#{small_task.id}/complete?response_view=slim", params.(10))
+
+      big = patch(conn, ~p"/api/tasks/#{big_task.id}/complete?response_view=slim", params.(400))
+
+      # The one-sided assertion below passes trivially if `big` SHRINKS — which
+      # is exactly what a 422 would do. A future validation rule targeting the
+      # 400-character evidence strings would otherwise leave this test green
+      # while it tested nothing at all.
+      assert small.status == 200
+      assert big.status == 200
+
+      assert byte_size(big.resp_body) - byte_size(small.resp_body) <= @width_tolerance
+    end
+
+    # Capped as a RATE rather than a whole-response number: a whole-response cap
+    # would pin a row count and need manual updating every time a fixture adds a
+    # task, which is a data assertion wearing a shape assertion's clothes.
+    test "GET /api/tasks stays under its per-row cap, and the cap discriminates", %{
+      conn: conn,
+      column: column
+    } do
+      for i <- 1..3 do
+        {:ok, t} =
+          Tasks.create_task(column, %{
+            "title" => "Row cap task #{i}",
+            "description" => String.duplicate("long description ", 50)
+          })
+
+        {:ok, _} =
+          t
+          |> Ecto.Changeset.change(reviewer_result: fat_reviewer_result(80))
+          |> Kanban.Repo.update()
+      end
+
+      slim = get(conn, ~p"/api/tasks?response_view=slim")
+      full = get(conn, ~p"/api/tasks")
+
+      assert slim.status == 200
+      assert full.status == 200
+
+      rows = length(json_response(slim, 200)["data"])
+      cap = @summary_row_cap * rows + @index_envelope
+
+      assert is_nil(cap_violation(slim.resp_body, cap)),
+             "slim index grew past #{@summary_row_cap} B/row over #{rows} rows: #{byte_size(slim.resp_body)} > #{cap}"
+
+      refute is_nil(cap_violation(full.resp_body, cap)),
+             "the cap no longer discriminates — even the FULL index fits under it"
+    end
+
+    # The tree root is deliberately never slimmed, so it gets a flat allowance
+    # sized at ~1.5x the measured root render — tight enough that a full tree
+    # with LEAN children still exceeds the cap, so the discrimination below is
+    # structural rather than supplied by the fixture. The cap's discriminating power comes from the children —
+    # which is the only part response_view=slim actually controls. The fixture
+    # is lean-root/fat-children for the same reason.
+    test "GET /:id/tree stays under its root allowance plus per-child cap", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(column, %{title: "Tree cap goal"}, [
+          %{title: "Child 1", description: String.duplicate("child detail ", 100)},
+          %{title: "Child 2", description: String.duplicate("child detail ", 100)}
+        ])
+
+      slim = get(conn, ~p"/api/tasks/#{goal.id}/tree?response_view=slim")
+      full = get(conn, ~p"/api/tasks/#{goal.id}/tree")
+
+      assert slim.status == 200
+      assert full.status == 200
+
+      children = length(json_response(slim, 200)["data"]["children"])
+      cap = @tree_root_allowance + @summary_row_cap * children
+
+      assert is_nil(cap_violation(slim.resp_body, cap)),
+             "slim tree grew past its cap over #{children} children: #{byte_size(slim.resp_body)} > #{cap}"
+
+      refute is_nil(cap_violation(full.resp_body, cap)),
+             "the cap no longer discriminates — even the FULL tree fits under it"
+    end
+  end
+
   describe "hook validation failures" do
     test "POST /api/tasks/claim with failed before_doing hook returns 422",
          %{conn: conn, column: column} do

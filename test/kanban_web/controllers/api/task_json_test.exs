@@ -21,6 +21,25 @@ defmodule KanbanWeb.API.TaskJSONTest do
   the view is resolved, and `KanbanWeb.ReviewLive` loads through
   `Kanban.Reviews.list_pending_reviews/1` rather than through any API view
   — but a structural argument is not a regression test, and these two are.
+
+  Last, the review-field presence guard (W2058), which covers a different
+  failure mode from W2060 above: not "does a review field survive the round
+  trip" but "is it still *rendered at all*". Nothing caught a later slimming
+  change quietly dropping a review field from the **full** view — W2060 reaches
+  only four fields, one endpoint, and only through persistence and the review
+  queue, never through the rendered shape. The guard states three expectations
+  rather than nine assertions: `data/1` renders all nine schema review fields,
+  `ack_data/1` renders exactly two of them (`needs_review`, `review_status`),
+  and `render_task_summary/1` renders none. Each is asserted as set equality, so
+  it fails both when a field goes missing and when one leaks into a view meant
+  to be compact.
+
+  Seven of the nine are name-matched against `Task.__schema__(:fields)` by a
+  drift canary, so the frozen list cannot silently fall behind the schema; only
+  `workflow_steps` and `explorer_result` are named by hand. The canary asserts
+  rather than derives on purpose — deriving would make the guard a policy that
+  every review-named field MUST be rendered, which is the wrong pressure for a
+  module whose compact views exist to expose less.
   """
 
   use KanbanWeb.ConnCase
@@ -526,6 +545,247 @@ defmodule KanbanWeb.API.TaskJSONTest do
 
       refute Enum.any?(outsider_queue, &(&1.id == task.id)),
              "a user with no membership on the board saw the task in the review queue"
+    end
+  end
+
+  # W2058: the executable form of "no review field may be removed from the full
+  # view". W2060 above proves review fields survive *persistence* through a slim
+  # completion; it says nothing about the *rendered shape*, covers only four
+  # fields, and only the /complete endpoint. These guards cover all nine schema
+  # review fields across every view, in both directions — a field missing from
+  # the full view fails, and a field leaking into a compact view fails too.
+  describe "review-field presence across views (W2058)" do
+    # The nine review fields as of W2058. Frozen deliberately rather than fully
+    # derived: a pure "every review-named schema field must render" rule would
+    # turn a regression guard into a policy, and would push the next maintainer
+    # toward rendering a field that may be deliberately internal — the wrong
+    # direction for a module whose compact views exist to expose less.
+    #
+    # The list cannot silently fall behind, because the drift canary below
+    # polices it against the schema. Known gap, stated rather than papered over:
+    # the canary matches on the substring "review", so a future sibling of
+    # explorer_result / workflow_steps (say a planner_result) would not be
+    # caught. Nothing in the schema makes that derivable.
+    @review_fields ~w(needs_review review_status review_notes review_report
+                      workflow_steps explorer_result reviewer_result
+                      reviewed_at reviewed_by_id)a
+
+    # The two of the nine that ack_data/1 deliberately carries.
+    @ack_review_fields ~w(needs_review review_status)a
+
+    # The seven whose names contain "review". workflow_steps and explorer_result
+    # are the only two that must be named by hand.
+    @name_matched_review_fields ~w(needs_review review_status review_notes
+                                   review_report reviewer_result reviewed_at
+                                   reviewed_by_id)a
+
+    # Key-set intersection, normalized to strings so the same helper works on
+    # atom-keyed view output and string-keyed JSON alike. Presence only — a
+    # field whose value is nil still counts, which is the point: these guards
+    # assert the KEY is rendered, never that it is truthy.
+    #
+    # Every assertion below — the green ones AND the deliberately-doctored red
+    # ones — must call this same helper on the same shape. A red-proof that
+    # exercised a different code path would only prove an unused function works.
+    defp review_fields_in(rendered) do
+      wanted = MapSet.new(@review_fields, &to_string/1)
+
+      rendered
+      |> Map.keys()
+      |> MapSet.new(&to_string/1)
+      |> MapSet.intersection(wanted)
+    end
+
+    defp expected_set(fields), do: MapSet.new(fields, &to_string/1)
+
+    defp sorted_inspect(enumerable), do: enumerable |> Enum.sort() |> inspect()
+
+    defp field_diff(actual, expected) do
+      missing = expected |> MapSet.difference(actual) |> sorted_inspect()
+      unexpected = actual |> MapSet.difference(expected) |> sorted_inspect()
+
+      "missing: #{missing}, unexpected: #{unexpected}"
+    end
+
+    defp leak_message(rendered, where) do
+      "a review field leaked into #{where}: " <> sorted_inspect(review_fields_in(rendered))
+    end
+
+    defp bare_task(column) do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Bare review-field task"})
+      task
+    end
+
+    # data/1 is private, so the full render is reached through its public view.
+    defp full_render(task), do: TaskJSON.show(%{task: task}).data
+
+    test "the frozen list still matches the review-named schema fields" do
+      derived =
+        :fields
+        |> Task.__schema__()
+        |> Enum.filter(fn field -> field |> to_string() |> String.contains?("review") end)
+        |> MapSet.new()
+
+      assert derived == MapSet.new(@name_matched_review_fields), """
+      The set of review-named schema fields changed.
+
+      If a new review field was added, decide whether it is API-visible:
+        - visible  -> render it in TaskJSON.data/1 and add it to @review_fields
+                      and @name_matched_review_fields here
+        - internal -> add it to @name_matched_review_fields only, with a comment
+                      saying why it is deliberately not rendered
+
+      Do NOT delete this assertion to make it pass — a hand-maintained list that
+      nothing polices is exactly the drift this canary exists to catch.
+
+      derived from schema: #{inspect(Enum.sort(derived))}
+      frozen here:         #{inspect(Enum.sort(@name_matched_review_fields))}
+      """
+    end
+
+    test "every frozen review field is still a schema field" do
+      schema_fields = :fields |> Task.__schema__() |> MapSet.new()
+      frozen = MapSet.new(@review_fields)
+
+      assert MapSet.subset?(frozen, schema_fields),
+             "renamed or removed from the schema: " <>
+               sorted_inspect(MapSet.difference(frozen, schema_fields))
+    end
+
+    # A freshly created task IS the all-nil edge case — needs_review defaults to
+    # false, workflow_steps to [], and the other seven are nil. Presence must
+    # still hold, which is why every assertion here is key-set based.
+    test "the full view renders all nine review fields even when every value is nil", %{
+      column: column
+    } do
+      rendered = full_render(bare_task(column))
+      expected = expected_set(@review_fields)
+
+      assert review_fields_in(rendered) == expected,
+             field_diff(review_fields_in(rendered), expected)
+
+      # Truthiness would have hidden this: the keys are present AND nil.
+      assert is_nil(rendered.reviewer_result)
+      assert is_nil(rendered.reviewed_at)
+    end
+
+    # AC3, first half: proof the guard actually goes red. Same helper, same
+    # shape, one field deleted.
+    test "the guard fails when a review field is removed from the full view", %{column: column} do
+      rendered = full_render(bare_task(column))
+      doctored = Map.delete(rendered, :reviewer_result)
+      expected = expected_set(@review_fields)
+
+      refute review_fields_in(doctored) == expected
+
+      assert MapSet.difference(expected, review_fields_in(doctored)) ==
+               MapSet.new(["reviewer_result"])
+    end
+
+    test "the compact views carry exactly the review fields they are meant to", %{
+      column: column
+    } do
+      task = bare_task(column)
+
+      # ack_data/1 is reached through the public ack/1 view.
+      ack = TaskJSON.ack(%{task: task}).data
+
+      assert review_fields_in(ack) == expected_set(@ack_review_fields),
+             field_diff(review_fields_in(ack), expected_set(@ack_review_fields))
+
+      # The summary row carries none of them. Set equality rather than a
+      # presence check, so a future change that leaks reviewer_result into the
+      # compact row fails here rather than passing unnoticed.
+      summary = TaskJSON.render_task_summary(task)
+
+      assert review_fields_in(summary) == MapSet.new([]),
+             leak_message(summary, "the summary row")
+    end
+
+    test "GET /api/tasks/:id renders all nine over the wire", %{conn: conn, column: column} do
+      task = bare_task(column)
+      body = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)["data"]
+      expected = expected_set(@review_fields)
+
+      # The wire assertion is not redundant with the data/1 one above: a future
+      # nil-stripping encoder step, or a @derive {Jason.Encoder, only: [...]},
+      # would drop the key from the wire while data/1 still returned it.
+      assert review_fields_in(body) == expected, field_diff(review_fields_in(body), expected)
+    end
+
+    test "the full index row and the full tree render all nine over the wire", %{
+      conn: conn,
+      column: column
+    } do
+      _task = bare_task(column)
+      expected = expected_set(@review_fields)
+
+      [row] = json_response(get(conn, ~p"/api/tasks"), 200)["data"]
+      assert review_fields_in(row) == expected, field_diff(review_fields_in(row), expected)
+
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(column, %{title: "Presence Goal"}, [
+          %{title: "Presence Child"}
+        ])
+
+      tree = json_response(get(conn, ~p"/api/tasks/#{goal.id}/tree"), 200)["data"]
+
+      assert review_fields_in(tree["task"]) == expected,
+             field_diff(review_fields_in(tree["task"]), expected)
+
+      for child <- tree["children"] do
+        assert review_fields_in(child) == expected, field_diff(review_fields_in(child), expected)
+      end
+    end
+
+    test "the slim index and slim tree children carry no review fields, and the tree root keeps all nine",
+         %{conn: conn, column: column} do
+      _task = bare_task(column)
+
+      [row] = json_response(get(conn, ~p"/api/tasks?response_view=slim"), 200)["data"]
+
+      assert review_fields_in(row) == MapSet.new([]),
+             leak_message(row, "a slim index row")
+
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(column, %{title: "Slim Presence Goal"}, [
+          %{title: "Slim Presence Child"}
+        ])
+
+      tree =
+        json_response(get(conn, ~p"/api/tasks/#{goal.id}/tree?response_view=slim"), 200)["data"]
+
+      # The root is deliberately NOT slimmed, so it must still carry all nine.
+      assert review_fields_in(tree["task"]) == expected_set(@review_fields),
+             field_diff(review_fields_in(tree["task"]), expected_set(@review_fields))
+
+      for child <- tree["children"] do
+        assert review_fields_in(child) == MapSet.new([]),
+               leak_message(child, "a slim tree child")
+      end
+    end
+
+    test "the slim changed_files ack carries exactly the two ack review fields", %{
+      conn: conn,
+      column: column
+    } do
+      task = bare_task(column)
+      payload = %{"changed_files" => [%{"path" => "lib/a.ex", "diff" => "@@ -1 +1 @@\n-a\n+b"}]}
+
+      full =
+        json_response(put(conn, ~p"/api/tasks/#{task.id}/changed_files", payload), 200)["data"]
+
+      slim =
+        json_response(
+          put(conn, ~p"/api/tasks/#{task.id}/changed_files?response_view=slim", payload),
+          200
+        )["data"]
+
+      assert review_fields_in(full) == expected_set(@review_fields),
+             field_diff(review_fields_in(full), expected_set(@review_fields))
+
+      assert review_fields_in(slim) == expected_set(@ack_review_fields),
+             field_diff(review_fields_in(slim), expected_set(@ack_review_fields))
     end
   end
 end
