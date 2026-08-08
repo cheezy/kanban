@@ -516,6 +516,22 @@ defmodule KanbanWeb.API.TaskController do
     }
   end
 
+  # W2054: the single resolution point for the opt-in slim response view, so
+  # no action hand-rolls the decision and the gate stays auditable in one
+  # place. Only the exact string "slim" opts in — absent, "full", malformed
+  # and unrecognised values all resolve to :full, because a crash on an
+  # unexpected param is a worse failure than a fat response. The value is
+  # attacker-controllable and is therefore matched as a literal string and
+  # never converted with String.to_atom/1, which would be an atom-exhaustion
+  # vector. Exposed for testing.
+  @doc false
+  def view_for(params) do
+    case params["response_view"] do
+      "slim" -> :slim
+      _ -> :full
+    end
+  end
+
   defp gate_completion_results(task, params) do
     metadata = [task_id: task.id, agent_name: params["agent_name"]]
 

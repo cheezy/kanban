@@ -5859,4 +5859,102 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert hd(rows)["type"] == "unit / manual"
     end
   end
+
+  describe "response_view opt-in gate (W2054)" do
+    test "view_for/1 returns :slim for the exact string slim" do
+      assert KanbanWeb.API.TaskController.view_for(%{"response_view" => "slim"}) == :slim
+    end
+
+    test "view_for/1 returns :full when the param is absent" do
+      assert KanbanWeb.API.TaskController.view_for(%{}) == :full
+      assert KanbanWeb.API.TaskController.view_for(%{"agent_name" => "Claude"}) == :full
+    end
+
+    test "view_for/1 returns :full for the string full" do
+      assert KanbanWeb.API.TaskController.view_for(%{"response_view" => "full"}) == :full
+    end
+
+    test "view_for/1 returns :full for an empty string" do
+      assert KanbanWeb.API.TaskController.view_for(%{"response_view" => ""}) == :full
+    end
+
+    test "view_for/1 returns :full for an unrecognised value" do
+      assert KanbanWeb.API.TaskController.view_for(%{"response_view" => "compact"}) == :full
+      assert KanbanWeb.API.TaskController.view_for(%{"response_view" => "SLIM_MODE"}) == :full
+    end
+
+    test "view_for/1 returns :full for a non-string value such as a list or map" do
+      assert KanbanWeb.API.TaskController.view_for(%{"response_view" => ["slim"]}) == :full
+
+      assert KanbanWeb.API.TaskController.view_for(%{"response_view" => %{"v" => "slim"}}) ==
+               :full
+
+      assert KanbanWeb.API.TaskController.view_for(%{"response_view" => nil}) == :full
+      assert KanbanWeb.API.TaskController.view_for(%{"response_view" => 1}) == :full
+    end
+
+    test "view_for/1 does not accept truthy variants" do
+      for value <- [true, "true", "1", "yes", "on"] do
+        assert KanbanWeb.API.TaskController.view_for(%{"response_view" => value}) == :full,
+               "#{inspect(value)} must not opt in to the slim view"
+      end
+    end
+
+    test "view_for/1 requires an exact match — whitespace and case do not opt in" do
+      for value <- [" slim", "slim ", " slim ", "Slim", "SLIM", "sLiM", "\tslim\n"] do
+        assert KanbanWeb.API.TaskController.view_for(%{"response_view" => value}) == :full,
+               "#{inspect(value)} must not opt in to the slim view"
+      end
+    end
+
+    test "view_for/1 never converts the param to an atom" do
+      # Atom-exhaustion guard: the param is attacker-controllable, so resolving
+      # an unrecognised value must not mint a new atom. String.to_existing_atom
+      # raises iff no atom was created — which is the assertion that would fail
+      # had the implementation reached for String.to_atom/1.
+      value = "no_such_view_#{System.unique_integer([:positive])}"
+
+      assert KanbanWeb.API.TaskController.view_for(%{"response_view" => value}) == :full
+      assert_raise ArgumentError, fn -> String.to_existing_atom(value) end
+    end
+
+    test "a request carrying response_view=slim behaves exactly as today", %{
+      conn: conn,
+      column: column
+    } do
+      created =
+        post(conn, ~p"/api/tasks", task: %{"title" => "View gate task", "column_id" => column.id})
+
+      id = json_response(created, 201)["data"]["id"]
+
+      full = json_response(get(conn, ~p"/api/tasks/#{id}"), 200)
+      slim = json_response(get(conn, ~p"/api/tasks/#{id}?response_view=slim"), 200)
+
+      # No endpoint consumes the resolution yet, so the gate is inert.
+      assert slim == full
+    end
+
+    test "the param is inert on an endpoint that does not consume it", %{
+      conn: conn,
+      column: column
+    } do
+      without = json_response(get(conn, ~p"/api/tasks"), 200)
+
+      created =
+        post(conn, ~p"/api/tasks?response_view=slim",
+          task: %{"title" => "Inert param task", "column_id" => column.id}
+        )
+
+      body = json_response(created, 201)["data"]
+
+      # The create response is unchanged by the param ...
+      assert body["title"] == "Inert param task"
+      assert Map.has_key?(body, "acceptance_criteria")
+      assert Map.has_key?(body, "key_files")
+
+      # ... and so is the index, beyond the row the create added.
+      with_param = json_response(get(conn, ~p"/api/tasks?response_view=slim"), 200)
+      assert length(with_param["data"]) == length(without["data"]) + 1
+    end
+  end
 end
