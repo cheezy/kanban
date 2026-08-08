@@ -154,6 +154,108 @@ defmodule KanbanWeb.API.TaskJSONTest do
     end
   end
 
+  describe "index/1 and tree/1 under response_view (W2057)" do
+    setup %{column: column} do
+      {:ok, goal} = Tasks.create_task(column, %{"title" => "Tree root goal", "type" => "goal"})
+      {:ok, child_one} = Tasks.create_task(column, %{"title" => "Child one"})
+      {:ok, child_two} = Tasks.create_task(column, %{"title" => "Child two"})
+
+      tree = %{
+        task: goal,
+        children: [child_one, child_two],
+        counts: %{total: 2, completed: 1, blocked: 0}
+      }
+
+      %{goal: goal, children: [child_one, child_two], tree: tree}
+    end
+
+    test "the full index render is unchanged by an explicit full view", %{children: tasks} do
+      assert TaskJSON.index(%{tasks: tasks}) ==
+               TaskJSON.index(%{tasks: tasks, response_view: :full})
+    end
+
+    test "the slim index reuses the canonical summary renderer", %{children: tasks} do
+      assert TaskJSON.index(%{tasks: tasks, response_view: :slim}) ==
+               %{data: Enum.map(tasks, &TaskJSON.render_task_summary/1)}
+    end
+
+    # render/3 merges conn.assigns, so in production the view function always
+    # receives a superset of the keys the controller passed. A bare
+    # %{tasks: tasks} clause matches that superset too, so the slim clause only
+    # fires because it is written first — and the compiler emits no warning
+    # either way. This is the unit-level guard for that ordering; the slim
+    # request tests in task_controller_test.exs ("GET /api/tasks" and
+    # "GET /api/tasks/:id/tree") guard it end to end through the real merged
+    # assigns, and fail too if the clauses are swapped.
+    test "the slim clause still wins on a production-shaped assigns map", %{
+      children: tasks,
+      tree: tree
+    } do
+      index_assigns = %{
+        tasks: tasks,
+        response_view: :slim,
+        conn: :ignored,
+        current_board: :ignored,
+        current_user: :ignored
+      }
+
+      assert TaskJSON.index(index_assigns) ==
+               %{data: Enum.map(tasks, &TaskJSON.render_task_summary/1)}
+
+      tree_assigns = %{
+        tree: tree,
+        response_view: :slim,
+        conn: :ignored,
+        current_board: :ignored,
+        current_user: :ignored
+      }
+
+      assert TaskJSON.tree(tree_assigns).data.children ==
+               Enum.map(tree.children, &TaskJSON.render_task_summary/1)
+    end
+
+    test "an empty board renders an empty data list in both views" do
+      assert TaskJSON.index(%{tasks: []}) == %{data: []}
+      assert TaskJSON.index(%{tasks: [], response_view: :slim}) == %{data: []}
+    end
+
+    test "the slim tree slims children but keeps a full root and untouched counts", %{tree: tree} do
+      full = TaskJSON.tree(%{tree: tree})
+      slim = TaskJSON.tree(%{tree: tree, response_view: :slim})
+
+      assert slim.data.task == full.data.task
+      assert slim.data.children == Enum.map(tree.children, &TaskJSON.render_task_summary/1)
+      assert slim.data.counts == full.data.counts
+      assert slim.data.counts == tree.counts
+    end
+
+    test "the full tree render is unchanged by an explicit full view", %{tree: tree} do
+      assert TaskJSON.tree(%{tree: tree}) == TaskJSON.tree(%{tree: tree, response_view: :full})
+    end
+
+    test "a goal with no children renders an empty children list under slim", %{goal: goal} do
+      tree = %{task: goal, children: [], counts: %{total: 0, completed: 0, blocked: 0}}
+
+      assert TaskJSON.tree(%{tree: tree, response_view: :slim}).data.children == []
+    end
+
+    # Intentional and canonical, not a bug: the summary renderer defaults nil
+    # dependencies to [], which is the shape /dependencies, /dependents and
+    # goal-creation child_tasks have always returned. data/1 renders the field
+    # raw. Reusing the one canonical renderer means inheriting that, and the
+    # alternative — a second compact shape that handles nil differently — is
+    # exactly what this goal exists to prevent.
+    test "the slim row defaults nil dependencies to [] where the full row keeps nil" do
+      tasks = [%Task{id: 1, dependencies: nil}]
+
+      [slim_row] = TaskJSON.index(%{tasks: tasks, response_view: :slim}).data
+      [full_row] = TaskJSON.index(%{tasks: tasks}).data
+
+      assert slim_row.dependencies == []
+      assert is_nil(full_row.dependencies)
+    end
+  end
+
   describe "completion_notes serialization (D188)" do
     test "the serializer returns completion_notes for a completed task", %{
       conn: conn,

@@ -1334,6 +1334,105 @@ defmodule KanbanWeb.API.TaskControllerTest do
       conn = get(conn, ~p"/api/tasks")
       assert json_response(conn, 401)
     end
+
+    test "an absent response_view returns a body identical to an explicit full", %{
+      conn: conn,
+      task1: task1
+    } do
+      absent = json_response(get(conn, ~p"/api/tasks"), 200)
+      explicit = json_response(get(conn, ~p"/api/tasks?response_view=full"), 200)
+
+      assert absent == explicit
+
+      # Pinned against the untouched GET /api/tasks/:id view, so this cannot
+      # pass by both the index row and the fixture shrinking together.
+      show = json_response(get(conn, ~p"/api/tasks/#{task1.id}"), 200)["data"]
+      row = Enum.find(absent["data"], &(&1["id"] == task1.id))
+
+      assert row |> Map.keys() |> Enum.sort() == show |> Map.keys() |> Enum.sort()
+    end
+
+    test "the full index row still carries every fat field, including the review fields", %{
+      conn: conn,
+      task1: task1
+    } do
+      response = json_response(get(conn, ~p"/api/tasks"), 200)
+      row = Enum.find(response["data"], &(&1["id"] == task1.id))
+
+      for field <- ~w(description acceptance_criteria key_files verification_steps
+                      review_status review_notes review_report reviewed_at
+                      reviewed_by_id reviewer_result explorer_result) do
+        assert Map.has_key?(row, field), "the full index row dropped #{field}"
+      end
+    end
+
+    test "response_view=slim returns only the eight summary keys per row", %{conn: conn} do
+      response = json_response(get(conn, ~p"/api/tasks?response_view=slim"), 200)
+
+      assert length(response["data"]) >= 2
+
+      for row <- response["data"] do
+        assert row |> Map.keys() |> Enum.sort() ==
+                 ~w(complexity created_by_agent dependencies id identifier priority status title)
+
+        refute Map.has_key?(row, "description")
+        refute Map.has_key?(row, "key_files")
+        refute Map.has_key?(row, "reviewer_result")
+      end
+    end
+
+    # The security consideration, computed from the live responses rather than
+    # from a hardcoded list, so it keeps holding if either shape moves.
+    test "the slim row is a strict subset of the full row", %{conn: conn, task1: task1} do
+      full = json_response(get(conn, ~p"/api/tasks"), 200)
+      slim = json_response(get(conn, ~p"/api/tasks?response_view=slim"), 200)
+
+      full_row = Enum.find(full["data"], &(&1["id"] == task1.id))
+      slim_row = Enum.find(slim["data"], &(&1["id"] == task1.id))
+
+      full_keys = full_row |> Map.keys() |> MapSet.new()
+      slim_keys = slim_row |> Map.keys() |> MapSet.new()
+
+      assert MapSet.subset?(slim_keys, full_keys)
+      refute MapSet.equal?(slim_keys, full_keys)
+    end
+
+    test "response_view=slim returns the same rows, in the same order, as the full view", %{
+      conn: conn
+    } do
+      full = json_response(get(conn, ~p"/api/tasks"), 200)
+      slim = json_response(get(conn, ~p"/api/tasks?response_view=slim"), 200)
+
+      # Slimming is shape-only: it must not add a row the full view withheld,
+      # nor drop one it returned.
+      assert Enum.map(slim["data"], & &1["id"]) == Enum.map(full["data"], & &1["id"])
+    end
+
+    test "response_view=slim is honoured when filtering by column_id", %{
+      conn: conn,
+      column: column
+    } do
+      response =
+        json_response(get(conn, ~p"/api/tasks?column_id=#{column.id}&response_view=slim"), 200)
+
+      refute response["data"] == []
+
+      for row <- response["data"] do
+        assert row |> Map.keys() |> Enum.sort() ==
+                 ~w(complexity created_by_agent dependencies id identifier priority status title)
+      end
+    end
+
+    test "an unrecognised response_view returns the full index", %{conn: conn} do
+      for value <- ~w(full SLIM compact) do
+        response = json_response(get(conn, ~p"/api/tasks?response_view=#{value}"), 200)
+
+        for row <- response["data"] do
+          assert Map.has_key?(row, "description"),
+                 "response_view=#{value} unexpectedly slimmed the index"
+        end
+      end
+    end
   end
 
   describe "GET /api/tasks/:id" do
@@ -1348,6 +1447,21 @@ defmodule KanbanWeb.API.TaskControllerTest do
         })
 
       %{task: task}
+    end
+
+    test "response_view does not slim GET /api/tasks/:id in either direction", %{
+      conn: conn,
+      task: task
+    } do
+      full = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)
+      slim = json_response(get(conn, ~p"/api/tasks/#{task.id}?response_view=slim"), 200)
+
+      assert slim == full
+
+      for field <- ~w(description key_files reviewer_result acceptance_criteria) do
+        assert Map.has_key?(slim["data"], field),
+               "GET /api/tasks/:id must stay full-fidelity under response_view=slim"
+      end
     end
 
     test "returns single task with all associations", %{conn: conn, task: task} do
@@ -5649,6 +5763,87 @@ defmodule KanbanWeb.API.TaskControllerTest do
       conn = get(conn, ~p"/api/tasks/#{task.id}/tree")
       assert json_response(conn, 404)["error"] =~ "Task not found"
     end
+
+    test "response_view=slim slims the children but keeps the root full", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{title: "Slim Tree Goal", description: "Goal detail the caller asked for"},
+          [%{title: "Child 1"}, %{title: "Child 2"}]
+        )
+
+      response = json_response(get(conn, ~p"/api/tasks/#{goal.id}/tree?response_view=slim"), 200)
+
+      # The root keeps the planning detail the request was made for.
+      assert response["data"]["task"]["description"] == "Goal detail the caller asked for"
+      assert Map.has_key?(response["data"]["task"], "key_files")
+      assert Map.has_key?(response["data"]["task"], "acceptance_criteria")
+
+      assert length(response["data"]["children"]) == 2
+
+      for child <- response["data"]["children"] do
+        assert child |> Map.keys() |> Enum.sort() ==
+                 ~w(complexity created_by_agent dependencies id identifier priority status title)
+      end
+    end
+
+    test "the counts object is identical in both views", %{conn: conn, column: column} do
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{title: "Counts Goal"},
+          [%{title: "Child 1"}, %{title: "Child 2"}]
+        )
+
+      full = json_response(get(conn, ~p"/api/tasks/#{goal.id}/tree"), 200)
+      slim = json_response(get(conn, ~p"/api/tasks/#{goal.id}/tree?response_view=slim"), 200)
+
+      assert slim["data"]["counts"] == full["data"]["counts"]
+
+      # Pinned so an empty-map regression cannot pass the equality above.
+      assert slim["data"]["counts"] |> Map.keys() |> Enum.sort() ==
+               ~w(blocked completed total)
+    end
+
+    test "an absent response_view returns a tree identical to an explicit full", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, %{goal: goal}} =
+        Tasks.create_goal_with_tasks(
+          column,
+          %{title: "Identity Goal"},
+          [%{title: "Child 1"}]
+        )
+
+      absent = json_response(get(conn, ~p"/api/tasks/#{goal.id}/tree"), 200)
+      explicit = json_response(get(conn, ~p"/api/tasks/#{goal.id}/tree?response_view=full"), 200)
+
+      assert absent == explicit
+
+      # Pinned against the untouched GET /api/tasks/:id view, so this cannot
+      # pass by both sides shrinking together.
+      show = json_response(get(conn, ~p"/api/tasks/#{goal.id}"), 200)["data"]
+
+      assert absent["data"]["task"] |> Map.keys() |> Enum.sort() ==
+               show |> Map.keys() |> Enum.sort()
+    end
+
+    test "response_view=slim on a leaf task keeps the root full and children empty", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, task} = Tasks.create_task(column, %{title: "Slim Leaf Task", position: 0})
+
+      response = json_response(get(conn, ~p"/api/tasks/#{task.id}/tree?response_view=slim"), 200)
+
+      assert response["data"]["task"]["title"] == "Slim Leaf Task"
+      assert Map.has_key?(response["data"]["task"], "key_files")
+      assert response["data"]["children"] == []
+    end
   end
 
   describe "hook validation failures" do
@@ -6280,7 +6475,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert Map.has_key?(body, "acceptance_criteria")
       assert Map.has_key?(body, "key_files")
 
-      # ... and so is the index, beyond the row the create added.
+      # ... and the index never gains or loses a row because of the param.
+      # As of W2057 the index DOES consume it — it changes each row's shape —
+      # but shape is all it may change. Row shape is covered by the
+      # "GET /api/tasks" describe above.
       with_param = json_response(get(conn, ~p"/api/tasks?response_view=slim"), 200)
       assert length(with_param["data"]) == length(without["data"]) + 1
     end

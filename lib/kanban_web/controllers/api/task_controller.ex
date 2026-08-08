@@ -17,17 +17,22 @@ defmodule KanbanWeb.API.TaskController do
 
   action_fallback KanbanWeb.API.FallbackController
 
+  # W2057: the view is resolved from the request once, here, and applied at
+  # render only — the board scoping and the query underneath are identical in
+  # both views, so the slim view can only narrow a row, never widen it or
+  # surface a task the full view withheld.
   def index(conn, params) do
     board = conn.assigns.current_board
+    view = view_for(params)
 
     if params["column_id"] do
-      list_tasks_by_column_id(conn, board, params["column_id"])
+      list_tasks_by_column_id(conn, board, params["column_id"], view)
     else
-      list_all_board_tasks(conn, board)
+      list_all_board_tasks(conn, board, view)
     end
   end
 
-  defp list_tasks_by_column_id(conn, board, raw_column_id) do
+  defp list_tasks_by_column_id(conn, board, raw_column_id, view) do
     case parse_id(raw_column_id) do
       {:ok, column_id} ->
         # Board-scoped lookup so a cross-board column id and a nonexistent
@@ -41,7 +46,7 @@ defmodule KanbanWeb.API.TaskController do
           column ->
             tasks = Tasks.list_tasks(column)
             emit_telemetry(conn, :task_listed, %{count: length(tasks)})
-            render(conn, :index, tasks: tasks)
+            render(conn, :index, tasks: tasks, response_view: view)
         end
 
       :error ->
@@ -54,11 +59,11 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp list_all_board_tasks(conn, board) do
+  defp list_all_board_tasks(conn, board, view) do
     columns = Columns.list_columns(board)
     tasks = Enum.flat_map(columns, &Tasks.list_tasks/1)
     emit_telemetry(conn, :task_listed, %{count: length(tasks)})
-    render(conn, :index, tasks: tasks)
+    render(conn, :index, tasks: tasks, response_view: view)
   end
 
   def show(conn, %{"id" => id_or_identifier}) do
@@ -915,14 +920,14 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  def tree(conn, %{"id" => id_or_identifier}) do
+  def tree(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
 
     case fetch_and_verify_task(id_or_identifier, board) do
       {:ok, task} ->
         tree_data = Tasks.get_task_tree(task.id, board.id)
         emit_telemetry(conn, :task_tree_fetched, %{task_id: task.id})
-        render(conn, :tree, tree: tree_data)
+        render(conn, :tree, tree: tree_data, response_view: view_for(params))
 
       error ->
         TaskErrors.handle_task_error(conn, error)

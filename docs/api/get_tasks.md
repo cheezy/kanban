@@ -20,6 +20,7 @@ Authorization: Bearer <your_api_token>
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `column_id` | integer | No | Filter tasks by column ID. If omitted, returns all tasks from all columns. |
+| `response_view` | string | No | `slim` returns a compact summary row per task instead of the full object. Any other value — including `full`, an unrecognised string, or the parameter being absent — returns the unchanged full response. |
 
 ## Response
 
@@ -124,6 +125,53 @@ Returns an array of tasks:
   ]
 }
 ```
+
+## Selecting the response view
+
+| Parameter | Values | Default | Effect |
+|---|---|---|---|
+| `response_view` | `slim` | absent (full) | `slim` returns a compact summary row per task instead of the full object. Any other value — including `full`, an unrecognised string, or the parameter being absent — returns the unchanged full response. |
+
+Only the exact lowercase string `slim` opts in.
+
+**Why you would want it.** A board-wide list of full task objects is the
+largest response this API produces, and almost none of its content is read when
+the caller is listing rather than reading. Fetch the compact rows to find the
+task you want, then [GET /api/tasks/:id](get_tasks_id.md) for its detail —
+that endpoint is always full-fidelity and is unaffected by `response_view`.
+
+**What never changes.** `response_view` changes only the shape of each row, not
+which rows are returned: the board scoping and the underlying query are
+identical under both views, so the slim view can only narrow a row, never widen
+it or surface a task the full view withheld. The summary keys are a strict
+subset of the full row's. The 400 and 403 responses are identical under both
+views, because the view is applied only at render.
+
+### Success (200 OK) — `?response_view=slim`
+
+Each row carries exactly these eight keys:
+
+```json
+{
+  "data": [
+    {
+      "id": 123,
+      "identifier": "W21",
+      "title": "Implement authentication",
+      "status": "in_progress",
+      "priority": "high",
+      "complexity": "medium",
+      "dependencies": [],
+      "created_by_agent": "ai_agent:claude-sonnet-4-5"
+    }
+  ]
+}
+```
+
+`dependencies` renders as `[]` rather than `null` when unset, matching the same
+summary shape returned by
+[GET /api/tasks/:id/dependencies](get_tasks_id_dependencies.md) and
+[GET /api/tasks/:id/dependents](get_tasks_id_dependents.md).
 
 ### Forbidden (403)
 

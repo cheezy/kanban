@@ -2,6 +2,24 @@ defmodule KanbanWeb.API.TaskJSON do
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.ErrorDocs
 
+  @doc """
+  Task list view. Under `response_view=slim` (W2057) each row is the canonical
+  compact summary instead of the full `data/1` render — a board-wide list of fat
+  task objects is the largest response this API produces, and almost none of it
+  is read when the caller is listing rather than reading.
+
+  Clause order is load-bearing, for the same reason spelled out for `ack/1`
+  below: `render/3` merges `conn.assigns`, so the assigns map always carries
+  `conn`, `current_board` and friends, and the bare clause would match a
+  `:slim`-carrying map just as happily. The slim clause must therefore come
+  first. The bare clause is the fallthrough rather than an explicit `:full`
+  match, mirroring `TaskController.view_for/1`: anything unrecognised resolves
+  to full, because a fat response is a better failure than a crash.
+  """
+  def index(%{tasks: tasks, response_view: :slim}) do
+    %{data: Enum.map(tasks, &render_task_summary/1)}
+  end
+
   def index(%{tasks: tasks}) do
     %{data: for(task <- tasks, do: data(task))}
   end
@@ -19,6 +37,32 @@ defmodule KanbanWeb.API.TaskJSON do
   def show(%{task: task} = assigns) do
     %{data: data(task)}
     |> maybe_add_skills_version(assigns)
+  end
+
+  @doc """
+  Task tree view. Under `response_view=slim` (W2057) the children render as
+  compact summaries, but the root `task` keeps its full render in both views and
+  `counts` is passed through untouched.
+
+  That asymmetry is deliberate, and is the thing most likely to be "harmonised"
+  away by a later reader: `/dependencies` and `/dependents` render the summary
+  shape for their subject task as well as for their list — unconditionally, with
+  no view gate at all — but `/tree` is the one response where the caller reads
+  the goal's own planning fields — `why`, `what`, `acceptance_criteria`,
+  `key_files` — alongside its children. The caller asked for that specific task
+  and needs its detail; the children are navigational. Slimming the root would
+  take away the detail the request was made for.
+
+  Clause order is load-bearing here for the same reason as `index/1` above.
+  """
+  def tree(%{tree: tree, response_view: :slim}) do
+    %{
+      data: %{
+        task: data(tree.task),
+        children: Enum.map(tree.children, &render_task_summary/1),
+        counts: tree.counts
+      }
+    }
   end
 
   def tree(%{tree: tree}) do
