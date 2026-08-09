@@ -7,6 +7,10 @@ defmodule KanbanWeb.AvatarPaletteTest do
 
   alias KanbanWeb.AvatarPalette
 
+  # D225: the moduledoc's mapping examples are doctests, so a prose edit that
+  # contradicts the code fails here rather than passing silently.
+  doctest KanbanWeb.AvatarPalette
+
   describe "for_human/1 — palette set" do
     test "always returns one of the four human-* palette strings for an integer id" do
       palettes = AvatarPalette.human_palettes()

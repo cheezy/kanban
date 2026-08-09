@@ -10,9 +10,22 @@ defmodule KanbanWeb.AvatarPalette do
   `for_agent/1` so the goal view inherits the exact same palette the
   board uses.
 
-  The human algorithm is `rem(user_id, 4)` so user `42` is always pink,
-  `43` is always blue, and so on. Agent names match a known vendor
-  prefix (Claude / Cursor / Aider / Codex) and fall back to `agent-claude`.
+  The human algorithm is `rem(user_id, 4)` indexed into `@human_palettes`
+  in the order that list declares — `human-blue`, `human-amber`,
+  `human-green`, `human-pink`. Agent names match a known vendor prefix
+  (Claude / Cursor / Aider / Codex) and fall back to `agent-claude`.
+
+  The examples below are doctests, so this prose cannot drift away from
+  the code again: editing a value here fails the suite.
+
+      iex> KanbanWeb.AvatarPalette.for_human(42)
+      "human-green"
+
+      iex> KanbanWeb.AvatarPalette.for_human(43)
+      "human-pink"
+
+      iex> KanbanWeb.AvatarPalette.human_palettes()
+      ["human-blue", "human-amber", "human-green", "human-pink"]
   """
 
   @human_palettes ~w(human-blue human-amber human-green human-pink)
