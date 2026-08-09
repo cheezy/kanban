@@ -9,8 +9,10 @@ defmodule KanbanWeb.Duration do
   intentional edge differences are explicit options, never silently
   unified:
 
-    * `:nil_label` — rendered for `nil` and any non-integer input
-      (default `"—"`)
+    * `:nil_label` — rendered for `nil`, any non-integer input, and any
+      negative integer (default `"—"`). Every caller passes a
+      non-negative duration, so a negative value is a data error rather
+      than a measurement, and is not rendered as one.
     * `:zero_label` — rendered for `0` (default `"0m"`; the goal sidebar
       passes `"—"`)
     * `:pad_remainder` — zero-pads the minute remainder so 65 renders
@@ -30,16 +32,17 @@ defmodule KanbanWeb.Duration do
       Duration.format_minutes(65, pad_remainder: true)   #=> "1h 05m"
       Duration.format_minutes(0, zero_label: "—")        #=> "—"
       Duration.format_minutes(nil)                       #=> "—"
+      Duration.format_minutes(-5)                        #=> "—"
   """
   def format_minutes(minutes, opts \\ [])
 
   def format_minutes(0, opts), do: Keyword.get(opts, :zero_label, "0m")
 
-  def format_minutes(minutes, _opts) when is_integer(minutes) and minutes < 60 do
+  def format_minutes(minutes, _opts) when is_integer(minutes) and minutes >= 0 and minutes < 60 do
     "#{minutes}m"
   end
 
-  def format_minutes(minutes, opts) when is_integer(minutes) do
+  def format_minutes(minutes, opts) when is_integer(minutes) and minutes >= 60 do
     hours = div(minutes, 60)
     remainder = rem(minutes, 60)
 

@@ -27,6 +27,28 @@ defmodule KanbanWeb.DurationTest do
       assert Duration.format_minutes(:oops) == "—"
       assert Duration.format_minutes(12.5) == "—"
     end
+
+    for minutes <- [-1, -60, -90] do
+      test "#{minutes} minutes renders the em dash" do
+        assert Duration.format_minutes(unquote(minutes)) == "—"
+      end
+    end
+
+    test "a negative value never renders as a duration string" do
+      refute Duration.format_minutes(-1) =~ "m"
+      refute Duration.format_minutes(-60) =~ "h"
+      refute Duration.format_minutes(-90) =~ "h"
+    end
+
+    test "negative minutes honour a custom nil_label" do
+      assert Duration.format_minutes(-5, nil_label: "n/a") == "n/a"
+      assert Duration.format_minutes(-90, nil_label: "n/a") == "n/a"
+    end
+
+    test "zero still takes the zero_label branch, not the negative fallback" do
+      assert Duration.format_minutes(0) == "0m"
+      assert Duration.format_minutes(0, nil_label: "n/a") == "0m"
+    end
   end
 
   describe "format_minutes/2 with zero_label (goal sidebar variant)" do
