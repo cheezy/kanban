@@ -3233,7 +3233,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       after_goal = Enum.find(response["hooks"], &(&1["name"] == "after_goal"))
       assert after_goal["blocking"] == true
-      assert after_goal["timeout"] == 60_000
+      assert after_goal["timeout"] == 600_000
       assert after_goal["env"]["HOOK_NAME"] == "after_goal"
     end
 
@@ -5067,7 +5067,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       after_goal = Enum.find(response["hooks"], &(&1["name"] == "after_goal"))
       assert after_goal["blocking"] == true
-      assert after_goal["timeout"] == 60_000
+      assert after_goal["timeout"] == 600_000
       assert after_goal["env"]["HOOK_NAME"] == "after_goal"
     end
 

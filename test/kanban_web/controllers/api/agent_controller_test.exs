@@ -312,10 +312,13 @@ defmodule KanbanWeb.API.AgentControllerTest do
       before_review = Enum.find(hooks, &(&1["name"] == "before_review"))
       after_review = Enum.find(hooks, &(&1["name"] == "after_review"))
 
-      assert before_doing["timeout"] == 60_000
-      assert after_doing["timeout"] == 120_000
-      assert before_review["timeout"] == 60_000
-      assert after_review["timeout"] == 60_000
+      # D229: every blocking hook is 600_000ms. The budget is a hang detector,
+      # not a performance gate — a developer's .stride.md commands are theirs and
+      # must never be killed for being slow.
+      assert before_doing["timeout"] == 600_000
+      assert after_doing["timeout"] == 600_000
+      assert before_review["timeout"] == 600_000
+      assert after_review["timeout"] == 600_000
     end
 
     test "response contains no authentication requirements", %{conn: conn} do

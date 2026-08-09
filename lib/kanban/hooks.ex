@@ -13,11 +13,11 @@ defmodule Kanban.Hooks do
   alias Kanban.Tasks.Task
 
   @hook_config %{
-    "before_doing" => %{blocking: true, timeout: 60_000},
-    "after_doing" => %{blocking: true, timeout: 120_000},
-    "before_review" => %{blocking: true, timeout: 60_000},
-    "after_review" => %{blocking: true, timeout: 60_000},
-    "after_goal" => %{blocking: true, timeout: 60_000}
+    "before_doing" => %{blocking: true, timeout: 600_000},
+    "after_doing" => %{blocking: true, timeout: 600_000},
+    "before_review" => %{blocking: true, timeout: 600_000},
+    "after_review" => %{blocking: true, timeout: 600_000},
+    "after_goal" => %{blocking: true, timeout: 600_000}
   }
 
   @doc """
@@ -32,7 +32,7 @@ defmodule Kanban.Hooks do
       {:ok, %{
         name: "before_doing",
         env: %{"TASK_ID" => "123", ...},
-        timeout: 60_000,
+        timeout: 600_000,
         blocking: true
       }}
 

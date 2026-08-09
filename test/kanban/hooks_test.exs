@@ -50,7 +50,7 @@ defmodule Kanban.HooksTest do
       assert hook_info.name == "before_doing"
       assert is_map(hook_info.env)
       assert hook_info.env["TASK_IDENTIFIER"] == task.identifier
-      assert hook_info.timeout == 60_000
+      assert hook_info.timeout == 600_000
       assert hook_info.blocking == true
     end
 
