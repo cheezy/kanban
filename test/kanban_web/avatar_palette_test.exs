@@ -32,6 +32,12 @@ defmodule KanbanWeb.AvatarPaletteTest do
       assert AvatarPalette.for_human(5) == p1
     end
 
+    test "zero and positive ids keep their existing palette mapping" do
+      assert AvatarPalette.for_human(0) == "human-blue"
+      assert AvatarPalette.for_human(42) == "human-green"
+      assert AvatarPalette.for_human(43) == "human-pink"
+    end
+
     test "the same id always returns the same palette (stable)" do
       for id <- [1, 7, 42, 9999] do
         first = AvatarPalette.for_human(id)
@@ -51,6 +57,14 @@ defmodule KanbanWeb.AvatarPaletteTest do
 
     test "returns human-blue when id is a map" do
       assert AvatarPalette.for_human(%{id: 1}) == "human-blue"
+    end
+
+    test "returns human-blue when id is -1" do
+      assert AvatarPalette.for_human(-1) == "human-blue"
+    end
+
+    test "returns human-blue when id is -4" do
+      assert AvatarPalette.for_human(-4) == "human-blue"
     end
   end
 

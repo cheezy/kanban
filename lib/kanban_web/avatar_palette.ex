@@ -23,7 +23,7 @@ defmodule KanbanWeb.AvatarPalette do
   Uses `rem/2` so the palette is stable across requests and matches
   the algorithm the board member stack has used since W437.
   """
-  def for_human(id) when is_integer(id) do
+  def for_human(id) when is_integer(id) and id >= 0 do
     Enum.at(@human_palettes, rem(id, length(@human_palettes)))
   end
 
