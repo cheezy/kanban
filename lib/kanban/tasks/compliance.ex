@@ -101,7 +101,10 @@ defmodule Kanban.Tasks.Compliance do
 
   The real fix is to constrain the vocabulary where it is written, mirroring
   the existing enum for explorer/reviewer reasons, which is a change to the
-  emitting contract rather than to this query.
+  emitting contract rather than to this query. **Filed as D239**, which also
+  covers constraining `name` to the canonical step list — persisted data already
+  contains two different step vocabularies from two runtimes, so that change
+  carries the same back-compat hazard and belongs with this one.
   """
   def skip_reasons(board_id) do
     %{rows: rows} = Repo.query!(@skip_reasons_sql, [board_id])
