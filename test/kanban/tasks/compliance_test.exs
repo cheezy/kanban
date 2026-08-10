@@ -94,22 +94,29 @@ defmodule Kanban.Tasks.ComplianceTest do
       assert Compliance.skip_reasons(board.id) == %{}
     end
 
-    test "returns empty map when no steps are skipped", %{board: board, column: column} do
-      seed(column, %{workflow_steps: [%{"name" => "a", "skipped" => false}]})
+    # (D233) These previously seeded `%{"skipped" => true}` — a shape no agent
+    # has ever emitted. The query filtered on the same non-existent key, so the
+    # tests and the query encoded the same wrong schema and validated each
+    # other, which is why an always-empty panel looked like a working one.
+    # Every case below now uses the real schema: dispatched false + reason.
+    test "ignores dispatched steps", %{board: board, column: column} do
+      seed(column, %{
+        workflow_steps: [%{"name" => "explorer", "dispatched" => true, "duration_ms" => 100}]
+      })
 
       assert Compliance.skip_reasons(board.id) == %{}
     end
 
-    test "groups and counts skip reasons", %{board: board, column: column} do
+    test "counts steps that agents actually emit as skipped", %{board: board, column: column} do
       seed(column, %{
         workflow_steps: [
-          %{"name" => "a", "skipped" => true, "reason" => "no tests"},
-          %{"name" => "b", "skipped" => true, "reason" => "no tests"}
+          %{"name" => "planner", "dispatched" => false, "reason" => "no tests"},
+          %{"name" => "implementation", "dispatched" => false, "reason" => "no tests"}
         ]
       })
 
       seed(column, %{
-        workflow_steps: [%{"name" => "c", "skipped" => true, "reason" => "manual"}]
+        workflow_steps: [%{"name" => "reviewer", "dispatched" => false, "reason" => "manual"}]
       })
 
       result = Compliance.skip_reasons(board.id)
@@ -118,12 +125,55 @@ defmodule Kanban.Tasks.ComplianceTest do
       assert Map.fetch!(result, "manual") == 1
     end
 
-    test "handles skipped step with no reason", %{board: board, column: column} do
-      seed(column, %{workflow_steps: [%{"name" => "a", "skipped" => true}]})
+    test "does not count a legacy `skipped` key on its own", %{board: board, column: column} do
+      # The key the old query filtered on. It carries no meaning in the schema,
+      # so on its own it must not produce a row — otherwise the defect could
+      # quietly return via data rather than via code.
+      seed(column, %{workflow_steps: [%{"name" => "planner", "skipped" => true}]})
+
+      assert Compliance.skip_reasons(board.id) == %{}
+    end
+
+    test "counts a historical row that has no reason", %{board: board, column: column} do
+      # Rows written before the validator required a reason. Grouped under ""
+      # rather than dropped, so the count stays truthful even when the text is
+      # missing.
+      seed(column, %{workflow_steps: [%{"name" => "planner", "dispatched" => false}]})
 
       result = Compliance.skip_reasons(board.id)
 
       assert Map.fetch!(result, "") == 1
+    end
+
+    test "keeps differing text for the same logical skip as separate rows",
+         %{board: board, column: column} do
+      # The documented consequence of NOT canonicalising (see the moduledoc):
+      # two agents describing the same skip differently produce two rows. This
+      # pins the decision so a future change to it is deliberate rather than
+      # accidental.
+      seed(column, %{
+        workflow_steps: [
+          %{"name" => "planner", "dispatched" => false, "reason" => "planned inline"},
+          %{"name" => "planner", "dispatched" => false, "reason" => "Planned inline."}
+        ]
+      })
+
+      result = Compliance.skip_reasons(board.id)
+
+      assert Map.fetch!(result, "planned inline") == 1
+      assert Map.fetch!(result, "Planned inline.") == 1
+    end
+
+    test "counts an entry whose name is not one of the six canonical steps",
+         %{board: board, column: column} do
+      # `name` is unconstrained by the validator, so a typo or an invented step
+      # still aggregates by reason. Counted rather than dropped: silently
+      # discarding it would hide the very fragmentation worth noticing.
+      seed(column, %{
+        workflow_steps: [%{"name" => "revieweer", "dispatched" => false, "reason" => "typo"}]
+      })
+
+      assert Map.fetch!(Compliance.skip_reasons(board.id), "typo") == 1
     end
 
     test "scopes by board_id (no cross-board leakage)", %{
@@ -131,7 +181,7 @@ defmodule Kanban.Tasks.ComplianceTest do
       other_column: other_column
     } do
       seed(other_column, %{
-        workflow_steps: [%{"name" => "a", "skipped" => true, "reason" => "r"}]
+        workflow_steps: [%{"name" => "planner", "dispatched" => false, "reason" => "r"}]
       })
 
       assert Compliance.skip_reasons(board.id) == %{}

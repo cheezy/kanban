@@ -71,10 +71,13 @@ defmodule KanbanWeb.MetricsLive.ComplianceTest do
       refute html =~ "No workflow step data yet"
     end
 
+    # (D233) These seeded `skipped: true`, a shape no agent emits, so the panel
+    # rendered populated here while being permanently empty in production. Both
+    # now seed what agents actually write: dispatched false + reason.
     test "renders skip reasons from context", %{conn: conn, board: board, column: column} do
       task_fixture(column, %{
         workflow_steps: [
-          %{"name" => "deploy", "skipped" => true, "reason" => "manual override"}
+          %{"name" => "deploy", "dispatched" => false, "reason" => "manual override"}
         ]
       })
 
@@ -84,13 +87,30 @@ defmodule KanbanWeb.MetricsLive.ComplianceTest do
       refute html =~ "No skipped steps recorded"
     end
 
+    test "shows the empty state for a legacy `skipped` key alone", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # The old shape must not populate the panel — otherwise the defect could
+      # return through data while the code stays correct.
+      task_fixture(column, %{
+        workflow_steps: [%{"name" => "deploy", "skipped" => true, "reason" => "manual override"}]
+      })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/compliance")
+
+      assert html =~ "No skipped steps recorded"
+      refute html =~ "manual override"
+    end
+
     test "labels empty-string reason as '(no reason given)'", %{
       conn: conn,
       board: board,
       column: column
     } do
       task_fixture(column, %{
-        workflow_steps: [%{"name" => "deploy", "skipped" => true}]
+        workflow_steps: [%{"name" => "deploy", "dispatched" => false}]
       })
 
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/compliance")

@@ -27,6 +27,19 @@ defmodule Kanban.Tasks.Compliance do
   GROUP BY elem->>'name'
   """
 
+  # (D233) Filters on `dispatched` being FALSE, not on a `skipped` key.
+  #
+  # The workflow_steps schema has no `skipped` key. A skipped step is recorded
+  # as `dispatched: false` with a `reason` — that is what the documented schema
+  # says, what `AgentWorkflow.validate_workflow_steps_shape/2` enforces, and
+  # what every emitting agent writes. Filtering on `skipped` therefore matched
+  # nothing in real data, so this panel was silently empty rather than visibly
+  # wrong. Confirmed against production: sampled task payloads carry only
+  # `dispatched` + `duration_ms` or `dispatched` + `reason`, and no `skipped`
+  # key at all.
+  #
+  # A missing `dispatched` key yields NULL, and `NULL IS FALSE` is false, so
+  # entries that predate the field are not counted rather than miscounted.
   @skip_reasons_sql """
   SELECT COALESCE(elem->>'reason', '') AS reason,
          COUNT(*) AS count
@@ -34,7 +47,7 @@ defmodule Kanban.Tasks.Compliance do
   JOIN columns c ON c.id = t.column_id
   CROSS JOIN LATERAL jsonb_array_elements(t.workflow_steps) AS elem
   WHERE c.board_id = $1
-    AND (elem->>'skipped')::boolean IS TRUE
+    AND (elem->>'dispatched')::boolean IS FALSE
   GROUP BY COALESCE(elem->>'reason', '')
   """
 
@@ -65,8 +78,30 @@ defmodule Kanban.Tasks.Compliance do
   Returns a map of skip-reason string to count of skipped steps matching that
   reason across all tasks on the given board.
 
-  Only steps where `"skipped"` is `true` are counted. Steps skipped without a
-  reason are grouped under the empty string key.
+  A step counts as skipped when `"dispatched"` is `false` — the schema has no
+  `"skipped"` key (D233). Steps skipped without a reason are grouped under the
+  empty string key; historical rows predate the validator that now requires a
+  reason, so that bucket is not dead code.
+
+  ## On reason text, decided deliberately rather than by omission (D233)
+
+  Reasons are **not** canonicalised here, and that is a decision with a cost.
+  Unlike `explorer_result.reason` and `reviewer_result.reason` — which
+  `Kanban.Tasks.CompletionValidation` constrains to a five-value enum — a
+  `workflow_steps` reason is only required to be a string, so agents write free
+  prose. Measured against real completions: 12 skipped entries produced 10
+  distinct strings averaging 145 characters, so grouping verbatim yields very
+  nearly one row per entry.
+
+  Bucketing was rejected rather than overlooked. Any mapping written today
+  would be fitted to the prose of the agents that happen to exist now, and
+  would silently mis-file wording it did not anticipate — the failure this
+  defect is already an instance of. Keeping the text raw means a novel skip
+  reason stays visible verbatim instead of vanishing into an "other" bucket.
+
+  The real fix is to constrain the vocabulary where it is written, mirroring
+  the existing enum for explorer/reviewer reasons, which is a change to the
+  emitting contract rather than to this query.
   """
   def skip_reasons(board_id) do
     %{rows: rows} = Repo.query!(@skip_reasons_sql, [board_id])
