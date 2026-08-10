@@ -28,21 +28,31 @@ config :kanban, Kanban.Repo,
   database: "kanban_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2,
-  # (D230) DBConnection defaults to a 50ms queue_target, and on a machine under
-  # ordinary concurrent load that is routinely exceeded: Ecto's parallel
-  # preloader spawns Tasks that each check out a sandbox connection, the
-  # checkout queues past the target, and DBConnection starts DROPPING requests.
-  # The test then fails with "could not checkout the connection owned by
-  # #PID<...>" — a spurious failure that is indistinguishable from a real one
-  # to whoever reads the result, which is precisely the diagnostic tax D230
-  # exists to remove. Reproduced at 2 failures in 6 runs under 4 CPU burners on
-  # an 8-core M2; both were connection checkouts inside a preloader, and both
-  # runs otherwise reported 7460/7461 passing.
+  # (D230) DBConnection defaults to a 50ms queue_target, which a machine under
+  # ordinary concurrent load routinely exceeds: Ecto's parallel preloader spawns
+  # Tasks that each check out a sandbox connection, the checkout queues past the
+  # target, and DBConnection begins SHEDDING requests. The test then fails with
+  # "could not checkout the connection owned by #PID<...>" — a spurious failure
+  # indistinguishable from a real one to whoever reads the result, which is
+  # exactly the diagnostic tax D230 exists to remove. Reproduced at 2 failures
+  # in 6 runs under 4 CPU burners on an 8-core M2; both were checkouts inside a
+  # preloader, and both runs otherwise reported 7460/7461 passing.
   #
-  # This widens the tolerance; it does not hide anything. A genuinely stuck
-  # query still fails, just after 500ms of waiting rather than 50ms.
-  queue_target: 500,
-  queue_interval: 5_000
+  # What this actually changes, stated precisely: queue_target is not a failure
+  # deadline. It is the input to a LOAD-SHEDDING heuristic — DBConnection sheds
+  # only once queue delay stays above the target across a queue_interval window.
+  # The hard deadline for a checkout is :timeout (15s default), which this does
+  # NOT touch, so the boundary at which a genuinely stuck query fails is
+  # unchanged. queue_interval is deliberately left at its 1000ms default: the
+  # measured drops were at 124-270ms, which justifies raising the target and
+  # says nothing about widening the window.
+  #
+  # The cost, named rather than glossed: a pool-starvation or connection-leak
+  # regression used to surface fast and loud as a dropped checkout. It now has
+  # to sustain >500ms of queue delay to do so, and may instead present as a slow
+  # suite or as a :timeout failure later. True deadlock is still caught by
+  # ExUnit's own timeout.
+  queue_target: 500
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
