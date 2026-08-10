@@ -27,7 +27,22 @@ config :kanban, Kanban.Repo,
   hostname: "localhost",
   database: "kanban_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2
+  pool_size: System.schedulers_online() * 2,
+  # (D230) DBConnection defaults to a 50ms queue_target, and on a machine under
+  # ordinary concurrent load that is routinely exceeded: Ecto's parallel
+  # preloader spawns Tasks that each check out a sandbox connection, the
+  # checkout queues past the target, and DBConnection starts DROPPING requests.
+  # The test then fails with "could not checkout the connection owned by
+  # #PID<...>" — a spurious failure that is indistinguishable from a real one
+  # to whoever reads the result, which is precisely the diagnostic tax D230
+  # exists to remove. Reproduced at 2 failures in 6 runs under 4 CPU burners on
+  # an 8-core M2; both were connection checkouts inside a preloader, and both
+  # runs otherwise reported 7460/7461 passing.
+  #
+  # This widens the tolerance; it does not hide anything. A genuinely stuck
+  # query still fails, just after 500ms of waiting rather than 50ms.
+  queue_target: 500,
+  queue_interval: 5_000
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
