@@ -173,7 +173,7 @@ defmodule Kanban.Tasks.ComplianceTest do
         workflow_steps: [%{"name" => "revieweer", "dispatched" => false, "reason" => "typo"}]
       })
 
-      assert Map.fetch!(Compliance.skip_reasons(board.id), "typo") == 1
+      assert Compliance.skip_reasons(board.id) |> Map.fetch!("typo") == 1
     end
 
     test "scopes by board_id (no cross-board leakage)", %{
