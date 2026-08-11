@@ -1199,6 +1199,63 @@ defmodule KanbanWeb.API.TaskController do
 
     log_update_forbidden_fields(conn, task, rejected_fields)
 
+    # `column_id` is excluded from the refusal. It is on the forbidden list, but
+    # it already has its own upstream gate: `column_change_attempted?/2` returns
+    # 403 for a substantive move, so anything reaching here is an idempotent
+    # echo of the task's current column — which callers legitimately send and
+    # which has always been allowed through. Failing it would break that, and
+    # this defect is about silent discards, not about tightening column moves.
+    refusable = rejected_fields -- ["column_id"]
+
+    if refusable == [] do
+      apply_api_task_update(conn, task, safe_params)
+    else
+      reject_forbidden_update(conn, refusable)
+    end
+  end
+
+  # (D227) A PATCH naming a field this endpoint cannot change now FAILS rather
+  # than returning 200 with the field quietly dropped.
+  #
+  # The fields are genuinely immutable here — they belong to the claim/complete/
+  # mark_reviewed workflow endpoints, and that is deliberate. What was not
+  # defensible was reporting success for a write that never happened: a caller
+  # correcting a completion record got HTTP 200, a normal task body and no
+  # errors key, so a record known to be wrong stayed wrong while its author
+  # believed it was fixed. A 200 that changed nothing is indistinguishable from
+  # a 200 that changed everything.
+  #
+  # The whole request is rejected rather than partially applied, including when
+  # it mixes an editable field with an immutable one. Partial application would
+  # reintroduce the same ambiguity one level down — the caller would still have
+  # to diff the response to learn which half landed.
+  #
+  # The audit log and telemetry above still fire: this is now a visible refusal
+  # AND a recorded one, not a swap of one for the other.
+  defp reject_forbidden_update(conn, rejected_fields) do
+    body =
+      ErrorDocs.add_docs_to_error(
+        %{
+          error: "task update rejected",
+          failures: [
+            %{
+              field: "task",
+              errors:
+                Enum.map(rejected_fields, fn field ->
+                  %{field: field, message: TaskParamFilter.forbidden_update_message(field)}
+                end)
+            }
+          ]
+        },
+        :update_forbidden_field
+      )
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(body)
+  end
+
+  defp apply_api_task_update(conn, task, safe_params) do
     case Tasks.api_update_task(task, safe_params) do
       {:ok, updated_task} ->
         updated_task = Tasks.get_task_for_view!(updated_task.id)

@@ -8,6 +8,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
   alias Kanban.Columns
   alias Kanban.Schemas.Task.BehaviourTestRow
   alias Kanban.Tasks
+  alias KanbanWeb.API.TaskParamFilter
 
   @moduletag capture_log: true
 
@@ -1786,6 +1787,42 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  # Names the fields the failures list must identify, and asserts the whole
+  # request was discarded rather than partially applied.
+  defp assert_update_rejected(conn, task, expected_fields) do
+    body = json_response(conn, 422)
+    reloaded = Tasks.get_task!(task.id)
+
+    assert body["error"] == "task update rejected"
+
+    named = Enum.map(hd(body["failures"])["errors"], & &1["field"])
+    assert Enum.sort(named) == Enum.sort(expected_fields)
+
+    assert Enum.all?(hd(body["failures"])["errors"], fn e ->
+             String.contains?(e["message"], "cannot be changed via PATCH")
+           end)
+
+    # The refusal is wired to its OWN ErrorDocs context, not the generic
+    # fallback. Passing the wrong atom to add_docs_to_error/2 silently yields
+    # the README link, which no test would otherwise notice.
+    assert body["documentation"] =~ "patch_tasks_id.md"
+    assert body["common_causes"] != []
+
+    # The legitimate half of the payload is not applied either.
+    assert reloaded.title == task.title
+    reloaded
+  end
+
+  # (D227) These asserted 200 with the forbidden field silently dropped — which
+  # was the defect, not the contract. A caller correcting a completion record
+  # got a normal task body and no errors key, so a record known to be wrong
+  # stayed wrong while its author believed it was fixed.
+  #
+  # Each case now asserts three things, and the third is the one that makes the
+  # first two mean something: the request is refused, the offending field is
+  # named, and NOTHING was written — including the legitimate fields in the same
+  # payload. A partial apply would reintroduce the same ambiguity one level
+  # down, leaving the caller to diff the response to learn which half landed.
   describe "PATCH /api/tasks/:id mass-assignment protection" do
     setup %{column: column, user: user} do
       {:ok, task} =
@@ -1799,19 +1836,16 @@ defmodule KanbanWeb.API.TaskControllerTest do
       %{task: task}
     end
 
-    test "silently strips status and keeps the rest of the patch", %{conn: conn, task: task} do
+    test "rejects status rather than stripping it", %{conn: conn, task: task} do
       conn =
         patch(conn, ~p"/api/tasks/#{task.id}", task: %{"title" => "New", "status" => "completed"})
 
-      response = json_response(conn, 200)["data"]
-      reloaded = Tasks.get_task!(task.id)
-
-      assert response["title"] == "New"
+      reloaded = assert_update_rejected(conn, task, ["status"])
       assert reloaded.status == task.status
       refute reloaded.status == :completed
     end
 
-    test "silently strips assigned_to_id", %{conn: conn, task: task} do
+    test "rejects assigned_to_id", %{conn: conn, task: task} do
       other = user_fixture()
 
       conn =
@@ -1819,11 +1853,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
           task: %{"title" => "New", "assigned_to_id" => other.id}
         )
 
-      assert json_response(conn, 200)["data"]["title"] == "New"
-      assert Tasks.get_task!(task.id).assigned_to_id == task.assigned_to_id
+      reloaded = assert_update_rejected(conn, task, ["assigned_to_id"])
+      assert reloaded.assigned_to_id == task.assigned_to_id
     end
 
-    test "silently strips completed_by_id and completed_at", %{conn: conn, task: task} do
+    test "rejects completed_by_id and completed_at", %{conn: conn, task: task} do
       other = user_fixture()
 
       conn =
@@ -1835,14 +1869,12 @@ defmodule KanbanWeb.API.TaskControllerTest do
           }
         )
 
-      reloaded = Tasks.get_task!(task.id)
-
-      assert json_response(conn, 200)["data"]["title"] == "New"
+      reloaded = assert_update_rejected(conn, task, ["completed_at", "completed_by_id"])
       assert is_nil(reloaded.completed_by_id)
       assert is_nil(reloaded.completed_at)
     end
 
-    test "silently strips reviewed_by_id, reviewed_at, review_status, review_notes",
+    test "rejects reviewed_by_id, reviewed_at, review_status, review_notes",
          %{conn: conn, task: task} do
       other = user_fixture()
 
@@ -1853,61 +1885,70 @@ defmodule KanbanWeb.API.TaskControllerTest do
             "reviewed_by_id" => other.id,
             "reviewed_at" => "2025-01-01T00:00:00Z",
             "review_status" => "approved",
-            "review_notes" => "lgtm"
+            "review_notes" => "forged"
           }
         )
 
-      reloaded = Tasks.get_task!(task.id)
+      reloaded =
+        assert_update_rejected(conn, task, [
+          "review_notes",
+          "review_status",
+          "reviewed_at",
+          "reviewed_by_id"
+        ])
 
-      assert json_response(conn, 200)["data"]["title"] == "New"
       assert is_nil(reloaded.reviewed_by_id)
       assert is_nil(reloaded.reviewed_at)
-      assert is_nil(reloaded.review_status)
-      assert is_nil(reloaded.review_notes)
+      assert reloaded.review_status == task.review_status
+      assert reloaded.review_notes == task.review_notes
     end
 
-    test "silently strips identifier (server-generated only)", %{conn: conn, task: task} do
+    test "rejects identifier (server-generated only)", %{conn: conn, task: task} do
       conn =
         patch(conn, ~p"/api/tasks/#{task.id}", task: %{"title" => "New", "identifier" => "X999"})
 
-      assert json_response(conn, 200)["data"]["title"] == "New"
-      assert Tasks.get_task!(task.id).identifier == task.identifier
+      reloaded = assert_update_rejected(conn, task, ["identifier"])
+      assert reloaded.identifier == task.identifier
     end
 
-    test "silently strips parent_id", %{conn: conn, column: column, user: user, task: task} do
-      {:ok, goal} =
+    test "rejects parent_id", %{conn: conn, column: column, user: user, task: task} do
+      {:ok, other_parent} =
         Tasks.create_task(column, %{
-          "title" => "Some goal",
+          "title" => "Other parent",
           "type" => "goal",
-          "complexity" => "small",
           "created_by_id" => user.id
         })
 
       conn =
-        patch(conn, ~p"/api/tasks/#{task.id}", task: %{"title" => "New", "parent_id" => goal.id})
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"title" => "New", "parent_id" => other_parent.id}
+        )
 
-      assert json_response(conn, 200)["data"]["title"] == "New"
-      assert Tasks.get_task!(task.id).parent_id == task.parent_id
+      reloaded = assert_update_rejected(conn, task, ["parent_id"])
+      assert reloaded.parent_id == task.parent_id
     end
 
-    test "silently strips claim fields", %{conn: conn, task: task} do
+    test "rejects claim fields", %{conn: conn, task: task} do
+      other = user_fixture()
+
       conn =
         patch(conn, ~p"/api/tasks/#{task.id}",
           task: %{
             "title" => "New",
             "claimed_at" => "2025-01-01T00:00:00Z",
-            "claim_expires_at" => "2025-01-01T01:00:00Z"
+            "claim_expires_at" => "2025-01-02T00:00:00Z",
+            "assigned_to_id" => other.id
           }
         )
 
-      reloaded = Tasks.get_task!(task.id)
+      reloaded =
+        assert_update_rejected(conn, task, ["assigned_to_id", "claim_expires_at", "claimed_at"])
 
-      assert json_response(conn, 200)["data"]["title"] == "New"
       assert is_nil(reloaded.claimed_at)
       assert is_nil(reloaded.claim_expires_at)
     end
 
-    test "silently strips completion actuals (time_spent_minutes, actual_complexity, actual_files_changed)",
+    test "rejects completion actuals (time_spent_minutes, actual_complexity, actual_files_changed)",
          %{conn: conn, task: task} do
       conn =
         patch(conn, ~p"/api/tasks/#{task.id}",
@@ -1915,19 +1956,23 @@ defmodule KanbanWeb.API.TaskControllerTest do
             "title" => "New",
             "time_spent_minutes" => 9999,
             "actual_complexity" => "large",
-            "actual_files_changed" => "secret.ex"
+            "actual_files_changed" => "forged.ex"
           }
         )
 
-      reloaded = Tasks.get_task!(task.id)
+      reloaded =
+        assert_update_rejected(conn, task, [
+          "actual_complexity",
+          "actual_files_changed",
+          "time_spent_minutes"
+        ])
 
-      assert json_response(conn, 200)["data"]["title"] == "New"
       assert is_nil(reloaded.time_spent_minutes)
       assert is_nil(reloaded.actual_complexity)
       assert is_nil(reloaded.actual_files_changed)
     end
 
-    test "silently strips created_by_* and archived_at", %{conn: conn, task: task} do
+    test "rejects created_by_* and archived_at", %{conn: conn, task: task} do
       other = user_fixture()
 
       conn =
@@ -1935,20 +1980,19 @@ defmodule KanbanWeb.API.TaskControllerTest do
           task: %{
             "title" => "New",
             "created_by_id" => other.id,
-            "created_by_agent" => "rogue",
+            "created_by_agent" => "Forged Agent",
             "archived_at" => "2025-01-01T00:00:00Z"
           }
         )
 
-      reloaded = Tasks.get_task!(task.id)
+      reloaded =
+        assert_update_rejected(conn, task, ["archived_at", "created_by_agent", "created_by_id"])
 
-      assert json_response(conn, 200)["data"]["title"] == "New"
       assert reloaded.created_by_id == task.created_by_id
-      assert reloaded.created_by_agent == task.created_by_agent
       assert is_nil(reloaded.archived_at)
     end
 
-    test "silently strips workflow_steps / explorer_result / reviewer_result",
+    test "rejects workflow_steps / explorer_result / reviewer_result",
          %{conn: conn, task: task} do
       conn =
         patch(conn, ~p"/api/tasks/#{task.id}",
@@ -1960,15 +2004,19 @@ defmodule KanbanWeb.API.TaskControllerTest do
           }
         )
 
-      reloaded = Tasks.get_task!(task.id)
+      reloaded =
+        assert_update_rejected(conn, task, [
+          "explorer_result",
+          "reviewer_result",
+          "workflow_steps"
+        ])
 
-      assert json_response(conn, 200)["data"]["title"] == "New"
       assert reloaded.workflow_steps == task.workflow_steps
       assert reloaded.explorer_result == task.explorer_result
       assert reloaded.reviewer_result == task.reviewer_result
     end
 
-    test "strips every forbidden field at once while applying legitimate changes",
+    test "names every forbidden field at once and applies none of the legitimate ones",
          %{conn: conn, task: task} do
       other = user_fixture()
 
@@ -1990,21 +2038,386 @@ defmodule KanbanWeb.API.TaskControllerTest do
           }
         )
 
-      reloaded = Tasks.get_task!(task.id)
+      reloaded =
+        assert_update_rejected(conn, task, [
+          "actual_complexity",
+          "archived_at",
+          "assigned_to_id",
+          "completed_at",
+          "completed_by_id",
+          "identifier",
+          "review_status",
+          "reviewed_by_id",
+          "status",
+          "time_spent_minutes"
+        ])
 
-      assert json_response(conn, 200)["data"]["title"] == "Legitimate"
-      assert reloaded.title == "Legitimate"
-      assert reloaded.why == "Legitimate why"
+      # Both legitimate fields are refused along with the rest.
+      assert reloaded.title == task.title
+      assert reloaded.why == task.why
       assert reloaded.identifier == task.identifier
       assert reloaded.status == task.status
       assert is_nil(reloaded.completed_by_id)
-      assert is_nil(reloaded.completed_at)
-      assert is_nil(reloaded.reviewed_by_id)
-      assert is_nil(reloaded.review_status)
-      assert is_nil(reloaded.time_spent_minutes)
-      assert is_nil(reloaded.actual_complexity)
-      assert is_nil(reloaded.archived_at)
-      assert reloaded.assigned_to_id == task.assigned_to_id
+    end
+
+    test "a patch of only editable fields still succeeds", %{conn: conn, task: task} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"title" => "Edited", "why" => "Because", "priority" => "high"}
+        )
+
+      assert json_response(conn, 200)["data"]["title"] == "Edited"
+      reloaded = Tasks.get_task!(task.id)
+      assert reloaded.title == "Edited"
+      assert reloaded.why == "Because"
+    end
+
+    # The half of "identifies which field was rejected AND why" that the
+    # assertions above do not reach. Every forbidden field is PATCHed and its
+    # reason pinned, so the branches of forbidden_update_reason/1 are verified
+    # in both directions rather than by inspection.
+    #
+    # It also enumerates from TaskParamFilter rather than from a copy, which
+    # makes it the drift guard: a field added to the forbidden list appears here
+    # with no expected reason and fails, instead of silently acquiring the
+    # catch-all "server-managed" text — which for a workflow field would send
+    # the caller to the wrong endpoint. That is the same class of error as the
+    # silent 200 this defect removes, one level down.
+    @reason_by_field %{
+      "status" => :claim_and_completion,
+      "assigned_to_id" => :claim_and_completion,
+      "claimed_at" => :claim_and_completion,
+      "claim_expires_at" => :claim_and_completion,
+      "completed_at" => :claim_and_completion,
+      "completed_by_id" => :claim_and_completion,
+      "completed_by_agent" => :claim_and_completion,
+      "completion_summary" => :claim_and_completion,
+      "completion_notes" => :claim_and_completion,
+      "actual_complexity" => :claim_and_completion,
+      "actual_files_changed" => :claim_and_completion,
+      "time_spent_minutes" => :claim_and_completion,
+      "review_report" => :claim_and_completion,
+      "workflow_steps" => :claim_and_completion,
+      "explorer_result" => :claim_and_completion,
+      "reviewer_result" => :claim_and_completion,
+      "review_status" => :review_verdict,
+      "review_notes" => :review_verdict,
+      "reviewed_at" => :review_attribution,
+      "reviewed_by_id" => :review_attribution,
+      "identifier" => :server_managed,
+      "parent_id" => :server_managed,
+      "position" => :server_managed,
+      "created_by_id" => :server_managed,
+      "created_by_agent" => :server_managed,
+      "archived_at" => :server_managed,
+      "archive_reason" => :server_managed,
+      "archive_note" => :server_managed,
+      "archived_by_id" => :server_managed,
+      "target_id" => :server_managed,
+      "duplicate_of_id" => :server_managed,
+      "changed_files" => {:dedicated, "PUT /api/tasks/:id/changed_files, its sole writer"},
+      "after_goal_status" => {:dedicated, "PATCH /api/tasks/:id/after_goal"},
+      "after_goal_result" => {:dedicated, "PATCH /api/tasks/:id/after_goal"},
+      "after_goal_attempts" => {:dedicated, "PATCH /api/tasks/:id/after_goal"},
+      # Not refused at all: it has its own upstream 403 gate, and an echo of
+      # the current column is allowed through. Listed so the exhaustiveness
+      # check below still covers the whole filter.
+      "column_id" => :not_refused
+    }
+
+    @expected_reason %{
+      claim_and_completion: "it is written by the claim and complete workflow endpoints",
+      review_verdict:
+        "it is the review verdict, recorded by a human reviewing the task in the board UI; " <>
+          "there is no API route that sets it",
+      review_attribution:
+        "it is review attribution, stamped by the server when a review is recorded",
+      server_managed: "it is server-managed; it is set at creation or by a dedicated action"
+    }
+
+    # The refusal was added on top of the audit log and telemetry, not in place
+    # of them — the module doc calls that log a monitored security control. Both
+    # sit before the branch in the same function, so moving the refusal above
+    # them would silence a control with the whole suite still green.
+    # The audit line is Logger.info and the test env's primary level is
+    # :warning, so it never reaches a handler without this — the same lift
+    # task_param_filter_test.exs uses for the unit-level version of this
+    # assertion. capture_log: false overrides the module-wide tag so the nested
+    # capture below is the one that sees the output.
+    @tag capture_log: false
+    test "the refusal still emits the mass-assignment audit log and telemetry",
+         %{conn: conn, task: task} do
+      handler = "d227-forbidden-#{System.unique_integer([:positive])}"
+      test_pid = self()
+
+      :telemetry.attach(
+        handler,
+        [:kanban, :api, :task_update_forbidden_fields_filtered],
+        fn _event, _measurements, metadata, _cfg ->
+          send(test_pid, {:telemetry, metadata})
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler) end)
+
+      # Raised AFTER the attach: :telemetry logs an info-level note about local
+      # handler functions, and lifting the level first would print it.
+      prev_level = Logger.level()
+      Logger.configure(level: :info)
+      on_exit(fn -> Logger.configure(level: prev_level) end)
+
+      log =
+        ExUnit.CaptureLog.capture_log(fn ->
+          conn = patch(conn, ~p"/api/tasks/#{task.id}", task: %{"status" => "completed"})
+          assert json_response(conn, 422)
+        end)
+
+      assert log =~ "API mass-assignment attempt rejected"
+      assert_receive {:telemetry, %{fields: ["status"], task_id: _}}
+    end
+
+    test "every forbidden field is classified, with no field left unaccounted for" do
+      assert Enum.sort(Map.keys(@reason_by_field)) ==
+               Enum.sort(TaskParamFilter.forbidden_api_update_fields())
+    end
+
+    # (D227) The structural version of this defect, and the one that let nine
+    # fields keep the old behaviour after the first fix: the refusal keys off
+    # the forbidden list, but silence comes from being on NEITHER list. A field
+    # that is neither refused nor cast is dropped by the changeset and reported
+    # as 200 — the exact symptom, one list over.
+    #
+    # Castability is derived from the changeset rather than copied from
+    # `@api_update_fields`, because a copy is another list that can drift. A
+    # cast field rejects a type-incompatible value with an error keyed on
+    # itself; an uncast field ignores it silently. Two probes are needed since
+    # no single value is invalid for every type — a map is valid for `:map`
+    # fields, a string for string fields.
+    test "no schema field falls between the forbidden list and the update allow-list" do
+      ignored = ~w(id inserted_at updated_at)
+      forbidden = TaskParamFilter.forbidden_api_update_fields()
+
+      schema_fields =
+        (Kanban.Tasks.Task.__schema__(:fields) ++ Kanban.Tasks.Task.__schema__(:embeds))
+        |> Enum.map(&to_string/1)
+        |> Enum.uniq()
+
+      # Bracketed deliberately: `--` is RIGHT-associative, so an unbracketed
+      # `a -- b -- c` means `a -- (b -- c)` and subtracts almost nothing. The
+      # formatter makes that grouping visible; it is not what is wanted here.
+      candidates = (schema_fields -- ignored) -- forbidden
+      gap = Enum.reject(candidates, &castable_on_update?/1)
+
+      assert gap == [],
+             "these fields are neither refused nor written — a PATCH naming one " <>
+               "returns 200 and silently discards it: #{inspect(gap)}"
+    end
+
+    test "each rejected field is given the reason that names its real writer",
+         %{conn: conn, task: task} do
+      for {field, kind} <- @reason_by_field, kind != :not_refused do
+        expected =
+          case kind do
+            {:dedicated, endpoint} -> "it has its own endpoint: #{endpoint}"
+            simple -> @expected_reason[simple]
+          end
+
+        conn = patch(conn, ~p"/api/tasks/#{task.id}", task: %{field => nil})
+        [error] = hd(json_response(conn, 422)["failures"])["errors"]
+
+        assert error["field"] == field
+
+        assert error["message"] ==
+                 "#{field} cannot be changed via PATCH /api/tasks/:id — " <>
+                   "#{expected}. " <>
+                   "The request was rejected in full and no field was changed.",
+               "wrong reason for #{field} (expected the #{inspect(kind)} reason)"
+      end
+    end
+  end
+
+  # True when `Task.api_update_changeset/2` casts this field — established by
+  # handing it a value its type cannot accept and seeing whether the changeset
+  # objects on that field's own key. An uncast field is ignored without
+  # complaint, which is precisely the silence being hunted.
+  #
+  # The base struct already satisfies `validate_required([:title, :type,
+  # :priority])`. Starting from a bare `%Task{}` instead makes the probe report
+  # `title` castable no matter what, because the required-field validation
+  # supplies a `:title` error whether or not anything was cast — a guard that
+  # answers "yes" for a field it never examined.
+  defp castable_on_update?(field) do
+    atom = String.to_existing_atom(field)
+    base = %Kanban.Tasks.Task{title: "probe", type: :work, priority: :medium}
+
+    Enum.any?([%{"nope" => "nope"}, "not-a-valid-value"], fn bad_value ->
+      base
+      |> Kanban.Tasks.Task.api_update_changeset(%{field => bad_value})
+      |> Map.fetch!(:errors)
+      |> Keyword.has_key?(atom)
+    end)
+  end
+
+  # A task that already looks finished: `status: :completed` with a real
+  # completion record, parked in whichever column the caller names. Written
+  # straight through the Repo rather than through the complete endpoint,
+  # because the point here is the PATCH path, not how the task got there.
+  defp finished_task(column, user) do
+    {:ok, task} =
+      Tasks.create_task(column, %{
+        "title" => "Finished work",
+        "description" => "Already completed",
+        "why" => "Original why",
+        "complexity" => "small",
+        "created_by_id" => user.id
+      })
+
+    task
+    |> Ecto.Changeset.change(%{
+      status: :completed,
+      completed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+      completed_by_id: user.id,
+      completed_by_agent: "Original Agent",
+      completion_summary: "Original summary",
+      completion_notes: "Original notes, including a statement later found to be false",
+      time_spent_minutes: 30,
+      review_status: :pending
+    })
+    |> Kanban.Repo.update!()
+  end
+
+  # (D227) The reported symptom was specifically about a COMPLETED task: an
+  # agent noticing a wrong completion record, PATCHing a correction, and getting
+  # 200 back with nothing changed. The block above covers the mechanism on an
+  # open task; this one covers the reported case itself, in both directions —
+  # the immutable field is refused, and the fields that ARE editable after
+  # completion still update, so the fix does not freeze the record wholesale.
+  #
+  # "In Review rather than Done" is here because those are two different states
+  # that both look finished: Done is `status: :completed` in the Done column;
+  # Review is the same status parked in the Review column awaiting a human. The
+  # refusal must not depend on which column the task is sitting in.
+  describe "PATCH /api/tasks/:id on a finished task" do
+    setup %{board: board, user: user} do
+      columns = Columns.list_columns(board)
+      done_column = Enum.find(columns, &(&1.name == "Done"))
+      review_column = Enum.find(columns, &(&1.name == "Review"))
+
+      %{done: finished_task(done_column, user), review: finished_task(review_column, user)}
+    end
+
+    # The literal reported case: a corrected `completion_notes` on an already
+    # completed task came back 200 with the original text intact.
+    test "refuses a correction to completion_notes on a done task",
+         %{conn: conn, done: task} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"completion_notes" => "corrected: the earlier note was false"}
+        )
+
+      body = json_response(conn, 422)
+      reloaded = Tasks.get_task!(task.id)
+
+      assert body["error"] == "task update rejected"
+      assert Enum.map(hd(body["failures"])["errors"], & &1["field"]) == ["completion_notes"]
+
+      # The record still stays wrong — but the caller is now told so instead of
+      # being handed a success it can't distinguish from a real write.
+      assert reloaded.completion_notes == task.completion_notes
+      assert reloaded.status == :completed
+    end
+
+    # D227's report is a completion note that made a false claim ABOUT
+    # changed_files, so this is the field an agent correcting that record
+    # reaches for — and it was the last one still answering 200.
+    test "refuses changed_files and points at its own endpoint", %{conn: conn, done: task} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{
+            "changed_files" => [%{"path" => "lib/foo.ex", "diff" => "@@ -1 +1 @@\n-old\n+new"}]
+          }
+        )
+
+      [error] = hd(json_response(conn, 422)["failures"])["errors"]
+
+      assert error["field"] == "changed_files"
+      assert error["message"] =~ "PUT /api/tasks/:id/changed_files"
+
+      assert Tasks.get_task!(task.id).changed_files == task.changed_files
+    end
+
+    test "refuses the completion metrics as a group", %{conn: conn, done: task} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"time_spent_minutes" => 45, "completion_summary" => "corrected"}
+        )
+
+      body = json_response(conn, 422)
+      reloaded = Tasks.get_task!(task.id)
+
+      assert Enum.sort(Enum.map(hd(body["failures"])["errors"], & &1["field"])) ==
+               ["completion_summary", "time_spent_minutes"]
+
+      assert reloaded.time_spent_minutes == task.time_spent_minutes
+      assert reloaded.completion_summary == task.completion_summary
+    end
+
+    # The pitfall this defect names by hand: `behaviour_test_matrix` is
+    # legitimately filled in after completion, so a fix that froze the whole
+    # record would break it. It is not on the forbidden list, and this proves
+    # the refusal did not quietly widen to cover it.
+    test "still allows the editable fields on a done task", %{conn: conn, done: task} do
+      matrix = full_behaviour_matrix()
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{
+            "title" => "Corrected title",
+            "pitfalls" => ["Do not re-run the migration"],
+            "behaviour_test_matrix" => matrix
+          }
+        )
+
+      body = json_response(conn, 200)["data"]
+      assert body["title"] == "Corrected title"
+      assert body["behaviour_test_matrix"] == expected_behaviour_matrix_json(matrix)
+
+      reloaded = Tasks.get_task!(task.id)
+      assert reloaded.title == "Corrected title"
+      assert reloaded.pitfalls == ["Do not re-run the migration"]
+      # Completion is untouched by an ordinary edit.
+      assert reloaded.status == :completed
+      assert reloaded.time_spent_minutes == task.time_spent_minutes
+    end
+
+    test "refuses the same field on a task in Review, not only in Done",
+         %{conn: conn, review: task} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"title" => "New", "review_status" => "approved"}
+        )
+
+      body = json_response(conn, 422)
+      reloaded = Tasks.get_task!(task.id)
+
+      assert Enum.map(hd(body["failures"])["errors"], & &1["field"]) == ["review_status"]
+      # Self-approval through the update endpoint is the thing being prevented.
+      assert reloaded.review_status == :pending
+      assert reloaded.title == task.title
+    end
+
+    test "a mixed patch on a review task applies neither half", %{conn: conn, review: task} do
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"why" => "Legitimate why", "completed_by_agent" => "Someone Else"}
+        )
+
+      assert json_response(conn, 422)["error"] == "task update rejected"
+
+      reloaded = Tasks.get_task!(task.id)
+      assert reloaded.why == task.why
+      assert reloaded.completed_by_agent == task.completed_by_agent
     end
   end
 

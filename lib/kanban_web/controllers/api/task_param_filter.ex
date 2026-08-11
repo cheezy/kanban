@@ -12,7 +12,13 @@ defmodule KanbanWeb.API.TaskParamFilter do
   The functions are conn-free: filters are pure `params -> {safe, rejected}`
   transforms, `column_change_attempted?/2` is a pure predicate, and the
   `log_*_mass_assignment` functions take primitive actor/field values so the
-  controller keeps its own telemetry emission and error rendering.
+  controller keeps its own telemetry emission and response assembly.
+
+  The *text* of an update refusal lives here too (`forbidden_update_message/1`),
+  beside the forbidden-field list it explains — the message's job is to name
+  which endpoint does write the field, so it drifts into inaccuracy the moment
+  it is maintained apart from the list. The controller still owns the HTTP
+  shape: status code, `ErrorDocs` wiring and JSON rendering.
   """
 
   require Logger
@@ -64,6 +70,17 @@ defmodule KanbanWeb.API.TaskParamFilter do
   # dedicated workflow endpoints (claim/complete/mark_reviewed) instead.
   # Defense in depth: the controller filters and logs; Task.api_update_changeset/2
   # also enforces the allow-list at the changeset layer.
+  #
+  # (D227) This list must stay the exact complement of what
+  # `Task.api_update_changeset/2` casts — otherwise a field on NEITHER list is
+  # silently discarded with a 200, which is the defect D227 removed for the
+  # fields that were already here. `changed_files`, `after_goal_*`, `archive_*`,
+  # `target_id` and `duplicate_of_id` were exactly that: real schema fields, on
+  # no list, dropped uncast, reported as success. `changed_files` was the sharp
+  # one — D227's own report is about a completion note that made a false claim
+  # ABOUT `changed_files`, so it is the field a correcting agent reaches for
+  # first. `task_controller_test.exs` derives the two sets from the schema and
+  # fails if any field falls into the gap again.
   @forbidden_api_update_fields ~w(
     status
     identifier
@@ -92,7 +109,101 @@ defmodule KanbanWeb.API.TaskParamFilter do
     created_by_id
     created_by_agent
     archived_at
+    changed_files
+    after_goal_status
+    after_goal_result
+    after_goal_attempts
+    archive_reason
+    archive_note
+    archived_by_id
+    target_id
+    duplicate_of_id
   )
+
+  @doc """
+  The fields an API client may not mass-assign via `PATCH /api/tasks/:id`.
+
+  Exposed so tests can enumerate the list rather than restate it — a hand-copied
+  copy drifts the moment a field is added here, and the symptom is a caller
+  being told, inaccurately, where to go instead. See
+  `forbidden_update_message/1`, which partitions this list in place.
+  """
+  def forbidden_api_update_fields, do: @forbidden_api_update_fields
+
+  # (D227) The rejection message for a refused PATCH. Its whole job is to tell a
+  # caller where the field IS written, so a reason naming the wrong endpoint is
+  # worse than a vague one — it sends them somewhere that rejects them again for
+  # a different reason. The partition lives here, beside the list it partitions,
+  # so the two cannot drift apart.
+  #
+  # `assigned_to_id` sits with the claim fields because the claim endpoint
+  # writes it alongside `claimed_at`/`claim_expires_at`. `review_report` sits
+  # with the completion fields because the COMPLETION changeset casts it
+  # (`AgentWorkflow.completion_changeset/5`) — despite the name, `mark_reviewed`
+  # does not write it.
+  @claim_and_completion_update_fields ~w(
+    status assigned_to_id claimed_at claim_expires_at completed_at
+    completed_by_id completed_by_agent completion_summary completion_notes
+    actual_complexity actual_files_changed time_spent_minutes review_report
+    workflow_steps explorer_result reviewer_result
+  )
+
+  # The verdict itself has NO API writer. `mark_reviewed/2` refuses with
+  # `:review_not_performed` when `review_status` is nil, so naming it here would
+  # be the exact mistake this partition exists to avoid: a human records the
+  # verdict in the board UI review form.
+  @review_verdict_update_fields ~w(review_status review_notes)
+
+  # Attribution, unlike the verdict, IS stamped by the workflow — `move_to_done`
+  # and `move_to_doing` write `reviewed_by_id`, and the board UI form writes both.
+  @review_attribution_update_fields ~w(reviewed_at reviewed_by_id)
+
+  # Fields with a dedicated write endpoint of their own. Named individually
+  # because "server-managed" would be useless here: the caller has somewhere
+  # specific to go, and these are the fields agents actually try to send.
+  @dedicated_endpoint_update_fields %{
+    "changed_files" => "PUT /api/tasks/:id/changed_files, its sole writer",
+    "after_goal_status" => "PATCH /api/tasks/:id/after_goal",
+    "after_goal_result" => "PATCH /api/tasks/:id/after_goal",
+    "after_goal_attempts" => "PATCH /api/tasks/:id/after_goal"
+  }
+
+  @doc """
+  Explains why `field` cannot be set through `PATCH /api/tasks/:id`.
+
+  The remainder of the forbidden list — `identifier`, `parent_id`, `position`,
+  `created_by_*`, `archived_at` — is deliberately NOT restated: it falls to the
+  catch-all clause, so a field added to `@forbidden_api_update_fields` acquires
+  the honest vague reason rather than a confidently wrong one. The controller
+  test PATCHes every member of the list and pins the reason each receives, so a
+  new field cannot reach the catch-all unnoticed.
+  """
+  def forbidden_update_message(field) do
+    "#{field} cannot be changed via PATCH /api/tasks/:id — #{forbidden_update_reason(field)}. " <>
+      "The request was rejected in full and no field was changed."
+  end
+
+  defp forbidden_update_reason(field) when field in @claim_and_completion_update_fields do
+    "it is written by the claim and complete workflow endpoints"
+  end
+
+  defp forbidden_update_reason(field) when field in @review_verdict_update_fields do
+    "it is the review verdict, recorded by a human reviewing the task in the board UI; " <>
+      "there is no API route that sets it"
+  end
+
+  defp forbidden_update_reason(field) when field in @review_attribution_update_fields do
+    "it is review attribution, stamped by the server when a review is recorded"
+  end
+
+  defp forbidden_update_reason(field)
+       when is_map_key(@dedicated_endpoint_update_fields, field) do
+    "it has its own endpoint: #{@dedicated_endpoint_update_fields[field]}"
+  end
+
+  defp forbidden_update_reason(_field) do
+    "it is server-managed; it is set at creation or by a dedicated action"
+  end
 
   @doc """
   True when `task_params` attempts to move the task to a different column (or

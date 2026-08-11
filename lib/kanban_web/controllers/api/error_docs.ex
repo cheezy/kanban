@@ -264,6 +264,23 @@ defmodule KanbanWeb.API.ErrorDocs do
     }
   end
 
+  # (D227) A PATCH naming a workflow-owned or server-managed field. Without this
+  # clause the refusal fell through to the generic README link, which tells a
+  # caller nothing about the one thing it needs to know: the field is not
+  # unwritable, it is written somewhere else.
+  def get_docs(:update_forbidden_field, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/api/patch_tasks_id.md",
+      common_causes: [
+        "The request named a workflow field — status, or one of the claim or completion fields — which is written by POST /api/tasks/claim and PATCH /api/tasks/:id/complete",
+        "The request named a review verdict — review_status or review_notes — which is recorded by a human reviewing the task in the board UI; no API route sets it",
+        "The request named review attribution — reviewed_at or reviewed_by_id — which the server stamps when a review is recorded",
+        "The request named a server-managed field — identifier, parent_id, position, created_by_* or archived_at — which is set at creation or by a dedicated action",
+        "Re-send the request with only the editable fields; the rejected request changed nothing"
+      ]
+    }
+  end
+
   # Validation errors (used by TaskJSON.error/1)
   def get_docs(:validation_error, opts) do
     field_errors = Keyword.get(opts, :fields, [])

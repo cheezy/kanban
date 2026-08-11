@@ -248,6 +248,36 @@ defmodule KanbanWeb.API.ErrorDocsTest do
       assert "Verify board_id in your requests" in result.common_causes
     end
 
+    # (D227) The point of the clause is that it is NOT the default fallback:
+    # a refused PATCH gets the update endpoint's own docs, not the README.
+    test "provides documentation for a refused forbidden-field update" do
+      result = ErrorDocs.get_docs(:update_forbidden_field)
+
+      assert result.documentation ==
+               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/patch_tasks_id.md"
+
+      assert Enum.any?(result.common_causes, &String.contains?(&1, "/api/tasks/claim"))
+      assert Enum.any?(result.common_causes, &String.contains?(&1, "identifier"))
+      assert Enum.any?(result.common_causes, &String.contains?(&1, "changed nothing"))
+
+      # The verdict and its attribution are called out separately because only
+      # the verdict has no API writer at all. Naming mark_reviewed for
+      # review_status would send a caller somewhere that rejects them for a
+      # different reason (it requires review_status to already be set), while
+      # reviewed_by_id genuinely is written there — one blanket sentence cannot
+      # be true of both.
+      verdict_cause = Enum.find(result.common_causes, &String.contains?(&1, "review_status"))
+
+      assert verdict_cause =~ "board UI"
+      refute verdict_cause =~ "mark_reviewed"
+      refute verdict_cause =~ "reviewed_by_id"
+
+      attribution_cause =
+        Enum.find(result.common_causes, &String.contains?(&1, "reviewed_by_id"))
+
+      assert attribution_cause =~ "stamps"
+    end
+
     test "provides default documentation for unknown contexts" do
       result = ErrorDocs.get_docs(:unknown_error_type)
 
