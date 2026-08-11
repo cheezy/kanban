@@ -261,23 +261,25 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
             type: "section_verdict",
             required: false,
             description:
-              "Verdict on the testing-strategy review step. Object with a status enum and an optional notes string. See section_verdict_shape below."
+              "Verdict on the testing-strategy review step. Object with a status enum and a `note` string — optional on \"passed\"/\"not_assessed\", REQUIRED and substantive on \"failed\". See section_verdict_shape below."
           },
           patterns: %{
             type: "section_verdict",
             required: false,
-            description: "Verdict on the patterns-followed review step."
+            description:
+              "Verdict on the patterns-followed review step. See section_verdict_shape below — `note` is REQUIRED and substantive on \"failed\"."
           },
           pitfalls: %{
             type: "section_verdict",
             required: false,
-            description: "Verdict on the pitfalls review step."
+            description:
+              "Verdict on the pitfalls review step. See section_verdict_shape below — `note` is REQUIRED and substantive on \"failed\"."
           },
           security_considerations: %{
             type: "section_verdict",
             required: false,
             description:
-              "Verdict on the security-considerations review step (see section_verdict_shape: status enum passed/failed/not_assessed plus an optional note). Beyond the shared section-verdict shape, this verdict object MAY additionally carry an OPTIONAL nested `considerations` array (see considerations_breakdown below) giving a per-item mitigation breakdown of the task's security_considerations list. Both the verdict and the nested array are optional and backwards-compatible — an absent array carries no obligation.",
+              "Verdict on the security-considerations review step (see section_verdict_shape: status enum passed/failed/not_assessed plus a `note` that is optional on \"passed\"/\"not_assessed\" and REQUIRED and substantive on \"failed\"). Beyond the shared section-verdict shape, this verdict object MAY additionally carry an OPTIONAL nested `considerations` array (see considerations_breakdown below) giving a per-item mitigation breakdown of the task's security_considerations list. Both the verdict and the nested array are optional and backwards-compatible — an absent array carries no obligation.",
             considerations_breakdown: %{
               type: "array_of_objects",
               required: false,
@@ -322,20 +324,25 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
           },
           section_verdict_shape: %{
             description:
-              "Object shape used by testing_strategy, patterns, and pitfalls. Status is enum-validated; notes is an optional string (empty string allowed). Non-map values are rejected.",
+              "Object shape used by testing_strategy, patterns, pitfalls, security_considerations and behaviour_test_matrix. Status is enum-validated. `note` (SINGULAR) is the rendered annotation: optional on \"passed\" and \"not_assessed\", but REQUIRED and substantive on \"failed\". Non-map values are rejected.",
             entry_fields: %{
               status: %{
                 type: "enum",
                 values: ["passed", "failed", "not_assessed"],
                 required: true
               },
-              notes: %{
+              note: %{
                 type: "string",
-                required: false,
-                description: "Free-form annotation explaining the verdict (empty string allowed)."
+                required: "only when status is \"failed\"",
+                description:
+                  "Annotation explaining the verdict. Optional on \"passed\" and \"not_assessed\" (empty string allowed). On \"failed\" it is REQUIRED and must name the specific violation in at least 20 non-whitespace characters: an empty string, a bare placeholder/TODO/TBD/n-a, padding built from those words, or a note that merely restates the status is rejected with 422 naming the offending section. A plural `notes` key is tolerated for legacy payloads but is never rendered and never satisfies this requirement."
               }
             },
-            example: %{status: "passed", notes: "All required test cases present."}
+            example: %{status: "passed", note: "All required test cases present."},
+            failed_example: %{
+              status: "failed",
+              note: "A direct Ecto query was introduced in the LiveView, which pitfall 1 forbids."
+            }
           }
         },
         skip_form: %{
@@ -381,10 +388,10 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
           ],
           testing_strategy: %{
             status: "passed",
-            notes: "All 5 required test cases present in the new describe block."
+            note: "All 5 required test cases present in the new describe block."
           },
           patterns: %{status: "passed"},
-          pitfalls: %{status: "passed", notes: "None violated."},
+          pitfalls: %{status: "passed", note: "None violated."},
           security_considerations: %{
             status: "passed",
             note: "Board-scoped query; no new input surface.",

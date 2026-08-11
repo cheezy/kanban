@@ -104,7 +104,13 @@ defmodule KanbanWeb.API.TaskJSONTest do
         "notes" => "All required test cases present."
       },
       "patterns" => %{"status" => "passed"},
-      "pitfalls" => %{"status" => "failed", "notes" => "One pitfall violated."}
+      # (D231) `note`, singular — the key the reviewer contract specifies, and
+      # the one a failed verdict must fill substantively. The plural `notes`
+      # used here before is emitted by nothing.
+      "pitfalls" => %{
+        "status" => "failed",
+        "note" => "One listed pitfall was violated: a direct Ecto query in the LiveView."
+      }
     }
   end
 

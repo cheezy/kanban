@@ -6675,12 +6675,12 @@ msgstr "設定セクション"
 msgid "Review data unavailable"
 msgstr "レビューデータがありません"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:180
+#: lib/kanban/tasks/completion_validation/review_contract.ex:343
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "ディスパッチされたレビューでは必須です: レビューキューが判定を表示できるよう status または issue_counts のいずれかを含めてください"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:173
+#: lib/kanban/tasks/completion_validation/review_contract.ex:336
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "ディスパッチされたレビューでは必須です: レビューキューが表示する構造化フィールド %{field} がありません"
@@ -8696,7 +8696,7 @@ msgstr "遅延"
 msgid "Completion notes"
 msgstr "完了メモ"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:186
+#: lib/kanban/tasks/completion_validation/review_contract.ex:349
 #, elixir-autogen, elixir-format
 msgid "must be a list on a dispatched review: one entry per project checklist bullet, or an empty list when the project has no CODE-REVIEW.md"
 msgstr "ディスパッチされたレビューではリストである必要があります: プロジェクトのチェックリスト項目ごとに1エントリ、プロジェクトに CODE-REVIEW.md がない場合は空のリスト"
@@ -8750,3 +8750,23 @@ msgstr "エクスプローラー結果"
 #, elixir-autogen, elixir-format
 msgid "Explorer result"
 msgstr "エクスプローラー結果"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:310
+#, elixir-autogen, elixir-format
+msgid "%{field}.note is required when the section verdict is \"failed\": it must name the specific violation or gap"
+msgstr "%{field}.note はセクションの判定が \"failed\" の場合に必須です。具体的な違反または不足を明示する必要があります"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:317
+#, elixir-autogen, elixir-format
+msgid "%{field}.note must be a string"
+msgstr "%{field}.note は文字列である必要があります"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:321
+#, elixir-autogen, elixir-format
+msgid "%{field}.note must name the specific violation in at least %{min} non-whitespace characters when the section verdict is \"failed\""
+msgstr "セクションの判定が \"failed\" の場合、%{field}.note は空白を除く %{min} 文字以上で具体的な違反を明示する必要があります"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:329
+#, elixir-autogen, elixir-format
+msgid "%{field}.note reads as a placeholder rather than naming the violation. If there is nothing substantive to write, the verdict is wrong rather than the note — re-check whether the section should be \"passed\" or \"not_assessed\" instead."
+msgstr "%{field}.note は違反を明示せず、プレースホルダーのように見えます。書くべき実質的な内容がない場合、誤っているのはノートではなく判定です。そのセクションが \"passed\" または \"not_assessed\" であるべきか再確認してください。"

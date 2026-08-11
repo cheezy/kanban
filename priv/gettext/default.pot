@@ -6629,12 +6629,12 @@ msgstr ""
 msgid "Review data unavailable"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:180
+#: lib/kanban/tasks/completion_validation/review_contract.ex:343
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:173
+#: lib/kanban/tasks/completion_validation/review_contract.ex:336
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr ""
@@ -8658,7 +8658,7 @@ msgstr ""
 msgid "Completion notes"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:186
+#: lib/kanban/tasks/completion_validation/review_contract.ex:349
 #, elixir-autogen, elixir-format
 msgid "must be a list on a dispatched review: one entry per project checklist bullet, or an empty list when the project has no CODE-REVIEW.md"
 msgstr ""
@@ -8711,4 +8711,24 @@ msgstr ""
 #: lib/kanban_web/live/task_live/view_component.ex:374
 #, elixir-autogen, elixir-format
 msgid "Explorer result"
+msgstr ""
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:310
+#, elixir-autogen, elixir-format
+msgid "%{field}.note is required when the section verdict is \"failed\": it must name the specific violation or gap"
+msgstr ""
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:317
+#, elixir-autogen, elixir-format
+msgid "%{field}.note must be a string"
+msgstr ""
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:321
+#, elixir-autogen, elixir-format
+msgid "%{field}.note must name the specific violation in at least %{min} non-whitespace characters when the section verdict is \"failed\""
+msgstr ""
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:329
+#, elixir-autogen, elixir-format
+msgid "%{field}.note reads as a placeholder rather than naming the violation. If there is nothing substantive to write, the verdict is wrong rather than the note — re-check whether the section should be \"passed\" or \"not_assessed\" instead."
 msgstr ""

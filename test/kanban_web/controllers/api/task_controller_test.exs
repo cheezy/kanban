@@ -3992,7 +3992,14 @@ defmodule KanbanWeb.API.TaskControllerTest do
         |> Map.put("status", "changes_requested")
         |> Map.put("issues_found", 2)
         |> Map.put("issue_counts", %{"critical" => 1, "important" => 1, "minor" => 0})
-        |> Map.put("security_considerations", %{"status" => "failed"})
+        # (D231) A failed verdict owes a note naming the violation. This test is
+        # about the security issue category, so the note is incidental here —
+        # but it must be real, which is the point of the rule.
+        |> Map.put("security_considerations", %{
+          "status" => "failed",
+          "note" =>
+            "The listed consideration is not mitigated by the diff, as the critical issue records."
+        })
         |> Map.put("issues", [
           %{
             "severity" => "critical",

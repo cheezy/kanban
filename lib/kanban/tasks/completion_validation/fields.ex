@@ -5,8 +5,8 @@ defmodule Kanban.Tasks.CompletionValidation.Fields do
 
   These are the primitives every validator in the family reaches for rather
   than re-implementing: decoding a value against an allow-list of atoms, and
-  checking an optional `notes` string on a section verdict. They live here,
-  not on the parent, for two reasons.
+  checking an optional `note` (and its legacy plural `notes`) string on a
+  section verdict. They live here, not on the parent, for two reasons.
 
   First, they are used from more than one sibling — `check_enum/6` from the
   parent's issue/criterion/consideration checks and from
@@ -66,12 +66,35 @@ defmodule Kanban.Tasks.CompletionValidation.Fields do
   def check_section_status(errors, map, field, prefix),
     do: check_enum(errors, map, "status", @section_status_enum, field, prefix)
 
+  # Two keys, and only one of them is live. The reviewer contract specifies
+  # `note`, SINGULAR, and that is the only key the review queue renders; the
+  # plural `notes` is checked purely so a legacy payload carrying it is not
+  # newly rejected. Both are type-checked on every status — a non-string note
+  # otherwise validates clean and then vanishes at render time, which reports
+  # nothing to the caller.
+  #
+  # The SUBSTANCE rule for a `failed` verdict's `note` is not here: it lives in
+  # `Kanban.Tasks.CompletionValidation.ReviewContract`, because it must reject
+  # unconditionally rather than warn under the grace flag (D231).
   @doc false
   def check_section_notes(errors, verdict, key) do
-    case Map.get(verdict, "notes") do
+    errors
+    |> check_note_type(verdict, key, "notes", :notes)
+    |> check_note_type(verdict, key, "note", :note)
+  end
+
+  # (D231) `note` is type-checked on EVERY status, not only `failed`. The
+  # substance rule in ReviewContract binds failed verdicts alone, so without
+  # this a `passed` verdict carrying `note: 42` validated clean and then
+  # vanished at render time — `ReviewReportHelpers.note_from_section/1` guards
+  # on `is_binary`, so the reviewer's rationale silently disappeared from the
+  # review queue with nothing reported to the caller. A type error is not a
+  # substance judgement, so checking it everywhere does not widen D222's scope.
+  defp check_note_type(errors, verdict, key, note_key, field) do
+    case Map.get(verdict, note_key) do
       nil -> errors
-      notes when is_binary(notes) -> errors
-      _ -> [{:notes, "#{key}.notes must be a string"} | errors]
+      note when is_binary(note) -> errors
+      _ -> [{field, "#{key}.#{note_key} must be a string"} | errors]
     end
   end
 end

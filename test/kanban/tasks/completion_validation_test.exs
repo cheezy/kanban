@@ -846,7 +846,13 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       payload =
         base_reviewer_payload()
         |> Map.put("patterns", %{"status" => "passed"})
-        |> Map.put("pitfalls", %{"status" => "failed", "notes" => "Two pitfalls violated"})
+        # (D231) `note`, singular — the key the reviewer contract specifies. This
+        # fixture previously used the plural `notes`, which nothing emits.
+        |> Map.put("pitfalls", %{
+          "status" => "failed",
+          "note" =>
+            "Two listed pitfalls were violated: the Ecto query in the LiveView, and the card layout change."
+        })
 
       assert {:ok, _} = CompletionValidation.validate_reviewer_result(payload)
     end
@@ -1024,11 +1030,173 @@ defmodule Kanban.Tasks.CompletionValidationTest do
     end
   end
 
+  # (D231) The consumer-side backstop for the reviewer's Verdict-note rule.
+  # Before this, a `failed` verdict carrying a padded stub note AND a real
+  # backing issue passed every gate — the rule was enforced only by the same
+  # model that would emit the stub, and D222's defect was exactly that model
+  # emitting `"note": "placeholder"`. These pin the server half, which binds
+  # whether or not any agent followed its instructions.
+  describe "review_contract_failures/1 — failed section verdicts must carry a substantive note" do
+    defp with_section(section, verdict) do
+      Map.put(base_reviewer_payload(), section, verdict)
+    end
+
+    # The thin base payload also fails the presence checks, so "accepted" here
+    # means "produced no NOTE failure" rather than "produced no failure".
+    defp note_failure?(payload) do
+      payload
+      |> CompletionValidation.review_contract_failures()
+      |> Enum.any?(fn {_field, message} -> String.contains?(message, ".note") end)
+    end
+
+    test "a failed verdict with no note at all is rejected" do
+      payload = with_section("pitfalls", %{"status" => "failed"})
+
+      errors = CompletionValidation.review_contract_failures(payload)
+
+      # AC3: the rejection names WHICH section failed — structurally, in the
+      # error's own field, not only in the message prose.
+      assert {:pitfalls, message} = List.keyfind(errors, :pitfalls, 0)
+      assert message =~ "pitfalls.note"
+    end
+
+    test "a failed verdict with an empty note is rejected" do
+      payload = with_section("pitfalls", %{"status" => "failed", "note" => "   "})
+
+      errors = CompletionValidation.review_contract_failures(payload)
+      assert {:pitfalls, message} = List.keyfind(errors, :pitfalls, 0)
+      assert message =~ "pitfalls.note"
+      assert message =~ "20 non-whitespace characters"
+    end
+
+    test "a failed verdict with a bare placeholder note is rejected" do
+      for stub <- ["placeholder", "TODO", "TBD", "n/a", "FIXME"] do
+        payload = with_section("patterns", %{"status" => "failed", "note" => stub})
+
+        errors = CompletionValidation.review_contract_failures(payload)
+
+        assert List.keyfind(errors, :patterns, 0),
+               "expected #{inspect(stub)} to be rejected"
+      end
+    end
+
+    # The shape that made this defect worth fixing: long enough to clear a bare
+    # length floor, but still saying nothing about the violation.
+    test "a padded placeholder note that clears the length floor is rejected" do
+      for stub <- [
+            "placeholder placeholder placeholder",
+            "TODO TODO TODO TODO TODO TODO",
+            "status failed. this is the section verdict: failed",
+            "TBD - TBD - TBD - TBD - TBD - TBD"
+          ] do
+        payload = with_section("testing_strategy", %{"status" => "failed", "note" => stub})
+
+        errors = CompletionValidation.review_contract_failures(payload)
+
+        assert {:testing_strategy, message} = List.keyfind(errors, :testing_strategy, 0),
+               "expected #{inspect(stub)} to be rejected"
+
+        assert message =~ "reads as a placeholder"
+      end
+    end
+
+    test "a note that only restates the status is rejected" do
+      payload =
+        with_section("testing_strategy", %{
+          "status" => "failed",
+          "note" => "This section failed. Status: failed."
+        })
+
+      errors = CompletionValidation.review_contract_failures(payload)
+      assert List.keyfind(errors, :testing_strategy, 0)
+    end
+
+    test "a substantive note on a failed verdict is accepted" do
+      payload =
+        with_section("pitfalls", %{
+          "status" => "failed",
+          "note" => "A direct Ecto query was introduced in the LiveView, which pitfall 1 forbids."
+        })
+
+      refute note_failure?(payload)
+    end
+
+    # The check is lexical and does not pretend to do semantics: one real word
+    # about the violation is enough. That is what keeps it from firing on a
+    # genuine note that happens to contain the word "failed".
+    test "a substantive note is accepted even when it contains the word failed" do
+      payload =
+        with_section("pitfalls", %{
+          "status" => "failed",
+          "note" => "The concurrency test named by the matrix is missing, so the row failed."
+        })
+
+      refute note_failure?(payload)
+    end
+
+    # AC2 and pitfall 1: `note` is optional by design on passed/not_assessed, so
+    # the ordinary empty-section case must gain no friction whatsoever.
+    test "a passed or not_assessed verdict that omits its note entirely is accepted" do
+      for status <- ["passed", "not_assessed"],
+          section <- ~w(testing_strategy patterns pitfalls) do
+        payload = with_section(section, %{"status" => status})
+
+        refute note_failure?(payload),
+               "expected #{section} #{status} with no note to be accepted"
+      end
+    end
+
+    test "a passed verdict with a short or placeholder note is still accepted" do
+      payload = with_section("patterns", %{"status" => "passed", "note" => "n/a"})
+
+      refute note_failure?(payload)
+    end
+
+    # The rule reaches every section verdict, including the optional matrix,
+    # because it lives in the one helper both call sites share.
+    test "the rule binds every section verdict, behaviour_test_matrix included" do
+      for section <- ~w(testing_strategy patterns pitfalls security_considerations
+                        behaviour_test_matrix) do
+        payload = with_section(section, %{"status" => "failed", "note" => "placeholder"})
+
+        errors = CompletionValidation.review_contract_failures(payload)
+        atom = String.to_existing_atom(section)
+
+        assert {^atom, message} = List.keyfind(errors, atom, 0),
+               "expected a stub note on #{section} to be rejected"
+
+        assert message =~ section
+      end
+    end
+
+    # The substance rule binds `failed` only, but a TYPE error is not a
+    # substance judgement. Without this a passed verdict's `note: 42` validated
+    # clean and then vanished at render time, since the renderer guards on
+    # is_binary — a silently dropped rationale with nothing reported.
+    test "a non-string note is rejected on a passed verdict too" do
+      payload = with_section("patterns", %{"status" => "passed", "note" => 42})
+
+      assert {:error, errors} = CompletionValidation.validate_reviewer_result(payload)
+      assert {:note, message} = List.keyfind(errors, :note, 0)
+      assert message =~ "patterns.note must be a string"
+    end
+
+    test "a non-string note on a failed verdict is rejected" do
+      payload = with_section("pitfalls", %{"status" => "failed", "note" => 42})
+
+      errors = CompletionValidation.review_contract_failures(payload)
+      assert {:pitfalls, message} = List.keyfind(errors, :pitfalls, 0)
+      assert message =~ "must be a string"
+    end
+  end
+
   describe "validate_reviewer_result/1 — nested security_considerations.considerations[] (W1866)" do
     test "accepts a well-formed considerations[] array" do
       payload =
         Map.put(base_reviewer_payload(), "security_considerations", %{
           "status" => "failed",
+          "note" =>
+            "The diff cap is not enforced on the considerations text, so oversized entries reach persistence.",
           "considerations" => [
             %{
               "consideration" => "Untrusted status is never String.to_atom'd",
@@ -1048,6 +1216,8 @@ defmodule Kanban.Tasks.CompletionValidationTest do
       payload =
         Map.put(base_reviewer_payload(), "security_considerations", %{
           "status" => "failed",
+          "note" =>
+            "One listed consideration is unmitigated: the position params reach persistence unchecked.",
           "considerations" => [
             %{"consideration" => "a", "status" => "mitigated"},
             %{"consideration" => "b", "status" => "partial"},

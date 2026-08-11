@@ -83,7 +83,7 @@ Both `after_doing_result` and `before_review_result` parameters must be objects 
 
 `reviewer_result` (dispatched=true) **also requires** `acceptance_criteria_checked` and `issues_found` as non-negative integers. `explorer_result` does not.
 
-**Structured fields (additive, optional, backwards compatible)** — `reviewer_result` (dispatched=true) additionally accepts the structured schema described below. All structured fields are optional; legacy summary-only payloads continue to validate unchanged. The server shape-validates whatever is present and tolerates unknown forward-compatible fields. Use these when your task-reviewer subagent emits a structured JSON report (see the `stride-workflow` plugin's `task-reviewer` agent prompt for the canonical schema).
+**Structured fields (additive, optional, backwards compatible)** — `reviewer_result` (dispatched=true) additionally accepts the structured schema described below. Structured fields are optional; legacy summary-only payloads continue to validate unchanged. **One exception, added in D231:** if you send a section verdict whose `status` is `"failed"`, that verdict must carry a substantive `note` — see the section-verdict row below. Nothing else about the structured block became mandatory. The server shape-validates whatever is present and tolerates unknown forward-compatible fields. Use these when your task-reviewer subagent emits a structured JSON report (see the `stride-workflow` plugin's `task-reviewer` agent prompt for the canonical schema).
 
 | Field | Type | Notes |
 |---|---|---|
@@ -92,7 +92,7 @@ Both `after_doing_result` and `before_review_result` parameters must be objects 
 | `issue_counts` | object | Per-severity count — keys mirror the severity enum: `critical`, `important`, `minor`. Missing keys are tolerated. |
 | `issues[]` | array of objects | Per-finding detail. Each entry must be a map with valid `severity` and `category`. Both enums are required when an entry is present; unknown fields per entry are tolerated. |
 | `acceptance_criteria[]` | array of objects | Per-criterion verdict. Each entry must be a map with a valid `status`. The status enum uses underscore form: **`met` / `not_met`** (a space form `"not met"` is rejected). |
-| `testing_strategy` | object | Section verdict — `{status, notes?}`. Status enum: `passed` / `failed` / `not_assessed`. Notes is an optional string (empty string allowed). |
+| `testing_strategy` | object | Section verdict — `{status, note?}`. Status enum: `passed` / `failed` / `not_assessed`. **`note` is the rendered key (singular)** — the review queue reads only `note`. On `passed` and `not_assessed` it is optional and may be omitted or empty. **On `"failed"` it is REQUIRED** and must name the specific violation in at least 20 non-whitespace characters; an empty string, a bare `placeholder` / `TODO` / `TBD` / `n/a`, padding built from those words, or a note that merely restates the status is rejected with `422`, naming the offending section (D231). A plural `notes` key is still shape-validated for legacy payloads but is **never rendered and never satisfies the failed-verdict requirement**. |
 | `patterns` | object | Same section-verdict shape as `testing_strategy`. |
 | `pitfalls` | object | Same section-verdict shape as `testing_strategy`. |
 
@@ -133,9 +133,9 @@ Structured `reviewer_result` example:
     {"criterion": "Validator accepts arrays", "status": "met"},
     {"criterion": "Status enum enforced", "status": "not_met", "evidence": "Spec case missing"}
   ],
-  "testing_strategy": {"status": "passed", "notes": "All 5 required test cases present."},
+  "testing_strategy": {"status": "passed", "note": "All 5 required test cases present."},
   "patterns": {"status": "passed"},
-  "pitfalls": {"status": "passed", "notes": "None violated."}
+  "pitfalls": {"status": "passed", "note": "None violated."}
 }
 ```
 

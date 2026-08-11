@@ -6675,12 +6675,12 @@ msgstr "设置部分"
 msgid "Review data unavailable"
 msgstr "审查数据不可用"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:180
+#: lib/kanban/tasks/completion_validation/review_contract.ex:343
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "在已派发的评审中为必填项：请包含 status 或 issue_counts，以便评审队列能够渲染评审结论"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:173
+#: lib/kanban/tasks/completion_validation/review_contract.ex:336
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "在已派发的评审中为必填项：评审队列渲染的结构化字段 %{field} 缺失"
@@ -8696,7 +8696,7 @@ msgstr "已延期"
 msgid "Completion notes"
 msgstr "完成备注"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:186
+#: lib/kanban/tasks/completion_validation/review_contract.ex:349
 #, elixir-autogen, elixir-format
 msgid "must be a list on a dispatched review: one entry per project checklist bullet, or an empty list when the project has no CODE-REVIEW.md"
 msgstr "在已派发的评审中必须为列表：项目检查清单的每个条目对应一项，若项目没有 CODE-REVIEW.md 则为空列表"
@@ -8750,3 +8750,23 @@ msgstr "探索器结果"
 #, elixir-autogen, elixir-format
 msgid "Explorer result"
 msgstr "探索器结果"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:310
+#, elixir-autogen, elixir-format
+msgid "%{field}.note is required when the section verdict is \"failed\": it must name the specific violation or gap"
+msgstr "当分区判定为 \"failed\" 时，%{field}.note 为必填项：必须指明具体的违规或缺口"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:317
+#, elixir-autogen, elixir-format
+msgid "%{field}.note must be a string"
+msgstr "%{field}.note 必须是字符串"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:321
+#, elixir-autogen, elixir-format
+msgid "%{field}.note must name the specific violation in at least %{min} non-whitespace characters when the section verdict is \"failed\""
+msgstr "当分区判定为 \"failed\" 时，%{field}.note 必须以至少 %{min} 个非空白字符指明具体的违规"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:329
+#, elixir-autogen, elixir-format
+msgid "%{field}.note reads as a placeholder rather than naming the violation. If there is nothing substantive to write, the verdict is wrong rather than the note — re-check whether the section should be \"passed\" or \"not_assessed\" instead."
+msgstr "%{field}.note 看起来像占位符，而没有指明违规内容。如果没有实质内容可写，那么错误的是判定而非该说明——请重新检查该分区是否应为 \"passed\" 或 \"not_assessed\"。"

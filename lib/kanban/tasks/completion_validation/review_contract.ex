@@ -91,6 +91,7 @@ defmodule Kanban.Tasks.CompletionValidation.ReviewContract do
     structural =
       []
       |> check_structured_block(result, :reviewer, require_structured_block: true)
+      |> check_failed_section_notes(result)
       |> Enum.reverse()
 
     structural ++ cross_failures(result, task)
@@ -167,6 +168,168 @@ defmodule Kanban.Tasks.CompletionValidation.ReviewContract do
       nil -> errors
       _ -> [{:project_checks, non_list_project_checks_message()} | errors]
     end
+  end
+
+  # (D231) The consumer-side backstop for the reviewer's Verdict-note rule.
+  #
+  # `stride/agents/task-reviewer.md` requires a `failed` section verdict to
+  # carry a substantive `note`, but that rule was policed only by the same model
+  # that would emit the stub — and D222's defect was exactly a model emitting
+  # `"note": "placeholder"` beside `"status": "failed"`. Asking the producer to
+  # enforce it was the weakest link in that fix.
+  #
+  # It lives in this module, not beside the other section checks, because those
+  # are grace-gated: they warn under the default flag and reject only in strict
+  # mode, so a stub would still land on every deployment that has not opted in.
+  # A stubbed note is malformed output, not a consistency nit — the same footing
+  # as an omitted section — so it belongs in the always-reject contract, which
+  # is also where its sibling half (a `failed` verdict with an empty `issues[]`)
+  # is already caught.
+  #
+  # Deliberately narrow, per D222's scope boundary:
+  #
+  #   * It binds `failed` verdicts ONLY. `note` is optional by design on
+  #     `passed` and `not_assessed`, so the ordinary empty-section case gains no
+  #     friction — a verdict omitting the key entirely is untouched.
+  #   * It rejects and reports; it never rewrites or downgrades a verdict.
+  #     Silently "fixing" a verdict is how a real finding disappears.
+  #   * It is lexical and does not pretend otherwise. It catches the observed
+  #     stub shapes — too short, or made entirely of placeholder and status
+  #     words — not weak prose. A determined stub of twenty real words still
+  #     passes, and no lexical check could say otherwise.
+  #
+  # `behaviour_test_matrix` is included even though it is not in
+  # @required_review_sections: it is optional to SUPPLY, but once supplied as
+  # `failed` it carries the same obligation as any other verdict.
+  #
+  # KNOWN FLEET GAP, recorded rather than worked around: only the Claude Code
+  # reviewer prompt (`stride/agents/task-reviewer.md`) carries the Verdict-note
+  # rule. The codex, gemini, copilot, opencode, lite, copilot-lite and pi ports
+  # still tell their agents the note is "optional but recommended", so an agent
+  # on one of those runtimes can emit a note-less `failed` verdict and be
+  # rejected here with no prompt instruction that anticipated it. That is
+  # tolerable and deliberate — a note-less `failed` verdict is already invalid
+  # output under D222, the 422 names the offending section and states the
+  # requirement, so the agent can repair and retry — but the prompts should be
+  # brought to parity. Filed as a follow-up; do not "fix" it by grace-gating
+  # this check, which would reproduce the exact defect D231 removed.
+  # Listed explicitly rather than derived by subtracting the non-verdict members
+  # of @required_review_sections. A subtraction silently enrols any future
+  # non-verdict section added to that list, and the two lists answer different
+  # questions: which sections must be PRESENT, versus which carry a verdict.
+  @noted_sections [
+    :testing_strategy,
+    :patterns,
+    :pitfalls,
+    :security_considerations,
+    :behaviour_test_matrix
+  ]
+
+  @min_section_note_length 20
+
+  @placeholder_note_words ~w(
+    placeholder placeholders stub stubbed todo tbd tba fixme xxx
+    none na n/a nil null empty blank pending unknown fill
+  )
+
+  # A note that only restates its own verdict says nothing about the violation,
+  # which is the entire reason the note is required.
+  @status_restatement_words ~w(status verdict section failed fail failure this is the)
+
+  defp check_failed_section_notes(errors, result) do
+    Enum.reduce(@noted_sections, errors, fn section, acc ->
+      case Map.get(result, Atom.to_string(section)) do
+        verdict when is_map(verdict) -> check_one_section_note(acc, verdict, section)
+        _ -> acc
+      end
+    end)
+  end
+
+  # Tagged with the SECTION's own atom, matching the semantic field atoms the
+  # rest of this module uses (:project_checks, :status). It also makes "the
+  # rejection names which section failed" structural in the response body rather
+  # than something a caller has to parse out of the message prose.
+  defp check_one_section_note(errors, verdict, section) do
+    if failed_verdict?(verdict) do
+      check_note_value(errors, Map.get(verdict, "note"), section)
+    else
+      errors
+    end
+  end
+
+  defp failed_verdict?(verdict) do
+    case Map.get(verdict, "status") do
+      "failed" -> true
+      :failed -> true
+      _ -> false
+    end
+  end
+
+  defp check_note_value(errors, note, section) when is_binary(note) do
+    key = Atom.to_string(section)
+
+    cond do
+      non_whitespace_length(note) < @min_section_note_length ->
+        [{section, note_too_short_message(key)} | errors]
+
+      placeholder_note?(note) ->
+        [{section, placeholder_note_message(key)} | errors]
+
+      true ->
+        errors
+    end
+  end
+
+  defp check_note_value(errors, nil, section),
+    do: [{section, missing_note_message(Atom.to_string(section))} | errors]
+
+  defp check_note_value(errors, _note, section),
+    do: [{section, non_string_note_message(Atom.to_string(section))} | errors]
+
+  # True when EVERY word is a placeholder or a status restatement. That is what
+  # makes the rule safe to apply: a single real word about the violation is
+  # enough to pass, so a genuine note that happens to contain "failed" is not
+  # mistaken for a stub.
+  defp placeholder_note?(note) do
+    words =
+      note
+      |> String.downcase()
+      |> String.split(~r{[^a-z0-9/]+}u, trim: true)
+
+    words != [] and
+      Enum.all?(words, &(&1 in @placeholder_note_words or &1 in @status_restatement_words))
+  end
+
+  defp non_whitespace_length(string) do
+    string
+    |> String.replace(~r/\s/u, "")
+    |> String.length()
+  end
+
+  defp missing_note_message(key) do
+    gettext(
+      "%{field}.note is required when the section verdict is \"failed\": it must name the specific violation or gap",
+      field: key
+    )
+  end
+
+  defp non_string_note_message(key) do
+    gettext("%{field}.note must be a string", field: key)
+  end
+
+  defp note_too_short_message(key) do
+    gettext(
+      "%{field}.note must name the specific violation in at least %{min} non-whitespace characters when the section verdict is \"failed\"",
+      field: key,
+      min: @min_section_note_length
+    )
+  end
+
+  defp placeholder_note_message(key) do
+    gettext(
+      "%{field}.note reads as a placeholder rather than naming the violation. If there is nothing substantive to write, the verdict is wrong rather than the note — re-check whether the section should be \"passed\" or \"not_assessed\" instead.",
+      field: key
+    )
   end
 
   defp missing_structured_field_message(key) do

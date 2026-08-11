@@ -171,6 +171,64 @@ defmodule KanbanWeb.API.CompletionResultGateTest do
     end
   end
 
+  # (D231) End to end through the gate, not just the validator. Unlike the two
+  # grace-gated checks above, this one is part of the unconditional contract:
+  # a stubbed note is malformed output, not a consistency warning, so it must
+  # reject in grace mode too — a payload that only rejects under strict mode
+  # would let the stub through on every deployment that has not enabled it.
+  describe "gate/2 — failed section verdicts must carry a substantive note (D231)" do
+    test "a stubbed note on a failed verdict is refused in both modes" do
+      request = build_request(stubbed_note_reviewer())
+
+      assert {:reject, body} = CompletionResultGate.gate(request, strict: false)
+      assert "pitfalls" in reviewer_failure_fields(body)
+
+      assert {:reject, _} = CompletionResultGate.gate(request, strict: true)
+    end
+
+    test "the refusal names the offending section" do
+      request = build_request(stubbed_note_reviewer())
+
+      assert {:reject, body} = CompletionResultGate.gate(request, strict: false)
+
+      message =
+        body.failures
+        |> Enum.find(&(&1.field == "reviewer_result"))
+        |> Map.fetch!(:errors)
+        |> Enum.find(&(&1.field == "pitfalls"))
+        |> Map.fetch!(:message)
+
+      assert message =~ "pitfalls.note"
+    end
+
+    test "a substantive note on the same failed verdict passes both modes" do
+      reviewer =
+        Map.put(full_reviewer(), "pitfalls", %{
+          "status" => "failed",
+          "note" => "A direct Ecto query was introduced in the LiveView, which pitfall 1 forbids."
+        })
+
+      request = build_request(reviewer)
+
+      assert :ok = CompletionResultGate.gate(request, strict: false)
+      assert :ok = CompletionResultGate.gate(request, strict: true)
+    end
+
+    test "an all-passed review with no notes at all is untouched" do
+      request = build_request(full_reviewer())
+
+      assert :ok = CompletionResultGate.gate(request, strict: false)
+      assert :ok = CompletionResultGate.gate(request, strict: true)
+    end
+  end
+
+  defp stubbed_note_reviewer do
+    Map.put(full_reviewer(), "pitfalls", %{
+      "status" => "failed",
+      "note" => "placeholder placeholder placeholder"
+    })
+  end
+
   defp inconsistent_considerations_reviewer do
     Map.put(full_reviewer(), "security_considerations", %{
       "status" => "passed",
@@ -181,6 +239,11 @@ defmodule KanbanWeb.API.CompletionResultGateTest do
   defp consistent_considerations_reviewer do
     Map.put(full_reviewer(), "security_considerations", %{
       "status" => "failed",
+      # (D231) A failed verdict now owes a substantive note. This fixture is
+      # about considerations[] consistency, so the note is incidental here —
+      # but it has to be real, which is the point of the rule.
+      "note" =>
+        "The first listed consideration is only partially mitigated: input is not sanitized.",
       "considerations" => [%{"consideration" => "input not sanitized", "status" => "partial"}]
     })
   end

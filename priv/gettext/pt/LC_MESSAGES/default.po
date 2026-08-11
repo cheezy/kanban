@@ -6705,12 +6705,12 @@ msgstr "Seções de configurações"
 msgid "Review data unavailable"
 msgstr "Dados de revisão indisponíveis"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:180
+#: lib/kanban/tasks/completion_validation/review_contract.ex:343
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr "é obrigatório em uma revisão despachada: inclua status ou issue_counts para que a fila de revisão possa exibir o veredito"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:173
+#: lib/kanban/tasks/completion_validation/review_contract.ex:336
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr "é obrigatório em uma revisão despachada: o campo estruturado %{field} que a fila de revisão exibe está ausente"
@@ -8734,7 +8734,7 @@ msgstr "Atrasado"
 msgid "Completion notes"
 msgstr "Notas da conclusão"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:186
+#: lib/kanban/tasks/completion_validation/review_contract.ex:349
 #, elixir-autogen, elixir-format
 msgid "must be a list on a dispatched review: one entry per project checklist bullet, or an empty list when the project has no CODE-REVIEW.md"
 msgstr "deve ser uma lista em uma revisão despachada: uma entrada por item da lista de verificação do projeto, ou uma lista vazia quando o projeto não tem CODE-REVIEW.md"
@@ -8788,3 +8788,23 @@ msgstr "Resultado do explorador"
 #, elixir-autogen, elixir-format
 msgid "Explorer result"
 msgstr "Resultado do explorador"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:310
+#, elixir-autogen, elixir-format
+msgid "%{field}.note is required when the section verdict is \"failed\": it must name the specific violation or gap"
+msgstr "%{field}.note é obrigatório quando o veredito da seção é \"failed\": ele deve nomear a violação ou lacuna específica"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:317
+#, elixir-autogen, elixir-format
+msgid "%{field}.note must be a string"
+msgstr "%{field}.note deve ser uma string"
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:321
+#, elixir-autogen, elixir-format
+msgid "%{field}.note must name the specific violation in at least %{min} non-whitespace characters when the section verdict is \"failed\""
+msgstr "%{field}.note deve nomear a violação específica em pelo menos %{min} caracteres sem espaços quando o veredito da seção é \"failed\""
+
+#: lib/kanban/tasks/completion_validation/review_contract.ex:329
+#, elixir-autogen, elixir-format
+msgid "%{field}.note reads as a placeholder rather than naming the violation. If there is nothing substantive to write, the verdict is wrong rather than the note — re-check whether the section should be \"passed\" or \"not_assessed\" instead."
+msgstr "%{field}.note parece um espaço reservado em vez de nomear a violação. Se não houver nada substancial a escrever, o errado é o veredito e não a nota — verifique novamente se a seção deveria ser \"passed\" ou \"not_assessed\"."
