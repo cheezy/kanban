@@ -49,6 +49,13 @@ Rules:
 - Line endings are preserved as the plugin captured them; the server does not normalize.
 - No syntax highlighting, no HTML, no ANSI color codes — plain text only.
 - A single path that's both committed-since-base AND further modified in the working tree appears exactly once in the snapshot, with a diff that reflects the final working-tree state.
+- **A path appears exactly once, but its `diff` value MAY be a concatenation of more than one unified patch (D236).** When a plugin attributes a task's changes to the commits that task actually made — excluding commits from nested tasks that claimed and completed inside its window — the task's own commits can form two or more non-contiguous runs. A file touched in more than one run then yields one complete unified patch per run, in chronological order, each with its own `diff --git` / `---` / `+++` headers, followed by any uncommitted working-tree change to that file.
+
+  Consumers MUST therefore treat the value as *patch text* rather than assume a single patch: parse it line-by-line, or split on `diff --git` boundaries. Two consequences are worth stating because they surprise a naive parser — the blob hashes in successive `index` lines do **not** chain (each patch is relative to its own run's start), and the same `+++ b/<path>` header can appear more than once in one value.
+
+  The alternative, squashing the runs into one patch, would mean diffing across a range that includes the nested task's commits — which reintroduces exactly the cross-attribution D236 removed. Multiple patches is the honest encoding of "these, and only these, are the changes this task made".
+
+  **This interacts with truncation, and not in the reviewer's favour.** The 500-line cap below applies to the **whole concatenated value**, and the uncommitted working-tree patch is appended **last** — so on a large multi-run file it is the first content lost. That is the change most likely to be what a reviewer actually wants to see. Plugins that can afford to be smarter should prefer truncating an earlier run over the trailing working-tree patch.
 
 ## Truncation
 
