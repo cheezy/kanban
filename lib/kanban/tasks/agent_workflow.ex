@@ -25,6 +25,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.WorkflowSteps
 
   require Logger
 
@@ -678,52 +679,13 @@ defmodule Kanban.Tasks.AgentWorkflow do
   # workflow_steps is {:array, :map} in the schema — Ecto's cast handles the
   # type, but we add an explicit shape check so non-list input or list elements
   # missing the canonical step fields are rejected before persistence.
+  #
+  # D239 moved the shape check and the reason_code vocabulary into
+  # `Kanban.Tasks.WorkflowSteps`: the read side (Compliance) and the API schema
+  # documentation both need to name the vocabulary, and this module was already
+  # over the 500-line guideline in AGENTS.md.
   defp validate_workflow_steps_shape(changeset, params) do
-    case Map.get(params, "workflow_steps") do
-      nil ->
-        changeset
-
-      value when is_list(value) ->
-        if Enum.all?(value, &valid_workflow_step?/1) do
-          changeset
-        else
-          Ecto.Changeset.add_error(
-            changeset,
-            :workflow_steps,
-            "each entry must be a map with a 'name' key and either duration_ms (when dispatched) or reason (when skipped)"
-          )
-        end
-
-      _ ->
-        Ecto.Changeset.add_error(changeset, :workflow_steps, "must be a list of step maps")
-    end
-  end
-
-  defp valid_workflow_step?(%{} = step) do
-    name = fetch_step_field(step, "name")
-    dispatched = fetch_step_field(step, "dispatched")
-
-    cond do
-      not is_binary(name) -> false
-      dispatched == true -> is_integer(fetch_step_field(step, "duration_ms"))
-      dispatched == false -> is_binary(fetch_step_field(step, "reason"))
-      true -> false
-    end
-  end
-
-  defp valid_workflow_step?(_), do: false
-
-  defp fetch_step_field(step, key) do
-    case Map.fetch(step, key) do
-      {:ok, value} -> value
-      :error -> Map.get(step, safe_existing_atom(key))
-    end
-  end
-
-  defp safe_existing_atom(key) do
-    String.to_existing_atom(key)
-  rescue
-    ArgumentError -> nil
+    WorkflowSteps.validate_shape(changeset, params)
   end
 
   defp move_to_done(task, user, board_id) do

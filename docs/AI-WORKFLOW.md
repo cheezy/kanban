@@ -153,7 +153,7 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
 7. **Complete the task** - Call [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md)
    - **REQUIRED:** Include BOTH `after_doing_result` AND `before_review_result` parameters
    - **REQUIRED (G65):** Include `explorer_result` and `reviewer_result` — dispatched-subagent shape or self-reported skip-form with enum `reason` and 40+ non-whitespace-char `summary`. See [Completion Validation](#completion-validation) below.
-   - **Recommended:** Include `workflow_steps` — six-entry telemetry array, one object per phase (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`).
+   - **Recommended:** Include `workflow_steps` — six-entry telemetry array, one object per phase (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). On a skipped entry, add the optional `reason_code` next to `reason` so the skip aggregates on the compliance dashboard instead of fragmenting.
    - **Only call this AFTER both hooks succeed**
    - API validates both hooks were executed and succeeded
    - Task moves to Review column (or Done if `needs_review=false`)
@@ -189,7 +189,7 @@ Starting with G65 (April 2026), the `/complete` endpoint validates three additio
 |---|---|---|
 | `explorer_result` | Yes (grace-warned, strict-rejected) | Dispatched-subagent shape **OR** self-reported skip-form |
 | `reviewer_result` | Yes (grace-warned, strict-rejected) | Same two shapes as `explorer_result`; dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found`, and **optionally accepts** the structured schema (`schema_version`, `status`, `issue_counts`, `issues[]`, `acceptance_criteria[]`, `testing_strategy`, `patterns`, `pitfalls`) |
-| `workflow_steps` | Recommended (telemetry) | Six-entry array: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review` |
+| `workflow_steps` | Recommended (telemetry) | Six-entry array: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`. A skipped entry may carry an optional `reason_code` alongside its free-text `reason` — see [reason_code](../api/patch_tasks_id_complete.md) |
 
 **Rollout modes** (controlled by the `:strict_completion_validation` application flag):
 

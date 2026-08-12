@@ -2718,25 +2718,25 @@ msgstr "(unbenannter Schritt)"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:62
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:72
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:68
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:73
 #, elixir-autogen, elixir-format
 msgid "Dispatched"
 msgstr "Ausgelöst"
 
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:71
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:57
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:62
 #, elixir-autogen, elixir-format
 msgid "Not dispatched"
 msgstr "Nicht ausgelöst"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:189
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:35
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:35
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:40
 #, elixir-autogen, elixir-format
 msgid "Reason"
 msgstr "Grund"
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:54
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:59
 #, elixir-autogen, elixir-format
 msgid "Skipped"
 msgstr "Übersprungen"
@@ -2746,12 +2746,12 @@ msgstr "Übersprungen"
 msgid "Workflow Steps"
 msgstr "Workflow-Schritte"
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:65
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:70
 #, elixir-autogen, elixir-format
 msgid "exit %{code}"
 msgstr "Exit %{code}"
 
-#: lib/kanban_web/live/metrics_live/compliance.html.heex:137
+#: lib/kanban_web/live/metrics_live/compliance.ex:71
 #, elixir-autogen, elixir-format
 msgid "(no reason given)"
 msgstr "(kein Grund angegeben)"
@@ -2761,7 +2761,7 @@ msgstr "(kein Grund angegeben)"
 msgid "Avg Steps / Task"
 msgstr "Ø Schritte / Aufgabe"
 
-#: lib/kanban_web/live/metrics_live/compliance.ex:72
+#: lib/kanban_web/live/metrics_live/compliance.ex:90
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Compliance Metrics"
@@ -8838,3 +8838,33 @@ msgstr "%{field}.note muss den konkreten Verstoß in mindestens %{min} Zeichen o
 #, elixir-autogen, elixir-format
 msgid "%{field}.note reads as a placeholder rather than naming the violation. If there is nothing substantive to write, the verdict is wrong rather than the note — re-check whether the section should be \"passed\" or \"not_assessed\" instead."
 msgstr "%{field}.note wirkt wie ein Platzhalter, statt den Verstoß zu benennen. Wenn es nichts Substanzielles zu schreiben gibt, ist das Urteil falsch und nicht die Notiz — prüfen Sie erneut, ob der Abschnitt stattdessen \"passed\" oder \"not_assessed\" sein sollte."
+
+#: lib/kanban_web/live/metrics_live/compliance.ex:72
+#, elixir-autogen, elixir-format
+msgid "Decision matrix skip"
+msgstr "Übersprungen laut Entscheidungsmatrix"
+
+#: lib/kanban_web/live/metrics_live/compliance.ex:76
+#, elixir-autogen, elixir-format
+msgid "Folded into prior step"
+msgstr "In den vorherigen Schritt integriert"
+
+#: lib/kanban_web/live/metrics_live/compliance.ex:74
+#, elixir-autogen, elixir-format
+msgid "Hook body empty"
+msgstr "Hook-Rumpf ist leer"
+
+#: lib/kanban_web/live/metrics_live/compliance.ex:77
+#, elixir-autogen, elixir-format
+msgid "Matrix deviation"
+msgstr "Abweichung von der Matrix"
+
+#: lib/kanban_web/live/metrics_live/compliance.ex:73
+#, elixir-autogen, elixir-format
+msgid "Ran inline, not dispatched"
+msgstr "Inline ausgeführt, nicht delegiert"
+
+#: lib/kanban_web/live/metrics_live/compliance.ex:75
+#, elixir-autogen, elixir-format
+msgid "Settled by task spec"
+msgstr "Durch die Aufgabenspezifikation geklärt"

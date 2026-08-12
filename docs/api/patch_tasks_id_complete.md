@@ -170,6 +170,21 @@ Free-form reasons are rejected — the enum is the contract.
 
 **`workflow_steps`** is a six-entry telemetry array (one object per phase: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). It is cast onto the task struct for aggregation but is not currently rejected when missing. Include it to contribute telemetry. Each entry has `{name, dispatched, duration_ms}` when the step ran, or `{name, dispatched: false, reason}` when it was skipped.
 
+**`workflow_steps[].reason_code`** (optional, D239) — a machine-readable skip category, used only when `dispatched: false`. Supply it **alongside** `reason`, never instead of it: the code is what the compliance dashboard aggregates, and the prose is what a human reads on the task detail page.
+
+| Code | Use when |
+|---|---|
+| `decision_matrix_skip` | The Step 3 decision matrix says this task's row skips this step. |
+| `ran_inline` | The step's work was performed, but in the main loop rather than by a dispatched subagent. |
+| `hook_body_empty` | Plugin mode: the `.stride.md` section body is empty, so the hook is a no-op. Only for `after_doing` / `before_review`. |
+| `subsumed_by_task_spec` | The task specification itself already settled what this step would have decided. |
+| `folded_into_prior_step` | An earlier step already produced this step's output — most often an explorer that returned a complete plan. |
+| `matrix_deviation` | The matrix called for this step and it was deliberately not run. Records non-compliance rather than a sanctioned skip — do not use it to dress up a deviation as a matrix skip. |
+
+Unlike the `explorer_result` / `reviewer_result` enum, **omitting `reason_code` is always valid**: payloads written before this field are accepted unchanged, and `reason` remains required-when-skipped and free-form. A `reason_code` outside the list above **is** rejected, so a typo opens no silent bucket.
+
+The vocabulary was derived by classifying the 73 skipped entries persisted on the production board, not invented. `name` is deliberately **not** constrained — persisted data carries a second step vocabulary from another runtime, and rejecting it would `422` that runtime's completions mid-flight.
+
 **Authoritative format reference:** See `GET /api/agent/onboarding` → `api_schema.explorer_result_format`, `reviewer_result_format`, `workflow_steps_format`, and `validation_modes` for the machine-readable contract. Server source of truth: `Kanban.Tasks.CompletionValidation` (`lib/kanban/tasks/completion_validation.ex`) and `Kanban.KanbanWeb.Api.CompletionResultGate` (`lib/kanban_web/controllers/api/completion_result_gate.ex`).
 
 ### Request Body Example
@@ -206,7 +221,8 @@ Free-form reasons are rejected — the enum is the contract.
   },
   "workflow_steps": [
     {"name": "explorer",       "dispatched": true,  "duration_ms": 12000},
-    {"name": "planner",        "dispatched": true,  "duration_ms": 8200},
+    {"name": "planner",        "dispatched": false, "reason_code": "decision_matrix_skip",
+     "reason": "Step 3 matrix row 'small, 2+ key_files' gives Plan = Skip"},
     {"name": "implementation", "dispatched": true,  "duration_ms": 1820000},
     {"name": "reviewer",       "dispatched": true,  "duration_ms": 8000},
     {"name": "after_doing",    "dispatched": true,  "duration_ms": 45678},

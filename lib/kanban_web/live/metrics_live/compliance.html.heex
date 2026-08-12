@@ -134,7 +134,7 @@
             ]}
           >
             <span style="font-size: 12.5px; color: var(--ink);">
-              {if reason == "", do: gettext("(no reason given)"), else: reason}
+              {skip_reason_label(reason)}
             </span>
             <span style={[
               "padding: 2px 8px; border-radius: 999px;",

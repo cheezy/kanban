@@ -378,6 +378,22 @@ Each element of `workflow_steps` is an object with these keys:
 | `dispatched` | boolean | Always | `true` if the step ran; `false` if intentionally skipped |
 | `duration_ms` | integer | When `dispatched=true` | Wall-clock time the step took, in milliseconds |
 | `reason` | string | When `dispatched=false` | Short explanation of why the step was skipped |
+| `reason_code` | enum | Optional, when `dispatched=false` | Machine-readable skip category (D239). Supplied **alongside** `reason`, never instead of it — the code is what the compliance dashboard aggregates, the prose is what a human reads. One of: `decision_matrix_skip`, `ran_inline`, `hook_body_empty`, `subsumed_by_task_spec`, `folded_into_prior_step`, `matrix_deviation`. A code outside that list is rejected with a `422`; omitting the key entirely is always valid |
+
+**Picking a `reason_code`:**
+
+| Code | Use when |
+|---|---|
+| `decision_matrix_skip` | The Step 3 decision matrix says this task's row skips this step |
+| `ran_inline` | The step's work was performed, but in the main loop rather than by a dispatched subagent |
+| `hook_body_empty` | Plugin mode: the `.stride.md` section body is empty, so the hook is a no-op (only `after_doing` / `before_review`) |
+| `subsumed_by_task_spec` | The task specification already settled what this step would have decided |
+| `folded_into_prior_step` | An earlier step already produced this step's output — most often an explorer that returned a complete plan |
+| `matrix_deviation` | The matrix called for this step and it was deliberately not run |
+
+`matrix_deviation` is the one code that records **non-compliance**, and that is exactly why it exists: when the matrix called for a step you did not run, say so with this code rather than reaching for `decision_matrix_skip`, which would dress a deviation up as a sanctioned skip. The prose in `reason` should then explain what drove the deviation.
+
+`name` is deliberately **not** constrained to the six values — persisted data carries a second step vocabulary from another runtime, so rejecting it would `422` that runtime's completions. Use the canonical six anyway; an invented name aggregates as its own row.
 
 ### End-of-Workflow Example (full dispatch)
 
@@ -400,10 +416,13 @@ A small task with 0-1 key_files that legitimately skipped exploration, planning,
 
 ```json
 "workflow_steps": [
-  {"name": "explorer",       "dispatched": false, "reason": "Decision matrix: small task, 0-1 key_files"},
-  {"name": "planner",        "dispatched": false, "reason": "Decision matrix: small task, 0-1 key_files"},
+  {"name": "explorer",       "dispatched": false, "reason_code": "decision_matrix_skip",
+   "reason": "Decision matrix: small task, 0-1 key_files"},
+  {"name": "planner",        "dispatched": false, "reason_code": "decision_matrix_skip",
+   "reason": "Decision matrix: small task, 0-1 key_files"},
   {"name": "implementation", "dispatched": true,  "duration_ms": 620000},
-  {"name": "reviewer",       "dispatched": false, "reason": "Decision matrix: small task, 0-1 key_files"},
+  {"name": "reviewer",       "dispatched": false, "reason_code": "decision_matrix_skip",
+   "reason": "Decision matrix: small task, 0-1 key_files"},
   {"name": "after_doing",    "dispatched": true,  "duration_ms": 38200},
   {"name": "before_review",  "dispatched": true,  "duration_ms": 1900}
 ]
@@ -414,6 +433,7 @@ A small task with 0-1 key_files that legitimately skipped exploration, planning,
 - Always include **all six** step names. Skipped steps are recorded with `dispatched: false` — never omitted.
 - Record entries in the order the steps occurred in the workflow (the order listed in the vocabulary table above).
 - When `dispatched: false`, the `reason` must describe **why** the step was skipped (e.g., decision matrix rule, task metadata, platform constraint) — not merely restate that it was skipped.
+- Add `reason_code` next to that prose whenever one of the six categories fits. Without it the entry still validates, but it lands in the compliance breakdown as its own one-row bucket rather than aggregating with every other skip of the same kind.
 - A missing `workflow_steps` array, or one with fewer than six entries, indicates an incomplete telemetry record.
 
 ---

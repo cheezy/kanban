@@ -1795,22 +1795,31 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
     assert body["error"] == "task update rejected"
 
-    named = Enum.map(hd(body["failures"])["errors"], & &1["field"])
-    assert Enum.sort(named) == Enum.sort(expected_fields)
-
-    assert Enum.all?(hd(body["failures"])["errors"], fn e ->
-             String.contains?(e["message"], "cannot be changed via PATCH")
-           end)
-
-    # The refusal is wired to its OWN ErrorDocs context, not the generic
-    # fallback. Passing the wrong atom to add_docs_to_error/2 silently yields
-    # the README link, which no test would otherwise notice.
-    assert body["documentation"] =~ "patch_tasks_id.md"
-    assert body["common_causes"] != []
+    assert_rejected_fields(body, expected_fields)
+    assert_rejection_docs(body)
 
     # The legitimate half of the payload is not applied either.
     assert reloaded.title == task.title
     reloaded
+  end
+
+  defp assert_rejected_fields(body, expected_fields) do
+    errors = body["failures"] |> hd() |> Map.fetch!("errors")
+    named = errors |> Enum.map(& &1["field"]) |> Enum.sort()
+
+    assert named == Enum.sort(expected_fields)
+
+    assert Enum.all?(errors, fn e ->
+             String.contains?(e["message"], "cannot be changed via PATCH")
+           end)
+  end
+
+  # The refusal is wired to its OWN ErrorDocs context, not the generic
+  # fallback. Passing the wrong atom to add_docs_to_error/2 silently yields
+  # the README link, which no test would otherwise notice.
+  defp assert_rejection_docs(body) do
+    assert body["documentation"] =~ "patch_tasks_id.md"
+    assert body["common_causes"] != []
   end
 
   # (D227) These asserted 200 with the forbidden field silently dropped — which
@@ -2178,8 +2187,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "every forbidden field is classified, with no field left unaccounted for" do
-      assert Enum.sort(Map.keys(@reason_by_field)) ==
-               Enum.sort(TaskParamFilter.forbidden_api_update_fields())
+      classified = @reason_by_field |> Map.keys() |> Enum.sort()
+      forbidden = TaskParamFilter.forbidden_api_update_fields() |> Enum.sort()
+
+      assert classified == forbidden
     end
 
     # (D227) The structural version of this defect, and the one that let nine
@@ -2356,8 +2367,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
       body = json_response(conn, 422)
       reloaded = Tasks.get_task!(task.id)
 
-      assert Enum.sort(Enum.map(hd(body["failures"])["errors"], & &1["field"])) ==
-               ["completion_summary", "time_spent_minutes"]
+      failed_fields =
+        body["failures"] |> hd() |> Map.fetch!("errors") |> Enum.map(& &1["field"]) |> Enum.sort()
+
+      assert failed_fields == ["completion_summary", "time_spent_minutes"]
 
       assert reloaded.time_spent_minutes == task.time_spent_minutes
       assert reloaded.completion_summary == task.completion_summary

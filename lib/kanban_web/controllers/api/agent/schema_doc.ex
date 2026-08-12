@@ -4,7 +4,13 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
   extracted verbatim from `KanbanWeb.API.AgentJSON` (W1442). Pure data —
   `schema/0` is composed unchanged into the onboarding response so external
   agents see a byte-identical `api_schema` map.
+
+  The `workflow_steps_format` block sources its step names and skip-reason
+  codes from `Kanban.Tasks.WorkflowSteps` rather than re-listing them, so the
+  published contract cannot drift from what the validator actually enforces.
   """
+
+  alias Kanban.Tasks.WorkflowSteps
 
   @doc "The API schema documentation map embedded in the onboarding payload."
   def schema do
@@ -406,51 +412,7 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
           }
         }
       },
-      workflow_steps_format: %{
-        description:
-          "Ordered six-entry telemetry array documenting which workflow phases executed during the task. " <>
-            "Cast onto the task struct for aggregation; not currently rejected when missing.",
-        type: "array_of_objects",
-        step_names: [
-          "explorer",
-          "planner",
-          "implementation",
-          "reviewer",
-          "after_doing",
-          "before_review"
-        ],
-        fields: %{
-          name: %{
-            type: "enum",
-            required: true,
-            description: "One of the six step_names above, in the order listed"
-          },
-          dispatched: %{
-            type: "boolean",
-            required: true,
-            description: "true if the step ran; false if intentionally skipped"
-          },
-          duration_ms: %{
-            type: "integer",
-            required_when: "dispatched=true",
-            description: "Wall-clock time the step took, in milliseconds"
-          },
-          reason: %{
-            type: "string",
-            required_when: "dispatched=false",
-            description:
-              "Short explanation of why the step was skipped (free-form; not the explorer_result/reviewer_result enum)"
-          }
-        },
-        example: [
-          %{name: "explorer", dispatched: true, duration_ms: 12_450},
-          %{name: "planner", dispatched: true, duration_ms: 8_200},
-          %{name: "implementation", dispatched: true, duration_ms: 1_820_000},
-          %{name: "reviewer", dispatched: true, duration_ms: 15_300},
-          %{name: "after_doing", dispatched: true, duration_ms: 45_678},
-          %{name: "before_review", dispatched: true, duration_ms: 2_340}
-        ]
-      },
+      workflow_steps_format: workflow_steps_format(),
       task_fields: %{
         title: %{type: "string", required: true, description: "Short task description"},
         type: %{type: "enum", values: ["work", "defect", "goal"], required: true},
@@ -585,6 +547,78 @@ defmodule KanbanWeb.API.Agent.SchemaDoc do
         }
       },
       valid_capabilities: Kanban.Tasks.Task.valid_capabilities()
+    }
+  end
+
+  defp workflow_steps_format do
+    %{
+      description:
+        "Ordered six-entry telemetry array documenting which workflow phases executed during the task. " <>
+          "Cast onto the task struct for aggregation; not currently rejected when missing.",
+      type: "array_of_objects",
+      step_names: WorkflowSteps.canonical_step_names(),
+      skip_reason_codes: skip_reason_code_strings(),
+      fields: workflow_steps_fields(),
+      example: [
+        %{name: "explorer", dispatched: true, duration_ms: 12_450},
+        %{
+          name: "planner",
+          dispatched: false,
+          reason_code: "decision_matrix_skip",
+          reason: "Step 3 matrix row 'small, 2+ key_files' gives Plan = Skip"
+        },
+        %{name: "implementation", dispatched: true, duration_ms: 1_820_000},
+        %{name: "reviewer", dispatched: true, duration_ms: 15_300},
+        %{name: "after_doing", dispatched: true, duration_ms: 45_678},
+        %{name: "before_review", dispatched: true, duration_ms: 2_340}
+      ]
+    }
+  end
+
+  defp skip_reason_code_strings do
+    Enum.map(WorkflowSteps.skip_reason_codes(), &to_string/1)
+  end
+
+  defp workflow_steps_fields do
+    %{
+      name: %{
+        type: "string",
+        required: true,
+        description:
+          "One of the six step_names above, in the order listed. Advisory, not enforced: " <>
+            "`name` is deliberately NOT constrained (D239), because persisted data carries a " <>
+            "second step vocabulary from another runtime and rejecting it would 422 that " <>
+            "runtime's completions mid-flight. An unrecognized name still aggregates as its own row."
+      },
+      dispatched: %{
+        type: "boolean",
+        required: true,
+        description: "true if the step ran; false if intentionally skipped"
+      },
+      duration_ms: %{
+        type: "integer",
+        required_when: "dispatched=true",
+        description: "Wall-clock time the step took, in milliseconds"
+      },
+      reason: %{
+        type: "string",
+        required_when: "dispatched=false",
+        description:
+          "Free-form explanation of why the step was skipped. Still required when dispatched=false, " <>
+            "still unconstrained, and still rendered verbatim on the task detail page. " <>
+            "Not the explorer_result/reviewer_result enum."
+      },
+      reason_code: %{
+        type: "enum",
+        required: false,
+        enum: skip_reason_code_strings(),
+        description:
+          "Optional machine-readable skip category, used ONLY when dispatched=false (D239). " <>
+            "Supply it alongside `reason`, never instead of it: the code is what the compliance " <>
+            "dashboard aggregates, the prose is what a human reads. Omitting it is always valid — " <>
+            "payloads that predate this field are accepted unchanged. A code outside the enum is " <>
+            "rejected rather than silently bucketed."
+      }
     }
   end
 end

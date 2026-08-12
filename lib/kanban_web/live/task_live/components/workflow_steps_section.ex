@@ -30,6 +30,11 @@ defmodule KanbanWeb.TaskLive.Components.WorkflowStepsSection do
                 {gettext("%{ms} ms", ms: step["duration_ms"])}
               </span>
             <% end %>
+            <%= if is_binary(step["reason_code"]) && step["reason_code"] != "" do %>
+              <span class="text-xs font-mono border border-current rounded px-1.5 py-0.5 opacity-80">
+                {step["reason_code"]}
+              </span>
+            <% end %>
             <%= if is_binary(step["reason"]) && step["reason"] != "" do %>
               <p class="w-full text-xs opacity-80 whitespace-pre-wrap break-words">
                 <span class="font-semibold">{gettext("Reason")}:</span> {step["reason"]}

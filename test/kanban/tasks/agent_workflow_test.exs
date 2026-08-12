@@ -656,6 +656,61 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
 
       assert {:ok, _task, _hooks} = AgentWorkflow.complete_task(claimed, user, params, "Claude")
     end
+
+    test "persists a canonical reason_code alongside the free-text reason (D239)",
+         %{claimed: claimed, user: user} do
+      prose = "Step 3 matrix row 'small, 2+ key_files' gives Plan = Skip"
+
+      params =
+        Map.put(valid_complete_params(), "workflow_steps", [
+          %{
+            "name" => "planner",
+            "dispatched" => false,
+            "reason_code" => "decision_matrix_skip",
+            "reason" => prose
+          }
+        ])
+
+      assert {:ok, task, _hooks} = AgentWorkflow.complete_task(claimed, user, params, "Claude")
+
+      # Both survive: the code is what the dashboard aggregates, the prose is
+      # what a human reads on the task detail page.
+      assert [step] = task.workflow_steps
+      assert step["reason_code"] == "decision_matrix_skip"
+      assert step["reason"] == prose
+    end
+
+    test "rejects a completion carrying an unrecognised reason_code",
+         %{claimed: claimed, user: user} do
+      params =
+        Map.put(valid_complete_params(), "workflow_steps", [
+          %{
+            "name" => "planner",
+            "dispatched" => false,
+            "reason" => "prose",
+            "reason_code" => "invented_bucket"
+          }
+        ])
+
+      assert {:error, cs} = AgentWorkflow.complete_task(claimed, user, params, "Claude")
+      assert Keyword.has_key?(cs.errors, :workflow_steps)
+    end
+
+    test "still accepts a skipped step with prose and no reason_code at all",
+         %{claimed: claimed, user: user} do
+      # The back-compat guarantee: an agent that predates D239 — including
+      # another runtime's plugin — completes exactly as it did before.
+      params =
+        Map.put(valid_complete_params(), "workflow_steps", [
+          %{
+            "name" => "planner",
+            "dispatched" => false,
+            "reason" => "Planned inline; the explorer left no design space."
+          }
+        ])
+
+      assert {:ok, _task, _hooks} = AgentWorkflow.complete_task(claimed, user, params, "Claude")
+    end
   end
 
   describe "complete_task/4 — re-completion after changes requested" do

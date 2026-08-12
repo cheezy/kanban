@@ -147,10 +147,10 @@ defmodule Kanban.Tasks.ComplianceTest do
 
     test "keeps differing text for the same logical skip as separate rows",
          %{board: board, column: column} do
-      # The documented consequence of NOT canonicalising (see the moduledoc):
-      # two agents describing the same skip differently produce two rows. This
-      # pins the decision so a future change to it is deliberate rather than
-      # accidental.
+      # Unchanged by D239: with no reason_code to group on, prose still buckets
+      # verbatim. This is the back-compat guarantee — a payload written before
+      # the vocabulary existed aggregates exactly as it always did, rather than
+      # being retro-fitted into a bucket that was guessed at on read.
       seed(column, %{
         workflow_steps: [
           %{"name" => "planner", "dispatched" => false, "reason" => "planned inline"},
@@ -162,6 +162,149 @@ defmodule Kanban.Tasks.ComplianceTest do
 
       assert Map.fetch!(result, "planned inline") == 1
       assert Map.fetch!(result, "Planned inline.") == 1
+    end
+
+    test "aggregates entries sharing a reason_code despite differing prose (D239)",
+         %{board: board, column: column} do
+      # The defect itself: these three are the same logical skip written three
+      # ways. Before D239 they were three rows of 1; now they are one row of 3,
+      # and the prose is still persisted for a human reading the task.
+      seed(column, %{
+        workflow_steps: [
+          %{
+            "name" => "planner",
+            "dispatched" => false,
+            "reason_code" => "ran_inline",
+            "reason" => "Planned inline: the explorer returned a concrete two-site fix."
+          },
+          %{
+            "name" => "explorer",
+            "dispatched" => false,
+            "reason_code" => "ran_inline",
+            "reason" => "Self-reported exploration: faster read directly than dispatched."
+          }
+        ]
+      })
+
+      seed(column, %{
+        workflow_steps: [
+          %{
+            "name" => "implementation",
+            "dispatched" => false,
+            "reason_code" => "ran_inline",
+            "reason" => "Implemented inline across four review rounds on one working tree."
+          }
+        ]
+      })
+
+      result = Compliance.skip_reasons(board.id)
+
+      assert Map.fetch!(result, "ran_inline") == 3
+      assert map_size(result) == 1
+    end
+
+    test "buckets by code and by prose side by side without losing either",
+         %{board: board, column: column} do
+      # A mixed board during rollout: updated agents emit codes, older ones do
+      # not. Both must count, and the totals must still add up.
+      seed(column, %{
+        workflow_steps: [
+          %{
+            "name" => "planner",
+            "dispatched" => false,
+            "reason_code" => "decision_matrix_skip",
+            "reason" => "Step 3 matrix gives Plan = Skip"
+          },
+          %{
+            "name" => "reviewer",
+            "dispatched" => false,
+            "reason_code" => "decision_matrix_skip",
+            "reason" => "Decision matrix: small task, 0-1 key_files"
+          },
+          %{"name" => "explorer", "dispatched" => false, "reason" => "legacy prose only"}
+        ]
+      })
+
+      result = Compliance.skip_reasons(board.id)
+
+      assert Map.fetch!(result, "decision_matrix_skip") == 2
+      assert Map.fetch!(result, "legacy prose only") == 1
+      assert result |> Map.values() |> Enum.sum() == 3
+    end
+
+    test "an empty reason_code falls through to the prose rather than collapsing",
+         %{board: board, column: column} do
+      # The NULLIF guard. Without it, every entry carrying reason_code: "" would
+      # collapse into a single empty bucket and lose its distinct prose.
+      seed(column, %{
+        workflow_steps: [
+          %{
+            "name" => "planner",
+            "dispatched" => false,
+            "reason_code" => "",
+            "reason" => "distinct prose one"
+          },
+          %{
+            "name" => "reviewer",
+            "dispatched" => false,
+            "reason_code" => "",
+            "reason" => "distinct prose two"
+          }
+        ]
+      })
+
+      result = Compliance.skip_reasons(board.id)
+
+      assert Map.fetch!(result, "distinct prose one") == 1
+      assert Map.fetch!(result, "distinct prose two") == 1
+      refute Map.has_key?(result, "")
+    end
+
+    test "the breakdown aggregates against realistic seeded data instead of fragmenting",
+         %{board: board, column: column} do
+      # The acceptance criterion, exercised end to end: prose sampled from real
+      # completions on the production board, each paired with the code derived
+      # from it. Twelve entries, twelve distinct reason strings, five rows.
+      realistic = [
+        {"decision_matrix_skip", "Decision matrix: small task, 0-1 key_files"},
+        {"decision_matrix_skip",
+         "Decision matrix: small complexity — the planner is dispatched for medium+ tasks only"},
+        {"decision_matrix_skip", "Step 3 decision matrix: small complexity with 2 key_files"},
+        {"decision_matrix_skip", "Decision matrix: small task, and there was nothing to plan."},
+        {"ran_inline", "Explored inline: the task named all three key files."},
+        {"ran_inline", "Self-reported exploration: faster read directly than dispatched"},
+        {"ran_inline", "Implemented inline across six review rounds on one working tree."},
+        {"hook_body_empty", "Plugin mode: the .stride.md after_doing body is empty, a no-op."},
+        {"hook_body_empty", "Plugin mode: the .stride.md before_review body is empty."},
+        {"hook_body_empty", "Plugin mode: the before_review body is empty."},
+        {"subsumed_by_task_spec", "The task specified both placements and named the pattern."},
+        {"matrix_deviation", "Deviation from the Step 3 matrix, recorded as a deviation."}
+      ]
+
+      seed(column, %{
+        workflow_steps:
+          Enum.map(realistic, fn {code, prose} ->
+            %{
+              "name" => "planner",
+              "dispatched" => false,
+              "reason_code" => code,
+              "reason" => prose
+            }
+          end)
+      })
+
+      result = Compliance.skip_reasons(board.id)
+
+      distinct_prose = realistic |> Enum.map(&elem(&1, 1)) |> Enum.uniq() |> length()
+
+      assert distinct_prose == 12
+      assert map_size(result) == 5
+      assert result["decision_matrix_skip"] == 4
+      assert result["ran_inline"] == 3
+      assert result["hook_body_empty"] == 3
+      assert result["subsumed_by_task_spec"] == 1
+      assert result["matrix_deviation"] == 1
+      assert result |> Map.values() |> Enum.sum() == 12
     end
 
     test "counts an entry whose name is not one of the six canonical steps",

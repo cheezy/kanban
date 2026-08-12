@@ -353,7 +353,8 @@ PATCH /api/tasks/:id/complete
   },
   "workflow_steps": [
     {"name": "explorer",       "dispatched": true,  "duration_ms": 9800},
-    {"name": "planner",        "dispatched": false, "reason": "Small task — planner skipped per decision matrix"},
+    {"name": "planner",        "dispatched": false, "reason_code": "decision_matrix_skip",
+     "reason": "Small task — planner skipped per decision matrix"},
     {"name": "implementation", "dispatched": true,  "duration_ms": 1520000},
     {"name": "reviewer",       "dispatched": true,  "duration_ms": 8400},
     {"name": "after_doing",    "dispatched": true,  "duration_ms": 45678},
@@ -365,6 +366,19 @@ PATCH /api/tasks/:id/complete
 **Critical:** `after_doing_result`, `before_review_result`, `workflow_steps`, `explorer_result`, and `reviewer_result` are ALL required. The API will reject requests missing any of them — see the Explorer/Reviewer Result Schema section below for accepted shapes.
 
 **Schema reference:** The `workflow_steps` array must match the schema documented in the `stride-workflow` skill — key-for-key. Always include one entry per step name (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). Skipped steps use `{"name": "<step>", "dispatched": false, "reason": "<why>"}`.
+
+**`reason_code` (optional, D239).** On a skipped step, add a machine-readable category next to the prose — `{"dispatched": false, "reason_code": "decision_matrix_skip", "reason": "<why>"}`. The code is what the compliance dashboard aggregates; the prose is what a human reads. One of:
+
+| Code | Use when |
+|---|---|
+| `decision_matrix_skip` | The Step 3 decision matrix says this task's row skips this step |
+| `ran_inline` | The work was performed, but in the main loop rather than by a dispatched subagent |
+| `hook_body_empty` | Plugin mode: the `.stride.md` section body is empty, so the hook is a no-op |
+| `subsumed_by_task_spec` | The task specification already settled what this step would have decided |
+| `folded_into_prior_step` | An earlier step already produced this step's output |
+| `matrix_deviation` | The matrix called for this step and it was deliberately not run — records a deviation, not a sanctioned skip |
+
+Never substitute the code for the prose, and never reach for `decision_matrix_skip` when the matrix actually called for the step: `matrix_deviation` is the honest code there. **Omitting `reason_code` entirely stays valid** — `reason` is still required and still free-form, so an older plugin completes exactly as before. A code outside this list is rejected with a `422`.
 
 **Optional:** Include `review_report` when a task-reviewer agent produced a structured review. Omit it when no review was performed (e.g., small tasks with 0-1 key_files).
 

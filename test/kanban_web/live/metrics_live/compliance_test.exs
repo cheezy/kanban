@@ -118,6 +118,93 @@ defmodule KanbanWeb.MetricsLive.ComplianceTest do
       assert html =~ "(no reason given)"
     end
 
+    test "renders one aggregated row for entries sharing a reason_code (D239)", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # Three distinct prose strings, one code. The panel must show the code's
+      # label once with a count of 3, not three rows of 1.
+      task_fixture(column, %{
+        workflow_steps: [
+          %{
+            "name" => "planner",
+            "dispatched" => false,
+            "reason_code" => "ran_inline",
+            "reason" => "Planned inline: the explorer returned a concrete two-site fix."
+          },
+          %{
+            "name" => "explorer",
+            "dispatched" => false,
+            "reason_code" => "ran_inline",
+            "reason" => "Self-reported exploration: faster read directly than dispatched."
+          },
+          %{
+            "name" => "implementation",
+            "dispatched" => false,
+            "reason_code" => "ran_inline",
+            "reason" => "Implemented inline across four review rounds."
+          }
+        ]
+      })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/compliance")
+
+      assert html =~ "Ran inline, not dispatched"
+      # The raw code and the verbatim prose stay off the aggregated panel; the
+      # prose belongs on the task detail page, not here.
+      refute html =~ "ran_inline"
+      refute html =~ "Self-reported exploration"
+    end
+
+    test "every canonical reason_code renders a human label, never a bare code", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # Guards the vocabulary against drift: adding a code to
+      # WorkflowSteps.skip_reason_codes/0 without a matching skip_reason_label/1
+      # clause would render the bare atom name to a human, and fails here.
+      codes = Kanban.Tasks.WorkflowSteps.skip_reason_codes()
+
+      task_fixture(column, %{
+        workflow_steps:
+          Enum.map(codes, fn code ->
+            %{
+              "name" => "planner",
+              "dispatched" => false,
+              "reason_code" => to_string(code),
+              "reason" => "prose for #{code}"
+            }
+          end)
+      })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/compliance")
+
+      for code <- codes do
+        refute html =~ to_string(code),
+               "reason_code #{code} rendered as a bare code — add a skip_reason_label/1 clause"
+      end
+    end
+
+    test "renders legacy prose verbatim when no reason_code is present", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      # The fallback clause. A novel or pre-D239 reason must stay visible as
+      # written rather than collapsing into an "other" bucket.
+      task_fixture(column, %{
+        workflow_steps: [
+          %{"name" => "planner", "dispatched" => false, "reason" => "a reason nobody anticipated"}
+        ]
+      })
+
+      {:ok, _view, html} = live(conn, ~p"/boards/#{board}/metrics/compliance")
+
+      assert html =~ "a reason nobody anticipated"
+    end
+
     test "renders per-agent compliance from context", %{
       conn: conn,
       board: board,

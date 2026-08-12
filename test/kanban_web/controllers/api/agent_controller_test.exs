@@ -950,6 +950,25 @@ defmodule KanbanWeb.API.AgentControllerTest do
       end
     end
 
+    test "api_schema publishes the workflow_steps reason_code vocabulary (D239)", %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      workflow_format = json_response(conn, 200)["api_schema"]["workflow_steps_format"]
+
+      expected = Enum.map(Kanban.Tasks.WorkflowSteps.skip_reason_codes(), &to_string/1)
+
+      # Published from the module the validator uses, so the documented contract
+      # cannot drift from what is actually enforced.
+      assert workflow_format["skip_reason_codes"] == expected
+
+      reason_code = workflow_format["fields"]["reason_code"]
+      assert reason_code["required"] == false
+      assert reason_code["enum"] == expected
+
+      # The prose field must still read as required-when-skipped and free-form:
+      # agents that only write `reason` stay valid.
+      assert workflow_format["fields"]["reason"]["required_when"] == "dispatched=false"
+    end
+
     test "api_schema documents plugin_versions with minimum supported versions", %{conn: conn} do
       conn = get(conn, ~p"/api/agent/onboarding")
       schema = json_response(conn, 200)["api_schema"]

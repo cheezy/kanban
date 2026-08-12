@@ -327,7 +327,7 @@ defmodule Kanban.Tasks.CompletionValidation.ReviewContract do
 
   defp placeholder_note_message(key) do
     gettext(
-      "%{field}.note reads as a placeholder rather than naming the violation. If there is nothing substantive to write, the verdict is wrong rather than the note — re-check whether the section should be \"passed\" or \"not_assessed\" instead.",
+      ~s|%{field}.note reads as a placeholder rather than naming the violation. If there is nothing substantive to write, the verdict is wrong rather than the note — re-check whether the section should be "passed" or "not_assessed" instead.|,
       field: key
     )
   end

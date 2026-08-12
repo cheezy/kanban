@@ -1672,6 +1672,55 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "needs_review is false"
     end
 
+    test "renders the reason_code badge next to the verbatim prose (D239)", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          workflow_steps: [
+            %{
+              "name" => "planner",
+              "dispatched" => false,
+              "reason_code" => "decision_matrix_skip",
+              "reason" => "Step 3 matrix row 'small, 2+ key_files' gives Plan = Skip"
+            }
+          ]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      # This is the page the acceptance criterion means by "where a human reads
+      # a single task": the aggregating code AND the full prose, side by side.
+      assert result =~ "decision_matrix_skip"
+      assert result =~ "Step 3 matrix row"
+    end
+
+    test "renders a pre-D239 step with prose and no reason_code unchanged", %{board: board} do
+      column = column_fixture(board)
+
+      task =
+        task_fixture(column, %{
+          workflow_steps: [
+            %{"name" => "planner", "dispatched" => false, "reason" => "legacy prose only"}
+          ]
+        })
+
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "legacy prose only"
+      assert result =~ "Not dispatched"
+    end
+
     test "renders workflow step with only name (no duration, no status)", %{board: board} do
       column = column_fixture(board)
 

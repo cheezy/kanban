@@ -59,6 +59,24 @@ defmodule KanbanWeb.MetricsLive.Compliance do
     |> push_navigate(to: ~p"/boards/#{board_id}")
   end
 
+  # D239: a skip bucket is either one of the canonical `reason_code` values —
+  # rendered as a translated label — or verbatim agent prose, rendered as
+  # written. The fallback clause is what keeps a novel or legacy reason visible
+  # instead of collapsing it into an "other" bucket.
+  #
+  # These labels must cover every code in
+  # `Kanban.Tasks.WorkflowSteps.skip_reason_codes/0`; the compliance LiveView
+  # test asserts that, so adding a code without a label fails the suite rather
+  # than silently rendering a bare atom name to a human.
+  defp skip_reason_label(""), do: gettext("(no reason given)")
+  defp skip_reason_label("decision_matrix_skip"), do: gettext("Decision matrix skip")
+  defp skip_reason_label("ran_inline"), do: gettext("Ran inline, not dispatched")
+  defp skip_reason_label("hook_body_empty"), do: gettext("Hook body empty")
+  defp skip_reason_label("subsumed_by_task_spec"), do: gettext("Settled by task spec")
+  defp skip_reason_label("folded_into_prior_step"), do: gettext("Folded into prior step")
+  defp skip_reason_label("matrix_deviation"), do: gettext("Matrix deviation")
+  defp skip_reason_label(reason), do: reason
+
   # W590: dispatch_rate_color/1 now returns a CSS color value
   # (consumed via inline `background: ...`) instead of a daisyUI class.
   defp dispatch_rate_color(rate) when rate >= 80.0, do: "var(--st-done)"

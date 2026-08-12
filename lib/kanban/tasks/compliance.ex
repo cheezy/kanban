@@ -40,15 +40,26 @@ defmodule Kanban.Tasks.Compliance do
   #
   # A missing `dispatched` key yields NULL, and `NULL IS FALSE` is false, so
   # entries that predate the field are not counted rather than miscounted.
+  # (D239) Buckets on `reason_code` when the entry carries one, falling back to
+  # the verbatim `reason` prose when it does not.
+  #
+  # This is NOT the read-side canonicalisation D233 rejected. Nothing here maps
+  # prose to a bucket — it reads a structured field that the write side
+  # (`Kanban.Tasks.WorkflowSteps`) validates against a closed vocabulary. An
+  # entry with no `reason_code` still groups by its exact text, so legacy rows
+  # and novel skip reasons stay visible verbatim rather than being guessed at.
+  #
+  # NULLIF guards the empty string: a `reason_code` of "" must fall through to
+  # the prose rather than collapsing every such row into one bucket.
   @skip_reasons_sql """
-  SELECT COALESCE(elem->>'reason', '') AS reason,
+  SELECT COALESCE(NULLIF(elem->>'reason_code', ''), elem->>'reason', '') AS reason,
          COUNT(*) AS count
   FROM tasks t
   JOIN columns c ON c.id = t.column_id
   CROSS JOIN LATERAL jsonb_array_elements(t.workflow_steps) AS elem
   WHERE c.board_id = $1
     AND (elem->>'dispatched')::boolean IS FALSE
-  GROUP BY COALESCE(elem->>'reason', '')
+  GROUP BY COALESCE(NULLIF(elem->>'reason_code', ''), elem->>'reason', '')
   """
 
   @doc """
@@ -83,28 +94,32 @@ defmodule Kanban.Tasks.Compliance do
   empty string key; historical rows predate the validator that now requires a
   reason, so that bucket is not dead code.
 
-  ## On reason text, decided deliberately rather than by omission (D233)
+  ## How the bucketing works, and why it is not read-side canonicalisation
 
-  Reasons are **not** canonicalised here, and that is a decision with a cost.
-  Unlike `explorer_result.reason` and `reviewer_result.reason` — which
-  `Kanban.Tasks.CompletionValidation` constrains to a five-value enum — a
-  `workflow_steps` reason is only required to be a string, so agents write free
-  prose. Measured against real completions: 12 skipped entries produced 10
-  distinct strings averaging 145 characters, so grouping verbatim yields very
+  An entry that carries a `reason_code` is grouped by that code; an entry
+  without one is grouped by its verbatim `reason` text. Both cases are still
+  counted, so the total never moves.
+
+  This was D233's open problem and D239 resolved it, but deliberately **not**
+  by mapping prose to buckets here. D233 rejected that and the rejection still
+  stands: any mapping written today would be fitted to the prose of the agents
+  that happen to exist now, and would silently mis-file wording it did not
+  anticipate — the failure the defect was itself an instance of. Measured at
+  the time: 73 skipped entries on the production board produced 58 distinct
+  reason strings averaging 145 characters, so grouping prose verbatim is very
   nearly one row per entry.
 
-  Bucketing was rejected rather than overlooked. Any mapping written today
-  would be fitted to the prose of the agents that happen to exist now, and
-  would silently mis-file wording it did not anticipate — the failure this
-  defect is already an instance of. Keeping the text raw means a novel skip
-  reason stays visible verbatim instead of vanishing into an "other" bucket.
+  What changed is the write side. `Kanban.Tasks.WorkflowSteps` now defines a
+  six-value `reason_code` vocabulary — derived by classifying those 73 real
+  entries rather than invented — and validates it on completion. This query
+  reads that structured field. It guesses at nothing, so a novel skip reason
+  with no code still appears verbatim instead of vanishing into an "other"
+  bucket, and rows written before D239 keep grouping exactly as they did.
 
-  The real fix is to constrain the vocabulary where it is written, mirroring
-  the existing enum for explorer/reviewer reasons, which is a change to the
-  emitting contract rather than to this query. **Filed as D239**, which also
-  covers constraining `name` to the canonical step list — persisted data already
-  contains two different step vocabularies from two runtimes, so that change
-  carries the same back-compat hazard and belongs with this one.
+  `name` is deliberately **not** constrained; `Kanban.Tasks.WorkflowSteps`
+  records that decision and the measured back-compat evidence behind it.
+  `step_dispatch_rates/1` therefore still groups by whatever name was written,
+  which keeps a misspelled or invented step visible as its own row.
   """
   def skip_reasons(board_id) do
     %{rows: rows} = Repo.query!(@skip_reasons_sql, [board_id])
