@@ -148,11 +148,21 @@ defmodule KanbanWeb.ReviewReportHelpers.ExplorerTest do
     end
 
     test "does not convert the incoming value to an atom" do
-      before = :erlang.system_info(:atom_count)
+      # Assert on THIS value rather than on :erlang.system_info(:atom_count).
+      # That counter is global to the VM, and this case is `async: true`, so any
+      # other test that lazily loads a module inside the measurement window moves
+      # it — the assertion then fails for a reason that has nothing to do with
+      # skip_reason_label/1. It was a real, seed-dependent failure (seed 203158
+      # reproduced it against an unrelated change), and re-running until the seed
+      # changed would have hidden it rather than fixed it.
+      #
+      # to_existing_atom/1 raising is the direct evidence the claim is about: the
+      # string was never interned.
+      value = "definitely_not_an_existing_atom_w1958"
 
-      Explorer.skip_reason_label("definitely_not_an_existing_atom_w1958")
+      Explorer.skip_reason_label(value)
 
-      assert :erlang.system_info(:atom_count) == before
+      assert_raise ArgumentError, fn -> String.to_existing_atom(value) end
     end
   end
 end
