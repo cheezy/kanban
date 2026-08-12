@@ -124,11 +124,18 @@ defmodule Kanban.Tasks.CompletionNotesScanTest do
       test_pid = self()
       handler = "completion-notes-scan-#{inspect(ref)}"
 
+      # Telemetry handlers are global to the VM, so a concurrent async test that
+      # completes a task with credential-shaped notes would otherwise deliver its
+      # event here and trip the `refute_receive` cases. `:telemetry.execute/3`
+      # runs handlers in the emitting process, so forwarding only when the
+      # emitter is this test's process scopes the handler to our own calls.
       :telemetry.attach(
         handler,
         [:kanban, :audit, :completion_notes_credential_suspected],
         fn _event, measurements, metadata, _config ->
-          send(test_pid, {:telemetry, ref, measurements, metadata})
+          if self() == test_pid do
+            send(test_pid, {:telemetry, ref, measurements, metadata})
+          end
         end,
         nil
       )
