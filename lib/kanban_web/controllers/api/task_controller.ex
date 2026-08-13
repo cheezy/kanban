@@ -385,7 +385,8 @@ defmodule KanbanWeb.API.TaskController do
 
         render(conn, :show,
           task: task,
-          agent_skills_version: params["skills_version"]
+          agent_skills_version: params["skills_version"],
+          response_view: view_for(params)
         )
     end
   end

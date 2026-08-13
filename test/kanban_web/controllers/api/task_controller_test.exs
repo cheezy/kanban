@@ -2542,6 +2542,136 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert json_response(conn, 404)["error"] =~ "No tasks available"
     end
 
+    test "response_view=slim returns the canonical summary row (W2075)", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Slim Next Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      response = json_response(get(conn, ~p"/api/tasks/next?response_view=slim"), 200)
+
+      assert response["data"] |> Map.keys() |> Enum.sort() ==
+               ~w(complexity created_by_agent dependencies id identifier priority status title)
+
+      assert response["data"]["id"] == task.id
+      assert response["data"]["title"] == "Slim Next Task"
+
+      # The slim render never calls maybe_add_skills_version (W2074 clause).
+      refute Map.has_key?(response, "current_skills_version")
+      refute Map.has_key?(response, "skills_update_required")
+    end
+
+    test "an absent response_view returns the full next body unchanged", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, _task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Full Next Task",
+          "description" => "Full next details",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      response = json_response(get(conn, ~p"/api/tasks/next"), 200)
+
+      for field <- ~w(description key_files acceptance_criteria reviewer_result) do
+        assert Map.has_key?(response["data"], field),
+               "GET /api/tasks/next without response_view must keep the full body"
+      end
+
+      assert response["data"]["description"] == "Full next details"
+    end
+
+    test "an unrecognized response_view value falls back to the full next body", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, _task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Fallback Next Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      absent = json_response(get(conn, ~p"/api/tasks/next"), 200)
+
+      for value <- ["compact", "SLIM", "full", ""] do
+        response = json_response(get(conn, ~p"/api/tasks/next?response_view=#{value}"), 200)
+
+        assert response == absent,
+               "response_view=#{value} must fall back to the same full body as the default"
+      end
+    end
+
+    test "the 404 no-task response is identical in every view", %{conn: conn} do
+      absent = json_response(get(conn, ~p"/api/tasks/next"), 404)
+      slim = json_response(get(conn, ~p"/api/tasks/next?response_view=slim"), 404)
+      full = json_response(get(conn, ~p"/api/tasks/next?response_view=full"), 404)
+
+      assert absent == slim
+      assert absent == full
+      assert absent["error"] =~ "No tasks available"
+    end
+
+    test "a slim next is followed by a claim that still returns the full body", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Slim Then Claim Task",
+          "description" => "Claim keeps the fat body",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      slim = json_response(get(conn, ~p"/api/tasks/next?response_view=slim"), 200)
+      assert slim["data"]["id"] == task.id
+
+      claimed =
+        json_response(
+          post(conn, ~p"/api/tasks/claim", %{
+            "before_doing_result" => valid_before_doing_result()
+          }),
+          200
+        )
+
+      assert claimed["data"]["id"] == task.id
+      assert claimed["data"]["description"] == "Claim keeps the fat body"
+      assert Map.has_key?(claimed["data"], "key_files")
+      assert Map.has_key?(claimed, "hook")
+    end
+
+    test "a task with empty key_files renders in both views", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "No Key Files Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      slim = json_response(get(conn, ~p"/api/tasks/next?response_view=slim"), 200)
+      full = json_response(get(conn, ~p"/api/tasks/next"), 200)
+
+      assert slim["data"]["id"] == task.id
+      assert full["data"]["id"] == task.id
+      assert full["data"]["key_files"] == []
+    end
+
     test "excludes tasks with status in_progress", %{
       conn: conn,
       ready_column: ready_column,
@@ -7244,6 +7374,32 @@ defmodule KanbanWeb.API.TaskControllerTest do
       slim = json_response(get(conn, ~p"/api/tasks/#{id}?response_view=slim"), 200)
 
       # W2054 left the gate inert here; W2074 wired show/2 into it.
+      refute slim == full
+
+      assert slim["data"] |> Map.keys() |> Enum.sort() ==
+               ~w(complexity created_by_agent dependencies id identifier priority status title)
+
+      assert Map.has_key?(full["data"], "description")
+    end
+
+    test "GET /api/tasks/next consumes the resolution (W2075)", %{
+      conn: conn,
+      board: board,
+      user: user
+    } do
+      ready_column = board |> Columns.list_columns() |> Enum.find(&(&1.name == "Ready"))
+
+      {:ok, _task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Next view gate task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      full = json_response(get(conn, ~p"/api/tasks/next"), 200)
+      slim = json_response(get(conn, ~p"/api/tasks/next?response_view=slim"), 200)
+
+      # W2054 left the gate inert here; W2075 wired next/2 into it.
       refute slim == full
 
       assert slim["data"] |> Map.keys() |> Enum.sort() ==

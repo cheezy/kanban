@@ -270,6 +270,17 @@ defmodule KanbanWeb.API.TaskJSONTest do
       assert TaskJSON.show(%{task: task}) == TaskJSON.show(%{task: task, response_view: :full})
     end
 
+    # next/2 threads agent_skills_version alongside response_view (W2075); the
+    # slim clause must still win over the bare clause for that assigns shape,
+    # and the slim render never adds current_skills_version.
+    test "the slim show clause wins with agent_skills_version in the assigns", %{
+      children: [task | _]
+    } do
+      assigns = %{task: task, response_view: :slim, agent_skills_version: "1.0"}
+
+      assert TaskJSON.show(assigns) == %{data: TaskJSON.render_task_summary(task)}
+    end
+
     test "the slim tree slims children but keeps a full root and untouched counts", %{tree: tree} do
       full = TaskJSON.tree(%{tree: tree})
       slim = TaskJSON.tree(%{tree: tree, response_view: :slim})
