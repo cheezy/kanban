@@ -25,16 +25,30 @@ defmodule KanbanWeb.API.TaskJSON do
   end
 
   @doc """
-  Single-task view. Under `response_view=slim` (W2074) the task renders as the
-  same canonical compact summary the index and tree endpoints serve, because
-  the full render — `review_report` included — is tens of KB and the single
-  most expensive artifact a dispatcher session reads.
+  Single-task view.
+
+  Under a `fields` projection (W2076) the task renders as `id` and
+  `identifier` plus exactly the requested allow-listed fields — the
+  controller only ever threads a `fields` assign that
+  `KanbanWeb.API.TaskFieldsProjection.resolve/1` validated, and never
+  alongside `response_view` (the two parameters are mutually exclusive at
+  the controller boundary).
+
+  Under `response_view=slim` (W2074) the task renders as the same canonical
+  compact summary the index and tree endpoints serve, because the full
+  render — `review_report` included — is tens of KB and the single most
+  expensive artifact a dispatcher session reads.
 
   Clause order is load-bearing for the same reason spelled out on `index/1`:
-  the bare `%{task: task}` clause would match a `:slim`-carrying assigns map
-  just as happily, so the slim clause must come first. The `hook`/`hooks`
-  clauses serve claim/complete responses, which never thread `response_view`.
+  the bare `%{task: task}` clause would match a `fields`- or
+  `:slim`-carrying assigns map just as happily, so those clauses must come
+  first. The `hook`/`hooks` clauses serve claim/complete responses, which
+  never thread `response_view` or `fields`.
   """
+  def show(%{task: task, fields: fields}) when is_list(fields) do
+    %{data: task |> projectable_data() |> Map.take(fields)}
+  end
+
   def show(%{task: task, response_view: :slim}) do
     %{data: render_task_summary(task)}
   end
@@ -183,6 +197,63 @@ defmodule KanbanWeb.API.TaskJSON do
       complexity: task.complexity,
       dependencies: task.dependencies || [],
       created_by_agent: task.created_by_agent
+    }
+  end
+
+  @projectable_field_names ~w(id identifier title status priority complexity
+                              dependencies created_by_agent needs_review
+                              review_status review_notes review_report
+                              workflow_steps explorer_result reviewer_result
+                              reviewed_at reviewed_by_id completed_at
+                              completed_by_id completed_by_agent
+                              completion_summary completion_notes
+                              actual_complexity actual_files_changed)
+
+  @doc """
+  The `fields` projection allow-list (W2076): the single source of truth
+  `KanbanWeb.API.TaskFieldsProjection.resolve/1` validates against.
+
+  A deliberate literal, never derived from the Task schema — deriving it
+  would silently expose future fields, and this list is the security
+  boundary for the projection: only names already served by the full show
+  response may appear here.
+  """
+  def projectable_field_names, do: @projectable_field_names
+
+  # The renderer behind the fields projection: a string-keyed map covering
+  # exactly @projectable_field_names, each value the same expression data/1
+  # uses — except dependencies, which takes render_task_summary/1's
+  # `|| []` normalisation so the summary-8 subset of a projection stays
+  # byte-identical to response_view=slim. Like data/1 above, it is one flat
+  # literal map — ABC size counts its 24 field reads, but there is no logic
+  # to extract.
+  # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
+  defp projectable_data(%Task{} = task) do
+    %{
+      "id" => task.id,
+      "identifier" => task.identifier,
+      "title" => task.title,
+      "status" => task.status,
+      "priority" => task.priority,
+      "complexity" => task.complexity,
+      "dependencies" => task.dependencies || [],
+      "created_by_agent" => task.created_by_agent,
+      "needs_review" => task.needs_review,
+      "review_status" => task.review_status,
+      "review_notes" => task.review_notes,
+      "review_report" => task.review_report,
+      "workflow_steps" => task.workflow_steps,
+      "explorer_result" => task.explorer_result,
+      "reviewer_result" => task.reviewer_result,
+      "reviewed_at" => task.reviewed_at,
+      "reviewed_by_id" => task.reviewed_by_id,
+      "completed_at" => task.completed_at,
+      "completed_by_id" => task.completed_by_id,
+      "completed_by_agent" => task.completed_by_agent,
+      "completion_summary" => task.completion_summary,
+      "completion_notes" => task.completion_notes,
+      "actual_complexity" => task.actual_complexity,
+      "actual_files_changed" => task.actual_files_changed
     }
   end
 

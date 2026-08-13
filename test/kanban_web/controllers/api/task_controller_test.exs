@@ -2788,6 +2788,236 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "GET /api/tasks/:id fields projection (W2076)" do
+    setup %{column: column, user: user} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Projected Task",
+          "description" => "Full details",
+          "complexity" => "medium",
+          "created_by_id" => user.id
+        })
+
+      task =
+        task
+        |> Ecto.Changeset.change(%{
+          dependencies: ["W9001", "W9002"],
+          status: :completed,
+          needs_review: true,
+          review_status: :approved,
+          review_notes: "Review notes here",
+          review_report: "## Review Summary\n\nApproved — 0 issues found.",
+          reviewed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+          reviewed_by_id: user.id,
+          completed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+          completed_by_id: user.id,
+          completed_by_agent: "Original Agent",
+          completion_summary: "Original summary",
+          completion_notes: "Original notes",
+          actual_complexity: :small,
+          actual_files_changed: "lib/a.ex, lib/b.ex",
+          workflow_steps: [
+            %{"name" => "implementation", "dispatched" => true, "duration_ms" => 1000}
+          ],
+          explorer_result: %{
+            "dispatched" => false,
+            "reason" => "small_task_0_1_key_files",
+            "summary" => "Skipped per decision matrix for a small single-file task"
+          },
+          reviewer_result: %{"dispatched" => true, "summary" => "ok", "issues_found" => 0}
+        })
+        |> Kanban.Repo.update!()
+
+      %{task: task}
+    end
+
+    test "a valid projection returns id, identifier, and the requested fields only", %{
+      conn: conn,
+      task: task
+    } do
+      response =
+        json_response(
+          get(conn, ~p"/api/tasks/#{task.id}?fields=review_status,review_report"),
+          200
+        )
+
+      assert response["data"] |> Map.keys() |> Enum.sort() ==
+               ~w(id identifier review_report review_status)
+
+      assert response["data"]["id"] == task.id
+      assert response["data"]["identifier"] == task.identifier
+      assert response["data"]["review_status"] == "approved"
+
+      assert response["data"]["review_report"] ==
+               "## Review Summary\n\nApproved — 0 issues found."
+    end
+
+    test "every allow-listed field round-trips its persisted value", %{conn: conn, task: task} do
+      names = KanbanWeb.API.TaskJSON.projectable_field_names()
+      all = Enum.join(names, ",")
+
+      projected = json_response(get(conn, ~p"/api/tasks/#{task.id}?fields=#{all}"), 200)["data"]
+      full = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)["data"]
+
+      assert projected |> Map.keys() |> Enum.sort() == Enum.sort(names)
+
+      for name <- names do
+        assert projected[name] == full[name],
+               "#{name} must round-trip the same value the full response serves"
+      end
+    end
+
+    test "every projectable field is served by the full show response", %{
+      conn: conn,
+      task: task
+    } do
+      names = KanbanWeb.API.TaskJSON.projectable_field_names()
+      full = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)["data"]
+
+      for name <- names do
+        assert Map.has_key?(full, name),
+               "allow-listed #{name} must already be served by the full show response"
+      end
+
+      assert length(names) == 24
+    end
+
+    test "a projection works when fetching by identifier string", %{conn: conn, task: task} do
+      response =
+        json_response(get(conn, ~p"/api/tasks/#{task.identifier}?fields=review_status"), 200)
+
+      assert response["data"] |> Map.keys() |> Enum.sort() ==
+               ~w(id identifier review_status)
+
+      assert response["data"]["id"] == task.id
+    end
+
+    test "an unknown field name is rejected with a 422 naming it", %{conn: conn, task: task} do
+      response =
+        json_response(get(conn, ~p"/api/tasks/#{task.id}?fields=review_status,descriptino"), 422)
+
+      assert response["error"] == "task fields rejected"
+
+      assert response["failures"] == [
+               %{
+                 "field" => "fields",
+                 "errors" => [
+                   %{
+                     "field" => "descriptino",
+                     "message" =>
+                       "descriptino is not in the allow-listed fields for GET /api/tasks/:id"
+                   }
+                 ]
+               }
+             ]
+
+      assert Map.has_key?(response, "documentation")
+    end
+
+    test "every unknown name in a long mixed list is named in one 422", %{
+      conn: conn,
+      task: task
+    } do
+      fields = "title,bogus_field,review_status,other_bogus,status,title"
+
+      response = json_response(get(conn, ~p"/api/tasks/#{task.id}?fields=#{fields}"), 422)
+
+      assert response["error"] == "task fields rejected"
+
+      [%{"field" => "fields", "errors" => errors}] = response["failures"]
+      assert Enum.map(errors, & &1["field"]) == ["bogus_field", "other_bogus"]
+    end
+
+    test "fields combined with response_view is rejected however either is valued", %{
+      conn: conn,
+      task: task
+    } do
+      for query <- [
+            "fields=title&response_view=slim",
+            "fields=title&response_view=full",
+            "fields=&response_view=slim"
+          ] do
+        response = json_response(get(conn, "/api/tasks/#{task.id}?#{query}"), 422)
+
+        assert response["error"] ==
+                 "fields and response_view are mutually exclusive; send only one",
+               "#{query} must trip the presence-based mutual exclusion"
+
+        assert Map.has_key?(response, "documentation")
+      end
+    end
+
+    test "a blank fields value falls back to the full body, not a 422", %{
+      conn: conn,
+      task: task
+    } do
+      bare = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)
+      blank = json_response(get(conn, ~p"/api/tasks/#{task.id}?fields="), 200)
+
+      assert blank == bare
+      assert Map.has_key?(blank["data"], "description")
+    end
+
+    test "trailing commas and blank segments are dropped silently", %{conn: conn, task: task} do
+      trailing = json_response(get(conn, ~p"/api/tasks/#{task.id}?fields=title,"), 200)
+      assert trailing["data"] |> Map.keys() |> Enum.sort() == ~w(id identifier title)
+
+      interior =
+        json_response(get(conn, "/api/tasks/#{task.id}?fields=title,%20,status"), 200)
+
+      assert interior["data"] |> Map.keys() |> Enum.sort() == ~w(id identifier status title)
+    end
+
+    test "whitespace around names is trimmed before matching", %{conn: conn, task: task} do
+      response =
+        json_response(get(conn, "/api/tasks/#{task.id}?fields=%20title%20,status"), 200)
+
+      assert response["data"] |> Map.keys() |> Enum.sort() == ~w(id identifier status title)
+    end
+
+    test "duplicate names are deduplicated", %{conn: conn, task: task} do
+      response =
+        json_response(get(conn, ~p"/api/tasks/#{task.id}?fields=title,title,status"), 200)
+
+      assert response["data"] |> Map.keys() |> Enum.sort() == ~w(id identifier status title)
+      assert response["data"]["title"] == "Projected Task"
+    end
+
+    test "requesting only id and identifier returns exactly those", %{conn: conn, task: task} do
+      response = json_response(get(conn, ~p"/api/tasks/#{task.id}?fields=id,identifier"), 200)
+
+      assert response["data"] == %{"id" => task.id, "identifier" => task.identifier}
+    end
+
+    test "a projection against a missing task still 404s", %{conn: conn} do
+      response = json_response(get(conn, ~p"/api/tasks/999999?fields=title"), 404)
+      assert response["error"] =~ "Task not found"
+    end
+
+    # Pins the one deliberate full-vs-projection divergence: the projection
+    # takes render_task_summary/1's `|| []` normalisation so its summary-8
+    # subset stays byte-identical to response_view=slim, while data/1 serves
+    # a legacy nil as null.
+    test "nil dependencies project as [] while the full response serves null", %{
+      conn: conn,
+      column: column,
+      user: user
+    } do
+      {:ok, task} =
+        Tasks.create_task(column, %{"title" => "Nil Deps Task", "created_by_id" => user.id})
+
+      task = task |> Ecto.Changeset.change(%{dependencies: nil}) |> Kanban.Repo.update!()
+
+      projected =
+        json_response(get(conn, ~p"/api/tasks/#{task.id}?fields=dependencies"), 200)["data"]
+
+      full = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)["data"]
+
+      assert projected["dependencies"] == []
+      assert full["dependencies"] == nil
+    end
+  end
+
   describe "POST /api/tasks/claim" do
     setup %{board: board, user: _user} do
       columns = Columns.list_columns(board)

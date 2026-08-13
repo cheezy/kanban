@@ -281,6 +281,34 @@ defmodule KanbanWeb.API.ErrorDocs do
     }
   end
 
+  # (W2076) A GET /api/tasks/:id?fields= naming something outside the
+  # projection allow-list. The whole request is rejected and every unknown
+  # name is listed — nothing is silently dropped.
+  def get_docs(:show_unknown_fields, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/api/get_tasks_id.md",
+      common_causes: [
+        "A field name is misspelled — names are matched exactly, in string space",
+        "The request named a field the full response serves but the projection does not (for example description, key_files, or changed_files) — the allow-list covers the summary and review/completion fields only",
+        "The request was rejected in full; no partial projection was returned. Re-send with only allow-listed names — the endpoint documentation lists them"
+      ]
+    }
+  end
+
+  # (W2076) fields and response_view on the same request. Presence-based:
+  # either parameter alone works, together they are refused before any
+  # parsing, so there is no precedence rule to learn.
+  def get_docs(:show_fields_response_view_conflict, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/api/get_tasks_id.md",
+      common_causes: [
+        "Both fields and response_view were sent on one request — they are mutually exclusive however either is valued",
+        "Use response_view=slim for the canonical compact summary, or fields= for a custom subset; each works alone",
+        "Neither parameter's projection ran; the request changed nothing"
+      ]
+    }
+  end
+
   # Validation errors (used by TaskJSON.error/1)
   def get_docs(:validation_error, opts) do
     field_errors = Keyword.get(opts, :fields, [])

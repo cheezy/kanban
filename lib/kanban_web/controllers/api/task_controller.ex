@@ -10,6 +10,7 @@ defmodule KanbanWeb.API.TaskController do
   alias KanbanWeb.API.CompletionResultGate
   alias KanbanWeb.API.ErrorDocs
   alias KanbanWeb.API.TaskErrors
+  alias KanbanWeb.API.TaskFieldsProjection
   alias KanbanWeb.API.TaskJSON
   alias KanbanWeb.API.TaskParamFilter
 
@@ -66,13 +67,72 @@ defmodule KanbanWeb.API.TaskController do
     render(conn, :index, tasks: tasks, response_view: view)
   end
 
+  # W2076: fields resolution runs before the task is fetched — validation is
+  # pure, so the reject path never touches task data and cannot become an
+  # existence oracle. The success path keeps the identical board-scoped
+  # fetch_and_verify_task/2 the unprojected show has always used.
   def show(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
 
+    case TaskFieldsProjection.resolve(params) do
+      {:ok, fields} -> show_task(conn, id_or_identifier, board, params, fields)
+      {:error, :mutually_exclusive} -> reject_fields_response_view_conflict(conn)
+      {:error, {:unknown_fields, unknown}} -> reject_unknown_fields(conn, unknown)
+    end
+  end
+
+  defp show_task(conn, id_or_identifier, board, params, fields) do
     case fetch_and_verify_task(id_or_identifier, board) do
-      {:ok, task} -> render(conn, :show, task: task, response_view: view_for(params))
+      {:ok, task} -> render_show(conn, task, params, fields)
       error -> TaskErrors.handle_task_error(conn, error)
     end
+  end
+
+  # nil fields = no projection requested: the legacy render, byte-identical
+  # to the pre-W2076 path. A validated fields list renders the projection
+  # and deliberately threads no response_view assign — the two are mutually
+  # exclusive at resolve/1.
+  defp render_show(conn, task, params, nil) do
+    render(conn, :show, task: task, response_view: view_for(params))
+  end
+
+  defp render_show(conn, task, _params, fields) do
+    render(conn, :show, task: task, fields: fields)
+  end
+
+  defp reject_unknown_fields(conn, unknown) do
+    body =
+      ErrorDocs.add_docs_to_error(
+        %{
+          error: "task fields rejected",
+          failures: [
+            %{
+              field: "fields",
+              errors:
+                Enum.map(unknown, fn name ->
+                  %{field: name, message: TaskFieldsProjection.unknown_field_message(name)}
+                end)
+            }
+          ]
+        },
+        :show_unknown_fields
+      )
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(body)
+  end
+
+  defp reject_fields_response_view_conflict(conn) do
+    body =
+      ErrorDocs.add_docs_to_error(
+        %{error: "fields and response_view are mutually exclusive; send only one"},
+        :show_fields_response_view_conflict
+      )
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(body)
   end
 
   def create(conn, %{"data" => _data}) do
