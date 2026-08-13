@@ -25,11 +25,9 @@ defmodule KanbanWeb.TaskLive.Components.WorkflowStepsSection do
             <span class="text-xs">
               {workflow_step_status_label(step)}
             </span>
-            <%= if is_integer(step["duration_ms"]) do %>
-              <span class="text-xs opacity-70">
-                {gettext("%{ms} ms", ms: step["duration_ms"])}
-              </span>
-            <% end %>
+            <span :if={duration_text(step)} class="text-xs opacity-70">
+              {duration_text(step)}
+            </span>
             <%= if is_binary(step["reason_code"]) && step["reason_code"] != "" do %>
               <span class="text-xs font-mono border border-current rounded px-1.5 py-0.5 opacity-80">
                 {step["reason_code"]}
@@ -46,6 +44,26 @@ defmodule KanbanWeb.TaskLive.Components.WorkflowStepsSection do
     </div>
     """
   end
+
+  # `after_doing` fires as PreToolUse of the completion request whose body
+  # already carries `after_doing_result`, and `before_review` as that same
+  # request's PostToolUse — so neither duration exists when the payload is
+  # serialised, and both arrive as a permanent `0` (D242). A literal "0 ms" is
+  # indistinguishable from a genuine near-instant run, so render an em dash for
+  # a figure that is structurally unknowable rather than reporting a measurement
+  # that was never taken.
+  @unmeasurable_steps ~w(after_doing before_review)
+
+  # Only the `0` placeholder is rewritten. A non-zero figure on these steps
+  # still renders normally, so this stays correct if a later change ever gives
+  # them a real destination.
+  defp duration_text(%{"name" => name, "duration_ms" => 0}) when name in @unmeasurable_steps,
+    do: "—"
+
+  defp duration_text(%{"duration_ms" => ms}) when is_integer(ms),
+    do: gettext("%{ms} ms", ms: ms)
+
+  defp duration_text(_step), do: nil
 
   defp workflow_step_status_label(%{} = step) do
     skipped = step["skipped"]

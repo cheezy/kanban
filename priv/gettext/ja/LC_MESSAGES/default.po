@@ -2704,7 +2704,7 @@ msgid "Only goals can be promoted"
 msgstr "プロモートできるのはゴールのみです"
 
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:111
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:30
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:64
 #, elixir-autogen, elixir-format
 msgid "%{ms} ms"
 msgstr "%{ms} ミリ秒"
@@ -2716,25 +2716,25 @@ msgstr "(名前のない手順)"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:62
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:72
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:73
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:91
 #, elixir-autogen, elixir-format
 msgid "Dispatched"
 msgstr "ディスパッチ済み"
 
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:71
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:62
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:80
 #, elixir-autogen, elixir-format
 msgid "Not dispatched"
 msgstr "未ディスパッチ"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:189
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:35
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:40
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:38
 #, elixir-autogen, elixir-format
 msgid "Reason"
 msgstr "理由"
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:59
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:77
 #, elixir-autogen, elixir-format
 msgid "Skipped"
 msgstr "スキップ"
@@ -2744,7 +2744,7 @@ msgstr "スキップ"
 msgid "Workflow Steps"
 msgstr "ワークフロー手順"
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:70
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:88
 #, elixir-autogen, elixir-format
 msgid "exit %{code}"
 msgstr "終了 %{code}"

@@ -2704,7 +2704,7 @@ msgid "Only goals can be promoted"
 msgstr "只有目标可以被提升"
 
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:111
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:30
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:64
 #, elixir-autogen, elixir-format
 msgid "%{ms} ms"
 msgstr "%{ms} 毫秒"
@@ -2716,25 +2716,25 @@ msgstr "(未命名步骤)"
 
 #: lib/kanban_web/live/metrics_live/compliance.html.heex:62
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:72
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:73
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:91
 #, elixir-autogen, elixir-format
 msgid "Dispatched"
 msgstr "已派发"
 
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:71
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:62
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:80
 #, elixir-autogen, elixir-format
 msgid "Not dispatched"
 msgstr "未派发"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:189
 #: lib/kanban_web/live/task_live/components/explorer_result_section.ex:35
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:40
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:38
 #, elixir-autogen, elixir-format
 msgid "Reason"
 msgstr "原因"
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:59
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:77
 #, elixir-autogen, elixir-format
 msgid "Skipped"
 msgstr "已跳过"
@@ -2744,7 +2744,7 @@ msgstr "已跳过"
 msgid "Workflow Steps"
 msgstr "工作流步骤"
 
-#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:70
+#: lib/kanban_web/live/task_live/components/workflow_steps_section.ex:88
 #, elixir-autogen, elixir-format
 msgid "exit %{code}"
 msgstr "退出 %{code}"
