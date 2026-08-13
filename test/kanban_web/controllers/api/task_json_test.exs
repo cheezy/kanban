@@ -244,6 +244,32 @@ defmodule KanbanWeb.API.TaskJSONTest do
       assert TaskJSON.index(%{tasks: [], response_view: :slim}) == %{data: []}
     end
 
+    test "the slim show reuses the canonical summary renderer", %{children: [task | _]} do
+      assert TaskJSON.show(%{task: task, response_view: :slim}) ==
+               %{data: TaskJSON.render_task_summary(task)}
+    end
+
+    # Same clause-order hazard as index/1 and tree/1 above: the bare
+    # %{task: task} show clause matches a :slim-carrying superset too, so the
+    # slim clause only fires because it is written first (W2074).
+    test "the slim show clause still wins on a production-shaped assigns map", %{
+      children: [task | _]
+    } do
+      assigns = %{
+        task: task,
+        response_view: :slim,
+        conn: :ignored,
+        current_board: :ignored,
+        current_user: :ignored
+      }
+
+      assert TaskJSON.show(assigns) == %{data: TaskJSON.render_task_summary(task)}
+    end
+
+    test "the full show render is unchanged by an explicit full view", %{children: [task | _]} do
+      assert TaskJSON.show(%{task: task}) == TaskJSON.show(%{task: task, response_view: :full})
+    end
+
     test "the slim tree slims children but keeps a full root and untouched counts", %{tree: tree} do
       full = TaskJSON.tree(%{tree: tree})
       slim = TaskJSON.tree(%{tree: tree, response_view: :slim})

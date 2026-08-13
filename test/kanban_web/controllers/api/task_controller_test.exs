@@ -1450,19 +1450,69 @@ defmodule KanbanWeb.API.TaskControllerTest do
       %{task: task}
     end
 
-    test "response_view does not slim GET /api/tasks/:id in either direction", %{
+    test "response_view=slim returns the canonical summary row (W2074)", %{
       conn: conn,
       task: task
     } do
-      full = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)
-      slim = json_response(get(conn, ~p"/api/tasks/#{task.id}?response_view=slim"), 200)
+      response = json_response(get(conn, ~p"/api/tasks/#{task.id}?response_view=slim"), 200)
 
-      assert slim == full
+      assert response["data"] |> Map.keys() |> Enum.sort() ==
+               ~w(complexity created_by_agent dependencies id identifier priority status title)
+
+      assert response["data"]["id"] == task.id
+      assert response["data"]["identifier"] == task.identifier
+      assert response["data"]["title"] == "Detailed Task"
+    end
+
+    test "an absent response_view returns the full body unchanged", %{conn: conn, task: task} do
+      response = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)
 
       for field <- ~w(description key_files reviewer_result acceptance_criteria) do
-        assert Map.has_key?(slim["data"], field),
-               "GET /api/tasks/:id must stay full-fidelity under response_view=slim"
+        assert Map.has_key?(response["data"], field),
+               "GET /api/tasks/:id without response_view must keep the full body"
       end
+
+      assert response["data"]["description"] == "Full details"
+    end
+
+    test "an unrecognized response_view value falls back to the full body", %{
+      conn: conn,
+      task: task
+    } do
+      absent = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)
+
+      for value <- ["compact", "SLIM", "full", ""] do
+        response =
+          json_response(get(conn, ~p"/api/tasks/#{task.id}?response_view=#{value}"), 200)
+
+        assert response == absent,
+               "response_view=#{value} must fall back to the same full body as the default"
+      end
+    end
+
+    test "response_view=slim works when fetching by identifier string", %{
+      conn: conn,
+      task: task
+    } do
+      response =
+        json_response(get(conn, ~p"/api/tasks/#{task.identifier}?response_view=slim"), 200)
+
+      assert response["data"]["id"] == task.id
+
+      assert response["data"] |> Map.keys() |> Enum.sort() ==
+               ~w(complexity created_by_agent dependencies id identifier priority status title)
+    end
+
+    test "a task fetched slim is intact when subsequently fetched full", %{
+      conn: conn,
+      task: task
+    } do
+      before_slim = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)
+      _slim = json_response(get(conn, ~p"/api/tasks/#{task.id}?response_view=slim"), 200)
+      after_slim = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)
+
+      assert after_slim == before_slim
+      assert after_slim["data"]["description"] == "Full details"
     end
 
     test "returns single task with all associations", %{conn: conn, task: task} do
@@ -7181,7 +7231,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert_raise ArgumentError, fn -> String.to_existing_atom(value) end
     end
 
-    test "a request carrying response_view=slim behaves exactly as today", %{
+    test "GET /api/tasks/:id consumes the resolution (W2074)", %{
       conn: conn,
       column: column
     } do
@@ -7193,8 +7243,13 @@ defmodule KanbanWeb.API.TaskControllerTest do
       full = json_response(get(conn, ~p"/api/tasks/#{id}"), 200)
       slim = json_response(get(conn, ~p"/api/tasks/#{id}?response_view=slim"), 200)
 
-      # No endpoint consumes the resolution yet, so the gate is inert.
-      assert slim == full
+      # W2054 left the gate inert here; W2074 wired show/2 into it.
+      refute slim == full
+
+      assert slim["data"] |> Map.keys() |> Enum.sort() ==
+               ~w(complexity created_by_agent dependencies id identifier priority status title)
+
+      assert Map.has_key?(full["data"], "description")
     end
 
     test "the param is inert on an endpoint that does not consume it", %{

@@ -66,11 +66,11 @@ defmodule KanbanWeb.API.TaskController do
     render(conn, :index, tasks: tasks, response_view: view)
   end
 
-  def show(conn, %{"id" => id_or_identifier}) do
+  def show(conn, %{"id" => id_or_identifier} = params) do
     board = conn.assigns.current_board
 
     case fetch_and_verify_task(id_or_identifier, board) do
-      {:ok, task} -> render(conn, :show, task: task)
+      {:ok, task} -> render(conn, :show, task: task, response_view: view_for(params))
       error -> TaskErrors.handle_task_error(conn, error)
     end
   end

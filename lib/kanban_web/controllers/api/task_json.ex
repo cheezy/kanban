@@ -24,6 +24,21 @@ defmodule KanbanWeb.API.TaskJSON do
     %{data: for(task <- tasks, do: data(task))}
   end
 
+  @doc """
+  Single-task view. Under `response_view=slim` (W2074) the task renders as the
+  same canonical compact summary the index and tree endpoints serve, because
+  the full render — `review_report` included — is tens of KB and the single
+  most expensive artifact a dispatcher session reads.
+
+  Clause order is load-bearing for the same reason spelled out on `index/1`:
+  the bare `%{task: task}` clause would match a `:slim`-carrying assigns map
+  just as happily, so the slim clause must come first. The `hook`/`hooks`
+  clauses serve claim/complete responses, which never thread `response_view`.
+  """
+  def show(%{task: task, response_view: :slim}) do
+    %{data: render_task_summary(task)}
+  end
+
   def show(%{task: task, hook: hook} = assigns) do
     %{data: data(task), hook: hook}
     |> maybe_add_skills_version(assigns)
