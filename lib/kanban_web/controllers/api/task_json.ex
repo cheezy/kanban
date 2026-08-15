@@ -186,22 +186,36 @@ defmodule KanbanWeb.API.TaskJSON do
   than through `render/3`. `KanbanWeb.API.TaskController.render_task_summary/1`
   delegates here so that `KanbanWeb.API.BatchGoalCreation`, which calls it by
   that name, keeps resolving unchanged.
+
+  (W2092) `type`, `parent_id`, and `claim_expires_at` are deliberate additions:
+  they are the workflow-critical state the 11-step agent loop reads (goal
+  detection, goal completion, claim-expiry monitoring) that agents previously
+  could not get from any summary row. `needs_review` and `review_status` are
+  just as deliberately **omitted**: the W2058 review-field presence guard keeps
+  every review-scoped field out of the summary shape, and the sanctioned path
+  for those two is the `fields=` projection (both are allow-listed below —
+  `fields=status,needs_review` is the documented review-gate read), or a full
+  fetch on a server predating W2076.
   """
   def render_task_summary(task) do
     %{
       id: task.id,
       identifier: task.identifier,
       title: task.title,
+      type: task.type,
       status: task.status,
       priority: task.priority,
       complexity: task.complexity,
       dependencies: task.dependencies || [],
-      created_by_agent: task.created_by_agent
+      created_by_agent: task.created_by_agent,
+      parent_id: task.parent_id,
+      claim_expires_at: task.claim_expires_at
     }
   end
 
-  @projectable_field_names ~w(id identifier title status priority complexity
-                              dependencies created_by_agent needs_review
+  @projectable_field_names ~w(id identifier title type status priority complexity
+                              dependencies created_by_agent parent_id
+                              claim_expires_at needs_review
                               review_status review_notes review_report
                               workflow_steps explorer_result reviewer_result
                               reviewed_at reviewed_by_id completed_at
@@ -225,7 +239,7 @@ defmodule KanbanWeb.API.TaskJSON do
   # uses — except dependencies, which takes render_task_summary/1's
   # `|| []` normalisation so the summary-8 subset of a projection stays
   # byte-identical to response_view=slim. Like data/1 above, it is one flat
-  # literal map — ABC size counts its 24 field reads, but there is no logic
+  # literal map — ABC size counts its 27 field reads, but there is no logic
   # to extract.
   # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   defp projectable_data(%Task{} = task) do
@@ -233,11 +247,14 @@ defmodule KanbanWeb.API.TaskJSON do
       "id" => task.id,
       "identifier" => task.identifier,
       "title" => task.title,
+      "type" => task.type,
       "status" => task.status,
       "priority" => task.priority,
       "complexity" => task.complexity,
       "dependencies" => task.dependencies || [],
       "created_by_agent" => task.created_by_agent,
+      "parent_id" => task.parent_id,
+      "claim_expires_at" => task.claim_expires_at,
       "needs_review" => task.needs_review,
       "review_status" => task.review_status,
       "review_notes" => task.review_notes,

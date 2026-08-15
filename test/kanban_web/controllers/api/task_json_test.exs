@@ -115,20 +115,23 @@ defmodule KanbanWeb.API.TaskJSONTest do
   end
 
   describe "render_task_summary/1 — canonical summary shape (W2055)" do
-    test "renders exactly the eight summary keys and nothing wider", %{column: column} do
+    test "renders exactly the eleven summary keys and nothing wider", %{column: column} do
       {:ok, task} = Tasks.create_task(column, %{"title" => "Summary shape task"})
 
       summary = TaskJSON.render_task_summary(task)
 
       assert summary |> Map.keys() |> Enum.sort() == [
+               :claim_expires_at,
                :complexity,
                :created_by_agent,
                :dependencies,
                :id,
                :identifier,
+               :parent_id,
                :priority,
                :status,
-               :title
+               :title,
+               :type
              ]
 
       # The summary is deliberately narrower than data/1. These three are
@@ -136,6 +139,11 @@ defmodule KanbanWeb.API.TaskJSONTest do
       refute Map.has_key?(summary, :description)
       refute Map.has_key?(summary, :key_files)
       refute Map.has_key?(summary, :reviewer_result)
+
+      # (W2092) The two review-gate fields stay out on purpose — the W2058
+      # presence guard owns that invariant; the fields= projection serves them.
+      refute Map.has_key?(summary, :needs_review)
+      refute Map.has_key?(summary, :review_status)
     end
 
     test "passes every field through verbatim", %{column: column} do

@@ -1374,7 +1374,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       for row <- response["data"] do
         assert row |> Map.keys() |> Enum.sort() ==
-                 ~w(complexity created_by_agent dependencies id identifier priority status title)
+                 ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
 
         refute Map.has_key?(row, "description")
         refute Map.has_key?(row, "key_files")
@@ -1420,7 +1420,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       for row <- response["data"] do
         assert row |> Map.keys() |> Enum.sort() ==
-                 ~w(complexity created_by_agent dependencies id identifier priority status title)
+                 ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
       end
     end
 
@@ -1457,7 +1457,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       response = json_response(get(conn, ~p"/api/tasks/#{task.id}?response_view=slim"), 200)
 
       assert response["data"] |> Map.keys() |> Enum.sort() ==
-               ~w(complexity created_by_agent dependencies id identifier priority status title)
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
 
       assert response["data"]["id"] == task.id
       assert response["data"]["identifier"] == task.identifier
@@ -1500,7 +1500,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["data"]["id"] == task.id
 
       assert response["data"] |> Map.keys() |> Enum.sort() ==
-               ~w(complexity created_by_agent dependencies id identifier priority status title)
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
     end
 
     test "a task fetched slim is intact when subsequently fetched full", %{
@@ -1513,6 +1513,93 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       assert after_slim == before_slim
       assert after_slim["data"]["description"] == "Full details"
+    end
+
+    test "slim show of an in_progress task renders the canonical keys only (W2092)", %{
+      conn: conn,
+      column: column,
+      user: user
+    } do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Claimed slim task"})
+
+      expires = DateTime.utc_now(:second) |> DateTime.add(3600, :second)
+
+      {:ok, task} =
+        task
+        |> Ecto.Changeset.change(
+          status: :in_progress,
+          claimed_at: DateTime.utc_now(:second),
+          claim_expires_at: expires,
+          assigned_to_id: user.id
+        )
+        |> Kanban.Repo.update()
+
+      response = json_response(get(conn, ~p"/api/tasks/#{task.id}?response_view=slim"), 200)
+
+      assert response["data"] |> Map.keys() |> Enum.sort() ==
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
+
+      assert response["data"]["status"] == "in_progress"
+      assert response["data"]["claim_expires_at"] == DateTime.to_iso8601(expires)
+      refute Map.has_key?(response["data"], "claimed_at")
+
+      # The claimed task stays fully intact when subsequently fetched full
+      # (the W2060 persistence approach, on a claimed record).
+      full = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)
+      assert full["data"]["status"] == "in_progress"
+      assert full["data"]["claimed_at"] != nil
+      assert full["data"]["claim_expires_at"] == DateTime.to_iso8601(expires)
+      assert full["data"]["assigned_to_id"] == user.id
+    end
+
+    test "slim show of an in-review task renders the canonical keys only (W2092)", %{
+      conn: conn,
+      column: column,
+      user: user
+    } do
+      # "In review" is status: :completed with review_status set and
+      # reviewed_at nil — the status enum has no :review value.
+      task = finished_task(column, user)
+      assert task.review_status == :pending
+      assert task.reviewed_at == nil
+
+      response = json_response(get(conn, ~p"/api/tasks/#{task.id}?response_view=slim"), 200)
+
+      assert response["data"] |> Map.keys() |> Enum.sort() ==
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
+
+      # (W2092) The review-gate fields are deliberately absent from the
+      # summary (W2058 presence guard); the fields= projection serves them.
+      refute Map.has_key?(response["data"], "review_status")
+      refute Map.has_key?(response["data"], "needs_review")
+    end
+
+    test "slim show of a goal carries type, and a child carries parent_id (W2092)", %{
+      conn: conn,
+      column: column,
+      user: user
+    } do
+      {:ok, goal} =
+        Tasks.create_task(column, %{
+          "title" => "Slim goal",
+          "type" => "goal",
+          "created_by_id" => user.id
+        })
+
+      {:ok, child} =
+        Tasks.create_task(column, %{
+          "title" => "Slim goal child",
+          "created_by_id" => user.id,
+          "parent_id" => goal.id
+        })
+
+      goal_row = json_response(get(conn, ~p"/api/tasks/#{goal.id}?response_view=slim"), 200)
+      child_row = json_response(get(conn, ~p"/api/tasks/#{child.id}?response_view=slim"), 200)
+
+      assert goal_row["data"]["type"] == "goal"
+      assert goal_row["data"]["parent_id"] == nil
+      assert child_row["data"]["type"] == "work"
+      assert child_row["data"]["parent_id"] == goal.id
     end
 
     test "returns single task with all associations", %{conn: conn, task: task} do
@@ -2557,7 +2644,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       response = json_response(get(conn, ~p"/api/tasks/next?response_view=slim"), 200)
 
       assert response["data"] |> Map.keys() |> Enum.sort() ==
-               ~w(complexity created_by_agent dependencies id identifier priority status title)
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
 
       assert response["data"]["id"] == task.id
       assert response["data"]["title"] == "Slim Next Task"
@@ -2879,7 +2966,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
                "allow-listed #{name} must already be served by the full show response"
       end
 
-      assert length(names) == 24
+      assert length(names) == 27
     end
 
     test "a projection works when fetching by identifier string", %{conn: conn, task: task} do
@@ -6116,6 +6203,27 @@ defmodule KanbanWeb.API.TaskControllerTest do
   end
 
   describe "GET /api/tasks/:id/dependencies" do
+    test "every node renders the canonical widened summary keys (W2092)", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, dep_task} = Tasks.create_task(column, %{"title" => "Dependency"})
+
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Task",
+          "dependencies" => [dep_task.identifier]
+        })
+
+      response = json_response(get(conn, ~p"/api/tasks/#{task.id}/dependencies"), 200)
+
+      assert response["task"] |> Map.keys() |> Enum.sort() ==
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
+
+      assert hd(response["dependencies"])["task"] |> Map.keys() |> Enum.sort() ==
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
+    end
+
     test "returns dependency tree for task without dependencies", %{conn: conn, column: column} do
       {:ok, task} =
         Tasks.create_task(column, %{
@@ -6222,6 +6330,27 @@ defmodule KanbanWeb.API.TaskControllerTest do
   end
 
   describe "GET /api/tasks/:id/dependents" do
+    test "dependent rows render the canonical widened summary keys (W2092)", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Task"})
+
+      {:ok, _dependent} =
+        Tasks.create_task(column, %{
+          "title" => "Dependent",
+          "dependencies" => [task.identifier]
+        })
+
+      response = json_response(get(conn, ~p"/api/tasks/#{task.id}/dependents"), 200)
+
+      assert response["task"] |> Map.keys() |> Enum.sort() ==
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
+
+      assert hd(response["dependents"]) |> Map.keys() |> Enum.sort() ==
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
+    end
+
     test "returns empty list for task without dependents", %{conn: conn, column: column} do
       {:ok, task} =
         Tasks.create_task(column, %{
@@ -6655,7 +6784,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       for child <- response["data"]["children"] do
         assert child |> Map.keys() |> Enum.sort() ==
-                 ~w(complexity created_by_agent dependencies id identifier priority status title)
+                 ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
       end
     end
 
@@ -7633,7 +7762,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       refute slim == full
 
       assert slim["data"] |> Map.keys() |> Enum.sort() ==
-               ~w(complexity created_by_agent dependencies id identifier priority status title)
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
 
       assert Map.has_key?(full["data"], "description")
     end
@@ -7659,7 +7788,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       refute slim == full
 
       assert slim["data"] |> Map.keys() |> Enum.sort() ==
-               ~w(complexity created_by_agent dependencies id identifier priority status title)
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
 
       assert Map.has_key?(full["data"], "description")
     end
