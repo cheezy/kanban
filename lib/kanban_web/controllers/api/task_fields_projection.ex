@@ -35,36 +35,52 @@ defmodule KanbanWeb.API.TaskFieldsProjection do
 
   Returns:
 
-    * `{:ok, nil}` — no projection requested (absent, blank, or non-binary
-      `fields`); the caller falls through to `view_for/1` resolution.
+    * `{:ok, nil}` — no projection requested (absent or blank `fields`);
+      the caller falls through to `view_for/1` resolution.
     * `{:ok, fields}` — a validated list of field names to project,
       always led by `id` and `identifier` so responses stay
       self-describing.
     * `{:error, :mutually_exclusive}` — both `fields` and `response_view`
       were sent.
+    * `{:error, :invalid_shape}` — `fields` was present but not a scalar
+      string (`?fields[]=x`, `?fields[key]=x`).
     * `{:error, {:unknown_fields, names}}` — every requested name not on
       the allow-list, in request order.
   """
   @spec resolve(map()) ::
           {:ok, [String.t()] | nil}
           | {:error, :mutually_exclusive}
+          | {:error, :invalid_shape}
           | {:error, {:unknown_fields, [String.t()]}}
   def resolve(params) do
     cond do
       Map.has_key?(params, "fields") and Map.has_key?(params, "response_view") ->
         {:error, :mutually_exclusive}
 
-      not is_binary(params["fields"]) ->
-        # A missing key, or an exotic shape such as ?fields[]=x, falls back
-        # to the full response — the same lenient stance view_for/1 takes
-        # for unrecognised response_view values.
+      not Map.has_key?(params, "fields") ->
         {:ok, nil}
+
+      not is_binary(params["fields"]) ->
+        # (W2094) A present-but-non-scalar shape such as ?fields[]=x or
+        # ?fields[key]=x is a malformed projection request, not the absence
+        # of one. It used to fall back to the FULL body — a client-side
+        # encoding bug then yields maximum data, inverting the projection's
+        # data-minimization intent — so it now rejects like unknown names do.
+        {:error, :invalid_shape}
 
       true ->
         params["fields"]
         |> parse_names()
         |> validate_names()
     end
+  end
+
+  @doc """
+  The rejection message for a non-scalar `fields` shape (W2094).
+  """
+  @spec invalid_shape_message() :: String.t()
+  def invalid_shape_message do
+    "fields must be a single comma-separated string (for example fields=status,needs_review) — array or map shapes like fields[]=x are not accepted"
   end
 
   @doc """

@@ -299,6 +299,21 @@ defmodule KanbanWeb.API.ErrorDocs do
     }
   end
 
+  # (W2094) A GET /api/tasks/:id?fields[]=x or ?fields[key]=x — the fields
+  # parameter was present but not a scalar string. Rejected rather than
+  # silently serving the full body, so a client encoding bug never yields
+  # maximum data.
+  def get_docs(:show_invalid_fields_shape, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/api/get_tasks_id.md",
+      common_causes: [
+        "The client encoded fields as an array (fields[]=a&fields[]=b) — send one comma-separated string instead: fields=a,b",
+        "The client encoded fields as a map (fields[key]=x) — the parameter takes a single scalar string",
+        "No projection ran and no data was returned; re-send with fields=<comma-separated names>"
+      ]
+    }
+  end
+
   # (W2076) fields and response_view on the same request. Presence-based:
   # either parameter alone works, together they are refused before any
   # parsing, so there is no precedence rule to learn.
@@ -306,7 +321,7 @@ defmodule KanbanWeb.API.ErrorDocs do
     %{
       documentation: "#{@docs_base_url}/api/get_tasks_id.md",
       common_causes: [
-        "Both fields and response_view were sent on one request — they are mutually exclusive however either is valued",
+        "Both fields and response_view were sent on one request — they are mutually exclusive whatever their values",
         "Use response_view=slim for the canonical compact summary, or fields= for a custom subset; each works alone",
         "Neither parameter's projection ran; the request changed nothing"
       ]

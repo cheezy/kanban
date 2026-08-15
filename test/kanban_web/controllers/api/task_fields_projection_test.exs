@@ -15,9 +15,23 @@ defmodule KanbanWeb.API.TaskFieldsProjectionTest do
       assert TaskFieldsProjection.resolve(%{"fields" => ",, ,"}) == {:ok, nil}
     end
 
-    test "returns {:ok, nil} for a non-binary fields shape" do
-      assert TaskFieldsProjection.resolve(%{"fields" => ["title"]}) == {:ok, nil}
-      assert TaskFieldsProjection.resolve(%{"fields" => %{"x" => "title"}}) == {:ok, nil}
+    test "rejects a present-but-non-binary fields shape (W2094)" do
+      assert TaskFieldsProjection.resolve(%{"fields" => ["title"]}) == {:error, :invalid_shape}
+
+      assert TaskFieldsProjection.resolve(%{"fields" => %{"x" => "title"}}) ==
+               {:error, :invalid_shape}
+    end
+
+    test "mutual exclusion still wins over the shape check (W2094)" do
+      assert TaskFieldsProjection.resolve(%{"fields" => ["title"], "response_view" => "slim"}) ==
+               {:error, :mutually_exclusive}
+    end
+
+    test "trimming is Unicode-wide, by design (W2094)" do
+      # String.trim/1 strips any Unicode whitespace — NBSP and tab included —
+      # so programmatically-generated names with exotic padding still resolve.
+      assert TaskFieldsProjection.resolve(%{"fields" => " title ,\tstatus\t"}) ==
+               {:ok, ~w(id identifier title status)}
     end
 
     test "always leads with id and identifier, without duplicating them" do

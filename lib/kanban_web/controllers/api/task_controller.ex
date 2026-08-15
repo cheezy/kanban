@@ -77,6 +77,7 @@ defmodule KanbanWeb.API.TaskController do
     case TaskFieldsProjection.resolve(params) do
       {:ok, fields} -> show_task(conn, id_or_identifier, board, params, fields)
       {:error, :mutually_exclusive} -> reject_fields_response_view_conflict(conn)
+      {:error, :invalid_shape} -> reject_invalid_fields_shape(conn)
       {:error, {:unknown_fields, unknown}} -> reject_unknown_fields(conn, unknown)
     end
   end
@@ -100,7 +101,47 @@ defmodule KanbanWeb.API.TaskController do
     render(conn, :show, task: task, fields: fields)
   end
 
+  # (W2094) The echo is capped: every name is still counted, but at most
+  # @unknown_fields_echo_cap are reflected back. Uncapped, 1,000 unknown
+  # names produced a ~93KB response from a ~7KB request — a ~13x reflected
+  # amplification of attacker-influenced text.
+  @unknown_fields_echo_cap 10
+
   defp reject_unknown_fields(conn, unknown) do
+    echoed = Enum.take(unknown, @unknown_fields_echo_cap)
+    omitted = length(unknown) - length(echoed)
+
+    errors =
+      Enum.map(echoed, fn name ->
+        %{field: name, message: TaskFieldsProjection.unknown_field_message(name)}
+      end)
+
+    errors =
+      if omitted > 0 do
+        errors ++
+          [
+            %{
+              field: "fields",
+              message:
+                "…and #{omitted} more unknown name(s) — the echo is capped at #{@unknown_fields_echo_cap}; the request named #{length(unknown)} distinct unknown fields in total"
+            }
+          ]
+      else
+        errors
+      end
+
+    body =
+      ErrorDocs.add_docs_to_error(
+        %{error: "task fields rejected", failures: [%{field: "fields", errors: errors}]},
+        :show_unknown_fields
+      )
+
+    conn
+    |> put_status(:unprocessable_entity)
+    |> json(body)
+  end
+
+  defp reject_invalid_fields_shape(conn) do
     body =
       ErrorDocs.add_docs_to_error(
         %{
@@ -108,14 +149,13 @@ defmodule KanbanWeb.API.TaskController do
           failures: [
             %{
               field: "fields",
-              errors:
-                Enum.map(unknown, fn name ->
-                  %{field: name, message: TaskFieldsProjection.unknown_field_message(name)}
-                end)
+              errors: [
+                %{field: "fields", message: TaskFieldsProjection.invalid_shape_message()}
+              ]
             }
           ]
         },
-        :show_unknown_fields
+        :show_invalid_fields_shape
       )
 
     conn

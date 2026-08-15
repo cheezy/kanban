@@ -117,6 +117,59 @@ Task not found:
 | `updated_at` | string | When task was last updated (ISO 8601) |
 | `completed_at` | string | When task was completed (null if not completed) |
 
+## Fields Projection (W2076/W2094)
+
+`GET /api/tasks/:id?fields=<comma-separated names>` returns only the named
+fields instead of the full body. The contract:
+
+- **Allow-list.** Only the summary and review/completion field names are
+  projectable — these 27 names (source of truth:
+  `KanbanWeb.API.TaskJSON.projectable_field_names/0`):
+  `id`, `identifier`, `title`, `type`, `status`, `priority`, `complexity`,
+  `dependencies`, `created_by_agent`, `parent_id`, `claim_expires_at`,
+  `needs_review`, `review_status`, `review_notes`, `review_report`,
+  `workflow_steps`, `explorer_result`, `reviewer_result`, `reviewed_at`,
+  `reviewed_by_id`, `completed_at`, `completed_by_id`, `completed_by_agent`,
+  `completion_summary`, `completion_notes`, `actual_complexity`,
+  `actual_files_changed`.
+  Naming anything else rejects the WHOLE request with a 422
+  (`"task fields rejected"`); no partial projection is returned.
+- **`id` and `identifier` are always included**, even when not requested, so
+  responses stay self-describing. `fields=status` returns `id`, `identifier`,
+  and `status`.
+- **One scalar string only (W2094).** Array or map shapes — `fields[]=x`,
+  `fields[key]=x` — are rejected with a 422 rather than silently serving the
+  full body, so a client-side encoding bug never yields maximum data.
+- **Repeated `fields` params last-win (W2094).** `?fields=title&fields=status`
+  keeps only `status` (standard Plug semantics); the earlier value is dropped
+  with no signal. Send one comma-separated string.
+- **The unknown-name echo is capped at 10 (W2094).** A 422 lists at most the
+  first 10 unknown names plus a final entry carrying the total count, bounding
+  reflected amplification.
+- **Whitespace trimming is Unicode-wide (W2094).** Names are split on commas
+  and trimmed with `String.trim/1`, which strips any Unicode whitespace (NBSP
+  and tab included) — relevant if clients generate names programmatically.
+- **Mutually exclusive with `response_view`.** Sending both parameters on one
+  request — whatever their values — is a 422; each works alone.
+
+### Rejected (422)
+
+```json
+{
+  "error": "task fields rejected",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/get_tasks_id.md",
+  "failures": [
+    {
+      "field": "fields",
+      "errors": [
+        {"field": "column_id", "message": "column_id is not in the allow-listed fields for GET /api/tasks/:id"}
+      ]
+    }
+  ],
+  "common_causes": ["..."]
+}
+```
+
 ## Example Usage
 
 ### Get task by numeric ID

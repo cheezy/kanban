@@ -3146,6 +3146,98 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert projected["dependencies"] == []
       assert full["dependencies"] == nil
     end
+
+    test "an array-shaped fields param is rejected, never served the full body (W2094)", %{
+      conn: conn,
+      task: task
+    } do
+      response = json_response(get(conn, "/api/tasks/#{task.id}?fields[]=title"), 422)
+
+      assert response["error"] == "task fields rejected"
+      [%{"field" => "fields", "errors" => [error]}] = response["failures"]
+      assert error["message"] =~ "single comma-separated string"
+      refute Map.has_key?(response, "data")
+
+      map_shape = json_response(get(conn, "/api/tasks/#{task.id}?fields[key]=title"), 422)
+      assert map_shape["error"] == "task fields rejected"
+    end
+
+    test "repeated scalar fields params last-win per Plug semantics (W2094)", %{
+      conn: conn,
+      task: task
+    } do
+      response =
+        json_response(get(conn, "/api/tasks/#{task.id}?fields=title&fields=status"), 200)
+
+      # Documented contract: Plug keeps the LAST scalar value; the earlier
+      # one is dropped with no signal. id/identifier are always present.
+      assert response["data"] |> Map.keys() |> Enum.sort() == ~w(id identifier status)
+
+      mixed = json_response(get(conn, "/api/tasks/#{task.id}?fields=bogus&fields=title"), 200)
+      assert mixed["data"] |> Map.keys() |> Enum.sort() == ~w(id identifier title)
+    end
+
+    test "the unknown-name echo is capped at 10 with a count (W2094)", %{conn: conn, task: task} do
+      unknowns = Enum.map(1..25, &"nope#{&1}") |> Enum.join(",")
+      response = json_response(get(conn, "/api/tasks/#{task.id}?fields=#{unknowns}"), 422)
+
+      [%{"field" => "fields", "errors" => errors}] = response["failures"]
+
+      # 10 echoed names plus the one capped-summary entry.
+      assert length(errors) == 11
+      assert Enum.at(errors, 0)["field"] == "nope1"
+      assert Enum.at(errors, 9)["field"] == "nope10"
+      summary = List.last(errors)
+      assert summary["field"] == "fields"
+      assert summary["message"] =~ "15 more unknown name(s)"
+      assert summary["message"] =~ "25 distinct unknown fields in total"
+    end
+
+    test "an unknown list at or under the cap is echoed in full (W2094)", %{
+      conn: conn,
+      task: task
+    } do
+      response = json_response(get(conn, "/api/tasks/#{task.id}?fields=a1,a2,a3"), 422)
+
+      [%{"field" => "fields", "errors" => errors}] = response["failures"]
+      assert length(errors) == 3
+      assert Enum.map(errors, & &1["field"]) == ~w(a1 a2 a3)
+    end
+
+    test "projection round-trips multi-KB JSONB review fields (W2094)", %{
+      conn: conn,
+      column: column
+    } do
+      fat_report = String.duplicate("review paragraph ", 500)
+
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Heavyweight task"})
+
+      {:ok, task} =
+        task
+        |> Ecto.Changeset.change(
+          review_report: fat_report,
+          reviewer_result: %{
+            "dispatched" => true,
+            "summary" => String.duplicate("assessed the diff thoroughly ", 200),
+            "issues" => []
+          }
+        )
+        |> Kanban.Repo.update()
+
+      projected =
+        json_response(
+          get(conn, ~p"/api/tasks/#{task.id}?fields=review_report,reviewer_result"),
+          200
+        )["data"]
+
+      assert projected["review_report"] == fat_report
+      assert projected["reviewer_result"]["dispatched"] == true
+      assert String.length(projected["reviewer_result"]["summary"]) > 1_000
+
+      # Projecting a different field on the same fat task stays small.
+      slim_read = json_response(get(conn, ~p"/api/tasks/#{task.id}?fields=status"), 200)["data"]
+      assert slim_read |> Map.keys() |> Enum.sort() == ~w(id identifier status)
+    end
   end
 
   describe "POST /api/tasks/claim" do
