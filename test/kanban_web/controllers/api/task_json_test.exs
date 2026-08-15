@@ -301,6 +301,7 @@ defmodule KanbanWeb.API.TaskJSONTest do
       assert rendered.current_skills_version == KanbanWeb.API.AgentJSON.skills_version()
 
       full = Map.delete(assigns, :response_view) |> TaskJSON.show()
+
       assert Map.has_key?(rendered, :skills_update_required) ==
                Map.has_key?(full, :skills_update_required)
     end
