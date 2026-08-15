@@ -3389,6 +3389,32 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["error"] =~ "not available to claim"
     end
 
+    test "claim 409 for a Backlog task names the not-in-a-claimable-column cause (D246)", %{
+      conn: conn,
+      column: backlog_column,
+      user: user
+    } do
+      {:ok, backlog_task} =
+        Tasks.create_task(backlog_column, %{
+          "title" => "Backlog Task Awaiting Promotion",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      conn =
+        post(conn, ~p"/api/tasks/claim", %{
+          "identifier" => backlog_task.identifier,
+          "before_doing_result" => valid_before_doing_result()
+        })
+
+      response = json_response(conn, 409)
+
+      assert response["error"] =~ backlog_task.identifier
+      causes = response["common_causes"]
+      assert is_list(causes)
+      assert Enum.any?(causes, &(&1 =~ ~r/claimable column|Backlog/i))
+    end
+
     test "returns 403 when claiming a task assigned to a different user", %{
       conn: conn,
       ready_column: ready_column,

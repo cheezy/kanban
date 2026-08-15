@@ -27,6 +27,9 @@ defmodule KanbanWeb.API.ErrorDocs do
     }
   end
 
+  # (D246) The claimable-column cause names the gate that actually rejects
+  # API-created tasks: they land in Backlog, which the claim query never
+  # considers claimable — only a human promoting the task to Ready makes it so.
   def get_docs(:task_not_claimable, opts) do
     identifier = Keyword.get(opts, :identifier)
 
@@ -41,7 +44,8 @@ defmodule KanbanWeb.API.ErrorDocs do
             "Task '#{identifier}' is already claimed by another agent",
             "Task '#{identifier}' is blocked by uncompleted dependencies",
             "Task '#{identifier}' requires capabilities you don't have",
-            "Task '#{identifier}' does not exist on this board"
+            "Task '#{identifier}' does not exist on this board",
+            "Task '#{identifier}' is not in a claimable column (e.g. Backlog) — a human must promote it to Ready"
           ]
         else
           [
