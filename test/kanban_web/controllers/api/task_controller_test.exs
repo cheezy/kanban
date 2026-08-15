@@ -3178,7 +3178,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "the unknown-name echo is capped at 10 with a count (W2094)", %{conn: conn, task: task} do
-      unknowns = Enum.map(1..25, &"nope#{&1}") |> Enum.join(",")
+      unknowns = Enum.map_join(1..25, ",", &"nope#{&1}")
       response = json_response(get(conn, "/api/tasks/#{task.id}?fields=#{unknowns}"), 422)
 
       [%{"field" => "fields", "errors" => errors}] = response["failures"]
