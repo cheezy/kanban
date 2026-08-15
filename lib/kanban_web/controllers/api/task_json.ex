@@ -49,8 +49,15 @@ defmodule KanbanWeb.API.TaskJSON do
     %{data: task |> projectable_data() |> Map.take(fields)}
   end
 
-  def show(%{task: task, response_view: :slim}) do
+  # (W2093) Slim carries the skills-version keys at the envelope root, exactly
+  # as the full view does: the token-conscious agents most likely to adopt slim
+  # are the population that sends skills_version on every next call, and
+  # dropping the keys silently severed the operators' only in-band force-update
+  # channel. The 11-key data summary is untouched; the fields= projection stays
+  # deliberately data-only (it is the surgical read).
+  def show(%{task: task, response_view: :slim} = assigns) do
     %{data: render_task_summary(task)}
+    |> maybe_add_skills_version(assigns)
   end
 
   def show(%{task: task, hook: hook} = assigns) do

@@ -253,8 +253,13 @@ defmodule KanbanWeb.API.TaskJSONTest do
     end
 
     test "the slim show reuses the canonical summary renderer", %{children: [task | _]} do
+      # (W2093) The slim envelope carries current_skills_version at the root,
+      # exactly like the full view; data is still the canonical summary.
       assert TaskJSON.show(%{task: task, response_view: :slim}) ==
-               %{data: TaskJSON.render_task_summary(task)}
+               %{
+                 data: TaskJSON.render_task_summary(task),
+                 current_skills_version: KanbanWeb.API.AgentJSON.skills_version()
+               }
     end
 
     # Same clause-order hazard as index/1 and tree/1 above: the bare
@@ -271,7 +276,10 @@ defmodule KanbanWeb.API.TaskJSONTest do
         current_user: :ignored
       }
 
-      assert TaskJSON.show(assigns) == %{data: TaskJSON.render_task_summary(task)}
+      assert TaskJSON.show(assigns) == %{
+               data: TaskJSON.render_task_summary(task),
+               current_skills_version: KanbanWeb.API.AgentJSON.skills_version()
+             }
     end
 
     test "the full show render is unchanged by an explicit full view", %{children: [task | _]} do
@@ -280,13 +288,21 @@ defmodule KanbanWeb.API.TaskJSONTest do
 
     # next/2 threads agent_skills_version alongside response_view (W2075); the
     # slim clause must still win over the bare clause for that assigns shape,
-    # and the slim render never adds current_skills_version.
+    # and (W2093) the slim render now runs the same maybe_add_skills_version/2
+    # gate the full view does — a current agent_skills_version adds the root
+    # version key with no staleness directive.
     test "the slim show clause wins with agent_skills_version in the assigns", %{
       children: [task | _]
     } do
       assigns = %{task: task, response_view: :slim, agent_skills_version: "1.0"}
 
-      assert TaskJSON.show(assigns) == %{data: TaskJSON.render_task_summary(task)}
+      rendered = TaskJSON.show(assigns)
+      assert rendered.data == TaskJSON.render_task_summary(task)
+      assert rendered.current_skills_version == KanbanWeb.API.AgentJSON.skills_version()
+
+      full = TaskJSON.show(Map.delete(assigns, :response_view))
+      assert Map.has_key?(rendered, :skills_update_required) ==
+               Map.has_key?(full, :skills_update_required)
     end
 
     test "the slim tree slims children but keeps a full root and untouched counts", %{tree: tree} do

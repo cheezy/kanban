@@ -1464,6 +1464,22 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["data"]["title"] == "Detailed Task"
     end
 
+    test "slim show carries current_skills_version at the root like the full view (W2093)", %{
+      conn: conn,
+      task: task
+    } do
+      slim = json_response(get(conn, ~p"/api/tasks/#{task.id}?response_view=slim"), 200)
+      full = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)
+
+      assert slim["current_skills_version"] == KanbanWeb.API.AgentJSON.skills_version()
+      assert slim["current_skills_version"] == full["current_skills_version"]
+
+      # The show action never threads agent_skills_version, so neither view
+      # can carry the staleness directive — matching the full view exactly.
+      refute Map.has_key?(slim, "skills_update_required")
+      refute Map.has_key?(full, "skills_update_required")
+    end
+
     test "an absent response_view returns the full body unchanged", %{conn: conn, task: task} do
       response = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)
 
@@ -2649,9 +2665,36 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["data"]["id"] == task.id
       assert response["data"]["title"] == "Slim Next Task"
 
-      # The slim render never calls maybe_add_skills_version (W2074 clause).
-      refute Map.has_key?(response, "current_skills_version")
+      # (W2093) Slim carries the skills keys at the envelope root, exactly as
+      # the full view does — the data summary itself stays untouched.
+      assert response["current_skills_version"] == KanbanWeb.API.AgentJSON.skills_version()
       refute Map.has_key?(response, "skills_update_required")
+    end
+
+    test "slim next with a stale skills_version carries skills_update_required at the root (W2093)",
+         %{conn: conn, ready_column: ready_column, user: user} do
+      {:ok, _task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Stale Skills Slim Task",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      response =
+        json_response(get(conn, ~p"/api/tasks/next?response_view=slim&skills_version=0.1"), 200)
+
+      assert response["current_skills_version"] == KanbanWeb.API.AgentJSON.skills_version()
+
+      assert response["skills_update_required"]["current_version"] ==
+               KanbanWeb.API.AgentJSON.skills_version()
+
+      assert response["skills_update_required"]["your_version"] == "0.1"
+      assert response["skills_update_required"]["action"] =~ "/plugin update stride"
+      assert response["skills_update_required"]["reason"] =~ "outdated"
+
+      # The data summary shape is unchanged by the root keys.
+      assert response["data"] |> Map.keys() |> Enum.sort() ==
+               ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
     end
 
     test "an absent response_view returns the full next body unchanged", %{
