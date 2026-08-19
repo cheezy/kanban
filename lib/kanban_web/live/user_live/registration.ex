@@ -75,6 +75,7 @@ defmodule KanbanWeb.UserLive.Registration do
           <input
             type="password"
             name={@form[:password].name}
+            value={Phoenix.HTML.Form.normalize_value("password", @form[:password].value)}
             id={@form[:password].id}
             autocomplete="new-password"
             required

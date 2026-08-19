@@ -59,6 +59,26 @@ defmodule KanbanWeb.UserLive.RegistrationTest do
       assert result =~ "Create your account"
       assert result =~ "must have the @ sign and no spaces"
     end
+
+    test "a validate re-render echoes the typed password back into its input", %{conn: conn} do
+      # Regression: the password input rendered no `value`, so LiveView's DOM
+      # patch (`fromEl.value = toEl.value` on every non-focused input) wiped an
+      # already-typed password as soon as the user went back to edit name/email.
+      {:ok, lv, _html} = live(conn, ~p"/users/register")
+
+      html =
+        lv
+        |> element("#registration_form")
+        |> render_change(
+          user: %{
+            "name" => "Ada Lovelace",
+            "email" => "ada@example.com",
+            "password" => "supersecret1234"
+          }
+        )
+
+      assert html =~ ~s(value="supersecret1234")
+    end
   end
 
   describe "register user" do

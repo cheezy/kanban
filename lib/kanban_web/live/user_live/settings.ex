@@ -128,10 +128,21 @@ defmodule KanbanWeb.UserLive.Settings do
                 />
 
                 <.set_field label={gettext("New password")} hint={gettext("At least 12 characters")}>
+                  <%!-- `value` is REQUIRED on a password input inside a
+                  phx-change form: LiveView's DOM patch assigns
+                  `fromEl.value = toEl.value` to every input that is not focused,
+                  so an unrendered value let typing in the confirmation field
+                  wipe whatever had been typed here. --%>
                   <input
                     type="password"
                     name={@password_form[:password].name}
                     id={@password_form[:password].id}
+                    value={
+                      Phoenix.HTML.Form.normalize_value(
+                        "password",
+                        @password_form[:password].value
+                      )
+                    }
                     autocomplete="new-password"
                     required
                     style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
@@ -144,6 +155,12 @@ defmodule KanbanWeb.UserLive.Settings do
                     type="password"
                     name={@password_form[:password_confirmation].name}
                     id={@password_form[:password_confirmation].id}
+                    value={
+                      Phoenix.HTML.Form.normalize_value(
+                        "password",
+                        @password_form[:password_confirmation].value
+                      )
+                    }
                     autocomplete="new-password"
                     style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
                   />

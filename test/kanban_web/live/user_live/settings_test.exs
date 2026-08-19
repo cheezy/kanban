@@ -182,6 +182,29 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       lv
     end
 
+    test "a validate re-render echoes both typed passwords back into their inputs",
+         %{conn: conn, user: user} do
+      # Same regression as the reset-password page: with no `value` rendered,
+      # LiveView's DOM patch (`fromEl.value = toEl.value` on every non-focused
+      # input) cleared "New password" the moment the confirmation was typed.
+      {:ok, lv, _html} = live(conn, ~p"/users/settings")
+      lv = select_password_tab(lv)
+
+      html =
+        lv
+        |> form("#password_form", %{
+          "user" => %{
+            "email" => user.email,
+            "password" => "supersecret1234",
+            "password_confirmation" => "sup"
+          }
+        })
+        |> render_change()
+
+      assert html =~ ~s(value="supersecret1234")
+      assert html =~ ~s(value="sup")
+    end
+
     test "updates the user password", %{conn: conn, user: user} do
       new_password = valid_user_password()
 

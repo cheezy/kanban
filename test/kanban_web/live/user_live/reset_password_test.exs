@@ -28,6 +28,45 @@ defmodule KanbanWeb.UserLive.ResetPasswordTest do
       assert html =~ "New password"
     end
 
+    test "a validate re-render echoes both typed passwords back into their inputs",
+         %{conn: conn, token: token} do
+      # Regression: the inputs rendered no `value`, so every phx-change sent back
+      # empty fields. LiveView's DOM patch assigns `fromEl.value = toEl.value` to
+      # every input that is NOT focused (only the focused one is preserved), so
+      # typing in "Confirm new password" silently wiped "New password" — reported
+      # as "once you start typing the second password, it resets the first one".
+      {:ok, lv, _html} = live(conn, ~p"/users/reset-password/#{token}")
+
+      html =
+        lv
+        |> form("#reset_password_form",
+          user: %{"password" => "supersecret1234", "password_confirmation" => "sup"}
+        )
+        |> render_change()
+
+      assert html =~ ~s(value="supersecret1234")
+      assert html =~ ~s(value="sup")
+    end
+
+    test "the typed password is still echoed once the confirmation matches",
+         %{conn: conn, token: token} do
+      # The matching pair makes the changeset valid, which is the branch that
+      # used to hash (bcrypt on every keystroke) and drop the :password change.
+      {:ok, lv, _html} = live(conn, ~p"/users/reset-password/#{token}")
+
+      html =
+        lv
+        |> form("#reset_password_form",
+          user: %{
+            "password" => "supersecret1234",
+            "password_confirmation" => "supersecret1234"
+          }
+        )
+        |> render_change()
+
+      assert html =~ ~s(value="supersecret1234")
+    end
+
     test "does not render reset password page with invalid token", %{conn: conn} do
       {:error, {:redirect, to}} = live(conn, ~p"/users/reset-password/invalid")
 

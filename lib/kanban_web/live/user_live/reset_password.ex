@@ -41,10 +41,17 @@ defmodule KanbanWeb.UserLive.ResetPassword do
           <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
             {gettext("New password")}
           </span>
+          <%!-- `value` is REQUIRED on a password input inside a phx-change form.
+          Without it the server re-renders an empty input, and LiveView's DOM
+          patch runs `fromEl.value = toEl.value` on every input that is not
+          currently focused — so typing in "Confirm new password" silently wiped
+          whatever had been typed here (D-report: "once you start typing the
+          second password, it resets the first one"). --%>
           <input
             type="password"
             name={f[:password].name}
             id={f[:password].id}
+            value={Phoenix.HTML.Form.normalize_value("password", f[:password].value)}
             autocomplete="new-password"
             required
             phx-mounted={JS.focus()}
@@ -64,6 +71,7 @@ defmodule KanbanWeb.UserLive.ResetPassword do
             type="password"
             name={f[:password_confirmation].name}
             id={f[:password_confirmation].id}
+            value={Phoenix.HTML.Form.normalize_value("password", f[:password_confirmation].value)}
             autocomplete="new-password"
             required
             style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
@@ -99,7 +107,13 @@ defmodule KanbanWeb.UserLive.ResetPassword do
 
   @impl true
   def handle_event("validate", %{"user" => user_params}, socket) do
-    changeset = Accounts.change_user_password(socket.assigns.user, user_params)
+    # hash_password: false — validation must not run bcrypt. Without it every
+    # keystroke on a matching pair hashed the password (~100ms of deliberate
+    # work per character, on an unauthenticated endpoint) and then dropped the
+    # :password change. Mirrors the settings LiveView's validate_password.
+    changeset =
+      Accounts.change_user_password(socket.assigns.user, user_params, hash_password: false)
+
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
   end
 
