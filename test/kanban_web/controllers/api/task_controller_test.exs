@@ -6724,15 +6724,60 @@ defmodule KanbanWeb.API.TaskControllerTest do
       refute Map.has_key?(response, "skills_update_required")
     end
 
-    test "GET /api/tasks/next with future version triggers skills_update_required",
+    # D267 INVERTED THIS TEST, deliberately. It previously asserted that a
+    # FUTURE version triggers skills_update_required, which pinned the defect
+    # rather than the intended behaviour: a plugin shipping ahead of the server
+    # (or a server rollback) was told "Your local skills are outdated" on every
+    # poll, and `/plugin update` can never make a newer version byte-equal to
+    # the server constant, so the directive was unsatisfiable. Only a STRICTLY
+    # OLDER version may draw it now. The older-version cases below and the
+    # slim-view case in the W2093 block still assert the directive fires.
+    test "GET /api/tasks/next with a future version draws no skills_update_required",
          %{conn: conn} do
       conn = get(conn, ~p"/api/tasks/next?skills_version=99.0")
       response = json_response(conn, 200)
 
-      assert response["skills_update_required"]["your_version"] == "99.0"
-
-      assert response["skills_update_required"]["current_version"] ==
+      assert response["current_skills_version"] ==
                KanbanWeb.API.AgentJSON.skills_version()
+
+      refute Map.has_key?(response, "skills_update_required")
+    end
+
+    test "GET /api/tasks/next with a whitespace-padded current version draws no directive",
+         %{conn: conn} do
+      current = KanbanWeb.API.AgentJSON.skills_version()
+      conn = get(conn, ~p"/api/tasks/next?skills_version=#{current <> " "}")
+      response = json_response(conn, 200)
+
+      refute Map.has_key?(response, "skills_update_required")
+    end
+
+    test "GET /api/tasks/next with an unparsable version draws no directive",
+         %{conn: conn} do
+      # Not strictly older, so not stale. The only directive this API has says
+      # the skills are outdated and prescribes /plugin update; neither claim is
+      # supportable about a version that cannot be ordered, and the update
+      # cannot resolve it either.
+      conn = get(conn, ~p"/api/tasks/next?skills_version=abc")
+      response = json_response(conn, 200)
+
+      assert response["current_skills_version"] ==
+               KanbanWeb.API.AgentJSON.skills_version()
+
+      refute Map.has_key?(response, "skills_update_required")
+    end
+
+    test "GET /api/tasks/next with a strictly older version still draws the complete directive",
+         %{conn: conn} do
+      conn = get(conn, ~p"/api/tasks/next?skills_version=0.1")
+      response = json_response(conn, 200)
+
+      directive = response["skills_update_required"]
+
+      assert directive["your_version"] == "0.1"
+      assert directive["current_version"] == KanbanWeb.API.AgentJSON.skills_version()
+      assert directive["action"] == "Run /plugin update stride to get the latest skills"
+      assert directive["reason"] == "Your local skills are outdated."
     end
   end
 

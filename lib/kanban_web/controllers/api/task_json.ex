@@ -1,6 +1,7 @@
 defmodule KanbanWeb.API.TaskJSON do
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.ErrorDocs
+  alias KanbanWeb.API.SkillsVersion
 
   @doc """
   Task list view. Under `response_view=slim` (W2057) each row is the canonical
@@ -420,27 +421,33 @@ defmodule KanbanWeb.API.TaskJSON do
 
   defp render_behaviour_test_matrix(_), do: []
 
+  # The directive fires only when the reported version is STRICTLY OLDER than
+  # this server's (D267). It used to fire on anything not byte-equal to the
+  # constant, which meant a NEWER version -- a plugin shipping ahead of the
+  # server, or a server rollback -- and a merely whitespace-padded current one
+  # were both told "Your local skills are outdated", and `/plugin update` could
+  # never make either byte-equal. The directive was unsatisfiable, so any
+  # automation gating on its absence stalled.
+  #
+  # `nil` and `""` stay exempt exactly as before; SkillsVersion.stale?/2 returns
+  # false for both, so the exemption is now expressed once, in the comparison,
+  # rather than as clauses here. The directive's SHAPE is unchanged -- only when
+  # it fires. `your_version` still echoes what the caller sent, untrimmed, so
+  # the response shows them the value they actually transmitted.
   defp maybe_add_skills_version(response, assigns) do
     current = KanbanWeb.API.AgentJSON.skills_version()
     response = Map.put(response, :current_skills_version, current)
+    reported = assigns[:agent_skills_version]
 
-    case assigns[:agent_skills_version] do
-      nil ->
-        response
-
-      "" ->
-        response
-
-      version when version == current ->
-        response
-
-      stale_version ->
-        Map.put(response, :skills_update_required, %{
-          current_version: current,
-          your_version: stale_version,
-          action: "Run /plugin update stride to get the latest skills",
-          reason: "Your local skills are outdated."
-        })
+    if SkillsVersion.stale?(reported, current) do
+      Map.put(response, :skills_update_required, %{
+        current_version: current,
+        your_version: reported,
+        action: "Run /plugin update stride to get the latest skills",
+        reason: "Your local skills are outdated."
+      })
+    else
+      response
     end
   end
 

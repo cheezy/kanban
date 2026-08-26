@@ -165,11 +165,32 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
     end
   end
 
+  # Phoenix's own download helper rather than a hand-rolled
+  # put_resp_content_type/put_resp_header/send_resp chain. Three reasons, in
+  # order of how much they matter:
+  #
+  #   * it URI-encodes the filename before it reaches the header, where the
+  #     previous version interpolated it raw. That is the difference between
+  #     the safety of this line depending on a comment nobody is obliged to
+  #     read, and depending on the framework;
+  #   * sobelow flagged the old chain twice -- XSS.ContentType on a
+  #     put_resp_content_type taking a variable, and XSS.SendResp on a
+  #     send_resp taking a variable body. Both were false positives (every
+  #     caller passes a compile-time constant content type, and the body is a
+  #     PDF or XLSX blob served as an attachment), but the project's
+  #     .sobelow-conf sets `skip: false`, so an inline annotation would not be
+  #     honoured and flipping that would weaken the scanner everywhere;
+  #   * it is the idiomatic API for exactly this job.
+  #
+  # The emitted header is unchanged for the filenames this controller builds:
+  # Phoenix appends the `filename*=utf-8''...` form only when encoding actually
+  # alters the string, and these filenames are entirely unreserved characters.
   defp send_download_response(conn, content_type, filename, binary) do
-    conn
-    |> put_resp_content_type(content_type)
-    |> put_resp_header("content-disposition", "attachment; filename=\"#{filename}\"")
-    |> send_resp(200, binary)
+    send_download(conn, {:binary, binary},
+      filename: filename,
+      content_type: content_type,
+      disposition: :attachment
+    )
   end
 
   # Every component is trusted by construction, which is why — unlike the board
@@ -180,8 +201,10 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
   #     — never `params["window_days"]`;
   #   * the date renders from a `Date` struct, so it is always `YYYY-MM-DD`.
   #
-  # Do not add the board name or any other user-controlled value back into this:
-  # it is interpolated straight into the content-disposition header.
+  # Do not add the board name or any other user-controlled value back into this.
+  # It reaches the content-disposition header, and while send_download now
+  # URI-encodes it rather than interpolating it raw, encoding is a backstop
+  # against a stray character -- not a licence to put user input in a filename.
   defp export_filename(assigns, extension) do
     date = assigns.timezone |> Kanban.Timezone.local_today() |> Date.to_string()
 
