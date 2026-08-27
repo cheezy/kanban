@@ -41,12 +41,24 @@ npm-debug.log
 
 TOKENS
 
+# .stride_auth.md is deliberately NOT anchored. It carries API tokens, so it
+# must stay ignored wherever it appears -- a stray nested copy being invisible
+# is the safe failure, and making it committable is not a trade worth taking.
 .stride_auth.md
-.stride-hook.log
-.stride-env-cache
-.stride-changed-files.json
-.stride-diff-upload-state
-.stride-dirty-baseline
+
+# The scratch artifacts below ARE anchored to the repo root, and that is the
+# point rather than tidiness. Unanchored, these patterns matched at ANY depth,
+# so when a Stride hook test leaked 26 fixture "project directories" into this
+# repo root on 2026-08-21, every one of them held only ignored paths -- and a
+# directory whose entire contents are ignored is not reported as untracked.
+# `ls` hid them too, since their only entries were dotfiles. The result sat
+# here unnoticed for five days. Anchored, a leak at any depth other than the
+# root now shows up in `git status` the moment it happens.
+/.stride-hook.log
+/.stride-env-cache
+/.stride-changed-files.json
+/.stride-diff-upload-state
+/.stride-dirty-baseline
 .exploratory/
 priv/repo/seed_metrics_data.exs
 package.json
@@ -95,6 +107,10 @@ launchdarkly/
 *.bak
 
 docs/blog/
-.stride/
+# Anchored for the reason given beside the .stride-* artifacts above: a nested
+# .stride/ is always a leaked fixture, and it should be visible rather than
+# silently ignored. Port checkouts that legitimately contain one are already
+# ignored wholesale by name further up this file.
+/.stride/
 design_handoff_stride/
 launchdarkly-copilot/
