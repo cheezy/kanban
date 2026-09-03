@@ -2059,6 +2059,123 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "commit-pending acceptance row end to end (D304)" do
+    setup [:register_and_log_in_user]
+
+    # This is the ONLY place the STORED shape meets the normalizer: the
+    # component's own unit tests hand it a fixture directly, whereas here the
+    # string-keyed reviewer_result travels through
+    # ReviewAcceptance.structured_acceptance/1 exactly as it does in production.
+    @sentinel "PENDING COMMIT — "
+
+    defp task_with_pending_commit_row!(column) do
+      pending_task!(column, %{
+        acceptance_criteria: "The suite passes\nThe fix is committed",
+        reviewer_result: %{
+          "dispatched" => true,
+          "status" => "approved",
+          "acceptance_criteria" => [
+            %{
+              "criterion" => "The suite passes",
+              "status" => "met",
+              "evidence" => "7621 tests pass"
+            },
+            %{
+              "criterion" => "The fix is committed",
+              "status" => "not_met",
+              "evidence" => @sentinel <> "the operator's commit, made after this review."
+            }
+          ]
+        }
+      })
+    end
+
+    defp acceptance_section(html) do
+      ~r/<section[^>]*data-acceptance-checklist[^>]*>.*?<\/section>/s
+      |> Regex.run(html)
+      |> List.first()
+    end
+
+    test "a stored sentinel row renders pending through the real normalizer",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = task_with_pending_commit_row!(column)
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      checklist = acceptance_section(html)
+
+      assert checklist
+      assert checklist =~ ~s(data-acceptance-checklist-pending="true")
+      assert checklist =~ "hero-clock"
+      assert checklist =~ "data-acceptance-checklist-pending-label"
+      # Scoped to the checklist: hero-x-mark appears elsewhere in page chrome.
+      refute checklist =~ "hero-x-mark"
+    end
+
+    test "the tally shows the pending row separately from the met count",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = task_with_pending_commit_row!(column)
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      checklist = acceptance_section(html)
+
+      # One met of two, and the pending row is NOT folded into the numerator.
+      assert checklist =~ "1/2"
+      assert checklist =~ "data-acceptance-checklist-pending-tally"
+      assert checklist =~ "(1 pending)"
+    end
+
+    test "the row stays machine-readable as not_met despite the pending styling",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+      _task = task_with_pending_commit_row!(column)
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      checklist = acceptance_section(html)
+
+      # The presentation softens; the underlying verdict must not. This is what
+      # keeps the carve-out a legibility change rather than a downgrade.
+      assert checklist =~ ~s(data-acceptance-checklist-status="not_met")
+    end
+
+    test "an ordinary not_met row on the same page still renders red",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      _task =
+        pending_task!(column, %{
+          acceptance_criteria: "The suite passes\nThe fix is committed",
+          reviewer_result: %{
+            "dispatched" => true,
+            "status" => "changes_requested",
+            "acceptance_criteria" => [
+              %{
+                "criterion" => "The suite passes",
+                "status" => "not_met",
+                "evidence" => "lib/a.ex:10 is genuinely broken"
+              },
+              %{
+                "criterion" => "The fix is committed",
+                "status" => "not_met",
+                "evidence" => @sentinel <> "the operator's commit."
+              }
+            ]
+          }
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/review")
+      checklist = acceptance_section(html)
+
+      # Both treatments coexist in one checklist, which is the whole point:
+      # the genuine failure keeps its red X, the scheduled one goes amber.
+      assert checklist =~ "hero-x-mark"
+      assert checklist =~ "hero-clock"
+      assert checklist =~ "var(--st-blocked"
+      assert checklist =~ "(1 pending)"
+    end
+  end
+
   describe "review_status_pill — direct from reviewer_result.status" do
     setup [:register_and_log_in_user]
 

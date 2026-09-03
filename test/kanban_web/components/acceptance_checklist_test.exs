@@ -370,6 +370,214 @@ defmodule KanbanWeb.AcceptanceChecklistTest do
     end
   end
 
+  describe "acceptance_checklist/1 — pending commit (D304)" do
+    # The reviewer opens a scheduled-commit row's evidence with this exact
+    # sentinel. EM DASH (U+2014), trailing space — a hyphen must not match.
+    @sentinel "PENDING COMMIT — "
+
+    defp pending_row(criterion \\ "The fix is committed") do
+      %{
+        "criterion" => criterion,
+        "status" => "not_met",
+        "evidence" => @sentinel <> "the operator's commit, made after this review."
+      }
+    end
+
+    test "a not_met row with sentinel evidence renders pending, not the failed box" do
+      assigns = %{structured: [pending_row()]}
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      assert html =~ ~s(data-acceptance-checklist-pending="true")
+      assert html =~ "hero-clock"
+      # The whole point: no red failure treatment on this row.
+      refute html =~ "hero-x-mark"
+      refute html =~ "var(--st-blocked"
+      # It is still not met — the status attribute is unchanged.
+      assert html =~ ~s(data-acceptance-checklist-status="not_met")
+    end
+
+    test "the pending state is visibly labelled, not merely unstyled" do
+      assigns = %{structured: [pending_row()]}
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      assert html =~ "data-acceptance-checklist-pending-label"
+      assert html =~ "Pending"
+      # Amber pending pair, both halves of which carry dark-mode overrides.
+      assert html =~ "var(--st-doing-soft)"
+      assert html =~ "var(--st-doing)"
+      # A soft-filled chip must be delineated by a border (dark-mode contract).
+      assert html =~ "border: 1px solid var(--line)"
+    end
+
+    test "the header tally reports pending rows separately from failures" do
+      assigns = %{
+        structured: [
+          %{"criterion" => "A", "status" => "met", "evidence" => nil},
+          %{"criterion" => "B", "status" => "met", "evidence" => nil},
+          pending_row("C")
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      # The numerator is untouched — a pending row is scheduled, not met.
+      assert html =~ "2/3"
+      assert html =~ "data-acceptance-checklist-pending-tally"
+      assert html =~ "(1 pending)"
+    end
+
+    test "the tally suffix is omitted entirely when nothing is pending" do
+      assigns = %{
+        structured: [
+          %{"criterion" => "A", "status" => "met", "evidence" => nil},
+          %{"criterion" => "B", "status" => "not_met", "evidence" => "genuinely broken"}
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      refute html =~ "data-acceptance-checklist-pending-tally"
+      refute html =~ "pending)"
+    end
+
+    test "an ordinary not_met row is untouched and still renders as a failure" do
+      assigns = %{
+        structured: [
+          %{"criterion" => "X", "status" => "not_met", "evidence" => "lib/a.ex:10 is wrong"}
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      assert html =~ "hero-x-mark"
+      assert html =~ "var(--st-blocked"
+      refute html =~ ~s(data-acceptance-checklist-pending="true")
+      refute html =~ "data-acceptance-checklist-pending-label"
+    end
+
+    test "the sentinel is honoured only in the reserved leading position" do
+      assigns = %{
+        structured: [
+          %{
+            "criterion" => "Y",
+            "status" => "not_met",
+            "evidence" => "the reviewer wrote " <> @sentinel <> "in the middle of a sentence"
+          }
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      # A substring match here would let a genuine failure disguise itself.
+      refute html =~ ~s(data-acceptance-checklist-pending="true")
+      assert html =~ "hero-x-mark"
+    end
+
+    test "an ASCII hyphen in place of the em dash does not match" do
+      assigns = %{
+        structured: [
+          %{
+            "criterion" => "Z",
+            "status" => "not_met",
+            "evidence" => "PENDING COMMIT - the operator's commit, with a hyphen."
+          }
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      refute html =~ ~s(data-acceptance-checklist-pending="true")
+      assert html =~ "hero-x-mark"
+    end
+
+    test "a met row whose evidence merely contains the sentinel is unaffected" do
+      assigns = %{
+        structured: [
+          %{"criterion" => "W", "status" => "met", "evidence" => @sentinel <> "irrelevant here"}
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      assert html =~ "hero-check"
+      refute html =~ ~s(data-acceptance-checklist-pending="true")
+    end
+
+    test "nil and empty evidence never raise and never read as pending" do
+      for evidence <- [nil, ""] do
+        assigns = %{
+          structured: [%{"criterion" => "V", "status" => "not_met", "evidence" => evidence}]
+        }
+
+        html =
+          rendered_to_string(~H"""
+          <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+          """)
+
+        refute html =~ ~s(data-acceptance-checklist-pending="true")
+        assert html =~ "hero-x-mark"
+      end
+    end
+
+    test "several pending rows in one review are counted together" do
+      assigns = %{
+        structured: [
+          %{"criterion" => "A", "status" => "met", "evidence" => nil},
+          pending_row("B"),
+          pending_row("C")
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      assert html =~ "1/3"
+      assert html =~ "(2 pending)"
+    end
+
+    test "pending evidence renders in muted ink rather than the blocked red" do
+      assigns = %{structured: [pending_row()]}
+
+      html =
+        rendered_to_string(~H"""
+        <AcceptanceChecklist.acceptance_checklist structured={@structured} />
+        """)
+
+      assert html =~ "data-acceptance-checklist-evidence"
+      assert html =~ "the operator&#39;s commit"
+      assert html =~ "var(--ink-3)"
+      refute html =~ "var(--st-blocked"
+    end
+  end
+
   describe "acceptance_checklist/1 — markers and scope" do
     test "outermost element carries the data-acceptance-checklist marker" do
       assigns = %{criteria: "Anything"}

@@ -90,13 +90,13 @@ msgstr "ログアウト"
 msgid "Settings"
 msgstr "設定"
 
-#: lib/kanban_web/live/user_live/settings.ex:375
+#: lib/kanban_web/live/user_live/settings.ex:392
 #, elixir-autogen, elixir-format
 msgid "A link to confirm your email change has been sent to the new address."
 msgstr "メール変更を確認するリンクが新しいアドレスに送信されました。"
 
-#: lib/kanban_web/live/user_live/reset_password.ex:61
-#: lib/kanban_web/live/user_live/settings.ex:142
+#: lib/kanban_web/live/user_live/reset_password.ex:68
+#: lib/kanban_web/live/user_live/settings.ex:153
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
 msgstr "新しいパスワードを確認"
@@ -106,7 +106,7 @@ msgstr "新しいパスワードを確認"
 msgid "Create an account"
 msgstr "アカウントを作成"
 
-#: lib/kanban_web/live/user_live/registration.ex:118
+#: lib/kanban_web/live/user_live/registration.ex:119
 #, elixir-autogen, elixir-format
 msgid "Creating account..."
 msgstr "アカウントを作成中..."
@@ -122,12 +122,12 @@ msgstr "アカウントを作成中..."
 msgid "Email"
 msgstr "メール"
 
-#: lib/kanban_web/live/user_live/settings.ex:283
+#: lib/kanban_web/live/user_live/settings.ex:300
 #, elixir-autogen, elixir-format
 msgid "Email change link is invalid or it has expired."
 msgstr "メール変更リンクが無効または期限切れです。"
 
-#: lib/kanban_web/live/user_live/settings.ex:280
+#: lib/kanban_web/live/user_live/settings.ex:297
 #, elixir-autogen, elixir-format
 msgid "Email changed successfully."
 msgstr "メールが正常に変更されました。"
@@ -153,7 +153,7 @@ msgstr "パスワード"
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/form_component.html.heex:412
 #: lib/kanban_web/live/user_live/settings.ex:93
-#: lib/kanban_web/live/user_live/settings.ex:156
+#: lib/kanban_web/live/user_live/settings.ex:173
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr "保存中..."
@@ -1018,18 +1018,18 @@ msgstr "一緒に働く"
 msgid "If your email is in our system, you will receive instructions to reset your password shortly."
 msgstr "メールアドレスがシステムに登録されている場合、まもなくパスワードリセットの手順が届きます。"
 
-#: lib/kanban_web/live/user_live/reset_password.ex:116
+#: lib/kanban_web/live/user_live/reset_password.ex:130
 #, elixir-autogen, elixir-format
 msgid "Password reset successfully."
 msgstr "パスワードを正常にリセットしました。"
 
 #: lib/kanban_web/live/user_live/reset_password.ex:25
-#: lib/kanban_web/live/user_live/reset_password.ex:76
+#: lib/kanban_web/live/user_live/reset_password.ex:84
 #, elixir-autogen, elixir-format
 msgid "Reset password"
 msgstr "パスワードをリセット"
 
-#: lib/kanban_web/live/user_live/reset_password.ex:129
+#: lib/kanban_web/live/user_live/reset_password.ex:143
 #, elixir-autogen, elixir-format
 msgid "Reset password link is invalid or it has expired."
 msgstr "パスワードリセットのリンクが無効か、有効期限が切れています。"
@@ -1376,6 +1376,8 @@ msgstr "対象外項目"
 msgid "Patterns to Follow"
 msgstr "従うべきパターン"
 
+#: lib/kanban_web/components/acceptance_checklist.ex:203
+#: lib/kanban_web/components/acceptance_checklist.ex:288
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:75
 #: lib/kanban_web/live/task_live/form_component.html.heex:400
 #, elixir-autogen, elixir-format
@@ -2938,7 +2940,7 @@ msgid "Build what's next. Together."
 msgstr "次なるものを共に築く。"
 
 #: lib/kanban_web/controllers/metrics_pdf_controller.ex:147
-#: lib/kanban_web/controllers/workspace_metrics_export_controller.ex:207
+#: lib/kanban_web/controllers/workspace_metrics_export_controller.ex:230
 #, elixir-autogen, elixir-format
 msgid "Failed to generate the export. Please try again or contact support."
 msgstr "エクスポートの生成に失敗しました。もう一度お試しいただくか、サポートにお問い合わせください。"
@@ -3036,7 +3038,7 @@ msgstr "正確性"
 #: lib/kanban_web/controllers/page_html/security.html.heex:154
 #: lib/kanban_web/controllers/page_html/tango.html.heex:72
 #: lib/kanban_web/controllers/page_html/tango.html.heex:91
-#: lib/kanban_web/live/user_live/registration.ex:103
+#: lib/kanban_web/live/user_live/registration.ex:104
 #, elixir-autogen, elixir-format
 msgid "and"
 msgstr "そして"
@@ -4590,25 +4592,25 @@ msgstr "必須"
 msgid "Started"
 msgstr "開始済み"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:71
-#: lib/kanban_web/components/acceptance_checklist.ex:138
+#: lib/kanban_web/components/acceptance_checklist.ex:84
+#: lib/kanban_web/components/acceptance_checklist.ex:154
 #: lib/kanban_web/components/review_queue_item.ex:248
 #: lib/kanban_web/live/task_live/view_component.ex:185
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria"
 msgstr "受け入れ基準"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:247
+#: lib/kanban_web/components/acceptance_checklist.ex:323
 #, elixir-autogen, elixir-format
 msgid "Checked"
 msgstr "確認済み"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:86
+#: lib/kanban_web/components/acceptance_checklist.ex:99
 #, elixir-autogen, elixir-format
 msgid "No acceptance criteria recorded."
 msgstr "受け入れ基準が記録されていません。"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:264
+#: lib/kanban_web/components/acceptance_checklist.ex:340
 #, elixir-autogen, elixir-format
 msgid "Unchecked"
 msgstr "未確認"
@@ -5479,7 +5481,7 @@ msgstr "キューに戻る"
 msgid "Back to review queue"
 msgstr "レビューキューに戻る"
 
-#: lib/kanban_web/live/user_live/settings.ex:394
+#: lib/kanban_web/live/user_live/settings.ex:411
 #, elixir-autogen, elixir-format
 msgid "Profile updated."
 msgstr "プロフィールを更新しました。"
@@ -5521,7 +5523,7 @@ msgstr "主な協働機能"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:5
 #: lib/kanban_web/controllers/page_html/terms.html.heex:92
-#: lib/kanban_web/live/user_live/registration.ex:108
+#: lib/kanban_web/live/user_live/registration.ex:109
 #, elixir-autogen, elixir-format
 msgid "Acceptable Use Policy"
 msgstr "利用規約"
@@ -5531,8 +5533,8 @@ msgstr "利用規約"
 msgid "Already have an account?"
 msgstr "すでにアカウントをお持ちですか?"
 
-#: lib/kanban_web/live/user_live/registration.ex:84
-#: lib/kanban_web/live/user_live/reset_password.ex:54
+#: lib/kanban_web/live/user_live/registration.ex:85
+#: lib/kanban_web/live/user_live/reset_password.ex:61
 #: lib/kanban_web/live/user_live/settings.ex:130
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
@@ -5575,7 +5577,7 @@ msgstr "強力なパスワードを選んで確認してください。変更が
 msgid "Confirming your account…"
 msgstr "アカウントを確認中..."
 
-#: lib/kanban_web/live/user_live/registration.ex:120
+#: lib/kanban_web/live/user_live/registration.ex:121
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Create account"
 msgstr "アカウントを作成"
@@ -5605,7 +5607,7 @@ msgstr "お忘れですか?"
 msgid "Hold tight — this will only take a moment."
 msgstr "少々お待ちください — すぐに完了します。"
 
-#: lib/kanban_web/live/user_live/registration.ex:99
+#: lib/kanban_web/live/user_live/registration.ex:100
 #, elixir-autogen, elixir-format
 msgid "I agree to the"
 msgstr "次に同意します:"
@@ -5651,7 +5653,7 @@ msgstr "Strideアプリケーションのリリースノート。"
 msgid "Reset your password"
 msgstr "パスワードをリセット"
 
-#: lib/kanban_web/live/user_live/settings.ex:159
+#: lib/kanban_web/live/user_live/settings.ex:176
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Save password"
 msgstr "パスワードを保存"
@@ -5672,7 +5674,7 @@ msgid "Tango"
 msgstr "Tango"
 
 #: lib/kanban_web/controllers/page_html/terms.html.heex:5
-#: lib/kanban_web/live/user_live/registration.ex:101
+#: lib/kanban_web/live/user_live/registration.ex:102
 #, elixir-autogen, elixir-format
 msgid "Terms of Service"
 msgstr "利用規約"
@@ -5747,7 +5749,7 @@ msgstr "オペレータパスワードのリセットはそうしますが"
 msgid "rotate API tokens. Rotate from"
 msgstr "APIトークンをローテーションします。次からローテーション:"
 
-#: lib/kanban_web/live/user_live/registration.ex:110
+#: lib/kanban_web/live/user_live/registration.ex:111
 #, elixir-autogen, elixir-format
 msgid "— including the agent-action attribution clause."
 msgstr "— エージェント行為の帰属条項を含む。"
@@ -6161,7 +6163,7 @@ msgid "%{checked}/%{total} · %{n} issue"
 msgid_plural "%{checked}/%{total} · %{n} issues"
 msgstr[0] "%{checked}/%{total} · %{n} 件の問題"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:229
+#: lib/kanban_web/components/acceptance_checklist.ex:305
 #: lib/kanban_web/components/code_review_panel.ex:147
 #, elixir-autogen, elixir-format
 msgid "Not met"
@@ -8800,3 +8802,8 @@ msgstr "インラインで実行、未ディスパッチ"
 #, elixir-autogen, elixir-format
 msgid "Settled by task spec"
 msgstr "タスク仕様で決定済み"
+
+#: lib/kanban_web/components/acceptance_checklist.ex:165
+#, elixir-autogen, elixir-format
+msgid "(%{count} pending)"
+msgstr "(%{count} 件保留中)"

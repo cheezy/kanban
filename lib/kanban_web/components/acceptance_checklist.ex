@@ -13,6 +13,19 @@ defmodule KanbanWeb.AcceptanceChecklist do
   """
   use KanbanWeb, :html
 
+  # D304 / stride W2127. A reviewer may legitimately approve a task while one
+  # acceptance criterion is still `not_met`, when the only thing outstanding is
+  # a commit the workflow schedules for AFTER the review. The reviewer marks
+  # that row by opening its `evidence` with this sentinel.
+  #
+  # Match byte-for-byte and only in the LEADING position: the stride contract
+  # reserves the opening of the string and nothing else, so evidence may
+  # legitimately contain this phrase later on. A `String.contains?/2` here would
+  # let a genuine failure disguise itself as scheduled work.
+  #
+  # The dash is an EM DASH (U+2014), not an ASCII hyphen.
+  @pending_commit_sentinel "PENDING COMMIT — "
+
   @doc """
   Renders the acceptance-criteria checklist.
 
@@ -115,12 +128,15 @@ defmodule KanbanWeb.AcceptanceChecklist do
 
   defp render_structured(assigns, structured) do
     met_count = Enum.count(structured, &(&1.status == "met"))
+    structured = Enum.map(structured, &annotate_pending_commit/1)
+    pending_count = Enum.count(structured, & &1.pending_commit?)
 
     assigns =
       assigns
       |> assign(:structured, structured)
       |> assign(:total, length(structured))
       |> assign(:checked_count, met_count)
+      |> assign(:pending_count, pending_count)
 
     ~H"""
     <section
@@ -140,6 +156,14 @@ defmodule KanbanWeb.AcceptanceChecklist do
         <span class="ident" style="font-size: 11px; color: var(--ink-3);">
           {@checked_count}/{@total}
         </span>
+        <span
+          :if={@pending_count > 0}
+          data-acceptance-checklist-pending-tally
+          class="ident"
+          style="font-size: 11px; color: var(--st-doing);"
+        >
+          {gettext("(%{count} pending)", count: @pending_count)}
+        </span>
       </header>
 
       <ol style={[
@@ -150,6 +174,7 @@ defmodule KanbanWeb.AcceptanceChecklist do
           :for={item <- @structured}
           data-acceptance-checklist-row
           data-acceptance-checklist-status={item.status}
+          data-acceptance-checklist-pending={item.pending_commit? && "true"}
           style={[
             "display: flex; flex-direction: column; gap: 4px;",
             "padding: 6px 8px; border-radius: 4px;",
@@ -160,12 +185,29 @@ defmodule KanbanWeb.AcceptanceChecklist do
           <div style="display: flex; align-items: flex-start; gap: 8px;">
             <.check_box
               checked?={item.status == "met"}
-              failed?={item.status == "not_met"}
+              failed?={item.status == "not_met" and not item.pending_commit?}
+              pending?={item.pending_commit?}
             />
             <span style="flex: 1; min-width: 0; text-wrap: pretty;">{item.criterion}</span>
+            <span
+              :if={item.pending_commit?}
+              data-acceptance-checklist-pending-label
+              style={[
+                "flex-shrink: 0; padding: 0 6px; border-radius: 999px;",
+                "font-size: 10px; font-weight: 600; line-height: 16px;",
+                "letter-spacing: 0.04em; text-transform: uppercase;",
+                "background: var(--st-doing-soft); color: var(--st-doing);",
+                "border: 1px solid var(--line);"
+              ]}
+            >
+              {gettext("Pending")}
+            </span>
           </div>
           <p
-            :if={item.status == "not_met" and item.evidence not in [nil, ""]}
+            :if={
+              item.status == "not_met" and not item.pending_commit? and
+                item.evidence not in [nil, ""]
+            }
             data-acceptance-checklist-evidence
             style={[
               "margin: 0 0 0 22px;",
@@ -177,7 +219,10 @@ defmodule KanbanWeb.AcceptanceChecklist do
             {item.evidence}
           </p>
           <p
-            :if={item.status == "met" and item.evidence not in [nil, ""]}
+            :if={
+              (item.status == "met" or item.pending_commit?) and
+                item.evidence not in [nil, ""]
+            }
             data-acceptance-checklist-evidence
             style={[
               "margin: 0 0 0 22px;",
@@ -220,8 +265,39 @@ defmodule KanbanWeb.AcceptanceChecklist do
   defp fetch_either(map, string_key, atom_key),
     do: Map.get(map, string_key) || Map.get(map, atom_key)
 
+  defp annotate_pending_commit(item),
+    do: Map.put(item, :pending_commit?, pending_commit?(item))
+
+  # `is_binary/1` rather than a `not in [nil, ""]` guard: evidence is reachable
+  # as nil (fetch_either returns nil when neither key is present), and
+  # String.starts_with?/2 would raise on it.
+  defp pending_commit?(%{status: "not_met", evidence: evidence}) when is_binary(evidence),
+    do: String.starts_with?(evidence, @pending_commit_sentinel)
+
+  defp pending_commit?(_), do: false
+
   attr :checked?, :boolean, required: true
   attr :failed?, :boolean, default: false
+  attr :pending?, :boolean, default: false
+
+  # ORDER IS LOAD-BEARING: `failed?: true` below matches first, and a pending
+  # row is still `not_met`, so a clause added after it would never be reached.
+  defp check_box(%{pending?: true} = assigns) do
+    ~H"""
+    <span
+      aria-label={gettext("Pending")}
+      style={[
+        "display: inline-flex; align-items: center; justify-content: center;",
+        "width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0;",
+        "margin-top: 2px;",
+        "border: 1.5px solid var(--st-doing);",
+        "background: var(--st-doing-soft); color: var(--st-doing);"
+      ]}
+    >
+      <.icon name="hero-clock" class="w-2.5 h-2.5" />
+    </span>
+    """
+  end
 
   defp check_box(%{failed?: true} = assigns) do
     ~H"""

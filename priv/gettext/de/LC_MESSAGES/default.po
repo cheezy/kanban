@@ -90,13 +90,13 @@ msgstr "Abmelden"
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: lib/kanban_web/live/user_live/settings.ex:375
+#: lib/kanban_web/live/user_live/settings.ex:392
 #, elixir-autogen, elixir-format
 msgid "A link to confirm your email change has been sent to the new address."
 msgstr "Ein Link zur Bestätigung Ihrer E-Mail-Änderung wurde an die neue Adresse gesendet."
 
-#: lib/kanban_web/live/user_live/reset_password.ex:61
-#: lib/kanban_web/live/user_live/settings.ex:142
+#: lib/kanban_web/live/user_live/reset_password.ex:68
+#: lib/kanban_web/live/user_live/settings.ex:153
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
 msgstr "Neues Passwort bestätigen"
@@ -106,7 +106,7 @@ msgstr "Neues Passwort bestätigen"
 msgid "Create an account"
 msgstr "Konto erstellen"
 
-#: lib/kanban_web/live/user_live/registration.ex:118
+#: lib/kanban_web/live/user_live/registration.ex:119
 #, elixir-autogen, elixir-format
 msgid "Creating account..."
 msgstr "Konto wird erstellt..."
@@ -122,12 +122,12 @@ msgstr "Konto wird erstellt..."
 msgid "Email"
 msgstr "E-Mail"
 
-#: lib/kanban_web/live/user_live/settings.ex:283
+#: lib/kanban_web/live/user_live/settings.ex:300
 #, elixir-autogen, elixir-format
 msgid "Email change link is invalid or it has expired."
 msgstr "Der E-Mail-Änderungslink ist ungültig oder abgelaufen."
 
-#: lib/kanban_web/live/user_live/settings.ex:280
+#: lib/kanban_web/live/user_live/settings.ex:297
 #, elixir-autogen, elixir-format
 msgid "Email changed successfully."
 msgstr "E-Mail erfolgreich geändert."
@@ -153,7 +153,7 @@ msgstr "Passwort"
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/form_component.html.heex:412
 #: lib/kanban_web/live/user_live/settings.ex:93
-#: lib/kanban_web/live/user_live/settings.ex:156
+#: lib/kanban_web/live/user_live/settings.ex:173
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr "Wird gespeichert..."
@@ -1018,18 +1018,18 @@ msgstr "Arbeiten Sie mit uns"
 msgid "If your email is in our system, you will receive instructions to reset your password shortly."
 msgstr "Falls Ihre E-Mail in unserem System hinterlegt ist, erhalten Sie in Kürze eine Anleitung zum Zurücksetzen Ihres Passworts."
 
-#: lib/kanban_web/live/user_live/reset_password.ex:116
+#: lib/kanban_web/live/user_live/reset_password.ex:130
 #, elixir-autogen, elixir-format
 msgid "Password reset successfully."
 msgstr "Passwort erfolgreich zurückgesetzt."
 
 #: lib/kanban_web/live/user_live/reset_password.ex:25
-#: lib/kanban_web/live/user_live/reset_password.ex:76
+#: lib/kanban_web/live/user_live/reset_password.ex:84
 #, elixir-autogen, elixir-format
 msgid "Reset password"
 msgstr "Passwort zurücksetzen"
 
-#: lib/kanban_web/live/user_live/reset_password.ex:129
+#: lib/kanban_web/live/user_live/reset_password.ex:143
 #, elixir-autogen, elixir-format
 msgid "Reset password link is invalid or it has expired."
 msgstr "Der Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen."
@@ -1376,6 +1376,8 @@ msgstr "Punkt außerhalb des Umfangs"
 msgid "Patterns to Follow"
 msgstr "Zu befolgende Muster"
 
+#: lib/kanban_web/components/acceptance_checklist.ex:203
+#: lib/kanban_web/components/acceptance_checklist.ex:288
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:75
 #: lib/kanban_web/live/task_live/form_component.html.heex:400
 #, elixir-autogen, elixir-format
@@ -2941,7 +2943,7 @@ msgid "Build what's next. Together."
 msgstr "Bauen Sie das Nächste. Gemeinsam."
 
 #: lib/kanban_web/controllers/metrics_pdf_controller.ex:147
-#: lib/kanban_web/controllers/workspace_metrics_export_controller.ex:207
+#: lib/kanban_web/controllers/workspace_metrics_export_controller.ex:230
 #, elixir-autogen, elixir-format
 msgid "Failed to generate the export. Please try again or contact support."
 msgstr "Erstellen des Exports fehlgeschlagen. Bitte versuchen Sie es erneut oder wenden Sie sich an den Support."
@@ -3039,7 +3041,7 @@ msgstr "Genauigkeit"
 #: lib/kanban_web/controllers/page_html/security.html.heex:154
 #: lib/kanban_web/controllers/page_html/tango.html.heex:72
 #: lib/kanban_web/controllers/page_html/tango.html.heex:91
-#: lib/kanban_web/live/user_live/registration.ex:103
+#: lib/kanban_web/live/user_live/registration.ex:104
 #, elixir-autogen, elixir-format
 msgid "and"
 msgstr "und"
@@ -4597,25 +4599,25 @@ msgstr "Erforderlich"
 msgid "Started"
 msgstr "Gestartet"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:71
-#: lib/kanban_web/components/acceptance_checklist.ex:138
+#: lib/kanban_web/components/acceptance_checklist.ex:84
+#: lib/kanban_web/components/acceptance_checklist.ex:154
 #: lib/kanban_web/components/review_queue_item.ex:248
 #: lib/kanban_web/live/task_live/view_component.ex:185
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria"
 msgstr "Akzeptanzkriterien"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:247
+#: lib/kanban_web/components/acceptance_checklist.ex:323
 #, elixir-autogen, elixir-format
 msgid "Checked"
 msgstr "Geprüft"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:86
+#: lib/kanban_web/components/acceptance_checklist.ex:99
 #, elixir-autogen, elixir-format
 msgid "No acceptance criteria recorded."
 msgstr "Keine Akzeptanzkriterien erfasst."
 
-#: lib/kanban_web/components/acceptance_checklist.ex:264
+#: lib/kanban_web/components/acceptance_checklist.ex:340
 #, elixir-autogen, elixir-format
 msgid "Unchecked"
 msgstr "Ungeprüft"
@@ -5491,7 +5493,7 @@ msgstr "Zurück zur Warteschlange"
 msgid "Back to review queue"
 msgstr "Zurück zur Prüfungswarteschlange"
 
-#: lib/kanban_web/live/user_live/settings.ex:394
+#: lib/kanban_web/live/user_live/settings.ex:411
 #, elixir-autogen, elixir-format
 msgid "Profile updated."
 msgstr "Profil aktualisiert."
@@ -5533,7 +5535,7 @@ msgstr "Wichtige Kollaborationsfunktionen"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:5
 #: lib/kanban_web/controllers/page_html/terms.html.heex:92
-#: lib/kanban_web/live/user_live/registration.ex:108
+#: lib/kanban_web/live/user_live/registration.ex:109
 #, elixir-autogen, elixir-format
 msgid "Acceptable Use Policy"
 msgstr "Richtlinie zur akzeptablen Nutzung"
@@ -5543,8 +5545,8 @@ msgstr "Richtlinie zur akzeptablen Nutzung"
 msgid "Already have an account?"
 msgstr "Haben Sie bereits ein Konto?"
 
-#: lib/kanban_web/live/user_live/registration.ex:84
-#: lib/kanban_web/live/user_live/reset_password.ex:54
+#: lib/kanban_web/live/user_live/registration.ex:85
+#: lib/kanban_web/live/user_live/reset_password.ex:61
 #: lib/kanban_web/live/user_live/settings.ex:130
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
@@ -5587,7 +5589,7 @@ msgstr "Wählen Sie ein starkes Passwort und bestätigen Sie es. Sie bleiben nac
 msgid "Confirming your account…"
 msgstr "Ihr Konto wird bestätigt..."
 
-#: lib/kanban_web/live/user_live/registration.ex:120
+#: lib/kanban_web/live/user_live/registration.ex:121
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Create account"
 msgstr "Konto erstellen"
@@ -5617,7 +5619,7 @@ msgstr "Vergessen?"
 msgid "Hold tight — this will only take a moment."
 msgstr "Bitte warten — das dauert nur einen Moment."
 
-#: lib/kanban_web/live/user_live/registration.ex:99
+#: lib/kanban_web/live/user_live/registration.ex:100
 #, elixir-autogen, elixir-format
 msgid "I agree to the"
 msgstr "Ich akzeptiere die"
@@ -5663,7 +5665,7 @@ msgstr "Release Notes für die Stride-Anwendung."
 msgid "Reset your password"
 msgstr "Setzen Sie Ihr Passwort zurück"
 
-#: lib/kanban_web/live/user_live/settings.ex:159
+#: lib/kanban_web/live/user_live/settings.ex:176
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Save password"
 msgstr "Passwort speichern"
@@ -5684,7 +5686,7 @@ msgid "Tango"
 msgstr "Tango"
 
 #: lib/kanban_web/controllers/page_html/terms.html.heex:5
-#: lib/kanban_web/live/user_live/registration.ex:101
+#: lib/kanban_web/live/user_live/registration.ex:102
 #, elixir-autogen, elixir-format
 msgid "Terms of Service"
 msgstr "Nutzungsbedingungen"
@@ -5759,7 +5761,7 @@ msgstr "das Zurücksetzen Ihres Operator-Passworts schon"
 msgid "rotate API tokens. Rotate from"
 msgstr "rotieren API-Tokens. Rotieren Sie über"
 
-#: lib/kanban_web/live/user_live/registration.ex:110
+#: lib/kanban_web/live/user_live/registration.ex:111
 #, elixir-autogen, elixir-format
 msgid "— including the agent-action attribution clause."
 msgstr "— einschließlich der Klausel zur Zuordnung von Agenten-Aktionen."
@@ -6174,7 +6176,7 @@ msgid_plural "%{checked}/%{total} · %{n} issues"
 msgstr[0] "%{checked}/%{total} · %{n} Problem"
 msgstr[1] "%{checked}/%{total} · %{n} Probleme"
 
-#: lib/kanban_web/components/acceptance_checklist.ex:229
+#: lib/kanban_web/components/acceptance_checklist.ex:305
 #: lib/kanban_web/components/code_review_panel.ex:147
 #, elixir-autogen, elixir-format
 msgid "Not met"
@@ -8868,3 +8870,8 @@ msgstr "Inline ausgeführt, nicht delegiert"
 #, elixir-autogen, elixir-format
 msgid "Settled by task spec"
 msgstr "Durch die Aufgabenspezifikation geklärt"
+
+#: lib/kanban_web/components/acceptance_checklist.ex:165
+#, elixir-autogen, elixir-format
+msgid "(%{count} pending)"
+msgstr "(%{count} ausstehend)"
