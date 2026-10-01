@@ -1,0 +1,20 @@
+XSS.Raw: XSS,lib/kanban_web/components/review_report_panel.ex:119,C52C3E
+XSS.Raw: XSS,lib/kanban_web/components/review_report_panel.ex:195,26573FE
+XSS.Raw: XSS,lib/kanban_web/controllers/metrics_pdf_html/cycle_time.html.heex:7,3FD1752
+XSS.Raw: XSS,lib/kanban_web/controllers/metrics_pdf_html/lead_time.html.heex:7,5C06ED5
+XSS.Raw: XSS,lib/kanban_web/controllers/metrics_pdf_html/throughput.html.heex:7,641B7CC
+XSS.Raw: XSS,lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:7,4FF3790
+XSS.Raw: XSS,lib/kanban_web/controllers/page_html/changelog.html.heex:52,18793F0
+XSS.Raw: XSS,lib/kanban_web/controllers/page_html/workflows.html.heex:20,17AB44C
+XSS.Raw: XSS,lib/kanban_web/controllers/page_html/workflows.html.heex:184,18CEA7D
+XSS.Raw: XSS,lib/kanban_web/controllers/page_html/workflows.html.heex:237,146C6FC
+XSS.Raw: XSS,lib/kanban_web/controllers/page_html/workflows.html.heex:249,676C6BD
+XSS.Raw: XSS,lib/kanban_web/controllers/page_html/workflows.html.heex:286,7A764E4
+XSS.Raw: XSS,lib/kanban_web/controllers/page_html/workflows.html.heex:337,149E89A
+XSS.Raw: XSS,lib/kanban_web/controllers/page_html/workflows.html.heex:386,589BEDA
+XSS.Raw: XSS,lib/kanban_web/controllers/page_html/workflows.html.heex:414,383322C
+XSS.Raw: XSS,lib/kanban_web/controllers/page_html/workflows.html.heex:435,223DA4A
+XSS.Raw: XSS,lib/kanban_web/controllers/page_html/workflows.html.heex:460,57B9236
+XSS.Raw: XSS,lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:12,68780FD
+XSS.Raw: XSS,lib/kanban_web/live/resources_live/components.ex:234,30FDF99
+XSS.SendResp: XSS in `send_resp`,lib/kanban_web/controllers/metrics_pdf_controller.ex:127,5A74F40

@@ -16,7 +16,7 @@ the reference state — any *new* finding is a regression against a green baseli
 
 | Tool | Command | Result |
 |------|---------|--------|
-| Sobelow (static analysis) | `mix sobelow` (reads `.sobelow-conf`) | **SCAN COMPLETE — no findings.** Config: `threshold: :low`, empty `ignore` list, empty `ignore_files` — a maximally-thorough scan with nothing suppressed. |
+| Sobelow (static analysis) | `mix sobelow` (reads `.sobelow-conf`) | **SCAN COMPLETE — no findings.** Config: `threshold: :low`, empty `ignore` list, empty `ignore_files`, `skip: true` — every check runs; only the 20 triaged false positives fingerprinted in `.sobelow-skips` are suppressed (see the Sobelow 0.16.0 triage below). |
 | Dependency CVE audit | `mix deps.audit` | **No vulnerabilities found.** |
 | Retired/advisory packages | `mix hex.audit` | **No retired or security-advisory packages found.** |
 | Outdated dependencies | `mix hex.outdated` | **All 35 dependencies up-to-date** (current == latest for every dep). |
@@ -31,6 +31,33 @@ config regardless. W1683 corrected the stray reference in `.stride_dev.md` (the
 CI workflow already used `.sobelow-conf`), so every tracked invocation now names
 the real file. Not a vulnerability — logged here and under the
 secrets/config/deploy domain (W1598) as tooling hygiene.
+
+**Update (Sobelow 0.16.0):** 0.16.0 parses its arguments strictly and fails
+with `Invalid Sobelow arguments: [".sobelow-conf"]` on any positional argument,
+so the trailing filename is no longer ignored — it aborts the scan before it
+runs. `--config` is a boolean flag that always reads `.sobelow-conf` from the
+project root, so every invocation is now the bare `mix sobelow --config`.
+
+### Sobelow 0.16.0 triage — 20 low-confidence findings, all false positives
+
+0.16.0 added raw-output detection in HEEx templates and inline `~H` sigils,
+which surfaced 20 pre-existing low-confidence findings. Each was reviewed and
+none is exploitable, so they are recorded in `.sobelow-skips` (fingerprinted —
+a changed or new sink at the same site reports again) with `skip: true` in
+`.sobelow-conf`:
+
+| Finding | Location | Why it is safe |
+|---|---|---|
+| 10 × `XSS.Raw` | `page_html/workflows.html.heex` | `gettext` strings with fixed link/span markup substituted in; no user input |
+| 5 × `XSS.Raw` | `metrics_pdf_html/*.html.heex` (4), `workspace_metrics_pdf_html/report.html.heex` | Inlined static CSS from `shared_pdf_css/0` / `pdf_css/0` |
+| `XSS.Raw` | `page_html/changelog.html.heex:52` | `priv/changelog/body.html`, read at compile time from the repo |
+| `XSS.Raw` | `resources_live/components.ex:234` | Static how-to data; `render_markdown/1` HTML-escapes before converting |
+| 2 × `XSS.Raw` | `components/review_report_panel.ex:119,195` | Agent-submitted `review_report`, but `MDEx.to_html/1` defaults to unsafe-off: raw HTML becomes `<!-- raw HTML omitted -->` and `javascript:` URLs are emptied (guarded by `review_report_panel_test.exs`) |
+| `XSS.SendResp` | `metrics_pdf_controller.ex:127` | Served as `application/pdf` with `content-disposition: attachment`; 0.16.0 keeps PDF sinks at low confidence by design |
+
+If a future change makes any of these sites render untrusted input without
+escaping or sanitising it, remove its line from `.sobelow-skips` rather than
+re-marking it.
 
 ## 2. Routes, pipelines, and auth boundaries
 
