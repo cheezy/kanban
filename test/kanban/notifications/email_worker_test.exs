@@ -159,7 +159,7 @@ defmodule Kanban.Notifications.EmailWorkerTest do
         assert email.subject == "[Stride] Your board access changed"
         assert email.html_body =~ "Removed from Alpha"
         assert email.text_body =~ "Removed from Alpha"
-        assert email.headers["List-Unsubscribe"] =~ "/notifications/unsubscribe?token="
+        assert email.headers["List-Unsubscribe"] =~ "/notifications/unsubscribe/one-click?token="
         assert email.headers["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
       end)
 

@@ -91,6 +91,10 @@ config :error_tracker,
 # query parameter so it never appears in a logged request path.
 config :phoenix, :filter_parameters, ["password", "token"]
 
+# ErrorTracker stores raw query strings, params and headers, which
+# :filter_parameters does not cover; this filter strips unsubscribe tokens.
+config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
+
 # Oban configuration — runs the after_goal grace-window worker (W493) and
 # notification email delivery (W2201).
 # `:after_goal_grace` queue has a depth of 5 because each job is a single

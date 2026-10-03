@@ -66,6 +66,37 @@ defmodule KanbanWeb.Router do
     post "/locale/:locale", PageController, :set_locale
   end
 
+  # Notification email unsubscribe (W2202). These sit outside the
+  # authenticated scopes on purpose: the signed token in the ?token= query
+  # parameter is the only credential, and it can only turn one category of
+  # email off for one user. GET only renders a confirmation (mail scanners
+  # prefetch links); the confirmation form POSTs through :browser, so it keeps
+  # session, flash and CSRF protection.
+  scope "/notifications", KanbanWeb do
+    pipe_through :browser
+
+    get "/unsubscribe", NotificationUnsubscribeController, :show
+    post "/unsubscribe", NotificationUnsubscribeController, :update
+    # The List-Unsubscribe header carries the one-click URL. Mail clients
+    # without RFC 8058 support open it with GET (RFC 2369), so a GET there
+    # shows the same no-change confirmation page.
+    get "/unsubscribe/one-click", NotificationUnsubscribeController, :show
+  end
+
+  # RFC 8058 one-click unsubscribe: mail providers POST
+  # "List-Unsubscribe=One-Click" to the List-Unsubscribe URL with no session
+  # and no CSRF token, so this pipeline fetches neither. The controller
+  # accepts only a valid signed token and only ever turns email off.
+  pipeline :one_click_unsubscribe do
+    plug :put_secure_browser_headers
+  end
+
+  scope "/notifications", KanbanWeb do
+    pipe_through :one_click_unsubscribe
+
+    post "/unsubscribe/one-click", NotificationUnsubscribeController, :one_click
+  end
+
   # Public API routes (no authentication required)
   scope "/api", KanbanWeb.API, as: :api do
     pipe_through :api_public

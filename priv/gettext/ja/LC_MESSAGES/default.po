@@ -333,7 +333,7 @@ msgstr "タスクの削除に失敗しました"
 msgid "Save Task"
 msgstr "タスクを保存"
 
-#: lib/kanban_web/live/task_live/form_component.ex:414
+#: lib/kanban_web/live/task_live/form_component.ex:427
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "タスクが正常に作成されました"
@@ -364,7 +364,7 @@ msgstr "タイトル"
 msgid "Update task details"
 msgstr "タスクの詳細を更新"
 
-#: lib/kanban_web/live/task_live/form_component.ex:432
+#: lib/kanban_web/live/task_live/form_component.ex:445
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "この列のWIP制限に達しました"
@@ -536,7 +536,7 @@ msgstr "コメントを追加"
 msgid "Adding..."
 msgstr "追加中..."
 
-#: lib/kanban_web/live/task_live/form_component.ex:503
+#: lib/kanban_web/live/task_live/form_component.ex:516
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr "コメントが正常に追加されました"
@@ -544,6 +544,7 @@ msgstr "コメントが正常に追加されました"
 #: lib/kanban_web/live/task_live/components/comments_section.ex:13
 #: lib/kanban_web/live/task_live/form_component.html.heex:525
 #: lib/kanban_web/live/task_live/view_component.ex:409
+#: lib/kanban_web/notification_labels.ex:23
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "コメント"
@@ -1853,7 +1854,7 @@ msgstr "Strideは単なるカンバンボード以上のものです。人間と
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "この協働アプローチにより、チームは繰り返しのコーディング作業をAIエージェントに委任しつつ、人間は高レベルな意思決定、アーキテクチャ、マージ前のAI生成コードのレビューに集中できます。"
 
-#: lib/kanban_web/live/task_live/form_component.ex:436
+#: lib/kanban_web/live/task_live/form_component.ex:449
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "タスクを追加できません: この列のWIP上限に達しています"
@@ -1875,7 +1876,7 @@ msgstr "このファイルに関するメモ"
 
 #: lib/kanban_web/live/task_live/form_component.ex:257
 #: lib/kanban_web/live/task_live/form_component.ex:392
-#: lib/kanban_web/live/task_live/form_component.ex:423
+#: lib/kanban_web/live/task_live/form_component.ex:436
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "下記のエラーを修正してください"
@@ -8808,96 +8809,193 @@ msgstr "タスク仕様で決定済み"
 msgid "(%{count} pending)"
 msgstr "(%{count} 件保留中)"
 
-#: lib/kanban_web/emails/notification_email.ex:93
+#: lib/kanban_web/emails/notification_email.ex:98
 #, elixir-autogen, elixir-format
 msgid "After-goal hook failed"
 msgstr "after-goal フックが失敗しました"
 
-#: lib/kanban_web/emails/notification_email.ex:113
+#: lib/kanban_web/emails/notification_email.ex:118
 #, elixir-autogen, elixir-format
 msgid "Board: %{board}"
 msgstr "ボード: %{board}"
 
-#: lib/kanban_web/emails/notification_email.ex:109
+#: lib/kanban_web/emails/notification_email.ex:114
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "%{actor} より"
 
-#: lib/kanban_web/emails/notification_email.ex:86
+#: lib/kanban_web/emails/notification_email.ex:91
 #, elixir-autogen, elixir-format
 msgid "Goal completed"
 msgstr "ゴールが完了しました"
 
-#: lib/kanban_web/emails/notification_email.ex:146
-#: lib/kanban_web/emails/notification_email.ex:156
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:41
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:56
+#: lib/kanban_web/emails/notification_email.ex:151
+#: lib/kanban_web/emails/notification_email.ex:161
 #, elixir-autogen, elixir-format
 msgid "Manage notification preferences"
 msgstr "通知設定を管理"
 
-#: lib/kanban_web/emails/notification_email.ex:88
+#: lib/kanban_web/emails/notification_email.ex:93
 #, elixir-autogen, elixir-format
 msgid "New comment"
 msgstr "新しいコメント"
 
-#: lib/kanban_web/emails/notification_email.ex:83
+#: lib/kanban_web/emails/notification_email.ex:88
 #, elixir-autogen, elixir-format
 msgid "Review requested"
 msgstr "レビューが依頼されました"
 
-#: lib/kanban_web/emails/notification_email.ex:94
+#: lib/kanban_web/emails/notification_email.ex:99
 #, elixir-autogen, elixir-format
 msgid "Target status changed"
 msgstr "ターゲットのステータスが変更されました"
 
-#: lib/kanban_web/emails/notification_email.ex:84
+#: lib/kanban_web/emails/notification_email.ex:89
 #, elixir-autogen, elixir-format
 msgid "Task assigned to you"
 msgstr "タスクが割り当てられました"
 
-#: lib/kanban_web/emails/notification_email.ex:91
+#: lib/kanban_web/emails/notification_email.ex:96
 #, elixir-autogen, elixir-format
 msgid "Task unclaimed"
 msgstr "タスクの担当が解除されました"
 
-#: lib/kanban_web/emails/notification_email.ex:145
-#: lib/kanban_web/emails/notification_email.ex:155
+#: lib/kanban_web/emails/notification_email.ex:150
+#: lib/kanban_web/emails/notification_email.ex:160
 #, elixir-autogen, elixir-format
 msgid "Unsubscribe from these emails"
 msgstr "これらのメールの配信を停止"
 
-#: lib/kanban_web/emails/notification_email.ex:134
-#: lib/kanban_web/emails/notification_email.ex:152
+#: lib/kanban_web/emails/notification_email.ex:139
+#: lib/kanban_web/emails/notification_email.ex:157
 #, elixir-autogen, elixir-format
 msgid "View in Stride"
 msgstr "Stride で表示"
 
-#: lib/kanban_web/emails/notification_email.ex:144
-#: lib/kanban_web/emails/notification_email.ex:154
+#: lib/kanban_web/emails/notification_email.ex:149
+#: lib/kanban_web/emails/notification_email.ex:159
 #, elixir-autogen, elixir-format
 msgid "You are receiving this because email notifications for this event type are on."
 msgstr "この種類のイベントのメール通知が有効になっているため、このメールが届いています。"
 
-#: lib/kanban_web/emails/notification_email.ex:89
+#: lib/kanban_web/emails/notification_email.ex:94
 #, elixir-autogen, elixir-format
 msgid "You were mentioned"
 msgstr "メンションされました"
 
-#: lib/kanban_web/emails/notification_email.ex:92
+#: lib/kanban_web/emails/notification_email.ex:97
 #, elixir-autogen, elixir-format
 msgid "Your board access changed"
 msgstr "ボードへのアクセス権が変更されました"
 
-#: lib/kanban_web/emails/notification_email.ex:85
+#: lib/kanban_web/emails/notification_email.ex:90
 #, elixir-autogen, elixir-format
 msgid "Your claim expired"
 msgstr "担当期限が切れました"
 
-#: lib/kanban_web/emails/notification_email.ex:90
+#: lib/kanban_web/emails/notification_email.ex:95
 #, elixir-autogen, elixir-format
 msgid "Your task was reviewed"
 msgstr "タスクがレビューされました"
 
-#: lib/kanban_web/emails/notification_email.ex:87
+#: lib/kanban_web/emails/notification_email.ex:92
 #, elixir-autogen, elixir-format
 msgid "Your weekly digest"
 msgstr "週次ダイジェスト"
+
+#: lib/kanban_web/notification_labels.ex:28
+#, elixir-autogen, elixir-format
+msgid "After-goal hook failures"
+msgstr "after-goal フックの失敗"
+
+#: lib/kanban_web/notification_labels.ex:27
+#, elixir-autogen, elixir-format
+msgid "Board access changes"
+msgstr "ボードアクセスの変更"
+
+#: lib/kanban_web/notification_labels.ex:21
+#, elixir-autogen, elixir-format
+msgid "Completed goals"
+msgstr "完了したゴール"
+
+#: lib/kanban_web/notification_labels.ex:29
+#, elixir-autogen, elixir-format
+msgid "Delivery target status"
+msgstr "デリバリーターゲットの状況"
+
+#: lib/kanban_web/notification_labels.ex:20
+#, elixir-autogen, elixir-format
+msgid "Expired claims"
+msgstr "期限切れの担当"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "In-app notifications are not affected."
+msgstr "アプリ内通知には影響しません。"
+
+#: lib/kanban_web/notification_labels.ex:24
+#, elixir-autogen, elixir-format
+msgid "Mentions"
+msgstr "メンション"
+
+#: lib/kanban_web/notification_labels.ex:18
+#, elixir-autogen, elixir-format
+msgid "Review requests"
+msgstr "レビュー依頼"
+
+#: lib/kanban_web/notification_labels.ex:25
+#, elixir-autogen, elixir-format
+msgid "Review results"
+msgstr "レビュー結果"
+
+#: lib/kanban_web/notification_labels.ex:19
+#, elixir-autogen, elixir-format
+msgid "Task assignments"
+msgstr "タスクの割り当て"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:48
+#, elixir-autogen, elixir-format
+msgid "The unsubscribe link is invalid or has expired. Sign in to manage which emails you receive."
+msgstr "配信停止リンクが無効か、有効期限が切れています。受信するメールを管理するにはサインインしてください。"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "This link is no longer valid"
+msgstr "このリンクは無効になりました"
+
+#: lib/kanban_web/notification_labels.ex:26
+#, elixir-autogen, elixir-format
+msgid "Unclaimed tasks"
+msgstr "担当が解除されたタスク"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Unsubscribe"
+msgstr "配信停止"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Unsubscribe from these emails?"
+msgstr "これらのメールの配信を停止しますか？"
+
+#: lib/kanban_web/notification_labels.ex:22
+#, elixir-autogen, elixir-format
+msgid "Weekly digest"
+msgstr "週次ダイジェスト"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:35
+#, elixir-autogen, elixir-format
+msgid "You will no longer receive emails about: %{category}."
+msgstr "次の内容に関するメールは今後届きません: %{category}。"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "You will stop receiving emails about: %{category}."
+msgstr "次の内容に関するメールの受信を停止します: %{category}。"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "You're unsubscribed"
+msgstr "配信を停止しました"

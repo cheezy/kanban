@@ -333,7 +333,7 @@ msgstr "Falha ao excluir tarefa"
 msgid "Save Task"
 msgstr "Salvar Tarefa"
 
-#: lib/kanban_web/live/task_live/form_component.ex:414
+#: lib/kanban_web/live/task_live/form_component.ex:427
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "Tarefa criada com sucesso"
@@ -364,7 +364,7 @@ msgstr "Título"
 msgid "Update task details"
 msgstr "Atualizar detalhes da tarefa"
 
-#: lib/kanban_web/live/task_live/form_component.ex:432
+#: lib/kanban_web/live/task_live/form_component.ex:445
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "Limite WIP atingido para esta coluna"
@@ -536,7 +536,7 @@ msgstr "Adicionar um comentário"
 msgid "Adding..."
 msgstr "Adicionando..."
 
-#: lib/kanban_web/live/task_live/form_component.ex:503
+#: lib/kanban_web/live/task_live/form_component.ex:516
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr "Comentário adicionado com sucesso"
@@ -544,6 +544,7 @@ msgstr "Comentário adicionado com sucesso"
 #: lib/kanban_web/live/task_live/components/comments_section.ex:13
 #: lib/kanban_web/live/task_live/form_component.html.heex:525
 #: lib/kanban_web/live/task_live/view_component.ex:409
+#: lib/kanban_web/notification_labels.ex:23
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "Comentários"
@@ -1853,7 +1854,7 @@ msgstr "O Stride é mais do que um quadro kanban — foi projetado desde o iníc
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "Essa abordagem colaborativa permite que as equipes deleguem tarefas repetitivas de codificação a agentes de IA enquanto humanos se concentram em decisões de alto nível, arquitetura e na revisão do código gerado pela IA antes do merge."
 
-#: lib/kanban_web/live/task_live/form_component.ex:436
+#: lib/kanban_web/live/task_live/form_component.ex:449
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "Não é possível adicionar a tarefa: o limite WIP desta coluna foi atingido"
@@ -1875,7 +1876,7 @@ msgstr "Nota sobre este arquivo"
 
 #: lib/kanban_web/live/task_live/form_component.ex:257
 #: lib/kanban_web/live/task_live/form_component.ex:392
-#: lib/kanban_web/live/task_live/form_component.ex:423
+#: lib/kanban_web/live/task_live/form_component.ex:436
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "Por favor corrija os erros abaixo"
@@ -8846,96 +8847,193 @@ msgstr "Resolvido pela especificação da tarefa"
 msgid "(%{count} pending)"
 msgstr "(%{count} pendente)"
 
-#: lib/kanban_web/emails/notification_email.ex:93
+#: lib/kanban_web/emails/notification_email.ex:98
 #, elixir-autogen, elixir-format
 msgid "After-goal hook failed"
 msgstr "O hook after-goal falhou"
 
-#: lib/kanban_web/emails/notification_email.ex:113
+#: lib/kanban_web/emails/notification_email.ex:118
 #, elixir-autogen, elixir-format
 msgid "Board: %{board}"
 msgstr "Quadro: %{board}"
 
-#: lib/kanban_web/emails/notification_email.ex:109
+#: lib/kanban_web/emails/notification_email.ex:114
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "Por %{actor}"
 
-#: lib/kanban_web/emails/notification_email.ex:86
+#: lib/kanban_web/emails/notification_email.ex:91
 #, elixir-autogen, elixir-format
 msgid "Goal completed"
 msgstr "Meta concluída"
 
-#: lib/kanban_web/emails/notification_email.ex:146
-#: lib/kanban_web/emails/notification_email.ex:156
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:41
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:56
+#: lib/kanban_web/emails/notification_email.ex:151
+#: lib/kanban_web/emails/notification_email.ex:161
 #, elixir-autogen, elixir-format
 msgid "Manage notification preferences"
 msgstr "Gerenciar preferências de notificação"
 
-#: lib/kanban_web/emails/notification_email.ex:88
+#: lib/kanban_web/emails/notification_email.ex:93
 #, elixir-autogen, elixir-format
 msgid "New comment"
 msgstr "Novo comentário"
 
-#: lib/kanban_web/emails/notification_email.ex:83
+#: lib/kanban_web/emails/notification_email.ex:88
 #, elixir-autogen, elixir-format
 msgid "Review requested"
 msgstr "Revisão solicitada"
 
-#: lib/kanban_web/emails/notification_email.ex:94
+#: lib/kanban_web/emails/notification_email.ex:99
 #, elixir-autogen, elixir-format
 msgid "Target status changed"
 msgstr "O status da meta mudou"
 
-#: lib/kanban_web/emails/notification_email.ex:84
+#: lib/kanban_web/emails/notification_email.ex:89
 #, elixir-autogen, elixir-format
 msgid "Task assigned to you"
 msgstr "Uma tarefa foi atribuída a você"
 
-#: lib/kanban_web/emails/notification_email.ex:91
+#: lib/kanban_web/emails/notification_email.ex:96
 #, elixir-autogen, elixir-format
 msgid "Task unclaimed"
 msgstr "Tarefa liberada"
 
-#: lib/kanban_web/emails/notification_email.ex:145
-#: lib/kanban_web/emails/notification_email.ex:155
+#: lib/kanban_web/emails/notification_email.ex:150
+#: lib/kanban_web/emails/notification_email.ex:160
 #, elixir-autogen, elixir-format
 msgid "Unsubscribe from these emails"
 msgstr "Cancelar a inscrição nestes e-mails"
 
-#: lib/kanban_web/emails/notification_email.ex:134
-#: lib/kanban_web/emails/notification_email.ex:152
+#: lib/kanban_web/emails/notification_email.ex:139
+#: lib/kanban_web/emails/notification_email.ex:157
 #, elixir-autogen, elixir-format
 msgid "View in Stride"
 msgstr "Ver no Stride"
 
-#: lib/kanban_web/emails/notification_email.ex:144
-#: lib/kanban_web/emails/notification_email.ex:154
+#: lib/kanban_web/emails/notification_email.ex:149
+#: lib/kanban_web/emails/notification_email.ex:159
 #, elixir-autogen, elixir-format
 msgid "You are receiving this because email notifications for this event type are on."
 msgstr "Você está recebendo isto porque as notificações por e-mail deste tipo de evento estão ativadas."
 
-#: lib/kanban_web/emails/notification_email.ex:89
+#: lib/kanban_web/emails/notification_email.ex:94
 #, elixir-autogen, elixir-format
 msgid "You were mentioned"
 msgstr "Você foi mencionado"
 
-#: lib/kanban_web/emails/notification_email.ex:92
+#: lib/kanban_web/emails/notification_email.ex:97
 #, elixir-autogen, elixir-format
 msgid "Your board access changed"
 msgstr "Seu acesso ao quadro mudou"
 
-#: lib/kanban_web/emails/notification_email.ex:85
+#: lib/kanban_web/emails/notification_email.ex:90
 #, elixir-autogen, elixir-format
 msgid "Your claim expired"
 msgstr "Sua reivindicação expirou"
 
-#: lib/kanban_web/emails/notification_email.ex:90
+#: lib/kanban_web/emails/notification_email.ex:95
 #, elixir-autogen, elixir-format
 msgid "Your task was reviewed"
 msgstr "Sua tarefa foi revisada"
 
-#: lib/kanban_web/emails/notification_email.ex:87
+#: lib/kanban_web/emails/notification_email.ex:92
 #, elixir-autogen, elixir-format
 msgid "Your weekly digest"
 msgstr "Seu resumo semanal"
+
+#: lib/kanban_web/notification_labels.ex:28
+#, elixir-autogen, elixir-format
+msgid "After-goal hook failures"
+msgstr "Falhas do hook after-goal"
+
+#: lib/kanban_web/notification_labels.ex:27
+#, elixir-autogen, elixir-format
+msgid "Board access changes"
+msgstr "Alterações de acesso ao quadro"
+
+#: lib/kanban_web/notification_labels.ex:21
+#, elixir-autogen, elixir-format
+msgid "Completed goals"
+msgstr "Metas concluídas"
+
+#: lib/kanban_web/notification_labels.ex:29
+#, elixir-autogen, elixir-format
+msgid "Delivery target status"
+msgstr "Status das metas de entrega"
+
+#: lib/kanban_web/notification_labels.ex:20
+#, elixir-autogen, elixir-format
+msgid "Expired claims"
+msgstr "Reivindicações expiradas"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "In-app notifications are not affected."
+msgstr "As notificações no aplicativo não são afetadas."
+
+#: lib/kanban_web/notification_labels.ex:24
+#, elixir-autogen, elixir-format
+msgid "Mentions"
+msgstr "Menções"
+
+#: lib/kanban_web/notification_labels.ex:18
+#, elixir-autogen, elixir-format
+msgid "Review requests"
+msgstr "Solicitações de revisão"
+
+#: lib/kanban_web/notification_labels.ex:25
+#, elixir-autogen, elixir-format
+msgid "Review results"
+msgstr "Resultados de revisão"
+
+#: lib/kanban_web/notification_labels.ex:19
+#, elixir-autogen, elixir-format
+msgid "Task assignments"
+msgstr "Atribuições de tarefas"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:48
+#, elixir-autogen, elixir-format
+msgid "The unsubscribe link is invalid or has expired. Sign in to manage which emails you receive."
+msgstr "O link de cancelamento é inválido ou expirou. Entre para gerenciar quais e-mails você recebe."
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:45
+#, elixir-autogen, elixir-format
+msgid "This link is no longer valid"
+msgstr "Este link não é mais válido"
+
+#: lib/kanban_web/notification_labels.ex:26
+#, elixir-autogen, elixir-format
+msgid "Unclaimed tasks"
+msgstr "Tarefas liberadas"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Unsubscribe"
+msgstr "Cancelar inscrição"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Unsubscribe from these emails?"
+msgstr "Cancelar a inscrição nestes e-mails?"
+
+#: lib/kanban_web/notification_labels.ex:22
+#, elixir-autogen, elixir-format
+msgid "Weekly digest"
+msgstr "Resumo semanal"
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:35
+#, elixir-autogen, elixir-format
+msgid "You will no longer receive emails about: %{category}."
+msgstr "Você não receberá mais e-mails sobre: %{category}."
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "You will stop receiving emails about: %{category}."
+msgstr "Você deixará de receber e-mails sobre: %{category}."
+
+#: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "You're unsubscribed"
+msgstr "Sua inscrição foi cancelada"

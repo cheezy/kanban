@@ -30,6 +30,10 @@ defmodule KanbanWeb.Emails.NotificationEmail do
   # logs (which record the path) never contain it; "token" is listed in
   # :filter_parameters so logged params are redacted too.
   @unsubscribe_path "/notifications/unsubscribe?token="
+  # RFC 8058: mail providers POST to the List-Unsubscribe URL itself, so the
+  # header points at the session-less one-click endpoint while the footer
+  # link opens the confirmation page.
+  @one_click_path "/notifications/unsubscribe/one-click?token="
   @preferences_path "/users/notifications"
   @from {"Stride Support", "noreply@stridelikeaboss.com"}
 
@@ -65,7 +69,7 @@ defmodule KanbanWeb.Emails.NotificationEmail do
   defp put_headers(email, notification, urls) do
     email
     |> header("Message-ID", "<notification-#{notification.id}@stridelikeaboss.com>")
-    |> header("List-Unsubscribe", "<" <> urls.unsubscribe <> ">")
+    |> header("List-Unsubscribe", "<" <> urls.one_click <> ">")
     |> header("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
   end
 
@@ -76,6 +80,7 @@ defmodule KanbanWeb.Emails.NotificationEmail do
     %{
       link: base <> (notification.url_path || "/"),
       unsubscribe: base <> @unsubscribe_path <> URI.encode_www_form(token),
+      one_click: base <> @one_click_path <> URI.encode_www_form(token),
       preferences: base <> @preferences_path
     }
   end

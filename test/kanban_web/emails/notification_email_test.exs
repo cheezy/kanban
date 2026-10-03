@@ -136,10 +136,15 @@ defmodule KanbanWeb.Emails.NotificationEmailTest do
       %URI{scheme: scheme, host: host, path: path, query: query} = URI.parse(url)
 
       assert email.headers["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
-      assert String.starts_with?(url, KanbanWeb.Endpoint.url() <> "/notifications/unsubscribe?")
+
+      assert String.starts_with?(
+               url,
+               KanbanWeb.Endpoint.url() <> "/notifications/unsubscribe/one-click?"
+             )
+
       assert scheme in ["http", "https"]
       assert is_binary(host)
-      assert path == "/notifications/unsubscribe"
+      assert path == "/notifications/unsubscribe/one-click"
 
       %{"token" => token} = URI.decode_query(query)
       user_id = user.id
@@ -147,8 +152,15 @@ defmodule KanbanWeb.Emails.NotificationEmailTest do
       assert {:ok, %{user_id: ^user_id, event_type: :task_assigned}} =
                UnsubscribeToken.verify(token)
 
-      assert email.html_body =~ url
-      assert email.text_body =~ url
+      # The footer links to the confirmation page with the same token, not to
+      # the one-click endpoint.
+      confirm_url =
+        KanbanWeb.Endpoint.url() <>
+          "/notifications/unsubscribe?" <> URI.encode_query(%{"token" => token})
+
+      assert email.text_body =~ confirm_url
+      assert email.html_body =~ confirm_url
+      refute email.text_body =~ "one-click"
       assert email.text_body =~ KanbanWeb.Endpoint.url() <> "/users/notifications"
     end
 

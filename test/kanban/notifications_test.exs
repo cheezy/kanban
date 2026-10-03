@@ -771,4 +771,40 @@ defmodule Kanban.NotificationsTest do
       refute other_pref.email
     end
   end
+
+  describe "unsubscribe/2" do
+    test "turns email off and leaves in-app unchanged" do
+      user = user_fixture()
+      preference_fixture(user, :review_requested, %{in_app: true, email: true})
+
+      assert :ok = Notifications.unsubscribe(user.id, :review_requested)
+
+      pref =
+        user
+        |> scope()
+        |> Notifications.get_preferences()
+        |> Enum.find(&(&1.event_type == :review_requested))
+
+      assert pref.in_app
+      refute pref.email
+    end
+
+    test "is idempotent" do
+      user = user_fixture()
+
+      assert :ok = Notifications.unsubscribe(user.id, :weekly_digest)
+      assert :ok = Notifications.unsubscribe(user.id, "weekly_digest")
+
+      assert Preference |> where(user_id: ^user.id) |> Repo.aggregate(:count) == 1
+    end
+
+    test "returns :not_found for a deleted user and an error for an unknown type" do
+      user = user_fixture()
+
+      assert {:error, :invalid_event_type} = Notifications.unsubscribe(user.id, :bogus)
+
+      Repo.delete!(user)
+      assert {:error, :not_found} = Notifications.unsubscribe(user.id, :review_requested)
+    end
+  end
 end

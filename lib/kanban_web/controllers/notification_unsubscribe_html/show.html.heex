@@ -1,0 +1,60 @@
+<.auth_frame flash={@flash}>
+  <div
+    id="notification-unsubscribe"
+    data-state={@state}
+    style="display: flex; flex-direction: column; align-items: center; text-align: center;"
+  >
+    <div style="width: 72px; height: 72px; border-radius: 16px; background: linear-gradient(135deg, var(--stride-orange-soft) 0%, var(--stride-violet-soft) 100%); display: inline-flex; align-items: center; justify-content: center; color: var(--stride-orange-ink); box-shadow: inset 0 0 0 1px var(--line);">
+      <.icon name="hero-envelope" class="w-8 h-8" />
+    </div>
+
+    <%= case @state do %>
+      <% :confirm -> %>
+        <h1 style="margin: 20px 0 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink);">
+          {gettext("Unsubscribe from these emails?")}
+        </h1>
+        <p style="margin: 10px 0 0; font-size: 13.5px; color: var(--ink-3); max-width: 360px; text-wrap: pretty;">
+          {gettext("You will stop receiving emails about: %{category}.", category: @category)}
+          {gettext("In-app notifications are not affected.")}
+        </p>
+        <.form
+          for={%{}}
+          action={~p"/notifications/unsubscribe?#{[token: @token]}"}
+          method="post"
+          style="margin-top: 24px; width: 100%;"
+        >
+          <.primary_full_button type="submit">
+            {gettext("Unsubscribe")}
+          </.primary_full_button>
+        </.form>
+      <% :done -> %>
+        <h1 style="margin: 20px 0 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink);">
+          {gettext("You're unsubscribed")}
+        </h1>
+        <p style="margin: 10px 0 0; font-size: 13.5px; color: var(--ink-3); max-width: 360px; text-wrap: pretty;">
+          {gettext("You will no longer receive emails about: %{category}.", category: @category)}
+        </p>
+        <a
+          href={preferences_path()}
+          style="margin-top: 24px; font-size: 13.5px; color: var(--ink); text-decoration: underline;"
+        >
+          {gettext("Manage notification preferences")}
+        </a>
+      <% :invalid -> %>
+        <h1 style="margin: 20px 0 0; font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15; color: var(--ink);">
+          {gettext("This link is no longer valid")}
+        </h1>
+        <p style="margin: 10px 0 0; font-size: 13.5px; color: var(--ink-3); max-width: 360px; text-wrap: pretty;">
+          {gettext(
+            "The unsubscribe link is invalid or has expired. Sign in to manage which emails you receive."
+          )}
+        </p>
+        <a
+          href={preferences_path()}
+          style="margin-top: 24px; font-size: 13.5px; color: var(--ink); text-decoration: underline;"
+        >
+          {gettext("Manage notification preferences")}
+        </a>
+    <% end %>
+  </div>
+</.auth_frame>

@@ -294,6 +294,32 @@ defmodule Kanban.Notifications do
     end
   end
 
+  @doc """
+  Turns email off for one user and one event type, leaving in-app delivery
+  as it was. Used by the signed unsubscribe links, which carry a verified
+  user id and event type rather than a session.
+
+  Idempotent. Returns `{:error, :not_found}` when the user no longer exists
+  and `{:error, :invalid_event_type}` for an unknown event type.
+  """
+  @spec unsubscribe(pos_integer(), event_type() | String.t()) ::
+          :ok | {:error, :not_found | :invalid_event_type | Ecto.Changeset.t()}
+  def unsubscribe(user_id, event_type) when is_integer(user_id) do
+    case Repo.get(User, user_id) do
+      nil ->
+        {:error, :not_found}
+
+      user ->
+        user
+        |> Scope.for_user()
+        |> update_preference(event_type, %{email: false})
+        |> ok_or_error()
+    end
+  end
+
+  defp ok_or_error({:ok, _preference}), do: :ok
+  defp ok_or_error({:error, _reason} = error), do: error
+
   # -- notify/3 helpers ------------------------------------------------------
 
   # Resolving recipients inside the transaction lets Recipients' FOR SHARE
