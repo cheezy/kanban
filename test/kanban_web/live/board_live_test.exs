@@ -777,6 +777,41 @@ defmodule KanbanWeb.BoardLiveTest do
       refute html =~ "Original Title"
     end
 
+    test "assigning a task through the edit form notifies the new assignee (W2203)",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      teammate = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, teammate, :modify, user)
+      task = task_fixture(column, %{title: "Hand me over"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+
+      show_live
+      |> form("#task-form", task: %{assigned_to_id: teammate.id})
+      |> render_submit()
+
+      assert [%Kanban.Notifications.Notification{user_id: user_id}] =
+               assignment_notifications(task.id)
+
+      assert user_id == teammate.id
+    end
+
+    test "assigning a task to yourself through the edit form notifies nobody (W2203)",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Mine now"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+
+      show_live
+      |> form("#task-form", task: %{assigned_to_id: user.id})
+      |> render_submit()
+
+      assert assignment_notifications(task.id) == []
+    end
+
     test "deletes task", %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
@@ -1910,5 +1945,13 @@ defmodule KanbanWeb.BoardLiveTest do
       assert html =~ "Task created successfully"
       assert html =~ "New Task on AI Board"
     end
+  end
+
+  defp assignment_notifications(task_id) do
+    import Ecto.Query
+
+    Kanban.Notifications.Notification
+    |> where(event_type: :task_assigned, task_id: ^task_id)
+    |> Kanban.Repo.all()
   end
 end

@@ -1,9 +1,12 @@
 defmodule Kanban.Tasks.AgentWorkflowTest do
   use Kanban.DataCase, async: true
+  use Oban.Testing, repo: Kanban.Repo
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
 
+  alias Kanban.Notifications.EmailWorker
+  alias Kanban.Notifications.Notification
   alias Kanban.Repo
   alias Kanban.Tasks
   alias Kanban.Tasks.AgentWorkflow
@@ -960,6 +963,128 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :read_only, ctx.user)
 
       assert {:error, :not_authorized} = AgentWorkflow.mark_done(ctx.in_review_task, ctx.other)
+    end
+  end
+
+  describe "complete_task/4 — review_requested notifications (W2203)" do
+    setup :setup_board
+
+    setup ctx do
+      reader = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :modify, ctx.user)
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, reader, :read_only, ctx.user)
+      %{reader: reader}
+    end
+
+    defp review_requests(task_id) do
+      Notification
+      |> where(event_type: :review_requested, task_id: ^task_id)
+      |> Repo.all()
+    end
+
+    test "notifies the completing owner and modify members, not read-only members", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      {:ok, completed, _hooks} =
+        AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      rows = review_requests(task.id)
+
+      notified = rows |> Enum.map(& &1.user_id) |> Enum.sort()
+      assert notified == Enum.sort([ctx.user.id, ctx.other.id])
+      refute Enum.any?(rows, &(&1.user_id == ctx.reader.id))
+
+      for n <- rows do
+        assert n.title == "#{completed.identifier}: #{completed.title}"
+        assert n.board_id == ctx.board.id
+        assert n.url_path == "/review"
+        assert_enqueued(worker: EmailWorker, args: %{notification_id: n.id})
+      end
+    end
+
+    test "a needs_review=false completion requests no review", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => false})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      {:ok, _done, _hooks} =
+        AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert review_requests(task.id) == []
+    end
+
+    test "never copies completion notes or summary into the notification", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      params =
+        Map.merge(valid_complete_params(), %{
+          "completion_summary" => "SUMMARY-MARKER",
+          "completion_notes" => "NOTES-MARKER"
+        })
+
+      {:ok, _completed, _hooks} = AgentWorkflow.complete_task(claimed, ctx.user, params, "Claude")
+
+      for n <- review_requests(task.id) do
+        refute n.title =~ "MARKER"
+        refute (n.body || "") =~ "MARKER"
+      end
+    end
+
+    test "a re-completion after changes requested notifies again", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      {:ok, completed, _hooks} =
+        AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      {:ok, back_in_doing} =
+        completed
+        |> Repo.preload([:column])
+        |> set_review_status(:changes_requested, ctx.user)
+        |> then(&AgentWorkflow.mark_reviewed(&1, ctx.user))
+
+      # Dedupe keys use second-precision updated_at.
+      Process.sleep(1_000)
+
+      {:ok, _recompleted, _hooks} =
+        AgentWorkflow.complete_task(back_in_doing, ctx.user, valid_complete_params(), "Claude")
+
+      rows = review_requests(task.id)
+
+      assert length(rows) == 4
+      assert rows |> Enum.map(& &1.dedupe_key) |> Enum.uniq() |> length() == 2
+    end
+
+    test "sibling tasks of one goal completed concurrently each notify every member once",
+         ctx do
+      goal = create_open_task(ctx.ready, ctx.user, %{"type" => "goal"})
+
+      claimed =
+        for _ <- 1..2 do
+          ctx.ready
+          |> create_open_task(ctx.user, %{"needs_review" => true, "parent_id" => goal.id})
+          |> claim_for(ctx.user, ctx.board)
+        end
+
+      claimed
+      |> Elixir.Task.async_stream(fn task ->
+        AgentWorkflow.complete_task(task, ctx.user, valid_complete_params(), "Claude")
+      end)
+      |> Enum.each(fn {:ok, result} -> assert {:ok, _completed, _hooks} = result end)
+
+      # The task id in each dedupe key keeps siblings from colliding.
+      for task <- claimed do
+        assert task.parent_id == goal.id
+        assert length(review_requests(task.id)) == 2
+      end
+    end
+
+    test "claiming a task does not send a task_assigned notification", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      _claimed = claim_for(task, ctx.user, ctx.board)
+
+      assert Notification |> where(event_type: :task_assigned) |> Repo.all() == []
     end
   end
 end

@@ -128,6 +128,42 @@ defmodule Kanban.Tasks.InterventionsTest do
       }
     end
 
+    test "notifies the new assignee once, for the goal (W2203)", ctx do
+      %{cols: cols, goal: goal, assignee: assignee, scope: scope} = ctx
+      task_fixture(cols["Backlog"], %{parent_id: goal.id})
+      task_fixture(cols["Ready"], %{parent_id: goal.id})
+
+      assert {:ok, %{moved: [_, _, _], skipped: []}} =
+               Interventions.reassign_goal_unstarted(scope, goal, assignee.id)
+
+      assert [%Kanban.Notifications.Notification{user_id: user_id, task_id: task_id}] =
+               task_assigned_rows()
+
+      assert user_id == assignee.id
+      assert task_id == goal.id
+    end
+
+    test "reassigning to the acting user notifies nobody (W2203)", ctx do
+      assert {:ok, _} = Interventions.reassign_goal_unstarted(ctx.scope, ctx.goal, ctx.owner.id)
+      assert task_assigned_rows() == []
+    end
+
+    test "reassigning to the current assignee notifies nobody (W2203)", ctx do
+      goal = ctx.goal |> Ecto.Changeset.change(assigned_to_id: ctx.assignee.id) |> Repo.update!()
+
+      assert {:ok, _} = Interventions.reassign_goal_unstarted(ctx.scope, goal, ctx.assignee.id)
+      assert task_assigned_rows() == []
+    end
+
+    test "an unauthorized reassignment notifies nobody (W2203)", ctx do
+      stranger = Scope.for_user(user_fixture())
+
+      assert {:error, :unauthorized} =
+               Interventions.reassign_goal_unstarted(stranger, ctx.goal, ctx.assignee.id)
+
+      assert task_assigned_rows() == []
+    end
+
     test "reassigns the goal and every Backlog/Ready open child", ctx do
       %{cols: cols, goal: goal, assignee: assignee, scope: scope} = ctx
       backlog_child = task_fixture(cols["Backlog"], %{parent_id: goal.id})
@@ -700,5 +736,11 @@ defmodule Kanban.Tasks.InterventionsTest do
     |> Map.fetch!(:task_histories)
     |> Enum.filter(&(&1.type == :priority_change))
     |> Enum.map(& &1.to_priority)
+  end
+
+  defp task_assigned_rows do
+    Kanban.Notifications.Notification
+    |> where(event_type: :task_assigned)
+    |> Repo.all()
   end
 end

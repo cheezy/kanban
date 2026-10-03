@@ -377,7 +377,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     task_params = prepare_task_update_params(socket, task_params)
     cascade_count = TaskParams.compute_cascade_count(socket.assigns.task, task_params)
 
-    case Tasks.update_task(socket.assigns.task, task_params) do
+    case save_task_update(socket, task_params) do
       {:ok, task} ->
         notify_parent({:saved, task})
 
@@ -391,6 +391,19 @@ defmodule KanbanWeb.TaskLive.FormComponent do
          socket
          |> assign(:error_message, gettext("Please fix the errors below"))
          |> assign_form(changeset)}
+    end
+  end
+
+  # Passing the acting user lets Tasks.update_task/3 skip the task_assigned
+  # notification when someone assigns a task to themselves.
+  defp save_task_update(socket, task_params) do
+    Tasks.update_task(socket.assigns.task, task_params, actor: current_user(socket))
+  end
+
+  defp current_user(socket) do
+    case Map.get(socket.assigns, :current_scope) do
+      %{user: user} -> user
+      _ -> nil
     end
   end
 

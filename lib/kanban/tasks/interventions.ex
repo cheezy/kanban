@@ -32,6 +32,7 @@ defmodule Kanban.Tasks.Interventions do
   alias Kanban.Boards
   alias Kanban.Boards.BoardUser
   alias Kanban.Columns.Column
+  alias Kanban.Notifications.Events
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Targets
@@ -105,11 +106,28 @@ defmodule Kanban.Tasks.Interventions do
           | {:error, :unauthorized | :assignee_not_on_board | Ecto.Changeset.t()}
   def reassign_goal_unstarted(scope, %Task{} = goal, new_assigned_to_id) do
     if can_intervene?(scope, goal) do
-      run_reassign(goal, new_assigned_to_id)
+      goal
+      |> run_reassign(new_assigned_to_id)
+      |> notify_reassigned(goal, scope)
     else
       {:error, :unauthorized}
     end
   end
+
+  # One task_assigned notification for the goal, never one per moved child.
+  # Hooked here rather than in finalize_intervention/2, which undo and
+  # reprioritize share.
+  defp notify_reassigned(
+         {:ok, %{moved: [%Task{assigned_to_id: new_id} = updated_goal | _]}} = result,
+         %Task{assigned_to_id: old_id},
+         %Scope{user: actor}
+       )
+       when new_id != old_id do
+    Events.task_assigned(updated_goal, actor)
+    result
+  end
+
+  defp notify_reassigned(result, _goal, _scope), do: result
 
   @doc """
   Read-only preview of what `reassign_goal_unstarted/3` would move for `goal`.

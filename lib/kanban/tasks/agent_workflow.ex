@@ -13,6 +13,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   alias Kanban.Columns.Column
   alias Kanban.Hooks
   alias Kanban.Hooks.Metadata
+  alias Kanban.Notifications.Events
   alias Kanban.Repo
   alias Kanban.Tasks.AgentQueries
   alias Kanban.Tasks.Broadcaster
@@ -514,6 +515,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
       # Review with no changed_files diff despite having changed files, so the
       # gap is telemetry-visible instead of a silently blind review queue.
       ChangedFilesAudit.audit_review_bound_task(updated_task, board_id)
+      Events.review_requested(updated_task)
 
       hooks =
         Metadata.build_completion_hooks(updated_task, board, agent_name, needs_review?: true)

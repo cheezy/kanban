@@ -6,6 +6,7 @@ defmodule Kanban.Tasks.Lifecycle do
   import Ecto.Query, warn: false
 
   alias Ecto.Multi
+  alias Kanban.Notifications.Events
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.DbErrors
@@ -24,18 +25,36 @@ defmodule Kanban.Tasks.Lifecycle do
   whose `assigned_to_id` differs from the new value. The cascade is atomic:
   goal update, child updates, and assignment_history rows all commit together
   in a single transaction. If any step fails, none persist.
+
+  When the assignee changes, the new assignee is notified once after the
+  write commits (`Kanban.Notifications.Events.task_assigned/2`) — once for a
+  goal, never per cascaded child. `opts`:
+
+    * `:actor` — the user making the change; assigning a task to yourself
+      notifies nobody. Omitted, the change is treated as a system change and
+      the assignee is notified.
   """
-  def update_task(%Task{} = task, attrs) do
+  def update_task(%Task{} = task, attrs, opts \\ []) do
     changeset = Task.changeset(task, attrs)
     changeset = Dependencies.validate_circular_dependencies(changeset)
     assignment_changed? = Map.has_key?(changeset.changes, :assigned_to_id)
 
-    if assignment_changed? and task.type == :goal do
-      update_goal_with_cascade(task, changeset)
-    else
-      update_without_cascade(task, changeset)
-    end
+    result =
+      if assignment_changed? and task.type == :goal do
+        update_goal_with_cascade(task, changeset)
+      else
+        update_without_cascade(task, changeset)
+      end
+
+    notify_assignment(result, assignment_changed?, opts)
   end
+
+  defp notify_assignment({:ok, updated} = result, true, opts) do
+    Events.task_assigned(updated, Keyword.get(opts, :actor))
+    result
+  end
+
+  defp notify_assignment(result, _assignment_changed?, _opts), do: result
 
   @doc """
   API-safe update path for PATCH /api/tasks/:id.
