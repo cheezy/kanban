@@ -87,19 +87,19 @@ msgstr "ログアウト"
 #: lib/kanban_web/components/layouts.ex:191
 #: lib/kanban_web/components/layouts.ex:192
 #: lib/kanban_web/components/nav_components.ex:132
-#: lib/kanban_web/live/user_live/notification_preferences.ex:115
-#: lib/kanban_web/live/user_live/settings.ex:16
+#: lib/kanban_web/live/user_live/notification_preferences.ex:124
+#: lib/kanban_web/live/user_live/settings_components.ex:29
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr "設定"
 
-#: lib/kanban_web/live/user_live/settings.ex:411
+#: lib/kanban_web/live/user_live/settings.ex:291
 #, elixir-autogen, elixir-format
 msgid "A link to confirm your email change has been sent to the new address."
 msgstr "メール変更を確認するリンクが新しいアドレスに送信されました。"
 
 #: lib/kanban_web/live/user_live/reset_password.ex:68
-#: lib/kanban_web/live/user_live/settings.ex:172
+#: lib/kanban_web/live/user_live/settings.ex:119
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
 msgstr "新しいパスワードを確認"
@@ -119,33 +119,33 @@ msgstr "アカウントを作成中..."
 #: lib/kanban_web/live/user_live/forgot_password.ex:40
 #: lib/kanban_web/live/user_live/forgot_password.ex:47
 #: lib/kanban_web/live/user_live/login.ex:42
-#: lib/kanban_web/live/user_live/notification_preferences.ex:177
+#: lib/kanban_web/live/user_live/notification_preferences.ex:187
 #: lib/kanban_web/live/user_live/registration.ex:57
-#: lib/kanban_web/live/user_live/settings.ex:96
+#: lib/kanban_web/live/user_live/settings.ex:43
 #, elixir-autogen, elixir-format
 msgid "Email"
 msgstr "メール"
 
-#: lib/kanban_web/live/user_live/settings.ex:319
+#: lib/kanban_web/live/user_live/settings.ex:190
 #, elixir-autogen, elixir-format
 msgid "Email change link is invalid or it has expired."
 msgstr "メール変更リンクが無効または期限切れです。"
 
-#: lib/kanban_web/live/user_live/settings.ex:316
+#: lib/kanban_web/live/user_live/settings.ex:187
 #, elixir-autogen, elixir-format
 msgid "Email changed successfully."
 msgstr "メールが正常に変更されました。"
 
 #: lib/kanban_web/live/user_live/reset_password.ex:42
-#: lib/kanban_web/live/user_live/settings.ex:149
+#: lib/kanban_web/live/user_live/settings.ex:96
 #, elixir-autogen, elixir-format
 msgid "New password"
 msgstr "新しいパスワード"
 
 #: lib/kanban_web/live/user_live/login.ex:59
 #: lib/kanban_web/live/user_live/registration.ex:73
-#: lib/kanban_web/live/user_live/settings.ex:46
-#: lib/kanban_web/live/user_live/settings.ex:124
+#: lib/kanban_web/live/user_live/settings.ex:71
+#: lib/kanban_web/live/user_live/settings_components.ex:101
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr "パスワード"
@@ -156,8 +156,8 @@ msgstr "パスワード"
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/form_component.html.heex:412
-#: lib/kanban_web/live/user_live/settings.ex:112
-#: lib/kanban_web/live/user_live/settings.ex:192
+#: lib/kanban_web/live/user_live/settings.ex:59
+#: lib/kanban_web/live/user_live/settings.ex:139
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr "保存中..."
@@ -230,7 +230,7 @@ msgstr "ボード用の列を作成して開始しましょう。"
 #: lib/kanban_web/live/board_live/settings_form_component.ex:78
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
 #: lib/kanban_web/live/target_live/form.html.heex:29
-#: lib/kanban_web/live/user_live/settings.ex:84
+#: lib/kanban_web/live/user_live/settings.ex:31
 #, elixir-autogen, elixir-format
 msgid "Name"
 msgstr "名前"
@@ -5501,7 +5501,7 @@ msgstr "キューに戻る"
 msgid "Back to review queue"
 msgstr "レビューキューに戻る"
 
-#: lib/kanban_web/live/user_live/settings.ex:430
+#: lib/kanban_web/live/user_live/settings.ex:310
 #, elixir-autogen, elixir-format
 msgid "Profile updated."
 msgstr "プロフィールを更新しました。"
@@ -5555,7 +5555,7 @@ msgstr "すでにアカウントをお持ちですか?"
 
 #: lib/kanban_web/live/user_live/registration.ex:85
 #: lib/kanban_web/live/user_live/reset_password.ex:61
-#: lib/kanban_web/live/user_live/settings.ex:149
+#: lib/kanban_web/live/user_live/settings.ex:96
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
 msgstr "12文字以上"
@@ -5587,7 +5587,7 @@ msgstr "言語を変更"
 msgid "Choose a new password for your account."
 msgstr "アカウントの新しいパスワードを選択してください。"
 
-#: lib/kanban_web/live/user_live/settings.ex:126
+#: lib/kanban_web/live/user_live/settings.ex:73
 #, elixir-autogen, elixir-format
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr "強力なパスワードを選んで確認してください。変更が成功すると、このデバイスでサインインされたままになります。"
@@ -5637,11 +5637,6 @@ msgstr "次に同意します:"
 msgid "Keep me signed in on this device"
 msgstr "このデバイスでサインインを維持"
 
-#: lib/kanban_web/live/user_live/settings.ex:19
-#, elixir-autogen, elixir-format
-msgid "Manage your account profile and password. Changes apply to your account immediately."
-msgstr "アカウントのプロフィールとパスワードを管理します。変更はすぐにアカウントに反映されます。"
-
 #: lib/kanban_web/live/user_live/login.ex:11
 #, elixir-autogen, elixir-format
 msgid "New to Stride?"
@@ -5652,8 +5647,8 @@ msgstr "Strideは初めてですか?"
 msgid "Not found"
 msgstr "見つかりません"
 
-#: lib/kanban_web/live/user_live/settings.ex:40
-#: lib/kanban_web/live/user_live/settings.ex:70
+#: lib/kanban_web/live/user_live/settings.ex:17
+#: lib/kanban_web/live/user_live/settings_components.ex:100
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Profile"
 msgstr "プロフィール"
@@ -5673,7 +5668,7 @@ msgstr "Strideアプリケーションのリリースノート。"
 msgid "Reset your password"
 msgstr "パスワードをリセット"
 
-#: lib/kanban_web/live/user_live/settings.ex:195
+#: lib/kanban_web/live/user_live/settings.ex:142
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Save password"
 msgstr "パスワードを保存"
@@ -5704,7 +5699,7 @@ msgstr "利用規約"
 msgid "The people and the AI collaborator behind Stride."
 msgstr "Strideを支える人々とAIコラボレーター。"
 
-#: lib/kanban_web/live/user_live/settings.ex:115
+#: lib/kanban_web/live/user_live/settings.ex:62
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Update profile"
 msgstr "プロフィールを更新"
@@ -5734,12 +5729,12 @@ msgstr "お帰りなさい。前回と同じ方法をご利用ください。"
 msgid "Your name"
 msgstr "お名前"
 
-#: lib/kanban_web/live/user_live/settings.ex:72
+#: lib/kanban_web/live/user_live/settings.ex:19
 #, elixir-autogen, elixir-format
 msgid "Your name and email address. Email changes require confirmation by clicking a link sent to the new address."
 msgstr "お名前とメールアドレス。メールアドレスの変更は、新しいアドレスに送信されるリンクをクリックして確認する必要があります。"
 
-#: lib/kanban_web/live/user_live/settings.ex:47
+#: lib/kanban_web/live/user_live/settings_components.ex:101
 #, elixir-autogen, elixir-format
 msgid "change credentials"
 msgstr "認証情報を変更"
@@ -5749,7 +5744,7 @@ msgstr "認証情報を変更"
 msgid "if you suspect a key is compromised."
 msgstr "鍵が侵害された疑いがある場合。"
 
-#: lib/kanban_web/live/user_live/settings.ex:41
+#: lib/kanban_web/live/user_live/settings_components.ex:100
 #, elixir-autogen, elixir-format
 msgid "name · email"
 msgstr "名前 · メール"
@@ -6688,8 +6683,8 @@ msgstr "Stride は各タスクを4段階のライフサイクルで包みます�
 msgid "Code review"
 msgstr "コードレビュー"
 
-#: lib/kanban_web/live/user_live/settings.ex:28
-#: lib/kanban_web/live/user_live/settings.ex:34
+#: lib/kanban_web/live/user_live/settings_components.ex:41
+#: lib/kanban_web/live/user_live/settings_components.ex:48
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Settings sections"
 msgstr "設定セクション"
@@ -9003,7 +8998,7 @@ msgstr "配信停止"
 msgid "Unsubscribe from these emails?"
 msgstr "これらのメールの配信を停止しますか？"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:183
+#: lib/kanban_web/live/user_live/notification_preferences.ex:193
 #: lib/kanban_web/notification_labels.ex:33
 #, elixir-autogen, elixir-format
 msgid "Weekly digest"
@@ -9084,8 +9079,8 @@ msgstr "通知が見つかりません。"
 #: lib/kanban_web/live/notification_live/index.ex:33
 #: lib/kanban_web/live/notification_live/index.html.heex:5
 #: lib/kanban_web/live/notification_live/index.html.heex:15
-#: lib/kanban_web/live/user_live/notification_preferences.ex:118
-#: lib/kanban_web/live/user_live/settings.ex:58
+#: lib/kanban_web/live/user_live/notification_preferences.ex:127
+#: lib/kanban_web/live/user_live/settings_components.ex:74
 #, elixir-autogen, elixir-format
 msgid "Notifications"
 msgstr "通知"
@@ -9121,11 +9116,6 @@ msgstr "レビューできるタスクがレビューキューで待っている
 msgid "A weekly summary of activity on your boards."
 msgstr "ボードのアクティビティの週次サマリー。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:102
-#, elixir-autogen, elixir-format
-msgid "Account"
-msgstr "アカウント"
-
 #: lib/kanban_web/notification_labels.ex:56
 #, elixir-autogen, elixir-format
 msgid "An agent releases a task it had claimed for you."
@@ -9136,43 +9126,43 @@ msgstr "エージェントがあなたのために引き受けていたタスク
 msgid "An agent's claim on your task expires before it is finished."
 msgstr "エージェントによるタスクの引き受けが、完了前に期限切れになったとき。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:127
+#: lib/kanban_web/live/user_live/notification_preferences.ex:136
 #, elixir-autogen, elixir-format
 msgid "Choose which events reach you and how. Changes save as soon as you toggle them."
 msgstr "どのイベントをどの方法で受け取るかを選びます。切り替えるとすぐに保存されます。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:76
+#: lib/kanban_web/live/user_live/notification_preferences.ex:84
 #, elixir-autogen, elixir-format
 msgid "Could not save that preference."
 msgstr "その設定を保存できませんでした。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:195
+#: lib/kanban_web/live/user_live/notification_preferences.ex:205
 #, elixir-autogen, elixir-format
 msgid "Email me a weekly summary of activity on my boards"
 msgstr "ボードのアクティビティの週次サマリーをメールで受け取る"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:101
+#: lib/kanban_web/live/user_live/notification_preferences.ex:109
 #, elixir-autogen, elixir-format
 msgid "Goals and targets"
 msgstr "ゴールとターゲット"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:169
+#: lib/kanban_web/live/user_live/notification_preferences.ex:179
 #, elixir-autogen, elixir-format
 msgid "In-app"
 msgstr "アプリ内"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:38
-#: lib/kanban_web/live/user_live/notification_preferences.ex:124
+#: lib/kanban_web/live/user_live/notification_preferences.ex:46
+#: lib/kanban_web/live/user_live/notification_preferences.ex:133
 #, elixir-autogen, elixir-format
 msgid "Notification preferences"
 msgstr "通知設定"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:68
+#: lib/kanban_web/live/user_live/notification_preferences.ex:76
 #, elixir-autogen, elixir-format
 msgid "Notification preferences saved."
 msgstr "通知設定を保存しました。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:99
+#: lib/kanban_web/live/user_live/notification_preferences.ex:107
 #, elixir-autogen, elixir-format
 msgid "Reviews"
 msgstr "レビュー"
@@ -9192,13 +9182,13 @@ msgstr "誰かがあなたのタスクにコメントしたとき。"
 msgid "Someone mentions you in a comment."
 msgstr "誰かがコメントであなたをメンションしたとき。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:100
+#: lib/kanban_web/live/user_live/notification_preferences.ex:108
 #, elixir-autogen, elixir-format
 msgid "Tasks and agents"
 msgstr "タスクとエージェント"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:47
-#: lib/kanban_web/live/user_live/notification_preferences.ex:59
+#: lib/kanban_web/live/user_live/notification_preferences.ex:55
+#: lib/kanban_web/live/user_live/notification_preferences.ex:67
 #, elixir-autogen, elixir-format
 msgid "Unknown notification type."
 msgstr "不明な通知の種類です。"
@@ -9208,7 +9198,7 @@ msgstr "不明な通知の種類です。"
 msgid "You are added to or removed from a board, or your access changes."
 msgstr "ボードに追加または削除されたとき、またはアクセス権が変わったとき。"
 
-#: lib/kanban_web/live/user_live/settings.ex:61
+#: lib/kanban_web/live/user_live/settings_components.ex:75
 #, elixir-autogen, elixir-format
 msgid "in-app · email"
 msgstr "アプリ · メール"
@@ -9335,3 +9325,18 @@ msgstr "目標日（%{date}）を過ぎました。"
 #, elixir-autogen, elixir-format
 msgid "Missed its target date."
 msgstr "目標日を過ぎました。"
+
+#: lib/kanban_web/live/user_live/notification_preferences.ex:110
+#, elixir-autogen, elixir-format
+msgid "Board access"
+msgstr "ボードへのアクセス"
+
+#: lib/kanban_web/live/user_live/notification_preferences.ex:111
+#, elixir-autogen, elixir-format
+msgid "Comments and mentions"
+msgstr "コメントとメンション"
+
+#: lib/kanban_web/live/user_live/settings_components.ex:32
+#, elixir-autogen, elixir-format
+msgid "Manage your profile, password and notifications. Changes apply to your account immediately."
+msgstr "プロフィール、パスワード、通知を管理します。変更はすぐにアカウントに反映されます。"

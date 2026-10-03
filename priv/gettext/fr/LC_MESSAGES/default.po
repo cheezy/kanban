@@ -87,19 +87,19 @@ msgstr "Se Déconnecter"
 #: lib/kanban_web/components/layouts.ex:191
 #: lib/kanban_web/components/layouts.ex:192
 #: lib/kanban_web/components/nav_components.ex:132
-#: lib/kanban_web/live/user_live/notification_preferences.ex:115
-#: lib/kanban_web/live/user_live/settings.ex:16
+#: lib/kanban_web/live/user_live/notification_preferences.ex:124
+#: lib/kanban_web/live/user_live/settings_components.ex:29
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr "Paramètres"
 
-#: lib/kanban_web/live/user_live/settings.ex:411
+#: lib/kanban_web/live/user_live/settings.ex:291
 #, elixir-autogen, elixir-format
 msgid "A link to confirm your email change has been sent to the new address."
 msgstr "Un lien pour confirmer votre changement d'email a été envoyé à la nouvelle adresse."
 
 #: lib/kanban_web/live/user_live/reset_password.ex:68
-#: lib/kanban_web/live/user_live/settings.ex:172
+#: lib/kanban_web/live/user_live/settings.ex:119
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
 msgstr "Confirmer le nouveau mot de passe"
@@ -119,33 +119,33 @@ msgstr "Création du compte en cours..."
 #: lib/kanban_web/live/user_live/forgot_password.ex:40
 #: lib/kanban_web/live/user_live/forgot_password.ex:47
 #: lib/kanban_web/live/user_live/login.ex:42
-#: lib/kanban_web/live/user_live/notification_preferences.ex:177
+#: lib/kanban_web/live/user_live/notification_preferences.ex:187
 #: lib/kanban_web/live/user_live/registration.ex:57
-#: lib/kanban_web/live/user_live/settings.ex:96
+#: lib/kanban_web/live/user_live/settings.ex:43
 #, elixir-autogen, elixir-format
 msgid "Email"
 msgstr "Email"
 
-#: lib/kanban_web/live/user_live/settings.ex:319
+#: lib/kanban_web/live/user_live/settings.ex:190
 #, elixir-autogen, elixir-format
 msgid "Email change link is invalid or it has expired."
 msgstr "Le lien de changement d'email est invalide ou a expiré."
 
-#: lib/kanban_web/live/user_live/settings.ex:316
+#: lib/kanban_web/live/user_live/settings.ex:187
 #, elixir-autogen, elixir-format
 msgid "Email changed successfully."
 msgstr "Email modifié avec succès."
 
 #: lib/kanban_web/live/user_live/reset_password.ex:42
-#: lib/kanban_web/live/user_live/settings.ex:149
+#: lib/kanban_web/live/user_live/settings.ex:96
 #, elixir-autogen, elixir-format
 msgid "New password"
 msgstr "Nouveau mot de passe"
 
 #: lib/kanban_web/live/user_live/login.ex:59
 #: lib/kanban_web/live/user_live/registration.ex:73
-#: lib/kanban_web/live/user_live/settings.ex:46
-#: lib/kanban_web/live/user_live/settings.ex:124
+#: lib/kanban_web/live/user_live/settings.ex:71
+#: lib/kanban_web/live/user_live/settings_components.ex:101
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr "Mot de passe"
@@ -156,8 +156,8 @@ msgstr "Mot de passe"
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/form_component.html.heex:412
-#: lib/kanban_web/live/user_live/settings.ex:112
-#: lib/kanban_web/live/user_live/settings.ex:192
+#: lib/kanban_web/live/user_live/settings.ex:59
+#: lib/kanban_web/live/user_live/settings.ex:139
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr "Enregistrement en cours..."
@@ -230,7 +230,7 @@ msgstr "Commencez par créer des colonnes pour votre tableau."
 #: lib/kanban_web/live/board_live/settings_form_component.ex:78
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
 #: lib/kanban_web/live/target_live/form.html.heex:29
-#: lib/kanban_web/live/user_live/settings.ex:84
+#: lib/kanban_web/live/user_live/settings.ex:31
 #, elixir-autogen, elixir-format
 msgid "Name"
 msgstr "Nom"
@@ -5513,7 +5513,7 @@ msgstr "Retour à la file"
 msgid "Back to review queue"
 msgstr "Retour à la file de relecture"
 
-#: lib/kanban_web/live/user_live/settings.ex:430
+#: lib/kanban_web/live/user_live/settings.ex:310
 #, elixir-autogen, elixir-format
 msgid "Profile updated."
 msgstr "Profil mis à jour."
@@ -5567,7 +5567,7 @@ msgstr "Vous avez déjà un compte ?"
 
 #: lib/kanban_web/live/user_live/registration.ex:85
 #: lib/kanban_web/live/user_live/reset_password.ex:61
-#: lib/kanban_web/live/user_live/settings.ex:149
+#: lib/kanban_web/live/user_live/settings.ex:96
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
 msgstr "Au moins 12 caractères"
@@ -5599,7 +5599,7 @@ msgstr "Changer de langue"
 msgid "Choose a new password for your account."
 msgstr "Choisissez un nouveau mot de passe pour votre compte."
 
-#: lib/kanban_web/live/user_live/settings.ex:126
+#: lib/kanban_web/live/user_live/settings.ex:73
 #, elixir-autogen, elixir-format
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr "Choisissez un mot de passe fort et confirmez-le. Vous resterez connecté sur cet appareil après un changement réussi."
@@ -5649,11 +5649,6 @@ msgstr "J'accepte les"
 msgid "Keep me signed in on this device"
 msgstr "Garder ma connexion active sur cet appareil"
 
-#: lib/kanban_web/live/user_live/settings.ex:19
-#, elixir-autogen, elixir-format
-msgid "Manage your account profile and password. Changes apply to your account immediately."
-msgstr "Gérez le profil et le mot de passe de votre compte. Les modifications s'appliquent immédiatement à votre compte."
-
 #: lib/kanban_web/live/user_live/login.ex:11
 #, elixir-autogen, elixir-format
 msgid "New to Stride?"
@@ -5664,8 +5659,8 @@ msgstr "Nouveau sur Stride ?"
 msgid "Not found"
 msgstr "Introuvable"
 
-#: lib/kanban_web/live/user_live/settings.ex:40
-#: lib/kanban_web/live/user_live/settings.ex:70
+#: lib/kanban_web/live/user_live/settings.ex:17
+#: lib/kanban_web/live/user_live/settings_components.ex:100
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Profile"
 msgstr "Profil mis à jour."
@@ -5685,7 +5680,7 @@ msgstr "Notes de version de l'application Stride."
 msgid "Reset your password"
 msgstr "Réinitialiser le mot de passe"
 
-#: lib/kanban_web/live/user_live/settings.ex:195
+#: lib/kanban_web/live/user_live/settings.ex:142
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Save password"
 msgstr "Enregistrer le Mot de Passe"
@@ -5716,7 +5711,7 @@ msgstr "Conditions de service"
 msgid "The people and the AI collaborator behind Stride."
 msgstr "Les personnes et le collaborateur IA derrière Stride."
 
-#: lib/kanban_web/live/user_live/settings.ex:115
+#: lib/kanban_web/live/user_live/settings.ex:62
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Update profile"
 msgstr "Mettre à jour le profil"
@@ -5746,12 +5741,12 @@ msgstr "Bon retour. Utilisez la même méthode que la dernière fois."
 msgid "Your name"
 msgstr "Votre nom"
 
-#: lib/kanban_web/live/user_live/settings.ex:72
+#: lib/kanban_web/live/user_live/settings.ex:19
 #, elixir-autogen, elixir-format
 msgid "Your name and email address. Email changes require confirmation by clicking a link sent to the new address."
 msgstr "Votre nom et votre adresse e-mail. Les changements d'e-mail nécessitent une confirmation en cliquant sur un lien envoyé à la nouvelle adresse."
 
-#: lib/kanban_web/live/user_live/settings.ex:47
+#: lib/kanban_web/live/user_live/settings_components.ex:101
 #, elixir-autogen, elixir-format
 msgid "change credentials"
 msgstr "modifier les identifiants"
@@ -5761,7 +5756,7 @@ msgstr "modifier les identifiants"
 msgid "if you suspect a key is compromised."
 msgstr "si vous soupçonnez qu'une clé est compromise."
 
-#: lib/kanban_web/live/user_live/settings.ex:41
+#: lib/kanban_web/live/user_live/settings_components.ex:100
 #, elixir-autogen, elixir-format
 msgid "name · email"
 msgstr "nom · e-mail"
@@ -6688,8 +6683,8 @@ msgstr "Stride enveloppe chaque tâche dans un cycle de vie en quatre étapes. L
 msgid "Code review"
 msgstr "Revue de code"
 
-#: lib/kanban_web/live/user_live/settings.ex:28
-#: lib/kanban_web/live/user_live/settings.ex:34
+#: lib/kanban_web/live/user_live/settings_components.ex:41
+#: lib/kanban_web/live/user_live/settings_components.ex:48
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Settings sections"
 msgstr "Sections des paramètres"
@@ -9011,7 +9006,7 @@ msgstr "Se désabonner"
 msgid "Unsubscribe from these emails?"
 msgstr "Se désabonner de ces e-mails ?"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:183
+#: lib/kanban_web/live/user_live/notification_preferences.ex:193
 #: lib/kanban_web/notification_labels.ex:33
 #, elixir-autogen, elixir-format
 msgid "Weekly digest"
@@ -9093,8 +9088,8 @@ msgstr "Notification introuvable."
 #: lib/kanban_web/live/notification_live/index.ex:33
 #: lib/kanban_web/live/notification_live/index.html.heex:5
 #: lib/kanban_web/live/notification_live/index.html.heex:15
-#: lib/kanban_web/live/user_live/notification_preferences.ex:118
-#: lib/kanban_web/live/user_live/settings.ex:58
+#: lib/kanban_web/live/user_live/notification_preferences.ex:127
+#: lib/kanban_web/live/user_live/settings_components.ex:74
 #, elixir-autogen, elixir-format
 msgid "Notifications"
 msgstr "Notifications"
@@ -9130,11 +9125,6 @@ msgstr "Une tâche que vous pouvez relire attend dans la file de relecture."
 msgid "A weekly summary of activity on your boards."
 msgstr "Un résumé hebdomadaire de l'activité sur vos tableaux."
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:102
-#, elixir-autogen, elixir-format
-msgid "Account"
-msgstr "Compte"
-
 #: lib/kanban_web/notification_labels.ex:56
 #, elixir-autogen, elixir-format
 msgid "An agent releases a task it had claimed for you."
@@ -9145,43 +9135,43 @@ msgstr "Un agent libère une tâche qu'il avait prise pour vous."
 msgid "An agent's claim on your task expires before it is finished."
 msgstr "La prise en charge de votre tâche par un agent expire avant qu'elle soit terminée."
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:127
+#: lib/kanban_web/live/user_live/notification_preferences.ex:136
 #, elixir-autogen, elixir-format
 msgid "Choose which events reach you and how. Changes save as soon as you toggle them."
 msgstr "Choisissez quels événements vous parviennent et comment. Les modifications sont enregistrées dès que vous les basculez."
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:76
+#: lib/kanban_web/live/user_live/notification_preferences.ex:84
 #, elixir-autogen, elixir-format
 msgid "Could not save that preference."
 msgstr "Impossible d'enregistrer cette préférence."
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:195
+#: lib/kanban_web/live/user_live/notification_preferences.ex:205
 #, elixir-autogen, elixir-format
 msgid "Email me a weekly summary of activity on my boards"
 msgstr "M'envoyer par e-mail un résumé hebdomadaire de l'activité sur mes tableaux"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:101
+#: lib/kanban_web/live/user_live/notification_preferences.ex:109
 #, elixir-autogen, elixir-format
 msgid "Goals and targets"
 msgstr "Objectifs et cibles"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:169
+#: lib/kanban_web/live/user_live/notification_preferences.ex:179
 #, elixir-autogen, elixir-format
 msgid "In-app"
 msgstr "Dans l'app"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:38
-#: lib/kanban_web/live/user_live/notification_preferences.ex:124
+#: lib/kanban_web/live/user_live/notification_preferences.ex:46
+#: lib/kanban_web/live/user_live/notification_preferences.ex:133
 #, elixir-autogen, elixir-format
 msgid "Notification preferences"
 msgstr "Préférences de notification"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:68
+#: lib/kanban_web/live/user_live/notification_preferences.ex:76
 #, elixir-autogen, elixir-format
 msgid "Notification preferences saved."
 msgstr "Préférences de notification enregistrées."
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:99
+#: lib/kanban_web/live/user_live/notification_preferences.ex:107
 #, elixir-autogen, elixir-format
 msgid "Reviews"
 msgstr "Relectures"
@@ -9201,13 +9191,13 @@ msgstr "Quelqu'un commente votre tâche."
 msgid "Someone mentions you in a comment."
 msgstr "Quelqu'un vous mentionne dans un commentaire."
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:100
+#: lib/kanban_web/live/user_live/notification_preferences.ex:108
 #, elixir-autogen, elixir-format
 msgid "Tasks and agents"
 msgstr "Tâches et agents"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:47
-#: lib/kanban_web/live/user_live/notification_preferences.ex:59
+#: lib/kanban_web/live/user_live/notification_preferences.ex:55
+#: lib/kanban_web/live/user_live/notification_preferences.ex:67
 #, elixir-autogen, elixir-format
 msgid "Unknown notification type."
 msgstr "Type de notification inconnu."
@@ -9217,7 +9207,7 @@ msgstr "Type de notification inconnu."
 msgid "You are added to or removed from a board, or your access changes."
 msgstr "Vous êtes ajouté à un tableau ou retiré de celui-ci, ou votre accès change."
 
-#: lib/kanban_web/live/user_live/settings.ex:61
+#: lib/kanban_web/live/user_live/settings_components.ex:75
 #, elixir-autogen, elixir-format
 msgid "in-app · email"
 msgstr "app · e-mail"
@@ -9346,3 +9336,18 @@ msgstr "A manqué sa date cible du %{date}."
 #, elixir-autogen, elixir-format
 msgid "Missed its target date."
 msgstr "A manqué sa date cible."
+
+#: lib/kanban_web/live/user_live/notification_preferences.ex:110
+#, elixir-autogen, elixir-format
+msgid "Board access"
+msgstr "Accès au tableau"
+
+#: lib/kanban_web/live/user_live/notification_preferences.ex:111
+#, elixir-autogen, elixir-format
+msgid "Comments and mentions"
+msgstr "Commentaires et mentions"
+
+#: lib/kanban_web/live/user_live/settings_components.ex:32
+#, elixir-autogen, elixir-format
+msgid "Manage your profile, password and notifications. Changes apply to your account immediately."
+msgstr "Gérez votre profil, votre mot de passe et vos notifications. Les modifications s'appliquent immédiatement à votre compte."

@@ -11,21 +11,29 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   """
   use KanbanWeb, :live_view
 
+  import KanbanWeb.UserLive.SettingsComponents
+
   alias Kanban.Notifications
   alias KanbanWeb.NotificationLabels
 
+  # Reviews first (reviewing agents' work is the main thing a person does
+  # here), then the task and goal lifecycles, board access, and the comment
+  # events, which nothing emits yet.
   @groups [
     reviews: [:review_requested, :task_reviewed],
-    tasks: [:task_assigned, :task_unclaimed, :claim_expired, :comment_added, :mentioned],
+    tasks: [:task_assigned, :task_unclaimed, :claim_expired],
     goals: [:goal_completed, :after_goal_failed, :target_status_changed],
-    account: [:board_access_changed]
+    board_access: [:board_access_changed],
+    comments: [:comment_added, :mentioned]
   ]
   @row_types @groups |> Keyword.values() |> List.flatten()
 
   # The core checkbox wraps itself in a padded, bottom-margined .fieldset,
   # which left the toggles off-centre and the row gaps uneven. Drop that
-  # spacing here and give each label a 44px tap height on phones.
-  @toggle_layout "[&_.fieldset]:m-0 [&_.fieldset]:p-0 [&_label]:flex [&_label]:items-center [&_label]:min-h-11 sm:[&_label]:min-h-0"
+  # spacing here, give each label a 44px tap height on phones, and let long
+  # label text wrap (the label class keeps it on one line, which overflowed
+  # the weekly digest toggle at 320px).
+  @toggle_layout "[&_.fieldset]:m-0 [&_.fieldset]:p-0 [&_label]:flex [&_label]:items-center [&_label]:min-h-11 sm:[&_label]:min-h-0 [&_.label]:whitespace-normal"
 
   @doc false
   # Every event type except :weekly_digest, which has its own toggle.
@@ -99,7 +107,8 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   defp group_title(:reviews), do: gettext("Reviews")
   defp group_title(:tasks), do: gettext("Tasks and agents")
   defp group_title(:goals), do: gettext("Goals and targets")
-  defp group_title(:account), do: gettext("Account")
+  defp group_title(:board_access), do: gettext("Board access")
+  defp group_title(:comments), do: gettext("Comments and mentions")
 
   @impl true
   def render(assigns) do
@@ -118,110 +127,87 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
         <span style="color: var(--ink); font-weight: 500;">{gettext("Notifications")}</span>
       </:breadcrumbs>
 
-      <div data-notification-preferences class="stride-screen px-4 pb-6 pt-5 md:px-7 md:pb-7">
-        <header style="padding-bottom: 14px;">
-          <h1 style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink);">
+      <.settings_shell active={:notifications}>
+        <div data-notification-preferences>
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink);">
             {gettext("Notification preferences")}
-          </h1>
-          <p style="margin: 6px 0 0; font-size: 13px; color: var(--ink-2); max-width: 720px; text-wrap: pretty; line-height: 1.55;">
+          </h2>
+          <p style="margin: 4px 0 0; font-size: 12px; color: var(--ink-3); line-height: 1.5; text-wrap: pretty;">
             {gettext(
               "Choose which events reach you and how. Changes save as soon as you toggle them."
             )}
           </p>
-        </header>
+        </div>
 
-        <div class="flex flex-col gap-[18px]" style="max-width: 760px;">
-          <.pref_card
-            :for={{group, types} <- @groups}
-            id={"group-#{group}"}
-            title={group_title(group)}
+        <.settings_card
+          :for={{group, types} <- @groups}
+          id={"group-#{group}"}
+          title={group_title(group)}
+          level={3}
+          compact
+        >
+          <div
+            :for={type <- types}
+            id={"pref-row-#{type}"}
+            class="flex flex-col @md:flex-row @md:items-center gap-2 @md:gap-4"
+            style="padding: 10px 0; border-bottom: 1px solid var(--line);"
           >
-            <div
-              :for={type <- types}
-              id={"pref-row-#{type}"}
-              class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4"
-              style="padding: 10px 0; border-bottom: 1px solid var(--line);"
-            >
-              <div style="flex: 1; min-width: 0;">
-                <div
-                  id={"pref-#{type}-name"}
-                  style="font-size: 13px; font-weight: 600; color: var(--ink);"
-                >
-                  {NotificationLabels.category(type)}
-                </div>
-                <div style="font-size: 12px; color: var(--ink-3); line-height: 1.45; text-wrap: pretty;">
-                  {NotificationLabels.description(type)}
-                </div>
-              </div>
-              <form
-                id={"pref-#{type}"}
-                phx-change="save"
-                class={["flex gap-5", @toggle_layout]}
-                style="margin: 0;"
+            <div style="flex: 1; min-width: 0;">
+              <div
+                id={"pref-#{type}-name"}
+                style="font-size: 13px; font-weight: 600; color: var(--ink);"
               >
-                <input type="hidden" name="event_type" value={type} />
-                <.input
-                  type="checkbox"
-                  id={"pref-#{type}-in_app"}
-                  name="in_app"
-                  aria-describedby={"pref-#{type}-name"}
-                  value={@preferences[type].in_app}
-                  label={gettext("In-app")}
-                />
-                <.input
-                  type="checkbox"
-                  id={"pref-#{type}-email"}
-                  name="email"
-                  aria-describedby={"pref-#{type}-name"}
-                  value={@preferences[type].email}
-                  label={gettext("Email")}
-                />
-              </form>
+                {NotificationLabels.category(type)}
+              </div>
+              <div style="font-size: 12px; color: var(--ink-3); line-height: 1.45; text-wrap: pretty;">
+                {NotificationLabels.description(type)}
+              </div>
             </div>
-          </.pref_card>
-
-          <.pref_card id="group-digest" title={gettext("Weekly digest")}>
             <form
-              id="pref-weekly_digest"
-              phx-change="save_digest"
-              class={@toggle_layout}
+              id={"pref-#{type}"}
+              phx-change="save"
+              class={["flex gap-5", @toggle_layout]}
               style="margin: 0;"
             >
+              <input type="hidden" name="event_type" value={type} />
               <.input
                 type="checkbox"
-                id="pref-weekly_digest-email"
+                id={"pref-#{type}-in_app"}
+                name="in_app"
+                aria-describedby={"pref-#{type}-name"}
+                value={@preferences[type].in_app}
+                label={gettext("In-app")}
+              />
+              <.input
+                type="checkbox"
+                id={"pref-#{type}-email"}
                 name="email"
-                value={@preferences[:weekly_digest].email}
-                label={gettext("Email me a weekly summary of activity on my boards")}
+                aria-describedby={"pref-#{type}-name"}
+                value={@preferences[type].email}
+                label={gettext("Email")}
               />
             </form>
-          </.pref_card>
-        </div>
-      </div>
+          </div>
+        </.settings_card>
+
+        <.settings_card id="group-digest" title={gettext("Weekly digest")} level={3} compact>
+          <form
+            id="pref-weekly_digest"
+            phx-change="save_digest"
+            class={@toggle_layout}
+            style="margin: 0;"
+          >
+            <.input
+              type="checkbox"
+              id="pref-weekly_digest-email"
+              name="email"
+              value={@preferences[:weekly_digest].email}
+              label={gettext("Email me a weekly summary of activity on my boards")}
+            />
+          </form>
+        </.settings_card>
+      </.settings_shell>
     </Layouts.app>
-    """
-  end
-
-  attr :id, :string, required: true
-  attr :title, :string, required: true
-  slot :inner_block, required: true
-
-  # Same card look as the settings page (settings.ex settings_card/1).
-  defp pref_card(assigns) do
-    ~H"""
-    <section
-      id={@id}
-      style="background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;"
-    >
-      <header style="padding: 14px 18px 12px; border-bottom: 1px solid var(--line);">
-        <h2 style="margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink);">
-          {@title}
-        </h2>
-      </header>
-      <div style="padding: 4px 18px 8px;">
-        {render_slot(@inner_block)}
-      </div>
-    </section>
     """
   end
 end

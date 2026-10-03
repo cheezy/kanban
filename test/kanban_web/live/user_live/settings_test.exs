@@ -31,7 +31,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
         |> live(~p"/users/settings")
 
       assert html =~ "Settings"
-      assert html =~ "Manage your account profile and password"
+      assert html =~ "Manage your profile, password and notifications"
 
       # W1387: the settings panel carries the data-settings-panel anchor that the
       # app.css mobile rule targets to raise inputs/buttons (form fields, the tab
@@ -72,8 +72,32 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       assert has_element?(lv, ~s(#settings-notifications-link[class*="basis-full"]))
       assert has_element?(lv, ~s([role="tablist"] button[role="tab"]), "Profile")
 
+      refute has_element?(lv, ~s(#settings-notifications-link[aria-current]))
+
       assert {:error, {:live_redirect, %{to: "/users/notifications"}}} =
                lv |> element("#settings-notifications-link") |> render_click()
+    end
+
+    test "opens the Password tab from ?section=password (the other settings pages link there)",
+         %{conn: conn} do
+      {:ok, lv, _html} =
+        conn
+        |> log_in_user(user_fixture())
+        |> live(~p"/users/settings?section=password")
+
+      assert has_element?(lv, "#password_form")
+      refute has_element?(lv, "#email_form")
+      assert has_element?(lv, ~s(button[role="tab"][aria-selected="true"]), "Password")
+    end
+
+    test "ignores an unknown ?section and opens Profile", %{conn: conn} do
+      {:ok, lv, _html} =
+        conn
+        |> log_in_user(user_fixture())
+        |> live(~p"/users/settings?section=bogus")
+
+      assert has_element?(lv, "#email_form")
+      refute has_element?(lv, "#password_form")
     end
 
     test "preserves the hidden username field for password managers", %{conn: conn} do

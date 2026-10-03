@@ -2,6 +2,7 @@ defmodule KanbanWeb.UserLive.Settings do
   use KanbanWeb, :live_view
 
   import KanbanWeb.FormHelpers
+  import KanbanWeb.UserLive.SettingsComponents
 
   alias Kanban.Accounts
 
@@ -9,279 +10,149 @@ defmodule KanbanWeb.UserLive.Settings do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div data-settings-panel class="stride-screen px-4 pb-6 pt-5 md:px-7 md:pb-7">
-        <header style="display: flex; align-items: flex-start; gap: 16px; padding-bottom: 14px;">
-          <div style="flex: 1; min-width: 0;">
-            <h1 style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink);">
-              {gettext("Settings")}
-            </h1>
-            <p style="margin: 6px 0 0; font-size: 13px; color: var(--ink-2); max-width: 720px; text-wrap: pretty; line-height: 1.55;">
-              {gettext(
-                "Manage your account profile and password. Changes apply to your account immediately."
-              )}
-            </p>
-          </div>
-        </header>
-
-        <div class="flex flex-col md:flex-row gap-4 md:gap-7 flex-1 min-h-0">
-          <nav
-            aria-label={gettext("Settings sections")}
-            class="flex flex-row flex-wrap md:flex-nowrap md:flex-col gap-1 md:w-[184px] md:flex-shrink-0 md:pt-1"
+      <.settings_shell active={@section} tabs>
+        <.settings_card
+          :if={@section == :profile}
+          id="profile"
+          title={gettext("Profile")}
+          hint={
+            gettext(
+              "Your name and email address. Email changes require confirmation by clicking a link sent to the new address."
+            )
+          }
+        >
+          <.form
+            for={@email_form}
+            id="email_form"
+            phx-submit="update_email"
+            phx-change="validate_email"
+            style="display: flex; flex-direction: column; gap: 14px;"
           >
-            <div
-              role="tablist"
-              aria-orientation="vertical"
-              aria-label={gettext("Settings sections")}
-              class="flex flex-row md:flex-col gap-1 basis-full min-[360px]:basis-0 min-[360px]:flex-[2] md:flex-initial"
-            >
-              <.section_link
-                section={:profile}
-                active={@section == :profile}
-                label={gettext("Profile")}
-                hint={gettext("name · email")}
+            <.set_field label={gettext("Name")} hint={nil}>
+              <input
+                type="text"
+                name={@email_form[:name].name}
+                id={@email_form[:name].id}
+                value={Phoenix.HTML.Form.normalize_value("text", @email_form[:name].value)}
+                autocomplete="name"
+                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: inherit;"
               />
-              <.section_link
-                section={:password}
-                active={@section == :password}
-                label={gettext("Password")}
-                hint={gettext("change credentials")}
+              <.field_errors errors={@email_form[:name].errors} />
+            </.set_field>
+
+            <.set_field label={gettext("Email")} hint={nil}>
+              <input
+                type="email"
+                name={@email_form[:email].name}
+                id={@email_form[:email].id}
+                value={Phoenix.HTML.Form.normalize_value("email", @email_form[:email].value)}
+                autocomplete="username"
+                required
+                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: inherit;"
               />
+              <.field_errors errors={@email_form[:email].errors} />
+            </.set_field>
+
+            <div style="margin-top: 4px;">
+              <button
+                type="submit"
+                phx-disable-with={gettext("Saving...")}
+                style="height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: var(--color-base-100); border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
+              >
+                {gettext("Update profile")}
+              </button>
             </div>
-            <%!-- A separate page (non-sudo session), so a link outside the tablist; below 360px it takes its own row. --%>
-            <.link
-              navigate={~p"/users/notifications"}
-              id="settings-notifications-link"
-              class="basis-full min-[360px]:basis-0 min-[360px]:flex-1 md:flex-initial"
-              style="display: flex; flex-direction: column; gap: 1px; padding: 7px 10px; border-radius: 5px; min-width: 0; text-decoration: none; background: transparent;"
-            >
-              <span style="font-size: 12.5px; font-weight: 500; color: var(--ink-2);">
-                {gettext("Notifications")}
-              </span>
-              <span style="font-size: 10.5px; font-family: var(--font-mono); color: var(--ink-3); letter-spacing: -0.01em;">
-                {gettext("in-app · email")}
-              </span>
-            </.link>
-          </nav>
+          </.form>
+        </.settings_card>
 
-          <div class="flex-1 min-w-0 flex flex-col gap-[18px]">
-            <.settings_card
-              :if={@section == :profile}
-              id="profile"
-              title={gettext("Profile")}
-              hint={
-                gettext(
-                  "Your name and email address. Email changes require confirmation by clicking a link sent to the new address."
-                )
-              }
-            >
-              <.form
-                for={@email_form}
-                id="email_form"
-                phx-submit="update_email"
-                phx-change="validate_email"
-                style="display: flex; flex-direction: column; gap: 14px;"
-              >
-                <.set_field label={gettext("Name")} hint={nil}>
-                  <input
-                    type="text"
-                    name={@email_form[:name].name}
-                    id={@email_form[:name].id}
-                    value={Phoenix.HTML.Form.normalize_value("text", @email_form[:name].value)}
-                    autocomplete="name"
-                    style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: inherit;"
-                  />
-                  <.field_errors errors={@email_form[:name].errors} />
-                </.set_field>
+        <.settings_card
+          :if={@section == :password}
+          id="password"
+          title={gettext("Password")}
+          hint={
+            gettext(
+              "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
+            )
+          }
+        >
+          <.form
+            for={@password_form}
+            id="password_form"
+            action={~p"/users/update-password"}
+            method="post"
+            phx-change="validate_password"
+            phx-submit="update_password"
+            phx-trigger-action={@trigger_submit}
+            style="display: flex; flex-direction: column; gap: 14px;"
+          >
+            <input
+              name={@password_form[:email].name}
+              type="hidden"
+              id="hidden_user_email"
+              autocomplete="username"
+              value={@current_email}
+            />
 
-                <.set_field label={gettext("Email")} hint={nil}>
-                  <input
-                    type="email"
-                    name={@email_form[:email].name}
-                    id={@email_form[:email].id}
-                    value={Phoenix.HTML.Form.normalize_value("email", @email_form[:email].value)}
-                    autocomplete="username"
-                    required
-                    style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: inherit;"
-                  />
-                  <.field_errors errors={@email_form[:email].errors} />
-                </.set_field>
-
-                <div style="margin-top: 4px;">
-                  <button
-                    type="submit"
-                    phx-disable-with={gettext("Saving...")}
-                    style="height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: var(--color-base-100); border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
-                  >
-                    {gettext("Update profile")}
-                  </button>
-                </div>
-              </.form>
-            </.settings_card>
-
-            <.settings_card
-              :if={@section == :password}
-              id="password"
-              title={gettext("Password")}
-              hint={
-                gettext(
-                  "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
-                )
-              }
-            >
-              <.form
-                for={@password_form}
-                id="password_form"
-                action={~p"/users/update-password"}
-                method="post"
-                phx-change="validate_password"
-                phx-submit="update_password"
-                phx-trigger-action={@trigger_submit}
-                style="display: flex; flex-direction: column; gap: 14px;"
-              >
-                <input
-                  name={@password_form[:email].name}
-                  type="hidden"
-                  id="hidden_user_email"
-                  autocomplete="username"
-                  value={@current_email}
-                />
-
-                <.set_field label={gettext("New password")} hint={gettext("At least 12 characters")}>
-                  <%!-- `value` is REQUIRED on a password input inside a
+            <.set_field label={gettext("New password")} hint={gettext("At least 12 characters")}>
+              <%!-- `value` is REQUIRED on a password input inside a
                   phx-change form: LiveView's DOM patch assigns
                   `fromEl.value = toEl.value` to every input that is not focused,
                   so an unrendered value let typing in the confirmation field
                   wipe whatever had been typed here. --%>
-                  <input
-                    type="password"
-                    name={@password_form[:password].name}
-                    id={@password_form[:password].id}
-                    value={
-                      Phoenix.HTML.Form.normalize_value(
-                        "password",
-                        @password_form[:password].value
-                      )
-                    }
-                    autocomplete="new-password"
-                    required
-                    style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
-                  />
-                  <.field_errors errors={@password_form[:password].errors} />
-                </.set_field>
+              <input
+                type="password"
+                name={@password_form[:password].name}
+                id={@password_form[:password].id}
+                value={
+                  Phoenix.HTML.Form.normalize_value(
+                    "password",
+                    @password_form[:password].value
+                  )
+                }
+                autocomplete="new-password"
+                required
+                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
+              />
+              <.field_errors errors={@password_form[:password].errors} />
+            </.set_field>
 
-                <.set_field label={gettext("Confirm new password")} hint={nil}>
-                  <input
-                    type="password"
-                    name={@password_form[:password_confirmation].name}
-                    id={@password_form[:password_confirmation].id}
-                    value={
-                      Phoenix.HTML.Form.normalize_value(
-                        "password",
-                        @password_form[:password_confirmation].value
-                      )
-                    }
-                    autocomplete="new-password"
-                    style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
-                  />
-                  <.field_errors errors={@password_form[:password_confirmation].errors} />
-                </.set_field>
+            <.set_field label={gettext("Confirm new password")} hint={nil}>
+              <input
+                type="password"
+                name={@password_form[:password_confirmation].name}
+                id={@password_form[:password_confirmation].id}
+                value={
+                  Phoenix.HTML.Form.normalize_value(
+                    "password",
+                    @password_form[:password_confirmation].value
+                  )
+                }
+                autocomplete="new-password"
+                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
+              />
+              <.field_errors errors={@password_form[:password_confirmation].errors} />
+            </.set_field>
 
-                <div style="margin-top: 4px;">
-                  <button
-                    type="submit"
-                    phx-disable-with={gettext("Saving...")}
-                    style="height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: var(--color-base-100); border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
-                  >
-                    {gettext("Save password")}
-                  </button>
-                </div>
-              </.form>
-            </.settings_card>
-          </div>
-        </div>
-      </div>
+            <div style="margin-top: 4px;">
+              <button
+                type="submit"
+                phx-disable-with={gettext("Saving...")}
+                style="height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: var(--color-base-100); border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
+              >
+                {gettext("Save password")}
+              </button>
+            </div>
+          </.form>
+        </.settings_card>
+      </.settings_shell>
     </Layouts.app>
     """
   end
 
   # -------------------------------------------------------------------------
-  # Local components (mirror board-settings.jsx primitives)
+  # Local components (mirror board-settings.jsx primitives); the shell, menu
+  # and cards are shared with notification preferences (SettingsComponents).
   # -------------------------------------------------------------------------
-
-  attr :section, :atom, required: true
-  attr :label, :string, required: true
-  attr :hint, :string, default: nil
-  attr :active, :boolean, default: false
-
-  defp section_link(assigns) do
-    ~H"""
-    <button
-      type="button"
-      role="tab"
-      aria-selected={if @active, do: "true", else: "false"}
-      aria-controls={"section-#{@section}"}
-      phx-click="select_section"
-      phx-value-section={Atom.to_string(@section)}
-      class="flex-1 md:flex-initial"
-      style={[
-        "display: flex; flex-direction: column; gap: 1px; padding: 7px 10px; border-radius: 5px;",
-        "border: 0; text-align: left; min-width: 0; font: inherit;",
-        if(@active,
-          do: "background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);",
-          else: "background: transparent;"
-        ),
-        "cursor: pointer;"
-      ]}
-    >
-      <span style={[
-        "font-size: 12.5px;",
-        if(@active,
-          do: "font-weight: 600; color: var(--ink);",
-          else: "font-weight: 500; color: var(--ink-2);"
-        )
-      ]}>
-        {@label}
-      </span>
-      <span
-        :if={@hint}
-        style="font-size: 10.5px; font-family: var(--font-mono); color: var(--ink-3); letter-spacing: -0.01em;"
-      >
-        {@hint}
-      </span>
-    </button>
-    """
-  end
-
-  attr :id, :string, default: nil
-  attr :title, :string, required: true
-  attr :hint, :string, default: nil
-  slot :inner_block, required: true
-
-  defp settings_card(assigns) do
-    ~H"""
-    <section
-      id={@id}
-      style="background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;"
-    >
-      <header style="padding: 14px 18px 12px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-start; gap: 12px; background: var(--surface);">
-        <div style="flex: 1; min-width: 0;">
-          <h2 style="margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink);">
-            {@title}
-          </h2>
-          <p
-            :if={@hint}
-            style="margin: 4px 0 0; font-size: 12px; color: var(--ink-3); line-height: 1.5; text-wrap: pretty;"
-          >
-            {@hint}
-          </p>
-        </div>
-      </header>
-      <div style="padding: 18px;">
-        {render_slot(@inner_block)}
-      </div>
-    </section>
-    """
-  end
 
   attr :label, :string, required: true
   attr :hint, :any, default: nil
@@ -337,6 +208,15 @@ defmodule KanbanWeb.UserLive.Settings do
 
     {:ok, socket}
   end
+
+  # The other settings pages link here with ?section=password to open that tab.
+  @impl true
+  def handle_params(%{"section" => section}, _uri, socket)
+      when section in ["profile", "password"] do
+    {:noreply, assign(socket, :section, String.to_existing_atom(section))}
+  end
+
+  def handle_params(_params, _uri, socket), do: {:noreply, socket}
 
   @impl true
   def handle_event("select_section", %{"section" => section}, socket)

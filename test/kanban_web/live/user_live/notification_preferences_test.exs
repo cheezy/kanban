@@ -67,11 +67,59 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
       assert has_element?(view, "#group-tasks #pref-row-task_unclaimed")
       assert has_element?(view, "#group-goals #pref-row-after_goal_failed")
       assert has_element?(view, "#group-goals #pref-row-target_status_changed")
-      assert has_element?(view, "#group-account #pref-row-board_access_changed")
+      assert has_element?(view, "#group-board_access #pref-row-board_access_changed")
+      assert has_element?(view, "#group-comments #pref-row-comment_added")
+      assert has_element?(view, "#group-comments #pref-row-mentioned")
+      refute has_element?(view, "#group-tasks #pref-row-comment_added")
 
-      for heading <- ["Reviews", "Tasks and agents", "Goals and targets", "Account"] do
-        assert has_element?(view, "h2", heading)
+      headings = [
+        "Reviews",
+        "Tasks and agents",
+        "Goals and targets",
+        "Board access",
+        "Comments and mentions",
+        "Weekly digest"
+      ]
+
+      for heading <- headings do
+        assert has_element?(view, "h3", heading)
       end
+    end
+
+    test "orders the groups reviews, tasks, goals, board access, comments, digest",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/users/notifications")
+
+      ids =
+        ~r/id="group-([a-z_]+)"/
+        |> Regex.scan(html, capture: :all_but_first)
+        |> List.flatten()
+
+      assert ids == ["reviews", "tasks", "goals", "board_access", "comments", "digest"]
+    end
+
+    test "renders inside the settings shell with Notifications as the current section",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      assert has_element?(view, "[data-settings-panel] h1", "Settings")
+      assert has_element?(view, "[data-settings-panel] h2", "Notification preferences")
+
+      assert has_element?(
+               view,
+               ~s(nav a#settings-notifications-link[aria-current="page"][href="/users/notifications"])
+             )
+
+      # Profile and Password are links back to the settings page, not tabs.
+      assert has_element?(view, ~s(nav a#settings-profile-link[href="/users/settings"]))
+
+      assert has_element?(
+               view,
+               ~s(nav a#settings-password-link[href="/users/settings?section=password"])
+             )
+
+      refute has_element?(view, ~s([role="tablist"]))
+      refute has_element?(view, ~s(#settings-profile-link[aria-current]))
     end
 
     test "each toggle is described by its event's name", %{conn: conn} do
@@ -94,7 +142,18 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
       for form <- ["#pref-task_assigned", "#pref-weekly_digest"] do
         assert has_element?(view, ~s(#{form}[class*="[&_.fieldset]:m-0"]))
         assert has_element?(view, ~s(#{form}[class*="[&_label]:min-h-11"]))
+        # long labels (the weekly digest's) wrap instead of overflowing at 320px
+        assert has_element?(view, ~s(#{form}[class*="[&_.label]:whitespace-normal"]))
       end
+    end
+
+    test "rows switch to one line by the settings column's width, not the viewport's",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      assert has_element?(view, ~s([data-settings-panel] [class*="@container"] #group-reviews))
+      assert has_element?(view, ~s(#pref-row-task_assigned[class*="@md:flex-row"]))
+      refute has_element?(view, ~s(#pref-row-task_assigned[class*="sm:flex-row"]))
     end
 
     test "reflects saved preferences", %{conn: conn, user: user} do
