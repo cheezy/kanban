@@ -17,18 +17,18 @@ msgstr ""
 msgid "Actions"
 msgstr "Ações"
 
-#: lib/kanban_web/components/layouts.ex:439
-#: lib/kanban_web/components/layouts.ex:451
+#: lib/kanban_web/components/layouts.ex:441
+#: lib/kanban_web/components/layouts.ex:453
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "Tentando reconectar"
 
-#: lib/kanban_web/components/layouts.ex:446
+#: lib/kanban_web/components/layouts.ex:448
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "Algo deu errado!"
 
-#: lib/kanban_web/components/layouts.ex:434
+#: lib/kanban_web/components/layouts.ex:436
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "Não conseguimos encontrar a internet"
@@ -163,7 +163,7 @@ msgstr "Salvando..."
 msgid "You need to reauthenticate to perform sensitive actions on your account."
 msgstr "Você precisa reautenticar para executar ações sensíveis em sua conta."
 
-#: lib/kanban_web/live/board_live/index.html.heex:144
+#: lib/kanban_web/live/board_live/index.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this board?"
 msgstr "Tem certeza de que deseja excluir este quadro?"
@@ -211,7 +211,7 @@ msgstr "Descrição"
 msgid "Edit Board"
 msgstr "Editar Quadro"
 
-#: lib/kanban_web/live/board_live/index.html.heex:137
+#: lib/kanban_web/live/board_live/index.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Edit board"
 msgstr "Editar quadro"
@@ -4195,7 +4195,7 @@ msgstr "agora mesmo"
 msgid "throughput"
 msgstr "Produtividade"
 
-#: lib/kanban_web/live/board_live/index.html.heex:102
+#: lib/kanban_web/live/board_live/index.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "%{count} active"
 msgid_plural "%{count} active"
@@ -4206,7 +4206,7 @@ msgstr[1] "%{count} ativas"
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:568
 #: lib/kanban_web/live/admin/user_live/index.html.heex:107
 #: lib/kanban_web/live/board_live/index.html.heex:5
-#: lib/kanban_web/live/board_live/index.html.heex:99
+#: lib/kanban_web/live/board_live/index.html.heex:100
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
 #, elixir-autogen, elixir-format
@@ -4218,13 +4218,13 @@ msgstr "Quadros"
 msgid "Create new board"
 msgstr "Criar novo quadro"
 
-#: lib/kanban_web/live/board_live/index.html.heex:146
+#: lib/kanban_web/live/board_live/index.html.heex:147
 #, elixir-autogen, elixir-format
 msgid "Delete board"
 msgstr "Excluir quadro"
 
 #: lib/kanban_web/live/board_live/index.ex:124
-#: lib/kanban_web/live/board_live/index.html.heex:21
+#: lib/kanban_web/live/board_live/index.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "New board"
 msgstr "Novo Quadro"
@@ -4305,12 +4305,12 @@ msgstr "META"
 msgid "Last Activity"
 msgstr "Última atividade"
 
-#: lib/kanban_web/live/board_live/index.html.heex:34
+#: lib/kanban_web/live/board_live/index.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "New AI Optimized Board"
 msgstr "Novo quadro otimizado para IA"
 
-#: lib/kanban_web/live/board_live/index.html.heex:45
+#: lib/kanban_web/live/board_live/index.html.heex:46
 #, elixir-autogen, elixir-format
 msgid "New Empty Board"
 msgstr "Novo Quadro Vazio"
@@ -4321,7 +4321,7 @@ msgstr "Novo Quadro Vazio"
 msgid "New goal"
 msgstr "Nova meta"
 
-#: lib/kanban_web/live/board_live/index.html.heex:36
+#: lib/kanban_web/live/board_live/index.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "Pre-configured for AI workflow"
 msgstr "Pré-configurado para fluxo de IA"
@@ -4343,7 +4343,7 @@ msgstr "Promover filhos para Pronto"
 msgid "Review queue"
 msgstr "Fila de revisão"
 
-#: lib/kanban_web/live/board_live/index.html.heex:47
+#: lib/kanban_web/live/board_live/index.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "Start with a blank board"
 msgstr "Começar com um quadro em branco"
@@ -7599,7 +7599,7 @@ msgstr "Metas que atualmente contam para este alvo."
 msgid "Goals you can add to this target."
 msgstr "Metas que você pode adicionar a este alvo."
 
-#: lib/kanban_web/live/board_live/index.html.heex:66
+#: lib/kanban_web/live/board_live/index.html.heex:67
 #: lib/kanban_web/live/target_live/form.html.heex:14
 #, elixir-autogen, elixir-format
 msgid "New Target"
@@ -8150,7 +8150,7 @@ msgstr "Apenas um alvo concluído pode ser arquivado"
 msgid "Target archived successfully"
 msgstr "Alvo arquivado com sucesso"
 
-#: lib/kanban_web/live/board_live/index.html.heex:85
+#: lib/kanban_web/live/board_live/index.html.heex:86
 #: lib/kanban_web/live/target_live/archived.ex:34
 #: lib/kanban_web/live/target_live/archived.html.heex:9
 #, elixir-autogen, elixir-format
@@ -8860,7 +8860,7 @@ msgid "Board: %{board}"
 msgstr "Quadro: %{board}"
 
 #: lib/kanban_web/emails/notification_email.ex:116
-#: lib/kanban_web/live/notification_live/index.html.heex:136
+#: lib/kanban_web/live/notification_live/index.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "Por %{actor}"
@@ -9063,17 +9063,17 @@ msgstr[1] "%{count} notificações não lidas"
 msgid "Filter notifications"
 msgstr "Filtrar notificações"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:187
+#: lib/kanban_web/live/notification_live/index.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "Load more"
 msgstr "Carregar mais"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:58
+#: lib/kanban_web/live/notification_live/index.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "Mark all read"
 msgstr "Marcar todas como lidas"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:170
+#: lib/kanban_web/live/notification_live/index.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Mark as read"
 msgstr "Marcar como lida"
@@ -9083,12 +9083,12 @@ msgstr "Marcar como lida"
 msgid "Mark as read: %{title}"
 msgstr "Marcar como lida: %{title}"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:73
+#: lib/kanban_web/live/notification_live/index.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "No notifications yet."
 msgstr "Ainda não há notificações."
 
-#: lib/kanban_web/live/notification_live/index.html.heex:72
+#: lib/kanban_web/live/notification_live/index.html.heex:66
 #, elixir-autogen, elixir-format
 msgid "No unread notifications."
 msgstr "Não há notificações não lidas."
@@ -9107,7 +9107,7 @@ msgid "Notifications"
 msgstr "Notificações"
 
 #: lib/kanban_web/live/notification_live/index.html.heex:38
-#: lib/kanban_web/live/notification_live/index.html.heex:119
+#: lib/kanban_web/live/notification_live/index.html.heex:116
 #, elixir-autogen, elixir-format
 msgid "Unread"
 msgstr "Não lidas"

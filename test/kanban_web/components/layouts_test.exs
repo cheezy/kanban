@@ -297,7 +297,7 @@ defmodule KanbanWeb.LayoutsTest do
       assert win_top_html(scope_with_count(0)) =~ "w-11 h-11 md:w-8 md:h-8"
     end
 
-    test "pins the bell outside the scrollable page actions" do
+    test "pins the bell outside the page actions" do
       scope = scope_with_count(2)
       assigns = %{current_scope: scope}
 
@@ -311,10 +311,11 @@ defmodule KanbanWeb.LayoutsTest do
       [actions] = Regex.run(~r/<div[^>]*data-win-top-actions.*?<\/div>/s, html)
       assert actions =~ "page-action"
       refute actions =~ "notification-bell"
-      assert actions =~ "overflow-x: auto"
-      # below md the actions wrap onto their own full-width row
-      assert actions =~ "max-md:basis-full"
-      assert html =~ "flex-wrap md:flex-nowrap"
+      # below lg the actions wrap onto their own full-width row; no overflow
+      # container, so dropdown menus inside the actions are never clipped
+      refute actions =~ "overflow"
+      assert actions =~ "max-lg:basis-full"
+      assert html =~ "flex-wrap lg:flex-nowrap"
       assert html =~ ~r/id="notification-bell"[^>]*class="[^"]*shrink-0/
     end
 

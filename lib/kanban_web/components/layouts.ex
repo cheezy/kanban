@@ -362,7 +362,7 @@ defmodule KanbanWeb.Layouts do
   def win_top(assigns) do
     ~H"""
     <div
-      class="stride-screen flex-wrap md:flex-nowrap"
+      class="stride-screen flex-wrap lg:flex-nowrap"
       style={[
         "min-height: 36px; display: flex; align-items: center; flex-shrink: 0;",
         "border-bottom: 1px solid var(--line); background: var(--surface);",
@@ -400,12 +400,12 @@ defmodule KanbanWeb.Layouts do
         <% end %>
       </div>
 
-      <%!-- Below md the actions take their own full-width row (swiping if still too wide). --%>
+      <%!-- Below lg the actions take their own full-width row and wrap; no overflow clips dropdowns. --%>
       <div
         :if={@actions not in [nil, []]}
         data-win-top-actions
-        class="[&>*]:shrink-0 max-md:order-last max-md:basis-full max-md:pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style="display: flex; align-items: center; gap: 8px; min-width: 0; overflow-x: auto; color: var(--ink-3); font-size: 11.5px;"
+        class="[&>*]:shrink-0 max-lg:order-last max-lg:basis-full max-lg:flex-wrap max-lg:pb-2"
+        style="display: flex; align-items: center; gap: 8px; color: var(--ink-3); font-size: 11.5px;"
       >
         {render_slot(@actions)}
       </div>
