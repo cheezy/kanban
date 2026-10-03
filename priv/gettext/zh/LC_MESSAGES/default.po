@@ -581,7 +581,7 @@ msgstr "分配给"
 
 #: lib/kanban_web/live/board_live/form.html.heex:323
 #: lib/kanban_web/live/board_live/members_form_component.ex:214
-#: lib/kanban_web/notification_labels.ex:162
+#: lib/kanban_web/notification_labels.ex:181
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
 msgstr "可编辑"
@@ -624,14 +624,14 @@ msgstr "只有看板所有者可以编辑此看板"
 #: lib/kanban_web/live/board_live/form.html.heex:321
 #: lib/kanban_web/live/board_live/members_form_component.ex:213
 #: lib/kanban_web/live/target_live/form.html.heex:34
-#: lib/kanban_web/notification_labels.ex:161
+#: lib/kanban_web/notification_labels.ex:180
 #, elixir-autogen, elixir-format
 msgid "Owner"
 msgstr "所有者"
 
 #: lib/kanban_web/live/board_live/form.html.heex:325
 #: lib/kanban_web/live/board_live/members_form_component.ex:215
-#: lib/kanban_web/notification_labels.ex:163
+#: lib/kanban_web/notification_labels.ex:182
 #, elixir-autogen, elixir-format
 msgid "Read Only"
 msgstr "只读"
@@ -1108,7 +1108,7 @@ msgstr "代理"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:401
-#: lib/kanban_web/notification_labels.ex:105
+#: lib/kanban_web/notification_labels.ex:107
 #: lib/kanban_web/review_report_helpers/tokens.ex:40
 #, elixir-autogen, elixir-format
 msgid "Approved"
@@ -6254,7 +6254,7 @@ msgstr "已请求修改"
 msgid "(no description)"
 msgstr "（无描述）"
 
-#: lib/kanban_web/notification_labels.ex:111
+#: lib/kanban_web/notification_labels.ex:113
 #: lib/kanban_web/review_report_helpers/tokens.ex:50
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
@@ -9024,12 +9024,12 @@ msgstr "您将不再收到关于以下内容的邮件：%{category}。"
 msgid "You're unsubscribed"
 msgstr "您已退订"
 
-#: lib/kanban_web/notification_labels.ex:102
+#: lib/kanban_web/notification_labels.ex:104
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code}"
 msgstr "退出码 %{code}"
 
-#: lib/kanban_web/notification_labels.ex:98
+#: lib/kanban_web/notification_labels.ex:100
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code} after %{ms} ms"
 msgstr "退出码 %{code}（%{ms} 毫秒后）"
@@ -9095,11 +9095,6 @@ msgstr "通知"
 #, elixir-autogen, elixir-format
 msgid "Unread"
 msgstr "未读"
-
-#: lib/kanban_web/notification_labels.ex:67
-#, elixir-autogen, elixir-format
-msgid "A delivery target you follow changes status."
-msgstr "你关注的交付目标状态发生变化。"
 
 #: lib/kanban_web/notification_labels.ex:61
 #, elixir-autogen, elixir-format
@@ -9279,39 +9274,64 @@ msgstr "已完成任务"
 msgid "Your boards"
 msgstr "您的看板"
 
-#: lib/kanban_web/notification_labels.ex:117
+#: lib/kanban_web/notification_labels.ex:119
 #, elixir-autogen, elixir-format
 msgid "Returned to Ready"
 msgstr "已退回待办"
 
-#: lib/kanban_web/notification_labels.ex:115
+#: lib/kanban_web/notification_labels.ex:117
 #, elixir-autogen, elixir-format
 msgid "Returned to Ready. Reason:"
 msgstr "已退回待办。原因："
 
-#: lib/kanban_web/notification_labels.ex:138
+#: lib/kanban_web/notification_labels.ex:143
 #, elixir-autogen, elixir-format
 msgid "You were added with %{access} access."
 msgstr "您已被添加，权限为“%{access}”。"
 
-#: lib/kanban_web/notification_labels.ex:130
+#: lib/kanban_web/notification_labels.ex:135
 #, elixir-autogen, elixir-format
 msgid "You were removed from this board. %{count} API token was revoked."
 msgid_plural "You were removed from this board. %{count} API tokens were revoked."
 msgstr[0] "您已被移出此看板。已撤销 %{count} 个 API 令牌。"
 
-#: lib/kanban_web/notification_labels.ex:156
+#: lib/kanban_web/notification_labels.ex:161
 #, elixir-autogen, elixir-format
 msgid "Your access changed to %{access}."
 msgstr "您的权限已更改为“%{access}”。"
 
-#: lib/kanban_web/notification_labels.ex:147
+#: lib/kanban_web/notification_labels.ex:152
 #, elixir-autogen, elixir-format
 msgid "Your access changed to %{access}. %{count} API token was revoked."
 msgid_plural "Your access changed to %{access}. %{count} API tokens were revoked."
 msgstr[0] "您的权限已更改为“%{access}”。已撤销 %{count} 个 API 令牌。"
 
-#: lib/kanban_web/notification_labels.ex:125
+#: lib/kanban_web/notification_labels.ex:130
 #, elixir-autogen, elixir-format
 msgid "You were removed from this board."
 msgstr "您已被移出此看板。"
+
+#: lib/kanban_web/notification_labels.ex:67
+#, elixir-autogen, elixir-format
+msgid "A delivery target you own becomes at risk or misses its date."
+msgstr "您拥有的交付目标面临风险或错过日期。"
+
+#: lib/kanban_web/notification_labels.ex:167
+#, elixir-autogen, elixir-format
+msgid "At risk of missing its target date of %{date}."
+msgstr "有可能错过目标日期 %{date}。"
+
+#: lib/kanban_web/notification_labels.ex:174
+#, elixir-autogen, elixir-format
+msgid "At risk of missing its target date."
+msgstr "有可能错过目标日期。"
+
+#: lib/kanban_web/notification_labels.ex:171
+#, elixir-autogen, elixir-format
+msgid "Missed its target date of %{date}."
+msgstr "已错过目标日期 %{date}。"
+
+#: lib/kanban_web/notification_labels.ex:176
+#, elixir-autogen, elixir-format
+msgid "Missed its target date."
+msgstr "已错过目标日期。"

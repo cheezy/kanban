@@ -7,17 +7,28 @@ defmodule Kanban.Targets.DeliveryTarget do
   is nullable and nullifies when the user is removed.
 
   `archived_at` is the archive flag: `nil` means active, a timestamp means
-  archived. There is no stored status column — a target's delivery status is
-  always derived at read time by `Kanban.Targets.Status.derive/4`.
+  archived. A target's delivery status is always derived at read time by
+  `Kanban.Targets.Status.derive/4` (through
+  `Kanban.Targets.list_targets_with_status/2`).
+
+  `last_notified_status` and `status_changed_at` are NOT a stored status: they
+  are the watermark `Kanban.Notifications.TargetStatusWorker` uses to notice a
+  change and notify the owner once. They lag the derived status by up to an
+  hour, are computed against UTC rather than a viewer's timezone, and no read
+  path may display or trust them. Only `status_changeset/2` writes them.
   """
   use Ecto.Schema
   import Ecto.Changeset
+
+  @statuses ~w(on_track at_risk missed complete)
 
   schema "delivery_targets" do
     field :name, :string
     field :target_date, :date
     field :description, :string
     field :archived_at, :utc_datetime_usec
+    field :last_notified_status, :string
+    field :status_changed_at, :utc_datetime
 
     belongs_to :owner, Kanban.Accounts.User
 
@@ -52,5 +63,19 @@ defmodule Kanban.Targets.DeliveryTarget do
   """
   def archive_changeset(delivery_target, attrs) do
     cast(delivery_target, attrs, [:archived_at])
+  end
+
+  @doc """
+  Records the status the target-status sweeper observed and when it changed.
+
+  Server-set only: built by `Kanban.Targets.StatusWatermark`, never from
+  request params, and the only changeset that casts these two fields.
+  `changeset/2` (the target form) and `archive_changeset/2` ignore them.
+  """
+  def status_changeset(delivery_target, attrs) do
+    delivery_target
+    |> cast(attrs, [:last_notified_status, :status_changed_at])
+    |> validate_required([:last_notified_status, :status_changed_at])
+    |> validate_inclusion(:last_notified_status, @statuses)
   end
 end

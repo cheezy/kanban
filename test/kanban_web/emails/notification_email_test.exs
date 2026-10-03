@@ -112,6 +112,22 @@ defmodule KanbanWeb.Emails.NotificationEmailTest do
       assert email.text_body =~ "#{KanbanWeb.Endpoint.url()}/boards"
     end
 
+    test "a target status notice names the target, its status and date", %{user: user} do
+      email =
+        build_email(user, %{
+          event_type: :target_status_changed,
+          title: "Q3 launch",
+          url_path: "/targets/42",
+          metadata: %{"status" => "missed", "target_date" => "2026-07-21"}
+        })
+
+      assert email.subject == "[Stride] Target status changed"
+      assert email.text_body =~ "Q3 launch"
+      assert email.text_body =~ "Missed its target date of 2026-07-21."
+      assert email.html_body =~ "Missed its target date of 2026-07-21."
+      assert email.text_body =~ "#{KanbanWeb.Endpoint.url()}/targets/42"
+    end
+
     test "a board access notice is worded in the user's locale", %{user: user} do
       email =
         Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->

@@ -1,11 +1,11 @@
 defmodule Kanban.Notifications.Events do
   @moduledoc """
-  Turns task lifecycle and board membership moments into
-  `Kanban.Notifications.notify/3` calls.
+  Turns task lifecycle, board membership and delivery-target status moments
+  into `Kanban.Notifications.notify/3` calls.
 
   Every function here is a side effect hung off a write that has already
   committed. They never raise and always return `:ok`: a failure is logged
-  with the event and task (or board) id only, so it can never change the
+  with the event and task (or board, or target) id only, so it can never change the
   result of the write that triggered it.
 
   Notification titles carry only the task identifier and title. Completion
@@ -31,6 +31,9 @@ defmodule Kanban.Notifications.Events do
       new access for an access change (the time of the revocation for a
       re-save of the same level that still revoked tokens), so re-adding a
       removed user (a new row) notifies again;
+    * target_status_changed uses the status and the watermark's
+      `status_changed_at`, so one recorded change notifies once and a later
+      slip (a new stamp) notifies again;
     * after_goal_failed uses the index of the first failing attempt in the
       current failure streak, so a streak notifies once and a failure after
       a later success notifies again.
@@ -48,6 +51,7 @@ defmodule Kanban.Notifications.Events do
   alias Kanban.Notifications
   alias Kanban.Notifications.GoalCompletedWorker
   alias Kanban.Repo
+  alias Kanban.Targets.DeliveryTarget
   alias Kanban.Tasks.Task
 
   require Logger
@@ -143,6 +147,23 @@ defmodule Kanban.Notifications.Events do
       emit_board_access_changed(board, user, change, opts)
     end)
   end
+
+  @doc """
+  Notifies `target`'s owner that its delivery status became `:at_risk` or
+  `:missed`, as recorded by the target-status sweeper at `changed_at`.
+
+  The notification names the target and its date only, never its goals, and
+  links to the target page. Nothing is sent for a target without an owner.
+  """
+  @spec target_status_changed(DeliveryTarget.t(), :at_risk | :missed, DateTime.t()) :: :ok
+  def target_status_changed(%DeliveryTarget{owner_id: owner_id} = target, status, changed_at)
+      when status in [:at_risk, :missed] and is_integer(owner_id) do
+    safely(:target_status_changed, target, fn ->
+      emit_target_status_changed(target, status, changed_at)
+    end)
+  end
+
+  def target_status_changed(%DeliveryTarget{}, _status, _changed_at), do: :ok
 
   @doc """
   Notifies a goal's creator and assignee that the goal reached Done. Does
@@ -357,6 +378,21 @@ defmodule Kanban.Notifications.Events do
 
   defp put_access(metadata, _access), do: metadata
 
+  # Board-less: a target spans boards, and its owner may not be a member of
+  # any of them. The status is worded (and translated) at display time.
+  defp emit_target_status_changed(target, status, changed_at) do
+    Notifications.notify(:target_status_changed, [%{id: target.owner_id}], %{
+      title: String.slice(target.name, 0, @title_max),
+      url_path: "/targets/#{target.id}",
+      board_id: nil,
+      metadata: %{
+        "status" => Atom.to_string(status),
+        "target_date" => Date.to_iso8601(target.target_date)
+      },
+      dedupe_key: "target_status:#{target.id}:#{status}:#{unix(changed_at)}"
+    })
+  end
+
   defp emit_goal_completed(goal) do
     board_id = board_id_for(goal)
     recipients = goal_recipients(goal)
@@ -474,6 +510,7 @@ defmodule Kanban.Notifications.Events do
   end
 
   defp subject_label(%Board{id: id}), do: "board #{id}"
+  defp subject_label(%DeliveryTarget{id: id}), do: "target #{id}"
   defp subject_label(%Task{id: id}), do: "task #{id}"
 
   defp describe(%Ecto.Changeset{errors: errors}) do

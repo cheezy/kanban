@@ -123,6 +123,69 @@ defmodule Kanban.Targets.DeliveryTargetTest do
     end
   end
 
+  describe "status_changeset/2" do
+    @observed ~U[2026-06-09 00:00:00Z]
+
+    test "casts only the watermark fields" do
+      user = user_fixture()
+      other = user_fixture()
+
+      changeset =
+        DeliveryTarget.status_changeset(%DeliveryTarget{owner_id: user.id, name: "Original"}, %{
+          last_notified_status: "at_risk",
+          status_changed_at: @observed,
+          name: "Renamed",
+          owner_id: other.id,
+          archived_at: DateTime.utc_now()
+        })
+
+      assert changeset.valid?
+      assert get_change(changeset, :last_notified_status) == "at_risk"
+      assert get_change(changeset, :status_changed_at) == @observed
+      assert get_change(changeset, :name) == nil
+      assert get_change(changeset, :owner_id) == nil
+      assert get_change(changeset, :archived_at) == nil
+    end
+
+    test "requires both fields and a known status" do
+      assert %{last_notified_status: ["can't be blank"], status_changed_at: ["can't be blank"]} =
+               %DeliveryTarget{} |> DeliveryTarget.status_changeset(%{}) |> errors_on()
+
+      assert %{last_notified_status: ["is invalid"]} =
+               %DeliveryTarget{}
+               |> DeliveryTarget.status_changeset(%{
+                 last_notified_status: "late",
+                 status_changed_at: @observed
+               })
+               |> errors_on()
+    end
+
+    test "the form changeset never casts the watermark fields" do
+      changeset =
+        DeliveryTarget.changeset(%DeliveryTarget{}, %{
+          name: "Q3 launch",
+          target_date: ~D[2026-09-30],
+          last_notified_status: "missed",
+          status_changed_at: @observed
+        })
+
+      assert get_change(changeset, :last_notified_status) == nil
+      assert get_change(changeset, :status_changed_at) == nil
+    end
+
+    test "the archive changeset never casts the watermark fields" do
+      changeset =
+        DeliveryTarget.archive_changeset(%DeliveryTarget{}, %{
+          archived_at: DateTime.utc_now(),
+          last_notified_status: "missed",
+          status_changed_at: @observed
+        })
+
+      assert get_change(changeset, :last_notified_status) == nil
+      assert get_change(changeset, :status_changed_at) == nil
+    end
+  end
+
   describe "database constraints" do
     test "can insert a target with an owner set on the struct" do
       user = user_fixture()

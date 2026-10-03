@@ -41,6 +41,7 @@ defmodule Kanban.Targets do
   alias Kanban.Targets.DeliveryTarget
   alias Kanban.Targets.Progress
   alias Kanban.Targets.Queries
+  alias Kanban.Targets.StatusWatermark
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
 
@@ -491,6 +492,18 @@ defmodule Kanban.Targets do
     |> then(&Progress.summarize_targets(scope, &1, now))
     |> Enum.map(fn {summary, goals} -> Map.put(summary, :goals, goals) end)
   end
+
+  @doc """
+  Owners of every active target, for the target-status sweeper only. See
+  `Kanban.Targets.StatusWatermark.list_active_target_owners/0`.
+  """
+  defdelegate list_active_target_owners(), to: StatusWatermark
+
+  @doc """
+  Records the status the target-status sweeper observed. See
+  `Kanban.Targets.StatusWatermark.record_observed_status/3`.
+  """
+  defdelegate record_observed_status(target, status, observed_at), to: StatusWatermark
 
   @doc """
   Loads one target's full progress payload — the aggregate summary the boards

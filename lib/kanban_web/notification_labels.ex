@@ -64,7 +64,7 @@ defmodule KanbanWeb.NotificationLabels do
     do: gettext("A goal's after_goal hook fails on the agent's machine.")
 
   def description(:target_status_changed),
-    do: gettext("A delivery target you follow changes status.")
+    do: gettext("A delivery target you own becomes at risk or misses its date.")
 
   def description(:board_access_changed),
     do: gettext("You are added to or removed from a board, or your access changes.")
@@ -87,7 +87,9 @@ defmodule KanbanWeb.NotificationLabels do
     * `:board_access_changed` — that the user was added (with their access
       level), had their access changed (with the new level) or was removed,
       plus how many API tokens a removal or a downgrade to read-only revoked
-      (left out when none were).
+      (left out when none were);
+    * `:target_status_changed` — that the target became at risk of missing
+      its date or missed it, with the date.
   """
   @spec detail(Notification.t()) :: String.t() | nil
   def detail(%Notification{
@@ -118,6 +120,9 @@ defmodule KanbanWeb.NotificationLabels do
 
   def detail(%Notification{event_type: :board_access_changed, metadata: metadata}),
     do: board_access_detail(metadata)
+
+  def detail(%Notification{event_type: :target_status_changed, metadata: metadata}),
+    do: target_status_detail(metadata)
 
   def detail(_notification), do: nil
 
@@ -156,6 +161,20 @@ defmodule KanbanWeb.NotificationLabels do
        do: gettext("Your access changed to %{access}.", access: access_label(access))
 
   defp board_access_detail(_metadata), do: nil
+
+  defp target_status_detail(%{"status" => "at_risk", "target_date" => date})
+       when is_binary(date),
+       do: gettext("At risk of missing its target date of %{date}.", date: date)
+
+  defp target_status_detail(%{"status" => "missed", "target_date" => date})
+       when is_binary(date),
+       do: gettext("Missed its target date of %{date}.", date: date)
+
+  defp target_status_detail(%{"status" => "at_risk"}),
+    do: gettext("At risk of missing its target date.")
+
+  defp target_status_detail(%{"status" => "missed"}), do: gettext("Missed its target date.")
+  defp target_status_detail(_metadata), do: nil
 
   # The same labels the board membership page shows.
   defp access_label("owner"), do: gettext("Owner")

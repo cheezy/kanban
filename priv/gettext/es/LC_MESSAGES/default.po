@@ -581,7 +581,7 @@ msgstr "Asignado a"
 
 #: lib/kanban_web/live/board_live/form.html.heex:323
 #: lib/kanban_web/live/board_live/members_form_component.ex:214
-#: lib/kanban_web/notification_labels.ex:162
+#: lib/kanban_web/notification_labels.ex:181
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
 msgstr "Puede Editar"
@@ -624,14 +624,14 @@ msgstr "Solo el propietario del tablero puede editarlo"
 #: lib/kanban_web/live/board_live/form.html.heex:321
 #: lib/kanban_web/live/board_live/members_form_component.ex:213
 #: lib/kanban_web/live/target_live/form.html.heex:34
-#: lib/kanban_web/notification_labels.ex:161
+#: lib/kanban_web/notification_labels.ex:180
 #, elixir-autogen, elixir-format
 msgid "Owner"
 msgstr "Propietario"
 
 #: lib/kanban_web/live/board_live/form.html.heex:325
 #: lib/kanban_web/live/board_live/members_form_component.ex:215
-#: lib/kanban_web/notification_labels.ex:163
+#: lib/kanban_web/notification_labels.ex:182
 #, elixir-autogen, elixir-format
 msgid "Read Only"
 msgstr "Solo Lectura"
@@ -1108,7 +1108,7 @@ msgstr "Agente"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:401
-#: lib/kanban_web/notification_labels.ex:105
+#: lib/kanban_web/notification_labels.ex:107
 #: lib/kanban_web/review_report_helpers/tokens.ex:40
 #, elixir-autogen, elixir-format
 msgid "Approved"
@@ -6269,7 +6269,7 @@ msgstr "cambios solicitados"
 msgid "(no description)"
 msgstr "(sin descripción)"
 
-#: lib/kanban_web/notification_labels.ex:111
+#: lib/kanban_web/notification_labels.ex:113
 #: lib/kanban_web/review_report_helpers/tokens.ex:50
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
@@ -9085,12 +9085,12 @@ msgstr "Dejará de recibir correos sobre: %{category}."
 msgid "You're unsubscribed"
 msgstr "Se ha cancelado su suscripción"
 
-#: lib/kanban_web/notification_labels.ex:102
+#: lib/kanban_web/notification_labels.ex:104
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code}"
 msgstr "Código de salida %{code}"
 
-#: lib/kanban_web/notification_labels.ex:98
+#: lib/kanban_web/notification_labels.ex:100
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code} after %{ms} ms"
 msgstr "Código de salida %{code} tras %{ms} ms"
@@ -9157,11 +9157,6 @@ msgstr "Notificaciones"
 #, elixir-autogen, elixir-format
 msgid "Unread"
 msgstr "No leídas"
-
-#: lib/kanban_web/notification_labels.ex:67
-#, elixir-autogen, elixir-format
-msgid "A delivery target you follow changes status."
-msgstr "Un objetivo de entrega que sigues cambia de estado."
 
 #: lib/kanban_web/notification_labels.ex:61
 #, elixir-autogen, elixir-format
@@ -9341,41 +9336,66 @@ msgstr "Tareas completadas"
 msgid "Your boards"
 msgstr "Sus tableros"
 
-#: lib/kanban_web/notification_labels.ex:117
+#: lib/kanban_web/notification_labels.ex:119
 #, elixir-autogen, elixir-format
 msgid "Returned to Ready"
 msgstr "Devuelta a Listo"
 
-#: lib/kanban_web/notification_labels.ex:115
+#: lib/kanban_web/notification_labels.ex:117
 #, elixir-autogen, elixir-format
 msgid "Returned to Ready. Reason:"
 msgstr "Devuelta a Listo. Motivo:"
 
-#: lib/kanban_web/notification_labels.ex:138
+#: lib/kanban_web/notification_labels.ex:143
 #, elixir-autogen, elixir-format
 msgid "You were added with %{access} access."
 msgstr "Se le añadió con acceso «%{access}»."
 
-#: lib/kanban_web/notification_labels.ex:130
+#: lib/kanban_web/notification_labels.ex:135
 #, elixir-autogen, elixir-format
 msgid "You were removed from this board. %{count} API token was revoked."
 msgid_plural "You were removed from this board. %{count} API tokens were revoked."
 msgstr[0] "Se le quitó de este tablero. Se revocó %{count} token de API."
 msgstr[1] "Se le quitó de este tablero. Se revocaron %{count} tokens de API."
 
-#: lib/kanban_web/notification_labels.ex:156
+#: lib/kanban_web/notification_labels.ex:161
 #, elixir-autogen, elixir-format
 msgid "Your access changed to %{access}."
 msgstr "Su acceso cambió a «%{access}»."
 
-#: lib/kanban_web/notification_labels.ex:147
+#: lib/kanban_web/notification_labels.ex:152
 #, elixir-autogen, elixir-format
 msgid "Your access changed to %{access}. %{count} API token was revoked."
 msgid_plural "Your access changed to %{access}. %{count} API tokens were revoked."
 msgstr[0] "Su acceso cambió a «%{access}». Se revocó %{count} token de API."
 msgstr[1] "Su acceso cambió a «%{access}». Se revocaron %{count} tokens de API."
 
-#: lib/kanban_web/notification_labels.ex:125
+#: lib/kanban_web/notification_labels.ex:130
 #, elixir-autogen, elixir-format
 msgid "You were removed from this board."
 msgstr "Se le quitó de este tablero."
+
+#: lib/kanban_web/notification_labels.ex:67
+#, elixir-autogen, elixir-format
+msgid "A delivery target you own becomes at risk or misses its date."
+msgstr "Un objetivo de entrega suyo pasa a estar en riesgo o incumple su fecha."
+
+#: lib/kanban_web/notification_labels.ex:167
+#, elixir-autogen, elixir-format
+msgid "At risk of missing its target date of %{date}."
+msgstr "En riesgo de incumplir su fecha objetivo del %{date}."
+
+#: lib/kanban_web/notification_labels.ex:174
+#, elixir-autogen, elixir-format
+msgid "At risk of missing its target date."
+msgstr "En riesgo de incumplir su fecha objetivo."
+
+#: lib/kanban_web/notification_labels.ex:171
+#, elixir-autogen, elixir-format
+msgid "Missed its target date of %{date}."
+msgstr "Incumplió su fecha objetivo del %{date}."
+
+#: lib/kanban_web/notification_labels.ex:176
+#, elixir-autogen, elixir-format
+msgid "Missed its target date."
+msgstr "Incumplió su fecha objetivo."

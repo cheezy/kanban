@@ -110,6 +110,29 @@ defmodule KanbanWeb.NotificationLive.IndexTest do
       assert has_element?(view, row(notification), "Blocked on credentials")
     end
 
+    test "renders a target status notice and opens the target page", %{conn: conn, user: user} do
+      {:ok, [notification]} =
+        Notifications.notify(:target_status_changed, [user], %{
+          title: "Q3 launch",
+          url_path: "/targets/42",
+          metadata: %{"status" => "at_risk", "target_date" => "2026-07-21"}
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/notifications")
+
+      assert has_element?(view, row(notification), "Delivery target status")
+      assert has_element?(view, row(notification), "Q3 launch")
+
+      assert has_element?(
+               view,
+               row(notification),
+               "At risk of missing its target date of 2026-07-21."
+             )
+
+      view |> element("#{row(notification)} [data-notification-open]") |> render_click()
+      assert_redirect(view, "/targets/42")
+    end
+
     test "renders board access notices from adding and removing the user",
          %{conn: conn, user: user} do
       owner = user_fixture()

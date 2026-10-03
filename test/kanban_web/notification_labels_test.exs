@@ -219,6 +219,59 @@ defmodule KanbanWeb.NotificationLabelsTest do
       end
     end
 
+    defp target_status(metadata) do
+      %Notification{event_type: :target_status_changed, metadata: metadata}
+    end
+
+    test "words an at-risk and a missed target with its date" do
+      assert %{"status" => "at_risk", "target_date" => "2026-07-21"}
+             |> target_status()
+             |> NotificationLabels.detail() ==
+               "At risk of missing its target date of 2026-07-21."
+
+      assert %{"status" => "missed", "target_date" => "2026-07-21"}
+             |> target_status()
+             |> NotificationLabels.detail() == "Missed its target date of 2026-07-21."
+    end
+
+    test "words a target status without a date" do
+      assert %{"status" => "at_risk"} |> target_status() |> NotificationLabels.detail() ==
+               "At risk of missing its target date."
+
+      assert %{"status" => "missed"} |> target_status() |> NotificationLabels.detail() ==
+               "Missed its target date."
+    end
+
+    test "returns nil for an unknown target status" do
+      for metadata <- [%{}, %{"status" => "on_track"}, %{"status" => "late"}] do
+        assert metadata |> target_status() |> NotificationLabels.detail() == nil
+      end
+    end
+
+    test "translates the target status wording in every locale" do
+      notifications = [
+        target_status(%{"status" => "at_risk", "target_date" => "2026-07-21"}),
+        target_status(%{"status" => "missed", "target_date" => "2026-07-21"}),
+        target_status(%{"status" => "at_risk"}),
+        target_status(%{"status" => "missed"})
+      ]
+
+      for notification <- notifications, locale <- ~w(de es fr ja pt zh) do
+        english = NotificationLabels.detail(notification)
+
+        translated =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            NotificationLabels.detail(notification)
+          end)
+
+        refute translated == english, "#{english} not translated for #{locale}"
+
+        if date = notification.metadata["target_date"] do
+          assert translated =~ date
+        end
+      end
+    end
+
     test "is translated" do
       notification = after_goal_failed(%{"exit_code" => 2, "duration_ms" => 10})
       english = NotificationLabels.detail(notification)

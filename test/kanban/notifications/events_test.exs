@@ -8,6 +8,7 @@ defmodule Kanban.Notifications.EventsTest do
   import ExUnit.CaptureLog
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.TargetsFixtures
   import Kanban.TasksFixtures
 
   alias Kanban.Accounts.Scope
@@ -39,6 +40,12 @@ defmodule Kanban.Notifications.EventsTest do
     Notification
     |> where(event_type: ^event_type)
     |> order_by(:user_id)
+    |> Repo.all()
+  end
+
+  defp rows_for_target(target_id) do
+    Notification
+    |> where(event_type: :target_status_changed, url_path: ^"/targets/#{target_id}")
     |> Repo.all()
   end
 
@@ -678,7 +685,93 @@ defmodule Kanban.Notifications.EventsTest do
     end
   end
 
+  describe "target_status_changed/3" do
+    @changed_at ~U[2026-06-09 00:17:00Z]
+
+    setup ctx do
+      %{
+        target:
+          delivery_target_fixture(ctx.owner, %{name: "Q3 launch", target_date: ~D[2026-07-21]})
+      }
+    end
+
+    test "notifies the owner with a board-less link to the target page", ctx do
+      assert :ok = Events.target_status_changed(ctx.target, :at_risk, @changed_at)
+
+      assert [%Notification{} = row] = rows(:target_status_changed)
+      assert row.user_id == ctx.owner.id
+      assert row.board_id == nil
+      assert row.task_id == nil
+      assert row.title == "Q3 launch"
+      assert row.url_path == "/targets/#{ctx.target.id}"
+      assert row.metadata == %{"status" => "at_risk", "target_date" => "2026-07-21"}
+
+      assert row.dedupe_key ==
+               "target_status:#{ctx.target.id}:at_risk:#{DateTime.to_unix(@changed_at)}"
+
+      assert_enqueued(worker: EmailWorker, args: %{notification_id: row.id})
+    end
+
+    test "at_risk and missed are told apart by their metadata", ctx do
+      Events.target_status_changed(ctx.target, :at_risk, @changed_at)
+      Events.target_status_changed(ctx.target, :missed, DateTime.add(@changed_at, 3600))
+
+      assert ctx.target.id
+             |> rows_for_target()
+             |> Enum.map(& &1.metadata["status"])
+             |> Enum.sort() ==
+               ["at_risk", "missed"]
+    end
+
+    test "the same recorded change notifies once", ctx do
+      Events.target_status_changed(ctx.target, :missed, @changed_at)
+      Events.target_status_changed(ctx.target, :missed, @changed_at)
+
+      assert [%Notification{}] = rows(:target_status_changed)
+    end
+
+    test "a later change of the same status notifies again", ctx do
+      Events.target_status_changed(ctx.target, :at_risk, @changed_at)
+      Events.target_status_changed(ctx.target, :at_risk, DateTime.add(@changed_at, 86_400))
+
+      assert length(rows(:target_status_changed)) == 2
+    end
+
+    test "does nothing for a healthy status or a target without an owner", ctx do
+      assert :ok = Events.target_status_changed(ctx.target, :on_track, @changed_at)
+      assert :ok = Events.target_status_changed(ctx.target, :complete, @changed_at)
+
+      assert :ok =
+               Events.target_status_changed(%{ctx.target | owner_id: nil}, :missed, @changed_at)
+
+      assert rows(:target_status_changed) == []
+    end
+
+    test "never names the target's goals", ctx do
+      goal = task_fixture(ctx.cols["Ready"], %{type: :goal, title: "Secret goal title"})
+      {:ok, _} = Tasks.update_task(goal, %{target_id: ctx.target.id})
+
+      Events.target_status_changed(ctx.target, :missed, @changed_at)
+
+      assert [%Notification{} = row] = rows(:target_status_changed)
+      refute inspect(Map.from_struct(row)) =~ "Secret goal title"
+    end
+  end
+
   describe "failure handling" do
+    test "a target event failure is logged with the target id only and returns :ok", ctx do
+      target = delivery_target_fixture(ctx.owner, %{name: "Private target name"})
+      break_notification_inserts()
+
+      log =
+        capture_log([level: :warning], fn ->
+          assert :ok = Events.target_status_changed(target, :missed, ~U[2026-06-09 00:17:00Z])
+        end)
+
+      assert log =~ "notification target_status_changed not emitted for target #{target.id}"
+      refute log =~ "Private target name"
+    end
+
     test "a board event failure is logged with the board id only and returns :ok", ctx do
       break_notification_inserts()
 
