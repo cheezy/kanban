@@ -1,6 +1,8 @@
 defmodule Kanban.Notifications.Notification do
   @moduledoc """
-  An in-app notification for one user.
+  A notification for one user. Rows with `in_app: true` appear in the inbox;
+  rows with `in_app: false` exist only so an email can be sent to a user who
+  turned in-app delivery off, and are never listed, counted or broadcast.
 
   `title` and `body` are stored as plain text; templates and emails escape
   them at render time, so pre-rendered HTML must never be stored here.
@@ -58,6 +60,7 @@ defmodule Kanban.Notifications.Notification do
     field :url_path, :string
     field :actor_name, :string
     field :metadata, :map, default: %{}
+    field :in_app, :boolean, default: true
     field :dedupe_key, :string
     field :read_at, :utc_datetime_usec
     field :emailed_at, :utc_datetime_usec
@@ -73,8 +76,9 @@ defmodule Kanban.Notifications.Notification do
   @doc """
   Builds a changeset for a new notification.
 
-  `user_id` and `event_type` are not cast: the context sets them on the
-  struct, so attributes can never redirect a notification to another user.
+  `user_id`, `event_type` and `in_app` are not cast: the context sets them on
+  the struct, so attributes can never redirect a notification to another user
+  or change how it is delivered.
   """
   def changeset(notification, attrs) do
     notification

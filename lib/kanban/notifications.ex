@@ -5,19 +5,23 @@ defmodule Kanban.Notifications do
 
   `notify/3` is the single entry point every event source uses (task
   lifecycle hooks, sweepers, the comment goal). It resolves each recipient's
-  in-app preference, inserts at most one row per `(user, dedupe_key)` and
-  broadcasts each new row on that user's own topic. Email delivery is layered
-  on top of this API by a later task.
+  in-app and email preferences (`Kanban.Notifications.Recipients`), inserts
+  at most one row per `(user, dedupe_key)` and broadcasts each new in-app row
+  on that user's own topic. In the same transaction it enqueues a
+  `Kanban.Notifications.EmailWorker` job for each new row whose recipient
+  wants email for the event type (saved preference, else the default below).
 
   ## Visibility
 
   Read and mark functions take a `%Kanban.Accounts.Scope{}` and only ever
-  touch the scoped user's rows. `notify/3` applies the same rule at write
-  time: when an event names a board, recipients who do not belong to that
-  board are dropped before anything is inserted or broadcast. A notification tied to a board is hidden
-  once the user no longer belongs to that board; a notification with a nil
-  `board_id` (an account-level event such as being removed from a board) is
-  always visible to its user.
+  touch the scoped user's in-app rows (rows stored for email-only delivery,
+  with `in_app: false`, never appear in the inbox or the unread count).
+  `notify/3` applies the same membership rule at write time: when an event
+  names a board, recipients who do not belong to that board are dropped
+  before anything is inserted or broadcast. A notification tied to a board
+  is hidden once the user no longer belongs to that board; a notification
+  with a nil `board_id` (an account-level event such as being removed from a
+  board) is always visible to its user.
 
   ## Default preferences
 
@@ -55,8 +59,10 @@ defmodule Kanban.Notifications do
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
   alias Kanban.Boards.BoardUser
+  alias Kanban.Notifications.EmailWorker
   alias Kanban.Notifications.Notification
   alias Kanban.Notifications.Preference
+  alias Kanban.Notifications.Recipients
   alias Kanban.Repo
   alias Kanban.Tasks.Task
 
@@ -130,13 +136,18 @@ defmodule Kanban.Notifications do
   identifiers in their `:title` or `:body`; the changeset rejects board-scoped
   `:url_path` values and task metadata keys on them.
 
-  Recipients whose in-app preference for the event type is off are skipped.
+  In-app and email preferences are independent. A recipient with both off is
+  skipped. A recipient with in-app off but email on gets a row stored with
+  `in_app: false`, which is never listed, counted or broadcast but is emailed.
+  For each inserted row whose recipient's email preference is on, an
+  `EmailWorker` job is enqueued in the same transaction.
   The same `dedupe_key` yields at most one row per recipient, so retries and
-  races are idempotent. Each newly inserted row is broadcast as
+  races are idempotent. Each newly inserted in-app row is broadcast as
   `{:notification_created, notification}` on its recipient's topic after the
   transaction commits.
 
-  Returns `{:ok, inserted}` (only the rows actually inserted),
+  Returns `{:ok, inserted}` (only the rows actually inserted, including
+  email-only rows),
   `{:error, :invalid_event_type}`, or `{:error, changeset}` when the
   attributes are invalid — in which case nothing is inserted for anyone.
 
@@ -285,68 +296,43 @@ defmodule Kanban.Notifications do
 
   # -- notify/3 helpers ------------------------------------------------------
 
-  # Runs inside the insert transaction, and board_members/2 takes FOR SHARE
-  # locks on the membership rows it reads, so a concurrent removal waits for
-  # this transaction instead of committing between the check and the insert.
+  # Resolving recipients inside the transaction lets Recipients' FOR SHARE
+  # membership locks hold until the rows are inserted.
   defp insert_for_recipients(type, recipients, attrs) do
+    board_id = attrs |> fetch_attr(:board_id) |> cast_optional_id()
+
     Repo.transaction(fn ->
-      type
-      |> deliverable_recipients(recipients, attrs |> fetch_attr(:board_id) |> cast_optional_id())
-      |> Enum.map(&insert_notification!(&1.id, type, attrs))
+      deliveries = Recipients.resolve(type, recipients, board_id, default_preference(type))
+
+      deliveries
+      |> Enum.map(&insert_notification!(&1, type, attrs))
       |> Enum.reject(&is_nil(&1.id))
+      |> enqueue_emails!(deliveries)
     end)
   end
 
-  defp deliverable_recipients(type, recipients, board_id) do
-    recipients = clean_recipients(recipients)
-    ids = Enum.map(recipients, & &1.id)
-    opted_out = type |> in_app_opt_outs(ids) |> MapSet.new()
-    allowed = board_members(board_id, ids)
+  defp enqueue_emails!(inserted, deliveries) do
+    email_user_ids = for %{email: true, user_id: id} <- deliveries, into: MapSet.new(), do: id
 
-    Enum.filter(recipients, &deliverable?(&1.id, opted_out, allowed))
+    inserted
+    |> Enum.filter(&MapSet.member?(email_user_ids, &1.user_id))
+    |> EmailWorker.enqueue()
+    |> case do
+      :ok -> inserted
+      {:error, changeset} -> Repo.rollback(changeset)
+    end
   end
-
-  defp clean_recipients(recipients) do
-    recipients
-    |> List.wrap()
-    |> Enum.filter(&match?(%{id: id} when is_integer(id), &1))
-    |> Enum.uniq_by(& &1.id)
-  end
-
-  defp deliverable?(id, opted_out, nil), do: not MapSet.member?(opted_out, id)
-
-  defp deliverable?(id, opted_out, allowed),
-    do: not MapSet.member?(opted_out, id) and MapSet.member?(allowed, id)
 
   defp broadcast_created(inserted) do
-    Enum.each(inserted, &broadcast(&1.user_id, {:notification_created, &1}))
+    inserted
+    |> Enum.filter(& &1.in_app)
+    |> Enum.each(&broadcast(&1.user_id, {:notification_created, &1}))
+
     {:ok, inserted}
   end
 
   defp invalid_event_type_error(:error), do: {:error, :invalid_event_type}
   defp invalid_event_type_error({:ok, _} = ok), do: ok
-
-  defp in_app_opt_outs(_type, []), do: []
-
-  defp in_app_opt_outs(type, ids) do
-    Preference
-    |> where([p], p.user_id in ^ids and p.event_type == ^type and p.in_app == false)
-    |> select([p], p.user_id)
-    |> Repo.all()
-  end
-
-  # nil means "no board named": every recipient is allowed and the changeset
-  # decides whether a board-less row is valid for the event type.
-  defp board_members(nil, _ids), do: nil
-
-  defp board_members(board_id, ids) do
-    BoardUser
-    |> where([bu], bu.board_id == ^board_id and bu.user_id in ^ids)
-    |> select([bu], bu.user_id)
-    |> lock("FOR SHARE")
-    |> Repo.all()
-    |> MapSet.new()
-  end
 
   defp validate_task_board(type, attrs) do
     task_id = attrs |> fetch_attr(:task_id) |> cast_optional_id()
@@ -369,8 +355,8 @@ defmodule Kanban.Notifications do
     |> Repo.one()
   end
 
-  defp insert_notification!(user_id, type, attrs) do
-    %Notification{user_id: user_id, event_type: type}
+  defp insert_notification!(%{user_id: user_id, in_app: in_app}, type, attrs) do
+    %Notification{user_id: user_id, event_type: type, in_app: in_app}
     |> Notification.changeset(attrs)
     |> Repo.insert(on_conflict: :nothing, conflict_target: [:user_id, :dedupe_key])
     |> case do
@@ -386,7 +372,7 @@ defmodule Kanban.Notifications do
       from(bu in BoardUser, where: bu.user_id == ^user_id, select: bu.board_id)
 
     from(n in Notification,
-      where: n.user_id == ^user_id,
+      where: n.user_id == ^user_id and n.in_app == true,
       where: is_nil(n.board_id) or n.board_id in subquery(member_board_ids)
     )
   end

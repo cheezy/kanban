@@ -186,9 +186,9 @@ defmodule Kanban.NotificationsTest do
       assert Notification |> where(user_id: ^user.id) |> Repo.aggregate(:count) == 2
     end
 
-    test "skips a recipient whose in-app preference is off" do
+    test "skips a recipient whose in-app and email preferences are both off" do
       %{owner: muted, member: listening, board: board} = board_with_member()
-      preference_fixture(muted, :review_requested, %{in_app: false})
+      preference_fixture(muted, :review_requested, %{in_app: false, email: false})
 
       assert {:ok, [n]} =
                Notifications.notify(:review_requested, [muted, listening], %{
@@ -197,6 +197,27 @@ defmodule Kanban.NotificationsTest do
                })
 
       assert n.user_id == listening.id
+      assert n.in_app
+    end
+
+    test "stores a hidden, unbroadcast row for a recipient with in-app off but email on" do
+      %{owner: email_only, member: listening, board: board} = board_with_member()
+      preference_fixture(email_only, :review_requested, %{in_app: false, email: true})
+      :ok = Notifications.subscribe(email_only)
+
+      assert {:ok, [hidden, visible]} =
+               Notifications.notify(:review_requested, [email_only, listening], %{
+                 title: "Review",
+                 board_id: board.id
+               })
+
+      assert %Notification{user_id: user_id, in_app: false} = hidden
+      assert user_id == email_only.id
+      assert visible.in_app
+      refute_receive {:notification_created, _}
+      assert email_only |> scope() |> Notifications.list_notifications() == []
+      assert email_only |> scope() |> Notifications.unread_count() == 0
+      assert {:error, :not_found} = email_only |> scope() |> Notifications.mark_read(hidden.id)
     end
 
     test "only the matching event type's preference is applied" do

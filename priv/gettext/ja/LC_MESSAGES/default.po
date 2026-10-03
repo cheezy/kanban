@@ -8807,3 +8807,97 @@ msgstr "タスク仕様で決定済み"
 #, elixir-autogen, elixir-format
 msgid "(%{count} pending)"
 msgstr "(%{count} 件保留中)"
+
+#: lib/kanban_web/emails/notification_email.ex:93
+#, elixir-autogen, elixir-format
+msgid "After-goal hook failed"
+msgstr "after-goal フックが失敗しました"
+
+#: lib/kanban_web/emails/notification_email.ex:113
+#, elixir-autogen, elixir-format
+msgid "Board: %{board}"
+msgstr "ボード: %{board}"
+
+#: lib/kanban_web/emails/notification_email.ex:109
+#, elixir-autogen, elixir-format
+msgid "By %{actor}"
+msgstr "%{actor} より"
+
+#: lib/kanban_web/emails/notification_email.ex:86
+#, elixir-autogen, elixir-format
+msgid "Goal completed"
+msgstr "ゴールが完了しました"
+
+#: lib/kanban_web/emails/notification_email.ex:146
+#: lib/kanban_web/emails/notification_email.ex:156
+#, elixir-autogen, elixir-format
+msgid "Manage notification preferences"
+msgstr "通知設定を管理"
+
+#: lib/kanban_web/emails/notification_email.ex:88
+#, elixir-autogen, elixir-format
+msgid "New comment"
+msgstr "新しいコメント"
+
+#: lib/kanban_web/emails/notification_email.ex:83
+#, elixir-autogen, elixir-format
+msgid "Review requested"
+msgstr "レビューが依頼されました"
+
+#: lib/kanban_web/emails/notification_email.ex:94
+#, elixir-autogen, elixir-format
+msgid "Target status changed"
+msgstr "ターゲットのステータスが変更されました"
+
+#: lib/kanban_web/emails/notification_email.ex:84
+#, elixir-autogen, elixir-format
+msgid "Task assigned to you"
+msgstr "タスクが割り当てられました"
+
+#: lib/kanban_web/emails/notification_email.ex:91
+#, elixir-autogen, elixir-format
+msgid "Task unclaimed"
+msgstr "タスクの担当が解除されました"
+
+#: lib/kanban_web/emails/notification_email.ex:145
+#: lib/kanban_web/emails/notification_email.ex:155
+#, elixir-autogen, elixir-format
+msgid "Unsubscribe from these emails"
+msgstr "これらのメールの配信を停止"
+
+#: lib/kanban_web/emails/notification_email.ex:134
+#: lib/kanban_web/emails/notification_email.ex:152
+#, elixir-autogen, elixir-format
+msgid "View in Stride"
+msgstr "Stride で表示"
+
+#: lib/kanban_web/emails/notification_email.ex:144
+#: lib/kanban_web/emails/notification_email.ex:154
+#, elixir-autogen, elixir-format
+msgid "You are receiving this because email notifications for this event type are on."
+msgstr "この種類のイベントのメール通知が有効になっているため、このメールが届いています。"
+
+#: lib/kanban_web/emails/notification_email.ex:89
+#, elixir-autogen, elixir-format
+msgid "You were mentioned"
+msgstr "メンションされました"
+
+#: lib/kanban_web/emails/notification_email.ex:92
+#, elixir-autogen, elixir-format
+msgid "Your board access changed"
+msgstr "ボードへのアクセス権が変更されました"
+
+#: lib/kanban_web/emails/notification_email.ex:85
+#, elixir-autogen, elixir-format
+msgid "Your claim expired"
+msgstr "担当期限が切れました"
+
+#: lib/kanban_web/emails/notification_email.ex:90
+#, elixir-autogen, elixir-format
+msgid "Your task was reviewed"
+msgstr "タスクがレビューされました"
+
+#: lib/kanban_web/emails/notification_email.ex:87
+#, elixir-autogen, elixir-format
+msgid "Your weekly digest"
+msgstr "週次ダイジェスト"

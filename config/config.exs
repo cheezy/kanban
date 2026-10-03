@@ -86,14 +86,21 @@ config :error_tracker,
   otp_app: :kanban,
   enabled: true
 
-# Oban configuration — runs the after_goal grace-window worker (W493).
+# Redact secrets from logged request params. "token" covers the signed
+# unsubscribe token in notification email links (W2201), which travels as a
+# query parameter so it never appears in a logged request path.
+config :phoenix, :filter_parameters, ["password", "token"]
+
+# Oban configuration — runs the after_goal grace-window worker (W493) and
+# notification email delivery (W2201).
 # `:after_goal_grace` queue has a depth of 5 because each job is a single
 # row update plus a status check; bursts are bounded by goal-completion
-# rate, not throughput.
+# rate, not throughput. `:notifications` sends one email per job, so its
+# depth of 10 bounds concurrent SMTP sessions.
 config :kanban, Oban,
   repo: Kanban.Repo,
   engine: Oban.Engines.Basic,
-  queues: [after_goal_grace: 5],
+  queues: [after_goal_grace: 5, notifications: 10],
   plugins: [{Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7}]
 
 # Configurable grace window (in milliseconds) between detecting the

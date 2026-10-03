@@ -8875,3 +8875,97 @@ msgstr "Durch die Aufgabenspezifikation geklärt"
 #, elixir-autogen, elixir-format
 msgid "(%{count} pending)"
 msgstr "(%{count} ausstehend)"
+
+#: lib/kanban_web/emails/notification_email.ex:93
+#, elixir-autogen, elixir-format
+msgid "After-goal hook failed"
+msgstr "After-Goal-Hook fehlgeschlagen"
+
+#: lib/kanban_web/emails/notification_email.ex:113
+#, elixir-autogen, elixir-format
+msgid "Board: %{board}"
+msgstr "Board: %{board}"
+
+#: lib/kanban_web/emails/notification_email.ex:109
+#, elixir-autogen, elixir-format
+msgid "By %{actor}"
+msgstr "Von %{actor}"
+
+#: lib/kanban_web/emails/notification_email.ex:86
+#, elixir-autogen, elixir-format
+msgid "Goal completed"
+msgstr "Ziel abgeschlossen"
+
+#: lib/kanban_web/emails/notification_email.ex:146
+#: lib/kanban_web/emails/notification_email.ex:156
+#, elixir-autogen, elixir-format
+msgid "Manage notification preferences"
+msgstr "Benachrichtigungseinstellungen verwalten"
+
+#: lib/kanban_web/emails/notification_email.ex:88
+#, elixir-autogen, elixir-format
+msgid "New comment"
+msgstr "Neuer Kommentar"
+
+#: lib/kanban_web/emails/notification_email.ex:83
+#, elixir-autogen, elixir-format
+msgid "Review requested"
+msgstr "Überprüfung angefordert"
+
+#: lib/kanban_web/emails/notification_email.ex:94
+#, elixir-autogen, elixir-format
+msgid "Target status changed"
+msgstr "Zielstatus geändert"
+
+#: lib/kanban_web/emails/notification_email.ex:84
+#, elixir-autogen, elixir-format
+msgid "Task assigned to you"
+msgstr "Ihnen wurde eine Aufgabe zugewiesen"
+
+#: lib/kanban_web/emails/notification_email.ex:91
+#, elixir-autogen, elixir-format
+msgid "Task unclaimed"
+msgstr "Aufgabe freigegeben"
+
+#: lib/kanban_web/emails/notification_email.ex:145
+#: lib/kanban_web/emails/notification_email.ex:155
+#, elixir-autogen, elixir-format
+msgid "Unsubscribe from these emails"
+msgstr "Diese E-Mails abbestellen"
+
+#: lib/kanban_web/emails/notification_email.ex:134
+#: lib/kanban_web/emails/notification_email.ex:152
+#, elixir-autogen, elixir-format
+msgid "View in Stride"
+msgstr "In Stride ansehen"
+
+#: lib/kanban_web/emails/notification_email.ex:144
+#: lib/kanban_web/emails/notification_email.ex:154
+#, elixir-autogen, elixir-format
+msgid "You are receiving this because email notifications for this event type are on."
+msgstr "Sie erhalten diese Nachricht, weil E-Mail-Benachrichtigungen für diesen Ereignistyp aktiviert sind."
+
+#: lib/kanban_web/emails/notification_email.ex:89
+#, elixir-autogen, elixir-format
+msgid "You were mentioned"
+msgstr "Sie wurden erwähnt"
+
+#: lib/kanban_web/emails/notification_email.ex:92
+#, elixir-autogen, elixir-format
+msgid "Your board access changed"
+msgstr "Ihr Board-Zugriff wurde geändert"
+
+#: lib/kanban_web/emails/notification_email.ex:85
+#, elixir-autogen, elixir-format
+msgid "Your claim expired"
+msgstr "Ihre Übernahme ist abgelaufen"
+
+#: lib/kanban_web/emails/notification_email.ex:90
+#, elixir-autogen, elixir-format
+msgid "Your task was reviewed"
+msgstr "Ihre Aufgabe wurde überprüft"
+
+#: lib/kanban_web/emails/notification_email.ex:87
+#, elixir-autogen, elixir-format
+msgid "Your weekly digest"
+msgstr "Ihre wöchentliche Zusammenfassung"

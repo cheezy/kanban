@@ -8807,3 +8807,97 @@ msgstr "由任务规格决定"
 #, elixir-autogen, elixir-format
 msgid "(%{count} pending)"
 msgstr "(%{count} 项待处理)"
+
+#: lib/kanban_web/emails/notification_email.ex:93
+#, elixir-autogen, elixir-format
+msgid "After-goal hook failed"
+msgstr "after-goal 钩子执行失败"
+
+#: lib/kanban_web/emails/notification_email.ex:113
+#, elixir-autogen, elixir-format
+msgid "Board: %{board}"
+msgstr "看板：%{board}"
+
+#: lib/kanban_web/emails/notification_email.ex:109
+#, elixir-autogen, elixir-format
+msgid "By %{actor}"
+msgstr "来自 %{actor}"
+
+#: lib/kanban_web/emails/notification_email.ex:86
+#, elixir-autogen, elixir-format
+msgid "Goal completed"
+msgstr "目标已完成"
+
+#: lib/kanban_web/emails/notification_email.ex:146
+#: lib/kanban_web/emails/notification_email.ex:156
+#, elixir-autogen, elixir-format
+msgid "Manage notification preferences"
+msgstr "管理通知偏好"
+
+#: lib/kanban_web/emails/notification_email.ex:88
+#, elixir-autogen, elixir-format
+msgid "New comment"
+msgstr "新评论"
+
+#: lib/kanban_web/emails/notification_email.ex:83
+#, elixir-autogen, elixir-format
+msgid "Review requested"
+msgstr "已请求审阅"
+
+#: lib/kanban_web/emails/notification_email.ex:94
+#, elixir-autogen, elixir-format
+msgid "Target status changed"
+msgstr "目标状态已更改"
+
+#: lib/kanban_web/emails/notification_email.ex:84
+#, elixir-autogen, elixir-format
+msgid "Task assigned to you"
+msgstr "有任务分配给您"
+
+#: lib/kanban_web/emails/notification_email.ex:91
+#, elixir-autogen, elixir-format
+msgid "Task unclaimed"
+msgstr "任务已取消认领"
+
+#: lib/kanban_web/emails/notification_email.ex:145
+#: lib/kanban_web/emails/notification_email.ex:155
+#, elixir-autogen, elixir-format
+msgid "Unsubscribe from these emails"
+msgstr "退订此类邮件"
+
+#: lib/kanban_web/emails/notification_email.ex:134
+#: lib/kanban_web/emails/notification_email.ex:152
+#, elixir-autogen, elixir-format
+msgid "View in Stride"
+msgstr "在 Stride 中查看"
+
+#: lib/kanban_web/emails/notification_email.ex:144
+#: lib/kanban_web/emails/notification_email.ex:154
+#, elixir-autogen, elixir-format
+msgid "You are receiving this because email notifications for this event type are on."
+msgstr "您收到此邮件是因为此类事件的邮件通知已开启。"
+
+#: lib/kanban_web/emails/notification_email.ex:89
+#, elixir-autogen, elixir-format
+msgid "You were mentioned"
+msgstr "有人提到了您"
+
+#: lib/kanban_web/emails/notification_email.ex:92
+#, elixir-autogen, elixir-format
+msgid "Your board access changed"
+msgstr "您的看板访问权限已更改"
+
+#: lib/kanban_web/emails/notification_email.ex:85
+#, elixir-autogen, elixir-format
+msgid "Your claim expired"
+msgstr "您的认领已过期"
+
+#: lib/kanban_web/emails/notification_email.ex:90
+#, elixir-autogen, elixir-format
+msgid "Your task was reviewed"
+msgstr "您的任务已被审阅"
+
+#: lib/kanban_web/emails/notification_email.ex:87
+#, elixir-autogen, elixir-format
+msgid "Your weekly digest"
+msgstr "您的每周摘要"
