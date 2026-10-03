@@ -86,7 +86,8 @@ defmodule KanbanWeb.NotificationLabels do
       reason in the body when there is one;
     * `:board_access_changed` — that the user was added (with their access
       level), had their access changed (with the new level) or was removed,
-      plus how many API tokens a removal or a downgrade to read-only revoked.
+      plus how many API tokens a removal or a downgrade to read-only revoked
+      (left out when none were).
   """
   @spec detail(Notification.t()) :: String.t() | nil
   def detail(%Notification{
@@ -120,8 +121,11 @@ defmodule KanbanWeb.NotificationLabels do
 
   def detail(_notification), do: nil
 
+  defp board_access_detail(%{"change" => "removed", "tokens_revoked" => 0}),
+    do: gettext("You were removed from this board.")
+
   defp board_access_detail(%{"change" => "removed", "tokens_revoked" => count})
-       when is_integer(count),
+       when is_integer(count) and count > 0,
        do:
          ngettext(
            "You were removed from this board. %{count} API token was revoked.",
@@ -138,7 +142,7 @@ defmodule KanbanWeb.NotificationLabels do
          "access" => "read_only",
          "tokens_revoked" => count
        })
-       when is_integer(count),
+       when is_integer(count) and count > 0,
        do:
          ngettext(
            "Your access changed to %{access}. %{count} API token was revoked.",

@@ -134,8 +134,10 @@ defmodule KanbanWeb.NotificationLive.IndexTest do
       assert has_element?(
                view,
                "[data-notifications-screen]",
-               "You were removed from this board. 0 API tokens were revoked."
+               "You were removed from this board."
              )
+
+      refute has_element?(view, "[data-notifications-screen]", "API token")
 
       refute has_element?(view, "[data-notifications-screen]", "You were added with")
 

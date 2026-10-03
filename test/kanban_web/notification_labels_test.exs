@@ -153,9 +153,13 @@ defmodule KanbanWeb.NotificationLabelsTest do
              |> access_changed()
              |> NotificationLabels.detail() ==
                "Your access changed to Read Only. 3 API tokens were revoked."
+
+      assert %{"change" => "access_changed", "access" => "read_only", "tokens_revoked" => 0}
+             |> access_changed()
+             |> NotificationLabels.detail() == "Your access changed to Read Only."
     end
 
-    test "words a removal with the revoked-token count" do
+    test "words a removal with the revoked-token count, leaving out a zero count" do
       assert %{"change" => "removed", "tokens_revoked" => 1}
              |> access_changed()
              |> NotificationLabels.detail() ==
@@ -163,8 +167,7 @@ defmodule KanbanWeb.NotificationLabelsTest do
 
       assert %{"change" => "removed", "tokens_revoked" => 0}
              |> access_changed()
-             |> NotificationLabels.detail() ==
-               "You were removed from this board. 0 API tokens were revoked."
+             |> NotificationLabels.detail() == "You were removed from this board."
     end
 
     test "returns nil for malformed board access metadata" do
@@ -173,6 +176,7 @@ defmodule KanbanWeb.NotificationLabelsTest do
             %{"change" => "added"},
             %{"change" => "added", "access" => "admin"},
             %{"change" => "removed", "tokens_revoked" => "2"},
+            %{"change" => "removed", "tokens_revoked" => -1},
             %{"change" => "deleted", "access" => "modify"}
           ] do
         assert metadata |> access_changed() |> NotificationLabels.detail() == nil
@@ -197,6 +201,7 @@ defmodule KanbanWeb.NotificationLabelsTest do
           "access" => "read_only",
           "tokens_revoked" => 2
         }),
+        access_changed(%{"change" => "removed", "tokens_revoked" => 0}),
         access_changed(%{"change" => "removed", "tokens_revoked" => 1}),
         access_changed(%{"change" => "removed", "tokens_revoked" => 2})
       ]
@@ -210,7 +215,7 @@ defmodule KanbanWeb.NotificationLabelsTest do
           end)
 
         refute translated == english, "#{english} not translated for #{locale}"
-        assert translated =~ ~r/\d/ or notification.metadata["change"] != "removed"
+        assert translated =~ ~r/\d/ or notification.metadata["tokens_revoked"] == 0
       end
     end
 

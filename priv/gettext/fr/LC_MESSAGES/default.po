@@ -581,7 +581,7 @@ msgstr "Assigné à"
 
 #: lib/kanban_web/live/board_live/form.html.heex:323
 #: lib/kanban_web/live/board_live/members_form_component.ex:214
-#: lib/kanban_web/notification_labels.ex:158
+#: lib/kanban_web/notification_labels.ex:162
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
 msgstr "Peut Modifier"
@@ -624,14 +624,14 @@ msgstr "Seul le propriétaire du tableau peut modifier ce tableau"
 #: lib/kanban_web/live/board_live/form.html.heex:321
 #: lib/kanban_web/live/board_live/members_form_component.ex:213
 #: lib/kanban_web/live/target_live/form.html.heex:34
-#: lib/kanban_web/notification_labels.ex:157
+#: lib/kanban_web/notification_labels.ex:161
 #, elixir-autogen, elixir-format
 msgid "Owner"
 msgstr "Propriétaire"
 
 #: lib/kanban_web/live/board_live/form.html.heex:325
 #: lib/kanban_web/live/board_live/members_form_component.ex:215
-#: lib/kanban_web/notification_labels.ex:159
+#: lib/kanban_web/notification_labels.ex:163
 #, elixir-autogen, elixir-format
 msgid "Read Only"
 msgstr "Lecture Seule"
@@ -1108,7 +1108,7 @@ msgstr "Agent"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:401
-#: lib/kanban_web/notification_labels.ex:104
+#: lib/kanban_web/notification_labels.ex:105
 #: lib/kanban_web/review_report_helpers/tokens.ex:40
 #, elixir-autogen, elixir-format
 msgid "Approved"
@@ -6269,7 +6269,7 @@ msgstr "modifications demandées"
 msgid "(no description)"
 msgstr "(aucune description)"
 
-#: lib/kanban_web/notification_labels.ex:110
+#: lib/kanban_web/notification_labels.ex:111
 #: lib/kanban_web/review_report_helpers/tokens.ex:50
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
@@ -9032,12 +9032,12 @@ msgstr "Vous ne recevrez plus d'e-mails concernant : %{category}."
 msgid "You're unsubscribed"
 msgstr "Vous êtes désabonné"
 
-#: lib/kanban_web/notification_labels.ex:101
+#: lib/kanban_web/notification_labels.ex:102
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code}"
 msgstr "Code de sortie %{code}"
 
-#: lib/kanban_web/notification_labels.ex:97
+#: lib/kanban_web/notification_labels.ex:98
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code} after %{ms} ms"
 msgstr "Code de sortie %{code} après %{ms} ms"
@@ -9288,36 +9288,41 @@ msgstr "Tâches terminées"
 msgid "Your boards"
 msgstr "Vos tableaux"
 
-#: lib/kanban_web/notification_labels.ex:116
+#: lib/kanban_web/notification_labels.ex:117
 #, elixir-autogen, elixir-format
 msgid "Returned to Ready"
 msgstr "Renvoyée dans « Prêt »"
 
-#: lib/kanban_web/notification_labels.ex:114
+#: lib/kanban_web/notification_labels.ex:115
 #, elixir-autogen, elixir-format
 msgid "Returned to Ready. Reason:"
 msgstr "Renvoyée dans « Prêt ». Raison :"
 
-#: lib/kanban_web/notification_labels.ex:134
+#: lib/kanban_web/notification_labels.ex:138
 #, elixir-autogen, elixir-format
 msgid "You were added with %{access} access."
 msgstr "Vous avez été ajouté avec l’accès « %{access} »."
 
-#: lib/kanban_web/notification_labels.ex:126
+#: lib/kanban_web/notification_labels.ex:130
 #, elixir-autogen, elixir-format
 msgid "You were removed from this board. %{count} API token was revoked."
 msgid_plural "You were removed from this board. %{count} API tokens were revoked."
 msgstr[0] "Vous avez été retiré de ce tableau. %{count} jeton d’API a été révoqué."
 msgstr[1] "Vous avez été retiré de ce tableau. %{count} jetons d’API ont été révoqués."
 
-#: lib/kanban_web/notification_labels.ex:152
+#: lib/kanban_web/notification_labels.ex:156
 #, elixir-autogen, elixir-format
 msgid "Your access changed to %{access}."
 msgstr "Votre accès est passé à « %{access} »."
 
-#: lib/kanban_web/notification_labels.ex:143
+#: lib/kanban_web/notification_labels.ex:147
 #, elixir-autogen, elixir-format
 msgid "Your access changed to %{access}. %{count} API token was revoked."
 msgid_plural "Your access changed to %{access}. %{count} API tokens were revoked."
 msgstr[0] "Votre accès est passé à « %{access} ». %{count} jeton d’API a été révoqué."
 msgstr[1] "Votre accès est passé à « %{access} ». %{count} jetons d’API ont été révoqués."
+
+#: lib/kanban_web/notification_labels.ex:125
+#, elixir-autogen, elixir-format
+msgid "You were removed from this board."
+msgstr "Vous avez été retiré de ce tableau."
