@@ -33,8 +33,11 @@ defmodule KanbanWeb.Emails.EmailHelpers do
   @button_style "display:inline-block;padding:10px 18px;border-radius:6px;background:#4f46e5;color:#ffffff;text-decoration:none"
   # dark-mode-ignore: email HTML cannot use the app's CSS variables
   @rule_style "border:none;border-top:1px solid #d4d4d8;margin:24px 0 12px"
-  # dark-mode-ignore: email HTML cannot use the app's CSS variables
-  @footer_style "font-size:12px;color:#71717a;margin:0"
+  @footer_style "font-size:12px;margin:0"
+  # Mail clients pick their own light or dark background, and no fixed grey
+  # reaches 4.5:1 on both, so the notice dims the client's text colour; the
+  # links keep their full colour.
+  @notice_style "opacity:0.75"
 
   @type urls :: %{unsubscribe: String.t(), one_click: String.t(), preferences: String.t()}
 
@@ -84,7 +87,7 @@ defmodule KanbanWeb.Emails.EmailHelpers do
   def footer_html(urls) do
     """
     <hr style="#{@rule_style}">
-    <p style="#{@footer_style}">#{escape(gettext("You are receiving this because email notifications for this event type are on."))}
+    <p style="#{@footer_style}"><span style="#{@notice_style}">#{escape(gettext("You are receiving this because email notifications for this event type are on."))}</span>
     <a href="#{escape(urls.unsubscribe)}">#{escape(gettext("Unsubscribe from these emails"))}</a> ·
     <a href="#{escape(urls.preferences)}">#{escape(gettext("Manage notification preferences"))}</a></p>
     """

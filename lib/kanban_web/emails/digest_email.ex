@@ -25,8 +25,9 @@ defmodule KanbanWeb.Emails.DigestEmail do
 
   # dark-mode-ignore: email HTML cannot use the app's CSS variables
   @cell_style "padding:6px 8px;border-bottom:1px solid #d4d4d8;text-align:left"
-  # dark-mode-ignore: email HTML cannot use the app's CSS variables
-  @muted_style "color:#71717a;font-size:13px"
+  # Mail clients pick their own light or dark background, and no fixed grey
+  # reaches 4.5:1 on both, so muted text dims the client's text colour.
+  @muted_style "opacity:0.75;font-size:13px"
   # dark-mode-ignore: email HTML cannot use the app's CSS variables
   @num_style "padding:6px 8px;border-bottom:1px solid #d4d4d8;text-align:right"
   @section_style "font-size:16px;margin:24px 0 8px"
@@ -128,10 +129,10 @@ defmodule KanbanWeb.Emails.DigestEmail do
   defp header_cells_html do
     [
       {gettext("Board"), @cell_style},
-      {gettext("Open"), @num_style},
+      {gettext("To Do"), @num_style},
       {gettext("Doing"), @num_style},
       {gettext("Review"), @num_style},
-      {gettext("Done (7 days)"), @num_style}
+      {gettext("Done"), @num_style}
     ]
     |> Enum.map_join(fn {label, style} -> ~s(<th style="#{style}">#{escape(label)}</th>) end)
   end
@@ -190,8 +191,8 @@ defmodule KanbanWeb.Emails.DigestEmail do
   defp boards_text(digest, urls) do
     rows =
       Enum.map(digest.boards, fn row ->
-        "- #{row.name}: #{gettext("Open")} #{row.open}, #{gettext("Doing")} #{row.doing}, " <>
-          "#{gettext("Review")} #{row.review}, #{gettext("Done (7 days)")} " <>
+        "- #{row.name}: #{gettext("To Do")} #{row.open}, #{gettext("Doing")} #{row.doing}, " <>
+          "#{gettext("Review")} #{row.review}, #{gettext("Done")} " <>
           "#{row.done_this_week}\n  #{board_url(urls, row.id)}"
       end)
 

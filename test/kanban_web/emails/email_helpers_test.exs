@@ -68,6 +68,13 @@ defmodule KanbanWeb.Emails.EmailHelpersTest do
       assert html =~ "Manage notification preferences"
     end
 
+    test "footer_html/1 dims only the notice, never with a fixed grey", %{urls: urls} do
+      html = EmailHelpers.footer_html(urls)
+
+      assert html =~ ~r/<span style="opacity:0.75">You are receiving this[^<]*<\/span>/
+      refute html =~ "#71717a"
+    end
+
     test "footer_text_lines/1 lists the notice and both links", %{urls: urls} do
       assert ["--", notice, unsubscribe, preferences] = EmailHelpers.footer_text_lines(urls)
       assert notice =~ "You are receiving this"

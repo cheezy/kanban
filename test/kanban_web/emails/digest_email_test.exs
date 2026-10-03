@@ -138,6 +138,21 @@ defmodule KanbanWeb.Emails.DigestEmailTest do
     assert email.html_body =~ ~s(href="#{base()}/notifications/unsubscribe?token=)
   end
 
+  test "labels the board columns like the board cards" do
+    email = build()
+
+    assert email.html_body =~ ~r/<th[^>]*>To Do<\/th>/
+    assert email.html_body =~ ~r/<th[^>]*>Done<\/th>/
+    assert email.text_body =~ "Main board: To Do 4, Doing 2, Review 1, Done 6"
+  end
+
+  test "muted text dims the client's text colour instead of a fixed grey" do
+    html = build(%{more_boards: 1}).html_body
+
+    refute html =~ "#71717a"
+    assert html =~ ~s(style="opacity:0.75;font-size:13px;margin:0 0 16px">Summary for)
+  end
+
   test "uses a Message-ID that is stable per user and week" do
     assert build().headers["Message-ID"] == "<weekly-digest-31-2026-W45@stridelikeaboss.com>"
   end

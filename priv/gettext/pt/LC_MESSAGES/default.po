@@ -54,6 +54,8 @@ msgstr " · Gerenciamento de Tarefas"
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:92
 #: lib/kanban_web/components/target_progress_header.ex:211
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:613
+#: lib/kanban_web/emails/digest_email.ex:135
+#: lib/kanban_web/emails/digest_email.ex:195
 #: lib/kanban_web/live/goal_live/show.ex:291
 #: lib/kanban_web/task_tokens.ex:23
 #, elixir-autogen, elixir-format
@@ -1354,8 +1356,6 @@ msgstr "Em caso de falha (o que acontece)"
 msgid "Only board owners can change field visibility"
 msgstr "Apenas os donos do quadro podem alterar a visibilidade dos campos"
 
-#: lib/kanban_web/emails/digest_email.ex:131
-#: lib/kanban_web/emails/digest_email.ex:193
 #: lib/kanban_web/live/goal_live/show.ex:292
 #: lib/kanban_web/live/task_live/form_component.html.heex:132
 #: lib/kanban_web/task_tokens.ex:19
@@ -2523,8 +2523,8 @@ msgstr "Análise de fila e tempo de espera"
 #: lib/kanban_web/components/target_progress_header.ex:210
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:312
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:612
-#: lib/kanban_web/emails/digest_email.ex:133
-#: lib/kanban_web/emails/digest_email.ex:194
+#: lib/kanban_web/emails/digest_email.ex:134
+#: lib/kanban_web/emails/digest_email.ex:195
 #: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
 #: lib/kanban_web/task_tokens.ex:22
@@ -3224,8 +3224,8 @@ msgstr "Diff, testes, aceitação, telemetria dos hooks — num só painel. Apro
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:90
 #: lib/kanban_web/components/target_progress_header.ex:209
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:611
-#: lib/kanban_web/emails/digest_email.ex:132
-#: lib/kanban_web/emails/digest_email.ex:193
+#: lib/kanban_web/emails/digest_email.ex:133
+#: lib/kanban_web/emails/digest_email.ex:194
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
@@ -4286,6 +4286,8 @@ msgstr "Quadro Vazio"
 #: lib/kanban_web/components/board_header.ex:71
 #: lib/kanban_web/components/board_pulse_card.ex:148
 #: lib/kanban_web/components/boards_header.ex:104
+#: lib/kanban_web/emails/digest_email.ex:132
+#: lib/kanban_web/emails/digest_email.ex:194
 #, elixir-autogen, elixir-format
 msgid "To Do"
 msgstr "A fazer"
@@ -4345,7 +4347,7 @@ msgid "Promote children to Ready"
 msgstr "Promover filhos para Pronto"
 
 #: lib/kanban_web/components/layouts.ex:301
-#: lib/kanban_web/emails/digest_email.ex:157
+#: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
 #, elixir-autogen, elixir-format
@@ -4407,7 +4409,7 @@ msgstr "Arquivar"
 #: lib/kanban_web/components/agents_header.ex:423
 #: lib/kanban_web/components/board_tabs.ex:116
 #: lib/kanban_web/components/task_metadata_grid.ex:69
-#: lib/kanban_web/emails/digest_email.ex:130
+#: lib/kanban_web/emails/digest_email.ex:131
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:89
 #, elixir-autogen, elixir-format
 msgid "Board"
@@ -5045,7 +5047,7 @@ msgid "Testing strategy"
 msgstr "Estratégia de testes"
 
 #: lib/kanban_web/components/agent_roster_card.ex:287
-#: lib/kanban_web/emails/digest_email.ex:73
+#: lib/kanban_web/emails/digest_email.ex:74
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr "Aguardando revisão"
@@ -8884,8 +8886,8 @@ msgstr "Meta concluída"
 
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:41
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:56
-#: lib/kanban_web/emails/email_helpers.ex:89
-#: lib/kanban_web/emails/email_helpers.ex:100
+#: lib/kanban_web/emails/email_helpers.ex:92
+#: lib/kanban_web/emails/email_helpers.ex:103
 #, elixir-autogen, elixir-format
 msgid "Manage notification preferences"
 msgstr "Gerenciar preferências de notificação"
@@ -8915,8 +8917,8 @@ msgstr "Uma tarefa foi atribuída a você"
 msgid "Task unclaimed"
 msgstr "Tarefa liberada"
 
-#: lib/kanban_web/emails/email_helpers.ex:88
-#: lib/kanban_web/emails/email_helpers.ex:99
+#: lib/kanban_web/emails/email_helpers.ex:91
+#: lib/kanban_web/emails/email_helpers.ex:102
 #, elixir-autogen, elixir-format
 msgid "Unsubscribe from these emails"
 msgstr "Cancelar a inscrição nestes e-mails"
@@ -8927,8 +8929,8 @@ msgstr "Cancelar a inscrição nestes e-mails"
 msgid "View in Stride"
 msgstr "Ver no Stride"
 
-#: lib/kanban_web/emails/email_helpers.ex:87
-#: lib/kanban_web/emails/email_helpers.ex:98
+#: lib/kanban_web/emails/email_helpers.ex:90
+#: lib/kanban_web/emails/email_helpers.ex:101
 #, elixir-autogen, elixir-format
 msgid "You are receiving this because email notifications for this event type are on."
 msgstr "Você está recebendo isto porque as notificações por e-mail deste tipo de evento estão ativadas."
@@ -8953,7 +8955,7 @@ msgstr "Sua reivindicação expirou"
 msgid "Your task was reviewed"
 msgstr "Sua tarefa foi revisada"
 
-#: lib/kanban_web/emails/digest_email.ex:40
+#: lib/kanban_web/emails/digest_email.ex:41
 #: lib/kanban_web/emails/notification_email.ex:67
 #, elixir-autogen, elixir-format
 msgid "Your weekly digest"
@@ -9250,69 +9252,63 @@ msgstr "Você é adicionado ou removido de um quadro, ou seu acesso muda."
 msgid "in-app · email"
 msgstr "app · e-mail"
 
-#: lib/kanban_web/emails/digest_email.ex:88
+#: lib/kanban_web/emails/digest_email.ex:89
 #, elixir-autogen, elixir-format
 msgid "%{count} d"
 msgstr "%{count} d"
 
-#: lib/kanban_web/emails/digest_email.ex:89
+#: lib/kanban_web/emails/digest_email.ex:90
 #, elixir-autogen, elixir-format
 msgid "%{count} h"
 msgstr "%{count} h"
 
-#: lib/kanban_web/emails/digest_email.ex:81
+#: lib/kanban_web/emails/digest_email.ex:82
 #, elixir-autogen, elixir-format
 msgid "%{identifier} on %{board}, waiting %{age}"
 msgstr "%{identifier} em %{board}, aguardando há %{age}"
 
-#: lib/kanban_web/emails/digest_email.ex:134
-#: lib/kanban_web/emails/digest_email.ex:194
-#, elixir-autogen, elixir-format
-msgid "Done (7 days)"
-msgstr "Concluído (7 dias)"
-
-#: lib/kanban_web/emails/digest_email.ex:72
+#: lib/kanban_web/emails/digest_email.ex:73
 #, elixir-autogen, elixir-format
 msgid "Goals completed"
 msgstr "Metas concluídas"
 
-#: lib/kanban_web/emails/digest_email.ex:158
-#: lib/kanban_web/emails/digest_email.ex:204
+#: lib/kanban_web/emails/digest_email.ex:159
+#: lib/kanban_web/emails/digest_email.ex:205
 #, elixir-autogen, elixir-format
 msgid "Nothing is waiting for review."
 msgstr "Nada aguardando revisão."
 
-#: lib/kanban_web/emails/digest_email.ex:167
-#: lib/kanban_web/emails/digest_email.ex:210
+#: lib/kanban_web/emails/digest_email.ex:168
+#: lib/kanban_web/emails/digest_email.ex:211
 #, elixir-autogen, elixir-format
 msgid "Oldest pending reviews"
 msgstr "Revisões pendentes mais antigas"
 
-#: lib/kanban_web/emails/digest_email.ex:159
-#: lib/kanban_web/emails/digest_email.ex:171
-#: lib/kanban_web/emails/digest_email.ex:204
-#: lib/kanban_web/emails/digest_email.ex:211
+#: lib/kanban_web/emails/digest_email.ex:160
+#: lib/kanban_web/emails/digest_email.ex:172
+#: lib/kanban_web/emails/digest_email.ex:205
+#: lib/kanban_web/emails/digest_email.ex:212
 #, elixir-autogen, elixir-format
 msgid "Open the review queue"
 msgstr "Abrir a fila de revisão"
 
-#: lib/kanban_web/emails/digest_email.ex:78
+#: lib/kanban_web/emails/digest_email.ex:79
 #, elixir-autogen, elixir-format
 msgid "Other boards: %{count}"
 msgstr "Outros quadros: %{count}"
 
-#: lib/kanban_web/emails/digest_email.ex:63
+#: lib/kanban_web/emails/digest_email.ex:64
 #, elixir-autogen, elixir-format
 msgid "Summary for %{start} – %{end} (UTC)"
 msgstr "Resumo de %{start} a %{end} (UTC)"
 
-#: lib/kanban_web/emails/digest_email.ex:71
+#: lib/kanban_web/emails/digest_email.ex:72
 #, elixir-autogen, elixir-format
 msgid "Tasks done"
 msgstr "Tarefas concluídas"
 
-#: lib/kanban_web/emails/digest_email.ex:119
-#: lib/kanban_web/emails/digest_email.ex:200
+#: lib/kanban_web/emails/digest_email.ex:120
+#: lib/kanban_web/emails/digest_email.ex:201
 #, elixir-autogen, elixir-format
 msgid "Your boards"
 msgstr "Seus quadros"
