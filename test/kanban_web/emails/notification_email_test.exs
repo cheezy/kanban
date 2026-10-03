@@ -78,6 +78,61 @@ defmodule KanbanWeb.Emails.NotificationEmailTest do
       end
     end
 
+    test "a board access notice names the board once and words the change", %{user: user} do
+      board = board_fixture(user, %{name: "Roadmap"})
+
+      email =
+        build_email(user, %{
+          event_type: :board_access_changed,
+          title: "Roadmap",
+          board: board,
+          url_path: "/boards/#{board.id}",
+          metadata: %{"change" => "added", "access" => "modify", "tokens_revoked" => 0}
+        })
+
+      assert email.subject == "[Stride] Your board access changed"
+      assert email.text_body =~ "Roadmap"
+      assert email.text_body =~ "You were added with Can Edit access."
+      refute email.text_body =~ "Board: Roadmap"
+      assert email.text_body =~ "#{KanbanWeb.Endpoint.url()}/boards/#{board.id}"
+    end
+
+    test "a removal notice has no board but names it and counts revoked tokens", %{user: user} do
+      email =
+        build_email(user, %{
+          event_type: :board_access_changed,
+          title: "Roadmap",
+          url_path: "/boards",
+          metadata: %{"change" => "removed", "tokens_revoked" => 2}
+        })
+
+      assert email.text_body =~ "Roadmap"
+      assert email.text_body =~ "You were removed from this board. 2 API tokens were revoked."
+      assert email.html_body =~ "You were removed from this board. 2 API tokens were revoked."
+      assert email.text_body =~ "#{KanbanWeb.Endpoint.url()}/boards"
+    end
+
+    test "a board access notice is worded in the user's locale", %{user: user} do
+      email =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          build_email(user, %{
+            event_type: :board_access_changed,
+            title: "Roadmap",
+            url_path: "/boards",
+            metadata: %{"change" => "removed", "tokens_revoked" => 2}
+          })
+        end)
+
+      assert email.text_body =~
+               "Sie wurden von diesem Board entfernt. 2 API-Tokens wurden widerrufen."
+    end
+
+    test "other notifications keep their board line", %{user: user} do
+      board = board_fixture(user, %{name: "Roadmap"})
+
+      assert build_email(user, %{board: board}).text_body =~ "Board: Roadmap"
+    end
+
     test "HTML-escapes the title, actor and board name", %{user: user} do
       board = board_fixture(user, %{name: "<i>Board</i>"})
 

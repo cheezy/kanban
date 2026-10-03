@@ -83,8 +83,15 @@ defmodule Kanban.Notifications.EmailWorkerTest do
           board_id: board.id
         })
 
-      assert [%Oban.Job{args: %{"notification_id" => id}}] = all_enqueued(worker: EmailWorker)
-      assert Repo.get!(Notification, id).user_id == member.id
+      # Adding the member also queued their "added to board" email.
+      review_jobs =
+        for %Oban.Job{args: %{"notification_id" => id}} <- all_enqueued(worker: EmailWorker),
+            notification = Repo.get!(Notification, id),
+            notification.event_type == :review_requested,
+            do: notification
+
+      assert [%Notification{user_id: user_id}] = review_jobs
+      assert user_id == member.id
     end
 
     test "a repeated dedupe key enqueues no second job" do

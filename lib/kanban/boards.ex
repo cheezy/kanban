@@ -2,8 +2,9 @@ defmodule Kanban.Boards do
   @moduledoc """
   The Boards context.
 
-  Board membership queries live in `Kanban.Boards.Membership` and are delegated
-  to below.
+  Board membership queries live in `Kanban.Boards.Membership` and membership
+  writes (add, change access, remove) in `Kanban.Boards.MembershipChanges`;
+  both are delegated to below.
   """
 
   use Gettext, backend: KanbanWeb.Gettext
@@ -12,10 +13,10 @@ defmodule Kanban.Boards do
   alias Kanban.Repo
 
   alias Kanban.Accounts.User
-  alias Kanban.ApiTokens
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Boards.Membership
+  alias Kanban.Boards.MembershipChanges
   alias Kanban.Boards.Metrics
 
   @doc """
@@ -564,113 +565,9 @@ defmodule Kanban.Boards do
     Board.changeset(board, attrs)
   end
 
-  @doc """
-  Adds a user to a board with the specified access level.
-
-  ## Examples
-
-      iex> add_user_to_board(board, user, :read_only)
-      {:ok, %BoardUser{}}
-
-  """
-  def add_user_to_board(%Board{} = board, user, access, current_user)
-      when access in [:owner, :read_only, :modify] do
-    if owner?(board, current_user) do
-      %BoardUser{}
-      |> BoardUser.changeset(%{
-        board_id: board.id,
-        user_id: user.id,
-        access: access
-      })
-      |> Repo.insert()
-    else
-      {:error, :unauthorized}
-    end
-  end
-
-  @doc """
-  Removes a user from a board.
-
-  ## Examples
-
-      iex> remove_user_from_board(board, user)
-      {:ok, %BoardUser{}}
-
-  """
-  def remove_user_from_board(%Board{} = board, user, current_user) do
-    if owner?(board, current_user) do
-      case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
-        nil ->
-          {:error, :not_found}
-
-        board_user ->
-          # Revoke the removed user's board-scoped API tokens in the same
-          # transaction as the membership delete, so a still-valid token cannot
-          # outlive the access it depended on (W1430).
-          Ecto.Multi.new()
-          |> Ecto.Multi.delete(:board_user, board_user)
-          |> Ecto.Multi.run(:revoke_tokens, fn _repo, _changes ->
-            {:ok, ApiTokens.revoke_user_tokens_for_board(board.id, user.id)}
-          end)
-          |> run_board_user_multi()
-      end
-    else
-      {:error, :unauthorized}
-    end
-  end
-
-  # Runs a BoardUser-mutating multi and normalizes the result back to the
-  # {:ok, %BoardUser{}} / {:error, reason} shape callers expect.
-  defp run_board_user_multi(multi) do
-    multi
-    |> Repo.transaction()
-    |> case do
-      {:ok, %{board_user: board_user}} -> {:ok, board_user}
-      {:error, _step, reason, _changes} -> {:error, reason}
-    end
-  end
-
-  @doc """
-  Updates a user's access level for a board.
-
-  ## Examples
-
-      iex> update_user_access(board, user, :modify)
-      {:ok, %BoardUser{}}
-
-  """
-  def update_user_access(%Board{} = board, user, new_access, current_user)
-      when new_access in [:owner, :read_only, :modify] do
-    if owner?(board, current_user) do
-      case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
-        nil ->
-          {:error, :not_found}
-
-        board_user ->
-          # Downgrading to :read_only revokes the user's board-scoped API tokens
-          # in the same transaction, so a token minted while they held :modify
-          # can no longer write to the board (W1430). Upgrades/lateral changes
-          # leave tokens intact.
-          Ecto.Multi.new()
-          |> Ecto.Multi.update(
-            :board_user,
-            BoardUser.changeset(board_user, %{access: new_access})
-          )
-          |> maybe_revoke_tokens_on_downgrade(board.id, user.id, new_access)
-          |> run_board_user_multi()
-      end
-    else
-      {:error, :unauthorized}
-    end
-  end
-
-  defp maybe_revoke_tokens_on_downgrade(multi, board_id, user_id, :read_only) do
-    Ecto.Multi.run(multi, :revoke_tokens, fn _repo, _changes ->
-      {:ok, ApiTokens.revoke_user_tokens_for_board(board_id, user_id)}
-    end)
-  end
-
-  defp maybe_revoke_tokens_on_downgrade(multi, _board_id, _user_id, _access), do: multi
+  defdelegate add_user_to_board(board, user, access, current_user), to: MembershipChanges
+  defdelegate remove_user_from_board(board, user, current_user), to: MembershipChanges
+  defdelegate update_user_access(board, user, new_access, current_user), to: MembershipChanges
 
   @doc """
   Lists all users associated with a board along with their access level.

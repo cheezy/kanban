@@ -5,8 +5,12 @@ defmodule Kanban.BoardsTest do
   import Kanban.BoardsFixtures
   import Kanban.TasksFixtures
 
+  alias Kanban.Accounts.Scope
   alias Kanban.Boards
   alias Kanban.Boards.Board
+  alias Kanban.Boards.BoardUser
+  alias Kanban.Notifications
+  alias Kanban.Notifications.Notification
   alias Kanban.Tasks
   alias KanbanWeb.AvatarPalette
 
@@ -728,6 +732,189 @@ defmodule Kanban.BoardsTest do
 
       assert {:ok, _} = Boards.update_user_access(board, member, :modify, owner)
       refute Kanban.Repo.get!(Kanban.ApiTokens.ApiToken, token.id).revoked_at
+    end
+  end
+
+  describe "membership notifications" do
+    setup do
+      owner = user_fixture()
+      %{owner: owner, board: board_fixture(owner), member: user_fixture()}
+    end
+
+    test "adding a user notifies them once with their access level", ctx do
+      assert {:ok, %BoardUser{access: :modify}} =
+               Boards.add_user_to_board(ctx.board, ctx.member, :modify, ctx.owner)
+
+      assert [%Notification{} = row] = access_rows()
+      assert row.user_id == ctx.member.id
+      assert row.board_id == ctx.board.id
+      assert row.title == ctx.board.name
+      assert row.url_path == "/boards/#{ctx.board.id}"
+      assert row.metadata == %{"change" => "added", "access" => "modify", "tokens_revoked" => 0}
+    end
+
+    test "removing a user with two active tokens tells them both were revoked", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :modify, ctx.owner)
+      create_tokens(ctx.member, ctx.board, 2)
+
+      assert {:ok, %BoardUser{}} =
+               Boards.remove_user_from_board(ctx.board, ctx.member, ctx.owner)
+
+      assert [%Notification{} = removed] = access_rows("removed")
+      assert removed.user_id == ctx.member.id
+      assert removed.board_id == nil
+      assert removed.url_path == "/boards"
+      assert removed.metadata == %{"change" => "removed", "tokens_revoked" => 2}
+
+      # The removal notice outlives the membership; the add notice does not.
+      assert [%Notification{id: id}] =
+               ctx.member |> Scope.for_user() |> Notifications.list_notifications()
+
+      assert id == removed.id
+    end
+
+    test "removing a user with no tokens reports a count of zero", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :read_only, ctx.owner)
+      {:ok, _} = Boards.remove_user_from_board(ctx.board, ctx.member, ctx.owner)
+
+      assert [%Notification{metadata: %{"tokens_revoked" => 0}}] = access_rows("removed")
+    end
+
+    test "a downgrade to read_only names the level and reports revoked tokens", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :modify, ctx.owner)
+      create_tokens(ctx.member, ctx.board, 1)
+
+      assert {:ok, %BoardUser{access: :read_only}} =
+               Boards.update_user_access(ctx.board, ctx.member, :read_only, ctx.owner)
+
+      assert [%Notification{user_id: user_id, board_id: board_id, metadata: metadata}] =
+               access_rows("access_changed")
+
+      assert user_id == ctx.member.id
+      assert board_id == ctx.board.id
+
+      assert metadata == %{
+               "change" => "access_changed",
+               "access" => "read_only",
+               "tokens_revoked" => 1
+             }
+    end
+
+    test "an upgrade from read_only to modify reports no revoked tokens", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :read_only, ctx.owner)
+      create_tokens(ctx.member, ctx.board, 1)
+
+      {:ok, _} = Boards.update_user_access(ctx.board, ctx.member, :modify, ctx.owner)
+
+      assert [%Notification{metadata: metadata}] = access_rows("access_changed")
+
+      assert metadata == %{
+               "change" => "access_changed",
+               "access" => "modify",
+               "tokens_revoked" => 0
+             }
+    end
+
+    test "re-saving the same level notifies nobody", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :modify, ctx.owner)
+
+      assert {:ok, %BoardUser{access: :modify}} =
+               Boards.update_user_access(ctx.board, ctx.member, :modify, ctx.owner)
+
+      assert access_rows("access_changed") == []
+    end
+
+    test "re-saving read_only that still revokes tokens notifies with the count", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :read_only, ctx.owner)
+      create_tokens(ctx.member, ctx.board, 1)
+
+      {:ok, _} = Boards.update_user_access(ctx.board, ctx.member, :read_only, ctx.owner)
+
+      assert [%Notification{metadata: %{"tokens_revoked" => 1}}] = access_rows("access_changed")
+    end
+
+    test "two successive revoking re-saves of read_only both notify", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :read_only, ctx.owner)
+
+      for _ <- 1..2 do
+        create_tokens(ctx.member, ctx.board, 1)
+        {:ok, _} = Boards.update_user_access(ctx.board, ctx.member, :read_only, ctx.owner)
+      end
+
+      assert [%Notification{}, %Notification{}] = access_rows("access_changed")
+    end
+
+    test "the owner changing their own membership notifies nobody", ctx do
+      other_board = board_fixture(ctx.owner)
+
+      assert {:ok, %BoardUser{}} =
+               Boards.update_user_access(ctx.board, ctx.owner, :modify, ctx.owner)
+
+      assert {:ok, %BoardUser{}} =
+               Boards.remove_user_from_board(other_board, ctx.owner, ctx.owner)
+
+      assert access_rows() == []
+    end
+
+    test "a non-owner gets an error and nobody is notified", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :modify, ctx.owner)
+      Repo.delete_all(Notification)
+      other = user_fixture()
+
+      assert {:error, :unauthorized} =
+               Boards.add_user_to_board(ctx.board, other, :modify, ctx.member)
+
+      assert {:error, :unauthorized} =
+               Boards.update_user_access(ctx.board, ctx.member, :read_only, ctx.member)
+
+      assert {:error, :unauthorized} =
+               Boards.remove_user_from_board(ctx.board, ctx.member, other)
+
+      assert access_rows() == []
+    end
+
+    test "a failed add or a missing member notifies nobody", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :modify, ctx.owner)
+      Repo.delete_all(Notification)
+      other = user_fixture()
+
+      assert {:error, %Ecto.Changeset{}} =
+               Boards.add_user_to_board(ctx.board, ctx.member, :read_only, ctx.owner)
+
+      assert {:error, :not_found} =
+               Boards.update_user_access(ctx.board, other, :modify, ctx.owner)
+
+      assert {:error, :not_found} = Boards.remove_user_from_board(ctx.board, other, ctx.owner)
+
+      assert access_rows() == []
+    end
+
+    test "re-adding a removed user notifies them again", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :modify, ctx.owner)
+      {:ok, _} = Boards.remove_user_from_board(ctx.board, ctx.member, ctx.owner)
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :modify, ctx.owner)
+
+      assert length(access_rows("added")) == 2
+    end
+  end
+
+  defp access_rows(change \\ nil) do
+    Notification
+    |> where(event_type: :board_access_changed)
+    |> order_by(:id)
+    |> Repo.all()
+    |> Enum.filter(&(is_nil(change) or &1.metadata["change"] == change))
+  end
+
+  defp create_tokens(user, board, count) do
+    for n <- 1..count do
+      {:ok, {_token, _plain}} =
+        Kanban.ApiTokens.create_api_token(user, board, %{
+          name: "Token #{n}",
+          agent_model: "claude",
+          agent_version: "v1",
+          agent_purpose: "x"
+        })
     end
   end
 

@@ -78,7 +78,7 @@ defmodule KanbanWeb.Emails.NotificationEmail do
       [
         notification.title,
         actor_line(notification.actor_name),
-        board_line(notification.board),
+        board_line(notification.board, notification.title),
         NotificationLabels.detail(notification),
         present(notification.body)
       ],
@@ -91,8 +91,13 @@ defmodule KanbanWeb.Emails.NotificationEmail do
 
   defp actor_line(_name), do: nil
 
-  defp board_line(%{name: name}) when is_binary(name), do: gettext("Board: %{board}", board: name)
-  defp board_line(_board), do: nil
+  # A board access notice is titled with the board name already.
+  defp board_line(%{name: title}, title), do: nil
+
+  defp board_line(%{name: name}, _title) when is_binary(name),
+    do: gettext("Board: %{board}", board: name)
+
+  defp board_line(_board, _title), do: nil
 
   defp present(text) when is_binary(text) and text != "", do: text
   defp present(_text), do: nil

@@ -110,6 +110,40 @@ defmodule KanbanWeb.NotificationLive.IndexTest do
       assert has_element?(view, row(notification), "Blocked on credentials")
     end
 
+    test "renders board access notices from adding and removing the user",
+         %{conn: conn, user: user} do
+      owner = user_fixture()
+      board = board_fixture(owner, %{name: "Roadmap"})
+
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :modify, owner)
+
+      {:ok, view, _html} = live(conn, ~p"/notifications")
+
+      assert has_element?(view, "[data-notifications-screen]", "Roadmap")
+
+      assert has_element?(
+               view,
+               "[data-notifications-screen]",
+               "You were added with Can Edit access."
+             )
+
+      {:ok, _} = Kanban.Boards.remove_user_from_board(board, user, owner)
+
+      {:ok, view, _html} = live(conn, ~p"/notifications")
+
+      assert has_element?(
+               view,
+               "[data-notifications-screen]",
+               "You were removed from this board. 0 API tokens were revoked."
+             )
+
+      refute has_element?(view, "[data-notifications-screen]", "You were added with")
+
+      [removed] = user |> Scope.for_user() |> Notifications.list_notifications()
+      view |> element("#{row(removed)} [data-notification-open]") |> render_click()
+      assert_redirect(view, "/boards")
+    end
+
     test "shows a per-filter empty state", %{conn: conn, user: user} do
       {:ok, view, _html} = live(conn, ~p"/notifications")
       assert has_element?(view, "#notifications-empty", "No notifications yet.")

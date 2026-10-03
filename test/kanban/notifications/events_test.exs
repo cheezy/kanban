@@ -527,7 +527,190 @@ defmodule Kanban.Notifications.EventsTest do
     end
   end
 
+  describe "board_access_changed/4" do
+    setup do
+      # The shared setup adds two members, which now notifies them.
+      Repo.delete_all(Notification)
+      :ok
+    end
+
+    test "an add names the board and access level and links to the board", ctx do
+      stamp = ~N[2026-02-01 09:00:00]
+
+      assert :ok =
+               Events.board_access_changed(ctx.board, ctx.editor, :added,
+                 actor: ctx.owner,
+                 access: :modify,
+                 tokens_revoked: 0,
+                 membership_id: 42,
+                 stamp: stamp
+               )
+
+      assert [%Notification{} = row] = rows(:board_access_changed)
+      assert row.user_id == ctx.editor.id
+      assert row.board_id == ctx.board.id
+      assert row.title == ctx.board.name
+      assert row.url_path == "/boards/#{ctx.board.id}"
+      assert row.task_id == nil
+      assert row.metadata == %{"change" => "added", "access" => "modify", "tokens_revoked" => 0}
+
+      assert row.dedupe_key ==
+               "board_access_changed:#{ctx.board.id}:#{ctx.editor.id}:42:added:modify:#{stamp |> DateTime.from_naive!("Etc/UTC") |> DateTime.to_unix(:microsecond)}"
+    end
+
+    test "an access change names the new level", ctx do
+      assert :ok =
+               Events.board_access_changed(ctx.board, ctx.editor, :access_changed,
+                 actor: ctx.owner,
+                 access: :read_only,
+                 tokens_revoked: 3
+               )
+
+      assert [%Notification{metadata: metadata, board_id: board_id}] =
+               rows(:board_access_changed)
+
+      assert board_id == ctx.board.id
+
+      assert metadata == %{
+               "change" => "access_changed",
+               "access" => "read_only",
+               "tokens_revoked" => 3
+             }
+    end
+
+    test "a removal has no board_id, links to the board list and counts revoked tokens", ctx do
+      outsider = user_fixture()
+
+      assert :ok =
+               Events.board_access_changed(ctx.board, outsider, :removed,
+                 actor: ctx.owner,
+                 tokens_revoked: 2
+               )
+
+      assert [%Notification{} = row] = rows(:board_access_changed)
+      assert row.user_id == outsider.id
+      assert row.board_id == nil
+      assert row.url_path == "/boards"
+      assert row.title == ctx.board.name
+      assert row.metadata == %{"change" => "removed", "tokens_revoked" => 2}
+
+      assert [%Notification{id: id}] =
+               outsider |> Scope.for_user() |> Kanban.Notifications.list_notifications()
+
+      assert id == row.id
+    end
+
+    test "stores the actor's name, never their email", ctx do
+      {:ok, named} =
+        ctx.owner |> Ecto.Changeset.change(name: "Olivia Owner") |> Repo.update()
+
+      Events.board_access_changed(ctx.board, ctx.editor, :added, actor: named, access: :modify)
+      assert [%Notification{actor_name: "Olivia Owner"}] = rows(:board_access_changed)
+
+      Repo.delete_all(Notification)
+      {:ok, unnamed} = ctx.owner |> Ecto.Changeset.change(name: nil) |> Repo.update()
+
+      Events.board_access_changed(ctx.board, ctx.editor, :added, actor: unnamed, access: :modify)
+      assert [%Notification{actor_name: nil}] = rows(:board_access_changed)
+    end
+
+    test "notifies nobody when the actor is the affected user", ctx do
+      for change <- [:added, :access_changed, :removed] do
+        assert :ok =
+                 Events.board_access_changed(ctx.board, ctx.editor, change,
+                   actor: ctx.editor,
+                   access: :modify
+                 )
+      end
+
+      assert rows(:board_access_changed) == []
+    end
+
+    test "a nil actor still notifies", ctx do
+      assert :ok = Events.board_access_changed(ctx.board, ctx.editor, :added, access: :modify)
+      assert [%Notification{actor_name: nil}] = rows(:board_access_changed)
+    end
+
+    test "a retry of the same change notifies once", ctx do
+      opts = [actor: ctx.owner, access: :modify, stamp: ~N[2026-02-01 09:00:00]]
+
+      Events.board_access_changed(ctx.board, ctx.editor, :added, opts)
+      Events.board_access_changed(ctx.board, ctx.editor, :added, opts)
+
+      assert [%Notification{}] = rows(:board_access_changed)
+    end
+
+    test "an unknown access level or a non-integer count is not stored", ctx do
+      Events.board_access_changed(ctx.board, ctx.editor, :added,
+        access: :admin,
+        tokens_revoked: "lots"
+      )
+
+      assert [%Notification{metadata: metadata}] = rows(:board_access_changed)
+      assert metadata == %{"change" => "added", "tokens_revoked" => 0}
+    end
+
+    test "a board name longer than a title is truncated", ctx do
+      board = %{ctx.board | name: String.duplicate("b", 300)}
+
+      Events.board_access_changed(board, ctx.editor, :added, access: :modify)
+
+      assert [%Notification{title: title}] = rows(:board_access_changed)
+      assert String.length(title) == 255
+    end
+
+    test "an added user who is not a board member is not notified", ctx do
+      outsider = user_fixture()
+
+      Events.board_access_changed(ctx.board, outsider, :added, actor: ctx.owner, access: :modify)
+
+      assert rows(:board_access_changed) == []
+    end
+
+    test "queues an email for the affected user", ctx do
+      Events.board_access_changed(ctx.board, ctx.editor, :added,
+        actor: ctx.owner,
+        access: :modify
+      )
+
+      assert [%Notification{id: id}] = rows(:board_access_changed)
+      assert_enqueued(worker: EmailWorker, args: %{notification_id: id})
+    end
+  end
+
   describe "failure handling" do
+    test "a board event failure is logged with the board id only and returns :ok", ctx do
+      break_notification_inserts()
+
+      log =
+        capture_log([level: :warning], fn ->
+          assert :ok =
+                   Events.board_access_changed(ctx.board, ctx.editor, :added,
+                     actor: ctx.owner,
+                     access: :modify
+                   )
+        end)
+
+      assert log =~ "notification board_access_changed not emitted for board #{ctx.board.id}"
+      refute log =~ ctx.board.name
+    end
+
+    test "a failing emitter never changes the membership functions' results", ctx do
+      member = user_fixture()
+      break_notification_inserts()
+
+      capture_log([level: :warning], fn ->
+        assert {:ok, %Boards.BoardUser{access: :modify}} =
+                 Boards.add_user_to_board(ctx.board, member, :modify, ctx.owner)
+
+        assert {:ok, %Boards.BoardUser{access: :read_only}} =
+                 Boards.update_user_access(ctx.board, member, :read_only, ctx.owner)
+
+        assert {:ok, %Boards.BoardUser{}} =
+                 Boards.remove_user_from_board(ctx.board, member, ctx.owner)
+      end)
+    end
+
     test "an error from notify/3 is logged with ids only and returns :ok", ctx do
       bogus = %{ctx.task | id: -1, assigned_to_id: ctx.editor.id}
 

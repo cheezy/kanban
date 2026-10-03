@@ -19,6 +19,8 @@ defmodule KanbanWeb.NotificationLabels do
 
   alias Kanban.Notifications.Notification
 
+  @access_levels ~w(owner modify read_only)
+
   @doc """
   Returns the translated category name for an event type, e.g.
   `"Review requests"` for `:review_requested`.
@@ -81,7 +83,10 @@ defmodule KanbanWeb.NotificationLabels do
       milliseconds;
     * `:task_reviewed` — the review outcome, approved or changes requested;
     * `:task_unclaimed` — that the task went back to Ready, introducing the
-      reason in the body when there is one.
+      reason in the body when there is one;
+    * `:board_access_changed` — that the user was added (with their access
+      level), had their access changed (with the new level) or was removed,
+      plus how many API tokens a removal or a downgrade to read-only revoked.
   """
   @spec detail(Notification.t()) :: String.t() | nil
   def detail(%Notification{
@@ -110,5 +115,46 @@ defmodule KanbanWeb.NotificationLabels do
 
   def detail(%Notification{event_type: :task_unclaimed}), do: gettext("Returned to Ready")
 
+  def detail(%Notification{event_type: :board_access_changed, metadata: metadata}),
+    do: board_access_detail(metadata)
+
   def detail(_notification), do: nil
+
+  defp board_access_detail(%{"change" => "removed", "tokens_revoked" => count})
+       when is_integer(count),
+       do:
+         ngettext(
+           "You were removed from this board. %{count} API token was revoked.",
+           "You were removed from this board. %{count} API tokens were revoked.",
+           count
+         )
+
+  defp board_access_detail(%{"change" => "added", "access" => access})
+       when access in @access_levels,
+       do: gettext("You were added with %{access} access.", access: access_label(access))
+
+  defp board_access_detail(%{
+         "change" => "access_changed",
+         "access" => "read_only",
+         "tokens_revoked" => count
+       })
+       when is_integer(count),
+       do:
+         ngettext(
+           "Your access changed to %{access}. %{count} API token was revoked.",
+           "Your access changed to %{access}. %{count} API tokens were revoked.",
+           count,
+           access: access_label("read_only")
+         )
+
+  defp board_access_detail(%{"change" => "access_changed", "access" => access})
+       when access in @access_levels,
+       do: gettext("Your access changed to %{access}.", access: access_label(access))
+
+  defp board_access_detail(_metadata), do: nil
+
+  # The same labels the board membership page shows.
+  defp access_label("owner"), do: gettext("Owner")
+  defp access_label("modify"), do: gettext("Can Edit")
+  defp access_label("read_only"), do: gettext("Read Only")
 end

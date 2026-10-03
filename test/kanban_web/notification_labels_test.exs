@@ -123,6 +123,97 @@ defmodule KanbanWeb.NotificationLabelsTest do
       end
     end
 
+    defp access_changed(metadata) do
+      %Notification{event_type: :board_access_changed, metadata: metadata}
+    end
+
+    test "words an add with the membership page's access label" do
+      for {access, label} <- [
+            {"owner", "Owner"},
+            {"modify", "Can Edit"},
+            {"read_only", "Read Only"}
+          ] do
+        assert %{"change" => "added", "access" => access, "tokens_revoked" => 0}
+               |> access_changed()
+               |> NotificationLabels.detail() == "You were added with #{label} access."
+      end
+    end
+
+    test "words an access change, counting revoked tokens only for read_only" do
+      assert %{"change" => "access_changed", "access" => "modify", "tokens_revoked" => 0}
+             |> access_changed()
+             |> NotificationLabels.detail() == "Your access changed to Can Edit."
+
+      assert %{"change" => "access_changed", "access" => "read_only", "tokens_revoked" => 1}
+             |> access_changed()
+             |> NotificationLabels.detail() ==
+               "Your access changed to Read Only. 1 API token was revoked."
+
+      assert %{"change" => "access_changed", "access" => "read_only", "tokens_revoked" => 3}
+             |> access_changed()
+             |> NotificationLabels.detail() ==
+               "Your access changed to Read Only. 3 API tokens were revoked."
+    end
+
+    test "words a removal with the revoked-token count" do
+      assert %{"change" => "removed", "tokens_revoked" => 1}
+             |> access_changed()
+             |> NotificationLabels.detail() ==
+               "You were removed from this board. 1 API token was revoked."
+
+      assert %{"change" => "removed", "tokens_revoked" => 0}
+             |> access_changed()
+             |> NotificationLabels.detail() ==
+               "You were removed from this board. 0 API tokens were revoked."
+    end
+
+    test "returns nil for malformed board access metadata" do
+      for metadata <- [
+            %{},
+            %{"change" => "added"},
+            %{"change" => "added", "access" => "admin"},
+            %{"change" => "removed", "tokens_revoked" => "2"},
+            %{"change" => "deleted", "access" => "modify"}
+          ] do
+        assert metadata |> access_changed() |> NotificationLabels.detail() == nil
+      end
+    end
+
+    test "translates the board access wording in every locale" do
+      notifications = [
+        access_changed(%{"change" => "added", "access" => "modify", "tokens_revoked" => 0}),
+        access_changed(%{
+          "change" => "access_changed",
+          "access" => "owner",
+          "tokens_revoked" => 0
+        }),
+        access_changed(%{
+          "change" => "access_changed",
+          "access" => "read_only",
+          "tokens_revoked" => 1
+        }),
+        access_changed(%{
+          "change" => "access_changed",
+          "access" => "read_only",
+          "tokens_revoked" => 2
+        }),
+        access_changed(%{"change" => "removed", "tokens_revoked" => 1}),
+        access_changed(%{"change" => "removed", "tokens_revoked" => 2})
+      ]
+
+      for notification <- notifications, locale <- ~w(de es fr ja pt zh) do
+        english = NotificationLabels.detail(notification)
+
+        translated =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            NotificationLabels.detail(notification)
+          end)
+
+        refute translated == english, "#{english} not translated for #{locale}"
+        assert translated =~ ~r/\d/ or notification.metadata["change"] != "removed"
+      end
+    end
+
     test "is translated" do
       notification = after_goal_failed(%{"exit_code" => 2, "duration_ms" => 10})
       english = NotificationLabels.detail(notification)

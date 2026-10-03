@@ -1,11 +1,12 @@
 defmodule Kanban.Notifications.Events do
   @moduledoc """
-  Turns task lifecycle moments into `Kanban.Notifications.notify/3` calls.
+  Turns task lifecycle and board membership moments into
+  `Kanban.Notifications.notify/3` calls.
 
   Every function here is a side effect hung off a write that has already
   committed. They never raise and always return `:ok`: a failure is logged
-  with the event and task id only, so it can never change the result of the
-  write that triggered it.
+  with the event and task (or board) id only, so it can never change the
+  result of the write that triggered it.
 
   Notification titles carry only the task identifier and title. Completion
   notes, summaries and other agent free text are never copied in; the event
@@ -25,6 +26,11 @@ defmodule Kanban.Notifications.Events do
     * task_unclaimed uses the released claim's `claimed_at` (`updated_at`
       for an in-progress task that was never claimed through the API);
     * goal_completed uses the goal's `completed_at`;
+    * board_access_changed uses the membership row's id plus its
+      `inserted_at` for an add or a removal, and its `updated_at` plus the
+      new access for an access change (the time of the revocation for a
+      re-save of the same level that still revoked tokens), so re-adding a
+      removed user (a new row) notifies again;
     * after_goal_failed uses the index of the first failing attempt in the
       current failure streak, so a streak notifies once and a failure after
       a later success notifies again.
@@ -49,6 +55,9 @@ defmodule Kanban.Notifications.Events do
   @write_access [:owner, :modify]
   @title_max 255
   @body_max 500
+  @board_access_changes [:added, :access_changed, :removed]
+
+  @type board_access_change :: :added | :access_changed | :removed
 
   @doc """
   Notifies every board member with write access (owner or modify) that
@@ -107,6 +116,32 @@ defmodule Kanban.Notifications.Events do
   @spec task_unclaimed(Task.t(), %{id: integer()}, term()) :: :ok
   def task_unclaimed(%Task{} = task, user, reason) do
     safely(:task_unclaimed, task, fn -> emit_task_unclaimed(task, user, reason) end)
+  end
+
+  @doc """
+  Notifies `user` that their membership of `board` changed: they were
+  `:added`, their access changed (`:access_changed`), or they were
+  `:removed`.
+
+  Nothing is sent when the `:actor` option is the affected user. Options:
+
+    * `:actor` — the user who made the change (`nil` for a system change);
+    * `:access` — the access level after an add or an access change;
+    * `:tokens_revoked` — how many of the user's API tokens for the board
+      the change revoked (a count only, never the tokens);
+    * `:membership_id` and `:stamp` — the membership row's id and the
+      timestamp used in the dedupe key.
+
+  A removal notice is stored without a `board_id`, so it stays visible
+  after the membership is gone, and names only the board.
+  """
+  @spec board_access_changed(Board.t(), %{id: integer()}, board_access_change(), keyword()) ::
+          :ok
+  def board_access_changed(%Board{} = board, %{id: _} = user, change, opts \\ [])
+      when change in @board_access_changes do
+    safely(:board_access_changed, board, fn ->
+      emit_board_access_changed(board, user, change, opts)
+    end)
   end
 
   @doc """
@@ -274,6 +309,54 @@ defmodule Kanban.Notifications.Events do
   defp actor_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp actor_name(_user), do: nil
 
+  defp emit_board_access_changed(board, %{id: user_id}, change, opts) do
+    case Keyword.get(opts, :actor) do
+      %{id: ^user_id} -> :ok
+      actor -> notify_board_access_changed(board, user_id, change, actor, opts)
+    end
+  end
+
+  defp notify_board_access_changed(board, user_id, change, actor, opts) do
+    access = Keyword.get(opts, :access)
+
+    attrs =
+      board
+      |> board_location(change)
+      |> Map.merge(%{
+        title: String.slice(board.name, 0, @title_max),
+        actor_name: actor_name(actor),
+        metadata: access_metadata(change, access, Keyword.get(opts, :tokens_revoked)),
+        dedupe_key: board_access_key(board, user_id, change, access, opts)
+      })
+
+    Notifications.notify(:board_access_changed, [%{id: user_id}], attrs)
+  end
+
+  defp board_access_key(board, user_id, change, access, opts) do
+    stamp = Keyword.get(opts, :stamp) || DateTime.utc_now()
+    membership_id = Keyword.get(opts, :membership_id)
+
+    "board_access_changed:#{board.id}:#{user_id}:#{membership_id}:#{change}:#{access}:#{unix_us(stamp)}"
+  end
+
+  # A removed user is no longer a member, so the notice carries no board_id
+  # (which would hide it) and links to the board list, not the board.
+  defp board_location(_board, :removed), do: %{board_id: nil, url_path: "/boards"}
+  defp board_location(board, _change), do: %{board_id: board.id, url_path: "/boards/#{board.id}"}
+
+  defp access_metadata(change, access, revoked) do
+    %{"change" => Atom.to_string(change), "tokens_revoked" => revoked_count(revoked)}
+    |> put_access(access)
+  end
+
+  defp revoked_count(count) when is_integer(count) and count > 0, do: count
+  defp revoked_count(_count), do: 0
+
+  defp put_access(metadata, access) when access in [:owner, :modify, :read_only],
+    do: Map.put(metadata, "access", Atom.to_string(access))
+
+  defp put_access(metadata, _access), do: metadata
+
   defp emit_goal_completed(goal) do
     board_id = board_id_for(goal)
     recipients = goal_recipients(goal)
@@ -371,14 +454,27 @@ defmodule Kanban.Notifications.Events do
     |> DateTime.to_unix()
   end
 
-  defp safely(event, task, fun) do
+  # Microseconds, so two revoking re-saves of the same access level (stamped
+  # with the time of the revocation) never share a key.
+  defp unix_us(%DateTime{} = datetime), do: DateTime.to_unix(datetime, :microsecond)
+
+  defp unix_us(%NaiveDateTime{} = datetime) do
+    datetime
+    |> DateTime.from_naive!("Etc/UTC")
+    |> DateTime.to_unix(:microsecond)
+  end
+
+  defp safely(event, subject, fun) do
     case fun.() do
-      {:error, reason} -> log_failure(event, task.id, describe(reason))
+      {:error, reason} -> log_failure(event, subject_label(subject), describe(reason))
       _ok -> :ok
     end
   rescue
-    exception -> log_failure(event, task.id, inspect(exception.__struct__))
+    exception -> log_failure(event, subject_label(subject), inspect(exception.__struct__))
   end
+
+  defp subject_label(%Board{id: id}), do: "board #{id}"
+  defp subject_label(%Task{id: id}), do: "task #{id}"
 
   defp describe(%Ecto.Changeset{errors: errors}) do
     errors
@@ -389,9 +485,9 @@ defmodule Kanban.Notifications.Events do
   defp describe(reason), do: inspect(reason)
 
   # Ids and an error kind only — never titles or exception messages, which
-  # can carry task text.
-  defp log_failure(event, task_id, reason) do
-    Logger.warning("notification #{event} not emitted for task #{task_id}: #{reason}")
+  # can carry task or board text.
+  defp log_failure(event, subject, reason) do
+    Logger.warning("notification #{event} not emitted for #{subject}: #{reason}")
     :ok
   end
 end

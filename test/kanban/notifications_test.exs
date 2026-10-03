@@ -35,6 +35,8 @@ defmodule Kanban.NotificationsTest do
     member = user_fixture()
     board = board_fixture(owner)
     {:ok, _} = Boards.add_user_to_board(board, member, access, owner)
+    # Drop the member's "added to board" notice so tests see only their own.
+    Repo.delete_all(Notification)
     %{owner: owner, member: member, board: board}
   end
 
@@ -561,8 +563,11 @@ defmodule Kanban.NotificationsTest do
 
       {:ok, _} = Boards.remove_user_from_board(board, member, owner)
 
-      assert member |> scope() |> Notifications.list_notifications() == []
-      assert member |> scope() |> Notifications.unread_count() == 0
+      # Only the board-less removal notice is left.
+      assert [%Notification{event_type: :board_access_changed, board_id: nil}] =
+               member |> scope() |> Notifications.list_notifications()
+
+      assert member |> scope() |> Notifications.unread_count() == 1
     end
 
     test "always lists a notification with a nil board_id, even for a user with no boards" do
@@ -572,10 +577,10 @@ defmodule Kanban.NotificationsTest do
       {:ok, [n]} =
         Notifications.notify(:board_access_changed, [member], %{title: "You were removed"})
 
-      assert [%Notification{id: id, board_id: nil}] =
-               member |> scope() |> Notifications.list_notifications()
+      listed = member |> scope() |> Notifications.list_notifications()
 
-      assert id == n.id
+      assert n.id in Enum.map(listed, & &1.id)
+      assert Enum.all?(listed, &is_nil(&1.board_id))
     end
   end
 
@@ -677,7 +682,8 @@ defmodule Kanban.NotificationsTest do
       visible = notification_fixture(member)
       {:ok, _} = Boards.remove_user_from_board(board, member, owner)
 
-      assert {:ok, 1} = member |> scope() |> Notifications.mark_all_read()
+      # The visible notification and the board-less removal notice.
+      assert {:ok, 2} = member |> scope() |> Notifications.mark_all_read()
       assert Repo.get!(Notification, visible.id).read_at
       assert is_nil(Repo.get!(Notification, hidden.id).read_at)
     end
