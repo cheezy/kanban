@@ -5,6 +5,44 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Stride now tells people when something needs their attention, in the app and by email, instead of waiting for them to go and look.
+
+### Added
+
+#### An inbox and a notification bell
+
+Every page in the app shell now has a bell with a live unread count, linking to a new **/notifications** inbox. The inbox lists your notifications newest first, filters to unread, marks one or all as read, and opens a notification's page when you click it. New notifications and read-state changes arrive live, without a reload. A notification tied to a board is hidden once you leave that board; account-level notices, such as being removed from a board, stay visible.
+
+Notification wording is rendered when it is shown, not when it is stored, so each person reads it in their own language. Agent free text that does reach a notification (review notes, an unclaim reason) is trimmed, capped at 500 characters and always shown escaped.
+
+#### What you are notified about
+
+- **Review requested:** when an agent completes a task that needs review, every board member with owner or edit access is told, with a link to the review queue.
+- **Review results:** approving a task or requesting changes tells the person whose agent did the work, with the reviewer's notes on a change request, unless they reviewed it themselves.
+- **Task assigned:** assigning a task to someone else tells them. Assigning one to yourself does not.
+- **Task unclaimed:** an agent releasing a task back to Ready tells the user it was working for and the task's creator, with the reason when one was given.
+- **Claim expired:** an agent claim that lapses before the task is finished tells the assigned user once. A sweeper checks every five minutes.
+- **Goal completed:** a goal reaching Done tells its creator and assignee once per completion.
+- **After-goal hook failed:** a failing after_goal hook tells the goal's creator and assignee once per run of failures, with the exit code and duration but never the hook's output.
+- **Board access changed:** being added to a board, having your access changed or being removed tells you what changed. When the change revoked your API tokens for that board, it says how many, so failing agents are no longer a mystery.
+- **Delivery target at risk or missed:** an hourly check tells a target's owner when the target becomes at risk of missing its date or misses it. The status matches the badge on the boards strip, and a target that recovers and slips again notifies again.
+
+#### Email delivery with one-click unsubscribe
+
+Notifications can also arrive by email. Emails are sent in the background, never on the request that caused them, so a slow mail server never slows the app down and a failed email never undoes the action that triggered it. Every kind of notification emails by default except completed goals.
+
+Every notification email carries a signed unsubscribe link, plus the `List-Unsubscribe` and `List-Unsubscribe-Post` headers mail providers use for one-click unsubscribe. A link turns off that one kind of email without logging in, expires after 90 days, and shows the same response for any invalid link, so it never reveals whether an account exists.
+
+#### Notification preferences
+
+A new **/users/notifications** page lets each person turn in-app and email delivery on or off for every kind of notification, and turn the weekly digest on or off.
+
+#### A weekly digest
+
+On Mondays at 13:00 UTC, everyone who has opted in, confirmed their email and still has an active account gets a digest of the previous week. It covers what was finished on their boards, completed goals and what is waiting in their review queue. It only mentions boards they belong to, and quiet weeks send nothing.
+
 ## [2.14.0] - 2026-07-31
 
 The cumulative flow diagram stopped being dominated by its own history, and the review contract stopped judging every project by Kanban's checklist.
