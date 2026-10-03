@@ -362,11 +362,11 @@ defmodule KanbanWeb.Layouts do
   def win_top(assigns) do
     ~H"""
     <div
-      class="stride-screen"
+      class="stride-screen flex-wrap md:flex-nowrap"
       style={[
         "min-height: 36px; display: flex; align-items: center; flex-shrink: 0;",
         "border-bottom: 1px solid var(--line); background: var(--surface);",
-        "padding: 0 10px 0 12px; gap: 10px;"
+        "padding: 0 10px 0 12px; column-gap: 10px; row-gap: 0;"
       ]}
     >
       <%= if @show_sidebar_toggle do %>
@@ -392,7 +392,7 @@ defmodule KanbanWeb.Layouts do
       </div>
       <div style="width: 1px; height: 14px; background: var(--line-2); margin-left: 4px;"></div>
 
-      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3);">
+      <div style="flex: 1 1 0; min-width: 0; overflow: hidden; white-space: nowrap; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3);">
         <%= if @breadcrumbs not in [nil, []] do %>
           {render_slot(@breadcrumbs)}
         <% else %>
@@ -400,17 +400,14 @@ defmodule KanbanWeb.Layouts do
         <% end %>
       </div>
 
-      <span style="flex: 1;"></span>
-
-      <%!-- Actions scroll sideways on narrow screens; the bell stays pinned. --%>
+      <%!-- Below md the actions take their own full-width row (swiping if still too wide). --%>
       <div
+        :if={@actions not in [nil, []]}
         data-win-top-actions
-        class="[&>*]:shrink-0"
+        class="[&>*]:shrink-0 max-md:order-last max-md:basis-full max-md:pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style="display: flex; align-items: center; gap: 8px; min-width: 0; overflow-x: auto; color: var(--ink-3); font-size: 11.5px;"
       >
-        <%= if @actions not in [nil, []] do %>
-          {render_slot(@actions)}
-        <% end %>
+        {render_slot(@actions)}
       </div>
       <NotificationBell.bell current_scope={@current_scope} />
     </div>

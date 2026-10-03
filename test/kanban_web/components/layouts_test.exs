@@ -312,7 +312,14 @@ defmodule KanbanWeb.LayoutsTest do
       assert actions =~ "page-action"
       refute actions =~ "notification-bell"
       assert actions =~ "overflow-x: auto"
+      # below md the actions wrap onto their own full-width row
+      assert actions =~ "max-md:basis-full"
+      assert html =~ "flex-wrap md:flex-nowrap"
       assert html =~ ~r/id="notification-bell"[^>]*class="[^"]*shrink-0/
+    end
+
+    test "renders no actions row when a page has no actions" do
+      refute win_top_html(scope_with_count(0)) =~ "data-win-top-actions"
     end
 
     test "renders no bell without a signed-in user" do
