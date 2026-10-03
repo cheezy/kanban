@@ -24,9 +24,8 @@ defmodule KanbanWeb.Emails.NotificationEmail do
   alias KanbanWeb.NotificationLabels
   alias KanbanWeb.UnsubscribeToken
 
-  # The unsubscribe (W2202) and preferences (W2206) routes do not exist yet,
-  # so these paths are plain strings rather than ~p sigils; switch to
-  # url(~p"...") once those routes land.
+  # Module attributes cannot use ~p, so these app-relative paths are plain
+  # strings; notification_email_test.exs pins the rendered hrefs.
   # The token travels as a query parameter, never a path segment, so request
   # logs (which record the path) never contain it; "token" is listed in
   # :filter_parameters so logged params are redacted too.

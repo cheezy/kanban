@@ -216,6 +216,11 @@ defmodule KanbanWeb.Router do
       live "/agents", AgentsLive, :index
       live "/review", ReviewLive, :index
       live "/notifications", NotificationLive.Index, :index
+      # Notification preferences live here rather than in the sudo-gated
+      # settings session: they are not credentials, and the unsubscribe pages
+      # and email footers link straight to them, so a stale session must not
+      # force a password prompt first.
+      live "/users/notifications", UserLive.NotificationPreferences, :edit
       live "/metrics", MetricsLive.Workspace, :index
       live "/boards/:id/edit", BoardLive.Form, :edit
 

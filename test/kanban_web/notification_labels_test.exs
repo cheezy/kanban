@@ -24,6 +24,29 @@ defmodule KanbanWeb.NotificationLabelsTest do
     end
   end
 
+  describe "description/1" do
+    test "every event type has a distinct, non-empty description" do
+      descriptions =
+        Enum.map(Kanban.Notifications.event_types(), &NotificationLabels.description/1)
+
+      assert Enum.all?(descriptions, &(is_binary(&1) and &1 != ""))
+      assert length(Enum.uniq(descriptions)) == length(descriptions)
+    end
+
+    test "descriptions are translated" do
+      english = NotificationLabels.description(:task_reviewed)
+
+      for locale <- ~w(de es fr ja pt zh) do
+        translated =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            NotificationLabels.description(:task_reviewed)
+          end)
+
+        refute translated == english, "not translated for #{locale}"
+      end
+    end
+  end
+
   describe "detail/1" do
     defp after_goal_failed(metadata) do
       %Notification{event_type: :after_goal_failed, metadata: metadata}

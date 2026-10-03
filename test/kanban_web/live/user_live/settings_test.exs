@@ -59,6 +59,21 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       refute html =~ ~s(id="profile")
     end
 
+    test "links to the notification preferences page from the section nav", %{conn: conn} do
+      {:ok, lv, _html} =
+        conn
+        |> log_in_user(user_fixture())
+        |> live(~p"/users/settings")
+
+      assert has_element?(lv, ~s(nav a#settings-notifications-link[href="/users/notifications"]))
+      # the link leaves the page, so it is not one of the tablist's tabs
+      refute has_element?(lv, ~s([role="tablist"] #settings-notifications-link))
+      assert has_element?(lv, ~s([role="tablist"] button[role="tab"]), "Profile")
+
+      assert {:error, {:live_redirect, %{to: "/users/notifications"}}} =
+               lv |> element("#settings-notifications-link") |> render_click()
+    end
+
     test "preserves the hidden username field for password managers", %{conn: conn} do
       # Password-manager autofill needs the username field in the same form.
       # The hidden username field is now inside the Password card, which only

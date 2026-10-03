@@ -12,8 +12,6 @@ defmodule KanbanWeb.NotificationUnsubscribeHTML do
 
   embed_templates "notification_unsubscribe_html/*"
 
-  # The preferences page lands in W2206; until then this is a plain path
-  # rather than a ~p sigil.
   @doc false
-  def preferences_path, do: "/users/notifications"
+  def preferences_path, do: ~p"/users/notifications"
 end

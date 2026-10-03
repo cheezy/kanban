@@ -25,23 +25,42 @@ defmodule KanbanWeb.UserLive.Settings do
 
         <div class="flex flex-col md:flex-row gap-4 md:gap-7 flex-1 min-h-0">
           <nav
-            role="tablist"
-            aria-orientation="vertical"
             aria-label={gettext("Settings sections")}
             class="flex flex-row md:flex-col gap-1 md:w-[184px] md:flex-shrink-0 md:pt-1"
           >
-            <.section_link
-              section={:profile}
-              active={@section == :profile}
-              label={gettext("Profile")}
-              hint={gettext("name · email")}
-            />
-            <.section_link
-              section={:password}
-              active={@section == :password}
-              label={gettext("Password")}
-              hint={gettext("change credentials")}
-            />
+            <div
+              role="tablist"
+              aria-orientation="vertical"
+              aria-label={gettext("Settings sections")}
+              class="flex flex-row md:flex-col gap-1 flex-[2] md:flex-initial"
+            >
+              <.section_link
+                section={:profile}
+                active={@section == :profile}
+                label={gettext("Profile")}
+                hint={gettext("name · email")}
+              />
+              <.section_link
+                section={:password}
+                active={@section == :password}
+                label={gettext("Password")}
+                hint={gettext("change credentials")}
+              />
+            </div>
+            <%!-- A separate page (non-sudo session), so a link outside the tablist. --%>
+            <.link
+              navigate={~p"/users/notifications"}
+              id="settings-notifications-link"
+              class="flex-1 md:flex-initial"
+              style="display: flex; flex-direction: column; gap: 1px; padding: 7px 10px; border-radius: 5px; min-width: 0; text-decoration: none; background: transparent;"
+            >
+              <span style="font-size: 12.5px; font-weight: 500; color: var(--ink-2);">
+                {gettext("Notifications")}
+              </span>
+              <span style="font-size: 10.5px; font-family: var(--font-mono); color: var(--ink-3); letter-spacing: -0.01em;">
+                {gettext("in-app · email")}
+              </span>
+            </.link>
           </nav>
 
           <div class="flex-1 min-w-0 flex flex-col gap-[18px]">
