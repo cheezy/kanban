@@ -441,6 +441,14 @@
   box-shadow: none;
 }
 
+/* daisyUI draws the focus ring in --btn-color (--color-primary), which is
+   2.76-2.92:1 on the light surfaces, under the 3:1 WCAG 1.4.11 needs. The ink
+   token is 7.6:1+ (light) / 9.6:1+ (dark); outside .stride-screen, where the
+   Stride tokens are not defined, fall back to the base content colour. */
+.btn-primary:focus-visible {
+  outline-color: var(--stride-orange-ink, var(--color-base-content));
+}
+
 .btn-outline {
   display: inline-flex;
   align-items: center;
