@@ -86,9 +86,12 @@ defmodule KanbanWeb.Router do
   # RFC 8058 one-click unsubscribe: mail providers POST
   # "List-Unsubscribe=One-Click" to the List-Unsubscribe URL with no session
   # and no CSRF token, so this pipeline fetches neither. The controller
-  # accepts only a valid signed token and only ever turns email off.
+  # accepts only a valid signed token and only ever turns email off. Its
+  # responses have empty bodies, so the policy allows nothing at all.
   pipeline :one_click_unsubscribe do
-    plug :put_secure_browser_headers
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" => "default-src 'none'; frame-ancestors 'none'"
+    }
   end
 
   scope "/notifications", KanbanWeb do

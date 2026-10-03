@@ -773,12 +773,17 @@ defmodule KanbanWeb.API.TaskController do
 
     case fetch_and_verify_task(id_or_identifier, board) do
       {:ok, task} ->
-        proceed_with_unclaim(conn, task, user, params["reason"])
+        proceed_with_unclaim(conn, task, user, unclaim_reason(params))
 
       error ->
         TaskErrors.handle_task_error(conn, error)
     end
   end
+
+  # The reason is optional free text. Anything else (a JSON object, a
+  # number) is dropped here rather than logged, stored or emailed.
+  defp unclaim_reason(%{"reason" => reason}) when is_binary(reason), do: reason
+  defp unclaim_reason(_params), do: nil
 
   defp proceed_with_unclaim(conn, task, user, reason) do
     case Tasks.unclaim_task(task, user, reason) do

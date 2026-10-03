@@ -203,6 +203,17 @@ defmodule KanbanWeb.NotificationUnsubscribeControllerTest do
       refute email_on?(ctx.user, :review_requested)
     end
 
+    test "sends a deny-all Content-Security-Policy", ctx do
+      conn =
+        post(ctx.conn, ~p"/notifications/unsubscribe/one-click?#{[token: ctx.token]}", %{
+          "List-Unsubscribe" => "One-Click"
+        })
+
+      assert get_resp_header(conn, "content-security-policy") == [
+               "default-src 'none'; frame-ancestors 'none'"
+             ]
+    end
+
     test "repeated provider POSTs stay successful and idempotent", ctx do
       for _ <- 1..2 do
         conn =

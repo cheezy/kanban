@@ -3741,6 +3741,33 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert notification.body == "task too complex"
     end
 
+    test "ignores a non-text reason instead of failing after the unclaim", %{
+      conn: conn,
+      claimed_task: task
+    } do
+      # The test env logs at :warning, which skips evaluating the unclaim
+      # Logger.info line that a non-text reason used to crash. This module is
+      # not async, so raising the global level here is safe.
+      previous_level = Logger.level()
+      Logger.configure(level: :info)
+      on_exit(fn -> Logger.configure(level: previous_level) end)
+
+      {conn, _log} =
+        ExUnit.CaptureLog.with_log(fn ->
+          post(conn, ~p"/api/tasks/#{task.id}/unclaim", %{"reason" => %{"nested" => "x"}})
+        end)
+
+      assert json_response(conn, 200)["data"]["status"] == "open"
+
+      notification =
+        Kanban.Repo.get_by!(Kanban.Notifications.Notification,
+          task_id: task.id,
+          event_type: :task_unclaimed
+        )
+
+      assert is_nil(notification.body)
+    end
+
     test "returns 403 when unclaiming someone else's task", %{
       conn: _conn,
       claimed_task: task,

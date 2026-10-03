@@ -261,14 +261,14 @@ defmodule Kanban.Notifications.Events do
     end
   end
 
+  defp body_text(_text), do: nil
+
   defp truncate_codepoints(text, max) do
     text
     |> String.codepoints()
     |> Enum.take(max)
     |> Enum.join()
   end
-
-  defp body_text(_text), do: nil
 
   # Never falls back to the email address.
   defp actor_name(%{name: name}) when is_binary(name) and name != "", do: name
