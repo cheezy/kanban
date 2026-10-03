@@ -20,7 +20,6 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizerTest do
 
       assert merged == %{
                "unit_tests" => ["new"],
-               "manual_tests" => [],
                "edge_cases" => ["Board with zero tasks"],
                "coverage_target" => "100%"
              }
@@ -32,6 +31,27 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizerTest do
 
       assert %{"integration_points" => %{"telemetry_events" => ["b"], "notes" => "keep"}} =
                ParamNormalizer.keep_stored_map_keys(params, task)
+    end
+
+    test "does not add empty lists for keys the stored map never had" do
+      task = %Task{integration_points: %{"modules" => ["A"], "telemetry_events" => ["t"]}}
+
+      params = %{
+        "integration_points" => %{
+          "telemetry_events" => [],
+          "external_apis" => [],
+          "pubsub_broadcasts" => ["p"]
+        }
+      }
+
+      assert %{"integration_points" => merged} =
+               ParamNormalizer.keep_stored_map_keys(params, task)
+
+      assert merged == %{
+               "modules" => ["A"],
+               "telemetry_events" => [],
+               "pubsub_broadcasts" => ["p"]
+             }
     end
 
     test "leaves params alone when the field was not submitted or nothing is stored" do

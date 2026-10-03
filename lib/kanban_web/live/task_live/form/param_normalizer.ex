@@ -32,6 +32,10 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
   Merges the submitted keys of partly-edited map fields over the task's stored
   map, so a save keeps the keys the form has no inputs for instead of
   replacing the whole map. Fields the form did not submit are left alone.
+
+  The form always posts every key it has inputs for, so an empty list for a
+  key the stored map never had is dropped rather than added; emptying a key
+  that was stored still saves `[]`.
   """
   def keep_stored_map_keys(params, task) do
     Enum.reduce(@partly_edited_map_fields, params, fn {key, field}, acc ->
@@ -41,12 +45,19 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
 
   defp merge_stored(params, field, %{} = stored) do
     case Map.get(params, field) do
-      %{} = submitted -> Map.put(params, field, Map.merge(stored, submitted))
-      _ -> params
+      %{} = submitted ->
+        Map.put(params, field, Map.merge(stored, new_or_filled(submitted, stored)))
+
+      _ ->
+        params
     end
   end
 
   defp merge_stored(params, _field, _stored), do: params
+
+  defp new_or_filled(submitted, stored) do
+    Map.reject(submitted, fn {key, value} -> value == [] and not Map.has_key?(stored, key) end)
+  end
 
   defp normalize_array_fields(params, fields) do
     Enum.reduce(fields, params, fn field, acc ->
