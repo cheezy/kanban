@@ -10,7 +10,10 @@
     class="stride-screen"
     style="display: flex; flex-direction: column; min-height: 0; padding: 18px 0;"
   >
-    <div style="padding: 0 28px 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;">
+    <div
+      class="px-4 md:px-7"
+      style="padding-bottom: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;"
+    >
       <h1 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink);">
         {gettext("Notifications")}
       </h1>
@@ -46,14 +49,18 @@
         id="mark-all-read"
         phx-click="mark_all_read"
         disabled={@current_scope.unread_notifications in [nil, 0]}
-        style="height: 1.75rem; min-height: 1.75rem; padding: 0 0.625rem; font-size: 11.5px; gap: 4px;"
+        class="btn btn-primary btn-soft min-h-11 sm:min-h-7"
+        style="height: 1.75rem; padding: 0 0.625rem; font-size: 11.5px; gap: 4px;"
       >
         <.icon name="hero-check" class="h-3.5 w-3.5" />
         {gettext("Mark all read")}
       </.button>
     </div>
 
-    <div style="flex: 1; overflow-y: auto; padding: 14px 28px 28px;">
+    <div
+      class="px-4 md:px-7"
+      style="flex: 1; overflow-y: auto; padding-top: 14px; padding-bottom: 28px;"
+    >
       <div
         :if={@loaded == 0}
         id="notifications-empty"
@@ -81,9 +88,8 @@
           id={dom_id}
           data-notification-row
           data-unread={to_string(is_nil(notification.read_at))}
-          class="row-hover"
+          class="row-hover flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3"
           style={[
-            "display: flex; align-items: flex-start; gap: 12px;",
             "padding: 10px 14px; border-bottom: 1px solid var(--line);"
           ]}
         >
@@ -160,7 +166,8 @@
             phx-value-id={notification.id}
             data-notification-mark-read
             aria-label={gettext("Mark as read: %{title}", title: notification.title)}
-            style="flex-shrink: 0; height: 1.75rem; min-height: 1.75rem; padding: 0 0.625rem; font-size: 11.5px; gap: 4px;"
+            class="btn btn-primary btn-soft self-start ml-[18px] sm:ml-0 min-h-11 sm:min-h-7"
+            style="flex-shrink: 0; height: 1.75rem; padding: 0 0.625rem; font-size: 11.5px; gap: 4px;"
           >
             {gettext("Mark as read")}
           </.button>

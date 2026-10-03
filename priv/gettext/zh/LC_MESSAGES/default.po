@@ -5086,7 +5086,7 @@ msgstr "%{m}分"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:414
 #: lib/kanban_web/components/archive_filter_chips.ex:88
-#: lib/kanban_web/live/notification_live/index.html.heex:29
+#: lib/kanban_web/live/notification_live/index.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "全部"
@@ -8836,7 +8836,7 @@ msgid "Board: %{board}"
 msgstr "看板：%{board}"
 
 #: lib/kanban_web/emails/notification_email.ex:90
-#: lib/kanban_web/live/notification_live/index.html.heex:133
+#: lib/kanban_web/live/notification_live/index.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "来自 %{actor}"
@@ -9035,37 +9035,37 @@ msgid "%{count} unread notification"
 msgid_plural "%{count} unread notifications"
 msgstr[0] "%{count} 条未读通知"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:19
+#: lib/kanban_web/live/notification_live/index.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "Filter notifications"
 msgstr "筛选通知"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:177
+#: lib/kanban_web/live/notification_live/index.html.heex:184
 #, elixir-autogen, elixir-format
 msgid "Load more"
 msgstr "加载更多"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:52
+#: lib/kanban_web/live/notification_live/index.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Mark all read"
 msgstr "全部标为已读"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:165
+#: lib/kanban_web/live/notification_live/index.html.heex:172
 #, elixir-autogen, elixir-format
 msgid "Mark as read"
 msgstr "标为已读"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:162
+#: lib/kanban_web/live/notification_live/index.html.heex:168
 #, elixir-autogen, elixir-format
 msgid "Mark as read: %{title}"
 msgstr "标为已读：%{title}"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:67
+#: lib/kanban_web/live/notification_live/index.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "No notifications yet."
 msgstr "暂无通知。"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:66
+#: lib/kanban_web/live/notification_live/index.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "No unread notifications."
 msgstr "没有未读通知。"
@@ -9078,15 +9078,15 @@ msgstr "未找到通知。"
 #: lib/kanban_web/components/notification_bell.ex:71
 #: lib/kanban_web/live/notification_live/index.ex:33
 #: lib/kanban_web/live/notification_live/index.html.heex:5
-#: lib/kanban_web/live/notification_live/index.html.heex:15
+#: lib/kanban_web/live/notification_live/index.html.heex:18
 #: lib/kanban_web/live/user_live/notification_preferences.ex:127
 #: lib/kanban_web/live/user_live/settings_components.ex:74
 #, elixir-autogen, elixir-format
 msgid "Notifications"
 msgstr "通知"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:38
-#: lib/kanban_web/live/notification_live/index.html.heex:116
+#: lib/kanban_web/live/notification_live/index.html.heex:41
+#: lib/kanban_web/live/notification_live/index.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "Unread"
 msgstr "未读"

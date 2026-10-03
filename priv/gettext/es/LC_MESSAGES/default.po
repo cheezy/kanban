@@ -5094,7 +5094,7 @@ msgstr "%{m}m"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:414
 #: lib/kanban_web/components/archive_filter_chips.ex:88
-#: lib/kanban_web/live/notification_live/index.html.heex:29
+#: lib/kanban_web/live/notification_live/index.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "Todos"
@@ -8897,7 +8897,7 @@ msgid "Board: %{board}"
 msgstr "Tablero: %{board}"
 
 #: lib/kanban_web/emails/notification_email.ex:90
-#: lib/kanban_web/live/notification_live/index.html.heex:133
+#: lib/kanban_web/live/notification_live/index.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "Por %{actor}"
@@ -9097,37 +9097,37 @@ msgid_plural "%{count} unread notifications"
 msgstr[0] "%{count} notificación sin leer"
 msgstr[1] "%{count} notificaciones sin leer"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:19
+#: lib/kanban_web/live/notification_live/index.html.heex:22
 #, elixir-autogen, elixir-format
 msgid "Filter notifications"
 msgstr "Filtrar notificaciones"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:177
+#: lib/kanban_web/live/notification_live/index.html.heex:184
 #, elixir-autogen, elixir-format
 msgid "Load more"
 msgstr "Cargar más"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:52
+#: lib/kanban_web/live/notification_live/index.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Mark all read"
 msgstr "Marcar todas como leídas"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:165
+#: lib/kanban_web/live/notification_live/index.html.heex:172
 #, elixir-autogen, elixir-format
 msgid "Mark as read"
 msgstr "Marcar como leída"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:162
+#: lib/kanban_web/live/notification_live/index.html.heex:168
 #, elixir-autogen, elixir-format
 msgid "Mark as read: %{title}"
 msgstr "Marcar como leída: %{title}"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:67
+#: lib/kanban_web/live/notification_live/index.html.heex:74
 #, elixir-autogen, elixir-format
 msgid "No notifications yet."
 msgstr "Aún no hay notificaciones."
 
-#: lib/kanban_web/live/notification_live/index.html.heex:66
+#: lib/kanban_web/live/notification_live/index.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "No unread notifications."
 msgstr "No hay notificaciones sin leer."
@@ -9140,15 +9140,15 @@ msgstr "Notificación no encontrada."
 #: lib/kanban_web/components/notification_bell.ex:71
 #: lib/kanban_web/live/notification_live/index.ex:33
 #: lib/kanban_web/live/notification_live/index.html.heex:5
-#: lib/kanban_web/live/notification_live/index.html.heex:15
+#: lib/kanban_web/live/notification_live/index.html.heex:18
 #: lib/kanban_web/live/user_live/notification_preferences.ex:127
 #: lib/kanban_web/live/user_live/settings_components.ex:74
 #, elixir-autogen, elixir-format
 msgid "Notifications"
 msgstr "Notificaciones"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:38
-#: lib/kanban_web/live/notification_live/index.html.heex:116
+#: lib/kanban_web/live/notification_live/index.html.heex:41
+#: lib/kanban_web/live/notification_live/index.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "Unread"
 msgstr "No leídas"

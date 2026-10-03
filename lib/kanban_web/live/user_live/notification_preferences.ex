@@ -195,7 +195,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
             id="pref-weekly_digest"
             phx-change="save_digest"
             class={@toggle_layout}
-            style="margin: 0;"
+            style="margin: 0; padding: 10px 0;"
           >
             <.input
               type="checkbox"
