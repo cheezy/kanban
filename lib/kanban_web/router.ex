@@ -165,7 +165,8 @@ defmodule KanbanWeb.Router do
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
-        {KanbanWeb.UserAuth, :require_admin}
+        {KanbanWeb.UserAuth, :require_admin},
+        {KanbanWeb.NotificationsOnMount, :default}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/messages", MessageLive.Index, :index
@@ -187,7 +188,8 @@ defmodule KanbanWeb.Router do
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
-        {KanbanWeb.UserAuth, :require_sudo_mode}
+        {KanbanWeb.UserAuth, :require_sudo_mode},
+        {KanbanWeb.NotificationsOnMount, :default}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/users/settings", UserLive.Settings, :edit
@@ -198,7 +200,8 @@ defmodule KanbanWeb.Router do
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
-        {KanbanWeb.UserAuth, :require_authenticated}
+        {KanbanWeb.UserAuth, :require_authenticated},
+        {KanbanWeb.NotificationsOnMount, :default}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/boards", BoardLive.Index, :index
@@ -212,6 +215,7 @@ defmodule KanbanWeb.Router do
 
       live "/agents", AgentsLive, :index
       live "/review", ReviewLive, :index
+      live "/notifications", NotificationLive.Index, :index
       live "/metrics", MetricsLive.Workspace, :index
       live "/boards/:id/edit", BoardLive.Form, :edit
 
@@ -277,7 +281,9 @@ defmodule KanbanWeb.Router do
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
-        {KanbanWeb.UserAuth, :mount_current_scope}
+        {KanbanWeb.UserAuth, :mount_current_scope},
+        # No-op for visitors; keeps a signed-in user's bell live here too.
+        {KanbanWeb.NotificationsOnMount, :default}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/resources", ResourcesLive.Index, :index

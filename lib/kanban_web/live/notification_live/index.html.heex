@@ -1,0 +1,179 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <:breadcrumbs>
+    <span>{gettext("Workspace")}</span>
+    <span style="color: var(--ink-4);">/</span>
+    <span style="color: var(--ink); font-weight: 500;">{gettext("Notifications")}</span>
+  </:breadcrumbs>
+
+  <div
+    data-notifications-screen
+    class="stride-screen"
+    style="display: flex; flex-direction: column; min-height: 0; padding: 18px 0;"
+  >
+    <div style="padding: 0 28px 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;">
+      <h1 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink);">
+        {gettext("Notifications")}
+      </h1>
+
+      <nav
+        aria-label={gettext("Filter notifications")}
+        style="display: inline-flex; gap: 2px; padding: 2px; border-radius: 7px; background: var(--surface-sunken);"
+      >
+        <.link
+          patch={~p"/notifications"}
+          data-filter="all"
+          aria-current={@filter == :all && "page"}
+          class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          style={filter_link_style(@filter == :all)}
+        >
+          {gettext("All")}
+        </.link>
+        <.link
+          patch={~p"/notifications?filter=unread"}
+          data-filter="unread"
+          aria-current={@filter == :unread && "page"}
+          class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          style={filter_link_style(@filter == :unread)}
+        >
+          {gettext("Unread")}
+        </.link>
+      </nav>
+
+      <span style="flex: 1;"></span>
+
+      <.button
+        type="button"
+        id="mark-all-read"
+        phx-click="mark_all_read"
+        disabled={@current_scope.unread_notifications in [nil, 0]}
+        style="height: 1.75rem; min-height: 1.75rem; padding: 0 0.625rem; font-size: 11.5px; gap: 4px;"
+      >
+        <.icon name="hero-check" class="h-3.5 w-3.5" />
+        {gettext("Mark all read")}
+      </.button>
+    </div>
+
+    <div style="flex: 1; overflow-y: auto; padding: 14px 28px 28px;">
+      <div
+        :if={@loaded == 0}
+        id="notifications-empty"
+        style={[
+          "padding: 48px 24px; text-align: center;",
+          "font-size: 13px; color: var(--ink-3); font-style: italic;"
+        ]}
+      >
+        {if @filter == :unread,
+          do: gettext("No unread notifications."),
+          else: gettext("No notifications yet.")}
+      </div>
+
+      <div
+        id="notifications"
+        phx-update="stream"
+        class={@loaded == 0 && "hidden"}
+        style={[
+          "background: var(--surface); border: 1px solid var(--line);",
+          "border-radius: 8px; overflow: hidden;"
+        ]}
+      >
+        <div
+          :for={{dom_id, notification} <- @streams.notifications}
+          id={dom_id}
+          data-notification-row
+          data-unread={to_string(is_nil(notification.read_at))}
+          class="row-hover"
+          style={[
+            "display: flex; align-items: flex-start; gap: 12px;",
+            "padding: 10px 14px; border-bottom: 1px solid var(--line);"
+          ]}
+        >
+          <%!-- A bare <button>, not <.button>: it is the whole clickable row
+                (keyboard-reachable), not an action control, so it carries no
+                btn styling. --%>
+          <button
+            type="button"
+            phx-click="open"
+            phx-value-id={notification.id}
+            data-notification-open
+            class="focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            style={[
+              "flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 10px;",
+              "text-align: left; background: transparent; border: 0; padding: 0;",
+              "font: inherit; color: inherit; cursor: pointer;"
+            ]}
+          >
+            <span
+              aria-hidden="true"
+              style={[
+                "flex-shrink: 0; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%;",
+                if(is_nil(notification.read_at),
+                  do: "background: var(--stride-orange);",
+                  else: "background: transparent;"
+                )
+              ]}
+            ></span>
+            <span style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+              <span :if={is_nil(notification.read_at)} class="sr-only">{gettext("Unread")}</span>
+              <span class="ucase" style="font-size: 10.5px; color: var(--ink-3);">
+                {NotificationLabels.category(notification.event_type)}
+              </span>
+              <span style={[
+                "font-size: 13px; color: var(--ink); overflow-wrap: anywhere;",
+                if(is_nil(notification.read_at),
+                  do: "font-weight: 600;",
+                  else: "font-weight: 500;"
+                )
+              ]}>
+                {notification.title}
+              </span>
+              <span
+                :if={notification.actor_name}
+                style="font-size: 11.5px; color: var(--ink-2);"
+              >
+                {gettext("By %{actor}", actor: notification.actor_name)}
+              </span>
+              <span
+                :if={NotificationLabels.detail(notification)}
+                style="font-size: 11.5px; color: var(--ink-2);"
+              >
+                {NotificationLabels.detail(notification)}
+              </span>
+              <span
+                :if={notification.body}
+                style="font-size: 11.5px; color: var(--ink-2); white-space: pre-line; overflow-wrap: anywhere;"
+              >
+                {notification.body}
+              </span>
+              <span style="font-size: 10.5px; color: var(--ink-3);">
+                {TimeAgo.format_age(notification.inserted_at, :coarse)}
+              </span>
+            </span>
+          </button>
+
+          <.button
+            :if={is_nil(notification.read_at)}
+            type="button"
+            phx-click="mark_read"
+            phx-value-id={notification.id}
+            data-notification-mark-read
+            aria-label={gettext("Mark as read: %{title}", title: notification.title)}
+            style="flex-shrink: 0; height: 1.75rem; min-height: 1.75rem; padding: 0 0.625rem; font-size: 11.5px; gap: 4px;"
+          >
+            {gettext("Mark as read")}
+          </.button>
+        </div>
+      </div>
+
+      <div :if={@has_more} style="display: flex; justify-content: center; padding-top: 14px;">
+        <.button
+          type="button"
+          id="notifications-load-more"
+          phx-click="load_more"
+          style="height: 1.75rem; min-height: 1.75rem; padding: 0 0.625rem; font-size: 11.5px; gap: 4px;"
+        >
+          {gettext("Load more")}
+        </.button>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

@@ -17,18 +17,18 @@ msgstr ""
 msgid "Actions"
 msgstr "Actions"
 
-#: lib/kanban_web/components/layouts.ex:433
-#: lib/kanban_web/components/layouts.ex:445
+#: lib/kanban_web/components/layouts.ex:439
+#: lib/kanban_web/components/layouts.ex:451
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "Tentative de reconnexion"
 
-#: lib/kanban_web/components/layouts.ex:440
+#: lib/kanban_web/components/layouts.ex:446
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "Quelque chose s'est mal passé !"
 
-#: lib/kanban_web/components/layouts.ex:428
+#: lib/kanban_web/components/layouts.ex:434
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "Impossible de trouver Internet"
@@ -75,15 +75,15 @@ msgstr "En Cours"
 msgid "Log in"
 msgstr "Se Connecter"
 
-#: lib/kanban_web/components/layouts.ex:213
+#: lib/kanban_web/components/layouts.ex:216
 #: lib/kanban_web/components/nav_components.ex:137
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "Se Déconnecter"
 
 #: lib/kanban_web/components/board_tabs.ex:143
-#: lib/kanban_web/components/layouts.ex:188
-#: lib/kanban_web/components/layouts.ex:189
+#: lib/kanban_web/components/layouts.ex:191
+#: lib/kanban_web/components/layouts.ex:192
 #: lib/kanban_web/components/nav_components.ex:132
 #: lib/kanban_web/live/user_live/settings.ex:16
 #, elixir-autogen, elixir-format
@@ -369,8 +369,8 @@ msgstr "Mettre à jour les détails de la tâche"
 msgid "WIP limit reached for this column"
 msgstr "Limite WIP atteinte pour cette colonne"
 
-#: lib/kanban_web/components/layouts.ex:149
-#: lib/kanban_web/components/layouts.ex:394
+#: lib/kanban_web/components/layouts.ex:152
+#: lib/kanban_web/components/layouts.ex:399
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -544,7 +544,7 @@ msgstr "Commentaire ajouté avec succès"
 #: lib/kanban_web/live/task_live/components/comments_section.ex:13
 #: lib/kanban_web/live/task_live/form_component.html.heex:525
 #: lib/kanban_web/live/task_live/view_component.ex:409
-#: lib/kanban_web/notification_labels.ex:23
+#: lib/kanban_web/notification_labels.ex:29
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "Commentaires"
@@ -769,7 +769,7 @@ msgstr "Tableau de bord"
 msgid "This account has already been confirmed. You can log in."
 msgstr "Ce compte a déjà été confirmé. Vous pouvez vous connecter."
 
-#: lib/kanban_web/components/layouts.ex:324
+#: lib/kanban_web/components/layouts.ex:327
 #: lib/kanban_web/components/marketing_components.ex:88
 #: lib/kanban_web/components/marketing_components.ex:276
 #: lib/kanban_web/components/nav_components.ex:134
@@ -2101,7 +2101,7 @@ msgstr "Précédent"
 msgid "Read more"
 msgstr "Lire la suite"
 
-#: lib/kanban_web/components/layouts.ex:317
+#: lib/kanban_web/components/layouts.ex:320
 #: lib/kanban_web/components/marketing_components.ex:84
 #: lib/kanban_web/components/marketing_components.ex:270
 #: lib/kanban_web/components/nav_components.ex:133
@@ -2187,7 +2187,7 @@ msgid "Could not find a user with that email address"
 msgstr "Aucun utilisateur trouvé avec cette adresse e-mail"
 
 #: lib/kanban_web/components/board_tabs.ex:125
-#: lib/kanban_web/components/layouts.ex:305
+#: lib/kanban_web/components/layouts.ex:308
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:5
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
@@ -4202,7 +4202,7 @@ msgid_plural "%{count} active"
 msgstr[0] "%{count} actif"
 msgstr[1] "%{count} actifs"
 
-#: lib/kanban_web/components/layouts.ex:284
+#: lib/kanban_web/components/layouts.ex:287
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:568
 #: lib/kanban_web/live/admin/user_live/index.html.heex:107
 #: lib/kanban_web/live/board_live/index.html.heex:5
@@ -4287,7 +4287,7 @@ msgstr "À faire"
 msgid "Active goals"
 msgstr "Objectifs actifs"
 
-#: lib/kanban_web/components/layouts.ex:291
+#: lib/kanban_web/components/layouts.ex:294
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
 #: lib/kanban_web/live/agents_live.ex:349
 #, elixir-autogen, elixir-format
@@ -4326,7 +4326,7 @@ msgstr "Nouvel objectif"
 msgid "Pre-configured for AI workflow"
 msgstr "Préconfiguré pour le workflow IA"
 
-#: lib/kanban_web/components/layouts.ex:127
+#: lib/kanban_web/components/layouts.ex:130
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr "Navigation principale"
@@ -4336,7 +4336,7 @@ msgstr "Navigation principale"
 msgid "Promote children to Ready"
 msgstr "Promouvoir les enfants vers « Prêt »"
 
-#: lib/kanban_web/components/layouts.ex:298
+#: lib/kanban_web/components/layouts.ex:301
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
 #, elixir-autogen, elixir-format
@@ -4348,7 +4348,7 @@ msgstr "File de relecture"
 msgid "Start with a blank board"
 msgstr "Commencer avec un tableau vierge"
 
-#: lib/kanban_web/components/layouts.ex:136
+#: lib/kanban_web/components/layouts.ex:139
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr "Accueil Stride"
@@ -4358,6 +4358,7 @@ msgstr "Accueil Stride"
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
 #: lib/kanban_web/live/metrics_live/workspace.ex:204
+#: lib/kanban_web/live/notification_live/index.html.heex:3
 #: lib/kanban_web/live/review_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Workspace"
@@ -5076,6 +5077,7 @@ msgstr "%{m}min"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:414
 #: lib/kanban_web/components/archive_filter_chips.ex:88
+#: lib/kanban_web/live/notification_live/index.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "Tous"
@@ -5479,7 +5481,7 @@ msgstr "tous les tableaux"
 msgid "Toggle menu"
 msgstr "Basculer le menu"
 
-#: lib/kanban_web/components/layouts.ex:373
+#: lib/kanban_web/components/layouts.ex:378
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr "Basculer la barre latérale"
@@ -8817,123 +8819,124 @@ msgstr "Résolu par la spécification de la tâche"
 msgid "(%{count} pending)"
 msgstr "(%{count} en attente)"
 
-#: lib/kanban_web/emails/notification_email.ex:98
+#: lib/kanban_web/emails/notification_email.ex:99
 #, elixir-autogen, elixir-format
 msgid "After-goal hook failed"
 msgstr "Échec du hook after-goal"
 
-#: lib/kanban_web/emails/notification_email.ex:137
+#: lib/kanban_web/emails/notification_email.ex:120
 #, elixir-autogen, elixir-format
 msgid "Board: %{board}"
 msgstr "Tableau : %{board}"
 
-#: lib/kanban_web/emails/notification_email.ex:115
+#: lib/kanban_web/emails/notification_email.ex:116
+#: lib/kanban_web/live/notification_live/index.html.heex:136
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "Par %{actor}"
 
-#: lib/kanban_web/emails/notification_email.ex:91
+#: lib/kanban_web/emails/notification_email.ex:92
 #, elixir-autogen, elixir-format
 msgid "Goal completed"
 msgstr "Objectif terminé"
 
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:41
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:56
-#: lib/kanban_web/emails/notification_email.ex:170
-#: lib/kanban_web/emails/notification_email.ex:180
+#: lib/kanban_web/emails/notification_email.ex:153
+#: lib/kanban_web/emails/notification_email.ex:163
 #, elixir-autogen, elixir-format
 msgid "Manage notification preferences"
 msgstr "Gérer les préférences de notification"
 
-#: lib/kanban_web/emails/notification_email.ex:93
+#: lib/kanban_web/emails/notification_email.ex:94
 #, elixir-autogen, elixir-format
 msgid "New comment"
 msgstr "Nouveau commentaire"
 
-#: lib/kanban_web/emails/notification_email.ex:88
+#: lib/kanban_web/emails/notification_email.ex:89
 #, elixir-autogen, elixir-format
 msgid "Review requested"
 msgstr "Revue demandée"
 
-#: lib/kanban_web/emails/notification_email.ex:99
+#: lib/kanban_web/emails/notification_email.ex:100
 #, elixir-autogen, elixir-format
 msgid "Target status changed"
 msgstr "Le statut de la cible a changé"
 
-#: lib/kanban_web/emails/notification_email.ex:89
+#: lib/kanban_web/emails/notification_email.ex:90
 #, elixir-autogen, elixir-format
 msgid "Task assigned to you"
 msgstr "Une tâche vous a été attribuée"
 
-#: lib/kanban_web/emails/notification_email.ex:96
+#: lib/kanban_web/emails/notification_email.ex:97
 #, elixir-autogen, elixir-format
 msgid "Task unclaimed"
 msgstr "Tâche libérée"
 
-#: lib/kanban_web/emails/notification_email.ex:169
-#: lib/kanban_web/emails/notification_email.ex:179
+#: lib/kanban_web/emails/notification_email.ex:152
+#: lib/kanban_web/emails/notification_email.ex:162
 #, elixir-autogen, elixir-format
 msgid "Unsubscribe from these emails"
 msgstr "Se désabonner de ces e-mails"
 
-#: lib/kanban_web/emails/notification_email.ex:158
-#: lib/kanban_web/emails/notification_email.ex:176
+#: lib/kanban_web/emails/notification_email.ex:141
+#: lib/kanban_web/emails/notification_email.ex:159
 #, elixir-autogen, elixir-format
 msgid "View in Stride"
 msgstr "Voir dans Stride"
 
-#: lib/kanban_web/emails/notification_email.ex:168
-#: lib/kanban_web/emails/notification_email.ex:178
+#: lib/kanban_web/emails/notification_email.ex:151
+#: lib/kanban_web/emails/notification_email.ex:161
 #, elixir-autogen, elixir-format
 msgid "You are receiving this because email notifications for this event type are on."
 msgstr "Vous recevez ce message car les notifications par e-mail sont activées pour ce type d'événement."
 
-#: lib/kanban_web/emails/notification_email.ex:94
+#: lib/kanban_web/emails/notification_email.ex:95
 #, elixir-autogen, elixir-format
 msgid "You were mentioned"
 msgstr "Vous avez été mentionné"
 
-#: lib/kanban_web/emails/notification_email.ex:97
+#: lib/kanban_web/emails/notification_email.ex:98
 #, elixir-autogen, elixir-format
 msgid "Your board access changed"
 msgstr "Votre accès au tableau a changé"
 
-#: lib/kanban_web/emails/notification_email.ex:90
+#: lib/kanban_web/emails/notification_email.ex:91
 #, elixir-autogen, elixir-format
 msgid "Your claim expired"
 msgstr "Votre prise en charge a expiré"
 
-#: lib/kanban_web/emails/notification_email.ex:95
+#: lib/kanban_web/emails/notification_email.ex:96
 #, elixir-autogen, elixir-format
 msgid "Your task was reviewed"
 msgstr "Votre tâche a été revue"
 
-#: lib/kanban_web/emails/notification_email.ex:92
+#: lib/kanban_web/emails/notification_email.ex:93
 #, elixir-autogen, elixir-format
 msgid "Your weekly digest"
 msgstr "Votre récapitulatif hebdomadaire"
 
-#: lib/kanban_web/notification_labels.ex:28
+#: lib/kanban_web/notification_labels.ex:34
 #, elixir-autogen, elixir-format
 msgid "After-goal hook failures"
 msgstr "Échecs du hook after-goal"
 
-#: lib/kanban_web/notification_labels.ex:27
+#: lib/kanban_web/notification_labels.ex:33
 #, elixir-autogen, elixir-format
 msgid "Board access changes"
 msgstr "Modifications d'accès au tableau"
 
-#: lib/kanban_web/notification_labels.ex:21
+#: lib/kanban_web/notification_labels.ex:27
 #, elixir-autogen, elixir-format
 msgid "Completed goals"
 msgstr "Objectifs terminés"
 
-#: lib/kanban_web/notification_labels.ex:29
+#: lib/kanban_web/notification_labels.ex:35
 #, elixir-autogen, elixir-format
 msgid "Delivery target status"
 msgstr "Statut des cibles de livraison"
 
-#: lib/kanban_web/notification_labels.ex:20
+#: lib/kanban_web/notification_labels.ex:26
 #, elixir-autogen, elixir-format
 msgid "Expired claims"
 msgstr "Prises en charge expirées"
@@ -8943,22 +8946,22 @@ msgstr "Prises en charge expirées"
 msgid "In-app notifications are not affected."
 msgstr "Les notifications dans l'application ne sont pas concernées."
 
-#: lib/kanban_web/notification_labels.ex:24
+#: lib/kanban_web/notification_labels.ex:30
 #, elixir-autogen, elixir-format
 msgid "Mentions"
 msgstr "Mentions"
 
-#: lib/kanban_web/notification_labels.ex:18
+#: lib/kanban_web/notification_labels.ex:24
 #, elixir-autogen, elixir-format
 msgid "Review requests"
 msgstr "Demandes de revue"
 
-#: lib/kanban_web/notification_labels.ex:25
+#: lib/kanban_web/notification_labels.ex:31
 #, elixir-autogen, elixir-format
 msgid "Review results"
 msgstr "Résultats de revue"
 
-#: lib/kanban_web/notification_labels.ex:19
+#: lib/kanban_web/notification_labels.ex:25
 #, elixir-autogen, elixir-format
 msgid "Task assignments"
 msgstr "Attributions de tâches"
@@ -8973,7 +8976,7 @@ msgstr "Le lien de désabonnement est invalide ou a expiré. Connectez-vous pour
 msgid "This link is no longer valid"
 msgstr "Ce lien n'est plus valide"
 
-#: lib/kanban_web/notification_labels.ex:26
+#: lib/kanban_web/notification_labels.ex:32
 #, elixir-autogen, elixir-format
 msgid "Unclaimed tasks"
 msgstr "Tâches libérées"
@@ -8988,7 +8991,7 @@ msgstr "Se désabonner"
 msgid "Unsubscribe from these emails?"
 msgstr "Se désabonner de ces e-mails ?"
 
-#: lib/kanban_web/notification_labels.ex:22
+#: lib/kanban_web/notification_labels.ex:28
 #, elixir-autogen, elixir-format
 msgid "Weekly digest"
 msgstr "Récapitulatif hebdomadaire"
@@ -9008,12 +9011,73 @@ msgstr "Vous ne recevrez plus d'e-mails concernant : %{category}."
 msgid "You're unsubscribed"
 msgstr "Vous êtes désabonné"
 
-#: lib/kanban_web/emails/notification_email.ex:133
+#: lib/kanban_web/notification_labels.ex:52
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code}"
 msgstr "Code de sortie %{code}"
 
-#: lib/kanban_web/emails/notification_email.ex:126
+#: lib/kanban_web/notification_labels.ex:48
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code} after %{ms} ms"
 msgstr "Code de sortie %{code} après %{ms} ms"
+
+#: lib/kanban_web/components/notification_bell.ex:68
+#, elixir-autogen, elixir-format
+msgid "%{count} unread notification"
+msgid_plural "%{count} unread notifications"
+msgstr[0] "%{count} notification non lue"
+msgstr[1] "%{count} notifications non lues"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "Filter notifications"
+msgstr "Filtrer les notifications"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:187
+#, elixir-autogen, elixir-format
+msgid "Load more"
+msgstr "Charger plus"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Mark all read"
+msgstr "Tout marquer comme lu"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:170
+#, elixir-autogen, elixir-format
+msgid "Mark as read"
+msgstr "Marquer comme lu"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:162
+#, elixir-autogen, elixir-format
+msgid "Mark as read: %{title}"
+msgstr "Marquer comme lu : %{title}"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:73
+#, elixir-autogen, elixir-format
+msgid "No notifications yet."
+msgstr "Aucune notification pour le moment."
+
+#: lib/kanban_web/live/notification_live/index.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "No unread notifications."
+msgstr "Aucune notification non lue."
+
+#: lib/kanban_web/live/notification_live/index.ex:146
+#, elixir-autogen, elixir-format
+msgid "Notification not found."
+msgstr "Notification introuvable."
+
+#: lib/kanban_web/components/notification_bell.ex:71
+#: lib/kanban_web/live/notification_live/index.ex:33
+#: lib/kanban_web/live/notification_live/index.html.heex:5
+#: lib/kanban_web/live/notification_live/index.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Notifications"
+msgstr "Notifications"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:38
+#: lib/kanban_web/live/notification_live/index.html.heex:119
+#, elixir-autogen, elixir-format
+msgid "Unread"
+msgstr "Non lues"

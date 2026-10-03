@@ -1,6 +1,7 @@
 defmodule KanbanWeb.NotificationLabelsTest do
   use ExUnit.Case, async: true
 
+  alias Kanban.Notifications.Notification
   alias KanbanWeb.NotificationLabels
 
   test "every notification event type has a distinct, non-empty category label" do
@@ -20,6 +21,45 @@ defmodule KanbanWeb.NotificationLabelsTest do
         end)
 
       refute translated == english, "not translated for #{locale}"
+    end
+  end
+
+  describe "detail/1" do
+    defp after_goal_failed(metadata) do
+      %Notification{event_type: :after_goal_failed, metadata: metadata}
+    end
+
+    test "words an after_goal failure with its exit code and duration" do
+      notification = after_goal_failed(%{"exit_code" => 2, "duration_ms" => 1500})
+
+      assert NotificationLabels.detail(notification) == "Exit code 2 after 1500 ms"
+    end
+
+    test "words an after_goal failure with only an exit code" do
+      assert %{"exit_code" => 1} |> after_goal_failed() |> NotificationLabels.detail() ==
+               "Exit code 1"
+    end
+
+    test "returns nil for malformed metadata and for other event types" do
+      assert %{"exit_code" => "1"} |> after_goal_failed() |> NotificationLabels.detail() == nil
+      assert %{} |> after_goal_failed() |> NotificationLabels.detail() == nil
+
+      assert NotificationLabels.detail(%Notification{
+               event_type: :review_requested,
+               metadata: %{"exit_code" => 1}
+             }) == nil
+    end
+
+    test "is translated" do
+      notification = after_goal_failed(%{"exit_code" => 2, "duration_ms" => 10})
+      english = NotificationLabels.detail(notification)
+
+      german =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          NotificationLabels.detail(notification)
+        end)
+
+      refute german == english
     end
   end
 end

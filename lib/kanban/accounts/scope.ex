@@ -14,11 +14,15 @@ defmodule Kanban.Accounts.Scope do
 
   Feel free to extend the fields on this struct to fit the needs of
   growing application requirements.
+
+  `unread_notifications` is the user's unread notification count. It is
+  `nil` until `KanbanWeb.NotificationsOnMount` loads it, so controller-rendered
+  pages (which never run that hook) show the bell without a badge.
   """
 
   alias Kanban.Accounts.User
 
-  defstruct user: nil
+  defstruct user: nil, unread_notifications: nil
 
   @doc """
   Creates a scope for the given user.

@@ -251,4 +251,65 @@ defmodule KanbanWeb.LayoutsTest do
       refute html =~ "data-sidebar-toggle"
     end
   end
+
+  describe "win_top/1 — notification bell" do
+    defp win_top_html(scope) do
+      assigns = %{current_scope: scope}
+
+      rendered_to_string(~H"""
+      <Layouts.win_top current_scope={@current_scope} />
+      """)
+    end
+
+    defp scope_with_count(count) do
+      %{scope_for(user_fixture()) | unread_notifications: count}
+    end
+
+    test "renders the bell with a badge when the scope has 3 unread" do
+      html = win_top_html(scope_with_count(3))
+
+      assert html =~ ~s(id="notification-bell")
+      assert html =~ ~s(href="/notifications")
+      assert html =~ ~s(aria-label="3 unread notifications")
+      assert html =~ ~r/id="notification-bell-badge"[^>]*>\s*3\s*</
+    end
+
+    test "uses the singular label for one unread notification" do
+      assert win_top_html(scope_with_count(1)) =~ ~s(aria-label="1 unread notification")
+    end
+
+    test "renders the bell without a badge when the count is nil or 0" do
+      for count <- [nil, 0] do
+        html = win_top_html(scope_with_count(count))
+
+        assert html =~ ~s(id="notification-bell")
+        assert html =~ ~s(aria-label="Notifications")
+        refute html =~ "notification-bell-badge"
+      end
+    end
+
+    test "caps the badge at 99+" do
+      assert win_top_html(scope_with_count(100)) =~ ~r/>\s*99\+\s*</
+      assert win_top_html(scope_with_count(99)) =~ ~r/>\s*99\s*</
+    end
+
+    test "keeps a 44px tap target on mobile" do
+      assert win_top_html(scope_with_count(0)) =~ "w-11 h-11 md:w-8 md:h-8"
+    end
+
+    test "renders no bell without a signed-in user" do
+      refute win_top_html(nil) =~ "notification-bell"
+    end
+
+    test "app/1 passes the scope's count through to the bell" do
+      assigns = %{current_scope: scope_with_count(7)}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.app flash={%{}} current_scope={@current_scope}>content</Layouts.app>
+        """)
+
+      assert html =~ ~s(aria-label="7 unread notifications")
+    end
+  end
 end

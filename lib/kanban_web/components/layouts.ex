@@ -8,6 +8,8 @@ defmodule KanbanWeb.Layouts do
   import KanbanWeb.MarketingComponents
   import KanbanWeb.MarketingClosing
 
+  alias KanbanWeb.NotificationBell
+
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML
   # skeleton of your application, namely HTML headers
@@ -83,6 +85,7 @@ defmodule KanbanWeb.Layouts do
           actions={@actions}
           page_title={@page_title}
           show_sidebar_toggle={@current_scope != nil}
+          current_scope={@current_scope}
         />
         <%!-- D48: in dark the canvas must sit at --bg (base-200, 16%), not the
               raised-card tone (base-100, 20%), so cards/columns read above it.
@@ -347,12 +350,14 @@ defmodule KanbanWeb.Layouts do
   The WinTop bar — the page header that sits above the main content area
   inside the authenticated app shell. Shows traffic-light decoration dots
   on the left, breadcrumbs (or a `:page_title`) in the middle, and an
-  optional `:actions` slot on the right.
+  optional `:actions` slot on the right, followed by the notification bell
+  when a user is signed in.
   """
   attr :breadcrumbs, :any, default: []
   attr :actions, :any, default: []
   attr :page_title, :string, default: nil
   attr :show_sidebar_toggle, :boolean, default: false
+  attr :current_scope, :map, default: nil, doc: "shows the notification bell when it has a user"
 
   def win_top(assigns) do
     ~H"""
@@ -401,6 +406,7 @@ defmodule KanbanWeb.Layouts do
         <%= if @actions not in [nil, []] do %>
           {render_slot(@actions)}
         <% end %>
+        <NotificationBell.bell current_scope={@current_scope} />
       </div>
     </div>
     """

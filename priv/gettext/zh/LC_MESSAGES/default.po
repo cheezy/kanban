@@ -17,18 +17,18 @@ msgstr ""
 msgid "Actions"
 msgstr "操作"
 
-#: lib/kanban_web/components/layouts.ex:433
-#: lib/kanban_web/components/layouts.ex:445
+#: lib/kanban_web/components/layouts.ex:439
+#: lib/kanban_web/components/layouts.ex:451
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "正在尝试重新连接"
 
-#: lib/kanban_web/components/layouts.ex:440
+#: lib/kanban_web/components/layouts.ex:446
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "出错了！"
 
-#: lib/kanban_web/components/layouts.ex:428
+#: lib/kanban_web/components/layouts.ex:434
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "无法连接到互联网"
@@ -75,15 +75,15 @@ msgstr "进行中"
 msgid "Log in"
 msgstr "登录"
 
-#: lib/kanban_web/components/layouts.ex:213
+#: lib/kanban_web/components/layouts.ex:216
 #: lib/kanban_web/components/nav_components.ex:137
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "退出"
 
 #: lib/kanban_web/components/board_tabs.ex:143
-#: lib/kanban_web/components/layouts.ex:188
-#: lib/kanban_web/components/layouts.ex:189
+#: lib/kanban_web/components/layouts.ex:191
+#: lib/kanban_web/components/layouts.ex:192
 #: lib/kanban_web/components/nav_components.ex:132
 #: lib/kanban_web/live/user_live/settings.ex:16
 #, elixir-autogen, elixir-format
@@ -369,8 +369,8 @@ msgstr "更新任务详情"
 msgid "WIP limit reached for this column"
 msgstr "此列已达到在制品限制"
 
-#: lib/kanban_web/components/layouts.ex:149
-#: lib/kanban_web/components/layouts.ex:394
+#: lib/kanban_web/components/layouts.ex:152
+#: lib/kanban_web/components/layouts.ex:399
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -544,7 +544,7 @@ msgstr "评论添加成功"
 #: lib/kanban_web/live/task_live/components/comments_section.ex:13
 #: lib/kanban_web/live/task_live/form_component.html.heex:525
 #: lib/kanban_web/live/task_live/view_component.ex:409
-#: lib/kanban_web/notification_labels.ex:23
+#: lib/kanban_web/notification_labels.ex:29
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "评论"
@@ -769,7 +769,7 @@ msgstr "仪表板"
 msgid "This account has already been confirmed. You can log in."
 msgstr "此账户已确认。您可以登录。"
 
-#: lib/kanban_web/components/layouts.ex:324
+#: lib/kanban_web/components/layouts.ex:327
 #: lib/kanban_web/components/marketing_components.ex:88
 #: lib/kanban_web/components/marketing_components.ex:276
 #: lib/kanban_web/components/nav_components.ex:134
@@ -2100,7 +2100,7 @@ msgstr "上一步"
 msgid "Read more"
 msgstr "阅读更多"
 
-#: lib/kanban_web/components/layouts.ex:317
+#: lib/kanban_web/components/layouts.ex:320
 #: lib/kanban_web/components/marketing_components.ex:84
 #: lib/kanban_web/components/marketing_components.ex:270
 #: lib/kanban_web/components/nav_components.ex:133
@@ -2185,7 +2185,7 @@ msgid "Could not find a user with that email address"
 msgstr "未找到使用该邮箱的用户"
 
 #: lib/kanban_web/components/board_tabs.ex:125
-#: lib/kanban_web/components/layouts.ex:305
+#: lib/kanban_web/components/layouts.ex:308
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:5
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
@@ -4198,7 +4198,7 @@ msgid "%{count} active"
 msgid_plural "%{count} active"
 msgstr[0] "%{count} 个活跃"
 
-#: lib/kanban_web/components/layouts.ex:284
+#: lib/kanban_web/components/layouts.ex:287
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:568
 #: lib/kanban_web/live/admin/user_live/index.html.heex:107
 #: lib/kanban_web/live/board_live/index.html.heex:5
@@ -4283,7 +4283,7 @@ msgstr "待办"
 msgid "Active goals"
 msgstr "活动目标"
 
-#: lib/kanban_web/components/layouts.ex:291
+#: lib/kanban_web/components/layouts.ex:294
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
 #: lib/kanban_web/live/agents_live.ex:349
 #, elixir-autogen, elixir-format
@@ -4322,7 +4322,7 @@ msgstr "新建目标"
 msgid "Pre-configured for AI workflow"
 msgstr "已为 AI 工作流预配置"
 
-#: lib/kanban_web/components/layouts.ex:127
+#: lib/kanban_web/components/layouts.ex:130
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr "主导航"
@@ -4332,7 +4332,7 @@ msgstr "主导航"
 msgid "Promote children to Ready"
 msgstr "将子项提升至「就绪」"
 
-#: lib/kanban_web/components/layouts.ex:298
+#: lib/kanban_web/components/layouts.ex:301
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
 #, elixir-autogen, elixir-format
@@ -4344,7 +4344,7 @@ msgstr "审核队列"
 msgid "Start with a blank board"
 msgstr "从一个空白看板开始"
 
-#: lib/kanban_web/components/layouts.ex:136
+#: lib/kanban_web/components/layouts.ex:139
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr "Stride 首页"
@@ -4354,6 +4354,7 @@ msgstr "Stride 首页"
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
 #: lib/kanban_web/live/metrics_live/workspace.ex:204
+#: lib/kanban_web/live/notification_live/index.html.heex:3
 #: lib/kanban_web/live/review_live.html.heex:3
 #, elixir-autogen, elixir-format
 msgid "Workspace"
@@ -5068,6 +5069,7 @@ msgstr "%{m}分"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:414
 #: lib/kanban_web/components/archive_filter_chips.ex:88
+#: lib/kanban_web/live/notification_live/index.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "全部"
@@ -5467,7 +5469,7 @@ msgstr "所有看板"
 msgid "Toggle menu"
 msgstr "切换菜单"
 
-#: lib/kanban_web/components/layouts.ex:373
+#: lib/kanban_web/components/layouts.ex:378
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr "切换侧边栏"
@@ -8809,123 +8811,124 @@ msgstr "由任务规格决定"
 msgid "(%{count} pending)"
 msgstr "(%{count} 项待处理)"
 
-#: lib/kanban_web/emails/notification_email.ex:98
+#: lib/kanban_web/emails/notification_email.ex:99
 #, elixir-autogen, elixir-format
 msgid "After-goal hook failed"
 msgstr "after-goal 钩子执行失败"
 
-#: lib/kanban_web/emails/notification_email.ex:137
+#: lib/kanban_web/emails/notification_email.ex:120
 #, elixir-autogen, elixir-format
 msgid "Board: %{board}"
 msgstr "看板：%{board}"
 
-#: lib/kanban_web/emails/notification_email.ex:115
+#: lib/kanban_web/emails/notification_email.ex:116
+#: lib/kanban_web/live/notification_live/index.html.heex:136
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "来自 %{actor}"
 
-#: lib/kanban_web/emails/notification_email.ex:91
+#: lib/kanban_web/emails/notification_email.ex:92
 #, elixir-autogen, elixir-format
 msgid "Goal completed"
 msgstr "目标已完成"
 
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:41
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:56
-#: lib/kanban_web/emails/notification_email.ex:170
-#: lib/kanban_web/emails/notification_email.ex:180
+#: lib/kanban_web/emails/notification_email.ex:153
+#: lib/kanban_web/emails/notification_email.ex:163
 #, elixir-autogen, elixir-format
 msgid "Manage notification preferences"
 msgstr "管理通知偏好"
 
-#: lib/kanban_web/emails/notification_email.ex:93
+#: lib/kanban_web/emails/notification_email.ex:94
 #, elixir-autogen, elixir-format
 msgid "New comment"
 msgstr "新评论"
 
-#: lib/kanban_web/emails/notification_email.ex:88
+#: lib/kanban_web/emails/notification_email.ex:89
 #, elixir-autogen, elixir-format
 msgid "Review requested"
 msgstr "已请求审阅"
 
-#: lib/kanban_web/emails/notification_email.ex:99
+#: lib/kanban_web/emails/notification_email.ex:100
 #, elixir-autogen, elixir-format
 msgid "Target status changed"
 msgstr "目标状态已更改"
 
-#: lib/kanban_web/emails/notification_email.ex:89
+#: lib/kanban_web/emails/notification_email.ex:90
 #, elixir-autogen, elixir-format
 msgid "Task assigned to you"
 msgstr "有任务分配给您"
 
-#: lib/kanban_web/emails/notification_email.ex:96
+#: lib/kanban_web/emails/notification_email.ex:97
 #, elixir-autogen, elixir-format
 msgid "Task unclaimed"
 msgstr "任务已取消认领"
 
-#: lib/kanban_web/emails/notification_email.ex:169
-#: lib/kanban_web/emails/notification_email.ex:179
+#: lib/kanban_web/emails/notification_email.ex:152
+#: lib/kanban_web/emails/notification_email.ex:162
 #, elixir-autogen, elixir-format
 msgid "Unsubscribe from these emails"
 msgstr "退订此类邮件"
 
-#: lib/kanban_web/emails/notification_email.ex:158
-#: lib/kanban_web/emails/notification_email.ex:176
+#: lib/kanban_web/emails/notification_email.ex:141
+#: lib/kanban_web/emails/notification_email.ex:159
 #, elixir-autogen, elixir-format
 msgid "View in Stride"
 msgstr "在 Stride 中查看"
 
-#: lib/kanban_web/emails/notification_email.ex:168
-#: lib/kanban_web/emails/notification_email.ex:178
+#: lib/kanban_web/emails/notification_email.ex:151
+#: lib/kanban_web/emails/notification_email.ex:161
 #, elixir-autogen, elixir-format
 msgid "You are receiving this because email notifications for this event type are on."
 msgstr "您收到此邮件是因为此类事件的邮件通知已开启。"
 
-#: lib/kanban_web/emails/notification_email.ex:94
+#: lib/kanban_web/emails/notification_email.ex:95
 #, elixir-autogen, elixir-format
 msgid "You were mentioned"
 msgstr "有人提到了您"
 
-#: lib/kanban_web/emails/notification_email.ex:97
+#: lib/kanban_web/emails/notification_email.ex:98
 #, elixir-autogen, elixir-format
 msgid "Your board access changed"
 msgstr "您的看板访问权限已更改"
 
-#: lib/kanban_web/emails/notification_email.ex:90
+#: lib/kanban_web/emails/notification_email.ex:91
 #, elixir-autogen, elixir-format
 msgid "Your claim expired"
 msgstr "您的认领已过期"
 
-#: lib/kanban_web/emails/notification_email.ex:95
+#: lib/kanban_web/emails/notification_email.ex:96
 #, elixir-autogen, elixir-format
 msgid "Your task was reviewed"
 msgstr "您的任务已被审阅"
 
-#: lib/kanban_web/emails/notification_email.ex:92
+#: lib/kanban_web/emails/notification_email.ex:93
 #, elixir-autogen, elixir-format
 msgid "Your weekly digest"
 msgstr "您的每周摘要"
 
-#: lib/kanban_web/notification_labels.ex:28
+#: lib/kanban_web/notification_labels.ex:34
 #, elixir-autogen, elixir-format
 msgid "After-goal hook failures"
 msgstr "after-goal 钩子失败"
 
-#: lib/kanban_web/notification_labels.ex:27
+#: lib/kanban_web/notification_labels.ex:33
 #, elixir-autogen, elixir-format
 msgid "Board access changes"
 msgstr "看板访问权限变更"
 
-#: lib/kanban_web/notification_labels.ex:21
+#: lib/kanban_web/notification_labels.ex:27
 #, elixir-autogen, elixir-format
 msgid "Completed goals"
 msgstr "已完成的目标"
 
-#: lib/kanban_web/notification_labels.ex:29
+#: lib/kanban_web/notification_labels.ex:35
 #, elixir-autogen, elixir-format
 msgid "Delivery target status"
 msgstr "交付目标状态"
 
-#: lib/kanban_web/notification_labels.ex:20
+#: lib/kanban_web/notification_labels.ex:26
 #, elixir-autogen, elixir-format
 msgid "Expired claims"
 msgstr "已过期的认领"
@@ -8935,22 +8938,22 @@ msgstr "已过期的认领"
 msgid "In-app notifications are not affected."
 msgstr "应用内通知不受影响。"
 
-#: lib/kanban_web/notification_labels.ex:24
+#: lib/kanban_web/notification_labels.ex:30
 #, elixir-autogen, elixir-format
 msgid "Mentions"
 msgstr "提及"
 
-#: lib/kanban_web/notification_labels.ex:18
+#: lib/kanban_web/notification_labels.ex:24
 #, elixir-autogen, elixir-format
 msgid "Review requests"
 msgstr "审阅请求"
 
-#: lib/kanban_web/notification_labels.ex:25
+#: lib/kanban_web/notification_labels.ex:31
 #, elixir-autogen, elixir-format
 msgid "Review results"
 msgstr "审阅结果"
 
-#: lib/kanban_web/notification_labels.ex:19
+#: lib/kanban_web/notification_labels.ex:25
 #, elixir-autogen, elixir-format
 msgid "Task assignments"
 msgstr "任务分配"
@@ -8965,7 +8968,7 @@ msgstr "退订链接无效或已过期。请登录以管理您接收的邮件。
 msgid "This link is no longer valid"
 msgstr "此链接已失效"
 
-#: lib/kanban_web/notification_labels.ex:26
+#: lib/kanban_web/notification_labels.ex:32
 #, elixir-autogen, elixir-format
 msgid "Unclaimed tasks"
 msgstr "已取消认领的任务"
@@ -8980,7 +8983,7 @@ msgstr "退订"
 msgid "Unsubscribe from these emails?"
 msgstr "退订此类邮件？"
 
-#: lib/kanban_web/notification_labels.ex:22
+#: lib/kanban_web/notification_labels.ex:28
 #, elixir-autogen, elixir-format
 msgid "Weekly digest"
 msgstr "每周摘要"
@@ -9000,12 +9003,72 @@ msgstr "您将不再收到关于以下内容的邮件：%{category}。"
 msgid "You're unsubscribed"
 msgstr "您已退订"
 
-#: lib/kanban_web/emails/notification_email.ex:133
+#: lib/kanban_web/notification_labels.ex:52
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code}"
 msgstr "退出码 %{code}"
 
-#: lib/kanban_web/emails/notification_email.ex:126
+#: lib/kanban_web/notification_labels.ex:48
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code} after %{ms} ms"
 msgstr "退出码 %{code}（%{ms} 毫秒后）"
+
+#: lib/kanban_web/components/notification_bell.ex:68
+#, elixir-autogen, elixir-format
+msgid "%{count} unread notification"
+msgid_plural "%{count} unread notifications"
+msgstr[0] "%{count} 条未读通知"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "Filter notifications"
+msgstr "筛选通知"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:187
+#, elixir-autogen, elixir-format
+msgid "Load more"
+msgstr "加载更多"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:58
+#, elixir-autogen, elixir-format
+msgid "Mark all read"
+msgstr "全部标为已读"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:170
+#, elixir-autogen, elixir-format
+msgid "Mark as read"
+msgstr "标为已读"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:162
+#, elixir-autogen, elixir-format
+msgid "Mark as read: %{title}"
+msgstr "标为已读：%{title}"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:73
+#, elixir-autogen, elixir-format
+msgid "No notifications yet."
+msgstr "暂无通知。"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "No unread notifications."
+msgstr "没有未读通知。"
+
+#: lib/kanban_web/live/notification_live/index.ex:146
+#, elixir-autogen, elixir-format
+msgid "Notification not found."
+msgstr "未找到通知。"
+
+#: lib/kanban_web/components/notification_bell.ex:71
+#: lib/kanban_web/live/notification_live/index.ex:33
+#: lib/kanban_web/live/notification_live/index.html.heex:5
+#: lib/kanban_web/live/notification_live/index.html.heex:15
+#, elixir-autogen, elixir-format
+msgid "Notifications"
+msgstr "通知"
+
+#: lib/kanban_web/live/notification_live/index.html.heex:38
+#: lib/kanban_web/live/notification_live/index.html.heex:119
+#, elixir-autogen, elixir-format
+msgid "Unread"
+msgstr "未读"
