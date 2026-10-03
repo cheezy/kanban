@@ -122,12 +122,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     existing = Ecto.Changeset.get_field(socket.assigns.form.source, :key_files) || []
     key_files = existing ++ [%Kanban.Schemas.Task.KeyFile{position: length(existing)}]
 
-    changeset =
-      socket.assigns.task
-      |> Tasks.Task.changeset(%{})
-      |> Ecto.Changeset.put_embed(:key_files, key_files)
-
-    {:noreply, assign_form(socket, changeset)}
+    put_embed_rows(socket, :key_files, key_files)
   end
 
   def handle_event("remove-key-file", %{"index" => index}, socket) do
@@ -137,24 +132,14 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       (Ecto.Changeset.get_field(socket.assigns.form.source, :key_files) || [])
       |> List.delete_at(index)
 
-    changeset =
-      socket.assigns.task
-      |> Tasks.Task.changeset(%{})
-      |> Ecto.Changeset.put_embed(:key_files, key_files)
-
-    {:noreply, assign_form(socket, changeset)}
+    put_embed_rows(socket, :key_files, key_files)
   end
 
   def handle_event("add-verification-step", _params, socket) do
     existing = Ecto.Changeset.get_field(socket.assigns.form.source, :verification_steps) || []
     steps = existing ++ [%Kanban.Schemas.Task.VerificationStep{position: length(existing)}]
 
-    changeset =
-      socket.assigns.task
-      |> Tasks.Task.changeset(%{})
-      |> Ecto.Changeset.put_embed(:verification_steps, steps)
-
-    {:noreply, assign_form(socket, changeset)}
+    put_embed_rows(socket, :verification_steps, steps)
   end
 
   def handle_event("remove-verification-step", %{"index" => index}, socket) do
@@ -164,24 +149,14 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       (Ecto.Changeset.get_field(socket.assigns.form.source, :verification_steps) || [])
       |> List.delete_at(index)
 
-    changeset =
-      socket.assigns.task
-      |> Tasks.Task.changeset(%{})
-      |> Ecto.Changeset.put_embed(:verification_steps, steps)
-
-    {:noreply, assign_form(socket, changeset)}
+    put_embed_rows(socket, :verification_steps, steps)
   end
 
   def handle_event("add-behaviour-test-row", _params, socket) do
     existing = Ecto.Changeset.get_field(socket.assigns.form.source, :behaviour_test_matrix) || []
     rows = existing ++ [%Kanban.Schemas.Task.BehaviourTestRow{position: length(existing)}]
 
-    changeset =
-      socket.assigns.task
-      |> Tasks.Task.changeset(%{})
-      |> Ecto.Changeset.put_embed(:behaviour_test_matrix, rows)
-
-    {:noreply, assign_form(socket, changeset)}
+    put_embed_rows(socket, :behaviour_test_matrix, rows)
   end
 
   def handle_event("remove-behaviour-test-row", %{"index" => index}, socket) do
@@ -191,12 +166,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       (Ecto.Changeset.get_field(socket.assigns.form.source, :behaviour_test_matrix) || [])
       |> List.delete_at(index)
 
-    changeset =
-      socket.assigns.task
-      |> Tasks.Task.changeset(%{})
-      |> Ecto.Changeset.put_embed(:behaviour_test_matrix, rows)
-
-    {:noreply, assign_form(socket, changeset)}
+    put_embed_rows(socket, :behaviour_test_matrix, rows)
   end
 
   def handle_event("add-capability-from-select", %{"new_capability" => capability}, socket)
@@ -225,6 +195,13 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   # events a FunctionClauseError instead of silently doing nothing.
   def handle_event(event, params, socket) when is_map_key(@field_events, event) do
     FieldEvents.handle(event, params, socket)
+  end
+
+  # Builds on the in-flight form (kept current by phx-change="validate"), so
+  # adding or removing a row keeps the user's other unsaved edits.
+  defp put_embed_rows(socket, field, rows) do
+    changeset = Ecto.Changeset.put_embed(socket.assigns.form.source, field, rows)
+    {:noreply, assign_form(socket, changeset)}
   end
 
   # Only refresh the raw assign when the textarea actually posted (field visible);

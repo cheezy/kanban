@@ -22,8 +22,6 @@ defmodule KanbanWeb.TaskLive.Form.FieldEvents do
 
   import Phoenix.Component, only: [assign: 3, to_form: 1]
 
-  alias Kanban.Tasks
-
   # event name => array column
   @array_events %{
     "add-technology" => :technology_requirements,
@@ -119,14 +117,11 @@ defmodule KanbanWeb.TaskLive.Form.FieldEvents do
     Ecto.Changeset.get_field(socket.assigns.form.source, field)
   end
 
-  # Rebuilt from the task rather than the in-flight changeset, matching the
-  # embed repeaters in the component: the row being added or removed is the
-  # only change the form needs to reflect.
+  # Builds on the in-flight form (kept current by phx-change="validate"),
+  # like the embed repeaters in the component, so adding or removing a row
+  # keeps the user's other unsaved edits.
   defp put_change(socket, field, value) do
-    changeset =
-      socket.assigns.task
-      |> Tasks.Task.changeset(%{})
-      |> Ecto.Changeset.put_change(field, value)
+    changeset = Ecto.Changeset.put_change(socket.assigns.form.source, field, value)
 
     {:noreply, assign(socket, :form, to_form(changeset))}
   end

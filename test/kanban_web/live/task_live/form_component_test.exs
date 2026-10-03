@@ -2066,6 +2066,88 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
+  describe "add/remove buttons keep other unsaved edits" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Stored title",
+          pitfalls: ["Stored pitfall"],
+          testing_strategy: %{"unit_tests" => ["Stored unit test"]}
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: user},
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      # The user types a new title and a second pitfall (phx-change="validate").
+      {:noreply, socket} =
+        FormComponent.handle_event(
+          "validate",
+          %{
+            "task" => %{
+              "title" => "Typed title",
+              "pitfalls" => ["Stored pitfall", "Typed pitfall"],
+              "testing_strategy" => %{"unit_tests" => ["Stored unit test"]}
+            }
+          },
+          socket
+        )
+
+      %{socket: socket}
+    end
+
+    defp field(socket, name), do: Ecto.Changeset.get_field(socket.assigns.form.source, name)
+
+    test "adding a unit test keeps the typed title and pitfall", %{socket: socket} do
+      {:noreply, socket} = FormComponent.handle_event("add-unit-test", %{}, socket)
+
+      assert field(socket, :title) == "Typed title"
+      assert field(socket, :pitfalls) == ["Stored pitfall", "Typed pitfall"]
+      assert field(socket, :testing_strategy)["unit_tests"] == ["Stored unit test", ""]
+    end
+
+    test "removing a pitfall keeps the typed title", %{socket: socket} do
+      {:noreply, socket} =
+        FormComponent.handle_event("remove-pitfall", %{"index" => "0"}, socket)
+
+      assert field(socket, :title) == "Typed title"
+      assert field(socket, :pitfalls) == ["Typed pitfall"]
+    end
+
+    test "embed repeaters keep the typed title and pitfall", %{socket: socket} do
+      for {event, params} <- [
+            {"add-key-file", %{}},
+            {"add-verification-step", %{}},
+            {"add-behaviour-test-row", %{}}
+          ] do
+        {:noreply, updated} = FormComponent.handle_event(event, params, socket)
+
+        assert field(updated, :title) == "Typed title", "#{event} lost the title"
+        assert field(updated, :pitfalls) == ["Stored pitfall", "Typed pitfall"]
+      end
+
+      {:noreply, added} = FormComponent.handle_event("add-key-file", %{}, socket)
+
+      {:noreply, removed} =
+        FormComponent.handle_event("remove-key-file", %{"index" => "0"}, added)
+
+      assert field(removed, :title) == "Typed title"
+      assert field(removed, :key_files) == []
+    end
+  end
+
   describe "handle_event add-unit-test" do
     test "adds empty unit test to testing_strategy map" do
       user = user_fixture()
