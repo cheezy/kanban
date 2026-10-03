@@ -373,7 +373,7 @@ defmodule KanbanWeb.Layouts do
         <button
           type="button"
           data-sidebar-toggle
-          class="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-md hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          class="md:hidden inline-flex shrink-0 items-center justify-center w-11 h-11 rounded-md hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           style="color: var(--ink-2); margin-left: -6px;"
           aria-label={gettext("Toggle sidebar")}
           aria-controls="app-sidebar"
@@ -402,12 +402,17 @@ defmodule KanbanWeb.Layouts do
 
       <span style="flex: 1;"></span>
 
-      <div style="display: flex; align-items: center; gap: 8px; color: var(--ink-3); font-size: 11.5px;">
+      <%!-- Actions scroll sideways on narrow screens; the bell stays pinned. --%>
+      <div
+        data-win-top-actions
+        class="[&>*]:shrink-0"
+        style="display: flex; align-items: center; gap: 8px; min-width: 0; overflow-x: auto; color: var(--ink-3); font-size: 11.5px;"
+      >
         <%= if @actions not in [nil, []] do %>
           {render_slot(@actions)}
         <% end %>
-        <NotificationBell.bell current_scope={@current_scope} />
       </div>
+      <NotificationBell.bell current_scope={@current_scope} />
     </div>
     """
   end

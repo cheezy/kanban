@@ -430,6 +430,17 @@
   transform: translateY(-0.0625rem);
 }
 
+/* The rule above sets background and colour outside daisyUI's cascade layer,
+   so daisyUI's own :disabled styling never applies. Restore a visible
+   disabled state (exempt from WCAG text contrast as an inactive control). */
+.btn-primary:disabled,
+.btn-primary[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .btn-outline {
   display: inline-flex;
   align-items: center;

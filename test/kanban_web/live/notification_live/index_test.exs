@@ -55,7 +55,8 @@ defmodule KanbanWeb.NotificationLive.IndexTest do
       {:ok, view, _html} = live(conn, ~p"/notifications")
 
       assert has_element?(view, row(notification), "By Ada")
-      assert has_element?(view, row(notification), "Line one")
+      # pre-line would turn whitespace around the text into a blank first line
+      assert render(view) =~ ~r/data-notification-body[^>]*>Line one\nLine two</
     end
 
     test "renders the after_goal failure detail", %{conn: conn, user: user} do

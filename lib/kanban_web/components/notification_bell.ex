@@ -27,7 +27,7 @@ defmodule KanbanWeb.NotificationBell do
       data-notification-bell
       aria-label={@label}
       title={@label}
-      class="relative inline-flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-md hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      class="relative inline-flex shrink-0 items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-md hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       style="color: var(--ink-2); text-decoration: none;"
     >
       <.icon name="hero-bell" class="w-5 h-5" />
