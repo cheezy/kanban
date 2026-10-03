@@ -4,7 +4,7 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizerTest do
   alias Kanban.Tasks.Task
   alias KanbanWeb.TaskLive.Form.ParamNormalizer
 
-  describe "keep_stored_map_keys/2" do
+  describe "preserve_stored_values/2" do
     test "keeps testing_strategy keys the form has no inputs for" do
       task = %Task{
         testing_strategy: %{
@@ -16,7 +16,8 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizerTest do
 
       params = %{"testing_strategy" => %{"unit_tests" => ["new"], "manual_tests" => []}}
 
-      assert %{"testing_strategy" => merged} = ParamNormalizer.keep_stored_map_keys(params, task)
+      assert %{"testing_strategy" => merged} =
+               ParamNormalizer.preserve_stored_values(params, task)
 
       assert merged == %{
                "unit_tests" => ["new"],
@@ -30,7 +31,7 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizerTest do
       params = %{"integration_points" => %{"telemetry_events" => ["b"]}}
 
       assert %{"integration_points" => %{"telemetry_events" => ["b"], "notes" => "keep"}} =
-               ParamNormalizer.keep_stored_map_keys(params, task)
+               ParamNormalizer.preserve_stored_values(params, task)
     end
 
     test "does not add empty lists for keys the stored map never had" do
@@ -45,7 +46,7 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizerTest do
       }
 
       assert %{"integration_points" => merged} =
-               ParamNormalizer.keep_stored_map_keys(params, task)
+               ParamNormalizer.preserve_stored_values(params, task)
 
       assert merged == %{
                "modules" => ["A"],
@@ -54,11 +55,41 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizerTest do
              }
     end
 
-    test "leaves params alone when the field was not submitted or nothing is stored" do
-      task = %Task{testing_strategy: %{"edge_cases" => ["x"]}, integration_points: nil}
-      params = %{"title" => "T", "integration_points" => %{"external_apis" => []}}
+    test "leaves params alone when the field was not submitted" do
+      task = %Task{testing_strategy: %{"edge_cases" => ["x"]}}
+      params = %{"title" => "T"}
 
-      assert ParamNormalizer.keep_stored_map_keys(params, task) == params
+      assert ParamNormalizer.preserve_stored_values(params, task) == params
+    end
+
+    test "keeps a nil map nil when the form submitted only empty lists" do
+      task = %Task{testing_strategy: nil, integration_points: nil}
+
+      params = %{
+        "title" => "T",
+        "integration_points" => %{"external_apis" => [], "telemetry_events" => []},
+        "testing_strategy" => %{"unit_tests" => ["New test"], "manual_tests" => []}
+      }
+
+      assert ParamNormalizer.preserve_stored_values(params, task) == %{
+               "title" => "T",
+               "testing_strategy" => %{"unit_tests" => ["New test"]}
+             }
+    end
+
+    test "drops an empty list for a list field the task never had" do
+      task = %Task{pitfalls: nil, out_of_scope: ["Stored"], technology_requirements: nil}
+
+      params = %{
+        "pitfalls" => [],
+        "out_of_scope" => [],
+        "technology_requirements" => ["Ecto"]
+      }
+
+      assert ParamNormalizer.preserve_stored_values(params, task) == %{
+               "out_of_scope" => [],
+               "technology_requirements" => ["Ecto"]
+             }
     end
   end
 end

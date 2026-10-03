@@ -11,6 +11,8 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
 
   @array_fields ~w[dependencies required_capabilities technology_requirements pitfalls out_of_scope security_considerations]
 
+  @array_field_keys Enum.map(@array_fields, &{String.to_atom(&1), &1})
+
   # Map fields the form edits only partly: it has inputs for some keys (e.g.
   # testing_strategy's unit/integration/manual tests) but not others
   # (edge_cases, coverage_target), which tasks created through the API carry.
@@ -29,15 +31,25 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
   end
 
   @doc """
-  Merges the submitted keys of partly-edited map fields over the task's stored
-  map, so a save keeps the keys the form has no inputs for instead of
-  replacing the whole map. Fields the form did not submit are left alone.
+  Adjusts edit-form params so a save writes only what the user changed:
 
-  The form always posts every key it has inputs for, so an empty list for a
-  key the stored map never had is dropped rather than added; emptying a key
-  that was stored still saves `[]`.
+    * partly-edited map fields (`testing_strategy`, `integration_points`)
+      merge the submitted keys over the stored map, so keys the form has no
+      inputs for survive instead of the whole map being replaced;
+    * the form posts every key and list it has inputs for, so an empty list
+      the task never had (a missing map key, a nil map, or a nil list field
+      like `pitfalls`) is dropped rather than written. Emptying a value that
+      was stored still saves `[]`.
+
+  Fields the form did not submit are left alone.
   """
-  def keep_stored_map_keys(params, task) do
+  def preserve_stored_values(params, task) do
+    params
+    |> merge_map_fields(task)
+    |> drop_unset_empty_lists(task)
+  end
+
+  defp merge_map_fields(params, task) do
     Enum.reduce(@partly_edited_map_fields, params, fn {key, field}, acc ->
       merge_stored(acc, field, Map.get(task, key))
     end)
@@ -53,7 +65,28 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
     end
   end
 
+  # A nil map stays nil unless the form submitted a non-empty value for it.
+  defp merge_stored(params, field, nil) do
+    case Map.get(params, field) do
+      %{} = submitted -> put_or_drop(params, field, new_or_filled(submitted, %{}))
+      _ -> params
+    end
+  end
+
   defp merge_stored(params, _field, _stored), do: params
+
+  defp put_or_drop(params, field, filled) when map_size(filled) == 0,
+    do: Map.delete(params, field)
+
+  defp put_or_drop(params, field, filled), do: Map.put(params, field, filled)
+
+  defp drop_unset_empty_lists(params, task) do
+    Enum.reduce(@array_field_keys, params, fn {key, field}, acc ->
+      if Map.get(acc, field) == [] and is_nil(Map.get(task, key)),
+        do: Map.delete(acc, field),
+        else: acc
+    end)
+  end
 
   defp new_or_filled(submitted, stored) do
     Map.reject(submitted, fn {key, value} -> value == [] and not Map.has_key?(stored, key) end)
