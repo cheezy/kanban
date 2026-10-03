@@ -3,6 +3,169 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [2.15.0] - 2026-10-03
+        </h2>
+
+        <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          Stride now tells people when something needs their attention, in the
+          app and by email, instead of waiting for them to go and look.
+        </p>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              An inbox and a notification bell
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Every page in the app shell now has a bell with a live
+              unread count, linking to a new
+              <strong>/notifications</strong> inbox. The inbox lists your
+              notifications newest first, filters to unread, marks one or
+              all as read, and opens a notification's page when you click
+              it. New notifications and read-state changes arrive live,
+              without a reload. A notification tied to a board is hidden
+              once you leave that board; account-level notices, such as
+              being removed from a board, stay visible.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Notification wording is rendered when it is shown, not when
+              it is stored, so each person reads it in their own language.
+              Agent free text that does reach a notification (review
+              notes, an unclaim reason) is trimmed, capped at 500
+              characters and always shown escaped.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              What you are notified about
+            </h4>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <strong>Review requested:</strong> when an agent
+                completes a task that needs review, every board member
+                with owner or edit access is told, with a link to the
+                review queue.
+              </li>
+              <li>
+                <strong>Review results:</strong> approving a task or
+                requesting changes tells the person whose agent did the
+                work, with the reviewer's notes on a change request,
+                unless they reviewed it themselves.
+              </li>
+              <li>
+                <strong>Task assigned:</strong> assigning a task to
+                someone else tells them. Assigning one to yourself does
+                not.
+              </li>
+              <li>
+                <strong>Task unclaimed:</strong> an agent releasing a
+                task back to Ready tells the user it was working for and
+                the task's creator, with the reason when one was given.
+              </li>
+              <li>
+                <strong>Claim expired:</strong> an agent claim that
+                lapses before the task is finished tells the assigned
+                user once. A sweeper checks every five minutes.
+              </li>
+              <li>
+                <strong>Goal completed:</strong> a goal reaching Done
+                tells its creator and assignee once per completion.
+              </li>
+              <li>
+                <strong>After-goal hook failed:</strong> a failing
+                after_goal hook tells the goal's creator and assignee
+                once per run of failures, with the exit code and
+                duration but never the hook's output.
+              </li>
+              <li>
+                <strong>Board access changed:</strong> being added to a
+                board, having your access changed or being removed tells
+                you what changed. When the change revoked your API
+                tokens for that board, it says how many, so failing
+                agents are no longer a mystery.
+              </li>
+              <li>
+                <strong>Delivery target at risk or missed:</strong> an
+                hourly check tells a target's owner when the target
+                becomes at risk of missing its date or misses it. The
+                status matches the badge on the boards strip, and a
+                target that recovers and slips again notifies again.
+              </li>
+            </ul>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Email delivery with one-click unsubscribe
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Notifications can also arrive by email. Emails are sent in
+              the background, never on the request that caused them, so a
+              slow mail server never slows the app down and a failed email
+              never undoes the action that triggered it. Every kind of
+              notification emails by default except completed goals.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Every notification email carries a signed unsubscribe link,
+              plus the <code>List-Unsubscribe</code> and
+              <code>List-Unsubscribe-Post</code> headers mail providers
+              use for one-click unsubscribe. A link turns off that one
+              kind of email without logging in, expires after 90 days, and
+              shows the same response for any invalid link, so it never
+              reveals whether an account exists.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Notification preferences
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              A new <strong>/users/notifications</strong> page lets each
+              person turn in-app and email delivery on or off for every
+              kind of notification, and turn the weekly digest on or off.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              A weekly digest
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              On Mondays at 13:00 UTC, everyone who has opted in,
+              confirmed their email and still has an active account gets a
+              digest of the previous week. It covers what was finished on
+              their boards, completed goals and what is waiting in their
+              review queue. It only mentions boards they belong to, and
+              quiet weeks send nothing.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.13.0] - 2026-07-28
         </h2>
 
