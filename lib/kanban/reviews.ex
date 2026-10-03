@@ -31,12 +31,15 @@ defmodule Kanban.Reviews do
   on the task BEFORE invoking the workflow transition, because
   `mark_reviewed/2` reads `task.review_status` to decide the destination
   column. Both calls run inside an outer `Repo.transaction/1` so a
-  workflow-step failure rolls back the review-field write.
+  workflow-step failure rolls back the review-field write. Once the
+  transaction commits, `Kanban.Notifications.Events.task_reviewed/2` tells
+  the task's completer the outcome; a rolled-back review notifies nobody.
   """
 
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Notifications.Events
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Tasks.AgentWorkflow
@@ -224,9 +227,8 @@ defmodule Kanban.Reviews do
   Requires `:review_notes` in `opts` — the whole point of the action is to
   pass the reviewer's feedback back to the agent. Sets `review_status` to
   `:changes_requested`, persists `:review_notes`, stamps `reviewed_at`,
-  and sets `reviewed_by_id`. Then delegates to
-  `Kanban.Tasks.AgentWorkflow.mark_reviewed/2` which moves the task back
-  to the Doing column.
+  and sets `reviewed_by_id`. The task stays in the Review column so the
+  agent can pick up the notes and move it back to Doing itself.
 
   Returns `{:ok, task}` on success or `{:error, reason}` — additional
   reason atoms over `approve_review/3`: `:review_notes_required`.
@@ -274,10 +276,22 @@ defmodule Kanban.Reviews do
 
   defp perform_review(scope, %Task{} = task, base_attrs, opts) do
     case scope_user(scope) do
-      nil -> {:error, :not_authorized}
-      user -> run_review_transaction(scope, task, user, base_attrs, opts)
+      nil ->
+        {:error, :not_authorized}
+
+      user ->
+        scope |> run_review_transaction(task, user, base_attrs, opts) |> notify_reviewed(user)
     end
   end
+
+  # Runs after Repo.transaction/1 has returned, so a rolled-back review
+  # never notifies.
+  defp notify_reviewed({:ok, task} = result, reviewer) do
+    Events.task_reviewed(task, reviewer)
+    result
+  end
+
+  defp notify_reviewed(error, _reviewer), do: error
 
   defp run_review_transaction(scope, task, user, base_attrs, opts) do
     Repo.transaction(fn -> commit_review!(scope, task, user, base_attrs, opts) end)

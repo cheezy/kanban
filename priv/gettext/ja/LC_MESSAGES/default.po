@@ -548,7 +548,7 @@ msgstr "コメントが正常に追加されました"
 #: lib/kanban_web/live/task_live/components/comments_section.ex:13
 #: lib/kanban_web/live/task_live/form_component.html.heex:525
 #: lib/kanban_web/live/task_live/view_component.ex:409
-#: lib/kanban_web/notification_labels.ex:30
+#: lib/kanban_web/notification_labels.ex:32
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "コメント"
@@ -1105,6 +1105,7 @@ msgstr "エージェント"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:401
+#: lib/kanban_web/notification_labels.ex:99
 #: lib/kanban_web/review_report_helpers/tokens.ex:40
 #, elixir-autogen, elixir-format
 msgid "Approved"
@@ -6250,6 +6251,7 @@ msgstr "変更要求あり"
 msgid "(no description)"
 msgstr "（説明なし）"
 
+#: lib/kanban_web/notification_labels.ex:105
 #: lib/kanban_web/review_report_helpers/tokens.ex:50
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
@@ -8923,27 +8925,27 @@ msgstr "タスクがレビューされました"
 msgid "Your weekly digest"
 msgstr "週次ダイジェスト"
 
-#: lib/kanban_web/notification_labels.ex:35
+#: lib/kanban_web/notification_labels.ex:37
 #, elixir-autogen, elixir-format
 msgid "After-goal hook failures"
 msgstr "after-goal フックの失敗"
 
-#: lib/kanban_web/notification_labels.ex:34
+#: lib/kanban_web/notification_labels.ex:36
 #, elixir-autogen, elixir-format
 msgid "Board access changes"
 msgstr "ボードアクセスの変更"
 
-#: lib/kanban_web/notification_labels.ex:28
+#: lib/kanban_web/notification_labels.ex:30
 #, elixir-autogen, elixir-format
 msgid "Completed goals"
 msgstr "完了したゴール"
 
-#: lib/kanban_web/notification_labels.ex:36
+#: lib/kanban_web/notification_labels.ex:38
 #, elixir-autogen, elixir-format
 msgid "Delivery target status"
 msgstr "デリバリーターゲットの状況"
 
-#: lib/kanban_web/notification_labels.ex:27
+#: lib/kanban_web/notification_labels.ex:29
 #, elixir-autogen, elixir-format
 msgid "Expired claims"
 msgstr "期限切れの担当"
@@ -8953,22 +8955,22 @@ msgstr "期限切れの担当"
 msgid "In-app notifications are not affected."
 msgstr "アプリ内通知には影響しません。"
 
-#: lib/kanban_web/notification_labels.ex:31
+#: lib/kanban_web/notification_labels.ex:33
 #, elixir-autogen, elixir-format
 msgid "Mentions"
 msgstr "メンション"
 
-#: lib/kanban_web/notification_labels.ex:25
+#: lib/kanban_web/notification_labels.ex:27
 #, elixir-autogen, elixir-format
 msgid "Review requests"
 msgstr "レビュー依頼"
 
-#: lib/kanban_web/notification_labels.ex:32
+#: lib/kanban_web/notification_labels.ex:34
 #, elixir-autogen, elixir-format
 msgid "Review results"
 msgstr "レビュー結果"
 
-#: lib/kanban_web/notification_labels.ex:26
+#: lib/kanban_web/notification_labels.ex:28
 #, elixir-autogen, elixir-format
 msgid "Task assignments"
 msgstr "タスクの割り当て"
@@ -8983,7 +8985,7 @@ msgstr "配信停止リンクが無効か、有効期限が切れています。
 msgid "This link is no longer valid"
 msgstr "このリンクは無効になりました"
 
-#: lib/kanban_web/notification_labels.ex:33
+#: lib/kanban_web/notification_labels.ex:35
 #, elixir-autogen, elixir-format
 msgid "Unclaimed tasks"
 msgstr "担当が解除されたタスク"
@@ -8999,7 +9001,7 @@ msgid "Unsubscribe from these emails?"
 msgstr "これらのメールの配信を停止しますか？"
 
 #: lib/kanban_web/live/user_live/notification_preferences.ex:183
-#: lib/kanban_web/notification_labels.ex:29
+#: lib/kanban_web/notification_labels.ex:31
 #, elixir-autogen, elixir-format
 msgid "Weekly digest"
 msgstr "週次ダイジェスト"
@@ -9019,12 +9021,12 @@ msgstr "次の内容に関するメールの受信を停止します: %{category
 msgid "You're unsubscribed"
 msgstr "配信を停止しました"
 
-#: lib/kanban_web/notification_labels.ex:89
+#: lib/kanban_web/notification_labels.ex:96
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code}"
 msgstr "終了コード %{code}"
 
-#: lib/kanban_web/notification_labels.ex:85
+#: lib/kanban_web/notification_labels.ex:92
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code} after %{ms} ms"
 msgstr "終了コード %{code}（%{ms} ms 後）"
@@ -9091,32 +9093,32 @@ msgstr "通知"
 msgid "Unread"
 msgstr "未読"
 
-#: lib/kanban_web/notification_labels.ex:63
+#: lib/kanban_web/notification_labels.ex:65
 #, elixir-autogen, elixir-format
 msgid "A delivery target you follow changes status."
 msgstr "フォローしている配信ターゲットのステータスが変わったとき。"
 
-#: lib/kanban_web/notification_labels.ex:57
+#: lib/kanban_web/notification_labels.ex:59
 #, elixir-autogen, elixir-format
 msgid "A goal you created or own reaches Done."
 msgstr "作成した、または担当しているゴールが完了したとき。"
 
-#: lib/kanban_web/notification_labels.ex:60
+#: lib/kanban_web/notification_labels.ex:62
 #, elixir-autogen, elixir-format
 msgid "A goal's after_goal hook fails on the agent's machine."
 msgstr "ゴールの after_goal フックがエージェントのマシンで失敗したとき。"
 
-#: lib/kanban_web/notification_labels.ex:47
+#: lib/kanban_web/notification_labels.ex:49
 #, elixir-autogen, elixir-format
 msgid "A reviewer approved or requested changes on your task."
 msgstr "レビュアーがあなたのタスクを承認、または変更を依頼したとき。"
 
-#: lib/kanban_web/notification_labels.ex:44
+#: lib/kanban_web/notification_labels.ex:46
 #, elixir-autogen, elixir-format
 msgid "A task you can review is waiting in the review queue."
 msgstr "レビューできるタスクがレビューキューで待っているとき。"
 
-#: lib/kanban_web/notification_labels.ex:72
+#: lib/kanban_web/notification_labels.ex:74
 #, elixir-autogen, elixir-format
 msgid "A weekly summary of activity on your boards."
 msgstr "ボードのアクティビティの週次サマリー。"
@@ -9126,12 +9128,12 @@ msgstr "ボードのアクティビティの週次サマリー。"
 msgid "Account"
 msgstr "アカウント"
 
-#: lib/kanban_web/notification_labels.ex:52
+#: lib/kanban_web/notification_labels.ex:54
 #, elixir-autogen, elixir-format
 msgid "An agent releases a task it had claimed for you."
 msgstr "エージェントがあなたのために引き受けていたタスクを手放したとき。"
 
-#: lib/kanban_web/notification_labels.ex:55
+#: lib/kanban_web/notification_labels.ex:57
 #, elixir-autogen, elixir-format
 msgid "An agent's claim on your task expires before it is finished."
 msgstr "エージェントによるタスクの引き受けが、完了前に期限切れになったとき。"
@@ -9177,17 +9179,17 @@ msgstr "通知設定を保存しました。"
 msgid "Reviews"
 msgstr "レビュー"
 
-#: lib/kanban_web/notification_labels.ex:49
+#: lib/kanban_web/notification_labels.ex:51
 #, elixir-autogen, elixir-format
 msgid "Someone assigns a task to you."
 msgstr "誰かがあなたにタスクを割り当てたとき。"
 
-#: lib/kanban_web/notification_labels.ex:68
+#: lib/kanban_web/notification_labels.ex:70
 #, elixir-autogen, elixir-format
 msgid "Someone comments on your task."
 msgstr "誰かがあなたのタスクにコメントしたとき。"
 
-#: lib/kanban_web/notification_labels.ex:69
+#: lib/kanban_web/notification_labels.ex:71
 #, elixir-autogen, elixir-format
 msgid "Someone mentions you in a comment."
 msgstr "誰かがコメントであなたをメンションしたとき。"
@@ -9203,7 +9205,7 @@ msgstr "タスクとエージェント"
 msgid "Unknown notification type."
 msgstr "不明な通知の種類です。"
 
-#: lib/kanban_web/notification_labels.ex:66
+#: lib/kanban_web/notification_labels.ex:68
 #, elixir-autogen, elixir-format
 msgid "You are added to or removed from a board, or your access changes."
 msgstr "ボードに追加または削除されたとき、またはアクセス権が変わったとき。"
@@ -9273,3 +9275,13 @@ msgstr "完了したタスク"
 #, elixir-autogen, elixir-format
 msgid "Your boards"
 msgstr "あなたのボード"
+
+#: lib/kanban_web/notification_labels.ex:111
+#, elixir-autogen, elixir-format
+msgid "Returned to Ready"
+msgstr "Readyに戻されました"
+
+#: lib/kanban_web/notification_labels.ex:109
+#, elixir-autogen, elixir-format
+msgid "Returned to Ready. Reason:"
+msgstr "Readyに戻されました。理由:"

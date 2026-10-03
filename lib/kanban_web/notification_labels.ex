@@ -5,8 +5,10 @@ defmodule KanbanWeb.NotificationLabels do
 
   `category/1` names a whole category of notifications and `description/1`
   says when it is sent (the preferences page shows both); `detail/1` words the
-  event-specific metadata stored on one notification, so it is translated at
-  render time rather than stored as text.
+  event-specific facts stored on one notification, so it is translated at
+  render time rather than stored as text. Free text (review notes, an unclaim
+  reason) stays raw in the body, which `detail/1` may introduce but never
+  copies.
 
   Each clause calls `gettext/1` with a literal so the strings are extracted;
   every type in `Kanban.Notifications.event_types/0` must have a `category/1`
@@ -72,9 +74,14 @@ defmodule KanbanWeb.NotificationLabels do
     do: gettext("A weekly summary of activity on your boards.")
 
   @doc """
-  Returns the translated detail line for a notification's metadata, or `nil`
-  when its event type stores none. Today only `:after_goal_failed` does: its
-  exit code and, when known, the duration in milliseconds.
+  Returns the translated detail line for a notification, or `nil` when its
+  event type has none:
+
+    * `:after_goal_failed` — the exit code and, when known, the duration in
+      milliseconds;
+    * `:task_reviewed` — the review outcome, approved or changes requested;
+    * `:task_unclaimed` — that the task went back to Ready, introducing the
+      reason in the body when there is one.
   """
   @spec detail(Notification.t()) :: String.t() | nil
   def detail(%Notification{
@@ -87,6 +94,21 @@ defmodule KanbanWeb.NotificationLabels do
   def detail(%Notification{event_type: :after_goal_failed, metadata: %{"exit_code" => code}})
       when is_integer(code),
       do: gettext("Exit code %{code}", code: code)
+
+  def detail(%Notification{event_type: :task_reviewed, metadata: %{"outcome" => "approved"}}),
+    do: gettext("Approved")
+
+  def detail(%Notification{
+        event_type: :task_reviewed,
+        metadata: %{"outcome" => "changes_requested"}
+      }),
+      do: gettext("Changes requested")
+
+  def detail(%Notification{event_type: :task_unclaimed, body: body})
+      when is_binary(body) and body != "",
+      do: gettext("Returned to Ready. Reason:")
+
+  def detail(%Notification{event_type: :task_unclaimed}), do: gettext("Returned to Ready")
 
   def detail(_notification), do: nil
 end

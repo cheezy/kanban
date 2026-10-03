@@ -165,6 +165,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
       {:task_updated, updated_task}
     )
 
+    Events.task_unclaimed(task, user, reason)
     {:ok, updated_task}
   end
 

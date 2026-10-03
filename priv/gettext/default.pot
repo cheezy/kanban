@@ -548,7 +548,7 @@ msgstr ""
 #: lib/kanban_web/live/task_live/components/comments_section.ex:13
 #: lib/kanban_web/live/task_live/form_component.html.heex:525
 #: lib/kanban_web/live/task_live/view_component.ex:409
-#: lib/kanban_web/notification_labels.ex:30
+#: lib/kanban_web/notification_labels.ex:32
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr ""
@@ -1105,6 +1105,7 @@ msgstr ""
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:401
+#: lib/kanban_web/notification_labels.ex:99
 #: lib/kanban_web/review_report_helpers/tokens.ex:40
 #, elixir-autogen, elixir-format
 msgid "Approved"
@@ -6265,6 +6266,7 @@ msgstr ""
 msgid "(no description)"
 msgstr ""
 
+#: lib/kanban_web/notification_labels.ex:105
 #: lib/kanban_web/review_report_helpers/tokens.ex:50
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
@@ -8885,27 +8887,27 @@ msgstr ""
 msgid "Your weekly digest"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:35
+#: lib/kanban_web/notification_labels.ex:37
 #, elixir-autogen, elixir-format
 msgid "After-goal hook failures"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:34
+#: lib/kanban_web/notification_labels.ex:36
 #, elixir-autogen, elixir-format
 msgid "Board access changes"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:28
+#: lib/kanban_web/notification_labels.ex:30
 #, elixir-autogen, elixir-format
 msgid "Completed goals"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:36
+#: lib/kanban_web/notification_labels.ex:38
 #, elixir-autogen, elixir-format
 msgid "Delivery target status"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:27
+#: lib/kanban_web/notification_labels.ex:29
 #, elixir-autogen, elixir-format
 msgid "Expired claims"
 msgstr ""
@@ -8915,22 +8917,22 @@ msgstr ""
 msgid "In-app notifications are not affected."
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:31
+#: lib/kanban_web/notification_labels.ex:33
 #, elixir-autogen, elixir-format
 msgid "Mentions"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:25
+#: lib/kanban_web/notification_labels.ex:27
 #, elixir-autogen, elixir-format
 msgid "Review requests"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:32
+#: lib/kanban_web/notification_labels.ex:34
 #, elixir-autogen, elixir-format
 msgid "Review results"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:26
+#: lib/kanban_web/notification_labels.ex:28
 #, elixir-autogen, elixir-format
 msgid "Task assignments"
 msgstr ""
@@ -8945,7 +8947,7 @@ msgstr ""
 msgid "This link is no longer valid"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:33
+#: lib/kanban_web/notification_labels.ex:35
 #, elixir-autogen, elixir-format
 msgid "Unclaimed tasks"
 msgstr ""
@@ -8961,7 +8963,7 @@ msgid "Unsubscribe from these emails?"
 msgstr ""
 
 #: lib/kanban_web/live/user_live/notification_preferences.ex:183
-#: lib/kanban_web/notification_labels.ex:29
+#: lib/kanban_web/notification_labels.ex:31
 #, elixir-autogen, elixir-format
 msgid "Weekly digest"
 msgstr ""
@@ -8981,12 +8983,12 @@ msgstr ""
 msgid "You're unsubscribed"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:89
+#: lib/kanban_web/notification_labels.ex:96
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code}"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:85
+#: lib/kanban_web/notification_labels.ex:92
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code} after %{ms} ms"
 msgstr ""
@@ -9054,32 +9056,32 @@ msgstr ""
 msgid "Unread"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:63
+#: lib/kanban_web/notification_labels.ex:65
 #, elixir-autogen, elixir-format
 msgid "A delivery target you follow changes status."
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:57
+#: lib/kanban_web/notification_labels.ex:59
 #, elixir-autogen, elixir-format
 msgid "A goal you created or own reaches Done."
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:60
+#: lib/kanban_web/notification_labels.ex:62
 #, elixir-autogen, elixir-format
 msgid "A goal's after_goal hook fails on the agent's machine."
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:47
+#: lib/kanban_web/notification_labels.ex:49
 #, elixir-autogen, elixir-format
 msgid "A reviewer approved or requested changes on your task."
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:44
+#: lib/kanban_web/notification_labels.ex:46
 #, elixir-autogen, elixir-format
 msgid "A task you can review is waiting in the review queue."
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:72
+#: lib/kanban_web/notification_labels.ex:74
 #, elixir-autogen, elixir-format
 msgid "A weekly summary of activity on your boards."
 msgstr ""
@@ -9089,12 +9091,12 @@ msgstr ""
 msgid "Account"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:52
+#: lib/kanban_web/notification_labels.ex:54
 #, elixir-autogen, elixir-format
 msgid "An agent releases a task it had claimed for you."
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:55
+#: lib/kanban_web/notification_labels.ex:57
 #, elixir-autogen, elixir-format
 msgid "An agent's claim on your task expires before it is finished."
 msgstr ""
@@ -9140,17 +9142,17 @@ msgstr ""
 msgid "Reviews"
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:49
+#: lib/kanban_web/notification_labels.ex:51
 #, elixir-autogen, elixir-format
 msgid "Someone assigns a task to you."
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:68
+#: lib/kanban_web/notification_labels.ex:70
 #, elixir-autogen, elixir-format
 msgid "Someone comments on your task."
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:69
+#: lib/kanban_web/notification_labels.ex:71
 #, elixir-autogen, elixir-format
 msgid "Someone mentions you in a comment."
 msgstr ""
@@ -9166,7 +9168,7 @@ msgstr ""
 msgid "Unknown notification type."
 msgstr ""
 
-#: lib/kanban_web/notification_labels.ex:66
+#: lib/kanban_web/notification_labels.ex:68
 #, elixir-autogen, elixir-format
 msgid "You are added to or removed from a board, or your access changes."
 msgstr ""
@@ -9235,4 +9237,14 @@ msgstr ""
 #: lib/kanban_web/emails/digest_email.ex:201
 #, elixir-autogen, elixir-format
 msgid "Your boards"
+msgstr ""
+
+#: lib/kanban_web/notification_labels.ex:111
+#, elixir-autogen, elixir-format
+msgid "Returned to Ready"
+msgstr ""
+
+#: lib/kanban_web/notification_labels.ex:109
+#, elixir-autogen, elixir-format
+msgid "Returned to Ready. Reason:"
 msgstr ""

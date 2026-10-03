@@ -74,6 +74,42 @@ defmodule KanbanWeb.NotificationLive.IndexTest do
       assert has_element?(view, row(notification), "Exit code 3 after 1200 ms")
     end
 
+    test "renders a review outcome with the reviewer and escaped notes", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, [notification]} =
+        Notifications.notify(:task_reviewed, [user], %{
+          title: "W1: Ship it",
+          board_id: board.id,
+          actor_name: "Ada",
+          body: "<b>Add a test</b>",
+          metadata: %{"outcome" => "changes_requested"}
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/notifications")
+
+      assert has_element?(view, row(notification), "Changes requested")
+      assert has_element?(view, row(notification), "By Ada")
+      assert render(view) =~ "&lt;b&gt;Add a test&lt;/b&gt;"
+      refute render(view) =~ "<b>Add a test</b>"
+    end
+
+    test "renders an unclaimed task with its reason", %{conn: conn, user: user} do
+      board = ai_optimized_board_fixture(user)
+
+      {:ok, [notification]} =
+        Notifications.notify(:task_unclaimed, [user], %{
+          title: "W2: Hard task",
+          board_id: board.id,
+          body: "Blocked on credentials"
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/notifications")
+
+      assert has_element?(view, row(notification), "Returned to Ready. Reason:")
+      assert has_element?(view, row(notification), "Blocked on credentials")
+    end
+
     test "shows a per-filter empty state", %{conn: conn, user: user} do
       {:ok, view, _html} = live(conn, ~p"/notifications")
       assert has_element?(view, "#notifications-empty", "No notifications yet.")

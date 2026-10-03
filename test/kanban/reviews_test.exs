@@ -4,6 +4,7 @@ defmodule Kanban.ReviewsTest do
   Queue at `/review`.
   """
   use Kanban.DataCase
+  use Oban.Testing, repo: Kanban.Repo
 
   import Ecto.Query
   import Kanban.AccountsFixtures
@@ -12,6 +13,9 @@ defmodule Kanban.ReviewsTest do
   import Kanban.TasksFixtures
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Boards
+  alias Kanban.Notifications.EmailWorker
+  alias Kanban.Notifications.Notification
   alias Kanban.Reviews
   alias Kanban.Tasks
 
@@ -494,6 +498,88 @@ defmodule Kanban.ReviewsTest do
       assert reloaded.review_status == :changes_requested
       assert reloaded.review_notes == "please fix"
       assert reloaded.reviewed_by_id == modifier.id
+    end
+  end
+
+  describe "review notifications" do
+    setup %{board: board, user: owner} do
+      completer = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, completer, :modify, owner)
+      %{completer: completer}
+    end
+
+    defp reviewed_rows do
+      Notification
+      |> where(event_type: :task_reviewed)
+      |> Repo.all()
+    end
+
+    test "approving notifies the completer once with outcome approved and a task link",
+         %{column: column, user: user, board: board, completer: completer} do
+      _done = column_fixture(board, %{name: "Done", position: 2})
+      task = pending_task!(column, %{completed_by_id: completer.id})
+
+      assert {:ok, _approved} = user |> Scope.for_user() |> Reviews.approve_review(task)
+
+      assert [%Notification{} = n] = reviewed_rows()
+      assert n.user_id == completer.id
+      assert n.metadata == %{"outcome" => "approved"}
+      assert n.url_path == "/boards/#{board.id}/tasks/#{task.id}/edit"
+      assert is_nil(n.body)
+      assert_enqueued(worker: EmailWorker, args: %{notification_id: n.id})
+    end
+
+    test "requesting changes notifies with the notes, truncated to 500 characters",
+         %{column: column, user: user, completer: completer} do
+      task = pending_task!(column, %{completed_by_id: completer.id})
+      notes = String.duplicate("n", 600)
+
+      assert {:ok, _changed} =
+               user
+               |> Scope.for_user()
+               |> Reviews.request_changes_review(task, review_notes: notes)
+
+      assert [%Notification{} = n] = reviewed_rows()
+      assert n.user_id == completer.id
+      assert n.metadata == %{"outcome" => "changes_requested"}
+      assert n.body == String.duplicate("n", 500)
+    end
+
+    test "a review that returns an error notifies nobody",
+         %{column: column, board: board, user: owner, completer: completer} do
+      task = pending_task!(column, %{completed_by_id: completer.id})
+      reader = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      assert {:error, :review_notes_required} =
+               owner |> Scope.for_user() |> Reviews.request_changes_review(task, [])
+
+      assert {:error, :not_authorized} =
+               reader
+               |> Scope.for_user()
+               |> Reviews.request_changes_review(task, review_notes: "x")
+
+      assert {:error, :not_authorized} = Reviews.approve_review(nil, task)
+      assert reviewed_rows() == []
+    end
+
+    test "reviewing your own agent's work notifies nobody", %{column: column, user: user} do
+      task = pending_task!(column, %{completed_by_id: user.id})
+
+      assert {:ok, _changed} =
+               user |> Scope.for_user() |> Reviews.request_changes_review(task, review_notes: "x")
+
+      assert reviewed_rows() == []
+    end
+
+    test "a completer removed from the board before the review is not notified",
+         %{column: column, user: user, board: board, completer: completer} do
+      _done = column_fixture(board, %{name: "Done", position: 2})
+      task = pending_task!(column, %{completed_by_id: completer.id})
+      {:ok, _} = Boards.remove_user_from_board(board, completer, user)
+
+      assert {:ok, _approved} = user |> Scope.for_user() |> Reviews.approve_review(task)
+      assert reviewed_rows() == []
     end
   end
 end

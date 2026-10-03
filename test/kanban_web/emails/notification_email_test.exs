@@ -194,6 +194,50 @@ defmodule KanbanWeb.Emails.NotificationEmailTest do
       assert french.text_body =~ "750"
     end
 
+    test "renders a review outcome and escaped notes, translated", %{user: user} do
+      attrs = %{
+        event_type: :task_reviewed,
+        title: "W1: Ship it",
+        actor_name: "Ada",
+        body: "<script>x</script>",
+        metadata: %{"outcome" => "changes_requested"}
+      }
+
+      email = build_email(user, attrs)
+      assert email.subject == "[Stride] Your task was reviewed"
+      assert email.text_body =~ "Changes requested"
+      assert email.html_body =~ "Changes requested"
+      assert email.html_body =~ "&lt;script&gt;x&lt;/script&gt;"
+      refute email.html_body =~ "<script>"
+      refute email.subject =~ "script"
+
+      german = Gettext.with_locale(KanbanWeb.Gettext, "de", fn -> build_email(user, attrs) end)
+      refute german.text_body =~ "Changes requested"
+    end
+
+    test "renders an unclaim reason after the Returned to Ready line", %{user: user} do
+      email =
+        build_email(user, %{event_type: :task_unclaimed, title: "W2: Hard", body: "Too big"})
+
+      assert email.subject == "[Stride] Task unclaimed"
+      assert email.text_body =~ ~r/Returned to Ready\. Reason:\s+Too big/
+    end
+
+    test "translates review and unclaim subjects in every supported locale", %{user: user} do
+      for type <- [:task_reviewed, :task_unclaimed] do
+        english = build_email(user, %{event_type: type})
+
+        for locale <- ~w(de es fr ja pt zh) do
+          email =
+            Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+              build_email(user, %{event_type: type})
+            end)
+
+          refute email.subject == english.subject, "#{type} subject not translated for #{locale}"
+        end
+      end
+    end
+
     test "uses a stable Message-ID per notification", %{user: user} do
       n = notification(user, %{})
       email = NotificationEmail.build(n, user)

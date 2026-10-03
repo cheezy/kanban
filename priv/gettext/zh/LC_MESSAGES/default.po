@@ -548,7 +548,7 @@ msgstr "评论添加成功"
 #: lib/kanban_web/live/task_live/components/comments_section.ex:13
 #: lib/kanban_web/live/task_live/form_component.html.heex:525
 #: lib/kanban_web/live/task_live/view_component.ex:409
-#: lib/kanban_web/notification_labels.ex:30
+#: lib/kanban_web/notification_labels.ex:32
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "评论"
@@ -1105,6 +1105,7 @@ msgstr "代理"
 
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:76
 #: lib/kanban_web/live/task_live/form_component.html.heex:401
+#: lib/kanban_web/notification_labels.ex:99
 #: lib/kanban_web/review_report_helpers/tokens.ex:40
 #, elixir-autogen, elixir-format
 msgid "Approved"
@@ -6250,6 +6251,7 @@ msgstr "已请求修改"
 msgid "(no description)"
 msgstr "（无描述）"
 
+#: lib/kanban_web/notification_labels.ex:105
 #: lib/kanban_web/review_report_helpers/tokens.ex:50
 #, elixir-autogen, elixir-format
 msgid "Changes requested"
@@ -8923,27 +8925,27 @@ msgstr "您的任务已被审阅"
 msgid "Your weekly digest"
 msgstr "您的每周摘要"
 
-#: lib/kanban_web/notification_labels.ex:35
+#: lib/kanban_web/notification_labels.ex:37
 #, elixir-autogen, elixir-format
 msgid "After-goal hook failures"
 msgstr "after-goal 钩子失败"
 
-#: lib/kanban_web/notification_labels.ex:34
+#: lib/kanban_web/notification_labels.ex:36
 #, elixir-autogen, elixir-format
 msgid "Board access changes"
 msgstr "看板访问权限变更"
 
-#: lib/kanban_web/notification_labels.ex:28
+#: lib/kanban_web/notification_labels.ex:30
 #, elixir-autogen, elixir-format
 msgid "Completed goals"
 msgstr "已完成的目标"
 
-#: lib/kanban_web/notification_labels.ex:36
+#: lib/kanban_web/notification_labels.ex:38
 #, elixir-autogen, elixir-format
 msgid "Delivery target status"
 msgstr "交付目标状态"
 
-#: lib/kanban_web/notification_labels.ex:27
+#: lib/kanban_web/notification_labels.ex:29
 #, elixir-autogen, elixir-format
 msgid "Expired claims"
 msgstr "已过期的认领"
@@ -8953,22 +8955,22 @@ msgstr "已过期的认领"
 msgid "In-app notifications are not affected."
 msgstr "应用内通知不受影响。"
 
-#: lib/kanban_web/notification_labels.ex:31
+#: lib/kanban_web/notification_labels.ex:33
 #, elixir-autogen, elixir-format
 msgid "Mentions"
 msgstr "提及"
 
-#: lib/kanban_web/notification_labels.ex:25
+#: lib/kanban_web/notification_labels.ex:27
 #, elixir-autogen, elixir-format
 msgid "Review requests"
 msgstr "审阅请求"
 
-#: lib/kanban_web/notification_labels.ex:32
+#: lib/kanban_web/notification_labels.ex:34
 #, elixir-autogen, elixir-format
 msgid "Review results"
 msgstr "审阅结果"
 
-#: lib/kanban_web/notification_labels.ex:26
+#: lib/kanban_web/notification_labels.ex:28
 #, elixir-autogen, elixir-format
 msgid "Task assignments"
 msgstr "任务分配"
@@ -8983,7 +8985,7 @@ msgstr "退订链接无效或已过期。请登录以管理您接收的邮件。
 msgid "This link is no longer valid"
 msgstr "此链接已失效"
 
-#: lib/kanban_web/notification_labels.ex:33
+#: lib/kanban_web/notification_labels.ex:35
 #, elixir-autogen, elixir-format
 msgid "Unclaimed tasks"
 msgstr "已取消认领的任务"
@@ -8999,7 +9001,7 @@ msgid "Unsubscribe from these emails?"
 msgstr "退订此类邮件？"
 
 #: lib/kanban_web/live/user_live/notification_preferences.ex:183
-#: lib/kanban_web/notification_labels.ex:29
+#: lib/kanban_web/notification_labels.ex:31
 #, elixir-autogen, elixir-format
 msgid "Weekly digest"
 msgstr "每周摘要"
@@ -9019,12 +9021,12 @@ msgstr "您将不再收到关于以下内容的邮件：%{category}。"
 msgid "You're unsubscribed"
 msgstr "您已退订"
 
-#: lib/kanban_web/notification_labels.ex:89
+#: lib/kanban_web/notification_labels.ex:96
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code}"
 msgstr "退出码 %{code}"
 
-#: lib/kanban_web/notification_labels.ex:85
+#: lib/kanban_web/notification_labels.ex:92
 #, elixir-autogen, elixir-format
 msgid "Exit code %{code} after %{ms} ms"
 msgstr "退出码 %{code}（%{ms} 毫秒后）"
@@ -9091,32 +9093,32 @@ msgstr "通知"
 msgid "Unread"
 msgstr "未读"
 
-#: lib/kanban_web/notification_labels.ex:63
+#: lib/kanban_web/notification_labels.ex:65
 #, elixir-autogen, elixir-format
 msgid "A delivery target you follow changes status."
 msgstr "你关注的交付目标状态发生变化。"
 
-#: lib/kanban_web/notification_labels.ex:57
+#: lib/kanban_web/notification_labels.ex:59
 #, elixir-autogen, elixir-format
 msgid "A goal you created or own reaches Done."
 msgstr "你创建或负责的目标已完成。"
 
-#: lib/kanban_web/notification_labels.ex:60
+#: lib/kanban_web/notification_labels.ex:62
 #, elixir-autogen, elixir-format
 msgid "A goal's after_goal hook fails on the agent's machine."
 msgstr "目标的 after_goal 钩子在代理的机器上运行失败。"
 
-#: lib/kanban_web/notification_labels.ex:47
+#: lib/kanban_web/notification_labels.ex:49
 #, elixir-autogen, elixir-format
 msgid "A reviewer approved or requested changes on your task."
 msgstr "审阅者批准了你的任务或要求修改。"
 
-#: lib/kanban_web/notification_labels.ex:44
+#: lib/kanban_web/notification_labels.ex:46
 #, elixir-autogen, elixir-format
 msgid "A task you can review is waiting in the review queue."
 msgstr "有可由你审阅的任务正在审阅队列中等待。"
 
-#: lib/kanban_web/notification_labels.ex:72
+#: lib/kanban_web/notification_labels.ex:74
 #, elixir-autogen, elixir-format
 msgid "A weekly summary of activity on your boards."
 msgstr "你的看板活动的每周摘要。"
@@ -9126,12 +9128,12 @@ msgstr "你的看板活动的每周摘要。"
 msgid "Account"
 msgstr "账户"
 
-#: lib/kanban_web/notification_labels.ex:52
+#: lib/kanban_web/notification_labels.ex:54
 #, elixir-autogen, elixir-format
 msgid "An agent releases a task it had claimed for you."
 msgstr "代理释放了它为你认领的任务。"
 
-#: lib/kanban_web/notification_labels.ex:55
+#: lib/kanban_web/notification_labels.ex:57
 #, elixir-autogen, elixir-format
 msgid "An agent's claim on your task expires before it is finished."
 msgstr "代理对你任务的认领在完成前已过期。"
@@ -9177,17 +9179,17 @@ msgstr "通知偏好设置已保存。"
 msgid "Reviews"
 msgstr "审阅"
 
-#: lib/kanban_web/notification_labels.ex:49
+#: lib/kanban_web/notification_labels.ex:51
 #, elixir-autogen, elixir-format
 msgid "Someone assigns a task to you."
 msgstr "有人将任务分配给你。"
 
-#: lib/kanban_web/notification_labels.ex:68
+#: lib/kanban_web/notification_labels.ex:70
 #, elixir-autogen, elixir-format
 msgid "Someone comments on your task."
 msgstr "有人评论了你的任务。"
 
-#: lib/kanban_web/notification_labels.ex:69
+#: lib/kanban_web/notification_labels.ex:71
 #, elixir-autogen, elixir-format
 msgid "Someone mentions you in a comment."
 msgstr "有人在评论中提到了你。"
@@ -9203,7 +9205,7 @@ msgstr "任务与代理"
 msgid "Unknown notification type."
 msgstr "未知的通知类型。"
 
-#: lib/kanban_web/notification_labels.ex:66
+#: lib/kanban_web/notification_labels.ex:68
 #, elixir-autogen, elixir-format
 msgid "You are added to or removed from a board, or your access changes."
 msgstr "你被添加到看板或从看板移除，或你的访问权限发生变化。"
@@ -9273,3 +9275,13 @@ msgstr "已完成任务"
 #, elixir-autogen, elixir-format
 msgid "Your boards"
 msgstr "您的看板"
+
+#: lib/kanban_web/notification_labels.ex:111
+#, elixir-autogen, elixir-format
+msgid "Returned to Ready"
+msgstr "已退回待办"
+
+#: lib/kanban_web/notification_labels.ex:109
+#, elixir-autogen, elixir-format
+msgid "Returned to Ready. Reason:"
+msgstr "已退回待办。原因："

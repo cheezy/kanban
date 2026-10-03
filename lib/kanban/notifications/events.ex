@@ -10,7 +10,9 @@ defmodule Kanban.Notifications.Events do
   Notification titles carry only the task identifier and title. Completion
   notes, summaries and other agent free text are never copied in; the event
   wording itself is rendered (and translated) from the event type when the
-  inbox or email shows it.
+  inbox or email shows it. The only free text stored is a reviewer's
+  change-request notes and an agent's unclaim reason, which go in the body
+  as plain text, trimmed and truncated to 500 characters.
 
   Dedupe keys make retries of the same event notify once:
 
@@ -19,6 +21,9 @@ defmodule Kanban.Notifications.Events do
       the same second (completion, review and re-completion within a second)
       collapse into one notification;
     * claim_expired uses `claim_expires_at` (a new claim gets a new key);
+    * task_reviewed uses `reviewed_at`, which every review restamps;
+    * task_unclaimed uses the released claim's `claimed_at` (`updated_at`
+      for an in-progress task that was never claimed through the API);
     * goal_completed uses the goal's `completed_at`;
     * after_goal_failed uses the index of the first failing attempt in the
       current failure streak, so a streak notifies once and a failure after
@@ -43,6 +48,7 @@ defmodule Kanban.Notifications.Events do
 
   @write_access [:owner, :modify]
   @title_max 255
+  @body_max 500
 
   @doc """
   Notifies every board member with write access (owner or modify) that
@@ -75,6 +81,32 @@ defmodule Kanban.Notifications.Events do
 
   def claim_expired(%Task{} = task) do
     safely(:claim_expired, task, fn -> emit_claim_expired(task) end)
+  end
+
+  @doc """
+  Notifies the user whose agent did `task`'s work that `reviewer` approved
+  it or requested changes: the task's completer, else its assignee. Nothing
+  is sent when that user is the reviewer, or when the task has no review.
+
+  The outcome is stored as metadata and worded at display time; the review
+  notes go in the body for a change request only, since an approval keeps
+  any earlier request's notes on the task.
+  """
+  @spec task_reviewed(Task.t(), %{id: integer()}) :: :ok
+  def task_reviewed(%Task{reviewed_at: nil}, _reviewer), do: :ok
+
+  def task_reviewed(%Task{} = task, reviewer) do
+    safely(:task_reviewed, task, fn -> emit_task_reviewed(task, reviewer) end)
+  end
+
+  @doc """
+  Notifies the unclaiming user and `task`'s creator (once when they are the
+  same user) that the task was released back to Ready, with `reason` when
+  one was given. `task` is the task as it was before the unclaim.
+  """
+  @spec task_unclaimed(Task.t(), %{id: integer()}, term()) :: :ok
+  def task_unclaimed(%Task{} = task, user, reason) do
+    safely(:task_unclaimed, task, fn -> emit_task_unclaimed(task, user, reason) end)
   end
 
   @doc """
@@ -163,6 +195,85 @@ defmodule Kanban.Notifications.Events do
     )
   end
 
+  defp emit_task_reviewed(task, reviewer) do
+    case review_recipient(task, reviewer) do
+      nil -> :ok
+      recipient_id -> notify_task_reviewed(task, reviewer, recipient_id)
+    end
+  end
+
+  defp notify_task_reviewed(task, reviewer, recipient_id) do
+    board_id = board_id_for(task)
+    dedupe_key = "task_reviewed:#{task.id}:#{unix(task.reviewed_at)}"
+
+    attrs =
+      task
+      |> attrs(board_id, task_path(board_id, task), dedupe_key)
+      |> Map.merge(%{
+        body: review_body(task),
+        actor_name: actor_name(reviewer),
+        metadata: %{"outcome" => outcome(task.review_status)}
+      })
+
+    Notifications.notify(:task_reviewed, [%{id: recipient_id}], attrs)
+  end
+
+  # The completer, else the assignee — never the reviewer, and no further
+  # fallback when the reviewer is the one who would be told.
+  defp review_recipient(task, %{id: reviewer_id}) do
+    case task.completed_by_id || task.assigned_to_id do
+      ^reviewer_id -> nil
+      id -> id
+    end
+  end
+
+  defp outcome(:approved), do: "approved"
+  defp outcome(:changes_requested), do: "changes_requested"
+
+  defp review_body(%Task{review_status: :changes_requested, review_notes: notes}),
+    do: body_text(notes)
+
+  defp review_body(_task), do: nil
+
+  defp emit_task_unclaimed(task, user, reason) do
+    board_id = board_id_for(task)
+    dedupe_key = "task_unclaimed:#{task.id}:#{unix(claim_stamp(task))}"
+
+    attrs =
+      task
+      |> attrs(board_id, task_path(board_id, task), dedupe_key)
+      |> Map.merge(%{body: body_text(reason), actor_name: actor_name(user)})
+
+    Notifications.notify(:task_unclaimed, id_recipients([user.id, task.created_by_id]), attrs)
+  end
+
+  defp claim_stamp(%Task{claimed_at: nil, updated_at: updated_at}), do: updated_at
+  defp claim_stamp(%Task{claimed_at: claimed_at}), do: claimed_at
+
+  # Free text is stored as plain text (the inbox and email escape it),
+  # trimmed and truncated; blank or non-string text stores no body. The cut
+  # counts code points, not graphemes: one grapheme can carry any number of
+  # combining marks, so a grapheme count would not bound the stored size.
+  defp body_text(text) when is_binary(text) do
+    case String.trim(text) do
+      "" -> nil
+      trimmed -> truncate_codepoints(trimmed, @body_max)
+    end
+  end
+
+  defp truncate_codepoints(text, max) do
+    text
+    |> String.codepoints()
+    |> Enum.take(max)
+    |> Enum.join()
+  end
+
+  defp body_text(_text), do: nil
+
+  # Never falls back to the email address.
+  defp actor_name(%{name: name}) when is_binary(name) and name != "", do: name
+  defp actor_name(_user), do: nil
+
   defp emit_goal_completed(goal) do
     board_id = board_id_for(goal)
     recipients = goal_recipients(goal)
@@ -189,8 +300,10 @@ defmodule Kanban.Notifications.Events do
     Notifications.notify(:after_goal_failed, recipients, attrs)
   end
 
-  defp goal_recipients(goal) do
-    [goal.created_by_id, goal.assigned_to_id]
+  defp goal_recipients(goal), do: id_recipients([goal.created_by_id, goal.assigned_to_id])
+
+  defp id_recipients(ids) do
+    ids
     |> Enum.reject(&is_nil/1)
     |> Enum.uniq()
     |> Enum.map(&%{id: &1})

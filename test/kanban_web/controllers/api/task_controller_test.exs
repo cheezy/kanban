@@ -3723,9 +3723,22 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["claim_expires_at"] == nil
     end
 
-    test "accepts optional reason parameter", %{conn: conn, claimed_task: task} do
+    test "accepts optional reason parameter and notifies with it", %{
+      conn: conn,
+      claimed_task: task,
+      user: user
+    } do
       conn = post(conn, ~p"/api/tasks/#{task.id}/unclaim", %{"reason" => "task too complex"})
-      assert json_response(conn, 200)
+      assert json_response(conn, 200)["data"]["id"] == task.id
+
+      notification =
+        Kanban.Repo.get_by!(Kanban.Notifications.Notification,
+          task_id: task.id,
+          event_type: :task_unclaimed
+        )
+
+      assert notification.user_id == user.id
+      assert notification.body == "task too complex"
     end
 
     test "returns 403 when unclaiming someone else's task", %{
@@ -3748,6 +3761,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       conn = post(other_conn, ~p"/api/tasks/#{task.id}/unclaim")
       assert json_response(conn, 403)["error"] =~ "You can only unclaim tasks that you claimed"
+
+      refute Kanban.Repo.get_by(Kanban.Notifications.Notification,
+               task_id: task.id,
+               event_type: :task_unclaimed
+             )
     end
 
     test "returns 422 when task is not claimed", %{

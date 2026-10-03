@@ -241,6 +241,57 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert broadcast.id == unclaimed.id
       assert broadcast.status == :open
     end
+
+    test "notifies the unclaiming user once with the reason when they created the task", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      {:ok, _unclaimed} = AgentWorkflow.unclaim_task(claimed, ctx.user, "blocked")
+
+      assert [%Notification{} = n] = unclaimed_rows(task)
+      assert n.user_id == ctx.user.id
+      assert n.body == "blocked"
+      assert n.dedupe_key == "task_unclaimed:#{task.id}:#{DateTime.to_unix(claimed.claimed_at)}"
+      assert_enqueued(worker: EmailWorker, args: %{notification_id: n.id})
+    end
+
+    test "notifies the unclaiming user and the task creator, with no body without a reason",
+         ctx do
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, ctx.other, :modify, ctx.user)
+      task = create_open_task(ctx.ready, ctx.other)
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      {:ok, _unclaimed} = AgentWorkflow.unclaim_task(claimed, ctx.user)
+
+      notifications = unclaimed_rows(task)
+
+      assert notifications |> Enum.map(& &1.user_id) |> Enum.sort() ==
+               Enum.sort([ctx.user.id, ctx.other.id])
+
+      assert Enum.all?(notifications, &is_nil(&1.body))
+    end
+
+    test "a failed unclaim notifies nobody", ctx do
+      open = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(create_open_task(ctx.ready, ctx.user), ctx.user, ctx.board)
+
+      assert {:error, :not_claimed} = AgentWorkflow.unclaim_task(open, ctx.user, "why")
+      assert {:error, :not_authorized} = AgentWorkflow.unclaim_task(claimed, ctx.other, "why")
+
+      Repo.get_by!(Kanban.Boards.BoardUser, board_id: ctx.board.id, user_id: ctx.user.id)
+      |> Ecto.Changeset.change(access: :read_only)
+      |> Repo.update!()
+
+      assert {:error, :not_authorized} = AgentWorkflow.unclaim_task(claimed, ctx.user, "why")
+      assert unclaimed_rows(open) == []
+      assert unclaimed_rows(claimed) == []
+    end
+  end
+
+  defp unclaimed_rows(task) do
+    Notification
+    |> where(event_type: :task_unclaimed, task_id: ^task.id)
+    |> Repo.all()
   end
 
   describe "complete_task/4 — completion_notes (D188)" do

@@ -17,7 +17,9 @@ defmodule Kanban.Notifications.EventsTest do
   alias Kanban.Notifications.Events
   alias Kanban.Notifications.GoalCompletedWorker
   alias Kanban.Notifications.Notification
+  alias Kanban.Reviews
   alias Kanban.Tasks
+  alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.Interventions
 
   setup do
@@ -321,6 +323,210 @@ defmodule Kanban.Notifications.EventsTest do
     end
   end
 
+  describe "task_reviewed/2" do
+    defp reviewed(ctx, attrs) do
+      struct(
+        ctx.task,
+        Map.merge(
+          %{review_status: :approved, reviewed_at: ~U[2026-02-03 04:05:06Z]},
+          attrs
+        )
+      )
+    end
+
+    test "notifies the completer with outcome, link, reviewer and an email", ctx do
+      reviewer = %{ctx.owner | name: "Ada Owner"}
+      task = reviewed(ctx, %{completed_by_id: ctx.editor.id, assigned_to_id: ctx.owner.id})
+
+      assert :ok = Events.task_reviewed(task, reviewer)
+
+      assert [%Notification{} = n] = rows(:task_reviewed)
+      assert n.user_id == ctx.editor.id
+      assert n.metadata == %{"outcome" => "approved"}
+      assert n.title == "#{task.identifier}: Ship the inbox"
+      assert n.url_path == "/boards/#{ctx.board.id}/tasks/#{task.id}/edit"
+      assert n.board_id == ctx.board.id
+      assert n.task_id == task.id
+      assert n.actor_name == "Ada Owner"
+      assert n.dedupe_key == "task_reviewed:#{task.id}:#{DateTime.to_unix(task.reviewed_at)}"
+      assert is_nil(n.body)
+      assert_enqueued(worker: EmailWorker, args: %{notification_id: n.id})
+    end
+
+    test "falls back to the assignee when there is no completer", ctx do
+      task = reviewed(ctx, %{completed_by_id: nil, assigned_to_id: ctx.editor.id})
+
+      assert :ok = Events.task_reviewed(task, ctx.owner)
+      assert [%Notification{user_id: user_id}] = rows(:task_reviewed)
+      assert user_id == ctx.editor.id
+    end
+
+    test "never notifies the reviewer, with no further fallback", ctx do
+      own_work = reviewed(ctx, %{completed_by_id: ctx.owner.id, assigned_to_id: ctx.editor.id})
+      nobody = reviewed(ctx, %{completed_by_id: nil, assigned_to_id: nil})
+
+      assert :ok = Events.task_reviewed(own_work, ctx.owner)
+      assert :ok = Events.task_reviewed(nobody, ctx.owner)
+      assert rows(:task_reviewed) == []
+    end
+
+    test "does nothing for a task with no review", ctx do
+      task = reviewed(ctx, %{completed_by_id: ctx.editor.id, reviewed_at: nil})
+
+      assert :ok = Events.task_reviewed(task, ctx.owner)
+      assert rows(:task_reviewed) == []
+    end
+
+    test "a change request carries the notes; an approval never carries old notes", ctx do
+      changes =
+        reviewed(ctx, %{
+          completed_by_id: ctx.editor.id,
+          review_status: :changes_requested,
+          review_notes: "  Add a test  "
+        })
+
+      approved =
+        reviewed(ctx, %{
+          completed_by_id: ctx.reader.id,
+          review_notes: "Stale notes from an earlier request"
+        })
+
+      :ok = Events.task_reviewed(changes, ctx.owner)
+      :ok = Events.task_reviewed(approved, ctx.owner)
+
+      by_user = :task_reviewed |> rows() |> Map.new(&{&1.user_id, &1})
+
+      assert by_user[ctx.editor.id].metadata == %{"outcome" => "changes_requested"}
+      assert by_user[ctx.editor.id].body == "Add a test"
+      assert by_user[ctx.reader.id].metadata == %{"outcome" => "approved"}
+      assert is_nil(by_user[ctx.reader.id].body)
+    end
+
+    test "truncates notes to 500 characters", ctx do
+      task =
+        reviewed(ctx, %{
+          completed_by_id: ctx.editor.id,
+          review_status: :changes_requested,
+          review_notes: String.duplicate("x", 600)
+        })
+
+      :ok = Events.task_reviewed(task, ctx.owner)
+
+      assert [%Notification{body: body}] = rows(:task_reviewed)
+      assert String.length(body) == 500
+    end
+
+    test "a retry of the same review notifies once", ctx do
+      task = reviewed(ctx, %{completed_by_id: ctx.editor.id})
+
+      :ok = Events.task_reviewed(task, ctx.owner)
+      :ok = Events.task_reviewed(task, ctx.owner)
+
+      assert [_one] = rows(:task_reviewed)
+    end
+
+    test "does not notify a completer who is no longer on the board", ctx do
+      task = reviewed(ctx, %{completed_by_id: user_fixture().id})
+
+      assert :ok = Events.task_reviewed(task, ctx.owner)
+      assert rows(:task_reviewed) == []
+    end
+  end
+
+  describe "task_unclaimed/3" do
+    defp released(ctx, attrs) do
+      struct(ctx.task, Map.merge(%{claimed_at: ~U[2026-02-03 04:05:06Z]}, attrs))
+    end
+
+    test "notifies the unclaiming user and the creator with the reason", ctx do
+      user = %{ctx.owner | name: "Agent Owner"}
+      task = released(ctx, %{created_by_id: ctx.editor.id})
+
+      assert :ok = Events.task_unclaimed(task, user, "Blocked on <credentials>")
+
+      assert [first, second] = rows(:task_unclaimed)
+
+      assert Enum.sort([first.user_id, second.user_id]) ==
+               Enum.sort([ctx.owner.id, ctx.editor.id])
+
+      for n <- [first, second] do
+        assert n.body == "Blocked on <credentials>"
+        assert n.actor_name == "Agent Owner"
+        assert n.title == "#{task.identifier}: Ship the inbox"
+        assert n.url_path == "/boards/#{ctx.board.id}/tasks/#{task.id}/edit"
+        assert n.dedupe_key == "task_unclaimed:#{task.id}:#{DateTime.to_unix(task.claimed_at)}"
+        assert_enqueued(worker: EmailWorker, args: %{notification_id: n.id})
+      end
+    end
+
+    test "de-duplicates when the unclaiming user created the task", ctx do
+      task = released(ctx, %{created_by_id: ctx.owner.id})
+
+      assert :ok = Events.task_unclaimed(task, ctx.owner, "why")
+      assert [%Notification{user_id: user_id}] = rows(:task_unclaimed)
+      assert user_id == ctx.owner.id
+    end
+
+    test "a missing, blank or non-text reason stores no body", ctx do
+      for {reason, index} <- Enum.with_index([nil, "   ", %{"a" => 1}, 42]) do
+        task = released(ctx, %{created_by_id: nil, claimed_at: DateTime.from_unix!(index)})
+        assert :ok = Events.task_unclaimed(task, ctx.owner, reason)
+      end
+
+      notifications = rows(:task_unclaimed)
+      assert length(notifications) == 4
+      assert Enum.all?(notifications, &is_nil(&1.body))
+    end
+
+    test "truncates the reason to 500 characters", ctx do
+      task = released(ctx, %{created_by_id: nil})
+
+      :ok = Events.task_unclaimed(task, ctx.owner, String.duplicate("y", 600))
+
+      assert [%Notification{body: body}] = rows(:task_unclaimed)
+      assert String.length(body) == 500
+    end
+
+    test "bounds a reason made of combining marks by code points, not graphemes", ctx do
+      task = released(ctx, %{created_by_id: nil})
+      reason = "a" <> String.duplicate("\u0301", 10_000)
+
+      :ok = Events.task_unclaimed(task, ctx.owner, reason)
+
+      assert [%Notification{body: body}] = rows(:task_unclaimed)
+      assert length(String.codepoints(body)) == 500
+      assert byte_size(body) <= 2_000
+    end
+
+    test "a retry of the same unclaim notifies each recipient once", ctx do
+      task = released(ctx, %{created_by_id: ctx.editor.id})
+
+      :ok = Events.task_unclaimed(task, ctx.owner, "why")
+      :ok = Events.task_unclaimed(task, ctx.owner, "why")
+
+      assert length(rows(:task_unclaimed)) == 2
+    end
+
+    test "falls back to updated_at when the task was never claimed through the API", ctx do
+      task = released(ctx, %{created_by_id: nil, claimed_at: nil})
+
+      :ok = Events.task_unclaimed(task, ctx.owner, nil)
+
+      assert [%Notification{dedupe_key: key}] = rows(:task_unclaimed)
+      unix = task.updated_at |> DateTime.from_naive!("Etc/UTC") |> DateTime.to_unix()
+      assert key == "task_unclaimed:#{task.id}:#{unix}"
+    end
+
+    test "does not notify a creator who is no longer on the board", ctx do
+      task = released(ctx, %{created_by_id: user_fixture().id})
+
+      :ok = Events.task_unclaimed(task, ctx.owner, "why")
+
+      assert [%Notification{user_id: user_id}] = rows(:task_unclaimed)
+      assert user_id == ctx.owner.id
+    end
+  end
+
   describe "failure handling" do
     test "an error from notify/3 is logged with ids only and returns :ok", ctx do
       bogus = %{ctx.task | id: -1, assigned_to_id: ctx.editor.id}
@@ -405,6 +611,80 @@ defmodule Kanban.Notifications.EventsTest do
 
       assert log =~ "notification task_assigned not emitted"
     end
+
+    test "review and unclaim failures are logged without free text and return :ok", ctx do
+      break_notification_inserts()
+
+      task = %{
+        ctx.task
+        | completed_by_id: ctx.editor.id,
+          review_status: :changes_requested,
+          review_notes: "secret review notes",
+          reviewed_at: ~U[2026-02-03 04:05:06Z],
+          claimed_at: ~U[2026-02-03 04:05:06Z]
+      }
+
+      log =
+        capture_log([level: :warning], fn ->
+          assert :ok = Events.task_reviewed(task, ctx.owner)
+          assert :ok = Events.task_unclaimed(task, ctx.owner, "secret unclaim reason")
+        end)
+
+      assert log =~ "notification task_reviewed not emitted for task #{task.id}"
+      assert log =~ "notification task_unclaimed not emitted for task #{task.id}"
+      refute log =~ "Ship the inbox"
+      refute log =~ "secret"
+    end
+
+    test "a failing emitter never changes approve_review's or request_changes_review's result",
+         ctx do
+      scope = Scope.for_user(ctx.owner)
+      approve = pending_review_task(ctx)
+      changes = pending_review_task(ctx)
+      break_notification_inserts()
+
+      log =
+        capture_log([level: :warning], fn ->
+          assert {:ok, %Tasks.Task{review_status: :approved}} =
+                   Reviews.approve_review(scope, approve)
+
+          assert {:ok, %Tasks.Task{review_status: :changes_requested}} =
+                   Reviews.request_changes_review(scope, changes, review_notes: "Fix it")
+        end)
+
+      assert log =~ "notification task_reviewed not emitted for task #{approve.id}"
+      assert log =~ "notification task_reviewed not emitted for task #{changes.id}"
+    end
+
+    test "a failing emitter never changes unclaim_task's result", ctx do
+      task = task_fixture(ctx.cols["Ready"], %{status: :open, created_by_id: ctx.editor.id})
+
+      {:ok, claimed, _hook} =
+        Tasks.claim_next_task([], ctx.owner, ctx.board.id, task.identifier, "Agent")
+
+      break_notification_inserts()
+
+      log =
+        capture_log([level: :warning], fn ->
+          assert {:ok, %Tasks.Task{status: :open}} =
+                   AgentWorkflow.unclaim_task(claimed, ctx.owner, "why")
+        end)
+
+      assert log =~ "notification task_unclaimed not emitted for task #{task.id}"
+    end
+  end
+
+  defp pending_review_task(ctx) do
+    task = task_fixture(ctx.cols["Review"])
+
+    {:ok, task} =
+      Tasks.update_task(task, %{
+        needs_review: true,
+        completed_by_agent: "Claude",
+        completed_by_id: ctx.editor.id
+      })
+
+    task
   end
 
   defp complete_params do

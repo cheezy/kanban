@@ -73,6 +73,56 @@ defmodule KanbanWeb.NotificationLabelsTest do
              }) == nil
     end
 
+    test "words a review outcome" do
+      approved = %Notification{event_type: :task_reviewed, metadata: %{"outcome" => "approved"}}
+
+      changes = %Notification{
+        event_type: :task_reviewed,
+        metadata: %{"outcome" => "changes_requested"}
+      }
+
+      assert NotificationLabels.detail(approved) == "Approved"
+      assert NotificationLabels.detail(changes) == "Changes requested"
+
+      for metadata <- [%{"outcome" => "other"}, %{}] do
+        assert NotificationLabels.detail(%Notification{
+                 event_type: :task_reviewed,
+                 metadata: metadata
+               }) == nil
+      end
+    end
+
+    test "says an unclaimed task went back to Ready, introducing a reason body" do
+      with_reason = %Notification{event_type: :task_unclaimed, body: "blocked"}
+
+      assert NotificationLabels.detail(with_reason) == "Returned to Ready. Reason:"
+
+      for body <- [nil, ""] do
+        assert NotificationLabels.detail(%Notification{event_type: :task_unclaimed, body: body}) ==
+                 "Returned to Ready"
+      end
+    end
+
+    test "translates the review and unclaim wording in every locale" do
+      notifications = [
+        %Notification{event_type: :task_reviewed, metadata: %{"outcome" => "approved"}},
+        %Notification{event_type: :task_reviewed, metadata: %{"outcome" => "changes_requested"}},
+        %Notification{event_type: :task_unclaimed, body: "blocked"},
+        %Notification{event_type: :task_unclaimed}
+      ]
+
+      for notification <- notifications, locale <- ~w(de es fr ja pt zh) do
+        english = NotificationLabels.detail(notification)
+
+        translated =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            NotificationLabels.detail(notification)
+          end)
+
+        refute translated == english, "#{english} not translated for #{locale}"
+      end
+    end
+
     test "is translated" do
       notification = after_goal_failed(%{"exit_code" => 2, "duration_ms" => 10})
       english = NotificationLabels.detail(notification)
