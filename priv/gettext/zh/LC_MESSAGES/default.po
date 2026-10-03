@@ -337,7 +337,7 @@ msgstr "删除任务失败"
 msgid "Save Task"
 msgstr "保存任务"
 
-#: lib/kanban_web/live/task_live/form_component.ex:427
+#: lib/kanban_web/live/task_live/form_component.ex:429
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "任务创建成功"
@@ -368,7 +368,7 @@ msgstr "标题"
 msgid "Update task details"
 msgstr "更新任务详情"
 
-#: lib/kanban_web/live/task_live/form_component.ex:445
+#: lib/kanban_web/live/task_live/form_component.ex:447
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "此列已达到在制品限制"
@@ -540,7 +540,7 @@ msgstr "添加评论"
 msgid "Adding..."
 msgstr "正在添加..."
 
-#: lib/kanban_web/live/task_live/form_component.ex:516
+#: lib/kanban_web/live/task_live/form_component.ex:518
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr "评论添加成功"
@@ -1858,7 +1858,7 @@ msgstr "Stride 不只是一个看板——它从底层设计起就支持人类�
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "这种协作方式让团队可以将重复的编码任务委托给 AI 代理,同时让人类专注于高层决策、架构以及在合并前审核 AI 生成的代码。"
 
-#: lib/kanban_web/live/task_live/form_component.ex:449
+#: lib/kanban_web/live/task_live/form_component.ex:451
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "无法添加任务:此列已达到 WIP 上限"
@@ -1879,8 +1879,8 @@ msgid "Note about this file"
 msgstr "关于此文件的备注"
 
 #: lib/kanban_web/live/task_live/form_component.ex:257
-#: lib/kanban_web/live/task_live/form_component.ex:392
-#: lib/kanban_web/live/task_live/form_component.ex:436
+#: lib/kanban_web/live/task_live/form_component.ex:394
+#: lib/kanban_web/live/task_live/form_component.ex:438
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "请修复下面的错误"
@@ -1974,14 +1974,14 @@ msgstr "任务归档成功"
 msgid "Task unarchived successfully"
 msgstr "已成功取消归档任务"
 
-#: lib/kanban_web/live/task_live/form_component.ex:296
-#: lib/kanban_web/live/task_live/form_component.ex:330
+#: lib/kanban_web/live/task_live/form_component.ex:298
+#: lib/kanban_web/live/task_live/form_component.ex:332
 #, elixir-autogen, elixir-format
 msgid "Column does not belong to this board"
 msgstr "该列不属于此看板"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:34
-#: lib/kanban_web/live/task_live/form_component.ex:300
+#: lib/kanban_web/live/task_live/form_component.ex:302
 #, elixir-autogen, elixir-format
 msgid "Security error: Invalid column"
 msgstr "安全错误:无效的列"
@@ -3065,7 +3065,7 @@ msgstr "速度"
 msgid "was born from our hands-on work with two AI tools —"
 msgstr "源自我们对两款 AI 工具的实践工作 —"
 
-#: lib/kanban_web/live/task_live/form_component.ex:366
+#: lib/kanban_web/live/task_live/form_component.ex:368
 #, elixir-autogen, elixir-format
 msgid "Assignee does not have access to this board"
 msgstr "被指派人无法访问此看板"
@@ -3100,7 +3100,7 @@ msgstr "提交问题失败。请稍后再试。"
 msgid "Invalid field name"
 msgstr "无效的字段名"
 
-#: lib/kanban_web/live/task_live/form_component.ex:348
+#: lib/kanban_web/live/task_live/form_component.ex:350
 #, elixir-autogen, elixir-format
 msgid "Parent goal does not belong to this board"
 msgstr "父目标不属于此看板"

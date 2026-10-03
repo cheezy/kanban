@@ -1675,6 +1675,57 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
+  describe "handle_event save for edit task keeps unedited map keys" do
+    test "a save keeps testing_strategy keys the form has no inputs for" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          testing_strategy: %{
+            "unit_tests" => ["Unit"],
+            "edge_cases" => ["Board with zero completed tasks"],
+            "coverage_target" => "All new metric query functions covered"
+          }
+        })
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: user},
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{
+        "title" => "Renamed",
+        "testing_strategy" => %{
+          "unit_tests" => ["", "Unit"],
+          "integration_tests" => [""],
+          "manual_tests" => [""]
+        }
+      }
+
+      {:noreply, _socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      saved = Kanban.Repo.get!(Tasks.Task, task.id)
+      assert saved.title == "Renamed"
+      assert saved.testing_strategy["unit_tests"] == ["Unit"]
+      assert saved.testing_strategy["edge_cases"] == ["Board with zero completed tasks"]
+
+      assert saved.testing_strategy["coverage_target"] ==
+               "All new metric query functions covered"
+    end
+  end
+
   describe "security: cross-board task creation prevention" do
     test "prevents creating task in another user's board column" do
       # Setup: Create two users with their own boards

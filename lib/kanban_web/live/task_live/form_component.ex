@@ -261,6 +261,8 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   defp save_task(socket, :edit_task, task_params) do
+    task_params = ParamNormalizer.keep_stored_map_keys(task_params, socket.assigns.task)
+
     # Security: every relational field that the user can change via the
     # form must be verified to live on the current board. The existing
     # column_id check is preserved; parent_id and assigned_to_id are now

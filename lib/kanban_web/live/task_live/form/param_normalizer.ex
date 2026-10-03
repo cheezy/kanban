@@ -11,6 +11,14 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
 
   @array_fields ~w[dependencies required_capabilities technology_requirements pitfalls out_of_scope security_considerations]
 
+  # Map fields the form edits only partly: it has inputs for some keys (e.g.
+  # testing_strategy's unit/integration/manual tests) but not others
+  # (edge_cases, coverage_target), which tasks created through the API carry.
+  @partly_edited_map_fields [
+    testing_strategy: "testing_strategy",
+    integration_points: "integration_points"
+  ]
+
   @doc """
   Normalize array and map fields in the task params before changeset construction.
   """
@@ -19,6 +27,26 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
     |> normalize_array_fields(@array_fields)
     |> normalize_map_fields()
   end
+
+  @doc """
+  Merges the submitted keys of partly-edited map fields over the task's stored
+  map, so a save keeps the keys the form has no inputs for instead of
+  replacing the whole map. Fields the form did not submit are left alone.
+  """
+  def keep_stored_map_keys(params, task) do
+    Enum.reduce(@partly_edited_map_fields, params, fn {key, field}, acc ->
+      merge_stored(acc, field, Map.get(task, key))
+    end)
+  end
+
+  defp merge_stored(params, field, %{} = stored) do
+    case Map.get(params, field) do
+      %{} = submitted -> Map.put(params, field, Map.merge(stored, submitted))
+      _ -> params
+    end
+  end
+
+  defp merge_stored(params, _field, _stored), do: params
 
   defp normalize_array_fields(params, fields) do
     Enum.reduce(fields, params, fn field, acc ->

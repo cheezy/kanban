@@ -337,7 +337,7 @@ msgstr ""
 msgid "Save Task"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:427
+#: lib/kanban_web/live/task_live/form_component.ex:429
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr ""
@@ -368,7 +368,7 @@ msgstr ""
 msgid "Update task details"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:445
+#: lib/kanban_web/live/task_live/form_component.ex:447
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr ""
@@ -540,7 +540,7 @@ msgstr ""
 msgid "Adding..."
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:516
+#: lib/kanban_web/live/task_live/form_component.ex:518
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr ""
@@ -1858,7 +1858,7 @@ msgstr ""
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:449
+#: lib/kanban_web/live/task_live/form_component.ex:451
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr ""
@@ -1879,8 +1879,8 @@ msgid "Note about this file"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.ex:257
-#: lib/kanban_web/live/task_live/form_component.ex:392
-#: lib/kanban_web/live/task_live/form_component.ex:436
+#: lib/kanban_web/live/task_live/form_component.ex:394
+#: lib/kanban_web/live/task_live/form_component.ex:438
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr ""
@@ -1974,14 +1974,14 @@ msgstr "Task archived successfully"
 msgid "Task unarchived successfully"
 msgstr "Task unarchived successfully"
 
-#: lib/kanban_web/live/task_live/form_component.ex:296
-#: lib/kanban_web/live/task_live/form_component.ex:330
+#: lib/kanban_web/live/task_live/form_component.ex:298
+#: lib/kanban_web/live/task_live/form_component.ex:332
 #, elixir-autogen, elixir-format
 msgid "Column does not belong to this board"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:34
-#: lib/kanban_web/live/task_live/form_component.ex:300
+#: lib/kanban_web/live/task_live/form_component.ex:302
 #, elixir-autogen, elixir-format
 msgid "Security error: Invalid column"
 msgstr ""
@@ -3068,7 +3068,7 @@ msgstr ""
 msgid "was born from our hands-on work with two AI tools —"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:366
+#: lib/kanban_web/live/task_live/form_component.ex:368
 #, elixir-autogen, elixir-format
 msgid "Assignee does not have access to this board"
 msgstr ""
@@ -3103,7 +3103,7 @@ msgstr ""
 msgid "Invalid field name"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:348
+#: lib/kanban_web/live/task_live/form_component.ex:350
 #, elixir-autogen, elixir-format
 msgid "Parent goal does not belong to this board"
 msgstr ""

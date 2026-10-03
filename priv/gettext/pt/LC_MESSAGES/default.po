@@ -337,7 +337,7 @@ msgstr "Falha ao excluir tarefa"
 msgid "Save Task"
 msgstr "Salvar Tarefa"
 
-#: lib/kanban_web/live/task_live/form_component.ex:427
+#: lib/kanban_web/live/task_live/form_component.ex:429
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "Tarefa criada com sucesso"
@@ -368,7 +368,7 @@ msgstr "Título"
 msgid "Update task details"
 msgstr "Atualizar detalhes da tarefa"
 
-#: lib/kanban_web/live/task_live/form_component.ex:445
+#: lib/kanban_web/live/task_live/form_component.ex:447
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "Limite WIP atingido para esta coluna"
@@ -540,7 +540,7 @@ msgstr "Adicionar um comentário"
 msgid "Adding..."
 msgstr "Adicionando..."
 
-#: lib/kanban_web/live/task_live/form_component.ex:516
+#: lib/kanban_web/live/task_live/form_component.ex:518
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr "Comentário adicionado com sucesso"
@@ -1858,7 +1858,7 @@ msgstr "O Stride é mais do que um quadro kanban — foi projetado desde o iníc
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "Essa abordagem colaborativa permite que as equipes deleguem tarefas repetitivas de codificação a agentes de IA enquanto humanos se concentram em decisões de alto nível, arquitetura e na revisão do código gerado pela IA antes do merge."
 
-#: lib/kanban_web/live/task_live/form_component.ex:449
+#: lib/kanban_web/live/task_live/form_component.ex:451
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "Não é possível adicionar a tarefa: o limite WIP desta coluna foi atingido"
@@ -1879,8 +1879,8 @@ msgid "Note about this file"
 msgstr "Nota sobre este arquivo"
 
 #: lib/kanban_web/live/task_live/form_component.ex:257
-#: lib/kanban_web/live/task_live/form_component.ex:392
-#: lib/kanban_web/live/task_live/form_component.ex:436
+#: lib/kanban_web/live/task_live/form_component.ex:394
+#: lib/kanban_web/live/task_live/form_component.ex:438
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "Por favor corrija os erros abaixo"
@@ -1974,14 +1974,14 @@ msgstr "Tarefa arquivada com sucesso"
 msgid "Task unarchived successfully"
 msgstr "Tarefa desarquivada com sucesso"
 
-#: lib/kanban_web/live/task_live/form_component.ex:296
-#: lib/kanban_web/live/task_live/form_component.ex:330
+#: lib/kanban_web/live/task_live/form_component.ex:298
+#: lib/kanban_web/live/task_live/form_component.ex:332
 #, elixir-autogen, elixir-format
 msgid "Column does not belong to this board"
 msgstr "A coluna não pertence a este quadro"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:34
-#: lib/kanban_web/live/task_live/form_component.ex:300
+#: lib/kanban_web/live/task_live/form_component.ex:302
 #, elixir-autogen, elixir-format
 msgid "Security error: Invalid column"
 msgstr "Erro de segurança: coluna inválida"
@@ -3068,7 +3068,7 @@ msgstr "velocidade"
 msgid "was born from our hands-on work with two AI tools —"
 msgstr "nasceu do nosso trabalho prático com duas ferramentas de IA —"
 
-#: lib/kanban_web/live/task_live/form_component.ex:366
+#: lib/kanban_web/live/task_live/form_component.ex:368
 #, elixir-autogen, elixir-format
 msgid "Assignee does not have access to this board"
 msgstr "O responsável não tem acesso a este quadro"
@@ -3103,7 +3103,7 @@ msgstr "Falha ao enviar o problema. Tente novamente mais tarde."
 msgid "Invalid field name"
 msgstr "Nome de campo inválido"
 
-#: lib/kanban_web/live/task_live/form_component.ex:348
+#: lib/kanban_web/live/task_live/form_component.ex:350
 #, elixir-autogen, elixir-format
 msgid "Parent goal does not belong to this board"
 msgstr "A meta principal não pertence a este quadro"
