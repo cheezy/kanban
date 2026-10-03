@@ -26,13 +26,13 @@ defmodule KanbanWeb.UserLive.Settings do
         <div class="flex flex-col md:flex-row gap-4 md:gap-7 flex-1 min-h-0">
           <nav
             aria-label={gettext("Settings sections")}
-            class="flex flex-row md:flex-col gap-1 md:w-[184px] md:flex-shrink-0 md:pt-1"
+            class="flex flex-row flex-wrap md:flex-nowrap md:flex-col gap-1 md:w-[184px] md:flex-shrink-0 md:pt-1"
           >
             <div
               role="tablist"
               aria-orientation="vertical"
               aria-label={gettext("Settings sections")}
-              class="flex flex-row md:flex-col gap-1 flex-[2] md:flex-initial"
+              class="flex flex-row md:flex-col gap-1 basis-full min-[360px]:basis-0 min-[360px]:flex-[2] md:flex-initial"
             >
               <.section_link
                 section={:profile}
@@ -47,11 +47,11 @@ defmodule KanbanWeb.UserLive.Settings do
                 hint={gettext("change credentials")}
               />
             </div>
-            <%!-- A separate page (non-sudo session), so a link outside the tablist. --%>
+            <%!-- A separate page (non-sudo session), so a link outside the tablist; below 360px it takes its own row. --%>
             <.link
               navigate={~p"/users/notifications"}
               id="settings-notifications-link"
-              class="flex-1 md:flex-initial"
+              class="basis-full min-[360px]:basis-0 min-[360px]:flex-1 md:flex-initial"
               style="display: flex; flex-direction: column; gap: 1px; padding: 7px 10px; border-radius: 5px; min-width: 0; text-decoration: none; background: transparent;"
             >
               <span style="font-size: 12.5px; font-weight: 500; color: var(--ink-2);">

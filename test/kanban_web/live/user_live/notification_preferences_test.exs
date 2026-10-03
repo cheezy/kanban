@@ -87,6 +87,16 @@ defmodule KanbanWeb.UserLive.NotificationPreferencesTest do
       assert has_element?(view, "#pref-task_reviewed-name", "Review results")
     end
 
+    test "toggle forms drop the checkbox spacing and keep a 44px phone tap height",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+
+      for form <- ["#pref-task_assigned", "#pref-weekly_digest"] do
+        assert has_element?(view, ~s(#{form}[class*="[&_.fieldset]:m-0"]))
+        assert has_element?(view, ~s(#{form}[class*="[&_label]:min-h-11"]))
+      end
+    end
+
     test "reflects saved preferences", %{conn: conn, user: user} do
       preference_fixture(user, :task_assigned, %{in_app: false, email: false})
 

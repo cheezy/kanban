@@ -68,6 +68,8 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       assert has_element?(lv, ~s(nav a#settings-notifications-link[href="/users/notifications"]))
       # the link leaves the page, so it is not one of the tablist's tabs
       refute has_element?(lv, ~s([role="tablist"] #settings-notifications-link))
+      # below 360px the link takes its own row so the tabs keep their width
+      assert has_element?(lv, ~s(#settings-notifications-link[class*="basis-full"]))
       assert has_element?(lv, ~s([role="tablist"] button[role="tab"]), "Profile")
 
       assert {:error, {:live_redirect, %{to: "/users/notifications"}}} =

@@ -85,7 +85,7 @@ msgstr "退出"
 #: lib/kanban_web/components/layouts.ex:191
 #: lib/kanban_web/components/layouts.ex:192
 #: lib/kanban_web/components/nav_components.ex:132
-#: lib/kanban_web/live/user_live/notification_preferences.ex:107
+#: lib/kanban_web/live/user_live/notification_preferences.ex:115
 #: lib/kanban_web/live/user_live/settings.ex:16
 #, elixir-autogen, elixir-format
 msgid "Settings"
@@ -117,7 +117,7 @@ msgstr "正在创建账户..."
 #: lib/kanban_web/live/user_live/forgot_password.ex:40
 #: lib/kanban_web/live/user_live/forgot_password.ex:47
 #: lib/kanban_web/live/user_live/login.ex:42
-#: lib/kanban_web/live/user_live/notification_preferences.ex:164
+#: lib/kanban_web/live/user_live/notification_preferences.ex:177
 #: lib/kanban_web/live/user_live/registration.ex:57
 #: lib/kanban_web/live/user_live/settings.ex:96
 #, elixir-autogen, elixir-format
@@ -8986,7 +8986,7 @@ msgstr "退订"
 msgid "Unsubscribe from these emails?"
 msgstr "退订此类邮件？"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:170
+#: lib/kanban_web/live/user_live/notification_preferences.ex:183
 #: lib/kanban_web/notification_labels.ex:29
 #, elixir-autogen, elixir-format
 msgid "Weekly digest"
@@ -9067,7 +9067,7 @@ msgstr "未找到通知。"
 #: lib/kanban_web/live/notification_live/index.ex:33
 #: lib/kanban_web/live/notification_live/index.html.heex:5
 #: lib/kanban_web/live/notification_live/index.html.heex:15
-#: lib/kanban_web/live/user_live/notification_preferences.ex:110
+#: lib/kanban_web/live/user_live/notification_preferences.ex:118
 #: lib/kanban_web/live/user_live/settings.ex:58
 #, elixir-autogen, elixir-format
 msgid "Notifications"
@@ -9109,7 +9109,7 @@ msgstr "有可由你审阅的任务正在审阅队列中等待。"
 msgid "A weekly summary of activity on your boards."
 msgstr "你的看板活动的每周摘要。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:97
+#: lib/kanban_web/live/user_live/notification_preferences.ex:102
 #, elixir-autogen, elixir-format
 msgid "Account"
 msgstr "账户"
@@ -9124,43 +9124,43 @@ msgstr "代理释放了它为你认领的任务。"
 msgid "An agent's claim on your task expires before it is finished."
 msgstr "代理对你任务的认领在完成前已过期。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:119
+#: lib/kanban_web/live/user_live/notification_preferences.ex:127
 #, elixir-autogen, elixir-format
 msgid "Choose which events reach you and how. Changes save as soon as you toggle them."
 msgstr "选择哪些事件以何种方式通知你。切换后会立即保存。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:71
+#: lib/kanban_web/live/user_live/notification_preferences.ex:76
 #, elixir-autogen, elixir-format
 msgid "Could not save that preference."
 msgstr "无法保存该偏好设置。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:177
+#: lib/kanban_web/live/user_live/notification_preferences.ex:195
 #, elixir-autogen, elixir-format
 msgid "Email me a weekly summary of activity on my boards"
 msgstr "每周通过电子邮件向我发送看板活动摘要"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:96
+#: lib/kanban_web/live/user_live/notification_preferences.ex:101
 #, elixir-autogen, elixir-format
 msgid "Goals and targets"
 msgstr "目标与交付目标"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:156
+#: lib/kanban_web/live/user_live/notification_preferences.ex:169
 #, elixir-autogen, elixir-format
 msgid "In-app"
 msgstr "应用内"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:33
-#: lib/kanban_web/live/user_live/notification_preferences.ex:116
+#: lib/kanban_web/live/user_live/notification_preferences.ex:38
+#: lib/kanban_web/live/user_live/notification_preferences.ex:124
 #, elixir-autogen, elixir-format
 msgid "Notification preferences"
 msgstr "通知偏好设置"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:63
+#: lib/kanban_web/live/user_live/notification_preferences.ex:68
 #, elixir-autogen, elixir-format
 msgid "Notification preferences saved."
 msgstr "通知偏好设置已保存。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:94
+#: lib/kanban_web/live/user_live/notification_preferences.ex:99
 #, elixir-autogen, elixir-format
 msgid "Reviews"
 msgstr "审阅"
@@ -9180,13 +9180,13 @@ msgstr "有人评论了你的任务。"
 msgid "Someone mentions you in a comment."
 msgstr "有人在评论中提到了你。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:95
+#: lib/kanban_web/live/user_live/notification_preferences.ex:100
 #, elixir-autogen, elixir-format
 msgid "Tasks and agents"
 msgstr "任务与代理"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:42
-#: lib/kanban_web/live/user_live/notification_preferences.ex:54
+#: lib/kanban_web/live/user_live/notification_preferences.ex:47
+#: lib/kanban_web/live/user_live/notification_preferences.ex:59
 #, elixir-autogen, elixir-format
 msgid "Unknown notification type."
 msgstr "未知的通知类型。"

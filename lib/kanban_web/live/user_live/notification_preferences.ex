@@ -22,6 +22,11 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   ]
   @row_types @groups |> Keyword.values() |> List.flatten()
 
+  # The core checkbox wraps itself in a padded, bottom-margined .fieldset,
+  # which left the toggles off-centre and the row gaps uneven. Drop that
+  # spacing here and give each label a 44px tap height on phones.
+  @toggle_layout "[&_.fieldset]:m-0 [&_.fieldset]:p-0 [&_label]:flex [&_label]:items-center [&_label]:min-h-11 sm:[&_label]:min-h-0"
+
   @doc false
   # Every event type except :weekly_digest, which has its own toggle.
   def row_types, do: @row_types
@@ -98,7 +103,10 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
 
   @impl true
   def render(assigns) do
-    assigns = assign(assigns, :groups, groups())
+    assigns =
+      assigns
+      |> assign(:groups, groups())
+      |> assign(:toggle_layout, @toggle_layout)
 
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
@@ -145,7 +153,12 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
                   {NotificationLabels.description(type)}
                 </div>
               </div>
-              <form id={"pref-#{type}"} phx-change="save" class="flex gap-5" style="margin: 0;">
+              <form
+                id={"pref-#{type}"}
+                phx-change="save"
+                class={["flex gap-5", @toggle_layout]}
+                style="margin: 0;"
+              >
                 <input type="hidden" name="event_type" value={type} />
                 <.input
                   type="checkbox"
@@ -168,7 +181,12 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
           </.pref_card>
 
           <.pref_card id="group-digest" title={gettext("Weekly digest")}>
-            <form id="pref-weekly_digest" phx-change="save_digest" style="margin: 0;">
+            <form
+              id="pref-weekly_digest"
+              phx-change="save_digest"
+              class={@toggle_layout}
+              style="margin: 0;"
+            >
               <.input
                 type="checkbox"
                 id="pref-weekly_digest-email"
