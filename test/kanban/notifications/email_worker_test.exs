@@ -248,4 +248,15 @@ defmodule Kanban.Notifications.EmailWorkerTest do
       refute_email_sent()
     end
   end
+
+  describe "failure_kind/1" do
+    test "maps mailer errors to bounded kinds without the raw reason" do
+      assert EmailWorker.failure_kind({:permanent_failure, "h", "550 <a@b>"}) ==
+               :permanent_failure
+
+      assert EmailWorker.failure_kind({:temporary_failure, "h", "421"}) == :temporary_failure
+      assert EmailWorker.failure_kind({:retries_exceeded, :timeout}) == :retries_exceeded
+      assert EmailWorker.failure_kind(:econnrefused) == :delivery_failed
+    end
+  end
 end

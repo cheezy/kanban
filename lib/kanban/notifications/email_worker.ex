@@ -114,10 +114,17 @@ defmodule Kanban.Notifications.EmailWorker do
     end
   end
 
-  defp failure_kind({:permanent_failure, _host, _reply}), do: :permanent_failure
-  defp failure_kind({:temporary_failure, _host, _reply}), do: :temporary_failure
-  defp failure_kind({:retries_exceeded, _detail}), do: :retries_exceeded
-  defp failure_kind(_reason), do: :delivery_failed
+  @doc """
+  Maps a mailer error to a bounded failure kind that is safe to log and to
+  return to Oban. The raw reason is dropped because SMTP replies often echo
+  the recipient address. `Kanban.Notifications.DigestWorker` shares it.
+  """
+  @spec failure_kind(term()) ::
+          :permanent_failure | :temporary_failure | :retries_exceeded | :delivery_failed
+  def failure_kind({:permanent_failure, _host, _reply}), do: :permanent_failure
+  def failure_kind({:temporary_failure, _host, _reply}), do: :temporary_failure
+  def failure_kind({:retries_exceeded, _detail}), do: :retries_exceeded
+  def failure_kind(_reason), do: :delivery_failed
 
   defp stamp_emailed(%Notification{id: id}) do
     Notification

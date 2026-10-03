@@ -9,7 +9,8 @@ defmodule KanbanWeb.Emails.NotificationEmail do
   content unescaped.
 
   Every email carries a signed one-click unsubscribe link in the footer and
-  in the `List-Unsubscribe` / `List-Unsubscribe-Post` headers (RFC 8058).
+  in the `List-Unsubscribe` / `List-Unsubscribe-Post` headers (RFC 8058),
+  built by `KanbanWeb.Emails.EmailHelpers`.
 
   Emails render in the calling process's Gettext locale; Oban jobs run with
   the default locale.
@@ -18,33 +19,12 @@ defmodule KanbanWeb.Emails.NotificationEmail do
   use Gettext, backend: KanbanWeb.Gettext
 
   import Swoosh.Email
+  import KanbanWeb.Emails.EmailHelpers, only: [escape: 1]
 
   alias Kanban.Accounts.User
   alias Kanban.Notifications.Notification
+  alias KanbanWeb.Emails.EmailHelpers
   alias KanbanWeb.NotificationLabels
-  alias KanbanWeb.UnsubscribeToken
-
-  # Module attributes cannot use ~p, so these app-relative paths are plain
-  # strings; notification_email_test.exs pins the rendered hrefs.
-  # The token travels as a query parameter, never a path segment, so request
-  # logs (which record the path) never contain it; "token" is listed in
-  # :filter_parameters so logged params are redacted too.
-  @unsubscribe_path "/notifications/unsubscribe?token="
-  # RFC 8058: mail providers POST to the List-Unsubscribe URL itself, so the
-  # header points at the session-less one-click endpoint while the footer
-  # link opens the confirmation page.
-  @one_click_path "/notifications/unsubscribe/one-click?token="
-  @preferences_path "/users/notifications"
-  @from {"Stride Support", "noreply@stridelikeaboss.com"}
-
-  # Email clients cannot resolve the app's CSS theme tokens, so mail styles use
-  # fixed colors chosen to read on both light and dark mail backgrounds.
-  # dark-mode-ignore: email HTML cannot use the app's CSS variables
-  @button_style "display:inline-block;padding:10px 18px;border-radius:6px;background:#4f46e5;color:#ffffff;text-decoration:none"
-  # dark-mode-ignore: email HTML cannot use the app's CSS variables
-  @rule_style "border:none;border-top:1px solid #d4d4d8;margin:24px 0 12px"
-  # dark-mode-ignore: email HTML cannot use the app's CSS variables
-  @footer_style "font-size:12px;color:#71717a;margin:0"
 
   @doc """
   Builds the email for `notification`, addressed to `user`.
@@ -59,7 +39,7 @@ defmodule KanbanWeb.Emails.NotificationEmail do
 
     new()
     |> to(user.email)
-    |> from(@from)
+    |> from(EmailHelpers.from())
     |> subject("[Stride] " <> heading)
     |> html_body(render_html(heading, lines, urls))
     |> text_body(render_text(heading, lines, urls))
@@ -69,20 +49,15 @@ defmodule KanbanWeb.Emails.NotificationEmail do
   defp put_headers(email, notification, urls) do
     email
     |> header("Message-ID", "<notification-#{notification.id}@stridelikeaboss.com>")
-    |> header("List-Unsubscribe", "<" <> urls.one_click <> ">")
-    |> header("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
+    |> EmailHelpers.put_unsubscribe_headers(urls)
   end
 
   defp urls(notification, user) do
-    base = KanbanWeb.Endpoint.url()
-    token = UnsubscribeToken.sign(user.id, notification.event_type)
+    link = KanbanWeb.Endpoint.url() <> (notification.url_path || "/")
 
-    %{
-      link: base <> (notification.url_path || "/"),
-      unsubscribe: base <> @unsubscribe_path <> URI.encode_www_form(token),
-      one_click: base <> @one_click_path <> URI.encode_www_form(token),
-      preferences: base <> @preferences_path
-    }
+    user.id
+    |> EmailHelpers.unsubscribe_urls(notification.event_type)
+    |> Map.put(:link, link)
   end
 
   defp heading(:review_requested), do: gettext("Review requested")
@@ -137,37 +112,16 @@ defmodule KanbanWeb.Emails.NotificationEmail do
     <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;max-width:600px;margin:0 auto;padding:24px">
     <h1 style="font-size:20px;margin:0 0 16px">#{escape(heading)}</h1>
     #{paragraphs}
-    <p style="margin:24px 0"><a href="#{escape(urls.link)}" style="#{@button_style}">#{escape(gettext("View in Stride"))}</a></p>
-    #{footer_html(urls)}
+    <p style="margin:24px 0"><a href="#{escape(urls.link)}" style="#{EmailHelpers.button_style()}">#{escape(gettext("View in Stride"))}</a></p>
+    #{EmailHelpers.footer_html(urls)}
     </body>
     </html>
     """
   end
 
-  defp footer_html(urls) do
-    """
-    <hr style="#{@rule_style}">
-    <p style="#{@footer_style}">#{escape(gettext("You are receiving this because email notifications for this event type are on."))}
-    <a href="#{escape(urls.unsubscribe)}">#{escape(gettext("Unsubscribe from these emails"))}</a> ·
-    <a href="#{escape(urls.preferences)}">#{escape(gettext("Manage notification preferences"))}</a></p>
-    """
-  end
-
   defp render_text(heading, lines, urls) do
-    footer = [
-      "#{gettext("View in Stride")}: #{urls.link}",
-      "--",
-      gettext("You are receiving this because email notifications for this event type are on."),
-      "#{gettext("Unsubscribe from these emails")}: #{urls.unsubscribe}",
-      "#{gettext("Manage notification preferences")}: #{urls.preferences}"
-    ]
+    footer = ["#{gettext("View in Stride")}: #{urls.link}" | EmailHelpers.footer_text_lines(urls)]
 
     Enum.join([heading | lines] ++ footer, "\n\n")
-  end
-
-  defp escape(text) do
-    text
-    |> Phoenix.HTML.html_escape()
-    |> Phoenix.HTML.safe_to_string()
   end
 end

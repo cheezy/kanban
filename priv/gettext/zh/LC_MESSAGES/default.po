@@ -1354,6 +1354,8 @@ msgstr "失败时(将发生什么)"
 msgid "Only board owners can change field visibility"
 msgstr "只有看板所有者可以更改字段可见性"
 
+#: lib/kanban_web/emails/digest_email.ex:131
+#: lib/kanban_web/emails/digest_email.ex:193
 #: lib/kanban_web/live/goal_live/show.ex:292
 #: lib/kanban_web/live/task_live/form_component.html.heex:132
 #: lib/kanban_web/task_tokens.ex:19
@@ -2519,6 +2521,8 @@ msgstr "队列和等待时间分析"
 #: lib/kanban_web/components/target_progress_header.ex:210
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:312
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:612
+#: lib/kanban_web/emails/digest_email.ex:133
+#: lib/kanban_web/emails/digest_email.ex:194
 #: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
 #: lib/kanban_web/task_tokens.ex:22
@@ -3217,6 +3221,8 @@ msgstr "Diff、测试、验收、hook 遥测——同一面板。一键批准。
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:90
 #: lib/kanban_web/components/target_progress_header.ex:209
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:611
+#: lib/kanban_web/emails/digest_email.ex:132
+#: lib/kanban_web/emails/digest_email.ex:193
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
@@ -4335,6 +4341,7 @@ msgid "Promote children to Ready"
 msgstr "将子项提升至「就绪」"
 
 #: lib/kanban_web/components/layouts.ex:301
+#: lib/kanban_web/emails/digest_email.ex:157
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
 #, elixir-autogen, elixir-format
@@ -4396,6 +4403,7 @@ msgstr "归档"
 #: lib/kanban_web/components/agents_header.ex:423
 #: lib/kanban_web/components/board_tabs.ex:116
 #: lib/kanban_web/components/task_metadata_grid.ex:69
+#: lib/kanban_web/emails/digest_email.ex:130
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:89
 #, elixir-autogen, elixir-format
 msgid "Board"
@@ -5029,6 +5037,7 @@ msgid "Testing strategy"
 msgstr "测试策略"
 
 #: lib/kanban_web/components/agent_roster_card.ex:287
+#: lib/kanban_web/emails/digest_email.ex:73
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr "等待审核"
@@ -8814,99 +8823,100 @@ msgstr "由任务规格决定"
 msgid "(%{count} pending)"
 msgstr "(%{count} 项待处理)"
 
-#: lib/kanban_web/emails/notification_email.ex:98
+#: lib/kanban_web/emails/notification_email.ex:73
 #, elixir-autogen, elixir-format
 msgid "After-goal hook failed"
 msgstr "after-goal 钩子执行失败"
 
-#: lib/kanban_web/emails/notification_email.ex:119
+#: lib/kanban_web/emails/notification_email.ex:94
 #, elixir-autogen, elixir-format
 msgid "Board: %{board}"
 msgstr "看板：%{board}"
 
-#: lib/kanban_web/emails/notification_email.ex:115
+#: lib/kanban_web/emails/notification_email.ex:90
 #: lib/kanban_web/live/notification_live/index.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "来自 %{actor}"
 
-#: lib/kanban_web/emails/notification_email.ex:91
+#: lib/kanban_web/emails/notification_email.ex:66
 #, elixir-autogen, elixir-format
 msgid "Goal completed"
 msgstr "目标已完成"
 
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:41
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:56
-#: lib/kanban_web/emails/notification_email.ex:152
-#: lib/kanban_web/emails/notification_email.ex:162
+#: lib/kanban_web/emails/email_helpers.ex:89
+#: lib/kanban_web/emails/email_helpers.ex:100
 #, elixir-autogen, elixir-format
 msgid "Manage notification preferences"
 msgstr "管理通知偏好"
 
-#: lib/kanban_web/emails/notification_email.ex:93
+#: lib/kanban_web/emails/notification_email.ex:68
 #, elixir-autogen, elixir-format
 msgid "New comment"
 msgstr "新评论"
 
-#: lib/kanban_web/emails/notification_email.ex:88
+#: lib/kanban_web/emails/notification_email.ex:63
 #, elixir-autogen, elixir-format
 msgid "Review requested"
 msgstr "已请求审阅"
 
-#: lib/kanban_web/emails/notification_email.ex:99
+#: lib/kanban_web/emails/notification_email.ex:74
 #, elixir-autogen, elixir-format
 msgid "Target status changed"
 msgstr "目标状态已更改"
 
-#: lib/kanban_web/emails/notification_email.ex:89
+#: lib/kanban_web/emails/notification_email.ex:64
 #, elixir-autogen, elixir-format
 msgid "Task assigned to you"
 msgstr "有任务分配给您"
 
-#: lib/kanban_web/emails/notification_email.ex:96
+#: lib/kanban_web/emails/notification_email.ex:71
 #, elixir-autogen, elixir-format
 msgid "Task unclaimed"
 msgstr "任务已取消认领"
 
-#: lib/kanban_web/emails/notification_email.ex:151
-#: lib/kanban_web/emails/notification_email.ex:161
+#: lib/kanban_web/emails/email_helpers.ex:88
+#: lib/kanban_web/emails/email_helpers.ex:99
 #, elixir-autogen, elixir-format
 msgid "Unsubscribe from these emails"
 msgstr "退订此类邮件"
 
-#: lib/kanban_web/emails/notification_email.ex:140
-#: lib/kanban_web/emails/notification_email.ex:158
+#: lib/kanban_web/emails/notification_email.ex:115
+#: lib/kanban_web/emails/notification_email.ex:123
 #, elixir-autogen, elixir-format
 msgid "View in Stride"
 msgstr "在 Stride 中查看"
 
-#: lib/kanban_web/emails/notification_email.ex:150
-#: lib/kanban_web/emails/notification_email.ex:160
+#: lib/kanban_web/emails/email_helpers.ex:87
+#: lib/kanban_web/emails/email_helpers.ex:98
 #, elixir-autogen, elixir-format
 msgid "You are receiving this because email notifications for this event type are on."
 msgstr "您收到此邮件是因为此类事件的邮件通知已开启。"
 
-#: lib/kanban_web/emails/notification_email.ex:94
+#: lib/kanban_web/emails/notification_email.ex:69
 #, elixir-autogen, elixir-format
 msgid "You were mentioned"
 msgstr "有人提到了您"
 
-#: lib/kanban_web/emails/notification_email.ex:97
+#: lib/kanban_web/emails/notification_email.ex:72
 #, elixir-autogen, elixir-format
 msgid "Your board access changed"
 msgstr "您的看板访问权限已更改"
 
-#: lib/kanban_web/emails/notification_email.ex:90
+#: lib/kanban_web/emails/notification_email.ex:65
 #, elixir-autogen, elixir-format
 msgid "Your claim expired"
 msgstr "您的认领已过期"
 
-#: lib/kanban_web/emails/notification_email.ex:95
+#: lib/kanban_web/emails/notification_email.ex:70
 #, elixir-autogen, elixir-format
 msgid "Your task was reviewed"
 msgstr "您的任务已被审阅"
 
-#: lib/kanban_web/emails/notification_email.ex:92
+#: lib/kanban_web/emails/digest_email.ex:40
+#: lib/kanban_web/emails/notification_email.ex:67
 #, elixir-autogen, elixir-format
 msgid "Your weekly digest"
 msgstr "您的每周摘要"
@@ -9200,3 +9210,70 @@ msgstr "你被添加到看板或从看板移除，或你的访问权限发生变
 #, elixir-autogen, elixir-format
 msgid "in-app · email"
 msgstr "应用内 · 邮件"
+
+#: lib/kanban_web/emails/digest_email.ex:88
+#, elixir-autogen, elixir-format
+msgid "%{count} d"
+msgstr "%{count} 天"
+
+#: lib/kanban_web/emails/digest_email.ex:89
+#, elixir-autogen, elixir-format
+msgid "%{count} h"
+msgstr "%{count} 小时"
+
+#: lib/kanban_web/emails/digest_email.ex:81
+#, elixir-autogen, elixir-format
+msgid "%{identifier} on %{board}, waiting %{age}"
+msgstr "%{board} 上的 %{identifier}，已等待 %{age}"
+
+#: lib/kanban_web/emails/digest_email.ex:134
+#: lib/kanban_web/emails/digest_email.ex:194
+#, elixir-autogen, elixir-format
+msgid "Done (7 days)"
+msgstr "完成（7 天）"
+
+#: lib/kanban_web/emails/digest_email.ex:72
+#, elixir-autogen, elixir-format
+msgid "Goals completed"
+msgstr "已完成目标"
+
+#: lib/kanban_web/emails/digest_email.ex:158
+#: lib/kanban_web/emails/digest_email.ex:204
+#, elixir-autogen, elixir-format
+msgid "Nothing is waiting for review."
+msgstr "没有等待审核的内容。"
+
+#: lib/kanban_web/emails/digest_email.ex:167
+#: lib/kanban_web/emails/digest_email.ex:210
+#, elixir-autogen, elixir-format
+msgid "Oldest pending reviews"
+msgstr "最早的待审核项"
+
+#: lib/kanban_web/emails/digest_email.ex:159
+#: lib/kanban_web/emails/digest_email.ex:171
+#: lib/kanban_web/emails/digest_email.ex:204
+#: lib/kanban_web/emails/digest_email.ex:211
+#, elixir-autogen, elixir-format
+msgid "Open the review queue"
+msgstr "打开审核队列"
+
+#: lib/kanban_web/emails/digest_email.ex:78
+#, elixir-autogen, elixir-format
+msgid "Other boards: %{count}"
+msgstr "其他看板：%{count}"
+
+#: lib/kanban_web/emails/digest_email.ex:63
+#, elixir-autogen, elixir-format
+msgid "Summary for %{start} – %{end} (UTC)"
+msgstr "%{start} – %{end} 摘要（UTC）"
+
+#: lib/kanban_web/emails/digest_email.ex:71
+#, elixir-autogen, elixir-format
+msgid "Tasks done"
+msgstr "已完成任务"
+
+#: lib/kanban_web/emails/digest_email.ex:119
+#: lib/kanban_web/emails/digest_email.ex:200
+#, elixir-autogen, elixir-format
+msgid "Your boards"
+msgstr "您的看板"

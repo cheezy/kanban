@@ -101,15 +101,19 @@ config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 # row update plus a status check; bursts are bounded by goal-completion
 # rate, not throughput. `:notifications` sends one email per job, so its
 # depth of 10 bounds concurrent SMTP sessions.
-# The Cron plugin runs the claim-expiry sweeper every five minutes (W2204);
-# later scheduled jobs (the weekly digest) append to the same crontab.
+# The Cron plugin runs the claim-expiry sweeper every five minutes (W2204)
+# and the weekly digest fan-out on Mondays at 13:00 UTC (W2207).
 config :kanban, Oban,
   repo: Kanban.Repo,
   engine: Oban.Engines.Basic,
   queues: [after_goal_grace: 5, notifications: 10],
   plugins: [
     {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
-    {Oban.Plugins.Cron, crontab: [{"*/5 * * * *", Kanban.Notifications.ClaimExpiryWorker}]}
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"*/5 * * * *", Kanban.Notifications.ClaimExpiryWorker},
+       {"0 13 * * 1", Kanban.Notifications.DigestFanoutWorker}
+     ]}
   ]
 
 # How far back the claim-expiry sweeper looks for expired claims, so the

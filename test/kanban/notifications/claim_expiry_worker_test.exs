@@ -51,8 +51,9 @@ defmodule Kanban.Notifications.ClaimExpiryWorkerTest do
   describe "cron configuration" do
     test "registers the sweeper every five minutes" do
       plugins = :kanban |> Application.fetch_env!(Oban) |> Keyword.fetch!(:plugins)
+      {Oban.Plugins.Cron, opts} = List.keyfind(plugins, Oban.Plugins.Cron, 0)
 
-      assert {Oban.Plugins.Cron, crontab: [{"*/5 * * * *", ClaimExpiryWorker}]} in plugins
+      assert {"*/5 * * * *", ClaimExpiryWorker} in Keyword.fetch!(opts, :crontab)
     end
 
     test "manual testing mode keeps the cron plugin from running in tests" do

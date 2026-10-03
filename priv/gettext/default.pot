@@ -1354,6 +1354,8 @@ msgstr ""
 msgid "Only board owners can change field visibility"
 msgstr ""
 
+#: lib/kanban_web/emails/digest_email.ex:131
+#: lib/kanban_web/emails/digest_email.ex:193
 #: lib/kanban_web/live/goal_live/show.ex:292
 #: lib/kanban_web/live/task_live/form_component.html.heex:132
 #: lib/kanban_web/task_tokens.ex:19
@@ -2521,6 +2523,8 @@ msgstr ""
 #: lib/kanban_web/components/target_progress_header.ex:210
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:312
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:612
+#: lib/kanban_web/emails/digest_email.ex:133
+#: lib/kanban_web/emails/digest_email.ex:194
 #: lib/kanban_web/live/goal_live/show.ex:290
 #: lib/kanban_web/live/metrics_live/dashboard.html.heex:216
 #: lib/kanban_web/task_tokens.ex:22
@@ -3220,6 +3224,8 @@ msgstr ""
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:90
 #: lib/kanban_web/components/target_progress_header.ex:209
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:611
+#: lib/kanban_web/emails/digest_email.ex:132
+#: lib/kanban_web/emails/digest_email.ex:193
 #: lib/kanban_web/live/goal_live/show.ex:289
 #: lib/kanban_web/task_tokens.ex:21
 #, elixir-autogen, elixir-format
@@ -4339,6 +4345,7 @@ msgid "Promote children to Ready"
 msgstr ""
 
 #: lib/kanban_web/components/layouts.ex:301
+#: lib/kanban_web/emails/digest_email.ex:157
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
 #, elixir-autogen, elixir-format
@@ -4400,6 +4407,7 @@ msgstr ""
 #: lib/kanban_web/components/agents_header.ex:423
 #: lib/kanban_web/components/board_tabs.ex:116
 #: lib/kanban_web/components/task_metadata_grid.ex:69
+#: lib/kanban_web/emails/digest_email.ex:130
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:89
 #, elixir-autogen, elixir-format
 msgid "Board"
@@ -5037,6 +5045,7 @@ msgid "Testing strategy"
 msgstr ""
 
 #: lib/kanban_web/components/agent_roster_card.ex:287
+#: lib/kanban_web/emails/digest_email.ex:73
 #, elixir-autogen, elixir-format
 msgid "Waiting for review"
 msgstr ""
@@ -8776,99 +8785,100 @@ msgstr ""
 msgid "(%{count} pending)"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:98
+#: lib/kanban_web/emails/notification_email.ex:73
 #, elixir-autogen, elixir-format
 msgid "After-goal hook failed"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:119
+#: lib/kanban_web/emails/notification_email.ex:94
 #, elixir-autogen, elixir-format
 msgid "Board: %{board}"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:115
+#: lib/kanban_web/emails/notification_email.ex:90
 #: lib/kanban_web/live/notification_live/index.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:91
+#: lib/kanban_web/emails/notification_email.ex:66
 #, elixir-autogen, elixir-format
 msgid "Goal completed"
 msgstr ""
 
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:41
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:56
-#: lib/kanban_web/emails/notification_email.ex:152
-#: lib/kanban_web/emails/notification_email.ex:162
+#: lib/kanban_web/emails/email_helpers.ex:89
+#: lib/kanban_web/emails/email_helpers.ex:100
 #, elixir-autogen, elixir-format
 msgid "Manage notification preferences"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:93
+#: lib/kanban_web/emails/notification_email.ex:68
 #, elixir-autogen, elixir-format
 msgid "New comment"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:88
+#: lib/kanban_web/emails/notification_email.ex:63
 #, elixir-autogen, elixir-format
 msgid "Review requested"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:99
+#: lib/kanban_web/emails/notification_email.ex:74
 #, elixir-autogen, elixir-format
 msgid "Target status changed"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:89
+#: lib/kanban_web/emails/notification_email.ex:64
 #, elixir-autogen, elixir-format
 msgid "Task assigned to you"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:96
+#: lib/kanban_web/emails/notification_email.ex:71
 #, elixir-autogen, elixir-format
 msgid "Task unclaimed"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:151
-#: lib/kanban_web/emails/notification_email.ex:161
+#: lib/kanban_web/emails/email_helpers.ex:88
+#: lib/kanban_web/emails/email_helpers.ex:99
 #, elixir-autogen, elixir-format
 msgid "Unsubscribe from these emails"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:140
-#: lib/kanban_web/emails/notification_email.ex:158
+#: lib/kanban_web/emails/notification_email.ex:115
+#: lib/kanban_web/emails/notification_email.ex:123
 #, elixir-autogen, elixir-format
 msgid "View in Stride"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:150
-#: lib/kanban_web/emails/notification_email.ex:160
+#: lib/kanban_web/emails/email_helpers.ex:87
+#: lib/kanban_web/emails/email_helpers.ex:98
 #, elixir-autogen, elixir-format
 msgid "You are receiving this because email notifications for this event type are on."
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:94
+#: lib/kanban_web/emails/notification_email.ex:69
 #, elixir-autogen, elixir-format
 msgid "You were mentioned"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:97
+#: lib/kanban_web/emails/notification_email.ex:72
 #, elixir-autogen, elixir-format
 msgid "Your board access changed"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:90
+#: lib/kanban_web/emails/notification_email.ex:65
 #, elixir-autogen, elixir-format
 msgid "Your claim expired"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:95
+#: lib/kanban_web/emails/notification_email.ex:70
 #, elixir-autogen, elixir-format
 msgid "Your task was reviewed"
 msgstr ""
 
-#: lib/kanban_web/emails/notification_email.ex:92
+#: lib/kanban_web/emails/digest_email.ex:40
+#: lib/kanban_web/emails/notification_email.ex:67
 #, elixir-autogen, elixir-format
 msgid "Your weekly digest"
 msgstr ""
@@ -9162,4 +9172,71 @@ msgstr ""
 #: lib/kanban_web/live/user_live/settings.ex:61
 #, elixir-autogen, elixir-format
 msgid "in-app · email"
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:88
+#, elixir-autogen, elixir-format
+msgid "%{count} d"
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:89
+#, elixir-autogen, elixir-format
+msgid "%{count} h"
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:81
+#, elixir-autogen, elixir-format
+msgid "%{identifier} on %{board}, waiting %{age}"
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:134
+#: lib/kanban_web/emails/digest_email.ex:194
+#, elixir-autogen, elixir-format
+msgid "Done (7 days)"
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:72
+#, elixir-autogen, elixir-format
+msgid "Goals completed"
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:158
+#: lib/kanban_web/emails/digest_email.ex:204
+#, elixir-autogen, elixir-format
+msgid "Nothing is waiting for review."
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:167
+#: lib/kanban_web/emails/digest_email.ex:210
+#, elixir-autogen, elixir-format
+msgid "Oldest pending reviews"
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:159
+#: lib/kanban_web/emails/digest_email.ex:171
+#: lib/kanban_web/emails/digest_email.ex:204
+#: lib/kanban_web/emails/digest_email.ex:211
+#, elixir-autogen, elixir-format
+msgid "Open the review queue"
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:78
+#, elixir-autogen, elixir-format
+msgid "Other boards: %{count}"
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:63
+#, elixir-autogen, elixir-format
+msgid "Summary for %{start} – %{end} (UTC)"
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:71
+#, elixir-autogen, elixir-format
+msgid "Tasks done"
+msgstr ""
+
+#: lib/kanban_web/emails/digest_email.ex:119
+#: lib/kanban_web/emails/digest_email.ex:200
+#, elixir-autogen, elixir-format
+msgid "Your boards"
 msgstr ""

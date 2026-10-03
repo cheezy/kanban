@@ -59,6 +59,7 @@ defmodule Kanban.Notifications do
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
   alias Kanban.Boards.BoardUser
+  alias Kanban.Notifications.DigestRecipients
   alias Kanban.Notifications.EmailWorker
   alias Kanban.Notifications.Notification
   alias Kanban.Notifications.Preference
@@ -346,6 +347,9 @@ defmodule Kanban.Notifications do
     )
     |> Repo.all()
   end
+
+  @doc "Ids of the users who should receive the weekly digest; see `DigestRecipients`."
+  defdelegate list_digest_recipients(), to: DigestRecipients
 
   # -- notify/3 helpers ------------------------------------------------------
 
