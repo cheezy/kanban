@@ -24,6 +24,42 @@ defmodule Kanban.Tasks.PositioningTest do
     task
   end
 
+  describe "moving into Review stamps review_requested_at" do
+    setup %{board: board} do
+      doing = column_fixture(board, %{name: "Doing", position: 1})
+      review = column_fixture(board, %{name: "Review", position: 2})
+      %{doing: doing, review: review}
+    end
+
+    defp review_requested_at(task), do: Repo.reload!(task).review_requested_at
+
+    test "a drag in from another column stamps the time it entered Review",
+         %{doing: doing, review: review} do
+      task = task_fixture(doing)
+
+      assert {:ok, _} = Kanban.Tasks.move_task(task, review, 0)
+
+      assert DateTime.diff(DateTime.utc_now(), review_requested_at(task)) in 0..5
+    end
+
+    test "a reorder inside Review keeps the original stamp", %{doing: doing, review: review} do
+      first = task_fixture(review)
+      _second = task_fixture(review)
+      entered = ~U[2026-09-01 12:00:00Z]
+
+      Kanban.Tasks.Task
+      |> where([t], t.id == ^first.id)
+      |> Repo.update_all(set: [review_requested_at: entered])
+
+      assert {:ok, _} = first |> Repo.reload!() |> Kanban.Tasks.move_task(review, 1)
+      assert review_requested_at(first) == entered
+
+      other = task_fixture(doing)
+      assert {:ok, _} = Kanban.Tasks.move_task(other, doing, 0)
+      assert review_requested_at(other) == nil
+    end
+  end
+
   describe "get_next_position/1" do
     test "returns 0 for empty column", %{column: column} do
       assert Positioning.get_next_position(column) == 0

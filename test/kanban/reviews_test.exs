@@ -37,6 +37,39 @@ defmodule Kanban.ReviewsTest do
     task
   end
 
+  defp stamp!(task, %DateTime{} = at) do
+    from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
+    |> Kanban.Repo.update_all(set: [review_requested_at: at])
+  end
+
+  describe "waiting_since/1" do
+    test "prefers review_requested_at" do
+      at = ~U[2026-10-01 09:00:00Z]
+
+      assert Reviews.waiting_since(%{
+               review_requested_at: at,
+               updated_at: ~N[2026-10-02 09:00:00]
+             }) ==
+               at
+    end
+
+    test "falls back to updated_at as UTC" do
+      assert Reviews.waiting_since(%{
+               review_requested_at: nil,
+               updated_at: ~N[2026-10-02 09:00:00]
+             }) ==
+               ~U[2026-10-02 09:00:00Z]
+
+      assert Reviews.waiting_since(%{updated_at: ~U[2026-10-02 09:00:00Z]}) ==
+               ~U[2026-10-02 09:00:00Z]
+    end
+
+    test "returns nil without either timestamp" do
+      assert Reviews.waiting_since(%{review_requested_at: nil, updated_at: nil}) == nil
+      assert Reviews.waiting_since(%{}) == nil
+    end
+  end
+
   describe "list_pending_reviews/1" do
     test "returns an empty list when no tasks are pending review" do
       assert Reviews.list_pending_reviews() == []
@@ -120,7 +153,7 @@ defmodule Kanban.ReviewsTest do
       assert Reviews.list_pending_reviews(scope: scope) == []
     end
 
-    test "orders results by updated_at ascending (oldest first)", %{column: column} do
+    test "orders unstamped tasks by updated_at ascending (oldest first)", %{column: column} do
       now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
       older = pending_task!(column)
       newer = pending_task!(column)
@@ -128,13 +161,55 @@ defmodule Kanban.ReviewsTest do
       from(t in Kanban.Tasks.Task, where: t.id == ^older.id)
       # Override updated_at directly so the test is robust to sub-second
       # precision in the timestamps.
-      |> Kanban.Repo.update_all(set: [updated_at: NaiveDateTime.add(now, -3600, :second)])
+      |> Kanban.Repo.update_all(
+        set: [updated_at: NaiveDateTime.add(now, -3600, :second), review_requested_at: nil]
+      )
 
       from(t in Kanban.Tasks.Task, where: t.id == ^newer.id)
-      |> Kanban.Repo.update_all(set: [updated_at: now])
+      |> Kanban.Repo.update_all(set: [updated_at: now, review_requested_at: nil])
 
       ids = Reviews.list_pending_reviews() |> Enum.map(& &1.id)
       assert ids == [older.id, newer.id]
+    end
+
+    test "orders by review_requested_at, so editing a pending task does not move it",
+         %{column: column} do
+      now = DateTime.utc_now(:second)
+      first = pending_task!(column)
+      second = pending_task!(column)
+      stamp!(first, DateTime.add(now, -7200, :second))
+      stamp!(second, DateTime.add(now, -3600, :second))
+
+      {:ok, _} = Tasks.update_task(first, %{title: "Edited while waiting"})
+
+      assert Reviews.list_pending_reviews() |> Enum.map(& &1.id) == [first.id, second.id]
+    end
+
+    test "a task created in the Review column is stamped and keeps its place when edited",
+         %{column: column} do
+      first = pending_task!(column)
+      second = pending_task!(column)
+      assert %DateTime{} = Kanban.Repo.reload!(first).review_requested_at
+
+      stamp!(first, :second |> DateTime.utc_now() |> DateTime.add(-60, :second))
+      {:ok, _} = first |> Kanban.Repo.reload!() |> Tasks.update_task(%{title: "Edited"})
+
+      assert Reviews.list_pending_reviews() |> Enum.map(& &1.id) == [first.id, second.id]
+    end
+
+    test "a stamped task sorts against an unstamped one by updated_at", %{column: column} do
+      now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      legacy = pending_task!(column)
+      stamped = pending_task!(column)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^legacy.id)
+      |> Kanban.Repo.update_all(
+        set: [updated_at: NaiveDateTime.add(now, -600, :second), review_requested_at: nil]
+      )
+
+      stamp!(stamped, now |> NaiveDateTime.add(-3600, :second) |> DateTime.from_naive!("Etc/UTC"))
+
+      assert Reviews.list_pending_reviews() |> Enum.map(& &1.id) == [stamped.id, legacy.id]
     end
 
     test "preloads :column and :board on returned tasks", %{column: column} do
@@ -227,11 +302,24 @@ defmodule Kanban.ReviewsTest do
       assert Reviews.queue_stats().distinct_agents == 2
     end
 
-    test "returns oldest_age_minutes derived from the oldest updated_at",
+    test "oldest_age_minutes uses review_requested_at over a later edit",
+         %{column: column} do
+      task = pending_task!(column)
+      stamp!(task, :second |> DateTime.utc_now() |> DateTime.add(-7200, :second))
+      {:ok, _} = Tasks.update_task(task, %{title: "Edited while waiting"})
+
+      stats = Reviews.queue_stats()
+      assert stats.oldest_age_minutes in 119..121
+    end
+
+    test "falls back to updated_at for oldest_age_minutes on unstamped tasks",
          %{column: column} do
       now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
       pending_task!(column)
       older = pending_task!(column)
+
+      Kanban.Tasks.Task
+      |> Kanban.Repo.update_all(set: [review_requested_at: nil])
 
       from(t in Kanban.Tasks.Task, where: t.id == ^older.id)
       |> Kanban.Repo.update_all(set: [updated_at: NaiveDateTime.add(now, -7200, :second)])

@@ -620,6 +620,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
     |> Ecto.Changeset.put_change(:column_id, review_column.id)
     |> Ecto.Changeset.put_change(:position, next_position)
     |> Ecto.Changeset.put_change(:completed_by_id, user.id)
+    |> Ecto.Changeset.put_change(:review_requested_at, DateTime.utc_now(:second))
     |> reset_review_round()
     |> Ecto.Changeset.validate_required([
       :completion_summary,

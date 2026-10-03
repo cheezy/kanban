@@ -4,15 +4,16 @@ defmodule KanbanWeb.ReviewQueueItem do
 
   Each row condenses one pending-review task into a single horizontal
   card: board chip, identifier, priority dot, optional "needs attention"
-  pill, completed-at relative timestamp, title, and an agent line. The
-  selected row gets a `surface-sunken` background and a 2px
-  `stride-orange` left border.
+  pill, how long it has waited for review (`Kanban.Reviews.waiting_since/1`),
+  title, and an agent line. The selected row gets a `surface-sunken`
+  background and a 2px `stride-orange` left border.
 
   Purely presentational — the LiveView passes the task in via `:item` and
   wires `:on_click` to a `phx-click` event that toggles selection.
   """
   use KanbanWeb, :html
 
+  alias Kanban.Reviews
   alias KanbanWeb.TimeAgo
 
   alias KanbanWeb.Avatar
@@ -53,6 +54,7 @@ defmodule KanbanWeb.ReviewQueueItem do
       |> assign(:agent_name, agent_name_for(task))
       |> assign(:files_count, files_count_for(task))
       |> assign(:completed_by_user, completed_by_user_for(task))
+      |> assign(:waiting_since, Reviews.waiting_since(task))
 
     ~H"""
     <button
@@ -125,15 +127,15 @@ defmodule KanbanWeb.ReviewQueueItem do
         <span style="flex: 1;" />
 
         <time
-          :if={@item.completed_at}
+          :if={@waiting_since}
           data-review-queue-item-timestamp
-          datetime={DateTime.to_iso8601(@item.completed_at)}
+          datetime={DateTime.to_iso8601(@waiting_since)}
           style={[
             "font-size: 11px; font-family: var(--font-mono);",
             "color: var(--ink-3);"
           ]}
         >
-          {TimeAgo.format_age(@item.completed_at, :fine)}
+          {TimeAgo.format_age(@waiting_since, :fine)}
         </time>
       </div>
 

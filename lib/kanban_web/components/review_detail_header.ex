@@ -19,6 +19,7 @@ defmodule KanbanWeb.ReviewDetailHeader do
   """
   use KanbanWeb, :html
 
+  alias Kanban.Reviews
   alias KanbanWeb.TimeAgo
 
   alias KanbanWeb.Avatar
@@ -30,7 +31,8 @@ defmodule KanbanWeb.ReviewDetailHeader do
   ## Attrs
 
     * `task` — required. A `%Kanban.Tasks.Task{}` (or compatible map)
-      exposing `:identifier`, `:completed_at`, and `:completed_by_agent`.
+      exposing `:identifier`, `:completed_by_agent`, and the timestamps
+      `Kanban.Reviews.waiting_since/1` reads for its age.
     * `on_approve` — required. The `phx-click` event name fired by the
       Approve button.
     * `on_request_changes` — required. The `phx-click` event name fired
@@ -46,6 +48,7 @@ defmodule KanbanWeb.ReviewDetailHeader do
     assigns =
       assigns
       |> assign(:agent_name, agent_name_for(task))
+      |> assign(:waiting_since, Reviews.waiting_since(task))
       |> assign(:age_label, age_label_for(task))
       |> assign(:completed_by_user, completed_by_user(task))
 
@@ -94,7 +97,7 @@ defmodule KanbanWeb.ReviewDetailHeader do
           <time
             :if={@age_label}
             data-review-detail-header-time
-            datetime={DateTime.to_iso8601(@task.completed_at)}
+            datetime={DateTime.to_iso8601(@waiting_since)}
             style={[
               "font-size: 11px; font-family: var(--font-mono);",
               "color: var(--ink-3);"
@@ -170,6 +173,10 @@ defmodule KanbanWeb.ReviewDetailHeader do
 
   defp agent_name_for(_), do: nil
 
-  defp age_label_for(%{completed_at: %DateTime{} = dt}), do: TimeAgo.format_age(dt, :fine)
-  defp age_label_for(_), do: nil
+  defp age_label_for(task) do
+    case Reviews.waiting_since(task) do
+      %DateTime{} = since -> TimeAgo.format_age(since, :fine)
+      nil -> nil
+    end
+  end
 end

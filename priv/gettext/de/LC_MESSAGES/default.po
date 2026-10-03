@@ -1389,7 +1389,7 @@ msgstr "Zu befolgende Muster"
 msgid "Pending"
 msgstr "Ausstehend"
 
-#: lib/kanban_web/components/review_queue_item.ex:266
+#: lib/kanban_web/components/review_queue_item.ex:268
 #: lib/kanban_web/components/review_report_panel.ex:412
 #: lib/kanban_web/components/review_stats_strip.ex:86
 #: lib/kanban_web/live/board_live/form.html.heex:178
@@ -4463,7 +4463,7 @@ msgstr[0] "%{count} Kriterium"
 msgstr[1] "%{count} Kriterien"
 
 #: lib/kanban_web/components/review_diff_panel.ex:131
-#: lib/kanban_web/components/review_queue_item.ex:176
+#: lib/kanban_web/components/review_queue_item.ex:178
 #: lib/kanban_web/components/task_card.ex:268
 #: lib/kanban_web/components/task_card.ex:312
 #, elixir-autogen, elixir-format, fuzzy
@@ -4615,7 +4615,7 @@ msgstr "Gestartet"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:84
 #: lib/kanban_web/components/acceptance_checklist.ex:154
-#: lib/kanban_web/components/review_queue_item.ex:248
+#: lib/kanban_web/components/review_queue_item.ex:250
 #: lib/kanban_web/live/task_live/view_component.ex:185
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria"
@@ -5038,7 +5038,7 @@ msgstr "Prüfungsstatus"
 msgid "Success"
 msgstr "Erfolg"
 
-#: lib/kanban_web/components/review_queue_item.ex:254
+#: lib/kanban_web/components/review_queue_item.ex:256
 #: lib/kanban_web/components/review_stats_strip.ex:72
 #: lib/kanban_web/live/task_live/view_component.ex:344
 #: lib/kanban_web/review_report_helpers.ex:54
@@ -5111,7 +5111,7 @@ msgstr "Keine aktuelle Aktivität."
 msgid "claimed"
 msgstr "Übernommen:"
 
-#: lib/kanban_web/components/review_detail_header.ex:81
+#: lib/kanban_web/components/review_detail_header.ex:84
 #: lib/kanban_web/task_tokens.ex:153
 #, elixir-autogen, elixir-format
 msgid "completed"
@@ -5202,24 +5202,24 @@ msgstr "vor %{s} Sek."
 msgid "Acceptance"
 msgstr "Akzeptanz"
 
-#: lib/kanban_web/components/review_detail_header.ex:154
+#: lib/kanban_web/components/review_detail_header.ex:157
 #, elixir-autogen, elixir-format
 msgid "Approve"
 msgstr "Genehmigen"
 
-#: lib/kanban_web/components/review_detail_header.ex:147
+#: lib/kanban_web/components/review_detail_header.ex:150
 #, elixir-autogen, elixir-format
 msgid "Request changes"
 msgstr "Änderungen anfordern"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:312
 #: lib/kanban_web/components/agent_activity_feed.ex:313
-#: lib/kanban_web/components/review_detail_header.ex:74
+#: lib/kanban_web/components/review_detail_header.ex:77
 #, elixir-autogen, elixir-format
 msgid "Unknown agent"
 msgstr "Unbekannter Agent"
 
-#: lib/kanban_web/components/review_queue_item.ex:122
+#: lib/kanban_web/components/review_queue_item.ex:124
 #, elixir-autogen, elixir-format
 msgid "needs attention"
 msgstr "benötigt Aufmerksamkeit"
@@ -5356,7 +5356,7 @@ msgid "Open archive actions"
 msgstr "Archiv-Aktionen öffnen"
 
 #: lib/kanban_web/components/archive_row.ex:351
-#: lib/kanban_web/components/review_detail_header.ex:115
+#: lib/kanban_web/components/review_detail_header.ex:118
 #, elixir-autogen, elixir-format
 msgid "by"
 msgstr "von"
@@ -6227,12 +6227,12 @@ msgstr "verletzt"
 msgid "Completion summary"
 msgstr "Abschlussbericht"
 
-#: lib/kanban_web/components/review_detail_header.ex:126
+#: lib/kanban_web/components/review_detail_header.ex:129
 #, elixir-autogen, elixir-format
 msgid "Email %{name}"
 msgstr "%{name} per E-Mail kontaktieren"
 
-#: lib/kanban_web/components/review_queue_item.ex:185
+#: lib/kanban_web/components/review_queue_item.ex:187
 #, elixir-autogen, elixir-format
 msgid "Completed by %{name}"
 msgstr "Abgeschlossen von %{name}"
@@ -6308,27 +6308,27 @@ msgstr "Nicht bewertet"
 msgid "passed"
 msgstr "bestanden"
 
-#: lib/kanban_web/components/review_queue_item.ex:246
+#: lib/kanban_web/components/review_queue_item.ex:248
 #, elixir-autogen, elixir-format
 msgid "ACC"
 msgstr "ACC"
 
-#: lib/kanban_web/components/review_queue_item.ex:258
+#: lib/kanban_web/components/review_queue_item.ex:260
 #, elixir-autogen, elixir-format
 msgid "PAT"
 msgstr "PAT"
 
-#: lib/kanban_web/components/review_queue_item.ex:264
+#: lib/kanban_web/components/review_queue_item.ex:266
 #, elixir-autogen, elixir-format
 msgid "PIT"
 msgstr "PIT"
 
-#: lib/kanban_web/components/review_queue_item.ex:260
+#: lib/kanban_web/components/review_queue_item.ex:262
 #, elixir-autogen, elixir-format
 msgid "Patterns followed"
 msgstr "Befolgte Muster"
 
-#: lib/kanban_web/components/review_queue_item.ex:252
+#: lib/kanban_web/components/review_queue_item.ex:254
 #, elixir-autogen, elixir-format
 msgid "TST"
 msgstr "TST"

@@ -13,7 +13,8 @@ defmodule Kanban.Notifications.Digest do
   work tasks and defects whose `completed_at` falls in the window, except
   those still in a Review column; completed goals are counted separately.
   Archived tasks still count, since they were finished that week. Pending
-  reviews are a snapshot at `now`, aged from `now`.
+  reviews are a snapshot at `now`, each aged from
+  `Kanban.Reviews.waiting_since/1` as on the /review page.
 
   `build/2` returns `:empty` when the user has no boards, or nothing was
   done and nothing is waiting for review, so quiet weeks send no email.
@@ -205,7 +206,6 @@ defmodule Kanban.Notifications.Digest do
 
   defp pending_reviews(user, now) do
     tasks = Reviews.list_pending_reviews(scope: Scope.for_user(user))
-    now = DateTime.to_naive(now)
     oldest = tasks |> Enum.take(@max_reviews) |> Enum.map(&review_row(&1, now))
 
     %{count: length(tasks), oldest_age_hours: oldest_age(oldest), oldest: oldest}
@@ -217,9 +217,11 @@ defmodule Kanban.Notifications.Digest do
       title: task.title,
       board_id: task.column.board.id,
       board_name: task.column.board.name,
-      age_hours: now |> NaiveDateTime.diff(task.updated_at, :hour) |> max(0)
+      age_hours: task |> Reviews.waiting_since() |> hours_since(now)
     }
   end
+
+  defp hours_since(since, now), do: now |> DateTime.diff(since, :hour) |> max(0)
 
   defp oldest_age([first | _rest]), do: first.age_hours
   defp oldest_age([]), do: nil

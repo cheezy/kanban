@@ -236,7 +236,7 @@ defmodule Kanban.Tasks.Positioning do
         handle_same_column_move(task, new_column, new_position)
       end
 
-      updated_task = finalize_task_move(task, new_column, new_position)
+      updated_task = finalize_task_move(task, new_column, new_position, is_cross_column_move)
 
       if is_cross_column_move do
         old_column = Columns.get_column!(old_column_id)
@@ -293,13 +293,15 @@ defmodule Kanban.Tasks.Positioning do
     end
   end
 
-  defp finalize_task_move(task, new_column, new_position) do
+  defp finalize_task_move(task, new_column, new_position, cross_column?) do
     Logger.info(
       "Updating task #{task.id} to final position: column_id=#{new_column.id}, position=#{new_position}"
     )
 
-    status_updates = determine_status_for_column(new_column.name, task)
-    updates = Map.merge(%{column_id: new_column.id, position: new_position}, status_updates)
+    updates =
+      %{column_id: new_column.id, position: new_position}
+      |> Map.merge(determine_status_for_column(new_column.name, task))
+      |> Map.merge(review_entry_updates(new_column.name, cross_column?))
 
     Task
     |> where([t], t.id == ^task.id)
@@ -312,6 +314,11 @@ defmodule Kanban.Tasks.Positioning do
 
     updated_task
   end
+
+  # A drag into Review from another column starts the task's review wait; a
+  # reorder inside Review does not (see Kanban.Reviews.waiting_since/1).
+  defp review_entry_updates("Review", true), do: %{review_requested_at: DateTime.utc_now(:second)}
+  defp review_entry_updates(_column_name, _cross_column?), do: %{}
 
   defp reorder_after_removal(column, removed_position) do
     query =

@@ -641,11 +641,14 @@ defmodule KanbanWeb.API.TaskJSONTest do
     # The two of the nine that ack_data/1 deliberately carries.
     @ack_review_fields ~w(needs_review review_status)a
 
-    # The seven whose names contain "review". workflow_steps and explorer_result
+    # The eight whose names contain "review". workflow_steps and explorer_result
     # are the only two that must be named by hand.
+    # review_requested_at is internal: it only orders and ages the /review
+    # queue (Kanban.Reviews.waiting_since/1), so TaskJSON deliberately does not
+    # render it (D348).
     @name_matched_review_fields ~w(needs_review review_status review_notes
                                    review_report reviewer_result reviewed_at
-                                   reviewed_by_id)a
+                                   reviewed_by_id review_requested_at)a
 
     # Key-set intersection, normalized to strings so the same helper works on
     # atom-keyed view output and string-keyed JSON alike. Presence only — a

@@ -15,7 +15,7 @@ defmodule KanbanWeb.ReviewLiveTest do
   # Sets the task's `updated_at` to `seconds_ago` in the past. Used by the
   # subtitle-age tests — `updated_at` is the field `Reviews.queue_stats/1`
   # consults for `oldest_age_minutes`.
-  defp backdate_updated_at!(task, seconds_ago) do
+  defp backdate_waiting_since!(task, seconds_ago) do
     import Ecto.Query
 
     backdated =
@@ -23,11 +23,15 @@ defmodule KanbanWeb.ReviewLiveTest do
       |> NaiveDateTime.add(seconds_ago, :second)
       |> NaiveDateTime.truncate(:second)
 
+    requested = DateTime.from_naive!(backdated, "Etc/UTC")
+
+    # The queue ages a task from review_requested_at (Reviews.waiting_since/1);
+    # updated_at moves with it so the fallback agrees.
     {1, _} =
       from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
-      |> Kanban.Repo.update_all(set: [updated_at: backdated])
+      |> Kanban.Repo.update_all(set: [updated_at: backdated, review_requested_at: requested])
 
-    %{task | updated_at: backdated}
+    %{task | updated_at: backdated, review_requested_at: requested}
   end
 
   defp pending_task!(column, attrs) do
@@ -607,10 +611,10 @@ defmodule KanbanWeb.ReviewLiveTest do
           changed_files: with_diffs(["lib/c.ex"])
         })
 
-      # Queue is ordered by updated_at ascending; second-resolution truncation
+      # Queue is ordered by when tasks entered Review; second-resolution truncation
       # can collide between two fixtures created in the same tick, so pin the
       # order explicitly.
-      first = backdate_updated_at!(first, -60)
+      first = backdate_waiting_since!(first, -60)
 
       {:ok, view, _html} = live(conn, ~p"/review")
 
@@ -751,7 +755,7 @@ defmodule KanbanWeb.ReviewLiveTest do
       # Backdate so `first` is reliably the oldest and gets selected on mount;
       # otherwise both rows share the same truncated `updated_at` and the
       # head-of-queue selection becomes non-deterministic.
-      backdate_updated_at!(first, -60)
+      backdate_waiting_since!(first, -60)
 
       second =
         pending_task!(column, %{
@@ -958,7 +962,7 @@ defmodule KanbanWeb.ReviewLiveTest do
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
       task = pending_task!(column, %{})
-      backdate_updated_at!(task, -30 * 60)
+      backdate_waiting_since!(task, -30 * 60)
 
       {:ok, _view, html} = live(conn, ~p"/review")
       assert html =~ ~r/oldest\s+\d+m ago/
@@ -968,7 +972,7 @@ defmodule KanbanWeb.ReviewLiveTest do
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
       task = pending_task!(column, %{})
-      backdate_updated_at!(task, -3 * 3600)
+      backdate_waiting_since!(task, -3 * 3600)
 
       {:ok, _view, html} = live(conn, ~p"/review")
       assert html =~ ~r/oldest\s+3h ago/
@@ -978,10 +982,28 @@ defmodule KanbanWeb.ReviewLiveTest do
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
       task = pending_task!(column, %{})
-      backdate_updated_at!(task, -2 * 86_400)
+      backdate_waiting_since!(task, -2 * 86_400)
 
       {:ok, _view, html} = live(conn, ~p"/review")
       assert html =~ ~r/oldest\s+2d ago/
+    end
+
+    test "the header, the card and the detail header show one age for the task",
+         %{conn: conn, user: user} do
+      import Ecto.Query
+
+      %{column: column} = setup_review_column(user)
+      task = pending_task!(column, %{completed_at: ~U[2026-01-01 00:00:00Z]})
+      requested = :second |> DateTime.utc_now() |> DateTime.add(-3 * 3600, :second)
+
+      from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
+      |> Kanban.Repo.update_all(set: [review_requested_at: requested])
+
+      {:ok, view, html} = live(conn, ~p"/review")
+
+      assert html =~ ~r/oldest\s+3h ago/
+      assert has_element?(view, "[data-review-queue-item-timestamp]", "3h ago")
+      assert has_element?(view, "[data-review-detail-header-time]", "3h ago")
     end
   end
 
@@ -2459,7 +2481,7 @@ defmodule KanbanWeb.ReviewLiveTest do
          %{conn: conn, user: user} do
       %{column: column} = setup_review_column(user)
       task = pending_task!(column, %{completed_by_agent: "Claude"})
-      _ = backdate_updated_at!(task, -2)
+      _ = backdate_waiting_since!(task, -2)
 
       {:ok, _view, html} = live(conn, ~p"/review")
       assert html =~ ~r/just now/

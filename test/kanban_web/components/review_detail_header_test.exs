@@ -12,7 +12,7 @@ defmodule KanbanWeb.ReviewDetailHeaderTest do
   defp task(overrides) do
     base = %{
       identifier: "W101",
-      completed_at: DateTime.add(DateTime.utc_now(), -120, :second),
+      review_requested_at: DateTime.add(DateTime.utc_now(), -120, :second),
       completed_by_agent: "Claude"
     }
 
@@ -58,10 +58,24 @@ defmodule KanbanWeb.ReviewDetailHeaderTest do
       assert render_header() =~ "W101"
     end
 
-    test "renders a relative age derived from completed_at" do
+    test "renders how long the task has waited for review" do
       html = render_header()
       assert html =~ "data-review-detail-header-time"
       assert html =~ ~r/(s|m|h|d) ago|just now/
+    end
+
+    test "ages the task from review_requested_at, like its queue card" do
+      now = DateTime.utc_now()
+      requested = DateTime.add(now, -3 * 3600, :second)
+
+      html =
+        render_header(%{
+          review_requested_at: requested,
+          completed_at: DateTime.add(now, -5 * 86_400, :second)
+        })
+
+      assert html =~ "3h ago"
+      assert html =~ ~s(datetime="#{DateTime.to_iso8601(requested)}")
     end
   end
 
@@ -128,8 +142,8 @@ defmodule KanbanWeb.ReviewDetailHeaderTest do
       assert html =~ "Unknown agent"
     end
 
-    test "missing completed_at renders no age element (no 'nil ago')" do
-      html = render_header(%{completed_at: nil})
+    test "no review timestamp renders no age element (no 'nil ago')" do
+      html = render_header(%{review_requested_at: nil, completed_at: nil})
       refute html =~ "data-review-detail-header-time"
       refute html =~ "nil ago"
     end

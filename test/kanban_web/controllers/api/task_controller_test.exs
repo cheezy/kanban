@@ -2262,6 +2262,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       "workflow_steps" => :claim_and_completion,
       "explorer_result" => :claim_and_completion,
       "reviewer_result" => :claim_and_completion,
+      "review_requested_at" => :claim_and_completion,
       "review_status" => :review_verdict,
       "review_notes" => :review_verdict,
       "reviewed_at" => :review_attribution,

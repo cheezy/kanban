@@ -15,7 +15,7 @@ defmodule KanbanWeb.ReviewQueueItemTest do
       identifier: "W101",
       title: "Wire up the new dropdown",
       priority: :high,
-      completed_at: DateTime.add(DateTime.utc_now(), -120, :second),
+      review_requested_at: DateTime.add(DateTime.utc_now(), -120, :second),
       completed_by_agent: "Claude",
       created_by_agent: "Claude",
       actual_files_changed: "lib/a.ex, lib/b.ex, lib/c.ex",
@@ -145,38 +145,53 @@ defmodule KanbanWeb.ReviewQueueItemTest do
   end
 
   describe "review_queue_item/1 — timestamp" do
-    test "renders a relative timestamp when completed_at is set" do
+    test "renders how long the task has waited for review" do
       html = render_item()
       assert html =~ "data-review-queue-item-timestamp"
       assert html =~ "ago"
     end
 
-    test "omits the timestamp when completed_at is nil" do
-      html = render_item(%{completed_at: nil})
+    test "ages the task from review_requested_at, not completed_at" do
+      now = DateTime.utc_now()
+
+      html =
+        render_item(%{
+          review_requested_at: DateTime.add(now, -3 * 3600, :second),
+          completed_at: DateTime.add(now, -5 * 86_400, :second)
+        })
+
+      assert html =~ "3h ago"
+      refute html =~ "5d ago"
+    end
+
+    test "falls back to updated_at for a task with no review stamp" do
+      updated_at = DateTime.utc_now() |> DateTime.add(-2 * 86_400, :second) |> DateTime.to_naive()
+
+      html = render_item(%{review_requested_at: nil, updated_at: updated_at})
+
+      assert html =~ "2d ago"
+    end
+
+    test "omits the timestamp when neither timestamp is set" do
+      html = render_item(%{review_requested_at: nil, completed_at: nil})
       refute html =~ "data-review-queue-item-timestamp"
     end
 
-    test "renders 'just now' when completed less than 5 seconds ago" do
+    test "renders 'just now' when the wait began less than 5 seconds ago" do
       now = DateTime.utc_now()
-      html = render_item(%{completed_at: DateTime.add(now, -1, :second)})
+      html = render_item(%{review_requested_at: DateTime.add(now, -1, :second)})
       assert html =~ "just now"
     end
 
-    test "renders Ns ago when completed in the last minute" do
+    test "renders Ns ago when the wait began in the last minute" do
       now = DateTime.utc_now()
-      html = render_item(%{completed_at: DateTime.add(now, -30, :second)})
+      html = render_item(%{review_requested_at: DateTime.add(now, -30, :second)})
       assert html =~ ~r/3\ds ago/
     end
 
-    test "renders Nh ago when completed hours ago" do
+    test "renders Nd ago when the wait began days ago" do
       now = DateTime.utc_now()
-      html = render_item(%{completed_at: DateTime.add(now, -3 * 3600, :second)})
-      assert html =~ "3h ago"
-    end
-
-    test "renders Nd ago when completed days ago" do
-      now = DateTime.utc_now()
-      html = render_item(%{completed_at: DateTime.add(now, -5 * 86_400, :second)})
+      html = render_item(%{review_requested_at: DateTime.add(now, -5 * 86_400, :second)})
       assert html =~ "5d ago"
     end
   end

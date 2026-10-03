@@ -738,8 +738,39 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
 
       assert recompleted.column_id == ctx.review.id
       assert is_nil(recompleted.review_status)
+      assert DateTime.diff(DateTime.utc_now(), recompleted.review_requested_at) in 0..5
       assert is_nil(recompleted.reviewed_at)
       assert is_nil(recompleted.reviewed_by_id)
+    end
+
+    test "stamps review_requested_at on completion and moves it on resubmission", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      {:ok, completed, _hooks} =
+        AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert %DateTime{} = completed.review_requested_at
+
+      long_ago = ~U[2026-01-01 00:00:00Z]
+
+      Task
+      |> where(id: ^task.id)
+      |> Repo.update_all(set: [review_requested_at: long_ago])
+
+      reviewed =
+        Task
+        |> Repo.get!(task.id)
+        |> Repo.preload([:column])
+        |> set_review_status(:changes_requested, ctx.user)
+
+      {:ok, back_in_doing} = AgentWorkflow.mark_reviewed(reviewed, ctx.user)
+
+      {:ok, recompleted, _hooks} =
+        AgentWorkflow.complete_task(back_in_doing, ctx.user, valid_complete_params(), "Claude")
+
+      assert DateTime.compare(recompleted.review_requested_at, long_ago) == :gt
+      assert is_nil(recompleted.completed_at)
     end
 
     test "a re-completed task is listed by Reviews.list_pending_reviews/1", ctx do

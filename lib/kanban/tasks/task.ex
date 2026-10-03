@@ -409,6 +409,11 @@ defmodule Kanban.Tasks.Task do
     # When reviewed - Validated: Required when review_status != :pending
     field :reviewed_at, :utc_datetime
 
+    # When the task last entered the Review column (agent completion or a drag
+    # in from another column). Server-set only: no changeset casts it.
+    # Kanban.Reviews.waiting_since/1 ages pending reviews from it (D348).
+    field :review_requested_at, :utc_datetime
+
     # After-Goal Tracking (W493 / G113)
     # Goal-only: set on goals when their last child completes, gating the
     # goal's transition to Done on an agent-reported `after_goal` exit

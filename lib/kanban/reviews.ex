@@ -13,6 +13,13 @@ defmodule Kanban.Reviews do
   the Review column is not yet completed; `completed_at` only gets stamped
   when the reviewer approves and the task transitions to Done.
 
+  A pending task has been waiting since `waiting_since/1`: its
+  `review_requested_at`, stamped each time it enters the Review column (an
+  agent completion, including a resubmission after "request changes", or a
+  drag in from another column), else its `updated_at`. The queue order, the
+  header's oldest age, the queue cards, the detail header and the weekly
+  digest all use it, so one task shows one age everywhere.
+
   All public functions are scope-aware: when a `Kanban.Accounts.Scope` is
   passed, results are filtered to tasks on boards the scoped user can
   access via `Kanban.Boards.BoardUser` membership. When `nil`, the
@@ -40,13 +47,11 @@ defmodule Kanban.Reviews do
   @doc """
   Returns the list of tasks currently pending review.
 
-  Tasks are ordered by `updated_at` ascending (oldest first) so the
-  reviewer surfaces the most stale work at the top of the queue.
-  `updated_at` reflects the most recent transition into the Review column
-  (either the original agent completion, or an agent re-completion after
-  a "request changes" round-trip). `:column`
-  and the column's `:board` are preloaded so the queue UI can render the
-  board chip without N+1 lookups.
+  Tasks are ordered by `waiting_since/1` ascending (oldest first, ties by
+  id) so the reviewer surfaces the most stale work at the top of the queue;
+  editing a pending task does not move it. `:column` and the column's
+  `:board` are preloaded so the queue UI can render the board chip without
+  N+1 lookups.
 
   ## Options
 
@@ -59,10 +64,30 @@ defmodule Kanban.Reviews do
     Task
     |> pending_review_query()
     |> BoardScope.apply_board_scope(Keyword.get(opts, :scope))
-    |> order_by([t], asc: t.updated_at)
+    |> order_by([t],
+      asc: fragment("COALESCE(?, ?)", t.review_requested_at, t.updated_at),
+      asc: t.id
+    )
     |> preload([t], [:completed_by, column: :board])
     |> Repo.all()
   end
+
+  @doc """
+  Returns when a pending task started waiting for review, as a UTC
+  `DateTime`: its `review_requested_at`, else its `updated_at` for a task
+  that predates the stamp or was created directly in the Review column.
+  Returns `nil` when neither is present.
+
+  Takes a `Task` or any map with those keys.
+  """
+  @spec waiting_since(map()) :: DateTime.t() | nil
+  def waiting_since(%{review_requested_at: %DateTime{} = at}), do: at
+
+  def waiting_since(%{updated_at: %NaiveDateTime{} = at}),
+    do: DateTime.from_naive!(at, "Etc/UTC")
+
+  def waiting_since(%{updated_at: %DateTime{} = at}), do: at
+  def waiting_since(_task), do: nil
 
   @doc """
   Returns a single pending-review task by id, scoped to the caller.
@@ -95,8 +120,7 @@ defmodule Kanban.Reviews do
     * `:count` — total number of pending-review tasks
     * `:distinct_agents` — distinct non-nil `completed_by_agent` values
     * `:oldest_age_minutes` — minutes since the oldest pending task's
-      `updated_at` (which the agent workflow stamps when moving the task
-      into Review), clamped to 0; `nil` when the queue is empty
+      `waiting_since/1`, clamped to 0; `nil` when the queue is empty
   """
   @spec queue_stats(keyword()) :: %{
           count: non_neg_integer(),
@@ -108,7 +132,11 @@ defmodule Kanban.Reviews do
       Task
       |> pending_review_query()
       |> BoardScope.apply_board_scope(Keyword.get(opts, :scope))
-      |> select([t], %{updated_at: t.updated_at, agent: t.completed_by_agent})
+      |> select([t], %{
+        review_requested_at: t.review_requested_at,
+        updated_at: t.updated_at,
+        agent: t.completed_by_agent
+      })
       |> Repo.all()
 
     %{
@@ -146,17 +174,17 @@ defmodule Kanban.Reviews do
   defp oldest_age_minutes(tasks) do
     oldest =
       tasks
-      |> Enum.map(& &1.updated_at)
+      |> Enum.map(&waiting_since/1)
       |> Enum.reject(&is_nil/1)
-      |> Enum.min(NaiveDateTime, fn -> nil end)
+      |> Enum.min(DateTime, fn -> nil end)
 
     case oldest do
       nil ->
         nil
 
-      %NaiveDateTime{} = ndt ->
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.diff(ndt, :second)
+      %DateTime{} = since ->
+        DateTime.utc_now()
+        |> DateTime.diff(since, :second)
         |> max(0)
         |> div(60)
     end

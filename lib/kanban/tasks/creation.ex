@@ -97,7 +97,7 @@ defmodule Kanban.Tasks.Creation do
     |> Ecto.Multi.run(:lock_and_prepare, goal_lock_and_prepare_fun(column, child_tasks_attrs))
     |> Ecto.Multi.insert(:goal, fn %{lock_and_prepare: prep} ->
       attrs = prepare_goal_attrs(goal_attrs, prep.goal_id, prep.position)
-      changeset_fn.(%Task{column_id: column.id}, attrs)
+      column |> new_task() |> changeset_fn.(attrs)
     end)
     |> Ecto.Multi.insert(:goal_history, fn %{goal: goal} ->
       TaskHistory.changeset(%TaskHistory{}, %{task_id: goal.id, type: :creation})
@@ -153,7 +153,7 @@ defmodule Kanban.Tasks.Creation do
           prep.position
         )
 
-      changeset_fn.(%Task{column_id: column.id}, child_attrs_with_parent)
+      column |> new_task() |> changeset_fn.(child_attrs_with_parent)
     end)
     |> Ecto.Multi.insert(history_key, fn changes ->
       child_task = Map.get(changes, task_key)
@@ -392,11 +392,18 @@ defmodule Kanban.Tasks.Creation do
         |> prepare_task_attrs(prep.position)
         |> put_key("identifier", prep.identifier)
 
-      %Task{column_id: column.id}
+      new_task(column)
       |> changeset_fn.(task_attrs)
       |> Dependencies.validate_circular_dependencies()
     end
   end
+
+  # A task created straight into Review starts waiting for review now, so an
+  # edit does not reset its age (Kanban.Reviews.waiting_since/1, D348).
+  defp new_task(%{id: id, name: "Review"}),
+    do: %Task{column_id: id, review_requested_at: DateTime.utc_now(:second)}
+
+  defp new_task(column), do: %Task{column_id: column.id}
 
   defp put_key(attrs, key, value) do
     actual_key =

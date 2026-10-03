@@ -57,6 +57,7 @@ defmodule KanbanWeb.API.TaskParamFilter do
     review_report
     reviewed_by_id
     reviewed_at
+    review_requested_at
     workflow_steps
     explorer_result
     reviewer_result
@@ -103,6 +104,7 @@ defmodule KanbanWeb.API.TaskParamFilter do
     review_report
     reviewed_by_id
     reviewed_at
+    review_requested_at
     workflow_steps
     explorer_result
     reviewer_result
@@ -140,12 +142,13 @@ defmodule KanbanWeb.API.TaskParamFilter do
   # writes it alongside `claimed_at`/`claim_expires_at`. `review_report` sits
   # with the completion fields because the COMPLETION changeset casts it
   # (`AgentWorkflow.completion_changeset/5`) — despite the name, `mark_reviewed`
-  # does not write it.
+  # does not write it. `review_requested_at` is stamped by the completion
+  # changeset too (and by a board drag into Review), never by a caller.
   @claim_and_completion_update_fields ~w(
     status assigned_to_id claimed_at claim_expires_at completed_at
     completed_by_id completed_by_agent completion_summary completion_notes
     actual_complexity actual_files_changed time_spent_minutes review_report
-    workflow_steps explorer_result reviewer_result
+    workflow_steps explorer_result reviewer_result review_requested_at
   )
 
   # The verdict itself has NO API writer. `mark_reviewed/2` refuses with

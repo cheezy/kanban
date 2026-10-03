@@ -36,7 +36,13 @@ defmodule Kanban.Notifications.DigestTest do
 
     Task
     |> where(id: ^task.id)
-    |> Repo.update_all(set: [needs_review: true, updated_at: updated_at])
+    |> Repo.update_all(
+      set: [
+        needs_review: true,
+        updated_at: updated_at,
+        review_requested_at: DateTime.from_naive!(updated_at, "Etc/UTC")
+      ]
+    )
 
     task
   end
@@ -125,6 +131,16 @@ defmodule Kanban.Notifications.DigestTest do
                reviews.oldest
 
       assert first.board_id == ctx.board.id
+    end
+
+    test "ages a review from when it entered Review, not from a later edit", ctx do
+      task = pending_review(ctx.cols["Review"], 1)
+
+      Task
+      |> where(id: ^task.id)
+      |> Repo.update_all(set: [review_requested_at: DateTime.add(@now, -72, :hour)])
+
+      assert %{reviews: %{oldest_age_hours: 72, oldest: [%{age_hours: 72}]}} = build(ctx.user)
     end
 
     test "never includes another user's boards or reviews", ctx do
