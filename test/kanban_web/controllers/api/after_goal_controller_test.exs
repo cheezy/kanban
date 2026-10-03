@@ -17,6 +17,7 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
   alias Kanban.AfterGoal.GraceWorker
   alias Kanban.ApiTokens
   alias Kanban.Columns
+  alias Kanban.Notifications.Notification
   alias Kanban.Tasks
 
   @moduletag capture_log: true
@@ -635,6 +636,86 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
       assert json_response(conn, 403)
       # Goal was not promoted; it stays pending for a re-run by an authorized caller.
       assert Tasks.get_task!(goal.id).after_goal_status == :pending
+    end
+  end
+
+  describe "after_goal and goal-completion notifications (W2204)" do
+    defp event_rows(event_type, goal_id) do
+      import Ecto.Query
+
+      Notification
+      |> where(event_type: ^event_type, task_id: ^goal_id)
+      |> Kanban.Repo.all()
+    end
+
+    defp report(conn, goal, exit_code, output \\ "hook output") do
+      patch(conn, ~p"/api/tasks/#{goal.id}/after_goal", %{
+        "exit_code" => exit_code,
+        "output" => output,
+        "duration_ms" => 500
+      })
+    end
+
+    test "a failing report notifies the goal creator with the exit code and a goal link", ctx do
+      %{conn: conn, user: user, board: board} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      report(conn, goal, 1)
+
+      assert [%Notification{} = n] = event_rows(:after_goal_failed, goal.id)
+      assert n.user_id == user.id
+      assert n.metadata["exit_code"] == 1
+      assert n.url_path == "/boards/#{board.id}/tasks/#{goal.id}/edit"
+    end
+
+    test "repeated failures notify once; a failure after a later success notifies again", ctx do
+      %{conn: conn} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      report(conn, goal, 1)
+      report(conn, goal, 2)
+      assert length(event_rows(:after_goal_failed, goal.id)) == 1
+
+      report(conn, goal, 0)
+      report(conn, goal, 1)
+      assert length(event_rows(:after_goal_failed, goal.id)) == 2
+    end
+
+    test "the hook output never reaches the notification", ctx do
+      %{conn: conn} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      report(conn, goal, 1, "leaked /Users/x host-secret")
+
+      assert [n] = event_rows(:after_goal_failed, goal.id)
+      refute inspect(n) =~ "host-secret"
+      refute inspect(n) =~ "/Users/x"
+    end
+
+    test "a success report notifies goal_completed once", ctx do
+      %{conn: conn} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      report(conn, goal, 0)
+      report(conn, goal, 0)
+
+      assert [%Notification{}] = event_rows(:goal_completed, goal.id)
+    end
+
+    test "a failure followed by the grace worker promotion sends both notifications", ctx do
+      %{conn: conn} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      report(conn, goal, 1)
+      Oban.drain_queue(queue: :after_goal_grace, with_scheduled: true)
+
+      assert [%Notification{}] = event_rows(:after_goal_failed, goal.id)
+      assert [%Notification{}] = event_rows(:goal_completed, goal.id)
     end
   end
 end

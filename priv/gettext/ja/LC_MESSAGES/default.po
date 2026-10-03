@@ -8814,12 +8814,12 @@ msgstr "(%{count} 件保留中)"
 msgid "After-goal hook failed"
 msgstr "after-goal フックが失敗しました"
 
-#: lib/kanban_web/emails/notification_email.ex:118
+#: lib/kanban_web/emails/notification_email.ex:137
 #, elixir-autogen, elixir-format
 msgid "Board: %{board}"
 msgstr "ボード: %{board}"
 
-#: lib/kanban_web/emails/notification_email.ex:114
+#: lib/kanban_web/emails/notification_email.ex:115
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "%{actor} より"
@@ -8831,8 +8831,8 @@ msgstr "ゴールが完了しました"
 
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:41
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:56
-#: lib/kanban_web/emails/notification_email.ex:151
-#: lib/kanban_web/emails/notification_email.ex:161
+#: lib/kanban_web/emails/notification_email.ex:170
+#: lib/kanban_web/emails/notification_email.ex:180
 #, elixir-autogen, elixir-format
 msgid "Manage notification preferences"
 msgstr "通知設定を管理"
@@ -8862,20 +8862,20 @@ msgstr "タスクが割り当てられました"
 msgid "Task unclaimed"
 msgstr "タスクの担当が解除されました"
 
-#: lib/kanban_web/emails/notification_email.ex:150
-#: lib/kanban_web/emails/notification_email.ex:160
+#: lib/kanban_web/emails/notification_email.ex:169
+#: lib/kanban_web/emails/notification_email.ex:179
 #, elixir-autogen, elixir-format
 msgid "Unsubscribe from these emails"
 msgstr "これらのメールの配信を停止"
 
-#: lib/kanban_web/emails/notification_email.ex:139
-#: lib/kanban_web/emails/notification_email.ex:157
+#: lib/kanban_web/emails/notification_email.ex:158
+#: lib/kanban_web/emails/notification_email.ex:176
 #, elixir-autogen, elixir-format
 msgid "View in Stride"
 msgstr "Stride で表示"
 
-#: lib/kanban_web/emails/notification_email.ex:149
-#: lib/kanban_web/emails/notification_email.ex:159
+#: lib/kanban_web/emails/notification_email.ex:168
+#: lib/kanban_web/emails/notification_email.ex:178
 #, elixir-autogen, elixir-format
 msgid "You are receiving this because email notifications for this event type are on."
 msgstr "この種類のイベントのメール通知が有効になっているため、このメールが届いています。"
@@ -8999,3 +8999,13 @@ msgstr "次の内容に関するメールの受信を停止します: %{category
 #, elixir-autogen, elixir-format
 msgid "You're unsubscribed"
 msgstr "配信を停止しました"
+
+#: lib/kanban_web/emails/notification_email.ex:133
+#, elixir-autogen, elixir-format
+msgid "Exit code %{code}"
+msgstr "終了コード %{code}"
+
+#: lib/kanban_web/emails/notification_email.ex:126
+#, elixir-autogen, elixir-format
+msgid "Exit code %{code} after %{ms} ms"
+msgstr "終了コード %{code}（%{ms} ms 後）"

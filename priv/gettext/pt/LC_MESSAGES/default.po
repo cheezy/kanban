@@ -8852,12 +8852,12 @@ msgstr "(%{count} pendente)"
 msgid "After-goal hook failed"
 msgstr "O hook after-goal falhou"
 
-#: lib/kanban_web/emails/notification_email.ex:118
+#: lib/kanban_web/emails/notification_email.ex:137
 #, elixir-autogen, elixir-format
 msgid "Board: %{board}"
 msgstr "Quadro: %{board}"
 
-#: lib/kanban_web/emails/notification_email.ex:114
+#: lib/kanban_web/emails/notification_email.ex:115
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "Por %{actor}"
@@ -8869,8 +8869,8 @@ msgstr "Meta concluída"
 
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:41
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:56
-#: lib/kanban_web/emails/notification_email.ex:151
-#: lib/kanban_web/emails/notification_email.ex:161
+#: lib/kanban_web/emails/notification_email.ex:170
+#: lib/kanban_web/emails/notification_email.ex:180
 #, elixir-autogen, elixir-format
 msgid "Manage notification preferences"
 msgstr "Gerenciar preferências de notificação"
@@ -8900,20 +8900,20 @@ msgstr "Uma tarefa foi atribuída a você"
 msgid "Task unclaimed"
 msgstr "Tarefa liberada"
 
-#: lib/kanban_web/emails/notification_email.ex:150
-#: lib/kanban_web/emails/notification_email.ex:160
+#: lib/kanban_web/emails/notification_email.ex:169
+#: lib/kanban_web/emails/notification_email.ex:179
 #, elixir-autogen, elixir-format
 msgid "Unsubscribe from these emails"
 msgstr "Cancelar a inscrição nestes e-mails"
 
-#: lib/kanban_web/emails/notification_email.ex:139
-#: lib/kanban_web/emails/notification_email.ex:157
+#: lib/kanban_web/emails/notification_email.ex:158
+#: lib/kanban_web/emails/notification_email.ex:176
 #, elixir-autogen, elixir-format
 msgid "View in Stride"
 msgstr "Ver no Stride"
 
-#: lib/kanban_web/emails/notification_email.ex:149
-#: lib/kanban_web/emails/notification_email.ex:159
+#: lib/kanban_web/emails/notification_email.ex:168
+#: lib/kanban_web/emails/notification_email.ex:178
 #, elixir-autogen, elixir-format
 msgid "You are receiving this because email notifications for this event type are on."
 msgstr "Você está recebendo isto porque as notificações por e-mail deste tipo de evento estão ativadas."
@@ -9037,3 +9037,13 @@ msgstr "Você deixará de receber e-mails sobre: %{category}."
 #, elixir-autogen, elixir-format
 msgid "You're unsubscribed"
 msgstr "Sua inscrição foi cancelada"
+
+#: lib/kanban_web/emails/notification_email.ex:133
+#, elixir-autogen, elixir-format
+msgid "Exit code %{code}"
+msgstr "Código de saída %{code}"
+
+#: lib/kanban_web/emails/notification_email.ex:126
+#, elixir-autogen, elixir-format
+msgid "Exit code %{code} after %{ms} ms"
+msgstr "Código de saída %{code} após %{ms} ms"

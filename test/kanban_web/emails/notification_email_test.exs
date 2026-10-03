@@ -173,6 +173,27 @@ defmodule KanbanWeb.Emails.NotificationEmailTest do
                })
     end
 
+    test "renders the after_goal exit code line from metadata, translated", %{user: user} do
+      attrs = %{
+        event_type: :after_goal_failed,
+        metadata: %{"exit_code" => 3, "duration_ms" => 750}
+      }
+
+      email = build_email(user, attrs)
+      assert email.text_body =~ "Exit code 3 after 750 ms"
+      assert email.html_body =~ "Exit code 3 after 750 ms"
+
+      short = build_email(user, %{attrs | metadata: %{"exit_code" => 3}})
+      assert short.text_body =~ "Exit code 3"
+      refute short.text_body =~ " ms"
+
+      french =
+        Gettext.with_locale(KanbanWeb.Gettext, "fr", fn -> build_email(user, attrs) end)
+
+      refute french.text_body =~ "Exit code 3 after 750 ms"
+      assert french.text_body =~ "750"
+    end
+
     test "uses a stable Message-ID per notification", %{user: user} do
       n = notification(user, %{})
       email = NotificationEmail.build(n, user)

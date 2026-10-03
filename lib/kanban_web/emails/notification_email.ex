@@ -104,6 +104,7 @@ defmodule KanbanWeb.Emails.NotificationEmail do
         notification.title,
         actor_line(notification.actor_name),
         board_line(notification.board),
+        detail_line(notification),
         present(notification.body)
       ],
       &is_nil/1
@@ -114,6 +115,24 @@ defmodule KanbanWeb.Emails.NotificationEmail do
     do: gettext("By %{actor}", actor: name)
 
   defp actor_line(_name), do: nil
+
+  # Event-specific details stored as metadata and worded here, so they are
+  # translated at render time.
+  defp detail_line(%Notification{
+         event_type: :after_goal_failed,
+         metadata: %{"exit_code" => code, "duration_ms" => ms}
+       })
+       when is_integer(code) and is_integer(ms),
+       do: gettext("Exit code %{code} after %{ms} ms", code: code, ms: ms)
+
+  defp detail_line(%Notification{
+         event_type: :after_goal_failed,
+         metadata: %{"exit_code" => code}
+       })
+       when is_integer(code),
+       do: gettext("Exit code %{code}", code: code)
+
+  defp detail_line(_notification), do: nil
 
   defp board_line(%{name: name}) when is_binary(name), do: gettext("Board: %{board}", board: name)
   defp board_line(_board), do: nil

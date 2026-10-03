@@ -14,6 +14,7 @@ defmodule Kanban.Tasks.GoalsTest do
   """
 
   use Kanban.DataCase
+  use Oban.Testing, repo: Kanban.Repo
 
   import Ecto.Query
   import Kanban.AccountsFixtures
@@ -21,6 +22,8 @@ defmodule Kanban.Tasks.GoalsTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
+  alias Kanban.Notifications.GoalCompletedWorker
+  alias Kanban.Notifications.Notification
   alias Kanban.Repo
   alias Kanban.Tasks
   alias Kanban.Tasks.Goals
@@ -260,6 +263,80 @@ defmodule Kanban.Tasks.GoalsTest do
       assert updated.after_goal_status == :succeeded
       refute Tasks.get_task!(goal.id).column_id == column.id
       assert Tasks.get_task!(goal.id).column_id == done.id
+    end
+  end
+
+  describe "goal_completed notifications (W2204)" do
+    @success %{"exit_code" => 0, "output" => "ok", "source" => "test"}
+    @failure %{"exit_code" => 1, "output" => "boom", "duration_ms" => 50}
+
+    setup %{user: user, board: board, column: column} do
+      done = column_fixture(board, %{name: "Done"})
+      assignee = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, assignee, :modify, user)
+
+      goal =
+        task_fixture(column, %{
+          title: "Notify goal",
+          type: :goal,
+          created_by_id: user.id,
+          assigned_to_id: assignee.id
+        })
+
+      %{done: done, assignee: assignee, notify_goal: goal}
+    end
+
+    defp goal_rows(event_type) do
+      Notification
+      |> where(event_type: ^event_type)
+      |> Repo.all()
+    end
+
+    test "promotion via after_goal success notifies creator and assignee once; a re-report adds nothing",
+         ctx do
+      assert {:ok, _} = Goals.mark_after_goal_succeeded_and_promote(ctx.notify_goal, @success)
+
+      users = :goal_completed |> goal_rows() |> Enum.map(& &1.user_id) |> Enum.sort()
+      assert users == Enum.sort([ctx.user.id, ctx.assignee.id])
+
+      # Idempotent branch: already succeeded.
+      assert {:ok, _} = Goals.mark_after_goal_succeeded_and_promote(ctx.notify_goal, @success)
+      assert length(goal_rows(:goal_completed)) == 2
+    end
+
+    test "a promotion that cannot reach Done notifies nobody" do
+      # This describe's setup adds a Done column, so use a fresh board
+      # without one: promotion becomes a no-op move.
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      lonely = task_fixture(column, %{type: :goal, created_by_id: user.id})
+
+      assert {:ok, _} = Goals.mark_after_goal_succeeded_and_promote(lonely, @success)
+      assert goal_rows(:goal_completed) == []
+    end
+
+    test "a human moving the last child into Done notifies once, after the move commits",
+         ctx do
+      child = task_fixture(ctx.column, %{title: "Last child", parent_id: ctx.notify_goal.id})
+
+      assert {:ok, _} = Tasks.move_task(child, ctx.done, 0)
+
+      assert Tasks.get_task!(ctx.notify_goal.id).column_id == ctx.done.id
+      assert_enqueued(worker: GoalCompletedWorker, args: %{goal_id: ctx.notify_goal.id})
+      assert goal_rows(:goal_completed) == []
+
+      assert :ok = perform_job(GoalCompletedWorker, %{goal_id: ctx.notify_goal.id})
+      assert :ok = perform_job(GoalCompletedWorker, %{goal_id: ctx.notify_goal.id})
+      assert length(goal_rows(:goal_completed)) == 2
+    end
+
+    test "record_after_goal_failure/2 notifies creator and assignee", ctx do
+      assert {:ok, updated} = Goals.record_after_goal_failure(ctx.notify_goal, @failure)
+      assert [@failure] == updated.after_goal_attempts
+
+      users = :after_goal_failed |> goal_rows() |> Enum.map(& &1.user_id) |> Enum.sort()
+      assert users == Enum.sort([ctx.user.id, ctx.assignee.id])
     end
   end
 end

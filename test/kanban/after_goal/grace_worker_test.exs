@@ -194,4 +194,32 @@ defmodule Kanban.AfterGoal.GraceWorkerTest do
       assert length(refetched.after_goal_attempts) == 1
     end
   end
+
+  describe "perform/1 — goal_completed notification (W2204)" do
+    test "promoting a pending goal notifies its creator once" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      doing = board |> Columns.list_columns() |> Enum.find(&(&1.name == "Doing"))
+
+      {:ok, goal} =
+        Tasks.create_task(doing, %{
+          "title" => "Grace goal",
+          "type" => "goal",
+          "created_by_id" => user.id
+        })
+
+      goal |> Ecto.Changeset.change(after_goal_status: :pending) |> Kanban.Repo.update!()
+
+      assert :ok = perform_job(GraceWorker, %{"goal_id" => goal.id})
+      assert :ok = perform_job(GraceWorker, %{"goal_id" => goal.id})
+
+      rows =
+        Kanban.Notifications.Notification
+        |> Ecto.Query.where(event_type: :goal_completed, task_id: ^goal.id)
+        |> Kanban.Repo.all()
+
+      assert [%{user_id: user_id}] = rows
+      assert user_id == user.id
+    end
+  end
 end

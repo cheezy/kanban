@@ -7,6 +7,7 @@ defmodule Kanban.Tasks.Goals do
 
   alias Kanban.Columns
   alias Kanban.Columns.Column
+  alias Kanban.Notifications.Events
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.History
@@ -221,9 +222,9 @@ defmodule Kanban.Tasks.Goals do
         # animate the goal to Done without requiring a page reload.
         # Fired post-commit so subscribers always observe the persisted
         # state on re-query.
-        updated_goal.id
-        |> Queries.get_task!()
-        |> Broadcaster.broadcast_task_change(:task_moved)
+        done_goal = Queries.get_task!(updated_goal.id)
+        Broadcaster.broadcast_task_change(done_goal, :task_moved)
+        Events.goal_completed(done_goal)
 
         {:ok, updated_goal}
 
@@ -261,7 +262,9 @@ defmodule Kanban.Tasks.Goals do
   """
   def record_after_goal_failure(%Task{type: :goal} = goal, attempt) do
     goal = Repo.get!(Task, goal.id)
-    {:ok, append_after_goal_attempt(goal, attempt)}
+    updated = append_after_goal_attempt(goal, attempt)
+    Events.after_goal_failed(updated, attempt)
+    {:ok, updated}
   end
 
   defp append_after_goal_attempt(goal, attempt) do
@@ -591,6 +594,8 @@ defmodule Kanban.Tasks.Goals do
 
     updated_goal = Queries.get_task!(parent_goal.id)
     Broadcaster.broadcast_task_change(updated_goal, :task_moved)
+    # This runs inside the caller's transaction, so defer the notification.
+    Events.goal_completed_after_commit(updated_goal)
     {:ok, :moved}
   end
 end

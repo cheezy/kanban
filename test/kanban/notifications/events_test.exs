@@ -15,6 +15,7 @@ defmodule Kanban.Notifications.EventsTest do
   alias Kanban.Columns
   alias Kanban.Notifications.EmailWorker
   alias Kanban.Notifications.Events
+  alias Kanban.Notifications.GoalCompletedWorker
   alias Kanban.Notifications.Notification
   alias Kanban.Tasks
   alias Kanban.Tasks.Interventions
@@ -158,6 +159,165 @@ defmodule Kanban.Notifications.EventsTest do
 
       assert :ok = Events.task_assigned(%{ctx.task | assigned_to_id: outsider.id}, ctx.owner)
       assert rows(:task_assigned) == []
+    end
+  end
+
+  describe "claim_expired/1" do
+    test "notifies the assignee with a dedupe key from the claim expiry", ctx do
+      expires = ~U[2026-01-01 10:00:00Z]
+      task = %{ctx.task | assigned_to_id: ctx.editor.id, claim_expires_at: expires}
+
+      assert :ok = Events.claim_expired(task)
+
+      assert [%Notification{user_id: user_id, dedupe_key: key}] = rows(:claim_expired)
+      assert user_id == ctx.editor.id
+      assert key == "claim_expired:#{task.id}:#{DateTime.to_unix(expires)}"
+    end
+
+    test "does nothing without an assignee or a claim expiry", ctx do
+      assert :ok = Events.claim_expired(%{ctx.task | assigned_to_id: nil})
+
+      assert :ok =
+               Events.claim_expired(%{
+                 ctx.task
+                 | assigned_to_id: ctx.editor.id,
+                   claim_expires_at: nil
+               })
+
+      assert rows(:claim_expired) == []
+    end
+
+    test "does not notify an assignee who is not on the board", ctx do
+      task = %{
+        ctx.task
+        | assigned_to_id: user_fixture().id,
+          claim_expires_at: ~U[2026-01-01 10:00:00Z]
+      }
+
+      assert :ok = Events.claim_expired(task)
+      assert rows(:claim_expired) == []
+    end
+  end
+
+  describe "goal_completed/1 and goal_completed_after_commit/1" do
+    defp completed_goal(ctx, attrs) do
+      goal =
+        task_fixture(
+          ctx.cols["Done"],
+          Map.merge(%{type: :goal, created_by_id: ctx.owner.id}, attrs)
+        )
+
+      %{goal | status: :completed, completed_at: ~U[2026-02-02 12:00:00Z]}
+    end
+
+    test "notifies creator and assignee once each", ctx do
+      goal = completed_goal(ctx, %{assigned_to_id: ctx.editor.id})
+
+      assert :ok = Events.goal_completed(goal)
+
+      users = :goal_completed |> rows() |> Enum.map(& &1.user_id) |> Enum.sort()
+      assert users == Enum.sort([ctx.owner.id, ctx.editor.id])
+    end
+
+    test "notifies once when the creator is also the assignee", ctx do
+      goal = completed_goal(ctx, %{assigned_to_id: ctx.owner.id})
+
+      assert :ok = Events.goal_completed(goal)
+      assert [%Notification{}] = rows(:goal_completed)
+    end
+
+    test "notifies nobody for a goal with no assignee and a deleted creator", ctx do
+      goal = %{completed_goal(ctx, %{}) | created_by_id: nil, assigned_to_id: nil}
+
+      assert :ok = Events.goal_completed(goal)
+      assert rows(:goal_completed) == []
+    end
+
+    test "does nothing for a goal that is not completed", ctx do
+      assert :ok = Events.goal_completed(%{completed_goal(ctx, %{}) | status: :open})
+      assert :ok = Events.goal_completed(ctx.task)
+      assert rows(:goal_completed) == []
+    end
+
+    test "goal_completed_after_commit/1 enqueues the worker only for a completed goal", ctx do
+      goal = completed_goal(ctx, %{})
+
+      assert :ok = Events.goal_completed_after_commit(goal)
+      assert_enqueued(worker: GoalCompletedWorker, args: %{goal_id: goal.id})
+
+      assert :ok = Events.goal_completed_after_commit(%{goal | status: :open, id: -5})
+      refute_enqueued(worker: GoalCompletedWorker, args: %{goal_id: -5})
+    end
+  end
+
+  describe "after_goal_failed/2" do
+    defp failing_goal(ctx, attempts) do
+      goal = task_fixture(ctx.cols["Doing"], %{type: :goal, created_by_id: ctx.owner.id})
+      %{goal | after_goal_attempts: attempts}
+    end
+
+    @fail %{"exit_code" => 1, "output" => "secret /Users/x token=abc", "duration_ms" => 500}
+    @ok %{"exit_code" => 0, "output" => "fine", "duration_ms" => 100}
+
+    test "notifies with the exit code and duration but never the output", ctx do
+      goal = failing_goal(ctx, [@fail])
+
+      assert :ok = Events.after_goal_failed(goal, @fail)
+
+      assert [%Notification{} = n] = rows(:after_goal_failed)
+      assert is_nil(n.body)
+      assert n.metadata == %{"exit_code" => 1, "duration_ms" => 500}
+      assert n.url_path == "/boards/#{ctx.board.id}/tasks/#{goal.id}/edit"
+      refute inspect(n) =~ "secret"
+      refute inspect(n) =~ "token=abc"
+    end
+
+    test "one failure streak notifies once", ctx do
+      goal = failing_goal(ctx, [@fail])
+      :ok = Events.after_goal_failed(goal, @fail)
+      :ok = Events.after_goal_failed(%{goal | after_goal_attempts: [@fail, @fail]}, @fail)
+
+      assert [%Notification{dedupe_key: key}] = rows(:after_goal_failed)
+      assert key == "after_goal_failed:#{goal.id}:0"
+    end
+
+    test "a failure after a later success starts a new streak", ctx do
+      goal = failing_goal(ctx, [@fail])
+      :ok = Events.after_goal_failed(goal, @fail)
+
+      :ok = Events.after_goal_failed(%{goal | after_goal_attempts: [@fail, @ok, @fail]}, @fail)
+
+      keys = :after_goal_failed |> rows() |> Enum.map(& &1.dedupe_key) |> Enum.sort()
+      assert keys == ["after_goal_failed:#{goal.id}:0", "after_goal_failed:#{goal.id}:2"]
+    end
+
+    test "a grace worker success also ends the streak", ctx do
+      grace = %{"exit_code" => 0, "duration_ms" => 0, "source" => "after_goal_grace_worker"}
+      goal = failing_goal(ctx, [@fail, grace, @fail])
+
+      :ok = Events.after_goal_failed(goal, @fail)
+
+      assert [%Notification{dedupe_key: key}] = rows(:after_goal_failed)
+      assert key == "after_goal_failed:#{goal.id}:2"
+    end
+
+    test "omits the duration when it is not an integer", ctx do
+      attempt = %{"exit_code" => 2, "output" => "x"}
+      goal = failing_goal(ctx, [attempt])
+      :ok = Events.after_goal_failed(goal, attempt)
+
+      assert [%Notification{body: nil, metadata: %{"exit_code" => 2}}] =
+               rows(:after_goal_failed)
+    end
+
+    test "an attempt without an integer exit code notifies with no details", ctx do
+      attempt = %{"output" => "x"}
+      goal = failing_goal(ctx, [attempt])
+
+      :ok = Events.after_goal_failed(goal, attempt)
+
+      assert [%Notification{body: nil, metadata: metadata}] = rows(:after_goal_failed)
+      assert metadata == %{}
     end
   end
 

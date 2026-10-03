@@ -8814,12 +8814,12 @@ msgstr "(%{count} 项待处理)"
 msgid "After-goal hook failed"
 msgstr "after-goal 钩子执行失败"
 
-#: lib/kanban_web/emails/notification_email.ex:118
+#: lib/kanban_web/emails/notification_email.ex:137
 #, elixir-autogen, elixir-format
 msgid "Board: %{board}"
 msgstr "看板：%{board}"
 
-#: lib/kanban_web/emails/notification_email.ex:114
+#: lib/kanban_web/emails/notification_email.ex:115
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "来自 %{actor}"
@@ -8831,8 +8831,8 @@ msgstr "目标已完成"
 
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:41
 #: lib/kanban_web/controllers/notification_unsubscribe_html/show.html.heex:56
-#: lib/kanban_web/emails/notification_email.ex:151
-#: lib/kanban_web/emails/notification_email.ex:161
+#: lib/kanban_web/emails/notification_email.ex:170
+#: lib/kanban_web/emails/notification_email.ex:180
 #, elixir-autogen, elixir-format
 msgid "Manage notification preferences"
 msgstr "管理通知偏好"
@@ -8862,20 +8862,20 @@ msgstr "有任务分配给您"
 msgid "Task unclaimed"
 msgstr "任务已取消认领"
 
-#: lib/kanban_web/emails/notification_email.ex:150
-#: lib/kanban_web/emails/notification_email.ex:160
+#: lib/kanban_web/emails/notification_email.ex:169
+#: lib/kanban_web/emails/notification_email.ex:179
 #, elixir-autogen, elixir-format
 msgid "Unsubscribe from these emails"
 msgstr "退订此类邮件"
 
-#: lib/kanban_web/emails/notification_email.ex:139
-#: lib/kanban_web/emails/notification_email.ex:157
+#: lib/kanban_web/emails/notification_email.ex:158
+#: lib/kanban_web/emails/notification_email.ex:176
 #, elixir-autogen, elixir-format
 msgid "View in Stride"
 msgstr "在 Stride 中查看"
 
-#: lib/kanban_web/emails/notification_email.ex:149
-#: lib/kanban_web/emails/notification_email.ex:159
+#: lib/kanban_web/emails/notification_email.ex:168
+#: lib/kanban_web/emails/notification_email.ex:178
 #, elixir-autogen, elixir-format
 msgid "You are receiving this because email notifications for this event type are on."
 msgstr "您收到此邮件是因为此类事件的邮件通知已开启。"
@@ -8999,3 +8999,13 @@ msgstr "您将不再收到关于以下内容的邮件：%{category}。"
 #, elixir-autogen, elixir-format
 msgid "You're unsubscribed"
 msgstr "您已退订"
+
+#: lib/kanban_web/emails/notification_email.ex:133
+#, elixir-autogen, elixir-format
+msgid "Exit code %{code}"
+msgstr "退出码 %{code}"
+
+#: lib/kanban_web/emails/notification_email.ex:126
+#, elixir-autogen, elixir-format
+msgid "Exit code %{code} after %{ms} ms"
+msgstr "退出码 %{code}（%{ms} 毫秒后）"
