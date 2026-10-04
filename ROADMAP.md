@@ -24,16 +24,16 @@ Stride tells people when something needs their attention instead of waiting for 
 - A weekly digest email summarising board activity, the review queue and what was finished.
 - Available in every language Stride supports.
 
-## 🔜 Task comments, @mentions and agent comments
+## 🔜 Developer integrations
 
-Turn task comments into a real conversation between people and agents.
+Plug Stride into the tools teams and agents already use.
 
-- Every comment shows who wrote it: the person, or the agent when it was posted through the API.
-- Authors can edit their own comments, marked as edited; authors and board owners can delete them.
-- @mention board members, with suggestions as you type. Mentioned people are notified.
-- Comments appear live for everyone viewing the task, without a reload.
-- One consistent comment thread in both the task view and the edit form, in light and dark mode.
-- Agents can read and post task comments through the API, so they can leave notes and pick up human feedback on the work they're doing.
+- A task API that pages through large boards and filters results, with no change for existing integrations.
+- A published, machine-readable OpenAPI description of the Stride API, so client libraries can be generated.
+- Outbound webhooks for task events: signed, retried automatically, with a delivery log and a test button.
+- Slack notifications for board activity.
+- GitHub integration that links pull requests to tasks by their identifier, shows pull request and CI status on task cards and in the task view, and moves a task to a chosen column when its pull request merges.
+- An MCP server, so MCP-capable agents can find, claim, complete and comment on tasks directly, using their existing API token.
 
 ## 🔜 Workspaces, invitations and account lifecycle
 
@@ -46,16 +46,27 @@ Give teams a home for their boards and people.
 - Delete your own account from Settings, once any boards you own have been handed over.
 - Export a complete workspace archive, and restore it on a self-hosted Stride instance.
 
-## 🔜 Developer integrations
+## 🔜 Enterprise identity and compliance
 
-Plug Stride into the tools teams and agents already use.
+Meet the security and compliance needs of larger organisations.
 
-- A task API that pages through large boards and filters results, with no change for existing integrations.
-- A published, machine-readable OpenAPI description of the Stride API, so client libraries can be generated.
-- Outbound webhooks for task events: signed, retried automatically, with a delivery log and a test button.
-- Slack notifications for board activity.
-- GitHub integration that links pull requests to tasks by their identifier, shows pull request and CI status on task cards and in the task view, and moves a task to a chosen column when its pull request merges.
-- An MCP server, so MCP-capable agents can find, claim, complete and comment on tasks directly, using their existing API token.
+- Two-factor authentication with an authenticator app, plus single-use recovery codes.
+- A permanent, tamper-proof audit log of important account and board activity.
+- An audit log viewer for administrators, with filters and CSV or JSON export.
+- Workspace security policies: require two-factor authentication for all members (with a grace period for existing members) and set how long audit records and archived tasks are kept.
+- Single sign-on with OIDC and SAML identity providers, limited to email domains the workspace has verified.
+- Automatic user provisioning and deprovisioning through SCIM. Removing someone signs them out everywhere and revokes their API tokens.
+
+## 🔜 Task comments, @mentions and agent comments
+
+Turn task comments into a real conversation between people and agents.
+
+- Every comment shows who wrote it: the person, or the agent when it was posted through the API.
+- Authors can edit their own comments, marked as edited; authors and board owners can delete them.
+- @mention board members, with suggestions as you type. Mentioned people are notified.
+- Comments appear live for everyone viewing the task, without a reload.
+- One consistent comment thread in both the task view and the edit form, in light and dark mode.
+- Agents can read and post task comments through the API, so they can leave notes and pick up human feedback on the work they're doing.
 
 ## 🔜 Board search, filters, labels, due dates and My Work
 
@@ -69,17 +80,6 @@ Make busy boards fast to work with.
 - Keyboard shortcuts: press `/` to search the board and `?` to see every shortcut.
 - Labels and due dates available through the API, so agents can set them and filter by them.
 - Read-only members keep full search and filtering, but never see editing actions.
-
-## 🔜 Enterprise identity and compliance
-
-Meet the security and compliance needs of larger organisations.
-
-- Two-factor authentication with an authenticator app, plus single-use recovery codes.
-- A permanent, tamper-proof audit log of important account and board activity.
-- An audit log viewer for administrators, with filters and CSV or JSON export.
-- Workspace security policies: require two-factor authentication for all members (with a grace period for existing members) and set how long audit records and archived tasks are kept.
-- Single sign-on with OIDC and SAML identity providers, limited to email domains the workspace has verified.
-- Automatic user provisioning and deprovisioning through SCIM. Removing someone signs them out everywhere and revokes their API tokens.
 
 ## 🔄 Ongoing plugin improvement
 
