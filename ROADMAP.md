@@ -35,17 +35,6 @@ Plug Stride into the tools teams and agents already use.
 - GitHub integration that links pull requests to tasks by their identifier, shows pull request and CI status on task cards and in the task view, and moves a task to a chosen column when its pull request merges.
 - An MCP server, so MCP-capable agents can find, claim, complete and comment on tasks directly, using their existing API token.
 
-## 🔜 Workspaces, invitations and account lifecycle
-
-Give teams a home for their boards and people.
-
-- Workspaces that group boards and people, with owner, admin, member and guest roles.
-- Every existing board moves into its owner's personal workspace automatically, and everyone keeps the access they have today.
-- Invite people to a workspace or board by email, whether or not they already have an account.
-- A single workspace API token that works across every board in the workspace you can access, alongside today's board tokens.
-- Delete your own account from Settings, once any boards you own have been handed over.
-- Export a complete workspace archive, and restore it on a self-hosted Stride instance.
-
 ## 🔜 Enterprise identity and compliance
 
 Meet the security and compliance needs of larger organisations.
@@ -56,6 +45,17 @@ Meet the security and compliance needs of larger organisations.
 - Workspace security policies: require two-factor authentication for all members (with a grace period for existing members) and set how long audit records and archived tasks are kept.
 - Single sign-on with OIDC and SAML identity providers, limited to email domains the workspace has verified.
 - Automatic user provisioning and deprovisioning through SCIM. Removing someone signs them out everywhere and revokes their API tokens.
+
+## 🔜 Workspaces, invitations and account lifecycle
+
+Give teams a home for their boards and people.
+
+- Workspaces that group boards and people, with owner, admin, member and guest roles.
+- Every existing board moves into its owner's personal workspace automatically, and everyone keeps the access they have today.
+- Invite people to a workspace or board by email, whether or not they already have an account.
+- A single workspace API token that works across every board in the workspace you can access, alongside today's board tokens.
+- Delete your own account from Settings, once any boards you own have been handed over.
+- Export a complete workspace archive, and restore it on a self-hosted Stride instance.
 
 ## 🔜 Task comments, @mentions and agent comments
 
