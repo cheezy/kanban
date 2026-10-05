@@ -534,6 +534,12 @@ For best performance:
 - The `created_by_agent` field is automatically set from your API token
 - Dependencies are validated after all goals are created
 - Circular dependencies are prevented by the system
+- Each child task is linked to the goal it is nested under: the server sets the
+  child's `parent_id` to that goal's id. The batch endpoint always creates new
+  goals, so it cannot add a task to a goal that already exists, and a
+  client-sent `parent_id` (or `parent_goal`) on a goal or child is ignored; see
+  the note under
+  [POST /api/tasks — Task Scheduling & Dependencies](post_tasks.md#task-scheduling--dependencies)
 
 ## See Also
 

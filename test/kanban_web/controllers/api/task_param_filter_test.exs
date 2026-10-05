@@ -88,6 +88,17 @@ defmodule KanbanWeb.API.TaskParamFilterTest do
       refute Map.has_key?(safe, "parent_id")
       assert "parent_id" in rejected
     end
+
+    test "leaves an unrelated parent_goal key untouched while stripping parent_id" do
+      params = %{"title" => "x", "parent_goal" => "G1", "parent_id" => 42}
+      {safe, rejected} = TaskParamFilter.filter_forbidden_create_fields(params)
+
+      # parent_goal is not a forbidden field: the filter passes it through and
+      # the changeset's cast drops it later as an unknown key, so only
+      # parent_id is reported (and therefore logged) as rejected.
+      assert safe == %{"title" => "x", "parent_goal" => "G1"}
+      assert rejected == ["parent_id"]
+    end
   end
 
   describe "filter_child_tasks/1" do

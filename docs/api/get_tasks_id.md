@@ -50,9 +50,7 @@ Authorization: Bearer <your_api_token>
     "completion_notes": null,
     "review_status": null,
     "review_report": null,
-    "parent_goal_id": 120,
-    "parent_goal_identifier": "G10",
-    "parent_goal_title": "User Management System",
+    "parent_id": 120,
     "required_capabilities": ["code_generation"],
     "dependencies": [119],
     "inserted_at": "2025-12-28T10:00:00Z",
@@ -113,9 +111,7 @@ that names no task or a task on another board. See
 | `completion_notes` | string | Notes provided when completing the task |
 | `review_status` | string | Review decision: `approved`, `changes_requested`, `rejected` (null if not reviewed) |
 | `review_report` | string | Structured review report from task-reviewer agent (null if not provided) |
-| `parent_goal_id` | integer | ID of parent goal (null if no parent) |
-| `parent_goal_identifier` | string | Identifier of parent goal |
-| `parent_goal_title` | string | Title of parent goal |
+| `parent_id` | integer | ID of the parent goal (null if no parent). Read-only through the API: set by the server when a goal is created with nested tasks or via the batch endpoint; a human can change it in the board UI |
 | `required_capabilities` | array | Required agent capabilities to work on this task |
 | `dependencies` | array | Array of task IDs that must be completed before this task |
 | `inserted_at` | string | When task was created (ISO 8601) |

@@ -130,6 +130,19 @@ defmodule KanbanWeb.API.TaskControllerTest do
     task
   end
 
+  # An existing goal on the requester's own board (D365), so a create naming it
+  # can only ever touch the requester's data.
+  defp same_board_goal!(column, user) do
+    {:ok, goal} =
+      Tasks.create_task(column, %{
+        "title" => "Existing goal",
+        "type" => "goal",
+        "created_by_id" => user.id
+      })
+
+    goal
+  end
+
   defp base_completion_params do
     %{
       "completion_summary" => "Implemented feature",
@@ -683,6 +696,85 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert is_nil(reloaded.parent_id)
       # …and the victim goal's assignee is not inherited onto the attacker's task.
       assert is_nil(reloaded.assigned_to_id)
+    end
+
+    # D365: the docs once advertised a task.parent_goal create parameter that
+    # the server never implemented. Neither parent_goal nor parent_id can attach
+    # a single create to an existing goal; both are ignored with a 201.
+    test "ignores parent_goal and parent_id on a single create", %{
+      conn: conn,
+      column: column,
+      user: user
+    } do
+      goal = same_board_goal!(column, user)
+
+      for parent_goal <- [goal.identifier, goal.id] do
+        response =
+          conn
+          |> post(~p"/api/tasks",
+            task: %{
+              "title" => "Wants to join #{goal.identifier}",
+              "type" => "work",
+              "parent_goal" => parent_goal,
+              "parent_id" => goal.id
+            }
+          )
+          |> json_response(201)
+
+        assert response["data"]["parent_id"] == nil
+        assert is_nil(Tasks.get_task!(response["data"]["id"]).parent_id)
+      end
+
+      # No attach side effect: the existing goal still has no children.
+      tree = conn |> get(~p"/api/tasks/#{goal.id}/tree") |> json_response(200)
+      assert tree["data"]["children"] == []
+    end
+
+    test "ignores a null parent_goal on create", %{conn: conn} do
+      response =
+        conn
+        |> post(~p"/api/tasks",
+          task: %{"title" => "Null parent_goal", "type" => "work", "parent_goal" => nil}
+        )
+        |> json_response(201)
+
+      reloaded = Tasks.get_task!(response["data"]["id"])
+      assert reloaded.title == "Null parent_goal"
+      assert is_nil(reloaded.parent_id)
+    end
+
+    test "parent_goal on a goal and its nested child cannot redirect the parent link",
+         %{conn: conn, column: column, user: user} do
+      existing_goal = same_board_goal!(column, user)
+
+      response =
+        conn
+        |> post(~p"/api/tasks",
+          task: %{
+            "title" => "New goal",
+            "type" => "goal",
+            "parent_goal" => existing_goal.identifier,
+            "tasks" => [
+              %{
+                "title" => "Nested child",
+                "type" => "work",
+                "parent_goal" => existing_goal.identifier,
+                "parent_id" => existing_goal.id
+              }
+            ]
+          }
+        )
+        |> json_response(201)
+
+      %{"goal" => new_goal, "child_tasks" => [child]} = response
+
+      # A goal never has a parent, and the child joins the goal it was nested
+      # under — the server-set link — not the one the client named.
+      assert is_nil(Tasks.get_task!(new_goal["id"]).parent_id)
+      assert Tasks.get_task!(child["id"]).parent_id == new_goal["id"]
+
+      tree = conn |> get(~p"/api/tasks/#{existing_goal.id}/tree") |> json_response(200)
+      assert tree["data"]["children"] == []
     end
 
     test "silently strips workflow_steps / explorer_result / reviewer_result",

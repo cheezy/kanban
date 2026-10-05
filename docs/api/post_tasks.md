@@ -35,7 +35,24 @@ Authorization: Bearer <your_api_token>
 |-----------|------|----------|-------------|
 | `task.key_files` | array | **CRITICAL** | Files that will be modified - prevents conflicts (see format below) |
 | `task.dependencies` | array | **Strongly Recommended** | Array of task identifiers that must complete first (e.g., `["W1", "W2"]`), or use 0-based indices for tasks within the same goal (e.g., `[0, 1]` - see Dependency Handling below) |
-| `task.parent_goal` | string | No | Identifier of parent goal (e.g., `"G1"`) if this task belongs to a goal |
+
+**A single create cannot attach a task to an existing goal.** There is no
+`parent_goal` parameter, and `parent_id` is read-only:
+
+- A client-sent `parent_id` is stripped before the task is created and logged as
+  a mass-assignment attempt. It is forbidden because it would let a client link
+  a task under any goal, including one on another board, and inherit that
+  goal's assignee.
+- A `parent_goal` key is dropped like any other unrecognised key, with no log
+  line.
+
+Either way the request still returns `201` and the new task has
+`parent_id: null`. The only ways to put work under a goal are nested `tasks` on
+a goal create (see [Goal Creation with Nested Tasks](#goal-creation-with-nested-tasks))
+or [`POST /api/tasks/batch`](post_tasks_batch.md); both create the goal and its
+children together. `parent_id` is set by the server during that goal creation and
+a task cannot be reparented via the API — ask a human to change the parent goal
+in the board UI.
 
 #### Planning & Context
 
@@ -717,7 +734,11 @@ returns the same 422.
 - Column WIP limits are not checked when a goal and its children are created,
   so a full target column does not reject a goal-with-tasks request; once
   created, the children count toward the column's limit like any other task
-- Child tasks are automatically linked to the parent goal via `parent_goal_id`
+- Child tasks are automatically linked to the parent goal: the server sets each
+  child's `parent_id` to the new goal's id. Nested creation here, or the same
+  nesting in [`POST /api/tasks/batch`](post_tasks_batch.md), is the only way a
+  task gets a parent through the API (see the note under
+  [Task Scheduling & Dependencies](#task-scheduling--dependencies))
 - Child tasks can have dependencies on each other using index-based references
 - The goal gets a `G` identifier, work children get `W` identifiers and defect
   children get `D` identifiers; each identifier is unique on the board

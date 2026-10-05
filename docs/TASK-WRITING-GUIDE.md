@@ -58,7 +58,8 @@ Stride uses a **2-level hierarchy** to organize work effectively:
 2. **Tasks (W/D prefix)** - Individual work items (1-3 hours each)
    - **Work tasks (W prefix)** - New functionality, enhancements
    - **Defects (D prefix)** - Bug fixes, corrections
-   - Can belong to a goal (via `parent_id`) or be standalone
+   - Can belong to a goal (via `parent_id`, which the server sets when the goal
+     and its tasks are created together) or be standalone
    - Moved manually through workflow columns
 
 ### When to Create a Goal
@@ -242,20 +243,28 @@ After both complete:
 
 ### Adding Tasks to Existing Goals
 
-You can attach tasks to existing goals by providing the goal's identifier:
+**A single `POST /api/tasks` cannot attach a task to an existing goal.** There is
+no `parent_goal` parameter, and `parent_id` is read-only:
 
-```json
-POST /api/tasks
-{
-  "title": "Add session timeout feature",
-  "type": "work",
-  "parent_goal": "G1",
-  "complexity": "small",
-  "estimated_files": "2-3"
-}
-```
+- A `parent_goal` key is dropped like any other unrecognised key, with no log
+  line.
+- A client-sent `parent_id` is stripped and logged as a mass-assignment
+  attempt.
 
-This task will become part of goal G1 and update its progress count.
+Either way the request still returns `201` and the task is created standalone,
+with `parent_id: null`, so the goal's progress count does not change.
+
+The only ways to put work under a goal through the API are:
+
+1. **Nested tasks on a goal create** — `POST /api/tasks` with `type: "goal"` and
+   a `tasks` array (see [Goal Creation with Nested Tasks](api/post_tasks.md#goal-creation-with-nested-tasks)).
+2. **The batch endpoint** — `POST /api/tasks/batch` with a `goals` array, each
+   goal carrying its own `tasks` (see [POST /api/tasks/batch](api/post_tasks_batch.md)).
+
+Both create the goal and its children together; the server sets each child's
+`parent_id`. Children must be `work` or `defect` tasks, never goals. A task
+cannot be reparented via the API, so to move an existing task under an existing
+goal, ask a human to change its parent goal in the board UI.
 
 ## Why Structured JSON Format Matters for Agents
 
@@ -424,7 +433,7 @@ Use **0-based array indices** to reference tasks within the same goal:
 
 The system automatically converts indices to actual identifiers (W47, W48, etc.) during creation.
 
-**When creating standalone tasks or adding tasks to existing goals:**
+**When creating standalone tasks (including tasks that depend on tasks in an existing goal):**
 
 Use actual task identifiers:
 

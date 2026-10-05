@@ -148,7 +148,7 @@ Tasks in Stride contain everything an AI needs to implement effectively:
 ### Tracking & Metadata
 
 - `dependencies` - Task identifiers that must complete first
-- `parent_id` - Parent goal (for hierarchical tasks)
+- `parent_id` - Parent goal (for hierarchical tasks). Read-only through the API: the server sets it only when a goal is created with nested tasks or through `POST /api/tasks/batch`, so a single create cannot attach a task to an existing goal. A human can change it in the board UI task form
 - `required_capabilities` - Required agent capabilities
 - `created_by_agent` - Tracks AI vs human creation
 - `completed_by_agent` - Tracks AI vs human completion

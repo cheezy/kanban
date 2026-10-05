@@ -39,7 +39,7 @@ of type `goal` is rejected with HTTP 422.
 - needs_review (boolean) - Whether task requires human review
 
 **Dependencies & Relationships:**
-- parent_goal_id (integer) - Links task to parent goal
+- parent_id (integer) - ID of the parent goal (null for a standalone task or a goal). Read-only through the API: the server sets it when a goal is created with nested tasks or via `POST /api/tasks/batch`; it cannot be set on a single create or changed via PATCH (a human can change it in the board UI)
 - required_capabilities (array) - Agent capabilities required (e.g., ["code_generation", "testing"])
 
 **Standard Fields:**
