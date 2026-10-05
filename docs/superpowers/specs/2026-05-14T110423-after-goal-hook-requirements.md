@@ -40,7 +40,7 @@ Ship a fifth developer-defined hook, `after_goal`, that fires once per goal comp
 
 ## Non-goals
 
-- **Nested goals** (a goal whose child is itself a goal). v1 only handles flat parent-goal → child-task hierarchy. Sub-goal cascade semantics are deferred — the after_goal hook of an inner goal does not bubble up to its containing goal in v1.
+- **Nested goals** (a goal whose child is itself a goal). Stride is strictly two-level: a goal contains only work and defect tasks, and since D354 the API rejects a nested goal with a 422, so there is no sub-goal cascade to design.
 - **Multiple `## after_goal` sections per `.stride.md`.** v1 supports exactly one after_goal command per project, following the same single-section parsing rule used by the other four hooks.
 - **Per-goal customization of the after_goal command on the server.** All goals in a project share the same after_goal section. v1 does NOT support per-goal command overrides — those, if needed, come later.
 

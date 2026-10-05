@@ -9,6 +9,9 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 - **Work** (W prefix) - Individual work items (features, enhancements)
 - **Defect** (D prefix) - Bug fixes and defect corrections
 
+A goal contains work and defect tasks only. Goals are never nested: a child task
+of type `goal` is rejected with HTTP 422.
+
 ### Core Schema Fields
 
 - title (string) - Task title

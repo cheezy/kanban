@@ -161,7 +161,7 @@
       "post": {
         "operationId": "createTask",
         "summary": "Create a task, or a goal with nested child tasks",
-        "description": "`type` must be exactly `work`, `defect` or `goal` (lowercase, no surrounding whitespace); an omitted `type` key defaults to `work`. Any other value, including `null`, an empty or whitespace-only string, a number, a case variant such as `Work`, or a mistaken name such as `bug` or `task`, is rejected with a 422 whose `errors.type` names the problem, and nothing is persisted. When `tasks` is non-empty the request always creates a goal and the top-level `type` is ignored, but every child's `type` is validated the same way: one invalid child type rejects the whole request, goal included.",
+        "description": "`type` must be exactly `work`, `defect` or `goal` (lowercase, no surrounding whitespace); an omitted `type` key defaults to `work`. Any other value, including `null`, an empty or whitespace-only string, a number, a case variant such as `Work`, or a mistaken name such as `bug` or `task`, is rejected with a 422 whose `errors.type` names the problem, and nothing is persisted. When `tasks` is non-empty the request always creates a goal and the top-level `type` is ignored, but every child's `type` is validated the same way: one invalid child type rejects the whole request, goal included. A child's `type` must be `work` or `defect`: a goal cannot contain another goal, so a child of type `goal` is rejected with a 422 before any identifier is assigned, and nothing is persisted. Tasks nest one level only, so a child with a non-empty `tasks` list of its own is rejected the same way, with `errors.tasks`.",
         "tags": [
           "Creation"
         ],
@@ -203,7 +203,7 @@
             "$ref": "#/components/responses/NotAcceptable"
           },
           "422": {
-            "description": "Validation failed. Nothing is persisted. An unrecognised `type` reports `errors.type: [\"is invalid\"]`; a `null`, empty or whitespace-only type reports `can't be blank`.",
+            "description": "Validation failed. Nothing is persisted. An unrecognised `type` reports `errors.type: [\"is invalid\"]`; a `null`, empty or whitespace-only type reports `can't be blank`. A nested child task of type `goal` reports `errors.type` saying a goal cannot contain another goal. A nested child with its own non-empty `tasks` reports `errors.tasks`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -223,6 +223,17 @@
                       "errors": {
                         "type": [
                           "is invalid"
+                        ]
+                      },
+                      "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#task-types"
+                    }
+                  },
+                  "nestedGoal": {
+                    "summary": "A nested child task of type goal",
+                    "value": {
+                      "errors": {
+                        "type": [
+                          "must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"
                         ]
                       },
                       "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#task-types"
@@ -367,7 +378,7 @@
       "post": {
         "operationId": "batchCreateGoals",
         "summary": "Create several goals with nested tasks",
-        "description": "Goals are created one at a time and processing stops at the first goal that fails; goals before it stay created. Each goal is created with its children in one transaction. A child task `type` must be exactly `work`, `defect` or `goal`; an invalid child type returns 422 with the failing goal's `index` (the child's position is not reported) and `details.type`, and neither that goal nor any of its children is persisted. A goal's own `type` is ignored: every top-level entry is created as a goal.",
+        "description": "Goals are created one at a time and processing stops at the first goal that fails; goals before it stay created. Each goal is created with its children in one transaction. A child task `type` must be exactly `work` or `defect`: a goal cannot contain another goal, so a child of type `goal` is rejected the same way, before any identifier is assigned. A child with a non-empty `tasks` list of its own is rejected too, with `details.tasks`. An invalid child type returns 422 with the failing goal's `index` (the child's position is not reported) and `details.type`, and neither that goal nor any of its children is persisted. A goal's own `type` is ignored: every top-level entry is created as a goal. Every goal and child gets its own identifier, unique on the board across the whole batch.",
         "tags": [
           "Creation"
         ],
@@ -440,6 +451,18 @@
                       "details": {
                         "type": [
                           "is invalid"
+                        ]
+                      }
+                    }
+                  },
+                  "nestedGoal": {
+                    "summary": "A child task of type goal in the second goal",
+                    "value": {
+                      "error": "Failed to create goal at index 1",
+                      "index": 1,
+                      "details": {
+                        "type": [
+                          "must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"
                         ]
                       }
                     }
@@ -2742,8 +2765,25 @@
           },
           "child_tasks": {
             "type": "array",
+            "description": "The goal's children. A goal contains only work and defect tasks, never another goal, so a child's `type` is never `goal`.",
             "items": {
-              "$ref": "#/components/schemas/TaskSummary"
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/TaskSummary"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "work",
+                        "defect"
+                      ]
+                    }
+                  }
+                }
+              ]
             }
           }
         }
@@ -2875,7 +2915,7 @@
         "properties": {
           "task": {
             "type": "object",
-            "description": "Task fields. For a goal, set type to goal and nest child tasks under `tasks`. See docs/api/post_tasks.md.",
+            "description": "Task fields. For a goal, set type to goal and nest child tasks under `tasks`; each child must be work or defect, because goals cannot be nested. On update, changing a goal's child to type goal is rejected with 422. See docs/api/post_tasks.md.",
             "additionalProperties": true
           },
           "agent_name": {

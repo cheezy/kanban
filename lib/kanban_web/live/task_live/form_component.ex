@@ -386,7 +386,12 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     end
   end
 
+  # The identifier is server-owned: the form has no input for it, and a crafted
+  # save carrying another task's identifier would give two tasks one
+  # identifier, which no database index prevents (D354).
   defp prepare_task_update_params(socket, task_params) do
+    task_params = Map.drop(task_params, ["identifier", :identifier])
+
     task_params =
       case Map.get(socket.assigns, :current_scope) do
         %{user: user} -> maybe_add_review_metadata(task_params, user)

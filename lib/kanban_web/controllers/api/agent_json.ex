@@ -142,7 +142,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "Atomic task claiming with capability matching",
           "Optional human review workflow",
           "Automatic dependency management",
-          "Goal hierarchy for multi-task projects"
+          "Two-level goal hierarchy for multi-task projects: a goal contains only work and defect tasks, never another goal"
         ],
         agent_workflow_pattern:
           "Agents should work continuously: claim task → complete → IF needs_review=false THEN claim next task, ELSE stop and wait for review. Continue this loop until encountering a task that needs review or running out of available tasks."
@@ -355,7 +355,8 @@ defmodule KanbanWeb.API.AgentJSON do
             %{
               method: "POST",
               path: "/api/tasks",
-              description: "Create task or goal with nested tasks",
+              description:
+                "Create task, or goal with nested work and defect tasks (a goal cannot contain a goal)",
               auth_required: true,
               documentation_url: "#{@docs_base_url}/docs/api/post_tasks.md"
             },

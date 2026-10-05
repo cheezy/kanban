@@ -225,4 +225,249 @@ defmodule Kanban.Tasks.CreationTest do
       end
     end
   end
+
+  describe "a goal cannot contain a goal (D354)" do
+    # A child of type goal used to be inserted with its parent's own G
+    # identifier: the child identifiers were pre-generated from the database
+    # before the parent row existed. Stride is two-level, so the child is now
+    # refused before any identifier is generated or any row is written.
+    alias Kanban.Tasks.Task.HierarchyValidations
+
+    defp nested_goal_message, do: HierarchyValidations.nested_goal_message()
+
+    defp column_task_count(column),
+      do: from(t in Task, where: t.column_id == ^column.id) |> Repo.aggregate(:count)
+
+    defp duplicate_identifiers(column) do
+      from(t in Task,
+        where: t.column_id == ^column.id,
+        group_by: t.identifier,
+        having: count(t.id) > 1,
+        select: t.identifier
+      )
+      |> Repo.all()
+    end
+
+    for create_fun <- [:create_goal_with_tasks, :api_create_goal_with_tasks] do
+      test "#{create_fun}/3: nested goal rejected at any position, writing nothing",
+           %{column: column} do
+        goal_attrs = %{"title" => "D354 parent", "type" => "goal"}
+
+        for goal_type <- ["goal", :goal], position <- 0..2 do
+          siblings = [
+            %{"title" => "D354 work child", "type" => "work"},
+            %{"title" => "D354 defect child", "type" => "defect"}
+          ]
+
+          children =
+            List.insert_at(siblings, position, %{"title" => "D354 child", "type" => goal_type})
+
+          assert {:error, {:child_task, ^position}, %Ecto.Changeset{} = changeset} =
+                   apply(Tasks, unquote(create_fun), [column, goal_attrs, children])
+
+          assert errors_on(changeset) == %{type: [nested_goal_message()]}
+        end
+
+        assert column_task_count(column) == 0
+      end
+    end
+
+    test "the child-goal check is the transaction's first step, ahead of every other validation",
+         %{column: column} do
+      # A child insert would also report the over-long title; the hierarchy
+      # step fails first, before any child changeset or identifier exists.
+      assert {:error, {:child_task, 0}, changeset} =
+               Tasks.api_create_goal_with_tasks(column, %{"title" => "D354 early"}, [
+                 %{"title" => @over, "type" => "goal"}
+               ])
+
+      assert errors_on(changeset) == %{type: [nested_goal_message()]}
+    end
+
+    test "several child goals are rejected at the first one", %{column: column} do
+      children = [
+        %{"title" => "D354 w", "type" => "work"},
+        %{"title" => "D354 g1", "type" => "goal"},
+        %{"title" => "D354 g2", "type" => "goal"}
+      ]
+
+      assert {:error, {:child_task, 1}, %Ecto.Changeset{}} =
+               Tasks.api_create_goal_with_tasks(column, %{"title" => "D354 p"}, children)
+
+      assert column_task_count(column) == 0
+    end
+
+    test "a rejected request consumes no identifier, so the next goal on an empty board is G1",
+         %{column: column} do
+      assert {:error, _, _} =
+               Tasks.api_create_goal_with_tasks(column, %{"title" => "D354 rejected"}, [
+                 %{"title" => "D354 nested", "type" => "goal"}
+               ])
+
+      assert {:ok, %{goal: %Task{identifier: "G1"}, child_tasks: []}} =
+               Tasks.api_create_goal_with_tasks(column, %{"title" => "D354 first goal"}, [])
+    end
+
+    test "goal with work and defect children is still created, with sequential identifiers and index dependencies",
+         %{column: column} do
+      children = [
+        %{"title" => "D354 a", "type" => "work"},
+        %{"title" => "D354 b", "type" => "defect", "dependencies" => [0]},
+        %{"title" => "D354 c", "type" => "work", "dependencies" => [0, 1]}
+      ]
+
+      assert {:ok, %{goal: goal, child_tasks: [a, b, c]}} =
+               Tasks.create_goal_with_tasks(column, %{"title" => "D354 ok"}, children)
+
+      assert goal.identifier == "G1"
+      assert {a.identifier, b.identifier, c.identifier} == {"W1", "D1", "W2"}
+      assert b.dependencies == [a.identifier]
+      assert c.dependencies == [a.identifier, b.identifier]
+      assert Enum.all?([a, b, c], &(&1.parent_id == goal.id))
+      assert duplicate_identifiers(column) == []
+    end
+
+    for create_fun <- [:create_goal_with_tasks, :api_create_goal_with_tasks] do
+      test "#{create_fun}/3: goal with no children is still created", %{column: column} do
+        assert {:ok,
+                %{goal: %Task{type: :goal, identifier: "G1", parent_id: nil}, child_tasks: []}} =
+                 apply(Tasks, unquote(create_fun), [column, %{"title" => "D354 lone goal"}, []])
+
+        assert {:ok, %{goal: %Task{identifier: "G2"}, child_tasks: []}} =
+                 apply(Tasks, unquote(create_fun), [column, %{"title" => "D354 lone goal 2"}])
+
+        assert column_task_count(column) == 2
+        assert duplicate_identifiers(column) == []
+      end
+    end
+
+    test "create_task/2 refuses a goal with a parent", %{column: column} do
+      {:ok, parent} = Tasks.create_task(column, %{"title" => "D354 top", "type" => "goal"})
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Tasks.create_task(column, %{
+                 "title" => "D354 nested single",
+                 "type" => "goal",
+                 "parent_id" => parent.id
+               })
+
+      assert errors_on(changeset) == %{type: [nested_goal_message()]}
+      refute persisted?("D354 nested single")
+
+      assert {:ok, %Task{type: :work}} =
+               Tasks.create_task(column, %{"title" => "D354 child ok", "parent_id" => parent.id})
+    end
+
+    test "update_task/2 refuses to give a goal a parent or turn a child into a goal",
+         %{column: column} do
+      {:ok, goal_a} = Tasks.create_task(column, %{"title" => "D354 goal a", "type" => "goal"})
+      {:ok, goal_b} = Tasks.create_task(column, %{"title" => "D354 goal b", "type" => "goal"})
+
+      {:ok, child} =
+        Tasks.create_task(column, %{"title" => "D354 child", "parent_id" => goal_a.id})
+
+      assert {:error, changeset} = Tasks.update_task(goal_b, %{parent_id: goal_a.id})
+      assert errors_on(changeset) == %{type: [nested_goal_message()]}
+
+      assert {:error, changeset} = Tasks.update_task(child, %{type: :goal})
+      assert errors_on(changeset) == %{type: [nested_goal_message()]}
+
+      assert {:error, changeset} = Tasks.api_update_task(child, %{"type" => "goal"})
+      assert errors_on(changeset) == %{type: [nested_goal_message()]}
+
+      assert {:ok, %Task{type: :defect}} = Tasks.api_update_task(child, %{"type" => "defect"})
+      assert {:ok, %Task{type: :goal, parent_id: nil}} = Tasks.update_task(goal_b, %{title: "x"})
+    end
+
+    test "a nested goal written before D354, sharing its parent's identifier, stays editable",
+         %{column: column} do
+      {:ok, parent} =
+        Tasks.create_task(column, %{"title" => "D354 legacy parent", "type" => "goal"})
+
+      # The real shape of the pre-D354 rows: the child goal holds its parent's G.
+      legacy =
+        Repo.insert!(%Task{
+          title: "D354 legacy nested",
+          type: :goal,
+          parent_id: parent.id,
+          column_id: column.id,
+          position: 99,
+          identifier: parent.identifier
+        })
+
+      assert duplicate_identifiers(column) == [parent.identifier]
+
+      assert {:ok, %Task{title: "D354 legacy renamed"}} =
+               Tasks.update_task(legacy, %{title: "D354 legacy renamed"})
+
+      # The next generated goal is still the next free number, not a third copy.
+      assert {:ok, %{goal: %Task{identifier: "G2"}}} =
+               Tasks.api_create_goal_with_tasks(column, %{"title" => "D354 after legacy"}, [])
+
+      assert duplicate_identifiers(column) == [parent.identifier]
+    end
+
+    test "a rejected request on a board with goals leaves the next G number unchanged",
+         %{column: column} do
+      for i <- 1..2 do
+        assert {:ok, _} =
+                 Tasks.api_create_goal_with_tasks(column, %{"title" => "D354 existing #{i}"}, [])
+      end
+
+      assert {:error, {:child_task, 0}, _} =
+               Tasks.api_create_goal_with_tasks(column, %{"title" => "D354 refused"}, [
+                 %{"title" => "D354 refused child", "type" => "goal"}
+               ])
+
+      assert {:ok, %{goal: %Task{identifier: "G3"}}} =
+               Tasks.api_create_goal_with_tasks(column, %{"title" => "D354 next"}, [])
+    end
+
+    test "a child goal ahead of a dependent work child is rejected at its own index",
+         %{column: column} do
+      children = [
+        %{"title" => "D354 dep work", "type" => "work"},
+        %{"title" => "D354 dep goal", "type" => "goal"},
+        %{"title" => "D354 dep on 0", "type" => "work", "dependencies" => [0]}
+      ]
+
+      assert {:error, {:child_task, 1}, changeset} =
+               Tasks.api_create_goal_with_tasks(column, %{"title" => "D354 dep parent"}, children)
+
+      assert errors_on(changeset) == %{type: [nested_goal_message()]}
+      assert column_task_count(column) == 0
+    end
+
+    for create_fun <- [:create_goal_with_tasks, :api_create_goal_with_tasks] do
+      test "#{create_fun}/3 rejects a child that carries tasks of its own", %{column: column} do
+        message = HierarchyValidations.nested_tasks_message()
+
+        for grandchild_type <- ["work", "goal"] do
+          children = [
+            %{"title" => "D354 plain child", "type" => "work"},
+            %{
+              "title" => "D354 child with tasks",
+              "type" => "defect",
+              "tasks" => [%{"title" => "D354 grandchild", "type" => grandchild_type}]
+            }
+          ]
+
+          assert {:error, {:child_task, 1}, changeset} =
+                   apply(Tasks, unquote(create_fun), [column, %{"title" => "D354 g"}, children])
+
+          assert errors_on(changeset) == %{tasks: [message]}
+        end
+
+        assert column_task_count(column) == 0
+
+        # An empty tasks list on a child is not nesting and is still accepted.
+        assert {:ok, %{child_tasks: [%Task{type: :work}]}} =
+                 apply(Tasks, unquote(create_fun), [
+                   column,
+                   %{"title" => "D354 empty nested"},
+                   [%{"title" => "D354 empty child", "type" => "work", "tasks" => []}]
+                 ])
+      end
+    end
+  end
 end

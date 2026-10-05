@@ -15,6 +15,7 @@ defmodule Kanban.Tasks.Creation do
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.Task.HierarchyValidations
   alias Kanban.Tasks.TaskHistory
   alias Kanban.Tasks.TaskType
 
@@ -65,6 +66,11 @@ defmodule Kanban.Tasks.Creation do
 
   @doc """
   Creates a goal with nested child tasks in a single atomic transaction.
+
+  Child tasks must be `work` or `defect` and carry no `tasks` of their own. A
+  child of type `goal` returns `{:error, {:child_task, index}, changeset}` with
+  an error on `:type`, a child with a non-empty `tasks` list the same shape with
+  an error on `:tasks`, and nothing is written (D354).
   """
   def create_goal_with_tasks(column, goal_attrs, child_tasks_attrs \\ []) do
     do_create_goal_with_tasks(column, goal_attrs, child_tasks_attrs, &Task.changeset/2)
@@ -99,6 +105,7 @@ defmodule Kanban.Tasks.Creation do
 
   defp build_goal_creation_multi(column, goal_attrs, child_tasks_attrs, changeset_fn) do
     Ecto.Multi.new()
+    |> Ecto.Multi.run(:child_hierarchy, child_hierarchy_fun(column, child_tasks_attrs))
     |> Ecto.Multi.run(:lock_and_prepare, goal_lock_and_prepare_fun(column, child_tasks_attrs))
     |> Ecto.Multi.insert(:goal, fn %{lock_and_prepare: prep} ->
       attrs = prepare_goal_attrs(goal_attrs, prep.goal_id, prep.position)
@@ -108,6 +115,31 @@ defmodule Kanban.Tasks.Creation do
       TaskHistory.changeset(%TaskHistory{}, %{task_id: goal.id, type: :creation})
     end)
     |> insert_child_tasks(column, child_tasks_attrs, changeset_fn)
+  end
+
+  # A goal holds only work and defect tasks, one level deep (D354). A child of
+  # type goal, or a child carrying its own tasks, is refused by the first step
+  # of the transaction, before :lock_and_prepare takes the board lock or
+  # generates a single identifier, so a rejected request rolls back with
+  # nothing written and no identifier consumed.
+  defp child_hierarchy_fun(column, child_tasks_attrs) do
+    fn _repo, _changes ->
+      case HierarchyValidations.child_task_error(child_tasks_attrs) do
+        nil ->
+          {:ok, :valid}
+
+        {index, field, message} ->
+          {:error, {index, child_hierarchy_changeset(column, field, message)}}
+      end
+    end
+  end
+
+  defp child_hierarchy_changeset(column, field, message) do
+    column
+    |> new_task()
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.add_error(field, message)
+    |> Map.put(:action, :insert)
   end
 
   defp goal_lock_and_prepare_fun(column, child_tasks_attrs) do
@@ -283,6 +315,11 @@ defmodule Kanban.Tasks.Creation do
         emit_goal_creation_telemetry(goal, updated_child_tasks, column)
 
         {:ok, %{goal: goal, child_tasks: updated_child_tasks}}
+
+      # Reported against the offending child, the same shape a failed child
+      # insert returns, so both endpoints render it like any child error.
+      {:error, :child_hierarchy, {index, changeset}, _changes} ->
+        {:error, {:child_task, index}, changeset}
 
       {:error, failed_operation, changeset, _changes} ->
         {:error, failed_operation, changeset}

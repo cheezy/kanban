@@ -50,6 +50,8 @@ Stride uses a **2-level hierarchy** to organize work effectively:
    - Container for multiple related tasks
    - Identifier: G1, G2, G3, etc.
    - Has `parent_id` of `nil` (top-level)
+   - Contains only work and defect tasks: a goal can never contain, or belong
+     to, another goal
    - Progress tracked automatically (e.g., "7/13 tasks complete")
    - Moves through workflow automatically based on child task states
 
@@ -747,6 +749,17 @@ When creating tasks via the API, use this JSON structure:
   - Exception: a goal's own top-level `type` is ignored when it carries child
     `tasks` (and for every entry in `POST /api/tasks/batch`) — the request
     always creates a goal. Each child task's `type` is still validated as above.
+  - A child task's `type` must be `"work"` or `"defect"`. Goals are never
+    nested, so a child of type `"goal"` is rejected with HTTP 422 and nothing is
+    created: `{"errors": {"type": ["must be 'work' or 'defect' for a task inside
+    a goal; a goal cannot contain another goal"]}}` from `POST /api/tasks`, the
+    same message under `details.type` from `POST /api/tasks/batch`. Changing an
+    existing child task's `type` to `"goal"` with `PATCH /api/tasks/:id` is
+    rejected the same way. To split a large piece of work inside a goal, add
+    more work tasks, or create a separate goal.
+  - Tasks nest one level only: a child task with its own non-empty `tasks`
+    list is rejected with HTTP 422 (`errors.tasks`, or `details.tasks` from the
+    batch endpoint) rather than having the inner list silently dropped.
 
 - **`complexity`**: `"small"`, `"medium"`, or `"large"`
 - **`priority`**: `"low"`, `"medium"`, `"high"`, or `"critical"`

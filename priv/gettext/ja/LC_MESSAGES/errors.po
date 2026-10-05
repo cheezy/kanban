@@ -91,3 +91,7 @@ msgstr "%{number}以上である必要があります"
 
 msgid "must be equal to %{number}"
 msgstr "%{number}と等しい必要があります"
+
+## From Kanban.Tasks.Task.HierarchyValidations (D354)
+msgid "must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"
+msgstr "目標内のタスクは 'work' または 'defect' である必要があります。目標に別の目標を含めることはできません"

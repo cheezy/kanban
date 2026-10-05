@@ -324,6 +324,46 @@ defmodule KanbanWeb.API.OpenApiContractTest do
     end
   end
 
+  describe "nested-goal 422 examples (D354)" do
+    test "spec does not allow goal as a child type", %{spec: spec} do
+      [summary, narrowing] =
+        get_in(spec, ~w(components schemas GoalCreated properties child_tasks items allOf))
+
+      assert summary == %{"$ref" => "#/components/schemas/TaskSummary"}
+      assert narrowing["properties"]["type"]["enum"] == ["work", "defect"]
+
+      for path <- ["/api/tasks", "/api/tasks/batch"] do
+        description = get_in(spec, ["paths", path, "post", "description"])
+
+        assert description =~ "a goal cannot contain another goal", path
+        refute description =~ "child task `type` must be exactly `work`, `defect` or `goal`", path
+      end
+    end
+
+    test "both creation operations show the message the server returns for a child goal",
+         %{spec: spec} do
+      message = Kanban.Tasks.Task.HierarchyValidations.nested_goal_message()
+
+      for {path, errors_key} <- [{"/api/tasks", "errors"}, {"/api/tasks/batch", "details"}] do
+        example =
+          get_in(spec, [
+            "paths",
+            path,
+            "post",
+            "responses",
+            "422",
+            "content",
+            "application/json",
+            "examples",
+            "nestedGoal",
+            "value"
+          ])
+
+        assert example[errors_key] == %{"type" => [message]}, "#{path} nestedGoal example"
+      end
+    end
+  end
+
   describe "public document hygiene" do
     test "contains no token-shaped strings or internal hostnames", %{raw: raw} do
       refute raw =~ ~r/stride_[A-Za-z0-9]/

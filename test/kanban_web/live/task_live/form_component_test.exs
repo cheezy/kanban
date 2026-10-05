@@ -1675,6 +1675,73 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
+  describe "handle_event save cannot nest a goal (D354)" do
+    test "saving a goal with a parent goal shows the type error and changes nothing" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      parent = task_fixture(column, %{title: "D354 form parent", type: :goal})
+      goal = task_fixture(column, %{title: "D354 form goal", type: :goal})
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: user},
+            task: goal,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{"title" => "D354 form goal", "parent_id" => to_string(parent.id)}
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      assert Kanban.Repo.get!(Tasks.Task, goal.id).parent_id == nil
+
+      assert {Kanban.Tasks.Task.HierarchyValidations.nested_goal_message(), []} ==
+               updated_socket.assigns.form.source.errors[:type]
+    end
+  end
+
+  describe "handle_event save keeps the identifier server-owned (D354)" do
+    test "a crafted edit save cannot copy another task's identifier" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      other = task_fixture(column, %{title: "D354 other"})
+      task = task_fixture(column, %{title: "D354 edited"})
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: user},
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      task_params = %{"title" => "D354 edited again", "identifier" => other.identifier}
+
+      {:noreply, _socket} = FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      reloaded = Kanban.Repo.get!(Tasks.Task, task.id)
+      assert reloaded.title == "D354 edited again"
+      assert reloaded.identifier == task.identifier
+      refute reloaded.identifier == other.identifier
+    end
+  end
+
   describe "handle_event save for edit task keeps unedited map keys" do
     test "a save keeps testing_strategy keys the form has no inputs for" do
       user = user_fixture()

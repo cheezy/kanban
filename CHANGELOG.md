@@ -5,6 +5,14 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **A goal can no longer contain another goal.** Creating a goal whose nested `tasks` included one of type `goal` used to create the child with its parent's own `G` identifier, so two tasks on the board shared one identifier. Stride has two levels, so `POST /api/tasks` and `POST /api/tasks/batch` now refuse a child of type `goal` with a 422 before any identifier is assigned, and nothing is written. The same rule stops `PATCH /api/tasks/:id` and the task form from turning a goal's child into a goal or giving a goal a parent goal. Nested goals created before this fix are left as they are and can still be edited.
+- **A goal's child can no longer carry tasks of its own.** A nested child with a non-empty `tasks` list used to return 201 with the inner list silently dropped. Both creation endpoints now refuse it with a 422 on `tasks`, and nothing is written.
+- **The task form no longer lets an edit set a task's identifier.** A crafted save could copy another task's identifier onto the edited task. Identifiers are now server-owned on that path too.
+
 ## [2.15.0] - 2026-10-03
 
 Stride now tells people when something needs their attention, in the app and by email, instead of waiting for them to go and look.

@@ -440,9 +440,18 @@ defmodule Kanban.AgentsTest do
       parent = task_fixture(column, %{type: :goal})
       {:ok, parent} = Tasks.update_task(parent, %{target_id: target.id})
       # A goal whose own parent is a target-bearing goal is still type :goal and
-      # must be excluded (the rollup bridges work tasks, not goals).
-      nested_goal = task_fixture(column, %{type: :goal, parent_id: parent.id})
-      {:ok, _nested_goal} = Tasks.update_task(nested_goal, %{target_id: target.id})
+      # must be excluded (the rollup bridges work tasks, not goals). Goals can
+      # no longer be nested (D354), so the row is inserted directly, in the
+      # shape pre-D354 data still has.
+      Kanban.Repo.insert!(%Kanban.Tasks.Task{
+        title: "Nested goal written before D354",
+        type: :goal,
+        parent_id: parent.id,
+        column_id: column.id,
+        position: 99,
+        identifier: parent.identifier,
+        target_id: target.id
+      })
 
       assert Agents.fetch_target_bridged_tasks(scope: scope) == []
     end

@@ -37,7 +37,7 @@ All parameters are optional. Only include the fields you want to update.
 | `title` | string | Task title |
 | `description` | string | Detailed task description |
 | `acceptance_criteria` | string | Acceptance criteria for task completion |
-| `type` | string | Task type: `work`, `defect`, or `goal` |
+| `type` | string | Task type: `work`, `defect`, or `goal`. A task that belongs to a goal cannot be changed to `goal`, because goals are never nested; that returns 422 with `errors.type` |
 | `priority` | string | Priority: `low`, `medium`, `high`, `critical` |
 | `needs_review` | boolean | Whether task requires human review before completion |
 

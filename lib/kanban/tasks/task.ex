@@ -147,6 +147,7 @@ defmodule Kanban.Tasks.Task do
   alias Kanban.Schemas.Task.VerificationStep
   alias Kanban.Tasks.Task.ArchiveChangeset
   alias Kanban.Tasks.Task.EmbedValidations
+  alias Kanban.Tasks.Task.HierarchyValidations
   alias Kanban.Tasks.Task.MapFieldValidations
 
   @doc """
@@ -624,6 +625,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_inclusion(:type, [:work, :defect, :goal],
       message: "must be 'work', 'defect', or 'goal'"
     )
+    |> HierarchyValidations.validate_goal_has_no_parent()
     |> validate_inclusion(:priority, [:low, :medium, :high, :critical],
       message: "must be 'low', 'medium', 'high', or 'critical'"
     )
@@ -771,6 +773,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_inclusion(:type, [:work, :defect, :goal],
       message: "must be 'work', 'defect', or 'goal'"
     )
+    |> HierarchyValidations.validate_goal_has_no_parent()
     |> validate_inclusion(:priority, [:low, :medium, :high, :critical],
       message: "must be 'low', 'medium', 'high', or 'critical'"
     )
@@ -816,6 +819,7 @@ defmodule Kanban.Tasks.Task do
     |> validate_inclusion(:type, [:work, :defect, :goal],
       message: "must be 'work', 'defect', or 'goal'"
     )
+    |> HierarchyValidations.validate_goal_has_no_parent()
     |> validate_inclusion(:priority, [:low, :medium, :high, :critical],
       message: "must be 'low', 'medium', 'high', or 'critical'"
     )

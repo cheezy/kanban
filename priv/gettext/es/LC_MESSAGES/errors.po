@@ -100,3 +100,7 @@ msgstr "debe ser mayor o igual a %{number}"
 
 msgid "must be equal to %{number}"
 msgstr "debe ser igual a %{number}"
+
+## From Kanban.Tasks.Task.HierarchyValidations (D354)
+msgid "must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"
+msgstr "debe ser 'work' o 'defect' para una tarea dentro de un objetivo; un objetivo no puede contener otro objetivo"

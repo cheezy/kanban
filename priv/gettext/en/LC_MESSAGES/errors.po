@@ -110,3 +110,7 @@ msgstr ""
 
 msgid "must be equal to %{number}"
 msgstr ""
+
+## From Kanban.Tasks.Task.HierarchyValidations (D354)
+msgid "must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"
+msgstr ""

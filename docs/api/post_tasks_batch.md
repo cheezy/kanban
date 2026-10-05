@@ -302,6 +302,25 @@ you sent is not echoed back. A `null`, empty or whitespace-only child type
 reports `"type": ["can't be blank"]`. The failing goal and all of its children are rolled back together;
 goals before `index` stay created (see [Goal Creation Order](#goal-creation-order)).
 
+A child task of type `goal` in the goal at index 1. Stride has two levels: a
+goal contains work and defect tasks and never another goal, so that goal is
+refused before any identifier is assigned:
+
+```json
+{
+  "error": "Failed to create goal at index 1",
+  "index": 1,
+  "details": {
+    "type": ["must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"]
+  }
+}
+```
+
+As with any other failure, goals before `index` stay created and nothing from
+the refused goal is written. A child with a non-empty `tasks` list of its own is
+refused the same way, with `details.tasks` instead of `details.type`, because
+tasks nest one level only; its inner list is never silently dropped.
+
 WIP limit reached:
 
 ```json
@@ -389,9 +408,12 @@ WIP limit reached:
 - A goal's own `type` is ignored: every entry in `goals` is created as a goal,
   even if it sends `"type": "work"` or an unrecognised value such as `"bug"`
 - A child task's `type` defaults to `work` when omitted, and otherwise must be
-  exactly `work`, `defect` or `goal` (lowercase, no surrounding whitespace). Any
-  other value returns the invalid-type 422 shown above. See
-  [Task Type Values](post_tasks.md#task-type-values)
+  exactly `work` or `defect` (lowercase, no surrounding whitespace). `goal` is
+  never valid for a child, because a goal cannot contain another goal; it
+  returns the nested-goal 422 shown above, and any other value returns the
+  invalid-type 422. See [Task Type Values](post_tasks.md#task-type-values)
+- Every goal gets its own `G` identifier and every child its own `W` or `D`
+  identifier, unique on the board across all goals in the batch
 - `priority` defaults to `medium`
 - `complexity` defaults to `small`
 - `needs_review` defaults to `false` (auto-complete without human review)
@@ -482,7 +504,9 @@ To continue after an error:
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `title: ["can't be blank"]` | Missing title | Add title to goal or task |
-| `type: ["is invalid"]` | Invalid child task type (case variants such as `Work` and names such as `bug` or `task` are invalid) | Use exactly `work`, `defect`, or `goal` |
+| `type: ["is invalid"]` | Invalid child task type (case variants such as `Work` and names such as `bug` or `task` are invalid) | Use exactly `work` or `defect` |
+| `type: ["must be 'work' or 'defect' for a task inside a goal; ..."]` | A child task has type `goal`; goals cannot be nested | Create the inner goal as its own entry in `goals` and give it its own `tasks` |
+| `tasks: ["must be empty for a task inside a goal; ..."]` | A child task carries its own non-empty `tasks` list | Flatten the inner tasks into the goal's `tasks`, or make them their own goal |
 | `type: ["can't be blank"]` | Child task sent `"type": null` or an empty/whitespace-only string | Omit `type` (defaults to `work`) or send a valid value |
 | `priority: ["is invalid"]` | Invalid priority | Use `low`, `medium`, `high`, or `critical` |
 | `complexity: ["is invalid"]` | Invalid complexity | Use `small`, `medium`, or `large` |

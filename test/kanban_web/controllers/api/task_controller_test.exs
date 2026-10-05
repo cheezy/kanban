@@ -1086,6 +1086,175 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "a goal cannot contain a goal (D354)" do
+    # A nested child of type goal used to be created with its parent's own G
+    # identifier. Stride is two-level, so both creation endpoints now refuse
+    # it with the standard 422 envelope before anything is written.
+    @nested_goal_message Kanban.Tasks.Task.HierarchyValidations.nested_goal_message()
+
+    defp d354_titles(conn) do
+      conn
+      |> get(~p"/api/tasks")
+      |> json_response(200)
+      |> Map.fetch!("data")
+      |> Enum.map(& &1["title"])
+    end
+
+    test "POST /api/tasks: nested goal returns 422 and persists nothing",
+         %{conn: conn} do
+      resp =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "D354 parent",
+            "type" => "goal",
+            "tasks" => [
+              %{"title" => "D354 work child", "type" => "work"},
+              %{"title" => "D354 child goal", "type" => "goal"}
+            ]
+          }
+        )
+
+      body = json_response(resp, 422)
+      assert body["errors"] == %{"type" => [@nested_goal_message]}
+      assert Map.has_key?(body, "documentation")
+
+      titles = d354_titles(conn)
+
+      for title <- ["D354 parent", "D354 work child", "D354 child goal"] do
+        refute title in titles
+      end
+    end
+
+    test "POST /api/tasks/batch: nested goal returns 422 at that goal's index and persists nothing for it",
+         %{conn: conn} do
+      resp =
+        post(conn, ~p"/api/tasks/batch",
+          goals: [
+            %{
+              "title" => "D354 batch goal 0",
+              "type" => "goal",
+              "tasks" => [%{"title" => "D354 batch work 0", "type" => "work"}]
+            },
+            %{
+              "title" => "D354 batch goal 1",
+              "type" => "goal",
+              "tasks" => [%{"title" => "D354 batch child goal 1", "type" => "goal"}]
+            }
+          ]
+        )
+
+      assert json_response(resp, 422) == %{
+               "error" => "Failed to create goal at index 1",
+               "index" => 1,
+               "details" => %{"type" => [@nested_goal_message]}
+             }
+
+      # The batch is not atomic across goals: goal 0 persists, goal 1 does not.
+      titles = d354_titles(conn)
+      assert "D354 batch goal 0" in titles
+      refute "D354 batch goal 1" in titles
+      refute "D354 batch child goal 1" in titles
+    end
+
+    test "a batch whose goals each hold a child goal writes nothing and repeats no identifier",
+         %{conn: conn} do
+      goals =
+        for i <- 0..1 do
+          %{
+            "title" => "D354 twin #{i}",
+            "type" => "goal",
+            "tasks" => [%{"title" => "D354 twin child #{i}", "type" => "goal"}]
+          }
+        end
+
+      resp = post(conn, ~p"/api/tasks/batch", goals: goals)
+      assert %{"index" => 0, "details" => %{"type" => [_]}} = json_response(resp, 422)
+
+      tasks = conn |> get(~p"/api/tasks") |> json_response(200) |> Map.fetch!("data")
+      refute Enum.any?(tasks, &String.starts_with?(&1["title"], "D354 twin"))
+
+      identifiers = Enum.map(tasks, & &1["identifier"])
+      assert identifiers == Enum.uniq(identifiers)
+    end
+
+    test "a batch of goals with work and defect children returns unique identifiers",
+         %{conn: conn} do
+      goals =
+        for i <- 0..1 do
+          %{
+            "title" => "D354 ok #{i}",
+            "type" => "goal",
+            "tasks" => [
+              %{"title" => "D354 ok work #{i}", "type" => "work"},
+              %{"title" => "D354 ok defect #{i}", "type" => "defect"}
+            ]
+          }
+        end
+
+      body = conn |> post(~p"/api/tasks/batch", goals: goals) |> json_response(201)
+
+      identifiers =
+        Enum.flat_map(body["goals"], fn %{"goal" => goal, "child_tasks" => children} ->
+          [goal["identifier"] | Enum.map(children, & &1["identifier"])]
+        end)
+
+      assert length(identifiers) == 6
+      assert identifiers == Enum.uniq(identifiers)
+    end
+
+    test "a child carrying tasks of its own returns 422 on both endpoints and writes nothing",
+         %{conn: conn} do
+      message = Kanban.Tasks.Task.HierarchyValidations.nested_tasks_message()
+
+      child = %{
+        "title" => "D354 nested-tasks child",
+        "type" => "work",
+        "tasks" => [%{"title" => "D354 grandchild", "type" => "goal"}]
+      }
+
+      single =
+        post(conn, ~p"/api/tasks",
+          task: %{"title" => "D354 nested-tasks goal", "type" => "goal", "tasks" => [child]}
+        )
+
+      assert json_response(single, 422)["errors"] == %{"tasks" => [message]}
+
+      batch =
+        post(conn, ~p"/api/tasks/batch",
+          goals: [%{"title" => "D354 nested-tasks batch", "type" => "goal", "tasks" => [child]}]
+        )
+
+      assert %{"index" => 0, "details" => %{"tasks" => [^message]}} = json_response(batch, 422)
+
+      titles = d354_titles(conn)
+
+      for title <- ["D354 nested-tasks goal", "D354 nested-tasks batch", "D354 grandchild"] do
+        refute title in titles
+      end
+    end
+
+    test "PATCH /api/tasks/:id refuses to turn a goal's child into a goal", %{conn: conn} do
+      created =
+        conn
+        |> post(~p"/api/tasks",
+          task: %{
+            "title" => "D354 patch parent",
+            "type" => "goal",
+            "tasks" => [%{"title" => "D354 patch child", "type" => "work"}]
+          }
+        )
+        |> json_response(201)
+
+      [%{"id" => child_id}] = created["child_tasks"]
+
+      resp = patch(conn, ~p"/api/tasks/#{child_id}", task: %{"type" => "goal"})
+      assert json_response(resp, 422)["errors"]["type"] == [@nested_goal_message]
+
+      resp = patch(conn, ~p"/api/tasks/#{child_id}", task: %{"type" => "defect"})
+      assert json_response(resp, 200)["data"]["type"] == "defect"
+    end
+  end
+
   describe "POST /api/tasks/batch" do
     test "returns 403 for a read-only board member (D154)", %{board: board, user: owner} do
       reader = user_fixture()

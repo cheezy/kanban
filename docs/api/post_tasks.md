@@ -24,7 +24,7 @@ Authorization: Bearer <your_api_token>
 |-----------|------|----------|-------------|
 | `task.title` | string | Yes | Clear, specific task title |
 | `task.description` | string | **Strongly Recommended** | Detailed description with WHY, WHAT, and WHERE |
-| `task.type` | string | **Strongly Recommended** | Type: `work` (new features), `defect` (bug fixes) or `goal` (a goal with nested `tasks`). Exact lowercase values only; omitted defaults to `work`, and any other value returns 422 (see [Task Type Values](#task-type-values)). Exception: when `task.tasks` is non-empty the request always creates a goal and this top-level value is ignored; each child's `type` is still validated |
+| `task.type` | string | **Strongly Recommended** | Type: `work` (new features), `defect` (bug fixes) or `goal` (a goal with nested `tasks`). Exact lowercase values only; omitted defaults to `work`, and any other value returns 422 (see [Task Type Values](#task-type-values)). Exception: when `task.tasks` is non-empty the request always creates a goal and this top-level value is ignored; each child's `type` is still validated and must be `work` or `defect`, because a goal cannot contain another goal |
 | `task.priority` | string | No | Priority: `low`, `medium`, `high`, `critical` (default: `medium`) |
 | `task.complexity` | string | **Strongly Recommended** | Complexity: `small`, `medium`, `large` (default: `small`) |
 | `task.needs_review` | boolean | No | Whether task requires human review (default: `true`) |
@@ -83,7 +83,7 @@ Authorization: Bearer <your_api_token>
 |-----------|------|----------|-------------|
 | `task.required_capabilities` | array | No | Required agent capabilities (e.g., `["code_generation", "testing"]`) |
 | `task.column_id` | integer | No | Column ID where task should be created (default: Ready) |
-| `task.tasks` | array | No | Array of child task objects (for goals only) |
+| `task.tasks` | array | No | Array of child task objects (for goals only). Each child's `type` must be `work` or `defect`; a child of type `goal` returns 422, and so does a child with a non-empty `tasks` list of its own (see [Unprocessable Entity (422)](#unprocessable-entity-422)) |
 | `agent_name` | string | No | **Top-level** (sibling of `task`, not nested inside it): the display name of the agent creating the task, used for `created_by_agent` attribution (see resolution order below) |
 
 #### created_by_agent Resolution Order
@@ -617,6 +617,34 @@ An explicit `"type": null`, or an empty or whitespace-only string, returns
 invalid type is on a nested child task, the same 422 is returned and neither the
 goal nor any child is created.
 
+A nested child task of type `goal`. Stride has two levels: a goal contains work
+and defect tasks and never another goal, so the request is refused before any
+identifier is assigned and neither the goal nor any child is created:
+
+```json
+{
+  "errors": {
+    "type": ["must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"]
+  },
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#task-types"
+}
+```
+
+A nested child task with a non-empty `tasks` list of its own. Tasks nest one
+level only, so the request is refused the same way instead of silently dropping
+the inner list, and nothing is created. An empty `tasks` list on a child is
+accepted:
+
+```json
+{
+  "errors": {
+    "tasks": ["must be empty for a task inside a goal; tasks cannot be nested more than one level"]
+  }
+}
+```
+
+The response also carries the usual `documentation` link.
+
 WIP limit reached:
 
 ```json
@@ -641,10 +669,15 @@ WIP limit reached:
 - When `tasks` is non-empty the request always creates a goal: the top-level
   `type` is ignored, but every child's `type` is validated (see
   [Task Type Values](#task-type-values))
+- Each child must be `work` or `defect`. Goals are never nested: a child of type
+  `goal` returns 422 and nothing is created
+- Tasks nest one level only: a child with a non-empty `tasks` list of its own
+  returns 422 and nothing is created
 - All tasks are created in a single database transaction (all-or-nothing)
 - Child tasks are automatically linked to the parent goal via `parent_goal_id`
 - Child tasks can have dependencies on each other using index-based references
-- Goals have identifiers starting with "G", tasks with "W"
+- The goal gets a `G` identifier, work children get `W` identifiers and defect
+  children get `D` identifiers; each identifier is unique on the board
 
 ### Dependency Handling for Child Tasks
 
@@ -728,7 +761,9 @@ Use existing task identifiers directly:
 
 - `work` - New functionality or an enhancement (default when `type` is omitted)
 - `defect` - A bug fix
-- `goal` - A goal; nest its child tasks under `tasks`
+- `goal` - A goal; nest its child tasks under `tasks`. A goal is always
+  top-level: it can never be the child of another goal, so `goal` is not a valid
+  type for a nested child task
 
 The match is exact: values are lowercase with no surrounding whitespace, so
 `Work`, `WORK` and `" work"` are rejected, as are mistaken names such as `bug`,
