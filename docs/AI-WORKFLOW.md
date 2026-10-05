@@ -50,31 +50,31 @@ of type `goal` is rejected with HTTP 422.
 
 ### Key API Endpoints for AI
 
-**Complete API documentation is available in [../api/README.md](../api/README.md)**
+**Complete API documentation is available in [api/README.md](api/README.md)**
 
 **Machine-readable contract:** [GET /api/openapi.json](api/get_openapi_json.md) serves an OpenAPI 3.1 description of every endpoint, with no authentication required — point a client generator, an API viewer or MCP tooling at it.
 
 **Task Discovery:**
-- [GET /api/tasks/next](../api/get_tasks_next.md) - Get next available task matching agent capabilities
-- [GET /api/tasks](../api/get_tasks.md) - List tasks; optional filters (`column_id`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`) and opt-in cursor pagination (`limit`, `cursor` → `meta.next_cursor`). Syncing with `updated_since`? See [Incremental sync](api/get_tasks.md#incremental-sync)
-- [GET /api/tasks/:id](../api/get_tasks_id.md) - Get specific task details
-- [GET /api/tasks/:id/tree](../api/get_tasks_id_tree.md) - Get task with all children (for goals)
+- [GET /api/tasks/next](api/get_tasks_next.md) - Get next available task matching agent capabilities
+- [GET /api/tasks](api/get_tasks.md) - List tasks; optional filters (`column_id`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`) and opt-in cursor pagination (`limit`, `cursor` → `meta.next_cursor`). Syncing with `updated_since`? See [Incremental sync](api/get_tasks.md#incremental-sync)
+- [GET /api/tasks/:id](api/get_tasks_id.md) - Get specific task details
+- [GET /api/tasks/:id/tree](api/get_tasks_id_tree.md) - Get task with all children (for goals)
 
 **Task Management:**
-- [POST /api/tasks/claim](../api/post_tasks_claim.md) - Claim a task and receive `before_doing` hook
-- [POST /api/tasks/:id/unclaim](../api/post_tasks_id_unclaim.md) - Unclaim a task you can't complete
-- [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md) - Complete a task and receive hooks
-- [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md) - Finalize review
-- [PATCH /api/tasks/:id/mark_done](../api/patch_tasks_id_mark_done.md) - Bypass review and mark as done (⚠️ limited functionality)
+- [POST /api/tasks/claim](api/post_tasks_claim.md) - Claim a task and receive `before_doing` hook
+- [POST /api/tasks/:id/unclaim](api/post_tasks_id_unclaim.md) - Unclaim a task you can't complete
+- [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md) - Complete a task and receive hooks
+- [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) - Finalize review
+- [PATCH /api/tasks/:id/mark_done](api/patch_tasks_id_mark_done.md) - Bypass review and mark as done (⚠️ limited functionality)
 
 **Task Creation:**
-- [POST /api/tasks](../api/post_tasks.md) - Create a task or goal with nested child tasks
-- [POST /api/tasks/batch](../api/post_tasks_batch.md) - Create multiple goals with nested tasks in one request
+- [POST /api/tasks](api/post_tasks.md) - Create a task or goal with nested child tasks
+- [POST /api/tasks/batch](api/post_tasks_batch.md) - Create multiple goals with nested tasks in one request
 
 **Authentication:**
 - Bearer token authentication
 - Capability matching: Agent capabilities matched against task `required_capabilities`
-- See [../api/README.md](../api/README.md) for authentication setup
+- See [api/README.md](api/README.md) for authentication setup
 
 ### AI Workflow Integration
 
@@ -124,14 +124,14 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
 
 **✨ Stride Plugin Available:** Use the `stride-workflow` orchestrator skill for the complete lifecycle. It handles hook execution, codebase exploration, code review, and all required API fields automatically. Individual skills (`stride-claiming-tasks`, `stride-completing-tasks`) remain available for standalone use.
 
-1. **Discover tasks** - Call [GET /api/tasks/next](../api/get_tasks_next.md) to find available tasks
+1. **Discover tasks** - Call [GET /api/tasks/next](api/get_tasks_next.md) to find available tasks
 
 2. **Execute `before_doing` hook FIRST** (blocking, 60s timeout)
    - Example: Pull latest code, setup workspace
    - Capture exit_code, output, and duration_ms
    - **Hook must succeed (exit_code 0) to proceed**
 
-3. **Claim a task** - Call [POST /api/tasks/claim](../api/post_tasks_claim.md)
+3. **Claim a task** - Call [POST /api/tasks/claim](api/post_tasks_claim.md)
    - **REQUIRED:** Include `before_doing_result` parameter with hook execution result
    - API validates hook was executed and succeeded
    - Receives `before_doing` hook metadata (for reference)
@@ -155,7 +155,7 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
    - If this fails, DO NOT call `/complete` - fix the issues first
    - This prepares the task for review
 
-7. **Complete the task** - Call [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md)
+7. **Complete the task** - Call [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md)
    - **REQUIRED:** Include BOTH `after_doing_result` AND `before_review_result` parameters
    - **REQUIRED (G65):** Include `explorer_result` and `reviewer_result` — dispatched-subagent shape or self-reported skip-form with enum `reason` and 40+ non-whitespace-char `summary`. See [Completion Validation](#completion-validation) below.
    - **Recommended:** Include `workflow_steps` — six-entry telemetry array, one object per phase (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). On a skipped entry, add the optional `reason_code` next to `reason` so the skip aggregates on the compliance dashboard instead of fragmenting.
@@ -175,7 +175,7 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
    - **Hook must succeed (exit_code 0) to proceed**
    - If this fails, DO NOT call `/mark_reviewed` - fix the issues first
 
-10. **Finalize review** - Call [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md)
+10. **Finalize review** - Call [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md)
     - **REQUIRED:** Include `after_review_result` parameter with hook execution result
     - **Only call this AFTER `after_review` hook succeeds** (if `needs_review=true`)
     - API validates hook was executed and succeeded
@@ -218,7 +218,7 @@ Starting with G65 (April 2026), the `/complete` endpoint validates three additio
 |---|---|---|
 | `explorer_result` | Yes (grace-warned, strict-rejected) | Dispatched-subagent shape **OR** self-reported skip-form |
 | `reviewer_result` | Yes (grace-warned, strict-rejected) | Same two shapes as `explorer_result`; dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found`, and **optionally accepts** the structured schema (`schema_version`, `status`, `issue_counts`, `issues[]`, `acceptance_criteria[]`, `testing_strategy`, `patterns`, `pitfalls`) |
-| `workflow_steps` | Recommended (telemetry) | Six-entry array: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`. A skipped entry may carry an optional `reason_code` alongside its free-text `reason` — see [reason_code](../api/patch_tasks_id_complete.md) |
+| `workflow_steps` | Recommended (telemetry) | Six-entry array: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`. A skipped entry may carry an optional `reason_code` alongside its free-text `reason` — see [reason_code](api/patch_tasks_id_complete.md) |
 
 **Rollout modes** (controlled by the `:strict_completion_validation` application flag):
 
@@ -237,7 +237,7 @@ Starting with G65 (April 2026), the `/complete` endpoint validates three additio
 
 The `reason` field must be one of five enum values: `no_subagent_support`, `small_task_0_1_key_files`, `trivial_change_docs_only`, `self_reported_exploration`, `self_reported_review`. The `summary` must contain at least 40 non-whitespace characters.
 
-**Full specification:** See [PATCH /api/tasks/:id/complete — Completion Validation Format (G65)](../api/patch_tasks_id_complete.md#completion-validation-format-g65) for the complete shape, rejection example, and authoritative schema references.
+**Full specification:** See [PATCH /api/tasks/:id/complete — Completion Validation Format (G65)](api/patch_tasks_id_complete.md#completion-validation-format-g65) for the complete shape, rejection example, and authoritative schema references.
 
 ---
 
@@ -378,7 +378,7 @@ once they exist. A limit of `0` means unlimited.
 Retrying immediately returns the same 422: wait for a task to leave the column
 or ask a board owner to raise the limit.
 
-See [POST /api/tasks](../api/post_tasks.md) for complete documentation.
+See [POST /api/tasks](api/post_tasks.md) for complete documentation.
 
 **✨ Stride Plugin Skills Available:**
 - Use `stride-workflow` for the complete task lifecycle (recommended entry point)
@@ -393,7 +393,7 @@ These skills are available via the Stride plugin for Claude Code, Gemini CLI, Co
 
 You MUST execute BOTH the `after_doing` AND `before_review` hooks BEFORE calling the complete endpoint and include both results in your request.
 
-When completing a task, use [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md):
+When completing a task, use [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md):
 
 ```json
 PATCH /api/tasks/:id/complete
@@ -419,15 +419,15 @@ PATCH /api/tasks/:id/complete
 2. Task moves to Review column (or Done if `needs_review=false`)
 3. If `needs_review=false`, server returns `after_review` hook metadata
 4. If `needs_review=true`, wait for human review
-5. Call [PATCH /api/tasks/:id/mark_reviewed](../api/patch_tasks_id_mark_reviewed.md) to finalize (with `after_review_result`)
+5. Call [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) to finalize (with `after_review_result`)
 
 **Important:** If either the `after_doing` or `before_review` hook fails (non-zero exit code), DO NOT call the complete endpoint. Fix the issues first, then re-execute the hooks and try again.
 
-See [PATCH /api/tasks/:id/complete](../api/patch_tasks_id_complete.md) for complete documentation.
+See [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md) for complete documentation.
 
 ### ⚠️ CRITICAL: mark_done Endpoint Limitations
 
-The [PATCH /api/tasks/:id/mark_done](../api/patch_tasks_id_mark_done.md) endpoint exists as a bypass mechanism for administrative or emergency situations, but **agents should NOT use it** in normal workflows due to critical limitations:
+The [PATCH /api/tasks/:id/mark_done](api/patch_tasks_id_mark_done.md) endpoint exists as a bypass mechanism for administrative or emergency situations, but **agents should NOT use it** in normal workflows due to critical limitations:
 
 **What mark_done Does:**
 - Moves task from Review column directly to Done column
@@ -469,7 +469,7 @@ If you use `mark_done` instead of the proper workflow, dependent tasks will rema
 
 **Agents should use the complete workflow** (claim → work → complete → mark_reviewed) to ensure proper hook execution, completion tracking, and dependency management.
 
-See [PATCH /api/tasks/:id/mark_done](../api/patch_tasks_id_mark_done.md) for complete documentation.
+See [PATCH /api/tasks/:id/mark_done](api/patch_tasks_id_mark_done.md) for complete documentation.
 
 ### Hook System
 
@@ -502,7 +502,7 @@ The hook system enables agents to execute custom workflows at key points in the 
 ```
 
 `.stride.md` (version controlled - project hooks):
-```markdown
+````markdown
 # Stride Configuration
 
 ## before_doing
@@ -526,9 +526,9 @@ gh pr create --title "$TASK_TITLE"
 ```bash
 ./scripts/deploy.sh
 ```
-```
+````
 
-See [../api/README.md](../api/README.md) for complete hook system documentation and examples.
+See [api/README.md](api/README.md) for complete hook system documentation and examples.
 
 ### Key Benefits for AI Agents
 
@@ -558,10 +558,10 @@ This creates a **Kanban board optimized for AI agents** - structured workflow wi
 2. **Set up authentication** - Create `.stride_auth.md` with your API token
 3. **Configure hooks** - Create `.stride.md` with your workflow hooks
 4. **Activate `stride-workflow`** - The orchestrator walks through claim → explore → implement → review → complete
-5. **Read the API documentation** - [../api/README.md](../api/README.md) for endpoint details
+5. **Read the API documentation** - [api/README.md](api/README.md) for endpoint details
 
 ### Related Documentation
 
-- [../api/README.md](../api/README.md) - Complete API documentation for agents
-- Individual endpoint docs in [../api/](../api/) directory
+- [api/README.md](api/README.md) - Complete API documentation for agents
+- Individual endpoint docs in [api/](api/) directory
 - See CHANGELOG.md for version history and recent changes

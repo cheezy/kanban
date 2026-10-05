@@ -21,6 +21,10 @@ defmodule KanbanWeb.DocAnchors do
   character, at least as long as the opener, carrying no info string. So a
   ```` ```bash ```` line inside a ```` ```markdown ```` block does not close it,
   and the bare ```` ``` ```` after it does.
+
+  `Kanban.DocLinks` (D355) reuses `prose_lines/1` and `anchors/1` to check the
+  relative links written inside the docs themselves, so both checks share one
+  fence rule and one slug rule.
   """
 
   @docs_url_prefix "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/"
@@ -57,12 +61,33 @@ defmodule KanbanWeb.DocAnchors do
   slugs and explicit HTML anchors, both taken only from outside fenced blocks.
   """
   def anchors(markdown) when is_binary(markdown) do
-    {_fence, _seen, anchors} =
-      markdown
-      |> String.split(~r/\r?\n/)
-      |> Enum.reduce({nil, %{}, MapSet.new()}, &scan_line/2)
+    {lines, _unclosed} = prose_lines(markdown)
+
+    {_seen, anchors} =
+      Enum.reduce(lines, {%{}, MapSet.new()}, fn {_number, line}, {seen, anchors} ->
+        scan_text_line(line, seen, anchors)
+      end)
 
     anchors
+  end
+
+  @doc """
+  Splits a markdown document into the lines that sit outside every fenced code
+  block, using the same CommonMark fence rule as `anchors/1` (D355).
+
+  Returns `{lines, unclosed}`. `lines` is a list of `{line_number, text}` with
+  1-based line numbers, fence lines themselves excluded. `unclosed` is the line
+  number of a fence still open at the end of the document, or `nil` when every
+  fence closes — an open fence turns the rest of the file into code on GitHub.
+  """
+  def prose_lines(markdown) when is_binary(markdown) do
+    {fence, lines} =
+      markdown
+      |> String.split(~r/\r?\n/)
+      |> Enum.with_index(1)
+      |> Enum.reduce({nil, []}, &track_fence/2)
+
+    {Enum.reverse(lines), unclosed_fence_line(fence)}
   end
 
   @doc """
@@ -142,18 +167,21 @@ defmodule KanbanWeb.DocAnchors do
       else: {:error, "#{url} has anchor ##{fragment}, which matches no heading in its file"}
   end
 
-  defp scan_line(line, {nil, seen, anchors}) do
+  defp track_fence({line, number}, {nil, lines}) do
     case Regex.run(@fence_open, line) do
-      [_, marker] -> {{String.first(marker), String.length(marker)}, seen, anchors}
-      nil -> scan_text_line(line, seen, anchors)
+      [_, marker] -> {{String.first(marker), String.length(marker), number}, lines}
+      nil -> {nil, [{number, line} | lines]}
     end
   end
 
-  defp scan_line(line, {{char, length} = fence, seen, anchors}) do
+  defp track_fence({line, _number}, {{char, length, _opened_at} = fence, lines}) do
     if closes_fence?(line, char, length),
-      do: {nil, seen, anchors},
-      else: {fence, seen, anchors}
+      do: {nil, lines},
+      else: {fence, lines}
   end
+
+  defp unclosed_fence_line(nil), do: nil
+  defp unclosed_fence_line({_char, _length, opened_at}), do: opened_at
 
   defp closes_fence?(line, char, length) do
     trimmed = String.trim(line)
@@ -168,12 +196,12 @@ defmodule KanbanWeb.DocAnchors do
 
     case Regex.run(@heading, line) do
       nil ->
-        {nil, seen, anchors}
+        {seen, anchors}
 
       captures ->
         text = captures |> Enum.at(1, "") |> String.replace(@closing_hashes, "")
         {slug, seen} = unique_slug(slug(text), seen)
-        {nil, seen, MapSet.put(anchors, slug)}
+        {seen, MapSet.put(anchors, slug)}
     end
   end
 

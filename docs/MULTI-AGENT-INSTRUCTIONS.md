@@ -37,7 +37,7 @@ Stride provides enhanced integration support for multiple AI coding assistants b
 
 ### Orchestrator-First Pattern (All Assistants)
 
-For any Stride task work, the entry point is the `stride-workflow` skill. Every task should be claimed, explored, implemented, reviewed, and completed through that single lifecycle: **claim → explore → implement → review → complete**. The supporting skills (`stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`) document API contracts and per-phase rules, but they are dispatched from inside `stride-workflow`, not invoked directly. The motivation, the three-layer defense design, and the per-platform decisions live in [`docs/plans/stride-plugin-feedback.md`](plans/stride-plugin-feedback.md). Each platform implements as much of the pattern as its host runtime allows:
+For any Stride task work, the entry point is the `stride-workflow` skill. Every task should be claimed, explored, implemented, reviewed, and completed through that single lifecycle: **claim → explore → implement → review → complete**. The supporting skills (`stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`) document API contracts and per-phase rules, but they are dispatched from inside `stride-workflow`, not invoked directly. The motivation for moving enforcement out of prose and into gates is recorded in [`docs/stride-plugin-enforcement-recommendations.md`](stride-plugin-enforcement-recommendations.md); the three layers and how far each platform implements them are summarized in the table below. Each platform implements as much of the pattern as its host runtime allows:
 
 | Platform | Layer 1 (runtime gate) | Layer 2 (INTERNAL descriptions) | Layer 3 (STOP body preamble) |
 |---|---|---|---|
@@ -862,7 +862,7 @@ To update instruction content:
 ## Related Documentation
 
 - [Onboarding Endpoint](api/get_agent_onboarding.md) - Complete API documentation
-- [Stride Has Skills](STRIDE-HAS-SKILLS.md) - Claude Code Skills documentation
+- [Stride Skills Plan](STRIDE-SKILLS-PLAN.md) - How the Claude Code skills were planned and implemented
 - [Task Writing Guide](TASK-WRITING-GUIDE.md) - How to write effective tasks
 - [AI Workflow](AI-WORKFLOW.md) - Complete workflow for AI agents
 - [Hook Execution Guide](AGENT-HOOK-EXECUTION-GUIDE.md) - How to execute hooks properly

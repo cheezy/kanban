@@ -133,9 +133,9 @@ Returns comprehensive onboarding information:
     }
   },
   "resources": {
-    "documentation_url": "https://www.stridelikeaboss.com/docs/api/README.md",
-    "api_workflow_guide": "https://www.stridelikeaboss.com/docs/WIP/AI-WORKFLOW.md",
-    "changelog_url": "https://www.stridelikeaboss.com/changelog"
+    "documentation_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+    "api_workflow_guide": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md",
+    "changelog_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/CHANGELOG.md"
   }
 }
 ```
@@ -475,4 +475,4 @@ This ensures you're always working with the latest skills, documentation, and sy
 
 - [README.md](README.md) - Complete API documentation
 - [POST /api/tasks/claim](post_tasks_claim.md) - Claim your first task
-- [AI-WORKFLOW.md](../WIP/AI-WORKFLOW.md) - Detailed workflow guide
+- [AI-WORKFLOW.md](../AI-WORKFLOW.md) - Detailed workflow guide

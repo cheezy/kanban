@@ -874,7 +874,7 @@ The `verification_steps` field MUST be an **array of objects** (not an empty arr
 
 For documentation/planning purposes, you can also use this markdown template:
 
-```markdown
+````markdown
 ## [Verb] [What] [Where/Context]
 
 **Complexity:** [small/medium/large] | **Est. Files:** [1-2 / 3-5 / 5+]
@@ -966,7 +966,7 @@ mix precommit
 
 - [What NOT to do/change]
 - [Future enhancements to skip]
-```
+````
 
 ### Example Task (Filled Out)
 
@@ -987,7 +987,7 @@ mix precommit
 
 Or in markdown format:
 
-```markdown
+````markdown
 ## Add priority filter to board list view
 
 **Complexity:** medium | **Est. Files:** 2-3
@@ -1094,7 +1094,7 @@ from t in Task,
 - Don't add sorting by priority (separate task)
 - Don't modify the task card layout or styling
 - Don't add bulk priority assignment
-```
+````
 
 ## Completion Validation Requirements (G65)
 

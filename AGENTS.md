@@ -7,6 +7,7 @@
 - When you add a new dependency or update an existing dependency run `mix usage_rules.sync` to update the AGENTS.md file and phoenix-framework Skill
 - Always provide translations of all text that is visible in the UI
 - Never put Ecto queries directly in LiveViews. Instead always put them in the appropriate context module
+- When you edit anything under `docs/` or `README.md`, write relative links from the linking file's own directory, never rename a doc file or heading, and nest code fences with a longer outer fence. `docs/doc-link-contract.md` has the rules, and `test/kanban/docs_relative_links_test.exs` enforces them
 
 ### Module design and complexity
 

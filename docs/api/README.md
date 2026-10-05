@@ -439,7 +439,7 @@ On `column_id` it is a `400` with `Invalid column_id: must be an integer`.
 
 Store authentication credentials (DO NOT commit to version control):
 
-```markdown
+````markdown
 # Stride API Authentication
 
 **DO NOT commit this file to version control!**
@@ -472,12 +472,13 @@ $env:STRIDE_API_URL = "https://www.stridelikeaboss.com"
 curl -H "Authorization: Bearer $env:STRIDE_API_TOKEN" `
   $env:STRIDE_API_URL/api/tasks/next
 ```
+````
 
 ### `.stride.md`
 
 Configure hooks for your project:
 
-```markdown
+````markdown
 # Stride Configuration
 
 ## before_doing
@@ -507,7 +508,7 @@ gh pr create --title "$TASK_TITLE" --body "Closes $TASK_IDENTIFIER"
 ./scripts/deploy.sh
 ```
 
-```
+````
 
 ## Examples
 
