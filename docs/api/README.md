@@ -10,8 +10,9 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
 4. [Hook System](#hook-system)
 5. [Completion Validation (explorer_result, reviewer_result, workflow_steps)](#completion-validation-explorer_result-reviewer_result-workflow_steps)
 6. [API Endpoints](#api-endpoints) (including the [OpenAPI specification](#api-specification))
-7. [Configuration Files](#configuration-files)
-8. [Examples](#examples)
+7. [Errors](#errors) (including [406 Not Acceptable](#406-not-acceptable))
+8. [Configuration Files](#configuration-files)
+9. [Examples](#examples)
 
 ## Quick Start
 
@@ -289,6 +290,46 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 | PATCH | `/api/tasks/:id/mark_reviewed` | Finalize review | `after_review`* |
 
 *`after_review` hook is only returned when the task is automatically moved to Done (`needs_review=false` or review approved).
+
+## Errors
+
+Every `/api` route returns JSON, errors included. Most error bodies carry an
+`error` string, often with a `message` and documentation keys. Validation
+(changeset) failures return `errors` keyed by field instead. Each endpoint page
+documents its own error responses, and the
+[OpenAPI specification](get_openapi_json.md) lists them per operation.
+
+### 406 Not Acceptable
+
+The API only serves `application/json`. A request whose `Accept` header asks
+for something else, such as `text/html`, `application/xml` or `image/png`,
+gets a `406` on every `/api` route:
+
+```http
+HTTP/1.1 406 Not Acceptable
+content-type: application/json; charset=utf-8
+
+{
+  "error": "Not Acceptable",
+  "message": "This API only serves application/json."
+}
+```
+
+To avoid it, send one of these:
+
+- `Accept: application/json`
+- `Accept: */*`, or a list that ends in `*/*` (a browser's default `Accept`
+  header resolves to JSON this way)
+- `Accept: application/vnd.oai.openapi+json` (useful on `GET /api/openapi.json`)
+- No `Accept` header at all
+
+The same 406 is returned for a `_format` query parameter other than `json`, and
+for a malformed `Accept` header.
+
+The 406 is decided before the API token is checked. An unauthenticated request
+with an unsupported `Accept` header gets the 406, not a 401, and the body is the
+same whether or not the token is valid. The body is a fixed string: it never
+echoes the `Accept` header back.
 
 ## Configuration Files
 
@@ -578,6 +619,12 @@ done
 - For `dispatched: true` on `reviewer_result`, also include `acceptance_criteria_checked` and `issues_found` as non-negative integers
 - For `dispatched: false`, the `reason` must be one of the five enum values exactly (see [Completion Validation](#completion-validation-explorer_result-reviewer_result-workflow_steps))
 - The summary minimum applies in skip form too — explain what you did instead, in 40+ non-whitespace characters
+
+### 406 Not Acceptable on Every Request
+
+- Your HTTP client is sending an `Accept` header the API does not serve, often
+  `text/html` from a browser-like default
+- Send `Accept: application/json` or `*/*`, or drop the header; see [406 Not Acceptable](#406-not-acceptable)
 
 ### Review Not Progressing
 

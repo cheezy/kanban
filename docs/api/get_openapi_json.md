@@ -22,8 +22,10 @@ it is ignored.
 **Parameters:** None
 
 The endpoint runs through the same `accepts ["json"]` pipeline as the rest of
-the API. Send no `Accept` header, `Accept: application/json`, or the OpenAPI
-media type `application/vnd.oai.openapi+json`. All three return the document.
+the API. Send no `Accept` header, `Accept: application/json`, `Accept: */*`, or
+the OpenAPI media type `application/vnd.oai.openapi+json`. All of them return
+the document. Any other value, such as `text/html` or `application/xml`, returns
+[406 Not Acceptable](#not-acceptable-406-not-acceptable) with a JSON error body.
 
 ## Response
 
@@ -67,6 +69,22 @@ cache it for an hour.
   }
 }
 ```
+
+### Not Acceptable (406 Not Acceptable)
+
+Returned when the `Accept` header (or a `_format` query parameter) asks for a
+format other than JSON, for example `Accept: text/html`. The body is JSON, with
+a fixed message that never echoes the header back:
+
+```json
+{
+  "error": "Not Acceptable",
+  "message": "This API only serves application/json."
+}
+```
+
+Every `/api` route behaves the same way. See
+[Errors](README.md#406-not-acceptable) in the API README.
 
 ### Server Error (500 Internal Server Error)
 
@@ -124,7 +142,10 @@ makes sure it cannot quietly fall behind the router. The test checks that:
    how to classify it.
 3. **The document is internally sound.** Every `$ref` resolves, every
    `operationId` is unique, every operation has a 2xx response, and every
-   `{name}` in a path has a required path parameter.
+   `{name}` in a path has a required path parameter. Every operation also
+   documents a `406` as a `$ref` to `#/components/responses/NotAcceptable`, and
+   that component's example must equal what `KanbanWeb.ErrorJSON` renders for a
+   406.
 4. **The schemas match what the API returns.** The property keys of `Task`,
    `TaskSummary` and `TaskAck` must equal the keys that
    `KanbanWeb.API.TaskJSON` renders, and `GoalSummary` the keys of
@@ -143,7 +164,9 @@ When you add a route under `/api` in `lib/kanban_web/router.ex`:
 
 1. Add an operation for it to `priv/openapi/stride-api.json`. Give it a unique
    `operationId`, a `summary`, a `tags` entry and at least one 2xx response.
-   Add 4xx responses as `$ref`s to `#/components/responses/*`.
+   Add 4xx responses as `$ref`s to `#/components/responses/*`. Every operation
+   needs `"406": { "$ref": "#/components/responses/NotAcceptable" }`, because
+   every `/api` route rejects a non-JSON `Accept` header.
 2. If the path contains `{id}`, put
    `"parameters": [{ "$ref": "#/components/parameters/TaskId" }]` on the path
    item. It is already there if the path item exists.

@@ -61,16 +61,17 @@ re-marking it.
 
 ## 2. Routes, pipelines, and auth boundaries
 
-Source: `lib/kanban_web/router.ex`. Four pipelines, and the trust boundary each
-route sits behind is the single most important fact for the authz reviews.
+Source: `lib/kanban_web/router.ex`. The pipelines below, and the trust boundary
+each route sits behind, are the single most important fact for the authz reviews.
 
 ### Pipelines
 
 | Pipeline | Plugs (security-relevant) | Trust level |
 |----------|---------------------------|-------------|
 | `:browser` | `fetch_session`, `protect_from_forgery` (CSRF), `put_secure_browser_headers` (with placeholder `default-src 'self'` CSP), `CspNonce`, `fetch_current_scope_for_user`, `Locale` | Session-cookie auth; CSRF-protected |
-| `:api` | `ApiTelemetry`, **`AuthenticateApiToken`** | Bearer-token auth (the agent surface) |
-| `:api_public` | `ApiTelemetry` only | **Unauthenticated** — only `/api/agent/onboarding` and `/api/openapi.json` |
+| `:api_json` | `put_format "json"` only (D351) | Piped through first by both `/api` scopes, ahead of `:api` / `:api_public`. It pins the response format so a rejected `Accept` header renders a 406 through `ErrorJSON` (fixed `error` + `message`, no echo) instead of crashing in `ErrorHTML`. It must be its own pipeline: the router re-raises with the conn as it entered the failing pipeline, so a pin inside `:api` would be lost. Never on `:browser` |
+| `:api` | `accepts ["json"]`, `ApiTelemetry`, **`AuthenticateApiToken`** | Bearer-token auth (the agent surface). The 406 from `accepts` fires before `AuthenticateApiToken`, so it reveals nothing about token validity, and before `ApiTelemetry`, so 406s are not counted in API telemetry |
+| `:api_public` | `accepts ["json"]`, `ApiTelemetry` | **Unauthenticated** — only `/api/agent/onboarding` and `/api/openapi.json` |
 | (admin overlay) | `:browser` + `require_authenticated_user` + `require_admin_user` | Admin-only |
 
 ### Route → boundary map

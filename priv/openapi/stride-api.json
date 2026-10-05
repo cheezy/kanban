@@ -51,6 +51,9 @@
                 }
               }
             }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
           }
         }
       }
@@ -74,6 +77,9 @@
                 }
               }
             }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -144,6 +150,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
@@ -189,6 +198,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
           },
           "422": {
             "description": "Validation failed. Nothing is persisted. An unrecognised `type` reports `errors.type: [\"is invalid\"]`; a `null`, empty or whitespace-only type reports `can't be blank`.",
@@ -272,6 +284,9 @@
               }
             }
           },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
@@ -329,6 +344,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
@@ -395,6 +413,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
           },
           "422": {
             "description": "Validation failed for the goal at `index`, or the root key was not `goals`. Goals before `index` were created; the failing goal and its children were not.",
@@ -483,6 +504,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
           "422": {
             "$ref": "#/components/responses/Unprocessable"
           },
@@ -526,6 +550,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
           },
           "422": {
             "$ref": "#/components/responses/Unprocessable"
@@ -571,6 +598,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
           },
           "422": {
             "$ref": "#/components/responses/Unprocessable"
@@ -627,6 +657,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
           },
           "422": {
             "$ref": "#/components/responses/Unprocessable"
@@ -750,6 +783,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
           "422": {
             "$ref": "#/components/responses/Unprocessable"
           },
@@ -846,6 +882,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
           "422": {
             "$ref": "#/components/responses/Unprocessable"
           },
@@ -905,6 +944,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
           "422": {
             "$ref": "#/components/responses/Unprocessable"
           },
@@ -945,6 +987,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
           },
           "422": {
             "$ref": "#/components/responses/Unprocessable"
@@ -997,6 +1042,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
           "422": {
             "$ref": "#/components/responses/Unprocessable"
           },
@@ -1038,6 +1086,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
@@ -1075,6 +1126,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -1119,6 +1173,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           }
@@ -1156,6 +1213,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -1354,6 +1414,20 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotAcceptable": {
+        "description": "The Accept header (or a `_format` parameter) asks for a format the API does not serve. Every /api route serves only JSON: send `Accept: application/json`, `*/*`, `application/vnd.oai.openapi+json`, or no Accept header. Returned before authentication runs, so it says nothing about the token.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "Not Acceptable",
+              "message": "This API only serves application/json."
             }
           }
         }

@@ -35,6 +35,20 @@ defmodule KanbanWeb.Router do
     plug KanbanWeb.Plugs.Locale, "en"
   end
 
+  # Pins the response format to json for every /api route (D351). It must be
+  # its own pipeline, piped through BEFORE :api / :api_public, rather than a
+  # plug inside them: when `plug :accepts, ["json"]` rejects an unsupported
+  # Accept header (e.g. text/html) it raises Phoenix.NotAcceptableError, and
+  # the router re-raises with the conn as it ENTERED the failing pipeline, so
+  # anything set earlier in that same pipeline is lost. Phoenix.Endpoint.
+  # RenderErrors then renders the 406 in the format already on the conn, and
+  # falls back to the first render_errors format (html) when none is set —
+  # which crashed in KanbanWeb.ErrorHTML. With the pin, the 406 renders through
+  # KanbanWeb.ErrorJSON. Never add this to :browser.
+  pipeline :api_json do
+    plug :put_format, "json"
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
     # Resolve the real client IP behind the Fly proxy before the token plug
@@ -102,7 +116,7 @@ defmodule KanbanWeb.Router do
 
   # Public API routes (no authentication required)
   scope "/api", KanbanWeb.API, as: :api do
-    pipe_through :api_public
+    pipe_through [:api_json, :api_public]
 
     get "/agent/onboarding", AgentController, :onboarding
     get "/openapi.json", OpenApiController, :show
@@ -110,7 +124,7 @@ defmodule KanbanWeb.Router do
 
   # API routes with token authentication
   scope "/api", KanbanWeb.API, as: :api do
-    pipe_through :api
+    pipe_through [:api_json, :api]
 
     get "/tasks/next", TaskController, :next
     post "/tasks/claim", TaskController, :claim

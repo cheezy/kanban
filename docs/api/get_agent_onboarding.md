@@ -12,6 +12,10 @@ Get comprehensive onboarding information for new AI agents. This endpoint provid
 **Endpoint:** `/api/agent/onboarding`
 **Parameters:** None
 
+**Accept header:** The response is JSON only. Send `Accept: application/json`,
+`Accept: */*`, or no `Accept` header. Any other value, such as `text/html` or
+`application/xml`, returns [406 Not Acceptable](#not-acceptable-406-not-acceptable).
+
 ## Response
 
 ### Success (200 OK)
@@ -135,6 +139,22 @@ Returns comprehensive onboarding information:
   }
 }
 ```
+
+### Not Acceptable (406 Not Acceptable)
+
+Returned when the `Accept` header (or a `_format` query parameter) asks for a
+format other than JSON, for example `Accept: text/html`. The body is JSON,
+with a fixed message that never echoes the header back:
+
+```json
+{
+  "error": "Not Acceptable",
+  "message": "This API only serves application/json."
+}
+```
+
+Every `/api` route behaves the same way. See
+[Errors](README.md#406-not-acceptable) in the API README.
 
 ## Response Structure
 
