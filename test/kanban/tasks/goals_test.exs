@@ -226,6 +226,86 @@ defmodule Kanban.Tasks.GoalsTest do
     end
   end
 
+  # D357: promotion and goal-follows-children moves write with update_all,
+  # so updated_at must be stamped explicitly for updated_since to see them.
+  describe "promote_goal_to_ready and goal follow move bump updated_at (D357)" do
+    @old ~N[2020-01-01 00:00:00]
+
+    defp age!(tasks) do
+      ids = Enum.map(tasks, & &1.id)
+      from(t in Task, where: t.id in ^ids) |> Repo.update_all(set: [updated_at: @old])
+      Enum.map(tasks, &Repo.reload!/1)
+    end
+
+    defp stamp(task), do: Repo.reload!(task).updated_at
+    defp bumped?(task), do: task |> stamp() |> NaiveDateTime.compare(@old) == :gt
+
+    test "promote_goal_to_ready bumps updated_at on each promoted task", %{user: user} do
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      _ready = column_fixture(board, %{name: "Ready"})
+
+      goal = task_fixture(backlog, %{title: "Backlog Goal", type: :goal})
+      child_a = task_fixture(backlog, %{title: "Child A", parent_id: goal.id})
+      child_b = task_fixture(backlog, %{title: "Child B", parent_id: goal.id})
+      bystander = task_fixture(backlog, %{title: "Not in the goal"})
+      [goal, child_a, child_b, bystander] = age!([goal, child_a, child_b, bystander])
+
+      assert {:ok, 3} = Tasks.promote_goal_to_ready(goal, board.id)
+
+      assert Enum.all?([goal, child_a, child_b], &bumped?/1)
+      refute bumped?(bystander)
+
+      # One value per promotion, shared by every promoted row.
+      assert [_single] = [goal, child_a, child_b] |> Enum.map(&stamp/1) |> Enum.uniq()
+    end
+
+    test "a goal following its child bumps the goal and the siblings shifted for it", %{
+      user: user
+    } do
+      board = board_fixture(user)
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+
+      goal = task_fixture(ready, %{title: "Following Goal", type: :goal})
+      child = task_fixture(ready, %{title: "Child", parent_id: goal.id})
+      sibling = task_fixture(doing, %{title: "Already in Doing"})
+      [goal, child, sibling] = age!([goal, child, sibling])
+
+      assert {:ok, _} = Tasks.move_task(child, doing, 0)
+
+      goal_after = Repo.reload!(goal)
+      assert goal_after.column_id == doing.id
+      assert Enum.all?([goal, child, sibling], &bumped?/1)
+
+      # The goal follow is part of the same move, so it shares the move's stamp.
+      assert stamp(goal) == stamp(child)
+    end
+
+    test "the goal follow bumps a sibling that only the goal placement shifts", %{user: user} do
+      board = board_fixture(user)
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+
+      goal = task_fixture(ready, %{title: "Following Goal", type: :goal})
+      child = task_fixture(ready, %{title: "Child", parent_id: goal.id})
+      # Doing holds another goal (0) and a task (1). The child lands at the end
+      # (2), so the move itself shifts nothing in Doing; the goal is then placed
+      # after the other goal (1) and only the goal placement shifts the task.
+      other_goal = task_fixture(doing, %{title: "Other Goal", type: :goal})
+      placement_only = task_fixture(doing, %{title: "Shifted by the goal only"})
+      [goal, child, other_goal, placement_only] = age!([goal, child, other_goal, placement_only])
+
+      assert {:ok, _} = Tasks.move_task(child, doing, 2)
+
+      assert Repo.reload!(goal).position == 1
+      assert Repo.reload!(placement_only).position == 2
+      assert bumped?(placement_only)
+      assert stamp(placement_only) == stamp(goal)
+      refute bumped?(other_goal)
+    end
+  end
+
   describe "mark_after_goal_succeeded_and_promote/2 — Done column resolution" do
     @attempt %{
       "exit_code" => 0,

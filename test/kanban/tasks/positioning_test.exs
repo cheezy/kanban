@@ -158,4 +158,145 @@ defmodule Kanban.Tasks.PositioningTest do
       assert {:error, :wip_limit_reached} = Kanban.Tasks.move_task(mover, dst, 0)
     end
   end
+
+  # D357: moves and reorders write with update_all, so updated_at must be
+  # stamped explicitly or GET /api/tasks?updated_since= never sees them.
+  describe "moves and reorders bump updated_at (D357)" do
+    @old ~N[2020-01-01 00:00:00]
+
+    defp age!(tasks) do
+      ids = Enum.map(tasks, & &1.id)
+
+      Kanban.Tasks.Task
+      |> where([t], t.id in ^ids)
+      |> Repo.update_all(set: [updated_at: @old])
+
+      Enum.map(tasks, &Repo.reload!/1)
+    end
+
+    defp stamp(task), do: Repo.reload!(task).updated_at
+    defp bumped?(task), do: task |> stamp() |> NaiveDateTime.compare(@old) == :gt
+    defp position(task), do: Repo.reload!(task).position
+
+    test "cross-column move bumps updated_at on moved task and shifted siblings", %{
+      board: board
+    } do
+      src = column_fixture(board, %{name: "Ready"})
+      dst = column_fixture(board, %{name: "Doing"})
+      [stay_src, mover, closed_up] = for _ <- 1..3, do: task_fixture(src)
+      [stay_dst, shifted] = for _ <- 1..2, do: task_fixture(dst)
+
+      [stay_src, mover, closed_up, stay_dst, shifted] =
+        age!([stay_src, mover, closed_up, stay_dst, shifted])
+
+      assert {:ok, moved} = Kanban.Tasks.move_task(mover, dst, 1)
+
+      assert moved.column_id == dst.id
+      assert bumped?(mover)
+      assert bumped?(closed_up)
+      assert bumped?(shifted)
+      refute bumped?(stay_src)
+      refute bumped?(stay_dst)
+
+      # One UTC value per operation, shared by every row it touched. (Whole
+      # seconds are guaranteed by the :naive_datetime column, which truncates on
+      # load, so asserting on microseconds here could never fail.)
+      stamps = Enum.map([mover, closed_up, shifted], &stamp/1)
+      assert [single] = Enum.uniq(stamps)
+      assert NaiveDateTime.diff(NaiveDateTime.utc_now(), single) in 0..5
+    end
+
+    test "no-op move does not bump updated_at", %{board: board} do
+      ready = column_fixture(board, %{name: "Ready"})
+      tasks = for _ <- 1..3, do: task_fixture(ready)
+      [first, middle, last] = age!(tasks)
+
+      assert {:ok, _} = Kanban.Tasks.move_task(middle, ready, middle.position)
+
+      refute Enum.any?([first, middle, last], &bumped?/1)
+    end
+
+    test "first and last position moves bump only the moved task and the shifted range", %{
+      board: board
+    } do
+      ready = column_fixture(board, %{name: "Ready"})
+      [a, b, c, d] = age!(for _ <- 1..4, do: task_fixture(ready))
+
+      # c (2) -> first: a and b shift down, d is outside the range.
+      assert {:ok, _} = Kanban.Tasks.move_task(c, ready, 0)
+      assert Enum.map([c, a, b, d], &position/1) == [0, 1, 2, 3]
+      assert Enum.all?([c, a, b], &bumped?/1)
+      refute bumped?(d)
+
+      [a, b, c, d] = age!([a, b, c, d])
+
+      # a (1) -> last: b and d shift up, c is outside the range.
+      assert {:ok, _} = a |> Repo.reload!() |> Kanban.Tasks.move_task(ready, 3)
+      assert Enum.map([c, b, d, a], &position/1) == [0, 1, 2, 3]
+      assert Enum.all?([a, b, d], &bumped?/1)
+      refute bumped?(c)
+    end
+
+    test "reorder skips archived tasks and bumps only live rewritten rows", %{board: board} do
+      col = column_fixture(board, %{name: "Ready"})
+      [a, b, c] = for _ <- 1..3, do: task_fixture(col)
+      archived = col |> task_fixture() |> archive!()
+      [a, b, c, archived] = age!([a, b, c, archived])
+      archived_position = position(archived)
+
+      # c moves to the top and b keeps position 1; a is not named, so the
+      # remaining-positions pass renumbers it to 2. The archived id is named
+      # too but must be neither renumbered nor stamped.
+      assert :ok = Positioning.reorder_tasks(col, [c.id, b.id, archived.id])
+
+      assert Enum.map([c, b, a], &position/1) == [0, 1, 2]
+      assert bumped?(c)
+      assert bumped?(a)
+      refute bumped?(b)
+      refute bumped?(archived)
+      assert position(archived) == archived_position
+    end
+
+    test "reorder of an empty id list or an archived-only column bumps nothing", %{
+      board: board
+    } do
+      col = column_fixture(board, %{name: "Ready"})
+      [a, b] = age!(for _ <- 1..2, do: task_fixture(col))
+
+      assert :ok = Positioning.reorder_tasks(col, [])
+      assert Enum.map([a, b], &position/1) == [0, 1]
+      refute Enum.any?([a, b], &bumped?/1)
+
+      only_archived = column_fixture(board, %{name: "Archive-only"})
+      [gone] = age!([only_archived |> task_fixture() |> archive!()])
+
+      assert :ok = Positioning.reorder_tasks(only_archived, [gone.id])
+      refute bumped?(gone)
+    end
+
+    test "a blocked task keeps its status and is still bumped", %{board: board} do
+      src = column_fixture(board, %{name: "Ready"})
+      dst = column_fixture(board, %{name: "Doing"})
+      task = task_fixture(src)
+
+      Kanban.Tasks.Task
+      |> where([t], t.id == ^task.id)
+      |> Repo.update_all(set: [status: :blocked])
+
+      [task] = age!([task])
+
+      assert {:ok, moved} = Kanban.Tasks.move_task(task, dst, 0)
+      assert moved.status == :blocked
+      assert bumped?(task)
+    end
+
+    test "a WIP-limit refusal writes nothing", %{board: board} do
+      src = column_fixture(board, %{name: "Ready"})
+      dst = column_fixture(board, %{name: "Doing", wip_limit: 1})
+      [mover, occupant] = age!([task_fixture(src), task_fixture(dst)])
+
+      assert {:error, :wip_limit_reached} = Kanban.Tasks.move_task(mover, dst, 0)
+      refute Enum.any?([mover, occupant], &bumped?/1)
+    end
+  end
 end

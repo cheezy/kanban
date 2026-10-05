@@ -2213,6 +2213,56 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert future["meta"]["next_cursor"] == nil
     end
 
+    # D357: a move writes with update_all, which used to leave updated_at
+    # untouched, so an incremental pass never saw a task change column.
+    test "updated_since returns a task moved to another column", %{
+      conn: conn,
+      board: board,
+      tasks: [moved | _]
+    } do
+      set_fields!(moved, updated_at: ~N[2020-01-01 00:00:00])
+      bound = "2021-01-01T00:00:00Z"
+
+      refute moved.id in page_ids(
+               json_response(get(conn, "/api/tasks?updated_since=#{bound}&limit=10"), 200)
+             )
+
+      ready = board |> Columns.list_columns() |> Enum.find(&(&1.name == "Ready"))
+      assert {:ok, _} = moved.id |> Tasks.get_task!() |> Tasks.move_task(ready, 0)
+
+      ids = walk(conn, "updated_since=#{bound}&limit=10") |> Enum.flat_map(&page_ids/1)
+      assert moved.id in ids
+    end
+
+    test "moved task updated_at is whole-second UTC and matches the bound", %{
+      conn: conn,
+      board: board,
+      tasks: [moved | _]
+    } do
+      set_fields!(moved, updated_at: ~N[2020-01-01 00:00:00])
+      ready = board |> Columns.list_columns() |> Enum.find(&(&1.name == "Ready"))
+      assert {:ok, _} = moved.id |> Tasks.get_task!() |> Tasks.move_task(ready, 0)
+
+      row =
+        walk(conn, "updated_since=2021-01-01T00:00:00Z&limit=10")
+        |> Enum.flat_map(& &1["data"])
+        |> Enum.find(&(&1["id"] == moved.id))
+
+      # Rendered in UTC with no offset and no fractional part.
+      stamp = row["updated_at"]
+      assert stamp =~ ~r/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\z/
+      assert row["column_id"] == ready.id
+
+      # The rendered value, sent back as an inclusive bound, still returns it.
+      again =
+        page_ids(json_response(get(conn, "/api/tasks?updated_since=#{stamp}Z&limit=10"), 200))
+
+      assert moved.id in again
+
+      {:ok, rendered} = NaiveDateTime.from_iso8601(stamp)
+      assert NaiveDateTime.diff(NaiveDateTime.utc_now(), rendered) in 0..5
+    end
+
     test "parent=G<n> returns only that goal's children on the token's board", %{
       conn: conn,
       column: column,

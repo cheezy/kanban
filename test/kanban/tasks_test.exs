@@ -386,6 +386,37 @@ defmodule Kanban.TasksTest do
       assert page.(~N[2999-01-01 00:00:00]) == []
     end
 
+    # D357: reorders and promotions write with update_all; they must still
+    # reach an incremental pass.
+    test "an updated_since pass includes tasks rewritten by reorder_tasks and by goal promotion" do
+      %{board: board, column: column} = page_board()
+      old = ~N[2020-01-01 00:00:00]
+      [a, b, c] = for _ <- 1..3, do: column |> task_fixture() |> page_set!(updated_at: old)
+
+      backlog = column_fixture(board, %{name: "Backlog"})
+      _ready = column_fixture(board, %{name: "Ready"})
+      goal = backlog |> task_fixture(%{type: :goal, title: "Goal"}) |> page_set!(updated_at: old)
+
+      child =
+        backlog
+        |> task_fixture(%{parent_id: goal.id, title: "Child"})
+        |> page_set!(updated_at: old)
+
+      pass = fn ->
+        board.id
+        |> Tasks.list_board_tasks_page(%{updated_since: ~N[2021-01-01 00:00:00]}, limit: 10)
+        |> ids()
+        |> Enum.sort()
+      end
+
+      assert pass.() == []
+
+      assert :ok = Tasks.reorder_tasks(column, [c.id, a.id, b.id])
+      assert {:ok, 2} = Tasks.promote_goal_to_ready(goal, board.id)
+
+      assert pass.() == Enum.sort([a.id, b.id, c.id, goal.id, child.id])
+    end
+
     test "parent returns only the children of this board's goal with that identifier" do
       %{board: board, column: column} = page_board()
       %{column: other_column} = page_board()

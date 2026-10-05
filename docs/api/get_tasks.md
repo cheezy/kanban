@@ -276,21 +276,23 @@ the API's verified behaviour opens:
    converted with `timestamp()` or `astimezone()` — which shifts the bound by
    the local UTC offset. Send the result with an explicit `Z`. (A value sent back with no
    offset is read as UTC, so an unmodified `updated_at` round-trips safely.)
-5. **Reconcile periodically — some changes never reach an incremental pass.**
-   Changes like these are invisible to `updated_since`:
-   - **Archived and deleted tasks.** Archiving a task updates its `updated_at`,
-     but archived tasks are excluded from every paginated response, so an
-     incremental pass never reports an archival; a deleted task is likewise
-     never returned. Either way the task simply stops appearing.
-   - **Board moves and reorders.** Dragging a task to another column on the
-     board, the column moves the server makes on its own (promoting tasks,
-     moving a goal to follow its child tasks), and reordering tasks within a
-     column (including the neighbours shifted to make room) change `status`,
-     `column_id`, `position` or `completed_at` without updating `updated_at`,
-     so a pass filtered by `updated_since` does not pick them up.
+5. **Reconcile periodically — archived and deleted tasks never reach an
+   incremental pass.** Archiving a task updates its `updated_at`, but archived
+   tasks are excluded from every paginated response, so an incremental pass
+   never reports an archival; a deleted task is likewise never returned.
+   Either way the task simply stops appearing.
 
    Run an occasional full pass without `updated_since`: upsert every row it
    returns and drop any local task it no longer returns.
+
+Board moves and reorders *do* reach an incremental pass. Dragging a task to
+another column, the column moves the server makes on its own (promoting tasks
+to Ready, moving a goal to follow its child tasks) and reordering tasks within
+a column all update `updated_at` — on the moved task and on every neighbour
+whose `position` shifts to make room or close the gap — so the next pass
+returns them with their new `column_id`, `position` and `status`. All the rows
+one move changes share the same `updated_at`. A move that changes nothing (a
+task dropped back where it was) leaves `updated_at` as it was.
 
 ### Success (200 OK) — paginated
 
@@ -505,7 +507,7 @@ not an integer at all, such as `abc`, still gets the 400. See
 | Field | Type | Description |
 |-------|------|-------------|
 | `inserted_at` | string | When task was created (ISO 8601) |
-| `updated_at` | string | When task was last updated (ISO 8601, UTC, whole seconds, rendered with no offset, such as `2026-01-31T12:00:00`). The watermark for [Incremental sync](#incremental-sync). Present in the full object only, not in `response_view=slim` rows. Not every change updates it: board moves and reorders change `status`, `column_id`, `position` or `completed_at` without it |
+| `updated_at` | string | When task was last updated (ISO 8601, UTC, whole seconds, rendered with no offset, such as `2026-01-31T12:00:00`). The watermark for [Incremental sync](#incremental-sync). Present in the full object only, not in `response_view=slim` rows. Board moves and reorders update it too, on the moved task and on every neighbour whose `position` shifts; a move that changes nothing leaves it as it was |
 
 ### Nested Object Structures
 
