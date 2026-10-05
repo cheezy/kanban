@@ -88,7 +88,7 @@ Returns the claimed task and the `before_doing` hook metadata:
     "priority": "high",
     "complexity": "medium",
     "needs_review": true,
-    "type": "task",
+    "type": "work",
     "column_id": 6,
     "column_name": "Doing",
     "board_id": 1,

@@ -74,5 +74,28 @@ defmodule KanbanWeb.API.AgentJSONTest do
       assert create["description"] =~ "goals are never WIP-checked"
       assert create["description"] =~ "a goal cannot contain a goal"
     end
+
+    # D358: there is no `review` task status — a task awaiting review keeps
+    # `in_progress` and only its column changes — so the hook environment
+    # docs must list exactly the Task status enum.
+    test "hook environment lists only valid statuses", %{conn: conn} do
+      body = json_response(conn, 200)
+
+      entry =
+        body
+        |> get_in(["hooks", "environment_variables"])
+        |> Enum.find(&String.starts_with?(&1, "TASK_STATUS"))
+
+      assert entry, "expected a TASK_STATUS entry in hooks.environment_variables"
+
+      [_, listed] = Regex.run(~r/\(([^)]*)\)/, entry)
+      listed = listed |> String.split(",") |> Enum.map(&String.trim/1) |> Enum.sort()
+
+      expected =
+        Kanban.Tasks.Task |> Ecto.Enum.values(:status) |> Enum.map(&to_string/1) |> Enum.sort()
+
+      assert listed == expected
+      refute "review" in listed
+    end
   end
 end

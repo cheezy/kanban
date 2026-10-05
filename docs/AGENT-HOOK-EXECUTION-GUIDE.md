@@ -201,8 +201,8 @@ All hooks receive these environment variables:
 - `TASK_IDENTIFIER` - Human-readable identifier (e.g., `W21`, `G10`)
 - `TASK_TITLE` - Task title
 - `TASK_DESCRIPTION` - Task description
-- `TASK_STATUS` - Current status (`open`, `in_progress`, `review`, `completed`)
-- `TASK_COMPLEXITY` - Complexity level (`trivial`, `low`, `medium`, `high`, `very_high`)
+- `TASK_STATUS` - Current status (`open`, `in_progress`, `blocked`, `completed`)
+- `TASK_COMPLEXITY` - Complexity level (`small`, `medium`, `large`)
 - `TASK_PRIORITY` - Priority level (`low`, `medium`, `high`, `critical`)
 - `TASK_NEEDS_REVIEW` - Whether review is required (`true`/`false`)
 

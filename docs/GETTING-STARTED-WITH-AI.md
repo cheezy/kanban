@@ -436,13 +436,13 @@ These skills are available via the Stride plugin for Claude Code, Gemini CLI, Co
     "title": "Implement User Authentication",
     "description": "Add complete user auth system with signup, login, and session management",
     "type": "goal",
-    "complexity": "high",
+    "complexity": "large",
     "required_capabilities": ["code_generation", "testing", "security"],
     "tasks": [
       {
         "title": "Create user database schema",
         "description": "Design and implement user table with proper indexes and constraints",
-        "complexity": "low",
+        "complexity": "small",
         "required_capabilities": ["code_generation", "database"]
       },
       {

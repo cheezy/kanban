@@ -124,7 +124,7 @@ Returns an array of tasks:
       "acceptance_criteria": null,
       "status": "open",
       "priority": "medium",
-      "complexity": "low",
+      "complexity": "small",
       "needs_review": true,
       "type": "work",
       "column_id": 5,

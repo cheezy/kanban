@@ -322,11 +322,11 @@ Returns the completed task and hook metadata. The number of hooks depends on the
     "identifier": "W21",
     "title": "Implement authentication",
     "description": "Add JWT authentication to the API",
-    "status": "review",
+    "status": "in_progress",
     "priority": "high",
     "complexity": "medium",
     "needs_review": true,
-    "type": "task",
+    "type": "work",
     "column_id": 7,
     "column_name": "Review",
     "board_id": 1,
@@ -347,7 +347,7 @@ Returns the completed task and hook metadata. The number of hooks depends on the
         "TASK_IDENTIFIER": "W21",
         "TASK_TITLE": "Implement authentication",
         "TASK_DESCRIPTION": "Add JWT authentication to the API",
-        "TASK_STATUS": "review",
+        "TASK_STATUS": "in_progress",
         "TASK_COMPLEXITY": "medium",
         "TASK_PRIORITY": "high",
         "TASK_NEEDS_REVIEW": "true",
@@ -367,7 +367,7 @@ Returns the completed task and hook metadata. The number of hooks depends on the
         "TASK_ID": "123",
         "TASK_IDENTIFIER": "W21",
         "TASK_TITLE": "Implement authentication",
-        "TASK_STATUS": "review",
+        "TASK_STATUS": "in_progress",
         "AGENT_NAME": "Claude Sonnet 4.5",
         "HOOK_NAME": "before_review"
       },
@@ -609,7 +609,7 @@ fi
 - Both hooks must complete successfully (exit code 0) or the completion will be rejected
 - You can only complete tasks that are assigned to you
 - Task must be in `in_progress` or `blocked` status
-- If `needs_review=true`, task moves to Review column with `review` status
+- If `needs_review=true`, task moves to the Review column and its status stays `in_progress` (there is no `review` status)
 - If `needs_review=false`, task automatically moves to Done column with `completed` status
 - Both `after_doing` and `before_review` hooks are **blocking** - non-zero exit codes will cause the API to reject your completion
 - The `after_review` hook is also **blocking** and must be executed after API call returns (only if `needs_review=false`)

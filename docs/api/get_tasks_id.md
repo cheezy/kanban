@@ -36,7 +36,7 @@ Authorization: Bearer <your_api_token>
     "priority": "high",
     "complexity": "medium",
     "needs_review": true,
-    "type": "task",
+    "type": "work",
     "column_id": 6,
     "column_name": "Doing",
     "board_id": 1,
@@ -93,11 +93,11 @@ that names no task or a task on another board. See
 | `identifier` | string | Human-readable identifier (W21, G10, etc.) |
 | `title` | string | Task title |
 | `description` | string | Detailed description |
-| `status` | string | Current status: `open`, `in_progress`, `blocked`, `review`, `completed` |
+| `status` | string | Current status: `open`, `in_progress`, `blocked`, `completed` (a task awaiting review keeps `in_progress`; its `column_name` is the Review column) |
 | `priority` | string | Priority: `low`, `medium`, `high`, `critical` |
-| `complexity` | string | Complexity: `trivial`, `low`, `medium`, `high`, `very_high` |
+| `complexity` | string | Complexity: `small`, `medium`, `large` |
 | `needs_review` | boolean | Whether task requires human review before completion |
-| `type` | string | Type: `task` or `goal` |
+| `type` | string | Type: `work`, `defect`, or `goal` |
 | `column_id` | integer | Current column ID |
 | `column_name` | string | Current column name |
 | `board_id` | integer | Board ID |

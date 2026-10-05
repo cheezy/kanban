@@ -38,7 +38,7 @@ Returns the next available task that:
     "priority": "high",
     "complexity": "medium",
     "needs_review": true,
-    "type": "task",
+    "type": "work",
     "column_id": 5,
     "column_name": "Ready",
     "board_id": 1,

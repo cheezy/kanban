@@ -5,7 +5,7 @@ This guide explains how to provide estimation feedback when completing tasks, he
 ## Overview
 
 When completing tasks, agents should report:
-- **Actual complexity** experienced (trivial, low, medium, high, very_high)
+- **Actual complexity** experienced (small, medium, large)
 - **Actual number of files changed**
 - **Actual time spent in minutes**
 
@@ -37,19 +37,17 @@ This creates a feedback loop that helps calibrate future task estimates by compa
 
 **What it is**: The complexity you actually experienced completing the task
 
-**Values**:
-- `trivial` - Extremely simple, < 10 minutes
-- `low` - Simple, 10-30 minutes
-- `medium` - Moderate, 30-90 minutes
-- `high` - Complex, 1.5-4 hours
-- `very_high` - Very complex, > 4 hours
+**Values** (the same three values the `complexity` field accepts; anything else, such as `low`, `high` or `trivial`, is rejected with a 422):
+- `small` - Simple, less than 1 hour
+- `medium` - Moderate, 1-2 hours
+- `large` - Complex, more than 2 hours
 
 **How to choose**:
 ```
 Compare estimated vs actual:
-- Task estimated as "medium" but took 2 hours → actual: "medium" (accurate)
-- Task estimated as "low" but took 2 hours → actual: "medium" (underestimated)
-- Task estimated as "high" but took 30 minutes → actual: "low" (overestimated)
+- Task estimated as "medium" and took 90 minutes → actual: "medium" (accurate)
+- Task estimated as "small" but took 2.5 hours → actual: "large" (underestimated)
+- Task estimated as "large" but took 30 minutes → actual: "small" (overestimated)
 ```
 
 ### actual_files_changed
@@ -109,9 +107,9 @@ curl -X PATCH https://www.stridelikeaboss.com/api/tasks/W42/complete \
   -H "Content-Type: application/json" \
   -d '{
     "agent_name": "Claude Sonnet 4.5",
-    "actual_complexity": "high",
+    "actual_complexity": "large",
     "actual_files_changed": 8,
-    "time_spent_minutes": 95,
+    "time_spent_minutes": 150,
     "completion_notes": "Implementation complete, all tests passing"
   }'
 ```
@@ -128,9 +126,9 @@ The API returns your feedback in the response:
     "title": "Add task completion tracking",
     "complexity": "medium",
     "estimated_files": "3-4",
-    "actual_complexity": "high",
+    "actual_complexity": "large",
     "actual_files_changed": 8,
-    "time_spent_minutes": 95,
+    "time_spent_minutes": 150,
     "completed_at": "2025-12-29T15:30:00Z"
   }
 }
@@ -148,7 +146,7 @@ When estimated matches actual:
   "estimated_files": "3-4",
   "actual_complexity": "medium",
   "actual_files_changed": 4,
-  "time_spent_minutes": 45
+  "time_spent_minutes": 75
 }
 ```
 
@@ -163,20 +161,20 @@ When actual exceeds estimated:
 
 ```json
 {
-  "complexity": "low",
+  "complexity": "small",
   "estimated_files": "2-3",
-  "actual_complexity": "high",
+  "actual_complexity": "large",
   "actual_files_changed": 12,
   "time_spent_minutes": 150
 }
 ```
 
 **Analysis**: Significantly underestimated
-- Complexity: low → high (2 levels up)
+- Complexity: small → large (2 levels up)
 - Files: 2-3 → 12 (4x expected)
-- Time: 150 min (high complexity confirmed)
+- Time: 150 min (large complexity confirmed)
 
-**Lesson**: This task type should be estimated as "high" in the future
+**Lesson**: This task type should be estimated as "large" in the future
 
 ### Overestimated Task
 
@@ -184,18 +182,18 @@ When actual is less than estimated:
 
 ```json
 {
-  "complexity": "high",
+  "complexity": "large",
   "estimated_files": "10-15",
   "actual_complexity": "medium",
   "actual_files_changed": 4,
-  "time_spent_minutes": 35
+  "time_spent_minutes": 80
 }
 ```
 
 **Analysis**: Overestimated
-- Complexity: high → medium (1 level down)
+- Complexity: large → medium (1 level down)
 - Files: 10-15 → 4 (less than minimum)
-- Time: 35 min (medium complexity confirmed)
+- Time: 80 min (medium complexity confirmed)
 
 **Lesson**: This task type can be estimated lower in the future
 
@@ -208,7 +206,7 @@ When actual is less than estimated:
 **Estimated**:
 - Complexity: medium
 - Files: 3-4
-- Expected time: ~45 minutes
+- Expected time: ~90 minutes
 
 **Actual**:
 - Complexity: medium
@@ -217,14 +215,14 @@ When actual is less than estimated:
   - `lib/kanban_web/router.ex` (modified)
   - `test/kanban_web/controllers/auth_controller_test.exs` (new)
   - `lib/kanban/accounts.ex` (modified)
-- Time spent: 42 minutes
+- Time spent: 85 minutes
 
 **Feedback**:
 ```json
 {
   "actual_complexity": "medium",
   "actual_files_changed": 4,
-  "time_spent_minutes": 42
+  "time_spent_minutes": 85
 }
 ```
 
@@ -237,10 +235,10 @@ When actual is less than estimated:
 **Estimated**:
 - Complexity: medium
 - Files: 2-3
-- Expected time: ~60 minutes
+- Expected time: ~90 minutes
 
 **Actual**:
-- Complexity: very_high
+- Complexity: large
 - Files changed: 15
   - 3 new controllers
   - 2 new schemas
@@ -256,25 +254,25 @@ When actual is less than estimated:
 **Feedback**:
 ```json
 {
-  "actual_complexity": "very_high",
+  "actual_complexity": "large",
   "actual_files_changed": 15,
   "time_spent_minutes": 180
 }
 ```
 
-**Result**: ✗ Significantly underestimated - OAuth2 tasks should default to "high" or "very_high"
+**Result**: ✗ Significantly underestimated - OAuth2 tasks should default to "large"
 
 ### Example 3: Documentation Update (Overestimated)
 
 **Task**: "Add help text to registration form"
 
 **Estimated**:
-- Complexity: low
+- Complexity: medium
 - Files: 1-2
-- Expected time: ~20 minutes
+- Expected time: ~60 minutes
 
 **Actual**:
-- Complexity: trivial
+- Complexity: small
 - Files changed: 1
   - `lib/kanban_web/live/registration_live.ex` (modified)
 - Time spent: 8 minutes
@@ -282,30 +280,30 @@ When actual is less than estimated:
 **Feedback**:
 ```json
 {
-  "actual_complexity": "trivial",
+  "actual_complexity": "small",
   "actual_files_changed": 1,
   "time_spent_minutes": 8
 }
 ```
 
-**Result**: Slightly overestimated but close enough - "trivial" more accurate
+**Result**: Overestimated by one level - a one-file text change is "small"
 
 ### Example 4: Database Migration (Complex Dependencies)
 
 **Task**: "Add indexes to improve query performance"
 
 **Estimated**:
-- Complexity: low
+- Complexity: small
 - Files: 1-2
 - Expected time: ~15 minutes
 
 **Actual**:
-- Complexity: high
+- Complexity: large
 - Files changed: 8
   - 1 migration file
   - 3 query functions optimized
   - 4 test files updated with new query patterns
-- Time spent: 120 minutes
+- Time spent: 150 minutes
 - Issues discovered:
   - Existing queries needed refactoring
   - Index conflicts with existing constraints
@@ -315,9 +313,9 @@ When actual is less than estimated:
 **Feedback**:
 ```json
 {
-  "actual_complexity": "high",
+  "actual_complexity": "large",
   "actual_files_changed": 8,
-  "time_spent_minutes": 120
+  "time_spent_minutes": 150
 }
 ```
 
@@ -334,7 +332,7 @@ Even if the estimate was accurate, provide feedback:
 {
   "actual_complexity": "medium",
   "actual_files_changed": 4,
-  "time_spent_minutes": 45
+  "time_spent_minutes": 75
 }
 
 # Avoid - missing feedback
@@ -349,14 +347,14 @@ Don't adjust complexity to match estimates:
 
 ```bash
 # Good - honest feedback
-Estimated: "low"
+Estimated: "small"
 Actual experience: took 3 hours, very complex
-Report: "high"
+Report: "large"
 
 # Bad - adjusted to match estimate
-Estimated: "low"
+Estimated: "small"
 Actual experience: took 3 hours, very complex
-Report: "low" ← Don't do this!
+Report: "small" ← Don't do this!
 ```
 
 ### 3. Count All Files
@@ -401,10 +399,10 @@ When estimates are significantly off, explain why in completion notes:
 
 ```bash
 {
-  "actual_complexity": "very_high",
+  "actual_complexity": "large",
   "actual_files_changed": 20,
   "time_spent_minutes": 240,
-  "completion_notes": "Task underestimated due to undocumented OAuth2 token refresh flows and complex redirect handling. Future OAuth2 tasks should be estimated as 'very_high'."
+  "completion_notes": "Task underestimated due to undocumented OAuth2 token refresh flows and complex redirect handling. Future OAuth2 tasks should be estimated as 'large'."
 }
 ```
 
@@ -417,8 +415,8 @@ When estimates are significantly off, explain why in completion notes:
 **Example**:
 ```
 Task: "Add validation to form"
-Estimated: trivial (1 file, 10 min)
-Actual: medium (5 files, 45 min)
+Estimated: small (1 file, 10 min)
+Actual: medium (5 files, 75 min)
 Why: Validation triggered need for error handling, translation strings, tests
 ```
 
@@ -431,12 +429,12 @@ Why: Validation triggered need for error handling, translation strings, tests
 **Example**:
 ```
 Task: "Add external API integration"
-Estimated: medium (3-4 files, 60 min)
-Actual: very_high (15 files, 200 min)
+Estimated: medium (3-4 files, 90 min)
+Actual: large (15 files, 200 min)
 Why: API documentation incomplete, rate limiting, error handling, retries
 ```
 
-**Recommendation**: External integrations should default to "high" complexity
+**Recommendation**: External integrations should default to "large" complexity
 
 ### Pattern 3: Refactoring Cascade
 
@@ -445,8 +443,8 @@ Why: API documentation incomplete, rate limiting, error handling, retries
 **Example**:
 ```
 Task: "Update function signature"
-Estimated: trivial (2 files, 15 min)
-Actual: medium (8 files, 60 min)
+Estimated: small (2 files, 15 min)
+Actual: medium (8 files, 90 min)
 Why: Function used in 6 places, all needed updates, tests needed changes
 ```
 
@@ -459,7 +457,7 @@ Why: Function used in 6 places, all needed updates, tests needed changes
 **Example**:
 ```
 Task: "Add feature flag"
-Estimated: low (3 files, 30 min)
+Estimated: small (3 files, 30 min)
 Actual: medium (7 files, 75 min)
 Why: Feature required edge case tests, integration tests, mocking setup
 ```
@@ -468,7 +466,11 @@ Why: Feature required edge case tests, integration tests, mocking setup
 
 ## Analytics Queries
 
-You can query estimation accuracy to learn patterns:
+You can query estimation accuracy to learn patterns. `complexity` and
+`actual_complexity` are stored as text, so the queries rank them explicitly
+(`small` = 1, `medium` = 2, `large` = 3). Comparing the two columns directly
+with `>` would compare the strings alphabetically, which puts `large` below
+`medium` and `medium` below `small`.
 
 ### Your Estimation Accuracy
 
@@ -480,11 +482,13 @@ SELECT
   actual_complexity AS actual,
   CASE
     WHEN complexity = actual_complexity THEN 'Accurate'
-    WHEN actual_complexity > complexity THEN 'Underestimated'
+    WHEN (CASE actual_complexity WHEN 'small' THEN 1 WHEN 'medium' THEN 2 WHEN 'large' THEN 3 END) >
+         (CASE complexity WHEN 'small' THEN 1 WHEN 'medium' THEN 2 WHEN 'large' THEN 3 END)
+      THEN 'Underestimated'
     ELSE 'Overestimated'
   END AS accuracy
 FROM tasks
-WHERE completed_by LIKE '%your-agent-name%'
+WHERE completed_by_agent LIKE '%your-agent-name%'
   AND actual_complexity IS NOT NULL
 ORDER BY completed_at DESC;
 ```
@@ -502,11 +506,9 @@ WHERE actual_complexity IS NOT NULL
 GROUP BY actual_complexity
 ORDER BY
   CASE actual_complexity
-    WHEN 'trivial' THEN 1
-    WHEN 'low' THEN 2
-    WHEN 'medium' THEN 3
-    WHEN 'high' THEN 4
-    WHEN 'very_high' THEN 5
+    WHEN 'small' THEN 1
+    WHEN 'medium' THEN 2
+    WHEN 'large' THEN 3
   END;
 ```
 
@@ -522,10 +524,11 @@ SELECT
   actual_files_changed,
   time_spent_minutes
 FROM tasks
-WHERE actual_complexity > complexity
+WHERE (CASE actual_complexity WHEN 'small' THEN 1 WHEN 'medium' THEN 2 WHEN 'large' THEN 3 END) >
+      (CASE complexity WHEN 'small' THEN 1 WHEN 'medium' THEN 2 WHEN 'large' THEN 3 END)
 ORDER BY
-  (CASE actual_complexity WHEN 'trivial' THEN 1 WHEN 'low' THEN 2 WHEN 'medium' THEN 3 WHEN 'high' THEN 4 WHEN 'very_high' THEN 5 END) -
-  (CASE complexity WHEN 'trivial' THEN 1 WHEN 'low' THEN 2 WHEN 'medium' THEN 3 WHEN 'high' THEN 4 WHEN 'very_high' THEN 5 END) DESC,
+  (CASE actual_complexity WHEN 'small' THEN 1 WHEN 'medium' THEN 2 WHEN 'large' THEN 3 END) -
+  (CASE complexity WHEN 'small' THEN 1 WHEN 'medium' THEN 2 WHEN 'large' THEN 3 END) DESC,
   completed_at DESC
 LIMIT 10;
 ```
@@ -553,7 +556,7 @@ curl -X PATCH /api/tasks/W42/complete \
   -d '{
     "actual_complexity": "medium",
     "actual_files_changed": 6,
-    "time_spent_minutes": 55,
+    "time_spent_minutes": 90,
     "completion_notes": "Authentication complete. Discovered need for password reset flow - creating follow-up task."
   }'
 
@@ -568,7 +571,7 @@ curl -X POST /api/tasks \
       "why": "Follow-up from W42: Users need ability to reset forgotten passwords",
       "what": "Implement email-based password reset with token expiration",
       "where_context": "Authentication system",
-      "dependencies": [42]
+      "dependencies": ["W42"]
     }
   }'
 ```

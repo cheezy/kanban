@@ -178,7 +178,7 @@ Response includes `needs_review`:
   "data": {
     "id": 42,
     "needs_review": true,
-    "status": "review",
+    "status": "in_progress",
     ...
   },
   "hooks": [
@@ -376,7 +376,7 @@ The report is then visible to human reviewers in the task detail view, providing
 {
   "title": "Update API documentation for /tasks endpoint",
   "needs_review": false,
-  "complexity": "trivial"
+  "complexity": "small"
 }
 ```
 
@@ -400,7 +400,7 @@ The report is then visible to human reviewers in the task detail view, providing
 {
   "title": "Implement two-factor authentication",
   "needs_review": true,
-  "complexity": "high"
+  "complexity": "large"
 }
 ```
 

@@ -362,7 +362,7 @@ The `security_considerations` array specifies security concerns, potential vulne
     "title": "Fix login bug",
     "description": "Users can't log in with special characters in password",
     "priority": "high",
-    "complexity": "low"
+    "complexity": "small"
   }
 }
 ```
@@ -540,7 +540,7 @@ The `security_considerations` array specifies security concerns, potential vulne
     "description": "Users can't log in with special characters in password",
     "status": "open",
     "priority": "high",
-    "complexity": "low",
+    "complexity": "small",
     "needs_review": true,
     "type": "work",
     "column_id": 5,
@@ -566,7 +566,7 @@ The `security_considerations` array specifies security concerns, potential vulne
     "description": "Complete authentication system with JWT tokens",
     "status": "open",
     "priority": "critical",
-    "complexity": "very_high",
+    "complexity": "large",
     "type": "goal",
     "column_id": 5,
     "created_by_agent": "ai_agent:claude-sonnet-4-5",
@@ -868,7 +868,7 @@ curl -X POST \
       "title": "Fix login bug",
       "description": "Users cannot log in with special characters",
       "priority": "high",
-      "complexity": "low"
+      "complexity": "small"
     }
   }' \
   https://www.stridelikeaboss.com/api/tasks

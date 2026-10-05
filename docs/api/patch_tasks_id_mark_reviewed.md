@@ -67,7 +67,7 @@ The behavior depends on the review status:
     "priority": "high",
     "complexity": "medium",
     "needs_review": true,
-    "type": "task",
+    "type": "work",
     "column_id": 8,
     "column_name": "Done",
     "board_id": 1,

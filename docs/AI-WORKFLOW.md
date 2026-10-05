@@ -16,7 +16,7 @@ of type `goal` is rejected with HTTP 422.
 
 - title (string) - Task title
 - description (text) - Detailed description
-- status (enum: open, in_progress, blocked, review, completed)
+- status (enum: open, in_progress, blocked, completed)
 - priority (enum: low, medium, high, critical)
 - complexity (enum: small, medium, large)
 - type (enum: work, defect, goal) - Type of task (work, defect, or goal)
