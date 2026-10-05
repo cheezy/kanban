@@ -186,6 +186,30 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
 
 ---
 
+### Claiming Tasks
+
+A claim (step 3 above) succeeds only for a task that is available to you. The main conditions — each one is checked by the server — are:
+
+- **It is in the Ready column.** Tasks created through the API land in Backlog, which is never claimable — a human must promote the task to Ready in the board UI.
+- **It is a `work` or `defect` task.** Goals are never claimed; their child tasks are. A task marked as a human task, or an archived task, is never offered to an agent either.
+- **It is not already claimed.** Its status is `open`, or an earlier claim on it has expired (claims expire after 60 minutes).
+- **Every task in its `dependencies` is completed.**
+- **Your API token's capabilities include every entry in its `required_capabilities`.** A token with no capabilities configured skips this check.
+- **It is not assigned to a different user.** A task pre-assigned to someone else (in the UI, or cascaded from its goal) can only be claimed by that user.
+- **When you claim without an `identifier`** (and for `GET /api/tasks/next`), a task is also skipped while any of its `key_files` is listed by a task currently in Doing or Review, so two agents never edit the same file at once. A claim that names an `identifier` does not apply this check.
+
+When the claim fails, the error response names the likely causes in `common_causes`:
+
+| Response | Meaning | What to do |
+|----------|---------|------------|
+| `409 Conflict` without an `identifier` in the request | No task in Ready meets every condition above | Wait for tasks to be promoted to Ready or for dependencies to complete |
+| `409 Conflict` for a named `identifier` | That task is blocked, already claimed, needs capabilities you lack, is not in Ready, or does not exist on this board | Check the task's column, `dependencies` and `required_capabilities`, or claim a different task |
+| `403 Forbidden`, task assigned to a different user | The task is assigned to someone else | Skip it and call `GET /api/tasks/next` again — your queue already excludes tasks assigned to others |
+| `403 Forbidden`, no write access | Your API token's user cannot write to this board | Ask a board owner for write access |
+| `422 Unprocessable Entity` | `before_doing_result` is missing, malformed, or reports a non-zero exit code | Run the `before_doing` hook first and send its result — see [Hook System](#hook-system) |
+
+---
+
 ### Completion Validation
 
 Starting with G65 (April 2026), the `/complete` endpoint validates three additional top-level fields alongside `after_doing_result` and `before_review_result`:

@@ -111,6 +111,18 @@ Defaulting to `false` reduces friction for autonomous agent operation and focuse
 # - Task moves to Done
 ```
 
+### Review Statuses
+
+A task in the Review column carries a `review_status`, which a **human reviewer** records in the board UI. Agents never set it — `PATCH /api/tasks/:id` refuses the field — they only read it, through [GET /api/tasks/:id](api/get_tasks_id.md), and then call [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) to act on it.
+
+| `review_status` | What `mark_reviewed` does |
+|-----------------|---------------------------|
+| not set (`null`) | Rejects the call with `422` — no review has been recorded yet; wait for the human reviewer |
+| `pending` | Rejects the call with `422` — the review is not finished; wait for a decision |
+| `approved` | Moves the task to Done and marks it `completed` |
+| `changes_requested` | Moves the task back to Doing (status `in_progress`, still assigned to you) to address the feedback |
+| `rejected` | Moves the task back to Doing (status `in_progress`, still assigned to you), exactly like `changes_requested` |
+
 ## API Integration
 
 ### Check needs_review When Claiming

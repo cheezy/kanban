@@ -2,6 +2,9 @@ defmodule KanbanWeb.API.ErrorDocsTest do
   use ExUnit.Case, async: true
 
   alias KanbanWeb.API.ErrorDocs
+  alias KanbanWeb.DocAnchors
+
+  @error_docs_source "lib/kanban_web/controllers/api/error_docs.ex"
 
   describe "get_docs/2 for task claiming errors" do
     test "provides documentation for no tasks available" do
@@ -53,7 +56,7 @@ defmodule KanbanWeb.API.ErrorDocsTest do
       result = ErrorDocs.get_docs(:invalid_status_for_complete)
 
       assert result.documentation =~
-               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md#completing-tasks"
+               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md#task-completion"
 
       refute Map.has_key?(result, :related_docs)
 
@@ -66,7 +69,7 @@ defmodule KanbanWeb.API.ErrorDocsTest do
       result = ErrorDocs.get_docs(:not_authorized_to_complete)
 
       assert result.documentation =~
-               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md#completing-tasks"
+               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md#task-completion"
 
       refute Map.has_key?(result, :related_docs)
 
@@ -118,7 +121,7 @@ defmodule KanbanWeb.API.ErrorDocsTest do
       result = ErrorDocs.get_docs(:review_not_performed)
 
       assert result.documentation =~
-               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/REVIEW-WORKFLOW.md#human-review-process"
+               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/REVIEW-WORKFLOW.md#when-needs_review--true-human-review-required"
 
       refute Map.has_key?(result, :related_docs)
 
@@ -165,14 +168,14 @@ defmodule KanbanWeb.API.ErrorDocsTest do
       result = ErrorDocs.get_docs(:validation_error, fields: [:key_files])
 
       assert result ==
-               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#key-files"
+               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#key_files---files-that-will-be-modified"
     end
 
     test "returns single URL when multiple fields map to same doc" do
       result = ErrorDocs.get_docs(:validation_error, fields: [:why, :what, :where_context])
 
       assert result ==
-               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#why-what-where"
+               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#why-what-and-where_context---purpose-change-and-location"
     end
 
     test "returns list of URLs for fields from different docs" do
@@ -181,7 +184,7 @@ defmodule KanbanWeb.API.ErrorDocsTest do
       assert is_list(result)
       assert length(result) == 2
 
-      assert "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#key-files" in result
+      assert "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#key_files---files-that-will-be-modified" in result
 
       assert "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-CAPABILITIES.md" in result
     end
@@ -197,18 +200,18 @@ defmodule KanbanWeb.API.ErrorDocsTest do
       # All three fields are in the same doc with different anchors
       assert length(result) == 3
 
-      assert "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#key-files" in result
+      assert "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#key_files---files-that-will-be-modified" in result
 
-      assert "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#verification-steps" in result
+      assert "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#verification_steps---how-to-prove-the-task-is-done" in result
 
-      assert "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#acceptance-criteria" in result
+      assert "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#acceptance_criteria---definition-of-done" in result
     end
 
     test "filters out unknown fields" do
       result = ErrorDocs.get_docs(:validation_error, fields: [:unknown_field, :key_files])
 
       assert result ==
-               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#key-files"
+               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#key_files---files-that-will-be-modified"
     end
 
     test "handles all supported validation fields" do
@@ -333,5 +336,227 @@ defmodule KanbanWeb.API.ErrorDocsTest do
       assert result.code == 123
       assert result.documentation
     end
+  end
+
+  # (D361) API errors hand agents a documentation URL so they can self-correct.
+  # These tests pin every emitted URL to a real file under docs/ and, when it
+  # carries a fragment, to a heading (or explicit HTML anchor) in that file —
+  # so a doc heading and a code link can no longer drift apart unnoticed.
+  describe "documentation anchor contract" do
+    test "every emitted doc URL resolves to an existing file and heading" do
+      urls =
+        "lib/**/*.ex"
+        |> Path.wildcard()
+        |> Enum.flat_map(fn path -> path |> File.read!() |> DocAnchors.source_doc_links() end)
+
+      # Non-vacuity: error_docs.ex alone writes 23 anchored links today, and
+      # the agent onboarding module adds one more.
+      assert length(urls) >= 24
+      assert Enum.any?(urls, &String.contains?(&1, "MULTI-AGENT-INSTRUCTIONS.md#"))
+
+      assert broken_links(urls) == []
+    end
+
+    test "every get_docs context and validation field link passes the anchor check" do
+      source = File.read!(@error_docs_source)
+
+      contexts =
+        ~r/^\s*def get_docs\(:(\w+)/m
+        |> Regex.scan(source, capture: :all_but_first)
+        |> Enum.map(fn [name] -> String.to_existing_atom(name) end)
+        |> Enum.uniq()
+
+      fields =
+        ~r/"(\w+)" =>\s+"#\{@docs_base_url\}/
+        |> Regex.scan(source, capture: :all_but_first)
+        |> List.flatten()
+
+      # Non-vacuity: the scans must find the clauses and the field map, so a
+      # renamed pattern cannot silently turn this into a test of nothing.
+      assert :no_tasks_available in contexts
+      assert :validation_error in contexts
+      assert length(contexts) >= 25
+      assert "key_files" in fields
+      assert length(fields) >= 13
+
+      results =
+        Enum.map(contexts, &ErrorDocs.get_docs(&1, identifier: "W1")) ++
+          [
+            ErrorDocs.get_docs(:unknown_error_type),
+            ErrorDocs.get_docs(:validation_error, fields: fields),
+            ErrorDocs.get_docs(:validation_error, fields: [])
+          ] ++ Enum.map(fields, &ErrorDocs.get_docs(:validation_error, fields: [&1]))
+
+      urls = results |> DocAnchors.flatten_urls() |> Enum.uniq()
+
+      assert Enum.any?(urls, &String.contains?(&1, "#"))
+      assert broken_links(urls) == []
+    end
+
+    test "corrected anchors point at the intended sections" do
+      prefix = DocAnchors.docs_url_prefix()
+
+      assert ErrorDocs.get_docs(:no_tasks_available).documentation ==
+               prefix <> "AI-WORKFLOW.md#claiming-tasks"
+
+      assert ErrorDocs.get_docs(:assigned_to_other_user).documentation ==
+               prefix <> "AI-WORKFLOW.md#claiming-tasks"
+
+      assert ErrorDocs.get_docs(:completion_validation_failed).documentation ==
+               prefix <> "AI-WORKFLOW.md#task-completion"
+
+      assert (prefix <> "AI-WORKFLOW.md#hook-system") in ErrorDocs.get_docs(
+               :hook_validation_failed
+             ).related_docs
+
+      assert ErrorDocs.get_docs(:invalid_review_status).documentation ==
+               prefix <> "REVIEW-WORKFLOW.md#review-statuses"
+
+      assert ErrorDocs.get_docs(:validation_error, fields: [:dependencies]) ==
+               prefix <> "TASK-WRITING-GUIDE.md#dependencies---tasks-that-must-complete-first"
+
+      assert ErrorDocs.get_docs(:validation_error, fields: [:complexity]) ==
+               prefix <> "TASK-WRITING-GUIDE.md#complexity---size-estimate"
+
+      assert ErrorDocs.get_docs(:validation_error, fields: [:priority]) ==
+               prefix <> "TASK-WRITING-GUIDE.md#priority---order-of-work"
+
+      assert ErrorDocs.get_docs(:validation_error, fields: [:testing_strategy]) ==
+               prefix <> "TASK-WRITING-GUIDE.md#testing_strategy---overall-testing-approach"
+
+      assert ErrorDocs.get_docs(:validation_error, fields: [:integration_points]) ==
+               prefix <> "TASK-WRITING-GUIDE.md#integration_points---systems-the-task-touches"
+    end
+
+    test "existing valid anchors still resolve unchanged" do
+      prefix = DocAnchors.docs_url_prefix()
+
+      for url <- [
+            prefix <> "AI-WORKFLOW.md#completion-validation",
+            prefix <> "TASK-WRITING-GUIDE.md#task-types",
+            prefix <> "api/patch_tasks_id_complete.md#completion-validation-format-g65",
+            prefix <> "MULTI-AGENT-INSTRUCTIONS.md#manual-installation"
+          ] do
+        assert DocAnchors.check_url(url) == :ok, url
+      end
+    end
+
+    test "fails when an emitted anchor has no matching heading" do
+      prefix = DocAnchors.docs_url_prefix()
+
+      for old <- [
+            "AI-WORKFLOW.md#completing-tasks",
+            "AI-WORKFLOW.md#hook-execution",
+            "REVIEW-WORKFLOW.md#human-review-process",
+            "TASK-WRITING-GUIDE.md#key-files",
+            "TASK-WRITING-GUIDE.md#why-what-where"
+          ] do
+        url = prefix <> old
+        assert {:error, message} = DocAnchors.check_url(url)
+        assert message =~ url
+        assert message =~ "matches no heading"
+      end
+    end
+
+    test "fails with the URL named when the file is missing, off-host or outside docs/" do
+      prefix = DocAnchors.docs_url_prefix()
+
+      missing = prefix <> "NO-SUCH-GUIDE.md#anything"
+      assert {:error, message} = DocAnchors.check_url(missing)
+      assert message =~ missing
+      assert message =~ "does not exist"
+
+      off_host = "https://example.com/docs/AI-WORKFLOW.md#claiming-tasks"
+      assert {:error, message} = DocAnchors.check_url(off_host)
+      assert message =~ off_host
+
+      for escape <- ["../mix.exs", "../README.md", "api/../../README.md", "/etc/passwd.md"] do
+        url = prefix <> escape
+        assert {:error, message} = DocAnchors.check_url(url)
+        assert message =~ "outside the allowed docs/ pattern"
+      end
+    end
+
+    test "unanchored and default links only require the file" do
+      prefix = DocAnchors.docs_url_prefix()
+
+      assert ErrorDocs.get_docs(:validation_error, fields: []) ==
+               prefix <> "TASK-WRITING-GUIDE.md"
+
+      assert DocAnchors.check_url(prefix <> "TASK-WRITING-GUIDE.md") == :ok
+
+      fallback = ErrorDocs.get_docs(:unknown_error_type)
+      assert DocAnchors.check_url(fallback.documentation) == :ok
+      assert DocAnchors.check_url(fallback.getting_started) == :ok
+    end
+
+    test "heading slug helper follows the GitHub rule" do
+      assert DocAnchors.slug("Hook System") == "hook-system"
+
+      assert DocAnchors.slug("`key_files` - Files that will be modified") ==
+               "key_files---files-that-will-be-modified"
+
+      assert DocAnchors.slug("Why, What, Where") == "why-what-where"
+
+      assert DocAnchors.slug("When needs_review = true (Human Review Required)") ==
+               "when-needs_review--true-human-review-required"
+
+      assert DocAnchors.slug("Completion Validation Requirements (G65)") ==
+               "completion-validation-requirements-g65"
+
+      assert DocAnchors.slug("See [the guide](GUIDE.md) **now**") == "see-the-guide-now"
+
+      markdown = """
+      # Setup
+      ## Setup
+      ### Setup ###
+      ## Setup-1
+      <a id="custom-anchor"></a>
+      """
+
+      assert DocAnchors.anchors(markdown) ==
+               MapSet.new(["setup", "setup-1", "setup-2", "setup-1-1", "custom-anchor"])
+    end
+
+    test "flattens string, list and map results and ignores fenced headings" do
+      url = DocAnchors.docs_url_prefix() <> "AI-WORKFLOW.md"
+
+      assert DocAnchors.flatten_urls(url) == [url]
+      assert DocAnchors.flatten_urls([url, "not a url"]) == [url]
+
+      assert DocAnchors.flatten_urls(%{documentation: url, related_docs: [url], count: 3}) ==
+               [url, url]
+
+      assert DocAnchors.flatten_urls(:atom) == []
+
+      markdown = """
+      ## Real Heading
+
+      ```markdown
+      ## Inside Fence
+      ```bash
+      ## Still Inside
+      ```
+      ## After Fence
+
+      ~~~~
+      ## Tilde Fenced
+      ~~~
+      ## Short Closer Does Not Close
+      ~~~~
+          ## Indented Code
+      """
+
+      assert DocAnchors.anchors(markdown) == MapSet.new(["real-heading", "after-fence"])
+    end
+  end
+
+  defp broken_links(urls) do
+    Enum.flat_map(urls, fn url ->
+      case DocAnchors.check_url(url) do
+        :ok -> []
+        {:error, message} -> [message]
+      end
+    end)
   end
 end

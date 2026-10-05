@@ -151,7 +151,7 @@ Hook validation failed (missing or invalid `before_doing_result`):
   "hook": "before_doing",
   "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-HOOK-EXECUTION-GUIDE.md",
   "related_docs": [
-    "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md#hook-execution"
+    "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md#hook-system"
   ],
   "common_causes": [
     "Hook result not provided in request (required parameter missing)",

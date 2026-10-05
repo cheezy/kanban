@@ -587,6 +587,65 @@ arrays are fine. Omitting it stores an empty object (`{}`).
 }
 ```
 
+#### `verification_steps` - How to prove the task is done
+
+**Why critical:** Gives the agent the exact commands and checks that show the work is finished, so "done" is demonstrated rather than claimed.
+
+`verification_steps` is an **array of objects**, one per check. Each object has `step_type` (`"command"` or `"manual"`), `step_text` (the command to run or the manual instruction), `position` (an integer from 0, for ordering) and an optional `expected_result`. An array of strings or a single string is invalid — see [verification_steps Format](#task-types) under Task Types for the full valid and invalid forms.
+
+**Format:**
+
+```json
+"verification_steps": [
+  {"step_type": "command", "step_text": "mix test test/kanban/accounts_test.exs", "expected_result": "All tests pass", "position": 0},
+  {"step_type": "manual", "step_text": "Log in with a password containing &", "expected_result": "Login succeeds", "position": 1}
+]
+```
+
+#### `acceptance_criteria` - Definition of done
+
+**Why critical:** The reviewer checks the work against these lines one by one, so each must be a specific, testable condition.
+
+`acceptance_criteria` is a **newline-separated string**: one criterion per line, each describing an observable behaviour or outcome rather than an implementation step.
+
+**Format:**
+
+```json
+"acceptance_criteria": "Users can log in with passwords containing &, %, # and @\nPassword validation rejects passwords shorter than 12 characters\nNo regression in normal password login"
+```
+
+#### `complexity` - Size estimate
+
+`complexity` is one of `"small"`, `"medium"` or `"large"` (default `"small"`). The Stride workflow uses it to decide how much exploration, planning and review an agent does around the implementation, so size it by the work involved: a one-file change is `small`, a change touching several modules is `medium`, and anything that needs breaking down belongs in a goal with smaller tasks.
+
+#### `priority` - Order of work
+
+`priority` is one of `"low"`, `"medium"`, `"high"` or `"critical"` (default `"medium"`). Agents asking for the next task get the highest-priority claimable task first, `critical` before `high` before `medium` before `low`.
+
+#### `integration_points` - Systems the task touches
+
+`integration_points` is an **optional JSON object** naming the systems, APIs, events or services the change interacts with, so the agent knows what else to check. Keys are free-form; every value must be a string or an array of strings. It defaults to an empty object (`{}`).
+
+**Format:**
+
+```json
+"integration_points": {
+  "pubsub_topics": ["board:123"],
+  "external_apis": ["Stripe webhooks"],
+  "telemetry_events": ["[:kanban, :task, :claimed]"]
+}
+```
+
+#### `why`, `what` and `where_context` - Purpose, change and location
+
+These three strings give the agent the context the structured fields cannot:
+
+- `why` - the problem being solved and the value it provides
+- `what` - the specific change to make
+- `where_context` - where in the code or UI the change lives
+
+Fill in all three; an agent that knows why a change matters makes better decisions about the cases the task did not spell out.
+
 **Always structure these other fields:**
 
 - `verification_steps` - What to test (array of objects with step_type, step_text, expected_result)

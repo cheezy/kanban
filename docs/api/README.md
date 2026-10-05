@@ -10,7 +10,7 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
 4. [Hook System](#hook-system)
 5. [Completion Validation (explorer_result, reviewer_result, workflow_steps)](#completion-validation-explorer_result-reviewer_result-workflow_steps)
 6. [API Endpoints](#api-endpoints) (including the [OpenAPI specification](#api-specification))
-7. [Errors](#errors) (including [400 for a malformed query string or body](#400-for-a-malformed-query-string-or-body), [406 Not Acceptable](#406-not-acceptable) and [404 for out-of-range numeric IDs](#404-for-out-of-range-numeric-ids))
+7. [Errors](#errors) (including [Documentation links in error bodies](#documentation-links-in-error-bodies), [400 for a malformed query string or body](#400-for-a-malformed-query-string-or-body), [406 Not Acceptable](#406-not-acceptable) and [404 for out-of-range numeric IDs](#404-for-out-of-range-numeric-ids))
 8. [Configuration Files](#configuration-files)
 9. [Examples](#examples)
 
@@ -298,6 +298,30 @@ Every `/api` route returns JSON, errors included. Most error bodies carry an
 (changeset) failures return `errors` keyed by field instead. Each endpoint page
 documents its own error responses, and the
 [OpenAPI specification](get_openapi_json.md) lists them per operation.
+
+### Documentation links in error bodies
+
+Many error bodies point at the guide that explains the failure, so an agent
+can correct the request without guessing:
+
+- `documentation` — the main guide for this error. On a changeset (`errors`)
+  failure from the task endpoints it is a single URL, or a list of URLs when
+  the failing fields are documented in different places.
+- `related_docs` — further reading, on some errors.
+- `common_causes` — the usual reasons for this error, in plain language.
+- `getting_started` — on errors with no more specific guide, the
+  getting-started guide for AI agents.
+
+Every link is a `https://raw.githubusercontent.com/cheezy/kanban/...` URL into
+this repository's `docs/` directory. A link ending in `#<anchor>` names a
+section of that guide: the anchor is the GitHub heading slug of the section
+title (for example `#hook-system` for "Hook System", or
+`#key_files---files-that-will-be-modified` for "`key_files` - Files that will be
+modified"). The raw host serves plain text and does not scroll to the anchor,
+so find the section by its heading — or open the same path under
+`https://github.com/cheezy/kanban/blob/main/docs/`, where the anchor does
+scroll. The test suite checks that every emitted link names an existing guide
+and, when it has an anchor, a real heading in it.
 
 ### 400 for a malformed query string or body
 

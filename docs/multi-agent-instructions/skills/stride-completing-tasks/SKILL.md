@@ -450,7 +450,7 @@ When strict mode is on and a payload fails validation:
     }
   ],
   "required_format": { /* both shapes documented above */ },
-  "documentation": "https://.../AI-WORKFLOW.md#completing-tasks"
+  "documentation": "https://.../AI-WORKFLOW.md#task-completion"
 }
 ```
 

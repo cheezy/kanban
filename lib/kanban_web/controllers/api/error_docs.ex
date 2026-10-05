@@ -4,6 +4,9 @@ defmodule KanbanWeb.API.ErrorDocs do
   understand and fix issues quickly.
   """
 
+  # (D361) Every `#anchor` below must be the GitHub slug of a heading in its
+  # target doc (never one inside a fenced code block), or the link drops the
+  # agent at the top of the page. ErrorDocsTest checks every emitted URL.
   @docs_base_url "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs"
 
   @doc """
@@ -60,7 +63,7 @@ defmodule KanbanWeb.API.ErrorDocs do
   # Task completion errors
   def get_docs(:invalid_status_for_complete, _opts) do
     %{
-      documentation: "#{@docs_base_url}/AI-WORKFLOW.md#completing-tasks",
+      documentation: "#{@docs_base_url}/AI-WORKFLOW.md#task-completion",
       common_causes: [
         "Task must be in 'in_progress' or 'blocked' status to complete",
         "You may need to claim the task first",
@@ -71,7 +74,7 @@ defmodule KanbanWeb.API.ErrorDocs do
 
   def get_docs(:not_authorized_to_complete, _opts) do
     %{
-      documentation: "#{@docs_base_url}/AI-WORKFLOW.md#completing-tasks",
+      documentation: "#{@docs_base_url}/AI-WORKFLOW.md#task-completion",
       common_causes: [
         "You can only complete tasks that are assigned to you",
         "Claim the task first using POST /api/tasks/claim"
@@ -103,7 +106,7 @@ defmodule KanbanWeb.API.ErrorDocs do
   # Completion result validation errors (explorer_result, reviewer_result)
   def get_docs(:completion_validation_failed, _opts) do
     %{
-      documentation: "#{@docs_base_url}/AI-WORKFLOW.md#completing-tasks",
+      documentation: "#{@docs_base_url}/AI-WORKFLOW.md#task-completion",
       related_docs: [
         "#{@docs_base_url}/AGENT-HOOK-EXECUTION-GUIDE.md",
         "#{@docs_base_url}/api/patch_tasks_id_complete.md#completion-validation-format-g65"
@@ -129,7 +132,7 @@ defmodule KanbanWeb.API.ErrorDocs do
     %{
       documentation: "#{@docs_base_url}/AGENT-HOOK-EXECUTION-GUIDE.md",
       related_docs: [
-        "#{@docs_base_url}/AI-WORKFLOW.md#hook-execution"
+        "#{@docs_base_url}/AI-WORKFLOW.md#hook-system"
       ],
       common_causes: [
         "Hook result not provided in request (required parameter missing)",
@@ -165,7 +168,8 @@ defmodule KanbanWeb.API.ErrorDocs do
 
   def get_docs(:review_not_performed, _opts) do
     %{
-      documentation: "#{@docs_base_url}/REVIEW-WORKFLOW.md#human-review-process",
+      documentation:
+        "#{@docs_base_url}/REVIEW-WORKFLOW.md#when-needs_review--true-human-review-required",
       common_causes: [
         "A human reviewer must set review_status before calling mark_reviewed",
         "Wait for human to approve/reject the review",
@@ -347,19 +351,28 @@ defmodule KanbanWeb.API.ErrorDocs do
     field_errors = Keyword.get(opts, :fields, [])
 
     field_docs = %{
-      "key_files" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#key-files",
-      "verification_steps" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#verification-steps",
-      "acceptance_criteria" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#acceptance-criteria",
-      "dependencies" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#dependencies",
+      "key_files" =>
+        "#{@docs_base_url}/TASK-WRITING-GUIDE.md#key_files---files-that-will-be-modified",
+      "verification_steps" =>
+        "#{@docs_base_url}/TASK-WRITING-GUIDE.md#verification_steps---how-to-prove-the-task-is-done",
+      "acceptance_criteria" =>
+        "#{@docs_base_url}/TASK-WRITING-GUIDE.md#acceptance_criteria---definition-of-done",
+      "dependencies" =>
+        "#{@docs_base_url}/TASK-WRITING-GUIDE.md#dependencies---tasks-that-must-complete-first",
       "required_capabilities" => "#{@docs_base_url}/AGENT-CAPABILITIES.md",
-      "complexity" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#complexity-estimation",
-      "priority" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#priority",
+      "complexity" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#complexity---size-estimate",
+      "priority" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#priority---order-of-work",
       "type" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#task-types",
-      "testing_strategy" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#testing-strategy",
-      "integration_points" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#integration-points",
-      "why" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#why-what-where",
-      "what" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#why-what-where",
-      "where_context" => "#{@docs_base_url}/TASK-WRITING-GUIDE.md#why-what-where"
+      "testing_strategy" =>
+        "#{@docs_base_url}/TASK-WRITING-GUIDE.md#testing_strategy---overall-testing-approach",
+      "integration_points" =>
+        "#{@docs_base_url}/TASK-WRITING-GUIDE.md#integration_points---systems-the-task-touches",
+      "why" =>
+        "#{@docs_base_url}/TASK-WRITING-GUIDE.md#why-what-and-where_context---purpose-change-and-location",
+      "what" =>
+        "#{@docs_base_url}/TASK-WRITING-GUIDE.md#why-what-and-where_context---purpose-change-and-location",
+      "where_context" =>
+        "#{@docs_base_url}/TASK-WRITING-GUIDE.md#why-what-and-where_context---purpose-change-and-location"
     }
 
     links =
