@@ -8,10 +8,78 @@ defmodule KanbanWeb.ErrorHTML do
   404 and 500 templates so the shared chrome (head, layout, Go-Home
   button) lives in one place. Each template passes its title, heading,
   message, and icon slot.
+
+  Only 404 and 500 have templates. Every other status that
+  `Phoenix.Endpoint.RenderErrors` renders as HTML goes through the `render/2`
+  fallback below (D353), so a 400 from a malformed query string or a 406 from
+  a browser route asked for an unsupported `Accept` returns its real status
+  with a translated page instead of crashing into a 500.
   """
   use KanbanWeb, :html
 
   embed_templates "error_html/*"
+
+  @doc """
+  Renders an error page for any status without its own template (D353).
+
+  `template` is `"<status>.html"`, as built by `Phoenix.Endpoint.RenderErrors`.
+  The page shows that status code with translated wording for 400, 406, 413
+  and 415 and generic translated wording for any other status. Nothing from
+  the request or the exception is shown.
+  """
+  def render(template, assigns) do
+    status_code = template |> String.split(".", parts: 2) |> hd()
+    {heading, message} = fallback_copy(status_code)
+
+    assigns
+    |> Map.new()
+    |> Map.merge(%{status_code: status_code, heading: heading, message: message})
+    |> fallback_page()
+  end
+
+  defp fallback_copy("400") do
+    {gettext("Bad Request"),
+     gettext("The request couldn't be understood. Check the address and try again.")}
+  end
+
+  defp fallback_copy("406") do
+    {gettext("Not Acceptable"),
+     gettext("This page can't be shown in the format that was requested.")}
+  end
+
+  defp fallback_copy("413") do
+    {gettext("Request Too Large"), gettext("The request was too large to process.")}
+  end
+
+  defp fallback_copy("415") do
+    {gettext("Unsupported Media Type"),
+     gettext("The request was sent in a format that isn't supported.")}
+  end
+
+  defp fallback_copy(_status_code) do
+    {gettext("Something Went Wrong"),
+     gettext("We couldn't complete your request. Please go back and try again.")}
+  end
+
+  defp fallback_page(assigns) do
+    ~H"""
+    <.error_page
+      page_title={@heading}
+      status_code={@status_code}
+      heading={@heading}
+      message={@message}
+    >
+      <:icon>
+        <div
+          class="stride-screen"
+          style="display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 16px; background: linear-gradient(135deg, var(--stride-orange-soft) 0%, var(--stride-violet-soft) 100%); color: var(--stride-orange-ink); box-shadow: inset 0 0 0 1px var(--line); margin-bottom: 24px;"
+        >
+          <.icon name="hero-exclamation-circle" class="size-9" />
+        </div>
+      </:icon>
+    </.error_page>
+    """
+  end
 
   attr :page_title, :string, required: true
   attr :status_code, :string, required: true

@@ -140,6 +140,22 @@ Returns comprehensive onboarding information:
 }
 ```
 
+### Bad Request (400 Bad Request)
+
+Returned when the query string cannot be parsed, for example `?a=%FF` (an
+invalid percent-encoding). The body is always JSON, whatever the `Accept`
+header says, with a fixed message that never echoes the request:
+
+```json
+{
+  "error": "Bad Request",
+  "message": "The request is malformed and could not be processed."
+}
+```
+
+Every `/api` route behaves the same way. See
+[Errors](README.md#400-for-a-malformed-query-string-or-body) in the API README.
+
 ### Not Acceptable (406 Not Acceptable)
 
 Returned when the `Accept` header (or a `_format` query parameter) asks for a

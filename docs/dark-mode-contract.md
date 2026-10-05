@@ -162,7 +162,11 @@ Resolution rules:
 
 Error pages (`lib/kanban_web/controllers/error_html.ex`) are standalone
 documents and use the same resolve-to-explicit core, minus the toggle machinery
-(no pill, so no `data-theme-choice`, no `phx:set-theme` listener).
+(no pill, so no `data-theme-choice`, no `phx:set-theme` listener). Every error
+page, including the `render/2` fallback for statuses without a template (400,
+406, 413, 415 and others, D353), is drawn by the shared `error_page/1`
+component, so this bootstrap lives in one place; see
+[`docs/error-pages.md`](error-pages.md).
 
 ## The three token vocabularies
 

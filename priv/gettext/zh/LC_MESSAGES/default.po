@@ -337,7 +337,7 @@ msgstr "删除任务失败"
 msgid "Save Task"
 msgstr "保存任务"
 
-#: lib/kanban_web/live/task_live/form_component.ex:406
+#: lib/kanban_web/live/task_live/form_component.ex:411
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "任务创建成功"
@@ -368,7 +368,7 @@ msgstr "标题"
 msgid "Update task details"
 msgstr "更新任务详情"
 
-#: lib/kanban_web/live/task_live/form_component.ex:424
+#: lib/kanban_web/live/task_live/form_component.ex:429
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "此列已达到在制品限制"
@@ -540,7 +540,7 @@ msgstr "添加评论"
 msgid "Adding..."
 msgstr "正在添加..."
 
-#: lib/kanban_web/live/task_live/form_component.ex:495
+#: lib/kanban_web/live/task_live/form_component.ex:500
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr "评论添加成功"
@@ -1862,7 +1862,7 @@ msgstr "Stride 不只是一个看板——它从底层设计起就支持人类�
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "这种协作方式让团队可以将重复的编码任务委托给 AI 代理,同时让人类专注于高层决策、架构以及在合并前审核 AI 生成的代码。"
 
-#: lib/kanban_web/live/task_live/form_component.ex:428
+#: lib/kanban_web/live/task_live/form_component.ex:433
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "无法添加任务:此列已达到 WIP 上限"
@@ -1884,7 +1884,7 @@ msgstr "关于此文件的备注"
 
 #: lib/kanban_web/live/task_live/form_component.ex:234
 #: lib/kanban_web/live/task_live/form_component.ex:371
-#: lib/kanban_web/live/task_live/form_component.ex:415
+#: lib/kanban_web/live/task_live/form_component.ex:420
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "请修复下面的错误"
@@ -5875,7 +5875,7 @@ msgstr "教程"
 msgid "Video"
 msgstr "视频"
 
-#: lib/kanban_web/controllers/error_html.ex:78
+#: lib/kanban_web/controllers/error_html.ex:146
 #, elixir-autogen, elixir-format
 msgid "Go Home"
 msgstr "返回首页"
@@ -9340,3 +9340,53 @@ msgstr "评论和提及"
 #, elixir-autogen, elixir-format
 msgid "Manage your profile, password and notifications. Changes apply to your account immediately."
 msgstr "管理您的个人资料、密码和通知。更改将立即应用到您的账户。"
+
+#: lib/kanban_web/controllers/error_html.ex:41
+#, elixir-autogen, elixir-format
+msgid "Bad Request"
+msgstr "错误的请求"
+
+#: lib/kanban_web/controllers/error_html.ex:46
+#, elixir-autogen, elixir-format
+msgid "Not Acceptable"
+msgstr "无法接受"
+
+#: lib/kanban_web/controllers/error_html.ex:51
+#, elixir-autogen, elixir-format
+msgid "Request Too Large"
+msgstr "请求过大"
+
+#: lib/kanban_web/controllers/error_html.ex:60
+#, elixir-autogen, elixir-format
+msgid "Something Went Wrong"
+msgstr "出了点问题"
+
+#: lib/kanban_web/controllers/error_html.ex:42
+#, elixir-autogen, elixir-format
+msgid "The request couldn't be understood. Check the address and try again."
+msgstr "无法理解该请求。请检查地址后重试。"
+
+#: lib/kanban_web/controllers/error_html.ex:56
+#, elixir-autogen, elixir-format
+msgid "The request was sent in a format that isn't supported."
+msgstr "请求以不受支持的格式发送。"
+
+#: lib/kanban_web/controllers/error_html.ex:51
+#, elixir-autogen, elixir-format
+msgid "The request was too large to process."
+msgstr "请求过大,无法处理。"
+
+#: lib/kanban_web/controllers/error_html.ex:47
+#, elixir-autogen, elixir-format
+msgid "This page can't be shown in the format that was requested."
+msgstr "无法以所请求的格式显示此页面。"
+
+#: lib/kanban_web/controllers/error_html.ex:55
+#, elixir-autogen, elixir-format
+msgid "Unsupported Media Type"
+msgstr "不支持的媒体类型"
+
+#: lib/kanban_web/controllers/error_html.ex:61
+#, elixir-autogen, elixir-format
+msgid "We couldn't complete your request. Please go back and try again."
+msgstr "我们无法完成您的请求。请返回后重试。"

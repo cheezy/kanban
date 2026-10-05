@@ -337,7 +337,7 @@ msgstr "Error al eliminar tarea"
 msgid "Save Task"
 msgstr "Guardar Tarea"
 
-#: lib/kanban_web/live/task_live/form_component.ex:406
+#: lib/kanban_web/live/task_live/form_component.ex:411
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "Tarea creada exitosamente"
@@ -368,7 +368,7 @@ msgstr "Título"
 msgid "Update task details"
 msgstr "Actualizar detalles de tarea"
 
-#: lib/kanban_web/live/task_live/form_component.ex:424
+#: lib/kanban_web/live/task_live/form_component.ex:429
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "Límite WIP alcanzado para esta columna"
@@ -540,7 +540,7 @@ msgstr "Agregar un comentario"
 msgid "Adding..."
 msgstr "Agregando..."
 
-#: lib/kanban_web/live/task_live/form_component.ex:495
+#: lib/kanban_web/live/task_live/form_component.ex:500
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr "Comentario agregado exitosamente"
@@ -1862,7 +1862,7 @@ msgstr "Stride es más que un tablero kanban — está diseñado desde cero para
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "Este enfoque colaborativo permite a los equipos delegar tareas repetitivas de programación a agentes de IA mientras los humanos se centran en decisiones de alto nivel, arquitectura y revisión del código generado por IA antes de fusionarlo."
 
-#: lib/kanban_web/live/task_live/form_component.ex:428
+#: lib/kanban_web/live/task_live/form_component.ex:433
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "No se puede agregar la tarea: se ha alcanzado el límite WIP de esta columna"
@@ -1884,7 +1884,7 @@ msgstr "Nota sobre este archivo"
 
 #: lib/kanban_web/live/task_live/form_component.ex:234
 #: lib/kanban_web/live/task_live/form_component.ex:371
-#: lib/kanban_web/live/task_live/form_component.ex:415
+#: lib/kanban_web/live/task_live/form_component.ex:420
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "Por favor corrige los errores a continuación"
@@ -5887,7 +5887,7 @@ msgstr "Tutorial"
 msgid "Video"
 msgstr "Video"
 
-#: lib/kanban_web/controllers/error_html.ex:78
+#: lib/kanban_web/controllers/error_html.ex:146
 #, elixir-autogen, elixir-format
 msgid "Go Home"
 msgstr "Ir al inicio"
@@ -9404,3 +9404,53 @@ msgstr "Comentarios y menciones"
 #, elixir-autogen, elixir-format
 msgid "Manage your profile, password and notifications. Changes apply to your account immediately."
 msgstr "Gestiona tu perfil, tu contraseña y tus notificaciones. Los cambios se aplican a tu cuenta inmediatamente."
+
+#: lib/kanban_web/controllers/error_html.ex:41
+#, elixir-autogen, elixir-format
+msgid "Bad Request"
+msgstr "Solicitud incorrecta"
+
+#: lib/kanban_web/controllers/error_html.ex:46
+#, elixir-autogen, elixir-format
+msgid "Not Acceptable"
+msgstr "No aceptable"
+
+#: lib/kanban_web/controllers/error_html.ex:51
+#, elixir-autogen, elixir-format
+msgid "Request Too Large"
+msgstr "Solicitud demasiado grande"
+
+#: lib/kanban_web/controllers/error_html.ex:60
+#, elixir-autogen, elixir-format
+msgid "Something Went Wrong"
+msgstr "Algo salió mal"
+
+#: lib/kanban_web/controllers/error_html.ex:42
+#, elixir-autogen, elixir-format
+msgid "The request couldn't be understood. Check the address and try again."
+msgstr "No se pudo entender la solicitud. Revisa la dirección e inténtalo de nuevo."
+
+#: lib/kanban_web/controllers/error_html.ex:56
+#, elixir-autogen, elixir-format
+msgid "The request was sent in a format that isn't supported."
+msgstr "La solicitud se envió en un formato no compatible."
+
+#: lib/kanban_web/controllers/error_html.ex:51
+#, elixir-autogen, elixir-format
+msgid "The request was too large to process."
+msgstr "La solicitud era demasiado grande para procesarla."
+
+#: lib/kanban_web/controllers/error_html.ex:47
+#, elixir-autogen, elixir-format
+msgid "This page can't be shown in the format that was requested."
+msgstr "Esta página no se puede mostrar en el formato solicitado."
+
+#: lib/kanban_web/controllers/error_html.ex:55
+#, elixir-autogen, elixir-format
+msgid "Unsupported Media Type"
+msgstr "Tipo de medio no compatible"
+
+#: lib/kanban_web/controllers/error_html.ex:61
+#, elixir-autogen, elixir-format
+msgid "We couldn't complete your request. Please go back and try again."
+msgstr "No pudimos completar tu solicitud. Vuelve atrás e inténtalo de nuevo."

@@ -244,6 +244,36 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       assert example == rendered
     end
 
+    # D353: a malformed query string or body is rejected by Plug.Parsers before
+    # routing, so every operation can return 400 and must say so through the
+    # shared component.
+    test "every operation documents a 400 response", %{spec: spec} do
+      expected = %{"$ref" => "#/components/responses/BadRequest"}
+
+      missing =
+        for {method, path, op} <- spec_operations(spec),
+            get_in(op, ["responses", "400"]) != expected do
+          "#{String.upcase(method)} #{path}"
+        end
+
+      assert missing == [],
+             "Operations without a 400 $ref to BadRequest:\n" <> Enum.join(missing, "\n")
+    end
+
+    test "the BadRequest example matches what ErrorJSON renders for an /api 400", %{spec: spec} do
+      example = get_in(spec, ~w(components responses BadRequest content application/json example))
+
+      conn = Phoenix.ConnTest.build_conn(:get, "/api/openapi.json")
+
+      rendered =
+        "400.json"
+        |> KanbanWeb.ErrorJSON.render(%{conn: conn})
+        |> Jason.encode!()
+        |> Jason.decode!()
+
+      assert example == rendered
+    end
+
     test "every path template variable has a required path parameter", %{spec: spec} do
       missing =
         for {method, path, op} <- spec_operations(spec),

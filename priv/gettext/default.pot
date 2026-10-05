@@ -337,7 +337,7 @@ msgstr ""
 msgid "Save Task"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:406
+#: lib/kanban_web/live/task_live/form_component.ex:411
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr ""
@@ -368,7 +368,7 @@ msgstr ""
 msgid "Update task details"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:424
+#: lib/kanban_web/live/task_live/form_component.ex:429
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr ""
@@ -540,7 +540,7 @@ msgstr ""
 msgid "Adding..."
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:495
+#: lib/kanban_web/live/task_live/form_component.ex:500
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr ""
@@ -1862,7 +1862,7 @@ msgstr ""
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form_component.ex:428
+#: lib/kanban_web/live/task_live/form_component.ex:433
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr ""
@@ -1884,7 +1884,7 @@ msgstr ""
 
 #: lib/kanban_web/live/task_live/form_component.ex:234
 #: lib/kanban_web/live/task_live/form_component.ex:371
-#: lib/kanban_web/live/task_live/form_component.ex:415
+#: lib/kanban_web/live/task_live/form_component.ex:420
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr ""
@@ -5887,7 +5887,7 @@ msgstr ""
 msgid "Video"
 msgstr ""
 
-#: lib/kanban_web/controllers/error_html.ex:78
+#: lib/kanban_web/controllers/error_html.ex:146
 #, elixir-autogen, elixir-format
 msgid "Go Home"
 msgstr ""
@@ -9304,4 +9304,54 @@ msgstr ""
 #: lib/kanban_web/live/user_live/settings_components.ex:32
 #, elixir-autogen, elixir-format
 msgid "Manage your profile, password and notifications. Changes apply to your account immediately."
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html.ex:41
+#, elixir-autogen, elixir-format
+msgid "Bad Request"
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html.ex:46
+#, elixir-autogen, elixir-format
+msgid "Not Acceptable"
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html.ex:51
+#, elixir-autogen, elixir-format
+msgid "Request Too Large"
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html.ex:60
+#, elixir-autogen, elixir-format
+msgid "Something Went Wrong"
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html.ex:42
+#, elixir-autogen, elixir-format
+msgid "The request couldn't be understood. Check the address and try again."
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html.ex:56
+#, elixir-autogen, elixir-format
+msgid "The request was sent in a format that isn't supported."
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html.ex:51
+#, elixir-autogen, elixir-format
+msgid "The request was too large to process."
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html.ex:47
+#, elixir-autogen, elixir-format
+msgid "This page can't be shown in the format that was requested."
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html.ex:55
+#, elixir-autogen, elixir-format
+msgid "Unsupported Media Type"
+msgstr ""
+
+#: lib/kanban_web/controllers/error_html.ex:61
+#, elixir-autogen, elixir-format
+msgid "We couldn't complete your request. Please go back and try again."
 msgstr ""

@@ -10,7 +10,7 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
 4. [Hook System](#hook-system)
 5. [Completion Validation (explorer_result, reviewer_result, workflow_steps)](#completion-validation-explorer_result-reviewer_result-workflow_steps)
 6. [API Endpoints](#api-endpoints) (including the [OpenAPI specification](#api-specification))
-7. [Errors](#errors) (including [406 Not Acceptable](#406-not-acceptable) and [404 for out-of-range numeric IDs](#404-for-out-of-range-numeric-ids))
+7. [Errors](#errors) (including [400 for a malformed query string or body](#400-for-a-malformed-query-string-or-body), [406 Not Acceptable](#406-not-acceptable) and [404 for out-of-range numeric IDs](#404-for-out-of-range-numeric-ids))
 8. [Configuration Files](#configuration-files)
 9. [Examples](#examples)
 
@@ -298,6 +298,42 @@ Every `/api` route returns JSON, errors included. Most error bodies carry an
 (changeset) failures return `errors` keyed by field instead. Each endpoint page
 documents its own error responses, and the
 [OpenAPI specification](get_openapi_json.md) lists them per operation.
+
+### 400 for a malformed query string or body
+
+A request whose query string or body cannot be parsed gets a `400` on every
+`/api` route, including a path that does not exist. Typical causes are an
+invalid percent-encoding in the query string (for example `?a=%FF`, which is
+not valid UTF-8) and a `Content-Type: application/json` body that is not valid
+JSON:
+
+```http
+HTTP/1.1 400 Bad Request
+content-type: application/json; charset=utf-8
+
+{
+  "error": "Bad Request",
+  "message": "The request is malformed and could not be processed."
+}
+```
+
+The request is parsed before it is routed, so this 400 is decided before the
+`Accept` header and the API token are checked. The body is always JSON, whatever
+the `Accept` header says, and it is the same fixed body whether or not the token
+is valid. It never echoes the query string, the body or the parser's error.
+
+A body over the 8 MB parser limit gets a `413` with the same shape:
+
+```json
+{
+  "error": "Request Entity Too Large",
+  "message": "The request body is too large."
+}
+```
+
+Some endpoints also return a `400` of their own for a parameter that parses but
+is invalid, such as a non-integer `column_id`. Those bodies carry an `error`
+naming the field and are documented on the endpoint's page.
 
 ### 406 Not Acceptable
 
@@ -661,6 +697,14 @@ done
 - For `dispatched: true` on `reviewer_result`, also include `acceptance_criteria_checked` and `issues_found` as non-negative integers
 - For `dispatched: false`, the `reason` must be one of the five enum values exactly (see [Completion Validation](#completion-validation-explorer_result-reviewer_result-workflow_steps))
 - The summary minimum applies in skip form too — explain what you did instead, in 40+ non-whitespace characters
+
+### 400 Bad Request on a Request That Looks Fine
+
+- Check the query string for a `%` that is not followed by two hex digits, or
+  that encodes bytes that are not valid UTF-8, such as `%FF`; percent-encode
+  values with your HTTP client's encoder rather than by hand
+- Check that a `Content-Type: application/json` body is valid JSON; see
+  [400 for a malformed query string or body](#400-for-a-malformed-query-string-or-body)
 
 ### 406 Not Acceptable on Every Request
 

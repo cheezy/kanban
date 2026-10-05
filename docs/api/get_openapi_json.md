@@ -70,6 +70,22 @@ cache it for an hour.
 }
 ```
 
+### Bad Request (400 Bad Request)
+
+Returned when the query string cannot be parsed, for example `?a=%FF` (an
+invalid percent-encoding). The body is always JSON, whatever the `Accept`
+header says, with a fixed message that never echoes the request:
+
+```json
+{
+  "error": "Bad Request",
+  "message": "The request is malformed and could not be processed."
+}
+```
+
+Every `/api` route behaves the same way. See
+[Errors](README.md#400-for-a-malformed-query-string-or-body) in the API README.
+
 ### Not Acceptable (406 Not Acceptable)
 
 Returned when the `Accept` header (or a `_format` query parameter) asks for a
@@ -145,7 +161,9 @@ makes sure it cannot quietly fall behind the router. The test checks that:
    `{name}` in a path has a required path parameter. Every operation also
    documents a `406` as a `$ref` to `#/components/responses/NotAcceptable`, and
    that component's example must equal what `KanbanWeb.ErrorJSON` renders for a
-   406.
+   406. Likewise every operation documents a `400` as a `$ref` to
+   `#/components/responses/BadRequest`, whose example must equal what
+   `KanbanWeb.ErrorJSON` renders for an `/api` 400.
 4. **The schemas match what the API returns.** The property keys of `Task`,
    `TaskSummary` and `TaskAck` must equal the keys that
    `KanbanWeb.API.TaskJSON` renders, and `GoalSummary` the keys of
@@ -166,7 +184,9 @@ When you add a route under `/api` in `lib/kanban_web/router.ex`:
    `operationId`, a `summary`, a `tags` entry and at least one 2xx response.
    Add 4xx responses as `$ref`s to `#/components/responses/*`. Every operation
    needs `"406": { "$ref": "#/components/responses/NotAcceptable" }`, because
-   every `/api` route rejects a non-JSON `Accept` header.
+   every `/api` route rejects a non-JSON `Accept` header, and
+   `"400": { "$ref": "#/components/responses/BadRequest" }`, because every
+   `/api` route rejects a query string or body that cannot be parsed.
 2. If the path contains `{id}`, put
    `"parameters": [{ "$ref": "#/components/parameters/TaskId" }]` on the path
    item. It is already there if the path item exists.

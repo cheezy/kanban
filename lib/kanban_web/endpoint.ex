@@ -47,10 +47,6 @@ defmodule KanbanWeb.Endpoint do
     plug Phoenix.Ecto.CheckRepoStatus, otp_app: :kanban
   end
 
-  plug Phoenix.LiveDashboard.RequestLogger,
-    param_key: "request_logger",
-    cookie_key: "request_logger"
-
   # Lets LiveView processes spawned during tests share the test
   # owner's Ecto sandbox connection, avoiding the noisy
   # "Postgrex.Protocol disconnected" log when a LiveView checks out
@@ -62,10 +58,24 @@ defmodule KanbanWeb.Endpoint do
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
-  plug Plug.Parsers,
+  # Plug.Parsers, wrapped so a parse failure on an /api path (a malformed
+  # query string or body, an oversized body) renders as JSON rather than
+  # HTML (D353). It must be the first plug that parses the query string:
+  # an earlier plug that calls fetch_query_params would raise the 400 outside
+  # the wrapper, and the /api client would get an HTML error page.
+  plug KanbanWeb.Plugs.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
+
+  # Placed after the parsers (D353) because it calls fetch_query_params; see
+  # the note above. Dev-tool trade-off: its Logger metadata is now set after
+  # Plug.Telemetry's request-start log line and after parsing, so the
+  # LiveDashboard request-logger stream no longer shows the "GET /path" line
+  # or anything logged while parsing. The rest of the request is captured.
+  plug Phoenix.LiveDashboard.RequestLogger,
+    param_key: "request_logger",
+    cookie_key: "request_logger"
 
   plug Plug.MethodOverride
   plug Plug.Head

@@ -74,6 +74,33 @@ each route sits behind, are the single most important fact for the authz reviews
 | `:api_public` | `accepts ["json"]`, `ApiTelemetry` | **Unauthenticated** — only `/api/agent/onboarding` and `/api/openapi.json` |
 | (admin overlay) | `:browser` + `require_authenticated_user` + `require_admin_user` | Admin-only |
 
+### Endpoint plugs and error rendering
+
+Source: `lib/kanban_web/endpoint.ex`. These run on every request **before** the
+router, so no pipeline above applies to an error they raise.
+
+- **`KanbanWeb.Plugs.Parsers`** (D353) wraps `Plug.Parsers`. On an `/api` path
+  a parse failure (malformed query string or body: 400; body over the limit:
+  413) is re-raised as a `Plug.Conn.WrapperError` carrying the conn with its
+  format pinned to json, so `Phoenix.Endpoint.RenderErrors` renders it through
+  `ErrorJSON` (fixed `error` + `message`, no echo of the query, body or
+  exception) whatever the `Accept` header says. The status is unchanged. The
+  pin is applied only on failure, so an unrouted `/api` path that parses still
+  renders the HTML 404, and it is never applied to a non-`/api` path.
+- **It must be the first plug that parses the query string.**
+  `Phoenix.LiveDashboard.RequestLogger` calls `fetch_query_params`, so it sits
+  after the parsers; moved back above them, a malformed query on `/api` would
+  raise outside the wrapper and render as HTML. (Dev-tool cost only: the
+  LiveDashboard request-logger stream no longer shows the request-start line.)
+- **`ErrorHTML` has a `render/2` fallback** (D353) for every status without a
+  template (400, 406, 413, 415 and any other). It renders the shared
+  `error_page/1` chrome with fixed, translated wording and the status code
+  only: nothing from the request or the exception reaches the page. Before it,
+  such a status crashed the render and the client got a 500.
+- `render_errors` keeps `html` first and `debug_errors` stays off outside dev;
+  verify pre-router errors with `assert_error_sent/2`, which uses the
+  production render path. See [`docs/error-pages.md`](error-pages.md).
+
 ### Route → boundary map
 
 - **Public, unauthenticated (`:browser`, no auth):** marketing pages (`/`,
