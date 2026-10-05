@@ -88,7 +88,7 @@
         "tags": [
           "Discovery"
         ],
-        "description": "Without any of limit, cursor, status, type, priority, assigned_to_id, parent or updated_since the legacy unpaginated list is returned. Supplying any of them switches to cursor pagination ordered by id.",
+        "description": "Without any of limit, cursor, status, type, priority, assigned_to_id, parent or updated_since the legacy unpaginated list is returned. Supplying any of them switches to cursor pagination ordered by id. Archived tasks are never returned. For incremental sync with updated_since, use the full view (slim rows carry no updated_at), derive the bound from server-stamped updated_at values (UTC, no offset) minus an overlap longer than one paging pass, upsert rows by id, and run a periodic full pass because archived or deleted tasks and board moves or reorders never appear in an updated_since pass; see docs/api/get_tasks.md#incremental-sync.",
         "parameters": [
           {
             "$ref": "#/components/parameters/ColumnId"
@@ -1244,7 +1244,7 @@
         "name": "updated_since",
         "in": "query",
         "required": false,
-        "description": "Only tasks updated at or after this ISO 8601 timestamp (paginated mode).",
+        "description": "Only tasks updated at or after this ISO 8601 timestamp (paginated mode); inclusive, offsets converted to UTC, no offset read as UTC, fractional seconds floored to the whole second. Take the value from server time (server-stamped updated_at), never the client clock, minus an overlap, and expect duplicates.",
         "schema": {
           "type": "string",
           "format": "date-time"

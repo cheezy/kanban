@@ -94,7 +94,7 @@ Tasks may also be `blocked` when one of their dependencies is incomplete.
 
 ### Typical Agent Workflow
 
-1. **Discover tasks** — `GET /api/tasks/next` or `GET /api/tasks` (on large boards, page with `limit`/`cursor` and narrow with filters such as `status` or `updated_since`)
+1. **Discover tasks** — `GET /api/tasks/next` or `GET /api/tasks` (on large boards, page with `limit`/`cursor` and narrow with filters such as `status` or `updated_since`; to sync with `updated_since`, follow [Incremental sync](get_tasks.md#incremental-sync))
 2. **Execute `before_doing` hook FIRST** (blocking, 60s timeout) — capture `exit_code`, `output`, `duration_ms`
 3. **Claim a task** — `POST /api/tasks/claim` with `before_doing_result` (required)
 4. **Explore the codebase** — dispatch a task-explorer subagent (where supported) or read key_files manually; capture the outcome for `explorer_result`
@@ -245,7 +245,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 ### Task Discovery
 
 - [GET /api/tasks/next](get_tasks_next.md) — Get next available task matching your capabilities
-- [GET /api/tasks](get_tasks.md) — List tasks; optional filters (`column_id`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`) and opt-in cursor pagination (`limit`, `cursor` → `meta.next_cursor`)
+- [GET /api/tasks](get_tasks.md) — List tasks; optional filters (`column_id`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`) and opt-in cursor pagination (`limit`, `cursor` → `meta.next_cursor`). Syncing with `updated_since`? See [Incremental sync](get_tasks.md#incremental-sync)
 - [GET /api/tasks/:id](get_tasks_id.md) — Get specific task details
 - [GET /api/tasks/:id/tree](get_tasks_id_tree.md) — Get task with all children (for goals)
 - [GET /api/tasks/:id/dependencies](get_tasks_id_dependencies.md) — Get tasks this task depends on

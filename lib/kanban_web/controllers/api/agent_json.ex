@@ -282,7 +282,7 @@ defmodule KanbanWeb.API.AgentJSON do
               method: "GET",
               path: "/api/tasks",
               description:
-                "List tasks; optional filters (column_id, status, type, priority, assigned_to_id, parent, updated_since) and cursor pagination (limit, cursor -> meta.next_cursor)",
+                "List tasks; optional filters (column_id, status, type, priority, assigned_to_id, parent, updated_since) and cursor pagination (limit, cursor -> meta.next_cursor). For incremental sync with updated_since, read the Incremental sync caveats in the docs first: full view only, bound from server-stamped updated_at with an overlap, upsert by id",
               auth_required: true,
               documentation_url: "#{@docs_base_url}/docs/api/get_tasks.md"
             },

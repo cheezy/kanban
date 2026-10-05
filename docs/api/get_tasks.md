@@ -31,7 +31,7 @@ Authorization: Bearer <your_api_token>
 | `priority` | string | No | **Paginated mode.** One of `low`, `medium`, `high`, `critical`. |
 | `assigned_to_id` | integer | No | **Paginated mode.** Only tasks assigned to this user ID. |
 | `parent` | string | No | **Paginated mode.** A goal identifier on this board, such as `G12`. Returns that goal's child tasks. |
-| `updated_since` | string | No | **Paginated mode.** ISO 8601 datetime, such as `2026-01-31T12:00:00Z`. Returns only tasks whose `updated_at` is at or after it. |
+| `updated_since` | string | No | **Paginated mode.** ISO 8601 datetime, such as `2026-01-31T12:00:00Z`. Returns only tasks whose `updated_at` is at or after it (inclusive, compared to the whole second). For syncing, take the value from server time and use the full view — see [Incremental sync](#incremental-sync). |
 
 The parameters marked **Paginated mode** are opt-in: when **none** of them is
 present the endpoint returns the unpaginated response described next, exactly
@@ -113,8 +113,8 @@ Returns an array of tasks:
       "review_report": null,
       "reviewed_at": null,
       "reviewed_by_id": null,
-      "inserted_at": "2025-12-28T10:00:00Z",
-      "updated_at": "2025-12-28T11:00:00Z"
+      "inserted_at": "2025-12-28T10:00:00",
+      "updated_at": "2025-12-28T11:00:00"
     },
     {
       "id": 124,
@@ -136,8 +136,8 @@ Returns an array of tasks:
       "required_capabilities": [],
       "claimed_at": null,
       "claim_expires_at": null,
-      "inserted_at": "2025-12-28T12:00:00Z",
-      "updated_at": "2025-12-28T12:00:00Z"
+      "inserted_at": "2025-12-28T12:00:00",
+      "updated_at": "2025-12-28T12:00:00"
     }
   ]
 }
@@ -228,19 +228,69 @@ they also combine with `column_id`:
   stored to the whole second, so the comparison is made at whole-second
   precision: any fractional part of the bound is dropped (`12:00:00.5Z`
   behaves as `12:00:00Z`). Every task updated during that second is therefore
-  returned — including one updated a moment *before* `.5` — so a sync never
-  misses an update, at the cost of occasionally returning a task you already
-  have. Treat results as upserts. A bare date such as `2026-01-31` is
-  rejected — include a time.
+  returned — including one updated a moment *before* `.5` — so the bound never
+  excludes an update made within its own second, at the cost of occasionally
+  returning a task you already have. Treat results as upserts keyed by `id`.
+  A bare date such as `2026-01-31` is rejected — include a time.
 
 **Board scoping.** Every page is scoped to the token's board. A cursor, a
 `parent` identifier or a `column_id` taken from another board can never return
 that board's tasks.
 
-**Incremental sync.** To fetch only what changed since your last poll, send
-`updated_since` with the time of that poll, plus a `limit`, and follow
-`meta.next_cursor` until it is `null`. Expect a task updated in the same
-second as that time to come back again, and apply rows as upserts.
+### Incremental sync
+
+To fetch only what changed since your last sync, run a *pass*: request
+`updated_since=<bound>` with a `limit`, follow `meta.next_cursor` until it is
+`null`, and apply every row as an upsert keyed by `id`. Choosing the bound is
+where a sync silently drifts, so follow all five rules — each one closes a gap
+the API's verified behaviour opens:
+
+1. **Server time, never your own clock.** The bound is compared with the
+   server-stamped `updated_at`. A client clock running ahead of the server
+   skips every task updated inside the gap, with no error.
+2. **The bound must reach back to before the previous pass began.** Pages are
+   an `id`-ascending keyset, so a task updated mid-pass whose `id` the cursor
+   has already passed is not returned again in that pass. A bound taken *after*
+   the last page (the "time of my last poll") is later than that update and
+   skips it for good; a bound no later than the moment the previous pass
+   began — its *first* page, not its last — always catches it next time.
+3. **Overlap, then de-duplicate by `id`.** The API has no dedicated server-time
+   field — `meta` carries only `next_cursor` and `limit` — so the practical
+   source of server time is the `updated_at` values themselves. Keep a
+   *watermark*: the highest `updated_at` seen in the last completed pass (keep
+   the previous watermark when a pass returns nothing). Send the watermark
+   *minus* an overlap window longer than one full paging pass, plus a safety
+   margin; that is what puts the bound before the previous pass began (rule 2).
+   Rows near the bound come back again by design — `updated_since` is inclusive
+   and floored to the whole second, and the overlap re-reads everything inside
+   the window — so expect duplicates and upsert them; never rely on there being
+   none.
+4. **Sync with the full view.** `updated_at` is in the full task object only.
+   `response_view=slim` rows have no `updated_at` (the slim row is the fixed
+   summary shown above), so a slim pass cannot produce the next watermark.
+   `updated_at` is rendered in UTC with no offset and no fractional part
+   (`"2026-01-31T12:00:00"`). **Parse it as UTC explicitly before subtracting
+   the overlap** — for example by appending `Z` — because many language
+   defaults treat an offset-less value as *local* time — JavaScript's `Date`
+   does so on parsing, and Python's naive `datetime` does so as soon as it is
+   converted with `timestamp()` or `astimezone()` — which shifts the bound by
+   the local UTC offset. Send the result with an explicit `Z`. (A value sent back with no
+   offset is read as UTC, so an unmodified `updated_at` round-trips safely.)
+5. **Reconcile periodically — some changes never reach an incremental pass.**
+   Changes like these are invisible to `updated_since`:
+   - **Archived and deleted tasks.** Archiving a task updates its `updated_at`,
+     but archived tasks are excluded from every paginated response, so an
+     incremental pass never reports an archival; a deleted task is likewise
+     never returned. Either way the task simply stops appearing.
+   - **Board moves and reorders.** Dragging a task to another column on the
+     board, the column moves the server makes on its own (promoting tasks,
+     moving a goal to follow its child tasks), and reordering tasks within a
+     column (including the neighbours shifted to make room) change `status`,
+     `column_id`, `position` or `completed_at` without updating `updated_at`,
+     so a pass filtered by `updated_since` does not pick them up.
+
+   Run an occasional full pass without `updated_since`: upsert every row it
+   returns and drop any local task it no longer returns.
 
 ### Success (200 OK) — paginated
 
@@ -449,7 +499,7 @@ two cases are deliberately indistinguishable, in both modes:
 | Field | Type | Description |
 |-------|------|-------------|
 | `inserted_at` | string | When task was created (ISO 8601) |
-| `updated_at` | string | When task was last updated (ISO 8601) |
+| `updated_at` | string | When task was last updated (ISO 8601, UTC, whole seconds, rendered with no offset, such as `2026-01-31T12:00:00`). The watermark for [Incremental sync](#incremental-sync). Present in the full object only, not in `response_view=slim` rows. Not every change updates it: board moves and reorders change `status`, `column_id`, `position` or `completed_at` without it |
 
 ### Nested Object Structures
 
@@ -508,10 +558,17 @@ curl -X GET \
 ### Fetch only tasks changed since the last sync
 
 ```bash
+# bound = last pass's highest updated_at minus an overlap longer than one pass
 curl -X GET \
   -H "Authorization: Bearer stride_dev_abc123..." \
-  "https://www.stridelikeaboss.com/api/tasks?updated_since=2026-01-31T12:00:00Z&limit=100&response_view=slim"
+  "https://www.stridelikeaboss.com/api/tasks?updated_since=2026-01-31T11:55:00Z&limit=100"
+# then repeat with &cursor=<meta.next_cursor> until next_cursor is null,
+# upserting rows by id
 ```
+
+Use the full view for a sync. Adding `response_view=slim` still filters
+correctly, but slim rows carry no `updated_at`, so the response cannot give you
+the next watermark. See [Incremental sync](#incremental-sync).
 
 ### List a goal's child tasks
 
@@ -526,7 +583,7 @@ curl -X GET \
 - Get overview of all tasks on the board
 - Filter tasks by column (e.g., see all tasks in Ready)
 - Find tasks by status, type, priority, assignee or parent goal (server-side filters)
-- Sync incrementally with `updated_since` and cursor pagination
+- Sync incrementally with `updated_since` and cursor pagination, using the full view and a server-time watermark with overlap (see [Incremental sync](#incremental-sync))
 - Build dashboards or reports
 - Monitor task progress
 
