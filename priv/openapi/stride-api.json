@@ -161,7 +161,7 @@
       "post": {
         "operationId": "createTask",
         "summary": "Create a task, or a goal with nested child tasks",
-        "description": "`type` must be exactly `work`, `defect` or `goal` (lowercase, no surrounding whitespace); an omitted `type` key defaults to `work`. Any other value, including `null`, an empty or whitespace-only string, a number, a case variant such as `Work`, or a mistaken name such as `bug` or `task`, is rejected with a 422 whose `errors.type` names the problem, and nothing is persisted. When `tasks` is non-empty the request always creates a goal and the top-level `type` is ignored, but every child's `type` is validated the same way: one invalid child type rejects the whole request, goal included. A child's `type` must be `work` or `defect`: a goal cannot contain another goal, so a child of type `goal` is rejected with a 422 before any identifier is assigned, and nothing is persisted. Tasks nest one level only, so a child with a non-empty `tasks` list of its own is rejected the same way, with `errors.tasks`.",
+        "description": "`type` must be exactly `work`, `defect` or `goal` (lowercase, no surrounding whitespace); an omitted `type` key defaults to `work`. Any other value, including `null`, an empty or whitespace-only string, a number, a case variant such as `Work`, or a mistaken name such as `bug` or `task`, is rejected with a 422 whose `errors.type` names the problem, and nothing is persisted. When `tasks` is non-empty the request always creates a goal and the top-level `type` is ignored, but every child's `type` is validated the same way: one invalid child type rejects the whole request, goal included. A child's `type` must be `work` or `defect`: a goal cannot contain another goal, so a child of type `goal` is rejected with a 422 before any identifier is assigned, and nothing is persisted. Tasks nest one level only, so a child with a non-empty `tasks` list of its own is rejected the same way, with `errors.tasks`. A `work` or `defect` task whose target column is already at its WIP limit is rejected with a 422 naming the WIP limit, and nothing is persisted; a column with a WIP limit of `0` is unlimited, and only non-archived `work` and `defect` tasks count toward a limit. Goals are exempt: a `goal`, including one created with nested child tasks, is never counted or blocked, and its children are not checked against the limit when they are created, though they count toward it once they exist.",
         "tags": [
           "Creation"
         ],
@@ -203,7 +203,7 @@
             "$ref": "#/components/responses/NotAcceptable"
           },
           "422": {
-            "description": "Validation failed. Nothing is persisted. An unrecognised `type` reports `errors.type: [\"is invalid\"]`; a `null`, empty or whitespace-only type reports `can't be blank`. A nested child task of type `goal` reports `errors.type` saying a goal cannot contain another goal. A nested child with its own non-empty `tasks` reports `errors.tasks`.",
+            "description": "Validation failed. Nothing is persisted. An unrecognised `type` reports `errors.type: [\"is invalid\"]`; a `null`, empty or whitespace-only type reports `can't be blank`. A nested child task of type `goal` reports `errors.type` saying a goal cannot contain another goal. A nested child with its own non-empty `tasks` reports `errors.tasks`. A `work` or `defect` task targeting a column at its WIP limit reports `error` naming the WIP limit, with `documentation` and `common_causes`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -237,6 +237,18 @@
                         ]
                       },
                       "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#task-types"
+                    }
+                  },
+                  "wipLimitReached": {
+                    "summary": "Target column is at its WIP limit",
+                    "value": {
+                      "error": "WIP limit reached for this column — work and defect tasks cannot be added until a slot frees up",
+                      "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/post_tasks.md#unprocessable-entity-422",
+                      "common_causes": [
+                        "The target column (Backlog by default) already holds as many work and defect tasks as its WIP limit allows",
+                        "WIP limits count only non-archived work and defect tasks; goals are never counted or blocked",
+                        "Wait for a task to leave the column, archive one, or ask a board owner to raise the column's WIP limit (0 means unlimited)"
+                      ]
                     }
                   }
                 }
@@ -378,7 +390,7 @@
       "post": {
         "operationId": "batchCreateGoals",
         "summary": "Create several goals with nested tasks",
-        "description": "Goals are created one at a time and processing stops at the first goal that fails; goals before it stay created. Each goal is created with its children in one transaction. A child task `type` must be exactly `work` or `defect`: a goal cannot contain another goal, so a child of type `goal` is rejected the same way, before any identifier is assigned. A child with a non-empty `tasks` list of its own is rejected too, with `details.tasks`. An invalid child type returns 422 with the failing goal's `index` (the child's position is not reported) and `details.type`, and neither that goal nor any of its children is persisted. A goal's own `type` is ignored: every top-level entry is created as a goal. Every goal and child gets its own identifier, unique on the board across the whole batch.",
+        "description": "Goals are created one at a time and processing stops at the first goal that fails; goals before it stay created. Each goal is created with its children in one transaction. A child task `type` must be exactly `work` or `defect`: a goal cannot contain another goal, so a child of type `goal` is rejected the same way, before any identifier is assigned. A child with a non-empty `tasks` list of its own is rejected too, with `details.tasks`. An invalid child type returns 422 with the failing goal's `index` (the child's position is not reported) and `details.type`, and neither that goal nor any of its children is persisted. A goal's own `type` is ignored: every top-level entry is created as a goal. Every goal and child gets its own identifier, unique on the board across the whole batch. Batch creation does not check column WIP limits: goals are exempt and child tasks are not checked when they are created, so a full target column does not reject a batch. Once created, child tasks count toward the column's limit like any other work or defect task.",
         "tags": [
           "Creation"
         ],

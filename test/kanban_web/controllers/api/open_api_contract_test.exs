@@ -20,6 +20,7 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   alias Kanban.ApiTokens
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.OpenApiSpec
+  alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskJSON
 
   @http_methods ~w(get put post delete patch head options trace)
@@ -321,6 +322,41 @@ defmodule KanbanWeb.API.OpenApiContractTest do
         |> Jason.decode!()
 
       assert example["errors"] == rendered["errors"]
+    end
+  end
+
+  describe "WIP limit 422 example (D356)" do
+    test "createTask's WIP 422 example matches what TaskErrors renders", %{spec: spec} do
+      example =
+        get_in(spec, [
+          "paths",
+          "/api/tasks",
+          "post",
+          "responses",
+          "422",
+          "content",
+          "application/json",
+          "examples",
+          "wipLimitReached",
+          "value"
+        ])
+
+      rendered =
+        Plug.Test.conn(:get, "/")
+        |> TaskErrors.handle_task_error({:error, :wip_limit_reached})
+
+      assert rendered.status == 422
+      assert example == Jason.decode!(rendered.resp_body)
+    end
+
+    test "createTask documents the WIP rejection and batch says it is not WIP-checked",
+         %{spec: spec} do
+      create = get_in(spec, ~w(paths /api/tasks post))
+      batch = get_in(spec, ~w(paths /api/tasks/batch post))
+
+      assert create["description"] =~ "WIP limit"
+      assert create["responses"]["422"]["description"] =~ "WIP limit"
+      assert batch["description"] =~ "does not check column WIP limits"
     end
   end
 

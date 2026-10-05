@@ -645,13 +645,35 @@ accepted:
 
 The response also carries the usual `documentation` link.
 
-WIP limit reached:
+WIP limit reached. A `work` or `defect` task whose target column (Backlog by
+default) already holds as many non-archived `work` and `defect` tasks as the
+column's WIP limit allows is rejected, and nothing is persisted. The message is
+fixed: it never echoes your title, type or column. A WIP limit of `0` means
+unlimited, so such a column never returns this error:
 
 ```json
 {
-  "error": "WIP limit reached for this column"
+  "error": "WIP limit reached for this column — work and defect tasks cannot be added until a slot frees up",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/post_tasks.md#unprocessable-entity-422",
+  "common_causes": [
+    "The target column (Backlog by default) already holds as many work and defect tasks as its WIP limit allows",
+    "WIP limits count only non-archived work and defect tasks; goals are never counted or blocked",
+    "Wait for a task to leave the column, archive one, or ask a board owner to raise the column's WIP limit (0 means unlimited)"
+  ]
 }
 ```
+
+WIP limits apply only to `work` and `defect` tasks created on their own. A
+`goal` is never counted or blocked, and creating a goal with nested child tasks
+does not check the limit either: the goal is exempt and its children are not
+checked against the limit when they are created, so a goal-with-tasks request
+into a full column still returns 201 and can take the column past its limit.
+Once created, those children count toward the limit like any other `work` or
+`defect` task, so a later single create into that column can get this 422.
+The check runs after board write access and the column lookup, so a 403 or 404
+is returned before any WIP rejection. To act on this error, wait for a task to
+leave the column or ask a board owner to raise the limit; retrying immediately
+returns the same 422.
 
 ## Notes
 
@@ -674,6 +696,9 @@ WIP limit reached:
 - Tasks nest one level only: a child with a non-empty `tasks` list of its own
   returns 422 and nothing is created
 - All tasks are created in a single database transaction (all-or-nothing)
+- Column WIP limits are not checked when a goal and its children are created,
+  so a full target column does not reject a goal-with-tasks request; once
+  created, the children count toward the column's limit like any other task
 - Child tasks are automatically linked to the parent goal via `parent_goal_id`
 - Child tasks can have dependencies on each other using index-based references
 - The goal gets a `G` identifier, work children get `W` identifiers and defect
@@ -772,8 +797,11 @@ and objects. A rejected type returns the 422 shown under
 [Unprocessable Entity (422)](#unprocessable-entity-422) and creates nothing. To
 get the `work` default, omit the `type` key entirely.
 
-WIP limits apply only to `work` and `defect`. A request with an invalid type is
-never counted against a WIP limit; it is rejected for its type.
+WIP limits apply only to `work` and `defect`, and only when one is created on
+its own; a goal and the children nested under it are never checked. A request
+with an invalid type is never counted against a WIP limit; it is rejected for
+its type. See [Unprocessable Entity (422)](#unprocessable-entity-422) for the
+WIP response body.
 
 ### Priority Values
 

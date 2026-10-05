@@ -356,7 +356,7 @@ defmodule KanbanWeb.API.AgentJSON do
               method: "POST",
               path: "/api/tasks",
               description:
-                "Create task, or goal with nested work and defect tasks (a goal cannot contain a goal)",
+                "Create task, or goal with nested work and defect tasks (a goal cannot contain a goal). A work or defect task whose column is at its WIP limit returns 422; goals are never WIP-checked",
               auth_required: true,
               documentation_url: "#{@docs_base_url}/docs/api/post_tasks.md"
             },

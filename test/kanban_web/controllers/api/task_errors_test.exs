@@ -74,4 +74,18 @@ defmodule KanbanWeb.API.TaskErrorsTest do
       assert Jason.decode!(conn.resp_body) == %{"error" => "Column does not belong to this board"}
     end
   end
+
+  describe "handle_task_error/2 — wip_limit_reached (D356)" do
+    test "renders 422 with a static WIP message and documentation" do
+      conn = conn(:get, "/") |> TaskErrors.handle_task_error({:error, :wip_limit_reached})
+
+      assert conn.status == 422
+      body = Jason.decode!(conn.resp_body)
+
+      assert body["error"] =~ "WIP limit reached"
+      assert body["documentation"] =~ "api/post_tasks.md#unprocessable-entity-422"
+      assert [_ | _] = body["common_causes"]
+      assert body |> Map.keys() |> Enum.sort() == ["common_causes", "documentation", "error"]
+    end
+  end
 end

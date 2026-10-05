@@ -1086,6 +1086,256 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "column at its WIP limit returns 422, never 500 (D356)" do
+    # Creation.do_create_task/3 returns {:error, :wip_limit_reached} for a work
+    # or defect task when the target column is full, and handle_task_creation/2
+    # had no clause for it, so the request crashed with FunctionClauseError and
+    # a 500. POST /api/tasks with no column_id lands in Backlog, so these tests
+    # cap the Backlog column from setup.
+    defp d356_limit(column, user, limit) do
+      {:ok, column} = Columns.update_column(column, %{wip_limit: limit}, user)
+      column
+    end
+
+    defp d356_fill(column, user, count) do
+      for i <- 1..count do
+        {:ok, task} =
+          Tasks.create_task(column, %{
+            "title" => "D356 filler #{i}",
+            "type" => "work",
+            "created_by_id" => user.id
+          })
+
+        task
+      end
+    end
+
+    defp d356_titles(conn) do
+      conn
+      |> get(~p"/api/tasks")
+      |> json_response(200)
+      |> Map.fetch!("data")
+      |> Enum.map(& &1["title"])
+    end
+
+    defp d356_full_column(%{column: column, user: user}) do
+      column = d356_limit(column, user, 1)
+      d356_fill(column, user, 1)
+      column
+    end
+
+    test "POST /api/tasks into a column at its WIP limit returns 422, not 500",
+         %{conn: conn} = ctx do
+      d356_full_column(ctx)
+
+      for type <- ["work", "defect"] do
+        title = "D356 rejected #{type} #{System.unique_integer([:positive])}"
+        resp = post(conn, ~p"/api/tasks", task: %{"title" => title, "type" => type})
+
+        body = json_response(resp, 422)
+        assert body["error"] =~ "WIP limit reached"
+        assert body["documentation"] =~ "api/post_tasks.md#unprocessable-entity-422"
+        assert [_ | _] = body["common_causes"]
+        assert Map.keys(body) |> Enum.sort() == ["common_causes", "documentation", "error"]
+
+        # Static message: nothing the client sent is reflected back.
+        refute inspect(body) =~ title
+        refute title in d356_titles(conn)
+      end
+    end
+
+    test "WIP boundary: creation succeeds below the limit and fails at the limit",
+         %{conn: conn, column: column, user: user} do
+      d356_limit(column, user, 1)
+
+      first = post(conn, ~p"/api/tasks", task: %{"title" => "D356 first", "type" => "work"})
+      assert json_response(first, 201)["data"]["title"] == "D356 first"
+
+      second = post(conn, ~p"/api/tasks", task: %{"title" => "D356 second", "type" => "work"})
+      assert json_response(second, 422)["error"] =~ "WIP limit reached"
+
+      titles = d356_titles(conn)
+      assert "D356 first" in titles
+      refute "D356 second" in titles
+    end
+
+    test "WIP rejection renders the standard envelope instead of a FunctionClauseError",
+         %{conn: conn} = ctx do
+      d356_full_column(ctx)
+
+      resp = post(conn, ~p"/api/tasks", task: %{"title" => "D356 envelope", "type" => "work"})
+      assert resp.status == 422
+      body = json_response(resp, 422)
+      refute Map.has_key?(body, "errors")
+      refute inspect(body) =~ "FunctionClauseError"
+
+      # An invalid type in a full column is rejected for its type, never for WIP.
+      bad = post(conn, ~p"/api/tasks", task: %{"title" => "D356 bad type", "type" => "bug"})
+      assert %{"errors" => %{"type" => ["is invalid"]}} = json_response(bad, 422)
+    end
+
+    test "unlimited column and goal type are never rejected for WIP",
+         %{conn: conn, column: column, user: user} do
+      column = d356_limit(column, user, 0)
+      d356_fill(column, user, 3)
+
+      resp = post(conn, ~p"/api/tasks", task: %{"title" => "D356 unlimited", "type" => "work"})
+      assert json_response(resp, 201)["data"]["type"] == "work"
+
+      d356_limit(column, user, 1)
+
+      goal = post(conn, ~p"/api/tasks", task: %{"title" => "D356 goal", "type" => "goal"})
+      assert json_response(goal, 201)["data"]["type"] == "goal"
+    end
+
+    test "archived tasks are not counted toward the WIP limit",
+         %{conn: conn, column: column, user: user} do
+      column = d356_limit(column, user, 1)
+      [filler] = d356_fill(column, user, 1)
+      {:ok, _} = Tasks.archive_task(filler)
+
+      resp =
+        post(conn, ~p"/api/tasks", task: %{"title" => "D356 after archive", "type" => "work"})
+
+      assert json_response(resp, 201)["data"]["title"] == "D356 after archive"
+    end
+
+    test "nested and batch creation into a full column never return 500",
+         %{conn: conn} = ctx do
+      d356_full_column(ctx)
+
+      # Pins today's behaviour: goal creation never runs the WIP check (the goal
+      # is exempt and its children are not checked when created, though they
+      # count toward the limit afterwards), so both paths return 201.
+      # Whether they should enforce the limit is a separate decision.
+      nested =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "D356 nested goal",
+            "type" => "goal",
+            "tasks" => [%{"title" => "D356 nested child", "type" => "work"}]
+          }
+        )
+
+      assert nested.status != 500
+      assert %{"goal" => %{"type" => "goal"}, "child_tasks" => [_]} = json_response(nested, 201)
+
+      batch =
+        post(conn, ~p"/api/tasks/batch",
+          goals: [
+            %{
+              "title" => "D356 batch goal",
+              "type" => "goal",
+              "tasks" => [%{"title" => "D356 batch child", "type" => "work"}]
+            }
+          ]
+        )
+
+      assert batch.status != 500
+      assert json_response(batch, 201)
+    end
+
+    test "children created under a goal skip the check but count toward the limit afterwards",
+         %{conn: conn, column: column, user: user} do
+      d356_limit(column, user, 2)
+
+      nested =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "D356 counted goal",
+            "type" => "goal",
+            "tasks" => [
+              %{"title" => "D356 counted child 1", "type" => "work"},
+              %{"title" => "D356 counted child 2", "type" => "defect"}
+            ]
+          }
+        )
+
+      assert %{"child_tasks" => [_, _]} = json_response(nested, 201)
+
+      single = post(conn, ~p"/api/tasks", task: %{"title" => "D356 after goal", "type" => "work"})
+      assert json_response(single, 422)["error"] =~ "WIP limit reached"
+    end
+
+    test "write access and the board-scoped column lookup still run before the WIP check",
+         %{conn: conn, board: board, user: owner} = ctx do
+      d356_full_column(ctx)
+
+      # A read-only member gets 403, never the WIP 422, for a full column.
+      reader = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      {:ok, {_t, reader_token}} =
+        ApiTokens.create_api_token(reader, board, %{"name" => "D356 Reader Token"})
+
+      read_only =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{reader_token}")
+        |> post(~p"/api/tasks", task: %{"title" => "D356 reader", "type" => "work"})
+
+      refute json_response(read_only, 403)["error"] =~ "WIP limit"
+
+      # A full column on another board is a 404, so the 422 never confirms
+      # anything about a board the token cannot reach.
+      other_owner = user_fixture()
+      other_board = ai_optimized_board_fixture(other_owner)
+      other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+      other_column = d356_limit(other_column, other_owner, 1)
+      d356_fill(other_column, other_owner, 1)
+
+      foreign =
+        post(conn, ~p"/api/tasks",
+          task: %{"title" => "D356 foreign", "type" => "work", "column_id" => other_column.id}
+        )
+
+      refute inspect(json_response(foreign, 404)) =~ "WIP limit"
+    end
+
+    test "PATCH, claim and complete never yield the WIP reason, even into a full column",
+         %{conn: conn, board: board, user: user} = ctx do
+      full_backlog = d356_full_column(ctx)
+      columns = Columns.list_columns(board)
+      ready = Enum.find(columns, &(&1.name == "Ready"))
+      doing = Enum.find(columns, &(&1.name == "Doing"))
+      review = Enum.find(columns, &(&1.name == "Review"))
+
+      # PATCH refuses any column change before a move is attempted (403).
+      {:ok, movable} =
+        Tasks.create_task(ready, %{"title" => "D356 movable", "created_by_id" => user.id})
+
+      patched = patch(conn, ~p"/api/tasks/#{movable.id}", task: %{"column_id" => full_backlog.id})
+      refute json_response(patched, 403)["error"] =~ "WIP limit"
+
+      # Claim and complete move tasks without consulting the WIP check, so a
+      # full Doing or Review column does not turn them into a WIP rejection.
+      for column <- [doing, review] do
+        column |> d356_limit(user, 1) |> d356_fill(user, 1)
+      end
+
+      claimed =
+        post(conn, ~p"/api/tasks/claim", %{
+          "identifier" => movable.identifier,
+          "before_doing_result" => valid_before_doing_result()
+        })
+
+      assert json_response(claimed, 200)["data"]["column_id"] == doing.id
+
+      completed =
+        patch(conn, ~p"/api/tasks/#{movable.id}/complete", %{
+          "completion_summary" => "D356 completion into a full Review column",
+          "actual_complexity" => "small",
+          "actual_files_changed" => "1",
+          "time_spent_minutes" => 1,
+          "after_doing_result" => valid_after_doing_result(),
+          "before_review_result" => valid_before_review_result()
+        })
+
+      assert completed.status in [200, 201]
+      refute inspect(json_response(completed, completed.status)) =~ "WIP limit"
+    end
+  end
+
   describe "a goal cannot contain a goal (D354)" do
     # A nested child of type goal used to be created with its parent's own G
     # identifier. Stride is two-level, so both creation endpoints now refuse

@@ -343,6 +343,17 @@ POST /api/tasks
 }
 ```
 
+**WIP limits on creation:** a `work` or `defect` task created on its own is
+checked against its target column's WIP limit (Backlog by default). When the
+column is full the request returns HTTP 422 with an `error` naming the WIP
+limit, plus `documentation` and `common_causes`, and nothing is created. Goals,
+and the child tasks nested under a goal (including every goal sent to
+`POST /api/tasks/batch`), are never checked against WIP limits when they are
+created, though nested work and defect tasks count toward the column's limit
+once they exist. A limit of `0` means unlimited.
+Retrying immediately returns the same 422: wait for a task to leave the column
+or ask a board owner to raise the limit.
+
 See [POST /api/tasks](../api/post_tasks.md) for complete documentation.
 
 **✨ Stride Plugin Skills Available:**

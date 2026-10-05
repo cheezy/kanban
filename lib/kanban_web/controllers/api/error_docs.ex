@@ -244,6 +244,20 @@ defmodule KanbanWeb.API.ErrorDocs do
     }
   end
 
+  # (D356) Rendered by POST /api/tasks when a work or defect task targets a
+  # column whose WIP limit is full. Goals are exempt and never counted; tasks
+  # nested under a goal skip the check when created but count once they exist.
+  def get_docs(:wip_limit_reached, _opts) do
+    %{
+      documentation: "#{@docs_base_url}/api/post_tasks.md#unprocessable-entity-422",
+      common_causes: [
+        "The target column (Backlog by default) already holds as many work and defect tasks as its WIP limit allows",
+        "WIP limits count only non-archived work and defect tasks; goals are never counted or blocked",
+        "Wait for a task to leave the column, archive one, or ask a board owner to raise the column's WIP limit (0 means unlimited)"
+      ]
+    }
+  end
+
   # Update errors
   def get_docs(:update_invalid_root_key, _opts) do
     %{

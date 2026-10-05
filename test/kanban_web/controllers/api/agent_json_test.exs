@@ -59,5 +59,20 @@ defmodule KanbanWeb.API.AgentJSONTest do
       assert map_size(body["memory_strategy"]) > 0
       assert map_size(body["session_initialization"]) > 0
     end
+
+    # D356: agents learn from onboarding that a full column rejects a single
+    # work/defect create with 422, and that goals are never WIP-checked.
+    test "the POST /api/tasks creation entry describes the WIP limit 422", %{conn: conn} do
+      body = json_response(conn, 200)
+
+      create =
+        body
+        |> get_in(["api_reference", "endpoints", "creation"])
+        |> Enum.find(&(&1["method"] == "POST" and &1["path"] == "/api/tasks"))
+
+      assert create["description"] =~ "WIP limit returns 422"
+      assert create["description"] =~ "goals are never WIP-checked"
+      assert create["description"] =~ "a goal cannot contain a goal"
+    end
   end
 end

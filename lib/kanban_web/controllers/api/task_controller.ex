@@ -1183,6 +1183,12 @@ defmodule KanbanWeb.API.TaskController do
     |> render(:error, changeset: changeset)
   end
 
+  # D356: a work or defect task created in a column at its WIP limit. Without
+  # this clause the reason fell through to FunctionClauseError and a 500.
+  defp handle_task_creation({:error, :wip_limit_reached} = error, conn) do
+    TaskErrors.handle_task_error(conn, error)
+  end
+
   defp handle_goal_creation({:ok, %{goal: goal, child_tasks: child_tasks}}, conn) do
     goal = Tasks.get_task_for_view!(goal.id)
 

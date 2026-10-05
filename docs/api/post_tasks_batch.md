@@ -321,14 +321,14 @@ the refused goal is written. A child with a non-empty `tasks` list of its own is
 refused the same way, with `details.tasks` instead of `details.type`, because
 tasks nest one level only; its inner list is never silently dropped.
 
-WIP limit reached:
-
-```json
-{
-  "error": "WIP limit reached while creating goal at index 2",
-  "index": 2
-}
-```
+Column WIP limits are not checked by this endpoint. Every entry creates a
+`goal`, goals are exempt from WIP limits, and child tasks are not checked
+against the target column's limit when they are created, so a full column never
+rejects a batch and a batch can take a column past its limit. Once created, the
+child tasks count toward the limit like any other `work` or `defect` task. To
+have a single `work` or `defect` task checked against a WIP limit, create it
+with [POST /api/tasks](post_tasks.md#unprocessable-entity-422), which returns a
+422 when the column is full.
 
 ## Behavior
 
@@ -511,14 +511,13 @@ To continue after an error:
 | `priority: ["is invalid"]` | Invalid priority | Use `low`, `medium`, `high`, or `critical` |
 | `complexity: ["is invalid"]` | Invalid complexity | Use `small`, `medium`, or `large` |
 | `dependencies: ["must be an array"]` | Wrong type | Use array of strings |
-| WIP limit reached | Too many tasks in column | Wait for tasks to complete or increase WIP limit |
 
 ## Performance Considerations
 
 - **Database transactions**: Each goal is created in its own transaction for isolation
 - **Sequential processing**: Goals are created one at a time in order
 - **Partial success**: If creation fails mid-batch, successfully created goals remain in the system
-- **WIP limits**: The batch is checked against column WIP limits for each goal
+- **WIP limits**: The batch is not checked against column WIP limits; goals are exempt, and child tasks are not checked when created but count toward the limit afterwards
 
 For best performance:
 

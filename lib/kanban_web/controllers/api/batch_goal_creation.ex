@@ -5,10 +5,12 @@ defmodule KanbanWeb.API.BatchGoalCreation do
 
   Processes a list of goal params one at a time, stopping on the first failure
   (`Enum.reduce_while`), and renders the documented batch response — the 201
-  success shape, the 422 changeset shape (`error`/`index`/`details`), and the
-  422 WIP-limit shape. The exact success/failure aggregation and response
-  bodies are documented in `docs/api/post_tasks_batch.md` and matched by the
-  request-test suite, so they must not drift.
+  success shape and the 422 changeset shape (`error`/`index`/`details`). The
+  exact success/failure aggregation and those response bodies are documented
+  in `docs/api/post_tasks_batch.md` and matched by the request-test suite, so
+  they must not drift. The 422 WIP-limit clause is kept only so its body stays
+  stable: goal creation never runs the WIP check, so it cannot currently be
+  reached, and the batch docs no longer describe it (D356).
 
   Like `KanbanWeb.API.TaskErrors`, this module takes `conn` and renders. It
   reuses the controller's shared creation/telemetry/rendering helpers
@@ -96,7 +98,8 @@ defmodule KanbanWeb.API.BatchGoalCreation do
   @doc """
   Renders the terminal batch response from the aggregation result: 201 on
   success, 422 with per-index details on a changeset failure, or 422 on a
-  WIP-limit failure.
+  WIP-limit failure. The WIP-limit clause is currently unreachable, because
+  goal creation never checks WIP limits; it is retained for body stability.
   """
   def handle_batch_result({:ok, created_goals}, conn) do
     TaskController.emit_telemetry(conn, :batch_goals_created, %{

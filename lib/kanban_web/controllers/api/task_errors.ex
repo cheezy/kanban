@@ -99,6 +99,17 @@ defmodule KanbanWeb.API.TaskErrors do
     )
   end
 
+  # D356: the message is a fixed string — it never echoes the request's title,
+  # type or column, so the 422 reveals nothing the caller did not already send.
+  def handle_task_error(conn, {:error, :wip_limit_reached}) do
+    error_response(
+      conn,
+      :unprocessable_entity,
+      "WIP limit reached for this column — work and defect tasks cannot be added until a slot frees up",
+      :wip_limit_reached
+    )
+  end
+
   @doc """
   Renders a `%{error: message, <docs>}` body at `status`, with `ErrorDocs`
   guidance merged in for `doc_key`.

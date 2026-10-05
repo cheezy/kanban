@@ -237,6 +237,20 @@ defmodule KanbanWeb.API.ErrorDocsTest do
   end
 
   describe "get_docs/2 for other error types" do
+    # (D356) A full column on POST /api/tasks must point at the create
+    # endpoint's 422 section, not the generic README fallback.
+    test "provides documentation for a WIP limit rejection" do
+      result = ErrorDocs.get_docs(:wip_limit_reached)
+
+      assert result.documentation ==
+               "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/post_tasks.md#unprocessable-entity-422"
+
+      assert [_ | _] = result.common_causes
+      assert Enum.any?(result.common_causes, &String.contains?(&1, "WIP limit"))
+      assert Enum.any?(result.common_causes, &String.contains?(&1, "goals are never counted"))
+      refute Map.has_key?(result, :getting_started)
+    end
+
     test "provides documentation for forbidden errors" do
       result = ErrorDocs.get_docs(:forbidden)
 
