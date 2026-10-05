@@ -70,7 +70,7 @@ route sits behind is the single most important fact for the authz reviews.
 |----------|---------------------------|-------------|
 | `:browser` | `fetch_session`, `protect_from_forgery` (CSRF), `put_secure_browser_headers` (with placeholder `default-src 'self'` CSP), `CspNonce`, `fetch_current_scope_for_user`, `Locale` | Session-cookie auth; CSRF-protected |
 | `:api` | `ApiTelemetry`, **`AuthenticateApiToken`** | Bearer-token auth (the agent surface) |
-| `:api_public` | `ApiTelemetry` only | **Unauthenticated** — only `/api/agent/onboarding` |
+| `:api_public` | `ApiTelemetry` only | **Unauthenticated** — only `/api/agent/onboarding` and `/api/openapi.json` |
 | (admin overlay) | `:browser` + `require_authenticated_user` + `require_admin_user` | Admin-only |
 
 ### Route → boundary map
@@ -94,7 +94,11 @@ route sits behind is the single most important fact for the authz reviews.
   `claim`, `batch`, `unclaim`, `complete`, `changed_files`, `mark_reviewed`,
   `mark_done`, `after_goal`, dependency/tree reads, and the `resources "/tasks"`
   CRUD (index/show/create/update).
-- **API, public (`:api_public`):** `GET /api/agent/onboarding` only.
+- **API, public (`:api_public`):** `GET /api/agent/onboarding` and
+  `GET /api/openapi.json` (W2225) only. The spec is served from a fixed priv
+  path and must carry no tokens, internal hostnames or undocumented routes;
+  `open_api_contract_test.exs` enforces the hygiene and that every route's
+  `bearerAuth` requirement matches its pipeline.
 
 ## 3. Per-domain surface inventory
 

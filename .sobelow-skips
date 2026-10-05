@@ -1,3 +1,4 @@
+Traversal.FileModule: Directory Traversal in `File.read`,lib/kanban_web/controllers/api/open_api_spec.ex:37,51CBE4D
 XSS.Raw: XSS,lib/kanban_web/components/review_report_panel.ex:119,C52C3E
 XSS.Raw: XSS,lib/kanban_web/components/review_report_panel.ex:195,26573FE
 XSS.Raw: XSS,lib/kanban_web/controllers/metrics_pdf_html/cycle_time.html.heex:7,3FD1752

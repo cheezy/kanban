@@ -9,13 +9,15 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
 3. [Workflow Overview](#workflow-overview)
 4. [Hook System](#hook-system)
 5. [Completion Validation (explorer_result, reviewer_result, workflow_steps)](#completion-validation-explorer_result-reviewer_result-workflow_steps)
-6. [API Endpoints](#api-endpoints)
+6. [API Endpoints](#api-endpoints) (including the [OpenAPI specification](#api-specification))
 7. [Configuration Files](#configuration-files)
 8. [Examples](#examples)
 
 ## Quick Start
 
 **New agents:** Start by calling [GET /api/agent/onboarding](get_agent_onboarding.md) to get complete onboarding information including file templates and step-by-step instructions.
+
+**Tooling and generated clients:** The machine-readable OpenAPI 3.1 contract is served at [GET /api/openapi.json](get_openapi_json.md) (no auth required).
 
 **Windows Users:** See [../WINDOWS-SETUP.md](../WINDOWS-SETUP.md) for Windows-specific setup before proceeding.
 
@@ -236,6 +238,10 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 
 - [GET /api/agent/onboarding](get_agent_onboarding.md) — Get comprehensive onboarding information (no auth required)
 
+### API Specification
+
+- [GET /api/openapi.json](get_openapi_json.md) — Machine-readable OpenAPI 3.1 description of every `/api` route (no auth required). Use it for client generation, API viewers and MCP tool schemas; a router contract test keeps it in sync with the code
+
 ### Task Discovery
 
 - [GET /api/tasks/next](get_tasks_next.md) — Get next available task matching your capabilities
@@ -265,6 +271,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 | Method | Endpoint | Purpose | Returns Hooks |
 |--------|----------|---------|---------------|
 | GET | `/api/agent/onboarding` | Get onboarding info | No |
+| GET | `/api/openapi.json` | OpenAPI 3.1 spec (no auth) | No |
 | GET | `/api/tasks/next` | Get next available task | No |
 | GET | `/api/tasks` | List tasks (filters, cursor pagination) | No |
 | GET | `/api/tasks/:id` | Get task details | No |

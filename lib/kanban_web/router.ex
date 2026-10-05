@@ -105,6 +105,7 @@ defmodule KanbanWeb.Router do
     pipe_through :api_public
 
     get "/agent/onboarding", AgentController, :onboarding
+    get "/openapi.json", OpenApiController, :show
   end
 
   # API routes with token authentication

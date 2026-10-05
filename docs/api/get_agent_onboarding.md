@@ -63,6 +63,7 @@ Returns comprehensive onboarding information:
   "api_reference": {
     "base_url": "https://www.stridelikeaboss.com",
     "authentication": "Bearer token in Authorization header",
+    "openapi_url": "https://www.stridelikeaboss.com/api/openapi.json",
     "endpoints": {
       "discovery": [...],
       "management": [...],
@@ -198,7 +199,9 @@ Each format includes:
 
 ### `api_reference`
 
-Organized list of all API endpoints:
+`base_url`, the `authentication` scheme, and `openapi_url` — the absolute URL of
+the machine-readable OpenAPI 3.1 spec ([GET /api/openapi.json](get_openapi_json.md)) —
+plus an organized list of the core API endpoints:
 
 - Discovery endpoints (browse tasks)
 - Management endpoints (claim, complete, review)

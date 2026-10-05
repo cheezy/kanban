@@ -49,6 +49,8 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 
 **Complete API documentation is available in [../api/README.md](../api/README.md)**
 
+**Machine-readable contract:** [GET /api/openapi.json](api/get_openapi_json.md) serves an OpenAPI 3.1 description of every endpoint, with no authentication required — point a client generator, an API viewer or MCP tooling at it.
+
 **Task Discovery:**
 - [GET /api/tasks/next](../api/get_tasks_next.md) - Get next available task matching agent capabilities
 - [GET /api/tasks](../api/get_tasks.md) - List tasks; optional filters (`column_id`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`) and opt-in cursor pagination (`limit`, `cursor` → `meta.next_cursor`)

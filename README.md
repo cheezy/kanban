@@ -168,6 +168,7 @@ See the [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) for details on creating
 ### Task Discovery & Management
 
 - `GET /api/agent/onboarding` - Complete onboarding guide for AI agents
+- `GET /api/openapi.json` - Machine-readable OpenAPI 3.1 description of every API route (no auth required); see [docs/api/get_openapi_json.md](docs/api/get_openapi_json.md)
 - `GET /api/tasks/next` - Get next available task ready to work
 - `GET /api/tasks` - List tasks, with optional filters (column, status, type, priority, assignee, parent goal, updated since) and cursor pagination
 - `GET /api/tasks/:id` - Get task details (supports identifiers like "W14")

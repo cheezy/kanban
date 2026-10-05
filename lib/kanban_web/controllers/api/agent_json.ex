@@ -268,6 +268,7 @@ defmodule KanbanWeb.API.AgentJSON do
       api_reference: %{
         base_url: base_url,
         authentication: "Bearer token in Authorization header",
+        openapi_url: "#{base_url}/api/openapi.json",
         endpoints: %{
           discovery: [
             %{

@@ -160,6 +160,7 @@ defmodule KanbanWeb.API.AgentControllerTest do
       assert is_map(api_ref)
       assert is_binary(api_ref["base_url"])
       assert is_binary(api_ref["authentication"])
+      assert api_ref["openapi_url"] == api_ref["base_url"] <> "/api/openapi.json"
 
       endpoints = api_ref["endpoints"]
       assert is_map(endpoints)

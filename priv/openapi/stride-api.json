@@ -1,0 +1,2758 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Stride API",
+    "version": "1.0.0",
+    "description": "Task-management API for AI agents. Human-readable reference: docs/api/README.md. Every authenticated operation requires a board-scoped Bearer token."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Onboarding"
+    },
+    {
+      "name": "Spec"
+    },
+    {
+      "name": "Discovery"
+    },
+    {
+      "name": "Management"
+    },
+    {
+      "name": "Creation"
+    }
+  ],
+  "paths": {
+    "/api/agent/onboarding": {
+      "get": {
+        "operationId": "getAgentOnboarding",
+        "summary": "Get agent onboarding information",
+        "tags": [
+          "Onboarding"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Onboarding payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Onboarding"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/openapi.json": {
+      "get": {
+        "operationId": "getOpenApiSpec",
+        "summary": "Get this OpenAPI document",
+        "tags": [
+          "Spec"
+        ],
+        "description": "Served without authentication. Responses carry `cache-control: public, max-age=3600`.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The OpenAPI 3.1 description of the Stride API.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenApiDocument"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/tasks": {
+      "get": {
+        "operationId": "listTasks",
+        "summary": "List tasks on the token's board",
+        "tags": [
+          "Discovery"
+        ],
+        "description": "Without any of limit, cursor, status, type, priority, assigned_to_id, parent or updated_since the legacy unpaginated list is returned. Supplying any of them switches to cursor pagination ordered by id.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ColumnId"
+          },
+          {
+            "$ref": "#/components/parameters/ResponseView"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Status"
+          },
+          {
+            "$ref": "#/components/parameters/Type"
+          },
+          {
+            "$ref": "#/components/parameters/Priority"
+          },
+          {
+            "$ref": "#/components/parameters/AssignedToId"
+          },
+          {
+            "$ref": "#/components/parameters/Parent"
+          },
+          {
+            "$ref": "#/components/parameters/UpdatedSince"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tasks; `meta` is present only in paginated mode.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTask",
+        "summary": "Create a task, or a goal with nested child tasks",
+        "tags": [
+          "Creation"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskWriteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created task, or created goal with its children.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TaskEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/GoalCreated"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/next": {
+      "get": {
+        "operationId": "getNextTask",
+        "summary": "Get the next claimable task",
+        "tags": [
+          "Discovery"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SkillsVersion"
+          },
+          {
+            "$ref": "#/components/parameters/ResponseView"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Next task; TaskSummary under response_view=slim.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TaskEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TaskSlimEnvelope"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "description": "No task available matching your capabilities.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/claim": {
+      "post": {
+        "operationId": "claimTask",
+        "summary": "Claim a task",
+        "tags": [
+          "Management"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "before_doing_result"
+                ],
+                "properties": {
+                  "identifier": {
+                    "type": "string",
+                    "description": "Task to claim. Omit to claim the next available task."
+                  },
+                  "agent_name": {
+                    "type": "string"
+                  },
+                  "skills_version": {
+                    "type": "string"
+                  },
+                  "before_doing_result": {
+                    "$ref": "#/components/schemas/HookResult"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Claimed task plus before_doing hook metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/tasks/batch": {
+      "post": {
+        "operationId": "batchCreateGoals",
+        "summary": "Create several goals with nested tasks",
+        "tags": [
+          "Creation"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "goals"
+                ],
+                "properties": {
+                  "goals": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "description": "The root key must be `goals`, not `tasks`."
+                  },
+                  "agent_name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created goals.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchCreated"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "get": {
+        "operationId": "getTask",
+        "summary": "Get a task",
+        "tags": [
+          "Discovery"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/ResponseView"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full task, TaskSummary under response_view=slim, or a projection under fields=.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TaskEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TaskSlimEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TaskProjectionEnvelope"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateTask",
+        "summary": "Update task fields",
+        "tags": [
+          "Management"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskWriteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated task.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceTask",
+        "summary": "Update task fields (PUT alias of PATCH)",
+        "tags": [
+          "Management"
+        ],
+        "description": "Identical to PATCH /api/tasks/{id}: a partial update, not a full replacement.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskWriteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated task.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/unclaim": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "post": {
+        "operationId": "unclaimTask",
+        "summary": "Release a claimed task",
+        "tags": [
+          "Management"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Unclaimed task.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/complete": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "patch": {
+        "operationId": "completeTask",
+        "summary": "Complete a claimed task",
+        "tags": [
+          "Management"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ResponseView"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "after_doing_result",
+                  "before_review_result",
+                  "explorer_result",
+                  "reviewer_result",
+                  "time_spent_minutes",
+                  "completion_summary",
+                  "actual_complexity",
+                  "actual_files_changed"
+                ],
+                "properties": {
+                  "after_doing_result": {
+                    "$ref": "#/components/schemas/HookResult"
+                  },
+                  "before_review_result": {
+                    "$ref": "#/components/schemas/HookResult"
+                  },
+                  "explorer_result": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Dispatched or skip form. See docs/api/patch_tasks_id_complete.md."
+                  },
+                  "reviewer_result": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Dispatched or skip form, optionally with the structured review block. See docs/api/patch_tasks_id_complete.md."
+                  },
+                  "workflow_steps": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "agent_name": {
+                    "type": "string"
+                  },
+                  "skills_version": {
+                    "type": "string"
+                  },
+                  "time_spent_minutes": {
+                    "type": "integer"
+                  },
+                  "completion_summary": {
+                    "type": "string"
+                  },
+                  "completion_notes": {
+                    "type": "string",
+                    "maxLength": 65535
+                  },
+                  "actual_complexity": {
+                    "type": "string",
+                    "enum": [
+                      "small",
+                      "medium",
+                      "large"
+                    ]
+                  },
+                  "actual_files_changed": {
+                    "type": "string"
+                  },
+                  "review_report": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Completed task (TaskAck under response_view=slim) plus hook metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompleteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/changed_files": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "put": {
+        "operationId": "putChangedFiles",
+        "summary": "Upload the per-file diff snapshot",
+        "tags": [
+          "Management"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ResponseView"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "changed_files": {
+                    "description": "Array of per-file diff entries, or an encoded envelope {encoding, data}. See docs/diff-contract.md.",
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": true
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "encoding",
+                          "data"
+                        ],
+                        "properties": {
+                          "encoding": {
+                            "type": "string",
+                            "enum": [
+                              "base64",
+                              "gzip+base64"
+                            ]
+                          },
+                          "data": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated task, or TaskAck under response_view=slim.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TaskEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TaskAckEnvelope"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/mark_reviewed": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "patch": {
+        "operationId": "markTaskReviewed",
+        "summary": "Finalize a reviewed task",
+        "tags": [
+          "Management"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "after_review_result"
+                ],
+                "properties": {
+                  "after_review_result": {
+                    "$ref": "#/components/schemas/HookResult"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reviewed task, with after_review (and after_goal) hooks when it moves to Done.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkReviewedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/mark_done": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "patch": {
+        "operationId": "markTaskDone",
+        "summary": "Move a task to Done, bypassing review",
+        "tags": [
+          "Management"
+        ],
+        "responses": {
+          "200": {
+            "description": "Task moved to Done.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/after_goal": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "patch": {
+        "operationId": "reportAfterGoal",
+        "summary": "Report the after_goal hook result for a goal",
+        "tags": [
+          "Management"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HookResult"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated goal.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/dependencies": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "get": {
+        "operationId": "getTaskDependencies",
+        "summary": "Get the tasks this task depends on",
+        "tags": [
+          "Discovery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Dependency tree.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dependencies"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/dependents": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "get": {
+        "operationId": "getTaskDependents",
+        "summary": "Get the tasks that depend on this task",
+        "tags": [
+          "Discovery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Dependent tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dependents"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/tree": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "get": {
+        "operationId": "getTaskTree",
+        "summary": "Get a task with its children",
+        "tags": [
+          "Discovery"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ResponseView"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task tree.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskTree"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}/after_goal_status": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "get": {
+        "operationId": "getAfterGoalStatus",
+        "summary": "Get whether completing this task armed an after_goal hook",
+        "tags": [
+          "Discovery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Compact after_goal status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AfterGoalStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Board-scoped Stride API token, sent as `Authorization: Bearer <token>`."
+      }
+    },
+    "parameters": {
+      "TaskId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Numeric task id or task identifier (for example W21).",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "ResponseView": {
+        "name": "response_view",
+        "in": "query",
+        "required": false,
+        "description": "`slim` selects the compact view. Any other value, or absence, returns the full view.",
+        "schema": {
+          "type": "string",
+          "examples": [
+            "slim",
+            "full"
+          ]
+        }
+      },
+      "Fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated projection of allow-listed task fields. Mutually exclusive with response_view (422).",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "SkillsVersion": {
+        "name": "skills_version",
+        "in": "query",
+        "required": false,
+        "description": "The caller's skills version; an older value adds skills_update_required to the response.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "Page size, 1-200. Supplying it switches to paginated mode; in paginated mode the page size is 50 when limit is omitted.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "description": "Opaque cursor from meta.next_cursor of the previous page.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Status": {
+        "name": "status",
+        "in": "query",
+        "required": false,
+        "description": "Filter by task status (paginated mode).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "open",
+            "in_progress",
+            "completed",
+            "blocked"
+          ]
+        }
+      },
+      "Type": {
+        "name": "type",
+        "in": "query",
+        "required": false,
+        "description": "Filter by task type (paginated mode).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "work",
+            "defect",
+            "goal"
+          ]
+        }
+      },
+      "Priority": {
+        "name": "priority",
+        "in": "query",
+        "required": false,
+        "description": "Filter by priority (paginated mode).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        }
+      },
+      "AssignedToId": {
+        "name": "assigned_to_id",
+        "in": "query",
+        "required": false,
+        "description": "Filter by assignee user id (paginated mode).",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "Parent": {
+        "name": "parent",
+        "in": "query",
+        "required": false,
+        "description": "Filter to the children of a goal, by goal identifier (paginated mode). At most 255 bytes.",
+        "schema": {
+          "type": "string",
+          "maxLength": 255
+        }
+      },
+      "UpdatedSince": {
+        "name": "updated_since",
+        "in": "query",
+        "required": false,
+        "description": "Only tasks updated at or after this ISO 8601 timestamp (paginated mode).",
+        "schema": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "ColumnId": {
+        "name": "column_id",
+        "in": "query",
+        "required": false,
+        "description": "Restrict to one column on the token's board. Works in both legacy and paginated mode.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Malformed query parameter.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing or invalid Authorization header, or invalid API token.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The token lacks access to this task, column or action.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Task not found on this board.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "The task is not claimable (blocked, already claimed, or capability mismatch).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unprocessable": {
+        "description": "Validation failed.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ValidationError"
+                },
+                {
+                  "$ref": "#/components/schemas/Error"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limited after repeated authentication failures.",
+        "headers": {
+          "retry-after": {
+            "description": "Seconds to wait before retrying.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Unexpected server error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Task": {
+        "type": "object",
+        "description": "Full task render (KanbanWeb.API.TaskJSON full view).",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "acceptance_criteria",
+          "position",
+          "type",
+          "priority",
+          "identifier",
+          "column_id",
+          "assigned_to_id",
+          "parent_id",
+          "complexity",
+          "estimated_files",
+          "why",
+          "what",
+          "where_context",
+          "patterns_to_follow",
+          "database_changes",
+          "validation_rules",
+          "telemetry_event",
+          "metrics_to_track",
+          "logging_requirements",
+          "error_user_message",
+          "error_on_failure",
+          "key_files",
+          "verification_steps",
+          "behaviour_test_matrix",
+          "technology_requirements",
+          "pitfalls",
+          "out_of_scope",
+          "security_considerations",
+          "testing_strategy",
+          "integration_points",
+          "technical_details",
+          "created_by_id",
+          "created_by_agent",
+          "completed_at",
+          "completed_by_id",
+          "completed_by_agent",
+          "completion_summary",
+          "completion_notes",
+          "dependencies",
+          "status",
+          "claimed_at",
+          "claim_expires_at",
+          "required_capabilities",
+          "actual_complexity",
+          "actual_files_changed",
+          "changed_files",
+          "time_spent_minutes",
+          "human_task",
+          "needs_review",
+          "review_status",
+          "review_notes",
+          "review_report",
+          "workflow_steps",
+          "explorer_result",
+          "reviewer_result",
+          "reviewed_at",
+          "reviewed_by_id",
+          "inserted_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "acceptance_criteria": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "position": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "work",
+              "defect",
+              "goal"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "column_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "assigned_to_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "parent_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "complexity": {
+            "type": "string",
+            "enum": [
+              "small",
+              "medium",
+              "large"
+            ]
+          },
+          "estimated_files": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "why": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "what": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "where_context": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patterns_to_follow": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "database_changes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validation_rules": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "telemetry_event": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metrics_to_track": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "logging_requirements": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "error_user_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "error_on_failure": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "key_files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KeyFile"
+            }
+          },
+          "verification_steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationStep"
+            }
+          },
+          "behaviour_test_matrix": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BehaviourTestMatrixRow"
+            }
+          },
+          "technology_requirements": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "pitfalls": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "out_of_scope": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "security_considerations": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "testing_strategy": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "integration_points": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "technical_details": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "created_by_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_by_agent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "completed_by_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "completed_by_agent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "completion_summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "completion_notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dependencies": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "completed",
+              "blocked"
+            ]
+          },
+          "claimed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "claim_expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "required_capabilities": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "actual_complexity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "small",
+              "medium",
+              "large",
+              null
+            ]
+          },
+          "actual_files_changed": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "changed_files": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "time_spent_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "human_task": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "needs_review": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "review_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "pending",
+              "approved",
+              "changes_requested",
+              "rejected",
+              null
+            ]
+          },
+          "review_notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "review_report": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_steps": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "explorer_result": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "reviewer_result": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          },
+          "reviewed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "reviewed_by_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "inserted_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp without a UTC offset (naive datetime)."
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp without a UTC offset (naive datetime)."
+          }
+        }
+      },
+      "TaskSummary": {
+        "type": "object",
+        "description": "Compact task summary served by response_view=slim, /dependencies, /dependents and goal creation.",
+        "required": [
+          "id",
+          "identifier",
+          "title",
+          "type",
+          "status",
+          "priority",
+          "complexity",
+          "dependencies",
+          "created_by_agent",
+          "parent_id",
+          "claim_expires_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "work",
+              "defect",
+              "goal"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "completed",
+              "blocked"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "complexity": {
+            "type": "string",
+            "enum": [
+              "small",
+              "medium",
+              "large"
+            ]
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_by_agent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "claim_expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskAck": {
+        "type": "object",
+        "description": "Acknowledgement view returned by response_view=slim on /complete and /changed_files.",
+        "required": [
+          "id",
+          "identifier",
+          "title",
+          "status",
+          "parent_id",
+          "needs_review",
+          "review_status",
+          "complexity",
+          "priority"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "completed",
+              "blocked"
+            ]
+          },
+          "parent_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "needs_review": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "review_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "pending",
+              "approved",
+              "changes_requested",
+              "rejected",
+              null
+            ]
+          },
+          "complexity": {
+            "type": "string",
+            "enum": [
+              "small",
+              "medium",
+              "large"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskProjection": {
+        "type": "object",
+        "description": "Projection returned by GET /api/tasks/{id}?fields=... — id and identifier plus exactly the requested allow-listed fields. Because it is open-ended, a full or slim body also satisfies this branch; the `fields` query parameter is what selects it.",
+        "required": [
+          "id",
+          "identifier"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "GoalSummary": {
+        "type": "object",
+        "description": "Goal render used by goal creation responses.",
+        "required": [
+          "id",
+          "identifier",
+          "title",
+          "description",
+          "status",
+          "priority",
+          "complexity",
+          "type",
+          "created_by_id",
+          "created_by_agent",
+          "column_id",
+          "inserted_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "in_progress",
+              "completed",
+              "blocked"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "complexity": {
+            "type": "string",
+            "enum": [
+              "small",
+              "medium",
+              "large"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "work",
+              "defect",
+              "goal"
+            ]
+          },
+          "created_by_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_by_agent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "column_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "inserted_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp without a UTC offset (naive datetime)."
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp without a UTC offset (naive datetime)."
+          }
+        }
+      },
+      "KeyFile": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "position": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "VerificationStep": {
+        "type": "object",
+        "properties": {
+          "step_type": {
+            "type": "string"
+          },
+          "step_text": {
+            "type": "string"
+          },
+          "expected_result": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "position": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "BehaviourTestMatrixRow": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "behaviour": {
+            "type": "string"
+          },
+          "test_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "na_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "position": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "HookResult": {
+        "type": "object",
+        "required": [
+          "exit_code",
+          "output",
+          "duration_ms"
+        ],
+        "properties": {
+          "exit_code": {
+            "type": "integer",
+            "description": "0 for success, non-zero for failure."
+          },
+          "output": {
+            "type": "string",
+            "description": "Combined stdout/stderr of the hook run."
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "Hook": {
+        "type": "object",
+        "description": "Hook metadata. The hook itself runs on the agent's machine, never on the server.",
+        "required": [
+          "name",
+          "env",
+          "timeout",
+          "blocking"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "before_doing",
+              "after_doing",
+              "before_review",
+              "after_review",
+              "after_goal"
+            ]
+          },
+          "env": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "timeout": {
+            "type": "integer",
+            "description": "Timeout in milliseconds."
+          },
+          "blocking": {
+            "type": "boolean"
+          },
+          "execute_before": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "execute_after": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SkillsUpdateRequired": {
+        "type": "object",
+        "description": "Present only when the caller reported a skills_version strictly older than the server's.",
+        "properties": {
+          "current_version": {
+            "type": "string"
+          },
+          "your_version": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "TaskEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Task"
+          },
+          "current_skills_version": {
+            "type": "string"
+          },
+          "skills_update_required": {
+            "$ref": "#/components/schemas/SkillsUpdateRequired"
+          }
+        }
+      },
+      "TaskSlimEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TaskSummary"
+          },
+          "current_skills_version": {
+            "type": "string"
+          },
+          "skills_update_required": {
+            "$ref": "#/components/schemas/SkillsUpdateRequired"
+          }
+        }
+      },
+      "TaskProjectionEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TaskProjection"
+          }
+        }
+      },
+      "ClaimResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "hook"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Task"
+          },
+          "current_skills_version": {
+            "type": "string"
+          },
+          "skills_update_required": {
+            "$ref": "#/components/schemas/SkillsUpdateRequired"
+          },
+          "hook": {
+            "$ref": "#/components/schemas/Hook"
+          }
+        }
+      },
+      "CompleteResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "hooks"
+        ],
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Task"
+              },
+              {
+                "$ref": "#/components/schemas/TaskAck"
+              }
+            ],
+            "description": "Full task, or TaskAck when response_view=slim."
+          },
+          "current_skills_version": {
+            "type": "string"
+          },
+          "skills_update_required": {
+            "$ref": "#/components/schemas/SkillsUpdateRequired"
+          },
+          "hooks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Hook"
+            }
+          }
+        }
+      },
+      "MarkReviewedResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Task"
+          },
+          "current_skills_version": {
+            "type": "string"
+          },
+          "skills_update_required": {
+            "$ref": "#/components/schemas/SkillsUpdateRequired"
+          },
+          "hooks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Hook"
+            }
+          }
+        }
+      },
+      "TaskAckEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TaskAck"
+          }
+        }
+      },
+      "PageMeta": {
+        "type": "object",
+        "description": "Present only in paginated mode (any of limit, cursor, status, type, priority, assigned_to_id, parent, updated_since supplied).",
+        "required": [
+          "next_cursor",
+          "limit"
+        ],
+        "properties": {
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Opaque cursor for the next page; null on the last page."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        }
+      },
+      "TaskList": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Task"
+                },
+                {
+                  "$ref": "#/components/schemas/TaskSummary"
+                }
+              ]
+            },
+            "description": "Full tasks, or TaskSummary rows when response_view=slim."
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "TaskTree": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "task",
+              "children",
+              "counts"
+            ],
+            "properties": {
+              "task": {
+                "$ref": "#/components/schemas/Task"
+              },
+              "children": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Task"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TaskSummary"
+                    }
+                  ]
+                },
+                "description": "Full children, or TaskSummary rows when response_view=slim. The root task is always full."
+              },
+              "counts": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "DependencyNode": {
+        "type": "object",
+        "required": [
+          "task",
+          "dependencies"
+        ],
+        "properties": {
+          "task": {
+            "$ref": "#/components/schemas/TaskSummary"
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DependencyNode"
+            }
+          }
+        }
+      },
+      "Dependencies": {
+        "type": "object",
+        "required": [
+          "task",
+          "dependencies"
+        ],
+        "properties": {
+          "task": {
+            "$ref": "#/components/schemas/TaskSummary"
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DependencyNode"
+            }
+          }
+        }
+      },
+      "Dependents": {
+        "type": "object",
+        "required": [
+          "task",
+          "dependents"
+        ],
+        "properties": {
+          "task": {
+            "$ref": "#/components/schemas/TaskSummary"
+          },
+          "dependents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskSummary"
+            }
+          }
+        }
+      },
+      "AfterGoalStatus": {
+        "type": "object",
+        "required": [
+          "after_goal_armed",
+          "goal_id",
+          "goal_identifier",
+          "env"
+        ],
+        "properties": {
+          "after_goal_armed": {
+            "type": "boolean"
+          },
+          "goal_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "goal_identifier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "GoalCreated": {
+        "type": "object",
+        "required": [
+          "goal",
+          "child_tasks"
+        ],
+        "properties": {
+          "goal": {
+            "$ref": "#/components/schemas/GoalSummary"
+          },
+          "child_tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskSummary"
+            }
+          }
+        }
+      },
+      "BatchCreated": {
+        "type": "object",
+        "required": [
+          "success",
+          "goals",
+          "total"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": true
+          },
+          "goals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GoalCreated"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "description": "Error body for most non-changeset failures: `error` is present, and documentation keys (documentation, getting_started, related_docs, common_causes, ...) are added on most 4xx responses. Changeset failures return ValidationError instead.",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "documentation": {
+            "description": "A documentation URL, a list of URLs when several fields fail, or an object of documentation links.",
+            "type": [
+              "string",
+              "array",
+              "object"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "getting_started": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "ValidationError": {
+        "type": "object",
+        "description": "Changeset validation failure. `errors` maps each field to its messages; an embedded list field (key_files, verification_steps, behaviour_test_matrix) maps to one object per entry in the resulting list, keyed by that entry's own fields (an empty object for a valid entry).",
+        "required": [
+          "errors"
+        ],
+        "properties": {
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "documentation": {
+            "description": "A documentation URL, a list of URLs when several fields fail, or an object of documentation links.",
+            "type": [
+              "string",
+              "array",
+              "object"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "Onboarding": {
+        "type": "object",
+        "description": "Agent onboarding payload. Only a few stable keys are listed; see docs/api/get_agent_onboarding.md for the full structure.",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "api_reference": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "resources": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "OpenApiDocument": {
+        "type": "object",
+        "description": "This OpenAPI 3.1 document.",
+        "additionalProperties": true
+      },
+      "TaskWriteRequest": {
+        "type": "object",
+        "required": [
+          "task"
+        ],
+        "properties": {
+          "task": {
+            "type": "object",
+            "description": "Task fields. For a goal, set type to goal and nest child tasks under `tasks`. See docs/api/post_tasks.md.",
+            "additionalProperties": true
+          },
+          "agent_name": {
+            "type": "string",
+            "description": "Agent display name for created_by_agent attribution."
+          }
+        }
+      }
+    }
+  }
+}
