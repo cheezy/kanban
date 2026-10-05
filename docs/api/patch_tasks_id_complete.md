@@ -22,7 +22,7 @@ Authorization: Bearer <your_api_token>
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `id` | string | Yes | Task ID (numeric) or task identifier (e.g., "W21") |
+| `id` | string | Yes | Task ID (numeric) or task identifier (e.g., "W21"). A numeric ID outside the signed 64-bit range (below -9223372036854775808 or above 9223372036854775807) returns 404, the same as an ID that names no task. |
 
 ### Request Body Parameters
 
@@ -387,6 +387,22 @@ Trying to complete a task assigned to someone else:
   "error": "You can only complete tasks that you are assigned to"
 }
 ```
+
+### Not Found (404)
+
+No task on the token's board matches the ID or identifier. A task on another
+board gets the same response:
+
+```json
+{
+  "error": "Task not found"
+}
+```
+
+A numeric ID outside the signed 64-bit range, such as `9223372036854775808`, gets
+this same 404 and body. It is never a 500, and it cannot be told apart from an ID
+that names no task or a task on another board. See
+[404 for out-of-range numeric IDs](README.md#404-for-out-of-range-numeric-ids).
 
 ### Unprocessable Entity (422)
 

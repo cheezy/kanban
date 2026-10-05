@@ -10,7 +10,7 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
 4. [Hook System](#hook-system)
 5. [Completion Validation (explorer_result, reviewer_result, workflow_steps)](#completion-validation-explorer_result-reviewer_result-workflow_steps)
 6. [API Endpoints](#api-endpoints) (including the [OpenAPI specification](#api-specification))
-7. [Errors](#errors) (including [406 Not Acceptable](#406-not-acceptable))
+7. [Errors](#errors) (including [406 Not Acceptable](#406-not-acceptable) and [404 for out-of-range numeric IDs](#404-for-out-of-range-numeric-ids))
 8. [Configuration Files](#configuration-files)
 9. [Examples](#examples)
 
@@ -330,6 +330,48 @@ The 406 is decided before the API token is checked. An unauthenticated request
 with an unsupported `Accept` header gets the 406, not a 401, and the body is the
 same whether or not the token is valid. The body is a fixed string: it never
 echoes the `Accept` header back.
+
+### 404 for out-of-range numeric IDs
+
+Task IDs and column IDs are stored as signed 64-bit integers. A numeric ID
+outside that range (below `-9223372036854775808` or above
+`9223372036854775807`, for example `99999999999999999999`) can never name a
+task or a column, so the API answers it with a `404` instead of failing:
+
+```http
+HTTP/1.1 404 Not Found
+content-type: application/json; charset=utf-8
+
+{
+  "error": "Task not found"
+}
+```
+
+This applies to every route that takes a task `:id`:
+
+- `GET /api/tasks/:id`, `PATCH /api/tasks/:id` and `PUT /api/tasks/:id`
+- `PATCH /api/tasks/:id/complete`, `PUT /api/tasks/:id/changed_files`,
+  `POST /api/tasks/:id/unclaim`, `PATCH /api/tasks/:id/mark_reviewed` and
+  `PATCH /api/tasks/:id/mark_done`
+- `GET /api/tasks/:id/dependencies`, `GET /api/tasks/:id/dependents` and
+  `GET /api/tasks/:id/tree`
+- `PATCH /api/tasks/:id/after_goal` and `GET /api/tasks/:id/after_goal_status`,
+  which have no page of their own
+
+It also applies to `column_id` on `GET /api/tasks` (legacy and paginated mode)
+and on `POST /api/tasks` (as a JSON number or a string).
+
+The 404 comes from the task lookup, so a check that runs before the lookup
+still answers first. For example, `PATCH` or `PUT /api/tasks/:id` with no
+`task` key in the body gets that endpoint's `422` whatever the ID is.
+
+The body is the same fixed body as for an ID that names no task, or a task or
+column on another board, so the response never shows whether something exists
+on another board. It never echoes the ID you sent. The range check happens
+after authentication and only ever leads to this 404: it never skips an access
+check. A value that is not a number at all is handled as before. On a task
+route it is looked up as an identifier such as `W21` (a 404 if none matches).
+On `column_id` it is a `400` with `Invalid column_id: must be an integer`.
 
 ## Configuration Files
 

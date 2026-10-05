@@ -151,6 +151,10 @@ curl -X POST https://www.stridelikeaboss.com/api/tasks/W42/unclaim \
 }
 ```
 
+The same 404 is returned for a task on another board and for a numeric ID
+outside the signed 64-bit range. See
+[404 for out-of-range numeric IDs](api/README.md#404-for-out-of-range-numeric-ids).
+
 ## Complete Workflow Examples
 
 ### Example 1: Missing Library Dependency

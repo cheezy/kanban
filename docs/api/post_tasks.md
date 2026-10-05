@@ -82,7 +82,7 @@ Authorization: Bearer <your_api_token>
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `task.required_capabilities` | array | No | Required agent capabilities (e.g., `["code_generation", "testing"]`) |
-| `task.column_id` | integer | No | Column ID where task should be created (default: Ready) |
+| `task.column_id` | integer | No | Column ID where task should be created (default: Ready). Sent as a JSON number or a numeric string. A value that is not an integer returns 400 `Invalid column_id: must be an integer`. A column that does not exist or is on another board returns 404 `Task not found`, and so does a whole number outside the signed 64-bit range. |
 | `task.tasks` | array | No | Array of child task objects (for goals only). Each child's `type` must be `work` or `defect`; a child of type `goal` returns 422, and so does a child with a non-empty `tasks` list of its own (see [Unprocessable Entity (422)](#unprocessable-entity-422)) |
 | `agent_name` | string | No | **Top-level** (sibling of `task`, not nested inside it): the display name of the agent creating the task, used for `created_by_agent` attribution (see resolution order below) |
 
@@ -586,6 +586,24 @@ The `security_considerations` array specifies security concerns, potential vulne
   ]
 }
 ```
+
+### Not Found (404)
+
+`task.column_id` names a column that does not exist or belongs to another
+board. The two cases are deliberately indistinguishable, and nothing is created:
+
+```json
+{
+  "error": "Task not found"
+}
+```
+
+A `task.column_id` that is a whole number outside the signed 64-bit range (below
+`-9223372036854775808` or above `9223372036854775807`) gets this same 404, whether
+it is sent as a JSON number or as a string. It is never a 500. A `column_id`
+that is not an integer at all, such as `"abc"`, gets a 400 with
+`Invalid column_id: must be an integer` instead. See
+[404 for out-of-range numeric IDs](README.md#404-for-out-of-range-numeric-ids).
 
 ### Unprocessable Entity (422)
 

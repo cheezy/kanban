@@ -22,7 +22,7 @@ Authorization: Bearer <your_api_token>
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `column_id` | integer | No | Filter tasks by column ID. If omitted, returns all tasks from all columns. Combines with every filter below. |
+| `column_id` | integer | No | Filter tasks by column ID. If omitted, returns all tasks from all columns. Combines with every filter below. A whole number outside the signed 64-bit range returns 404, the same as a column that does not exist. |
 | `response_view` | string | No | `slim` returns a compact summary row per task instead of the full object. Any other value — including `full`, an unrecognised string, or the parameter being absent — returns the unchanged full response. Works in both modes. |
 | `limit` | integer | No | **Paginated mode.** Page size, `1`–`200`. Default `50`. |
 | `cursor` | string | No | **Paginated mode.** Opaque cursor from a previous page's `meta.next_cursor`. Omit for the first page. |
@@ -405,6 +405,12 @@ two cases are deliberately indistinguishable, in both modes:
   "error": "Task not found"
 }
 ```
+
+A `column_id` that is a whole number outside the signed 64-bit range (below
+`-9223372036854775808` or above `9223372036854775807`) gets this same 404 in both
+modes. It is a valid integer, so it is not the 400 above. A `column_id` that is
+not an integer at all, such as `abc`, still gets the 400. See
+[404 for out-of-range numeric IDs](README.md#404-for-out-of-range-numeric-ids).
 
 ## Response Field Descriptions
 

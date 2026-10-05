@@ -19,6 +19,13 @@ defmodule KanbanWeb.API.TaskController do
 
   action_fallback KanbanWeb.API.FallbackController
 
+  # D360: Postgrex encodes a bigint parameter only inside the signed 64-bit
+  # range and raises DBConnection.EncodeError (a 500) for anything outside it.
+  # Integer.parse/1 is unbounded, so a parsed task id or column_id is checked
+  # against this range before it can reach a query. Zero and negatives inside
+  # the range keep their existing path (lookup, then 404).
+  @bigint_range -9_223_372_036_854_775_808..9_223_372_036_854_775_807
+
   # W2057: the view is resolved from the request once, here, and applied at
   # render only — the board scoping and the query underneath are identical in
   # both views, so the slim view can only narrow a row, never widen it or
@@ -49,7 +56,7 @@ defmodule KanbanWeb.API.TaskController do
         # column id produce the same {:error, :not_found} response — closes
         # the existence-oracle gap that the old get_column! + verify pattern
         # had (W399).
-        case Columns.get_column_for_board(column_id, board.id) do
+        case column_for_board(column_id, board.id) do
           nil ->
             TaskErrors.handle_task_error(conn, {:error, :not_found})
 
@@ -114,7 +121,7 @@ defmodule KanbanWeb.API.TaskController do
   # Same board-scoped lookup as the legacy column_id branch, so a cross-board
   # and a nonexistent column id produce the same 404 in both modes.
   defp board_column_filter(board, column_id) do
-    case Columns.get_column_for_board(column_id, board.id) do
+    case column_for_board(column_id, board.id) do
       nil -> {:error, :not_found}
       column -> {:ok, %{column_id: column.id}}
     end
@@ -341,7 +348,7 @@ defmodule KanbanWeb.API.TaskController do
   defp resolve_column_and_create(conn, board, column_id, task_params, creator) do
     # Board-scoped lookup unifies "no such column" and "column on other
     # board" into a single not_found response (W399).
-    case Columns.get_column_for_board(column_id, board.id) do
+    case column_for_board(column_id, board.id) do
       nil ->
         TaskErrors.handle_task_error(conn, {:error, :not_found})
 
@@ -1118,13 +1125,19 @@ defmodule KanbanWeb.API.TaskController do
 
   defp get_task_by_id_or_identifier(id_or_identifier, board) do
     case Integer.parse(id_or_identifier) do
-      {id, ""} ->
+      {id, ""} when id in @bigint_range ->
         # Board-scope the numeric-id lookup so a cross-board id and a
         # nonexistent id both resolve to nil → 404. Fetching globally and
         # letting verify_board_ownership distinguish them downstream returned
         # 403 for a cross-board id vs 404 for a missing one — a task-existence
         # oracle (D160), the same class W399 closed for column lookups.
         if Tasks.get_task_for_board(id, board.id), do: Tasks.get_task_for_view(id)
+
+      {_out_of_range_id, ""} ->
+        # D360: a whole number no task id can hold is simply "not found" —
+        # the same nil (and so the same 404 body) as a missing in-range id,
+        # decided without a query and without trying the identifier branch.
+        nil
 
       _ ->
         # It's an identifier like "W14"
@@ -1464,6 +1477,16 @@ defmodule KanbanWeb.API.TaskController do
   end
 
   defp actor_user_id(conn), do: conn.assigns[:current_user] && conn.assigns.current_user.id
+
+  # D360: board-scoped column lookup that answers nil, the same as a missing
+  # or cross-board column, for a well-formed integer outside the bigint range,
+  # so it 404s instead of raising in Postgrex. parse_id/1 stays unbounded on
+  # purpose: its :error means "not an integer" (a 400), which an out-of-range
+  # integer is not.
+  defp column_for_board(column_id, board_id) when column_id in @bigint_range,
+    do: Columns.get_column_for_board(column_id, board_id)
+
+  defp column_for_board(_out_of_range_column_id, _board_id), do: nil
 
   defp parse_id(id) when is_integer(id), do: {:ok, id}
 

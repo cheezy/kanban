@@ -265,7 +265,7 @@ This metadata:
 **Possible causes:**
 1. API endpoint doesn't exist
 2. Wrong base URL (check `STRIDE_API_URL`)
-3. Task/resource ID doesn't exist
+3. Task/resource ID doesn't exist on your board (a numeric ID outside the signed 64-bit range also gets a 404)
 
 **Solutions:**
 - Verify base URL is correct
