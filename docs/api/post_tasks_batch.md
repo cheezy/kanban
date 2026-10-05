@@ -490,6 +490,6 @@ For best performance:
 ## See Also
 
 - [POST /api/tasks](post_tasks.md) - Create a single task or goal
-- [GET /api/tasks](get_tasks.md) - List all tasks
+- [GET /api/tasks](get_tasks.md) - List tasks (filters, cursor pagination)
 - [GET /api/tasks/:id/tree](get_tasks_id_tree.md) - Get goal with all child tasks
 - [PATCH /api/tasks/:id](patch_tasks_id.md) - Update a task

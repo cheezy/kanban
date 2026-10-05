@@ -280,7 +280,8 @@ defmodule KanbanWeb.API.AgentJSON do
             %{
               method: "GET",
               path: "/api/tasks",
-              description: "List all tasks",
+              description:
+                "List tasks; optional filters (column_id, status, type, priority, assigned_to_id, parent, updated_since) and cursor pagination (limit, cursor -> meta.next_cursor)",
               auth_required: true,
               documentation_url: "#{@docs_base_url}/docs/api/get_tasks.md"
             },

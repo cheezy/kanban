@@ -37,6 +37,8 @@ defmodule Kanban.Tasks do
   def list_tasks_by_columns(columns, opts \\ []),
     do: Queries.list_tasks_by_columns(columns, opts)
 
+  defdelegate list_board_tasks_page(board_id, filters, opts), to: Queries
+
   defdelegate sort_by_goal_hierarchy(tasks), to: Queries
   defdelegate group_rows_by_goal(tasks), to: Queries
   defdelegate list_children_for_goal(user, goal_id), to: Queries

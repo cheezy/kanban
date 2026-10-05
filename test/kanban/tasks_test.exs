@@ -218,6 +218,219 @@ defmodule Kanban.TasksTest do
     end
   end
 
+  describe "list_board_tasks_page/3" do
+    defp page_set!(task, fields) do
+      Kanban.Tasks.Task
+      |> where([t], t.id == ^task.id)
+      |> Kanban.Repo.update_all(set: fields)
+
+      Kanban.Tasks.get_task!(task.id)
+    end
+
+    defp page_board do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      %{user: user, board: board, column: column}
+    end
+
+    defp ids({tasks, _next}), do: Enum.map(tasks, & &1.id)
+
+    test "returns {[], nil} for an empty board" do
+      %{board: board} = page_board()
+
+      assert Tasks.list_board_tasks_page(board.id, %{}, limit: 10) == {[], nil}
+    end
+
+    test "pages in id order with next_id set to the last id until the final page" do
+      %{board: board, column: column} = page_board()
+      other_column = column_fixture(board)
+
+      # Created across two columns so id order differs from column/position order.
+      tasks = [
+        task_fixture(column),
+        task_fixture(other_column),
+        task_fixture(column),
+        task_fixture(other_column),
+        task_fixture(column)
+      ]
+
+      all_ids = tasks |> Enum.map(& &1.id) |> Enum.sort()
+
+      {page1, next1} = Tasks.list_board_tasks_page(board.id, %{}, limit: 2)
+      assert Enum.map(page1, & &1.id) == Enum.take(all_ids, 2)
+      assert next1 == Enum.at(all_ids, 1)
+
+      {page2, next2} = Tasks.list_board_tasks_page(board.id, %{}, limit: 2, after_id: next1)
+      assert Enum.map(page2, & &1.id) == Enum.slice(all_ids, 2, 2)
+      assert next2 == Enum.at(all_ids, 3)
+
+      {page3, next3} = Tasks.list_board_tasks_page(board.id, %{}, limit: 2, after_id: next2)
+      assert Enum.map(page3, & &1.id) == [List.last(all_ids)]
+      assert next3 == nil
+    end
+
+    test "an exactly-full last page reports no further page" do
+      %{board: board, column: column} = page_board()
+      task_fixture(column)
+      task_fixture(column)
+
+      assert {[_, _], nil} = Tasks.list_board_tasks_page(board.id, %{}, limit: 2)
+    end
+
+    test "preloads assigned_to" do
+      %{board: board, column: column, user: user} = page_board()
+      task = column |> task_fixture() |> page_set!(assigned_to_id: user.id)
+
+      {[row], nil} = Tasks.list_board_tasks_page(board.id, %{}, limit: 5)
+      assert row.id == task.id
+      assert row.assigned_to.id == user.id
+    end
+
+    test "excludes archived tasks" do
+      %{board: board, column: column} = page_board()
+      kept = task_fixture(column)
+
+      column
+      |> task_fixture()
+      |> page_set!(archived_at: DateTime.utc_now() |> DateTime.truncate(:second))
+
+      assert ids(Tasks.list_board_tasks_page(board.id, %{}, limit: 10)) == [kept.id]
+    end
+
+    test "never returns another board's tasks, even from that board's cursor" do
+      %{board: board, column: column} = page_board()
+      %{board: other_board, column: other_column} = page_board()
+
+      mine = task_fixture(column)
+      theirs = task_fixture(other_column)
+
+      assert ids(Tasks.list_board_tasks_page(board.id, %{}, limit: 10)) == [mine.id]
+
+      # A cursor below the other board's task id still cannot reach it.
+      assert {[], nil} =
+               Tasks.list_board_tasks_page(board.id, %{}, limit: 10, after_id: mine.id)
+
+      assert ids(Tasks.list_board_tasks_page(other_board.id, %{}, limit: 10)) == [theirs.id]
+    end
+
+    test "a cursor whose task was deleted still advances" do
+      %{board: board, column: column} = page_board()
+      first = task_fixture(column)
+      second = task_fixture(column)
+      third = task_fixture(column)
+
+      {page, next} = Tasks.list_board_tasks_page(board.id, %{}, limit: 2)
+      assert Enum.map(page, & &1.id) == [first.id, second.id]
+      assert next == second.id
+
+      second.id |> Tasks.get_task!() |> Kanban.Repo.delete!()
+
+      assert ids(Tasks.list_board_tasks_page(board.id, %{}, limit: 2, after_id: next)) == [
+               third.id
+             ]
+    end
+
+    test "filters by status, type, priority and assigned_to_id, alone and combined" do
+      %{board: board, column: column, user: user} = page_board()
+
+      open_work = task_fixture(column, %{type: :work, priority: :high})
+
+      blocked_defect =
+        column
+        |> task_fixture(%{type: :defect, priority: :high})
+        |> page_set!(status: :blocked, assigned_to_id: user.id)
+
+      low_work = column |> task_fixture(%{type: :work, priority: :low})
+
+      page = fn filters -> ids(Tasks.list_board_tasks_page(board.id, filters, limit: 10)) end
+
+      assert page.(%{status: :blocked}) == [blocked_defect.id]
+      assert page.(%{type: :work}) == [open_work.id, low_work.id]
+      assert page.(%{priority: :high}) == [open_work.id, blocked_defect.id]
+      assert page.(%{assigned_to_id: user.id}) == [blocked_defect.id]
+      assert page.(%{type: :work, priority: :high}) == [open_work.id]
+      assert page.(%{status: :open, priority: :low}) == [low_work.id]
+      assert page.(%{status: :completed}) == []
+    end
+
+    test "column_id combines with the other filters" do
+      %{board: board, column: column} = page_board()
+      other_column = column_fixture(board)
+
+      here = task_fixture(column, %{priority: :high})
+      _elsewhere = task_fixture(other_column, %{priority: :high})
+      _low_here = task_fixture(column, %{priority: :low})
+
+      assert ids(
+               Tasks.list_board_tasks_page(
+                 board.id,
+                 %{column_id: column.id, priority: :high},
+                 limit: 10
+               )
+             ) == [here.id]
+    end
+
+    test "updated_since is inclusive and excludes older tasks" do
+      %{board: board, column: column} = page_board()
+      old = column |> task_fixture() |> page_set!(updated_at: ~N[2020-01-01 00:00:00])
+      edge = column |> task_fixture() |> page_set!(updated_at: ~N[2025-06-01 12:00:00])
+      fresh = task_fixture(column)
+
+      page = fn since ->
+        ids(Tasks.list_board_tasks_page(board.id, %{updated_since: since}, limit: 10))
+      end
+
+      assert page.(~N[2025-06-01 12:00:00]) == [edge.id, fresh.id]
+      refute old.id in page.(~N[2021-01-01 00:00:00])
+      assert page.(~N[2999-01-01 00:00:00]) == []
+    end
+
+    test "parent returns only the children of this board's goal with that identifier" do
+      %{board: board, column: column} = page_board()
+      %{column: other_column} = page_board()
+
+      goal = task_fixture(column, %{type: :goal, title: "Goal"})
+      other_goal = task_fixture(other_column, %{type: :goal, title: "Other goal"})
+
+      # Both boards number their first goal the same, which is what makes the
+      # board-scoped resolution load-bearing.
+      assert goal.identifier == other_goal.identifier
+
+      child = column |> task_fixture() |> page_set!(parent_id: goal.id)
+      _unrelated = task_fixture(column)
+      _other_child = other_column |> task_fixture() |> page_set!(parent_id: other_goal.id)
+
+      assert ids(Tasks.list_board_tasks_page(board.id, %{parent: goal.identifier}, limit: 10)) ==
+               [child.id]
+    end
+
+    test "parent resolves the identifier against this board's goals only" do
+      %{board: board, column: column} = page_board()
+      %{column: other_column} = page_board()
+
+      other_goal = task_fixture(other_column, %{type: :goal, title: "Other goal"})
+
+      # A row on this board pointing at the other board's goal (not reachable
+      # through the API, forced here) must not match that board's identifier.
+      _stray = column |> task_fixture() |> page_set!(parent_id: other_goal.id)
+
+      assert {[], nil} =
+               Tasks.list_board_tasks_page(board.id, %{parent: other_goal.identifier}, limit: 10)
+    end
+
+    test "parent naming a non-goal or unknown identifier returns an empty page" do
+      %{board: board, column: column} = page_board()
+      work = task_fixture(column)
+      _child_of_work = column |> task_fixture() |> page_set!(parent_id: work.id)
+
+      assert {[], nil} =
+               Tasks.list_board_tasks_page(board.id, %{parent: work.identifier}, limit: 10)
+
+      assert {[], nil} = Tasks.list_board_tasks_page(board.id, %{parent: "G999999"}, limit: 10)
+    end
+  end
+
   describe "list_archived_tasks/1" do
     test "returns only archived tasks" do
       user = user_fixture()

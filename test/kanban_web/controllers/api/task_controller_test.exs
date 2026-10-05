@@ -1436,6 +1436,308 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  # W2224: opt-in cursor pagination and filters. The legacy describe above is
+  # deliberately left untouched — it is the proof the unpaginated path did not move.
+  describe "GET /api/tasks pagination and filters" do
+    setup %{column: column, user: user} do
+      tasks =
+        for n <- 1..7 do
+          {:ok, task} =
+            Tasks.create_task(column, %{
+              "title" => "Paged #{n}",
+              "created_by_id" => user.id
+            })
+
+          task
+        end
+
+      %{tasks: tasks}
+    end
+
+    defp set_fields!(task, fields) do
+      require Ecto.Query
+
+      Kanban.Tasks.Task
+      |> Ecto.Query.where([t], t.id == ^task.id)
+      |> Kanban.Repo.update_all(set: fields)
+
+      task
+    end
+
+    defp walk(conn, query, cursor \\ nil, acc \\ []) do
+      url =
+        if cursor,
+          do: "/api/tasks?#{query}&cursor=#{cursor}",
+          else: "/api/tasks?#{query}"
+
+      response = json_response(get(conn, url), 200)
+      pages = [response | acc]
+
+      case response["meta"]["next_cursor"] do
+        nil -> Enum.reverse(pages)
+        next -> walk(conn, query, next, pages)
+      end
+    end
+
+    defp page_ids(response), do: Enum.map(response["data"], & &1["id"])
+
+    test "walking every page with limit=3 returns the full list once, in id order", %{
+      conn: conn
+    } do
+      pages = walk(conn, "limit=3")
+
+      assert Enum.map(pages, &length(&1["data"])) == [3, 3, 1]
+      assert List.last(pages)["meta"]["next_cursor"] == nil
+
+      walked = Enum.flat_map(pages, &page_ids/1)
+      assert walked == Enum.uniq(walked)
+      assert walked == Enum.sort(walked)
+
+      legacy_ids = page_ids(json_response(get(conn, ~p"/api/tasks"), 200))
+      assert Enum.sort(walked) == Enum.sort(legacy_ids)
+    end
+
+    test "limit=2 returns two tasks and a meta block; the cursor continues with no overlap", %{
+      conn: conn
+    } do
+      first = json_response(get(conn, ~p"/api/tasks?limit=2"), 200)
+
+      assert length(first["data"]) == 2
+      assert %{"limit" => 2, "next_cursor" => cursor} = first["meta"]
+      assert is_binary(cursor)
+
+      second = json_response(get(conn, ~p"/api/tasks?limit=2&cursor=#{cursor}"), 200)
+      assert length(second["data"]) == 2
+      first_ids = page_ids(first)
+      second_ids = page_ids(second)
+      assert first_ids |> MapSet.new() |> MapSet.disjoint?(MapSet.new(second_ids))
+      assert hd(second_ids) > List.last(first_ids)
+    end
+
+    test "a filter alone opts in and defaults limit to 50", %{conn: conn} do
+      response = json_response(get(conn, ~p"/api/tasks?status=open"), 200)
+
+      assert response["meta"] == %{"limit" => 50, "next_cursor" => nil}
+      assert length(response["data"]) == 7
+    end
+
+    test "the legacy response carries no meta key, with or without column_id", %{
+      conn: conn,
+      column: column
+    } do
+      for path <- [
+            ~p"/api/tasks",
+            ~p"/api/tasks?column_id=#{column.id}",
+            ~p"/api/tasks?response_view=slim"
+          ] do
+        body = conn |> get(path) |> json_response(200)
+        refute Map.has_key?(body, "meta"), "#{path} unexpectedly carried meta"
+      end
+    end
+
+    test "paginated full rows have the same keys as legacy full rows", %{conn: conn} do
+      [legacy_row | _] = json_response(get(conn, ~p"/api/tasks"), 200)["data"]
+      [paged_row | _] = json_response(get(conn, ~p"/api/tasks?limit=1"), 200)["data"]
+
+      assert Map.keys(paged_row) |> Enum.sort() == Map.keys(legacy_row) |> Enum.sort()
+    end
+
+    test "response_view=slim works in paginated mode and still carries meta", %{conn: conn} do
+      slim = json_response(get(conn, ~p"/api/tasks?limit=2&response_view=slim"), 200)
+      full = json_response(get(conn, ~p"/api/tasks?limit=2"), 200)
+
+      assert %{"limit" => 2, "next_cursor" => cursor} = slim["meta"]
+      assert is_binary(cursor)
+      assert slim["meta"] == full["meta"]
+      assert page_ids(slim) == page_ids(full)
+
+      for row <- slim["data"] do
+        assert row |> Map.keys() |> Enum.sort() ==
+                 ~w(claim_expires_at complexity created_by_agent dependencies id identifier parent_id priority status title type)
+      end
+    end
+
+    test "status, type, priority and assigned_to_id each narrow the results and combine", %{
+      conn: conn,
+      tasks: [t1, t2, t3 | _],
+      user: user
+    } do
+      set_fields!(t1, status: :blocked, priority: :high)
+      set_fields!(t2, type: :defect, priority: :high, assigned_to_id: user.id)
+      set_fields!(t3, priority: :critical)
+
+      ids = fn query -> page_ids(json_response(get(conn, "/api/tasks?#{query}"), 200)) end
+
+      assert ids.("status=blocked") == [t1.id]
+      assert ids.("type=defect") == [t2.id]
+      assert ids.("priority=critical") == [t3.id]
+      assert ids.("assigned_to_id=#{user.id}") == [t2.id]
+      assert ids.("priority=high") == [t1.id, t2.id]
+      assert ids.("priority=high&type=work") == [t1.id]
+      assert ids.("priority=high&status=open") == [t2.id]
+    end
+
+    test "column_id combines with the new filters", %{
+      conn: conn,
+      board: board,
+      user: user,
+      tasks: [t1 | _]
+    } do
+      ready = Columns.list_columns(board) |> Enum.find(&(&1.name == "Ready"))
+
+      {:ok, in_ready} =
+        Tasks.create_task(ready, %{"title" => "Ready task", "created_by_id" => user.id})
+
+      set_fields!(t1, priority: :critical)
+      set_fields!(in_ready, priority: :critical)
+
+      response =
+        json_response(get(conn, ~p"/api/tasks?column_id=#{ready.id}&priority=critical"), 200)
+
+      assert page_ids(response) == [in_ready.id]
+
+      response = json_response(get(conn, ~p"/api/tasks?column_id=#{ready.id}&type=goal"), 200)
+      assert response["data"] == []
+    end
+
+    test "updated_since excludes tasks updated before the timestamp", %{
+      conn: conn,
+      tasks: [old | rest]
+    } do
+      set_fields!(old, updated_at: ~N[2020-01-01 00:00:00])
+
+      ids =
+        page_ids(json_response(get(conn, ~p"/api/tasks?updated_since=2021-01-01T00:00:00Z"), 200))
+
+      refute old.id in ids
+      assert Enum.sort(ids) == rest |> Enum.map(& &1.id) |> Enum.sort()
+
+      # updated_at is stored to the whole second, so a fractional bound compares at
+      # second precision: a task stored in that same second is still returned
+      # (an update at 00:00:00.7 is stored as 00:00:00 and must not be lost),
+      # while one from the previous second is not.
+      set_fields!(old, updated_at: ~N[2020-01-01 00:00:00])
+
+      same_second =
+        json_response(get(conn, ~p"/api/tasks?updated_since=2020-01-01T00:00:00.5Z"), 200)
+
+      assert old.id in page_ids(same_second)
+
+      next_second =
+        json_response(get(conn, ~p"/api/tasks?updated_since=2020-01-01T00:00:01.5Z"), 200)
+
+      refute old.id in page_ids(next_second)
+
+      future = json_response(get(conn, ~p"/api/tasks?updated_since=2999-01-01T00:00:00Z"), 200)
+      assert future["data"] == []
+      assert future["meta"]["next_cursor"] == nil
+    end
+
+    test "parent=G<n> returns only that goal's children on the token's board", %{
+      conn: conn,
+      column: column,
+      user: user,
+      tasks: [child, _ | _]
+    } do
+      {:ok, goal} =
+        Tasks.create_task(column, %{
+          "title" => "A goal",
+          "type" => "goal",
+          "created_by_id" => user.id
+        })
+
+      set_fields!(child, parent_id: goal.id)
+
+      response = json_response(get(conn, ~p"/api/tasks?parent=#{goal.identifier}"), 200)
+      assert page_ids(response) == [child.id]
+
+      unknown = json_response(get(conn, ~p"/api/tasks?parent=G999999"), 200)
+      assert unknown["data"] == []
+    end
+
+    test "a cursor or parent identifier from another board never returns that board's tasks",
+         %{conn: conn, tasks: tasks} do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, other_goal} =
+        Tasks.create_task(other_column, %{
+          "title" => "Other goal",
+          "type" => "goal",
+          "created_by_id" => other_user.id
+        })
+
+      {:ok, other_child} =
+        Tasks.create_task(other_column, %{
+          "title" => "Other child",
+          "created_by_id" => other_user.id
+        })
+
+      set_fields!(other_child, parent_id: other_goal.id)
+      other_ids = MapSet.new([other_goal.id, other_child.id])
+
+      # A cursor pointing just below the other board's tasks.
+      low_cursor = KanbanWeb.API.TaskListParams.encode_cursor(other_goal.id - 1)
+      by_cursor = json_response(get(conn, ~p"/api/tasks?cursor=#{low_cursor}"), 200)
+      assert by_cursor |> page_ids() |> MapSet.new() |> MapSet.disjoint?(other_ids)
+
+      # Our board has no goal, so the other board's goal identifier matches nothing here.
+      by_parent = json_response(get(conn, ~p"/api/tasks?parent=#{other_goal.identifier}"), 200)
+      assert by_parent["data"] == []
+
+      walked = conn |> walk("limit=50") |> Enum.flat_map(&page_ids/1)
+      assert Enum.sort(walked) == tasks |> Enum.map(& &1.id) |> Enum.sort()
+    end
+
+    test "a column_id on another board is a 404 in paginated mode, as in legacy mode", %{
+      conn: conn
+    } do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      [other_column | _] = Columns.list_columns(other_board)
+
+      legacy = get(conn, ~p"/api/tasks?column_id=#{other_column.id}")
+      paged = get(conn, ~p"/api/tasks?column_id=#{other_column.id}&limit=5")
+
+      assert json_response(paged, 404) == json_response(legacy, 404)
+    end
+
+    test "invalid params return 400 with an invalid_param error message", %{conn: conn} do
+      cases = [
+        {"limit=201", "Invalid limit"},
+        {"limit=0", "Invalid limit"},
+        {"limit=-1", "Invalid limit"},
+        {"limit=", "Invalid limit"},
+        {"limit[]=5", "Invalid limit"},
+        {"cursor=!!!", "Invalid cursor"},
+        {"cursor=#{Base.url_encode64("abc", padding: false)}", "Invalid cursor"},
+        {"status=bogus", "Invalid status"},
+        {"type=task", "Invalid type"},
+        {"priority=urgent", "Invalid priority"},
+        {"assigned_to_id=abc", "Invalid assigned_to_id"},
+        {"parent=", "Invalid parent"},
+        {"updated_since=notadate", "Invalid updated_since"},
+        {"updated_since=2026-10-05", "Invalid updated_since"},
+        {"column_id=abc&limit=2", "Invalid column_id"}
+      ]
+
+      for {query, message} <- cases do
+        response = json_response(get(conn, "/api/tasks?#{query}"), 400)
+
+        assert response["error"] =~ message,
+               "#{query} returned #{inspect(response["error"])}"
+
+        assert is_binary(response["documentation"])
+      end
+    end
+
+    test "returns 401 without authentication" do
+      conn = build_conn() |> put_req_header("accept", "application/json")
+      assert json_response(get(conn, ~p"/api/tasks?limit=2"), 401)
+    end
+  end
+
   describe "GET /api/tasks/:id" do
     setup %{column: column, user: user} do
       {:ok, task} =

@@ -12,6 +12,7 @@ defmodule KanbanWeb.API.TaskController do
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskFieldsProjection
   alias KanbanWeb.API.TaskJSON
+  alias KanbanWeb.API.TaskListParams
   alias KanbanWeb.API.TaskParamFilter
 
   require Logger
@@ -26,10 +27,18 @@ defmodule KanbanWeb.API.TaskController do
     board = conn.assigns.current_board
     view = view_for(params)
 
-    if params["column_id"] do
-      list_tasks_by_column_id(conn, board, params["column_id"], view)
-    else
-      list_all_board_tasks(conn, board, view)
+    # W2224: pagination and filters are opt-in by key presence. With none of
+    # the page keys present the two legacy branches below run exactly as
+    # before, so the unpaginated response stays byte-identical.
+    cond do
+      TaskListParams.paginated?(params) ->
+        list_board_tasks_page(conn, board, params, view)
+
+      params["column_id"] ->
+        list_tasks_by_column_id(conn, board, params["column_id"], view)
+
+      true ->
+        list_all_board_tasks(conn, board, view)
     end
   end
 
@@ -65,6 +74,50 @@ defmodule KanbanWeb.API.TaskController do
     tasks = Enum.flat_map(columns, &Tasks.list_tasks/1)
     emit_telemetry(conn, :task_listed, %{count: length(tasks)})
     render(conn, :index, tasks: tasks, response_view: view)
+  end
+
+  # W2224: every param is validated before any query runs, and the board id
+  # from the token is the first constraint of the page query, so neither a
+  # crafted cursor nor another board's parent identifier can widen the scope.
+  defp list_board_tasks_page(conn, board, params, view) do
+    with {:ok, page} <- TaskListParams.parse(params),
+         {:ok, column_filter} <- page_column_filter(board, params["column_id"]) do
+      render_task_page(conn, board, page, column_filter, view)
+    else
+      {:error, :not_found} ->
+        TaskErrors.handle_task_error(conn, {:error, :not_found})
+
+      {:error, message} when is_binary(message) ->
+        TaskErrors.error_response(conn, :bad_request, message, :invalid_param)
+    end
+  end
+
+  defp render_task_page(conn, board, page, column_filter, view) do
+    filters = page |> TaskListParams.filters() |> Map.merge(column_filter)
+    opts = [limit: page.limit, after_id: page.cursor]
+    {tasks, next_id} = Tasks.list_board_tasks_page(board.id, filters, opts)
+    meta = %{next_cursor: TaskListParams.encode_cursor(next_id), limit: page.limit}
+
+    emit_telemetry(conn, :task_listed, %{count: length(tasks)})
+    render(conn, :index, tasks: tasks, response_view: view, page_meta: meta)
+  end
+
+  defp page_column_filter(_board, nil), do: {:ok, %{}}
+
+  defp page_column_filter(board, raw_column_id) do
+    case parse_id(raw_column_id) do
+      {:ok, column_id} -> board_column_filter(board, column_id)
+      :error -> {:error, "Invalid column_id: must be an integer"}
+    end
+  end
+
+  # Same board-scoped lookup as the legacy column_id branch, so a cross-board
+  # and a nonexistent column id produce the same 404 in both modes.
+  defp board_column_filter(board, column_id) do
+    case Columns.get_column_for_board(column_id, board.id) do
+      nil -> {:error, :not_found}
+      column -> {:ok, %{column_id: column.id}}
+    end
   end
 
   # W2076: fields resolution runs before the task is fetched — validation is

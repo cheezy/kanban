@@ -51,7 +51,7 @@ The Kanban system uses a **2-level hierarchy** optimized for AI interaction:
 
 **Task Discovery:**
 - [GET /api/tasks/next](../api/get_tasks_next.md) - Get next available task matching agent capabilities
-- [GET /api/tasks](../api/get_tasks.md) - List all tasks (optionally filter by column)
+- [GET /api/tasks](../api/get_tasks.md) - List tasks; optional filters (`column_id`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`) and opt-in cursor pagination (`limit`, `cursor` → `meta.next_cursor`)
 - [GET /api/tasks/:id](../api/get_tasks_id.md) - Get specific task details
 - [GET /api/tasks/:id/tree](../api/get_tasks_id_tree.md) - Get task with all children (for goals)
 

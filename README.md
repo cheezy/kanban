@@ -169,7 +169,7 @@ See the [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) for details on creating
 
 - `GET /api/agent/onboarding` - Complete onboarding guide for AI agents
 - `GET /api/tasks/next` - Get next available task ready to work
-- `GET /api/tasks` - List all tasks (optionally filtered by column)
+- `GET /api/tasks` - List tasks, with optional filters (column, status, type, priority, assignee, parent goal, updated since) and cursor pagination
 - `GET /api/tasks/:id` - Get task details (supports identifiers like "W14")
 - `GET /api/tasks/:id/tree` - Get task tree (goals with children)
 - `GET /api/tasks/:id/dependencies` - Get full dependency tree
@@ -241,7 +241,7 @@ Humans maintain control through the review workflow. AI handles implementation, 
 ### API Reference
 
 - [API Documentation](docs/api/README.md) - Complete API reference
-- [GET /api/tasks](docs/api/get_tasks.md) - List tasks
+- [GET /api/tasks](docs/api/get_tasks.md) - List tasks (filters, cursor pagination)
 - [POST /api/tasks](docs/api/post_tasks.md) - Create tasks
 - [POST /api/tasks/claim](docs/api/post_tasks_claim.md) - Claim tasks
 - [PATCH /api/tasks/:id/complete](docs/api/patch_tasks_id_complete.md) - Complete tasks

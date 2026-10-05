@@ -60,6 +60,12 @@ defmodule Kanban.Tasks.Queries do
   end
 
   @doc """
+  Returns one keyset-paginated, filtered page of a board's non-archived tasks
+  as `{tasks, next_id}`. Implemented in `Kanban.Tasks.PageQueries` (W2224).
+  """
+  defdelegate list_board_tasks_page(board_id, filters, opts), to: Kanban.Tasks.PageQueries
+
+  @doc """
   Returns archived tasks for a column, sorted by archived_at descending.
   """
   def list_archived_tasks(column) do

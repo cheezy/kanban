@@ -207,6 +207,6 @@ curl -X GET \
 
 ## See Also
 
-- [GET /api/tasks](get_tasks.md) - List all tasks
+- [GET /api/tasks](get_tasks.md) - List tasks (filters, cursor pagination)
 - [GET /api/tasks/:id/tree](get_tasks_id_tree.md) - Get task with all children (for goals)
 - [POST /api/tasks/claim](post_tasks_claim.md) - Claim this task

@@ -16,7 +16,20 @@ defmodule KanbanWeb.API.TaskJSON do
   first. The bare clause is the fallthrough rather than an explicit `:full`
   match, mirroring `TaskController.view_for/1`: anything unrecognised resolves
   to full, because a fat response is a better failure than a crash.
+
+  In paginated mode (W2224) the controller also assigns `page_meta`, and the
+  response gains a `meta` block of `next_cursor` and `limit`. Those two
+  clauses come before the legacy pair for the same merged-assigns reason; the
+  legacy path never assigns `page_meta`, so its body stays byte-identical.
   """
+  def index(%{tasks: tasks, response_view: :slim, page_meta: meta}) do
+    %{data: Enum.map(tasks, &render_task_summary/1), meta: meta}
+  end
+
+  def index(%{tasks: tasks, page_meta: meta}) do
+    %{data: for(task <- tasks, do: data(task)), meta: meta}
+  end
+
   def index(%{tasks: tasks, response_view: :slim}) do
     %{data: Enum.map(tasks, &render_task_summary/1)}
   end

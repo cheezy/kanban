@@ -759,6 +759,6 @@ curl -X POST \
 
 ## See Also
 
-- [GET /api/tasks](get_tasks.md) - List all tasks
+- [GET /api/tasks](get_tasks.md) - List tasks (filters, cursor pagination)
 - [GET /api/tasks/:id](get_tasks_id.md) - Get task details
 - [POST /api/tasks/claim](post_tasks_claim.md) - Claim a task to start working

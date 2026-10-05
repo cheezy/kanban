@@ -231,7 +231,7 @@ This ensures:
 3. All tasks require capabilities you don't have
 4. No tasks currently in Ready column
 
-Check with `/api/tasks` to see all tasks and their states.
+Check with `/api/tasks` to see all tasks and their states. On a large board, narrow it server-side — for example `/api/tasks?status=open&limit=50`, following `meta.next_cursor` for further pages.
 
 ## See Also
 

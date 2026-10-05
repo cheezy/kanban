@@ -426,4 +426,4 @@ This endpoint is commonly used in these workflows:
 - [POST /api/tasks](post_tasks.md) - Create a new task
 - [PATCH /api/tasks/:id/complete](patch_tasks_id_complete.md) - Complete a task (triggers hooks)
 - [POST /api/tasks/claim](post_tasks_claim.md) - Claim a task
-- [GET /api/tasks](get_tasks.md) - List all tasks
+- [GET /api/tasks](get_tasks.md) - List tasks (filters, cursor pagination)
