@@ -74,7 +74,10 @@ defmodule Kanban.Tasks.Identifiers do
     Repo.query!("SELECT pg_advisory_xact_lock($1)", [board_id + @lock_namespace])
   end
 
-  defp normalize_task_type(task_type) when is_atom(task_type), do: task_type
+  # An unknown atom (including nil from a JSON null) falls back to :work like an
+  # unknown string, so get_task_type_prefix/1 never raises; the changeset then
+  # rejects the type with a 422 and the transaction rolls back (D352).
+  defp normalize_task_type(task_type) when task_type in [:work, :defect, :goal], do: task_type
   defp normalize_task_type("work"), do: :work
   defp normalize_task_type("defect"), do: :defect
   defp normalize_task_type("goal"), do: :goal

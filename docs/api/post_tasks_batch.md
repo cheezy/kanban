@@ -270,18 +270,37 @@ Column doesn't belong to the board:
 
 ### Unprocessable Entity (422)
 
-Validation error in one of the goals:
+Validation error in one of the goals (here, the goal's own title is blank):
 
 ```json
 {
   "error": "Failed to create goal at index 1",
   "index": 1,
   "details": {
-    "title": ["can't be blank"],
+    "title": ["can't be blank"]
+  }
+}
+```
+
+Invalid child task type (for example `"bug"`, `"task"` or `"Work"`) in the goal
+at index 1:
+
+```json
+{
+  "error": "Failed to create goal at index 1",
+  "index": 1,
+  "details": {
     "type": ["is invalid"]
   }
 }
 ```
+
+`index` is the position of the failing **goal** in `goals`; the position of the
+failing child inside that goal's `tasks` is not reported. `details` carries the
+errors of the first record that failed (the goal, or one child), and the value
+you sent is not echoed back. A `null`, empty or whitespace-only child type
+reports `"type": ["can't be blank"]`. The failing goal and all of its children are rolled back together;
+goals before `index` stay created (see [Goal Creation Order](#goal-creation-order)).
 
 WIP limit reached:
 
@@ -367,7 +386,12 @@ WIP limit reached:
 
 - All goals are created in the default column (typically "Backlog" or "Ready")
 - **Note:** Any `column_id` specified in goal objects is ignored - all goals use the default column
-- `type` defaults to `goal` for goals and `work` for child tasks
+- A goal's own `type` is ignored: every entry in `goals` is created as a goal,
+  even if it sends `"type": "work"` or an unrecognised value such as `"bug"`
+- A child task's `type` defaults to `work` when omitted, and otherwise must be
+  exactly `work`, `defect` or `goal` (lowercase, no surrounding whitespace). Any
+  other value returns the invalid-type 422 shown above. See
+  [Task Type Values](post_tasks.md#task-type-values)
 - `priority` defaults to `medium`
 - `complexity` defaults to `small`
 - `needs_review` defaults to `false` (auto-complete without human review)
@@ -458,7 +482,8 @@ To continue after an error:
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `title: ["can't be blank"]` | Missing title | Add title to goal or task |
-| `type: ["is invalid"]` | Invalid type value | Use `work`, `defect`, or `goal` |
+| `type: ["is invalid"]` | Invalid child task type (case variants such as `Work` and names such as `bug` or `task` are invalid) | Use exactly `work`, `defect`, or `goal` |
+| `type: ["can't be blank"]` | Child task sent `"type": null` or an empty/whitespace-only string | Omit `type` (defaults to `work`) or send a valid value |
 | `priority: ["is invalid"]` | Invalid priority | Use `low`, `medium`, `high`, or `critical` |
 | `complexity: ["is invalid"]` | Invalid complexity | Use `small`, `medium`, or `large` |
 | `dependencies: ["must be an array"]` | Wrong type | Use array of strings |

@@ -24,7 +24,7 @@ Authorization: Bearer <your_api_token>
 |-----------|------|----------|-------------|
 | `task.title` | string | Yes | Clear, specific task title |
 | `task.description` | string | **Strongly Recommended** | Detailed description with WHY, WHAT, and WHERE |
-| `task.type` | string | **Strongly Recommended** | Type: `work` (new features) or `defect` (bug fixes) |
+| `task.type` | string | **Strongly Recommended** | Type: `work` (new features), `defect` (bug fixes) or `goal` (a goal with nested `tasks`). Exact lowercase values only; omitted defaults to `work`, and any other value returns 422 (see [Task Type Values](#task-type-values)). Exception: when `task.tasks` is non-empty the request always creates a goal and this top-level value is ignored; each child's `type` is still validated |
 | `task.priority` | string | No | Priority: `low`, `medium`, `high`, `critical` (default: `medium`) |
 | `task.complexity` | string | **Strongly Recommended** | Complexity: `small`, `medium`, `large` (default: `small`) |
 | `task.needs_review` | boolean | No | Whether task requires human review (default: `true`) |
@@ -525,7 +525,7 @@ The `security_considerations` array specifies security concerns, potential vulne
     "priority": "high",
     "complexity": "low",
     "needs_review": true,
-    "type": "task",
+    "type": "work",
     "column_id": 5,
     "column_name": "Ready",
     "board_id": 1,
@@ -600,6 +600,23 @@ Validation errors:
 }
 ```
 
+Unrecognised task type (for example `"bug"`, `"task"`, `"Work"` or `42`). The
+value you sent is not echoed back, and nothing is persisted:
+
+```json
+{
+  "errors": {
+    "type": ["is invalid"]
+  },
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#task-types"
+}
+```
+
+An explicit `"type": null`, or an empty or whitespace-only string, returns
+`"type": ["can't be blank"]` instead. When the
+invalid type is on a nested child task, the same 422 is returned and neither the
+goal nor any child is created.
+
 WIP limit reached:
 
 ```json
@@ -621,6 +638,9 @@ WIP limit reached:
 
 - Set `type: "goal"` to create a goal
 - Include a `tasks` array to create child tasks atomically
+- When `tasks` is non-empty the request always creates a goal: the top-level
+  `type` is ignored, but every child's `type` is validated (see
+  [Task Type Values](#task-type-values))
 - All tasks are created in a single database transaction (all-or-nothing)
 - Child tasks are automatically linked to the parent goal via `parent_goal_id`
 - Child tasks can have dependencies on each other using index-based references
@@ -703,6 +723,22 @@ Use existing task identifiers directly:
 - Available capabilities: `code_generation`, `testing`, `documentation`, `review`, `deployment`
 - If not specified, any agent can claim the task
 - Agents specify their capabilities in their API token configuration
+
+### Task Type Values
+
+- `work` - New functionality or an enhancement (default when `type` is omitted)
+- `defect` - A bug fix
+- `goal` - A goal; nest its child tasks under `tasks`
+
+The match is exact: values are lowercase with no surrounding whitespace, so
+`Work`, `WORK` and `" work"` are rejected, as are mistaken names such as `bug`,
+`task` or `epic`, `null`, an empty or whitespace-only string, numbers, arrays
+and objects. A rejected type returns the 422 shown under
+[Unprocessable Entity (422)](#unprocessable-entity-422) and creates nothing. To
+get the `work` default, omit the `type` key entirely.
+
+WIP limits apply only to `work` and `defect`. A request with an invalid type is
+never counted against a WIP limit; it is rejected for its type.
 
 ### Priority Values
 

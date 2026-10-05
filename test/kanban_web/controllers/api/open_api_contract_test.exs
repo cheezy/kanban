@@ -236,6 +236,57 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
       assert missing == [], "GET /api/tasks is missing parameters: #{inspect(missing)}"
     end
+
+    # D352: an unrecognised task type is a 422 on both create operations, and
+    # the spec says which values are accepted.
+    test "createTask and batchCreateGoals declare a 422 response for an invalid type", %{
+      spec: spec
+    } do
+      ops = for {_, _, op} <- spec_operations(spec), into: %{}, do: {op["operationId"], op}
+
+      for id <- ~w(createTask batchCreateGoals) do
+        op = Map.fetch!(ops, id)
+        response = resolve(spec, op["responses"]["422"] || %{})
+
+        assert is_map(response) and is_binary(response["description"]),
+               "#{id} must declare a 422 response"
+
+        assert get_in(response, ["content", "application/json", "schema"]),
+               "#{id}'s 422 must declare a JSON schema"
+
+        for value <- ecto_enum(:type) do
+          assert op["description"] =~ "`#{value}`",
+                 "#{id}'s description must list the accepted type #{value}"
+        end
+      end
+    end
+
+    test "createTask's invalid-type 422 example matches what TaskJSON.error/1 renders", %{
+      spec: spec
+    } do
+      example =
+        get_in(spec, [
+          "paths",
+          "/api/tasks",
+          "post",
+          "responses",
+          "422",
+          "content",
+          "application/json",
+          "examples",
+          "invalidType",
+          "value"
+        ])
+
+      rendered =
+        %Task{}
+        |> Task.api_create_changeset(%{"title" => "t", "position" => 0, "type" => "bug"})
+        |> then(&TaskJSON.error(%{changeset: &1}))
+        |> Jason.encode!()
+        |> Jason.decode!()
+
+      assert example["errors"] == rendered["errors"]
+    end
   end
 
   describe "public document hygiene" do

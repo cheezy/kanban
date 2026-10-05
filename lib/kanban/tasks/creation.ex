@@ -16,6 +16,7 @@ defmodule Kanban.Tasks.Creation do
   alias Kanban.Tasks.Queries
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
+  alias Kanban.Tasks.TaskType
 
   @doc """
   Creates a task for a column with automatic position assignment.
@@ -45,8 +46,12 @@ defmodule Kanban.Tasks.Creation do
   end
 
   defp do_create_task(column, attrs, changeset_fn) do
-    attrs = maybe_inherit_assignment_from_parent(attrs, column.board_id)
-    task_type = get_task_type_from_attrs(attrs)
+    attrs =
+      attrs
+      |> TaskType.blank_to_nil()
+      |> maybe_inherit_assignment_from_parent(column.board_id)
+
+    task_type = TaskType.from_attrs(attrs)
     should_check_wip = task_type in [:work, :defect]
 
     if !should_check_wip || Positioning.can_add_task?(column) do
@@ -169,7 +174,7 @@ defmodule Kanban.Tasks.Creation do
     next_position = base_position + index + 1
     identifier = Enum.at(task_identifiers, index)
 
-    prepared_attrs = prepare_task_attrs(attrs, next_position)
+    prepared_attrs = attrs |> TaskType.blank_to_nil() |> prepare_task_attrs(next_position)
 
     prepared_attrs = convert_index_based_dependencies(prepared_attrs, task_identifiers)
 
@@ -446,23 +451,6 @@ defmodule Kanban.Tasks.Creation do
   end
 
   defp emit_task_creation_telemetry(error, _column), do: error
-
-  defp get_task_type_from_attrs(attrs) do
-    cond do
-      Map.has_key?(attrs, :type) ->
-        normalize_type(attrs[:type])
-
-      Map.has_key?(attrs, "type") ->
-        normalize_type(attrs["type"])
-
-      true ->
-        :work
-    end
-  end
-
-  defp normalize_type(type) when is_atom(type), do: type
-  defp normalize_type(type) when is_binary(type), do: String.to_existing_atom(type)
-  defp normalize_type(_), do: :work
 
   defp prepare_task_attrs(attrs, position) do
     has_string_keys? = Map.keys(attrs) |> Enum.any?(&is_binary/1)

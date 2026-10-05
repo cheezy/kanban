@@ -725,6 +725,8 @@ When creating tasks via the API, use this JSON structure:
 }
 ```
 
+### Task Types
+
 **⚠️ CRITICAL: Valid Field Values**
 
 - **`type`**: MUST be one of: `"work"`, `"defect"`, or `"goal"` (strings, not atoms)
@@ -732,6 +734,19 @@ When creating tasks via the API, use this JSON structure:
   - `"defect"` - Bug fixes, error corrections
   - `"goal"` - Container for multiple related tasks (25+ hours)
   - ❌ Invalid: `"task"`, `"bug"`, `"feature"`, `null`, or any other value
+  - Values are exact: lowercase, no surrounding whitespace, so `"Work"` and
+    `" work"` are invalid too, as is an empty string. Omitting the `type` key
+    creates a `"work"` task.
+  - An invalid type is rejected with HTTP 422 and nothing is created:
+    `POST /api/tasks` returns `{"errors": {"type": ["is invalid"]}}` (or
+    `["can't be blank"]` for `null` or a blank string), and
+    `POST /api/tasks/batch` returns the
+    same message under `details.type` with the failing goal's `index`. See
+    [POST /api/tasks](api/post_tasks.md#task-type-values) and
+    [POST /api/tasks/batch](api/post_tasks_batch.md#unprocessable-entity-422).
+  - Exception: a goal's own top-level `type` is ignored when it carries child
+    `tasks` (and for every entry in `POST /api/tasks/batch`) — the request
+    always creates a goal. Each child task's `type` is still validated as above.
 
 - **`complexity`**: `"small"`, `"medium"`, or `"large"`
 - **`priority`**: `"low"`, `"medium"`, `"high"`, or `"critical"`

@@ -925,6 +925,167 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
   end
 
+  describe "unrecognised task type returns 422, never 500 (D352)" do
+    # Creation.normalize_type/1 used to call String.to_existing_atom/1 on the
+    # client-supplied type, so a string with no existing atom raised
+    # ArgumentError and returned 500. Every invalid type now returns the
+    # standard 422 envelope and persists nothing.
+    defp d352_unique_type, do: "no_such_type_d352_#{System.unique_integer([:positive])}"
+
+    defp d352_titles(conn) do
+      conn
+      |> get(~p"/api/tasks")
+      |> json_response(200)
+      |> Map.fetch!("data")
+      |> Enum.map(& &1["title"])
+    end
+
+    test "POST /api/tasks with an unrecognised type returns 422, not 500", %{conn: conn} do
+      unique = d352_unique_type()
+
+      for type <- ["bug", "task", unique] do
+        title = "D352 single #{type}"
+        resp = post(conn, ~p"/api/tasks", task: %{"title" => title, "type" => type})
+
+        body = json_response(resp, 422)
+        assert body["errors"]["type"] == ["is invalid"]
+        assert Map.has_key?(body, "documentation")
+        # The raw client value is not reflected back. Checked with the unique
+        # value only: "task" is a substring of the documentation URL.
+        refute inspect(body) =~ unique
+        refute title in d352_titles(conn)
+      end
+    end
+
+    test "POST /api/tasks rejects case/whitespace variants and non-string types",
+         %{conn: conn} do
+      for type <- ["Work", " work", "DEFECT", 42, %{"v" => "work"}] do
+        resp = post(conn, ~p"/api/tasks", task: %{"title" => "D352 variant", "type" => type})
+        assert %{"errors" => %{"type" => [_]}} = json_response(resp, 422)
+      end
+
+      for type <- [nil, "", "   "] do
+        resp = post(conn, ~p"/api/tasks", task: %{"title" => "D352 null", "type" => type})
+        assert %{"errors" => %{"type" => ["can't be blank"]}} = json_response(resp, 422)
+      end
+
+      refute "D352 variant" in d352_titles(conn)
+      refute "D352 null" in d352_titles(conn)
+    end
+
+    test "POST /api/tasks with an oversized type returns 422 without leaking DB text",
+         %{conn: conn} do
+      oversized = String.duplicate("a", 256)
+
+      resp =
+        post(conn, ~p"/api/tasks", task: %{"title" => "D352 oversized", "type" => oversized})
+
+      body = json_response(resp, 422)
+      assert body["errors"]["type"] == ["is invalid"]
+
+      rendered = inspect(body)
+      refute rendered =~ "Postgrex"
+      refute rendered =~ "22001"
+      refute rendered =~ oversized
+      refute "D352 oversized" in d352_titles(conn)
+    end
+
+    test "POST /api/tasks still creates work, defect and goal types after the type-normalisation fix",
+         %{conn: conn} do
+      for type <- ["work", "defect", "goal"] do
+        resp = post(conn, ~p"/api/tasks", task: %{"title" => "D352 ok #{type}", "type" => type})
+        assert json_response(resp, 201)["data"]["type"] == type
+      end
+    end
+
+    test "invalid type in a nested child and in POST /api/tasks/batch returns 422 and persists nothing",
+         %{conn: conn} do
+      for bad_type <- ["bug", d352_unique_type(), nil] do
+        nested =
+          post(conn, ~p"/api/tasks",
+            task: %{
+              "title" => "D352 nested goal",
+              "type" => "goal",
+              "tasks" => [
+                %{"title" => "D352 nested ok", "type" => "work"},
+                %{"title" => "D352 nested bad", "type" => bad_type}
+              ]
+            }
+          )
+
+        assert %{"errors" => %{"type" => [_]}} = json_response(nested, 422)
+      end
+
+      batch =
+        post(conn, ~p"/api/tasks/batch",
+          goals: [
+            %{
+              "title" => "D352 batch goal 0",
+              "type" => "goal",
+              "tasks" => [%{"title" => "D352 batch ok 0", "type" => "work"}]
+            },
+            %{
+              "title" => "D352 batch goal 1",
+              "type" => "goal",
+              "tasks" => [
+                %{"title" => "D352 batch ok 1", "type" => "work"},
+                %{"title" => "D352 batch bad 1", "type" => d352_unique_type()}
+              ]
+            }
+          ]
+        )
+
+      assert %{"error" => error, "index" => 1, "details" => details} = json_response(batch, 422)
+      assert error =~ "Failed to create goal at index 1"
+      assert details["type"] == ["is invalid"]
+
+      titles = d352_titles(conn)
+
+      for title <- ["D352 nested goal", "D352 nested ok", "D352 nested bad"] do
+        refute title in titles
+      end
+
+      # The batch is not atomic across goals: goal 0 persists, goal 1 and all of
+      # its children roll back together.
+      assert "D352 batch goal 0" in titles
+      refute "D352 batch goal 1" in titles
+      refute "D352 batch ok 1" in titles
+      refute "D352 batch bad 1" in titles
+    end
+
+    test "POST /api/tasks with children ignores an invalid top-level type and creates a goal",
+         %{conn: conn} do
+      resp =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "D352 nested top-level type",
+            "type" => "bug",
+            "tasks" => [%{"title" => "D352 nested top-level child", "type" => "work"}]
+          }
+        )
+
+      assert %{"goal" => %{"type" => "goal"}, "child_tasks" => [_]} = json_response(resp, 201)
+    end
+
+    test "POST /api/tasks/batch with an invalid goal-level type ignores it and creates a goal",
+         %{conn: conn} do
+      resp =
+        post(conn, ~p"/api/tasks/batch",
+          goals: [
+            %{
+              "title" => "D352 goal-level type",
+              "type" => "bug",
+              "tasks" => [%{"title" => "D352 goal-level child", "type" => "work"}]
+            }
+          ]
+        )
+
+      assert %{"goals" => [%{"goal" => goal}]} = json_response(resp, 201)
+      assert goal["type"] == "goal"
+      assert goal["identifier"] =~ ~r/^G\d+$/
+    end
+  end
+
   describe "POST /api/tasks/batch" do
     test "returns 403 for a read-only board member (D154)", %{board: board, user: owner} do
       reader = user_fixture()

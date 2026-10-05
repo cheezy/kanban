@@ -152,6 +152,7 @@
       "post": {
         "operationId": "createTask",
         "summary": "Create a task, or a goal with nested child tasks",
+        "description": "`type` must be exactly `work`, `defect` or `goal` (lowercase, no surrounding whitespace); an omitted `type` key defaults to `work`. Any other value, including `null`, an empty or whitespace-only string, a number, a case variant such as `Work`, or a mistaken name such as `bug` or `task`, is rejected with a 422 whose `errors.type` names the problem, and nothing is persisted. When `tasks` is non-empty the request always creates a goal and the top-level `type` is ignored, but every child's `type` is validated the same way: one invalid child type rejects the whole request, goal included.",
         "tags": [
           "Creation"
         ],
@@ -190,7 +191,34 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "422": {
-            "$ref": "#/components/responses/Unprocessable"
+            "description": "Validation failed. Nothing is persisted. An unrecognised `type` reports `errors.type: [\"is invalid\"]`; a `null`, empty or whitespace-only type reports `can't be blank`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  ]
+                },
+                "examples": {
+                  "invalidType": {
+                    "summary": "Unrecognised task type",
+                    "value": {
+                      "errors": {
+                        "type": [
+                          "is invalid"
+                        ]
+                      },
+                      "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#task-types"
+                    }
+                  }
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -321,6 +349,7 @@
       "post": {
         "operationId": "batchCreateGoals",
         "summary": "Create several goals with nested tasks",
+        "description": "Goals are created one at a time and processing stops at the first goal that fails; goals before it stay created. Each goal is created with its children in one transaction. A child task `type` must be exactly `work`, `defect` or `goal`; an invalid child type returns 422 with the failing goal's `index` (the child's position is not reported) and `details.type`, and neither that goal nor any of its children is persisted. A goal's own `type` is ignored: every top-level entry is created as a goal.",
         "tags": [
           "Creation"
         ],
@@ -368,7 +397,35 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "422": {
-            "$ref": "#/components/responses/Unprocessable"
+            "description": "Validation failed for the goal at `index`, or the root key was not `goals`. Goals before `index` were created; the failing goal and its children were not.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  ]
+                },
+                "examples": {
+                  "invalidChildType": {
+                    "summary": "Invalid child task type in the second goal",
+                    "value": {
+                      "error": "Failed to create goal at index 1",
+                      "index": 1,
+                      "details": {
+                        "type": [
+                          "is invalid"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
