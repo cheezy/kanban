@@ -2,7 +2,7 @@
 
 This roadmap describes what is coming to Stride and what has recently shipped. Items are listed in the order we plan to deliver them. Plans can change as we learn, so treat anything not yet marked complete as a direction rather than a promise.
 
-**Status key:** ✅ Complete · 🔜 Planned · 🔄 Ongoing
+**Status key:** ✅ Complete · 🚧 In progress · 🔜 Planned · 🔄 Ongoing
 
 ---
 
@@ -24,12 +24,12 @@ Stride tells people when something needs their attention instead of waiting for 
 - A weekly digest email summarising board activity, the review queue and what was finished.
 - Available in every language Stride supports.
 
-## 🔜 Developer integrations
+## 🚧 Developer integrations
 
 Plug Stride into the tools teams and agents already use.
 
-- A task API that pages through large boards and filters results, with no change for existing integrations.
-- A published, machine-readable OpenAPI description of the Stride API, so client libraries can be generated.
+- ✅ A task API that pages through large boards and filters results, with no change for existing integrations.
+- ✅ A published, machine-readable OpenAPI description of the Stride API, so client libraries can be generated.
 - Outbound webhooks for task events: signed, retried automatically, with a delivery log and a test button.
 - Slack notifications for board activity.
 - GitHub integration that links pull requests to tasks by their identifier, shows pull request and CI status on task cards and in the task view, and moves a task to a chosen column when its pull request merges.
