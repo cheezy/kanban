@@ -30,6 +30,10 @@
     },
     {
       "name": "Creation"
+    },
+    {
+      "name": "MCP",
+      "description": "Model Context Protocol server over Streamable HTTP. See docs/MCP.md."
     }
   ],
   "paths": {
@@ -1308,6 +1312,204 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/mcp": {
+      "post": {
+        "operationId": "mcpMessage",
+        "summary": "Send MCP JSON-RPC messages",
+        "description": "Model Context Protocol endpoint (Streamable HTTP transport, JSON responses only, stateless: no session id and no SSE stream). The body is one JSON-RPC 2.0 message or a batch of them. Methods: initialize, ping, tools/list, tools/call, and any notification (accepted and ignored). The tools wrap the task API and run the same validation as the REST endpoints; the tool list and arguments are in docs/MCP.md. A request is authenticated before any JSON-RPC handling, so a missing or invalid token is a plain 401. JSON-RPC errors: -32700 parse error and -32600 invalid request answer 400 with a JSON-RPC body (a malformed JSON body on this endpoint is answered after authentication with -32700, not with the generic 400 body); -32601 method not found and -32602 invalid params answer 200. A tool failure is a 200 result with isError true, whose text is the REST error body plus error_code and http_status.",
+        "tags": [
+          "MCP"
+        ],
+        "parameters": [
+          {
+            "name": "MCP-Protocol-Version",
+            "in": "header",
+            "required": false,
+            "description": "Negotiated MCP protocol version. An unsupported value answers 400.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2025-11-25",
+                "2025-06-18",
+                "2025-03-26",
+                "2024-11-05"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/JsonRpcMessage"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/JsonRpcMessage"
+                    },
+                    "minItems": 1,
+                    "maxItems": 50
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The JSON-RPC response, or an array of responses for a batch.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/JsonRpcResponse"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/JsonRpcResponse"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "The body held only notifications or responses. No body."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The Origin header names another origin (DNS-rebinding protection).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "get": {
+        "operationId": "mcpOpenStream",
+        "summary": "Open an MCP SSE stream (not supported)",
+        "description": "The server never opens a server-to-client SSE stream. Always answers 405 (after authentication; an Accept of text/event-stream is accepted here so an SSE probe gets the 405, not a 406) with an Allow: POST header and a JSON-RPC error body; documented so every routed verb is in this file.",
+        "tags": [
+          "MCP"
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The Origin header names another origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed.",
+            "headers": {
+              "Allow": {
+                "description": "Always POST.",
+                "schema": {
+                  "type": "string",
+                  "const": "POST"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "mcpEndSession",
+        "summary": "End an MCP session (not supported)",
+        "description": "The server is stateless and issues no session to end. Always answers 405 (after authentication; an Accept of text/event-stream is accepted here so an SSE probe gets the 405, not a 406) with an Allow: POST header and a JSON-RPC error body; documented so every routed verb is in this file.",
+        "tags": [
+          "MCP"
+        ],
+        "responses": {
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "The Origin header names another origin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed.",
+            "headers": {
+              "Allow": {
+                "description": "Always POST.",
+                "schema": {
+                  "type": "string",
+                  "const": "POST"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
           },
           "406": {
             "$ref": "#/components/responses/NotAcceptable"
@@ -2997,6 +3199,70 @@
           "agent_name": {
             "type": "string",
             "description": "Agent display name for created_by_agent attribution."
+          }
+        }
+      },
+      "JsonRpcMessage": {
+        "type": "object",
+        "required": [
+          "jsonrpc"
+        ],
+        "properties": {
+          "jsonrpc": {
+            "const": "2.0"
+          },
+          "id": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "JsonRpcResponse": {
+        "type": "object",
+        "required": [
+          "jsonrpc",
+          "id"
+        ],
+        "properties": {
+          "jsonrpc": {
+            "const": "2.0"
+          },
+          "id": {
+            "type": [
+              "string",
+              "integer",
+              "null"
+            ]
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              },
+              "data": {}
+            }
           }
         }
       }

@@ -26,6 +26,9 @@ defmodule KanbanWeb.API.OpenApiContractTest do
   @http_methods ~w(get put post delete patch head options trace)
   @spec_file "priv/openapi/stride-api.json"
 
+  # W2231: routed only so that they can answer 405 Method Not Allowed.
+  @method_not_allowed_only [{"get", "/api/mcp"}, {"delete", "/api/mcp"}]
+
   setup_all do
     raw = File.read!(OpenApiSpec.path())
     %{raw: raw, spec: Jason.decode!(raw)}
@@ -202,11 +205,24 @@ defmodule KanbanWeb.API.OpenApiContractTest do
     test "every operation has at least one 2xx response", %{spec: spec} do
       without_2xx =
         for {method, path, op} <- spec_operations(spec),
+            {method, path} not in @method_not_allowed_only,
             not (op |> Map.get("responses", %{}) |> Map.keys() |> Enum.any?(&success_code?/1)) do
           "#{String.upcase(method)} #{path}"
         end
 
       assert without_2xx == []
+    end
+
+    # W2231: GET and DELETE /api/mcp are routed only to answer 405 (no SSE
+    # stream, no session), so they are the one documented exception to the
+    # 2xx rule above — and must document exactly that.
+    test "the 405-only MCP operations document a 405 and no 2xx", %{spec: spec} do
+      for {method, path} <- @method_not_allowed_only do
+        responses = get_in(spec, ["paths", path, method, "responses"])
+
+        assert Map.has_key?(responses, "405"), "#{method} #{path} must document its 405"
+        refute responses |> Map.keys() |> Enum.any?(&success_code?/1)
+      end
     end
 
     # D351: every /api route sits behind `plug :accepts, ["json"]`, so every

@@ -140,6 +140,26 @@ defmodule KanbanWeb.Router do
     get "/tasks/:id/tree", TaskController, :tree
     get "/tasks/:id/after_goal_status", TaskController, :after_goal_status
     resources "/tasks", TaskController, only: [:index, :show, :create, :update]
+
+    # Model Context Protocol over Streamable HTTP (W2231), behind the same
+    # Bearer-token pipeline as the task API.
+    post "/mcp", McpController, :handle
+  end
+
+  pipeline :mcp_event_stream_accept do
+    plug KanbanWeb.Plugs.McpEventStreamAccept
+  end
+
+  # GET and DELETE /api/mcp answer 405: the MCP server opens no SSE stream and
+  # keeps no session. A client probing for the stream sends
+  # Accept: text/event-stream, which :api's accepts plug would refuse with 406
+  # before the 405, so this scope lets that one Accept value through first
+  # (W2231). Authentication is the same :api pipeline.
+  scope "/api", KanbanWeb.API, as: :api do
+    pipe_through [:api_json, :mcp_event_stream_accept, :api]
+
+    get "/mcp", McpController, :method_not_allowed
+    delete "/mcp", McpController, :method_not_allowed
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

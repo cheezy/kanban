@@ -187,6 +187,9 @@ When you add a route under `/api` in `lib/kanban_web/router.ex`:
    every `/api` route rejects a non-JSON `Accept` header, and
    `"400": { "$ref": "#/components/responses/BadRequest" }`, because every
    `/api` route rejects a query string or body that cannot be parsed.
+   The one exception to the 2xx rule is a verb routed only to answer `405`
+   (today `GET` and `DELETE /api/mcp`). List it in `@method_not_allowed_only`
+   in the contract test and document its `405` response.
 2. If the path contains `{id}`, put
    `"parameters": [{ "$ref": "#/components/parameters/TaskId" }]` on the path
    item. It is already there if the path item exists.

@@ -7,8 +7,8 @@ defmodule KanbanWeb.API.TaskController do
   alias Kanban.Tasks
   alias KanbanWeb.API.BatchGoalCreation
   alias KanbanWeb.API.ChangedFilesTransport
-  alias KanbanWeb.API.CompletionResultGate
   alias KanbanWeb.API.ErrorDocs
+  alias KanbanWeb.API.TaskActions
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskFieldsProjection
   alias KanbanWeb.API.TaskJSON
@@ -18,13 +18,6 @@ defmodule KanbanWeb.API.TaskController do
   require Logger
 
   action_fallback KanbanWeb.API.FallbackController
-
-  # D360: Postgrex encodes a bigint parameter only inside the signed 64-bit
-  # range and raises DBConnection.EncodeError (a 500) for anything outside it.
-  # Integer.parse/1 is unbounded, so a parsed task id or column_id is checked
-  # against this range before it can reach a query. Zero and negatives inside
-  # the range keep their existing path (lookup, then 404).
-  @bigint_range -9_223_372_036_854_775_808..9_223_372_036_854_775_807
 
   # W2057: the view is resolved from the request once, here, and applied at
   # render only — the board scoping and the query underneath are identical in
@@ -39,7 +32,7 @@ defmodule KanbanWeb.API.TaskController do
     # before, so the unpaginated response stays byte-identical.
     cond do
       TaskListParams.paginated?(params) ->
-        list_board_tasks_page(conn, board, params, view)
+        list_board_tasks_page(conn, params)
 
       params["column_id"] ->
         list_tasks_by_column_id(conn, board, params["column_id"], view)
@@ -83,48 +76,10 @@ defmodule KanbanWeb.API.TaskController do
     render(conn, :index, tasks: tasks, response_view: view)
   end
 
-  # W2224: every param is validated before any query runs, and the board id
-  # from the token is the first constraint of the page query, so neither a
-  # crafted cursor nor another board's parent identifier can widen the scope.
-  defp list_board_tasks_page(conn, board, params, view) do
-    with {:ok, page} <- TaskListParams.parse(params),
-         {:ok, column_filter} <- page_column_filter(board, params["column_id"]) do
-      render_task_page(conn, board, page, column_filter, view)
-    else
-      {:error, :not_found} ->
-        TaskErrors.handle_task_error(conn, {:error, :not_found})
-
-      {:error, message} when is_binary(message) ->
-        TaskErrors.error_response(conn, :bad_request, message, :invalid_param)
-    end
-  end
-
-  defp render_task_page(conn, board, page, column_filter, view) do
-    filters = page |> TaskListParams.filters() |> Map.merge(column_filter)
-    opts = [limit: page.limit, after_id: page.cursor]
-    {tasks, next_id} = Tasks.list_board_tasks_page(board.id, filters, opts)
-    meta = %{next_cursor: TaskListParams.encode_cursor(next_id), limit: page.limit}
-
-    emit_telemetry(conn, :task_listed, %{count: length(tasks)})
-    render(conn, :index, tasks: tasks, response_view: view, page_meta: meta)
-  end
-
-  defp page_column_filter(_board, nil), do: {:ok, %{}}
-
-  defp page_column_filter(board, raw_column_id) do
-    case parse_id(raw_column_id) do
-      {:ok, column_id} -> board_column_filter(board, column_id)
-      :error -> {:error, "Invalid column_id: must be an integer"}
-    end
-  end
-
-  # Same board-scoped lookup as the legacy column_id branch, so a cross-board
-  # and a nonexistent column id produce the same 404 in both modes.
-  defp board_column_filter(board, column_id) do
-    case column_for_board(column_id, board.id) do
-      nil -> {:error, :not_found}
-      column -> {:ok, %{column_id: column.id}}
-    end
+  # W2224: the paginated mode lives in TaskActions.list_page/2, shared with the
+  # MCP stride_list_tasks tool (W2231).
+  defp list_board_tasks_page(conn, params) do
+    respond(conn, TaskActions.list_page(conn, params))
   end
 
   # W2076: fields resolution runs before the task is fetched — validation is
@@ -142,23 +97,19 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp show_task(conn, id_or_identifier, board, params, fields) do
+  # nil fields = no projection requested: the legacy render, byte-identical
+  # to the pre-W2076 path, shared with the MCP stride_get_task tool (W2231).
+  # A validated fields list renders the projection and deliberately threads
+  # no response_view assign — the two are mutually exclusive at resolve/1.
+  defp show_task(conn, id_or_identifier, _board, params, nil) do
+    respond(conn, TaskActions.get_task(conn, id_or_identifier, params))
+  end
+
+  defp show_task(conn, id_or_identifier, board, _params, fields) do
     case fetch_and_verify_task(id_or_identifier, board) do
-      {:ok, task} -> render_show(conn, task, params, fields)
+      {:ok, task} -> render(conn, :show, task: task, fields: fields)
       error -> TaskErrors.handle_task_error(conn, error)
     end
-  end
-
-  # nil fields = no projection requested: the legacy render, byte-identical
-  # to the pre-W2076 path. A validated fields list renders the projection
-  # and deliberately threads no response_view assign — the two are mutually
-  # exclusive at resolve/1.
-  defp render_show(conn, task, params, nil) do
-    render(conn, :show, task: task, response_view: view_for(params))
-  end
-
-  defp render_show(conn, task, _params, fields) do
-    render(conn, :show, task: task, fields: fields)
   end
 
   # (W2094) The echo is capped: every name is still counted, but at most
@@ -335,14 +286,7 @@ defmodule KanbanWeb.API.TaskController do
   # mass-assignment filtering already apply; this rejects a token whose user lost
   # :owner/:modify access but that escaped revocation.
   defp authorize_board_write(conn) do
-    board = conn.assigns.current_board
-    %{id: user_id} = conn.assigns.current_user
-
-    if Boards.get_user_access(board.id, user_id) in [:owner, :modify] do
-      :ok
-    else
-      {:error, :not_authorized_write}
-    end
+    TaskActions.authorize_board_write(conn.assigns.current_board, conn.assigns.current_user)
   end
 
   defp resolve_column_and_create(conn, board, column_id, task_params, creator) do
@@ -528,236 +472,33 @@ defmodule KanbanWeb.API.TaskController do
     |> json(error_response)
   end
 
-  def next(conn, params) do
-    board = conn.assigns.current_board
-    user = conn.assigns.current_user
-    api_token = conn.assigns.api_token
-    agent_capabilities = api_token.agent_capabilities || []
+  # W2231: next, claim and complete delegate to TaskActions, which the MCP
+  # tools call too, so both transports share one validation path.
+  def next(conn, params), do: respond(conn, TaskActions.next_task(conn, params))
 
-    case Tasks.get_next_task(agent_capabilities, board.id, user.id) do
-      nil ->
-        conn
-        |> put_status(:not_found)
-        |> json(%{error: "No tasks available in Ready column matching your capabilities"})
+  def claim(conn, params), do: respond(conn, TaskActions.claim(conn, params))
 
-      task ->
-        emit_telemetry(conn, :next_task_fetched, %{task_id: task.id, priority: task.priority})
-
-        render(conn, :show,
-          task: task,
-          agent_skills_version: params["skills_version"],
-          response_view: view_for(params)
-        )
-    end
-  end
-
-  def claim(conn, params) do
-    board = conn.assigns.current_board
-    user = conn.assigns.current_user
-    api_token = conn.assigns.api_token
-    agent_capabilities = api_token.agent_capabilities || []
-    task_identifier = params["identifier"]
-    agent_name = params["agent_name"] || "Unknown"
-    before_doing_result = params["before_doing_result"]
-    agent_skills_version = params["skills_version"]
-
-    stamp_agent_identity(conn, params)
-
-    agent = %{
-      capabilities: agent_capabilities,
-      name: agent_name,
-      api_token: api_token,
-      skills_version: agent_skills_version
-    }
-
-    case Kanban.Hooks.Validator.validate_hook_execution(before_doing_result, "before_doing",
-           blocking: true
-         ) do
-      :ok ->
-        proceed_with_claim(conn, user, board, task_identifier, agent)
-
-      {:error, reason} ->
-        TaskErrors.handle_hook_validation_error(conn, "before_doing", reason)
-    end
-  end
-
-  defp proceed_with_claim(conn, user, board, task_identifier, agent) do
-    case Tasks.claim_next_task(agent.capabilities, user, board.id, task_identifier, agent.name) do
-      {:ok, task, hook_info} ->
-        render_claimed_task(conn, task, hook_info, task_identifier, agent)
-
-      {:error, :no_tasks_available} ->
-        handle_no_tasks_available(conn, task_identifier)
-
-      {:error, :assigned_to_other_user} ->
-        handle_assigned_to_other_user(conn, task_identifier)
-
-      {:error, :not_authorized} ->
-        TaskErrors.error_response(
-          conn,
-          :forbidden,
-          "You do not have write access to claim tasks on this board",
-          :not_authorized_to_claim
-        )
-
-      {:error, reason} ->
-        handle_unexpected_claim_error(conn, reason,
-          task_identifier: task_identifier,
-          agent_name: agent.name
-        )
-    end
-  end
-
-  defp render_claimed_task(conn, task, hook_info, task_identifier, agent) do
-    emit_telemetry(conn, :task_claimed, %{
-      task_id: task.id,
-      priority: task.priority,
-      api_token_id: agent.api_token.id,
-      specific_task: !!task_identifier
-    })
-
-    render(conn, :show,
-      task: task,
-      hook: hook_info,
-      agent_skills_version: agent.skills_version
-    )
-  end
-
-  # Logs the underlying reason server-side (changeset internals, internal
-  # atoms, database errors, etc.) and returns a stable user-facing body
-  # so the response does not leak implementation detail to API clients.
+  # Logs the underlying reason server-side and returns a stable user-facing
+  # body so the response does not leak implementation detail to API clients.
   # Exposed for testing.
   @doc false
   def handle_unexpected_claim_error(conn, reason, metadata) do
-    Logger.error(
-      "claim_next_task catch-all error: #{inspect(reason)}",
-      Keyword.put(metadata, :reason, inspect(reason))
-    )
-
-    conn
-    |> put_status(:internal_server_error)
-    |> json(unexpected_claim_error_body())
+    TaskActions.log_unexpected_claim_error(reason, metadata)
+    TaskErrors.render_error(conn, :claim_failed)
   end
 
   @doc false
-  def unexpected_claim_error_body do
-    %{
-      error: "internal_server_error",
-      message: "Failed to claim task. Please retry; if the failure persists, contact support."
-    }
-  end
+  defdelegate unexpected_claim_error_body, to: TaskErrors
 
   def complete(conn, %{"id" => id_or_identifier} = params) do
-    board = conn.assigns.current_board
-    user = conn.assigns.current_user
-
-    stamp_agent_identity(conn, params)
-
-    with {:ok, task} <- fetch_and_verify_task(id_or_identifier, board),
-         :ok <- validate_complete_preconditions(task, params) do
-      proceed_with_complete(conn, task, user, params, build_complete_agent(conn, params))
-    else
-      error -> TaskErrors.handle_task_error(conn, error)
-    end
+    respond(conn, TaskActions.complete(conn, id_or_identifier, params))
   end
 
-  # D137: remember the token's last-seen agent identity from the raw request
-  # param — never the "Unknown" fallback the claim/complete paths default to.
-  # Best-effort: a failed stamp never fails the parent request.
-  defp stamp_agent_identity(conn, params) do
-    ApiTokens.stamp_last_agent_name(conn.assigns.api_token, params["agent_name"])
-  end
-
-  defp validate_complete_preconditions(task, params) do
-    with :ok <- validate_hook(params["after_doing_result"], "after_doing"),
-         :ok <- validate_hook(params["before_review_result"], "before_review") do
-      gate_completion_results(task, params)
-    end
-  end
-
-  defp build_complete_agent(conn, params) do
-    %{
-      name: params["agent_name"] || "Unknown",
-      api_token: conn.assigns.api_token,
-      skills_version: params["skills_version"]
-    }
-  end
-
-  # W2054: the single resolution point for the opt-in slim response view, so
-  # no action hand-rolls the decision and the gate stays auditable in one
-  # place. Only the exact string "slim" opts in — absent, "full", malformed
-  # and unrecognised values all resolve to :full, because a crash on an
-  # unexpected param is a worse failure than a fat response. The value is
-  # attacker-controllable and is therefore matched as a literal string and
-  # never converted with String.to_atom/1, which would be an atom-exhaustion
-  # vector. Exposed for testing.
   @doc false
-  def view_for(params) do
-    case params["response_view"] do
-      "slim" -> :slim
-      _ -> :full
-    end
-  end
+  defdelegate view_for(params), to: TaskActions
 
-  defp gate_completion_results(task, params) do
-    metadata = [task_id: task.id, agent_name: params["agent_name"]]
-
-    case CompletionResultGate.gate(params, task: task, metadata: metadata) do
-      :ok -> :ok
-      {:warn, _failures} -> :ok
-      {:reject, body} -> {:error, {:completion_validation_failed, body}}
-    end
-  end
-
-  defp proceed_with_complete(conn, task, user, params, agent) do
-    params_with_agent = maybe_add_completed_by_agent(params, agent.api_token, agent.name)
-
-    case Tasks.complete_task(task, user, params_with_agent, agent.name) do
-      {:ok, task, hooks} ->
-        render_completed_task(conn, task, hooks, agent, view_for(params))
-
-      {:error, :invalid_status} ->
-        TaskErrors.error_response(
-          conn,
-          :unprocessable_entity,
-          "Task must be in progress or blocked to complete",
-          :invalid_status_for_complete
-        )
-
-      {:error, :not_authorized} ->
-        TaskErrors.error_response(
-          conn,
-          :forbidden,
-          "You can only complete tasks that you are assigned to",
-          :not_authorized_to_complete
-        )
-
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> render(:error, changeset: changeset)
-    end
-  end
-
-  # W2059: the view is resolved from the request but applied HERE, on the
-  # success path only — Tasks.complete_task/4 has already authorized and
-  # persisted the completion, so the choice cannot widen what a caller reads
-  # and cannot change what is validated or stored. Both branches are handed the
-  # SAME assigns, so `hooks` (which stride-hook.sh reads for before_review and
-  # after_goal detection) and the skills-version keys ride along either way.
-  defp render_completed_task(conn, task, hooks, agent, view) do
-    emit_telemetry(conn, :task_completed, %{
-      task_id: task.id,
-      time_spent_minutes: task.time_spent_minutes
-    })
-
-    assigns = [task: task, hooks: hooks, agent_skills_version: agent.skills_version]
-
-    case view do
-      :slim -> render(conn, :ack, assigns)
-      :full -> render(conn, :show, assigns)
-    end
-  end
+  defp respond(conn, {:ok, template, assigns}), do: render(conn, template, assigns)
+  defp respond(conn, {:error, reason}), do: TaskErrors.render_error(conn, reason)
 
   def put_changed_files(conn, %{"id" => id_or_identifier} = params) do
     # Accept the wrapped {changed_files: [...]} shape (canonical), a top-level
@@ -1123,54 +864,12 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp get_task_by_id_or_identifier(id_or_identifier, board) do
-    case Integer.parse(id_or_identifier) do
-      {id, ""} when id in @bigint_range ->
-        # Board-scope the numeric-id lookup so a cross-board id and a
-        # nonexistent id both resolve to nil → 404. Fetching globally and
-        # letting verify_board_ownership distinguish them downstream returned
-        # 403 for a cross-board id vs 404 for a missing one — a task-existence
-        # oracle (D160), the same class W399 closed for column lookups.
-        if Tasks.get_task_for_board(id, board.id), do: Tasks.get_task_for_view(id)
+  defp fetch_and_verify_task(id_or_identifier, board),
+    do: TaskActions.fetch_task(id_or_identifier, board)
 
-      {_out_of_range_id, ""} ->
-        # D360: a whole number no task id can hold is simply "not found" —
-        # the same nil (and so the same 404 body) as a missing in-range id,
-        # decided without a query and without trying the identifier branch.
-        nil
+  defp validate_hook(result, hook_name), do: TaskActions.validate_hook(result, hook_name)
 
-      _ ->
-        # It's an identifier like "W14"
-        columns = Columns.list_columns(board)
-        column_ids = Enum.map(columns, & &1.id)
-
-        Tasks.get_task_by_identifier_for_view(id_or_identifier, column_ids)
-    end
-  end
-
-  defp fetch_task_by_id_or_identifier(id_or_identifier, board) do
-    case get_task_by_id_or_identifier(id_or_identifier, board) do
-      nil -> {:error, :not_found}
-      task -> {:ok, task}
-    end
-  end
-
-  defp fetch_and_verify_task(id_or_identifier, board) do
-    with {:ok, task} <- fetch_task_by_id_or_identifier(id_or_identifier, board),
-         :ok <- verify_board_ownership(task, board) do
-      {:ok, task}
-    end
-  end
-
-  defp verify_board_ownership(%{column: %{board_id: board_id}}, %{id: board_id}), do: :ok
-  defp verify_board_ownership(_, _), do: {:error, :forbidden}
-
-  defp validate_hook(result, hook_name) do
-    case Kanban.Hooks.Validator.validate_hook_execution(result, hook_name, blocking: true) do
-      :ok -> :ok
-      {:error, reason} -> {:error, {:hook_failed, hook_name, reason}}
-    end
-  end
+  defp stamp_agent_identity(conn, params), do: TaskActions.stamp_agent_identity(conn, params)
 
   @doc false
   def build_task_params_with_creator(task_params, user, api_token, agent_name) do
@@ -1263,18 +962,7 @@ defmodule KanbanWeb.API.TaskController do
   # actions share them. render_task_summary/1 is also exposed for the same caller
   # but is no longer owned here — it delegates to KanbanWeb.API.TaskJSON.
   @doc false
-  def emit_telemetry(conn, event_name, metadata) do
-    :telemetry.execute(
-      [:kanban, :api, event_name],
-      %{count: 1},
-      Map.merge(metadata, %{
-        board_id: conn.assigns.current_board.id,
-        user_id: conn.assigns.current_user.id,
-        path: conn.request_path,
-        method: conn.method
-      })
-    )
-  end
+  defdelegate emit_telemetry(conn, event_name, metadata), to: TaskActions
 
   # The summary shape itself lives in KanbanWeb.API.TaskJSON, which owns it.
   # This delegate exists solely so KanbanWeb.API.BatchGoalCreation, which calls
@@ -1312,53 +1000,6 @@ defmodule KanbanWeb.API.TaskController do
       ApiTokens.usable_agent_name?(api_token.last_agent_name) -> api_token.last_agent_name
       true -> nil
     end
-  end
-
-  defp maybe_add_completed_by_agent(task_params, api_token, agent_name) do
-    case api_token.agent_model do
-      nil -> Map.put(task_params, "completed_by_agent", agent_name)
-      agent_model -> Map.put(task_params, "completed_by_agent", "ai_agent:#{agent_model}")
-    end
-  end
-
-  defp handle_no_tasks_available(conn, task_identifier) do
-    error_message =
-      if task_identifier do
-        "Task '#{task_identifier}' is not available to claim. It may be blocked by dependencies, already claimed, require capabilities you don't have, or not exist on this board."
-      else
-        "No tasks available to claim matching your capabilities. All tasks in Ready column are either blocked, already claimed, or require capabilities you don't have."
-      end
-
-    error_response =
-      ErrorDocs.add_docs_to_error(
-        %{error: error_message},
-        if(task_identifier, do: :task_not_claimable, else: :no_tasks_available),
-        identifier: task_identifier
-      )
-
-    conn
-    |> put_status(:conflict)
-    |> json(error_response)
-  end
-
-  defp handle_assigned_to_other_user(conn, task_identifier) do
-    error_message =
-      if task_identifier do
-        "Task '#{task_identifier}' is assigned to a different user. Only the assigned user can claim it."
-      else
-        "This task is assigned to a different user. Only the assigned user can claim it."
-      end
-
-    error_response =
-      ErrorDocs.add_docs_to_error(
-        %{error: error_message},
-        :assigned_to_other_user,
-        identifier: task_identifier
-      )
-
-    conn
-    |> put_status(:forbidden)
-    |> json(error_response)
   end
 
   defp reject_column_change(conn, task) do
@@ -1478,24 +1119,8 @@ defmodule KanbanWeb.API.TaskController do
 
   defp actor_user_id(conn), do: conn.assigns[:current_user] && conn.assigns.current_user.id
 
-  # D360: board-scoped column lookup that answers nil, the same as a missing
-  # or cross-board column, for a well-formed integer outside the bigint range,
-  # so it 404s instead of raising in Postgrex. parse_id/1 stays unbounded on
-  # purpose: its :error means "not an integer" (a 400), which an out-of-range
-  # integer is not.
-  defp column_for_board(column_id, board_id) when column_id in @bigint_range,
-    do: Columns.get_column_for_board(column_id, board_id)
+  defp column_for_board(column_id, board_id),
+    do: TaskActions.column_for_board(column_id, board_id)
 
-  defp column_for_board(_out_of_range_column_id, _board_id), do: nil
-
-  defp parse_id(id) when is_integer(id), do: {:ok, id}
-
-  defp parse_id(id) when is_binary(id) do
-    case Integer.parse(id) do
-      {int_id, ""} -> {:ok, int_id}
-      _ -> :error
-    end
-  end
-
-  defp parse_id(_), do: :error
+  defp parse_id(id), do: TaskActions.parse_id(id)
 end

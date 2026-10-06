@@ -21,6 +21,10 @@ defmodule KanbanWeb.Plugs.Parsers do
   leaves this plug with no format set, so the router decides the format as
   before, and an unrouted `/api` path still renders its HTML 404. Non-`/api`
   paths are passed straight to `Plug.Parsers` and never get the pin.
+
+  One exception (W2231): a malformed JSON body on `POST /api/mcp` is not
+  raised but flagged, so the MCP endpoint can answer it with a JSON-RPC
+  `-32700` after authentication — see `parse_api/2`.
   """
   @behaviour Plug
 
@@ -29,7 +33,7 @@ defmodule KanbanWeb.Plugs.Parsers do
 
   @impl Plug
   def call(%Plug.Conn{path_info: ["api" | _]} = conn, opts) do
-    Plug.Parsers.call(conn, opts)
+    parse_api(conn, opts)
   catch
     kind, reason ->
       conn
@@ -38,4 +42,27 @@ defmodule KanbanWeb.Plugs.Parsers do
   end
 
   def call(conn, opts), do: Plug.Parsers.call(conn, opts)
+
+  # W2231: a malformed JSON body on POST /api/mcp must be answered with a
+  # JSON-RPC -32700 Parse error, and only AFTER authentication (an
+  # unauthenticated request gets the 401 before any JSON-RPC handling). So
+  # for that one route, and only for `Plug.Parsers.ParseError`, the failure is
+  # recorded in `conn.private[:kanban_mcp_parse_error]` instead of raised: the
+  # body is replaced with an empty map (nothing downstream sees the bytes),
+  # the second `Plug.Parsers.call/2` takes its already-parsed clause and only
+  # merges the query params, and the request continues to the router, where
+  # the `:api` pipeline authenticates it and `KanbanWeb.API.McpController`
+  # answers -32700. Every other failure on that route — an oversized body
+  # (413), an unsupported content type (415), a malformed query string — still
+  # raises through the `catch` above exactly as for every other /api path.
+  defp parse_api(%Plug.Conn{method: "POST", path_info: ["api", "mcp"]} = conn, opts) do
+    Plug.Parsers.call(conn, opts)
+  rescue
+    Plug.Parsers.ParseError ->
+      %{conn | body_params: %{}}
+      |> Plug.Parsers.call(opts)
+      |> Plug.Conn.put_private(:kanban_mcp_parse_error, true)
+  end
+
+  defp parse_api(conn, opts), do: Plug.Parsers.call(conn, opts)
 end

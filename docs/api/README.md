@@ -9,7 +9,7 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
 3. [Workflow Overview](#workflow-overview)
 4. [Hook System](#hook-system)
 5. [Completion Validation (explorer_result, reviewer_result, workflow_steps)](#completion-validation-explorer_result-reviewer_result-workflow_steps)
-6. [API Endpoints](#api-endpoints) (including the [OpenAPI specification](#api-specification))
+6. [API Endpoints](#api-endpoints) (including the [OpenAPI specification](#api-specification) and the [MCP server](#mcp-server))
 7. [Errors](#errors) (including [Documentation links in error bodies](#documentation-links-in-error-bodies), [400 for a malformed query string or body](#400-for-a-malformed-query-string-or-body), [406 Not Acceptable](#406-not-acceptable) and [404 for out-of-range numeric IDs](#404-for-out-of-range-numeric-ids))
 8. [Configuration Files](#configuration-files)
 9. [Examples](#examples)
@@ -243,6 +243,10 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 
 - [GET /api/openapi.json](get_openapi_json.md) — Machine-readable OpenAPI 3.1 description of every `/api` route (no auth required). Use it for client generation, API viewers and MCP tool schemas; a router contract test keeps it in sync with the code
 
+### MCP Server
+
+- [POST /api/mcp](../MCP.md) — Model Context Protocol server (Streamable HTTP, JSON-RPC 2.0, JSON responses only). MCP clients such as Claude Code call the task API through six schema-validated tools: next task, claim, complete, get task, list tasks and add comment. Claims and completions go through the same validation as the REST endpoints. `GET` and `DELETE /api/mcp` return `405`. Setup and the tool reference are in [MCP.md](../MCP.md)
+
 ### Task Discovery
 
 - [GET /api/tasks/next](get_tasks_next.md) — Get next available task matching your capabilities
@@ -288,6 +292,8 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 | PUT | `/api/tasks/:id/changed_files` | Upload per-file diff snapshot (sole writer) | No |
 | PATCH | `/api/tasks/:id/mark_done` | Bypass review, mark done | No |
 | PATCH | `/api/tasks/:id/mark_reviewed` | Finalize review | `after_review`* |
+| POST | `/api/mcp` | MCP server: JSON-RPC over Streamable HTTP | Through its claim and complete tools |
+| GET, DELETE | `/api/mcp` | Not supported, returns `405` | No |
 
 *`after_review` hook is only returned when the task is automatically moved to Done (`needs_review=false` or review approved).
 
@@ -354,6 +360,10 @@ A body over the 8 MB parser limit gets a `413` with the same shape:
   "message": "The request body is too large."
 }
 ```
+
+`POST /api/mcp` is the one exception for a body that is not valid JSON. It
+authenticates the request first, then answers with a JSON-RPC `-32700` Parse
+error body, still with status `400`. See [MCP.md](../MCP.md#errors).
 
 Some endpoints also return a `400` of their own for a parameter that parses but
 is invalid, such as a non-integer `column_id`. Those bodies carry an `error`

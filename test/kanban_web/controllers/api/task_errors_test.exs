@@ -88,4 +88,66 @@ defmodule KanbanWeb.API.TaskErrorsTest do
       assert body |> Map.keys() |> Enum.sort() == ["common_causes", "documentation", "error"]
     end
   end
+
+  describe "error_body/1 (W2231)" do
+    test "translates the claim and complete reasons with their API error codes" do
+      assert {:not_found, :no_tasks_available,
+              %{error: "No tasks available in Ready column" <> _}} =
+               TaskErrors.error_body(:no_next_task)
+
+      assert {:conflict, :no_tasks_available, %{error: "No tasks available to claim" <> _}} =
+               TaskErrors.error_body({:no_tasks_available, nil})
+
+      assert {:conflict, :task_not_claimable, %{error: "Task 'W1' is not available" <> _}} =
+               TaskErrors.error_body({:no_tasks_available, "W1"})
+
+      assert {:forbidden, :assigned_to_other_user, %{error: "Task 'W1' is assigned" <> _}} =
+               TaskErrors.error_body({:assigned_to_other_user, "W1"})
+
+      assert {:forbidden, :assigned_to_other_user, %{error: "This task is assigned" <> _}} =
+               TaskErrors.error_body({:assigned_to_other_user, nil})
+
+      assert {:forbidden, :not_authorized_to_claim, _} =
+               TaskErrors.error_body(:not_authorized_to_claim)
+
+      assert {:unprocessable_entity, :invalid_status_for_complete, _} =
+               TaskErrors.error_body(:invalid_status_for_complete)
+
+      assert {:forbidden, :not_authorized_to_complete, _} =
+               TaskErrors.error_body(:not_authorized_to_complete)
+
+      assert {:bad_request, :invalid_param, %{error: "bad limit"}} =
+               TaskErrors.error_body({:invalid_param, "bad limit"})
+
+      assert {:internal_server_error, :internal_server_error, body} =
+               TaskErrors.error_body(:claim_failed)
+
+      assert body == TaskErrors.unexpected_claim_error_body()
+    end
+
+    test "a hook failure carries the required format" do
+      assert {:unprocessable_entity, :hook_validation_failed, body} =
+               TaskErrors.error_body({:hook_failed, "after_doing", "exit_code is required"})
+
+      assert body.hook == "after_doing"
+      assert Map.has_key?(body.required_format, "after_doing_result")
+    end
+
+    test "a changeset renders the TaskJSON validation body" do
+      changeset =
+        {%{}, %{content: :string}}
+        |> Ecto.Changeset.cast(%{}, [:content])
+        |> Ecto.Changeset.validate_required([:content])
+
+      assert {:unprocessable_entity, :validation_error, %{errors: %{content: [_]}}} =
+               TaskErrors.error_body(changeset)
+    end
+
+    test "render_error/2 renders exactly the error_body/1 status and body" do
+      conn = :get |> conn("/") |> TaskErrors.render_error(:not_found)
+
+      assert conn.status == 404
+      assert Jason.decode!(conn.resp_body) == %{"error" => "Task not found"}
+    end
+  end
 end
