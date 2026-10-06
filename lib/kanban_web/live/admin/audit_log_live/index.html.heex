@@ -1,0 +1,102 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
+    <.header>
+      {gettext("Audit Log")}
+      <:subtitle>
+        {gettext("Security events recorded on this instance, newest first. Times are in UTC.")}
+      </:subtitle>
+      <:actions>
+        <.button id="audit-log-export-csv" href={export_path(@filter_params, "csv")}>
+          <.icon name="hero-arrow-down-tray" class="size-4" />
+          {gettext("Export CSV")}
+        </.button>
+        <.button id="audit-log-export-json" href={export_path(@filter_params, "json")}>
+          <.icon name="hero-arrow-down-tray" class="size-4" />
+          {gettext("Export JSON")}
+        </.button>
+      </:actions>
+    </.header>
+
+    <.form
+      for={@form}
+      id="audit-log-filters"
+      phx-change="filter"
+      phx-submit="filter"
+      class="mt-6 grid grid-cols-1 gap-x-4 sm:grid-cols-2 lg:grid-cols-4"
+    >
+      <.input
+        field={@form[:action]}
+        type="select"
+        label={gettext("Action")}
+        prompt={gettext("All actions")}
+        options={@actions}
+      />
+      <.input
+        field={@form[:actor_email]}
+        type="email"
+        label={gettext("Actor email")}
+        phx-debounce="400"
+        autocomplete="off"
+      />
+      <.input field={@form[:from]} type="date" label={gettext("From (UTC)")} />
+      <.input field={@form[:to]} type="date" label={gettext("To (UTC)")} />
+    </.form>
+
+    <div :if={@filter_params != %{}} class="mt-2">
+      <.link id="audit-log-clear-filters" patch={~p"/admin/audit-log"} class="text-sm underline">
+        {gettext("Clear filters")}
+      </.link>
+    </div>
+
+    <section class="mt-6">
+      <p :if={@empty?} id="audit-log-empty" style="color: var(--ink-2);">
+        {gettext("No audit events match these filters.")}
+      </p>
+
+      <div :if={!@empty?} class="overflow-x-auto">
+        <.table id="audit-events" rows={@streams.events}>
+          <:col :let={{_id, event}} label={gettext("Time (UTC)")}>
+            <span class="whitespace-nowrap tabular-nums text-base-content">
+              {format_time(event.inserted_at)}
+            </span>
+          </:col>
+          <:col :let={{_id, event}} label={gettext("Action")}>
+            <span class="badge badge-ghost whitespace-nowrap">{event.action}</span>
+          </:col>
+          <:col :let={{_id, event}} label={gettext("Actor")}>
+            <span class="break-all text-base-content">{actor_label(event)}</span>
+          </:col>
+          <:col :let={{_id, event}} label={gettext("IP")}>
+            <span class="whitespace-nowrap tabular-nums" style="color: var(--ink-2);">
+              {event.ip}
+            </span>
+          </:col>
+          <:col :let={{_id, event}} label={gettext("Details")}>
+            <pre class="min-w-48 max-w-xl whitespace-pre-wrap break-all font-mono text-xs text-base-content">{metadata_json(event.metadata)}</pre>
+          </:col>
+        </.table>
+      </div>
+
+      <nav
+        :if={@paged? or @next_cursor}
+        aria-label={gettext("Audit log pages")}
+        class="mt-6 flex gap-2"
+      >
+        <.button
+          :if={@paged?}
+          id="audit-log-newest"
+          patch={index_path(@filter_params)}
+        >
+          {gettext("Newest")}
+        </.button>
+        <.button
+          :if={@next_cursor}
+          id="audit-log-next-page"
+          patch={index_path(Map.put(@filter_params, "cursor", @next_cursor))}
+        >
+          {gettext("Older events")}
+        </.button>
+      </nav>
+    </section>
+  </div>
+</Layouts.app>

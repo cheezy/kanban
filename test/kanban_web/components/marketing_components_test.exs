@@ -202,6 +202,34 @@ defmodule KanbanWeb.MarketingComponentsTest do
                :binary.match(html, ~s|href="/admin/errors"|)
     end
 
+    test "Audit Log follows User Admin in both the desktop nav and mobile menu for admins" do
+      assigns = %{current_scope: %{user: %{email: "admin@example.com", type: :admin}}}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+
+      assert html =~ "Audit Log"
+      assert href_count(html, "/admin/audit-log") == 2
+
+      assert :binary.match(html, ~s|href="/admin/audit-log"|) >
+               :binary.match(html, ~s|href="/admin/users"|)
+    end
+
+    test "non-admin and signed-out visitors never see the Audit Log link" do
+      for scope <- [%{user: %{email: "member@example.com", type: :member}}, nil] do
+        assigns = %{current_scope: scope}
+
+        html =
+          rendered_to_string(~H"""
+          <MarketingComponents.marketing_nav current_scope={@current_scope} />
+          """)
+
+        assert href_count(html, "/admin/audit-log") == 0
+      end
+    end
+
     test "non-admin and signed-out visitors never see the User Admin link" do
       for scope <- [%{user: %{email: "member@example.com", type: :member}}, nil] do
         assigns = %{current_scope: scope}

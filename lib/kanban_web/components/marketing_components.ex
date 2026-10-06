@@ -114,6 +114,13 @@ defmodule KanbanWeb.MarketingComponents do
           >
             {gettext("User Admin")}
           </.link>
+          <.link
+            href={~p"/admin/audit-log"}
+            class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
+            style="color: var(--ink-2);"
+          >
+            {gettext("Audit Log")}
+          </.link>
         <% end %>
         <.link
           href={~p"/users/log-out"}
@@ -297,6 +304,12 @@ defmodule KanbanWeb.MarketingComponents do
           class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
         >
           {gettext("User Admin")}
+        </.link>
+        <.link
+          href={~p"/admin/audit-log"}
+          class="flex items-center min-h-11 px-4 text-[14px] hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+        >
+          {gettext("Audit Log")}
         </.link>
       <% end %>
       <.link

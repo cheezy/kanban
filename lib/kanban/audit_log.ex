@@ -34,6 +34,8 @@ defmodule Kanban.AuditLog do
   import Ecto.Query, warn: false
 
   alias Kanban.AuditLog.AuditEvent
+  alias Kanban.AuditLog.Export
+  alias Kanban.AuditLog.Query
   alias Kanban.Repo
 
   require Logger
@@ -57,6 +59,9 @@ defmodule Kanban.AuditLog do
   @max_bigint 9_223_372_036_854_775_807
 
   @default_limit 100
+  @default_page_size 50
+  @max_page_size 200
+  @export_batch_size 500
 
   @doc """
   Emit a security audit event. `action` is a stable atom (e.g. `:login_failed`);
@@ -75,14 +80,19 @@ defmodule Kanban.AuditLog do
   end
 
   @doc """
-  Lists stored audit events, newest first by default.
+  Lists stored audit events, newest first by default, with each event's actor
+  user preloaded (`nil` when there is none or it was deleted).
 
   `filters`:
 
     * `:action` — only events with this action (atom or string).
     * `:actor_user_id` — only events whose actor is this user id.
+    * `:actor_email` — only events whose actor's email, or whose recorded
+      `email` metadata, equals this (case-insensitive, exact).
     * `:since` / `:until` — only events inserted at or after / before this
       `DateTime`.
+    * `:cursor` — a decoded keyset cursor `{inserted_at, id}`; only events
+      older than that position (meaningful with the default `:desc` order).
 
   `opts`:
 
@@ -92,14 +102,90 @@ defmodule Kanban.AuditLog do
   @spec list_events(keyword(), keyword()) :: [AuditEvent.t()]
   def list_events(filters \\ [], opts \\ []) do
     filters
-    |> events_query(Keyword.get(opts, :order, :desc))
+    |> Query.events(Keyword.get(opts, :order, :desc))
+    |> Query.with_actor()
     |> limit(^Keyword.get(opts, :limit, @default_limit))
     |> Repo.all()
   end
 
   @doc """
+  One newest-first page of events for the admin viewer, paginated by keyset
+  (never by offset).
+
+  Takes the same `filters` as `list_events/2`. `opts`:
+
+    * `:cursor` — a decoded cursor (see `Kanban.AuditLog.Query.decode_cursor/1`);
+      `nil` starts at the newest event.
+    * `:limit` — page size, clamped to 1..#{@max_page_size} (default #{@default_page_size}).
+
+  Returns `%{entries: events, next_cursor: encoded | nil}`; `next_cursor` is
+  `nil` on the last page.
+  """
+  @spec list_events_page(keyword(), keyword()) :: %{
+          entries: [AuditEvent.t()],
+          next_cursor: String.t() | nil
+        }
+  def list_events_page(filters \\ [], opts \\ []) do
+    page_size = opts |> Keyword.get(:limit, @default_page_size) |> clamp_page_size()
+
+    rows =
+      filters
+      |> Keyword.put(:cursor, Keyword.get(opts, :cursor))
+      |> list_events(limit: page_size + 1)
+
+    {entries, rest} = Enum.split(rows, page_size)
+    next_cursor = if rest != [], do: entries |> List.last() |> Query.encode_cursor()
+
+    %{entries: entries, next_cursor: next_cursor}
+  end
+
+  @doc """
+  The distinct action names stored so far, alphabetically — the choices for
+  the viewer's action filter.
+  """
+  @spec list_actions() :: [String.t()]
+  def list_actions do
+    from(e in AuditEvent, distinct: true, select: e.action, order_by: e.action)
+    |> Repo.all()
+  end
+
+  @doc """
+  A lazy stream of export chunks (iodata) for every event matching `filters`,
+  newest first, as `:csv` (header line then rows) or `:json` (one array of
+  objects).
+
+  Events are fetched in keyset batches of `:batch_size` (default
+  #{@export_batch_size}) as the stream is consumed, so an export never loads
+  the whole table and holds no transaction or connection while the response
+  is being sent. Events inserted after the export starts are newer than its
+  first batch and are therefore not included.
+  """
+  @spec export_stream(keyword(), :csv | :json, keyword()) :: Enumerable.t()
+  def export_stream(filters, format, opts \\ []) when format in [:csv, :json] do
+    batch_size = Keyword.get(opts, :batch_size, @export_batch_size)
+
+    {:after, nil}
+    |> Stream.unfold(fn
+      :done -> nil
+      {:after, cursor} -> next_export_batch(filters, cursor, batch_size)
+    end)
+    |> Export.encode_stream(format)
+  end
+
+  defp next_export_batch(filters, cursor, batch_size) do
+    case list_events(Keyword.put(filters, :cursor, cursor), limit: batch_size) do
+      [] -> nil
+      batch when length(batch) < batch_size -> {batch, :done}
+      batch -> {batch, {:after, batch |> List.last() |> keyset_position()}}
+    end
+  end
+
+  defp keyset_position(%AuditEvent{inserted_at: at, id: id}), do: {at, id}
+
+  @doc """
   Streams stored audit events matching `filters` (see `list_events/2`), for
-  exports too large to load at once.
+  exports too large to load at once. The actor is not preloaded (streams do not
+  support preloads).
 
   Like every `Repo.stream/2`, the stream must be enumerated inside a
   `Repo.transaction/2`. `opts` accepts `:order` (default `:asc`, oldest first)
@@ -108,31 +194,12 @@ defmodule Kanban.AuditLog do
   @spec stream_events(keyword(), keyword()) :: Enum.t()
   def stream_events(filters \\ [], opts \\ []) do
     filters
-    |> events_query(Keyword.get(opts, :order, :asc))
+    |> Query.events(Keyword.get(opts, :order, :asc))
     |> Repo.stream(max_rows: Keyword.get(opts, :max_rows, 500))
   end
 
-  defp events_query(filters, order) when order in [:asc, :desc] do
-    query = Enum.reduce(filters, from(e in AuditEvent), &apply_filter/2)
-    order_by(query, [e], [{^order, e.inserted_at}, {^order, e.id}])
-  end
-
-  defp apply_filter({:action, action}, query) when is_atom(action) and not is_nil(action),
-    do: apply_filter({:action, Atom.to_string(action)}, query)
-
-  defp apply_filter({:action, action}, query) when is_binary(action),
-    do: where(query, [e], e.action == ^action)
-
-  defp apply_filter({:actor_user_id, id}, query) when is_integer(id),
-    do: where(query, [e], e.actor_user_id == ^id)
-
-  defp apply_filter({:since, %DateTime{} = since}, query),
-    do: where(query, [e], e.inserted_at >= ^since)
-
-  defp apply_filter({:until, %DateTime{} = until}, query),
-    do: where(query, [e], e.inserted_at < ^until)
-
-  defp apply_filter({_key, nil}, query), do: query
+  defp clamp_page_size(size) when is_integer(size), do: size |> max(1) |> min(@max_page_size)
+  defp clamp_page_size(_size), do: @default_page_size
 
   defp sanitize(metadata) do
     metadata

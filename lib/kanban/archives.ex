@@ -18,6 +18,7 @@ defmodule Kanban.Archives do
 
   import Ecto.Query, warn: false
 
+  alias Kanban.CSV
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Tasks.Task
@@ -83,7 +84,8 @@ defmodule Kanban.Archives do
 
   Every field is RFC-4180 quoted/escaped and neutralized against CSV
   formula injection (a leading `=`, `+`, `-`, `@`, tab, or CR is prefixed
-  with a single quote so spreadsheet apps do not execute it).
+  with a single quote so spreadsheet apps do not execute it) by the shared
+  `Kanban.CSV` encoder.
   """
   @spec export_csv_for_board(integer()) :: binary()
   def export_csv_for_board(board_id) when is_integer(board_id) do
@@ -103,7 +105,7 @@ defmodule Kanban.Archives do
     header = Enum.map(@csv_headers, &to_string/1)
 
     [header | Enum.map(rows, &csv_row_fields/1)]
-    |> Enum.map_join("\r\n", &encode_csv_row/1)
+    |> CSV.encode()
     |> Kernel.<>("\r\n")
   end
 
@@ -220,32 +222,4 @@ defmodule Kanban.Archives do
 
   defp csv_archived_at(%DateTime{} = at), do: DateTime.to_iso8601(at)
   defp csv_archived_at(_), do: ""
-
-  defp encode_csv_row(fields), do: Enum.map_join(fields, ",", &encode_csv_field/1)
-
-  defp encode_csv_field(value) do
-    value
-    |> to_string()
-    |> neutralize_formula()
-    |> rfc4180_quote()
-  end
-
-  # OWASP CSV-injection guard: a cell beginning with a formula trigger is
-  # prefixed with a single quote so spreadsheet apps treat it as inert text.
-  defp neutralize_formula(<<first, _::binary>> = field)
-       when first in [?=, ?+, ?-, ?@, ?\t, ?\r] do
-    "'" <> field
-  end
-
-  defp neutralize_formula(field), do: field
-
-  # RFC-4180: quote fields containing a comma, double-quote, CR, or LF, and
-  # escape embedded double-quotes by doubling them.
-  defp rfc4180_quote(field) do
-    if String.contains?(field, [",", "\"", "\n", "\r"]) do
-      ~s("#{String.replace(field, "\"", "\"\"")}")
-    else
-      field
-    end
-  end
 end

@@ -9,6 +9,8 @@ defmodule Kanban.AuditLogTest do
 
   alias Kanban.AuditLog
   alias Kanban.AuditLog.AuditEvent
+  alias Kanban.AuditLog.Filters
+  alias Kanban.AuditLog.Query
 
   setup do
     original = Logger.level()
@@ -452,5 +454,242 @@ defmodule Kanban.AuditLogTest do
 
       assert {:ok, 3} = Repo.transact(fn -> {:ok, Enum.count(AuditLog.stream_events())} end)
     end
+  end
+
+  describe "list_events_page/2" do
+    setup do
+      base = ~U[2026-10-01 12:00:00.000000Z]
+      user = user_fixture(%{email: "actor-#{System.unique_integer([:positive])}@example.com"})
+
+      # Five events, the last two sharing a timestamp so ties must break on id.
+      e1 = insert_event!("login_failed", base, metadata: %{"email" => "Victim@Example.com"})
+      e2 = insert_event!("api_token_created", DateTime.add(base, 60), actor: user)
+
+      e3 =
+        insert_event!("login_failed", DateTime.add(base, 86_400),
+          metadata: %{"email" => "other@example.com"}
+        )
+
+      e4 = insert_event!("permission_denied", DateTime.add(base, 2 * 86_400), actor: user)
+      e5 = insert_event!("permission_denied", DateTime.add(base, 2 * 86_400), actor: user)
+
+      %{user: user, events: [e1, e2, e3, e4, e5], base: base}
+    end
+
+    test "returns the newest page first with the actor preloaded", %{events: events, user: user} do
+      %{entries: entries, next_cursor: nil} = AuditLog.list_events_page()
+
+      assert Enum.map(entries, & &1.id) == events |> Enum.reverse() |> Enum.map(& &1.id)
+      assert hd(entries).actor_user.email == user.email
+      assert List.last(entries).actor_user == nil
+    end
+
+    test "walks every row exactly once across keyset pages, ties broken by id",
+         %{events: events} do
+      ids = walk_pages([], nil, 2)
+
+      assert ids == events |> Enum.reverse() |> Enum.map(& &1.id)
+      assert ids == Enum.uniq(ids)
+    end
+
+    test "next_cursor is nil exactly on the last page" do
+      assert %{entries: [_, _, _, _], next_cursor: cursor} =
+               AuditLog.list_events_page([], limit: 4)
+
+      assert is_binary(cursor)
+
+      assert %{entries: [_], next_cursor: nil} =
+               AuditLog.list_events_page([], limit: 4, cursor: Query.decode_cursor(cursor))
+    end
+
+    test "clamps the page size to 1..200 and defaults a non-integer limit", %{events: events} do
+      assert %{entries: [_]} = AuditLog.list_events_page([], limit: 0)
+      assert %{entries: entries} = AuditLog.list_events_page([], limit: "x")
+      assert length(entries) == length(events)
+
+      # 205 more rows (210 in all): an oversized limit is capped at exactly 200
+      # and the page says there is more.
+      now = DateTime.utc_now()
+
+      Repo.insert_all(
+        AuditEvent,
+        for(
+          i <- 1..205,
+          do: %{action: "clamp_test", metadata: %{}, inserted_at: DateTime.add(now, i)}
+        )
+      )
+
+      assert %{entries: capped, next_cursor: cursor} =
+               AuditLog.list_events_page([], limit: 10_000)
+
+      assert length(capped) == 200
+      assert is_binary(cursor)
+    end
+
+    test "filters by action" do
+      %{entries: entries} = AuditLog.list_events_page(action: "login_failed")
+      assert Enum.all?(entries, &(&1.action == "login_failed"))
+      assert length(entries) == 2
+    end
+
+    test "filters by actor email case-insensitively, matching the actor or the recorded email",
+         %{user: user} do
+      %{entries: actor_entries} =
+        AuditLog.list_events_page(actor_email: String.upcase(user.email))
+
+      assert length(actor_entries) == 3
+      assert Enum.all?(actor_entries, &(&1.actor_user_id == user.id))
+
+      %{entries: [victim]} = AuditLog.list_events_page(actor_email: "victim@example.com")
+      assert victim.metadata["email"] == "Victim@Example.com"
+
+      assert %{entries: []} = AuditLog.list_events_page(actor_email: "%@example.com")
+    end
+
+    test "filters by an inclusive UTC date range", %{base: base} do
+      parsed = Filters.parse(%{"from" => "2026-10-02", "to" => "2026-10-02"})
+      %{entries: [only]} = AuditLog.list_events_page(parsed.filters)
+      assert DateTime.compare(only.inserted_at, DateTime.add(base, 86_400)) == :eq
+
+      parsed = Filters.parse(%{"to" => "2026-10-01"})
+      %{entries: first_day} = AuditLog.list_events_page(parsed.filters)
+      assert length(first_day) == 2
+    end
+
+    test "returns an empty page when nothing matches" do
+      assert AuditLog.list_events_page(action: "nothing_here") == %{entries: [], next_cursor: nil}
+    end
+  end
+
+  describe "list_events/2 with a :cursor filter" do
+    test "returns only rows older than the cursor position" do
+      base = ~U[2026-10-01 00:00:00.000000Z]
+      older = insert_event!("login_failed", base)
+      newer = insert_event!("login_failed", DateTime.add(base, 1))
+
+      assert [%{id: id}] = AuditLog.list_events(cursor: {newer.inserted_at, newer.id})
+      assert id == older.id
+    end
+  end
+
+  describe "list_actions/0" do
+    test "lists each stored action once, alphabetically" do
+      AuditLog.event(:sudo_mode_entered)
+      AuditLog.event(:login_failed)
+      AuditLog.event(:login_failed)
+
+      assert AuditLog.list_actions() == ["login_failed", "sudo_mode_entered"]
+    end
+  end
+
+  describe "export_stream/3" do
+    setup do
+      user = user_fixture()
+      base = ~U[2026-10-01 00:00:00.000000Z]
+
+      insert_event!("login_failed", base, metadata: %{"email" => "=cmd|' /C calc'!A0"})
+
+      insert_event!("api_token_created", DateTime.add(base, 1),
+        actor: user,
+        ip: "203.0.113.5",
+        metadata: %{"user_id" => user.id, "note" => ~s(say "hi",\nthen 日本 ✓)}
+      )
+
+      %{user: user}
+    end
+
+    test "CSV has a header then one neutralised, quoted row per event, newest first",
+         %{user: user} do
+      csv = [] |> AuditLog.export_stream(:csv) |> Enum.join()
+      [header, newest, oldest] = String.split(csv, "\r\n", trim: true)
+
+      assert header == "id,inserted_at,action,actor_user_id,actor_email,ip,metadata"
+      assert newest =~ ",api_token_created,#{user.id},#{user.email},203.0.113.5,"
+      assert oldest =~ ",login_failed,,,,"
+      # The metadata cell starts with "{" so it is not itself a formula, and the
+      # embedded formula text is inside a quoted JSON string.
+      refute oldest =~ ~r/(^|,)=/
+    end
+
+    test "CSV neutralises a cell that begins with a formula trigger" do
+      insert_event!("=SUM(A1)", ~U[2026-10-02 00:00:00.000000Z])
+
+      csv = [action: "=SUM(A1)"] |> AuditLog.export_stream(:csv) |> Enum.join()
+      assert csv =~ ",'=SUM(A1),"
+    end
+
+    test "JSON is a valid array of objects with metadata intact", %{user: user} do
+      json = [] |> AuditLog.export_stream(:json) |> Enum.join()
+
+      assert [newest, oldest] = Jason.decode!(json)
+      assert newest["action"] == "api_token_created"
+      assert newest["actor_email"] == user.email
+      assert newest["metadata"]["note"] == ~s(say "hi",\nthen 日本 ✓)
+      assert oldest["metadata"] == %{"email" => "=cmd|' /C calc'!A0"}
+      assert oldest["actor_email"] == nil
+    end
+
+    test "honours filters and returns an empty array / header-only CSV when nothing matches" do
+      assert [action: "nope"] |> AuditLog.export_stream(:json) |> Enum.join() == "[]"
+
+      assert [action: "nope"] |> AuditLog.export_stream(:csv) |> Enum.join() ==
+               "id,inserted_at,action,actor_user_id,actor_email,ip,metadata\r\n"
+
+      json = [action: "login_failed"] |> AuditLog.export_stream(:json) |> Enum.join()
+      assert [%{"action" => "login_failed"}] = Jason.decode!(json)
+    end
+
+    test "reads in keyset batches without losing or repeating rows" do
+      base = ~U[2026-10-03 00:00:00.000000Z]
+      for i <- 1..7, do: insert_event!("batch_test", DateTime.add(base, div(i, 2)))
+
+      json = [action: "batch_test"] |> AuditLog.export_stream(:json, batch_size: 2) |> Enum.join()
+      ids = json |> Jason.decode!() |> Enum.map(& &1["id"])
+
+      assert length(ids) == 7
+      assert ids == Enum.uniq(ids)
+
+      csv = [action: "batch_test"] |> AuditLog.export_stream(:csv, batch_size: 3) |> Enum.join()
+      assert csv |> String.split("\r\n", trim: true) |> length() == 8
+    end
+
+    test "ignores a cursor in the filters and always exports from the newest row" do
+      json =
+        [cursor: {~U[2000-01-01 00:00:00Z], 1}]
+        |> AuditLog.export_stream(:json)
+        |> Enum.join()
+
+      assert length(Jason.decode!(json)) == 2
+    end
+
+    test "a deleted actor keeps its id from the metadata and has no email", %{user: user} do
+      Repo.delete!(user)
+
+      json = [action: "api_token_created"] |> AuditLog.export_stream(:json) |> Enum.join()
+
+      assert [%{"actor_user_id" => id, "actor_email" => nil}] = Jason.decode!(json)
+      assert id == user.id
+    end
+  end
+
+  defp insert_event!(action, inserted_at, opts \\ []) do
+    actor = Keyword.get(opts, :actor)
+
+    Repo.insert!(%AuditEvent{
+      action: action,
+      inserted_at: inserted_at,
+      actor_user_id: actor && actor.id,
+      ip: Keyword.get(opts, :ip),
+      metadata: Keyword.get(opts, :metadata, %{})
+    })
+  end
+
+  defp walk_pages(acc, cursor, size) do
+    %{entries: entries, next_cursor: next} =
+      AuditLog.list_events_page([], limit: size, cursor: cursor)
+
+    acc = acc ++ Enum.map(entries, & &1.id)
+
+    if next, do: walk_pages(acc, Query.decode_cursor(next), size), else: acc
   end
 end

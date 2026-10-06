@@ -189,7 +189,12 @@ defmodule KanbanWeb.Router do
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/messages", MessageLive.Index, :index
       live "/users", UserLive.Index, :index
+      live "/audit-log", AuditLogLive.Index, :index
     end
+
+    # Same admin-only pipeline as the live_session above. `alias: false` keeps
+    # the controller's real module name (it is not under KanbanWeb.Admin).
+    get "/audit-log/export", KanbanWeb.AuditLogExportController, :export, alias: false
   end
 
   ## Authentication routes
