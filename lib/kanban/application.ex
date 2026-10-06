@@ -34,8 +34,22 @@ defmodule Kanban.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Kanban.Supervisor]
-    Supervisor.start_link(children, opts)
+
+    children
+    |> Supervisor.start_link(opts)
+    |> start_audit_log_boot_check()
   end
+
+  # Once the tree is up, check the audit log hardening off the boot path: the
+  # check runs under the task supervisor, is a no-op unless config/prod.exs
+  # sets :audit_log_boot_check, and never raises (Kanban.Release). The start
+  # result is returned unchanged either way.
+  defp start_audit_log_boot_check({:ok, _pid} = started) do
+    Task.Supervisor.start_child(Kanban.TaskSupervisor, Kanban.Release, :audit_log_boot_check, [])
+    started
+  end
+
+  defp start_audit_log_boot_check(other), do: other
 
   # Tell Phoenix to update the endpoint configuration
   # whenever the application is updated.

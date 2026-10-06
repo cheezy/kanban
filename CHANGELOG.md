@@ -5,6 +5,26 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.0] - 2026-10-06
+
+The security audit log can now be moved out of the application's reach: a separate owner role owns the table and its functions, retention runs through one owner-owned purge function, and an operator command finishes the job in production.
+
+### Added
+
+#### A separate owner role for the audit table
+
+The `audit_events` table, its id sequence, its append-only trigger function and their schema can now belong to `kanban_audit_owner`, a role that cannot log in and that the application can never assume. The application keeps only the right to insert and read events. Until now the application's own role owned the table, so it could disable or drop the trigger that protects it. A migration hardens the table when it runs as a superuser and otherwise logs why and carries on, so a deploy never fails for lack of privilege. `docs/audit-log-hardening.md` describes the statements and every reason a database can be reported as degraded.
+
+#### An owner-owned retention purge
+
+Old events are now removed only through the `audit_events_purge` database function. It refuses any cutoff newer than 90 days in the function body itself, so even a compromised application cannot erase recent history. In a hardened database it runs with the owner's rights and is the only way the application can delete a row; the old session flag that let a delete through is ignored there.
+
+#### A release command to harden production, and a boot warning while it is not
+
+Production runs its migrations as the application role, which cannot create the owner role, so the database stays degraded until an operator runs `Kanban.Release.harden_audit_log/0` once. It reads an admin database URL from `AUDIT_LOG_ADMIN_DATABASE_URL`, set only for that one command and never stored as a Fly secret, opens its own short-lived connection, and applies both hardening steps in one transaction. It refuses an admin URL whose user is the application role. `Kanban.Release.audit_log_status/0` reports whether the database is hardened. In production the app now logs one warning after boot when the audit log is degraded, naming the reasons; the check never blocks or crashes startup.
+
+**Deploy step:** after deploying this version, run the one-time provisioning step in `docs/audit-log-database-roles.md` against each production database. The `release_command` in `fly.production.toml` and `fly.review.toml` is unchanged. Later migrations that alter `audit_events` must run through the same admin path.
+
 ## [2.16.0] - 2026-10-05
 
 Agents and integrations can now page through a board's tasks and filter them on the server, and can discover the whole API from a machine-readable specification.

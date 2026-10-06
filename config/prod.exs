@@ -14,6 +14,11 @@ config :kanban, KanbanWeb.Endpoint,
 # (default false) so the session works over http.
 config :kanban, :session_cookie_secure, true
 
+# Check the audit log ownership hardening once after boot and log one warning
+# when it is degraded (Kanban.Release.audit_log_boot_check/1). Read at runtime;
+# dev and test leave it unset, so the check never runs there.
+config :kanban, :audit_log_boot_check, true
+
 # Configures Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Req
 
