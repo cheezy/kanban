@@ -7396,7 +7396,7 @@ msgid "Recent activity"
 msgstr "Letzte Aktivität"
 
 #: lib/kanban_web/components/agent_detail_panel.ex:317
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:78
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:79
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr "Keine"
@@ -9547,7 +9547,7 @@ msgstr "Bis (UTC)"
 msgid "Unsupported export format."
 msgstr "Nicht unterstütztes Exportformat."
 
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:76
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:77
 #, elixir-autogen, elixir-format
 msgid "User #%{id} (deleted)"
 msgstr "Benutzer #%{id} (gelöscht)"

@@ -7336,7 +7336,7 @@ msgid "Recent activity"
 msgstr "最近活动"
 
 #: lib/kanban_web/components/agent_detail_panel.ex:317
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:78
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:79
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr "无"
@@ -9476,7 +9476,7 @@ msgstr "结束日期 (UTC)"
 msgid "Unsupported export format."
 msgstr "不支持的导出格式。"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:76
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:77
 #, elixir-autogen, elixir-format
 msgid "User #%{id} (deleted)"
 msgstr "用户 #%{id}（已删除）"
