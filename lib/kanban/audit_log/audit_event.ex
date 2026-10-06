@@ -1,0 +1,35 @@
+defmodule Kanban.AuditLog.AuditEvent do
+  @moduledoc """
+  One persisted security audit event.
+
+  Rows are written only by `Kanban.AuditLog.event/2` and are append-only: a
+  database trigger rejects every `UPDATE` (except the foreign-key cascade that
+  nulls `actor_user_id` when a user is deleted) and every `DELETE`/`TRUNCATE`
+  that is not part of the retention purge. There is therefore no update
+  changeset — `insert_changeset/1` is the only way to build one.
+  """
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @type t :: %__MODULE__{}
+
+  schema "audit_events" do
+    field :action, :string
+    field :ip, :string
+    field :metadata, :map, default: %{}
+
+    belongs_to :actor_user, Kanban.Accounts.User
+
+    timestamps(type: :utc_datetime_usec, updated_at: false)
+  end
+
+  @doc false
+  def insert_changeset(attrs) do
+    %__MODULE__{}
+    |> cast(attrs, [:action, :actor_user_id, :ip, :metadata])
+    |> validate_required([:action])
+    |> validate_length(:action, max: 255, count: :codepoints)
+    |> validate_length(:ip, max: 255, count: :codepoints)
+    |> foreign_key_constraint(:actor_user_id)
+  end
+end

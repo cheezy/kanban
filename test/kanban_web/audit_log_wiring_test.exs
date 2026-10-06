@@ -10,6 +10,7 @@ defmodule KanbanWeb.AuditLogWiringTest do
   import Kanban.BoardsFixtures
 
   alias Kanban.ApiTokens
+  alias Kanban.AuditLog
 
   defp attach(action) do
     test_pid = self()
@@ -68,5 +69,44 @@ defmodule KanbanWeb.AuditLogWiringTest do
     |> get(~p"/api/tasks/next")
 
     assert_receive {:audit, %{reason: :not_found}}
+  end
+
+  describe "persistence through the real code paths" do
+    test "a failed login stores a :login_failed row with the email and ip, never the password",
+         %{conn: conn} do
+      email = unique_user_email()
+
+      post(conn, ~p"/users/log-in", %{
+        "user" => %{"email" => email, "password" => "wrong-password-value"}
+      })
+
+      assert [event] =
+               [action: :login_failed]
+               |> AuditLog.list_events()
+               |> Enum.filter(&(&1.metadata["email"] == email))
+
+      assert event.ip == "127.0.0.1"
+      assert event.actor_user_id == nil
+      refute inspect(event.metadata) =~ "wrong-password-value"
+      refute Map.has_key?(event.metadata, "password")
+    end
+
+    test "creating and revoking an API token store :api_token_created and :api_token_revoked rows" do
+      user = user_fixture()
+      board = board_fixture(user)
+
+      {:ok, {token, plain}} = ApiTokens.create_api_token(user, board, %{name: "Audit"})
+      {:ok, _} = ApiTokens.revoke_api_token(token)
+
+      assert [created] = AuditLog.list_events(action: :api_token_created, actor_user_id: user.id)
+      assert created.metadata["token_id"] == token.id
+      assert created.metadata["board_id"] == board.id
+
+      assert [revoked] = AuditLog.list_events(action: :api_token_revoked, actor_user_id: user.id)
+      assert revoked.metadata["token_id"] == token.id
+
+      refute inspect(created.metadata) =~ plain
+      refute inspect(revoked.metadata) =~ plain
+    end
   end
 end
