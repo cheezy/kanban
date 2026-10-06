@@ -7,9 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.17.0] - 2026-10-06
 
-The security audit log can now be moved out of the application's reach: a separate owner role owns the table and its functions, retention runs through one owner-owned purge function, and an operator command finishes the job in production.
+MCP clients such as Claude Code can now work Stride tasks through typed tools. Security audit events are now stored in the database, site admins can browse and export them, and the stored log can be moved out of the application's reach: a separate owner role owns the table and its functions, retention runs through one owner-owned purge function, and an operator command finishes the job in production.
 
 ### Added
+
+#### An MCP server at `/api/mcp`
+
+Stride now serves a Model Context Protocol server at `POST /api/mcp`, so MCP clients such as Claude Code can use Stride through schema-checked tools instead of hand-built `curl` commands. It offers six tools: `stride_next_task`, `stride_claim_task`, `stride_complete_task`, `stride_get_task`, `stride_list_tasks` and `stride_add_comment`. Each tool's arguments match the REST API's OpenAPI specification. Claims and completions run through the same code as the REST endpoints, so hook results, `reviewer_result` and the completion gate are checked exactly as before. Hooks still run on the agent's machine; the server never runs one. `stride_list_tasks` always returns one page of slim summaries unless asked for whole tasks, so a large board cannot flood an agent's context.
+
+The server speaks JSON-RPC 2.0 over Streamable HTTP and answers with JSON only. It opens no event stream and keeps no session, so `GET` and `DELETE /api/mcp` return `405`. It supports MCP protocol versions `2024-11-05` through `2025-11-25`. It uses the same API token as the REST API, acts as the token's user on the token's board, and counts failed authentication attempts toward the same rate limit. A request whose `Origin` header names any other site is refused with `403`, so a web page cannot drive the endpoint through a visitor's browser. A REST refusal comes back as a tool error carrying the same body plus `error_code` and `http_status`. `docs/MCP.md` covers setup in Claude Code and the full tool reference, and the API docs and OpenAPI specification now list the endpoint. REST responses are unchanged.
+
+#### A persisted, append-only audit trail
+
+Every security audit event is now also stored as a row in a new `audit_events` table, alongside the structured log line and telemetry event it already produced, so events can be queried, exported and kept. Each row records the action, the acting user, the IP address and the event's metadata. Values that look like credentials (passwords, raw tokens, secrets) are dropped before anything is logged or stored, and long values are cut to 2,000 characters.
+
+The table is append-only. A database trigger rejects every change to a stored row, every `TRUNCATE`, and every delete outside the retention purge. The one exception: deleting a user clears the actor link on their events but keeps the events, and the user's id stays in the metadata.
+
+Storing an event can never break the action being audited. If the insert fails, the failure is logged by action and error type only, never the values, and the caller carries on. Inside a transaction the insert runs under a savepoint, so a failed audit insert cannot roll back the caller's work. An event whose user no longer exists is stored without the actor link rather than lost.
+
+#### An audit log viewer and export for site admins
+
+Site admins have a new **/admin/audit-log** page, linked from the admin menu on desktop and mobile. It lists events newest first, 50 to a page, and filters by action, actor email, and a from and to date (whole UTC days, both inclusive). The filters live in the URL, so a filtered view can be bookmarked or shared with another admin. Filter values are checked strictly, and an invalid one is ignored rather than causing an error.
+
+The same filters drive a download as CSV or JSON from `/admin/audit-log/export`. Large exports stream from the database in batches instead of loading at once. CSV cells are guarded against spreadsheet formula injection, using the same encoder as the board archive export. Every export is itself recorded as an `audit_log_exported` event, with its format and filters, before the first byte is sent, so even an aborted download leaves a record. Only site admins can reach the page or the export.
 
 #### A separate owner role for the audit table
 
@@ -18,12 +38,6 @@ The `audit_events` table, its id sequence, its append-only trigger function and 
 #### An owner-owned retention purge
 
 Old events are now removed only through the `audit_events_purge` database function. It refuses any cutoff newer than 90 days in the function body itself, so even a compromised application cannot erase recent history. In a hardened database it runs with the owner's rights and is the only way the application can delete a row; the old session flag that let a delete through is ignored there.
-
-#### A release command to harden production, and a boot warning while it is not
-
-Production runs its migrations as the application role, which cannot create the owner role, so the database stays degraded until an operator runs `Kanban.Release.harden_audit_log/0` once. It reads an admin database URL from `AUDIT_LOG_ADMIN_DATABASE_URL`, set only for that one command and never stored as a Fly secret, opens its own short-lived connection, and applies both hardening steps in one transaction. It refuses an admin URL whose user is the application role. `Kanban.Release.audit_log_status/0` reports whether the database is hardened. In production the app now logs one warning after boot when the audit log is degraded, naming the reasons; the check never blocks or crashes startup.
-
-**Deploy step:** after deploying this version, run the one-time provisioning step in `docs/audit-log-database-roles.md` against each production database. The `release_command` in `fly.production.toml` and `fly.review.toml` is unchanged. Later migrations that alter `audit_events` must run through the same admin path.
 
 ## [2.16.0] - 2026-10-05
 

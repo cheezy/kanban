@@ -3,6 +3,179 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [2.17.0] - 2026-10-06
+        </h2>
+
+        <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          MCP clients such as Claude Code can now work Stride tasks through
+          typed tools. Security audit events are now stored in the
+          database, site admins can browse and export them, and the stored
+          log can be moved out of the application's reach: a separate owner
+          role owns the table and its functions, retention runs through one
+          owner-owned purge function, and an operator command finishes the
+          job in production.
+        </p>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              An MCP server at <code>/api/mcp</code>
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Stride now serves a Model Context Protocol server at
+              <code>POST /api/mcp</code>, so MCP clients such as Claude Code
+              can use Stride through schema-checked tools instead of
+              hand-built <code>curl</code> commands. It offers six tools:
+              <code>stride_next_task</code>, <code>stride_claim_task</code>,
+              <code>stride_complete_task</code>,
+              <code>stride_get_task</code>, <code>stride_list_tasks</code>
+              and <code>stride_add_comment</code>. Each tool's arguments
+              match the REST API's OpenAPI specification. Claims and
+              completions run through the same code as the REST endpoints,
+              so hook results, <code>reviewer_result</code> and the
+              completion gate are checked exactly as before. Hooks still run
+              on the agent's machine; the server never runs one.
+              <code>stride_list_tasks</code> always returns one page of slim
+              summaries unless asked for whole tasks, so a large board cannot
+              flood an agent's context.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The server speaks JSON-RPC 2.0 over Streamable HTTP and answers
+              with JSON only. It opens no event stream and keeps no session,
+              so <code>GET</code> and <code>DELETE /api/mcp</code> return
+              <code>405</code>. It supports MCP protocol versions
+              <code>2024-11-05</code> through <code>2025-11-25</code>. It
+              uses the same API token as the REST API, acts as the token's
+              user on the token's board, and counts failed authentication
+              attempts toward the same rate limit. A request whose
+              <code>Origin</code> header names any other site is refused with
+              <code>403</code>, so a web page cannot drive the endpoint
+              through a visitor's browser. A REST refusal comes back as a
+              tool error carrying the same body plus
+              <code>error_code</code> and <code>http_status</code>.
+              <code>docs/MCP.md</code> covers setup in Claude Code and the
+              full tool reference, and the API docs and OpenAPI specification
+              now list the endpoint. REST responses are unchanged.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              A persisted, append-only audit trail
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Every security audit event is now also stored as a row in a new
+              <code>audit_events</code> table, alongside the structured log
+              line and telemetry event it already produced, so events can be
+              queried, exported and kept. Each row records the action, the
+              acting user, the IP address and the event's metadata. Values
+              that look like credentials (passwords, raw tokens, secrets) are
+              dropped before anything is logged or stored, and long values
+              are cut to 2,000 characters.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The table is append-only. A database trigger rejects every
+              change to a stored row, every <code>TRUNCATE</code>, and every
+              delete outside the retention purge. The one exception: deleting
+              a user clears the actor link on their events but keeps the
+              events, and the user's id stays in the metadata.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Storing an event can never break the action being audited. If
+              the insert fails, the failure is logged by action and error type
+              only, never the values, and the caller carries on. Inside a
+              transaction the insert runs under a savepoint, so a failed
+              audit insert cannot roll back the caller's work. An event whose
+              user no longer exists is stored without the actor link rather
+              than lost.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              An audit log viewer and export for site admins
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Site admins have a new <strong>/admin/audit-log</strong> page,
+              linked from the admin menu on desktop and mobile. It lists
+              events newest first, 50 to a page, and filters by action, actor
+              email, and a from and to date (whole UTC days, both inclusive).
+              The filters live in the URL, so a filtered view can be
+              bookmarked or shared with another admin. Filter values are
+              checked strictly, and an invalid one is ignored rather than
+              causing an error.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The same filters drive a download as CSV or JSON from
+              <code>/admin/audit-log/export</code>. Large exports stream from
+              the database in batches instead of loading at once. CSV cells
+              are guarded against spreadsheet formula injection, using the
+              same encoder as the board archive export. Every export is
+              itself recorded as an <code>audit_log_exported</code> event,
+              with its format and filters, before the first byte is sent, so
+              even an aborted download leaves a record. Only site admins can
+              reach the page or the export.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              A separate owner role for the audit table
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The <code>audit_events</code> table, its id sequence, its
+              append-only trigger function and their schema can now belong to
+              <code>kanban_audit_owner</code>, a role that cannot log in and
+              that the application can never assume. The application keeps
+              only the right to insert and read events. Until now the
+              application's own role owned the table, so it could disable or
+              drop the trigger that protects it. A migration hardens the
+              table when it runs as a superuser and otherwise logs why and
+              carries on, so a deploy never fails for lack of privilege.
+              <code>docs/audit-log-hardening.md</code> describes the
+              statements and every reason a database can be reported as
+              degraded.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              An owner-owned retention purge
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Old events are now removed only through the
+              <code>audit_events_purge</code> database function. It refuses
+              any cutoff newer than 90 days in the function body itself, so
+              even a compromised application cannot erase recent history. In
+              a hardened database it runs with the owner's rights and is the
+              only way the application can delete a row; the old session flag
+              that let a delete through is ignored there.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.16.0] - 2026-10-05
         </h2>
 

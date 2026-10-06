@@ -42,7 +42,7 @@ privilege.
 |---|---|---|---|
 | Dev and test | A superuser (`postgres`) | Ownership moves, but the status names `app_role_is_superuser`, because the app connects as that same superuser | Off |
 | Review apps | The app role, through `release_command` | Degraded until the release command below is run against that database | On |
-| Production | The app role, through `release_command` | Degraded until the release command below is run once | On |
+| Production | The app role, through `release_command` | Degraded until the release command below is run once. On Fly Managed Postgres it stays degraded; see [Fly Managed Postgres](#fly-managed-postgres) | On |
 
 The boot check runs once after the application starts, off the boot path. When
 the status is degraded it logs one warning naming every reason, for example
@@ -59,6 +59,10 @@ exception type. It runs only where `config/prod.exs` sets
 Run this once per database, after the deploy that ships the hardening
 migrations. It is safe to run again: a second run changes nothing and reports
 `{:ok, :hardened}`.
+
+This step needs a superuser. A database on Fly Managed Postgres has none, so
+skip this section there and read [Fly Managed Postgres](#fly-managed-postgres)
+instead.
 
 1. **Get an admin credential** for the production database: a role that is a
    superuser on that cluster. Do **not** run `fly secrets set` with it. Every
@@ -147,15 +151,49 @@ rollback, and drop the purge function
 role, a rollback degrades instead and changes nothing. The owner role is never
 dropped, because other databases on the cluster may use it.
 
+## Fly Managed Postgres
+
+Production runs on Fly Managed Postgres, which gives no Postgres superuser.
+Its most privileged role, `schema_admin` (held by the default `fly-user`), can
+create and alter tables and functions but cannot do anything that needs a
+superuser, and a `CREATE ROLE` sent over a database connection is refused.
+Users and their roles are managed only through the Fly dashboard or
+`fly mpg users`.
+
+So the owner-role separation cannot be set up there:
+
+- `harden_audit_log` stops at its superuser check with
+  `{:error, :admin_not_superuser}` and changes nothing. Running it is harmless,
+  but do not expect it to succeed.
+- The database stays degraded, and the boot check logs its warning after
+  every boot. On such a database that warning is a known limitation, not a
+  missed step.
+
+What degraded mode still gives on Managed Postgres:
+
+- The append-only trigger rejects every update, except the cascade that clears
+  the actor link when a user is deleted, and every `TRUNCATE` sent through the
+  application's normal code paths.
+- The purge function still refuses a cutoff newer than 90 days.
+
+What it does not give: the application role owns `audit_events`, its trigger
+function and its purge function. A compromised application could therefore
+disable or replace the trigger, or set the purge flag and delete rows directly
+without the 90-day floor.
+
+Partial hardening with Managed Postgres's own roles has not been built. The
+application would connect as a separate `writer` user, and the objects would
+stay owned by the `schema_admin` user. Two things block it today: the status
+check recognises only the owner-role model, and `release_command` runs with the
+application's secrets, so migrations would have to become a manual operator
+step. Full hardening needs a Postgres where you hold a superuser.
+
 ## Open questions
 
-- **Which privileges does production's Fly Postgres give?** The provisioning
-  step needs a superuser to create the owner role and hand ownership to it.
-  If the provider does not grant one, the command returns
-  `{:error, :admin_not_superuser}` or `{:error, :hardening_failed}` with
-  `insufficient_privilege`, nothing is changed, and production stays degraded
-  with the boot warning naming why. This has not been checked against
-  production yet.
+- **Which privileges does production's Fly Postgres give?** Answered for Fly
+  Managed Postgres: no superuser, so production stays degraded. See
+  [Fly Managed Postgres](#fly-managed-postgres). On a provider that does
+  grant a superuser, the provisioning step above applies unchanged.
 - **Where should the command run?** Running it inside the long-running app
   machine shares that machine's operating-system user with the application
   process for the length of the command. A one-off machine from the same image,
