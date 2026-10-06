@@ -54,8 +54,9 @@ truncate rows. `status/2` reports `:hardened` only in that state. A user can
 still be deleted: the foreign-key cascade that nulls `actor_user_id` runs with
 the table owner's rights.
 
-The trigger still honours the `kanban.audit_purge` flag. A hardened application
-role cannot use it, because it no longer holds the `DELETE` right.
+Rows still leave the table through the retention purge, which no longer relies
+on the `kanban.audit_purge` flag once the table is hardened. See
+[Retention purge](#retention-purge).
 
 ## When the migration hardens
 
@@ -125,6 +126,78 @@ Kanban.AuditLog.Hardening.status(runner, app_role: "kanban_app")
 In dev and test the application connects as a superuser. There the table is
 hardened, but `status/2` for that role reports `:app_role_is_superuser`.
 
+## Retention purge
+
+Retention removes old events through one database function,
+`audit_events_purge(cutoff timestamptz)`. The statements live in
+`Kanban.AuditLog.Hardening.Purge` (`lib/kanban/audit_log/hardening/purge.ex`),
+the migration
+`priv/repo/migrations/20261006164351_add_audit_events_purge_function.exs`
+installs them, and `Kanban.AuditLog.purge_before/1` calls the function with the
+cutoff as a bound parameter.
+
+The function:
+
+- refuses a cutoff that is `NULL` or newer than 90 days ago, with SQLSTATE
+  `KAP01`, which `purge_before/1` returns as `{:error, :cutoff_too_recent}`.
+  The floor is in the function body, so a compromised application calling the
+  function directly still cannot erase recent history;
+- removes only rows whose `inserted_at` is strictly older than the cutoff (a
+  row stamped exactly at the cutoff is kept) and returns how many it removed;
+- runs with its owner's rights (`SECURITY DEFINER`), with `search_path`
+  pinned to `pg_catalog, pg_temp` and the table name schema-qualified. The
+  application role may create objects in the table's schema, so that schema is
+  kept off the path of code that runs with another role's rights;
+- is executable only by the application role: the `EXECUTE` right every new
+  function gives `PUBLIC` is revoked first.
+
+What else changes depends on whether the table is hardened:
+
+| | Hardened | Degraded |
+|---|---|---|
+| Purge function owner | `kanban_audit_owner` | The application role |
+| Trigger rule for `DELETE` | Allowed only when the current role owns `audit_events` and the delete is not fired from another trigger; the `kanban.audit_purge` flag is ignored | Allowed when the transaction-local `kanban.audit_purge` flag is on |
+| How the purge gets through | It runs as the owner role | It sets the flag around its own delete and restores the previous value |
+
+In hardened mode the application cannot become the owner role, so the purge
+function is the only way the application can delete a row. A superuser that sets the flag and
+deletes directly is refused too. The owner is read from the catalog when the
+trigger runs, so no role name is embedded in it. The update branch, with its
+foreign-key nilify exception, and the always-rejected `TRUNCATE` are unchanged.
+The owner role must own no other function the application can call, because any
+such function could also delete.
+
+The migration installs the hardened purge only when it runs as a superuser and
+the table already belongs to `kanban_audit_owner`. Otherwise it installs the
+degraded purge and logs `security_audit_purge_degraded` with a reason
+(`not_superuser` or `table_not_owned_by_owner_role`). When it cannot install
+the function, it changes nothing and also logs why: `schema_create_denied` when
+the migrating role cannot create in the table's schema, and
+`purge_function_not_replaceable` when a purge function already exists that the
+migrating role does not own. It never fails for lack of privilege. If the table belongs to
+the owner role but the migration runs as another role, the application role
+cannot delete. `purge_before/1` then raises until a superuser installs the
+hardened purge with `Kanban.AuditLog.Hardening.Purge.apply/3`.
+
+Rolling the migration back drops the purge function and restores the
+flag-based trigger body from
+`priv/repo/migrations/20261006153642_fix_audit_events_truncate_message.exs`,
+keeping the pinned search path. Anything the migrating role cannot own is left
+in place and named in one degraded notice.
+
+`Kanban.AuditLog.Hardening.Purge.status/2` takes a runner and the application
+role's name and returns `:hardened` or `{:degraded, reasons}`:
+
+| Reason | Meaning |
+|---|---|
+| `:purge_function_missing` | No purge function is installed |
+| `:purge_function_not_owned_by_owner_role` | The purge function belongs to another role, such as the application role in degraded mode |
+| `:purge_function_not_security_definer` | The purge function runs with its caller's rights, so it cannot delete from a hardened table |
+| `:purge_function_search_path_not_pinned` | The purge function's `search_path` is not pinned to `pg_catalog, pg_temp` |
+| `:purge_function_executable_by_public` | Every role can execute the purge function |
+| `:app_role_cannot_execute_purge_function` | The named application role is missing or cannot execute the purge function |
+| `:trigger_function_honors_flag` | The trigger still admits a delete when the `kanban.audit_purge` flag is on |
+
 ## Tests
 
 `test/kanban/audit_log/hardening_test.exs` proves the separation. A superuser
@@ -133,3 +206,8 @@ bypasses every right, so the tests use `Kanban.AuditLogRoleHelper`
 superuser inside the sandbox transaction, hardens the table for it, and switches
 the transaction to it. Hardening locks `audit_events` until the sandbox rolls
 back, so a test module that uses the helper must be `async: false`.
+
+`test/kanban/audit_log/purge_test.exs` covers the purge function, both modes
+and `status/2`, using the same helper. The append-only trigger tests in
+`test/kanban/audit_log_test.exs` assert that the test database is hardened, so
+a degraded test database fails them instead of passing for the wrong reason.

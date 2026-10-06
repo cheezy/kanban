@@ -422,7 +422,12 @@ defmodule Kanban.AuditLog.Hardening do
 
   # --- helpers ---------------------------------------------------------------
 
-  defp scalar(runner, sql) do
+  @doc """
+  Runs `sql` through `runner` and returns the single value it selects, or `nil`
+  when it returns no row. Shared with `Kanban.AuditLog.Hardening.Purge`.
+  """
+  @spec scalar(runner(), String.t()) :: term()
+  def scalar(runner, sql) do
     case runner.(sql).rows do
       [[value]] -> value
       [] -> nil
@@ -435,7 +440,12 @@ defmodule Kanban.AuditLog.Hardening do
     {:degraded, reasons}
   end
 
-  defp quote_literal(name) do
+  @doc """
+  Quotes a role name as an SQL string literal, doubling any embedded `'`, after
+  the same validation as `quote_ident/1`.
+  """
+  @spec quote_literal(String.t()) :: String.t()
+  def quote_literal(name) do
     "'" <> (name |> validate_role_name!() |> String.replace("'", "''")) <> "'"
   end
 

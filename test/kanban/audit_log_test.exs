@@ -10,6 +10,8 @@ defmodule Kanban.AuditLogTest do
   alias Kanban.AuditLog
   alias Kanban.AuditLog.AuditEvent
   alias Kanban.AuditLog.Filters
+  alias Kanban.AuditLog.Hardening
+  alias Kanban.AuditLog.Hardening.Purge
   alias Kanban.AuditLog.Query
 
   setup do
@@ -340,6 +342,19 @@ defmodule Kanban.AuditLogTest do
 
   describe "append-only trigger" do
     setup do
+      # These tests describe the hardened trigger. A test database the
+      # migrations could not harden would fail here, loudly, rather than pass
+      # the flag tests for the wrong reason.
+      runner = fn sql -> Repo.query!(sql) end
+
+      %{rows: [[table_owner, connected_as]]} =
+        Repo.query!(
+          "SELECT pg_get_userbyid(relowner), current_user FROM pg_class WHERE oid = 'audit_events'::regclass"
+        )
+
+      assert table_owner == Hardening.owner_role(), "the test database is not hardened"
+      assert Purge.status(runner, app_role: connected_as) == :hardened
+
       user = user_fixture()
       AuditLog.event(:sudo_mode_entered, user_id: user.id)
       %{event: only_event!(), user: user}
@@ -366,14 +381,11 @@ defmodule Kanban.AuditLogTest do
       assert Repo.get(AuditEvent, event.id)
     end
 
-    test "TRUNCATE is rejected even when the purge flag is set", %{event: event} do
+    test "TRUNCATE is rejected even when the purge flag is set" do
       error =
         assert_raise Postgrex.Error, ~r/append-only: TRUNCATE is not permitted/, fn ->
           Repo.transact(fn ->
             Repo.query!("SELECT set_config('kanban.audit_purge', 'on', true)")
-            # The flag that admits this DELETE...
-            assert {:ok, _} = Repo.delete(event)
-            # ...does not admit TRUNCATE.
             Repo.query!("TRUNCATE audit_events")
             {:ok, :truncated}
           end)
@@ -399,14 +411,20 @@ defmodule Kanban.AuditLogTest do
       assert Repo.aggregate(AuditEvent, :count) == 1
     end
 
-    test "a delete succeeds when the purge-only transaction flag is set", %{event: event} do
-      assert {:ok, _} =
-               Repo.transact(fn ->
-                 Repo.query!("SELECT set_config('kanban.audit_purge', 'on', true)")
-                 Repo.delete(event)
-               end)
+    test "a delete with the purge flag set is rejected in hardened mode", %{event: event} do
+      # The suite connects as a superuser, which may set the flag and holds the
+      # DELETE right. The owner-aware trigger ignores the flag and admits a
+      # delete only from the table's owner.
+      assert_raise Postgrex.Error,
+                   ~r/append-only: DELETE is not permitted outside the retention purge/,
+                   fn ->
+                     Repo.transact(fn ->
+                       Repo.query!("SELECT set_config('kanban.audit_purge', 'on', true)")
+                       Repo.delete(event)
+                     end)
+                   end
 
-      assert Repo.get(AuditEvent, event.id) == nil
+      assert Repo.get(AuditEvent, event.id)
     end
 
     test "deleting the actor nulls actor_user_id and leaves the rest intact",

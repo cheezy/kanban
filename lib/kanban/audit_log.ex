@@ -15,8 +15,25 @@ defmodule Kanban.AuditLog do
       the foreign-key cascade that nulls `actor_user_id` when its user is
       deleted), every `TRUNCATE`, and every delete outside the retention purge.
       Where the migration could harden it (see `Kanban.AuditLog.Hardening`),
-      the table belongs to a separate role, so the application cannot disable
-      that trigger.
+      the table belongs to a separate owner role, so the application cannot
+      disable that trigger.
+
+  ## Retention
+
+  `purge_before/1` is the sanctioned way to remove rows. It calls the database
+  function `audit_events_purge`, which refuses a cutoff newer than the
+  retention floor (90 days) and removes only rows strictly older than the
+  cutoff — the floor is enforced in the database, so even a compromised
+  application cannot erase recent history through it. In hardened mode (see
+  `Kanban.AuditLog.Hardening.Purge`) that function belongs to the owner role
+  and runs with its rights, and the trigger admits a delete only from the
+  owner of `audit_events`: the transaction-local `kanban.audit_purge` flag is
+  **not** the control there and is ignored, so the purge function is the only
+  path the application has. In degraded mode (a database the migration could
+  not harden) the function belongs to the application role and the flag-based
+  trigger stays: the function sets the flag itself, so `purge_before/1` works
+  in both modes, but the trigger also admits any other delete made with the
+  flag set.
 
   Callers pass an action atom and a keyword list of context. Known-sensitive
   keys (passwords, raw tokens, secrets) are dropped defensively before anything
@@ -227,6 +244,35 @@ defmodule Kanban.AuditLog do
 
   defp format_pair(pair), do: pair
 
+  # --- retention -------------------------------------------------------------
+
+  @purge_refused_code Kanban.AuditLog.Hardening.Purge.cutoff_too_recent_code()
+
+  @doc """
+  Removes every stored event inserted strictly before `cutoff` through the
+  database purge function, returning `{:ok, removed_count}`.
+
+  Returns `{:error, :cutoff_too_recent}` when the function refuses the cutoff
+  because it is newer than the retention floor (90 days ago). The cutoff is
+  passed as a bound parameter. Any other failure raises: purge is an operator
+  maintenance call, not a request path, so a silent failure would hide lost
+  retention. Inside an open transaction the call runs under a savepoint, so a
+  refusal does not abort the caller's transaction.
+  """
+  @spec purge_before(DateTime.t()) :: {:ok, non_neg_integer()} | {:error, :cutoff_too_recent}
+  def purge_before(%DateTime{} = cutoff) do
+    case Repo.query("SELECT audit_events_purge($1)", [cutoff], statement_opts()) do
+      {:ok, %{rows: [[removed]]}} ->
+        {:ok, removed}
+
+      {:error, %Postgrex.Error{postgres: %{pg_code: @purge_refused_code}}} ->
+        {:error, :cutoff_too_recent}
+
+      {:error, error} ->
+        raise error
+    end
+  end
+
   # --- persistence -----------------------------------------------------------
 
   # Stores the already-sanitized pairs, never the raw metadata. Every failure —
@@ -260,7 +306,7 @@ defmodule Kanban.AuditLog do
   defp insert_event(attrs) do
     attrs
     |> AuditEvent.insert_changeset()
-    |> Repo.insert(insert_opts())
+    |> Repo.insert(statement_opts())
     |> retry_without_actor(attrs)
   end
 
@@ -277,9 +323,9 @@ defmodule Kanban.AuditLog do
   defp retry_without_actor(result, _attrs), do: result
 
   # Inside a caller's transaction a failed statement would poison it; a
-  # savepoint confines the failure to the audit insert. Outside a transaction
-  # Postgrex rejects savepoint mode, so the default is used.
-  defp insert_opts do
+  # savepoint confines the failure to the audit statement. Outside a
+  # transaction Postgrex rejects savepoint mode, so the default is used.
+  defp statement_opts do
     if Repo.in_transaction?(), do: [mode: :savepoint], else: []
   end
 
