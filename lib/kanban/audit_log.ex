@@ -14,6 +14,9 @@ defmodule Kanban.AuditLog do
       retained. A database trigger rejects every edit of a stored row (except
       the foreign-key cascade that nulls `actor_user_id` when its user is
       deleted), every `TRUNCATE`, and every delete outside the retention purge.
+      Where the migration could harden it (see `Kanban.AuditLog.Hardening`),
+      the table belongs to a separate role, so the application cannot disable
+      that trigger.
 
   Callers pass an action atom and a keyword list of context. Known-sensitive
   keys (passwords, raw tokens, secrets) are dropped defensively before anything

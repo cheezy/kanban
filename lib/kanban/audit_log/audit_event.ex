@@ -9,6 +9,10 @@ defmodule Kanban.AuditLog.AuditEvent do
   `kanban.audit_purge` setting is on — the only gate a retention purge can use.
   There is therefore no update changeset — `insert_changeset/1` is the only way
   to build one.
+
+  Because a table's owner can disable its triggers, `Kanban.AuditLog.Hardening`
+  moves ownership of the table to a role the application cannot assume, when
+  the migration runs as a superuser.
   """
   use Ecto.Schema
   import Ecto.Changeset

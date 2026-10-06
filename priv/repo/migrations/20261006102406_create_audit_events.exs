@@ -16,8 +16,9 @@ defmodule Kanban.Repo.Migrations.CreateAuditEvents do
   #     argument (is_local) must be true: a session-level setting would stay on
   #     for every later transaction on that pooled connection.
   #
-  # Limitation: the role that owns the table can still disable or drop the
-  # trigger. Defending against a compromised owner needs a separate owner role.
+  # The role that owns the table can disable or drop the trigger, so ownership
+  # moves to a separate owner role in 20261006155407_move_audit_events_ownership
+  # (statements in Kanban.AuditLog.Hardening).
   def up do
     create table(:audit_events) do
       add :action, :string, null: false
