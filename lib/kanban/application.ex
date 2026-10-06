@@ -45,17 +45,31 @@ defmodule Kanban.Application do
     :ok
   end
 
-  defp chromic_pdf_options do
-    base = [
+  @doc false
+  # Public (with @doc false) only so test/kanban/application_test.exs can pin
+  # the options handed to ChromicPDF.
+  #
+  # `on_demand: true` is added only when the :chromic_pdf_on_demand flag is set,
+  # which config/test.exs does (D367). Without it ChromicPDF starts a resident
+  # headless Chrome at boot, and ExUnit does not shut the supervision tree down
+  # cleanly, so every `mix test` run leaked one orphaned Chrome. The flag is
+  # read at runtime (like :async_email_delivery in
+  # Kanban.Accounts.UserNotifier) so no environment bakes another's value in;
+  # production and dev never set it and keep the resident browser.
+  def chromic_pdf_options do
+    [
       no_sandbox: true,
       discard_stderr: true,
       chrome_args: "--disable-dev-shm-usage --disable-gpu",
       session_pool: [timeout: 30_000, init_timeout: 30_000, checkout_timeout: 30_000]
     ]
-
-    case System.find_executable("google-chrome-stable") do
-      nil -> base
-      path -> [{:chrome_executable, path} | base]
-    end
+    |> put_chrome_executable(System.find_executable("google-chrome-stable"))
+    |> put_on_demand(Application.get_env(:kanban, :chromic_pdf_on_demand, false))
   end
+
+  defp put_chrome_executable(opts, nil), do: opts
+  defp put_chrome_executable(opts, path), do: [{:chrome_executable, path} | opts]
+
+  defp put_on_demand(opts, true), do: [{:on_demand, true} | opts]
+  defp put_on_demand(opts, _not_set), do: opts
 end

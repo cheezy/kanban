@@ -70,6 +70,29 @@ config :kanban, Kanban.Mailer, adapter: Swoosh.Adapters.Test
 # UserNotifier task-path test.
 config :kanban, :async_email_delivery, false
 
+# Start ChromicPDF in on_demand mode in test (D367, orphaned headless Chrome).
+# With a resident browser, ChromicPDF launches a headless Chrome at boot of
+# every `mix test`, and ExUnit does not shut the application supervisor down
+# cleanly, so each run leaked one Chrome that outlived the VM. Those orphans
+# ignore SIGTERM; enough of them exhausted macOS IOSurface clients, and the PDF
+# tests then timed out. ChromicPDF's own docs ("On Demand" mode and
+# "Terminating your supervisor after your test suite" in the chromic_pdf.ex
+# moduledoc) recommend this for tests. In this mode Chrome is started only
+# when a PDF renders, so a run with no PDF test starts none. Each
+# PDF-printing test pays for a Chrome boot: ChromicPDF's docs say roughly
+# 0.5s, and about 0.8s was measured here on a loaded machine.
+#
+# on_demand alone does not stop Chrome after the render: ChromicPDF stops
+# each per-call browser by closing its pipe, and Chrome on macOS survives
+# that. So test/test_helper.exs also attaches Kanban.ChromicPDFCleanup, which
+# sends Chrome the DevTools Browser.close command after every render. It also
+# registers an ExUnit.after_suite safety net. Neither runs when `mix test` is
+# killed (for example by a hook timeout), so an in-flight Chrome can still be
+# orphaned then.
+# Read at runtime by Kanban.Application.chromic_pdf_options/0; prod and dev
+# never set it and keep the resident browser.
+config :kanban, :chromic_pdf_on_demand, true
+
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 
