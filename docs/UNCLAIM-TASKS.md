@@ -520,6 +520,6 @@ Remember: Unclaiming is a feature, not a failure. It helps tasks get to agents w
 
 ## See Also
 
-- [API Documentation](api/POST_tasks_id_unclaim.md) - Unclaim endpoint details
+- [API Documentation](api/post_tasks_id_unclaim.md) - Unclaim endpoint details
 - [Task Writing Guide](TASK-WRITING-GUIDE.md) - Writing clear, complete tasks
 - [Agent Hook Execution Guide](AGENT-HOOK-EXECUTION-GUIDE.md) - Hook execution workflow
