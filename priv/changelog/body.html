@@ -3,6 +3,92 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [2.16.0] - 2026-10-05
+        </h2>
+
+        <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          Agents and integrations can now page through a board's tasks and
+          filter them on the server, and can discover the whole API from a
+          machine-readable specification.
+        </p>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Cursor pagination and filters for <code>GET /api/tasks</code>
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              <code>GET /api/tasks</code> now accepts <code>limit</code>
+              (1 to 200, default 50) and an opaque <code>cursor</code>. It
+              also accepts filters on <code>status</code>,
+              <code>type</code>, <code>priority</code>,
+              <code>assigned_to_id</code>, <code>parent</code> (a goal
+              identifier such as <code>G12</code>) and
+              <code>updated_since</code> (an ISO 8601 timestamp), and they
+              combine with the existing <code>column_id</code>. Archived
+              tasks are left out. Each page is ordered by task id and
+              carries a <code>meta</code> block with
+              <code>next_cursor</code> and <code>limit</code>. Pass
+              <code>next_cursor</code> back as <code>cursor</code> to get
+              the next page, and stop when it is <code>null</code>.
+              Following the pages with <code>updated_since</code> gives an
+              incremental sync.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Pagination is opt-in. A request with none of the new
+              parameters gets the same unpaginated response as before,
+              byte for byte, so existing clients are unaffected. Once any
+              new parameter is present, a blank or malformed value returns
+              a 400 with the reason, never a silent fall back to the full
+              list. Every doc that describes the endpoint, and the
+              onboarding <code>api_reference</code>, now cover the new
+              parameters.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              An OpenAPI 3.1 specification at <code>/api/openapi.json</code>
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The API is now described by a hand-written OpenAPI 3.1
+              specification, served without authentication at
+              <code>GET /api/openapi.json</code> with a one-hour cache. It
+              defines the bearer-token security scheme and shared
+              <code>Task</code>, <code>TaskSummary</code>,
+              <code>Error</code> and <code>PageMeta</code> schemas. The
+              agent onboarding response links to it as
+              <code>api_reference.openapi_url</code>, and
+              <code>docs/api/get_openapi_json.md</code> documents it.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              A contract test keeps the specification honest. It fails when
+              a route exists in the router but not in the spec, or in the
+              spec but not in the router, when an operation's
+              authentication does not match its pipeline, or when the
+              <code>Task</code> schema's keys and enum values drift from
+              what the API actually renders.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.15.0] - 2026-10-03
         </h2>
 
