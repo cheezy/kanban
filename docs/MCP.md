@@ -107,11 +107,41 @@ Notes:
   default. This keeps large boards from filling the agent's context. Pass
   `meta.next_cursor` back as `cursor` to get the next page. On the last page
   `meta.next_cursor` is `null`. Pass `"response_view": "full"` to get whole
-  tasks.
+  tasks. A full-view page is capped by a byte budget, as described in
+  [Full-view size limit](#full-view-size-limit).
 - **`stride_add_comment`** needs `owner` or `modify` access to the board.
   `stride_claim_task` and `stride_complete_task` need the same access, as they
   do over REST. Over MCP, a read-only member cannot comment, even though the
   board UI lets read-only members comment.
+
+### Full-view size limit
+
+Whole tasks are large, so `stride_list_tasks` caps a full-view page at
+**100,000 bytes** of task JSON. The budget counts the UTF-8 bytes of the task
+objects in `data`. The response envelope adds a little on top.
+
+- Tasks are kept in id order until the next task would go over the budget. The
+  rest of the page is left for the next call.
+- A page with any tasks always returns at least one. A single task larger than
+  the budget comes back alone, so paging always moves forward.
+- In the full view, `meta` always carries `truncated`. It is `false` when the
+  whole page fit, and `meta.next_cursor` is then the normal cursor.
+- When `meta.truncated` is `true`, `meta.next_cursor` points after the last task
+  returned. This holds even on what would have been the last page, so the cut
+  tasks are never lost.
+- Keep passing `meta.next_cursor` back as `cursor` until it is `null`. Together
+  the pages hold every task exactly once.
+- The cursor does not carry filters. Send the same `status`, `type`,
+  `priority`, `assigned_to_id`, `parent`, `updated_since` and `column_id` with
+  every page, as with [GET /api/tasks](api/get_tasks.md).
+- The slim view is never cut and its `meta` has no `truncated` key. The REST
+  endpoint `GET /api/tasks` is not affected either.
+
+The `meta` of a cut page looks like this:
+
+```json
+{"next_cursor": "NzMwMg", "limit": 200, "truncated": true}
+```
 
 ### Example: claim a task
 

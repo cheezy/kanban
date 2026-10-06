@@ -119,6 +119,18 @@ defmodule KanbanWeb.API.McpControllerTest do
     task
   end
 
+  defp sized_task(ready_column, user, title, description_bytes) do
+    {:ok, task} =
+      Tasks.create_task(ready_column, %{
+        "title" => title,
+        "status" => "open",
+        "created_by_id" => user.id,
+        "description" => String.duplicate("x", description_bytes)
+      })
+
+    task
+  end
+
   defp claimed_task(doing_column, user) do
     {:ok, task} =
       Tasks.create_task(doing_column, %{
@@ -578,6 +590,63 @@ defmodule KanbanWeb.API.McpControllerTest do
       {true, body} = call_tool(conn, "stride_list_tasks", %{"cursor" => "!!!"})
       assert body["error_code"] == "invalid_param"
       assert body["http_status"] == 400
+    end
+
+    test "stride_list_tasks full view over POST /api/mcp is cut by the byte budget", %{
+      conn: conn,
+      user: user,
+      ready_column: ready_column
+    } do
+      budget = KanbanWeb.MCP.Tools.full_view_byte_budget()
+
+      tasks =
+        for i <- 1..3, do: sized_task(ready_column, user, "Big #{i}", div(budget, 2) - 5_000)
+
+      args = %{"response_view" => "full", "limit" => 200}
+
+      {false, page} = call_tool(conn, "stride_list_tasks", args)
+
+      assert page["meta"]["truncated"] == true
+      assert length(page["data"]) == 2
+      assert is_binary(page["meta"]["next_cursor"])
+
+      {false, page2} =
+        call_tool(conn, "stride_list_tasks", Map.put(args, "cursor", page["meta"]["next_cursor"]))
+
+      assert page2["meta"] == %{"next_cursor" => nil, "limit" => 200, "truncated" => false}
+
+      assert Enum.map(page["data"] ++ page2["data"], & &1["id"]) == Enum.map(tasks, & &1.id)
+    end
+
+    test "GET /api/tasks in full view is not truncated by the MCP guard", %{
+      conn: conn,
+      user: user,
+      ready_column: ready_column
+    } do
+      budget = KanbanWeb.MCP.Tools.full_view_byte_budget()
+
+      tasks =
+        for i <- 1..3, do: sized_task(ready_column, user, "Big #{i}", div(budget, 2) - 5_000)
+
+      rest = conn |> get(~p"/api/tasks?limit=200&response_view=full") |> json_response(200)
+
+      assert Enum.map(rest["data"], & &1["id"]) == Enum.map(tasks, & &1.id)
+      assert rest["meta"] == %{"next_cursor" => nil, "limit" => 200}
+    end
+
+    test "a full-view page under the budget is the REST full body plus truncated false", %{
+      conn: conn,
+      user: user,
+      ready_column: ready_column
+    } do
+      for i <- 1..3, do: ready_task(ready_column, user, "Task #{i}")
+
+      {false, page} =
+        call_tool(conn, "stride_list_tasks", %{"response_view" => "full", "limit" => 2})
+
+      rest = conn |> get(~p"/api/tasks?limit=2&response_view=full") |> json_response(200)
+
+      assert page == put_in(rest, ["meta", "truncated"], false)
     end
 
     test "a cross-board identifier is the same not-found as REST", %{conn: conn} do

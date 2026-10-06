@@ -124,7 +124,7 @@ defmodule KanbanWeb.MCP.ToolSchemas do
       "name" => "stride_list_tasks",
       "title" => "List tasks",
       "description" =>
-        "Lists one page of the token's board tasks (GET /api/tasks in paginated mode), slim summaries by default. Pass meta.next_cursor back as cursor for the next page; it is null on the last page.",
+        "Lists one page of the token's board tasks (GET /api/tasks in paginated mode), slim summaries by default. Pass meta.next_cursor back as cursor, with the same filters, for the next page; it is null on the last page. In the full view a page holds at most 100,000 bytes of task JSON (always at least one task): meta.truncated is true when tasks were cut, and meta.next_cursor then continues after the last returned task.",
       "inputSchema" => %{
         "type" => "object",
         "properties" => %{
@@ -132,11 +132,12 @@ defmodule KanbanWeb.MCP.ToolSchemas do
             "type" => "integer",
             "minimum" => 1,
             "maximum" => 200,
-            "description" => "Page size, 1-200 (default 50)."
+            "description" =>
+              "Page size, 1-200 (default 50). A full-view page returns fewer tasks when it reaches the 100,000-byte budget (meta.truncated is then true)."
           },
           "cursor" => %{
             "type" => "string",
-            "description" => "meta.next_cursor of the previous page."
+            "description" => "meta.next_cursor of the previous page. Resend the same filters."
           },
           "status" => %{"type" => "string", "enum" => @status_values},
           "type" => %{"type" => "string", "enum" => @type_values},
@@ -156,7 +157,7 @@ defmodule KanbanWeb.MCP.ToolSchemas do
             Map.put(
               @response_view,
               "description",
-              "full returns whole tasks; slim is the default."
+              "full returns whole tasks, cut to a 100,000-byte budget per page (meta.truncated says whether the page was cut); slim is the default and is never cut."
             )
         },
         "additionalProperties" => false
