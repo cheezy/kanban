@@ -4,9 +4,11 @@ defmodule Kanban.AuditLog.AuditEvent do
 
   Rows are written only by `Kanban.AuditLog.event/2` and are append-only: a
   database trigger rejects every `UPDATE` (except the foreign-key cascade that
-  nulls `actor_user_id` when a user is deleted) and every `DELETE`/`TRUNCATE`
-  that is not part of the retention purge. There is therefore no update
-  changeset — `insert_changeset/1` is the only way to build one.
+  nulls `actor_user_id` when a user is deleted), every `TRUNCATE`
+  unconditionally, and every `DELETE` unless the transaction-local
+  `kanban.audit_purge` setting is on — the only gate a retention purge can use.
+  There is therefore no update changeset — `insert_changeset/1` is the only way
+  to build one.
   """
   use Ecto.Schema
   import Ecto.Changeset

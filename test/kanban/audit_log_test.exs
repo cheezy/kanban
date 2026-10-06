@@ -114,9 +114,13 @@ defmodule Kanban.AuditLogTest do
         AuditLog.event(:sudo_mode_entered, user_id: 42)
       end)
 
-    # Pinned to the info line: user_id 42 has no users row, so the insert also
-    # logs "security_audit_persist_failed", which a bare substring would match.
+    # user_id 42 has no users row, so the insert fails the actor foreign key and
+    # is retried once with a nil actor: the row is stored and no persist-failure
+    # line is logged. The assertion stays pinned to the info line because other
+    # persist failures are logged as "security_audit_persist_failed" (action and
+    # exception type only, never values), which a bare substring would match.
     assert log =~ "[info] security_audit\n"
+    refute log =~ "security_audit_persist_failed"
   end
 
   test "sensitive values never reach the log output" do
@@ -355,29 +359,43 @@ defmodule Kanban.AuditLogTest do
     end
 
     test "a plain Repo.delete is rejected", %{event: event} do
-      assert_raise Postgrex.Error, ~r/append-only: DELETE/, fn -> Repo.delete(event) end
+      assert_raise Postgrex.Error,
+                   ~r/append-only: DELETE is not permitted outside the retention purge/,
+                   fn -> Repo.delete(event) end
+
       assert Repo.get(AuditEvent, event.id)
     end
 
-    test "TRUNCATE is rejected even when the purge flag is set" do
-      assert_raise Postgrex.Error, ~r/append-only: TRUNCATE/, fn ->
-        Repo.transact(fn ->
-          Repo.query!("SELECT set_config('kanban.audit_purge', 'on', true)")
-          Repo.query!("TRUNCATE audit_events")
-          {:ok, :truncated}
-        end)
-      end
+    test "TRUNCATE is rejected even when the purge flag is set", %{event: event} do
+      error =
+        assert_raise Postgrex.Error, ~r/append-only: TRUNCATE is not permitted/, fn ->
+          Repo.transact(fn ->
+            Repo.query!("SELECT set_config('kanban.audit_purge', 'on', true)")
+            # The flag that admits this DELETE...
+            assert {:ok, _} = Repo.delete(event)
+            # ...does not admit TRUNCATE.
+            Repo.query!("TRUNCATE audit_events")
+            {:ok, :truncated}
+          end)
+        end
 
+      # TRUNCATE is rejected unconditionally, so its message must not suggest
+      # the retention purge could allow it.
+      refute Exception.message(error) =~ "retention purge"
       assert Repo.aggregate(AuditEvent, :count) == 1
     end
 
     test "delete_all and TRUNCATE are rejected" do
-      assert_raise Postgrex.Error, ~r/append-only: DELETE/, fn -> Repo.delete_all(AuditEvent) end
+      assert_raise Postgrex.Error,
+                   ~r/append-only: DELETE is not permitted outside the retention purge/,
+                   fn -> Repo.delete_all(AuditEvent) end
 
-      assert_raise Postgrex.Error, ~r/append-only: TRUNCATE/, fn ->
-        Repo.query!("TRUNCATE audit_events")
-      end
+      error =
+        assert_raise Postgrex.Error, ~r/append-only: TRUNCATE is not permitted/, fn ->
+          Repo.query!("TRUNCATE audit_events")
+        end
 
+      refute Exception.message(error) =~ "retention purge"
       assert Repo.aggregate(AuditEvent, :count) == 1
     end
 
