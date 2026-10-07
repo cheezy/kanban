@@ -12,12 +12,16 @@ defmodule KanbanWeb.API.BatchGoalCreation do
   stable: goal creation never runs the WIP check, so it cannot currently be
   reached, and the batch docs no longer describe it (D356).
 
+  `create_batch/3` (moved here from the controller's `batch_create/2` body
+  when the controller was split to stay under the module size guideline) runs
+  after the live board-write check and resolves the board's default column.
+
   Like `KanbanWeb.API.TaskErrors`, this module takes `conn` and renders. It
-  reuses the controller's shared creation/telemetry/rendering helpers
-  (`build_task_params_with_creator/4`, `log_create_forbidden_fields/3`,
-  `emit_telemetry/3`, `render_goal_with_children/1`, `render_task_summary/1`),
-  which stay in `TaskController` because they are shared with the single-create
-  and dependency-listing actions — except `render_task_summary/1`, whose shape
+  reuses the shared creation helpers (`build_task_params_with_creator/4`,
+  `log_create_forbidden_fields/3`, `render_goal_with_children/1`,
+  `get_default_column_id/1`) from `KanbanWeb.API.TaskCreation`, which owns them
+  because the single-create action shares them, plus the controller's
+  `emit_telemetry/3` and `render_task_summary/1` delegates — the summary shape
   is owned by `KanbanWeb.API.TaskJSON`; the controller keeps a delegate under
   that name so the call below resolves unchanged.
   """
@@ -25,10 +29,46 @@ defmodule KanbanWeb.API.BatchGoalCreation do
   import Plug.Conn, only: [put_status: 2]
   import Phoenix.Controller, only: [json: 2]
 
+  alias Kanban.Columns
   alias Kanban.Tasks
+  alias KanbanWeb.API.TaskActions
   alias KanbanWeb.API.TaskController
+  alias KanbanWeb.API.TaskCreation
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskParamFilter
+
+  @doc """
+  Creates every goal in `goals` in the board's default column and renders the
+  batch response. The caller must already have authorized the board write.
+  """
+  # Mirrors the live board-write re-check that create/2, update/2, and
+  # after_goal enforce (D108/D109): a token whose user has only view/read-only
+  # access — or whose owner/modify access was downgraded after the token was
+  # issued — must not bulk-create goals via this endpoint. Called only after
+  # authorize_board_write/1 passes, so no side effect runs for an unauthorized
+  # caller.
+  def create_batch(conn, goals, params) do
+    board = conn.assigns.current_board
+    user = conn.assigns.current_user
+    api_token = conn.assigns.api_token
+    agent_name = params["agent_name"]
+
+    TaskActions.stamp_agent_identity(conn, params)
+
+    column_id = TaskCreation.get_default_column_id(board)
+
+    # Board-scoped lookup; default column should always exist on the board, so
+    # this is defense-in-depth in case get_default_column_id returns nil/stale.
+    case column_id && Columns.get_column_for_board(column_id, board.id) do
+      nil ->
+        TaskErrors.handle_task_error(conn, {:error, :not_found})
+
+      column ->
+        goals
+        |> process_batch_goals(column, user, api_token, agent_name, conn)
+        |> handle_batch_result(conn)
+    end
+  end
 
   @doc """
   Creates each goal in `goals` in order, stopping on the first failure. Returns
@@ -54,14 +94,14 @@ defmodule KanbanWeb.API.BatchGoalCreation do
     {safe_child_tasks, rejected_child_fields} =
       TaskParamFilter.filter_child_tasks(child_tasks_raw)
 
-    TaskController.log_create_forbidden_fields(
+    TaskCreation.log_create_forbidden_fields(
       ctx.conn,
       rejected_goal_fields,
       rejected_child_fields
     )
 
     task_params_with_creator =
-      TaskController.build_task_params_with_creator(
+      TaskCreation.build_task_params_with_creator(
         safe_goal_params,
         ctx.user,
         ctx.api_token,
@@ -88,7 +128,7 @@ defmodule KanbanWeb.API.BatchGoalCreation do
     })
 
     result = %{
-      goal: TaskController.render_goal_with_children(goal),
+      goal: TaskCreation.render_goal_with_children(goal),
       child_tasks: Enum.map(created_child_tasks, &TaskController.render_task_summary/1)
     }
 
