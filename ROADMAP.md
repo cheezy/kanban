@@ -42,6 +42,7 @@ Meet the security and compliance needs of larger organisations.
 - Two-factor authentication with an authenticator app, plus single-use recovery codes.
 - ✅ A permanent, tamper-proof audit log of important account and board activity.
 - ✅ An audit log viewer for administrators, with filters and CSV or JSON export.
+- Telemetry for every important event — sign-ins and account changes, board access, task and goal activity, agent work, notifications, rate limits and data exports — with a documented event catalogue, no personal data in event details, and a configurable retention period for stored metrics.
 - Workspace security policies: require two-factor authentication for all members (with a grace period for existing members) and set how long audit records and archived tasks are kept.
 - Single sign-on with OIDC and SAML identity providers, limited to email domains the workspace has verified.
 - Automatic user provisioning and deprovisioning through SCIM. Removing someone signs them out everywhere and revokes their API tokens.
