@@ -192,7 +192,7 @@ msgstr "看板创建成功"
 msgid "Board updated successfully"
 msgstr "看板更新成功"
 
-#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:171
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:174
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
@@ -2204,8 +2204,7 @@ msgstr "未找到使用该邮箱的用户"
 msgid "Metrics"
 msgstr "指标"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:94
-#: lib/kanban_web/live/metrics_live/components/filters.ex:241
+#: lib/kanban_web/live/metrics_live/components/filters.ex:107
 #, elixir-autogen, elixir-format
 msgid "Agent Filter"
 msgstr "代理人筛选"
@@ -2221,14 +2220,12 @@ msgstr "未知代理人"
 
 #: lib/kanban_web/controllers/metrics_pdf_html.ex:112
 #: lib/kanban_web/export/metrics_excel.ex:122
-#: lib/kanban_web/live/metrics_live/components/filters.ex:108
-#: lib/kanban_web/live/metrics_live/components/filters.ex:252
+#: lib/kanban_web/live/metrics_live/components/filters.ex:119
 #, elixir-autogen, elixir-format
 msgid "All Agents"
 msgstr "所有代理人"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:63
-#: lib/kanban_web/live/metrics_live/components/filters.ex:227
+#: lib/kanban_web/live/metrics_live/components/filters.ex:90
 #: lib/kanban_web/live/metrics_live/helpers.ex:39
 #, elixir-autogen, elixir-format
 msgid "All Time"
@@ -2315,7 +2312,7 @@ msgstr "完成:"
 msgid "Created:"
 msgstr "创建:"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:194
+#: lib/kanban_web/live/metrics_live/components/filters.ex:53
 #, elixir-autogen, elixir-format
 msgid "Customize your %{view_name} view"
 msgstr "自定义您的%{view_name}视图"
@@ -2346,8 +2343,7 @@ msgid "Excel"
 msgstr "Excel"
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:571
-#: lib/kanban_web/live/metrics_live/components/filters.ex:155
-#: lib/kanban_web/live/metrics_live/components/filters.ex:275
+#: lib/kanban_web/live/metrics_live/components/filters.ex:142
 #: lib/kanban_web/live/metrics_live/workspace.ex:403
 #, elixir-autogen, elixir-format
 msgid "Exclude Weekends"
@@ -2359,7 +2355,7 @@ msgstr "排除周末"
 msgid "Export"
 msgstr "导出"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:191
+#: lib/kanban_web/live/metrics_live/components/filters.ex:50
 #, elixir-autogen, elixir-format
 msgid "Filters"
 msgstr "筛选"
@@ -2390,22 +2386,19 @@ msgid "Human bottleneck analysis"
 msgstr "瓶颈分析"
 
 #: lib/kanban_web/export/metrics_excel.ex:371
-#: lib/kanban_web/live/metrics_live/components/filters.ex:58
-#: lib/kanban_web/live/metrics_live/components/filters.ex:221
+#: lib/kanban_web/live/metrics_live/components/filters.ex:84
 #: lib/kanban_web/live/metrics_live/helpers.ex:37
 #, elixir-autogen, elixir-format
 msgid "Last 30 Days"
 msgstr "最近30天"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:55
-#: lib/kanban_web/live/metrics_live/components/filters.ex:218
+#: lib/kanban_web/live/metrics_live/components/filters.ex:81
 #: lib/kanban_web/live/metrics_live/helpers.ex:36
 #, elixir-autogen, elixir-format
 msgid "Last 7 Days"
 msgstr "最近7天"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:61
-#: lib/kanban_web/live/metrics_live/components/filters.ex:224
+#: lib/kanban_web/live/metrics_live/components/filters.ex:87
 #: lib/kanban_web/live/metrics_live/helpers.ex:38
 #, elixir-autogen, elixir-format
 msgid "Last 90 Days"
@@ -2451,6 +2444,7 @@ msgid "Min"
 msgstr "最小"
 
 #: lib/kanban_web/live/metrics_live/components.ex:185
+#: lib/kanban_web/live/metrics_live/components/trend_chart.ex:171
 #, elixir-autogen, elixir-format
 msgid "No data available"
 msgstr "暂无数据"
@@ -2576,8 +2570,7 @@ msgstr "吞吐量"
 msgid "Throughput Metrics"
 msgstr "吞吐量指标"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:40
-#: lib/kanban_web/live/metrics_live/components/filters.ex:205
+#: lib/kanban_web/live/metrics_live/components/filters.ex:67
 #, elixir-autogen, elixir-format
 msgid "Time Range"
 msgstr "时间范围"
@@ -2615,7 +2608,7 @@ msgstr "任务完成后等待人工审查的时间"
 #: lib/kanban_web/components/agent_activity_feed.ex:456
 #: lib/kanban_web/components/agent_roster_card.ex:242
 #: lib/kanban_web/components/agents_header.ex:438
-#: lib/kanban_web/live/metrics_live/components/filters.ex:216
+#: lib/kanban_web/live/metrics_live/components/filters.ex:79
 #: lib/kanban_web/live/metrics_live/helpers.ex:35
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -8373,6 +8366,7 @@ msgid "Custom Range"
 msgstr "自定义范围"
 
 #: lib/kanban_web/controllers/metrics_pdf_html/cycle_time.html.heex:160
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Cycle Time Trend"
 msgstr "周期时间趋势"
@@ -8416,6 +8410,7 @@ msgid "Included"
 msgstr "已包含"
 
 #: lib/kanban_web/controllers/metrics_pdf_html/lead_time.html.heex:160
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Lead Time Trend"
 msgstr "前置时间趋势"
@@ -9509,3 +9504,23 @@ msgstr "已编辑"
 #, elixir-autogen, elixir-format
 msgid "via %{name}"
 msgstr "通过 %{name}"
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:65
+#, elixir-autogen, elixir-format
+msgid "Average cycle time per day"
+msgstr "每日平均周期时间"
+
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "Average lead time per day"
+msgstr "每日平均前置时间"
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:68
+#, elixir-autogen, elixir-format
+msgid "No cycle time data available"
+msgstr "暂无周期时间数据"
+
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "No lead time data available"
+msgstr "暂无前置时间数据"

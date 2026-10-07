@@ -1173,6 +1173,38 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert html =~ ~s(class="stride-screen agents-trends-band")
     end
 
+    test "the trend strip spans the days the selector names",
+         %{conn: conn, user: user} do
+      column = user |> board_fixture() |> column_fixture()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          created_by_agent: "Claude",
+          completed_by_agent: "Claude",
+          status: :completed,
+          completed_at: now
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/agents")
+
+      for {range, days} <- [
+            {"today", 1},
+            {"last_7_days", 7},
+            {"last_30_days", 30},
+            {"last_90_days", 90},
+            {"all_time", 14}
+          ] do
+        html =
+          view |> form("#agents-filter-form", %{"time_range" => range}) |> render_change()
+
+        assert length(Regex.scan(~r/data-agents-pm-trends-bar=/, html)) == days,
+               "expected #{days} day buckets for #{range}"
+      end
+    end
+
     test "shows the empty hint and zeroed stats when nothing has completed",
          %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/agents")
@@ -1289,7 +1321,8 @@ defmodule KanbanWeb.AgentsLiveTest do
       expanded = view |> element(~s([data-agents-dormant-toggle])) |> render_click()
       assert expanded =~ "data-agent-dormant-card"
       assert expanded =~ "GhostBot"
-      assert expanded =~ "Last seen"
+      # seed_dormant_agent/2 claims the task 15 whole days ago.
+      assert expanded =~ "Last seen 15d ago"
 
       collapsed = view |> element(~s([data-agents-dormant-toggle])) |> render_click()
       refute collapsed =~ "data-agent-dormant-card"
@@ -2073,6 +2106,11 @@ defmodule KanbanWeb.AgentsLiveTest do
       assert html =~ backlog_child.identifier
       assert html =~ "Wire it up"
       assert html =~ "2 tasks"
+
+      # Secondary text uses the --ink-2 token, never an opacity (D214).
+      dialog = view |> element("#reassign-goal-modal") |> render()
+      assert dialog =~ "color: var(--ink-2);"
+      refute dialog =~ "opacity-70"
     end
 
     test "confirming reassigns the goal and its not-started children, leaving Doing untouched",
@@ -2091,7 +2129,8 @@ defmodule KanbanWeb.AgentsLiveTest do
         |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
         |> render_submit()
 
-      assert html =~ "Reassigned"
+      # The goal and its Ready child move; the Doing child does not.
+      assert html =~ "Reassigned 2 tasks."
       assert Repo.get!(Kanban.Tasks.Task, goal.id).assigned_to_id == other.id
       assert Repo.get!(Kanban.Tasks.Task, ready_child.id).assigned_to_id == other.id
       # The in-progress Doing child keeps its (nil) assignee.
@@ -2118,8 +2157,9 @@ defmodule KanbanWeb.AgentsLiveTest do
         |> form("#reassign-form", %{"assigned_to_id" => to_string(other.id)})
         |> render_submit()
 
-      assert html =~ "Skipped"
-      assert html =~ claimed.identifier
+      # The goal and the open child move; the claimed child is skipped by name.
+      assert html =~ "Reassigned 2 tasks."
+      assert html =~ "Skipped 1 task already claimed: #{claimed.identifier}."
       assert Repo.get!(Kanban.Tasks.Task, claimed.id).assigned_to_id == nil
     end
 

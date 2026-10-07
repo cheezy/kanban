@@ -145,6 +145,20 @@ defmodule KanbanWeb.API.TaskParamFilterTest do
     end
   end
 
+  describe "actor_user_id/1" do
+    test "returns the authenticated user's id" do
+      conn = Plug.Conn.assign(%Plug.Conn{}, :current_user, %{id: 7})
+      assert TaskParamFilter.actor_user_id(conn) == 7
+    end
+
+    test "returns nil when no user is assigned" do
+      assert TaskParamFilter.actor_user_id(%Plug.Conn{}) == nil
+
+      conn = Plug.Conn.assign(%Plug.Conn{}, :current_user, nil)
+      assert TaskParamFilter.actor_user_id(conn) == nil
+    end
+  end
+
   describe "audit logging (monitored message strings)" do
     setup do
       prev = Logger.level()

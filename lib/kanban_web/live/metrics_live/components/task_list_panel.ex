@@ -4,8 +4,8 @@ defmodule KanbanWeb.MetricsLive.Components.TaskListPanel do
   per-task metadata and badge slots and an empty state.
 
   Split from `KanbanWeb.MetricsLive.Components` to keep that module under the
-  module-size guidance in `AGENTS.md`. `KanbanWeb.MetricsLive.Components`
-  still delegates `task_list_panel/1` here, so callers keep importing it.
+  module-size guidance in `AGENTS.md`. Callers import or alias this module
+  directly, so HEEx checks each call's attributes at compile time.
   """
   use Phoenix.Component
   use Gettext, backend: KanbanWeb.Gettext

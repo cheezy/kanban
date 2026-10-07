@@ -21,7 +21,6 @@ defmodule Kanban.Tasks.Task.FieldValidations do
   (`security_considerations`, `testing_strategy`, `integration_points`,
   `technical_details`) when neither the change nor the stored value is set.
   """
-  # Validate that embed fields are arrays before casting
   def normalize_ai_context_fields(changeset) do
     changeset
     |> normalize_field(:security_considerations, [])

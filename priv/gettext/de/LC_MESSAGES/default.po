@@ -192,7 +192,7 @@ msgstr "Board erfolgreich erstellt"
 msgid "Board updated successfully"
 msgstr "Board erfolgreich aktualisiert"
 
-#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:171
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:174
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
@@ -2206,8 +2206,7 @@ msgstr "Es wurde kein Benutzer mit dieser E-Mail-Adresse gefunden"
 msgid "Metrics"
 msgstr "Kennzahlen"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:94
-#: lib/kanban_web/live/metrics_live/components/filters.ex:241
+#: lib/kanban_web/live/metrics_live/components/filters.ex:107
 #, elixir-autogen, elixir-format
 msgid "Agent Filter"
 msgstr "Agentenfilter"
@@ -2223,14 +2222,12 @@ msgstr "Agent unbekannt"
 
 #: lib/kanban_web/controllers/metrics_pdf_html.ex:112
 #: lib/kanban_web/export/metrics_excel.ex:122
-#: lib/kanban_web/live/metrics_live/components/filters.ex:108
-#: lib/kanban_web/live/metrics_live/components/filters.ex:252
+#: lib/kanban_web/live/metrics_live/components/filters.ex:119
 #, elixir-autogen, elixir-format
 msgid "All Agents"
 msgstr "Alle Agenten"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:63
-#: lib/kanban_web/live/metrics_live/components/filters.ex:227
+#: lib/kanban_web/live/metrics_live/components/filters.ex:90
 #: lib/kanban_web/live/metrics_live/helpers.ex:39
 #, elixir-autogen, elixir-format
 msgid "All Time"
@@ -2317,7 +2314,7 @@ msgstr "Abgeschlossen:"
 msgid "Created:"
 msgstr "Erstellt:"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:194
+#: lib/kanban_web/live/metrics_live/components/filters.ex:53
 #, elixir-autogen, elixir-format
 msgid "Customize your %{view_name} view"
 msgstr "Passen Sie Ihre %{view_name}-Ansicht an"
@@ -2348,8 +2345,7 @@ msgid "Excel"
 msgstr "Excel"
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:571
-#: lib/kanban_web/live/metrics_live/components/filters.ex:155
-#: lib/kanban_web/live/metrics_live/components/filters.ex:275
+#: lib/kanban_web/live/metrics_live/components/filters.ex:142
 #: lib/kanban_web/live/metrics_live/workspace.ex:403
 #, elixir-autogen, elixir-format
 msgid "Exclude Weekends"
@@ -2361,7 +2357,7 @@ msgstr "Wochenenden ausschließen"
 msgid "Export"
 msgstr "Exportieren"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:191
+#: lib/kanban_web/live/metrics_live/components/filters.ex:50
 #, elixir-autogen, elixir-format
 msgid "Filters"
 msgstr "Filter"
@@ -2392,22 +2388,19 @@ msgid "Human bottleneck analysis"
 msgstr "Engpassanalyse"
 
 #: lib/kanban_web/export/metrics_excel.ex:371
-#: lib/kanban_web/live/metrics_live/components/filters.ex:58
-#: lib/kanban_web/live/metrics_live/components/filters.ex:221
+#: lib/kanban_web/live/metrics_live/components/filters.ex:84
 #: lib/kanban_web/live/metrics_live/helpers.ex:37
 #, elixir-autogen, elixir-format
 msgid "Last 30 Days"
 msgstr "Letzte 30 Tage"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:55
-#: lib/kanban_web/live/metrics_live/components/filters.ex:218
+#: lib/kanban_web/live/metrics_live/components/filters.ex:81
 #: lib/kanban_web/live/metrics_live/helpers.ex:36
 #, elixir-autogen, elixir-format
 msgid "Last 7 Days"
 msgstr "Letzte 7 Tage"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:61
-#: lib/kanban_web/live/metrics_live/components/filters.ex:224
+#: lib/kanban_web/live/metrics_live/components/filters.ex:87
 #: lib/kanban_web/live/metrics_live/helpers.ex:38
 #, elixir-autogen, elixir-format
 msgid "Last 90 Days"
@@ -2453,6 +2446,7 @@ msgid "Min"
 msgstr "Min"
 
 #: lib/kanban_web/live/metrics_live/components.ex:185
+#: lib/kanban_web/live/metrics_live/components/trend_chart.ex:171
 #, elixir-autogen, elixir-format
 msgid "No data available"
 msgstr "Keine Daten verfügbar"
@@ -2578,8 +2572,7 @@ msgstr "Durchsatz"
 msgid "Throughput Metrics"
 msgstr "Durchsatz-Metriken"
 
-#: lib/kanban_web/live/metrics_live/components/filters.ex:40
-#: lib/kanban_web/live/metrics_live/components/filters.ex:205
+#: lib/kanban_web/live/metrics_live/components/filters.ex:67
 #, elixir-autogen, elixir-format
 msgid "Time Range"
 msgstr "Zeitraum"
@@ -2617,7 +2610,7 @@ msgstr "Zeit, die Aufgaben nach dem Abschluss auf eine Überprüfung warten"
 #: lib/kanban_web/components/agent_activity_feed.ex:456
 #: lib/kanban_web/components/agent_roster_card.ex:242
 #: lib/kanban_web/components/agents_header.ex:438
-#: lib/kanban_web/live/metrics_live/components/filters.ex:216
+#: lib/kanban_web/live/metrics_live/components/filters.ex:79
 #: lib/kanban_web/live/metrics_live/helpers.ex:35
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -8441,6 +8434,7 @@ msgid "Custom Range"
 msgstr "Benutzerdefinierter Zeitraum"
 
 #: lib/kanban_web/controllers/metrics_pdf_html/cycle_time.html.heex:160
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Cycle Time Trend"
 msgstr "Zykluszeit-Verlauf"
@@ -8484,6 +8478,7 @@ msgid "Included"
 msgstr "Eingeschlossen"
 
 #: lib/kanban_web/controllers/metrics_pdf_html/lead_time.html.heex:160
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Lead Time Trend"
 msgstr "Durchlaufzeit-Verlauf"
@@ -9580,3 +9575,23 @@ msgstr "bearbeitet"
 #, elixir-autogen, elixir-format
 msgid "via %{name}"
 msgstr "über %{name}"
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:65
+#, elixir-autogen, elixir-format
+msgid "Average cycle time per day"
+msgstr "Durchschnittliche Zykluszeit pro Tag"
+
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:63
+#, elixir-autogen, elixir-format
+msgid "Average lead time per day"
+msgstr "Durchschnittliche Durchlaufzeit pro Tag"
+
+#: lib/kanban_web/live/metrics_live/cycle_time.html.heex:68
+#, elixir-autogen, elixir-format
+msgid "No cycle time data available"
+msgstr "Keine Zykluszeit-Daten verfügbar"
+
+#: lib/kanban_web/live/metrics_live/lead_time.html.heex:66
+#, elixir-autogen, elixir-format
+msgid "No lead time data available"
+msgstr "Keine Durchlaufzeit-Daten verfügbar"

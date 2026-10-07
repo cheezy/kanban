@@ -7,8 +7,8 @@ defmodule KanbanWeb.MetricsLive.Components.ExportDropdown do
   string from the page's filters.
 
   Split from `KanbanWeb.MetricsLive.Components` to keep that module under the
-  module-size guidance in `AGENTS.md`. `KanbanWeb.MetricsLive.Components`
-  still delegates both dropdowns here, so callers keep using it.
+  module-size guidance in `AGENTS.md`. Callers import or alias this module
+  directly, so HEEx checks each call's attributes at compile time.
   """
   use Phoenix.Component
   use Gettext, backend: KanbanWeb.Gettext

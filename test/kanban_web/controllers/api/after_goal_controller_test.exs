@@ -215,6 +215,27 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
       assert length(reloaded_goal.after_goal_attempts) == 1
     end
 
+    # An empty `## after_goal` section did no work and reports exactly this
+    # body, so zero is the lower bound that must be accepted.
+    test "a zero duration_ms is accepted and stored", ctx do
+      %{conn: conn, done_column: done_column} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{goal.id}/after_goal", %{
+          "exit_code" => 0,
+          "output" => "",
+          "duration_ms" => 0
+        })
+
+      assert json_response(conn, 200)
+      reloaded_goal = Tasks.get_task!(goal.id)
+      assert reloaded_goal.after_goal_status == :succeeded
+      assert reloaded_goal.column_id == done_column.id
+      assert reloaded_goal.after_goal_result["duration_ms"] == 0
+    end
+
     test "result has reported_at timestamp appended by the server", ctx do
       %{conn: conn} = ctx
       %{goal: goal, child: child} = create_goal_with_single_child(ctx)
@@ -362,6 +383,22 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
   end
 
   describe "endpoint validation" do
+    test "returns 422 for a negative duration_ms and records nothing", ctx do
+      %{conn: conn} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{goal.id}/after_goal", %{
+          "exit_code" => 0,
+          "output" => "",
+          "duration_ms" => -1
+        })
+
+      assert json_response(conn, 422)["error"] =~ "duration_ms: non-negative integer"
+      assert Tasks.get_task!(goal.id).after_goal_attempts in [nil, []]
+    end
+
     test "returns 422 when target task is not a goal", ctx do
       %{conn: conn, user: user, doing_column: doing_column} = ctx
 

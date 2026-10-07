@@ -6,10 +6,11 @@ defmodule KanbanWeb.MetricsLive.Components.TrendChart do
   PDF export.
 
   Split from `KanbanWeb.MetricsLive.Components` to keep that module under the
-  module-size guidance in `AGENTS.md`. `KanbanWeb.MetricsLive.Components`
-  still delegates `trend_chart/1` here, so callers keep importing it.
+  module-size guidance in `AGENTS.md`. Callers import or alias this module
+  directly, so HEEx checks each call's attributes at compile time.
   """
   use Phoenix.Component
+  use Gettext, backend: KanbanWeb.Gettext
 
   import KanbanWeb.MetricsLive.Components.Icon
 
@@ -20,7 +21,9 @@ defmodule KanbanWeb.MetricsLive.Components.TrendChart do
   attr :subtitle, :string, required: true
   attr :daily_times, :list, required: true
   attr :format_fn, :any, required: true
-  attr :empty_message, :string, default: "No data available"
+  # nil means the translated "No data available", resolved at render time: a
+  # gettext call as the attr default would be fixed at compile time.
+  attr :empty_message, :string, default: nil
 
   def trend_chart(assigns) do
     ~H"""
@@ -165,7 +168,7 @@ defmodule KanbanWeb.MetricsLive.Components.TrendChart do
           <.icon name="hero-chart-bar" class="h-8 w-8" />
         </span>
         <p style="margin: 8px 0 0; font-size: 12.5px; color: var(--ink-3); font-style: italic;">
-          {@empty_message}
+          {@empty_message || gettext("No data available")}
         </p>
       </div>
     </section>

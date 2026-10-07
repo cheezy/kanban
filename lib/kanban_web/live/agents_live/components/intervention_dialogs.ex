@@ -150,16 +150,19 @@ defmodule KanbanWeb.AgentsLive.Components.InterventionDialogs do
       <div class="flex flex-col gap-4">
         <h2 class="text-lg font-semibold text-base-content">{@title}</h2>
 
-        <p class="text-sm text-base-content opacity-70">{@summary}</p>
+        <%!-- Secondary text takes the --ink-2 token, never an opacity, which the
+        contrast gate cannot measure (D214). The dialog renders inside the
+        Agents page's .stride-screen, where the token is defined. --%>
+        <p class="text-sm" style="color: var(--ink-2);">{@summary}</p>
 
         <ul class="flex flex-col gap-1 text-sm text-base-content" data-intervention-affected>
           <li data-intervention-goal={@goal.id}>
             <span class="font-mono">{@goal.identifier}</span>
-            <span class="opacity-70">— {@goal.title}</span>
+            <span style="color: var(--ink-2);">— {@goal.title}</span>
           </li>
           <li :for={child <- @children} data-intervention-child={child.id}>
             <span class="font-mono">{child.identifier}</span>
-            <span class="opacity-70">— {child.title}</span>
+            <span style="color: var(--ink-2);">— {child.title}</span>
           </li>
         </ul>
 

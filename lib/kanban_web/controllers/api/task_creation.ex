@@ -219,7 +219,11 @@ defmodule KanbanWeb.API.TaskCreation do
   # emit_telemetry/3 is controller-wide infra keyed off conn.
   @doc false
   def log_create_forbidden_fields(conn, goal_fields, child_fields) do
-    TaskParamFilter.log_create_mass_assignment(goal_fields, child_fields, actor_user_id(conn))
+    TaskParamFilter.log_create_mass_assignment(
+      goal_fields,
+      child_fields,
+      TaskParamFilter.actor_user_id(conn)
+    )
 
     if goal_fields != [] or child_fields != [] do
       TaskActions.emit_telemetry(conn, :task_create_forbidden_fields_filtered, %{
@@ -228,6 +232,4 @@ defmodule KanbanWeb.API.TaskCreation do
       })
     end
   end
-
-  defp actor_user_id(conn), do: conn.assigns[:current_user] && conn.assigns.current_user.id
 end

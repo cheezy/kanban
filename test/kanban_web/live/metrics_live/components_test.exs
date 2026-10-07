@@ -261,201 +261,6 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
     end
   end
 
-  describe "time_range_filter/1" do
-    test "renders with current selection" do
-      assigns = %{
-        current_range: :last_30_days,
-        on_change: "filter_time_range",
-        class: ""
-      }
-
-      html =
-        rendered_to_string(~H"""
-        <Filters.time_range_filter
-          current_range={@current_range}
-          on_change={@on_change}
-          class={@class}
-        />
-        """)
-
-      assert html =~ "Time Range"
-      assert html =~ "Last 7 Days"
-      assert html =~ "Last 30 Days"
-      assert html =~ "Last 90 Days"
-      assert html =~ "All Time"
-      assert html =~ "phx-change=\"filter_time_range\""
-    end
-
-    test "marks correct option as selected" do
-      assigns = %{
-        current_range: :last_7_days,
-        on_change: "filter_time_range",
-        class: ""
-      }
-
-      html =
-        rendered_to_string(~H"""
-        <Filters.time_range_filter
-          current_range={@current_range}
-          on_change={@on_change}
-          class={@class}
-        />
-        """)
-
-      assert html =~ "selected"
-      assert html =~ "last_7_days"
-    end
-
-    test "includes ARIA label" do
-      assigns = %{
-        current_range: :last_30_days,
-        on_change: "filter_time_range",
-        class: ""
-      }
-
-      html =
-        rendered_to_string(~H"""
-        <Filters.time_range_filter
-          current_range={@current_range}
-          on_change={@on_change}
-          class={@class}
-        />
-        """)
-
-      assert html =~ "aria-label=\"Select time range\""
-    end
-  end
-
-  describe "agent_filter/1" do
-    test "renders with empty agents list" do
-      assigns = %{
-        agents: [],
-        current_agent: nil,
-        on_change: "filter_agent",
-        class: ""
-      }
-
-      html =
-        rendered_to_string(~H"""
-        <Filters.agent_filter
-          agents={@agents}
-          current_agent={@current_agent}
-          on_change={@on_change}
-          class={@class}
-        />
-        """)
-
-      assert html =~ "Agent Filter"
-      assert html =~ "All Agents"
-      assert html =~ "phx-change=\"filter_agent\""
-    end
-
-    test "renders with agents list" do
-      assigns = %{
-        agents: ["Claude Sonnet 4.5", "GPT-4"],
-        current_agent: nil,
-        on_change: "filter_agent",
-        class: ""
-      }
-
-      html =
-        rendered_to_string(~H"""
-        <Filters.agent_filter
-          agents={@agents}
-          current_agent={@current_agent}
-          on_change={@on_change}
-          class={@class}
-        />
-        """)
-
-      assert html =~ "Claude Sonnet 4.5"
-      assert html =~ "GPT-4"
-    end
-
-    test "marks selected agent" do
-      assigns = %{
-        agents: ["Claude Sonnet 4.5", "GPT-4"],
-        current_agent: "Claude Sonnet 4.5",
-        on_change: "filter_agent",
-        class: ""
-      }
-
-      html =
-        rendered_to_string(~H"""
-        <Filters.agent_filter
-          agents={@agents}
-          current_agent={@current_agent}
-          on_change={@on_change}
-          class={@class}
-        />
-        """)
-
-      assert html =~ "selected"
-      assert html =~ "Claude Sonnet 4.5"
-    end
-  end
-
-  describe "weekend_toggle/1" do
-    test "renders unchecked by default" do
-      assigns = %{
-        exclude_weekends: false,
-        on_change: "toggle_weekends",
-        class: ""
-      }
-
-      html =
-        rendered_to_string(~H"""
-        <Filters.weekend_toggle
-          exclude_weekends={@exclude_weekends}
-          on_change={@on_change}
-          class={@class}
-        />
-        """)
-
-      assert html =~ "Exclude Weekends"
-      assert html =~ "phx-change=\"toggle_weekends\""
-      refute html =~ "checked"
-    end
-
-    test "renders checked when true" do
-      assigns = %{
-        exclude_weekends: true,
-        on_change: "toggle_weekends",
-        class: ""
-      }
-
-      html =
-        rendered_to_string(~H"""
-        <Filters.weekend_toggle
-          exclude_weekends={@exclude_weekends}
-          on_change={@on_change}
-          class={@class}
-        />
-        """)
-
-      assert html =~ "checked"
-    end
-
-    test "includes ARIA label" do
-      assigns = %{
-        exclude_weekends: false,
-        on_change: "toggle_weekends",
-        class: ""
-      }
-
-      html =
-        rendered_to_string(~H"""
-        <Filters.weekend_toggle
-          exclude_weekends={@exclude_weekends}
-          on_change={@on_change}
-          class={@class}
-        />
-        """)
-
-      assert html =~ "aria-label=\"Exclude weekends from calculations\""
-    end
-  end
-
   describe "metric_filters/1" do
     test "renders with all filter options" do
       assigns = %{
@@ -1347,6 +1152,48 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
       assert html =~ "border-left: 2px solid var(--ink-3)"
       assert html =~ "1 task"
       refute html =~ "border-blue-500"
+    end
+  end
+
+  describe "translated labels" do
+    test "the filter form links each label to its control" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <Filters.metric_filters
+          time_range={:last_7_days}
+          exclude_weekends={false}
+          agents={["Claude"]}
+          view_name="throughput"
+        />
+        """)
+
+      assert html =~ ~s(for="metrics-filter-time-range")
+      assert html =~ ~s(id="metrics-filter-time-range")
+      assert html =~ ~s(for="metrics-filter-agent")
+      assert html =~ ~s(id="metrics-filter-agent")
+      # The weekend checkbox sits inside its label, and its id is the only one.
+      assert length(Regex.scan(~r/id="exclude_weekends"/, html)) == 1
+    end
+
+    test "the trend chart's default empty message and the page labels are translated" do
+      assigns = %{}
+
+      html =
+        Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+          rendered_to_string(~H"""
+          <TrendChart.trend_chart
+            title="t"
+            subtitle="s"
+            daily_times={[]}
+            format_fn={&to_string/1}
+          />
+          """)
+        end)
+
+      assert html =~ "Keine Daten verfügbar"
+      refute html =~ "No data available"
     end
   end
 end

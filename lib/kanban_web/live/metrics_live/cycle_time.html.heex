@@ -61,11 +61,11 @@
       <.summary_stats stats={@summary_stats} format_fn={&format_cycle_time/1} />
 
       <.trend_chart
-        title="Cycle Time Trend"
-        subtitle="Average cycle time per day"
+        title={gettext("Cycle Time Trend")}
+        subtitle={gettext("Average cycle time per day")}
         daily_times={@daily_cycle_times}
         format_fn={&format_cycle_time_hours/1}
-        empty_message="No cycle time data available"
+        empty_message={gettext("No cycle time data available")}
       />
 
       <.task_list_panel

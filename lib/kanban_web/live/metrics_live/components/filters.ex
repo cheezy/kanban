@@ -1,162 +1,21 @@
 defmodule KanbanWeb.MetricsLive.Components.Filters do
   @moduledoc """
-  Filter controls for the board metrics pages: the combined
-  `metric_filters/1` form (time range, agent and weekend toggle) and the
-  standalone `time_range_filter/1`, `agent_filter/1` and `weekend_toggle/1`
-  controls.
+  The filter form for the board metrics pages: `metric_filters/1`, with the
+  time range, agent and weekend controls in one form.
+
+  The standalone `time_range_filter/1`, `agent_filter/1` and
+  `weekend_toggle/1` controls were removed: every metrics page has used this
+  combined form since the "removed duplication" consolidation, and nothing
+  called them.
 
   Split from `KanbanWeb.MetricsLive.Components` to keep that module under the
-  module-size guidance in `AGENTS.md`. `KanbanWeb.MetricsLive.Components`
-  still delegates every component here, so callers keep importing it.
+  module-size guidance in `AGENTS.md`. Callers import or alias this module
+  directly, so HEEx checks each call's attributes at compile time.
   """
   use Phoenix.Component
   use Gettext, backend: KanbanWeb.Gettext
 
   import KanbanWeb.MetricsLive.Components.Icon
-
-  @doc """
-  Renders a time range filter dropdown.
-
-  ## Examples
-
-      <.time_range_filter
-        current_range={:last_30_days}
-        on_change="filter_time_range"
-      />
-  """
-  attr :current_range, :atom, required: true, doc: "currently selected time range atom"
-  attr :on_change, :string, required: true, doc: "phx-change event name"
-  attr :class, :string, default: "", doc: "additional CSS classes"
-
-  def time_range_filter(assigns) do
-    ~H"""
-    <div class={@class} style="flex: 1; min-width: 200px;">
-      <label style={[
-        "display: block; margin-bottom: 6px;",
-        "font-size: 11px; font-weight: 600;",
-        "text-transform: uppercase; letter-spacing: 0.08em;",
-        "color: var(--ink-3);"
-      ]}>
-        {gettext("Time Range")}
-      </label>
-      <select
-        phx-change={@on_change}
-        name="time_range"
-        style={[
-          "display: block; width: 100%;",
-          "padding: 6px 10px; border-radius: 6px;",
-          "border: 1px solid var(--line);",
-          "background: var(--surface); color: var(--ink);",
-          "font-size: 12.5px;"
-        ]}
-        aria-label="Select time range"
-      >
-        <option value="last_7_days" selected={@current_range == :last_7_days}>
-          {gettext("Last 7 Days")}
-        </option>
-        <option value="last_30_days" selected={@current_range == :last_30_days}>
-          {gettext("Last 30 Days")}
-        </option>
-        <option value="last_90_days" selected={@current_range == :last_90_days}>
-          {gettext("Last 90 Days")}
-        </option>
-        <option value="all_time" selected={@current_range == :all_time}>{gettext("All Time")}</option>
-      </select>
-    </div>
-    """
-  end
-
-  @doc """
-  Renders an agent filter dropdown.
-
-  ## Examples
-
-      <.agent_filter
-        agents={["Claude Sonnet 4.5", "GPT-4"]}
-        current_agent={nil}
-        on_change="filter_agent"
-      />
-  """
-  attr :agents, :list, default: [], doc: "list of available agent names"
-  attr :current_agent, :string, default: nil, doc: "currently selected agent name"
-  attr :on_change, :string, required: true, doc: "phx-change event name"
-  attr :class, :string, default: "", doc: "additional CSS classes"
-
-  def agent_filter(assigns) do
-    ~H"""
-    <div class={@class} style="flex: 1; min-width: 200px;">
-      <label style={[
-        "display: block; margin-bottom: 6px;",
-        "font-size: 11px; font-weight: 600;",
-        "text-transform: uppercase; letter-spacing: 0.08em;",
-        "color: var(--ink-3);"
-      ]}>
-        {gettext("Agent Filter")}
-      </label>
-      <select
-        phx-change={@on_change}
-        name="agent_name"
-        style={[
-          "display: block; width: 100%;",
-          "padding: 6px 10px; border-radius: 6px;",
-          "border: 1px solid var(--line);",
-          "background: var(--surface); color: var(--ink);",
-          "font-size: 12.5px;"
-        ]}
-        aria-label="Filter by agent"
-      >
-        <option value="" selected={is_nil(@current_agent)}>{gettext("All Agents")}</option>
-        <option
-          :for={agent <- @agents}
-          value={agent}
-          selected={@current_agent == agent}
-        >
-          {agent}
-        </option>
-      </select>
-    </div>
-    """
-  end
-
-  @doc """
-  Renders a weekend exclusion toggle checkbox.
-
-  ## Examples
-
-      <.weekend_toggle
-        exclude_weekends={false}
-        on_change="toggle_weekends"
-      />
-  """
-  attr :exclude_weekends, :boolean, required: true, doc: "whether weekends are excluded"
-  attr :on_change, :string, required: true, doc: "phx-change event name"
-  attr :class, :string, default: "", doc: "additional CSS classes"
-
-  def weekend_toggle(assigns) do
-    ~H"""
-    <div
-      class={@class}
-      style="display: inline-flex; align-items: center; gap: 8px; margin-top: 24px;"
-    >
-      <input
-        type="checkbox"
-        id="exclude_weekends"
-        phx-change={@on_change}
-        name="exclude_weekends"
-        value={to_string(!@exclude_weekends)}
-        checked={@exclude_weekends}
-        style="width: 14px; height: 14px; accent-color: var(--stride-orange);"
-        aria-label="Exclude weekends from calculations"
-      />
-      <label
-        for="exclude_weekends"
-        style="font-size: 12px; font-weight: 500; color: var(--ink-2);"
-      >
-        {gettext("Exclude Weekends")}
-      </label>
-    </div>
-    """
-  end
 
   @doc """
   Renders the metrics filter form with time range, agent, and weekend toggle.
@@ -197,14 +56,18 @@ defmodule KanbanWeb.MetricsLive.Components.Filters do
       <form id="metrics-filter-form" phx-change="filter_change">
         <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px;">
           <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 220px;">
-            <label style={[
-              "font-size: 9.5px; font-weight: 600;",
-              "text-transform: uppercase; letter-spacing: 0.08em;",
-              "color: var(--ink-3);"
-            ]}>
+            <label
+              for="metrics-filter-time-range"
+              style={[
+                "font-size: 9.5px; font-weight: 600;",
+                "text-transform: uppercase; letter-spacing: 0.08em;",
+                "color: var(--ink-3);"
+              ]}
+            >
               {gettext("Time Range")}
             </label>
             <select
+              id="metrics-filter-time-range"
               name="time_range"
               style={[
                 "padding: 6px 10px; border-radius: 6px;",
@@ -233,14 +96,18 @@ defmodule KanbanWeb.MetricsLive.Components.Filters do
             :if={@show_agent_filter}
             style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 220px;"
           >
-            <label style={[
-              "font-size: 9.5px; font-weight: 600;",
-              "text-transform: uppercase; letter-spacing: 0.08em;",
-              "color: var(--ink-3);"
-            ]}>
+            <label
+              for="metrics-filter-agent"
+              style={[
+                "font-size: 9.5px; font-weight: 600;",
+                "text-transform: uppercase; letter-spacing: 0.08em;",
+                "color: var(--ink-3);"
+              ]}
+            >
               {gettext("Agent Filter")}
             </label>
             <select
+              id="metrics-filter-agent"
               name="agent_name"
               style={[
                 "padding: 6px 10px; border-radius: 6px;",

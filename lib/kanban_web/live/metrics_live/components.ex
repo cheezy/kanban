@@ -15,8 +15,8 @@ defmodule KanbanWeb.MetricsLive.Components do
   guidance in `AGENTS.md`; callers import or alias those modules directly, so
   HEEx still checks each call's attributes at compile time:
 
-    * `KanbanWeb.MetricsLive.Components.Filters` - the filter form and the
-      standalone time range, agent and weekend controls
+    * `KanbanWeb.MetricsLive.Components.Filters` - the filter form (time
+      range, agent and weekend controls)
     * `KanbanWeb.MetricsLive.Components.TrendChart` - the SVG trend chart
     * `KanbanWeb.MetricsLive.Components.ExportDropdown` - the board and
       workspace PDF/Excel export dropdowns

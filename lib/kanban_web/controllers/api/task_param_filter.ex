@@ -266,6 +266,12 @@ defmodule KanbanWeb.API.TaskParamFilter do
   def filter_child_tasks(other), do: {other, []}
 
   @doc """
+  The id of the authenticated API user on `conn`, or `nil` when there is none.
+  The actor id both mass-assignment audit log lines carry.
+  """
+  def actor_user_id(conn), do: conn.assigns[:current_user] && conn.assigns.current_user.id
+
+  @doc """
   Emits the monitored update-path mass-assignment audit log line. No-op when no
   forbidden field was rejected. The controller emits the companion telemetry
   event separately.

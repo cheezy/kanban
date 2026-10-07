@@ -134,7 +134,11 @@ defmodule KanbanWeb.API.TaskUpdate do
   # Emits the update-path mass-assignment audit log (via TaskParamFilter) and,
   # when a forbidden field was rejected, the companion telemetry event.
   defp log_update_forbidden_fields(conn, task, rejected_fields) do
-    TaskParamFilter.log_update_mass_assignment(task.id, rejected_fields, actor_user_id(conn))
+    TaskParamFilter.log_update_mass_assignment(
+      task.id,
+      rejected_fields,
+      TaskParamFilter.actor_user_id(conn)
+    )
 
     if rejected_fields != [] do
       TaskActions.emit_telemetry(conn, :task_update_forbidden_fields_filtered, %{
@@ -143,6 +147,4 @@ defmodule KanbanWeb.API.TaskUpdate do
       })
     end
   end
-
-  defp actor_user_id(conn), do: conn.assigns[:current_user] && conn.assigns.current_user.id
 end

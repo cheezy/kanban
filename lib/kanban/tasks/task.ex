@@ -153,6 +153,9 @@ defmodule Kanban.Tasks.Task do
   alias Kanban.Tasks.Task.Changesets
   alias Kanban.Tasks.Task.LengthValidations
 
+  @typedoc "A task or goal row (the `tasks` table)."
+  @type t :: %__MODULE__{}
+
   @doc "Valid `required_capabilities` strings. See `Kanban.Tasks.Task.Capabilities`."
   defdelegate valid_capabilities, to: Capabilities
 
