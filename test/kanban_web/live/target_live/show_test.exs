@@ -66,13 +66,6 @@ defmodule KanbanWeb.TargetLive.ShowTest do
     haystack |> String.split(needle) |> length() |> Kernel.-(1)
   end
 
-  defp index_of(haystack, needle) do
-    case :binary.match(haystack, needle) do
-      {start, _len} -> start
-      :nomatch -> -1
-    end
-  end
-
   describe "mount/3 — happy path" do
     setup [:register_and_log_in_user]
 
@@ -181,8 +174,16 @@ defmodule KanbanWeb.TargetLive.ShowTest do
       {:ok, _live, html} = live(conn, ~p"/targets/#{target}")
 
       # Identifiers must appear in numeric (not alphabetical) order in the markup.
-      positions = Enum.map(["G9", "G18", "G131"], &index_of(html, &1))
-      assert positions == Enum.sort(positions)
+      # Read the identifier cells themselves: a bare substring search over the
+      # whole page also matches random tokens (CSRF, phx-session) that can
+      # contain "G18" and so land before the table.
+      identifiers =
+        html
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query("[data-target-goal-row] [data-goal-col='identifier']")
+        |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
+
+      assert identifiers == ["G9", "G18", "G131"]
     end
 
     test "aggregates completed/total across multiple member goals in the hero",
