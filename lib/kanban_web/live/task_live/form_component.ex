@@ -105,16 +105,26 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     end
   end
 
+  # Authorization lives in Kanban.Tasks.CommentPolicy: create_comment/4 loads
+  # the task's board itself and admits any board member (read-only included),
+  # so neither socket.assigns.board nor the client params are trusted here.
   def handle_event("add_comment", %{"task_comment" => comment_params}, socket) do
-    if commenter_authorized?(socket) do
-      do_add_comment(socket, comment_params)
-    else
-      {:noreply,
-       put_flash(
-         socket,
-         :error,
-         gettext("You must be a board member to comment on this task")
-       )}
+    scope = Map.get(socket.assigns, :current_scope)
+
+    case Tasks.create_comment(scope, socket.assigns.task, comment_params) do
+      {:ok, _comment} ->
+        {:noreply, assign_after_comment_added(socket)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, :comment_form, to_form(changeset))}
+
+      {:error, _unauthorized_or_not_found} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You must be a board member to comment on this task")
+         )}
     end
   end
 
@@ -480,16 +490,6 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 
-  defp do_add_comment(socket, comment_params) do
-    case Tasks.create_comment(socket.assigns.task.id, comment_params) do
-      {:ok, _comment} ->
-        {:noreply, assign_after_comment_added(socket)}
-
-      {:error, changeset} ->
-        {:noreply, assign(socket, :comment_form, to_form(changeset))}
-    end
-  end
-
   defp assign_after_comment_added(socket) do
     task = Tasks.get_task_with_comments!(socket.assigns.task.id)
     comment_changeset = TaskComment.changeset(%TaskComment{}, %{})
@@ -498,28 +498,6 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     |> assign(:task, task)
     |> assign(:comment_form, to_form(comment_changeset))
     |> put_flash(:info, gettext("Comment added successfully"))
-  end
-
-  # Authorization gate for add_comment: caller must be a member of the
-  # board the task lives on. Read-only members are allowed (commenting
-  # is discussion, not state mutation). Public/unauthenticated viewers
-  # and authenticated users with no membership row are rejected. Note:
-  # TaskComment.changeset/2 never casts its author fields (author_user_id,
-  # author_agent_name), so spoofing the author via comment_params is
-  # structurally impossible — this gate covers the second half of the
-  # security review's concern ("verify the user is authorized to comment
-  # on socket.assigns.task").
-  # Called from handle_event("add_comment", ...); analyzer regex misses
-  # predicate `?` callers, hence the unused-defp false positive.
-  defp commenter_authorized?(socket) do
-    with %{user: %{id: user_id}} <- Map.get(socket.assigns, :current_scope),
-         %{} = board <- socket.assigns[:board],
-         access when not is_nil(access) <-
-           Kanban.Boards.get_user_access(board.id, user_id) do
-      true
-    else
-      _ -> false
-    end
   end
 
   # D110: the task create/edit save path is a modify action. Board access is

@@ -150,6 +150,14 @@ defmodule KanbanWeb.API.McpControllerTest do
     reader = user_fixture()
     {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
     {:ok, {_t, token}} = ApiTokens.create_api_token(reader, board, %{"name" => "Reader"})
+    {authed(build_conn(), token), reader}
+  end
+
+  # A token whose user holds no membership row on the board. Token creation
+  # does not itself check membership, which is what lets this case exist.
+  defp non_member_conn(board) do
+    stranger = user_fixture()
+    {:ok, {_t, token}} = ApiTokens.create_api_token(stranger, board, %{"name" => "Stranger"})
     authed(build_conn(), token)
   end
 
@@ -669,13 +677,13 @@ defmodule KanbanWeb.API.McpControllerTest do
   end
 
   describe "read-only members" do
-    test "cannot claim, complete or comment, and nothing changes", %{
+    test "cannot claim or complete, but can comment as themselves", %{
       board: board,
       user: owner,
       ready_column: ready_column,
       doing_column: doing_column
     } do
-      conn = reader_conn(board, owner)
+      {conn, reader} = reader_conn(board, owner)
       ready = ready_task(ready_column, owner)
       claimed = claimed_task(doing_column, owner)
 
@@ -692,15 +700,18 @@ defmodule KanbanWeb.API.McpControllerTest do
       assert complete["http_status"] == 403
       assert complete["error_code"] == "not_authorized_to_complete"
 
-      {true, comment} =
+      {false, comment} =
         call_tool(conn, "stride_add_comment", %{"id" => ready.id, "content" => "hi"})
 
-      assert comment["error_code"] == "not_authorized_write"
-      assert comment["http_status"] == 403
+      assert comment["data"]["task_id"] == ready.id
 
       assert Tasks.get_task!(ready.id).status == :open
       assert Tasks.get_task!(claimed.id).column_id == doing_column.id
-      assert Tasks.get_task_with_comments!(ready.id).comments == []
+
+      assert [%{content: "hi", author_user_id: author_id}] =
+               Tasks.get_task_with_comments!(ready.id).comments
+
+      assert author_id == reader.id
     end
   end
 
@@ -721,6 +732,38 @@ defmodule KanbanWeb.API.McpControllerTest do
       assert body["data"]["task_id"] == task.id
       assert body["data"]["content"] == "Looks good"
       assert [%{content: "Looks good"}] = Tasks.get_task_with_comments!(task.id).comments
+    end
+
+    test "stores the token's user as the author", %{
+      conn: conn,
+      user: user,
+      ready_column: ready_column
+    } do
+      task = ready_task(ready_column, user)
+
+      {false, _body} =
+        call_tool(conn, "stride_add_comment", %{"id" => task.identifier, "content" => "Mine"})
+
+      assert [%{author_user_id: author_id}] = Tasks.get_task_with_comments!(task.id).comments
+      assert author_id == user.id
+    end
+
+    test "a token user with no board membership is refused with not_authorized", %{
+      board: board,
+      user: user,
+      ready_column: ready_column
+    } do
+      task = ready_task(ready_column, user)
+
+      {true, body} =
+        call_tool(non_member_conn(board), "stride_add_comment", %{
+          "id" => task.identifier,
+          "content" => "Let me in"
+        })
+
+      assert body["error_code"] == "not_authorized"
+      assert body["http_status"] == 403
+      assert Tasks.get_task_with_comments!(task.id).comments == []
     end
 
     test "an empty comment is rejected by the schema", %{

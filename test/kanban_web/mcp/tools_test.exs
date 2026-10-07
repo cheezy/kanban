@@ -467,6 +467,14 @@ defmodule KanbanWeb.MCP.ToolsTest do
       assert body["error"] =~ "write access"
     end
 
+    test "failure maps :not_authorized (no board membership) to a 403" do
+      body = :not_authorized |> Tools.failure() |> text_body()
+
+      assert body["error_code"] == "not_authorized"
+      assert body["http_status"] == 403
+      assert body["error"] =~ "board membership"
+    end
+
     test "success wraps the body as JSON text" do
       assert Tools.success(%{a: 1}) == %{
                content: [%{type: "text", text: ~s({"a":1})}],

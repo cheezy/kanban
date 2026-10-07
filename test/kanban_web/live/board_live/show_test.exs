@@ -2467,6 +2467,27 @@ defmodule KanbanWeb.BoardLive.ShowTest do
     end
   end
 
+  describe "PubSub :comment_changed event" do
+    setup [:register_and_log_in_user]
+
+    test "a comment broadcast on the board topic is ignored without crashing the view",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Discussed task"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      send(
+        view.pid,
+        {Kanban.Tasks.Comments, :comment_changed, %{task_id: task.id, board_id: board.id}}
+      )
+
+      assert render(view) =~ "Discussed task"
+      assert Process.alive?(view.pid)
+    end
+  end
+
   describe "PubSub :task_deleted event with skip_next_reload" do
     setup [:register_and_log_in_user]
 

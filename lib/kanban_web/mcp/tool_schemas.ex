@@ -168,7 +168,7 @@ defmodule KanbanWeb.MCP.ToolSchemas do
       "name" => "stride_add_comment",
       "title" => "Add comment",
       "description" =>
-        "Adds a comment to a task on the token's board. Requires owner or modify access to the board.",
+        "Adds a comment to a task on the token's board, authored by the token's user. Any board member may comment, including read-only members.",
       "inputSchema" => %{
         "type" => "object",
         "properties" => %{

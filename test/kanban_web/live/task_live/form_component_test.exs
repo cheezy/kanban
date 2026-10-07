@@ -575,6 +575,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       # Task should be reloaded with new comment
       assert length(updated_socket.assigns.task.comments) == 1
       assert hd(updated_socket.assigns.task.comments).content == "New comment"
+      assert hd(updated_socket.assigns.task.comments).author_user_id == user.id
 
       # Comment form should be reset
       assert updated_socket.assigns.comment_form
@@ -640,6 +641,38 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
 
       assert updated_socket.assigns.flash["error"] =~ "must be a board member"
       # No comment row was created.
+      assert Kanban.Repo.aggregate(Kanban.Tasks.TaskComment, :count) == 0
+    end
+
+    test "rejects add_comment when the assigned board is not the task's board" do
+      owner = user_fixture()
+      outsider = user_fixture()
+      board = board_fixture(owner)
+      outsider_board = board_fixture(outsider)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Not Yours"})
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: outsider},
+            task: task,
+            board: outsider_board,
+            action: :edit_task
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event(
+          "add_comment",
+          %{"task_comment" => %{"content" => "board swap"}},
+          socket
+        )
+
+      assert updated_socket.assigns.flash["error"] =~ "must be a board member"
       assert Kanban.Repo.aggregate(Kanban.Tasks.TaskComment, :count) == 0
     end
 

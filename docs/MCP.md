@@ -109,10 +109,12 @@ Notes:
   `meta.next_cursor` is `null`. Pass `"response_view": "full"` to get whole
   tasks. A full-view page is capped by a byte budget, as described in
   [Full-view size limit](#full-view-size-limit).
-- **`stride_add_comment`** needs `owner` or `modify` access to the board.
-  `stride_claim_task` and `stride_complete_task` need the same access, as they
-  do over REST. Over MCP, a read-only member cannot comment, even though the
-  board UI lets read-only members comment.
+- **`stride_add_comment`** is open to any member of the board, `read_only`
+  included. The comment is stored with the token's
+  user as its author. A token user with no membership on the board is refused
+  with `error_code` `not_authorized` (HTTP status 403).
+  `stride_claim_task` and `stride_complete_task` still need `owner` or
+  `modify` access, as they do over REST.
 
 ### Full-view size limit
 

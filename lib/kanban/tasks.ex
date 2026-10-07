@@ -13,6 +13,7 @@ defmodule Kanban.Tasks do
   - `Tasks.AgentWorkflow` - Agent claim, complete, review, unclaim
   - `Tasks.GoalCompletion` - Transactional last-child-completion detection
   - `Tasks.Broadcaster` - PubSub broadcasting
+  - `Tasks.Comments` - Task comments, authorized by `Tasks.CommentPolicy`
   - `Tasks.Identifiers` - Identifier generation
   - `Tasks.History` - Move/priority/assignment history
   """
@@ -44,7 +45,15 @@ defmodule Kanban.Tasks do
   defdelegate list_children_for_goal(user, goal_id), to: Queries
   defdelegate list_goal_choices_for_board(board_id, exclude_task_id), to: Queries
   defdelegate get_task_with_comments!(id), to: Queries
-  defdelegate create_comment(task_id, attrs), to: Comments
+
+  def create_comment(scope, task, attrs, opts \\ []),
+    do: Comments.create_comment(scope, task, attrs, opts)
+
+  defdelegate update_comment(scope, comment, attrs), to: Comments
+  defdelegate delete_comment(scope, comment), to: Comments
+  defdelegate get_comment!(id), to: Comments
+  defdelegate list_comments(task), to: Comments
+
   defdelegate completed_task_counts_by_agent, to: Queries
   defdelegate list_archived_tasks(column), to: Queries
   defdelegate list_archived_tasks_for_board(board_id), to: Queries

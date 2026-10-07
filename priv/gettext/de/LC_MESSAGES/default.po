@@ -260,7 +260,7 @@ msgstr "Verwenden Sie dieses Formular, um Board-Datensätze in Ihrer Datenbank z
 msgid "Column created successfully"
 msgstr "Spalte erfolgreich erstellt"
 
-#: lib/kanban_web/live/board_live/show.ex:876
+#: lib/kanban_web/live/board_live/show.ex:887
 #, elixir-autogen, elixir-format
 msgid "Column deleted successfully"
 msgstr "Spalte erfolgreich gelöscht"
@@ -280,7 +280,7 @@ msgstr "Erstellen Sie eine neue Spalte für Ihr Board"
 msgid "Create your first column"
 msgstr "Erstellen Sie Ihre erste Spalte"
 
-#: lib/kanban_web/live/board_live/show.ex:881
+#: lib/kanban_web/live/board_live/show.ex:892
 #, elixir-autogen, elixir-format
 msgid "Failed to delete column"
 msgstr "Spalte konnte nicht gelöscht werden"
@@ -327,7 +327,7 @@ msgstr "Neue Aufgabe erstellen"
 #: lib/kanban_web/live/archive_live/index.ex:474
 #: lib/kanban_web/live/archive_live/index.ex:499
 #: lib/kanban_web/live/board_live/show.ex:182
-#: lib/kanban_web/live/board_live/show.ex:1033
+#: lib/kanban_web/live/board_live/show.ex:1044
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
 msgstr "Aufgabe konnte nicht gelöscht werden"
@@ -337,13 +337,13 @@ msgstr "Aufgabe konnte nicht gelöscht werden"
 msgid "Save Task"
 msgstr "Aufgabe speichern"
 
-#: lib/kanban_web/live/task_live/form_component.ex:411
+#: lib/kanban_web/live/task_live/form_component.ex:421
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "Aufgabe erfolgreich erstellt"
 
 #: lib/kanban_web/live/archive_live/index.ex:470
-#: lib/kanban_web/live/board_live/show.ex:1019
+#: lib/kanban_web/live/board_live/show.ex:1030
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
 msgstr "Aufgabe erfolgreich gelöscht"
@@ -368,7 +368,7 @@ msgstr "Titel"
 msgid "Update task details"
 msgstr "Aufgabendetails aktualisieren"
 
-#: lib/kanban_web/live/task_live/form_component.ex:429
+#: lib/kanban_web/live/task_live/form_component.ex:439
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "WIP-Limit für diese Spalte erreicht"
@@ -384,7 +384,7 @@ msgstr "WIP-Limit für diese Spalte erreicht"
 msgid "Stride"
 msgstr "Stride"
 
-#: lib/kanban_web/live/board_live/show.ex:618
+#: lib/kanban_web/live/board_live/show.ex:629
 #, elixir-autogen, elixir-format
 msgid "Cannot move task: column has reached its WIP limit"
 msgstr "Aufgabe kann nicht verschoben werden: Spalte hat ihr WIP-Limit erreicht"
@@ -421,7 +421,7 @@ msgid "Defect"
 msgstr "Fehler"
 
 #: lib/kanban_web/live/board_live/show.ex:235
-#: lib/kanban_web/live/board_live/show.ex:588
+#: lib/kanban_web/live/board_live/show.ex:599
 #, elixir-autogen, elixir-format
 msgid "Failed to move task"
 msgstr "Aufgabe konnte nicht verschoben werden"
@@ -1290,7 +1290,7 @@ msgid "Estimated Files"
 msgstr "Geschätzte Dateien"
 
 #: lib/kanban_web/live/board_live/field_visibility.ex:48
-#: lib/kanban_web/live/board_live/show.ex:865
+#: lib/kanban_web/live/board_live/show.ex:876
 #, elixir-autogen, elixir-format
 msgid "Failed to update field visibility"
 msgstr "Feldsichtbarkeit konnte nicht aktualisiert werden"
@@ -1355,7 +1355,7 @@ msgstr "Bei Fehler (was passiert)"
 
 #: lib/kanban_web/live/board_live/field_visibility.ex:45
 #: lib/kanban_web/live/board_live/show.ex:262
-#: lib/kanban_web/live/board_live/show.ex:862
+#: lib/kanban_web/live/board_live/show.ex:873
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr "Nur Board-Besitzer können die Feldsichtbarkeit ändern"
@@ -1862,7 +1862,7 @@ msgstr "Stride ist mehr als ein Kanban-Board — es wurde von Grund auf entwicke
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "Dieser kollaborative Ansatz erlaubt es Teams, repetitive Programmieraufgaben an KI-Agenten zu delegieren, während sich Menschen auf übergeordnete Entscheidungen, Architektur und die Prüfung KI-generierten Codes vor dem Merge konzentrieren."
 
-#: lib/kanban_web/live/task_live/form_component.ex:433
+#: lib/kanban_web/live/task_live/form_component.ex:443
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "Aufgabe kann nicht hinzugefügt werden: WIP-Limit für diese Spalte erreicht"
@@ -1882,9 +1882,9 @@ msgstr "Erwartetes Ergebnis"
 msgid "Note about this file"
 msgstr "Hinweis zu dieser Datei"
 
-#: lib/kanban_web/live/task_live/form_component.ex:234
-#: lib/kanban_web/live/task_live/form_component.ex:371
-#: lib/kanban_web/live/task_live/form_component.ex:420
+#: lib/kanban_web/live/task_live/form_component.ex:244
+#: lib/kanban_web/live/task_live/form_component.ex:381
+#: lib/kanban_web/live/task_live/form_component.ex:430
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "Bitte beheben Sie die untenstehenden Fehler"
@@ -1957,7 +1957,7 @@ msgid "Delete"
 msgstr "Löschen"
 
 #: lib/kanban_web/live/board_live/show.ex:163
-#: lib/kanban_web/live/board_live/show.ex:1006
+#: lib/kanban_web/live/board_live/show.ex:1017
 #, elixir-autogen, elixir-format
 msgid "Failed to archive task"
 msgstr "Aufgabe konnte nicht archiviert werden"
@@ -1968,7 +1968,7 @@ msgstr "Aufgabe konnte nicht archiviert werden"
 msgid "Failed to unarchive task"
 msgstr "Aufgabe konnte nicht aus dem Archiv geholt werden"
 
-#: lib/kanban_web/live/board_live/show.ex:1000
+#: lib/kanban_web/live/board_live/show.ex:1011
 #, elixir-autogen, elixir-format
 msgid "Task archived successfully"
 msgstr "Aufgabe erfolgreich archiviert"
@@ -1978,14 +1978,14 @@ msgstr "Aufgabe erfolgreich archiviert"
 msgid "Task unarchived successfully"
 msgstr "Aufgabe erfolgreich aus dem Archiv geholt"
 
-#: lib/kanban_web/live/task_live/form_component.ex:275
-#: lib/kanban_web/live/task_live/form_component.ex:309
+#: lib/kanban_web/live/task_live/form_component.ex:285
+#: lib/kanban_web/live/task_live/form_component.ex:319
 #, elixir-autogen, elixir-format
 msgid "Column does not belong to this board"
 msgstr "Spalte gehört nicht zu diesem Board"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:34
-#: lib/kanban_web/live/task_live/form_component.ex:279
+#: lib/kanban_web/live/task_live/form_component.ex:289
 #, elixir-autogen, elixir-format
 msgid "Security error: Invalid column"
 msgstr "Sicherheitsfehler: Ungültige Spalte"
@@ -2043,7 +2043,7 @@ msgstr "Zurück zu allen Ressourcen"
 msgid "Browse all guides"
 msgstr "Alle Anleitungen durchsuchen"
 
-#: lib/kanban_web/live/board_live/show.ex:1029
+#: lib/kanban_web/live/board_live/show.ex:1040
 #, elixir-autogen, elixir-format
 msgid "Cannot delete task: other tasks depend on it. Remove dependencies first."
 msgstr "Aufgabe kann nicht gelöscht werden: andere Aufgaben hängen davon ab. Entfernen Sie zuerst die Abhängigkeiten."
@@ -2683,7 +2683,7 @@ msgstr "Aufgaben abgeschlossen"
 #: lib/kanban_web/live/archive_live/index.ex:33
 #: lib/kanban_web/live/board_live/form.ex:124
 #: lib/kanban_web/live/board_live/index.ex:288
-#: lib/kanban_web/live/board_live/show.ex:1072
+#: lib/kanban_web/live/board_live/show.ex:1083
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
 #: lib/kanban_web/live/metrics_live/base.ex:82
@@ -2700,7 +2700,7 @@ msgid "Check this box if this task is for human workers only and should not be c
 msgstr "Aktivieren Sie dieses Kontrollkästchen, wenn diese Aufgabe nur für menschliche Bearbeiter ist und nicht von KI-Agenten beansprucht werden soll"
 
 #: lib/kanban_web/live/board_live/show.ex:201
-#: lib/kanban_web/live/board_live/show.ex:474
+#: lib/kanban_web/live/board_live/show.ex:485
 #, elixir-autogen, elixir-format
 msgid "Failed to move goal to Ready"
 msgstr "Ziel konnte nicht in Ready verschoben werden"
@@ -2715,7 +2715,7 @@ msgstr "Menschliche Aufgabe"
 msgid "Move goal and tasks to Ready"
 msgstr "Ziel und Aufgaben nach „Bereit“ verschieben"
 
-#: lib/kanban_web/live/board_live/show.ex:471
+#: lib/kanban_web/live/board_live/show.ex:482
 #, elixir-autogen, elixir-format
 msgid "Only goals can be promoted"
 msgstr "Nur Ziele können hochgestuft werden"
@@ -2982,7 +2982,7 @@ msgstr "Nur der Board-Besitzer kann die Board-Mitgliedschaft verwalten"
 msgid "Tango is a Canada-based software company focused on building modern, scalable digital products by combining cutting-edge technology with AI-assisted development. We help organizations move faster, build smarter, and deliver higher-quality software without unnecessary complexity."
 msgstr "Tango ist ein in Kanada ansässiges Softwareunternehmen, das moderne, skalierbare digitale Produkte entwickelt, indem es Spitzentechnologie mit KI-gestützter Entwicklung kombiniert. Wir helfen Organisationen, schneller voranzukommen, intelligenter zu bauen und qualitativ hochwertigere Software ohne unnötige Komplexität auszuliefern."
 
-#: lib/kanban_web/live/board_live/show.ex:988
+#: lib/kanban_web/live/board_live/show.ex:999
 #, elixir-autogen, elixir-format
 msgid "Task not found"
 msgstr "Aufgabe nicht gefunden"
@@ -3074,7 +3074,7 @@ msgstr "Geschwindigkeit"
 msgid "was born from our hands-on work with two AI tools —"
 msgstr "entstand aus unserer praktischen Arbeit mit zwei KI-Tools —"
 
-#: lib/kanban_web/live/task_live/form_component.ex:345
+#: lib/kanban_web/live/task_live/form_component.ex:355
 #, elixir-autogen, elixir-format
 msgid "Assignee does not have access to this board"
 msgstr "Der Zugewiesene hat keinen Zugriff auf dieses Board"
@@ -3084,16 +3084,16 @@ msgstr "Der Zugewiesene hat keinen Zugriff auf dieses Board"
 msgid "Backlog Wait Tasks"
 msgstr "Aufgaben in Backlog-Wartezeit"
 
-#: lib/kanban_web/live/board_live/show.ex:524
-#: lib/kanban_web/live/board_live/show.ex:563
-#: lib/kanban_web/live/board_live/show.ex:748
-#: lib/kanban_web/live/board_live/show.ex:775
-#: lib/kanban_web/live/board_live/show.ex:841
+#: lib/kanban_web/live/board_live/show.ex:535
+#: lib/kanban_web/live/board_live/show.ex:574
+#: lib/kanban_web/live/board_live/show.ex:759
+#: lib/kanban_web/live/board_live/show.ex:786
+#: lib/kanban_web/live/board_live/show.ex:852
 #, elixir-autogen, elixir-format
 msgid "Column not found on this board"
 msgstr "Spalte auf diesem Board nicht gefunden"
 
-#: lib/kanban_web/live/board_live/show.ex:910
+#: lib/kanban_web/live/board_live/show.ex:921
 #, elixir-autogen, elixir-format
 msgid "Column or task not found on this board"
 msgstr "Spalte oder Aufgabe auf diesem Board nicht gefunden"
@@ -3109,7 +3109,7 @@ msgstr "Senden des Problems fehlgeschlagen. Bitte versuchen Sie es später erneu
 msgid "Invalid field name"
 msgstr "Ungültiger Feldname"
 
-#: lib/kanban_web/live/task_live/form_component.ex:327
+#: lib/kanban_web/live/task_live/form_component.ex:337
 #, elixir-autogen, elixir-format
 msgid "Parent goal does not belong to this board"
 msgstr "Übergeordnetes Ziel gehört nicht zu diesem Board"
@@ -3139,12 +3139,12 @@ msgstr "Sicherheitsfehler: Ungültiger Zugewiesener"
 msgid "Security error: Invalid parent goal"
 msgstr "Sicherheitsfehler: Ungültiges übergeordnetes Ziel"
 
-#: lib/kanban_web/live/board_live/show.ex:936
+#: lib/kanban_web/live/board_live/show.ex:947
 #, elixir-autogen, elixir-format
 msgid "Task not found on this board"
 msgstr "Aufgabe auf diesem Board nicht gefunden"
 
-#: lib/kanban_web/live/task_live/form_component.ex:116
+#: lib/kanban_web/live/task_live/form_component.ex:126
 #, elixir-autogen, elixir-format
 msgid "You must be a board member to comment on this task"
 msgstr "Sie müssen Board-Mitglied sein, um diese Aufgabe zu kommentieren"

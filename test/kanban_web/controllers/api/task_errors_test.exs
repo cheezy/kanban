@@ -116,6 +116,9 @@ defmodule KanbanWeb.API.TaskErrorsTest do
       assert {:forbidden, :not_authorized_to_complete, _} =
                TaskErrors.error_body(:not_authorized_to_complete)
 
+      assert {:forbidden, :not_authorized, %{error: "Not authorized — board membership required"}} =
+               TaskErrors.error_body(:not_authorized)
+
       assert {:bad_request, :invalid_param, %{error: "bad limit"}} =
                TaskErrors.error_body({:invalid_param, "bad limit"})
 

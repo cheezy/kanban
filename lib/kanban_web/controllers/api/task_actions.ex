@@ -20,6 +20,7 @@ defmodule KanbanWeb.API.TaskActions do
   the controller-level telemetry events carry its path and method.
   """
 
+  alias Kanban.Accounts.Scope
   alias Kanban.ApiTokens
   alias Kanban.Boards
   alias Kanban.Columns
@@ -255,19 +256,30 @@ defmodule KanbanWeb.API.TaskActions do
   end
 
   @doc """
-  Adds a comment to a task on the token's board. The task is fetched with the
-  same board-scoped lookup as every other action, so a cross-board identifier
-  is a plain not-found, and the caller must hold `:owner` or `:modify` access
-  — a read-only member cannot comment through the API.
+  Adds a comment to a task on the token's board, authored by the token's user.
+  The task is fetched with the same board-scoped lookup as every other action,
+  so a cross-board identifier is a plain not-found. Authorization is
+  `Kanban.Tasks.CommentPolicy`, applied inside `Tasks.create_comment/4`: any
+  board member may comment, read-only included, and a user with no membership
+  on the board gets `{:error, :not_authorized}`. Claim and complete still need
+  `authorize_board_write/2`.
   """
   def add_comment(conn, id_or_identifier, content) do
     %{current_board: board, current_user: user} = conn.assigns
 
     with {:ok, task} <- fetch_task(id_or_identifier, board),
-         :ok <- authorize_board_write(board, user),
-         {:ok, comment} <- Tasks.create_comment(task.id, %{"content" => content}) do
+         {:ok, comment} <- comment_as(user, task, content) do
       emit_telemetry(conn, :comment_created, %{task_id: task.id})
       {:ok, comment}
+    end
+  end
+
+  defp comment_as(user, task, content) do
+    scope = Scope.for_user(user)
+
+    case Tasks.create_comment(scope, task, %{"content" => content}) do
+      {:error, :unauthorized} -> {:error, :not_authorized}
+      other -> other
     end
   end
 

@@ -136,6 +136,39 @@ defmodule KanbanWeb.API.TaskActionsTest do
       assert {:ok, comment} = TaskActions.add_comment(conn, task.identifier, "hello")
       assert comment.task_id == task.id
       assert comment.content == "hello"
+      assert comment.author_user_id == user.id
+    end
+
+    test "a read-only member can comment, authored by the token's user",
+         %{conn: conn, board: board, user: owner, ready: ready} do
+      {:ok, task} = Tasks.create_task(ready, %{"title" => "T", "created_by_id" => owner.id})
+      reader = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      conn = Plug.Conn.assign(conn, :current_user, reader)
+
+      assert {:ok, comment} = TaskActions.add_comment(conn, task.identifier, "observing")
+      assert comment.author_user_id == reader.id
+    end
+
+    test "a user with no board membership is :not_authorized and nothing is stored",
+         %{conn: conn, user: owner, ready: ready} do
+      {:ok, task} = Tasks.create_task(ready, %{"title" => "T", "created_by_id" => owner.id})
+      conn = Plug.Conn.assign(conn, :current_user, user_fixture())
+
+      assert {:error, :not_authorized} = TaskActions.add_comment(conn, task.identifier, "nope")
+      assert Kanban.Repo.aggregate(Kanban.Tasks.TaskComment, :count) == 0
+    end
+
+    test "a cross-board task is not_found", %{conn: conn} do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      other_ready = other_board |> Columns.list_columns() |> Enum.find(&(&1.name == "Ready"))
+
+      {:ok, other} =
+        Tasks.create_task(other_ready, %{"title" => "O", "created_by_id" => other_user.id})
+
+      assert {:error, :not_found} = TaskActions.add_comment(conn, other.identifier, "x")
     end
 
     test "a blank comment is a changeset error", %{conn: conn, user: user, ready: ready} do

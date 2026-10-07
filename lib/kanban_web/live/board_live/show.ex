@@ -420,6 +420,17 @@ defmodule KanbanWeb.BoardLive.Show do
       else: reload_board_data(socket)
   end
 
+  # Comment create/edit/delete broadcasts on this board topic too. The board
+  # columns render no comments, but the task view and task edit modals hosted
+  # here do; this clause does NOT refresh them yet, so an open modal keeps its
+  # comments until reopened. A live refresh needs a full component update: a
+  # partial send_update resets ViewComponent's permission assigns. Without this
+  # clause the message would crash the LiveView (no catch-all handle_info).
+  @impl true
+  def handle_info({Kanban.Tasks.Comments, :comment_changed, _payload}, socket) do
+    {:noreply, socket}
+  end
+
   @impl true
   def handle_info({:field_visibility_updated, new_visibility}, socket) do
     {:noreply, assign(socket, :field_visibility, new_visibility)}

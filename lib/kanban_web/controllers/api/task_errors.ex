@@ -89,6 +89,14 @@ defmodule KanbanWeb.API.TaskErrors do
     )
   end
 
+  def error_body(:not_authorized) do
+    documented(
+      :forbidden,
+      "Not authorized — board membership required",
+      :not_authorized
+    )
+  end
+
   def error_body(:after_goal_not_started) do
     documented(
       :unprocessable_entity,
