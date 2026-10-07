@@ -88,3 +88,11 @@ Continuous work on the Stride agent plugins to improve:
 - **Accuracy**: agents follow the workflow correctly, produce better work, and need fewer review rounds.
 - **Speed**: less time from claiming a task to completing it.
 - **Token usage**: lower model cost per task, without losing quality.
+
+Recently shipped for OpenCode (Stride for OpenCode 1.41.0 and 1.42.0, and OpenCode exploratory testing 0.4.0):
+
+- ✅ Before starting, agents compare what a task says about the code with the code itself and report anything out of date.
+- ✅ Stricter reviews: each planned test is traced to a real test, new and changed tests are shown to fail when the behaviour they guard is broken, factual statements in a change are checked against the code, and files that are meant to change together are flagged when only one did.
+- ✅ New tasks get a full behaviour test matrix by default and a consistency check across their fields before they are created.
+- ✅ Lighter instructions: background reading moved out of the always-loaded skills, and finding the next task asks for a smaller reply.
+- ✅ Exploratory testing can save its full report to a file, re-check a single fixed bug, and turn findings into regression tests without stopping to ask questions.
