@@ -73,6 +73,12 @@ defmodule KanbanWeb.TargetsStrip do
 
   alias Kanban.Targets.Status
 
+  # Gap between clusters, and between a divider and its cluster's content.
+  @cluster_gap_px 12
+  # One divider plus the gap after it: how far the cluster row is shifted left
+  # so the leading divider of each wrapped line falls outside the clipping box.
+  @cluster_offset_px @cluster_gap_px + 1
+
   @doc """
   Renders the targets strip.
 
@@ -91,21 +97,34 @@ defmodule KanbanWeb.TargetsStrip do
     assigns = assign(assigns, :count, length(assigns.targets))
 
     ~H"""
-    <div style={[
-      "padding: 10px 22px 12px;",
-      "border-bottom: 1px solid var(--line);",
-      "background: var(--surface-2);",
-      "display: flex; align-items: center; gap: 10px;"
-    ]}>
+    <%!-- Below the sm breakpoint the label sits above the cards so each card
+    gets the full width; from sm up it sits beside them, as before. --%>
+    <div
+      class="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2.5"
+      style={[
+        "padding: 10px 22px 12px;",
+        "border-bottom: 1px solid var(--line);",
+        "background: var(--surface-2);"
+      ]}
+      data-targets-strip
+    >
       <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
         <.icon name="hero-calendar" class="w-2.5 h-2.5" />
         <span class="ucase" style="font-size: 10px;">{gettext("Targets")}</span>
         <span class="ident" style="font-size: 10.5px;">{@count}</span>
       </div>
 
-      <div style="width: 1px; height: 18px; background: var(--line);"></div>
+      <div
+        class="hidden sm:block"
+        style="width: 1px; height: 18px; background: var(--line);"
+        data-strip-divider
+      >
+      </div>
 
-      <div style="display: flex; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 0;">
+      <div
+        class="w-full sm:w-auto sm:flex-1"
+        style="display: flex; gap: 8px; flex-wrap: wrap; min-width: 0;"
+      >
         <.target_card :for={entry <- @targets} entry={entry} />
       </div>
     </div>
@@ -130,48 +149,65 @@ defmodule KanbanWeb.TargetsStrip do
 
     ~H"""
     <.link navigate={~p"/targets/#{@entry.target.id}"} style={card_style(@token)} data-target-card>
-      <span style="font-size: 12px; font-weight: 500; color: var(--ink); flex-shrink: 0; white-space: nowrap;">
-        {@entry.target.name}
-      </span>
+      <%!-- Each cluster begins with its divider, and the cluster row is shifted
+      left by one divider-plus-gap inside a clipping box, so the divider of
+      whichever cluster starts a wrapped line is hidden. A line therefore never
+      starts or ends with a divider. The name cluster begins with a blank
+      spacer of the same width so every cluster lines up the same way. --%>
+      <span style={clip_style()}>
+        <span style={clusters_style()}>
+          <span style={cluster_style()}>
+            <span style={spacer_style()} aria-hidden="true"></span>
+            <%!-- A name longer than the whole card wraps inside it rather than
+            clipping or widening the page. --%>
+            <span style="font-size: 12px; font-weight: 500; color: var(--ink); min-width: 0; overflow-wrap: anywhere;">
+              {@entry.target.name}
+            </span>
+          </span>
 
-      <span style={divider_style()} data-pill-divider aria-hidden="true"></span>
+          <span style={cluster_style()}>
+            <span style={divider_style()} data-pill-divider aria-hidden="true"></span>
+            <span style="font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono); white-space: nowrap;">
+              {gettext("Due. %{date}", date: format_date(@entry.target.target_date))}
+            </span>
+          </span>
 
-      <span style="font-size: 10.5px; color: var(--ink-3); font-family: var(--font-mono); white-space: nowrap;">
-        {gettext("Due. %{date}", date: format_date(@entry.target.target_date))}
-      </span>
-      <span :if={@estimated_date} style={divider_style()} data-pill-divider aria-hidden="true"></span>
-      <span
-        :if={@estimated_date}
-        style={estimated_date_style(@slipped?)}
-        title={estimated_date_title(@slipped?, @entry.target.target_date)}
-        data-estimated-date
-        data-estimate-slipped={@slipped?}
-      >
-        {gettext("Est. %{date}", date: format_date(@estimated_date))}
-      </span>
-      <span :if={@slipped?} style={slip_chip_style()} data-estimate-slip-chip>
-        {gettext("Slipped")}
-        <span class="sr-only">
-          {gettext("Estimated completion — after the %{target_date} target",
-            target_date: format_date(@entry.target.target_date)
-          )}
+          <span :if={@estimated_date} style={cluster_style()}>
+            <span style={divider_style()} data-pill-divider aria-hidden="true"></span>
+            <span
+              style={estimated_date_style(@slipped?)}
+              title={estimated_date_title(@slipped?, @entry.target.target_date)}
+              data-estimated-date
+              data-estimate-slipped={@slipped?}
+            >
+              {gettext("Est. %{date}", date: format_date(@estimated_date))}
+            </span>
+            <span :if={@slipped?} style={slip_chip_style()} data-estimate-slip-chip>
+              {gettext("Slipped")}
+              <span class="sr-only">
+                {gettext("Estimated completion — after the %{target_date} target",
+                  target_date: format_date(@entry.target.target_date)
+                )}
+              </span>
+            </span>
+          </span>
+
+          <span style={cluster_style()}>
+            <span style={divider_style()} data-pill-divider aria-hidden="true"></span>
+            <span style={badge_style(@token)}>{@label}</span>
+          </span>
+
+          <span style={cluster_style()}>
+            <span style={divider_style()} data-pill-divider aria-hidden="true"></span>
+            <span style="font-size: 11px; font-family: var(--font-mono); color: var(--ink-3); white-space: nowrap;">
+              {@entry.completed}/{@entry.total} ({@entry.percentage}%)
+            </span>
+            <span style="width: 54px; height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; flex-shrink: 0;">
+              <span style={"display: block; height: 100%; border-radius: 2px; width: #{@entry.percentage}%; background: var(--st-#{@token});"}></span>
+            </span>
+          </span>
         </span>
       </span>
-
-      <span style={divider_style()} data-pill-divider aria-hidden="true"></span>
-
-      <span style={badge_style(@token)}>{@label}</span>
-
-      <span style={divider_style()} data-pill-divider aria-hidden="true"></span>
-
-      <span style="font-size: 11px; font-family: var(--font-mono); color: var(--ink-3);">
-        {@entry.completed}/{@entry.total} ({@entry.percentage}%)
-      </span>
-
-      <div style="width: 54px; height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden;">
-        <div style={"height: 100%; border-radius: 2px; width: #{@entry.percentage}%; background: var(--st-#{@token});"}>
-        </div>
-      </div>
     </.link>
     """
   end
@@ -181,25 +217,46 @@ defmodule KanbanWeb.TargetsStrip do
   # Card border + left stripe use the target's status token, mirroring the
   # goal-pill style but sourced from a dark-mode-safe --st-* token.
   #
-  # The pill is a nested inline-flex item of the strip's `flex: 1; min-width: 0`
-  # card row, so the row caps the space it offers each pill. flex-shrink 0 +
-  # nowrap alone did not stop a long name from squeezing out the first divider
-  # (Safari caps the pill's computed basis to the row's width, D164 follow-up),
-  # so min-width: max-content pins the pill to its full content width. The name
-  # and every divider stay visible and the whole pill wraps to the next row via
-  # the row's flex-wrap instead of the title/divider being clipped.
+  # The card is a nested inline-flex item of the strip's wrapping card row.
+  # D164: a long name must never squeeze a divider out of view, so the card is
+  # capped at the row's width (max-width: 100%) and wraps its clusters onto
+  # further lines instead; where there is room it stays on one line. Nothing is
+  # pinned to its one-line width, which is what made the page wider than a
+  # phone screen.
   defp card_style(token) do
     [
-      "display: inline-flex; align-items: center; gap: 10px;",
+      "display: inline-flex; align-items: center;",
       "padding: 5px 10px 5px 8px;",
       "background: var(--surface);",
       "border: 1px solid var(--st-#{token});",
       "border-left: 3px solid var(--st-#{token});",
       "border-radius: 5px;",
       "text-decoration: none;",
-      "flex-shrink: 0; white-space: nowrap; min-width: max-content;"
+      "flex-shrink: 0; max-width: 100%;"
     ]
   end
+
+  # The clipping box. It hides only what sits left of its own edge: the
+  # leading divider (or spacer) of whichever cluster starts each line.
+  defp clip_style, do: "display: block; overflow: hidden; min-width: 0;"
+
+  defp clusters_style do
+    [
+      "display: flex; flex-wrap: wrap; align-items: center;",
+      "column-gap: #{@cluster_gap_px}px; row-gap: 4px;",
+      "margin-left: -#{@cluster_offset_px}px;"
+    ]
+  end
+
+  # A cluster never shrinks below its content, so its parts are never squeezed;
+  # it moves to the next line as a whole when it does not fit.
+  defp cluster_style do
+    "display: inline-flex; align-items: center; gap: #{@cluster_gap_px}px; flex-shrink: 0; max-width: 100%; min-width: 0;"
+  end
+
+  # Same footprint as a divider, but blank, so the name cluster lines up with
+  # the others and is shifted by the same amount.
+  defp spacer_style, do: "width: 1px; height: 15px; flex-shrink: 0;"
 
   defp badge_style(token) do
     [
@@ -209,14 +266,12 @@ defmodule KanbanWeb.TargetsStrip do
     ]
   end
 
-  # Pill-scale divider between the value clusters (name | dates | badge |
-  # progress) and, conditionally, between the two dates. Uses var(--ink-4) —
-  # the token app.css earmarks for separators, held to the 3:1 graphical
-  # contrast floor in both themes — because the hairline var(--line) proved
-  # invisible at pill scale (D163). The margins add breathing room on top of
-  # the card's flex gap so the clusters read as separate groups.
+  # Pill-scale divider that opens each value cluster after the name (dates,
+  # estimate, badge, progress). Uses var(--ink-4) — the token app.css earmarks
+  # for separators, held to the 3:1 graphical contrast floor in both themes —
+  # because the hairline var(--line) proved invisible at pill scale (D163).
   defp divider_style do
-    "width: 1px; height: 15px; background: var(--ink-4); flex-shrink: 0; margin: 0 2px;"
+    "width: 1px; height: 15px; background: var(--ink-4); flex-shrink: 0;"
   end
 
   # atom -> {--st-* token stem, translated label}. See the moduledoc palette.

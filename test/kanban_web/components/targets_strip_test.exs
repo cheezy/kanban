@@ -57,6 +57,15 @@ defmodule KanbanWeb.TargetsStripTest do
       assert html =~ "Targets"
       assert html =~ ~r/class="ident"[^>]*>\s*2\s*</
     end
+
+    test "stacks the label above the cards below the sm breakpoint" do
+      html = render_targets([entry()])
+
+      assert html =~ "flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-2.5"
+      # The vertical rule between label and cards only makes sense side by side.
+      assert html =~ ~r/class="hidden sm:block"[^>]*data-strip-divider/
+      assert html =~ "w-full sm:w-auto sm:flex-1"
+    end
   end
 
   describe "targets_strip/1 — target card" do
@@ -85,16 +94,48 @@ defmodule KanbanWeb.TargetsStripTest do
       assert count_dividers(html) == 3
     end
 
-    test "keeps the pill at intrinsic width so nothing clips" do
+    test "caps the card at the row's width and wraps its clusters instead of overflowing" do
       html = render_targets([entry()])
 
-      # min-width: max-content pins the pill to its full content width so a long
-      # name cannot squeeze out the first divider (the strip row would otherwise
-      # cap the nested flex pill's width).
-      assert html =~ "flex-shrink: 0; white-space: nowrap; min-width: max-content;"
-      # The name span is itself rigid (flex-shrink: 0) so it never compresses at
-      # the exact-fit boundary and push the first divider out of view.
-      assert html =~ "color: var(--ink); flex-shrink: 0; white-space: nowrap;"
+      # Pinning the card to its one-line width is what overflowed at 390px.
+      assert html =~ "flex-shrink: 0; max-width: 100%;"
+      refute html =~ "min-width: max-content"
+      # The clusters wrap inside a clipping box, shifted left by one divider
+      # (1px) plus the 12px gap after it.
+      assert html =~ "display: block; overflow: hidden; min-width: 0;"
+      assert html =~ "display: flex; flex-wrap: wrap;"
+      assert html =~ "margin-left: -13px;"
+      # A name longer than the whole card wraps inside it.
+      assert html =~ "color: var(--ink); min-width: 0; overflow-wrap: anywhere;"
+    end
+
+    # Each cluster after the name opens with its divider and the name cluster
+    # opens with a blank spacer of the same width, so the divider of whichever
+    # cluster starts a wrapped line falls in the clipped strip and no line ever
+    # starts or ends with one.
+    test "opens every cluster with its divider, and the name cluster with a spacer" do
+      for estimate <- [nil, ~D[2027-03-03]] do
+        html = render_targets([entry(%{estimated_completion_date: estimate})])
+        cluster = ~s(gap: 12px; flex-shrink: 0; max-width: 100%; min-width: 0;">)
+
+        opened_by_divider =
+          ~r/#{Regex.escape(cluster)}\s*<span style="width: 1px; height: 15px; background: var\(--ink-4\)/
+
+        opened_by_spacer =
+          ~r/#{Regex.escape(cluster)}\s*<span style="width: 1px; height: 15px; flex-shrink: 0;" aria-hidden="true">/
+
+        clusters = length(String.split(html, cluster)) - 1
+
+        assert length(Regex.scan(opened_by_divider, html)) == count_dividers(html)
+        assert length(Regex.scan(opened_by_spacer, html)) == 1
+        assert clusters == count_dividers(html) + 1
+      end
+    end
+
+    test "keeps the progress fraction on one line" do
+      html = render_targets([entry(%{completed: 1, total: 10, percentage: 10})])
+
+      assert html =~ ~r/white-space: nowrap;">\s*1\/10 \(10%\)/
     end
 
     test "renders all dividers for a very long target name" do
