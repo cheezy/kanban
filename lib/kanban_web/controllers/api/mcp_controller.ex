@@ -41,7 +41,13 @@ defmodule KanbanWeb.API.McpController do
     end
   end
 
-  def method_not_allowed(conn, _params) do
+  # One action per verb, both answering 405. A single action routed from both
+  # GET and DELETE is the "action reuse" pattern Sobelow's Config.CSRFRoute
+  # check flags, because a GET could then reach a state-changing handler.
+  def get_not_allowed(conn, _params), do: method_not_allowed(conn)
+  def delete_not_allowed(conn, _params), do: method_not_allowed(conn)
+
+  defp method_not_allowed(conn) do
     conn
     |> put_resp_header("allow", "POST")
     |> put_status(:method_not_allowed)

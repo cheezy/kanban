@@ -23,8 +23,6 @@ defmodule KanbanWeb.AuditLogExportController do
 
   plug :require_admin_user
 
-  @content_types %{csv: "text/csv", json: "application/json"}
-
   def export(conn, params) do
     case export_format(params["format"]) do
       {:ok, format} ->
@@ -52,7 +50,7 @@ defmodule KanbanWeb.AuditLogExportController do
 
     conn =
       conn
-      |> put_resp_content_type(@content_types[format])
+      |> put_export_content_type(format)
       |> put_resp_header(
         "content-disposition",
         ~s(attachment; filename="#{export_filename(format)}")
@@ -69,6 +67,14 @@ defmodule KanbanWeb.AuditLogExportController do
       end
     end)
   end
+
+  # A literal content type per format. export_format/1 has already reduced the
+  # request to :csv or :json, and naming each type here keeps the response type
+  # fixed in code rather than looked up from a value (Sobelow XSS.ContentType).
+  defp put_export_content_type(conn, :csv), do: put_resp_content_type(conn, "text/csv")
+
+  defp put_export_content_type(conn, :json),
+    do: put_resp_content_type(conn, "application/json")
 
   # A fixed token plus today's date — no user input ever reaches the header.
   defp export_filename(format), do: "audit_log_#{Date.utc_today()}.#{format}"

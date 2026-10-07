@@ -158,8 +158,8 @@ defmodule KanbanWeb.Router do
   scope "/api", KanbanWeb.API, as: :api do
     pipe_through [:api_json, :mcp_event_stream_accept, :api]
 
-    get "/mcp", McpController, :method_not_allowed
-    delete "/mcp", McpController, :method_not_allowed
+    get "/mcp", McpController, :get_not_allowed
+    delete "/mcp", McpController, :delete_not_allowed
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
