@@ -109,4 +109,25 @@ defmodule KanbanWeb.CoreComponentsTest do
       assert encoded =~ "pop_focus"
     end
   end
+
+  describe "header/1" do
+    test "lets the actions wrap below the title and colors the subtitle with a token" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <CoreComponents.header>
+          Title
+          <:subtitle>Sub</:subtitle>
+          <:actions><button>Go</button></:actions>
+        </CoreComponents.header>
+        """)
+
+      assert html =~ "flex flex-wrap items-center justify-between"
+      assert html =~ ~s(<div class="flex flex-wrap gap-2">)
+      assert html =~ "color: var(--ink-2);"
+      refute html =~ "opacity-70"
+      refute html =~ "flex-none"
+    end
+  end
 end

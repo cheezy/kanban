@@ -76,5 +76,7 @@ defmodule KanbanWeb.Admin.AuditLogLive.Index do
   defp actor_label(%{metadata: %{"user_id" => id}}) when is_integer(id),
     do: gettext("User #%{id} (deleted)", id: id)
 
-  defp actor_label(_event), do: gettext("None")
+  # "None" here means no person, which some languages word differently from
+  # the shared "None" (de "Keine" is for things, "Niemand" for people).
+  defp actor_label(_event), do: pgettext("audit log actor", "None")
 end

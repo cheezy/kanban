@@ -87,7 +87,7 @@
           id="audit-log-newest"
           patch={index_path(@filter_params)}
         >
-          {gettext("Newest")}
+          {pgettext("audit log pages", "Newest")}
         </.button>
         <.button
           :if={@next_cursor}

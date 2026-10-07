@@ -11,7 +11,7 @@ msgstr ""
 "Language: en\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/kanban_web/components/core_components.ex:473
+#: lib/kanban_web/components/core_components.ex:476
 #: lib/kanban_web/live/admin/user_live/index.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Actions"
@@ -34,7 +34,7 @@ msgid "We can't find the internet"
 msgstr ""
 
 #: lib/kanban_web/components/core_components.ex:101
-#: lib/kanban_web/components/core_components.ex:654
+#: lib/kanban_web/components/core_components.ex:657
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr ""
@@ -2077,7 +2077,6 @@ msgstr ""
 msgid "Most Relevant"
 msgstr ""
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:90
 #: lib/kanban_web/live/resources_live/index.html.heex:54
 #, elixir-autogen, elixir-format
 msgid "Newest"
@@ -7255,7 +7254,6 @@ msgid "Recent activity"
 msgstr ""
 
 #: lib/kanban_web/components/agent_detail_panel.ex:317
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:79
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr ""
@@ -9512,4 +9510,16 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgctxt "agent action"
 msgid "unclaimed"
+msgstr ""
+
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:81
+#, elixir-autogen, elixir-format
+msgctxt "audit log actor"
+msgid "None"
+msgstr ""
+
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:90
+#, elixir-autogen, elixir-format
+msgctxt "audit log pages"
+msgid "Newest"
 msgstr ""

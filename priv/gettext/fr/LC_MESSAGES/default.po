@@ -11,7 +11,7 @@ msgstr ""
 "Language: fr\n"
 "Plural-Forms: nplurals=2; plural=(n>1);\n"
 
-#: lib/kanban_web/components/core_components.ex:473
+#: lib/kanban_web/components/core_components.ex:476
 #: lib/kanban_web/live/admin/user_live/index.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Actions"
@@ -34,7 +34,7 @@ msgid "We can't find the internet"
 msgstr "Impossible de trouver Internet"
 
 #: lib/kanban_web/components/core_components.ex:101
-#: lib/kanban_web/components/core_components.ex:654
+#: lib/kanban_web/components/core_components.ex:657
 #, elixir-autogen, elixir-format
 msgid "close"
 msgstr "fermer"
@@ -2077,7 +2077,6 @@ msgstr "Rendre le tableau lisible publiquement"
 msgid "Most Relevant"
 msgstr "Les plus pertinents"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:90
 #: lib/kanban_web/live/resources_live/index.html.heex:54
 #, elixir-autogen, elixir-format
 msgid "Newest"
@@ -7301,7 +7300,6 @@ msgid "Recent activity"
 msgstr "Activité récente"
 
 #: lib/kanban_web/components/agent_detail_panel.ex:317
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:79
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr "Aucun"
@@ -9559,3 +9557,15 @@ msgstr "relu"
 msgctxt "agent action"
 msgid "unclaimed"
 msgstr "libéré"
+
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:81
+#, elixir-autogen, elixir-format
+msgctxt "audit log actor"
+msgid "None"
+msgstr "Personne"
+
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:90
+#, elixir-autogen, elixir-format
+msgctxt "audit log pages"
+msgid "Newest"
+msgstr "Plus récents"

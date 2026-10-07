@@ -419,16 +419,19 @@ defmodule KanbanWeb.CoreComponents do
 
   def header(assigns) do
     ~H"""
-    <header class={[@actions != [] && "flex items-center justify-between gap-6", "pb-2"]}>
-      <div>
+    <header class={[
+      @actions != [] && "flex flex-wrap items-center justify-between gap-x-6 gap-y-3",
+      "pb-2"
+    ]}>
+      <div class="min-w-0">
         <h1 class="text-3xl font-bold leading-tight text-base-content tracking-tight">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="text-base text-base-content opacity-70 mt-2 leading-relaxed">
+        <p :if={@subtitle != []} class="text-base mt-2 leading-relaxed" style="color: var(--ink-2);">
           {render_slot(@subtitle)}
         </p>
       </div>
-      <div class="flex-none flex gap-2">{render_slot(@actions)}</div>
+      <div class="flex flex-wrap gap-2">{render_slot(@actions)}</div>
     </header>
     """
   end

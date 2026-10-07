@@ -197,6 +197,22 @@ defmodule Kanban.AuditLogTest do
       assert ips == ["203.0.113.5", "2001:db8::1", "unknown"]
     end
 
+    test "string IPs are stored normalized when they parse and as unknown when not" do
+      AuditLog.event(:login_failed, email: "a@example.com", ip: "203.0.113.5")
+      AuditLog.event(:login_failed, email: "b@example.com", ip: " 2001:DB8::1 ")
+      AuditLog.event(:login_failed, email: "c@example.com", ip: "=tw7+1")
+      AuditLog.event(:login_failed, email: "d@example.com", ip: "")
+      AuditLog.event(:login_failed, email: "e@example.com", ip: String.duplicate("1", 300))
+
+      events = AuditLog.list_events([], order: :asc)
+
+      assert Enum.map(events, & &1.ip) ==
+               ["203.0.113.5", "2001:db8::1", "unknown", "unknown", "unknown"]
+
+      # The value as given is still kept in the metadata.
+      assert Enum.at(events, 2).metadata["ip"] == "=tw7+1"
+    end
+
     test "non-JSON-safe values are stringified instead of raising" do
       pid = self()
 

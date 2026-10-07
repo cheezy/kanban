@@ -343,10 +343,22 @@ defmodule Kanban.AuditLog do
     end
   end
 
+  # The ip column holds only a parseable address, normalized ("2001:DB8::1"
+  # becomes "2001:db8::1"); any other string is stored as "unknown", the same
+  # as an unformattable tuple. The value as given stays in the metadata.
   defp ip(clean) do
     case Keyword.get(clean, :ip) do
-      ip when is_binary(ip) -> ip |> json_safe() |> String.slice(0, @max_ip_length)
+      ip when is_binary(ip) -> normalize_ip(ip)
       _ -> nil
+    end
+  end
+
+  defp normalize_ip(text) do
+    with true <- byte_size(text) <= @max_ip_length and String.valid?(text),
+         {:ok, address} <- text |> String.trim() |> String.to_charlist() |> :inet.parse_address() do
+      address |> :inet.ntoa() |> to_string()
+    else
+      _invalid -> "unknown"
     end
   end
 

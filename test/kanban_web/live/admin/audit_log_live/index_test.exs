@@ -190,6 +190,29 @@ defmodule KanbanWeb.Admin.AuditLogLive.IndexTest do
       refute csv_href =~ "cursor"
     end
 
+    test "an event with no actor reads as no person in German", %{conn: conn, old: old} do
+      {:ok, view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "de"})
+        |> live(~p"/admin/audit-log")
+
+      assert has_element?(view, "#events-#{old.id}", "Niemand")
+      refute has_element?(view, "#events-#{old.id}", "Keine")
+    end
+
+    test "the Newest page button says go to the newest in Japanese",
+         %{conn: conn, new: new} do
+      cursor = Kanban.AuditLog.Query.encode_cursor(new)
+
+      {:ok, view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "ja"})
+        |> live(~p"/admin/audit-log?#{%{"cursor" => cursor}}")
+
+      assert has_element?(view, "#audit-log-newest", "最新")
+      refute has_element?(view, "#audit-log-newest", "新着順")
+    end
+
     test "labels a deleted actor by the id kept in the metadata", %{conn: conn} do
       gone = user_fixture()
 
