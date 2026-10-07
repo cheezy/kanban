@@ -155,6 +155,23 @@ defmodule Kanban.Tasks.InterventionsTest do
       assert task_assigned_rows() == []
     end
 
+    test "on a custom board, a child in the column before Doing counts as not started", ctx do
+      board = board_fixture(ctx.owner)
+      {:ok, _} = Boards.add_user_to_board(board, ctx.assignee, :modify, ctx.owner)
+      todo = column_fixture(board, %{name: "To Do"})
+      doing = column_fixture(board, %{name: "Doing"})
+      goal = task_fixture(todo, %{type: :goal})
+      waiting = task_fixture(todo, %{parent_id: goal.id})
+      started = task_fixture(doing, %{parent_id: goal.id, status: :in_progress})
+
+      assert {:ok, %{moved: moved, skipped: []}} =
+               Interventions.reassign_goal_unstarted(ctx.scope, goal, ctx.assignee.id)
+
+      assert moved |> Enum.map(& &1.id) |> Enum.sort() == Enum.sort([goal.id, waiting.id])
+      assert reload(waiting).assigned_to_id == ctx.assignee.id
+      assert reload(started).assigned_to_id == nil
+    end
+
     test "an unauthorized reassignment notifies nobody (W2203)", ctx do
       stranger = Scope.for_user(user_fixture())
 

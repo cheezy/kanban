@@ -161,6 +161,51 @@ defmodule Kanban.Tasks.PositioningTest do
 
   # D357: moves and reorders write with update_all, so updated_at must be
   # stamped explicitly or GET /api/tasks?updated_since= never sees them.
+  describe "a drop lands where it was dropped, even with position gaps" do
+    # The board sends the drop index among the column's other visible cards.
+    # Archiving a card leaves a gap in the column's positions, which used to
+    # put the card one place away from where it was dropped.
+    defp live_order(column) do
+      Kanban.Tasks.Task
+      |> where([t], t.column_id == ^column.id and is_nil(t.archived_at))
+      |> order_by([t], asc: t.position)
+      |> select([t], t.id)
+      |> Repo.all()
+    end
+
+    test "a cross-column drop between two cards lands between them", %{board: board} do
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+      [a, gone, b, c] = for _ <- 1..4, do: task_fixture(doing)
+      archive!(gone)
+      moving = task_fixture(ready)
+
+      # Visible order in Doing is a, b, c; drop between b and c (index 2).
+      assert {:ok, _} = Kanban.Tasks.move_task(moving, doing, 2)
+      assert live_order(doing) == [a.id, b.id, moving.id, c.id]
+    end
+
+    test "a same-column drop lands at the dropped index", %{board: board} do
+      ready = column_fixture(board, %{name: "Ready"})
+      [a, gone, b, c] = for _ <- 1..4, do: task_fixture(ready)
+      archive!(gone)
+
+      # Visible order a, b, c; drag a to the end (index 2 among the others).
+      assert {:ok, _} = a |> Repo.reload!() |> Kanban.Tasks.move_task(ready, 2)
+      assert live_order(ready) == [b.id, c.id, a.id]
+    end
+
+    test "an index past the end appends the card", %{board: board} do
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+      [a, b] = for _ <- 1..2, do: task_fixture(doing)
+      moving = task_fixture(ready)
+
+      assert {:ok, _} = Kanban.Tasks.move_task(moving, doing, 99)
+      assert live_order(doing) == [a.id, b.id, moving.id]
+    end
+  end
+
   describe "moves and reorders bump updated_at (D357)" do
     @old ~N[2020-01-01 00:00:00]
 

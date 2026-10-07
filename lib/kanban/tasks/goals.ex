@@ -365,7 +365,7 @@ defmodule Kanban.Tasks.Goals do
   # (D357; see Kanban.Tasks.Positioning).
   defp move_task_to_column(task, target_column, now) do
     next_pos = Positioning.get_next_position_locked(target_column)
-    status_updates = Positioning.determine_status_for_column(target_column.name, task)
+    status_updates = Positioning.determine_status_for_column(target_column, task)
 
     updates =
       Map.merge(

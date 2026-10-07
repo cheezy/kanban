@@ -11,8 +11,8 @@ defmodule Kanban.Tasks.Interventions do
   /agents reads use — belonging to the goal's board.
 
   `reassign_goal_unstarted/3` is the first write action: it reassigns the goal
-  and only its not-started, unclaimed children (Backlog/Ready column, status
-  `:open`) to a new user, atomically, skipping any child claimed since the
+  and only its not-started, unclaimed children (a not-started column, see
+  `Kanban.Columns.Stage`, with status `:open`) to a new user, atomically, skipping any child claimed since the
   caller inspected the goal. Eligibility is re-read inside the transaction
   under a row lock so a race with an agent claim is caught rather than silently
   overwritten — this is deliberately narrower than the `Lifecycle` assignment
@@ -32,6 +32,7 @@ defmodule Kanban.Tasks.Interventions do
   alias Kanban.Boards
   alias Kanban.Boards.BoardUser
   alias Kanban.Columns.Column
+  alias Kanban.Columns.Stage
   alias Kanban.Notifications.Events
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
@@ -41,7 +42,6 @@ defmodule Kanban.Tasks.Interventions do
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
 
-  @not_started_columns ["Backlog", "Ready"]
   @allowed_priorities [:low, :medium, :high, :critical]
 
   @doc """
@@ -81,10 +81,12 @@ defmodule Kanban.Tasks.Interventions do
   Reassigns `goal` and its not-started, unclaimed children to
   `new_assigned_to_id`, atomically.
 
-  Only children on a Backlog/Ready column with status `:open` are moved; any
+  Only children on a not-started column (Backlog/Ready, or a custom column
+  before the board's first Doing/Review column; see `Kanban.Columns.Stage`)
+  with status `:open` are moved; any
   such child that has been claimed (status `:in_progress`) since the caller
   inspected the goal is left untouched and surfaced in `:skipped`. A child that
-  a concurrent claim has already moved *out* of Backlog/Ready is no longer a
+  a concurrent claim has already moved *out* of a not-started column is no longer a
   candidate at all, so it appears in neither list — it is simply not touched.
   Children in Doing, Review, or Done are never considered. Assignment history
   is recorded for the goal and each moved child.
@@ -193,7 +195,7 @@ defmodule Kanban.Tasks.Interventions do
       goal = Repo.preload(goal, [:target, column: :board])
 
       {eligible, _claimed} =
-        goal.id
+        goal
         |> not_started_children_query(lock: false)
         |> Repo.all()
         |> partition_candidates()
@@ -211,7 +213,7 @@ defmodule Kanban.Tasks.Interventions do
   `new_priority` must be one of `#{inspect(@allowed_priorities)}` (an atom, or
   the equivalent string); any other value returns `{:error, :invalid_priority}`
   without touching the database. Child selection is identical to
-  `reassign_goal_unstarted/3` (Backlog/Ready column, status `:open`, re-read
+  `reassign_goal_unstarted/3` (not-started column, status `:open`, re-read
   under a row lock), so the two actions stay consistent — a claimed child is
   surfaced in `:skipped`, and Doing/Review/Done children are never considered.
   Priority-change history is recorded for the goal and each moved child.
@@ -314,7 +316,7 @@ defmodule Kanban.Tasks.Interventions do
   end
 
   defp read_candidates(repo, goal) do
-    goal.id
+    goal
     |> not_started_children_query()
     |> repo.all()
   end
@@ -372,7 +374,7 @@ defmodule Kanban.Tasks.Interventions do
   end
 
   defp read_moved_children(repo, goal, child_ids) do
-    goal.id
+    goal
     |> not_started_children_query()
     |> where([t], t.id in ^child_ids)
     |> repo.all()
@@ -401,16 +403,16 @@ defmodule Kanban.Tasks.Interventions do
   # flips a child to :in_progress either lands before this lock (child is seen
   # as claimed and skipped) or blocks behind it (child stays :open and is
   # reassigned) — never a lost update. The lock targets only task rows because
-  # the column filter uses a subquery rather than a join. The write path locks
-  # (default); the read-only preview passes `lock: false`.
-  defp not_started_children_query(goal_id, opts \\ []) do
-    not_started_column_ids =
-      from(c in Column, where: c.name in ^@not_started_columns, select: c.id)
+  # the column filter is a list of ids rather than a join. The write path locks
+  # (default); the read-only preview passes `lock: false`. Which columns count
+  # as not started is decided per board by Kanban.Columns.Stage.
+  defp not_started_children_query(%Task{} = goal, opts \\ []) do
+    not_started_column_ids = goal |> board_id() |> Stage.not_started_column_ids()
 
     query =
       from(t in Task,
-        where: t.parent_id == ^goal_id,
-        where: t.column_id in subquery(not_started_column_ids),
+        where: t.parent_id == ^goal.id,
+        where: t.column_id in ^not_started_column_ids,
         where: is_nil(t.archived_at)
       )
 
@@ -419,6 +421,11 @@ defmodule Kanban.Tasks.Interventions do
     else
       query
     end
+  end
+
+  defp board_id(%Task{column_id: column_id}) do
+    from(c in Column, where: c.id == ^column_id, select: c.board_id)
+    |> Repo.one!()
   end
 
   defp partition_candidates(candidates) do
