@@ -2494,6 +2494,11 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
       render_hook(view, "view_task", %{"id" => to_string(task.id)})
       :timer.sleep(200)
+      # The view handles its delayed {:show_task_modal, _} message, and the
+      # re-render that reloads the thread, before answering this render call.
+      # Without it that reload could run after the insert below and show the
+      # comment early.
+      _ = render(view)
 
       # Written without a broadcast reaching this view, then announced.
       %Kanban.Tasks.TaskComment{task_id: task.id}

@@ -19,6 +19,13 @@ defmodule KanbanWeb.Avatar do
   """
   use KanbanWeb, :html
 
+  # Background for an avatar with no palette (an unknown agent's "?", or a
+  # palette key not listed below). Like the palette colours it is fixed rather
+  # than a theme token, because the initials are always near-black: a neutral
+  # grey at 70% lightness keeps them about 7:1 in both themes, where
+  # var(--ink-3) gave 3.4:1 in light mode.
+  @neutral_background "oklch(70% 0.005 270)"
+
   @doc """
   Renders one avatar.
 
@@ -151,7 +158,7 @@ defmodule KanbanWeb.Avatar do
       "agent-cursor" -> "oklch(60% 0.16 240)"
       "agent-aider" -> "oklch(60% 0.14 155)"
       "agent-codex" -> "oklch(60% 0.18 277)"
-      _ -> "var(--ink-3)"
+      _ -> @neutral_background
     end
   end
 
@@ -161,11 +168,11 @@ defmodule KanbanWeb.Avatar do
       "human-amber" -> "oklch(60% 0.10 60)"
       "human-green" -> "oklch(60% 0.10 155)"
       "human-pink" -> "oklch(60% 0.10 320)"
-      _ -> "var(--ink-3)"
+      _ -> @neutral_background
     end
   end
 
-  defp avatar_color(_kind, _palette), do: "var(--ink-3)"
+  defp avatar_color(_kind, _palette), do: @neutral_background
 
   defp avatar_initials(name) when is_binary(name) and byte_size(name) > 0 do
     name

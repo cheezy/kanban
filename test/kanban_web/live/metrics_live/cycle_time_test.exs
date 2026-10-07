@@ -867,9 +867,12 @@ defmodule KanbanWeb.MetricsLive.CycleTimeTest do
     %{board: board, column: column}
   end
 
+  # Claims 24 hours before the completion, whichever completion the caller
+  # asks for, so a backdated completion never lands before its claim (such
+  # rows are excluded from cycle time as inconsistent data).
   defp complete_task(task, attrs \\ %{}) do
-    claimed_at = DateTime.add(DateTime.utc_now(), -24, :hour)
-    completed_at = DateTime.utc_now()
+    completed_at = Map.get(attrs, :completed_at, DateTime.utc_now())
+    claimed_at = DateTime.add(completed_at, -24, :hour)
 
     attrs =
       Map.merge(

@@ -305,6 +305,36 @@ defmodule Kanban.MetricsTest do
       assert stats.max_hours <= 25
     end
 
+    test "leaves out a task completed before its claim, with or without weekends" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user)
+      column = column_fixture(board)
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{claimed_at: DateTime.add(now, -24, :hour), completed_at: now})
+
+      # Inconsistent data: claimed two days after it was completed.
+      {:ok, _} =
+        column
+        |> task_fixture()
+        |> Tasks.update_task(%{
+          claimed_at: DateTime.add(now, 47, :hour),
+          completed_at: DateTime.add(now, -1, :hour)
+        })
+
+      for exclude <- [false, true] do
+        {:ok, stats} = Metrics.get_cycle_time_stats(board.id, exclude_weekends: exclude)
+        assert stats.count == 1
+        assert stats.min_hours >= 0
+      end
+
+      assert [%{cycle_time_seconds: seconds}] = TaskQueries.get_cycle_time_tasks(board.id)
+      assert seconds > 0
+    end
+
     test "returns zero stats for empty board" do
       user = user_fixture()
       board = board_fixture(user)

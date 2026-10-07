@@ -199,7 +199,8 @@ defmodule Kanban.Metrics.TaskQueries do
   end
 
   # AI-optimized boards record `claimed_at` when an agent starts work, so cycle
-  # time is `completed_at - claimed_at`. Rows without a `claimed_at` are excluded.
+  # time is `completed_at - claimed_at`. Rows without a `claimed_at`, or completed
+  # before their claim (inconsistent data), are excluded.
   defp cycle_time_tasks_ai(board_id, opts) do
     {start_date, agent_name} = window(opts)
 
@@ -208,6 +209,7 @@ defmodule Kanban.Metrics.TaskQueries do
     |> where([t, c], c.board_id == ^board_id)
     |> where([t], not is_nil(t.completed_at))
     |> where([t], not is_nil(t.claimed_at))
+    |> where([t], t.completed_at >= t.claimed_at)
     |> where([t], t.completed_at >= ^start_date)
     |> where([t], t.type != ^:goal)
     |> order_by([t], desc: t.completed_at)
@@ -237,6 +239,7 @@ defmodule Kanban.Metrics.TaskQueries do
     |> where([t, c], c.board_id == ^board_id)
     |> where([t], not is_nil(t.completed_at))
     |> where([t], t.completed_at >= ^start_date)
+    |> where([t, _c, fm], t.completed_at >= fm.started_at)
     |> where([t], t.type != ^:goal)
     |> order_by([t], desc: t.completed_at)
     |> select([t, _c, fm], %{

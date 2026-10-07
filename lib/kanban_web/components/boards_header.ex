@@ -66,11 +66,12 @@ defmodule KanbanWeb.BoardsHeader do
       `Avatar.avatar_stack/1`. Every entry must carry `:name`. Defaults to
       `[]`; empty or `nil` hides both the divider and the stack.
 
-      Supply `:palette` too. `Avatar` tolerates its absence but falls back to
-      a `var(--ink-3)` chip, and its hardcoded near-black initials measure
-      only 3.4:1 against that in light mode — below AA. Every palette
-      `KanbanWeb.AvatarPalette` produces is a known key, so the context's own
-      output never hits that branch; a hand-built member list can.
+      Supply `:palette` too, so each member gets its own colour. `Avatar`
+      tolerates its absence and falls back to a fixed neutral grey chip
+      (about 7:1 against its near-black initials in both themes). Every
+      palette `KanbanWeb.AvatarPalette` produces is a known key, so the
+      context's own output never hits that branch; a hand-built member list
+      can.
   """
   attr :metrics, :map,
     required: true,

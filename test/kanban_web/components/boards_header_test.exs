@@ -163,13 +163,13 @@ defmodule KanbanWeb.BoardsHeaderTest do
     end
 
     test "still renders a member that carries no palette" do
-      # Avatar falls back to a var(--ink-3) chip. The context never produces
+      # Avatar falls back to its fixed neutral chip. The context never produces
       # this shape, but a hand-built list can, so pin that it renders rather
-      # than raising. See the :members attr doc for the contrast caveat.
+      # than raising.
       html = render_header(members: [%{kind: :human, name: "Ada"}])
 
       assert html =~ "data-boards-header-members"
-      assert html =~ "background: var(--ink-3);"
+      assert html =~ "background: oklch(70% 0.005 270);"
     end
 
     test "renders the divider alongside the stack" do

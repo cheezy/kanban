@@ -62,10 +62,14 @@ defmodule Kanban.Metrics.Workspace.Durations do
     |> round_or_zero()
   end
 
-  @doc "One task's cycle time in whole minutes, or nil when it was never claimed."
+  @doc """
+  One task's cycle time in whole minutes, or nil when it was never claimed or
+  its completion precedes its claim (inconsistent data, which is left out rather
+  than counted as zero).
+  """
   @spec cycle_minutes(map(), boolean()) :: non_neg_integer() | nil
   def cycle_minutes(%{claimed_at: %DateTime{} = c, completed_at: %DateTime{} = d}, exclude?) do
-    elapsed_minutes(c, d, exclude?)
+    if DateTime.compare(d, c) == :lt, do: nil, else: elapsed_minutes(c, d, exclude?)
   end
 
   def cycle_minutes(_task, _exclude?), do: nil

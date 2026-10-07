@@ -220,6 +220,9 @@ defmodule Kanban.Metrics do
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], not is_nil(t.completed_at))
       |> where([t], not is_nil(t.claimed_at))
+      # A completion before its claim is inconsistent data (backfilled seeds);
+      # leave it out rather than report a negative cycle time.
+      |> where([t], t.completed_at >= t.claimed_at)
       |> where([t], t.completed_at >= ^start_date)
       |> where([t], t.type != ^:goal)
       |> maybe_filter_by_agent(agent_name)
@@ -263,6 +266,7 @@ defmodule Kanban.Metrics do
       |> where([t, c], c.board_id == ^board_id)
       |> where([t], not is_nil(t.completed_at))
       |> where([t], t.completed_at >= ^start_date)
+      |> where([t, _c, fm], t.completed_at >= fm.started_at)
       |> where([t], t.type != ^:goal)
       |> select([t, _c, fm], %{
         cycle_time_seconds:

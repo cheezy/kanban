@@ -57,7 +57,7 @@ defmodule KanbanWeb.AvatarTest do
       end
     end
 
-    test "unknown agent palette falls back to var(--ink-3)" do
+    test "unknown agent palette falls back to the fixed neutral background" do
       assigns = %{}
 
       html =
@@ -65,7 +65,7 @@ defmodule KanbanWeb.AvatarTest do
         <Avatar.avatar kind={:agent} name="X" palette="agent-unknown" />
         """)
 
-      assert html =~ "background: var(--ink-3);"
+      assert html =~ "background: oklch(70% 0.005 270);"
     end
   end
 
@@ -88,7 +88,7 @@ defmodule KanbanWeb.AvatarTest do
       end
     end
 
-    test "missing palette falls back to var(--ink-3)" do
+    test "missing palette falls back to the fixed neutral background" do
       assigns = %{}
 
       html =
@@ -96,7 +96,7 @@ defmodule KanbanWeb.AvatarTest do
         <Avatar.avatar kind={:human} name="X" />
         """)
 
-      assert html =~ "background: var(--ink-3);"
+      assert html =~ "background: oklch(70% 0.005 270);"
     end
   end
 

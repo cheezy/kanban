@@ -284,7 +284,9 @@
                 <span style="color: var(--ink-3); white-space: nowrap;">
                   {gettext("Completed:")} {format_date(goal.completed_at)}
                 </span>
-                <span style="color: var(--ink-4); white-space: nowrap;">
+                <%!-- --ink-3, not --ink-4: this is text, and --ink-4 is only held to
+                the 3:1 floor for separators and incidental marks. --%>
+                <span style="color: var(--ink-3); white-space: nowrap;">
                   {gettext("Created:")} {format_date(goal.inserted_at)}
                 </span>
               </span>

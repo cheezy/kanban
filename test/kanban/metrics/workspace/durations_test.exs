@@ -17,6 +17,13 @@ defmodule Kanban.Metrics.Workspace.DurationsTest do
       assert Durations.cycle_minutes(task, false) == 64 * 60
     end
 
+    test "returns nil when the completion precedes the claim, in both modes" do
+      task = %{claimed_at: @monday_morning, completed_at: @friday_evening}
+
+      assert Durations.cycle_minutes(task, false) == nil
+      assert Durations.cycle_minutes(task, true) == nil
+    end
+
     test "subtracts the weekend portion when weekends are excluded" do
       task = %{claimed_at: @friday_evening, completed_at: @monday_morning}
 
