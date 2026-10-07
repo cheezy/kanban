@@ -17,8 +17,9 @@ defmodule Kanban.Tasks.Task.MapFieldValidations do
   error strings (including the JSON-object examples) are asserted verbatim by
   the AI-context-fields tests and shown to API clients, so they must not drift.
 
-  `validate_string_list_field/2` is public because `Kanban.Tasks.Task` still
-  calls it directly for the `technology_requirements` field.
+  `validate_string_list_field/2` is public because
+  `Kanban.Tasks.Task.FieldValidations` calls it directly for the
+  `technology_requirements` field.
   """
 
   import Ecto.Changeset

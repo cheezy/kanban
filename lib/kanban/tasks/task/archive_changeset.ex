@@ -7,7 +7,8 @@ defmodule Kanban.Tasks.Task.ArchiveChangeset do
   `validate_archive_fields/1`, skipping the unrelated full-task validations so
   archiving does not retroactively reject pre-existing inconsistent state on
   other fields. `Kanban.Tasks.Task.archive_changeset/2` delegates here, and
-  `Kanban.Tasks.Task.changeset/2` still calls `validate_archive_fields/1`
+  `Kanban.Tasks.Task.changeset/2` (implemented in
+  `Kanban.Tasks.Task.Changesets`) still calls `validate_archive_fields/1`
   directly (hence it is public). Error strings are asserted verbatim by the
   schema tests and shown to API clients, so they must not drift.
   """
