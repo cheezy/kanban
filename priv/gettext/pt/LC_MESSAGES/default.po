@@ -48,7 +48,7 @@ msgstr " · Gerenciamento de Tarefas"
 
 #: lib/kanban_web/components/board_header.ex:74
 #: lib/kanban_web/components/board_pulse_card.ex:151
-#: lib/kanban_web/components/boards_header.ex:107
+#: lib/kanban_web/components/boards_header.ex:108
 #: lib/kanban_web/components/goal_progress_header.ex:208
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:92
@@ -964,9 +964,9 @@ msgid "The People Behind This App"
 msgstr "As Pessoas Por Trás Deste Aplicativo"
 
 #: lib/phoenix/live_dashboard/layout_view.ex:57
-#, elixir-format, fuzzy
+#, elixir-format
 msgid "Back to App"
-msgstr "Voltar ao quadro"
+msgstr "Voltar ao aplicativo"
 
 #: lib/kanban_web/live/board_live/form.html.heex:88
 #: lib/kanban_web/live/board_live/settings_form_component.ex:238
@@ -2057,9 +2057,9 @@ msgid "Clear filters"
 msgstr "Limpar filtros"
 
 #: lib/kanban_web/live/resources_live/show.html.heex:117
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Guide not found"
-msgstr "Usuário não encontrado"
+msgstr "Guia não encontrado"
 
 #: lib/kanban_web/live/resources_live/index.html.heex:19
 #, elixir-autogen, elixir-format
@@ -2213,7 +2213,7 @@ msgstr "Filtro de agente"
 
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:98
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:92
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:333
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:335
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:103
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:180
 #, elixir-autogen, elixir-format
@@ -2275,7 +2275,7 @@ msgid "Backlog Wait Time"
 msgstr "Tempo de espera em pendências"
 
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:85
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:317
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:319
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:171
 #, elixir-autogen, elixir-format
 msgid "Claimed:"
@@ -2292,7 +2292,7 @@ msgstr "Objetivos concluídos"
 #: lib/kanban_web/controllers/metrics_pdf_html/throughput.html.heex:276
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:72
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:70
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:297
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:299
 #, elixir-autogen, elixir-format
 msgid "Completed Tasks"
 msgstr "Tarefas concluídas"
@@ -2300,15 +2300,15 @@ msgstr "Tarefas concluídas"
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:91
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:85
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:285
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:321
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:323
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Completed:"
 msgstr "Concluído:"
 
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:81
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:288
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:310
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:290
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:312
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Created:"
@@ -2367,7 +2367,7 @@ msgstr "Filtros"
 msgid "Goals completed in this time range"
 msgstr "Objetivos concluídos neste período"
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:298
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:300
 #, elixir-autogen, elixir-format
 msgid "Grouped by completion date"
 msgstr "Agrupado por data de conclusão"
@@ -2459,7 +2459,7 @@ msgstr "Nenhuma tarefa reivindicada neste período"
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:78
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:76
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:199
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:304
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:306
 #, elixir-autogen, elixir-format
 msgid "No tasks completed in this time range"
 msgstr "Nenhuma tarefa concluída neste período"
@@ -2513,7 +2513,7 @@ msgstr "Análise de fila e tempo de espera"
 
 #: lib/kanban_web/components/board_header.ex:73
 #: lib/kanban_web/components/board_pulse_card.ex:150
-#: lib/kanban_web/components/boards_header.ex:106
+#: lib/kanban_web/components/boards_header.ex:107
 #: lib/kanban_web/components/goal_progress_header.ex:207
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:91
@@ -2864,9 +2864,9 @@ msgid "Create Message"
 msgstr "Criar mensagem"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:12
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Create a new message"
-msgstr "Criar uma nova tarefa"
+msgstr "Criar uma nova mensagem"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:54
 #, elixir-autogen, elixir-format
@@ -2889,9 +2889,9 @@ msgid "Message deleted."
 msgstr "Mensagem excluída."
 
 #: lib/kanban_web/live/admin/message_live/index.ex:60
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Message not found."
-msgstr "Usuário não encontrado"
+msgstr "Mensagem não encontrada."
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:37
 #, elixir-autogen, elixir-format
@@ -2909,11 +2909,11 @@ msgid "Dismiss message"
 msgstr "Dispensar mensagem"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:75
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Task updated successfully. 1 child task was also updated."
 msgid_plural "Task updated successfully. %{count} child tasks were also updated."
-msgstr[0] "Tarefa atualizada com sucesso"
-msgstr[1] "Tarefa atualizada com sucesso"
+msgstr[0] "Tarefa atualizada com sucesso. 1 subtarefa também foi atualizada."
+msgstr[1] "Tarefa atualizada com sucesso. %{count} subtarefas também foram atualizadas."
 
 #: lib/kanban_web/controllers/page_html/tango.html.heex:58
 #, elixir-autogen, elixir-format
@@ -3215,7 +3215,7 @@ msgstr "Diff, testes, aceitação, telemetria dos hooks — num só painel. Apro
 
 #: lib/kanban_web/components/board_header.ex:72
 #: lib/kanban_web/components/board_pulse_card.ex:149
-#: lib/kanban_web/components/boards_header.ex:105
+#: lib/kanban_web/components/boards_header.ex:106
 #: lib/kanban_web/components/goal_progress_header.ex:206
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:90
@@ -3837,7 +3837,7 @@ msgid "Full agent API + client-side hooks"
 msgstr "API de agentes completa + hooks no lado cliente"
 
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:55
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Get started"
 msgstr "Começar"
 
@@ -4036,7 +4036,7 @@ msgid "Solo"
 msgstr "Solo"
 
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:103
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Start free trial"
 msgstr "Iniciar teste grátis"
 
@@ -4066,7 +4066,7 @@ msgid "Structured schema, not free-text"
 msgstr "Esquema estruturado, não texto livre"
 
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:147
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Talk to us"
 msgstr "Fale com a gente"
 
@@ -4282,7 +4282,7 @@ msgstr "Quadro Vazio"
 
 #: lib/kanban_web/components/board_header.ex:71
 #: lib/kanban_web/components/board_pulse_card.ex:148
-#: lib/kanban_web/components/boards_header.ex:104
+#: lib/kanban_web/components/boards_header.ex:105
 #: lib/kanban_web/emails/digest_email.ex:132
 #: lib/kanban_web/emails/digest_email.ex:194
 #, elixir-autogen, elixir-format
@@ -4453,7 +4453,7 @@ msgid "Unrefined ideas land here. Triage to Ready when they have a why and accep
 msgstr "Ideias não refinadas aterrissam aqui. Mande para Pronto quando tiverem um porquê e critérios de aceitação."
 
 #: lib/kanban_web/components/task_card.ex:245
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{count} criterion"
 msgid_plural "%{count} criteria"
 msgstr[0] "%{count} critério"
@@ -4463,14 +4463,14 @@ msgstr[1] "%{count} critérios"
 #: lib/kanban_web/components/review_queue_item.ex:178
 #: lib/kanban_web/components/task_card.ex:268
 #: lib/kanban_web/components/task_card.ex:312
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{count} file"
 msgid_plural "%{count} files"
 msgstr[0] "%{count} arquivo"
 msgstr[1] "%{count} arquivos"
 
 #: lib/kanban_web/components/task_card.ex:258
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{count} issue"
 msgid_plural "%{count} issues"
 msgstr[0] "%{count} problema"
@@ -4652,29 +4652,29 @@ msgstr "%{done} de %{total} concluídos"
 #: lib/kanban_web/components/goal_progress_header.ex:111
 #: lib/kanban_web/components/target_goal_manage_row.ex:82
 #: lib/kanban_web/components/target_goal_row.ex:71
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Goal progress by child status"
 msgstr "Progresso da meta por status dos filhos"
 
 #: lib/kanban_web/components/goal_progress_header.ex:74
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "priority"
-msgstr "Prioridade"
+msgstr "prioridade"
 
 #: lib/kanban_web/components/goal_child_row.ex:85
 #: lib/kanban_web/components/target_goal_manage_row.ex:116
 #: lib/kanban_web/components/target_goal_row.ex:98
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "unassigned"
-msgstr "Não atribuído"
+msgstr "não atribuído"
 
 #: lib/kanban_web/live/goal_live/show.ex:77
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Goal not found"
 msgstr "Meta não encontrada"
 
 #: lib/kanban_web/live/goal_live/show.ex:142
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{count} child"
 msgid_plural "%{count} children"
 msgstr[0] "%{count} filho"
@@ -4827,7 +4827,7 @@ msgid "Working on it"
 msgstr "Em andamento"
 
 #: lib/kanban_web/components/goal_sidebar.ex:189
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{n} days"
 msgstr "%{n} dias"
 
@@ -4845,9 +4845,9 @@ msgstr "Ciclo méd."
 #: lib/kanban_web/components/goal_sidebar.ex:58
 #: lib/kanban_web/components/target_progress_header.ex:217
 #: lib/kanban_web/components/targets_strip.ex:278
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Complete"
-msgstr "Concluída"
+msgstr "Concluído"
 
 #: lib/kanban_web/components/goal_sidebar.ex:72
 #, elixir-autogen, elixir-format
@@ -4885,7 +4885,7 @@ msgid "Key files"
 msgstr "Arquivos Principais"
 
 #: lib/kanban_web/components/goal_sidebar.ex:89
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Last activity"
 msgstr "Última atividade"
 
@@ -4910,9 +4910,9 @@ msgid "Patterns to follow"
 msgstr "Padrões a seguir"
 
 #: lib/kanban_web/components/goal_sidebar.ex:57
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Progress"
-msgstr "Em Progresso"
+msgstr "Progresso"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:422
 #: lib/kanban_web/live/task_live/view_component.ex:369
@@ -4948,7 +4948,7 @@ msgid "Time"
 msgstr "Tempo"
 
 #: lib/kanban_web/components/goal_sidebar.ex:81
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Time spent"
 msgstr "Tempo gasto"
 
@@ -4963,9 +4963,9 @@ msgid "Verification steps"
 msgstr "Passos de Verificação"
 
 #: lib/kanban_web/components/goal_sidebar.ex:187
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "today"
-msgstr "Hoje"
+msgstr "hoje"
 
 #: lib/kanban_web/components/agent_roster_card.ex:243
 #, elixir-autogen, elixir-format
@@ -5105,9 +5105,9 @@ msgid "No recent activity."
 msgstr "Sem atividade recente."
 
 #: lib/kanban_web/task_tokens.ex:152
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "claimed"
-msgstr "Reivindicado:"
+msgstr "reservou"
 
 #: lib/kanban_web/components/review_detail_header.ex:84
 #: lib/kanban_web/task_tokens.ex:153
@@ -5116,9 +5116,9 @@ msgid "completed"
 msgstr "concluída"
 
 #: lib/kanban_web/task_tokens.ex:155
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "created"
-msgstr "Criado"
+msgstr "criou"
 
 #: lib/kanban_web/review_report_helpers.ex:173
 #: lib/kanban_web/task_tokens.ex:154
@@ -5127,9 +5127,9 @@ msgid "reviewed"
 msgstr "revisto"
 
 #: lib/kanban_web/task_tokens.ex:156
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "unclaimed"
-msgstr "Reivindicado:"
+msgstr "liberou"
 
 #: lib/kanban_web/components/agents_header.ex:118
 #, elixir-autogen, elixir-format
@@ -5155,7 +5155,7 @@ msgstr[0] "últimas 24h · %{count} evento"
 msgstr[1] "últimas 24h · %{count} eventos"
 
 #: lib/kanban_web/live/agents_live/components/live_indicator.ex:43
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] "%{count} conectado"
@@ -5223,7 +5223,7 @@ msgid "needs attention"
 msgstr "precisa de atenção"
 
 #: lib/kanban_web/components/review_diff_panel.ex:145
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{count} failing test"
 msgid_plural "%{count} failing tests"
 msgstr[0] "%{count} teste falhando"
@@ -5412,9 +5412,9 @@ msgstr "Restaurar"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:49
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:522
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Cycle time · median"
-msgstr "Tempo de ciclo"
+msgstr "Tempo de ciclo · mediana"
 
 #: lib/kanban_web/components/metrics_kpi_strip.ex:76
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:552
@@ -5437,24 +5437,24 @@ msgstr "ideia → concluído"
 #: lib/kanban_web/components/metrics_cycle_time_chart.ex:266
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:38
 #: lib/kanban_web/export/workspace_metrics_excel.ex:92
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Cycle time · daily median (min)"
-msgstr "Tempo de ciclo"
+msgstr "Tempo de ciclo · mediana diária (min)"
 
 #: lib/kanban_web/components/metrics_throughput_chart.ex:80
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Throughput sparkline"
-msgstr "Métricas de produtividade"
+msgstr "Minigráfico de produtividade"
 
 #: lib/kanban_web/components/metrics_throughput_chart.ex:63
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:48
 #: lib/kanban_web/export/workspace_metrics_excel.ex:160
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Throughput · tasks completed per day"
 msgstr "Throughput · tarefas concluídas por dia"
 
 #: lib/kanban_web/components/metrics_agent_leaderboard.ex:58
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "by completed"
 msgstr "por concluídas"
 
@@ -5514,27 +5514,27 @@ msgid "Profile updated."
 msgstr "Perfil atualizado."
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:122
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid " — complete onboarding endpoint and documentation guides for AI agents at /api/agent/onboarding."
 msgstr " — endpoint completo de onboarding e guias de documentação para agentes de IA em /api/agent/onboarding."
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:106
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid " — execute custom code at key moments: before_doing, after_doing, before_review, after_review."
 msgstr " — execute código personalizado em momentos-chave: before_doing, after_doing, before_review, after_review."
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:98
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid " — optimistic locking prevents multiple agents from claiming the same task."
 msgstr " — o bloqueio otimista impede que múltiplos agentes reservem a mesma tarefa."
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:114
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid " — optional human approval before tasks move to Done, with request-for-changes capability."
 msgstr " — aprovação humana opcional antes que as tarefas passem para Concluído, com capacidade de solicitar mudanças."
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:90
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid " — tasks specify required capabilities, and agents only see tasks matching their skills."
 msgstr " — as tarefas especificam as capacidades necessárias, e os agentes só veem tarefas que combinam com suas habilidades."
 
@@ -5544,7 +5544,7 @@ msgid "How Stride was built, who it's for, and how to get involved."
 msgstr "Como o Stride foi construído, para quem é e como participar."
 
 #: lib/kanban_web/controllers/page_html/about.html.heex:83
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Key collaboration features"
 msgstr "Principais recursos de colaboração"
 
@@ -5574,7 +5574,7 @@ msgstr "Log de auditoria para reordenação de colunas"
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:18
 #: lib/kanban_web/live/user_live/reset_password.ex:19
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Back to sign in"
 msgstr "Voltar para o login"
 
@@ -5585,9 +5585,9 @@ msgstr "Quadro → Tokens"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:10
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:30
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Changelog"
-msgstr "Mudar idioma"
+msgstr "Registro de alterações"
 
 #: lib/kanban_web/live/user_live/reset_password.ex:28
 #, elixir-autogen, elixir-format
@@ -5600,29 +5600,29 @@ msgid "Choose a strong password and confirm it. You will stay signed in on this 
 msgstr "Escolha uma senha forte e confirme. Você continuará logado neste dispositivo após uma mudança bem-sucedida."
 
 #: lib/kanban_web/live/user_live/confirmation.ex:157
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Confirming your account…"
-msgstr "Confirmando sua conta..."
+msgstr "Confirmando sua conta…"
 
 #: lib/kanban_web/live/user_live/registration.ex:121
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Create account"
-msgstr "Criar uma conta"
+msgstr "Criar conta"
 
 #: lib/kanban_web/live/user_live/registration.ex:26
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Create your account"
-msgstr "Crie Sua Conta"
+msgstr "Crie sua conta"
 
 #: lib/kanban_web/controllers/page_html/tango.html.heex:164
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Established companies modernizing their development practices."
 msgstr "Empresas estabelecidas modernizando suas práticas de desenvolvimento."
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:65
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "For agents:"
-msgstr "Para agentes"
+msgstr "Para agentes:"
 
 #: lib/kanban_web/live/user_live/login.ex:65
 #, elixir-autogen, elixir-format
@@ -5650,18 +5650,18 @@ msgid "New to Stride?"
 msgstr "Novo no Stride?"
 
 #: lib/kanban_web/live/resources_live/show.html.heex:11
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Not found"
 msgstr "Não encontrado"
 
 #: lib/kanban_web/live/user_live/settings.ex:17
 #: lib/kanban_web/live/user_live/settings_components.ex:100
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Profile"
 msgstr "Perfil"
 
 #: lib/kanban_web/controllers/page_html/tango.html.heex:167
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Public and private sector teams tackling complex technical challenges."
 msgstr "Times dos setores público e privado enfrentando desafios técnicos complexos."
 
@@ -5671,14 +5671,14 @@ msgid "Release notes for the Stride application."
 msgstr "Notas de versão da aplicação Stride."
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:24
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Reset your password"
 msgstr "Redefina sua senha"
 
 #: lib/kanban_web/live/user_live/settings.ex:142
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Save password"
-msgstr "Salvar Senha"
+msgstr "Salvar senha"
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:56
 #, elixir-autogen, elixir-format
@@ -5686,7 +5686,7 @@ msgid "Send reset link"
 msgstr "Enviar link de redefinição"
 
 #: lib/kanban_web/controllers/page_html/tango.html.heex:161
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Startups looking to move fast without sacrificing quality."
 msgstr "Startups que querem se mover rápido sem abrir mão da qualidade."
 
@@ -5707,9 +5707,9 @@ msgid "The people and the AI collaborator behind Stride."
 msgstr "As pessoas e o colaborador de IA por trás do Stride."
 
 #: lib/kanban_web/live/user_live/settings.ex:62
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Update profile"
-msgstr "Atualizar Perfil"
+msgstr "Atualizar perfil"
 
 #: lib/kanban_web/live/user_live/confirmation.ex:168
 #, elixir-autogen, elixir-format
@@ -5717,7 +5717,7 @@ msgid "Verifying your confirmation link…"
 msgstr "Verificando seu link de confirmação…"
 
 #: lib/kanban_web/controllers/page_html/tango.html.heex:157
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "We work with"
 msgstr "Trabalhamos com"
 
@@ -6711,7 +6711,7 @@ msgstr "Revisão de código"
 
 #: lib/kanban_web/live/user_live/settings_components.ex:41
 #: lib/kanban_web/live/user_live/settings_components.ex:48
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Settings sections"
 msgstr "Seções de configurações"
 
@@ -6910,9 +6910,9 @@ msgid "We may investigate suspected violations of this policy and take any actio
 msgstr "Podemos investigar suspeitas de violação desta política e tomar qualquer medida que considerarmos apropriada, incluindo a remoção de conteúdo, a suspensão ou revogação de tokens de API, a suspensão ou o encerramento de contas e a denúncia de atividades às autoridades quando exigido. Quando possível, avisaremos você e daremos a oportunidade de corrigir o problema antes de agir — mas não somos obrigados a fazê-lo quando uma violação é grave ou causa dano contínuo."
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:143
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "We may update this policy from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect. Continued use of the service after a change takes effect constitutes acceptance of the revised policy."
-msgstr "Podemos atualizar esta política de tempos em tempos. Quando fizermos mudanças materiais, indicaremos a nova data de vigência no topo desta página e, quando apropriado, notificaremos você por e-mail ou banner no aplicativo antes que a mudança entre em vigor."
+msgstr "Podemos atualizar esta política de tempos em tempos. Quando fizermos mudanças materiais, indicaremos a nova data de vigência no topo desta página e, quando apropriado, notificaremos você por e-mail ou banner no aplicativo antes que a mudança entre em vigor. O uso continuado do serviço após a entrada em vigor de uma mudança constitui aceitação da política revisada."
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:110
 #, elixir-autogen, elixir-format
@@ -7083,17 +7083,17 @@ msgid "Edge cases"
 msgstr "Casos extremos"
 
 #: lib/kanban_web/review_report_helpers.ex:264
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Integration tests"
 msgstr "Testes de integração"
 
 #: lib/kanban_web/review_report_helpers.ex:265
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Manual tests"
 msgstr "Testes manuais"
 
 #: lib/kanban_web/review_report_helpers.ex:263
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Unit tests"
 msgstr "Testes unitários"
 
@@ -7441,7 +7441,7 @@ msgstr "Nenhuma conclusão nos últimos %{count} dias."
 
 #: lib/kanban_web/components/agents_header.ex:435
 #: lib/kanban_web/live/metrics_live/workspace.ex:422
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Time range"
 msgstr "Período"
 
@@ -7453,9 +7453,9 @@ msgid "vs prev %{count}d"
 msgstr "vs. ant. %{count}d"
 
 #: lib/kanban_web/components/metrics_cycle_time_chart.ex:111
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "last %{count} days"
-msgstr "Últimos %{count} dias"
+msgstr "últimos %{count} dias"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:273
 #, elixir-autogen, elixir-format
@@ -7484,9 +7484,9 @@ msgid "Apply"
 msgstr "Aplicar"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:199
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "From"
-msgstr "de"
+msgstr "De"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:206
 #, elixir-autogen, elixir-format
@@ -7504,9 +7504,9 @@ msgid "Expand all"
 msgstr "Expandir tudo"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:106
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Clear search"
-msgstr "Limpar"
+msgstr "Limpar pesquisa"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:92
 #, elixir-autogen, elixir-format
@@ -7519,9 +7519,9 @@ msgid "No archived tasks match \"%{query}\"."
 msgstr "Nenhuma tarefa arquivada corresponde a \"%{query}\"."
 
 #: lib/kanban_web/components/agents_header.ex:100
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Created today"
-msgstr "Concluídas hoje"
+msgstr "Criadas hoje"
 
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:138
 #, elixir-autogen, elixir-format
@@ -7673,28 +7673,28 @@ msgid "Target not found"
 msgstr "Alvo não encontrado"
 
 #: lib/kanban_web/components/target_progress_header.ex:66
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Target"
-msgstr "Alvos"
+msgstr "Alvo"
 
 #: lib/kanban_web/components/target_progress_header.ex:121
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Target progress by child status"
-msgstr "Progresso da meta por status dos filhos"
+msgstr "Progresso do alvo por status dos filhos"
 
 #: lib/kanban_web/components/target_goal_manage_row.ex:85
 #: lib/kanban_web/components/target_goal_row.ex:74
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "%{done} of %{total} (%{pct}%)"
-msgstr "%{done} de %{total} concluídos"
+msgstr "%{done} de %{total} (%{pct}%)"
 
 #: lib/kanban_web/live/target_live/show.html.heex:74
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Goals"
-msgstr "Meta"
+msgstr "Metas"
 
 #: lib/kanban_web/live/target_live/show.html.heex:47
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Edit target"
 msgstr "Editar alvo"
 
@@ -7745,9 +7745,9 @@ msgid "Choose a new owner first."
 msgstr "Escolha primeiro um novo responsável."
 
 #: lib/kanban_web/live/agents_live/interventions.ex:68
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Could not reassign the goal. Please try again."
-msgstr "Não foi possível atribuir a meta"
+msgstr "Não foi possível reatribuir a meta. Tente novamente."
 
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:70
 #, elixir-autogen, elixir-format
@@ -7756,9 +7756,9 @@ msgstr "Novo responsável"
 
 #: lib/kanban_web/components/target_risk_explainer.ex:186
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:63
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Reassign"
-msgstr "Reatribuído"
+msgstr "Reatribuir"
 
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:53
 #, elixir-autogen, elixir-format
@@ -7903,9 +7903,9 @@ msgstr "Não foi possível atualizar os dados dos agentes no momento. Exibindo o
 
 #: lib/kanban_web/live/board_live/authorization.ex:83
 #: lib/kanban_web/live/task_live/form_component.ex:101
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "You do not have permission to modify tasks on this board"
-msgstr "Você não tem permissão para mover tarefas neste quadro"
+msgstr "Você não tem permissão para modificar tarefas neste quadro"
 
 #: lib/kanban_web/live/review_live.html.heex:526
 #, elixir-autogen, elixir-format

@@ -48,7 +48,7 @@ msgstr ""
 
 #: lib/kanban_web/components/board_header.ex:74
 #: lib/kanban_web/components/board_pulse_card.ex:151
-#: lib/kanban_web/components/boards_header.ex:107
+#: lib/kanban_web/components/boards_header.ex:108
 #: lib/kanban_web/components/goal_progress_header.ex:208
 #: lib/kanban_web/components/marketing_mini_board.ex:288
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:92
@@ -2213,7 +2213,7 @@ msgstr ""
 
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:98
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:92
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:333
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:335
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:103
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:180
 #, elixir-autogen, elixir-format
@@ -2275,7 +2275,7 @@ msgid "Backlog Wait Time"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:85
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:317
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:319
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:171
 #, elixir-autogen, elixir-format
 msgid "Claimed:"
@@ -2292,7 +2292,7 @@ msgstr ""
 #: lib/kanban_web/controllers/metrics_pdf_html/throughput.html.heex:276
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:72
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:70
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:297
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:299
 #, elixir-autogen, elixir-format
 msgid "Completed Tasks"
 msgstr ""
@@ -2300,15 +2300,15 @@ msgstr ""
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:91
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:85
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:285
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:321
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:323
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:95
 #, elixir-autogen, elixir-format
 msgid "Completed:"
 msgstr ""
 
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:81
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:288
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:310
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:290
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:312
 #: lib/kanban_web/live/metrics_live/wait_time.html.heex:165
 #, elixir-autogen, elixir-format
 msgid "Created:"
@@ -2367,7 +2367,7 @@ msgstr ""
 msgid "Goals completed in this time range"
 msgstr ""
 
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:298
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:300
 #, elixir-autogen, elixir-format
 msgid "Grouped by completion date"
 msgstr ""
@@ -2459,7 +2459,7 @@ msgstr ""
 #: lib/kanban_web/live/metrics_live/cycle_time.html.heex:78
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:76
 #: lib/kanban_web/live/metrics_live/throughput.html.heex:199
-#: lib/kanban_web/live/metrics_live/throughput.html.heex:304
+#: lib/kanban_web/live/metrics_live/throughput.html.heex:306
 #, elixir-autogen, elixir-format
 msgid "No tasks completed in this time range"
 msgstr ""
@@ -2513,7 +2513,7 @@ msgstr ""
 
 #: lib/kanban_web/components/board_header.ex:73
 #: lib/kanban_web/components/board_pulse_card.ex:150
-#: lib/kanban_web/components/boards_header.ex:106
+#: lib/kanban_web/components/boards_header.ex:107
 #: lib/kanban_web/components/goal_progress_header.ex:207
 #: lib/kanban_web/components/marketing_mini_board.ex:270
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:91
@@ -3215,7 +3215,7 @@ msgstr ""
 
 #: lib/kanban_web/components/board_header.ex:72
 #: lib/kanban_web/components/board_pulse_card.ex:149
-#: lib/kanban_web/components/boards_header.ex:105
+#: lib/kanban_web/components/boards_header.ex:106
 #: lib/kanban_web/components/goal_progress_header.ex:206
 #: lib/kanban_web/components/marketing_mini_board.ex:242
 #: lib/kanban_web/components/metrics_cumulative_flow.ex:90
@@ -4282,7 +4282,7 @@ msgstr ""
 
 #: lib/kanban_web/components/board_header.ex:71
 #: lib/kanban_web/components/board_pulse_card.ex:148
-#: lib/kanban_web/components/boards_header.ex:104
+#: lib/kanban_web/components/boards_header.ex:105
 #: lib/kanban_web/emails/digest_email.ex:132
 #: lib/kanban_web/emails/digest_email.ex:194
 #, elixir-autogen, elixir-format
