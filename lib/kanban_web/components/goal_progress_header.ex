@@ -71,7 +71,7 @@ defmodule KanbanWeb.GoalProgressHeader do
         <BoardHeader.ai_pill :if={@ai_generated?} />
         <.priority_dot :if={@priority} priority={@priority} />
         <span :if={@priority} style="font-size: 11px; color: var(--ink-3);">
-          {TaskTokens.priority_word(@priority)} {gettext("priority")}
+          {TaskTokens.priority_label(@priority)}
         </span>
       </div>
 

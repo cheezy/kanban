@@ -58,6 +58,18 @@ defmodule KanbanWeb.TaskTokens do
   def priority_word(:low), do: gettext("Low")
   def priority_word(_), do: ""
 
+  @doc """
+  Gettext phrase naming a priority level, such as "High priority" (returns
+  empty string for unknowns). One message per level, so each language can
+  order and inflect the phrase itself instead of having it built from two
+  separately translated words.
+  """
+  def priority_label(:critical), do: gettext("Critical priority")
+  def priority_label(:high), do: gettext("High priority")
+  def priority_label(:medium), do: gettext("Medium priority")
+  def priority_label(:low), do: gettext("Low priority")
+  def priority_label(_), do: ""
+
   # --- Complexity --------------------------------------------------------
 
   @doc "Gettext word for a complexity atom (returns empty string for unknowns)."
@@ -148,12 +160,17 @@ defmodule KanbanWeb.TaskTokens do
   def kind_soft(:review), do: status_soft(:completed)
   def kind_soft(_), do: "transparent"
 
-  @doc "Gettext label for an event kind."
-  def kind_label(:claim), do: gettext("claimed")
-  def kind_label(:complete), do: gettext("completed")
-  def kind_label(:review), do: gettext("reviewed")
-  def kind_label(:create), do: gettext("created")
-  def kind_label(:unclaim), do: gettext("unclaimed")
+  @doc """
+  Gettext verb for an event kind, as it reads after the agent's name ("Ada
+  claimed W12"). The "agent action" context keeps these verbs apart from the
+  same English words used as adjectives elsewhere, such as the review
+  report's "reviewed" verdict, so each language can conjugate them.
+  """
+  def kind_label(:claim), do: pgettext("agent action", "claimed")
+  def kind_label(:complete), do: pgettext("agent action", "completed")
+  def kind_label(:review), do: pgettext("agent action", "reviewed")
+  def kind_label(:create), do: pgettext("agent action", "created")
+  def kind_label(:unclaim), do: pgettext("agent action", "unclaimed")
   def kind_label(_), do: ""
 
   # --- Task type ---------------------------------------------------------

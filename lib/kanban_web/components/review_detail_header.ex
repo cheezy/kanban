@@ -81,7 +81,7 @@ defmodule KanbanWeb.ReviewDetailHeader do
             data-review-detail-header-label
             style="font-size: 12px; color: var(--ink-3);"
           >
-            {gettext("completed")}
+            {pgettext("agent action", "completed")}
           </span>
 
           <span

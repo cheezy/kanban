@@ -417,7 +417,7 @@ msgstr ""
 #: lib/kanban_web/live/issue_live/form_component.ex:303
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:71
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
-#: lib/kanban_web/task_tokens.ex:163
+#: lib/kanban_web/task_tokens.ex:180
 #, elixir-autogen, elixir-format
 msgid "Defect"
 msgstr ""
@@ -449,7 +449,7 @@ msgstr ""
 #: lib/kanban_web/live/task_live/form_component.html.heex:171
 #: lib/kanban_web/live/task_live/form_component.html.heex:370
 #: lib/kanban_web/task_tokens.ex:57
-#: lib/kanban_web/task_tokens.ex:65
+#: lib/kanban_web/task_tokens.ex:77
 #, elixir-autogen, elixir-format
 msgid "Medium"
 msgstr ""
@@ -496,7 +496,7 @@ msgstr ""
 
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:70
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
-#: lib/kanban_web/task_tokens.ex:162
+#: lib/kanban_web/task_tokens.ex:179
 #, elixir-autogen, elixir-format
 msgid "Work"
 msgstr ""
@@ -1178,8 +1178,8 @@ msgstr ""
 #: lib/kanban_web/export/workspace_metrics_excel.ex:188
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:135
 #: lib/kanban_web/live/task_live/form_component.html.heex:135
-#: lib/kanban_web/task_tokens.ex:78
-#: lib/kanban_web/task_tokens.ex:83
+#: lib/kanban_web/task_tokens.ex:90
+#: lib/kanban_web/task_tokens.ex:95
 #, elixir-autogen, elixir-format
 msgid "Completed"
 msgstr ""
@@ -1310,7 +1310,7 @@ msgstr ""
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:33
 #: lib/kanban_web/live/task_live/form_component.html.heex:172
 #: lib/kanban_web/live/task_live/form_component.html.heex:371
-#: lib/kanban_web/task_tokens.ex:66
+#: lib/kanban_web/task_tokens.ex:78
 #, elixir-autogen, elixir-format
 msgid "Large"
 msgstr ""
@@ -1457,7 +1457,7 @@ msgstr ""
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:31
 #: lib/kanban_web/live/task_live/form_component.html.heex:170
 #: lib/kanban_web/live/task_live/form_component.html.heex:369
-#: lib/kanban_web/task_tokens.ex:64
+#: lib/kanban_web/task_tokens.ex:76
 #, elixir-autogen, elixir-format
 msgid "Small"
 msgstr ""
@@ -1822,7 +1822,7 @@ msgstr ""
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:56
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
-#: lib/kanban_web/task_tokens.ex:164
+#: lib/kanban_web/task_tokens.ex:181
 #, elixir-autogen, elixir-format
 msgid "Goal"
 msgstr ""
@@ -4656,11 +4656,6 @@ msgstr ""
 msgid "Goal progress by child status"
 msgstr ""
 
-#: lib/kanban_web/components/goal_progress_header.ex:74
-#, elixir-autogen, elixir-format
-msgid "priority"
-msgstr ""
-
 #: lib/kanban_web/components/goal_child_row.ex:85
 #: lib/kanban_web/components/target_goal_manage_row.ex:116
 #: lib/kanban_web/components/target_goal_row.ex:98
@@ -5104,31 +5099,9 @@ msgstr ""
 msgid "No recent activity."
 msgstr ""
 
-#: lib/kanban_web/task_tokens.ex:152
-#, elixir-autogen, elixir-format
-msgid "claimed"
-msgstr ""
-
-#: lib/kanban_web/components/review_detail_header.ex:84
-#: lib/kanban_web/task_tokens.ex:153
-#, elixir-autogen, elixir-format
-msgid "completed"
-msgstr ""
-
-#: lib/kanban_web/task_tokens.ex:155
-#, elixir-autogen, elixir-format
-msgid "created"
-msgstr ""
-
 #: lib/kanban_web/review_report_helpers.ex:173
-#: lib/kanban_web/task_tokens.ex:154
 #, elixir-autogen, elixir-format
 msgid "reviewed"
-msgstr ""
-
-#: lib/kanban_web/task_tokens.ex:156
-#, elixir-autogen, elixir-format
-msgid "unclaimed"
 msgstr ""
 
 #: lib/kanban_web/components/agents_header.ex:118
@@ -5301,22 +5274,22 @@ msgstr ""
 msgid "oldest %{age}"
 msgstr ""
 
-#: lib/kanban_web/task_tokens.ex:79
+#: lib/kanban_web/task_tokens.ex:91
 #, elixir-autogen, elixir-format
 msgid "Cancelled"
 msgstr ""
 
-#: lib/kanban_web/task_tokens.ex:82
+#: lib/kanban_web/task_tokens.ex:94
 #, elixir-autogen, elixir-format
 msgid "Deferred"
 msgstr ""
 
-#: lib/kanban_web/task_tokens.ex:81
+#: lib/kanban_web/task_tokens.ex:93
 #, elixir-autogen, elixir-format
 msgid "Duplicate"
 msgstr ""
 
-#: lib/kanban_web/task_tokens.ex:80
+#: lib/kanban_web/task_tokens.ex:92
 #, elixir-autogen, elixir-format
 msgid "Won't do"
 msgstr ""
@@ -5909,22 +5882,22 @@ msgstr ""
 msgid "Sorry, we couldn't find the page you're looking for. The resource might have been moved, deleted, or you may not have permission to access it."
 msgstr ""
 
-#: lib/kanban_web/task_tokens.ex:177
+#: lib/kanban_web/task_tokens.ex:194
 #, elixir-autogen, elixir-format
 msgid "After Doing"
 msgstr ""
 
-#: lib/kanban_web/task_tokens.ex:179
+#: lib/kanban_web/task_tokens.ex:196
 #, elixir-autogen, elixir-format
 msgid "After Review"
 msgstr ""
 
-#: lib/kanban_web/task_tokens.ex:176
+#: lib/kanban_web/task_tokens.ex:193
 #, elixir-autogen, elixir-format
 msgid "Before Doing"
 msgstr ""
 
-#: lib/kanban_web/task_tokens.ex:178
+#: lib/kanban_web/task_tokens.ex:195
 #, elixir-autogen, elixir-format
 msgid "Before Review"
 msgstr ""
@@ -9488,4 +9461,55 @@ msgstr ""
 #: lib/kanban_web/live/metrics_live/lead_time.html.heex:66
 #, elixir-autogen, elixir-format
 msgid "No lead time data available"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:67
+#, elixir-autogen, elixir-format
+msgid "Critical priority"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:68
+#, elixir-autogen, elixir-format
+msgid "High priority"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:70
+#, elixir-autogen, elixir-format
+msgid "Low priority"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:69
+#, elixir-autogen, elixir-format
+msgid "Medium priority"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:169
+#, elixir-autogen, elixir-format
+msgctxt "agent action"
+msgid "claimed"
+msgstr ""
+
+#: lib/kanban_web/components/review_detail_header.ex:84
+#: lib/kanban_web/task_tokens.ex:170
+#, elixir-autogen, elixir-format
+msgctxt "agent action"
+msgid "completed"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:172
+#, elixir-autogen, elixir-format
+msgctxt "agent action"
+msgid "created"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:171
+#, elixir-autogen, elixir-format
+msgctxt "agent action"
+msgid "reviewed"
+msgstr ""
+
+#: lib/kanban_web/task_tokens.ex:173
+#, elixir-autogen, elixir-format
+msgctxt "agent action"
+msgid "unclaimed"
 msgstr ""

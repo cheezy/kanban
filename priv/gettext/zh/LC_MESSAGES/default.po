@@ -417,7 +417,7 @@ msgstr "紧急"
 #: lib/kanban_web/live/issue_live/form_component.ex:303
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:71
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
-#: lib/kanban_web/task_tokens.ex:163
+#: lib/kanban_web/task_tokens.ex:180
 #, elixir-autogen, elixir-format
 msgid "Defect"
 msgstr "缺陷"
@@ -449,7 +449,7 @@ msgstr "低"
 #: lib/kanban_web/live/task_live/form_component.html.heex:171
 #: lib/kanban_web/live/task_live/form_component.html.heex:370
 #: lib/kanban_web/task_tokens.ex:57
-#: lib/kanban_web/task_tokens.ex:65
+#: lib/kanban_web/task_tokens.ex:77
 #, elixir-autogen, elixir-format
 msgid "Medium"
 msgstr "中"
@@ -496,7 +496,7 @@ msgstr "超出在制品限制"
 
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:70
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
-#: lib/kanban_web/task_tokens.ex:162
+#: lib/kanban_web/task_tokens.ex:179
 #, elixir-autogen, elixir-format
 msgid "Work"
 msgstr "工作"
@@ -1178,8 +1178,8 @@ msgstr "需要避免的常见陷阱"
 #: lib/kanban_web/export/workspace_metrics_excel.ex:188
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:135
 #: lib/kanban_web/live/task_live/form_component.html.heex:135
-#: lib/kanban_web/task_tokens.ex:78
-#: lib/kanban_web/task_tokens.ex:83
+#: lib/kanban_web/task_tokens.ex:90
+#: lib/kanban_web/task_tokens.ex:95
 #, elixir-autogen, elixir-format
 msgid "Completed"
 msgstr "已完成"
@@ -1310,7 +1310,7 @@ msgstr "需要先读的关键文件"
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:33
 #: lib/kanban_web/live/task_live/form_component.html.heex:172
 #: lib/kanban_web/live/task_live/form_component.html.heex:371
-#: lib/kanban_web/task_tokens.ex:66
+#: lib/kanban_web/task_tokens.ex:78
 #, elixir-autogen, elixir-format
 msgid "Large"
 msgstr "大"
@@ -1457,7 +1457,7 @@ msgstr "选择状态"
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:31
 #: lib/kanban_web/live/task_live/form_component.html.heex:170
 #: lib/kanban_web/live/task_live/form_component.html.heex:369
-#: lib/kanban_web/task_tokens.ex:64
+#: lib/kanban_web/task_tokens.ex:76
 #, elixir-autogen, elixir-format
 msgid "Small"
 msgstr "小"
@@ -1822,7 +1822,7 @@ msgstr "完整的 API 文档"
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:56
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
-#: lib/kanban_web/task_tokens.ex:164
+#: lib/kanban_web/task_tokens.ex:181
 #, elixir-autogen, elixir-format
 msgid "Goal"
 msgstr "目标"
@@ -4649,11 +4649,6 @@ msgstr "已完成 %{done}/%{total}"
 msgid "Goal progress by child status"
 msgstr "按子项状态显示的目标进度"
 
-#: lib/kanban_web/components/goal_progress_header.ex:74
-#, elixir-autogen, elixir-format
-msgid "priority"
-msgstr "优先级"
-
 #: lib/kanban_web/components/goal_child_row.ex:85
 #: lib/kanban_web/components/target_goal_manage_row.ex:116
 #: lib/kanban_web/components/target_goal_row.ex:98
@@ -5096,32 +5091,10 @@ msgstr "完成数"
 msgid "No recent activity."
 msgstr "暂无近期活动。"
 
-#: lib/kanban_web/task_tokens.ex:152
-#, elixir-autogen, elixir-format
-msgid "claimed"
-msgstr "已认领"
-
-#: lib/kanban_web/components/review_detail_header.ex:84
-#: lib/kanban_web/task_tokens.ex:153
-#, elixir-autogen, elixir-format
-msgid "completed"
-msgstr "已完成"
-
-#: lib/kanban_web/task_tokens.ex:155
-#, elixir-autogen, elixir-format
-msgid "created"
-msgstr "已创建"
-
 #: lib/kanban_web/review_report_helpers.ex:173
-#: lib/kanban_web/task_tokens.ex:154
 #, elixir-autogen, elixir-format
 msgid "reviewed"
 msgstr "已审阅"
-
-#: lib/kanban_web/task_tokens.ex:156
-#, elixir-autogen, elixir-format
-msgid "unclaimed"
-msgstr "已取消认领"
 
 #: lib/kanban_web/components/agents_header.ex:118
 #, elixir-autogen, elixir-format
@@ -5289,22 +5262,22 @@ msgstr "无法对任务请求更改。"
 msgid "oldest %{age}"
 msgstr "最早 %{age}"
 
-#: lib/kanban_web/task_tokens.ex:79
+#: lib/kanban_web/task_tokens.ex:91
 #, elixir-autogen, elixir-format
 msgid "Cancelled"
 msgstr "已取消"
 
-#: lib/kanban_web/task_tokens.ex:82
+#: lib/kanban_web/task_tokens.ex:94
 #, elixir-autogen, elixir-format
 msgid "Deferred"
 msgstr "已延期"
 
-#: lib/kanban_web/task_tokens.ex:81
+#: lib/kanban_web/task_tokens.ex:93
 #, elixir-autogen, elixir-format
 msgid "Duplicate"
 msgstr "重复"
 
-#: lib/kanban_web/task_tokens.ex:80
+#: lib/kanban_web/task_tokens.ex:92
 #, elixir-autogen, elixir-format
 msgid "Won't do"
 msgstr "不会做"
@@ -5897,22 +5870,22 @@ msgstr "页面未找到"
 msgid "Sorry, we couldn't find the page you're looking for. The resource might have been moved, deleted, or you may not have permission to access it."
 msgstr "抱歉,我们找不到您要查找的页面。资源可能已被移动、删除,或者您没有访问权限。"
 
-#: lib/kanban_web/task_tokens.ex:177
+#: lib/kanban_web/task_tokens.ex:194
 #, elixir-autogen, elixir-format
 msgid "After Doing"
 msgstr "执行后"
 
-#: lib/kanban_web/task_tokens.ex:179
+#: lib/kanban_web/task_tokens.ex:196
 #, elixir-autogen, elixir-format
 msgid "After Review"
 msgstr "审核后"
 
-#: lib/kanban_web/task_tokens.ex:176
+#: lib/kanban_web/task_tokens.ex:193
 #, elixir-autogen, elixir-format
 msgid "Before Doing"
 msgstr "执行前"
 
-#: lib/kanban_web/task_tokens.ex:178
+#: lib/kanban_web/task_tokens.ex:195
 #, elixir-autogen, elixir-format
 msgid "Before Review"
 msgstr "审核前"
@@ -6080,7 +6053,7 @@ msgstr "Stride agent 活动界面,顶部为 agent 列表,下方为实时事件�
 #: lib/kanban_web/controllers/page_html/product.html.heex:207
 #, elixir-autogen, elixir-format
 msgid "Stride workspace metrics dashboard with lead time, cycle time, wait time, and throughput split by agent and human"
-msgstr "Stride 工作区指标仪表板,按 agent 与人类分别展示提前时间、周期时间、等待时间和吞吐量"
+msgstr "Stride 工作区指标仪表板,按代理与人类分别展示前置时间、周期时间、等待时间和吞吐量"
 
 #: lib/kanban_web/controllers/page_html/product.html.heex:24
 #, elixir-autogen, elixir-format
@@ -8248,7 +8221,7 @@ msgstr "工作流插件"
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:532
 #, elixir-autogen, elixir-format
 msgid "Lead time · median"
-msgstr "前置时间"
+msgstr "前置时间 · 中位数"
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:45
 #: lib/kanban_web/export/workspace_metrics_excel.ex:93
@@ -9524,3 +9497,54 @@ msgstr "暂无周期时间数据"
 #, elixir-autogen, elixir-format
 msgid "No lead time data available"
 msgstr "暂无前置时间数据"
+
+#: lib/kanban_web/task_tokens.ex:67
+#, elixir-autogen, elixir-format
+msgid "Critical priority"
+msgstr "紧急优先级"
+
+#: lib/kanban_web/task_tokens.ex:68
+#, elixir-autogen, elixir-format
+msgid "High priority"
+msgstr "高优先级"
+
+#: lib/kanban_web/task_tokens.ex:70
+#, elixir-autogen, elixir-format
+msgid "Low priority"
+msgstr "低优先级"
+
+#: lib/kanban_web/task_tokens.ex:69
+#, elixir-autogen, elixir-format
+msgid "Medium priority"
+msgstr "中优先级"
+
+#: lib/kanban_web/task_tokens.ex:169
+#, elixir-autogen, elixir-format
+msgctxt "agent action"
+msgid "claimed"
+msgstr "已认领"
+
+#: lib/kanban_web/components/review_detail_header.ex:84
+#: lib/kanban_web/task_tokens.ex:170
+#, elixir-autogen, elixir-format
+msgctxt "agent action"
+msgid "completed"
+msgstr "已完成"
+
+#: lib/kanban_web/task_tokens.ex:172
+#, elixir-autogen, elixir-format
+msgctxt "agent action"
+msgid "created"
+msgstr "已创建"
+
+#: lib/kanban_web/task_tokens.ex:171
+#, elixir-autogen, elixir-format
+msgctxt "agent action"
+msgid "reviewed"
+msgstr "已审阅"
+
+#: lib/kanban_web/task_tokens.ex:173
+#, elixir-autogen, elixir-format
+msgctxt "agent action"
+msgid "unclaimed"
+msgstr "已取消认领"

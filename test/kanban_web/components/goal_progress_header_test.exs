@@ -114,7 +114,7 @@ defmodule KanbanWeb.GoalProgressHeaderTest do
         """)
 
       assert html =~ "var(--pri-critical)"
-      assert html =~ "Critical"
+      assert html =~ "Critical priority"
     end
 
     test "omits priority block when priority is nil" do

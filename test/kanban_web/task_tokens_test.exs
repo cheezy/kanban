@@ -98,6 +98,44 @@ defmodule KanbanWeb.TaskTokensTest do
     end
   end
 
+  describe "priority_label/1" do
+    for {level, label} <- [
+          {:critical, "Critical priority"},
+          {:high, "High priority"},
+          {:medium, "Medium priority"},
+          {:low, "Low priority"}
+        ] do
+      test "#{level} → #{label}" do
+        assert TaskTokens.priority_label(unquote(level)) == unquote(label)
+      end
+    end
+
+    test "unknown priority returns empty string" do
+      assert TaskTokens.priority_label(:wat) == ""
+      assert TaskTokens.priority_label(nil) == ""
+    end
+
+    test "each language orders the whole phrase itself" do
+      Gettext.with_locale(KanbanWeb.Gettext, "fr", fn ->
+        assert TaskTokens.priority_label(:high) == "Priorité élevée"
+      end)
+
+      Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+        assert TaskTokens.priority_label(:high) == "Hohe Priorität"
+      end)
+    end
+  end
+
+  describe "kind_label/1 translations" do
+    test "the feed verb is translated apart from the same English adjective" do
+      Gettext.with_locale(KanbanWeb.Gettext, "es", fn ->
+        assert TaskTokens.kind_label(:review) == "revisó"
+        assert TaskTokens.kind_label(:complete) == "completó"
+        assert Gettext.gettext(KanbanWeb.Gettext, "reviewed") == "revisado"
+      end)
+    end
+  end
+
   describe "complexity_word/1" do
     for {tier, word} <- [
           {:small, "Small"},
