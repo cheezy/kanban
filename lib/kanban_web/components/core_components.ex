@@ -54,7 +54,7 @@ defmodule KanbanWeb.CoreComponents do
     <div
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
       id={@id}
-      phx-hook="AutoDismissFlash"
+      phx-hook={auto_dismiss_hook(@kind)}
       phx-click={
         JS.push("lv:clear-flash", value: %{key: @kind})
         |> hide("##{@id}")
@@ -107,6 +107,15 @@ defmodule KanbanWeb.CoreComponents do
     </div>
     """
   end
+
+  @doc """
+  The hook that hides a flash on its own, or `nil` when the flash should stay.
+
+  Only `:info` notices hide themselves. An `:error` flash stays until the user
+  dismisses it, so it is never gone before it has been read.
+  """
+  def auto_dismiss_hook(:info), do: "AutoDismissFlash"
+  def auto_dismiss_hook(_kind), do: nil
 
   @doc """
   Renders a button with navigation support.

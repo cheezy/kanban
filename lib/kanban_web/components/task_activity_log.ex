@@ -27,8 +27,12 @@ defmodule KanbanWeb.TaskActivityLog do
       atom keys (`:type`, `:from_column`, `:to_column`, `:from_priority`,
       `:to_priority`, `:from_user`, `:to_user`, `:from_user_id`,
       `:to_user_id`, `:inserted_at`). Required.
+    * `heading` — whether to render the built-in "History" heading. Pass
+      `false` when the caller already renders its own section header for it.
+      Defaults to `true`.
   """
   attr :histories, :list, required: true
+  attr :heading, :boolean, default: true
 
   def activity_log(assigns) do
     ~H"""
@@ -37,10 +41,13 @@ defmodule KanbanWeb.TaskActivityLog do
       class="stride-screen"
       style="display: flex; flex-direction: column; gap: 6px;"
     >
-      <h3 style={[
-        "margin: 0; font-size: 12.5px; font-weight: 600;",
-        "letter-spacing: -0.005em; color: var(--ink);"
-      ]}>
+      <h3
+        :if={@heading}
+        style={[
+          "margin: 0; font-size: 12.5px; font-weight: 600;",
+          "letter-spacing: -0.005em; color: var(--ink);"
+        ]}
+      >
         {gettext("History")}
       </h3>
 

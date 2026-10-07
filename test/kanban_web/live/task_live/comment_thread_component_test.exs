@@ -107,6 +107,29 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
       assert html =~ long_word
       assert html =~ "overflow-wrap: anywhere"
     end
+
+    test "gives each row the id comment_dom_id/2 names" do
+      html = render_row(entry(comment(%{id: 42})), dom_prefix: "comment-thread-view-7")
+
+      assert CommentThreadComponent.comment_dom_id("comment-thread-view-7", %{id: 42}) ==
+               "comment-thread-view-7-comment-42"
+
+      assert html =~ ~s(id="comment-thread-view-7-comment-42")
+    end
+
+    # The body is white-space: pre-wrap, so any template whitespace inside the
+    # tag would render as a blank line and an indent above the text.
+    test "renders the body with no surrounding whitespace" do
+      html = render_row(entry(comment(%{content: "Hello"})))
+
+      assert html =~ ~r/data-comment-body[^>]*>Hello<\/p>/
+    end
+
+    test "keeps a multi-line body's own line breaks and nothing more" do
+      html = render_row(entry(comment(%{content: "line one\nline two"})))
+
+      assert html =~ ~r/data-comment-body[^>]*>line one\nline two<\/p>/
+    end
   end
 
   describe "update/2 and handle_event/3" do
@@ -161,6 +184,23 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
       # ...which a successful post clears.
       assert socket.assigns.comment_form.errors == []
       refute socket.assigns.comment_form.source.changes[:content]
+      # The success message goes to the hosting LiveView, never only to the
+      # component's own flash, which LiveView would drop.
+      assert_received {CommentThreadComponent, {:flash, :info, "Comment added successfully"}}
+      refute socket.assigns.flash["info"]
+    end
+
+    test "sends no message to the host for a rejected comment", %{owner: owner, task: task} do
+      socket = mount_thread(task, owner)
+
+      {:noreply, _socket} =
+        CommentThreadComponent.handle_event(
+          "add_comment",
+          %{"task_comment" => %{"content" => "   "}},
+          socket
+        )
+
+      refute_received {CommentThreadComponent, {:flash, _kind, _message}}
     end
 
     test "attaches the comment to the server-held task, ignoring a client task_id",
@@ -199,14 +239,16 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
 
       refute socket.assigns.can_comment
 
-      {:noreply, socket} =
+      {:noreply, _socket} =
         CommentThreadComponent.handle_event(
           "add_comment",
           %{"task_comment" => %{"content" => "should not save"}},
           socket
         )
 
-      assert socket.assigns.flash["error"] =~ "must be a board member"
+      assert_received {CommentThreadComponent,
+                       {:flash, :error, "You must be a board member" <> _}}
+
       assert Repo.aggregate(TaskComment, :count) == 0
     end
 
@@ -249,14 +291,14 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
 
       assert [%{can_delete: false}] = socket.assigns.entries
 
-      {:noreply, socket} =
+      {:noreply, _socket} =
         CommentThreadComponent.handle_event(
           "delete_comment",
           %{"id" => to_string(owners.id)},
           socket
         )
 
-      assert socket.assigns.flash["error"] =~ "not allowed"
+      assert_received {CommentThreadComponent, {:flash, :error, "You are not allowed" <> _}}
       assert Repo.get(TaskComment, owners.id)
     end
 
@@ -322,7 +364,7 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
           socket
         )
 
-      assert socket.assigns.flash["error"] =~ "no longer exists"
+      assert_received {CommentThreadComponent, {:flash, :error, "This comment no longer exists"}}
       assert socket.assigns.editing_id == nil
       assert socket.assigns.entries == []
     end
@@ -383,6 +425,57 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
       html = view |> element(thread(task)) |> render()
       assert html =~ "Ship it"
       assert html =~ "Ada Lovelace"
+
+      # The board page shows the thread's success message as a flash.
+      assert render(view) =~ "Comment added successfully"
+    end
+
+    test "posting a comment asks the browser to scroll it into view",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      task = board |> column_fixture() |> task_fixture()
+      view = open_task_view(conn, board, task)
+
+      view
+      |> element(thread(task) <> "-composer")
+      |> render_submit(%{"task_comment" => %{"content" => "Scroll to me"}})
+
+      [comment] = Repo.all(TaskComment)
+
+      row_id =
+        :view
+        |> CommentThreadComponent.dom_id(task.id)
+        |> CommentThreadComponent.comment_dom_id(comment)
+
+      assert_push_event(view, "comment-thread:scroll-to", %{id: ^row_id})
+      # The id names a row that is on the page.
+      assert has_element?(view, "#" <> row_id, "Scroll to me")
+    end
+
+    test "a rejected comment asks for no scroll", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      task = board |> column_fixture() |> task_fixture()
+      view = open_task_view(conn, board, task)
+
+      view
+      |> element(thread(task) <> "-composer")
+      |> render_submit(%{"task_comment" => %{"content" => ""}})
+
+      refute_push_event(view, "comment-thread:scroll-to", %{})
+    end
+
+    test "the board page shows an error message the thread sends it",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      task = board |> column_fixture() |> task_fixture()
+      view = open_task_view(conn, board, task)
+
+      send(
+        view.pid,
+        {CommentThreadComponent, {:flash, :error, "You are not allowed to change this comment"}}
+      )
+
+      assert render(view) =~ "You are not allowed to change this comment"
     end
 
     test "the author edits and deletes their comment", %{conn: conn, user: user} do

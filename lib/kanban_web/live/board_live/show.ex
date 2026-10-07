@@ -431,6 +431,13 @@ defmodule KanbanWeb.BoardLive.Show do
     {:noreply, socket}
   end
 
+  # The comment thread is a live component, whose own flash LiveView drops,
+  # so it sends its messages here to be shown.
+  @impl true
+  def handle_info({KanbanWeb.TaskLive.CommentThreadComponent, {:flash, kind, message}}, socket) do
+    {:noreply, put_flash(socket, kind, message)}
+  end
+
   @impl true
   def handle_info({:field_visibility_updated, new_visibility}, socket) do
     {:noreply, assign(socket, :field_visibility, new_visibility)}

@@ -442,6 +442,17 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "Created"
     end
 
+    test "shows the History heading once, not twice", %{task: task} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          field_visibility: all_fields_visible()
+        )
+
+      assert length(Regex.scan(~r/>\s*History\s*</, result)) == 1
+    end
+
     test "displays creation history with green icon", %{task: task} do
       %TaskHistory{}
       |> TaskHistory.changeset(%{

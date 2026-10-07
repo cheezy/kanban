@@ -59,6 +59,13 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// A comment thread scrolls on its own, so a comment just posted can land below
+// its visible rows. The server names the new comment's row once it is rendered.
+window.addEventListener("phx:comment-thread:scroll-to", event => {
+  const row = document.getElementById(event.detail.id)
+  if (row) row.scrollIntoView({block: "nearest", behavior: "smooth"})
+})
+
 // Handle remote task moves (from other clients)
 window.addEventListener("phx:task_moved_remotely", (e) => {
   const {task_id, new_column_id, new_position} = e.detail

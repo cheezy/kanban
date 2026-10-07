@@ -46,6 +46,12 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   def dom_id(host, task_id) when host in @hosts, do: "comment-thread-#{host}-#{task_id}"
 
   @doc """
+  The DOM id of one comment's row inside the thread whose component id is
+  `thread_id`.
+  """
+  def comment_dom_id(thread_id, %{id: comment_id}), do: "#{thread_id}-comment-#{comment_id}"
+
+  @doc """
   Asks every mounted thread for the task in `payload` to reload its comments.
 
   Accepts the `:comment_changed` broadcast payload (`%{task_id: id}`) or a
@@ -148,12 +154,15 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   @impl true
   def handle_event(_event, _params, socket), do: {:noreply, socket}
 
-  defp handle_create_result({:ok, _comment}, socket) do
+  # The thread scrolls on its own, so the new comment can land below the
+  # visible rows; the browser is told to bring it into view (see app.js).
+  defp handle_create_result({:ok, comment}, socket) do
     {:noreply,
      socket
      |> assign(:comment_form, new_comment_form(socket.assigns.id))
      |> load_thread()
-     |> put_flash(:info, gettext("Comment added successfully"))}
+     |> push_event("comment-thread:scroll-to", %{id: comment_dom_id(socket.assigns.id, comment)})
+     |> notify_flash(:info, gettext("Comment added successfully"))}
   end
 
   defp handle_create_result({:error, %Ecto.Changeset{} = changeset}, socket),
@@ -161,11 +170,11 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
 
   defp handle_create_result({:error, :unauthorized}, socket) do
     {:noreply,
-     put_flash(socket, :error, gettext("You must be a board member to comment on this task"))}
+     notify_flash(socket, :error, gettext("You must be a board member to comment on this task"))}
   end
 
   defp handle_create_result({:error, :not_found}, socket),
-    do: {:noreply, socket |> load_thread() |> put_flash(:error, gettext("Task not found"))}
+    do: {:noreply, socket |> load_thread() |> notify_flash(:error, gettext("Task not found"))}
 
   defp handle_save_result({:ok, _comment}, socket, _editing_id),
     do: {:noreply, socket |> clear_editing() |> load_thread()}
@@ -187,14 +196,22 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
     socket
     |> clear_editing()
     |> load_thread()
-    |> put_flash(:error, gettext("This comment no longer exists"))
+    |> notify_flash(:error, gettext("This comment no longer exists"))
   end
 
   defp not_allowed(socket) do
     socket
     |> clear_editing()
     |> load_thread()
-    |> put_flash(:error, gettext("You are not allowed to change this comment"))
+    |> notify_flash(:error, gettext("You are not allowed to change this comment"))
+  end
+
+  # LiveView discards a live component's own flash unless the component also
+  # redirects or patches, so the message goes to the hosting LiveView, which
+  # owns the flash and handles {CommentThreadComponent, {:flash, kind, message}}.
+  defp notify_flash(socket, kind, message) do
+    send(self(), {__MODULE__, {:flash, kind, message}})
+    socket
   end
 
   defp load_thread(socket) do
@@ -328,7 +345,7 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
 
     ~H"""
     <article
-      id={"#{@dom_prefix}-comment-#{@comment.id}"}
+      id={comment_dom_id(@dom_prefix, @comment)}
       data-comment
       style="display: flex; align-items: flex-start; gap: 10px;"
     >
@@ -422,13 +439,16 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
           </div>
         </.form>
 
+        <%!-- white-space: pre-wrap keeps the comment's own line breaks, so the
+        content must touch both tags: any template whitespace inside them is
+        rendered as a leading blank line and indent. phx-no-format stops
+        mix format from moving the content back onto its own line. --%>
         <p
           :if={!@editing}
           data-comment-body
+          phx-no-format
           style="margin: 4px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere;"
-        >
-          {@comment.content}
-        </p>
+        >{@comment.content}</p>
       </div>
     </article>
     """

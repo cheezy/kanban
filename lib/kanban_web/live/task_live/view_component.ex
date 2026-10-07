@@ -405,7 +405,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             <% end %>
 
             <SectionHead.section_head title={gettext("History")} />
-            <TaskActivityLog.activity_log histories={@task.task_histories} />
+            <%!-- The section head above is this block's heading; the log's own
+            would repeat it. --%>
+            <TaskActivityLog.activity_log histories={@task.task_histories} heading={false} />
 
             <.live_component
               module={CommentThreadComponent}

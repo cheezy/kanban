@@ -42,6 +42,32 @@ defmodule KanbanWeb.TaskActivityLogTest do
     end
   end
 
+  describe "activity_log/1 — heading" do
+    test "renders its own History heading by default" do
+      assigns = %{histories: [entry(%{type: :creation})]}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskActivityLog.activity_log histories={@histories} />
+        """)
+
+      assert html =~ ~r/<h3[^>]*>\s*History\s*<\/h3>/
+    end
+
+    test "omits the heading when the caller renders its own, keeping the entries" do
+      assigns = %{histories: [entry(%{type: :creation})]}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskActivityLog.activity_log histories={@histories} heading={false} />
+        """)
+
+      refute html =~ "<h3"
+      refute html =~ "History"
+      assert html =~ "Created"
+    end
+  end
+
   describe "activity_log/1 — entry rendering by type" do
     test "renders :creation with the create icon and 'Created' copy" do
       assigns = %{histories: [entry(%{type: :creation})]}

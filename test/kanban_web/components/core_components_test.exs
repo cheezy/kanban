@@ -49,6 +49,38 @@ defmodule KanbanWeb.CoreComponentsTest do
       assert html =~ "Heads up"
       assert html =~ "Something broke"
     end
+
+    test "an info flash hides itself" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <CoreComponents.flash kind={:info}>Saved</CoreComponents.flash>
+        """)
+
+      assert html =~ ~s(phx-hook="AutoDismissFlash")
+    end
+
+    test "an error flash stays until the user dismisses it" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <CoreComponents.flash kind={:error}>Nope</CoreComponents.flash>
+        """)
+
+      refute html =~ "AutoDismissFlash"
+      # Dismissing by click still works.
+      assert html =~ "lv:clear-flash"
+    end
+  end
+
+  describe "auto_dismiss_hook/1" do
+    test "names the hook only for info" do
+      assert CoreComponents.auto_dismiss_hook(:info) == "AutoDismissFlash"
+      assert CoreComponents.auto_dismiss_hook(:error) == nil
+      assert CoreComponents.auto_dismiss_hook(nil) == nil
+    end
   end
 
   describe "show_modal/2 and hide_modal/2 (W1079 — promoted to public)" do
