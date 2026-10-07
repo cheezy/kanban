@@ -163,7 +163,7 @@ defmodule Kanban.Tasks.Queries do
             order_by: [desc: h.inserted_at],
             preload: [:from_user, :to_user]
           ),
-        comments: from(c in TaskComment, order_by: [asc: c.inserted_at])
+        comments: comments_with_author_query(asc: :inserted_at)
       ])
 
     if task.type == :goal do
@@ -196,7 +196,7 @@ defmodule Kanban.Tasks.Queries do
                 order_by: [desc: h.inserted_at],
                 preload: [:from_user, :to_user]
               ),
-            comments: from(c in TaskComment, order_by: [asc: c.inserted_at])
+            comments: comments_with_author_query(asc: :inserted_at)
           ])
 
         if task.type == :goal do
@@ -233,7 +233,7 @@ defmodule Kanban.Tasks.Queries do
               order_by: [desc: h.inserted_at],
               preload: [:from_user, :to_user]
             ),
-          comments: from(c in TaskComment, order_by: [asc: c.inserted_at])
+          comments: comments_with_author_query(asc: :inserted_at)
         ])
     end
   end
@@ -296,7 +296,13 @@ defmodule Kanban.Tasks.Queries do
   def get_task_with_comments!(id) do
     id
     |> get_task_with_history!()
-    |> Repo.preload(comments: from(c in TaskComment, order_by: [desc: c.id]))
+    |> Repo.preload(comments: comments_with_author_query(desc: :id))
+  end
+
+  # Every comment preload also loads `:author` so views can render the
+  # author's name without an N+1 query per comment.
+  defp comments_with_author_query(order_by) do
+    from(c in TaskComment, order_by: ^order_by, preload: [:author])
   end
 
   @doc """

@@ -52,6 +52,47 @@ defmodule Kanban.Tasks.TaskCommentTest do
       assert {:error, changeset} = Repo.insert(changeset)
       assert "does not exist" in errors_on(changeset).task_id
     end
+
+    test "accepts content at exactly the maximum length" do
+      task = insert_task()
+      content = String.duplicate("a", TaskComment.content_max_length())
+
+      changeset = TaskComment.changeset(%TaskComment{task_id: task.id}, %{content: content})
+
+      assert TaskComment.content_max_length() == 10_000
+      assert changeset.valid?
+    end
+
+    test "rejects content longer than the maximum length" do
+      task = insert_task()
+      content = String.duplicate("a", TaskComment.content_max_length() + 1)
+
+      changeset = TaskComment.changeset(%TaskComment{task_id: task.id}, %{content: content})
+
+      refute changeset.valid?
+      assert "should be at most 10000 character(s)" in errors_on(changeset).content
+    end
+
+    test "ignores author_user_id, author_agent_name and mentioned_user_ids in attrs" do
+      task = insert_task()
+      other_user = user_fixture()
+
+      changeset =
+        TaskComment.changeset(%TaskComment{task_id: task.id}, %{
+          "content" => "Impersonation attempt",
+          "author_user_id" => other_user.id,
+          "author_agent_name" => "Spoofed Agent",
+          "mentioned_user_ids" => [other_user.id]
+        })
+
+      assert changeset.valid?
+      refute get_change(changeset, :author_user_id)
+      refute get_change(changeset, :author_agent_name)
+      refute get_change(changeset, :mentioned_user_ids)
+      assert get_field(changeset, :author_user_id) == nil
+      assert get_field(changeset, :author_agent_name) == nil
+      assert get_field(changeset, :mentioned_user_ids) == []
+    end
   end
 
   describe "associations" do
@@ -99,6 +140,121 @@ defmodule Kanban.Tasks.TaskCommentTest do
       Repo.delete(task)
 
       assert Repo.get(TaskComment, comment.id) == nil
+    end
+  end
+
+  describe "authorship columns" do
+    test "a struct built with author_user_id set persists that author" do
+      task = insert_task()
+      author = user_fixture()
+
+      comment =
+        %TaskComment{task_id: task.id, author_user_id: author.id}
+        |> TaskComment.changeset(%{content: "Authored comment"})
+        |> Repo.insert!()
+        |> Repo.preload(:author)
+
+      assert comment.author_user_id == author.id
+      assert comment.author.id == author.id
+      assert Repo.get!(TaskComment, comment.id).author_user_id == author.id
+    end
+
+    test "persists an author_agent_name of exactly 255 characters" do
+      task = insert_task()
+      agent_name = String.duplicate("a", 255)
+
+      comment =
+        %TaskComment{task_id: task.id, author_agent_name: agent_name}
+        |> TaskComment.changeset(%{content: "Posted via the API"})
+        |> Repo.insert!()
+
+      assert Repo.get!(TaskComment, comment.id).author_agent_name == agent_name
+    end
+
+    test "persists edited_at and mentioned_user_ids set on the struct" do
+      task = insert_task()
+      mentioned = user_fixture()
+      edited_at = DateTime.utc_now(:second)
+
+      comment =
+        %TaskComment{task_id: task.id, edited_at: edited_at, mentioned_user_ids: [mentioned.id]}
+        |> TaskComment.changeset(%{content: "Hey @someone"})
+        |> Repo.insert!()
+
+      reloaded = Repo.get!(TaskComment, comment.id)
+      assert reloaded.edited_at == edited_at
+      assert reloaded.mentioned_user_ids == [mentioned.id]
+    end
+
+    test "a comment without an author keeps nil author fields and empty mentions" do
+      task = insert_task()
+
+      {:ok, comment} =
+        %TaskComment{task_id: task.id}
+        |> TaskComment.changeset(%{content: "Legacy-style comment"})
+        |> Repo.insert()
+
+      reloaded = Repo.get!(TaskComment, comment.id) |> Repo.preload(:author)
+      assert reloaded.author_user_id == nil
+      assert reloaded.author == nil
+      assert reloaded.author_agent_name == nil
+      assert reloaded.edited_at == nil
+      assert reloaded.mentioned_user_ids == []
+    end
+
+    test "a row inserted without mentioned_user_ids gets the empty-array database default" do
+      task = insert_task()
+
+      %{rows: [[id]]} =
+        Repo.query!(
+          "INSERT INTO task_comments (content, task_id, inserted_at, updated_at) " <>
+            "VALUES ($1, $2, now(), now()) RETURNING id",
+          ["Row written without the new columns", task.id]
+        )
+
+      comment = Repo.get!(TaskComment, id)
+      assert comment.mentioned_user_ids == []
+      assert comment.author_user_id == nil
+    end
+
+    test "mentioned_user_ids rejects NULL at the database level" do
+      task = insert_task()
+
+      assert_raise Postgrex.Error, ~r/not_null_violation|null value/, fn ->
+        Repo.query!(
+          "INSERT INTO task_comments (content, task_id, mentioned_user_ids, inserted_at, updated_at) " <>
+            "VALUES ($1, $2, NULL, now(), now())",
+          ["Null mentions", task.id]
+        )
+      end
+    end
+
+    test "deleting the author nilifies author_user_id instead of deleting the comment" do
+      task = insert_task()
+      author = user_fixture()
+
+      comment =
+        %TaskComment{task_id: task.id, author_user_id: author.id}
+        |> TaskComment.changeset(%{content: "Will outlive its author"})
+        |> Repo.insert!()
+
+      assert {:ok, _} = Repo.delete(author)
+
+      reloaded = Repo.get(TaskComment, comment.id)
+      assert reloaded
+      assert reloaded.author_user_id == nil
+      assert reloaded.content == "Will outlive its author"
+    end
+
+    test "an author_user_id that does not exist is rejected by the foreign key" do
+      task = insert_task()
+
+      assert {:error, changeset} =
+               %TaskComment{task_id: task.id, author_user_id: -1}
+               |> TaskComment.changeset(%{content: "Ghost author"})
+               |> Repo.insert()
+
+      assert "does not exist" in errors_on(changeset).author_user_id
     end
   end
 

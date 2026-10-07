@@ -13,6 +13,7 @@ defmodule Kanban.Tasks.CommentsTest do
 
   alias Kanban.Tasks
   alias Kanban.Tasks.Comments
+  alias Kanban.Tasks.TaskComment
 
   setup do
     user = user_fixture()
@@ -67,6 +68,61 @@ defmodule Kanban.Tasks.CommentsTest do
 
     test "returns a task with an empty comment list when there are none", %{task: task} do
       assert Tasks.get_task_with_comments!(task.id).comments == []
+    end
+
+    test "preloads each comment's author", %{task: task} do
+      author = user_fixture()
+      Repo.insert!(%TaskComment{task_id: task.id, author_user_id: author.id, content: "Mine"})
+      Repo.insert!(%TaskComment{task_id: task.id, content: "Authorless"})
+
+      [authorless, authored] = Tasks.get_task_with_comments!(task.id).comments
+
+      assert authored.author.id == author.id
+      assert authorless.author == nil
+    end
+
+    test "leaves the comment with a nil author after the author is deleted", %{task: task} do
+      author = user_fixture()
+      Repo.insert!(%TaskComment{task_id: task.id, author_user_id: author.id, content: "Orphaned"})
+
+      assert {:ok, _} = Repo.delete(author)
+
+      [comment] = Tasks.get_task_with_comments!(task.id).comments
+      assert comment.content == "Orphaned"
+      assert comment.author_user_id == nil
+      assert comment.author == nil
+    end
+  end
+
+  describe "comment author preloading on the read views" do
+    setup %{task: task} do
+      author = user_fixture()
+      Repo.insert!(%TaskComment{task_id: task.id, author_user_id: author.id, content: "First"})
+      Repo.insert!(%TaskComment{task_id: task.id, content: "Second"})
+      %{author: author}
+    end
+
+    test "get_task_for_view!/1 preloads :author", %{task: task, author: author} do
+      assert_authors(Tasks.get_task_for_view!(task.id).comments, author)
+    end
+
+    test "get_task_for_view/1 preloads :author", %{task: task, author: author} do
+      assert_authors(Tasks.get_task_for_view(task.id).comments, author)
+    end
+
+    test "get_task_by_identifier_for_view/2 preloads :author",
+         %{task: task, column: column, author: author} do
+      loaded = Tasks.get_task_by_identifier_for_view(task.identifier, [column.id])
+      assert_authors(loaded.comments, author)
+    end
+
+    # Both comments share an inserted_at second, so the asc ordering can tie;
+    # look them up by content rather than relying on list position.
+    defp assert_authors(comments, author) do
+      by_content = Map.new(comments, &{&1.content, &1})
+      assert map_size(by_content) == 2
+      assert by_content["First"].author.id == author.id
+      assert by_content["Second"].author == nil
     end
   end
 

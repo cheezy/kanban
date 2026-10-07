@@ -504,10 +504,11 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   # board the task lives on. Read-only members are allowed (commenting
   # is discussion, not state mutation). Public/unauthenticated viewers
   # and authenticated users with no membership row are rejected. Note:
-  # the TaskComment schema currently has no author/user_id field, so
-  # spoofing the author via comment_params is structurally impossible —
-  # this gate covers the second half of the security review's concern
-  # ("verify the user is authorized to comment on socket.assigns.task").
+  # TaskComment.changeset/2 never casts its author fields (author_user_id,
+  # author_agent_name), so spoofing the author via comment_params is
+  # structurally impossible — this gate covers the second half of the
+  # security review's concern ("verify the user is authorized to comment
+  # on socket.assigns.task").
   # Called from handle_event("add_comment", ...); analyzer regex misses
   # predicate `?` callers, hence the unused-defp false positive.
   defp commenter_authorized?(socket) do
