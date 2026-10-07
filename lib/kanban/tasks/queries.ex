@@ -289,9 +289,10 @@ defmodule Kanban.Tasks.Queries do
   end
 
   @doc """
-  Like `get_task_with_history!/1`, but also preloads comments newest-first —
-  the order the task form's comment thread renders (the other preloads in this
-  module order comments ascending for the read views).
+  Like `get_task_with_history!/1`, but also preloads comments newest-first
+  (the other preloads in this module order comments ascending). The task views
+  no longer use it: since W2210 both render `KanbanWeb.TaskLive.CommentThreadComponent`,
+  which lists comments oldest-first through `Kanban.Tasks.list_comment_thread/2`.
   """
   def get_task_with_comments!(id) do
     id

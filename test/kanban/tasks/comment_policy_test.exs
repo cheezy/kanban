@@ -31,6 +31,55 @@ defmodule Kanban.Tasks.CommentPolicyTest do
   defp scope(user), do: Scope.for_user(user)
   defp authored_by(user), do: %TaskComment{author_user_id: user.id}
 
+  describe "resolve/2" do
+    test "captures the user id and access level for each role", ctx do
+      for {user, access} <- [
+            {ctx.owner, :owner},
+            {ctx.modifier, :modify},
+            {ctx.reader, :read_only},
+            {ctx.stranger, nil}
+          ] do
+        assert user |> scope() |> CommentPolicy.resolve(ctx.board.id) == %{
+                 user_id: user.id,
+                 access: access
+               }
+      end
+    end
+
+    test "resolves a nil scope or a scope without a user to no access", %{board: board} do
+      assert CommentPolicy.resolve(nil, board.id) == %{user_id: nil, access: nil}
+      assert CommentPolicy.resolve(%Scope{user: nil}, board.id) == %{user_id: nil, access: nil}
+    end
+  end
+
+  describe "allowed?/2 and allowed?/3" do
+    test "lets only the author edit and the author or owner delete", ctx do
+      owner = ctx.owner |> scope() |> CommentPolicy.resolve(ctx.board.id)
+      modifier = ctx.modifier |> scope() |> CommentPolicy.resolve(ctx.board.id)
+
+      assert CommentPolicy.allowed?(modifier, :edit, authored_by(ctx.modifier))
+      refute CommentPolicy.allowed?(modifier, :edit, authored_by(ctx.reader))
+      refute CommentPolicy.allowed?(owner, :edit, authored_by(ctx.reader))
+      assert CommentPolicy.allowed?(owner, :delete, authored_by(ctx.reader))
+      refute CommentPolicy.allowed?(modifier, :delete, authored_by(ctx.reader))
+    end
+
+    test "refuses everything for a viewer with no access, even on their own comment", ctx do
+      former = %{user_id: ctx.stranger.id, access: nil}
+
+      refute CommentPolicy.allowed?(former, :comment)
+      refute CommentPolicy.allowed?(former, :edit, authored_by(ctx.stranger))
+      refute CommentPolicy.allowed?(former, :delete, authored_by(ctx.stranger))
+    end
+
+    test "never treats a comment with no author as authored by an anonymous viewer" do
+      anonymous_member = %{user_id: nil, access: :modify}
+
+      refute CommentPolicy.allowed?(anonymous_member, :edit, %TaskComment{author_user_id: nil})
+      refute CommentPolicy.allowed?(anonymous_member, :delete, %TaskComment{author_user_id: nil})
+    end
+  end
+
   describe "can_comment?/2" do
     test "is true for owner, modify and read-only members", ctx do
       for user <- [ctx.owner, ctx.modifier, ctx.reader] do

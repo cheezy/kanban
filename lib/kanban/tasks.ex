@@ -53,6 +53,7 @@ defmodule Kanban.Tasks do
   defdelegate delete_comment(scope, comment), to: Comments
   defdelegate get_comment!(id), to: Comments
   defdelegate list_comments(task), to: Comments
+  defdelegate list_comment_thread(scope, task), to: Comments
 
   defdelegate completed_task_counts_by_agent, to: Queries
   defdelegate list_archived_tasks(column), to: Queries

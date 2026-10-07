@@ -96,6 +96,42 @@ defmodule Kanban.Tasks.Comments do
     |> Repo.all()
   end
 
+  @doc """
+  Lists `task`'s comments (oldest first, `:author` preloaded) together with
+  what the scope may do: `can_comment` for the thread and `can_edit` /
+  `can_delete` per comment.
+
+  The board is derived from the task server-side and the caller's access is
+  resolved once through `CommentPolicy.resolve/2`, so the cost is a fixed number
+  of queries (at most four: the task's board, the viewer's access, the comments
+  and their authors) however many comments the task has. The flags are a rendering hint
+  only: create, update and delete re-authorize on every call.
+
+  Performs no read authorization, exactly like `list_comments/1`: the caller
+  must already have established that the viewer may see `task`. Returns
+  `{:error, :not_found}` for an unsaved or deleted task.
+  """
+  def list_comment_thread(scope, %Task{id: task_id} = task) when is_integer(task_id) do
+    with {:ok, board_id} <- board_id_for_task(task_id) do
+      viewer = CommentPolicy.resolve(scope, board_id)
+
+      entries =
+        task
+        |> list_comments()
+        |> Enum.map(fn comment ->
+          %{
+            comment: comment,
+            can_edit: CommentPolicy.allowed?(viewer, :edit, comment),
+            can_delete: CommentPolicy.allowed?(viewer, :delete, comment)
+          }
+        end)
+
+      {:ok, %{can_comment: CommentPolicy.allowed?(viewer, :comment), entries: entries}}
+    end
+  end
+
+  def list_comment_thread(_scope, %Task{}), do: {:error, :not_found}
+
   defp insert_comment(%{user: %{id: user_id}}, task_id, attrs, opts) do
     %TaskComment{
       task_id: task_id,

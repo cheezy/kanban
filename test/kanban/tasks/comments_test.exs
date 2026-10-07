@@ -410,6 +410,85 @@ defmodule Kanban.Tasks.CommentsTest do
     end
   end
 
+  describe "list_comment_thread/2" do
+    test "flags what the author may do with each comment",
+         %{user: owner, task: task} = ctx do
+      %{modifier: modifier, reader: reader} = add_members(ctx)
+      {:ok, mine} = modifier |> scope() |> Comments.create_comment(task, %{"content" => "Mine"})
+      {:ok, theirs} = reader |> scope() |> Comments.create_comment(task, %{"content" => "Theirs"})
+
+      assert {:ok, %{can_comment: true, entries: entries}} =
+               modifier |> scope() |> Tasks.list_comment_thread(task)
+
+      assert [
+               %{comment: %{id: mine_id}, can_edit: true, can_delete: true},
+               %{comment: %{id: theirs_id}, can_edit: false, can_delete: false}
+             ] = entries
+
+      assert {mine_id, theirs_id} == {mine.id, theirs.id}
+      assert Enum.all?(entries, &match?(%{comment: %{author: %{id: _}}}, &1))
+
+      assert {:ok, %{entries: owner_entries}} =
+               owner |> scope() |> Comments.list_comment_thread(task)
+
+      assert Enum.map(owner_entries, &{&1.can_edit, &1.can_delete}) == [
+               {false, true},
+               {false, true}
+             ]
+    end
+
+    test "lets a read-only member comment", %{task: task} = ctx do
+      %{reader: reader} = add_members(ctx)
+
+      assert {:ok, %{can_comment: true}} =
+               reader |> scope() |> Comments.list_comment_thread(task)
+    end
+
+    test "grants nothing to a non-member or a nil scope", %{user: user, task: task} do
+      {:ok, _} = user |> scope() |> Comments.create_comment(task, %{"content" => "Members only"})
+      stranger = user_fixture()
+
+      for viewer_scope <- [scope(stranger), nil] do
+        assert {:ok, %{can_comment: false, entries: [entry]}} =
+                 Comments.list_comment_thread(viewer_scope, task)
+
+        assert entry.comment.content == "Members only"
+        refute entry.can_edit
+        refute entry.can_delete
+      end
+    end
+
+    test "never lets anyone edit a legacy comment with no author",
+         %{user: owner, task: task} do
+      %TaskComment{task_id: task.id}
+      |> TaskComment.changeset(%{content: "Legacy"})
+      |> Repo.insert!()
+
+      assert {:ok, %{entries: [%{comment: %{author: nil}, can_edit: false, can_delete: true}]}} =
+               owner |> scope() |> Comments.list_comment_thread(task)
+    end
+
+    test "returns :not_found for an unsaved or deleted task", %{user: user, task: task} do
+      assert {:error, :not_found} = user |> scope() |> Comments.list_comment_thread(%Task{})
+      assert {:error, :not_found} = user |> scope() |> Comments.list_comment_thread(%Task{id: -1})
+      assert {:ok, %{entries: []}} = user |> scope() |> Comments.list_comment_thread(task)
+    end
+
+    test "issues the same number of queries however many comments there are",
+         %{user: user, task: task} do
+      {:ok, _} = user |> scope() |> Comments.create_comment(task, %{"content" => "One"})
+      few = count_queries(fn -> user |> scope() |> Comments.list_comment_thread(task) end)
+
+      for n <- 1..20 do
+        {:ok, _} = user |> scope() |> Comments.create_comment(task, %{"content" => "C#{n}"})
+      end
+
+      many = count_queries(fn -> user |> scope() |> Comments.list_comment_thread(task) end)
+
+      assert few == many
+    end
+  end
+
   describe "get_task_with_comments!/1" do
     test "preloads comments newest-first", %{user: user, task: task} do
       {:ok, first} = user |> scope() |> Comments.create_comment(task, %{"content" => "First"})
@@ -535,6 +614,37 @@ defmodule Kanban.Tasks.CommentsTest do
   end
 
   defp scope(user), do: Scope.for_user(user)
+
+  # Counts Repo queries issued by this test process while `fun` runs.
+  defp count_queries(fun) do
+    test_pid = self()
+    handler_id = {__MODULE__, make_ref()}
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :repo, :query],
+      fn _event, _measurements, _metadata, _config ->
+        if self() == test_pid, do: send(test_pid, {:repo_query, handler_id})
+      end,
+      nil
+    )
+
+    try do
+      fun.()
+    after
+      :telemetry.detach(handler_id)
+    end
+
+    drain_queries(handler_id, 0)
+  end
+
+  defp drain_queries(handler_id, count) do
+    receive do
+      {:repo_query, ^handler_id} -> drain_queries(handler_id, count + 1)
+    after
+      0 -> count
+    end
+  end
 
   defp add_members(%{board: board, user: owner}) do
     modifier = user_fixture()

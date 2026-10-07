@@ -17,7 +17,6 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   import KanbanWeb.TaskLive.Components.BehaviourTestMatrixSection
   import KanbanWeb.TaskLive.Components.ChecklistSection
   import KanbanWeb.TaskLive.Components.ChildTasksSection
-  import KanbanWeb.TaskLive.Components.CommentsSection
   import KanbanWeb.TaskLive.Components.CompletionSection
   import KanbanWeb.TaskLive.Components.DependenciesSection
   import KanbanWeb.TaskLive.Components.ExplorerResultSection
@@ -35,6 +34,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.SectionHead
   alias KanbanWeb.TaskActivityLog
+  alias KanbanWeb.TaskLive.CommentThreadComponent
   alias KanbanWeb.TaskTokens
 
   @impl true
@@ -69,6 +69,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
     |> assign(:ai_optimized_board, Map.get(assigns, :ai_optimized_board, false))
     |> assign(:can_modify, Map.get(assigns, :can_modify, false))
     |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))
+    |> assign(:current_scope, Map.get(assigns, :current_scope))
   end
 
   # A re-render for the SAME task (a changed can_modify, field_visibility, …)
@@ -406,8 +407,12 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
             <SectionHead.section_head title={gettext("History")} />
             <TaskActivityLog.activity_log histories={@task.task_histories} />
 
-            <SectionHead.section_head title={gettext("Comments")} />
-            <.comments_section comments={@task.comments} />
+            <.live_component
+              module={CommentThreadComponent}
+              id={CommentThreadComponent.dom_id(:view, @task.id)}
+              task_id={@task.id}
+              current_scope={@current_scope}
+            />
           </div>
 
           <.task_detail_aside task={@task} can_modify={@can_modify} board_id={@board_id} />

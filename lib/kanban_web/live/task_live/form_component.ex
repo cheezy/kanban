@@ -8,7 +8,6 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   alias Kanban.Columns
   alias Kanban.Tasks
-  alias Kanban.Tasks.TaskComment
   alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.TaskLive.Form.FieldEvents
   alias KanbanWeb.TaskLive.Form.OptionBuilders
@@ -28,7 +27,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
      |> assign(:task, task_data.task_with_associations)
      |> assign(:column_options, task_data.column_options)
      |> assign(:assignable_users, task_data.assignable_users)
-     |> assign(:comment_form, task_data.comment_form)
+     |> assign_new(:current_scope, fn -> nil end)
      |> assign(:goal_options, task_data.goal_options)
      |> assign(:field_visibility, board.field_visibility || %{})
      |> assign(:error_message, nil)
@@ -48,20 +47,19 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     goal_options = OptionBuilders.build_goal_options(board, task)
 
     task_with_associations = load_task_associations(task, action)
-    comment_form = to_form(TaskComment.changeset(%TaskComment{}, %{}))
 
     %{
       task_with_associations: task_with_associations,
       column_options: column_options,
       assignable_users: assignable_users,
-      comment_form: comment_form,
       goal_options: goal_options,
       changeset: changeset
     }
   end
 
+  # Comments are loaded by the CommentThreadComponent the template mounts.
   defp load_task_associations(task, :edit_task) when not is_nil(task.id) do
-    Tasks.get_task_with_comments!(task.id)
+    Tasks.get_task_with_history!(task.id)
   end
 
   defp load_task_associations(task, _action), do: task
@@ -102,29 +100,6 @@ defmodule KanbanWeb.TaskLive.FormComponent do
          :error,
          gettext("You do not have permission to modify tasks on this board")
        )}
-    end
-  end
-
-  # Authorization lives in Kanban.Tasks.CommentPolicy: create_comment/4 loads
-  # the task's board itself and admits any board member (read-only included),
-  # so neither socket.assigns.board nor the client params are trusted here.
-  def handle_event("add_comment", %{"task_comment" => comment_params}, socket) do
-    scope = Map.get(socket.assigns, :current_scope)
-
-    case Tasks.create_comment(scope, socket.assigns.task, comment_params) do
-      {:ok, _comment} ->
-        {:noreply, assign_after_comment_added(socket)}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, :comment_form, to_form(changeset))}
-
-      {:error, _unauthorized_or_not_found} ->
-        {:noreply,
-         put_flash(
-           socket,
-           :error,
-           gettext("You must be a board member to comment on this task")
-         )}
     end
   end
 
@@ -489,16 +464,6 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
-
-  defp assign_after_comment_added(socket) do
-    task = Tasks.get_task_with_comments!(socket.assigns.task.id)
-    comment_changeset = TaskComment.changeset(%TaskComment{}, %{})
-
-    socket
-    |> assign(:task, task)
-    |> assign(:comment_form, to_form(comment_changeset))
-    |> put_flash(:info, gettext("Comment added successfully"))
-  end
 
   # D110: the task create/edit save path is a modify action. Board access is
   # verified authoritatively here (current_scope + board -> Boards.can_modify?)

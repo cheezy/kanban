@@ -429,123 +429,54 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
-  describe "update/2 with comments" do
-    test "loads comments when editing task" do
+  # Comment listing and posting moved to KanbanWeb.TaskLive.CommentThreadComponent
+  # (W2210); its behaviour is covered in comment_thread_component_test.exs.
+  describe "comment thread" do
+    test "renders the shared comment thread when editing a saved task" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
       task = task_fixture(column, %{title: "Test Task"})
+      {:ok, _} = user |> user_scope_fixture() |> Tasks.create_comment(task, %{"content" => "Hi"})
 
-      # Add a comment
-      {:ok, _comment} =
-        Kanban.Repo.insert(%Kanban.Tasks.TaskComment{
-          task_id: task.id,
-          content: "Test comment"
-        })
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            task: task,
-            board: board,
-            action: :edit_task
-          },
-          %Phoenix.LiveView.Socket{}
+      html =
+        render_component(FormComponent,
+          id: "edit-#{task.id}",
+          title: "Edit Task",
+          action: :edit_task,
+          board: board,
+          task: task,
+          column_id: nil,
+          current_scope: user_scope_fixture(user),
+          patch: "/boards/#{board.id}"
         )
 
-      # Task should have comments preloaded
-      assert Ecto.assoc_loaded?(socket.assigns.task.comments)
-      assert length(socket.assigns.task.comments) == 1
-      assert hd(socket.assigns.task.comments).content == "Test comment"
+      assert html =~ ~s(id="comment-thread-form-#{task.id}")
+      assert html =~ "comment-thread-form-#{task.id}-composer"
+      assert html =~ "Hi"
     end
 
-    test "initializes comment form for edit task" do
+    test "does not render a comment thread for a new task" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Test Task"})
 
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            task: task,
-            board: board,
-            action: :edit_task
-          },
-          %Phoenix.LiveView.Socket{}
+      html =
+        render_component(FormComponent,
+          id: :new,
+          title: "New Task",
+          action: :new_task,
+          board: board,
+          task: %Tasks.Task{column_id: column.id},
+          column_id: column.id,
+          current_scope: user_scope_fixture(user),
+          patch: "/boards/#{board.id}"
         )
 
-      # Comment form should be initialized
-      assert socket.assigns.comment_form
-      assert socket.assigns.comment_form.source
+      refute html =~ "data-comment-thread"
     end
 
-    test "does not initialize comment form for new task" do
-      user = user_fixture()
-      board = board_fixture(user)
-      column = column_fixture(board, %{name: "To Do"})
-      task = %Tasks.Task{column_id: column.id}
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            task: task,
-            board: board,
-            action: :new_task,
-            column_id: column.id
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      # Comment form should still be initialized
-      assert socket.assigns.comment_form
-    end
-
-    test "orders comments by most recent first" do
-      user = user_fixture()
-      board = board_fixture(user)
-      column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Test Task"})
-
-      # Add comments
-      {:ok, _comment1} =
-        Kanban.Repo.insert(%Kanban.Tasks.TaskComment{
-          task_id: task.id,
-          content: "First comment"
-        })
-
-      {:ok, _comment2} =
-        Kanban.Repo.insert(%Kanban.Tasks.TaskComment{
-          task_id: task.id,
-          content: "Second comment"
-        })
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            task: task,
-            board: board,
-            action: :edit_task
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      comments = socket.assigns.task.comments
-      assert length(comments) == 2
-
-      # Comments are ordered desc by inserted_at, meaning most recent first
-      # Since they're inserted sequentially, the second one should have a later inserted_at
-      # Database ordering may vary by microseconds, so we check by ID which increases monotonically
-      first_comment = hd(comments)
-      last_comment = List.last(comments)
-
-      # The comment with the higher ID should be first (most recent)
-      assert first_comment.id > last_comment.id
-    end
-  end
-
-  describe "handle_event add_comment" do
-    test "adds comment successfully" do
+    test "no longer owns comment state or the add_comment event" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
@@ -553,274 +484,12 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
 
       {:ok, socket} =
         FormComponent.update(
-          %{
-            current_scope: %{user: user},
-            task: task,
-            board: board,
-            action: :edit_task
-          },
+          %{current_scope: %{user: user}, task: task, board: board, action: :edit_task},
           %Phoenix.LiveView.Socket{}
         )
 
-      # Initialize flash map in socket assigns
-      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
-
-      {:noreply, updated_socket} =
-        FormComponent.handle_event(
-          "add_comment",
-          %{"task_comment" => %{"content" => "New comment"}},
-          socket
-        )
-
-      # Task should be reloaded with new comment
-      assert length(updated_socket.assigns.task.comments) == 1
-      assert hd(updated_socket.assigns.task.comments).content == "New comment"
-      assert hd(updated_socket.assigns.task.comments).author_user_id == user.id
-
-      # Comment form should be reset
-      assert updated_socket.assigns.comment_form
-      refute updated_socket.assigns.comment_form.source.changes[:content]
-    end
-
-    test "shows validation error for empty comment" do
-      user = user_fixture()
-      board = board_fixture(user)
-      column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Test Task"})
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            current_scope: %{user: user},
-            task: task,
-            board: board,
-            action: :edit_task
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      {:noreply, updated_socket} =
-        FormComponent.handle_event(
-          "add_comment",
-          %{"task_comment" => %{"content" => ""}},
-          socket
-        )
-
-      # Should have validation error
-      assert updated_socket.assigns.comment_form.source.errors[:content]
-      # Task comments should not be updated
-      assert Enum.empty?(updated_socket.assigns.task.comments)
-    end
-
-    test "rejects add_comment when the user is not a board member" do
-      owner = user_fixture()
-      stranger = user_fixture()
-      board = board_fixture(owner)
-      column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Members Only"})
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            current_scope: %{user: stranger},
-            task: task,
-            board: board,
-            action: :edit_task
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
-
-      {:noreply, updated_socket} =
-        FormComponent.handle_event(
-          "add_comment",
-          %{"task_comment" => %{"content" => "should not save"}},
-          socket
-        )
-
-      assert updated_socket.assigns.flash["error"] =~ "must be a board member"
-      # No comment row was created.
-      assert Kanban.Repo.aggregate(Kanban.Tasks.TaskComment, :count) == 0
-    end
-
-    test "rejects add_comment when the assigned board is not the task's board" do
-      owner = user_fixture()
-      outsider = user_fixture()
-      board = board_fixture(owner)
-      outsider_board = board_fixture(outsider)
-      column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Not Yours"})
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            current_scope: %{user: outsider},
-            task: task,
-            board: outsider_board,
-            action: :edit_task
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
-
-      {:noreply, updated_socket} =
-        FormComponent.handle_event(
-          "add_comment",
-          %{"task_comment" => %{"content" => "board swap"}},
-          socket
-        )
-
-      assert updated_socket.assigns.flash["error"] =~ "must be a board member"
-      assert Kanban.Repo.aggregate(Kanban.Tasks.TaskComment, :count) == 0
-    end
-
-    test "accepts add_comment when the user is a read-only board member" do
-      owner = user_fixture()
-      reader = user_fixture()
-      board = board_fixture(owner)
-      column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Open Discussion"})
-      Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            current_scope: %{user: reader},
-            task: task,
-            board: board,
-            action: :edit_task
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
-
-      {:noreply, updated_socket} =
-        FormComponent.handle_event(
-          "add_comment",
-          %{"task_comment" => %{"content" => "I have thoughts"}},
-          socket
-        )
-
-      assert length(updated_socket.assigns.task.comments) == 1
-    end
-
-    test "adds multiple comments" do
-      user = user_fixture()
-      board = board_fixture(user)
-      column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Test Task"})
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            current_scope: %{user: user},
-            task: task,
-            board: board,
-            action: :edit_task
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      # Initialize flash map in socket assigns
-      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
-
-      # Add first comment
-      {:noreply, socket} =
-        FormComponent.handle_event(
-          "add_comment",
-          %{"task_comment" => %{"content" => "First comment"}},
-          socket
-        )
-
-      # Add second comment
-      {:noreply, updated_socket} =
-        FormComponent.handle_event(
-          "add_comment",
-          %{"task_comment" => %{"content" => "Second comment"}},
-          socket
-        )
-
-      # Should have both comments
-      assert length(updated_socket.assigns.task.comments) == 2
-      # Most recent should be first
-      assert hd(updated_socket.assigns.task.comments).content == "Second comment"
-    end
-
-    test "includes task_id in comment params" do
-      user = user_fixture()
-      board = board_fixture(user)
-      column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Test Task"})
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            current_scope: %{user: user},
-            task: task,
-            board: board,
-            action: :edit_task
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      # Initialize flash map in socket assigns
-      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
-
-      {:noreply, updated_socket} =
-        FormComponent.handle_event(
-          "add_comment",
-          %{"task_comment" => %{"content" => "Comment without task_id"}},
-          socket
-        )
-
-      # Comment should be associated with the task
-      comment = hd(updated_socket.assigns.task.comments)
-      assert comment.task_id == task.id
-    end
-
-    test "overrides any client-supplied task_id in comment_params" do
-      # Server-source the task_id from socket.assigns.task — never trust
-      # an attacker-supplied task_id key in the params map.
-      user = user_fixture()
-      board = board_fixture(user)
-      column = column_fixture(board, %{name: "To Do"})
-      task = task_fixture(column, %{title: "Real Task"})
-
-      # A separate task whose id the attacker tries to spoof.
-      other_task = task_fixture(column, %{title: "Other Task"})
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            current_scope: %{user: user},
-            task: task,
-            board: board,
-            action: :edit_task
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
-
-      {:noreply, updated_socket} =
-        FormComponent.handle_event(
-          "add_comment",
-          %{
-            "task_comment" => %{
-              "content" => "should attach to real task",
-              "task_id" => other_task.id
-            }
-          },
-          socket
-        )
-
-      # Comment goes to the SERVER task, ignoring the spoofed task_id.
-      comment = hd(updated_socket.assigns.task.comments)
-      assert comment.task_id == task.id
-      refute comment.task_id == other_task.id
+      refute Map.has_key?(socket.assigns, :comment_form)
+      assert Ecto.assoc_loaded?(socket.assigns.task.task_histories)
     end
   end
 

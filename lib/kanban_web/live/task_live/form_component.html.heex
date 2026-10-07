@@ -520,52 +520,13 @@
   <% end %>
 
   <%= if @action == :edit_task && @task.id do %>
-    <div style="margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line);">
-      <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
-        {gettext("Comments")}
-      </h3>
-
-      <.form
-        :let={c}
-        for={@comment_form}
-        id="comment-form"
-        phx-target={@myself}
-        phx-submit="add_comment"
-        style="margin-bottom: 24px;"
-      >
-        <.input
-          field={c[:content]}
-          type="textarea"
-          label={gettext("Add a comment")}
-          rows="3"
-          placeholder={gettext("Write your comment here...")}
-          required
-        />
-        <div style="margin-top: 12px;">
-          <.button type="submit" phx-disable-with={gettext("Adding...")}>
-            {gettext("Add Comment")}
-          </.button>
-        </div>
-      </.form>
-
-      <%= if length(@task.comments || []) > 0 do %>
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 18px;">
-          <%= for comment <- @task.comments do %>
-            <div style="padding: 12px 14px; background: var(--surface-sunken); border: 1px solid var(--line); border-radius: 6px;">
-              <p style="font-size: 12.5px; color: var(--ink); margin: 0; white-space: pre-wrap;">
-                {comment.content}
-              </p>
-              <p style="font-size: 11px; color: var(--ink-3); margin: 6px 0 0; font-family: var(--font-mono);">
-                {Calendar.strftime(comment.inserted_at, "%B %d, %Y at %I:%M %p")}
-              </p>
-            </div>
-          <% end %>
-        </div>
-      <% else %>
-        <p style="font-size: 12.5px; color: var(--ink-3); font-style: italic; margin: 18px 0 0;">
-          {gettext("No comments yet. Be the first to comment!")}
-        </p>
-      <% end %>
+    <div style="margin-top: 28px; padding-top: 2px; border-top: 1px solid var(--line);">
+      <.live_component
+        module={KanbanWeb.TaskLive.CommentThreadComponent}
+        id={KanbanWeb.TaskLive.CommentThreadComponent.dom_id(:form, @task.id)}
+        task_id={@task.id}
+        current_scope={@current_scope}
+      />
     </div>
   <% end %>
 </div>

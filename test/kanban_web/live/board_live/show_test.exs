@@ -2470,8 +2470,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
   describe "PubSub :comment_changed event" do
     setup [:register_and_log_in_user]
 
-    test "a comment broadcast on the board topic is ignored without crashing the view",
-         %{conn: conn, user: user} do
+    test "with no task open, the broadcast is harmless", %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board)
       task = task_fixture(column, %{title: "Discussed task"})
@@ -2485,6 +2484,33 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       assert render(view) =~ "Discussed task"
       assert Process.alive?(view.pid)
+    end
+
+    test "refreshes the comment thread of the open task view", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Discussed task"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      render_hook(view, "view_task", %{"id" => to_string(task.id)})
+      :timer.sleep(200)
+
+      # Written without a broadcast reaching this view, then announced.
+      %Kanban.Tasks.TaskComment{task_id: task.id}
+      |> Kanban.Tasks.TaskComment.changeset(%{content: "Fresh thought"})
+      |> Kanban.Repo.insert!()
+
+      refute view |> element("#comment-thread-view-#{task.id}") |> render() =~ "Fresh thought"
+
+      send(
+        view.pid,
+        {Kanban.Tasks.Comments, :comment_changed, %{task_id: task.id, board_id: board.id}}
+      )
+
+      # handle_info answers with a send_update the view processes next, so the
+      # first render only drains the queue; the second sees the refresh.
+      _ = render(view)
+      assert view |> element("#comment-thread-view-#{task.id}") |> render() =~ "Fresh thought"
     end
   end
 

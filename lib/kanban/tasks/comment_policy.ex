@@ -24,19 +24,62 @@ defmodule Kanban.Tasks.CommentPolicy do
   alias Kanban.Boards
   alias Kanban.Tasks.TaskComment
 
+  @typedoc """
+  The caller's access to one board, resolved once by `resolve/2` so that many
+  comments can be checked with `allowed?/2` and `allowed?/3` without a query
+  per comment.
+  """
+  @type viewer :: %{
+          user_id: integer() | nil,
+          access: :owner | :modify | :read_only | nil
+        }
+
+  @doc """
+  Resolves the scope's access to `board_id` with a single lookup.
+
+  A `nil` scope, a scope without a user, or a non-member resolves to a viewer
+  with `access: nil`, which every `allowed?` check refuses.
+  """
+  @spec resolve(term(), integer()) :: viewer()
+  def resolve(scope, board_id), do: %{user_id: user_id(scope), access: access(scope, board_id)}
+
+  @doc """
+  `true` when the resolved viewer may comment on the board (any membership).
+  """
+  @spec allowed?(viewer(), :comment) :: boolean()
+  def allowed?(%{access: access}, :comment), do: not is_nil(access)
+
+  @doc """
+  `true` when the resolved viewer may `:edit` or `:delete` `comment`.
+
+  Edit is author-only; delete is the author or the board owner. Both require
+  the viewer to still be a board member, and a comment with no author is never
+  "authored" by anyone.
+  """
+  @spec allowed?(viewer(), :edit | :delete, struct()) :: boolean()
+  def allowed?(%{access: nil}, _action, _comment), do: false
+
+  def allowed?(viewer, :edit, %TaskComment{author_user_id: author_id}),
+    do: author?(viewer, author_id)
+
+  def allowed?(%{access: :owner}, :delete, %TaskComment{}), do: true
+
+  def allowed?(viewer, :delete, %TaskComment{author_user_id: author_id}),
+    do: author?(viewer, author_id)
+
   @doc """
   `true` when the scope's user is a member of `board_id` at any access level.
   """
   @spec can_comment?(term(), integer()) :: boolean()
-  def can_comment?(scope, board_id), do: not is_nil(access(scope, board_id))
+  def can_comment?(scope, board_id), do: scope |> resolve(board_id) |> allowed?(:comment)
 
   @doc """
   `true` only when the scope's user authored `comment` and is still a member
   of `board_id`. Always `false` for a comment with no author.
   """
   @spec can_edit?(term(), integer(), struct()) :: boolean()
-  def can_edit?(scope, board_id, %TaskComment{author_user_id: author_id}) do
-    author?(scope, author_id) and can_comment?(scope, board_id)
+  def can_edit?(scope, board_id, %TaskComment{} = comment) do
+    scope |> resolve(board_id) |> allowed?(:edit, comment)
   end
 
   @doc """
@@ -44,12 +87,8 @@ defmodule Kanban.Tasks.CommentPolicy do
   still a member of `board_id`.
   """
   @spec can_delete?(term(), integer(), struct()) :: boolean()
-  def can_delete?(scope, board_id, %TaskComment{author_user_id: author_id}) do
-    case access(scope, board_id) do
-      nil -> false
-      :owner -> true
-      _member -> author?(scope, author_id)
-    end
+  def can_delete?(scope, board_id, %TaskComment{} = comment) do
+    scope |> resolve(board_id) |> allowed?(:delete, comment)
   end
 
   defp access(%{user: %{id: user_id}}, board_id)
@@ -58,6 +97,9 @@ defmodule Kanban.Tasks.CommentPolicy do
 
   defp access(_scope, _board_id), do: nil
 
-  defp author?(%{user: %{id: user_id}}, user_id) when is_integer(user_id), do: true
-  defp author?(_scope, _author_id), do: false
+  defp user_id(%{user: %{id: user_id}}) when is_integer(user_id), do: user_id
+  defp user_id(_scope), do: nil
+
+  defp author?(%{user_id: user_id}, user_id) when is_integer(user_id), do: true
+  defp author?(_viewer, _author_id), do: false
 end

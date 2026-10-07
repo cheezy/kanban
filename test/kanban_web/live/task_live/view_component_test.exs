@@ -548,7 +548,11 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
         )
 
       assert result =~ "This is a test comment"
-      assert result =~ "hero-chat-bubble-left"
+      # A legacy comment with no author is attributed to "Unknown".
+      assert result =~ "Unknown"
+      # Rendering without a scope is read-only: no composer, no controls.
+      refute result =~ "-composer"
+      refute result =~ "delete_comment"
     end
 
     test "displays multiple comments", %{task: task} do
@@ -577,12 +581,10 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
       assert result =~ "Second comment"
     end
 
-    test "displays comment timestamp with formatted datetime", %{task: task} do
+    test "displays comment time as a relative age with the exact time in a tooltip",
+         %{task: task} do
       %TaskComment{task_id: task.id}
-      |> TaskComment.changeset(%{
-        content: "Test comment",
-        inserted_at: ~U[2024-01-15 10:30:00Z]
-      })
+      |> TaskComment.changeset(%{content: "Test comment"})
       |> Repo.insert!()
 
       result =
@@ -592,7 +594,23 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           field_visibility: all_fields_visible()
         )
 
-      assert result =~ ~r/\w+ \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/
+      assert result =~ "just now"
+
+      assert result =~
+               ~r/<time datetime="\d{4}-\d{2}-\d{2}T[^"]+" title="\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC"/
+    end
+
+    test "shows the comment composer to a board member", %{task: task, user: user} do
+      result =
+        render_component(KanbanWeb.TaskLive.ViewComponent,
+          id: "test-view",
+          task_id: task.id,
+          current_scope: user_scope_fixture(user),
+          field_visibility: all_fields_visible()
+        )
+
+      assert result =~ "comment-thread-view-#{task.id}-composer"
+      assert result =~ "Add Comment"
     end
 
     test "displays history timestamp with formatted datetime", %{task: task} do
@@ -2454,6 +2472,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           task: task,
           board_id: nil,
           can_modify: false,
+          current_scope: nil,
           field_visibility: all_fields_visible()
         })
 
@@ -2476,6 +2495,7 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           task: task,
           board_id: nil,
           can_modify: false,
+          current_scope: nil,
           field_visibility: all_fields_visible()
         })
 
