@@ -10,8 +10,7 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
   and never re-derived from persisted state, and the per-token `board_id ==
   board.id` checks in revoke/delete are cross-board IDOR guards. Flash strings
   are asserted in tests and shown to users — do not reword. `assign_api_tokens_state/3`
-  calls back into `KanbanWeb.BoardLive.Show.assign_common_board_state/4`, which
-  stays in the LiveView.
+  calls `KanbanWeb.BoardLive.BoardState.assign_common_board_state/4`.
   """
 
   use Gettext, backend: KanbanWeb.Gettext
@@ -22,7 +21,7 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
 
   alias Kanban.ApiTokens
   alias Kanban.Columns
-  alias KanbanWeb.BoardLive.Show
+  alias KanbanWeb.BoardLive.BoardState
 
   @doc "Resolves the API-tokens view: gates by AI-optimized board + role, else assigns token state."
   def resolve_api_tokens_view(socket, board, user_access) do
@@ -131,7 +130,7 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
 
     {:noreply,
      socket
-     |> Show.assign_common_board_state(board, user_access, columns)
+     |> BoardState.assign_common_board_state(board, user_access, columns)
      |> assign(:page_title, "Stride")
      |> assign(:api_tokens, api_tokens)
      |> assign(:token_form, to_form(token_changeset))

@@ -556,7 +556,7 @@ defmodule Kanban.Targets.Progress do
   end
 
   # Maps a column name to its flow bucket. Duplicates the tiny name→status case
-  # from KanbanWeb.BoardLive.Show.column_status/1 deliberately: a context must
+  # from KanbanWeb.BoardLive.ColumnActions.column_status/1 deliberately: a context must
   # not depend on the web layer. Any unknown/nil column falls back to :backlog.
   defp flow_bucket(%{name: name}) when is_binary(name) do
     case String.downcase(name) do

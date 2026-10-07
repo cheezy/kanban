@@ -23,10 +23,10 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   import KanbanWeb.TaskLive.Components.IntegrationPointsSection
   import KanbanWeb.TaskLive.Components.ReviewStatusSection
   import KanbanWeb.TaskLive.Components.TaskDetailAside
+  import KanbanWeb.TaskLive.Components.TaskDetailBand
   import KanbanWeb.TaskLive.Components.TechnicalDetailsSection
+  import KanbanWeb.TaskLive.Components.TextBlock
   import KanbanWeb.TaskLive.Components.WorkflowStepsSection
-
-  import KanbanWeb.TaskVisuals
 
   alias Kanban.Tasks
   alias KanbanWeb.AcceptanceChecklist
@@ -35,7 +35,6 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   alias KanbanWeb.SectionHead
   alias KanbanWeb.TaskActivityLog
   alias KanbanWeb.TaskLive.CommentThreadComponent
-  alias KanbanWeb.TaskTokens
 
   @impl true
   def update(%{task_id: task_id} = assigns, socket) do
@@ -424,76 +423,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
     """
   end
 
-  # --- Sub-components -----------------------------------------------------
-
-  attr :task, :map, required: true
-  attr :can_modify, :boolean, required: true
-  attr :board_id, :any, required: true
-
-  defp detail_band(assigns) do
-    ~H"""
-    <div
-      data-task-detail-band
-      style={[
-        "padding: 14px 22px 12px;",
-        "border-bottom: 1px solid var(--line);",
-        "display: flex; align-items: center; gap: 8px; flex-wrap: wrap;",
-        "background: var(--surface);"
-      ]}
-    >
-      <.type_icon type={@task.type} />
-      <span class="ident" style="font-size: 11.5px; color: var(--ink-2);">
-        {@task.identifier}
-      </span>
-      <.status_pill status={@task.status} variant={:base} />
-      <span
-        :if={@task.priority}
-        aria-hidden="true"
-        style={[
-          "width: 6px; height: 6px; border-radius: 50%;",
-          "background: #{TaskTokens.priority_color(@task.priority)};"
-        ]}
-      ></span>
-      <span :if={@task.priority || @task.complexity} style="font-size: 11px; color: var(--ink-3);">
-        {pretty_meta(@task.priority, @task.complexity)}
-      </span>
-      <span style="flex: 1;"></span>
-    </div>
-    """
-  end
-
-  attr :label, :string, required: true
-  attr :mono, :boolean, default: false
-  slot :inner_block, required: true
-
-  defp block(assigns) do
-    assigns =
-      assign(assigns, :font, if(assigns.mono, do: "var(--font-mono)", else: "var(--font-sans)"))
-
-    ~H"""
-    <div>
-      <span class="ucase" style="font-size: 10.5px; color: var(--ink-3);">{@label}</span>
-      <p style={[
-        "margin: 4px 0 0; font-size: 13px; line-height: 1.55;",
-        "color: var(--ink); white-space: pre-wrap;",
-        "font-family: #{@font};",
-        "text-wrap: pretty;"
-      ]}>
-        {render_slot(@inner_block)}
-      </p>
-    </div>
-    """
-  end
-
   # --- Helpers ------------------------------------------------------------
-
-  defp pretty_meta(nil, nil), do: ""
-  defp pretty_meta(priority, nil), do: TaskTokens.priority_word(priority)
-  defp pretty_meta(nil, complexity), do: TaskTokens.complexity_word(complexity)
-
-  defp pretty_meta(priority, complexity) do
-    "#{TaskTokens.priority_word(priority)} · #{TaskTokens.complexity_word(complexity)}"
-  end
 
   defp acceptance_count_label(criteria) when is_binary(criteria) do
     total =
@@ -508,6 +438,9 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
 
   defp acceptance_count_label(_), do: nil
 
+  # The top band (TaskDetailBand, with pretty_meta/2) and the labelled text
+  # block (TextBlock) moved to their own component modules for the same reason.
+  #
   # The right-rail metadata aside — and the helpers only it used:
   # author_avatar/1, user_display_name/1, palette_for_user/1,
   # parent_goal_loaded?/1, board_name_for/1 and needs_review_pill_style/0 —

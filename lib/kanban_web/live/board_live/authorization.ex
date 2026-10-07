@@ -19,6 +19,7 @@ defmodule KanbanWeb.BoardLive.Authorization do
   alias Kanban.Columns
   alias Kanban.Tasks
   alias KanbanWeb.BoardLive.Show
+  alias KanbanWeb.BoardLive.TaskActions
 
   require Logger
 
@@ -108,9 +109,9 @@ defmodule KanbanWeb.BoardLive.Authorization do
     )
 
     if old_col_id == new_col_id do
-      Show.handle_task_reorder(socket, old_col_id, task.id, new_position)
+      TaskActions.handle_task_reorder(socket, old_col_id, task.id, new_position)
     else
-      Show.handle_task_move(socket, task, new_col_id, new_position)
+      TaskActions.handle_task_move(socket, task, new_col_id, new_position)
     end
   end
 

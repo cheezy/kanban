@@ -8,12 +8,12 @@ defmodule KanbanWeb.BoardLive.Goals do
   No socket access. `compute_goal_progress/2` is the one function that touches the
   database (`Tasks.get_task_children/2` per goal); the rest operate on the
   in-memory `tasks_by_column` map. `compute_active_goals/4` calls back into
-  `KanbanWeb.BoardLive.Show.column_status/1`, which stays in the LiveView because
-  the template uses it directly too.
+  `KanbanWeb.BoardLive.ColumnActions.column_status/1`, which the board template
+  also uses (through `KanbanWeb.BoardLive.Show`).
   """
 
   alias Kanban.Tasks
-  alias KanbanWeb.BoardLive.Show
+  alias KanbanWeb.BoardLive.ColumnActions
 
   # Build the list of active goals shaped for KanbanWeb.GoalsStrip.
   # Each entry has :identifier, :name, :color, :ink, :promoted plus a
@@ -21,7 +21,8 @@ defmodule KanbanWeb.BoardLive.Goals do
   # sorted by identifier so the strip's order is stable across refreshes.
   @doc "Builds the active-goals list for the goals strip, sorted by inserted_at."
   def compute_active_goals(tasks_by_column, columns, goals_by_id, backlog_promotable) do
-    status_by_column_id = Map.new(columns, fn col -> {col.id, Show.column_status(col.name)} end)
+    status_by_column_id =
+      Map.new(columns, fn col -> {col.id, ColumnActions.column_status(col.name)} end)
 
     goals_by_id
     |> Enum.map(&build_active_goal(&1, tasks_by_column, status_by_column_id, backlog_promotable))
