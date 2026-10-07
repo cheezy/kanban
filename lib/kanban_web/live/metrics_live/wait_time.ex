@@ -3,6 +3,9 @@ defmodule KanbanWeb.MetricsLive.WaitTime do
   use KanbanWeb.MetricsLive.Base, page_title: "Wait Time Metrics"
 
   import KanbanWeb.MetricsLive.Components
+  import KanbanWeb.MetricsLive.Components.ExportDropdown
+  import KanbanWeb.MetricsLive.Components.Filters
+  import KanbanWeb.MetricsLive.Components.TaskListPanel
 
   alias Kanban.Metrics
   alias Kanban.Metrics.TaskQueries

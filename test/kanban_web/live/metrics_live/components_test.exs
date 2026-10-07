@@ -5,6 +5,10 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
   import Phoenix.LiveViewTest
 
   alias KanbanWeb.MetricsLive.Components
+  alias KanbanWeb.MetricsLive.Components.ExportDropdown
+  alias KanbanWeb.MetricsLive.Components.Filters
+  alias KanbanWeb.MetricsLive.Components.TaskListPanel
+  alias KanbanWeb.MetricsLive.Components.TrendChart
 
   describe "stat_card/1" do
     test "renders with required attributes" do
@@ -267,7 +271,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.time_range_filter
+        <Filters.time_range_filter
           current_range={@current_range}
           on_change={@on_change}
           class={@class}
@@ -291,7 +295,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.time_range_filter
+        <Filters.time_range_filter
           current_range={@current_range}
           on_change={@on_change}
           class={@class}
@@ -311,7 +315,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.time_range_filter
+        <Filters.time_range_filter
           current_range={@current_range}
           on_change={@on_change}
           class={@class}
@@ -333,7 +337,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.agent_filter
+        <Filters.agent_filter
           agents={@agents}
           current_agent={@current_agent}
           on_change={@on_change}
@@ -356,7 +360,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.agent_filter
+        <Filters.agent_filter
           agents={@agents}
           current_agent={@current_agent}
           on_change={@on_change}
@@ -378,7 +382,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.agent_filter
+        <Filters.agent_filter
           agents={@agents}
           current_agent={@current_agent}
           on_change={@on_change}
@@ -401,7 +405,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.weekend_toggle
+        <Filters.weekend_toggle
           exclude_weekends={@exclude_weekends}
           on_change={@on_change}
           class={@class}
@@ -422,7 +426,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.weekend_toggle
+        <Filters.weekend_toggle
           exclude_weekends={@exclude_weekends}
           on_change={@on_change}
           class={@class}
@@ -441,7 +445,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.weekend_toggle
+        <Filters.weekend_toggle
           exclude_weekends={@exclude_weekends}
           on_change={@on_change}
           class={@class}
@@ -464,7 +468,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.metric_filters
+        <Filters.metric_filters
           time_range={@time_range}
           agent_name={@agent_name}
           exclude_weekends={@exclude_weekends}
@@ -489,7 +493,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.metric_filters
+        <Filters.metric_filters
           time_range={@time_range}
           agent_name={@agent_name}
           exclude_weekends={@exclude_weekends}
@@ -517,7 +521,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.metric_filters
+        <Filters.metric_filters
           time_range={@time_range}
           agent_name={@agent_name}
           exclude_weekends={@exclude_weekends}
@@ -542,7 +546,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.metric_filters
+        <Filters.metric_filters
           time_range={@time_range}
           agent_name={@agent_name}
           exclude_weekends={@exclude_weekends}
@@ -566,7 +570,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.metric_filters
+        <Filters.metric_filters
           time_range={@time_range}
           agent_name={@agent_name}
           exclude_weekends={@exclude_weekends}
@@ -590,7 +594,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.metric_filters
+        <Filters.metric_filters
           time_range={@time_range}
           agent_name={@agent_name}
           exclude_weekends={@exclude_weekends}
@@ -615,7 +619,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.metric_filters
+        <Filters.metric_filters
           time_range={@time_range}
           agent_name={@agent_name}
           exclude_weekends={@exclude_weekends}
@@ -787,7 +791,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.trend_chart
+        <TrendChart.trend_chart
           title={@title}
           subtitle={@subtitle}
           daily_times={@daily_times}
@@ -819,7 +823,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.trend_chart
+        <TrendChart.trend_chart
           title={@title}
           subtitle={@subtitle}
           daily_times={@daily_times}
@@ -846,7 +850,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.trend_chart
+        <TrendChart.trend_chart
           title={@title}
           subtitle={@subtitle}
           daily_times={@daily_times}
@@ -874,7 +878,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.trend_chart
+        <TrendChart.trend_chart
           title={@title}
           subtitle={@subtitle}
           daily_times={@daily_times}
@@ -905,7 +909,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.trend_chart
+        <TrendChart.trend_chart
           title={@title}
           subtitle={@subtitle}
           daily_times={@daily_times}
@@ -928,7 +932,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.trend_chart
+        <TrendChart.trend_chart
           title={@title}
           subtitle={@subtitle}
           daily_times={@daily_times}
@@ -953,7 +957,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.trend_chart
+        <TrendChart.trend_chart
           title={@title}
           subtitle={@subtitle}
           daily_times={@daily_times}
@@ -1059,7 +1063,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.export_dropdown
+        <ExportDropdown.export_dropdown
           export_base_path={@export_base_path}
           time_range={@time_range}
           agent_name={@agent_name}
@@ -1085,7 +1089,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.export_dropdown
+        <ExportDropdown.export_dropdown
           export_base_path={@export_base_path}
           time_range={@time_range}
           agent_name={@agent_name}
@@ -1108,7 +1112,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.export_dropdown
+        <ExportDropdown.export_dropdown
           export_base_path={@export_base_path}
           time_range={@time_range}
           agent_name={@agent_name}
@@ -1137,7 +1141,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         )
 
       rendered_to_string(~H"""
-      <Components.workspace_export_dropdown
+      <ExportDropdown.workspace_export_dropdown
         export_base_path={@export_base_path}
         window_days={@window_days}
         board_ids={@board_ids}
@@ -1236,7 +1240,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.task_list_panel
+        <TaskListPanel.task_list_panel
           title={@title}
           subtitle={@subtitle}
           icon_name={@icon_name}
@@ -1251,7 +1255,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
           <:task_badge :let={task}>
             <span class="badge">{task.cycle}</span>
           </:task_badge>
-        </Components.task_list_panel>
+        </TaskListPanel.task_list_panel>
         """)
 
       assert html =~ "Completed Tasks"
@@ -1286,7 +1290,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.task_list_panel
+        <TaskListPanel.task_list_panel
           title={@title}
           subtitle={@subtitle}
           icon_name={@icon_name}
@@ -1298,7 +1302,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         >
           <:task_metadata :let={_task}>meta</:task_metadata>
           <:task_badge :let={_task}>badge</:task_badge>
-        </Components.task_list_panel>
+        </TaskListPanel.task_list_panel>
         """)
 
       assert html =~ "No tasks waiting for review in this time range"
@@ -1322,7 +1326,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
 
       html =
         rendered_to_string(~H"""
-        <Components.task_list_panel
+        <TaskListPanel.task_list_panel
           title={@title}
           subtitle={@subtitle}
           icon_name={@icon_name}
@@ -1334,7 +1338,7 @@ defmodule KanbanWeb.MetricsLive.ComponentsTest do
         >
           <:task_metadata :let={_task}>meta</:task_metadata>
           <:task_badge :let={_task}>badge</:task_badge>
-        </Components.task_list_panel>
+        </TaskListPanel.task_list_panel>
         """)
 
       # The restyled task_list_panel collapses every :date_accent atom to

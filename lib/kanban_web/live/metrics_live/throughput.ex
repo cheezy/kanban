@@ -2,7 +2,9 @@ defmodule KanbanWeb.MetricsLive.Throughput do
   use KanbanWeb, :live_view
   use KanbanWeb.MetricsLive.Base, page_title: "Throughput Metrics"
 
-  import KanbanWeb.MetricsLive.Components
+  import KanbanWeb.MetricsLive.Components.ExportDropdown
+  import KanbanWeb.MetricsLive.Components.Filters
+  import KanbanWeb.MetricsLive.Components.TaskListPanel
 
   alias Kanban.Metrics
   alias Kanban.Metrics.TaskQueries

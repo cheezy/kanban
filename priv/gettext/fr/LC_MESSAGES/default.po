@@ -192,7 +192,7 @@ msgstr "Tableau créé avec succès"
 msgid "Board updated successfully"
 msgstr "Tableau mis à jour avec succès"
 
-#: lib/kanban_web/live/agents_live.ex:1118
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:171
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
@@ -407,7 +407,7 @@ msgid "Created"
 msgstr "Créé"
 
 #: lib/kanban_web/components/review_report_panel.ex:403
-#: lib/kanban_web/live/agents_live.ex:844
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:121
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -428,21 +428,21 @@ msgstr "Défaut"
 msgid "Failed to move task"
 msgstr "Échec du déplacement de la tâche"
 
-#: lib/kanban_web/live/agents_live.ex:843
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:120
 #: lib/kanban_web/live/task_live/form_component.html.heex:121
 #: lib/kanban_web/task_tokens.ex:56
 #, elixir-autogen, elixir-format
 msgid "High"
 msgstr "Élevé"
 
-#: lib/kanban_web/live/agents_live.ex:841
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:118
 #: lib/kanban_web/live/task_live/form_component.html.heex:119
 #: lib/kanban_web/task_tokens.ex:58
 #, elixir-autogen, elixir-format
 msgid "Low"
 msgstr "Bas"
 
-#: lib/kanban_web/live/agents_live.ex:842
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:119
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:25
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:32
 #: lib/kanban_web/live/task_live/form_component.html.heex:120
@@ -2206,8 +2206,8 @@ msgstr "Aucun utilisateur trouvé avec cette adresse e-mail"
 msgid "Metrics"
 msgstr "Mesures"
 
-#: lib/kanban_web/live/metrics_live/components.ex:253
-#: lib/kanban_web/live/metrics_live/components.ex:410
+#: lib/kanban_web/live/metrics_live/components/filters.ex:94
+#: lib/kanban_web/live/metrics_live/components/filters.ex:241
 #, elixir-autogen, elixir-format
 msgid "Agent Filter"
 msgstr "Filtre d'agent"
@@ -2223,14 +2223,14 @@ msgstr "Agent inconnu"
 
 #: lib/kanban_web/controllers/metrics_pdf_html.ex:112
 #: lib/kanban_web/export/metrics_excel.ex:122
-#: lib/kanban_web/live/metrics_live/components.ex:267
-#: lib/kanban_web/live/metrics_live/components.ex:421
+#: lib/kanban_web/live/metrics_live/components/filters.ex:108
+#: lib/kanban_web/live/metrics_live/components/filters.ex:252
 #, elixir-autogen, elixir-format
 msgid "All Agents"
 msgstr "Tous les agents"
 
-#: lib/kanban_web/live/metrics_live/components.ex:222
-#: lib/kanban_web/live/metrics_live/components.ex:396
+#: lib/kanban_web/live/metrics_live/components/filters.ex:63
+#: lib/kanban_web/live/metrics_live/components/filters.ex:227
 #: lib/kanban_web/live/metrics_live/helpers.ex:39
 #, elixir-autogen, elixir-format
 msgid "All Time"
@@ -2240,7 +2240,7 @@ msgstr "Tout le temps"
 #: lib/kanban_web/controllers/metrics_pdf_html/lead_time.html.heex:107
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:124
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:227
-#: lib/kanban_web/live/metrics_live/components.ex:471
+#: lib/kanban_web/live/metrics_live/components.ex:210
 #, elixir-autogen, elixir-format
 msgid "Average"
 msgstr "Moyenne"
@@ -2317,7 +2317,7 @@ msgstr "Terminé :"
 msgid "Created:"
 msgstr "Créé :"
 
-#: lib/kanban_web/live/metrics_live/components.ex:363
+#: lib/kanban_web/live/metrics_live/components/filters.ex:194
 #, elixir-autogen, elixir-format
 msgid "Customize your %{view_name} view"
 msgstr "Personnalisez votre vue %{view_name}"
@@ -2342,26 +2342,26 @@ msgstr "Métriques du temps de cycle"
 msgid "Daily Completions Bar Chart"
 msgstr "Graphique des tâches quotidiennes terminées"
 
-#: lib/kanban_web/live/metrics_live/components.ex:851
+#: lib/kanban_web/live/metrics_live/components/export_dropdown.ex:142
 #, elixir-autogen, elixir-format
 msgid "Excel"
 msgstr "Excel"
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:571
-#: lib/kanban_web/live/metrics_live/components.ex:314
-#: lib/kanban_web/live/metrics_live/components.ex:444
+#: lib/kanban_web/live/metrics_live/components/filters.ex:155
+#: lib/kanban_web/live/metrics_live/components/filters.ex:275
 #: lib/kanban_web/live/metrics_live/workspace.ex:403
 #, elixir-autogen, elixir-format
 msgid "Exclude Weekends"
 msgstr "Exclure les week-ends"
 
 #: lib/kanban_web/export/metrics_excel.ex:77
-#: lib/kanban_web/live/metrics_live/components.ex:814
+#: lib/kanban_web/live/metrics_live/components/export_dropdown.ex:105
 #, elixir-autogen, elixir-format
 msgid "Export"
 msgstr "Exporter"
 
-#: lib/kanban_web/live/metrics_live/components.ex:360
+#: lib/kanban_web/live/metrics_live/components/filters.ex:191
 #, elixir-autogen, elixir-format
 msgid "Filters"
 msgstr "Filtres"
@@ -2392,22 +2392,22 @@ msgid "Human bottleneck analysis"
 msgstr "Analyse des goulots d'étranglement"
 
 #: lib/kanban_web/export/metrics_excel.ex:371
-#: lib/kanban_web/live/metrics_live/components.ex:217
-#: lib/kanban_web/live/metrics_live/components.ex:390
+#: lib/kanban_web/live/metrics_live/components/filters.ex:58
+#: lib/kanban_web/live/metrics_live/components/filters.ex:221
 #: lib/kanban_web/live/metrics_live/helpers.ex:37
 #, elixir-autogen, elixir-format
 msgid "Last 30 Days"
 msgstr "30 derniers jours"
 
-#: lib/kanban_web/live/metrics_live/components.ex:214
-#: lib/kanban_web/live/metrics_live/components.ex:387
+#: lib/kanban_web/live/metrics_live/components/filters.ex:55
+#: lib/kanban_web/live/metrics_live/components/filters.ex:218
 #: lib/kanban_web/live/metrics_live/helpers.ex:36
 #, elixir-autogen, elixir-format
 msgid "Last 7 Days"
 msgstr "7 derniers jours"
 
-#: lib/kanban_web/live/metrics_live/components.ex:220
-#: lib/kanban_web/live/metrics_live/components.ex:393
+#: lib/kanban_web/live/metrics_live/components/filters.ex:61
+#: lib/kanban_web/live/metrics_live/components/filters.ex:224
 #: lib/kanban_web/live/metrics_live/helpers.ex:38
 #, elixir-autogen, elixir-format
 msgid "Last 90 Days"
@@ -2428,7 +2428,7 @@ msgstr "Délai"
 msgid "Lead Time Metrics"
 msgstr "Métriques du délai"
 
-#: lib/kanban_web/live/metrics_live/components.ex:489
+#: lib/kanban_web/live/metrics_live/components.ex:228
 #, elixir-autogen, elixir-format
 msgid "Max"
 msgstr "Max"
@@ -2437,7 +2437,7 @@ msgstr "Max"
 #: lib/kanban_web/controllers/metrics_pdf_html/lead_time.html.heex:118
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:137
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:240
-#: lib/kanban_web/live/metrics_live/components.ex:477
+#: lib/kanban_web/live/metrics_live/components.ex:216
 #, elixir-autogen, elixir-format
 msgid "Median"
 msgstr "Médiane"
@@ -2447,12 +2447,12 @@ msgstr "Médiane"
 msgid "Metrics Dashboard"
 msgstr "Tableau de bord des métriques"
 
-#: lib/kanban_web/live/metrics_live/components.ex:483
+#: lib/kanban_web/live/metrics_live/components.ex:222
 #, elixir-autogen, elixir-format
 msgid "Min"
 msgstr "Min"
 
-#: lib/kanban_web/live/metrics_live/components.ex:169
+#: lib/kanban_web/live/metrics_live/components.ex:185
 #, elixir-autogen, elixir-format
 msgid "No data available"
 msgstr "Aucune donnée disponible"
@@ -2480,7 +2480,7 @@ msgstr "Aucune tâche démarrée dans cette période"
 msgid "No tasks waiting for review in this time range"
 msgstr "Aucune tâche en attente de révision dans cette période"
 
-#: lib/kanban_web/live/metrics_live/components.ex:840
+#: lib/kanban_web/live/metrics_live/components/export_dropdown.ex:131
 #, elixir-autogen, elixir-format
 msgid "PDF"
 msgstr "PDF"
@@ -2578,8 +2578,8 @@ msgstr "Débit"
 msgid "Throughput Metrics"
 msgstr "Métriques du débit"
 
-#: lib/kanban_web/live/metrics_live/components.ex:199
-#: lib/kanban_web/live/metrics_live/components.ex:374
+#: lib/kanban_web/live/metrics_live/components/filters.ex:40
+#: lib/kanban_web/live/metrics_live/components/filters.ex:205
 #, elixir-autogen, elixir-format
 msgid "Time Range"
 msgstr "Période"
@@ -2617,7 +2617,7 @@ msgstr "Temps que les tâches passent en attente de révision après achèvement
 #: lib/kanban_web/components/agent_activity_feed.ex:456
 #: lib/kanban_web/components/agent_roster_card.ex:242
 #: lib/kanban_web/components/agents_header.ex:438
-#: lib/kanban_web/live/metrics_live/components.ex:385
+#: lib/kanban_web/live/metrics_live/components/filters.ex:216
 #: lib/kanban_web/live/metrics_live/helpers.ex:35
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -2630,7 +2630,7 @@ msgstr "Aujourd'hui"
 msgid "Total Tasks"
 msgstr "Total des tâches"
 
-#: lib/kanban_web/live/metrics_live/components.ex:89
+#: lib/kanban_web/live/metrics_live/components.ex:105
 #, elixir-autogen, elixir-format
 msgid "View details"
 msgstr "Voir les détails"
@@ -2661,12 +2661,12 @@ msgstr "moy"
 msgid "median"
 msgstr "médiane"
 
-#: lib/kanban_web/live/metrics_live/components.ex:987
+#: lib/kanban_web/live/metrics_live/components/task_list_panel.ex:98
 #, elixir-autogen, elixir-format
 msgid "task"
 msgstr "tâche"
 
-#: lib/kanban_web/live/metrics_live/components.ex:988
+#: lib/kanban_web/live/metrics_live/components/task_list_panel.ex:99
 #, elixir-autogen, elixir-format
 msgid "tasks"
 msgstr "tâches"
@@ -4303,7 +4303,7 @@ msgstr "Objectifs actifs"
 
 #: lib/kanban_web/components/layouts.ex:294
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
-#: lib/kanban_web/live/agents_live.ex:349
+#: lib/kanban_web/live/agents_live.ex:338
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr "Agents"
@@ -4368,7 +4368,7 @@ msgstr "Commencer avec un tableau vierge"
 msgid "Stride home"
 msgstr "Accueil Stride"
 
-#: lib/kanban_web/live/agents_live.ex:347
+#: lib/kanban_web/live/agents_live.ex:336
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -5161,19 +5161,19 @@ msgid_plural "last 24h · %{count} events"
 msgstr[0] "dernières 24 h · %{count} événement"
 msgstr[1] "dernières 24 h · %{count} événements"
 
-#: lib/kanban_web/live/agents_live.ex:1247
+#: lib/kanban_web/live/agents_live/components/live_indicator.ex:43
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] "%{count} connecté"
 msgstr[1] "%{count} connectés"
 
-#: lib/kanban_web/live/agents_live.ex:429
+#: lib/kanban_web/live/agents_live/components/roster.ex:49
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr "Aucun agent n'a encore d'activité."
 
-#: lib/kanban_web/live/agents_live.ex:399
+#: lib/kanban_web/live/agents_live/components/live_indicator.ex:35
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr "en direct"
@@ -7235,13 +7235,13 @@ msgstr "Détails techniques"
 msgid "Technical Details (JSON object)"
 msgstr "Détails techniques (objet JSON)"
 
-#: lib/kanban_web/live/agents_live.ex:507
+#: lib/kanban_web/live/agents_live/components/roster.ex:132
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "Filtré par %{agent}"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:524
+#: lib/kanban_web/live/agents_live/components/roster.ex:149
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "Effacer"
@@ -7304,12 +7304,12 @@ msgstr "%{date} : %{count} terminées"
 msgid "of which"
 msgstr "dont"
 
-#: lib/kanban_web/live/agents_live.ex:467
+#: lib/kanban_web/live/agents_live/components/roster.ex:87
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "Inactifs (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:1302
+#: lib/kanban_web/live/agents_live/components/roster.ex:181
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "Vu il y a %{days} j"
@@ -7711,169 +7711,169 @@ msgstr "Cible de livraison et objectif en cours"
 msgid "Hide archived goals"
 msgstr "Masquer les objectifs archivés"
 
-#: lib/kanban_web/live/agents_live.ex:1028
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:72
 #, elixir-autogen, elixir-format
 msgid "Choose a new owner"
 msgstr "Choisir un nouveau responsable"
 
-#: lib/kanban_web/live/agents_live.ex:246
+#: lib/kanban_web/live/agents_live.ex:235
 #, elixir-autogen, elixir-format
 msgid "Choose a new owner first."
 msgstr "Choisissez d'abord un nouveau responsable."
 
-#: lib/kanban_web/live/agents_live.ex:734
+#: lib/kanban_web/live/agents_live/interventions.ex:68
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Could not reassign the goal. Please try again."
 msgstr "Impossible d'assigner l'objectif"
 
-#: lib/kanban_web/live/agents_live.ex:1026
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:70
 #, elixir-autogen, elixir-format
 msgid "New owner"
 msgstr "Nouveau responsable"
 
 #: lib/kanban_web/components/target_risk_explainer.ex:186
-#: lib/kanban_web/live/agents_live.ex:1019
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:63
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reassign"
 msgstr "Réaffecté"
 
-#: lib/kanban_web/live/agents_live.ex:1009
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:53
 #, elixir-autogen, elixir-format
 msgid "Reassign %{goal}"
 msgstr "Réattribuer %{goal}"
 
-#: lib/kanban_web/live/agents_live.ex:774
-#: lib/kanban_web/live/agents_live.ex:780
+#: lib/kanban_web/live/agents_live/interventions.ex:111
+#: lib/kanban_web/live/agents_live/interventions.ex:117
 #, elixir-autogen, elixir-format
 msgid "Reassigned %{count} task."
 msgid_plural "Reassigned %{count} tasks."
 msgstr[0] "%{count} tâche réattribuée."
 msgstr[1] "%{count} tâches réattribuées."
 
-#: lib/kanban_web/live/agents_live.ex:783
-#: lib/kanban_web/live/agents_live.ex:859
+#: lib/kanban_web/live/agents_live/interventions.ex:120
+#: lib/kanban_web/live/agents_live/interventions.ex:190
 #, elixir-autogen, elixir-format
 msgid "Skipped %{count} task already claimed: %{ids}."
 msgid_plural "Skipped %{count} tasks already claimed: %{ids}."
 msgstr[0] "%{count} tâche déjà réclamée ignorée : %{ids}."
 msgstr[1] "%{count} tâches déjà réclamées ignorées : %{ids}."
 
-#: lib/kanban_web/live/agents_live.ex:730
+#: lib/kanban_web/live/agents_live/interventions.ex:64
 #, elixir-autogen, elixir-format
 msgid "That user is not a member of this board."
 msgstr "Cet utilisateur n'est pas membre de ce tableau."
 
-#: lib/kanban_web/live/agents_live.ex:1011
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:55
 #, elixir-autogen, elixir-format
 msgid "This will move 1 task to the new owner:"
 msgid_plural "This will move %{count} tasks to the new owner:"
 msgstr[0] "Cela déplacera 1 tâche vers le nouveau responsable :"
 msgstr[1] "Cela déplacera %{count} tâches vers le nouveau responsable :"
 
-#: lib/kanban_web/live/agents_live.ex:227
-#: lib/kanban_web/live/agents_live.ex:726
+#: lib/kanban_web/live/agents_live.ex:216
+#: lib/kanban_web/live/agents_live/interventions.ex:60
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to reassign this goal."
 msgstr "Vous n'êtes pas autorisé à réattribuer cet objectif."
 
-#: lib/kanban_web/live/agents_live.ex:1066
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:110
 #, elixir-autogen, elixir-format
 msgid "Choose a new priority"
 msgstr "Choisissez une nouvelle priorité"
 
-#: lib/kanban_web/live/agents_live.ex:290
+#: lib/kanban_web/live/agents_live.ex:279
 #, elixir-autogen, elixir-format
 msgid "Choose a new priority first."
 msgstr "Choisissez d'abord une nouvelle priorité."
 
-#: lib/kanban_web/live/agents_live.ex:827
+#: lib/kanban_web/live/agents_live/interventions.ex:165
 #, elixir-autogen, elixir-format
 msgid "Could not reprioritize the goal. Please try again."
 msgstr "Impossible de redéfinir la priorité de l'objectif. Veuillez réessayer."
 
-#: lib/kanban_web/live/agents_live.ex:1064
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:108
 #, elixir-autogen, elixir-format
 msgid "New priority"
 msgstr "Nouvelle priorité"
 
 #: lib/kanban_web/components/target_risk_explainer.ex:196
-#: lib/kanban_web/live/agents_live.ex:1057
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:101
 #, elixir-autogen, elixir-format
 msgid "Reprioritize"
 msgstr "Redéfinir la priorité"
 
-#: lib/kanban_web/live/agents_live.ex:1047
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:91
 #, elixir-autogen, elixir-format
 msgid "Reprioritize %{goal}"
 msgstr "Redéfinir la priorité de %{goal}"
 
-#: lib/kanban_web/live/agents_live.ex:849
-#: lib/kanban_web/live/agents_live.ex:856
+#: lib/kanban_web/live/agents_live/interventions.ex:180
+#: lib/kanban_web/live/agents_live/interventions.ex:187
 #, elixir-autogen, elixir-format
 msgid "Reprioritized %{count} task."
 msgid_plural "Reprioritized %{count} tasks."
 msgstr[0] "Priorité modifiée pour %{count} tâche."
 msgstr[1] "Priorité modifiée pour %{count} tâches."
 
-#: lib/kanban_web/live/agents_live.ex:823
+#: lib/kanban_web/live/agents_live/interventions.ex:161
 #, elixir-autogen, elixir-format
 msgid "That is not a valid priority."
 msgstr "Cette priorité n'est pas valide."
 
-#: lib/kanban_web/live/agents_live.ex:1049
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:93
 #, elixir-autogen, elixir-format
 msgid "This will change the priority of 1 task:"
 msgid_plural "This will change the priority of %{count} tasks:"
 msgstr[0] "Cela changera la priorité de 1 tâche :"
 msgstr[1] "Cela changera la priorité de %{count} tâches :"
 
-#: lib/kanban_web/live/agents_live.ex:271
-#: lib/kanban_web/live/agents_live.ex:819
+#: lib/kanban_web/live/agents_live.ex:260
+#: lib/kanban_web/live/agents_live/interventions.ex:157
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to reprioritize this goal."
 msgstr "Vous n'êtes pas autorisé à redéfinir la priorité de cet objectif."
 
-#: lib/kanban_web/live/agents_live.ex:956
+#: lib/kanban_web/live/agents_live/interventions.ex:288
 #, elixir-autogen, elixir-format
 msgid "Could not restore %{count} task claimed since: %{ids}."
 msgid_plural "Could not restore %{count} tasks claimed since: %{ids}."
 msgstr[0] "Impossible de restaurer %{count} tâche réclamée depuis : %{ids}."
 msgstr[1] "Impossible de restaurer %{count} tâches réclamées depuis : %{ids}."
 
-#: lib/kanban_web/live/agents_live.ex:969
+#: lib/kanban_web/live/agents_live/interventions.ex:301
 #, elixir-autogen, elixir-format
 msgid "Could not undo the change. Please try again."
 msgstr "Impossible d'annuler la modification. Veuillez réessayer."
 
-#: lib/kanban_web/live/agents_live.ex:993
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:37
 #, elixir-autogen, elixir-format
 msgid "Goal reassigned."
 msgstr "Objectif réattribué."
 
-#: lib/kanban_web/live/agents_live.ex:994
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:38
 #, elixir-autogen, elixir-format
 msgid "Goal reprioritized."
 msgstr "Priorité de l'objectif modifiée."
 
-#: lib/kanban_web/live/agents_live.ex:987
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:31
 #, elixir-autogen, elixir-format
 msgid "Undo"
 msgstr "Annuler"
 
-#: lib/kanban_web/live/agents_live.ex:938
-#: lib/kanban_web/live/agents_live.ex:949
+#: lib/kanban_web/live/agents_live/interventions.ex:270
+#: lib/kanban_web/live/agents_live/interventions.ex:281
 #, elixir-autogen, elixir-format
 msgid "Undone: restored %{count} task."
 msgid_plural "Undone: restored %{count} tasks."
 msgstr[0] "Annulé : %{count} tâche restaurée."
 msgstr[1] "Annulé : %{count} tâches restaurées."
 
-#: lib/kanban_web/live/agents_live.ex:967
+#: lib/kanban_web/live/agents_live/interventions.ex:299
 #, elixir-autogen, elixir-format
 msgid "You are no longer allowed to undo this change."
 msgstr "Vous n'êtes plus autorisé à annuler cette modification."
 
-#: lib/kanban_web/live/agents_live.ex:597
+#: lib/kanban_web/live/agents_live/data_loader.ex:82
 #, elixir-autogen, elixir-format
 msgid "Agent data could not be refreshed just now. Showing the last available data."
 msgstr "Les données des agents n'ont pas pu être actualisées pour le moment. Affichage des dernières données disponibles."

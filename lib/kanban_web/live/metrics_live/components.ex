@@ -10,10 +10,10 @@ defmodule KanbanWeb.MetricsLive.Components do
   re-skinned to the stride-screen aesthetic in W588 to match the
   workspace `/metrics` page shipped in W580-W585.
 
-  This module is the entry point for every metrics page component. The stat
-  card, bar chart, summary stats and empty state live here; the rest were
-  split into focused modules to keep this one under the module-size guidance
-  in `AGENTS.md`, and are delegated from here:
+  The stat card, bar chart, summary stats and empty state live here. The rest
+  were split into focused modules to keep this one under the module-size
+  guidance in `AGENTS.md`; callers import or alias those modules directly, so
+  HEEx still checks each call's attributes at compile time:
 
     * `KanbanWeb.MetricsLive.Components.Filters` - the filter form and the
       standalone time range, agent and weekend controls
@@ -28,11 +28,6 @@ defmodule KanbanWeb.MetricsLive.Components do
   use Gettext, backend: KanbanWeb.Gettext
 
   import KanbanWeb.MetricsLive.Components.Icon
-
-  alias KanbanWeb.MetricsLive.Components.ExportDropdown
-  alias KanbanWeb.MetricsLive.Components.Filters
-  alias KanbanWeb.MetricsLive.Components.TaskListPanel
-  alias KanbanWeb.MetricsLive.Components.TrendChart
 
   @doc """
   Renders a stat card with title, value, and optional subtitle.
@@ -308,34 +303,6 @@ defmodule KanbanWeb.MetricsLive.Components do
     </div>
     """
   end
-
-  # Components that moved into focused modules. The metrics LiveViews import
-  # this module and the workspace page and tests call it directly, so each
-  # one delegates and every call site stays unchanged.
-
-  @doc "See `KanbanWeb.MetricsLive.Components.Filters.time_range_filter/1`."
-  defdelegate time_range_filter(assigns), to: Filters
-
-  @doc "See `KanbanWeb.MetricsLive.Components.Filters.agent_filter/1`."
-  defdelegate agent_filter(assigns), to: Filters
-
-  @doc "See `KanbanWeb.MetricsLive.Components.Filters.weekend_toggle/1`."
-  defdelegate weekend_toggle(assigns), to: Filters
-
-  @doc "See `KanbanWeb.MetricsLive.Components.Filters.metric_filters/1`."
-  defdelegate metric_filters(assigns), to: Filters
-
-  @doc "See `KanbanWeb.MetricsLive.Components.TrendChart.trend_chart/1`."
-  defdelegate trend_chart(assigns), to: TrendChart
-
-  @doc "See `KanbanWeb.MetricsLive.Components.ExportDropdown.export_dropdown/1`."
-  defdelegate export_dropdown(assigns), to: ExportDropdown
-
-  @doc "See `KanbanWeb.MetricsLive.Components.ExportDropdown.workspace_export_dropdown/1`."
-  defdelegate workspace_export_dropdown(assigns), to: ExportDropdown
-
-  @doc "See `KanbanWeb.MetricsLive.Components.TaskListPanel.task_list_panel/1`."
-  defdelegate task_list_panel(assigns), to: TaskListPanel
 
   # Helper function to calculate percentage for bar chart
   defp calculate_percentage(_value, 0), do: 0

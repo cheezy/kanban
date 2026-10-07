@@ -16,8 +16,6 @@ defmodule KanbanWeb.API.TaskController do
   alias KanbanWeb.API.TaskTransitions
   alias KanbanWeb.API.TaskUpdate
 
-  require Logger
-
   action_fallback KanbanWeb.API.FallbackController
 
   # W2057: the view is resolved from the request once, here, and applied at

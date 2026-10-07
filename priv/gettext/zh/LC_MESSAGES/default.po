@@ -192,7 +192,7 @@ msgstr "看板创建成功"
 msgid "Board updated successfully"
 msgstr "看板更新成功"
 
-#: lib/kanban_web/live/agents_live.ex:1118
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:171
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
@@ -407,7 +407,7 @@ msgid "Created"
 msgstr "创建时间"
 
 #: lib/kanban_web/components/review_report_panel.ex:403
-#: lib/kanban_web/live/agents_live.ex:844
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:121
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -428,21 +428,21 @@ msgstr "缺陷"
 msgid "Failed to move task"
 msgstr "移动任务失败"
 
-#: lib/kanban_web/live/agents_live.ex:843
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:120
 #: lib/kanban_web/live/task_live/form_component.html.heex:121
 #: lib/kanban_web/task_tokens.ex:56
 #, elixir-autogen, elixir-format
 msgid "High"
 msgstr "高"
 
-#: lib/kanban_web/live/agents_live.ex:841
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:118
 #: lib/kanban_web/live/task_live/form_component.html.heex:119
 #: lib/kanban_web/task_tokens.ex:58
 #, elixir-autogen, elixir-format
 msgid "Low"
 msgstr "低"
 
-#: lib/kanban_web/live/agents_live.ex:842
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:119
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:25
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:32
 #: lib/kanban_web/live/task_live/form_component.html.heex:120
@@ -2204,8 +2204,8 @@ msgstr "未找到使用该邮箱的用户"
 msgid "Metrics"
 msgstr "指标"
 
-#: lib/kanban_web/live/metrics_live/components.ex:253
-#: lib/kanban_web/live/metrics_live/components.ex:410
+#: lib/kanban_web/live/metrics_live/components/filters.ex:94
+#: lib/kanban_web/live/metrics_live/components/filters.ex:241
 #, elixir-autogen, elixir-format
 msgid "Agent Filter"
 msgstr "代理人筛选"
@@ -2221,14 +2221,14 @@ msgstr "未知代理人"
 
 #: lib/kanban_web/controllers/metrics_pdf_html.ex:112
 #: lib/kanban_web/export/metrics_excel.ex:122
-#: lib/kanban_web/live/metrics_live/components.ex:267
-#: lib/kanban_web/live/metrics_live/components.ex:421
+#: lib/kanban_web/live/metrics_live/components/filters.ex:108
+#: lib/kanban_web/live/metrics_live/components/filters.ex:252
 #, elixir-autogen, elixir-format
 msgid "All Agents"
 msgstr "所有代理人"
 
-#: lib/kanban_web/live/metrics_live/components.ex:222
-#: lib/kanban_web/live/metrics_live/components.ex:396
+#: lib/kanban_web/live/metrics_live/components/filters.ex:63
+#: lib/kanban_web/live/metrics_live/components/filters.ex:227
 #: lib/kanban_web/live/metrics_live/helpers.ex:39
 #, elixir-autogen, elixir-format
 msgid "All Time"
@@ -2238,7 +2238,7 @@ msgstr "所有时间"
 #: lib/kanban_web/controllers/metrics_pdf_html/lead_time.html.heex:107
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:124
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:227
-#: lib/kanban_web/live/metrics_live/components.ex:471
+#: lib/kanban_web/live/metrics_live/components.ex:210
 #, elixir-autogen, elixir-format
 msgid "Average"
 msgstr "平均"
@@ -2315,7 +2315,7 @@ msgstr "完成:"
 msgid "Created:"
 msgstr "创建:"
 
-#: lib/kanban_web/live/metrics_live/components.ex:363
+#: lib/kanban_web/live/metrics_live/components/filters.ex:194
 #, elixir-autogen, elixir-format
 msgid "Customize your %{view_name} view"
 msgstr "自定义您的%{view_name}视图"
@@ -2340,26 +2340,26 @@ msgstr "周期时间指标"
 msgid "Daily Completions Bar Chart"
 msgstr "每日完成量柱状图"
 
-#: lib/kanban_web/live/metrics_live/components.ex:851
+#: lib/kanban_web/live/metrics_live/components/export_dropdown.ex:142
 #, elixir-autogen, elixir-format
 msgid "Excel"
 msgstr "Excel"
 
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:571
-#: lib/kanban_web/live/metrics_live/components.ex:314
-#: lib/kanban_web/live/metrics_live/components.ex:444
+#: lib/kanban_web/live/metrics_live/components/filters.ex:155
+#: lib/kanban_web/live/metrics_live/components/filters.ex:275
 #: lib/kanban_web/live/metrics_live/workspace.ex:403
 #, elixir-autogen, elixir-format
 msgid "Exclude Weekends"
 msgstr "排除周末"
 
 #: lib/kanban_web/export/metrics_excel.ex:77
-#: lib/kanban_web/live/metrics_live/components.ex:814
+#: lib/kanban_web/live/metrics_live/components/export_dropdown.ex:105
 #, elixir-autogen, elixir-format
 msgid "Export"
 msgstr "导出"
 
-#: lib/kanban_web/live/metrics_live/components.ex:360
+#: lib/kanban_web/live/metrics_live/components/filters.ex:191
 #, elixir-autogen, elixir-format
 msgid "Filters"
 msgstr "筛选"
@@ -2390,22 +2390,22 @@ msgid "Human bottleneck analysis"
 msgstr "瓶颈分析"
 
 #: lib/kanban_web/export/metrics_excel.ex:371
-#: lib/kanban_web/live/metrics_live/components.ex:217
-#: lib/kanban_web/live/metrics_live/components.ex:390
+#: lib/kanban_web/live/metrics_live/components/filters.ex:58
+#: lib/kanban_web/live/metrics_live/components/filters.ex:221
 #: lib/kanban_web/live/metrics_live/helpers.ex:37
 #, elixir-autogen, elixir-format
 msgid "Last 30 Days"
 msgstr "最近30天"
 
-#: lib/kanban_web/live/metrics_live/components.ex:214
-#: lib/kanban_web/live/metrics_live/components.ex:387
+#: lib/kanban_web/live/metrics_live/components/filters.ex:55
+#: lib/kanban_web/live/metrics_live/components/filters.ex:218
 #: lib/kanban_web/live/metrics_live/helpers.ex:36
 #, elixir-autogen, elixir-format
 msgid "Last 7 Days"
 msgstr "最近7天"
 
-#: lib/kanban_web/live/metrics_live/components.ex:220
-#: lib/kanban_web/live/metrics_live/components.ex:393
+#: lib/kanban_web/live/metrics_live/components/filters.ex:61
+#: lib/kanban_web/live/metrics_live/components/filters.ex:224
 #: lib/kanban_web/live/metrics_live/helpers.ex:38
 #, elixir-autogen, elixir-format
 msgid "Last 90 Days"
@@ -2426,7 +2426,7 @@ msgstr "前置时间"
 msgid "Lead Time Metrics"
 msgstr "前置时间指标"
 
-#: lib/kanban_web/live/metrics_live/components.ex:489
+#: lib/kanban_web/live/metrics_live/components.ex:228
 #, elixir-autogen, elixir-format
 msgid "Max"
 msgstr "最大"
@@ -2435,7 +2435,7 @@ msgstr "最大"
 #: lib/kanban_web/controllers/metrics_pdf_html/lead_time.html.heex:118
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:137
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:240
-#: lib/kanban_web/live/metrics_live/components.ex:477
+#: lib/kanban_web/live/metrics_live/components.ex:216
 #, elixir-autogen, elixir-format
 msgid "Median"
 msgstr "中位数"
@@ -2445,12 +2445,12 @@ msgstr "中位数"
 msgid "Metrics Dashboard"
 msgstr "指标仪表盘"
 
-#: lib/kanban_web/live/metrics_live/components.ex:483
+#: lib/kanban_web/live/metrics_live/components.ex:222
 #, elixir-autogen, elixir-format
 msgid "Min"
 msgstr "最小"
 
-#: lib/kanban_web/live/metrics_live/components.ex:169
+#: lib/kanban_web/live/metrics_live/components.ex:185
 #, elixir-autogen, elixir-format
 msgid "No data available"
 msgstr "暂无数据"
@@ -2478,7 +2478,7 @@ msgstr "此期间没有开始的任务"
 msgid "No tasks waiting for review in this time range"
 msgstr "此期间没有等待审查的任务"
 
-#: lib/kanban_web/live/metrics_live/components.ex:840
+#: lib/kanban_web/live/metrics_live/components/export_dropdown.ex:131
 #, elixir-autogen, elixir-format
 msgid "PDF"
 msgstr "PDF"
@@ -2576,8 +2576,8 @@ msgstr "吞吐量"
 msgid "Throughput Metrics"
 msgstr "吞吐量指标"
 
-#: lib/kanban_web/live/metrics_live/components.ex:199
-#: lib/kanban_web/live/metrics_live/components.ex:374
+#: lib/kanban_web/live/metrics_live/components/filters.ex:40
+#: lib/kanban_web/live/metrics_live/components/filters.ex:205
 #, elixir-autogen, elixir-format
 msgid "Time Range"
 msgstr "时间范围"
@@ -2615,7 +2615,7 @@ msgstr "任务完成后等待人工审查的时间"
 #: lib/kanban_web/components/agent_activity_feed.ex:456
 #: lib/kanban_web/components/agent_roster_card.ex:242
 #: lib/kanban_web/components/agents_header.ex:438
-#: lib/kanban_web/live/metrics_live/components.ex:385
+#: lib/kanban_web/live/metrics_live/components/filters.ex:216
 #: lib/kanban_web/live/metrics_live/helpers.ex:35
 #, elixir-autogen, elixir-format
 msgid "Today"
@@ -2628,7 +2628,7 @@ msgstr "今天"
 msgid "Total Tasks"
 msgstr "任务总数"
 
-#: lib/kanban_web/live/metrics_live/components.ex:89
+#: lib/kanban_web/live/metrics_live/components.ex:105
 #, elixir-autogen, elixir-format
 msgid "View details"
 msgstr "查看详情"
@@ -2659,12 +2659,12 @@ msgstr "平均"
 msgid "median"
 msgstr "中位数"
 
-#: lib/kanban_web/live/metrics_live/components.ex:987
+#: lib/kanban_web/live/metrics_live/components/task_list_panel.ex:98
 #, elixir-autogen, elixir-format
 msgid "task"
 msgstr "任务"
 
-#: lib/kanban_web/live/metrics_live/components.ex:988
+#: lib/kanban_web/live/metrics_live/components/task_list_panel.ex:99
 #, elixir-autogen, elixir-format
 msgid "tasks"
 msgstr "任务"
@@ -4299,7 +4299,7 @@ msgstr "活动目标"
 
 #: lib/kanban_web/components/layouts.ex:294
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
-#: lib/kanban_web/live/agents_live.ex:349
+#: lib/kanban_web/live/agents_live.ex:338
 #, elixir-autogen, elixir-format
 msgid "Agents"
 msgstr "代理"
@@ -4364,7 +4364,7 @@ msgstr "从一个空白看板开始"
 msgid "Stride home"
 msgstr "Stride 首页"
 
-#: lib/kanban_web/live/agents_live.ex:347
+#: lib/kanban_web/live/agents_live.ex:336
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
@@ -5152,18 +5152,18 @@ msgid "last 24h · %{count} event"
 msgid_plural "last 24h · %{count} events"
 msgstr[0] "最近 24 小时 · %{count} 个事件"
 
-#: lib/kanban_web/live/agents_live.ex:1247
+#: lib/kanban_web/live/agents_live/components/live_indicator.ex:43
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} connected"
 msgid_plural "%{count} connected"
 msgstr[0] "%{count} 个已连接"
 
-#: lib/kanban_web/live/agents_live.ex:429
+#: lib/kanban_web/live/agents_live/components/roster.ex:49
 #, elixir-autogen, elixir-format
 msgid "No agents have activity yet."
 msgstr "暂无代理活动。"
 
-#: lib/kanban_web/live/agents_live.ex:399
+#: lib/kanban_web/live/agents_live/components/live_indicator.ex:35
 #, elixir-autogen, elixir-format
 msgid "live"
 msgstr "实时"
@@ -7235,13 +7235,13 @@ msgstr "技术细节"
 msgid "Technical Details (JSON object)"
 msgstr "技术细节（JSON 对象）"
 
-#: lib/kanban_web/live/agents_live.ex:507
+#: lib/kanban_web/live/agents_live/components/roster.ex:132
 #, elixir-autogen, elixir-format
 msgid "Filtering by %{agent}"
 msgstr "按 %{agent} 筛选"
 
 #: lib/kanban_web/components/archive_filter_chips.ex:220
-#: lib/kanban_web/live/agents_live.ex:524
+#: lib/kanban_web/live/agents_live/components/roster.ex:149
 #, elixir-autogen, elixir-format
 msgid "Clear"
 msgstr "清除"
@@ -7304,12 +7304,12 @@ msgstr "%{date}：完成 %{count} 个"
 msgid "of which"
 msgstr "其中"
 
-#: lib/kanban_web/live/agents_live.ex:467
+#: lib/kanban_web/live/agents_live/components/roster.ex:87
 #, elixir-autogen, elixir-format
 msgid "Dormant (%{count})"
 msgstr "休眠 (%{count})"
 
-#: lib/kanban_web/live/agents_live.ex:1302
+#: lib/kanban_web/live/agents_live/components/roster.ex:181
 #, elixir-autogen, elixir-format
 msgid "Last seen %{days}d ago"
 msgstr "%{days} 天前活跃"
@@ -7711,162 +7711,162 @@ msgstr "正在推进的交付目标和目标"
 msgid "Hide archived goals"
 msgstr "隐藏已归档的目标"
 
-#: lib/kanban_web/live/agents_live.ex:1028
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:72
 #, elixir-autogen, elixir-format
 msgid "Choose a new owner"
 msgstr "选择新的负责人"
 
-#: lib/kanban_web/live/agents_live.ex:246
+#: lib/kanban_web/live/agents_live.ex:235
 #, elixir-autogen, elixir-format
 msgid "Choose a new owner first."
 msgstr "请先选择新的负责人。"
 
-#: lib/kanban_web/live/agents_live.ex:734
+#: lib/kanban_web/live/agents_live/interventions.ex:68
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Could not reassign the goal. Please try again."
 msgstr "无法分配目标"
 
-#: lib/kanban_web/live/agents_live.ex:1026
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:70
 #, elixir-autogen, elixir-format
 msgid "New owner"
 msgstr "新的负责人"
 
 #: lib/kanban_web/components/target_risk_explainer.ex:186
-#: lib/kanban_web/live/agents_live.ex:1019
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:63
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reassign"
 msgstr "已重新分配"
 
-#: lib/kanban_web/live/agents_live.ex:1009
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:53
 #, elixir-autogen, elixir-format
 msgid "Reassign %{goal}"
 msgstr "重新分配 %{goal}"
 
-#: lib/kanban_web/live/agents_live.ex:774
-#: lib/kanban_web/live/agents_live.ex:780
+#: lib/kanban_web/live/agents_live/interventions.ex:111
+#: lib/kanban_web/live/agents_live/interventions.ex:117
 #, elixir-autogen, elixir-format
 msgid "Reassigned %{count} task."
 msgid_plural "Reassigned %{count} tasks."
 msgstr[0] "已重新分配 %{count} 个任务。"
 
-#: lib/kanban_web/live/agents_live.ex:783
-#: lib/kanban_web/live/agents_live.ex:859
+#: lib/kanban_web/live/agents_live/interventions.ex:120
+#: lib/kanban_web/live/agents_live/interventions.ex:190
 #, elixir-autogen, elixir-format
 msgid "Skipped %{count} task already claimed: %{ids}."
 msgid_plural "Skipped %{count} tasks already claimed: %{ids}."
 msgstr[0] "已跳过 %{count} 个已被领取的任务：%{ids}"
 
-#: lib/kanban_web/live/agents_live.ex:730
+#: lib/kanban_web/live/agents_live/interventions.ex:64
 #, elixir-autogen, elixir-format
 msgid "That user is not a member of this board."
 msgstr "该用户不是此看板的成员。"
 
-#: lib/kanban_web/live/agents_live.ex:1011
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:55
 #, elixir-autogen, elixir-format
 msgid "This will move 1 task to the new owner:"
 msgid_plural "This will move %{count} tasks to the new owner:"
 msgstr[0] "这会将 %{count} 个任务移交给新的负责人："
 
-#: lib/kanban_web/live/agents_live.ex:227
-#: lib/kanban_web/live/agents_live.ex:726
+#: lib/kanban_web/live/agents_live.ex:216
+#: lib/kanban_web/live/agents_live/interventions.ex:60
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to reassign this goal."
 msgstr "您无权重新分配此目标。"
 
-#: lib/kanban_web/live/agents_live.ex:1066
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:110
 #, elixir-autogen, elixir-format
 msgid "Choose a new priority"
 msgstr "选择新的优先级"
 
-#: lib/kanban_web/live/agents_live.ex:290
+#: lib/kanban_web/live/agents_live.ex:279
 #, elixir-autogen, elixir-format
 msgid "Choose a new priority first."
 msgstr "请先选择新的优先级。"
 
-#: lib/kanban_web/live/agents_live.ex:827
+#: lib/kanban_web/live/agents_live/interventions.ex:165
 #, elixir-autogen, elixir-format
 msgid "Could not reprioritize the goal. Please try again."
 msgstr "无法更改目标的优先级。请重试。"
 
-#: lib/kanban_web/live/agents_live.ex:1064
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:108
 #, elixir-autogen, elixir-format
 msgid "New priority"
 msgstr "新优先级"
 
 #: lib/kanban_web/components/target_risk_explainer.ex:196
-#: lib/kanban_web/live/agents_live.ex:1057
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:101
 #, elixir-autogen, elixir-format
 msgid "Reprioritize"
 msgstr "更改优先级"
 
-#: lib/kanban_web/live/agents_live.ex:1047
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:91
 #, elixir-autogen, elixir-format
 msgid "Reprioritize %{goal}"
 msgstr "重新设置 %{goal} 的优先级"
 
-#: lib/kanban_web/live/agents_live.ex:849
-#: lib/kanban_web/live/agents_live.ex:856
+#: lib/kanban_web/live/agents_live/interventions.ex:180
+#: lib/kanban_web/live/agents_live/interventions.ex:187
 #, elixir-autogen, elixir-format
 msgid "Reprioritized %{count} task."
 msgid_plural "Reprioritized %{count} tasks."
 msgstr[0] "已重新设置 %{count} 个任务的优先级。"
 
-#: lib/kanban_web/live/agents_live.ex:823
+#: lib/kanban_web/live/agents_live/interventions.ex:161
 #, elixir-autogen, elixir-format
 msgid "That is not a valid priority."
 msgstr "这不是有效的优先级。"
 
-#: lib/kanban_web/live/agents_live.ex:1049
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:93
 #, elixir-autogen, elixir-format
 msgid "This will change the priority of 1 task:"
 msgid_plural "This will change the priority of %{count} tasks:"
 msgstr[0] "这将更改 %{count} 个任务的优先级:"
 
-#: lib/kanban_web/live/agents_live.ex:271
-#: lib/kanban_web/live/agents_live.ex:819
+#: lib/kanban_web/live/agents_live.ex:260
+#: lib/kanban_web/live/agents_live/interventions.ex:157
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to reprioritize this goal."
 msgstr "您无权更改此目标的优先级。"
 
-#: lib/kanban_web/live/agents_live.ex:956
+#: lib/kanban_web/live/agents_live/interventions.ex:288
 #, elixir-autogen, elixir-format
 msgid "Could not restore %{count} task claimed since: %{ids}."
 msgid_plural "Could not restore %{count} tasks claimed since: %{ids}."
 msgstr[0] "无法恢复此后被认领的 %{count} 个任务：%{ids}。"
 
-#: lib/kanban_web/live/agents_live.ex:969
+#: lib/kanban_web/live/agents_live/interventions.ex:301
 #, elixir-autogen, elixir-format
 msgid "Could not undo the change. Please try again."
 msgstr "无法撤销此更改。请重试。"
 
-#: lib/kanban_web/live/agents_live.ex:993
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:37
 #, elixir-autogen, elixir-format
 msgid "Goal reassigned."
 msgstr "已重新分配目标。"
 
-#: lib/kanban_web/live/agents_live.ex:994
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:38
 #, elixir-autogen, elixir-format
 msgid "Goal reprioritized."
 msgstr "已更改目标的优先级。"
 
-#: lib/kanban_web/live/agents_live.ex:987
+#: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:31
 #, elixir-autogen, elixir-format
 msgid "Undo"
 msgstr "撤销"
 
-#: lib/kanban_web/live/agents_live.ex:938
-#: lib/kanban_web/live/agents_live.ex:949
+#: lib/kanban_web/live/agents_live/interventions.ex:270
+#: lib/kanban_web/live/agents_live/interventions.ex:281
 #, elixir-autogen, elixir-format
 msgid "Undone: restored %{count} task."
 msgid_plural "Undone: restored %{count} tasks."
 msgstr[0] "已撤销：已恢复 %{count} 个任务。"
 
-#: lib/kanban_web/live/agents_live.ex:967
+#: lib/kanban_web/live/agents_live/interventions.ex:299
 #, elixir-autogen, elixir-format
 msgid "You are no longer allowed to undo this change."
 msgstr "您已无权撤销此更改。"
 
-#: lib/kanban_web/live/agents_live.ex:597
+#: lib/kanban_web/live/agents_live/data_loader.ex:82
 #, elixir-autogen, elixir-format
 msgid "Agent data could not be refreshed just now. Showing the last available data."
 msgstr "目前无法刷新代理数据。显示最近可用的数据。"

@@ -57,7 +57,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
   alias KanbanWeb.MetricsCumulativeFlow
   alias KanbanWeb.MetricsCycleTimeChart
   alias KanbanWeb.MetricsKpiStrip
-  alias KanbanWeb.MetricsLive.Components
+  alias KanbanWeb.MetricsLive.Components.ExportDropdown
   alias KanbanWeb.MetricsLive.Helpers
   alias KanbanWeb.MetricsThroughputChart
 
@@ -234,7 +234,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
           <.window_selector selected_window_days={@selected_window_days} />
           <.board_selector boards={@boards} selected_board_ids={@selected_board_ids} />
           <.weekend_selector exclude_weekends={@exclude_weekends} />
-          <Components.workspace_export_dropdown
+          <ExportDropdown.workspace_export_dropdown
             export_base_path={~p"/metrics/export"}
             window_days={@selected_window_days}
             board_ids={@export_board_ids}
@@ -375,7 +375,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
 
   attr :exclude_weekends, :boolean, required: true
 
-  # Mirrors the board metrics pages' checkbox (MetricsLive.Components.metric_filters/1)
+  # Mirrors the board metrics pages' checkbox (MetricsLive.Components.Filters.metric_filters/1)
   # so the two pages read as one control. A raw checkbox rather than
   # core_components' <.input type="checkbox"> for the same reason the board
   # selector above documents: <.input> emits a hidden value="false" companion,

@@ -3,6 +3,10 @@ defmodule KanbanWeb.MetricsLive.CycleTime do
   use KanbanWeb.MetricsLive.Base, page_title: "Cycle Time Metrics"
 
   import KanbanWeb.MetricsLive.Components
+  import KanbanWeb.MetricsLive.Components.ExportDropdown
+  import KanbanWeb.MetricsLive.Components.Filters
+  import KanbanWeb.MetricsLive.Components.TaskListPanel
+  import KanbanWeb.MetricsLive.Components.TrendChart
 
   alias Kanban.Metrics
   alias Kanban.Metrics.TaskQueries

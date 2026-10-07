@@ -2,7 +2,7 @@ defmodule KanbanWeb.MetricsLive.Dashboard do
   use KanbanWeb, :live_view
   use KanbanWeb.MetricsLive.Base, page_title: "Metrics Dashboard"
 
-  import KanbanWeb.MetricsLive.Components
+  import KanbanWeb.MetricsLive.Components.Filters
 
   alias KanbanWeb.MetricsLive.Helpers
 
