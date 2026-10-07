@@ -33,15 +33,15 @@ Plug Stride into the tools teams and agents already use.
 - Outbound webhooks for task events: signed, retried automatically, with a delivery log and a test button.
 - Slack notifications for board activity.
 - GitHub integration that links pull requests to tasks by their identifier, shows pull request and CI status on task cards and in the task view, and moves a task to a chosen column when its pull request merges.
-- An MCP server, so MCP-capable agents can find, claim, complete and comment on tasks directly, using their existing API token.
+- ✅ An MCP server, so MCP-capable agents can find, claim, complete and comment on tasks directly, using their existing API token.
 
-## 🔜 Enterprise identity and compliance
+## 🚧 Enterprise identity and compliance
 
 Meet the security and compliance needs of larger organisations.
 
 - Two-factor authentication with an authenticator app, plus single-use recovery codes.
-- A permanent, tamper-proof audit log of important account and board activity.
-- An audit log viewer for administrators, with filters and CSV or JSON export.
+- ✅ A permanent, tamper-proof audit log of important account and board activity.
+- ✅ An audit log viewer for administrators, with filters and CSV or JSON export.
 - Workspace security policies: require two-factor authentication for all members (with a grace period for existing members) and set how long audit records and archived tasks are kept.
 - Single sign-on with OIDC and SAML identity providers, limited to email domains the workspace has verified.
 - Automatic user provisioning and deprovisioning through SCIM. Removing someone signs them out everywhere and revokes their API tokens.
