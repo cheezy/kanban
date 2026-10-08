@@ -11,6 +11,13 @@ defmodule Kanban.Tasks.Comments do
   `{Kanban.Tasks.Comments, :comment_changed, %{task_id: _, board_id: _}}` on
   `"board:<board_id>"`, after the write has committed.
 
+  Mentions: on create and update the content's `@[Name](user:ID)` tokens
+  (`Kanban.Tasks.Mentions`) are resolved against the comment's board,
+  server-side, and only ids of current members — at most
+  `Kanban.Tasks.Mentions.max_mentions/0` of them — are stored in
+  `mentioned_user_ids`. The returned comment's virtual
+  `newly_mentioned_user_ids` names the members that write newly mentions.
+
   Errors are `{:error, :unauthorized}` when the policy refuses,
   `{:error, :not_found}` when the task or comment no longer exists, and
   `{:error, %Ecto.Changeset{}}` when the content is invalid.
@@ -19,8 +26,10 @@ defmodule Kanban.Tasks.Comments do
   import Ecto.Query, warn: false
 
   alias Kanban.AuditLog
+  alias Kanban.Boards
   alias Kanban.Repo
   alias Kanban.Tasks.CommentPolicy
+  alias Kanban.Tasks.Mentions
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
 
@@ -32,6 +41,9 @@ defmodule Kanban.Tasks.Comments do
   comment cannot be redirected to another task or attributed to another user —
   `content` is the only client-controlled field.
 
+  `mentioned_user_ids` is resolved from the content against the task's board
+  members, and the returned comment's `newly_mentioned_user_ids` equals it.
+
   Options:
 
     * `:author_agent_name` — the agent that wrote the comment, if any.
@@ -40,7 +52,7 @@ defmodule Kanban.Tasks.Comments do
 
   def create_comment(scope, %Task{id: task_id}, attrs, opts) when is_integer(task_id) do
     with {:ok, board_id} <- authorize_create(scope, task_id),
-         {:ok, comment} <- insert_comment(scope, task_id, attrs, opts) do
+         {:ok, comment} <- insert_comment(scope, task_id, board_id, attrs, opts) do
       broadcast(task_id, board_id)
       {:ok, comment}
     end
@@ -55,10 +67,14 @@ defmodule Kanban.Tasks.Comments do
 
   The comment is re-read by id, so the caller's struct is used for its id
   only and a stale or forged `task_id` or author on it has no effect.
+
+  `mentioned_user_ids` is recomputed from the new content against the board's
+  current members, so removed mentions drop out. The returned comment's
+  `newly_mentioned_user_ids` holds only the ids the edit added.
   """
   def update_comment(scope, %TaskComment{id: id}, attrs) do
     with {:ok, current, board_id} <- fetch_authorized(id, &CommentPolicy.can_edit?(scope, &1, &2)),
-         {:ok, updated} <- persist_update(current, attrs) do
+         {:ok, updated} <- persist_update(current, attrs, board_id) do
       broadcast(updated.task_id, board_id)
       {:ok, updated}
     end
@@ -103,9 +119,15 @@ defmodule Kanban.Tasks.Comments do
 
   The board is derived from the task server-side and the caller's access is
   resolved once through `CommentPolicy.resolve/2`, so the cost is a fixed number
-  of queries (at most four: the task's board, the viewer's access, the comments
-  and their authors) however many comments the task has. The flags are a rendering hint
-  only: create, update and delete re-authorize on every call.
+  of queries (at most five: the task's board, the viewer's access, the comments,
+  their authors and the mentioned members) however many comments the task has.
+  The flags are a rendering hint only: create, update and delete re-authorize
+  on every call.
+
+  Each entry also carries `mentions`, a map of user id to the display name to
+  show (current name, else email) for the comment's stored mentions whose user
+  is still a board member. A mention of anyone else is absent, so the renderer
+  shows its token as plain text.
 
   Performs no read authorization, exactly like `list_comments/1`: the caller
   must already have established that the viewer may see `task`. Returns
@@ -114,15 +136,16 @@ defmodule Kanban.Tasks.Comments do
   def list_comment_thread(scope, %Task{id: task_id} = task) when is_integer(task_id) do
     with {:ok, board_id} <- board_id_for_task(task_id) do
       viewer = CommentPolicy.resolve(scope, board_id)
+      comments = list_comments(task)
+      names = mention_names(board_id, comments)
 
       entries =
-        task
-        |> list_comments()
-        |> Enum.map(fn comment ->
+        Enum.map(comments, fn comment ->
           %{
             comment: comment,
             can_edit: CommentPolicy.allowed?(viewer, :edit, comment),
-            can_delete: CommentPolicy.allowed?(viewer, :delete, comment)
+            can_delete: CommentPolicy.allowed?(viewer, :delete, comment),
+            mentions: Map.take(names, comment.mentioned_user_ids)
           }
         end)
 
@@ -132,23 +155,59 @@ defmodule Kanban.Tasks.Comments do
 
   def list_comment_thread(_scope, %Task{}), do: {:error, :not_found}
 
-  defp insert_comment(%{user: %{id: user_id}}, task_id, attrs, opts) do
+  defp insert_comment(%{user: %{id: user_id}}, task_id, board_id, attrs, opts) do
     %TaskComment{
       task_id: task_id,
       author_user_id: user_id,
       author_agent_name: Keyword.get(opts, :author_agent_name)
     }
     |> TaskComment.changeset(attrs)
+    |> put_mentions(board_id)
     |> Repo.insert()
+    |> with_newly_mentioned([])
   end
 
-  defp persist_update(current, attrs) do
+  defp persist_update(current, attrs, board_id) do
     current
     |> TaskComment.changeset(attrs)
+    |> put_mentions(board_id)
     |> Ecto.Changeset.put_change(:edited_at, DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update(stale_error_field: :id)
     |> map_stale()
+    |> with_newly_mentioned(current.mentioned_user_ids)
   end
+
+  # Only a valid changeset is worth a membership query; an invalid one is
+  # never written.
+  defp put_mentions(%Ecto.Changeset{valid?: true} = changeset, board_id) do
+    ids = changeset |> Ecto.Changeset.get_field(:content) |> Mentions.parse()
+    member_ids = board_id |> Boards.members_among(ids) |> Enum.map(& &1.id)
+
+    Ecto.Changeset.put_change(changeset, :mentioned_user_ids, Mentions.resolve(ids, member_ids))
+  end
+
+  defp put_mentions(changeset, _board_id), do: changeset
+
+  defp with_newly_mentioned({:ok, %TaskComment{} = comment}, previous_ids) do
+    added = Mentions.added(previous_ids || [], comment.mentioned_user_ids)
+    {:ok, %{comment | newly_mentioned_user_ids: added}}
+  end
+
+  defp with_newly_mentioned(error, _previous_ids), do: error
+
+  # One query for every comment's mentions, keyed by id. Re-checking membership
+  # here (not just at write time) means a member removed since the comment was
+  # written stops rendering as a chip, and a rename shows the new name.
+  defp mention_names(board_id, comments) do
+    ids = comments |> Enum.flat_map(& &1.mentioned_user_ids) |> Enum.uniq()
+
+    board_id
+    |> Boards.members_among(ids)
+    |> Map.new(fn member -> {member.id, mention_label(member)} end)
+  end
+
+  defp mention_label(%{name: name}) when is_binary(name) and name != "", do: name
+  defp mention_label(%{email: email}), do: email
 
   defp after_delete(scope, deleted, board_id) do
     maybe_audit_owner_delete(scope, deleted, board_id)

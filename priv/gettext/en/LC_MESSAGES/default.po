@@ -155,7 +155,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/settings_form_component.ex:142
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
 #: lib/kanban_web/live/target_live/form.html.heex:39
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:433
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:442
 #: lib/kanban_web/live/task_live/form_component.html.heex:412
 #: lib/kanban_web/live/user_live/settings.ex:59
 #: lib/kanban_web/live/user_live/settings.ex:139
@@ -198,7 +198,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:437
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:446
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr ""
@@ -527,33 +527,33 @@ msgstr ""
 msgid "to"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:314
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:317
 #, elixir-autogen, elixir-format
 msgid "Add Comment"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:306
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:309
 #, elixir-autogen, elixir-format
 msgid "Add a comment"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:313
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:316
 #, elixir-autogen, elixir-format
 msgid "Adding..."
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:165
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:168
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:271
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:274
 #: lib/kanban_web/notification_labels.ex:34
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:309
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:312
 #, elixir-autogen, elixir-format
 msgid "Write your comment here..."
 msgstr ""
@@ -734,7 +734,7 @@ msgstr ""
 msgid "History"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:277
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:280
 #, elixir-autogen, elixir-format
 msgid "No comments yet"
 msgstr ""
@@ -1513,7 +1513,7 @@ msgstr ""
 #: lib/kanban_web/components/task_activity_log.ex:194
 #: lib/kanban_web/components/task_metadata_grid.ex:247
 #: lib/kanban_web/export/metrics_excel.ex:76
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:484
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:519
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
 #, elixir-autogen, elixir-format
 msgid "Unknown"
@@ -1948,7 +1948,7 @@ msgstr "Board:"
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
 #: lib/kanban_web/live/admin/user_live/index.html.heex:222
 #: lib/kanban_web/live/board_live/show.html.heex:786
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:411
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:420
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr ""
@@ -2972,7 +2972,7 @@ msgid "Tango is a Canada-based software company focused on building modern, scal
 msgstr ""
 
 #: lib/kanban_web/live/board_live/task_actions.ex:175
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:177
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:180
 #, elixir-autogen, elixir-format
 msgid "Task not found"
 msgstr ""
@@ -3134,7 +3134,7 @@ msgstr ""
 msgid "Task not found on this board"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:173
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:176
 #, elixir-autogen, elixir-format
 msgid "You must be a board member to comment on this task"
 msgstr ""
@@ -4695,7 +4695,7 @@ msgid "Close"
 msgstr "Close"
 
 #: lib/kanban_web/live/board_live/settings_form_component.ex:150
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:434
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:443
 #, elixir-autogen, elixir-format
 msgid "Save"
 msgstr "Save"
@@ -9411,32 +9411,32 @@ msgstr ""
 msgid "User #%{id} (deleted)"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:408
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:417
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this comment?"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:399
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:408
 #, elixir-autogen, elixir-format
 msgid "Edit"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:199
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:202
 #, elixir-autogen, elixir-format
 msgid "This comment no longer exists"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:206
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:209
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to change this comment"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:384
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:393
 #, elixir-autogen, elixir-format
 msgid "edited"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:368
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:377
 #, elixir-autogen, elixir-format
 msgid "via %{name}"
 msgstr ""

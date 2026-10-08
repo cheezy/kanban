@@ -15,6 +15,7 @@ defmodule Kanban.Boards do
   alias Kanban.Accounts.User
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
+  alias Kanban.Boards.MemberSearch
   alias Kanban.Boards.Membership
   alias Kanban.Boards.MembershipChanges
   alias Kanban.Boards.Metrics
@@ -58,6 +59,10 @@ defmodule Kanban.Boards do
   ## Membership
 
   defdelegate board_counts_by_user(), to: Membership
+
+  # Board-scoped member lookups for comment @mentions (see Kanban.Boards.MemberSearch).
+  defdelegate search_board_members(scope, board, query, limit), to: MemberSearch
+  defdelegate members_among(board_id, user_ids), to: MemberSearch
 
   defp board_sort_key(board) do
     access_priority =

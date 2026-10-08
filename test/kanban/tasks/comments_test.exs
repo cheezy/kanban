@@ -16,6 +16,7 @@ defmodule Kanban.Tasks.CommentsTest do
   alias Kanban.Boards
   alias Kanban.Tasks
   alias Kanban.Tasks.Comments
+  alias Kanban.Tasks.Mentions
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
 
@@ -613,7 +614,202 @@ defmodule Kanban.Tasks.CommentsTest do
     end
   end
 
+  describe "@mentions" do
+    setup ctx do
+      members = add_members(ctx)
+      outsider = user_fixture()
+      Map.merge(members, %{outsider: outsider})
+    end
+
+    test "create stores only the ids of current board members",
+         %{user: user, task: task, modifier: modifier, outsider: outsider} do
+      content = "cc #{mention(modifier)} and #{mention(outsider)}"
+
+      assert {:ok, comment} =
+               user |> scope() |> Comments.create_comment(task, %{"content" => content})
+
+      assert comment.mentioned_user_ids == [modifier.id]
+      assert comment.newly_mentioned_user_ids == [modifier.id]
+      assert Repo.reload!(comment).mentioned_user_ids == [modifier.id]
+    end
+
+    test "create resolves membership against the task's own board",
+         %{user: user, task: task} do
+      other_owner = user_fixture()
+      _other_board = board_fixture(other_owner)
+
+      assert {:ok, comment} =
+               user
+               |> scope()
+               |> Comments.create_comment(task, %{"content" => mention(other_owner)})
+
+      assert comment.mentioned_user_ids == []
+    end
+
+    test "a self-mention is stored", %{user: user, task: task} do
+      assert {:ok, comment} =
+               user |> scope() |> Comments.create_comment(task, %{"content" => mention(user)})
+
+      assert comment.mentioned_user_ids == [user.id]
+    end
+
+    test "free-text @names and malformed tokens mention nobody",
+         %{user: user, task: task, modifier: modifier} do
+      content = "@#{modifier.email} @[x](user:#{modifier.id} @[x](user:abc)"
+
+      assert {:ok, comment} =
+               user |> scope() |> Comments.create_comment(task, %{"content" => content})
+
+      assert comment.mentioned_user_ids == []
+      assert comment.newly_mentioned_user_ids == []
+    end
+
+    test "an agent comment resolves mentions too", %{user: user, task: task, reader: reader} do
+      assert {:ok, comment} =
+               user
+               |> scope()
+               |> Comments.create_comment(task, %{"content" => mention(reader)},
+                 author_agent_name: "Bot"
+               )
+
+      assert comment.mentioned_user_ids == [reader.id]
+    end
+
+    test "caps the number of distinct mentions per comment",
+         %{user: owner, board: board, task: task} do
+      max = Mentions.max_mentions()
+
+      extra =
+        for _ <- 1..max do
+          member = user_fixture()
+          {:ok, _} = Boards.add_user_to_board(board, member, :read_only, owner)
+          member
+        end
+
+      content = Enum.map_join([owner | extra], " ", &mention/1)
+
+      assert {:ok, comment} =
+               owner |> scope() |> Comments.create_comment(task, %{"content" => content})
+
+      assert length(comment.mentioned_user_ids) == max
+      assert comment.mentioned_user_ids == [owner | extra] |> Enum.take(max) |> Enum.map(& &1.id)
+    end
+
+    test "editing to add a mention reports exactly that id as newly mentioned",
+         %{user: user, task: task, modifier: modifier, reader: reader} do
+      {:ok, comment} =
+        user |> scope() |> Comments.create_comment(task, %{"content" => mention(modifier)})
+
+      content = "#{mention(modifier)} #{mention(reader)}"
+
+      assert {:ok, updated} =
+               user |> scope() |> Comments.update_comment(comment, %{"content" => content})
+
+      assert updated.mentioned_user_ids == [modifier.id, reader.id]
+      assert updated.newly_mentioned_user_ids == [reader.id]
+      assert Repo.reload!(updated).mentioned_user_ids == [modifier.id, reader.id]
+    end
+
+    test "editing away a mention recomputes the stored ids and adds nobody",
+         %{user: user, task: task, modifier: modifier, reader: reader} do
+      {:ok, comment} =
+        user
+        |> scope()
+        |> Comments.create_comment(task, %{"content" => "#{mention(modifier)} #{mention(reader)}"})
+
+      assert {:ok, updated} =
+               user
+               |> scope()
+               |> Comments.update_comment(comment, %{"content" => "only #{mention(reader)}"})
+
+      assert updated.mentioned_user_ids == [reader.id]
+      assert updated.newly_mentioned_user_ids == []
+    end
+
+    test "editing re-checks membership, dropping a user removed from the board",
+         %{user: owner, board: board, task: task, modifier: modifier, reader: reader} do
+      content = "#{mention(modifier)} #{mention(reader)}"
+      {:ok, comment} = owner |> scope() |> Comments.create_comment(task, %{"content" => content})
+      {:ok, _} = Boards.remove_user_from_board(board, reader, owner)
+
+      assert {:ok, updated} =
+               owner
+               |> scope()
+               |> Comments.update_comment(comment, %{"content" => content <> " edited"})
+
+      assert updated.mentioned_user_ids == [modifier.id]
+      assert updated.newly_mentioned_user_ids == []
+    end
+
+    test "editing cannot mention a non-member", %{user: user, task: task, outsider: outsider} do
+      {:ok, comment} = user |> scope() |> Comments.create_comment(task, %{"content" => "hi"})
+
+      assert {:ok, updated} =
+               user
+               |> scope()
+               |> Comments.update_comment(comment, %{"content" => mention(outsider)})
+
+      assert updated.mentioned_user_ids == []
+      assert updated.newly_mentioned_user_ids == []
+    end
+
+    test "the thread maps each comment's members to their current name",
+         %{user: user, task: task, modifier: modifier, reader: reader} do
+      modifier = set_name(modifier, "Old Name")
+
+      {:ok, _} =
+        user |> scope() |> Comments.create_comment(task, %{"content" => mention(modifier)})
+
+      {:ok, _} = user |> scope() |> Comments.create_comment(task, %{"content" => mention(reader)})
+      {:ok, _} = user |> scope() |> Comments.create_comment(task, %{"content" => "none"})
+      set_name(modifier, "New Name")
+
+      assert {:ok, %{entries: [first, second, third]}} =
+               user |> scope() |> Comments.list_comment_thread(task)
+
+      assert first.mentions == %{modifier.id => "New Name"}
+      assert second.mentions == %{reader.id => reader.email}
+      assert third.mentions == %{}
+    end
+
+    test "the thread drops a mention of a user later removed from the board",
+         %{user: owner, board: board, task: task, reader: reader} do
+      {:ok, comment} =
+        owner |> scope() |> Comments.create_comment(task, %{"content" => mention(reader)})
+
+      {:ok, _} = Boards.remove_user_from_board(board, reader, owner)
+
+      assert {:ok, %{entries: [entry]}} = owner |> scope() |> Comments.list_comment_thread(task)
+      assert entry.comment.id == comment.id
+      assert entry.comment.mentioned_user_ids == [reader.id]
+      assert entry.mentions == %{}
+    end
+
+    test "the thread issues the same number of queries however many comments mention",
+         %{user: user, task: task, modifier: modifier, reader: reader} do
+      {:ok, _} =
+        user |> scope() |> Comments.create_comment(task, %{"content" => mention(modifier)})
+
+      few = count_queries(fn -> user |> scope() |> Comments.list_comment_thread(task) end)
+
+      for n <- 1..20 do
+        content = "#{n} #{mention(modifier)} #{mention(reader)}"
+        {:ok, _} = user |> scope() |> Comments.create_comment(task, %{"content" => content})
+      end
+
+      many = count_queries(fn -> user |> scope() |> Comments.list_comment_thread(task) end)
+
+      assert few == many
+    end
+  end
+
   defp scope(user), do: Scope.for_user(user)
+
+  defp mention(user), do: "@[#{user.name || user.email}](user:#{user.id})"
+
+  defp set_name(user, name) do
+    user |> Ecto.Changeset.change(name: name) |> Repo.update!()
+  end
 
   # Counts Repo queries issued by this test process while `fun` runs.
   defp count_queries(fun) do

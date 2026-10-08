@@ -155,7 +155,7 @@ msgstr "パスワード"
 #: lib/kanban_web/live/board_live/settings_form_component.ex:142
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
 #: lib/kanban_web/live/target_live/form.html.heex:39
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:433
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:442
 #: lib/kanban_web/live/task_live/form_component.html.heex:412
 #: lib/kanban_web/live/user_live/settings.ex:59
 #: lib/kanban_web/live/user_live/settings.ex:139
@@ -198,7 +198,7 @@ msgstr "ボードが正常に更新されました"
 #: lib/kanban_web/live/board_live/settings_form_component.ex:138
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:437
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:446
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "キャンセル"
@@ -527,33 +527,33 @@ msgstr "から"
 msgid "to"
 msgstr "へ"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:314
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:317
 #, elixir-autogen, elixir-format
 msgid "Add Comment"
 msgstr "コメントを追加"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:306
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:309
 #, elixir-autogen, elixir-format
 msgid "Add a comment"
 msgstr "コメントを追加"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:313
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:316
 #, elixir-autogen, elixir-format
 msgid "Adding..."
 msgstr "追加中..."
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:165
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:168
 #, elixir-autogen, elixir-format
 msgid "Comment added successfully"
 msgstr "コメントが正常に追加されました"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:271
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:274
 #: lib/kanban_web/notification_labels.ex:34
 #, elixir-autogen, elixir-format
 msgid "Comments"
 msgstr "コメント"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:309
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:312
 #, elixir-autogen, elixir-format
 msgid "Write your comment here..."
 msgstr "ここにコメントを入力..."
@@ -734,7 +734,7 @@ msgstr "ボードに戻る"
 msgid "History"
 msgstr "履歴"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:277
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:280
 #, elixir-autogen, elixir-format
 msgid "No comments yet"
 msgstr "まだコメントがありません"
@@ -1513,7 +1513,7 @@ msgstr "経過時間 (分)"
 #: lib/kanban_web/components/task_activity_log.ex:194
 #: lib/kanban_web/components/task_metadata_grid.ex:247
 #: lib/kanban_web/export/metrics_excel.ex:76
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:484
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:519
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
 #, elixir-autogen, elixir-format
 msgid "Unknown"
@@ -1948,7 +1948,7 @@ msgstr "ボード:"
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
 #: lib/kanban_web/live/admin/user_live/index.html.heex:222
 #: lib/kanban_web/live/board_live/show.html.heex:786
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:411
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:420
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr "削除"
@@ -2969,7 +2969,7 @@ msgid "Tango is a Canada-based software company focused on building modern, scal
 msgstr "Tangoはカナダを拠点とするソフトウェア企業で、最先端の技術とAI支援開発を組み合わせて、現代的で拡張性のあるデジタル製品を構築することに注力しています。組織がより速く、賢く、不要な複雑さなしに、より高品質なソフトウェアを届けられるよう支援します。"
 
 #: lib/kanban_web/live/board_live/task_actions.ex:175
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:177
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:180
 #, elixir-autogen, elixir-format
 msgid "Task not found"
 msgstr "タスクが見つかりません"
@@ -3131,7 +3131,7 @@ msgstr "セキュリティエラー: 無効な親ゴール"
 msgid "Task not found on this board"
 msgstr "このボードにタスクが見つかりません"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:173
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:176
 #, elixir-autogen, elixir-format
 msgid "You must be a board member to comment on this task"
 msgstr "このタスクにコメントするにはボードメンバーである必要があります"
@@ -4687,7 +4687,7 @@ msgid "Close"
 msgstr "閉じる"
 
 #: lib/kanban_web/live/board_live/settings_form_component.ex:150
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:434
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:443
 #, elixir-autogen, elixir-format
 msgid "Save"
 msgstr "保存"
@@ -9446,32 +9446,32 @@ msgstr "サポートされていないエクスポート形式です。"
 msgid "User #%{id} (deleted)"
 msgstr "ユーザー #%{id}（削除済み）"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:408
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:417
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this comment?"
 msgstr "このコメントを削除してもよろしいですか？"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:399
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:408
 #, elixir-autogen, elixir-format
 msgid "Edit"
 msgstr "編集"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:199
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:202
 #, elixir-autogen, elixir-format
 msgid "This comment no longer exists"
 msgstr "このコメントはもう存在しません"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:206
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:209
 #, elixir-autogen, elixir-format
 msgid "You are not allowed to change this comment"
 msgstr "このコメントを変更する権限がありません"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:384
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:393
 #, elixir-autogen, elixir-format
 msgid "edited"
 msgstr "編集済み"
 
-#: lib/kanban_web/live/task_live/comment_thread_component.ex:368
+#: lib/kanban_web/live/task_live/comment_thread_component.ex:377
 #, elixir-autogen, elixir-format
 msgid "via %{name}"
 msgstr "%{name} 経由"

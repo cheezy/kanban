@@ -130,6 +130,62 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
 
       assert html =~ ~r/data-comment-body[^>]*>line one\nline two<\/p>/
     end
+
+    test "renders a resolved mention as a chip with the member's current name" do
+      html =
+        render_row(
+          entry(comment(%{content: "hi @[Old Name](user:7)!"}), %{mentions: %{7 => "Ada"}})
+        )
+
+      assert html =~ ~r/data-mention-chip[^>]*data-user-id="7"/
+      assert html =~ "@Ada"
+      refute html =~ "Old Name"
+      refute html =~ "(user:7)"
+    end
+
+    test "emits the mention segments with no whitespace between them" do
+      html =
+        render_row(entry(comment(%{content: "hi @[A](user:7)!"}), %{mentions: %{7 => "Ada"}}))
+
+      assert html =~ ~r/data-comment-body[^>]*>hi <span data-mention-chip/
+      assert html =~ ~r/@Ada<\/span>!<\/p>/
+    end
+
+    test "renders an unresolved token, or a row with no mentions map, as plain text" do
+      unresolved =
+        render_row(entry(comment(%{content: "@[Bo](user:8)"}), %{mentions: %{7 => "Ada"}}))
+
+      legacy = render_row(entry(comment(%{content: "@[Bo](user:8)"})))
+
+      for html <- [unresolved, legacy] do
+        refute html =~ "data-mention-chip"
+        assert html =~ ~r/data-comment-body[^>]*>@\[Bo\]\(user:8\)<\/p>/
+      end
+    end
+
+    test "escapes markup in mention names and around mention tokens" do
+      content = "<script>x</script>@[<img src=x onerror=alert(1)>](user:7) @[<b>](user:9)"
+
+      html =
+        render_row(entry(comment(%{content: content}), %{mentions: %{7 => "<i>Ada</i>"}}))
+
+      refute html =~ "<script>"
+      refute html =~ "<img src=x"
+      refute html =~ "<i>Ada</i>"
+      refute html =~ "<b>"
+      assert html =~ "&lt;script&gt;x&lt;/script&gt;"
+      assert html =~ "@&lt;i&gt;Ada&lt;/i&gt;"
+      assert html =~ "@[&lt;b&gt;](user:9)"
+    end
+
+    test "styles the chip with theme tokens only" do
+      html =
+        render_row(entry(comment(%{content: "@[A](user:7)"}), %{mentions: %{7 => "Ada"}}))
+
+      assert html =~ "background: var(--st-ready-soft)"
+      assert html =~ "border: 1px solid var(--line)"
+      assert html =~ "color: var(--ink)"
+    end
   end
 
   describe "update/2 and handle_event/3" do
@@ -450,6 +506,29 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
       assert_push_event(view, "comment-thread:scroll-to", %{id: ^row_id})
       # The id names a row that is on the page.
       assert has_element?(view, "#" <> row_id, "Scroll to me")
+    end
+
+    test "a mention of a board member renders as a chip with their name",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      task = board |> column_fixture() |> task_fixture()
+      member = user_fixture()
+      {:ok, member} = Kanban.Accounts.update_user_name(member, %{name: "Grace Hopper"})
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, user)
+      outsider = user_fixture()
+      view = open_task_view(conn, board, task)
+
+      content = "cc @[Grace](user:#{member.id}) and @[Eve](user:#{outsider.id})"
+
+      view
+      |> element(thread(task) <> "-composer")
+      |> render_submit(%{"task_comment" => %{"content" => content}})
+
+      html = view |> element(thread(task)) |> render()
+      assert html =~ ~s(data-user-id="#{member.id}")
+      assert html =~ "@Grace Hopper"
+      refute html =~ ~s(data-user-id="#{outsider.id}")
+      assert html =~ "@[Eve](user:#{outsider.id})"
     end
 
     test "a rejected comment asks for no scroll", %{conn: conn, user: user} do

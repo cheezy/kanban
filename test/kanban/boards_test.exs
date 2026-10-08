@@ -1056,6 +1056,122 @@ defmodule Kanban.BoardsTest do
     end
   end
 
+  describe "search_board_members/4" do
+    setup do
+      owner =
+        named_user("Owner Person", "owner-#{System.unique_integer([:positive])}@example.com")
+
+      board = board_fixture(owner)
+      ada = named_user("Ada Lovelace", "ada-#{System.unique_integer([:positive])}@example.com")
+      bob = named_user("Bob Builder", "bob-#{System.unique_integer([:positive])}@calc.test")
+      {:ok, _} = Boards.add_user_to_board(board, ada, :modify, owner)
+      {:ok, _} = Boards.add_user_to_board(board, bob, :read_only, owner)
+      %{owner: owner, board: board, ada: ada, bob: bob}
+    end
+
+    test "matches the name case-insensitively", %{owner: owner, board: board, ada: ada} do
+      assert {:ok, [%{id: id, name: "Ada Lovelace", email: email}]} =
+               owner |> Scope.for_user() |> Boards.search_board_members(board, "aDA lOV", 10)
+
+      assert {id, email} == {ada.id, ada.email}
+    end
+
+    test "matches the email case-insensitively", %{owner: owner, board: board, bob: bob} do
+      assert {:ok, [%{id: id}]} =
+               owner |> Scope.for_user() |> Boards.search_board_members(board, "CALC.TEST", 10)
+
+      assert id == bob.id
+    end
+
+    test "an empty query returns members ordered by display name",
+         %{owner: owner, board: board, ada: ada, bob: bob} do
+      assert {:ok, results} =
+               owner |> Scope.for_user() |> Boards.search_board_members(board, "  ", 10)
+
+      assert Enum.map(results, & &1.id) == [ada.id, bob.id, owner.id]
+    end
+
+    test "returns at most the given limit", %{owner: owner, board: board} do
+      assert {:ok, [_one]} =
+               owner |> Scope.for_user() |> Boards.search_board_members(board, "", 1)
+
+      assert {:ok, [_, _]} =
+               owner |> Scope.for_user() |> Boards.search_board_members(board, "", 2)
+    end
+
+    test "clamps the limit to 1..20", %{owner: owner, board: board} do
+      for _ <- 1..22 do
+        {:ok, _} = Boards.add_user_to_board(board, user_fixture(), :read_only, owner)
+      end
+
+      scope = Scope.for_user(owner)
+      assert {:ok, [_one]} = Boards.search_board_members(scope, board, "", 0)
+      assert {:ok, [_one]} = Boards.search_board_members(scope, board, "", -5)
+      assert {:ok, results} = Boards.search_board_members(scope, board, "", 100)
+      assert length(results) == 20
+    end
+
+    test "never returns users from another board", %{owner: owner, board: board} do
+      other_owner =
+        named_user("Ada Other", "ada-other-#{System.unique_integer([:positive])}@example.com")
+
+      _other_board = board_fixture(other_owner)
+
+      assert {:ok, results} =
+               owner |> Scope.for_user() |> Boards.search_board_members(board, "ada", 10)
+
+      refute Enum.any?(results, &(&1.id == other_owner.id))
+      assert length(results) == 1
+    end
+
+    test "treats % and _ in the query literally", %{owner: owner, board: board} do
+      scope = Scope.for_user(owner)
+      assert {:ok, []} = Boards.search_board_members(scope, board, "%", 10)
+      assert {:ok, []} = Boards.search_board_members(scope, board, "a_a", 10)
+      assert {:ok, []} = Boards.search_board_members(scope, board, "\\", 10)
+    end
+
+    test "a read-only member may search", %{board: board, bob: bob, ada: ada} do
+      assert {:ok, [%{id: id}]} =
+               bob |> Scope.for_user() |> Boards.search_board_members(board, "ada", 10)
+
+      assert id == ada.id
+    end
+
+    test "refuses a non-member, even on a public read-only board", %{board: board} do
+      stranger = user_fixture()
+
+      assert {:error, :unauthorized} =
+               stranger |> Scope.for_user() |> Boards.search_board_members(board, "", 10)
+
+      public = board |> Ecto.Changeset.change(read_only: true) |> Kanban.Repo.update!()
+      assert {:ok, %Board{}} = Boards.get_board(public.id, stranger)
+
+      assert {:error, :unauthorized} =
+               stranger |> Scope.for_user() |> Boards.search_board_members(public, "", 10)
+    end
+
+    test "refuses a nil scope", %{board: board} do
+      assert {:error, :unauthorized} = Boards.search_board_members(nil, board, "", 10)
+    end
+  end
+
+  describe "members_among/2" do
+    test "returns only the given ids that belong to the board" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      member = user_fixture()
+      outsider = user_fixture()
+      _outsiders_board = board_fixture(outsider)
+      {:ok, _} = Boards.add_user_to_board(board, member, :read_only, owner)
+
+      results = Boards.members_among(board.id, [member.id, outsider.id, owner.id, -1])
+
+      assert results |> Enum.map(& &1.id) |> Enum.sort() == Enum.sort([member.id, owner.id])
+      assert Enum.all?(results, &Map.has_key?(&1, :email))
+    end
+  end
+
   describe "update_field_visibility/3" do
     test "owner can update field visibility" do
       owner = user_fixture()
@@ -1864,5 +1980,12 @@ defmodule Kanban.BoardsTest do
       |> Enum.filter(&(&1.kind == :agent))
       |> Enum.map(& &1.name)
     end
+  end
+
+  defp named_user(name, email) do
+    %{email: email}
+    |> user_fixture()
+    |> Ecto.Changeset.change(name: name)
+    |> Kanban.Repo.update!()
   end
 end

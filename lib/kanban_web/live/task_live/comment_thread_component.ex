@@ -8,7 +8,9 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   Each comment shows its author's avatar and name ("Unknown" for legacy rows
   with no author; the agent name plus "via <user>" for comments an agent
   posted through the API), a relative time, and an "edited" marker once
-  `edited_at` is set.
+  `edited_at` is set. A `@[Name](user:ID)` mention of a current board member
+  renders as a chip showing that member's current name; any other token stays
+  plain text.
 
   Data and permissions come from `Kanban.Tasks.list_comment_thread/2`, which
   resolves the viewer's board access once. The rendered controls are a hint
@@ -31,6 +33,7 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   use KanbanWeb, :live_component
 
   alias Kanban.Tasks
+  alias Kanban.Tasks.Mentions
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
   alias KanbanWeb.Avatar
@@ -324,7 +327,9 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   and — when allowed — the edit and delete controls or the inline edit form.
 
   `entry` is one element of `Kanban.Tasks.list_comment_thread/2`'s `entries`.
-  Content is rendered through HEEx and therefore always escaped.
+  Content is split into text and mention segments by
+  `Kanban.Tasks.Mentions.segments/2`, using the entry's `mentions` map, and
+  every segment is rendered through HEEx and therefore always escaped.
   """
   attr :entry, :map, required: true
   attr :editing, :boolean, default: false
@@ -342,6 +347,10 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
       |> assign(:author, author_details(comment))
       |> assign(:inserted_at, inserted_at)
       |> assign(:age, TimeAgo.format_age(inserted_at, :coarse))
+      |> assign(
+        :segments,
+        Mentions.segments(comment.content, Map.get(assigns.entry, :mentions, %{}))
+      )
 
     ~H"""
     <article
@@ -442,15 +451,41 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
         <%!-- white-space: pre-wrap keeps the comment's own line breaks, so the
         content must touch both tags: any template whitespace inside them is
         rendered as a leading blank line and indent. phx-no-format stops
-        mix format from moving the content back onto its own line. --%>
+        mix format from moving the content back onto its own line, and the
+        segments are emitted with no whitespace between them. --%>
         <p
           :if={!@editing}
           data-comment-body
           phx-no-format
           style="margin: 4px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere;"
-        >{@comment.content}</p>
+        ><.comment_segment :for={segment <- @segments} segment={segment} /></p>
       </div>
     </article>
+    """
+  end
+
+  attr :segment, :any, required: true
+
+  # One piece of a comment body. Text is emitted bare (no wrapping tag, no
+  # whitespace) so pre-wrap shows exactly the comment's own characters.
+  defp comment_segment(%{segment: {:text, text}} = assigns) do
+    assigns = assign(assigns, :text, text)
+    ~H"{@text}"
+  end
+
+  defp comment_segment(%{segment: {:mention, user_id, name}} = assigns) do
+    assigns =
+      assigns
+      |> assign(:user_id, user_id)
+      |> assign(:name, name)
+      |> assign(:palette, AvatarPalette.for_human(user_id))
+
+    ~H"""
+    <span
+      data-mention-chip
+      data-user-id={@user_id}
+      style="display: inline-flex; align-items: center; gap: 3px; vertical-align: baseline; padding: 0 5px; border-radius: 4px; background: var(--st-ready-soft); border: 1px solid var(--line); color: var(--ink); font-weight: 600; white-space: nowrap;"
+    ><Avatar.avatar kind={:human} name={@name} palette={@palette} size={14} />@{@name}</span>
     """
   end
 

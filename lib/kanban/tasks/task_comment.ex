@@ -10,6 +10,11 @@ defmodule Kanban.Tasks.TaskComment do
     field :edited_at, :utc_datetime
     field :mentioned_user_ids, {:array, :integer}, default: []
 
+    # Set by Kanban.Tasks.Comments on a successful create or update: the
+    # members this write newly mentions (on create, every stored id; on an
+    # edit, the ids that were not mentioned before). Never persisted, never cast.
+    field :newly_mentioned_user_ids, {:array, :integer}, virtual: true, default: []
+
     belongs_to :task, Kanban.Tasks.Task
     belongs_to :author, Kanban.Accounts.User, foreign_key: :author_user_id
 
@@ -29,10 +34,11 @@ defmodule Kanban.Tasks.TaskComment do
   forgets to overwrite it. `validate_required` still asserts the struct carries a
   `task_id`.
 
-  The same rule covers authorship: `:author_user_id`, `:author_agent_name` and
-  `:mentioned_user_ids` are server-set fields that live on the struct and are
-  never cast, so a client cannot post a comment impersonating another user or
-  agent. `:content` is capped at `content_max_length/0` characters.
+  The same rule covers authorship: `:author_user_id`, `:author_agent_name`,
+  `:mentioned_user_ids` and the virtual `:newly_mentioned_user_ids` are
+  server-set fields that live on the struct and are never cast, so a client
+  cannot post a comment impersonating another user or agent, or mention
+  someone the server did not resolve. `:content` is capped at `content_max_length/0` characters.
   """
   def changeset(task_comment, attrs) do
     task_comment
