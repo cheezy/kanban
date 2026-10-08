@@ -8,6 +8,12 @@ manages it, how the secrets are stored, and what an operator has to configure.
 API tokens are not affected. Agents keep authenticating with their bearer
 token as described in the [Authentication Guide](AUTHENTICATION.md).
 
+People using Stride get a step-by-step version of this page in the app:
+**Resources → Setting Up Two-Factor Authentication**
+(`/resources/two-factor-authentication`). Its text lives in
+`lib/kanban_web/live/resources_live/how_tos/account.ex`; keep the two in step
+when the flow changes.
+
 ## Turning it on
 
 Two-factor lives under **Settings → Two-factor** (`/users/settings?section=two_factor`).

@@ -505,8 +505,59 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 19 guides" do
-      assert length(HowToData.all_how_tos()) == 19
+    test "has all 20 guides" do
+      assert length(HowToData.all_how_tos()) == 20
+    end
+
+    test "every guide id is unique across the area modules" do
+      ids = Enum.map(HowToData.all_how_tos(), & &1.id)
+      assert ids == Enum.uniq(ids)
+    end
+  end
+
+  describe "two-factor authentication guide" do
+    test "is a beginner security guide with steps" do
+      assert {:ok, guide} = HowToData.get_how_to("two-factor-authentication")
+      assert guide.tags == ["security", "beginner"]
+      assert guide.created_at == ~D[2026-10-08]
+      assert length(guide.steps) >= 10
+    end
+
+    test "sits next to the API authentication guide in security navigation" do
+      {:ok, guide} = HowToData.get_how_to("two-factor-authentication")
+
+      assert {nil, %{id: "api-authentication"}} = HowToData.get_navigation(guide)
+    end
+
+    test "every bolded UI label it names still exists in the two-factor screens" do
+      sources =
+        Enum.map_join(
+          [
+            "lib/kanban_web/live/user_live/two_factor_component.ex",
+            "lib/kanban_web/live/user_live/two_factor.ex",
+            "lib/kanban_web/live/user_live/login.ex",
+            "lib/kanban_web/live/user_live/settings.ex",
+            "lib/kanban_web/live/user_live/settings_components.ex",
+            "lib/kanban_web/components/layouts.ex"
+          ],
+          &File.read!/1
+        )
+
+      {:ok, guide} = HowToData.get_how_to("two-factor-authentication")
+
+      labels =
+        for step <- guide.steps,
+            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            label not in ["and", "An authenticator app", "A safe place for ten recovery codes"],
+            not String.ends_with?(label, "."),
+            not String.ends_with?(label, "?"),
+            do: String.replace(label, "Settings → Two-factor", "Two-factor")
+
+      assert labels != []
+
+      for label <- labels do
+        assert sources =~ ~s("#{label}"), "the guide names **#{label}**, which no screen shows"
+      end
     end
   end
 
