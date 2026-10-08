@@ -77,6 +77,37 @@ defmodule Kanban.Tasks.Mentions do
   def parse(_content), do: []
 
   @doc """
+  Makes `name` safe to place in a mention token, so that
+  `"@[" <> token_name(name) <> "](user:ID)"` always parses as one mention.
+
+  Line breaks become a space, `@[` becomes `@ [`, `](user:` becomes
+  `] (user:`, surrounding whitespace is trimmed and the result is cut to the
+  token's 640 code points. A name that leaves nothing yields `""`, which the
+  caller must not put in a token. The name in a token is only a hint for raw
+  text (rendering looks the member up by id), so these changes lose nothing.
+
+  ## Examples
+
+      iex> Kanban.Tasks.Mentions.token_name("Ada Lovelace")
+      "Ada Lovelace"
+
+      iex> Kanban.Tasks.Mentions.token_name("x@[y](user:1)\\nz")
+      "x@ [y] (user:1) z"
+  """
+  @spec token_name(String.t()) :: String.t()
+  def token_name(name) when is_binary(name) do
+    name
+    |> String.replace(~r/[\r\n]+/, " ")
+    |> String.replace("@[", "@ [")
+    |> String.replace("](user:", "] (user:")
+    |> String.trim()
+    |> String.codepoints()
+    |> Enum.take(640)
+    |> Enum.join()
+    |> String.trim_trailing()
+  end
+
+  @doc """
   Keeps the ids in `ids` that are in `member_ids` (a list or `MapSet`),
   preserving order, and caps the result at `max_mentions/0`.
 

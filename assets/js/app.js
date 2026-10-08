@@ -28,6 +28,7 @@ import SortableHook from "./hooks/sortable"
 import ColumnSortableHook from "./hooks/column_sortable"
 import DelayedModalClickAway from "./hooks/delayed_modal_click_away"
 import Dropdown from "./hooks/dropdown"
+import MentionAutocomplete from "./hooks/mention_autocomplete"
 import PasswordToggle from "./hooks/password_toggle"
 import Sidebar from "./hooks/sidebar"
 import SnapIndicator from "./hooks/snap_indicator"
@@ -39,6 +40,7 @@ const MyHooks = {
   ColumnSortable: ColumnSortableHook,
   DelayedModalClickAway,
   Dropdown,
+  MentionAutocomplete,
   PasswordToggle,
   Sidebar,
   SnapIndicator,

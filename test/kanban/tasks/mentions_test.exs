@@ -197,4 +197,53 @@ defmodule Kanban.Tasks.MentionsTest do
       assert Mentions.segments(<<0xFF>>, %{}) == []
     end
   end
+
+  describe "token_name/1" do
+    defp parses_as_one_mention?(name),
+      do: Mentions.parse("@[" <> Mentions.token_name(name) <> "](user:7)") == [7]
+
+    test "leaves an ordinary name unchanged" do
+      assert Mentions.token_name("Ada Lovelace") == "Ada Lovelace"
+      assert Mentions.token_name("Zoë [QA] (ops)") == "Zoë [QA] (ops)"
+    end
+
+    test "replaces line breaks with a space" do
+      assert Mentions.token_name("Ada\nLovelace") == "Ada Lovelace"
+      assert Mentions.token_name("Ada\r\nLovelace") == "Ada Lovelace"
+    end
+
+    test "breaks up the sequences that would end or nest a token" do
+      assert Mentions.token_name("a@[b") == "a@ [b"
+      assert Mentions.token_name("a](user:9)b") == "a] (user:9)b"
+    end
+
+    test "trims surrounding whitespace and yields \"\" for a blank name" do
+      assert Mentions.token_name("  Ada  ") == "Ada"
+      assert Mentions.token_name(" \n ") == ""
+    end
+
+    test "cuts a long name to 640 code points" do
+      name = "é" |> String.duplicate(700) |> Mentions.token_name()
+
+      assert String.length(name) == 640
+      assert parses_as_one_mention?(name)
+    end
+
+    test "always yields a name that parses as exactly one mention" do
+      hostile = [
+        "Ada",
+        "a@[b](user:1)",
+        "x](user:2)",
+        "@@[[",
+        "line\nbreak",
+        "ends with ](user",
+        "ends with @",
+        "](",
+        "a@b.example",
+        String.duplicate("@[", 400)
+      ]
+
+      for name <- hostile, do: assert(parses_as_one_mention?(name), inspect(name))
+    end
+  end
 end

@@ -10,7 +10,15 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   posted through the API), a relative time, and an "edited" marker once
   `edited_at` is set. A `@[Name](user:ID)` mention of a current board member
   renders as a chip showing that member's current name; any other token stays
-  plain text.
+  plain text. Each row is rendered by
+  `KanbanWeb.TaskLive.Components.CommentRow`.
+
+  The composer and the edit form use
+  `KanbanWeb.TaskLive.Components.MentionField`, whose autocomplete hook asks
+  this component's `mention_search` event for up to eight
+  matching board members. The reply is `%{members: [%{id: id, label: label}]}`,
+  `label` being safe to place in a mention token; a viewer who is not a member
+  of the task's board gets an empty list.
 
   Data and permissions come from `Kanban.Tasks.list_comment_thread/2`, which
   resolves the viewer's board access once. The rendered controls are a hint
@@ -33,15 +41,16 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   use KanbanWeb, :live_component
 
   alias Kanban.Tasks
-  alias Kanban.Tasks.Mentions
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
-  alias KanbanWeb.Avatar
-  alias KanbanWeb.AvatarPalette
   alias KanbanWeb.SectionHead
-  alias KanbanWeb.TimeAgo
+  alias KanbanWeb.TaskLive.Components.CommentRow
+  alias KanbanWeb.TaskLive.Components.MentionField
 
   @hosts [:view, :form]
+
+  # The most suggestions one mention_search reply carries.
+  @mention_limit 8
 
   @doc """
   The component id for the thread mounted in `host` (`:view` or `:form`).
@@ -50,9 +59,9 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
 
   @doc """
   The DOM id of one comment's row inside the thread whose component id is
-  `thread_id`.
+  `thread_id`. See `KanbanWeb.TaskLive.Components.CommentRow.comment_dom_id/2`.
   """
-  def comment_dom_id(thread_id, %{id: comment_id}), do: "#{thread_id}-comment-#{comment_id}"
+  defdelegate comment_dom_id(thread_id, comment), to: CommentRow
 
   @doc """
   Asks every mounted thread for the task in `payload` to reload its comments.
@@ -154,8 +163,32 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
     end
   end
 
+  # The mention autocomplete (assets/js/hooks/mention_autocomplete.js) asks
+  # for board members matching what follows an @. The board comes from the
+  # server-held task id, and Tasks.search_mentionable_members/4 refuses a
+  # viewer who is not a member of it, so any refusal is an empty list: the
+  # reply never says why, and members cannot be enumerated from outside.
+  @impl true
+  def handle_event("mention_search", params, socket) do
+    members =
+      case Tasks.search_mentionable_members(
+             socket.assigns.current_scope,
+             task_ref(socket),
+             mention_query(params),
+             @mention_limit
+           ) do
+        {:ok, members} -> members
+        {:error, _reason} -> []
+      end
+
+    {:reply, %{members: members}, socket}
+  end
+
   @impl true
   def handle_event(_event, _params, socket), do: {:noreply, socket}
+
+  defp mention_query(%{"query" => query}) when is_binary(query), do: query
+  defp mention_query(_params), do: ""
 
   # The thread scrolls on its own, so the new comment can land below the
   # visible rows; the browser is told to bring it into view (see app.js).
@@ -284,7 +317,7 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
         :if={@entries != []}
         style="display: flex; flex-direction: column; gap: 14px; max-height: 28rem; overflow-y: auto;"
       >
-        <.comment_row
+        <CommentRow.comment_row
           :for={entry <- @entries}
           entry={entry}
           editing={entry.comment.id == @editing_id}
@@ -303,14 +336,10 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
         phx-submit="add_comment"
         style="margin-top: 16px;"
       >
-        <.input
+        <MentionField.mention_textarea
           field={f[:content]}
-          type="textarea"
           label={gettext("Add a comment")}
-          rows="3"
-          maxlength={TaskComment.content_max_length()}
           placeholder={gettext("Write your comment here...")}
-          required
         />
         <div style="margin-top: 8px;">
           <.button type="submit" phx-disable-with={gettext("Adding...")}>
@@ -322,206 +351,6 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
     """
   end
 
-  @doc """
-  Renders one comment: avatar, author, relative time, edited marker, body,
-  and — when allowed — the edit and delete controls or the inline edit form.
-
-  `entry` is one element of `Kanban.Tasks.list_comment_thread/2`'s `entries`.
-  Content is split into text and mention segments by
-  `Kanban.Tasks.Mentions.segments/2`, using the entry's `mentions` map, and
-  every segment is rendered through HEEx and therefore always escaped.
-  """
-  attr :entry, :map, required: true
-  attr :editing, :boolean, default: false
-  attr :edit_form, :any, default: nil
-  attr :target, :any, default: nil
-  attr :dom_prefix, :string, default: "comment-thread"
-
-  def comment_row(assigns) do
-    comment = assigns.entry.comment
-    inserted_at = to_utc(comment.inserted_at)
-
-    assigns =
-      assigns
-      |> assign(:comment, comment)
-      |> assign(:author, author_details(comment))
-      |> assign(:inserted_at, inserted_at)
-      |> assign(:age, TimeAgo.format_age(inserted_at, :coarse))
-      |> assign(
-        :segments,
-        Mentions.segments(comment.content, Map.get(assigns.entry, :mentions, %{}))
-      )
-
-    ~H"""
-    <article
-      id={comment_dom_id(@dom_prefix, @comment)}
-      data-comment
-      style="display: flex; align-items: flex-start; gap: 10px;"
-    >
-      <span style="margin-top: 1px; flex-shrink: 0; display: inline-flex;">
-        <Avatar.avatar kind={@author.kind} name={@author.name} palette={@author.palette} size={22} />
-      </span>
-      <div style="flex: 1; min-width: 0;">
-        <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: 12px;">
-          <span
-            data-comment-author
-            style="font-weight: 600; color: var(--ink); overflow-wrap: anywhere;"
-          >
-            {@author.name}
-          </span>
-          <span
-            :if={@author.via}
-            data-comment-via
-            style="color: var(--ink-3); overflow-wrap: anywhere;"
-          >
-            {gettext("via %{name}", name: @author.via)}
-          </span>
-          <time
-            :if={@inserted_at}
-            datetime={DateTime.to_iso8601(@inserted_at)}
-            title={Calendar.strftime(@inserted_at, "%Y-%m-%d %H:%M UTC")}
-            style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);"
-          >
-            {@age}
-          </time>
-          <span
-            :if={@comment.edited_at}
-            data-comment-edited
-            title={Calendar.strftime(@comment.edited_at, "%Y-%m-%d %H:%M UTC")}
-            style="font-size: 11px; color: var(--ink-3); font-style: italic;"
-          >
-            {gettext("edited")}
-          </span>
-          <span style="flex: 1;"></span>
-          <span :if={!@editing} style="display: inline-flex; gap: 4px;">
-            <%!-- Compact ghost variant of <.button>: a full-size button per
-            comment row would dominate the thread. --%>
-            <.button
-              :if={@entry.can_edit}
-              type="button"
-              class="btn btn-ghost btn-xs"
-              phx-click="edit_comment"
-              phx-value-id={@comment.id}
-              phx-target={@target}
-              style="color: var(--ink-2);"
-            >
-              {gettext("Edit")}
-            </.button>
-            <.button
-              :if={@entry.can_delete}
-              type="button"
-              class="btn btn-ghost btn-xs"
-              phx-click="delete_comment"
-              phx-value-id={@comment.id}
-              phx-target={@target}
-              data-confirm={gettext("Are you sure you want to delete this comment?")}
-              style="color: var(--st-blocked);"
-            >
-              {gettext("Delete")}
-            </.button>
-          </span>
-        </div>
-
-        <.form
-          :let={f}
-          :if={@editing && @edit_form}
-          for={@edit_form}
-          id={"#{@dom_prefix}-edit-#{@comment.id}"}
-          phx-target={@target}
-          phx-submit="save_comment"
-          style="margin-top: 6px;"
-        >
-          <.input
-            field={f[:content]}
-            type="textarea"
-            rows="3"
-            maxlength={TaskComment.content_max_length()}
-            required
-          />
-          <div style="display: flex; gap: 8px; margin-top: 6px;">
-            <.button type="submit" phx-disable-with={gettext("Saving...")}>
-              {gettext("Save")}
-            </.button>
-            <.button type="button" phx-click="cancel_edit" phx-target={@target}>
-              {gettext("Cancel")}
-            </.button>
-          </div>
-        </.form>
-
-        <%!-- white-space: pre-wrap keeps the comment's own line breaks, so the
-        content must touch both tags: any template whitespace inside them is
-        rendered as a leading blank line and indent. phx-no-format stops
-        mix format from moving the content back onto its own line, and the
-        segments are emitted with no whitespace between them. --%>
-        <p
-          :if={!@editing}
-          data-comment-body
-          phx-no-format
-          style="margin: 4px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere;"
-        ><.comment_segment :for={segment <- @segments} segment={segment} /></p>
-      </div>
-    </article>
-    """
-  end
-
-  attr :segment, :any, required: true
-
-  # One piece of a comment body. Text is emitted bare (no wrapping tag, no
-  # whitespace) so pre-wrap shows exactly the comment's own characters.
-  defp comment_segment(%{segment: {:text, text}} = assigns) do
-    assigns = assign(assigns, :text, text)
-    ~H"{@text}"
-  end
-
-  defp comment_segment(%{segment: {:mention, user_id, name}} = assigns) do
-    assigns =
-      assigns
-      |> assign(:user_id, user_id)
-      |> assign(:name, name)
-      |> assign(:palette, AvatarPalette.for_human(user_id))
-
-    ~H"""
-    <span
-      data-mention-chip
-      data-user-id={@user_id}
-      style="display: inline-flex; align-items: center; gap: 3px; vertical-align: baseline; padding: 0 5px; border-radius: 4px; background: var(--st-ready-soft); border: 1px solid var(--line); color: var(--ink); font-weight: 600; white-space: nowrap;"
-    ><Avatar.avatar kind={:human} name={@name} palette={@palette} size={14} />@{@name}</span>
-    """
-  end
-
   defp count_label([]), do: nil
   defp count_label(entries), do: entries |> length() |> Integer.to_string()
-
-  # An agent comment is attributed to the agent and to the human whose token
-  # it ran under; anything else to its human author, or "Unknown" when the
-  # row predates authorship.
-  defp author_details(%TaskComment{author_agent_name: agent} = comment)
-       when is_binary(agent) and agent != "" do
-    %{
-      kind: :agent,
-      name: agent,
-      palette: AvatarPalette.for_agent(agent),
-      via: display_name(comment.author)
-    }
-  end
-
-  defp author_details(%TaskComment{author: author}) do
-    %{
-      kind: :human,
-      name: display_name(author),
-      palette: author |> author_id() |> AvatarPalette.for_human(),
-      via: nil
-    }
-  end
-
-  defp display_name(%{name: name}) when is_binary(name) and name != "", do: name
-  defp display_name(%{email: email}) when is_binary(email) and email != "", do: email
-  defp display_name(_author), do: gettext("Unknown")
-
-  defp author_id(%{id: id}) when is_integer(id), do: id
-  defp author_id(_author), do: nil
-
-  defp to_utc(%NaiveDateTime{} = naive), do: DateTime.from_naive!(naive, "Etc/UTC")
-  defp to_utc(%DateTime{} = datetime), do: datetime
-  defp to_utc(_missing), do: nil
 end

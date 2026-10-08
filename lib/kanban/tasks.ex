@@ -55,6 +55,7 @@ defmodule Kanban.Tasks do
   defdelegate list_comments(task), to: Comments
   defdelegate list_recent_comments(task, limit), to: Comments
   defdelegate list_comment_thread(scope, task), to: Comments
+  defdelegate search_mentionable_members(scope, task, query, limit), to: Comments
 
   defdelegate completed_task_counts_by_agent, to: Queries
   defdelegate list_archived_tasks(column), to: Queries

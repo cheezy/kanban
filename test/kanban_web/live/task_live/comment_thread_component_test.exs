@@ -14,180 +14,6 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
   alias Kanban.Tasks.TaskComment
   alias KanbanWeb.TaskLive.CommentThreadComponent
 
-  defp entry(comment, flags \\ %{}) do
-    Map.merge(%{comment: comment, can_edit: false, can_delete: false}, flags)
-  end
-
-  defp comment(attrs) do
-    struct(
-      %TaskComment{
-        id: 1,
-        content: "Hello",
-        author: nil,
-        author_agent_name: nil,
-        edited_at: nil,
-        inserted_at: ~N[2024-01-15 10:30:00]
-      },
-      attrs
-    )
-  end
-
-  defp render_row(entry, attrs \\ []) do
-    render_component(&CommentThreadComponent.comment_row/1, [entry: entry] ++ attrs)
-  end
-
-  describe "comment_row/1" do
-    test "renders \"Unknown\" for a comment with no author" do
-      html = render_row(entry(comment(%{author: nil})))
-
-      assert html =~ "Unknown"
-      assert html =~ "Hello"
-    end
-
-    test "renders the author's name, falling back to email when the name is blank" do
-      named = render_row(entry(comment(%{author: %{id: 7, name: "Ada", email: "ada@x.test"}})))
-      blank = render_row(entry(comment(%{author: %{id: 7, name: "", email: "ada@x.test"}})))
-
-      assert named =~ "Ada"
-      refute named =~ "ada@x.test"
-      assert blank =~ "ada@x.test"
-    end
-
-    test "renders the agent name and the via-user label for an agent comment" do
-      html =
-        render_row(
-          entry(
-            comment(%{
-              author_agent_name: "Claude Opus 5.5",
-              author: %{id: 7, name: "Ada", email: "ada@x.test"}
-            })
-          )
-        )
-
-      assert html =~ "Claude Opus 5.5"
-      assert html =~ "via Ada"
-    end
-
-    test "renders the edited marker only when edited_at is present" do
-      plain = render_row(entry(comment(%{})))
-      edited = render_row(entry(comment(%{edited_at: ~U[2024-01-16 09:00:00Z]})))
-
-      refute plain =~ "data-comment-edited"
-      assert edited =~ "data-comment-edited"
-      assert edited =~ "edited"
-    end
-
-    test "renders a relative time from the naive inserted_at" do
-      inserted_at = NaiveDateTime.add(NaiveDateTime.utc_now(), -3 * 3600)
-      html = render_row(entry(comment(%{inserted_at: inserted_at})))
-
-      assert html =~ "3h ago"
-      assert html =~ ~s(datetime=")
-    end
-
-    test "shows edit and delete controls only when allowed" do
-      none = render_row(entry(comment(%{})))
-      delete_only = render_row(entry(comment(%{}), %{can_delete: true}))
-      both = render_row(entry(comment(%{}), %{can_edit: true, can_delete: true}))
-
-      refute none =~ "edit_comment"
-      refute none =~ "delete_comment"
-      refute delete_only =~ "edit_comment"
-      assert delete_only =~ "delete_comment"
-      assert both =~ "edit_comment"
-      assert both =~ "delete_comment"
-    end
-
-    test "escapes comment content and keeps a very long word wrappable" do
-      long_word = String.duplicate("a", 2_000)
-      html = render_row(entry(comment(%{content: "<script>alert(1)</script> " <> long_word})))
-
-      refute html =~ "<script>alert(1)</script>"
-      assert html =~ "&lt;script&gt;"
-      assert html =~ long_word
-      assert html =~ "overflow-wrap: anywhere"
-    end
-
-    test "gives each row the id comment_dom_id/2 names" do
-      html = render_row(entry(comment(%{id: 42})), dom_prefix: "comment-thread-view-7")
-
-      assert CommentThreadComponent.comment_dom_id("comment-thread-view-7", %{id: 42}) ==
-               "comment-thread-view-7-comment-42"
-
-      assert html =~ ~s(id="comment-thread-view-7-comment-42")
-    end
-
-    # The body is white-space: pre-wrap, so any template whitespace inside the
-    # tag would render as a blank line and an indent above the text.
-    test "renders the body with no surrounding whitespace" do
-      html = render_row(entry(comment(%{content: "Hello"})))
-
-      assert html =~ ~r/data-comment-body[^>]*>Hello<\/p>/
-    end
-
-    test "keeps a multi-line body's own line breaks and nothing more" do
-      html = render_row(entry(comment(%{content: "line one\nline two"})))
-
-      assert html =~ ~r/data-comment-body[^>]*>line one\nline two<\/p>/
-    end
-
-    test "renders a resolved mention as a chip with the member's current name" do
-      html =
-        render_row(
-          entry(comment(%{content: "hi @[Old Name](user:7)!"}), %{mentions: %{7 => "Ada"}})
-        )
-
-      assert html =~ ~r/data-mention-chip[^>]*data-user-id="7"/
-      assert html =~ "@Ada"
-      refute html =~ "Old Name"
-      refute html =~ "(user:7)"
-    end
-
-    test "emits the mention segments with no whitespace between them" do
-      html =
-        render_row(entry(comment(%{content: "hi @[A](user:7)!"}), %{mentions: %{7 => "Ada"}}))
-
-      assert html =~ ~r/data-comment-body[^>]*>hi <span data-mention-chip/
-      assert html =~ ~r/@Ada<\/span>!<\/p>/
-    end
-
-    test "renders an unresolved token, or a row with no mentions map, as plain text" do
-      unresolved =
-        render_row(entry(comment(%{content: "@[Bo](user:8)"}), %{mentions: %{7 => "Ada"}}))
-
-      legacy = render_row(entry(comment(%{content: "@[Bo](user:8)"})))
-
-      for html <- [unresolved, legacy] do
-        refute html =~ "data-mention-chip"
-        assert html =~ ~r/data-comment-body[^>]*>@\[Bo\]\(user:8\)<\/p>/
-      end
-    end
-
-    test "escapes markup in mention names and around mention tokens" do
-      content = "<script>x</script>@[<img src=x onerror=alert(1)>](user:7) @[<b>](user:9)"
-
-      html =
-        render_row(entry(comment(%{content: content}), %{mentions: %{7 => "<i>Ada</i>"}}))
-
-      refute html =~ "<script>"
-      refute html =~ "<img src=x"
-      refute html =~ "<i>Ada</i>"
-      refute html =~ "<b>"
-      assert html =~ "&lt;script&gt;x&lt;/script&gt;"
-      assert html =~ "@&lt;i&gt;Ada&lt;/i&gt;"
-      assert html =~ "@[&lt;b&gt;](user:9)"
-    end
-
-    test "styles the chip with theme tokens only" do
-      html =
-        render_row(entry(comment(%{content: "@[A](user:7)"}), %{mentions: %{7 => "Ada"}}))
-
-      assert html =~ "background: var(--st-ready-soft)"
-      assert html =~ "border: 1px solid var(--line)"
-      assert html =~ "color: var(--ink)"
-    end
-  end
-
   describe "update/2 and handle_event/3" do
     setup do
       owner = user_fixture()
@@ -447,6 +273,80 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
       assert socket.assigns.editing_id == nil
     end
 
+    defp add_named_member(board, owner, name) do
+      member = user_fixture()
+      {:ok, member} = Kanban.Accounts.update_user_name(member, %{name: name})
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      member
+    end
+
+    test "mention_search replies with board members matching the query",
+         %{owner: owner, board: board, task: task} do
+      grace = add_named_member(board, owner, "Grace Hopper")
+      _alan = add_named_member(board, owner, "Alan Turing")
+      socket = mount_thread(task, owner)
+
+      assert {:reply, %{members: [%{id: id, label: "Grace Hopper"} = member]}, ^socket} =
+               CommentThreadComponent.handle_event("mention_search", %{"query" => "gra"}, socket)
+
+      assert id == grace.id
+      assert Map.keys(member) |> Enum.sort() == [:id, :label]
+    end
+
+    test "mention_search returns at most eight members",
+         %{owner: owner, board: board, task: task} do
+      for n <- 1..10, do: add_named_member(board, owner, "Member #{n}")
+      socket = mount_thread(task, owner)
+
+      {:reply, %{members: members}, _socket} =
+        CommentThreadComponent.handle_event("mention_search", %{"query" => "Member"}, socket)
+
+      assert length(members) == 8
+    end
+
+    test "mention_search never returns members of another board",
+         %{owner: owner, board: board, task: task} do
+      other_owner = user_fixture()
+      other_board = board_fixture(other_owner)
+      add_named_member(other_board, other_owner, "Grace Elsewhere")
+      add_named_member(board, owner, "Grace Here")
+      socket = mount_thread(task, owner)
+
+      {:reply, %{members: members}, _socket} =
+        CommentThreadComponent.handle_event("mention_search", %{"query" => "Grace"}, socket)
+
+      assert Enum.map(members, & &1.label) == ["Grace Here"]
+    end
+
+    test "mention_search replies with an empty list to a non-member or no scope",
+         %{owner: owner, board: board, task: task} do
+      add_named_member(board, owner, "Grace Hopper")
+
+      for viewer <- [user_fixture(), nil] do
+        socket = mount_thread(task, viewer)
+
+        assert {:reply, %{members: []}, _socket} =
+                 CommentThreadComponent.handle_event("mention_search", %{"query" => "gr"}, socket)
+      end
+    end
+
+    test "mention_search treats a missing or non-string query as empty",
+         %{owner: owner, task: task} do
+      socket = mount_thread(task, owner)
+
+      for params <- [%{}, %{"query" => 7}, %{"query" => ["x"]}] do
+        assert {:reply, %{members: members}, _socket} =
+                 CommentThreadComponent.handle_event("mention_search", params, socket)
+
+        assert Enum.map(members, & &1.id) == [owner.id]
+      end
+    end
+
+    test "comment_dom_id/2 delegates to the row component" do
+      assert CommentThreadComponent.comment_dom_id("comment-thread-view-7", %{id: 42}) ==
+               "comment-thread-view-7-comment-42"
+    end
+
     test "refresh/1 accepts the broadcast payload and ignores anything else" do
       assert CommentThreadComponent.refresh(%{task_id: 123, board_id: 1}) == :ok
       assert CommentThreadComponent.refresh(:unexpected) == :ok
@@ -484,6 +384,74 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
 
       # The board page shows the thread's success message as a flash.
       assert render(view) =~ "Comment added successfully"
+    end
+
+    test "the composer carries the mention autocomplete hook and its listbox",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      task = board |> column_fixture() |> task_fixture()
+      view = open_task_view(conn, board, task)
+      textarea = thread(task) <> "-composer_content"
+
+      assert has_element?(view, textarea <> ~s([phx-hook="MentionAutocomplete"]))
+
+      assert has_element?(
+               view,
+               textarea <> ~s([aria-controls="#{String.trim_leading(textarea, "#")}-mentions"])
+             )
+
+      assert has_element?(view, textarea <> ~s(-mentions[role="listbox"][phx-update="ignore"]))
+      assert has_element?(view, textarea <> ~s(-mentions[data-empty-text="No matching members"]))
+    end
+
+    test "mention_search replies to the hook and the inserted token is stored as a mention",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      task = board |> column_fixture() |> task_fixture()
+      grace = user_fixture()
+      {:ok, grace} = Kanban.Accounts.update_user_name(grace, %{name: "Grace Hopper"})
+      {:ok, _} = Boards.add_user_to_board(board, grace, :modify, user)
+      outsider = user_fixture()
+      {:ok, _} = Kanban.Accounts.update_user_name(outsider, %{name: "Grace Outsider"})
+      view = open_task_view(conn, board, task)
+
+      view
+      |> with_target(thread(task))
+      |> render_hook("mention_search", %{"query" => "gra"})
+
+      assert_reply(view, %{members: [%{id: id, label: label}]})
+      assert id == grace.id
+
+      view
+      |> element(thread(task) <> "-composer")
+      |> render_submit(%{"task_comment" => %{"content" => "ping @[#{label}](user:#{id}) "}})
+
+      assert [comment] = Repo.all(TaskComment)
+      assert comment.mentioned_user_ids == [grace.id]
+
+      assert has_element?(
+               view,
+               thread(task) <> ~s( [data-mention-chip][data-user-id="#{grace.id}"])
+             )
+    end
+
+    test "the inline edit textarea carries the mention autocomplete hook",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      task = board |> column_fixture() |> task_fixture()
+
+      {:ok, comment} =
+        user |> Scope.for_user() |> Tasks.create_comment(task, %{"content" => "Mine"})
+
+      view = open_task_view(conn, board, task)
+
+      view
+      |> element(thread(task) <> ~s( [phx-click="edit_comment"][phx-value-id="#{comment.id}"]))
+      |> render_click()
+
+      edit = thread(task) <> "-edit-#{comment.id}_content"
+      assert has_element?(view, edit <> ~s([phx-hook="MentionAutocomplete"]))
+      assert has_element?(view, edit <> ~s(-mentions[role="listbox"]))
     end
 
     test "posting a comment asks the browser to scroll it into view",
@@ -665,6 +633,11 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponentTest do
       |> render_submit(%{"task_comment" => %{"content" => "Added from the form"}})
 
       assert view |> element(form_thread) |> render() =~ "Added from the form"
+
+      assert has_element?(
+               view,
+               form_thread <> ~s(-composer_content[phx-hook="MentionAutocomplete"])
+             )
     end
   end
 end

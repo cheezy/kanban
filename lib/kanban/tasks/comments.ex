@@ -27,6 +27,7 @@ defmodule Kanban.Tasks.Comments do
 
   alias Kanban.AuditLog
   alias Kanban.Boards
+  alias Kanban.Boards.Board
   alias Kanban.Repo
   alias Kanban.Tasks.CommentPolicy
   alias Kanban.Tasks.Mentions
@@ -180,6 +181,49 @@ defmodule Kanban.Tasks.Comments do
   end
 
   def list_comment_thread(_scope, %Task{}), do: {:error, :not_found}
+
+  @doc """
+  Searches the members of `task`'s board for the comment `@mention`
+  autocomplete, returning at most `limit` `%{id: id, label: label}` maps.
+
+  The board is derived from the task server-side and the search is
+  `Kanban.Boards.search_board_members/4`, so `query` matches a member's name
+  or email and the scope's user must be a member of that board; otherwise —
+  including a `nil` scope — the result is `{:error, :unauthorized}`.
+
+  `label` is the member's name, else their email, passed through
+  `Kanban.Tasks.Mentions.token_name/1`, so `@[label](user:id)` is always a
+  valid mention token. Emails are not returned.
+
+  Returns `{:error, :not_found}` for an unsaved or deleted task.
+  """
+  def search_mentionable_members(scope, %Task{id: task_id}, query, limit)
+      when is_integer(task_id) and is_binary(query) and is_integer(limit) do
+    with {:ok, board_id} <- board_id_for_task(task_id),
+         {:ok, members} <-
+           Boards.search_board_members(scope, %Board{id: board_id}, query, limit) do
+      {:ok, Enum.flat_map(members, &mention_candidate/1)}
+    end
+  end
+
+  def search_mentionable_members(_scope, %Task{}, _query, _limit), do: {:error, :not_found}
+
+  defp mention_candidate(%{id: id} = member) do
+    case member |> mention_label() |> Mentions.token_name() do
+      "" -> fallback_candidate(member)
+      label -> [%{id: id, label: label}]
+    end
+  end
+
+  # A name that token_name/1 empties (only whitespace) falls back to the email.
+  defp fallback_candidate(%{id: id, email: email}) when is_binary(email) do
+    case Mentions.token_name(email) do
+      "" -> []
+      label -> [%{id: id, label: label}]
+    end
+  end
+
+  defp fallback_candidate(_member), do: []
 
   defp insert_comment(%{user: %{id: user_id}}, task_id, board_id, attrs, opts) do
     %TaskComment{task_id: task_id, author_user_id: user_id}

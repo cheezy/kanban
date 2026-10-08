@@ -1561,3 +1561,59 @@
     display: none !important;
   }
 }
+
+/* ============================================================
+   Comment @mention autocomplete listbox
+   (KanbanWeb.TaskLive.Components.MentionField +
+   assets/js/hooks/mention_autocomplete.js). Absolutely positioned
+   inside its relative field wrapper, full field width so it never
+   overflows a phone-width viewport, and theme tokens only so it
+   follows light and dark mode. The active option is marked by a
+   left rule as well as its fill, so it is not shown by colour alone.
+   ============================================================ */
+.mention-listbox {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 30;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  max-width: 100%;
+  max-height: 14rem;
+  overflow-y: auto;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  font-size: 12.5px;
+}
+
+.mention-listbox[hidden] {
+  display: none;
+}
+
+.mention-listbox.mention-listbox--above {
+  top: auto;
+  bottom: 100%;
+}
+
+.mention-listbox .mention-option {
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.mention-listbox .mention-option[aria-selected="true"] {
+  background: var(--surface-2);
+  box-shadow: inset 2px 0 0 var(--ink-2);
+}
+
+.mention-listbox .mention-empty {
+  padding: 6px 10px;
+  color: var(--ink-3);
+  font-style: italic;
+}
