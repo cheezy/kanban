@@ -69,18 +69,19 @@ Give teams a home for their boards and people.
 - Delete your own account from Settings, once any boards you own have been handed over.
 - Export a complete workspace archive, and restore it on a self-hosted Stride instance.
 
-## 🔜 Board search, filters, labels, due dates and My Work
+## 🔜 Board search, filters, labels and My Work
 
 Make busy boards fast to work with.
 
-- Search and filter a board by text, type, priority, assignee, label and due date. Filtered views live in the URL, so you can share or bookmark them.
+- Search and filter a board by text, type, priority, assignee and label. Filtered views live in the URL, so you can share or bookmark them.
 - Board labels with names and colours, managed in board settings and shown on task cards.
-- Optional due dates on tasks, with overdue and due-soon indicators on the cards.
-- A **My Work** page listing everything assigned to you across all your boards, grouped by board or by when it's due.
+- A **My Work** page listing everything assigned to you across all your boards, grouped by board.
 - Select several tasks at once to move, assign, label or archive them together.
 - Keyboard shortcuts: press `/` to search the board and `?` to see every shortcut.
-- Labels and due dates available through the API, so agents can set them and filter by them.
+- Labels available through the API, so agents can set them and filter by them.
 - Read-only members keep full search and filtering, but never see editing actions.
+
+Deadlines stay with delivery targets rather than individual tasks, so tasks don't get their own due dates.
 
 ## 🔄 Ongoing plugin improvement
 
