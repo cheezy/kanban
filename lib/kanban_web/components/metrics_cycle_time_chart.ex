@@ -130,7 +130,7 @@ defmodule KanbanWeb.MetricsCycleTimeChart do
               "bottom: #{gridline_bottom_pct(tick, @chart_max)}%;",
               "border-top: 1px dashed var(--line-2);",
               "font-size: 10px; font-family: var(--font-mono);",
-              "color: var(--ink-4); padding-left: 2px;"
+              "color: var(--ink-3); padding-left: 2px;"
             ]}
           >
             {tick}{@tick_unit}

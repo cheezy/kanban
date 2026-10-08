@@ -188,6 +188,38 @@ defmodule KanbanWeb.LayoutsTest do
     end
   end
 
+  describe "landmarks" do
+    test "the sidebar's two navs carry different accessible names" do
+      user = user_fixture()
+      assigns = %{current_scope: scope_for(user), active: nil, board: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        """)
+
+      labels =
+        html
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query("nav")
+        |> Enum.flat_map(&LazyHTML.attribute(&1, "aria-label"))
+
+      assert labels == ["Workspace", "Resources and information"]
+    end
+
+    test "the WinTop bar is a <header>, so its contents sit in the banner landmark" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.win_top page_title="Boards" />
+        """)
+
+      assert html |> LazyHTML.from_fragment() |> LazyHTML.query("header") |> Enum.count() == 1
+      assert html =~ ~r{^\s*<header}
+    end
+  end
+
   describe "app/1 — mobile drawer backdrop" do
     test "renders the backdrop element for backdrop-close when signed in" do
       user = user_fixture()

@@ -154,7 +154,12 @@ defmodule KanbanWeb.Layouts do
         </span>
       </.link>
 
-      <nav style="padding: 6px; display: flex; flex-direction: column; gap: 1px;">
+      <%!-- Two navs in one sidebar: each needs its own name, or assistive tech
+            lists two identical "navigation" landmarks. --%>
+      <nav
+        aria-label={gettext("Workspace")}
+        style="padding: 6px; display: flex; flex-direction: column; gap: 1px;"
+      >
         <.side_nav_item :for={item <- @primary_items} item={item} active={@active} />
       </nav>
 
@@ -162,7 +167,10 @@ defmodule KanbanWeb.Layouts do
         <hr style="border: 0; border-top: 1px solid var(--line);" />
       </div>
 
-      <nav style="padding: 0 6px 6px; display: flex; flex-direction: column; gap: 1px;">
+      <nav
+        aria-label={gettext("Resources and information")}
+        style="padding: 0 6px 6px; display: flex; flex-direction: column; gap: 1px;"
+      >
         <.side_nav_item :for={item <- @secondary_items} item={item} active={@active} />
       </nav>
 
@@ -354,7 +362,10 @@ defmodule KanbanWeb.Layouts do
 
   def win_top(assigns) do
     ~H"""
-    <div
+    <%!-- A <header> outside <main> is the page's banner landmark, so the
+          breadcrumbs, page actions and notification bell are reachable by
+          landmark navigation like the sidebar and main content. --%>
+    <header
       class="stride-screen flex-wrap lg:flex-nowrap"
       style={[
         "min-height: 36px; display: flex; align-items: center; flex-shrink: 0;",
@@ -403,7 +414,7 @@ defmodule KanbanWeb.Layouts do
         {render_slot(@actions)}
       </div>
       <NotificationBell.bell current_scope={@current_scope} />
-    </div>
+    </header>
     """
   end
 

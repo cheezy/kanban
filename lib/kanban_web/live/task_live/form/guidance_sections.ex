@@ -18,9 +18,9 @@ defmodule KanbanWeb.TaskLive.Form.GuidanceSections do
     <%= if field_visible?(@field_visibility, "technology_requirements") do %>
       <%!-- Technology Requirements Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+        <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Technology Requirements")}
-        </h3>
+        </h2>
         <.error :for={msg <- Enum.map(@f[:technology_requirements].errors, &translate_error/1)}>
           {msg}
         </.error>
@@ -58,9 +58,9 @@ defmodule KanbanWeb.TaskLive.Form.GuidanceSections do
     <%= if field_visible?(@field_visibility, "pitfalls") do %>
       <%!-- Pitfalls Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+        <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Common Pitfalls")}
-        </h3>
+        </h2>
         <.error :for={msg <- Enum.map(@f[:pitfalls].errors, &translate_error/1)}>{msg}</.error>
         <input type="hidden" name="task[pitfalls][]" value="" />
         <%= for {pitfall, index} <- Enum.with_index(Ecto.Changeset.get_field(@f.source, :pitfalls) || []) do %>
@@ -97,9 +97,9 @@ defmodule KanbanWeb.TaskLive.Form.GuidanceSections do
     <%= if field_visible?(@field_visibility, "out_of_scope") do %>
       <%!-- Out of Scope Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+        <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Out of Scope")}
-        </h3>
+        </h2>
         <.error :for={msg <- Enum.map(@f[:out_of_scope].errors, &translate_error/1)}>{msg}</.error>
         <input type="hidden" name="task[out_of_scope][]" value="" />
         <%= for {item, index} <- Enum.with_index(Ecto.Changeset.get_field(@f.source, :out_of_scope) || []) do %>
@@ -136,9 +136,9 @@ defmodule KanbanWeb.TaskLive.Form.GuidanceSections do
     <%= if field_visible?(@field_visibility, "security_considerations") do %>
       <%!-- Security Considerations Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+        <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Security Considerations")}
-        </h3>
+        </h2>
         <.error :for={msg <- Enum.map(@f[:security_considerations].errors, &translate_error/1)}>
           {msg}
         </.error>

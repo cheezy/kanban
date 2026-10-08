@@ -51,7 +51,7 @@ defmodule KanbanWeb.TaskActivityLogTest do
         <TaskActivityLog.activity_log histories={@histories} />
         """)
 
-      assert html =~ ~r/<h3[^>]*>\s*History\s*<\/h3>/
+      assert html =~ ~r/<h2[^>]*>\s*History\s*<\/h2>/
     end
 
     test "omits the heading when the caller renders its own, keeping the entries" do
@@ -62,7 +62,7 @@ defmodule KanbanWeb.TaskActivityLogTest do
         <TaskActivityLog.activity_log histories={@histories} heading={false} />
         """)
 
-      refute html =~ "<h3"
+      refute html =~ "<h2"
       refute html =~ "History"
       assert html =~ "Created"
     end

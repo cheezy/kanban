@@ -47,6 +47,19 @@ defmodule KanbanWeb.BoardIdentityTest do
     end
   end
 
+  describe "accent_ink/1" do
+    test "orange and violet, light in both themes, take fixed black" do
+      assert BoardIdentity.accent_ink(:orange) == "oklch(0% 0 0)"
+      assert BoardIdentity.accent_ink(:violet) == "oklch(0% 0 0)"
+    end
+
+    test "every other accent, known or not, takes the theme-flipping surface" do
+      for accent <- [:ready, :doing, :backlog, :blocked, :chartreuse, nil] do
+        assert BoardIdentity.accent_ink(accent) == "var(--surface)"
+      end
+    end
+  end
+
   describe "present?/1" do
     test "false for nil, empty, and whitespace-only strings" do
       refute BoardIdentity.present?(nil)

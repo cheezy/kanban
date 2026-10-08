@@ -126,16 +126,18 @@ defmodule KanbanWeb.DeliveryHealthBand do
       ]}>
         {@stat.count}
       </dd>
-      <span
+      <%!-- A second <dd> for the date: a <dl> group may hold only dt/dd. --%>
+      <dd
         data-delivery-health-soonest
         title={gettext("Soonest target date")}
         style={[
+          "margin: 0;",
           "font-size: 10.5px; color: var(--ink-3);",
           "font-family: var(--font-mono);"
         ]}
       >
         {soonest_label(@stat.soonest)}
-      </span>
+      </dd>
     </div>
     """
   end

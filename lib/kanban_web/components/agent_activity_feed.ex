@@ -96,9 +96,13 @@ defmodule KanbanWeb.AgentActivityFeed do
         {gettext("No recent activity.")}
       </p>
 
+      <%!-- The list scrolls on md+, so it takes focus (tabindex) and a name,
+            letting keyboard users scroll it with the arrow keys. --%>
       <ul
         :if={@events != []}
-        class="md:overflow-y-auto"
+        tabindex="0"
+        aria-label={gettext("Agent activity")}
+        class="md:overflow-y-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         style={[
           "margin: 0; padding: 0; list-style: none;",
           "display: flex; flex-direction: column; gap: 4px;",
@@ -264,9 +268,8 @@ defmodule KanbanWeb.AgentActivityFeed do
           <span
             :if={owner_label(@event.owner)}
             data-agent-feed-owner
-            aria-label={gettext("Operator")}
             style="color: var(--ink-3);"
-          >({owner_label(@event.owner)})</span>
+          ><span class="sr-only">{gettext("Operator")}</span>({owner_label(@event.owner)})</span>
           <span style="color: var(--ink-3);">{TaskTokens.kind_label(@event.kind)}</span>
           <span :if={@event.identifier} style="font-weight: 600; letter-spacing: 0.02em;">
             {@event.identifier}
@@ -278,6 +281,7 @@ defmodule KanbanWeb.AgentActivityFeed do
           :if={@tether}
           data-agent-feed-tether
           data-agent-feed-tether-status={@tether.status}
+          role="group"
           aria-label={gettext("Advancing delivery target and goal")}
           style={[
             "min-width: 0; display: flex; align-items: center; gap: 4px;",
@@ -310,6 +314,7 @@ defmodule KanbanWeb.AgentActivityFeed do
     <span
       data-agent-feed-avatar-fallback
       title={gettext("Unknown agent")}
+      role="img"
       aria-label={gettext("Unknown agent")}
       style="display: inline-flex;"
     >

@@ -21,9 +21,9 @@ defmodule KanbanWeb.TaskLive.Form.EmbedSections do
     <%= if field_visible?(@field_visibility, "key_files") do %>
       <%!-- Key Files Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+        <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Key Files to Read First")}
-        </h3>
+        </h2>
         <.error :for={msg <- Enum.map(@f[:key_files].errors, &translate_error/1)}>{msg}</.error>
         <.inputs_for :let={kf} field={@f[:key_files]}>
           <div class="flex flex-wrap gap-2 items-start mb-2">
@@ -67,9 +67,9 @@ defmodule KanbanWeb.TaskLive.Form.EmbedSections do
     <%= if field_visible?(@field_visibility, "verification_steps") do %>
       <%!-- Verification Steps Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+        <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Verification Steps")}
-        </h3>
+        </h2>
         <.error :for={msg <- Enum.map(@f[:verification_steps].errors, &translate_error/1)}>
           {msg}
         </.error>
@@ -118,9 +118,9 @@ defmodule KanbanWeb.TaskLive.Form.EmbedSections do
     <%= if field_visible?(@field_visibility, "behaviour_test_matrix") do %>
       <%!-- Behaviour/Test Matrix Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+        <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Behaviour/Test Matrix")}
-        </h3>
+        </h2>
         <p style="font-size: 11.5px; color: var(--ink-3); margin: 0 0 12px;">
           {gettext(
             "Cover every category at least once. Give each row a real test name, or set the status to Not applicable and say why."

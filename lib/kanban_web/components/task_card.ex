@@ -114,6 +114,7 @@ defmodule KanbanWeb.TaskCard do
         class="tooltip"
         style="display: inline-flex; align-items: center; color: var(--st-blocked);"
         data-tip={gettext("Blocked")}
+        role="img"
         aria-label={gettext("Blocked")}
       >
         <.icon name="hero-no-symbol" class="w-2.5 h-2.5" />

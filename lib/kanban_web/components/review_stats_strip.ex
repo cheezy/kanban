@@ -130,6 +130,7 @@ defmodule KanbanWeb.ReviewStatsStrip do
           :if={@indicator}
           data-review-stats-indicator={@marker}
           title={@indicator_title}
+          role="img"
           aria-label={@indicator_title}
           style="display: inline-flex; color: var(--st-blocked);"
         >

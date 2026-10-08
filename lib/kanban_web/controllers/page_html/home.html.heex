@@ -1,7 +1,11 @@
 <Layouts.flash_group flash={@flash} />
 
-<.marketing_hero current_scope={@current_scope} has_boards={@has_boards} />
-<.marketing_belief_band />
-<.marketing_how_it_works />
-<.marketing_feature_grid />
-<.marketing_cta_section current_scope={@current_scope} />
+<%!-- The other marketing pages each open their own <main>; the home page
+      needs one too, or its sections sit outside every landmark. --%>
+<main>
+  <.marketing_hero current_scope={@current_scope} has_boards={@has_boards} />
+  <.marketing_belief_band />
+  <.marketing_how_it_works />
+  <.marketing_feature_grid />
+  <.marketing_cta_section current_scope={@current_scope} />
+</main>

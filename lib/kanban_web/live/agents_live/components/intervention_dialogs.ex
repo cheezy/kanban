@@ -143,6 +143,7 @@ defmodule KanbanWeb.AgentsLive.Components.InterventionDialogs do
     ~H"""
     <KanbanWeb.DelayedModal.delayed_modal
       id={@id}
+      label={@title}
       show
       on_cancel={JS.push(@cancel_event)}
       max_width="max-w-lg"

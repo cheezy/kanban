@@ -42,6 +42,19 @@ defmodule KanbanWeb.BoardIdentity do
   def accent_color(_other), do: "var(--ink-3)"
 
   @doc """
+  The text color for a monogram drawn on `accent_color/1`, chosen so it keeps
+  WCAG AA contrast in both themes.
+
+  Orange and violet stay light in both themes, so they take fixed black: light
+  violet (oklch 60%) is 5.06:1 against black but only 4.42:1 against the brown
+  `--color-primary-content`. Every other accent is dark in light mode and light
+  in dark mode, so it takes `--surface`, which flips with the theme (7.1:1 or
+  better in both).
+  """
+  def accent_ink(accent) when accent in [:orange, :violet], do: "oklch(0% 0 0)"
+  def accent_ink(_other), do: "var(--surface)"
+
+  @doc """
   True only for a binary with non-whitespace content.
   """
   def present?(nil), do: false

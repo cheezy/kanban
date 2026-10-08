@@ -129,7 +129,9 @@ defmodule KanbanWeb.AgentsHeader do
         </div>
       </div>
 
-      <dl
+      <%!-- The partition and the stuck overlay are separate <dl>s: a <dl> may
+            hold only dt/dd groups, not the divider or the "of which" label. --%>
+      <div
         data-agents-fleet-health
         style={[
           "display: flex; align-items: center; flex-wrap: wrap; gap: 10px;",
@@ -137,9 +139,9 @@ defmodule KanbanWeb.AgentsHeader do
         ]}
       >
         <%!-- Working / Waiting / Idle partition the live agent set and sum to it. --%>
-        <div
+        <dl
           data-agents-fleet-health-partition
-          style="display: flex; align-items: stretch; flex-wrap: wrap; gap: 10px;"
+          style="display: flex; align-items: stretch; flex-wrap: wrap; gap: 10px; margin: 0;"
         >
           <.health_stat
             marker="working"
@@ -160,7 +162,7 @@ defmodule KanbanWeb.AgentsHeader do
             tone="var(--stride-orange-ink)"
             soft="var(--stride-orange-soft)"
           />
-        </div>
+        </dl>
 
         <span
           data-agents-fleet-health-divider
@@ -185,15 +187,17 @@ defmodule KanbanWeb.AgentsHeader do
           ]}>
             {gettext("of which")}
           </span>
-          <.health_stat
-            marker="stuck"
-            label={gettext("Stuck")}
-            value={@fleet_health.stuck}
-            tone="var(--st-blocked)"
-            soft="var(--st-blocked-soft)"
-          />
+          <dl style="margin: 0;">
+            <.health_stat
+              marker="stuck"
+              label={gettext("Stuck")}
+              value={@fleet_health.stuck}
+              tone="var(--st-blocked)"
+              soft="var(--st-blocked-soft)"
+            />
+          </dl>
         </div>
-      </dl>
+      </div>
     </header>
     """
   end
@@ -383,11 +387,13 @@ defmodule KanbanWeb.AgentsHeader do
       ]}>
         {@value}
       </dd>
-      <div
+      <%!-- A second <dd> for the delta: a <dl> group may hold only dt/dd. --%>
+      <dd
         :if={@delta != nil}
         data-agents-pm-trends-delta
         title={gettext("vs the prior period")}
         style={[
+          "margin: 0;",
           "display: inline-flex; align-items: center; gap: 2px;",
           "font-size: 10px; font-weight: 600;",
           "font-variant-numeric: tabular-nums;",
@@ -396,7 +402,7 @@ defmodule KanbanWeb.AgentsHeader do
       >
         <.icon name={delta_icon(@delta)} class="w-3 h-3" />
         <span>{delta_label(@delta)}</span>
-      </div>
+      </dd>
     </div>
     """
   end

@@ -18,6 +18,7 @@ defmodule KanbanWeb.DelayedModalTest do
       html =
         render_component(&DelayedModal.delayed_modal/1,
           id: "demo-modal",
+          label: "Demo dialog",
           inner_block: simple_inner("Hello")
         )
 
@@ -36,10 +37,27 @@ defmodule KanbanWeb.DelayedModalTest do
       assert html =~ "Hello"
     end
 
+    test "names the dialog with its label and points at no missing elements" do
+      html =
+        render_component(&DelayedModal.delayed_modal/1,
+          id: "named-modal",
+          label: "Edit task",
+          inner_block: simple_inner("Body")
+        )
+
+      [dialog] =
+        html |> LazyHTML.from_fragment() |> LazyHTML.query(~s([role="dialog"])) |> Enum.to_list()
+
+      assert LazyHTML.attribute(dialog, "aria-label") == ["Edit task"]
+      assert LazyHTML.attribute(dialog, "aria-labelledby") == []
+      assert LazyHTML.attribute(dialog, "aria-describedby") == []
+    end
+
     test "renders with show: true (phx-mounted shows the modal)" do
       html =
         render_component(&DelayedModal.delayed_modal/1,
           id: "shown-modal",
+          label: "Demo dialog",
           show: true,
           inner_block: simple_inner("Body")
         )
@@ -53,6 +71,7 @@ defmodule KanbanWeb.DelayedModalTest do
       html =
         render_component(&DelayedModal.delayed_modal/1,
           id: "delegated-modal",
+          label: "Demo dialog",
           show: true,
           inner_block: simple_inner("Body")
         )
@@ -73,6 +92,7 @@ defmodule KanbanWeb.DelayedModalTest do
       html =
         render_component(&DelayedModal.delayed_modal/1,
           id: "unknown-width-modal",
+          label: "Demo dialog",
           max_width: "max-w-prose",
           inner_block: simple_inner("X")
         )
@@ -85,6 +105,7 @@ defmodule KanbanWeb.DelayedModalTest do
       html =
         render_component(&DelayedModal.delayed_modal/1,
           id: "padded-modal",
+          label: "Demo dialog",
           padding: "p-2",
           inner_block: simple_inner("X")
         )
@@ -99,6 +120,7 @@ defmodule KanbanWeb.DelayedModalTest do
       html =
         render_component(&DelayedModal.delayed_modal/1,
           id: "mf-modal",
+          label: "Demo dialog",
           mobile_fullscreen: true,
           inner_block: simple_inner("Body")
         )
@@ -124,6 +146,7 @@ defmodule KanbanWeb.DelayedModalTest do
         html =
           render_component(&DelayedModal.delayed_modal/1,
             id: "mf-#{size}",
+            label: "Demo dialog",
             max_width: size,
             mobile_fullscreen: true,
             inner_block: simple_inner("X")
@@ -138,6 +161,7 @@ defmodule KanbanWeb.DelayedModalTest do
       html =
         render_component(&DelayedModal.delayed_modal/1,
           id: "mf-unknown",
+          label: "Demo dialog",
           max_width: "max-w-prose",
           mobile_fullscreen: true,
           inner_block: simple_inner("X")

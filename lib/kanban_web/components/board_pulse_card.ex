@@ -44,7 +44,8 @@ defmodule KanbanWeb.BoardPulseCard do
   attr :board, :map, required: true
 
   def board_pulse_card(assigns) do
-    assigns = assign(assigns, :accent_css, accent_color(Map.get(assigns.board, :accent)))
+    accent = Map.get(assigns.board, :accent)
+    assigns = assign(assigns, accent_css: accent_color(accent), accent_ink: accent_ink(accent))
 
     ~H"""
     <.link
@@ -60,7 +61,7 @@ defmodule KanbanWeb.BoardPulseCard do
         "position: relative; overflow: hidden;",
         "height: 100%;"
       ]}>
-        <.identifier_and_name board={@board} accent_css={@accent_css} />
+        <.identifier_and_name board={@board} accent_css={@accent_css} accent_ink={@accent_ink} />
         <.pulse_row board={@board} accent_css={@accent_css} />
         <.stat_row metrics={@board.metrics} />
         <.member_footer board={@board} />
@@ -71,6 +72,7 @@ defmodule KanbanWeb.BoardPulseCard do
 
   attr :board, :map, required: true
   attr :accent_css, :string, required: true
+  attr :accent_ink, :string, required: true
 
   defp identifier_and_name(assigns) do
     ~H"""
@@ -81,7 +83,7 @@ defmodule KanbanWeb.BoardPulseCard do
           "width: 26px; height: 26px; border-radius: 6px;",
           "background: #{@accent_css};",
           "display: inline-flex; align-items: center; justify-content: center;",
-          "color: var(--color-primary-content); font-size: 10px; font-weight: 700;",
+          "color: #{@accent_ink}; font-size: 10px; font-weight: 700;",
           "font-family: var(--font-mono); letter-spacing: -0.02em; flex-shrink: 0;"
         ]}
       >
@@ -89,9 +91,9 @@ defmodule KanbanWeb.BoardPulseCard do
       </span>
       <div style="flex: 1; min-width: 0;">
         <div style="display: flex; align-items: center; gap: 6px;">
-          <h3 style="margin: 0; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em;">
+          <h2 style="margin: 0; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em;">
             {@board.name}
-          </h3>
+          </h2>
           <span
             :if={Map.get(@board, :ai_optimized_board, false)}
             class="ucase"

@@ -1,6 +1,13 @@
 defmodule KanbanWeb.PageControllerTest do
   use KanbanWeb.ConnCase
 
+  test "GET / puts the marketing sections in one <main> landmark", %{conn: conn} do
+    document = conn |> get(~p"/") |> html_response(200) |> LazyHTML.from_document()
+
+    assert document |> LazyHTML.query("main") |> Enum.count() == 1
+    assert document |> LazyHTML.query("main h1") |> Enum.count() == 1
+  end
+
   test "GET /", %{conn: conn} do
     conn = get(conn, ~p"/")
     body = html_response(conn, 200)

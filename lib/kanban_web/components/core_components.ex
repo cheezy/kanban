@@ -581,19 +581,24 @@ defmodule KanbanWeb.CoreComponents do
 
   ## Examples
 
-      <.modal id="confirm-modal">
+      <.modal id="confirm-modal" label="Confirm">
         This is a modal.
       </.modal>
 
   JS commands may be passed to the `:on_cancel` to configure
   the closing/cancel event, for example:
 
-      <.modal id="confirm" on_cancel={JS.navigate(~p"/posts")}>
+      <.modal id="confirm" label="Confirm" on_cancel={JS.navigate(~p"/posts")}>
         This is another modal.
       </.modal>
 
   """
   attr :id, :string, required: true
+
+  attr :label, :string,
+    required: true,
+    doc: "The dialog's accessible name, read out when it opens (usually its visible title)."
+
   attr :show, :boolean, default: false
   attr :on_cancel, JS, default: %JS{}
 
@@ -620,8 +625,7 @@ defmodule KanbanWeb.CoreComponents do
       />
       <div
         class="fixed inset-0 overflow-y-auto"
-        aria-labelledby={"#{@id}-title"}
-        aria-describedby={"#{@id}-description"}
+        aria-label={@label}
         role="dialog"
         aria-modal="true"
         tabindex="0"

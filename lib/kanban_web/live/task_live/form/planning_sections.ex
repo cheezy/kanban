@@ -18,9 +18,9 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
     <%= if field_visible?(@field_visibility, "testing_strategy") do %>
       <%!-- Testing Strategy Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+        <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Testing Strategy")}
-        </h3>
+        </h2>
         <.error :for={msg <- Enum.map(@f[:testing_strategy].errors, &translate_error/1)}>
           {msg}
         </.error>
@@ -136,9 +136,9 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
     <%= if field_visible?(@field_visibility, "integration_points") do %>
       <%!-- Integration Points Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+        <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Integration Points")}
-        </h3>
+        </h2>
         <.error :for={msg <- Enum.map(@f[:integration_points].errors, &translate_error/1)}>
           {msg}
         </.error>
@@ -288,9 +288,9 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
 
     <%!-- Dependencies Section --%>
     <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-      <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+      <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
         {gettext("Dependencies")}
-      </h3>
+      </h2>
       <.error :for={msg <- Enum.map(@f[:dependencies].errors, &translate_error/1)}>{msg}</.error>
       <input type="hidden" name="task[dependencies][]" value="" />
       <%= for {dep, index} <- Enum.with_index(Ecto.Changeset.get_field(@f.source, :dependencies) || []) do %>
@@ -326,9 +326,9 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
     <%= if Ecto.Changeset.get_field(@f.source, :created_by_agent) || Ecto.Changeset.get_field(@f.source, :completed_by_agent) do %>
       <%!-- Agent Tracking Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">
-        <h3 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
+        <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Agent Tracking")}
-        </h3>
+        </h2>
         <.input field={@f[:created_by_agent]} type="text" label={gettext("Created By Agent")} />
         <.input field={@f[:completed_by_agent]} type="text" label={gettext("Completed By Agent")} />
         <.input

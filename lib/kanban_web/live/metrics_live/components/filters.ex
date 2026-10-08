@@ -41,14 +41,14 @@ defmodule KanbanWeb.MetricsLive.Components.Filters do
         <span style="display: inline-flex; color: var(--ink-3);">
           <.icon name="hero-funnel-solid" class="h-4 w-4" />
         </span>
-        <h3 style={[
+        <h2 style={[
           "margin: 0;",
           "font-size: 9.5px; font-weight: 600;",
           "text-transform: uppercase; letter-spacing: 0.08em;",
           "color: var(--ink-3);"
         ]}>
           {gettext("Filters")}
-        </h3>
+        </h2>
         <span style="font-size: 11px; color: var(--ink-3); font-family: var(--font-mono);">
           {gettext("Customize your %{view_name} view", view_name: @view_name)}
         </span>

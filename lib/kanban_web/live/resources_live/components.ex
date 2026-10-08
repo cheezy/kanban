@@ -49,12 +49,12 @@ defmodule KanbanWeb.ResourcesLive.Components do
         </div>
       </div>
       <div class="p-[18px] flex-1 flex flex-col">
-        <h3
+        <h2
           class="line-clamp-2 m-0 mb-1.5 text-[14px] font-semibold tracking-tight"
           style="color: var(--ink);"
         >
           {@how_to.title}
-        </h3>
+        </h2>
         <p
           class="line-clamp-2 m-0 mb-[14px] text-[12.5px] flex-1"
           style="color: var(--ink-2);"
@@ -130,6 +130,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
         name="query"
         value={@value}
         placeholder={@placeholder}
+        aria-label={@placeholder || gettext("Search")}
         phx-keyup={@event}
         phx-debounce={@debounce}
         class="block w-full py-2.5 pr-3 pl-9 text-[13px] outline-none transition-colors"

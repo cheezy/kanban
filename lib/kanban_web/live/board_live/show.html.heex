@@ -352,6 +352,9 @@
   <KanbanWeb.DelayedModal.delayed_modal
     :if={@live_action in [:new_column, :edit_column]}
     id="column-modal"
+    label={
+      if @live_action == :new_column, do: gettext("New column"), else: gettext("Edit column")
+    }
     show
     on_cancel={JS.patch(~p"/boards/#{@board}")}
     padding="p-4 md:p-8 lg:p-14"
@@ -372,6 +375,13 @@
   <KanbanWeb.DelayedModal.delayed_modal
     :if={@live_action in [:new_task, :new_goal, :edit_task, :edit_task_in_column]}
     id="task-modal"
+    label={
+      cond do
+        @live_action == :new_goal -> gettext("New goal")
+        @live_action == :new_task -> gettext("New task")
+        true -> gettext("Edit task")
+      end
+    }
     show
     on_cancel={JS.patch(~p"/boards/#{@board}")}
     max_width="max-w-6xl"
@@ -409,6 +419,7 @@
   <KanbanWeb.DelayedModal.delayed_modal
     :if={@live_action == :board_settings}
     id="board-settings-modal"
+    label={gettext("Board settings")}
     show
     on_cancel={JS.patch(~p"/boards/#{@board}")}
     padding="p-4 md:p-8 lg:p-14"
@@ -434,6 +445,7 @@
   <KanbanWeb.DelayedModal.delayed_modal
     :if={@live_action == :manage_members}
     id="board-members-modal"
+    label={gettext("Manage members")}
     show
     on_cancel={JS.patch(~p"/boards/#{@board}")}
     padding="p-4 md:p-8 lg:p-14"
@@ -459,6 +471,7 @@
   <div :if={@viewing_task_id && @show_task_modal} id={"task-modal-wrapper-#{@viewing_task_id}"}>
     <KanbanWeb.DelayedModal.delayed_modal
       id="task-view-modal"
+      label={gettext("Task details")}
       show
       on_cancel={JS.push("close_task_view")}
       max_width="max-w-6xl"
@@ -482,6 +495,7 @@
   <.modal
     :if={@live_action == :api_tokens}
     id="api-tokens-modal"
+    label={gettext("API tokens")}
     show
     on_cancel={JS.patch(~p"/boards/#{@board}")}
     mobile_fullscreen

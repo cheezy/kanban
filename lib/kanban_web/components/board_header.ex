@@ -109,6 +109,7 @@ defmodule KanbanWeb.BoardHeader do
     assigns =
       assigns
       |> assign(:accent_css, accent_color(Map.get(assigns.board, :accent)))
+      |> assign(:accent_ink, accent_ink(Map.get(assigns.board, :accent)))
       |> assign(:prefix, board_prefix(assigns.board.name))
 
     ~H"""
@@ -118,7 +119,7 @@ defmodule KanbanWeb.BoardHeader do
         "width: #{@size}px; height: #{@size}px; border-radius: 6px;",
         "background: #{@accent_css};",
         "display: inline-flex; align-items: center; justify-content: center;",
-        "color: var(--color-primary-content); font-size: #{badge_font_size(@size)}px; font-weight: 700;",
+        "color: #{@accent_ink}; font-size: #{badge_font_size(@size)}px; font-weight: 700;",
         "font-family: var(--font-mono); letter-spacing: -0.02em; flex-shrink: 0;"
       ]}
     >

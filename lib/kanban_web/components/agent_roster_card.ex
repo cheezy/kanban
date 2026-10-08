@@ -50,7 +50,9 @@ defmodule KanbanWeb.AgentRosterCard do
 
   def card(assigns) do
     ~H"""
-    <article
+    <%!-- A <div>, not an <article>: the selectable card takes role="button",
+          which an <article> is not allowed to carry. --%>
+    <div
       data-agent-roster-card
       data-agent-name={@agent.name}
       data-agent-key={@agent.owner_key}
@@ -95,13 +97,13 @@ defmodule KanbanWeb.AgentRosterCard do
           <div
             :if={owner_label(@agent.owner)}
             data-agent-owner
-            aria-label={gettext("Operator")}
             style={[
               "font-size: 11px; font-weight: 500;",
               "color: var(--ink-3);",
               "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
             ]}
           >
+            <span class="sr-only">{gettext("Operator")}</span>
             {owner_label(@agent.owner)}
           </div>
         </div>
@@ -118,7 +120,7 @@ defmodule KanbanWeb.AgentRosterCard do
       <.capability_pills :if={@agent.capabilities != []} capabilities={@agent.capabilities} />
 
       <.stats_grid agent={@agent} />
-    </article>
+    </div>
     """
   end
 
@@ -132,6 +134,7 @@ defmodule KanbanWeb.AgentRosterCard do
     <div
       data-agent-target-annotation
       data-agent-target-status={@annotation.status}
+      role="group"
       aria-label={gettext("Advancing delivery target and goal")}
       style={[
         "display: flex; align-items: center; gap: 5px; min-width: 0;",
@@ -167,6 +170,7 @@ defmodule KanbanWeb.AgentRosterCard do
       data-agent-status-dot
       data-agent-status={@status}
       title={status_label(@status)}
+      role="img"
       aria-label={status_label(@status)}
       style={[
         "width: 8px; height: 8px; border-radius: 50%;",

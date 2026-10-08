@@ -285,6 +285,7 @@ defmodule KanbanWeb.AcceptanceChecklist do
   defp check_box(%{pending?: true} = assigns) do
     ~H"""
     <span
+      role="img"
       aria-label={gettext("Pending")}
       style={[
         "display: inline-flex; align-items: center; justify-content: center;",
@@ -302,6 +303,7 @@ defmodule KanbanWeb.AcceptanceChecklist do
   defp check_box(%{failed?: true} = assigns) do
     ~H"""
     <span
+      role="img"
       aria-label={gettext("Not met")}
       style={[
         "display: inline-flex; align-items: center; justify-content: center;",
@@ -320,6 +322,7 @@ defmodule KanbanWeb.AcceptanceChecklist do
   defp check_box(%{checked?: true} = assigns) do
     ~H"""
     <span
+      role="img"
       aria-label={gettext("Checked")}
       style={[
         "display: inline-flex; align-items: center; justify-content: center;",
@@ -337,6 +340,7 @@ defmodule KanbanWeb.AcceptanceChecklist do
   defp check_box(assigns) do
     ~H"""
     <span
+      role="img"
       aria-label={gettext("Unchecked")}
       style={[
         "display: inline-flex; align-items: center; justify-content: center;",

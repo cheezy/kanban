@@ -41,7 +41,7 @@ defmodule KanbanWeb.TaskActivityLog do
       class="stride-screen"
       style="display: flex; flex-direction: column; gap: 6px;"
     >
-      <h3
+      <h2
         :if={@heading}
         style={[
           "margin: 0; font-size: 12.5px; font-weight: 600;",
@@ -49,7 +49,7 @@ defmodule KanbanWeb.TaskActivityLog do
         ]}
       >
         {gettext("History")}
-      </h3>
+      </h2>
 
       <p
         :if={@histories == []}

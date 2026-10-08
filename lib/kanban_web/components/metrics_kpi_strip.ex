@@ -137,7 +137,8 @@ defmodule KanbanWeb.MetricsKpiStrip do
           {format_delta(@delta_pct)}
         </span>
       </dd>
-      <p
+      <%!-- A second <dd> for the sub-line: a <dl> group may hold only dt/dd. --%>
+      <dd
         data-metrics-kpi-sub
         style={[
           "margin: 2px 0 0;",
@@ -145,7 +146,7 @@ defmodule KanbanWeb.MetricsKpiStrip do
         ]}
       >
         {@sub}
-      </p>
+      </dd>
     </div>
     """
   end

@@ -6,6 +6,11 @@ defmodule KanbanWeb.DelayedModal do
   alias Phoenix.LiveView.JS
 
   attr :id, :string, required: true
+
+  attr :label, :string,
+    required: true,
+    doc: "The dialog's accessible name, read out when it opens (usually its visible title)."
+
   attr :show, :boolean, default: false
   attr :on_cancel, JS, default: %JS{}
 
@@ -41,8 +46,7 @@ defmodule KanbanWeb.DelayedModal do
       />
       <div
         class="fixed inset-0 overflow-y-auto"
-        aria-labelledby={"#{@id}-title"}
-        aria-describedby={"#{@id}-description"}
+        aria-label={@label}
         role="dialog"
         aria-modal="true"
         tabindex="0"

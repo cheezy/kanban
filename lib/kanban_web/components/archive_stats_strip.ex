@@ -87,13 +87,14 @@ defmodule KanbanWeb.ArchiveStatsStrip do
       ]}>
         {@value}
       </dd>
-      <p style={[
+      <%!-- A second <dd> for the caption: a <dl> group may hold only dt/dd. --%>
+      <dd style={[
         "margin: 0;",
         "font-size: 11.5px; color: var(--ink-3);",
         "text-wrap: pretty;"
       ]}>
         {@caption}
-      </p>
+      </dd>
     </div>
     """
   end

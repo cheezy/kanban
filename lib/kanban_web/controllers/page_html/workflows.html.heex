@@ -4,7 +4,7 @@
       <h1 class="text-4xl md:text-5xl font-bold text-base-content mb-4">
         {gettext("Workflows")}
       </h1>
-      <p class="text-lg text-base-content opacity-70 max-w-2xl mx-auto">
+      <p class="text-lg max-w-2xl mx-auto" style="color: var(--ink-2);">
         {gettext(
           "Stride wraps every task in a four-stage lifecycle. Humans choose when to be involved and when to allow the agent to work independently. The board drives a real codebase, not a vibe."
         )}
@@ -16,14 +16,14 @@
         {gettext("Requirements")}
       </h2>
 
-      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto mb-8">
+      <p class="leading-relaxed text-center max-w-3xl mx-auto mb-8" style="color: var(--ink-2);">
         {raw(
           String.replace(
             gettext(
               "Before a single task hits the board, stride-ideation turns a fuzzy idea into a structured plan. An interactive session writes a committed requirements document, then decomposes it into a goal with dependency-ordered tasks — so agents start from a real specification, not a one-line prompt."
             ),
             "stride-ideation",
-            ~s(<a href="https://github.com/cheezy/stride-ideation" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">stride-ideation</a>),
+            ~s{<a href="https://github.com/cheezy/stride-ideation" class="underline" style="color: var(--stride-orange-ink);" target="_blank" rel="noopener noreferrer">stride-ideation</a>},
             global: false
           )
         )}
@@ -32,33 +32,42 @@
       <div class="bg-base-100 rounded-2xl border border-base-300 p-8 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="text-center">
-            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+            <div
+              class="text-xs font-mono uppercase tracking-wide mb-1"
+              style="color: var(--ink-2);"
+            >
               {gettext("01")}
             </div>
             <code class="text-base font-mono font-semibold text-base-content">/ideate</code>
-            <div class="text-xs text-base-content opacity-80 mt-1">
+            <div class="text-xs mt-1" style="color: var(--ink-2);">
               {gettext(
                 "An interactive Q&A turns a fuzzy idea into a committed requirements doc — Goal, Problem, Outcome, Assumptions, Constraints, Non-goals, Success Metrics."
               )}
             </div>
           </div>
           <div class="text-center">
-            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+            <div
+              class="text-xs font-mono uppercase tracking-wide mb-1"
+              style="color: var(--ink-2);"
+            >
               {gettext("02")}
             </div>
             <code class="text-base font-mono font-semibold text-base-content">/stridify</code>
-            <div class="text-xs text-base-content opacity-80 mt-1">
+            <div class="text-xs mt-1" style="color: var(--ink-2);">
               {gettext(
                 "Decomposes that document into a goal with dependency-ordered tasks, each sized to roughly 5 to 15 minutes of work."
               )}
             </div>
           </div>
           <div class="text-center">
-            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+            <div
+              class="text-xs font-mono uppercase tracking-wide mb-1"
+              style="color: var(--ink-2);"
+            >
               {gettext("03")}
             </div>
             <div class="font-semibold text-base-content">{gettext("On the board")}</div>
-            <div class="text-xs text-base-content opacity-80 mt-1">
+            <div class="text-xs mt-1" style="color: var(--ink-2);">
               {gettext(
                 "The goal and its tasks land in Ready. Agents claim them, and the lifecycle below takes over."
               )}
@@ -73,7 +82,7 @@
         {gettext("Getting ready for development")}
       </h2>
 
-      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto mb-8">
+      <p class="leading-relaxed text-center max-w-3xl mx-auto mb-8" style="color: var(--ink-2);">
         {gettext(
           "Ideation fills the Backlog, but agents never touch it directly. A human curates first: review what was captured, decide which tasks need a human sign-off, and promote the ready work into the Ready column."
         )}
@@ -82,35 +91,44 @@
       <div class="bg-base-100 rounded-2xl border border-base-300 p-8 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="text-center">
-            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+            <div
+              class="text-xs font-mono uppercase tracking-wide mb-1"
+              style="color: var(--ink-2);"
+            >
               {gettext("01")}
             </div>
             <div class="font-semibold text-base-content">{gettext("Review the Backlog")}</div>
-            <div class="text-xs text-base-content opacity-80 mt-1">
+            <div class="text-xs mt-1" style="color: var(--ink-2);">
               {gettext(
                 "Humans read through the captured tasks, sharpen scope, and confirm each one has a clear reason and acceptance criteria before any agent sees it."
               )}
             </div>
           </div>
           <div class="text-center">
-            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+            <div
+              class="text-xs font-mono uppercase tracking-wide mb-1"
+              style="color: var(--ink-2);"
+            >
               {gettext("02")}
             </div>
             <div class="font-semibold text-base-content">
               {gettext("Decide what needs review")}
             </div>
-            <div class="text-xs text-base-content opacity-80 mt-1">
+            <div class="text-xs mt-1" style="color: var(--ink-2);">
               {gettext(
                 "Flag the tasks whose finished work should pause for human approval. Those stop in Review when complete; the rest advance straight to Done."
               )}
             </div>
           </div>
           <div class="text-center">
-            <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 mb-1">
+            <div
+              class="text-xs font-mono uppercase tracking-wide mb-1"
+              style="color: var(--ink-2);"
+            >
               {gettext("03")}
             </div>
             <div class="font-semibold text-base-content">{gettext("Move to Ready")}</div>
-            <div class="text-xs text-base-content opacity-80 mt-1">
+            <div class="text-xs mt-1" style="color: var(--ink-2);">
               {gettext(
                 "Drag the prepared tasks into Ready. That move is the go signal — agents claim only from Ready, so nothing starts until a human says so."
               )}
@@ -119,7 +137,7 @@
         </div>
       </div>
 
-      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto">
+      <p class="leading-relaxed text-center max-w-3xl mx-auto" style="color: var(--ink-2);">
         {gettext(
           "Backlog is the human staging area; Ready is the contract. Curating the board up front is what lets agents run autonomously once the lifecycle below kicks in."
         )}
@@ -131,7 +149,7 @@
         {gettext("The AI development lifecycle")}
       </h2>
 
-      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto mb-6">
+      <p class="leading-relaxed text-center max-w-3xl mx-auto mb-6" style="color: var(--ink-2);">
         {gettext(
           "When an agent claims a task from Ready, the card moves to Doing and the agent runs the Stride workflow — a fixed loop where hooks, subagents, and skills carry the work from claim to completion."
         )}
@@ -140,11 +158,11 @@
       <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-6 text-xs">
         <span class="inline-flex items-center gap-1.5">
           <span class="w-2.5 h-2.5 rounded-full" style="background: var(--st-doing);"></span>
-          <span class="text-base-content opacity-70">{gettext("Hook")}</span>
+          <span style="color: var(--ink-2);">{gettext("Hook")}</span>
         </span>
         <span class="inline-flex items-center gap-1.5">
           <span class="w-2.5 h-2.5 rounded-full" style="background: var(--stride-violet);"></span>
-          <span class="text-base-content opacity-70">{gettext("Subagent")}</span>
+          <span style="color: var(--ink-2);">{gettext("Subagent")}</span>
         </span>
       </div>
 
@@ -153,13 +171,19 @@
           <li>
             <details class="group rounded-lg -mx-2 px-2 py-1.5 hover:bg-base-200/60 transition-colors">
               <summary class="flex gap-4 items-start cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
+                <div
+                  class="text-xs font-mono uppercase tracking-wide pt-0.5 w-6 shrink-0"
+                  style="color: var(--ink-2);"
+                >
                   {gettext("01")}
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2">
                     <span class="font-semibold text-base-content">{gettext("Claim")}</span>
-                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
+                    <span
+                      class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium"
+                      style="color: var(--stride-orange-ink);"
+                    >
                       {gettext("Details")}
                       <.icon
                         name="hero-chevron-down"
@@ -167,7 +191,7 @@
                       />
                     </span>
                   </div>
-                  <div class="text-xs text-base-content opacity-80 mt-0.5">
+                  <div class="text-xs mt-0.5" style="color: var(--ink-2);">
                     {gettext("The agent claims a task from Ready; the card moves to Doing.")}
                   </div>
                   <div class="flex flex-wrap gap-1.5 mt-2">
@@ -180,7 +204,7 @@
                   </div>
                 </div>
               </summary>
-              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
+              <div class="mt-3 pl-10 text-xs leading-relaxed" style="color: var(--ink-2);">
                 {raw(
                   String.replace(
                     gettext(
@@ -197,13 +221,19 @@
           <li>
             <details class="group rounded-lg -mx-2 px-2 py-1.5 hover:bg-base-200/60 transition-colors">
               <summary class="flex gap-4 items-start cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
+                <div
+                  class="text-xs font-mono uppercase tracking-wide pt-0.5 w-6 shrink-0"
+                  style="color: var(--ink-2);"
+                >
                   {gettext("02")}
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2">
                     <span class="font-semibold text-base-content">{gettext("Explore")}</span>
-                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
+                    <span
+                      class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium"
+                      style="color: var(--stride-orange-ink);"
+                    >
                       {gettext("Details")}
                       <.icon
                         name="hero-chevron-down"
@@ -211,7 +241,7 @@
                       />
                     </span>
                   </div>
-                  <div class="text-xs text-base-content opacity-80 mt-0.5">
+                  <div class="text-xs mt-0.5" style="color: var(--ink-2);">
                     {gettext(
                       "A subagent maps the key files, related tests, and existing patterns before any code is written."
                     )}
@@ -232,7 +262,10 @@
                   </div>
                 </div>
               </summary>
-              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed space-y-2">
+              <div
+                class="mt-3 pl-10 text-xs leading-relaxed space-y-2"
+                style="color: var(--ink-2);"
+              >
                 <p>
                   {raw(
                     String.replace(
@@ -263,13 +296,19 @@
           <li>
             <details class="group rounded-lg -mx-2 px-2 py-1.5 hover:bg-base-200/60 transition-colors">
               <summary class="flex gap-4 items-start cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
+                <div
+                  class="text-xs font-mono uppercase tracking-wide pt-0.5 w-6 shrink-0"
+                  style="color: var(--ink-2);"
+                >
                   {gettext("03")}
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2">
                     <span class="font-semibold text-base-content">{gettext("Implement")}</span>
-                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
+                    <span
+                      class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium"
+                      style="color: var(--stride-orange-ink);"
+                    >
                       {gettext("Details")}
                       <.icon
                         name="hero-chevron-down"
@@ -277,12 +316,12 @@
                       />
                     </span>
                   </div>
-                  <div class="text-xs text-base-content opacity-80 mt-0.5">
+                  <div class="text-xs mt-0.5" style="color: var(--ink-2);">
                     {gettext("The agent writes the code to complete the task.")}
                   </div>
                 </div>
               </summary>
-              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
+              <div class="mt-3 pl-10 text-xs leading-relaxed" style="color: var(--ink-2);">
                 {raw(
                   gettext(
                     "The implementing agent now writes the code, drawing on everything gathered so far: the task specification carried in the Stride claim — its acceptance criteria, pitfalls, and the human-reviewed details — the task-explorer's map of the existing files, tests, and patterns, and, on medium and larger tasks, the planner's step-by-step plan. It writes both the implementation and the tests that exercise it, mirroring the conventions the explorer surfaced so the change fits cleanly into the codebase it lands in."
@@ -304,13 +343,19 @@
           <li>
             <details class="group rounded-lg -mx-2 px-2 py-1.5 hover:bg-base-200/60 transition-colors">
               <summary class="flex gap-4 items-start cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
+                <div
+                  class="text-xs font-mono uppercase tracking-wide pt-0.5 w-6 shrink-0"
+                  style="color: var(--ink-2);"
+                >
                   {gettext("04")}
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2">
                     <span class="font-semibold text-base-content">{gettext("Review")}</span>
-                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
+                    <span
+                      class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium"
+                      style="color: var(--stride-orange-ink);"
+                    >
                       {gettext("Details")}
                       <.icon
                         name="hero-chevron-down"
@@ -318,7 +363,7 @@
                       />
                     </span>
                   </div>
-                  <div class="text-xs text-base-content opacity-80 mt-0.5">
+                  <div class="text-xs mt-0.5" style="color: var(--ink-2);">
                     {gettext(
                       "A subagent checks the diff against the task's acceptance criteria and pitfalls."
                     )}
@@ -333,7 +378,7 @@
                   </div>
                 </div>
               </summary>
-              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
+              <div class="mt-3 pl-10 text-xs leading-relaxed" style="color: var(--ink-2);">
                 {raw(
                   gettext(
                     "The task-reviewer subagent checks the finished diff against the task's own contract — its acceptance criteria, pitfalls, patterns to follow, and testing strategy — catching the task-specific problems that automated tests can't. It also enforces the project's standing rules: when a CODE-REVIEW.md file is present, each bullet in it becomes a review check — a CRITICAL: prefix raising its severity — and any unmet check is treated just like a task-specific finding. When the review comes back clean, the work moves straight on to validation. When it surfaces critical or important issues, the implementing agent fixes them and the diff is reviewed again; only once those are resolved does the task advance, while minor suggestions are noted but never block."
@@ -355,13 +400,19 @@
           <li>
             <details class="group rounded-lg -mx-2 px-2 py-1.5 hover:bg-base-200/60 transition-colors">
               <summary class="flex gap-4 items-start cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                <div class="text-xs font-mono uppercase tracking-wide text-base-content opacity-80 pt-0.5 w-6 shrink-0">
+                <div
+                  class="text-xs font-mono uppercase tracking-wide pt-0.5 w-6 shrink-0"
+                  style="color: var(--ink-2);"
+                >
                   {gettext("05")}
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2">
                     <span class="font-semibold text-base-content">{gettext("Validate")}</span>
-                    <span class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium text-primary">
+                    <span
+                      class="inline-flex items-center gap-1 shrink-0 text-[11px] font-medium"
+                      style="color: var(--stride-orange-ink);"
+                    >
                       {gettext("Details")}
                       <.icon
                         name="hero-chevron-down"
@@ -369,7 +420,7 @@
                       />
                     </span>
                   </div>
-                  <div class="text-xs text-base-content opacity-80 mt-0.5">
+                  <div class="text-xs mt-0.5" style="color: var(--ink-2);">
                     {gettext("Developer defined validations that must pass before completion.")}
                   </div>
                   <div class="flex flex-wrap gap-1.5 mt-2">
@@ -382,7 +433,7 @@
                   </div>
                 </div>
               </summary>
-              <div class="mt-3 pl-10 text-xs text-base-content opacity-80 leading-relaxed">
+              <div class="mt-3 pl-10 text-xs leading-relaxed" style="color: var(--ink-2);">
                 {raw(
                   gettext(
                     "Validation runs the after_doing hook — a blocking quality gate whose commands the developer defines. They typically run the full test suite, check formatting, run static code analysis, and run a security scan, and often build the project and auto-commit the change. Because the hook blocks completion, any failure stops the task cold: the agent fixes what broke and re-runs the hook until everything passes, so nothing reaches Done in a broken state."
@@ -410,7 +461,7 @@
         {gettext("Human review and completion")}
       </h2>
 
-      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto mb-8">
+      <p class="leading-relaxed text-center max-w-3xl mx-auto mb-8" style="color: var(--ink-2);">
         {raw(
           gettext(
             "When the agent marks a task complete, the before_review hook fires — the moment to open a pull request, post the diff for reviewers, or ping a channel. What happens next turns on a single flag a human set back in the Backlog: needs_review."
@@ -431,7 +482,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
           <h3 class="font-semibold text-base-content mb-2">{gettext("Flagged for review")}</h3>
-          <p class="text-sm text-base-content opacity-70 leading-relaxed">
+          <p class="text-sm leading-relaxed" style="color: var(--ink-2);">
             {raw(
               gettext(
                 "A task with needs_review set to true lands in the Review column and stops. It surfaces in the review queue — the shared list of finished tasks awaiting a human — which shows a full diff of every changed file alongside the task-reviewer's report. The reviewer reads through it and then approves the task, sends it back, or requests changes. On approval the after_review hook fires — merge, deploy, notify — and the task moves to Done."
@@ -456,7 +507,7 @@
         </div>
         <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
           <h3 class="font-semibold text-base-content mb-2">{gettext("Cleared to ship")}</h3>
-          <p class="text-sm text-base-content opacity-70 leading-relaxed">
+          <p class="text-sm leading-relaxed" style="color: var(--ink-2);">
             {raw(
               gettext(
                 "A task without that flag never pauses. It moves straight to Done, the after_review hook fires immediately — the same merge-and-deploy step, with no human in the loop — and the change is shipped on the spot."
@@ -471,7 +522,7 @@
         </div>
       </div>
 
-      <p class="text-base-content opacity-70 leading-relaxed text-center max-w-3xl mx-auto">
+      <p class="leading-relaxed text-center max-w-3xl mx-auto" style="color: var(--ink-2);">
         {gettext(
           "And the agent doesn't wait around. As soon as an un-flagged task reaches Done, it claims the next task from the Ready column and runs the whole loop again — working straight through the board until Ready is empty. Only a task that needs human review pauses the run, holding in the Review column until someone signs off."
         )}
@@ -482,7 +533,7 @@
       <h2 class="text-2xl md:text-3xl font-bold text-base-content mb-4">
         {gettext("Wire your project to Stride")}
       </h2>
-      <p class="text-base-content opacity-70 mb-6 max-w-xl mx-auto">
+      <p class="mb-6 max-w-xl mx-auto" style="color: var(--ink-2);">
         {gettext(
           "Drop a .stride.md in your project folder, get an API token for your agent, and watch the loop run on your own machine."
         )}
