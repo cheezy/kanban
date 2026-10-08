@@ -160,6 +160,13 @@
           </div>
         </div>
       <% else %>
+        <BoardFilterBar.board_filter_bar
+          filters={@board_filters}
+          labels={@filter_options.labels}
+          members={@filter_options.members}
+          active={@filters_active}
+          drag_hint={@filters_active and @can_modify}
+        />
         <div
           id="snap-indicator"
           class="md:hidden flex items-center justify-center gap-1.5 pb-2"
@@ -187,8 +194,9 @@
             data-column-id={column.id}
           >
             <% all_tasks = Map.get(@tasks_by_column, column.id, []) %>
+            <% visible_tasks = Map.get(@visible_tasks_by_column, column.id, []) %>
             <% task_count = Enum.count(all_tasks, &(&1.type in [:work, :defect])) %>
-            <% total_tasks = length(all_tasks) %>
+            <% total_tasks = length(visible_tasks) %>
             <% at_limit = column.wip_limit > 0 and task_count >= column.wip_limit %>
             <% over_limit = column.wip_limit > 0 and task_count > column.wip_limit %>
             <div class="flex items-start justify-between mb-2 group">
@@ -201,6 +209,11 @@
                 <ColumnHeader.column_header
                   column={column}
                   count={task_count}
+                  shown={
+                    if @filters_active,
+                      do: Enum.count(visible_tasks, &(&1.type in [:work, :defect]))
+                  }
+                  total={task_count}
                   new_task_path={
                     if @can_modify and not at_limit,
                       do: ~p"/boards/#{@board}/columns/#{column}/tasks/new"
@@ -262,16 +275,20 @@
               data-wip-limit={column.wip_limit}
               data-task-count={task_count}
               data-server-sorted={if goal_hierarchy_column?(column), do: "true"}
+              data-sortable-disabled={if @filters_active, do: "true"}
             >
               <div
                 id={"empty-state-#{column.id}"}
                 class={"empty-state #{if total_tasks > 0, do: "hidden"}"}
               >
-                <ColumnEmpty.column_empty status={column_status(column.name)} />
+                <ColumnEmpty.column_empty
+                  status={column_status(column.name)}
+                  filtered={@filters_active}
+                />
               </div>
 
               <div
-                :for={task <- Map.get(@tasks_by_column, column.id, [])}
+                :for={task <- visible_tasks}
                 id={"task-#{task.id}"}
                 data-id={task.id}
                 data-position={task.position}
@@ -325,7 +342,8 @@
                   phx-value-id={task.id}
                   class={[
                     "cursor-pointer",
-                    (@can_modify and task.type != :goal) && "cursor-grab active:cursor-grabbing"
+                    (@can_modify and not @filters_active and task.type != :goal) &&
+                      "cursor-grab active:cursor-grabbing"
                   ]}
                 >
                   <TaskCard.task_card
@@ -359,7 +377,7 @@
       if @live_action == :new_column, do: gettext("New column"), else: gettext("Edit column")
     }
     show
-    on_cancel={JS.patch(~p"/boards/#{@board}")}
+    on_cancel={JS.patch(FilterActions.board_path(@board, @board_filters))}
     padding="p-4 md:p-8 lg:p-14"
     mobile_fullscreen
   >
@@ -371,7 +389,7 @@
       board={@board}
       current_scope={@current_scope}
       column={(@live_action == :edit_column && @column) || %Kanban.Columns.Column{}}
-      patch={~p"/boards/#{@board}"}
+      patch={FilterActions.board_path(@board, @board_filters)}
     />
   </KanbanWeb.DelayedModal.delayed_modal>
 
@@ -386,7 +404,7 @@
       end
     }
     show
-    on_cancel={JS.patch(~p"/boards/#{@board}")}
+    on_cancel={JS.patch(FilterActions.board_path(@board, @board_filters))}
     max_width="max-w-6xl"
     padding="p-4 md:p-6 lg:p-8"
     mobile_fullscreen
@@ -415,7 +433,7 @@
       }
       column_id={(@live_action in [:new_task, :new_goal] && @column_id) || nil}
       current_scope={@current_scope}
-      patch={~p"/boards/#{@board}"}
+      patch={FilterActions.board_path(@board, @board_filters)}
     />
   </KanbanWeb.DelayedModal.delayed_modal>
 
@@ -424,7 +442,7 @@
     id="board-settings-modal"
     label={gettext("Board settings")}
     show
-    on_cancel={JS.patch(~p"/boards/#{@board}")}
+    on_cancel={JS.patch(FilterActions.board_path(@board, @board_filters))}
     padding="p-4 md:p-8 lg:p-14"
     mobile_fullscreen
   >
@@ -441,7 +459,7 @@
       id={"board-settings-#{@board.id}"}
       board={@board}
       current_scope={@current_scope}
-      patch={~p"/boards/#{@board}"}
+      patch={FilterActions.board_path(@board, @board_filters)}
     />
   </KanbanWeb.DelayedModal.delayed_modal>
 
@@ -450,7 +468,7 @@
     id="board-members-modal"
     label={gettext("Manage members")}
     show
-    on_cancel={JS.patch(~p"/boards/#{@board}")}
+    on_cancel={JS.patch(FilterActions.board_path(@board, @board_filters))}
     padding="p-4 md:p-8 lg:p-14"
     mobile_fullscreen
   >
@@ -467,7 +485,7 @@
       id={"board-members-#{@board.id}"}
       board={@board}
       current_scope={@current_scope}
-      patch={~p"/boards/#{@board}"}
+      patch={FilterActions.board_path(@board, @board_filters)}
     />
   </KanbanWeb.DelayedModal.delayed_modal>
 
@@ -500,7 +518,7 @@
     id="api-tokens-modal"
     label={gettext("API tokens")}
     show
-    on_cancel={JS.patch(~p"/boards/#{@board}")}
+    on_cancel={JS.patch(FilterActions.board_path(@board, @board_filters))}
     mobile_fullscreen
   >
     <div class="stride-screen">

@@ -76,4 +76,18 @@ defmodule KanbanWeb.ColumnEmptyTest do
       assert html =~ "Unrefined ideas"
     end
   end
+
+  describe "column_empty/1 — filtered (W2235)" do
+    test "says nothing matches instead of the status hint" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <ColumnEmpty.column_empty status={:doing} filtered={true} />
+        """)
+
+      assert html =~ "No cards match these filters."
+      refute html =~ "In-flight work"
+    end
+  end
 end

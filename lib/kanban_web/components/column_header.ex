@@ -24,10 +24,16 @@ defmodule KanbanWeb.ColumnHeader do
     * `count` — the number of tasks currently in the column. Required.
     * `new_task_path` — patch target for the `+ task` icon button. When
       `nil` (read-only viewers, locked boards), the button is omitted.
+    * `shown` — while the board filter bar is active, the number of cards
+      the filters leave visible. The badge then reads "shown of total"
+      (`total` being every card in the column). The WIP highlight always
+      uses the unfiltered `count`. Default `nil` (no filter).
   """
   attr :column, :map, required: true
   attr :count, :integer, required: true
   attr :new_task_path, :string, default: nil
+  attr :shown, :integer, default: nil
+  attr :total, :integer, default: nil
 
   def column_header(assigns) do
     wip = wip_limit(assigns.column)
@@ -38,7 +44,7 @@ defmodule KanbanWeb.ColumnHeader do
       |> assign(:wip, wip)
       |> assign(:over_wip, over_wip)
       |> assign(:status_color, status_color_for(assigns.column.name))
-      |> assign(:wip_label, wip_label(assigns.count, wip))
+      |> assign(:wip_label, badge_label(assigns, wip))
 
     ~H"""
     <div style={[
@@ -57,12 +63,15 @@ defmodule KanbanWeb.ColumnHeader do
       <span style="font-size: 12.5px; font-weight: 600; letter-spacing: -0.005em;">
         {@column.name}
       </span>
-      <span style={[
-        "font-size: 11px; font-family: var(--font-mono);",
-        "color: #{badge_color(@over_wip)};",
-        "background: #{badge_bg(@over_wip)};",
-        "padding: 0 5px; border-radius: 3px; font-weight: 500;"
-      ]}>
+      <span
+        data-column-count
+        style={[
+          "font-size: 11px; font-family: var(--font-mono);",
+          "color: #{badge_color(@over_wip)};",
+          "background: #{badge_bg(@over_wip)};",
+          "padding: 0 5px; border-radius: 3px; font-weight: 500;"
+        ]}
+      >
         {@wip_label}
       </span>
       <span style="flex: 1;"></span>
@@ -90,6 +99,11 @@ defmodule KanbanWeb.ColumnHeader do
 
   defp wip_limit(%{wip_limit: w}) when is_integer(w), do: w
   defp wip_limit(_), do: 0
+
+  defp badge_label(%{shown: shown} = assigns, _wip) when is_integer(shown),
+    do: gettext("%{shown} of %{total}", shown: shown, total: assigns.total || assigns.count)
+
+  defp badge_label(assigns, wip), do: wip_label(assigns.count, wip)
 
   defp wip_label(count, 0), do: Integer.to_string(count)
   defp wip_label(count, wip), do: "#{count}/#{wip}"

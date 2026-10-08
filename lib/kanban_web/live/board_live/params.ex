@@ -21,6 +21,7 @@ defmodule KanbanWeb.BoardLive.Params do
   alias Kanban.Tasks
   alias KanbanWeb.BoardLive.Authorization
   alias KanbanWeb.BoardLive.BoardState
+  alias KanbanWeb.BoardLive.FilterActions
   alias KanbanWeb.BoardLive.Show
 
   def with_board(socket, id, fun) do
@@ -44,8 +45,11 @@ defmodule KanbanWeb.BoardLive.Params do
      |> push_navigate(to: ~p"/boards")}
   end
 
+  # handle_params runs on every patch (each filter change, opening a modal),
+  # and a second subscribe to the same topic would deliver every broadcast
+  # twice. Subscribe only when this socket has not already loaded this board.
   def subscribe_to_board_updates(socket, board_id) do
-    if connected?(socket) do
+    if connected?(socket) and not match?(%{id: ^board_id}, socket.assigns[:board]) do
       Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board_id}")
     end
   end
@@ -232,15 +236,20 @@ defmodule KanbanWeb.BoardLive.Params do
     end)
   end
 
-  def resolve_default_board_view(socket, board, user_access) do
+  # The plain board URL carries the filter bar's query params (W2235); they
+  # are read here on every :show patch so the URL stays the source of truth.
+  def resolve_default_board_view(socket, board, user_access, params \\ %{}) do
     case Authorization.check_new_column_authorization(
            socket.assigns.live_action,
            user_access,
            board
          ) do
       :ok ->
-        if same_board_show?(socket, board) do
-          BoardState.refresh_board_tasks(socket, board)
+        same_board? = same_board_show?(socket, board)
+        {socket, filters_changed?} = maybe_assign_filters(socket, board, params)
+
+        if same_board? do
+          BoardState.refresh_board_tasks(socket, board, filters_changed?)
         else
           BoardState.assign_board_state(socket, board, user_access)
         end
@@ -252,6 +261,11 @@ defmodule KanbanWeb.BoardLive.Params do
          |> push_patch(to: ~p"/boards/#{board}")}
     end
   end
+
+  defp maybe_assign_filters(%{assigns: %{live_action: :show}} = socket, board, params),
+    do: FilterActions.assign_filters(socket, board, params)
+
+  defp maybe_assign_filters(socket, _board, _params), do: {socket, false}
 
   defp same_board_show?(socket, board) do
     socket.assigns.live_action == :show and

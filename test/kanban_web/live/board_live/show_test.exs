@@ -2977,4 +2977,311 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
     struct(Kanban.Tasks.Task, Map.merge(defaults, Map.new(overrides)))
   end
+
+  describe "board search and filters (W2235)" do
+    setup [:register_and_log_in_user]
+
+    setup %{user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "Doing"})
+
+      alpha = task_fixture(column, %{title: "Alpha login bug", type: :defect, priority: :high})
+      beta = task_fixture(column, %{title: "Beta onboarding", type: :work, priority: :low})
+      gamma = task_fixture(column, %{title: "Gamma search work", type: :work, priority: :high})
+
+      %{board: board, column: column, alpha: alpha, beta: beta, gamma: gamma}
+    end
+
+    defp card?(view, task), do: has_element?(view, "#task-#{task.id}")
+
+    defp attach_filter_label(user, task, label) do
+      {:ok, _} =
+        user
+        |> Kanban.Accounts.Scope.for_user()
+        |> Kanban.Labels.set_task_labels(task, [label.id])
+    end
+
+    test "typing in search patches the URL and hides non-matching cards", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      view |> form("#board-filter-form", %{"q" => "alpha"}) |> render_change()
+
+      assert_patch(view, ~p"/boards/#{ctx.board}?q=alpha")
+      assert card?(view, ctx.alpha)
+      refute card?(view, ctx.beta)
+      refute card?(view, ctx.gamma)
+    end
+
+    test "changing a selector patches the URL and filters without a reload", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      view |> form("#board-filter-form", %{"priority" => "high"}) |> render_change()
+
+      assert_patch(view, ~p"/boards/#{ctx.board}?priority=high")
+      assert card?(view, ctx.alpha)
+      assert card?(view, ctx.gamma)
+      refute card?(view, ctx.beta)
+    end
+
+    test "submitting the search form patches instead of submitting natively", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      view |> form("#board-filter-form", %{"q" => "gamma"}) |> render_submit()
+
+      assert_patch(view, ~p"/boards/#{ctx.board}?q=gamma")
+      assert card?(view, ctx.gamma)
+      refute card?(view, ctx.alpha)
+    end
+
+    test "opening a URL with filter params renders the board already filtered", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?type=work&priority=high")
+
+      assert card?(view, ctx.gamma)
+      refute card?(view, ctx.alpha)
+      refute card?(view, ctx.beta)
+      assert has_element?(view, "#board-filter-priority option[value='high'][selected]")
+      assert has_element?(view, "#board-filter-type option[value='work'][selected]")
+    end
+
+    test "unknown or malformed params are ignored, not crashed on", ctx do
+      other_board = board_fixture(user_fixture())
+      foreign_label = Kanban.LabelsFixtures.label_fixture(other_board)
+
+      {:ok, view, _html} =
+        live(
+          ctx.conn,
+          ~p"/boards/#{ctx.board}?type=epic&priority=URGENT&assignee=abc&label=#{foreign_label.id}&sort=x"
+        )
+
+      assert card?(view, ctx.alpha)
+      assert card?(view, ctx.beta)
+      assert card?(view, ctx.gamma)
+      refute has_element?(view, "#board-filter-clear")
+    end
+
+    test "search matches identifiers case-insensitively and wildcards literally", ctx do
+      {:ok, view, _html} =
+        live(ctx.conn, ~p"/boards/#{ctx.board}?q=#{String.downcase(ctx.beta.identifier)}")
+
+      assert card?(view, ctx.beta)
+      refute card?(view, ctx.gamma)
+
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?q=%25")
+
+      refute card?(view, ctx.alpha)
+      refute card?(view, ctx.beta)
+    end
+
+    test "filters combine and Clear resets them", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?type=work&priority=high")
+
+      assert card?(view, ctx.gamma)
+      refute card?(view, ctx.beta)
+
+      view |> element("#board-filter-clear") |> render_click()
+
+      assert_patch(view, ~p"/boards/#{ctx.board}")
+      assert card?(view, ctx.alpha)
+      assert card?(view, ctx.beta)
+      assert card?(view, ctx.gamma)
+      refute has_element?(view, "#board-filter-clear")
+    end
+
+    test "assignee filter matches unassigned tasks and board members", ctx do
+      ctx.alpha |> Ecto.Changeset.change(assigned_to_id: ctx.user.id) |> Kanban.Repo.update!()
+
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?assignee=unassigned")
+
+      refute card?(view, ctx.alpha)
+      assert card?(view, ctx.beta)
+
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?assignee=#{ctx.user.id}")
+
+      assert card?(view, ctx.alpha)
+      refute card?(view, ctx.beta)
+    end
+
+    test "label filter shows only labelled tasks", ctx do
+      label = Kanban.LabelsFixtures.label_fixture(ctx.board, %{name: "Frontend"})
+      attach_filter_label(ctx.user, ctx.beta, label)
+
+      {:ok, view, html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      assert html =~ "Frontend"
+
+      view |> form("#board-filter-form", %{"label" => to_string(label.id)}) |> render_change()
+
+      assert_patch(view, ~p"/boards/#{ctx.board}?label=#{label.id}")
+      assert card?(view, ctx.beta)
+      refute card?(view, ctx.alpha)
+    end
+
+    test "drag reordering is disabled with a visible hint while filters are active", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      refute has_element?(view, "[phx-hook='Sortable'][data-sortable-disabled='true']")
+      refute has_element?(view, "#board-filter-drag-hint")
+
+      view |> form("#board-filter-form", %{"q" => "alpha"}) |> render_change()
+
+      assert has_element?(view, "#tasks-#{ctx.column.id}[data-sortable-disabled='true']")
+      assert has_element?(view, "#board-filter-drag-hint")
+    end
+
+    test "a move pushed while filters are active is rejected and positions stay put", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?priority=high")
+      before = Enum.map([ctx.alpha, ctx.beta, ctx.gamma], &Kanban.Repo.reload!(&1).position)
+
+      html =
+        render_hook(view, "move_task", %{
+          "task_id" => to_string(ctx.gamma.id),
+          "old_column_id" => to_string(ctx.column.id),
+          "new_column_id" => to_string(ctx.column.id),
+          "new_position" => 0
+        })
+
+      assert html =~ "Clear the filters to reorder cards"
+
+      assert Enum.map([ctx.alpha, ctx.beta, ctx.gamma], &Kanban.Repo.reload!(&1).position) ==
+               before
+    end
+
+    test "column counts reflect filtered results and empty columns say so", ctx do
+      empty_column = column_fixture(ctx.board, %{name: "Review"})
+      _other = task_fixture(empty_column, %{title: "Unrelated review"})
+
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?q=alpha")
+
+      assert view |> element("#columns-#{ctx.column.id} [data-column-count]") |> render() =~
+               "1 of 3"
+
+      assert view |> element("#columns-#{empty_column.id} [data-column-empty]") |> render() =~
+               "No cards match these filters."
+
+      refute has_element?(view, "#empty-state-#{empty_column.id}.hidden")
+    end
+
+    test "a goal card stays visible as context for its matching children", ctx do
+      goal = task_fixture(ctx.column, %{title: "Quarterly roadmap", type: :goal})
+
+      child =
+        ctx.column
+        |> task_fixture(%{title: "Needle child"})
+        |> Ecto.Changeset.change(parent_id: goal.id)
+        |> Kanban.Repo.update!()
+
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?q=needle")
+
+      assert card?(view, goal)
+      assert card?(view, child)
+      refute card?(view, ctx.alpha)
+    end
+
+    test "filters survive a PubSub reload", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?q=alpha")
+
+      new_task = task_fixture(ctx.column, %{title: "Delta unrelated"})
+      send(view.pid, {Kanban.Tasks, :task_created, new_task})
+
+      refute card?(view, new_task)
+      assert card?(view, ctx.alpha)
+      refute card?(view, ctx.beta)
+
+      moved = %{ctx.beta | position: 0}
+      send(view.pid, {Kanban.Tasks, :task_moved, moved})
+
+      assert card?(view, ctx.alpha)
+      refute card?(view, ctx.beta)
+      # While filtered the moved card may be absent from the DOM, and the
+      # client reloads the page when it cannot find it — so no client event.
+      refute_push_event(view, "task_moved_remotely", %{})
+    end
+
+    test "an unfiltered board still lets the client apply remote moves", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      send(view.pid, {Kanban.Tasks, :task_moved, %{ctx.beta | position: 0}})
+
+      assert_push_event(view, "task_moved_remotely", %{task_id: task_id})
+      assert task_id == ctx.beta.id
+    end
+
+    test "repeated filter changes keep a single board subscription", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      view |> form("#board-filter-form", %{"q" => "a"}) |> render_change()
+      view |> form("#board-filter-form", %{"q" => "al"}) |> render_change()
+
+      topic = "board:#{ctx.board.id}"
+      assert Registry.keys(Kanban.PubSub, view.pid) |> Enum.count(&(&1 == topic)) == 1
+    end
+
+    test "a read-only member can filter", ctx do
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, member, :read_only, ctx.user)
+      conn = log_in_user(ctx.conn, member)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{ctx.board}")
+      view |> form("#board-filter-form", %{"q" => "beta"}) |> render_change()
+
+      assert_patch(view, ~p"/boards/#{ctx.board}?q=beta")
+      assert card?(view, ctx.beta)
+      refute card?(view, ctx.alpha)
+      refute has_element?(view, "#board-filter-drag-hint")
+    end
+
+    test "a public read-only viewer can filter, including by label", ctx do
+      label = Kanban.LabelsFixtures.label_fixture(ctx.board, %{name: "Public label"})
+      attach_filter_label(ctx.user, ctx.gamma, label)
+      {:ok, board} = Kanban.Boards.update_board(ctx.board, %{read_only: true}, ctx.user)
+      conn = log_in_user(ctx.conn, user_fixture())
+
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}")
+      assert html =~ "Public label"
+
+      view |> form("#board-filter-form", %{"label" => to_string(label.id)}) |> render_change()
+
+      assert_patch(view, ~p"/boards/#{board}?label=#{label.id}")
+      assert card?(view, ctx.gamma)
+      refute card?(view, ctx.alpha)
+    end
+
+    test "closing a task modal returns to the filtered board", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?q=alpha")
+
+      html = render_patch(view, ~p"/boards/#{ctx.board}/tasks/#{ctx.alpha}/edit")
+
+      # The modal's cancel and save targets carry the filter query string.
+      assert html =~ "/boards/#{ctx.board.id}?q=alpha"
+      assert card?(view, ctx.alpha)
+      refute card?(view, ctx.beta)
+
+      render_patch(view, ~p"/boards/#{ctx.board}?q=alpha")
+
+      # Back on the board the filters are still applied. (Asserted on the
+      # filter bar: this LiveViewTest DOM drops the streamed columns after a
+      # modal round-trip whether or not filters are set.)
+      assert has_element?(view, "#board-search[value='alpha']")
+      assert has_element?(view, "#board-filter-clear")
+    end
+
+    test "a label created after the board opened can still be filtered by URL", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      label = Kanban.LabelsFixtures.label_fixture(ctx.board, %{name: "Late label"})
+      attach_filter_label(ctx.user, ctx.gamma, label)
+
+      render_patch(view, ~p"/boards/#{ctx.board}?label=#{label.id}")
+
+      assert card?(view, ctx.gamma)
+      refute card?(view, ctx.alpha)
+      assert render(view) =~ "Late label"
+    end
+
+    test "a filtered URL does not open a board the viewer cannot see", ctx do
+      conn = log_in_user(ctx.conn, user_fixture())
+
+      assert {:error, {:live_redirect, %{to: "/boards"}}} =
+               live(conn, ~p"/boards/#{ctx.board}?q=alpha")
+    end
+  end
 end

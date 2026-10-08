@@ -180,4 +180,36 @@ defmodule KanbanWeb.ColumnHeaderTest do
       refute html =~ "var(--st-blocked-soft)"
     end
   end
+
+  describe "column_header/1 — filtered count (W2235)" do
+    test "reads shown of total while filtered, unfiltered count otherwise" do
+      assigns = %{column: column()}
+
+      filtered =
+        rendered_to_string(~H"""
+        <ColumnHeader.column_header column={@column} count={5} shown={2} total={5} />
+        """)
+
+      unfiltered =
+        rendered_to_string(~H"""
+        <ColumnHeader.column_header column={@column} count={5} />
+        """)
+
+      assert filtered =~ ~r/>\s*2 of 5\s*</
+      assert unfiltered =~ ~r/>\s*5\s*</
+      refute unfiltered =~ " of "
+    end
+
+    test "keeps the over-WIP highlight on the unfiltered count" do
+      assigns = %{column: column(%{wip_limit: 3})}
+
+      html =
+        rendered_to_string(~H"""
+        <ColumnHeader.column_header column={@column} count={4} shown={1} total={4} />
+        """)
+
+      assert html =~ "1 of 4"
+      assert html =~ "var(--st-blocked-soft)"
+    end
+  end
 end

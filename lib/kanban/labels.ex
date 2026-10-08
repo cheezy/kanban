@@ -8,6 +8,10 @@ defmodule Kanban.Labels do
     * `list_labels/2` returns the board's labels to any member (including
       read-only members) and `[]` to anyone else, so a non-member cannot tell
       "no access" from "no labels".
+    * `list_viewable_labels/2` widens that to everyone who can view the
+      board — its members, plus anyone when the board is shared publicly
+      read-only — matching `Kanban.Boards.get_board/2`. The board filter bar
+      uses it so public read-only viewers can filter by label.
     * The mutating functions require `:owner` or `:modify` access on the
       label's (or task's) board and return `{:error, :unauthorized}` otherwise,
       matching `Kanban.Boards` and `Kanban.Columns`.
@@ -50,6 +54,40 @@ defmodule Kanban.Labels do
           on: bu.board_id == l.board_id and bu.user_id == ^user_id
         )
         |> where([l], l.board_id == ^board_id)
+        |> order_by([l], asc: fragment("lower(?)", l.name), asc: l.id)
+        |> Repo.all()
+    end
+  end
+
+  @doc """
+  Lists the labels of a board the scope's user can view, ordered like
+  `list_labels/2`.
+
+  A user can view a board when they are a member of it, or when the board is
+  shared publicly read-only (`read_only: true`). Returns `[]` otherwise,
+  including for a scope with no user.
+
+  ## Examples
+
+      iex> list_viewable_labels(public_viewer_scope, read_only_board)
+      [%Label{}, ...]
+
+      iex> list_viewable_labels(non_member_scope, private_board)
+      []
+
+  """
+  def list_viewable_labels(scope, %Board{id: board_id}) do
+    case scope_user(scope) do
+      nil ->
+        []
+
+      %{id: user_id} ->
+        members = from(bu in BoardUser, where: bu.user_id == ^user_id, select: bu.board_id)
+
+        Label
+        |> join(:inner, [l], b in Board, on: b.id == l.board_id)
+        |> where([l, b], l.board_id == ^board_id)
+        |> where([l, b], b.read_only or b.id in subquery(members))
         |> order_by([l], asc: fragment("lower(?)", l.name), asc: l.id)
         |> Repo.all()
     end

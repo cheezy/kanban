@@ -21,11 +21,20 @@ defmodule KanbanWeb.ColumnEmpty do
     * `status` — one of `:backlog | :ready | :doing | :review | :done`.
       Drives the hint copy. Unknown atoms fall back to a default hint.
       Default `:backlog`.
+    * `filtered` — true while the board filter bar is active, so an empty
+      column means "nothing matches" rather than "nothing here"; the hint
+      says so instead of the status copy. Default `false`.
   """
   attr :status, :atom, default: :backlog
+  attr :filtered, :boolean, default: false
 
   def column_empty(assigns) do
-    assigns = assign(assigns, :hint, hint_for(assigns.status))
+    hint =
+      if assigns.filtered,
+        do: gettext("No cards match these filters."),
+        else: hint_for(assigns.status)
+
+    assigns = assign(assigns, :hint, hint)
 
     ~H"""
     <div

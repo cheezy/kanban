@@ -18,6 +18,7 @@ defmodule KanbanWeb.BoardLive.Authorization do
 
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias Kanban.Tasks.BoardFilters
   alias KanbanWeb.BoardLive.Show
   alias KanbanWeb.BoardLive.TaskActions
 
@@ -115,12 +116,22 @@ defmodule KanbanWeb.BoardLive.Authorization do
     end
   end
 
-  @doc "Authorizes a move; requires :can_modify and board-scoped move targets."
+  @doc """
+  Authorizes a move; requires :can_modify and board-scoped move targets.
+  Returns `{:error, :filters_active}` while the board filter bar is narrowing
+  the columns, because a filtered column's positions are not the real order
+  (W2235).
+  """
   def authorize_move_task(socket, raw_task_id, raw_old_col_id, raw_new_col_id) do
-    if socket.assigns.can_modify do
-      lookup_move_targets(socket, raw_task_id, raw_old_col_id, raw_new_col_id)
-    else
-      {:error, :not_authorized}
+    cond do
+      not socket.assigns.can_modify ->
+        {:error, :not_authorized}
+
+      BoardFilters.active?(socket.assigns[:board_filters]) ->
+        {:error, :filters_active}
+
+      true ->
+        lookup_move_targets(socket, raw_task_id, raw_old_col_id, raw_new_col_id)
     end
   end
 

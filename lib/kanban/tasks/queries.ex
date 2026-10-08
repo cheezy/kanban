@@ -9,6 +9,7 @@ defmodule Kanban.Tasks.Queries do
   import Ecto.Query, warn: false
 
   alias Kanban.Repo
+  alias Kanban.Tasks.BoardFilters
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
   alias Kanban.Tasks.TaskHistory
@@ -39,24 +40,26 @@ defmodule Kanban.Tasks.Queries do
   The returned map only contains keys for columns that have at least one task.
   Callers that need an entry for every requested column should merge against a
   seed map built from the column IDs.
+
+  Pass `filters: %Kanban.Tasks.BoardFilters{}` to narrow the result with the
+  board filter bar's search and selectors (see `Kanban.Tasks.BoardFilters`).
   """
   def list_tasks_by_columns(columns, opts \\ []) do
-    include_archived = Keyword.get(opts, :include_archived, false)
-    column_ids = Enum.map(columns, & &1.id)
-
-    case column_ids do
-      [] ->
-        %{}
-
-      ids ->
-        Task
-        |> where([t], t.column_id in ^ids)
-        |> maybe_filter_archived(include_archived)
-        |> order_by([t], [t.column_id, t.position])
-        |> preload(:assigned_to)
-        |> Repo.all()
-        |> Enum.group_by(& &1.column_id)
+    case Enum.map(columns, & &1.id) do
+      [] -> %{}
+      ids -> query_tasks_by_column_ids(ids, opts)
     end
+  end
+
+  defp query_tasks_by_column_ids(ids, opts) do
+    Task
+    |> where([t], t.column_id in ^ids)
+    |> maybe_filter_archived(Keyword.get(opts, :include_archived, false))
+    |> BoardFilters.apply_filters(Keyword.get(opts, :filters))
+    |> order_by([t], [t.column_id, t.position])
+    |> preload(:assigned_to)
+    |> Repo.all()
+    |> Enum.group_by(& &1.column_id)
   end
 
   @doc """

@@ -4,11 +4,14 @@ defmodule KanbanWeb.BoardLive.Show do
   alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Messages
+  alias Kanban.Tasks.BoardFilters
+  alias KanbanWeb.BoardFilterBar
   alias KanbanWeb.BoardHeader
   alias KanbanWeb.BoardLive.ApiTokens
   alias KanbanWeb.BoardLive.Authorization
   alias KanbanWeb.BoardLive.BoardState
   alias KanbanWeb.BoardLive.ColumnActions
+  alias KanbanWeb.BoardLive.FilterActions
   alias KanbanWeb.BoardLive.Params
   alias KanbanWeb.BoardLive.TaskActions
   alias KanbanWeb.BoardLive.TaskCardData
@@ -29,7 +32,11 @@ defmodule KanbanWeb.BoardLive.Show do
        viewing_task_id: nil,
        show_task_modal: false,
        column_id: nil,
-       tasks_version: :os.system_time(:millisecond)
+       tasks_version: :os.system_time(:millisecond),
+       board_filters: %BoardFilters{},
+       filter_options: FilterActions.empty_options(),
+       filters_active: false,
+       visible_tasks_by_column: %{}
      )
      |> stream(:undismissed_messages, undismissed_messages)}
   end
@@ -65,11 +72,17 @@ defmodule KanbanWeb.BoardLive.Show do
     end)
   end
 
-  def handle_params(%{"id" => id}, _, socket) do
+  def handle_params(%{"id" => id} = params, _, socket) do
     Params.with_board(socket, id, fn board, user_access ->
-      Params.resolve_default_board_view(socket, board, user_access)
+      Params.resolve_default_board_view(socket, board, user_access, params)
     end)
   end
+
+  @impl true
+  def handle_event("filter_change", params, socket),
+    do: FilterActions.handle_filter_change(socket, params)
+
+  def handle_event("clear_filters", _params, socket), do: FilterActions.clear_filters(socket)
 
   @impl true
   def handle_event("dismiss_message", %{"id" => id}, socket) do
@@ -221,27 +234,9 @@ defmodule KanbanWeb.BoardLive.Show do
         },
         socket
       ) do
-    case Authorization.authorize_move_task(socket, task_id, old_column_id, new_column_id) do
-      {:ok, task, parsed_old_col_id, parsed_new_col_id} ->
-        Authorization.dispatch_authorized_move(
-          socket,
-          task,
-          parsed_old_col_id,
-          parsed_new_col_id,
-          new_position
-        )
-
-      {:error, :not_authorized} ->
-        {:noreply,
-         put_flash(
-           socket,
-           :error,
-           gettext("You do not have permission to move tasks on this board")
-         )}
-
-      {:error, :not_found} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to move task"))}
-    end
+    socket
+    |> Authorization.authorize_move_task(task_id, old_column_id, new_column_id)
+    |> handle_move_authorization(socket, new_position)
   end
 
   @impl true
@@ -370,24 +365,8 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
-  def handle_info({Kanban.Tasks, :task_moved, task}, socket) do
-    # Send event to JavaScript to manually update the DOM
-    # This is more reliable than trying to force LiveView to update.
-    # Also refresh per-board metrics (BoardHeader KV counts) and
-    # reload the column tasks so the GoalsStrip flow segments
-    # recompute after a remote move from another client.
-    columns = Columns.list_columns(socket.assigns.board)
-
-    {:noreply,
-     socket
-     |> push_event("task_moved_remotely", %{
-       task_id: task.id,
-       new_column_id: task.column_id,
-       new_position: task.position
-     })
-     |> BoardState.load_tasks_for_columns(columns)
-     |> BoardState.refresh_board_metrics()}
-  end
+  def handle_info({Kanban.Tasks, :task_moved, task}, socket),
+    do: BoardState.handle_remote_task_move(socket, task)
 
   @impl true
   def handle_info({Kanban.Tasks, :task_deleted, _task}, socket) do
@@ -495,4 +474,18 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @doc "See `KanbanWeb.BoardLive.ColumnActions.column_status/1`."
   defdelegate column_status(name), to: ColumnActions
+
+  defp handle_move_authorization({:ok, task, old_col_id, new_col_id}, socket, new_position),
+    do: Authorization.dispatch_authorized_move(socket, task, old_col_id, new_col_id, new_position)
+
+  defp handle_move_authorization({:error, :filters_active}, socket, _new_position),
+    do: FilterActions.reject_filtered_move(socket)
+
+  defp handle_move_authorization({:error, :not_authorized}, socket, _new_position) do
+    {:noreply,
+     put_flash(socket, :error, gettext("You do not have permission to move tasks on this board"))}
+  end
+
+  defp handle_move_authorization({:error, :not_found}, socket, _new_position),
+    do: {:noreply, put_flash(socket, :error, gettext("Failed to move task"))}
 end

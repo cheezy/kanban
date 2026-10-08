@@ -130,7 +130,13 @@ const SortableHook = {
     const group = this.el.dataset.group || "shared"
     const handle = this.el.dataset.handle
 
+    // The server sets data-sortable-disabled while board filters are active:
+    // a filtered column's indexes are not the real positions, so dragging is
+    // turned off (and the server rejects any move that slips through).
+    const disabled = this.el.dataset.sortableDisabled === "true"
+
     this.sortable = Sortable.create(this.el, {
+      disabled: disabled,
       group: group,
       animation: 150,
       easing: "cubic-bezier(0.4, 0, 0.2, 1)",
@@ -171,6 +177,11 @@ const SortableHook = {
       },
 
       onEnd: function(evt) {
+        if (hook.el.dataset.sortableDisabled === "true") {
+          hook.isDragging = false
+          return
+        }
+
         const taskId = evt.item.dataset.id
         const newColumnId = evt.to.dataset.columnId
         const oldColumnId = evt.from.dataset.columnId

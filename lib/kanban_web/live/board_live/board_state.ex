@@ -8,11 +8,12 @@ defmodule KanbanWeb.BoardLive.BoardState do
   """
 
   import Phoenix.Component, only: [assign: 3]
-  import Phoenix.LiveView, only: [stream: 3, stream: 4]
+  import Phoenix.LiveView, only: [push_event: 3, stream: 3, stream: 4]
 
   alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias Kanban.Tasks.BoardFilters
   alias KanbanWeb.BoardAccent
   alias KanbanWeb.BoardLive.Goals
 
@@ -77,9 +78,37 @@ defmodule KanbanWeb.BoardLive.BoardState do
   def page_title(:manage_members), do: "Manage Members"
   def page_title(:board_settings), do: "Board Settings"
 
-  def load_tasks_for_columns(socket, columns) do
-    tasks_by_column = group_tasks_by_column(columns)
+  @doc """
+  Loads every column's tasks and the goal-derived assigns.
 
+  `:tasks_by_column` always holds the unfiltered tasks: the goal strip, goal
+  progress, goal chips and WIP limits are computed from it, so filtering never
+  distorts them. `:visible_tasks_by_column` holds what the columns render —
+  the same map when no filter is active, otherwise a second, filtered query
+  using the socket's `:board_filters` (W2235). Every reload goes through here,
+  so PubSub-triggered reloads keep the current filters.
+  """
+  def load_tasks_for_columns(socket, columns) do
+    tasks_by_column = group_tasks_by_column(columns, [])
+    filters = socket.assigns[:board_filters]
+    filters_active = BoardFilters.active?(filters)
+
+    socket
+    |> assign(:tasks_by_column, tasks_by_column)
+    |> assign(:visible_tasks_by_column, visible_tasks(columns, tasks_by_column, filters))
+    |> assign(:filters_active, filters_active)
+    |> assign_goal_data(columns, tasks_by_column)
+    |> assign(:ready_column_id, ready_column_id(columns))
+    |> assign(:tasks_version, :os.system_time(:millisecond))
+  end
+
+  defp visible_tasks(columns, tasks_by_column, filters) do
+    if BoardFilters.active?(filters),
+      do: group_tasks_by_column(columns, filters: filters),
+      else: tasks_by_column
+  end
+
+  defp assign_goal_data(socket, columns, tasks_by_column) do
     goal_progress = Goals.compute_goal_progress(tasks_by_column, socket.assigns.board.id)
     backlog_goals_with_children = Goals.compute_backlog_promotable_goals(columns, tasks_by_column)
     goals_by_id = Goals.compute_goals_by_id(tasks_by_column)
@@ -93,17 +122,14 @@ defmodule KanbanWeb.BoardLive.BoardState do
       )
 
     socket
-    |> assign(:tasks_by_column, tasks_by_column)
     |> assign(:goal_progress, goal_progress)
     |> assign(:backlog_goals_with_children, backlog_goals_with_children)
     |> assign(:goals_by_id, goals_by_id)
     |> assign(:goals, goals)
-    |> assign(:ready_column_id, ready_column_id(columns))
-    |> assign(:tasks_version, :os.system_time(:millisecond))
   end
 
-  defp group_tasks_by_column(columns) do
-    grouped = Tasks.list_tasks_by_columns(columns)
+  defp group_tasks_by_column(columns, opts) do
+    grouped = Tasks.list_tasks_by_columns(columns, opts)
 
     Enum.into(columns, %{}, fn column ->
       tasks = grouped |> Map.get(column.id, []) |> sort_column_tasks(column)
@@ -169,7 +195,13 @@ defmodule KanbanWeb.BoardLive.BoardState do
     assign(socket, :board, board)
   end
 
-  def refresh_board_tasks(socket, board) do
+  @doc """
+  Re-reads the board's tasks after a same-board patch. Pass `true` as the
+  third (`restream?`) argument when the visible cards changed (a filter
+  change), because the cards render inside the `:columns` stream items and
+  only re-render when those are re-inserted.
+  """
+  def refresh_board_tasks(socket, board, restream? \\ false) do
     columns = Columns.list_columns(board)
 
     {:noreply,
@@ -177,6 +209,38 @@ defmodule KanbanWeb.BoardLive.BoardState do
      |> assign(:page_title, page_title(socket.assigns.live_action))
      |> assign(:viewing_task_id, nil)
      |> assign(:show_task_modal, false)
+     |> maybe_restream_columns(columns, restream?)
      |> load_tasks_for_columns(columns)}
+  end
+
+  defp maybe_restream_columns(socket, columns, true), do: stream(socket, :columns, columns)
+  defp maybe_restream_columns(socket, _columns, false), do: socket
+
+  @doc """
+  Applies a task moved by another client. Unfiltered, the client moves the
+  card itself from the `task_moved_remotely` event. While filters are active
+  the moved card may not be on the page at all — and the client reloads the
+  whole page when it cannot find it — so the columns are re-rendered from
+  the server instead. Either way the tasks and board metrics are re-read so
+  the goal strip and header counts recompute.
+  """
+  def handle_remote_task_move(socket, task) do
+    columns = Columns.list_columns(socket.assigns.board)
+
+    socket =
+      if BoardFilters.active?(socket.assigns[:board_filters]) do
+        stream(socket, :columns, columns)
+      else
+        push_event(socket, "task_moved_remotely", %{
+          task_id: task.id,
+          new_column_id: task.column_id,
+          new_position: task.position
+        })
+      end
+
+    {:noreply,
+     socket
+     |> load_tasks_for_columns(columns)
+     |> refresh_board_metrics()}
   end
 end

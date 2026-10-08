@@ -109,6 +109,49 @@ defmodule Kanban.LabelsTest do
     end
   end
 
+  describe "list_viewable_labels/2" do
+    test "returns the board's labels to members, ordered like list_labels/2", ctx do
+      zeta = label_fixture(ctx.board, %{name: "zeta"})
+      alpha = label_fixture(ctx.board, %{name: "Alpha"})
+
+      for scope <- [ctx.owner_scope, ctx.modify_scope, ctx.read_only_scope] do
+        assert scope |> Labels.list_viewable_labels(ctx.board) |> Enum.map(& &1.id) ==
+                 [alpha.id, zeta.id]
+      end
+    end
+
+    test "returns [] to a non-member of a private board", ctx do
+      label_fixture(ctx.board)
+
+      assert Labels.list_viewable_labels(ctx.outsider_scope, ctx.board) == []
+    end
+
+    test "returns the labels to a non-member of a public read-only board", ctx do
+      {:ok, board} = Boards.update_board(ctx.board, %{read_only: true}, ctx.owner)
+      label = label_fixture(board)
+
+      assert [%Label{id: id}] = Labels.list_viewable_labels(ctx.outsider_scope, board)
+      assert id == label.id
+    end
+
+    test "returns [] for a nil scope or a scope without a user", ctx do
+      {:ok, board} = Boards.update_board(ctx.board, %{read_only: true}, ctx.owner)
+      label_fixture(board)
+
+      assert Labels.list_viewable_labels(nil, board) == []
+      assert Labels.list_viewable_labels(%Scope{user: nil}, board) == []
+    end
+
+    test "excludes labels from other boards", ctx do
+      {:ok, _} = Boards.update_board(ctx.other_board, %{read_only: true}, ctx.other_owner)
+      label_fixture(ctx.other_board)
+      own = label_fixture(ctx.board)
+
+      assert [%Label{id: id}] = Labels.list_viewable_labels(ctx.owner_scope, ctx.board)
+      assert id == own.id
+    end
+  end
+
   describe "create_label/3" do
     test "creates a label on the board for the owner", ctx do
       assert {:ok, %Label{} = label} =
