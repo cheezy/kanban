@@ -1,10 +1,20 @@
 defmodule KanbanWeb.Telemetry.MetricsStorage do
   @moduledoc """
   Stores telemetry metrics history in PostgreSQL for unlimited persistence.
+
+  Event metadata is stored as JSON after sanitising: keys that carry a
+  credential (session, tokens, CSRF, passwords, secrets, cookies,
+  authorization, OTP, `live_socket_id`) are dropped at any depth, and a
+  struct is stored as its module name only, so a socket's or a session's
+  contents never reach the `metrics_events` table. Keys ending in `_id`, such
+  as `user_id`, are ids rather than credentials and are kept.
   """
   use GenServer
   import Ecto.Query
   alias Kanban.Repo
+
+  @credential_fragments ~w(password token secret authoriz cookie session csrf)
+  @credential_words ~w(otp)
 
   def start_link(metrics) do
     GenServer.start_link(__MODULE__, metrics, name: __MODULE__)
@@ -157,11 +167,7 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
 
   defp format_label(metric_name), do: to_string(metric_name)
 
-  defp sanitize_metadata(metadata) when is_map(metadata) do
-    metadata
-    |> Enum.map(fn {key, value} -> {to_string(key), sanitize_value(value)} end)
-    |> Enum.into(%{})
-  end
+  defp sanitize_metadata(metadata) when is_map(metadata), do: sanitize_map(metadata)
 
   defp sanitize_metadata(_metadata), do: %{}
 
@@ -184,20 +190,31 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
 
   defp sanitize_value(value) when is_list(value), do: Enum.map(value, &sanitize_value/1)
 
-  # Handle maps (but not structs)
-  defp sanitize_value(value) when is_map(value) do
-    # Check if it's a struct (all structs have a __struct__ key)
-    if Map.has_key?(value, :__struct__) do
-      # For unknown structs, convert to string
-      inspect(value)
-    else
-      # For regular maps, recursively sanitize
-      Enum.map(value, fn {k, v} -> {to_string(k), sanitize_value(v)} end)
-      |> Enum.into(%{})
+  # Any other struct (a socket, a conn) is stored as its module name: its
+  # inspected fields could carry assigns or a session.
+  defp sanitize_value(%module{}), do: inspect(module)
+
+  defp sanitize_value(value) when is_map(value), do: sanitize_map(value)
+
+  defp sanitize_value(_value), do: nil
+
+  defp sanitize_map(map) do
+    for {key, value} <- map, key = to_string(key), not credential_key?(key), into: %{} do
+      {key, sanitize_value(value)}
     end
   end
 
-  defp sanitize_value(_value), do: nil
+  # live_socket_id is "users_sessions:" plus the session token, so it is dropped
+  # even though it ends in _id.
+  defp credential_key?("live_socket_id"), do: true
+
+  defp credential_key?(key) do
+    key = String.downcase(key)
+
+    not String.ends_with?(key, "_id") and
+      (String.contains?(key, @credential_fragments) or
+         key |> String.split(~r/[^a-z0-9]+/) |> Enum.any?(&(&1 in @credential_words)))
+  end
 
   if Mix.env() == :test do
     def __format_label__(metric_name), do: format_label(metric_name)

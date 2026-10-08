@@ -112,12 +112,10 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
       assert result == %{"key1" => "value1", "key2" => 42}
     end
 
-    test "converts structs to string using inspect" do
-      struct = %URI{scheme: "https", host: "example.com"}
-      result = MetricsStorage.__sanitize_value__(struct)
+    test "stores a struct as its module name, never its fields" do
+      struct = %URI{scheme: "https", host: "example.com", userinfo: "user:secret"}
 
-      assert is_binary(result)
-      assert String.contains?(result, "URI")
+      assert MetricsStorage.__sanitize_value__(struct) == "URI"
     end
 
     test "returns nil for unsupported types" do
@@ -138,6 +136,53 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
       result = MetricsStorage.__sanitize_metadata__(metadata)
 
       assert result == %{"outer" => %{"inner" => "value"}}
+    end
+
+    test "drops credential-bearing keys at any depth" do
+      metadata = %{
+        connect_info: %{
+          session: %{"user_token" => "raw-session-token", "_csrf_token" => "csrf"},
+          peer_data: %{address: "127.0.0.1"}
+        },
+        params: %{"_csrf_token" => "csrf", "token" => "socket-token", "vsn" => "2.0.0"},
+        live_socket_id: "users_sessions:raw-session-token",
+        password: "hunter2",
+        api_secret: "s",
+        authorization: "Bearer x",
+        cookie: "c",
+        otp: "123456",
+        user_id: 7,
+        api_token_id: 3,
+        result: :ok
+      }
+
+      result = MetricsStorage.__sanitize_metadata__(metadata)
+
+      assert result == %{
+               "connect_info" => %{"peer_data" => %{"address" => "127.0.0.1"}},
+               "params" => %{"vsn" => "2.0.0"},
+               "user_id" => 7,
+               "api_token_id" => 3,
+               "result" => "ok"
+             }
+
+      refute inspect(result) =~ "raw-session-token"
+    end
+
+    test "drops credential-bearing keys inside lists of maps" do
+      result = MetricsStorage.__sanitize_value__([%{"token" => "t", "name" => "n"}])
+
+      assert result == [%{"name" => "n"}]
+    end
+
+    test "keeps keys that only resemble a credential word" do
+      metadata = %{key1: 1, footprint: 2, keyboard: 3}
+
+      assert MetricsStorage.__sanitize_metadata__(metadata) == %{
+               "key1" => 1,
+               "footprint" => 2,
+               "keyboard" => 3
+             }
     end
 
     test "returns empty map for non-map metadata" do
