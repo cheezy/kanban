@@ -812,6 +812,33 @@ defmodule KanbanWeb.BoardLiveTest do
       assert assignment_notifications(task.id) == []
     end
 
+    test "posting a comment from the edit form keeps unsaved task edits",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "Stored title"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+
+      show_live
+      |> form("#task-form", task: %{title: "Unsaved title"})
+      |> render_change()
+
+      show_live
+      |> form("form[phx-submit='add_comment']", task_comment: %{content: "A comment"})
+      |> render_submit()
+
+      # The success flash makes the board page re-render; the form must survive it.
+      assert render(show_live) =~ "Comment added successfully"
+
+      assert has_element?(
+               show_live,
+               "#task-form input[name='task[title]'][value='Unsaved title']"
+             )
+
+      assert Kanban.Repo.reload!(task).title == "Stored title"
+    end
+
     test "deletes task", %{conn: conn, user: user} do
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})

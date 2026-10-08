@@ -17,7 +17,21 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   @field_events FieldEvents.events()
 
+  # A re-render of the hosting LiveView (a flash, for example) can re-send the
+  # same task. Rebuilding the form from it would throw away what the user has
+  # typed, so keep the form unless the stored task itself changed.
   @impl true
+  def update(
+        %{task: %{id: id, updated_at: updated_at}, board: board} = assigns,
+        %{assigns: %{form: _, task: %{id: id, updated_at: updated_at}}} = socket
+      )
+      when not is_nil(id) do
+    {:ok,
+     socket
+     |> assign(Map.drop(assigns, [:task]))
+     |> assign(:field_visibility, board.field_visibility || %{})}
+  end
+
   def update(%{task: task, board: board, action: action} = assigns, socket) do
     task_data = prepare_task_data(task, board, action, assigns)
 

@@ -400,7 +400,7 @@
           true -> %Kanban.Tasks.Task{}
         end
       }
-      column_id={(@live_action in [:new_task, :new_goal] && Map.get(assigns, :column_id)) || nil}
+      column_id={(@live_action in [:new_task, :new_goal] && @column_id) || nil}
       current_scope={@current_scope}
       patch={~p"/boards/#{@board}"}
     />

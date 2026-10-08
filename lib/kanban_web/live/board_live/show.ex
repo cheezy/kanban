@@ -28,6 +28,7 @@ defmodule KanbanWeb.BoardLive.Show do
      |> assign(
        viewing_task_id: nil,
        show_task_modal: false,
+       column_id: nil,
        tasks_version: :os.system_time(:millisecond)
      )
      |> stream(:undismissed_messages, undismissed_messages)}
