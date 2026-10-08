@@ -2,7 +2,11 @@ defmodule KanbanWeb.UserSessionController do
   use KanbanWeb, :controller
 
   alias Kanban.Accounts
+  alias Kanban.Accounts.TwoFactor
+  alias Kanban.Accounts.User
+  alias Kanban.AuditLog
   alias Kanban.RateLimit
+  alias KanbanWeb.TwoFactorPending
   alias KanbanWeb.UserAuth
 
   # The settings LiveView is sudo-gated at mount, but the password-change POST
@@ -81,10 +85,182 @@ defmodule KanbanWeb.UserSessionController do
         deny_login(conn, email, "Invalid email or password")
 
       user ->
-        conn
-        |> put_flash(:info, info)
-        |> UserAuth.log_in_user(user, user_params)
+        start_session(conn, user, user_params, info)
     end
+  end
+
+  # The password is right. With two-factor on, the session gets only a
+  # pending-login marker and the user is sent to the challenge; the session
+  # token is issued by verify_two_factor/2 once a code is accepted. This runs
+  # after the confirmation check, so nothing about two-factor is revealed
+  # before the password has been verified.
+  defp start_session(conn, user, user_params, info) do
+    if Accounts.two_factor_enabled?(user) do
+      conn
+      |> TwoFactorPending.put(user, user_params["remember_me"] == "true")
+      |> redirect(to: ~p"/users/two-factor")
+    else
+      conn
+      |> put_flash(:info, info)
+      |> UserAuth.log_in_user(user, user_params)
+    end
+  end
+
+  @doc """
+  The second step of signing in for a user with two-factor turned on: checks a
+  TOTP code or an unused recovery code against the pending-login marker set
+  by the password step, and only then logs the user in.
+
+  Attempts are counted per user on `:two_factor` (inside
+  `Kanban.Accounts.TwoFactor`), and wrong codes per IP on
+  `:two_factor_challenge` and per user over a day on `:two_factor_daily`; any
+  of them refuses the attempt with the same message as a throttled password
+  login.
+  """
+  def verify_two_factor(conn, params) do
+    case open_challenge(conn) do
+      {:ok, user, pending} -> check_challenge_code(conn, user, pending, params)
+      {:error, :rate_limited} -> deny_challenge(conn, rate_limited_message())
+      {:error, _expired_or_ineligible} -> deny_challenge(conn, challenge_expired_message())
+    end
+  end
+
+  # The marker, then the IP limit (before any database work), then the
+  # account, then its day-long failure cap. The per-user :two_factor limit is
+  # applied atomically by Kanban.Accounts.TwoFactor when the code is checked.
+  defp open_challenge(conn) do
+    with {:ok, pending} <- TwoFactorPending.get(conn),
+         :ok <- peek_challenge_ip(conn),
+         {:ok, user} <- fetch_challenge_user(pending),
+         :ok <- peek_daily_cap(user) do
+      {:ok, user, pending}
+    end
+  end
+
+  # Blocks an IP flood before any database work, like the :login peek.
+  defp peek_challenge_ip(conn) do
+    case RateLimit.peek(:two_factor_challenge, ip: conn.remote_ip) do
+      :ok -> :ok
+      {:error, {:rate_limited, _retry_after_ms}} -> {:error, :rate_limited}
+    end
+  end
+
+  # The account may have changed since the password step: it must still
+  # exist, be enabled and confirmed, and still have two-factor on.
+  defp fetch_challenge_user(%{user_id: user_id}) do
+    case Accounts.get_user(user_id) do
+      %User{disabled_at: nil, confirmed_at: %DateTime{}} = user ->
+        if Accounts.two_factor_enabled?(user), do: {:ok, user}, else: {:error, :ineligible}
+
+      _missing_disabled_or_unconfirmed ->
+        {:error, :ineligible}
+    end
+  end
+
+  defp peek_daily_cap(%User{id: user_id}) do
+    case RateLimit.peek(:two_factor_daily, identity: "user:#{user_id}") do
+      :ok -> :ok
+      {:error, {:rate_limited, _retry_after_ms}} -> {:error, :rate_limited}
+    end
+  end
+
+  defp check_challenge_code(conn, user, pending, params) do
+    {method, code} = challenge_input(params)
+
+    case verify_challenge_code(user, method, code) do
+      :ok -> complete_two_factor_login(conn, user, pending, method)
+      {:error, :rate_limited} -> deny_challenge(conn, rate_limited_message())
+      {:error, :invalid_code} -> challenge_failed(conn, user, method)
+    end
+  end
+
+  defp challenge_input(%{"two_factor" => %{"code" => code} = input}) when is_binary(code) do
+    {challenge_method(input["mode"]), code}
+  end
+
+  defp challenge_input(_params), do: {:totp, ""}
+
+  defp challenge_method("recovery"), do: :recovery_code
+  defp challenge_method(_mode), do: :totp
+
+  # An attempt refused by the per-user limit is told it was throttled, not
+  # that its code was wrong. Two-factor turned off since the account check
+  # reads as a wrong code.
+  defp verify_challenge_code(user, :totp, code) do
+    case TwoFactor.verify_code(user, code) do
+      :ok -> :ok
+      {:error, :rate_limited} -> {:error, :rate_limited}
+      {:error, _invalid_or_not_enabled} -> {:error, :invalid_code}
+    end
+  end
+
+  defp verify_challenge_code(user, :recovery_code, code) do
+    Accounts.consume_recovery_code(user, code)
+  end
+
+  # The marker is deleted explicitly: on a sudo re-authentication the user is
+  # already logged in, so UserAuth does not clear the session.
+  defp complete_two_factor_login(conn, user, pending, method) do
+    if method == :recovery_code do
+      AuditLog.event(:two_factor_recovery_code_used, user_id: user.id, ip: conn.remote_ip)
+    end
+
+    AuditLog.event(:login_succeeded_two_factor,
+      user_id: user.id,
+      ip: conn.remote_ip,
+      method: method
+    )
+
+    conn
+    |> TwoFactorPending.delete()
+    |> put_flash(:info, two_factor_success_message(method))
+    |> UserAuth.log_in_user(user, remember_me_params(pending))
+  end
+
+  defp remember_me_params(%{remember_me: true}), do: %{"remember_me" => "true"}
+  defp remember_me_params(_pending), do: %{}
+
+  defp two_factor_success_message(:totp), do: gettext("Welcome back!")
+
+  defp two_factor_success_message(:recovery_code) do
+    gettext(
+      "Welcome back! You signed in with a recovery code, which can't be used again. Create new recovery codes in Settings → Two-factor."
+    )
+  end
+
+  # A wrong code keeps the marker, so the user can try again until a limit or
+  # the marker's five minutes run out.
+  defp challenge_failed(conn, user, method) do
+    RateLimit.record_failure(:two_factor_challenge, ip: conn.remote_ip)
+    RateLimit.record_failure(:two_factor_daily, identity: "user:#{user.id}")
+
+    AuditLog.event(:two_factor_challenge_failed,
+      user_id: user.id,
+      ip: conn.remote_ip,
+      method: method
+    )
+
+    conn
+    |> put_flash(:error, gettext("That code is not valid. Check it and try again."))
+    |> redirect(to: challenge_path(method))
+  end
+
+  defp challenge_path(:recovery_code), do: ~p"/users/two-factor?mode=recovery"
+  defp challenge_path(:totp), do: ~p"/users/two-factor"
+
+  defp deny_challenge(conn, message) do
+    conn
+    |> TwoFactorPending.delete()
+    |> put_flash(:error, message)
+    |> redirect(to: ~p"/users/log-in")
+  end
+
+  defp challenge_expired_message do
+    gettext("Your sign-in attempt expired. Please sign in again.")
+  end
+
+  defp rate_limited_message do
+    gettext("Too many attempts. Please wait a few minutes and try again.")
   end
 
   defp deny_login(conn, email, message) do
@@ -98,24 +274,26 @@ defmodule KanbanWeb.UserSessionController do
   # "wrong password" (both are a generic failure + redirect back to log-in).
   defp deny_login_rate_limited(conn, email) do
     conn
-    |> put_flash(
-      :error,
-      gettext("Too many attempts. Please wait a few minutes and try again.")
-    )
+    |> put_flash(:error, rate_limited_message())
     |> put_flash(:email, String.slice(email, 0, 160))
     |> redirect(to: ~p"/users/log-in")
   end
 
-  def update_password(conn, %{"user" => user_params} = params) do
+  def update_password(conn, %{"user" => user_params}) do
     user = conn.assigns.current_scope.user
-    {:ok, {_user, expired_tokens}} = Accounts.update_user_password(user, user_params)
+    {:ok, {user, expired_tokens}} = Accounts.update_user_password(user, user_params)
 
     # disconnect all existing LiveViews with old sessions
     UserAuth.disconnect_sessions(expired_tokens)
 
+    # Logs the current user straight back in rather than repeating the
+    # password login: the :require_sudo_mode plug already required a recent
+    # sign-in, which for a two-factor user included the second factor, so
+    # changing the password does not send them to the challenge again.
     conn
     |> put_session(:user_return_to, ~p"/users/settings")
-    |> create(params, "Password updated successfully!")
+    |> put_flash(:info, "Password updated successfully!")
+    |> UserAuth.log_in_user(user, user_params)
   end
 
   def delete(conn, _params) do

@@ -312,6 +312,7 @@ defmodule KanbanWeb.Router do
       ] do
       live "/users/register", UserLive.Registration, :new
       live "/users/log-in", UserLive.Login, :new
+      live "/users/two-factor", UserLive.TwoFactor, :new
       live "/users/confirm/:token", UserLive.Confirmation, :new
       live "/users/forgot-password", UserLive.ForgotPassword, :new
       live "/users/reset-password/:token", UserLive.ResetPassword, :edit
@@ -342,6 +343,7 @@ defmodule KanbanWeb.Router do
 
     post "/users/register", UserSessionController, :register
     post "/users/log-in", UserSessionController, :create
+    post "/users/two-factor", UserSessionController, :verify_two_factor
     delete "/users/log-out", UserSessionController, :delete
   end
 end

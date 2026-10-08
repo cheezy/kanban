@@ -21,6 +21,8 @@ defmodule Kanban.RateLimit do
     * `:issue`     — 5 min  / 5  / 20   (per submission)
     * `:api_token` — 1 min  / 20        (IP-only, failure-counted)
     * `:two_factor` — 5 min / 10 / —    (identity-only, per attempt)
+    * `:two_factor_challenge` — 5 min / — / 30 (IP-only, failure-counted)
+    * `:two_factor_daily` — 24 h / 30 / —    (identity-only, failure-counted)
 
   `:two_factor` counts every second-factor code attempt per user (`identity:
   "user:<id>"`, no IP) wherever a code is checked, with `check/2` so the
@@ -28,6 +30,14 @@ defmodule Kanban.RateLimit do
   cannot script guesses at a 6-digit code, in sequence or in parallel. It has no IP ceiling: the callers are
   authenticated, and a shared ceiling keyed on an absent IP would let one user
   lock everyone out.
+
+  `:two_factor_challenge` is the IP side of the sign-in challenge
+  (`POST /users/two-factor`): wrong codes from one IP are counted across every
+  account, so a client holding several stolen passwords cannot spread its
+  guesses over them. The per-user ceiling there is still `:two_factor`.
+  `:two_factor_daily` caps wrong sign-in codes per user (`identity:
+  "user:<id>"`) over a day, so someone who has the password cannot keep
+  guessing at the `:two_factor` rate for weeks.
 
   Thresholds are a product/ops decision — override per environment via:
 
@@ -39,7 +49,7 @@ defmodule Kanban.RateLimit do
     * `check/2`  — increment and evaluate; use for per-submission surfaces
       (`:reset`, `:resend`, `:issue`, `:two_factor`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
-      (`:login`, `:api_token`) so a flood cannot force password hashing or DB
+      (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`) so a flood cannot force password hashing or DB
       lookups.
     * `record_failure/2` — increment the failure counter after an authentication
       attempt fails; pair with `peek/2`.
@@ -53,10 +63,20 @@ defmodule Kanban.RateLimit do
     resend: %{scale_ms: 900_000, id_limit: 3, ip_limit: 15},
     issue: %{scale_ms: 300_000, id_limit: 5, ip_limit: 20},
     api_token: %{scale_ms: 60_000, ip_limit: 20},
-    two_factor: %{scale_ms: 300_000, id_limit: 10}
+    two_factor: %{scale_ms: 300_000, id_limit: 10},
+    two_factor_challenge: %{scale_ms: 300_000, ip_limit: 30},
+    two_factor_daily: %{scale_ms: 86_400_000, id_limit: 30}
   }
 
-  @type surface :: :login | :reset | :resend | :issue | :api_token | :two_factor
+  @type surface ::
+          :login
+          | :reset
+          | :resend
+          | :issue
+          | :api_token
+          | :two_factor
+          | :two_factor_challenge
+          | :two_factor_daily
   @type opts :: [ip: term(), identity: String.t() | nil]
   @type result :: :ok | {:error, {:rate_limited, non_neg_integer()}}
 

@@ -5547,6 +5547,7 @@ msgstr "Journal d'audit pour la réorganisation des colonnes"
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:18
 #: lib/kanban_web/live/user_live/reset_password.ex:19
+#: lib/kanban_web/live/user_live/two_factor.ex:32
 #, elixir-autogen, elixir-format
 msgid "Back to sign in"
 msgstr "Retour à la connexion"
@@ -7002,7 +7003,7 @@ msgstr "Votre contenu"
 msgid "Your use of the service is subject to our "
 msgstr "Votre utilisation du service est soumise à notre "
 
-#: lib/kanban_web/controllers/user_session_controller.ex:68
+#: lib/kanban_web/controllers/user_session_controller.ex:72
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "Vous devez confirmer votre compte avant de vous connecter. Vérifiez votre e-mail pour trouver le lien de confirmation."
@@ -7904,7 +7905,7 @@ msgstr "90 derniers jours"
 msgid "New column"
 msgstr "Nouvelle colonne"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:103
+#: lib/kanban_web/controllers/user_session_controller.ex:263
 #: lib/kanban_web/live/user_live/two_factor_component.ex:380
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
@@ -9665,6 +9666,7 @@ msgstr "Scannez ce code QR avec votre application d'authentification, ou saisiss
 msgid "Set up two-factor authentication"
 msgstr "Configurer la double authentification"
 
+#: lib/kanban_web/controllers/user_session_controller.ex:244
 #: lib/kanban_web/live/user_live/two_factor_component.ex:373
 #, elixir-autogen, elixir-format
 msgid "That code is not valid. Check it and try again."
@@ -9682,6 +9684,7 @@ msgid "Two-factor"
 msgstr "Double authentification"
 
 #: lib/kanban_web/live/user_live/settings.ex:151
+#: lib/kanban_web/live/user_live/two_factor.ex:38
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication"
 msgstr "Double authentification"
@@ -9707,3 +9710,54 @@ msgstr "Vérifier et activer"
 #, elixir-autogen, elixir-format
 msgid "authenticator app"
 msgstr "application d'authentification"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:138
+#, elixir-autogen, elixir-format
+msgid "Authentication code"
+msgstr "Code d'authentification"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:135
+#, elixir-autogen, elixir-format
+msgid "Enter one of the recovery codes you saved when you turned on two-factor."
+msgstr "Saisissez l'un des codes de récupération que vous avez enregistrés en activant la double authentification."
+
+#: lib/kanban_web/live/user_live/two_factor.ex:132
+#, elixir-autogen, elixir-format
+msgid "Enter the 6-digit code from your authenticator app."
+msgstr "Saisissez le code à 6 chiffres de votre application d'authentification."
+
+#: lib/kanban_web/live/user_live/two_factor.ex:139
+#, elixir-autogen, elixir-format
+msgid "Recovery code"
+msgstr "Code de récupération"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:141
+#, elixir-autogen, elixir-format
+msgid "Use a recovery code instead"
+msgstr "Utiliser plutôt un code de récupération"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:142
+#, elixir-autogen, elixir-format
+msgid "Use your authenticator app instead"
+msgstr "Utiliser plutôt votre application d'authentification"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:77
+#, elixir-autogen, elixir-format
+msgid "Verify"
+msgstr "Vérifier"
+
+#: lib/kanban_web/controllers/user_session_controller.ex:223
+#, elixir-autogen, elixir-format
+msgid "Welcome back!"
+msgstr "Bon retour parmi nous !"
+
+#: lib/kanban_web/controllers/user_session_controller.ex:226
+#, elixir-autogen, elixir-format
+msgid "Welcome back! You signed in with a recovery code, which can't be used again. Create new recovery codes in Settings → Two-factor."
+msgstr "Bon retour parmi nous ! Vous vous êtes connecté avec un code de récupération, qui ne peut plus être utilisé. Créez de nouveaux codes de récupération dans Paramètres → Double authentification."
+
+#: lib/kanban_web/controllers/user_session_controller.ex:259
+#: lib/kanban_web/live/user_live/two_factor.ex:104
+#, elixir-autogen, elixir-format
+msgid "Your sign-in attempt expired. Please sign in again."
+msgstr "Votre tentative de connexion a expiré. Veuillez vous reconnecter."

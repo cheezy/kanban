@@ -107,6 +107,26 @@ defmodule KanbanWeb.UserLive.LoginTest do
     end
   end
 
+  describe "user login - two-factor" do
+    test "sends a user with two-factor on to the challenge, not into the app", %{conn: conn} do
+      user = user_fixture()
+      Kanban.TwoFactorHelpers.enroll(user)
+
+      {:ok, lv, _html} = live(conn, ~p"/users/log-in")
+
+      form =
+        form(lv, "#login_form_password",
+          user: %{email: user.email, password: valid_user_password()}
+        )
+
+      render_submit(form, %{user: %{remember_me: true}})
+      conn = follow_trigger_action(form, conn)
+
+      assert redirected_to(conn) == ~p"/users/two-factor"
+      refute get_session(conn, :user_token)
+    end
+  end
+
   describe "login navigation" do
     test "redirects to registration page when the Register button is clicked", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/users/log-in")

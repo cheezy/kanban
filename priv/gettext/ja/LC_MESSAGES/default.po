@@ -5535,6 +5535,7 @@ msgstr "列の並び替えに関する監査ログ"
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:18
 #: lib/kanban_web/live/user_live/reset_password.ex:19
+#: lib/kanban_web/live/user_live/two_factor.ex:32
 #, elixir-autogen, elixir-format
 msgid "Back to sign in"
 msgstr "サインインに戻る"
@@ -7002,7 +7003,7 @@ msgstr "お客様のコンテンツ"
 msgid "Your use of the service is subject to our "
 msgstr "本サービスの利用には、当社の"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:68
+#: lib/kanban_web/controllers/user_session_controller.ex:72
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "サインインする前にアカウントを確認する必要があります。確認リンクが記載されたメールをご確認ください。"
@@ -7897,7 +7898,7 @@ msgstr "過去90日間"
 msgid "New column"
 msgstr "新しい列"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:103
+#: lib/kanban_web/controllers/user_session_controller.ex:263
 #: lib/kanban_web/live/user_live/two_factor_component.ex:380
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
@@ -9654,6 +9655,7 @@ msgstr "認証アプリでこのQRコードをスキャンするか、キーを�
 msgid "Set up two-factor authentication"
 msgstr "二要素認証を設定"
 
+#: lib/kanban_web/controllers/user_session_controller.ex:244
 #: lib/kanban_web/live/user_live/two_factor_component.ex:373
 #, elixir-autogen, elixir-format
 msgid "That code is not valid. Check it and try again."
@@ -9671,6 +9673,7 @@ msgid "Two-factor"
 msgstr "二要素認証"
 
 #: lib/kanban_web/live/user_live/settings.ex:151
+#: lib/kanban_web/live/user_live/two_factor.ex:38
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication"
 msgstr "二要素認証"
@@ -9696,3 +9699,54 @@ msgstr "確認して有効にする"
 #, elixir-autogen, elixir-format
 msgid "authenticator app"
 msgstr "認証アプリ"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:138
+#, elixir-autogen, elixir-format
+msgid "Authentication code"
+msgstr "認証コード"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:135
+#, elixir-autogen, elixir-format
+msgid "Enter one of the recovery codes you saved when you turned on two-factor."
+msgstr "二要素認証を有効にしたときに保存したリカバリーコードのいずれかを入力してください。"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:132
+#, elixir-autogen, elixir-format
+msgid "Enter the 6-digit code from your authenticator app."
+msgstr "認証アプリに表示される6桁のコードを入力してください。"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:139
+#, elixir-autogen, elixir-format
+msgid "Recovery code"
+msgstr "リカバリーコード"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:141
+#, elixir-autogen, elixir-format
+msgid "Use a recovery code instead"
+msgstr "代わりにリカバリーコードを使う"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:142
+#, elixir-autogen, elixir-format
+msgid "Use your authenticator app instead"
+msgstr "代わりに認証アプリを使う"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:77
+#, elixir-autogen, elixir-format
+msgid "Verify"
+msgstr "確認"
+
+#: lib/kanban_web/controllers/user_session_controller.ex:223
+#, elixir-autogen, elixir-format
+msgid "Welcome back!"
+msgstr "おかえりなさい!"
+
+#: lib/kanban_web/controllers/user_session_controller.ex:226
+#, elixir-autogen, elixir-format
+msgid "Welcome back! You signed in with a recovery code, which can't be used again. Create new recovery codes in Settings → Two-factor."
+msgstr "おかえりなさい!リカバリーコードでサインインしました。このコードは再利用できません。設定 → 二要素認証で新しいリカバリーコードを作成してください。"
+
+#: lib/kanban_web/controllers/user_session_controller.ex:259
+#: lib/kanban_web/live/user_live/two_factor.ex:104
+#, elixir-autogen, elixir-format
+msgid "Your sign-in attempt expired. Please sign in again."
+msgstr "サインインの有効期限が切れました。もう一度サインインしてください。"

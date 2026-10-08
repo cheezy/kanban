@@ -128,4 +128,52 @@ defmodule Kanban.RateLimitTest do
       assert :ok = RateLimit.peek(:two_factor, identity: user)
     end
   end
+
+  describe ":two_factor_challenge surface (IP-only)" do
+    test "denies one IP after 30 failures spread across different users" do
+      ip = unique_ip()
+
+      for _ <- 1..30 do
+        RateLimit.record_failure(:two_factor_challenge,
+          ip: ip,
+          identity: "user:#{System.unique_integer([:positive])}"
+        )
+      end
+
+      assert {:error, {:rate_limited, _}} = RateLimit.peek(:two_factor_challenge, ip: ip)
+
+      assert {:error, {:rate_limited, _}} =
+               RateLimit.peek(:two_factor_challenge, ip: ip, identity: "user:fresh")
+    end
+
+    test "allows up to the limit, and another IP is unaffected" do
+      ip = unique_ip()
+
+      for _ <- 1..29, do: RateLimit.record_failure(:two_factor_challenge, ip: ip)
+
+      assert :ok = RateLimit.peek(:two_factor_challenge, ip: ip)
+
+      RateLimit.record_failure(:two_factor_challenge, ip: ip)
+
+      assert {:error, {:rate_limited, _}} = RateLimit.peek(:two_factor_challenge, ip: ip)
+      assert :ok = RateLimit.peek(:two_factor_challenge, ip: unique_ip())
+    end
+  end
+
+  describe ":two_factor_daily surface (identity-only)" do
+    test "denies a user after 30 failures in the day, from any IP" do
+      user = "user:#{System.unique_integer([:positive])}"
+
+      for _ <- 1..29, do: RateLimit.record_failure(:two_factor_daily, identity: user)
+      assert :ok = RateLimit.peek(:two_factor_daily, identity: user)
+
+      RateLimit.record_failure(:two_factor_daily, identity: user)
+
+      assert {:error, {:rate_limited, retry_after_ms}} =
+               RateLimit.peek(:two_factor_daily, identity: user)
+
+      assert retry_after_ms > 300_000
+      assert :ok = RateLimit.peek(:two_factor_daily, identity: "user:other")
+    end
+  end
 end

@@ -166,10 +166,19 @@ defmodule Kanban.Accounts.TwoFactor do
   every code is rejected while the user is throttled for too many attempts.
   """
   @spec valid_code?(User.t(), String.t()) :: boolean()
-  def valid_code?(%User{} = user, code) do
+  def valid_code?(%User{} = user, code), do: verify_code(user, code) == :ok
+
+  @doc """
+  Like `valid_code?/2`, but says why a code was refused: `:rate_limited` when
+  the attempt was refused by the per-user limit, which the sign-in challenge
+  reports differently from a wrong code.
+  """
+  @spec verify_code(User.t(), String.t()) ::
+          :ok | {:error, :invalid_code | :not_enabled | :rate_limited}
+  def verify_code(%User{} = user, code) do
     throttled(user, fn ->
       with {:ok, totp} <- fetch_enabled(user), do: use_code(totp, code)
-    end) == :ok
+    end)
   end
 
   @doc """

@@ -5547,6 +5547,7 @@ msgstr "Registro de auditoría para el reordenamiento de columnas"
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:18
 #: lib/kanban_web/live/user_live/reset_password.ex:19
+#: lib/kanban_web/live/user_live/two_factor.ex:32
 #, elixir-autogen, elixir-format
 msgid "Back to sign in"
 msgstr "Volver a iniciar sesión"
@@ -7055,7 +7056,7 @@ msgstr "Su contenido"
 msgid "Your use of the service is subject to our "
 msgstr "Su uso del servicio está sujeto a nuestra "
 
-#: lib/kanban_web/controllers/user_session_controller.ex:68
+#: lib/kanban_web/controllers/user_session_controller.ex:72
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "Debes confirmar tu cuenta antes de iniciar sesión. Revisa tu correo electrónico para encontrar el enlace de confirmación."
@@ -7957,7 +7958,7 @@ msgstr "Últimos 90 días"
 msgid "New column"
 msgstr "Nueva columna"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:103
+#: lib/kanban_web/controllers/user_session_controller.ex:263
 #: lib/kanban_web/live/user_live/two_factor_component.ex:380
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
@@ -9718,6 +9719,7 @@ msgstr "Escanea este código QR con tu app de autenticación o introduce la clav
 msgid "Set up two-factor authentication"
 msgstr "Configurar la verificación en dos pasos"
 
+#: lib/kanban_web/controllers/user_session_controller.ex:244
 #: lib/kanban_web/live/user_live/two_factor_component.ex:373
 #, elixir-autogen, elixir-format
 msgid "That code is not valid. Check it and try again."
@@ -9735,6 +9737,7 @@ msgid "Two-factor"
 msgstr "Dos pasos"
 
 #: lib/kanban_web/live/user_live/settings.ex:151
+#: lib/kanban_web/live/user_live/two_factor.ex:38
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication"
 msgstr "Verificación en dos pasos"
@@ -9760,3 +9763,54 @@ msgstr "Verificar y activar"
 #, elixir-autogen, elixir-format
 msgid "authenticator app"
 msgstr "app de autenticación"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:138
+#, elixir-autogen, elixir-format
+msgid "Authentication code"
+msgstr "Código de autenticación"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:135
+#, elixir-autogen, elixir-format
+msgid "Enter one of the recovery codes you saved when you turned on two-factor."
+msgstr "Introduce uno de los códigos de recuperación que guardaste al activar la verificación en dos pasos."
+
+#: lib/kanban_web/live/user_live/two_factor.ex:132
+#, elixir-autogen, elixir-format
+msgid "Enter the 6-digit code from your authenticator app."
+msgstr "Introduce el código de 6 dígitos de tu app de autenticación."
+
+#: lib/kanban_web/live/user_live/two_factor.ex:139
+#, elixir-autogen, elixir-format
+msgid "Recovery code"
+msgstr "Código de recuperación"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:141
+#, elixir-autogen, elixir-format
+msgid "Use a recovery code instead"
+msgstr "Usar un código de recuperación"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:142
+#, elixir-autogen, elixir-format
+msgid "Use your authenticator app instead"
+msgstr "Usar tu app de autenticación"
+
+#: lib/kanban_web/live/user_live/two_factor.ex:77
+#, elixir-autogen, elixir-format
+msgid "Verify"
+msgstr "Verificar"
+
+#: lib/kanban_web/controllers/user_session_controller.ex:223
+#, elixir-autogen, elixir-format
+msgid "Welcome back!"
+msgstr "¡Bienvenido de nuevo!"
+
+#: lib/kanban_web/controllers/user_session_controller.ex:226
+#, elixir-autogen, elixir-format
+msgid "Welcome back! You signed in with a recovery code, which can't be used again. Create new recovery codes in Settings → Two-factor."
+msgstr "¡Bienvenido de nuevo! Has iniciado sesión con un código de recuperación, que no se puede volver a usar. Crea códigos de recuperación nuevos en Configuración → Dos pasos."
+
+#: lib/kanban_web/controllers/user_session_controller.ex:259
+#: lib/kanban_web/live/user_live/two_factor.ex:104
+#, elixir-autogen, elixir-format
+msgid "Your sign-in attempt expired. Please sign in again."
+msgstr "Tu intento de inicio de sesión ha caducado. Vuelve a iniciar sesión."

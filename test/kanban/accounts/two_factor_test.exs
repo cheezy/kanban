@@ -181,6 +181,19 @@ defmodule Kanban.Accounts.TwoFactorTest do
     end
   end
 
+  describe "verify_code/2" do
+    test "says why a code was refused", %{user: user} do
+      assert TwoFactor.verify_code(user, "123456") == {:error, :not_enabled}
+
+      %{secret: secret} = enroll(user)
+      next = code(secret, 1)
+
+      assert TwoFactor.verify_code(user, "not a code") == {:error, :invalid_code}
+      assert TwoFactor.verify_code(user, next) == :ok
+      assert TwoFactor.verify_code(user, next) == {:error, :invalid_code}
+    end
+  end
+
   describe "valid_code?/2" do
     test "accepts a fresh code and rejects the same code twice (replay)", %{user: user} do
       %{secret: secret} = enroll(user)

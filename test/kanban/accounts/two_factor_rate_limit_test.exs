@@ -94,6 +94,18 @@ defmodule Kanban.Accounts.TwoFactorRateLimitTest do
     assert Enum.count(results, &(&1 == {:error, :rate_limited})) >= 20 - (@limit - 1)
   end
 
+  test "verify_code/2 reports a refused attempt as rate limited", ctx do
+    enable(ctx)
+
+    for _ <- 1..(@limit - 1) do
+      assert Kanban.Accounts.TwoFactor.verify_code(ctx.user, wrong(ctx.secret, 1)) ==
+               {:error, :invalid_code}
+    end
+
+    assert Kanban.Accounts.TwoFactor.verify_code(ctx.user, code(ctx.secret, 1)) ==
+             {:error, :rate_limited}
+  end
+
   test "one user's attempts do not throttle another user", ctx do
     for _ <- 1..@limit, do: Accounts.confirm_two_factor_enrollment(ctx.user, wrong(ctx.secret))
 

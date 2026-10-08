@@ -63,7 +63,9 @@ be used to enumerate accounts, and resends are throttled to one per minute.
 ## User Accounts: Two-Factor Authentication
 
 A person can add an authenticator-app code to their password under
-**Settings → Two-factor**. It protects the human's account only: API tokens,
+**Settings → Two-factor**. Once it is on, signing in asks for a code from the
+app (or a recovery code) after the password, at `/users/two-factor`, before
+any session is created. It protects the human's account only: API tokens,
 and so agents, are not affected. See
 [Two-Factor Authentication](TWO-FACTOR-AUTHENTICATION.md) for how it works.
 
