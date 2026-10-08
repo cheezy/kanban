@@ -111,8 +111,10 @@ defmodule Kanban.AuditLogTest do
   end
 
   test "writes a structured security_audit log line without interpolating values" do
+    # colors off: in a terminal the formatter wraps the line in ANSI codes, so
+    # "\e[0m" would sit between "security_audit" and the newline.
     log =
-      capture_log(fn ->
+      capture_log([colors: [enabled: false]], fn ->
         AuditLog.event(:sudo_mode_entered, user_id: 42)
       end)
 
