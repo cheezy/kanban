@@ -274,6 +274,65 @@ defmodule KanbanWeb.TaskCardTest do
   end
 
   describe "task_card/1 — column-specific footers" do
+    test "renders the move-to-Ready arrow when show_move_to_ready is true" do
+      assigns = %{task: task(%{id: 77})}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} column={:backlog} show_move_to_ready />
+        """)
+
+      assert html =~ ~s(phx-click="move_task_to_ready")
+      assert html =~ ~s(phx-value-id="77")
+      assert html =~ ~s(aria-label="Move to Ready")
+      assert html =~ ~s(type="button")
+      assert html =~ "move-to-ready"
+      assert html =~ "hero-arrow-right"
+      # Hover/focus reveal on md+, always visible below md (touch).
+      assert html =~ "md:opacity-0"
+      assert html =~ "md:group-hover:opacity-100"
+      assert html =~ "md:group-focus-within:opacity-100"
+      # A card with no planning meta still gets a bottom row for the arrow,
+      # and the arrow is pushed to the right of it.
+      assert html =~ "margin-left: auto;"
+    end
+
+    test "the move-to-Ready arrow sits after the needs-review pill" do
+      assigns = %{task: task(%{needs_review: true})}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} column={:backlog} show_move_to_ready />
+        """)
+
+      [before_arrow, _] = String.split(html, ~s(phx-click="move_task_to_ready"), parts: 2)
+      assert before_arrow =~ "Requires a human review"
+    end
+
+    test "omits the move-to-Ready arrow by default" do
+      assigns = %{task: task(%{key_files_count: 2})}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} column={:backlog} />
+        """)
+
+      refute html =~ "move_task_to_ready"
+      refute html =~ "move-to-ready"
+    end
+
+    test "never renders the move-to-Ready arrow on a goal card" do
+      assigns = %{task: task(%{type: :goal, identifier: "G7"})}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} column={:backlog} show_move_to_ready />
+        """)
+
+      refute html =~ "move_task_to_ready"
+      assert html =~ "promote_goal_to_ready"
+    end
+
     test ":doing column renders the planning meta (same as backlog/ready)" do
       assigns = %{
         task:

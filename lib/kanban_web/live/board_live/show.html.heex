@@ -339,6 +339,9 @@
                     }
                     column={column_status(column.name)}
                     board_id={@board.id}
+                    show_move_to_ready={
+                      show_move_to_ready?(@can_modify, @ready_column_id, column, task)
+                    }
                   />
                 </div>
               </div>

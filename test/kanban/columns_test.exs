@@ -60,6 +60,77 @@ defmodule Kanban.ColumnsTest do
     end
   end
 
+  describe "get_column_by_name/2" do
+    test "get_column_by_name/2 matches case-insensitively and only on the given board" do
+      user = user_fixture()
+      board = board_fixture(user)
+      other_board = board_fixture(user)
+
+      _backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, %{name: "  Ready "})
+      _other_ready = column_fixture(other_board, %{name: "Ready"})
+
+      assert %Column{id: id} = Columns.get_column_by_name(board.id, "ready")
+      assert id == ready.id
+      assert %Column{id: ^id} = Columns.get_column_by_name(board.id, " READY ")
+    end
+
+    test "returns nil when the board has no column with that name" do
+      user = user_fixture()
+      board = board_fixture(user)
+      other_board = board_fixture(user)
+      column_fixture(other_board, %{name: "Ready"})
+      column_fixture(board, %{name: "Ready soon"})
+
+      assert Columns.get_column_by_name(board.id, "Ready") == nil
+    end
+
+    test "returns the lowest-positioned match when names repeat" do
+      user = user_fixture()
+      board = board_fixture(user)
+      first = column_fixture(board, %{name: "Ready"})
+      _second = column_fixture(board, %{name: "ready"})
+
+      assert Columns.get_column_by_name(board.id, "Ready").id == first.id
+    end
+
+    test "matches a name padded with tabs or newlines, agreeing with named?/2" do
+      user = user_fixture()
+      board = board_fixture(user)
+      ready = column_fixture(board, %{name: "\tReady\n"})
+
+      assert Columns.named?(ready, "Ready")
+      assert Columns.get_column_by_name(board.id, "Ready").id == ready.id
+    end
+
+    test "returns nil for a non-binary name" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column_fixture(board, %{name: "Ready"})
+
+      assert Columns.get_column_by_name(board.id, nil) == nil
+    end
+  end
+
+  describe "named?/2" do
+    test "matches ignoring case and surrounding whitespace" do
+      assert Columns.named?(%Column{name: " backlog "}, "Backlog")
+      assert Columns.named?(%Column{name: "READY"}, "ready")
+      assert Columns.named?(%{name: "Ready"}, "  Ready\t")
+    end
+
+    test "does not match a different name" do
+      refute Columns.named?(%Column{name: "To Do"}, "Backlog")
+      refute Columns.named?(%Column{name: "Ready soon"}, "Ready")
+    end
+
+    test "is false for a nil column, a nil column name or a non-binary name" do
+      refute Columns.named?(nil, "Backlog")
+      refute Columns.named?(%Column{name: nil}, "Backlog")
+      refute Columns.named?(%Column{name: "Backlog"}, nil)
+    end
+  end
+
   describe "create_column/3" do
     test "creates a column with valid attributes" do
       user = user_fixture()

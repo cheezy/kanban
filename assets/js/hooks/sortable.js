@@ -157,9 +157,10 @@ const SortableHook = {
       scrollSpeed: 15,
       bubbleScroll: true,
       // Pointerdowns on these elements never start a drag — the click is
-      // forwarded normally so the edit/archive/delete buttons still work
-      // and clicks on empty-state placeholders aren't intercepted.
-      filter: ".empty-state, .task-actions, .task-actions *",
+      // forwarded normally so the edit/archive/delete buttons and the
+      // Backlog card's move-to-Ready arrow still work, and clicks on
+      // empty-state placeholders aren't intercepted.
+      filter: ".empty-state, .task-actions, .task-actions *, .move-to-ready, .move-to-ready *",
       preventOnFilter: false,
       delay: 0,
       delayOnTouchOnly: true,

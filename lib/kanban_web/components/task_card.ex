@@ -39,11 +39,17 @@ defmodule KanbanWeb.TaskCard do
       (`:backlog | :ready | :doing | :review | :done`). Drives the
       per-column footer rendering. Default `:backlog`.
     * `dense` — when true, tighter padding and gap. Default false.
+    * `show_move_to_ready` — when true, renders a right-aligned
+      "Move to Ready" arrow button in the card's bottom row (sending the
+      `move_task_to_ready` event). The caller decides eligibility (Backlog
+      column by name, modify access, a Ready column exists); goal cards
+      never render it. Default false.
   """
   attr :task, :map, required: true
   attr :column, :atom, default: :backlog
   attr :dense, :boolean, default: false
   attr :board_id, :any, default: nil
+  attr :show_move_to_ready, :boolean, default: false
 
   def task_card(assigns) do
     if assigns.task.type == :goal do
@@ -91,8 +97,9 @@ defmodule KanbanWeb.TaskCard do
       <.review_footer :if={@column == :review} task={@task} />
       <.done_footer :if={@column == :done} task={@task} />
       <.backlog_meta
-        :if={@column in [:backlog, :ready, :doing] and not @dense}
+        :if={(@column in [:backlog, :ready, :doing] and not @dense) or @show_move_to_ready}
         task={@task}
+        show_move_to_ready={@show_move_to_ready}
       />
     </article>
     """
@@ -326,6 +333,7 @@ defmodule KanbanWeb.TaskCard do
   end
 
   attr :task, :map, required: true
+  attr :show_move_to_ready, :boolean, default: false
 
   defp backlog_meta(assigns) do
     key_files = Map.get(assigns.task, :key_files_count)
@@ -343,7 +351,7 @@ defmodule KanbanWeb.TaskCard do
 
     ~H"""
     <div
-      :if={@any_meta?}
+      :if={@any_meta? || @show_move_to_ready}
       style={[
         "display: flex; align-items: center; gap: 8px;",
         "color: var(--ink-3); font-size: 10.5px;"
@@ -385,7 +393,44 @@ defmodule KanbanWeb.TaskCard do
       >
         {gettext("review")}
       </span>
+      <.move_to_ready_button
+        :if={@show_move_to_ready}
+        task_id={Map.get(@task, :id)}
+        push_right={not @needs_review}
+      />
     </div>
+    """
+  end
+
+  attr :task_id, :any, required: true
+  attr :push_right, :boolean, default: true
+
+  # Hover/focus-revealed arrow that sends the task to the bottom of Ready.
+  # Its own phx-click is the closest binding, so the surrounding view_task
+  # wrapper never fires; the `move-to-ready` class is in the Sortable filter
+  # (assets/js/hooks/sortable.js) so a press never starts a drag. Below md
+  # it stays visible, like the board's task-actions, for touch users.
+  defp move_to_ready_button(assigns) do
+    ~H"""
+    <button
+      type="button"
+      phx-click="move_task_to_ready"
+      phx-value-id={@task_id}
+      aria-label={gettext("Move to Ready")}
+      title={gettext("Move to Ready")}
+      style={if @push_right, do: "margin-left: auto;", else: ""}
+      class={[
+        "move-to-ready inline-flex items-center justify-center",
+        "min-h-11 min-w-11 md:min-h-0 md:min-w-0 p-1 rounded cursor-pointer",
+        "text-[var(--ink-3)] hover:text-[var(--ink)] hover:bg-[var(--surface-sunken)]",
+        "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100",
+        "focus-visible:opacity-100 transition-opacity",
+        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+        "phx-click-loading:cursor-wait phx-click-loading:pointer-events-none"
+      ]}
+    >
+      <.icon name="hero-arrow-right" class="w-3.5 h-3.5" />
+    </button>
     """
   end
 

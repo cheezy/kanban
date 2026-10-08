@@ -56,6 +56,57 @@ defmodule Kanban.Columns do
   end
 
   @doc """
+  Returns the first column (by position) on `board_id` whose name matches
+  `name`, ignoring case and surrounding whitespace, or `nil` when the board
+  has no such column.
+
+  Column names are not unique on a board, so the lowest-positioned match
+  wins. The lookup is always scoped to `board_id`, and the name comparison
+  is `named?/2` itself (run over the board's few columns in memory), so the
+  two can never disagree about which whitespace or case counts as a match.
+
+  ## Examples
+
+      iex> get_column_by_name(board.id, "ready")
+      %Column{name: "Ready"}
+
+      iex> get_column_by_name(board.id, "Nope")
+      nil
+
+  """
+  def get_column_by_name(board_id, name) when is_binary(name) do
+    Column
+    |> where([c], c.board_id == ^board_id)
+    |> order_by([c], c.position)
+    |> Repo.all()
+    |> Enum.find(&named?(&1, name))
+  end
+
+  def get_column_by_name(_board_id, _name), do: nil
+
+  @doc """
+  True when `column`'s name equals `name`, ignoring case and surrounding
+  whitespace (`String.trim/1`, so any Unicode whitespace) — the comparison
+  `get_column_by_name/2` applies. Pure; runs no query. Anything that is not
+  a map with a binary `:name`, or a non-binary `name`, is `false`.
+
+  ## Examples
+
+      iex> named?(%Column{name: " backlog "}, "Backlog")
+      true
+
+      iex> named?(%Column{name: "To Do"}, "Backlog")
+      false
+
+  """
+  def named?(%{name: column_name}, name) when is_binary(column_name) and is_binary(name),
+    do: normalize_name(column_name) == normalize_name(name)
+
+  def named?(_column, _name), do: false
+
+  defp normalize_name(name), do: name |> String.trim() |> String.downcase()
+
+  @doc """
   Creates a column for a board with automatic position assignment.
 
   Only the board owner may create columns; any other user gets

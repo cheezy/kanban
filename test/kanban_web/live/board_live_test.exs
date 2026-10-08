@@ -1522,6 +1522,236 @@ defmodule KanbanWeb.BoardLiveTest do
     end
   end
 
+  describe "Move to Ready arrow" do
+    setup [:register_and_log_in_user]
+
+    defp backlog_ready_board(user, ready_attrs \\ %{}) do
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, Map.merge(%{name: "Ready"}, ready_attrs))
+      doing = column_fixture(board, %{name: "Doing"})
+      %{board: board, backlog: backlog, ready: ready, doing: doing}
+    end
+
+    defp arrow_selector(task), do: "#task-#{task.id} button.move-to-ready"
+
+    defp column_task_ids(column), do: column |> Kanban.Tasks.list_tasks() |> Enum.map(& &1.id)
+
+    test "clicking the Ready arrow moves a Backlog task to the bottom of Ready", %{
+      conn: conn,
+      user: user
+    } do
+      %{board: board, backlog: backlog, ready: ready} = backlog_ready_board(user)
+      task = task_fixture(backlog, %{title: "Promote me"})
+      r1 = task_fixture(ready, %{title: "Ready one"})
+      r2 = task_fixture(ready, %{title: "Ready two"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+      {:ok, other_viewer, _html} = live(conn, ~p"/boards/#{board}")
+
+      capture_log(fn ->
+        show_live |> element(arrow_selector(task)) |> render_click()
+      end)
+
+      assert column_task_ids(ready) == [r1.id, r2.id, task.id]
+      assert column_task_ids(backlog) == []
+
+      # The board re-renders without a reload: the card now sits in Ready.
+      assert has_element?(show_live, "#tasks-#{ready.id} #task-#{task.id}")
+      refute has_element?(show_live, "#tasks-#{backlog.id} #task-#{task.id}")
+      # Clicking the arrow does not open the task view.
+      refute has_element?(show_live, "#task-view-modal")
+
+      # Other viewers of the board receive the move live.
+      assert_push_event(other_viewer, "task_moved_remotely", %{task_id: task_id})
+      assert task_id == task.id
+    end
+
+    test "clicking the Ready arrow with an empty Ready column lands the task at position 0", %{
+      conn: conn,
+      user: user
+    } do
+      %{board: board, backlog: backlog, ready: ready} = backlog_ready_board(user)
+      task = task_fixture(backlog, %{title: "First into Ready"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      capture_log(fn ->
+        show_live |> element(arrow_selector(task)) |> render_click()
+      end)
+
+      assert column_task_ids(ready) == [task.id]
+      assert Kanban.Tasks.get_task!(task.id).position == 0
+      assert has_element?(show_live, "#tasks-#{ready.id} #task-#{task.id}")
+    end
+
+    test "clicking the Ready arrow on a blocked Backlog task moves it like a drag", %{
+      conn: conn,
+      user: user
+    } do
+      %{board: board, backlog: backlog, ready: ready} = backlog_ready_board(user)
+      blocker = task_fixture(backlog, %{title: "Blocker"})
+      blocked = task_fixture(backlog, %{title: "Blocked", dependencies: [blocker.identifier]})
+      existing = task_fixture(ready, %{title: "Already ready"})
+
+      assert Kanban.Tasks.get_task!(blocked.id).status == :blocked
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      capture_log(fn ->
+        show_live |> element(arrow_selector(blocked)) |> render_click()
+      end)
+
+      assert column_task_ids(ready) == [existing.id, blocked.id]
+      assert has_element?(show_live, "#tasks-#{ready.id} #task-#{blocked.id}")
+    end
+
+    test "the Ready arrow renders only on Backlog work and defect cards", %{
+      conn: conn,
+      user: user
+    } do
+      %{board: board, backlog: backlog, ready: ready, doing: doing} = backlog_ready_board(user)
+      todo = column_fixture(board, %{name: "To Do"})
+      work = task_fixture(backlog, %{title: "Backlog work"})
+      defect = task_fixture(backlog, %{title: "Backlog defect", type: :defect})
+
+      {:ok, %{goal: goal}} =
+        Kanban.Tasks.create_goal_with_tasks(backlog, %{title: "Backlog goal"}, [])
+
+      in_ready = task_fixture(ready, %{title: "Ready work"})
+      in_doing = task_fixture(doing, %{title: "Doing work"})
+      in_todo = task_fixture(todo, %{title: "Custom column work"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      assert has_element?(show_live, arrow_selector(work))
+      assert has_element?(show_live, arrow_selector(defect))
+      refute has_element?(show_live, arrow_selector(goal))
+      refute has_element?(show_live, arrow_selector(in_ready))
+      refute has_element?(show_live, arrow_selector(in_doing))
+      # "To Do" maps to :backlog via column_status/1 but is not named Backlog.
+      refute has_element?(show_live, arrow_selector(in_todo))
+    end
+
+    test "no Ready arrow on a board without a Ready column", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      _doing = column_fixture(board, %{name: "Doing"})
+      task = task_fixture(backlog, %{title: "Stuck in Backlog"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      refute has_element?(show_live, "button.move-to-ready")
+
+      show_live |> render_hook("move_task_to_ready", %{"id" => to_string(task.id)})
+
+      assert render(show_live) =~ "Column not found on this board"
+      assert column_task_ids(backlog) == [task.id]
+    end
+
+    test "read-only member sees no Ready arrow and move_task_to_ready is refused", %{
+      conn: conn,
+      user: user
+    } do
+      owner = user_fixture()
+      %{board: board, backlog: backlog, ready: ready} = backlog_ready_board(owner)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, user, :read_only, owner)
+      task = task_fixture(backlog, %{title: "Not yours to move"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      refute has_element?(show_live, "button.move-to-ready")
+
+      show_live |> render_hook("move_task_to_ready", %{"id" => to_string(task.id)})
+
+      assert render(show_live) =~ "You do not have permission to move tasks on this board"
+      assert column_task_ids(backlog) == [task.id]
+      assert column_task_ids(ready) == []
+    end
+
+    test "move_task_to_ready respects the Ready column WIP limit", %{conn: conn, user: user} do
+      %{board: board, backlog: backlog, ready: ready} =
+        backlog_ready_board(user, %{wip_limit: 1})
+
+      task = task_fixture(backlog, %{title: "Waiting"})
+      full = task_fixture(ready, %{title: "Already ready"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      capture_log(fn ->
+        html = show_live |> element(arrow_selector(task)) |> render_click()
+        assert html =~ "Cannot move task: column has reached its WIP limit"
+      end)
+
+      assert column_task_ids(backlog) == [task.id]
+      assert column_task_ids(ready) == [full.id]
+      # The board still renders both columns, with the card left in Backlog.
+      assert has_element?(show_live, "#tasks-#{backlog.id} #task-#{task.id}")
+      assert has_element?(show_live, "#tasks-#{ready.id} #task-#{full.id}")
+    end
+
+    test "move_task_to_ready refuses a task that is no longer in Backlog", %{
+      conn: conn,
+      user: user
+    } do
+      %{board: board, backlog: backlog, ready: ready, doing: doing} = backlog_ready_board(user)
+      task = task_fixture(backlog, %{title: "Moved elsewhere"})
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      # Someone else moves it to Doing before the click arrives.
+      {:ok, _} = task.id |> Kanban.Tasks.get_task!() |> Kanban.Tasks.move_task(doing, 0)
+
+      show_live |> render_hook("move_task_to_ready", %{"id" => to_string(task.id)})
+
+      assert render(show_live) =~
+               "This task is no longer in Backlog, so it was not moved to Ready"
+
+      assert column_task_ids(doing) == [task.id]
+      assert column_task_ids(ready) == []
+    end
+
+    test "move_task_to_ready ignores a task id from another board or a non-numeric id", %{
+      conn: conn,
+      user: user
+    } do
+      %{board: board, backlog: backlog, ready: ready} = backlog_ready_board(user)
+      own_task = task_fixture(backlog, %{title: "Mine"})
+
+      other_owner = user_fixture()
+      %{backlog: other_backlog} = backlog_ready_board(other_owner)
+      other_task = task_fixture(other_backlog, %{title: "Theirs"})
+
+      # A fresh session per id, so a flash left by one id cannot satisfy the
+      # assertion for the next.
+      for raw_id <- [to_string(other_task.id), "abc", "#{own_task.id}; DROP", ""] do
+        {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+        refute render(show_live) =~ "Failed to move task"
+
+        show_live |> render_hook("move_task_to_ready", %{"id" => raw_id})
+        assert render(show_live) =~ "Failed to move task"
+      end
+
+      assert column_task_ids(other_backlog) == [other_task.id]
+      assert column_task_ids(backlog) == [own_task.id]
+      assert column_task_ids(ready) == []
+    end
+
+    test "move_task_to_ready refuses a goal", %{conn: conn, user: user} do
+      %{board: board, backlog: backlog, ready: ready} = backlog_ready_board(user)
+
+      {:ok, %{goal: goal}} =
+        Kanban.Tasks.create_goal_with_tasks(backlog, %{title: "A goal"}, [])
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      show_live |> render_hook("move_task_to_ready", %{"id" => to_string(goal.id)})
+
+      assert render(show_live) =~ "Failed to move task"
+      assert column_task_ids(ready) == []
+    end
+  end
+
   describe "Page Titles" do
     setup [:register_and_log_in_user]
 

@@ -192,6 +192,25 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_event("move_task_to_ready", %{"id" => id}, socket) do
+    case Authorization.authorize_modify_for_task(socket, id) do
+      {:ok, task} ->
+        TaskActions.move_task_to_ready(socket, task)
+
+      {:error, :not_authorized} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("You do not have permission to move tasks on this board")
+         )}
+
+      {:error, :not_found} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to move task"))}
+    end
+  end
+
+  @impl true
   def handle_event(
         "move_task",
         %{
@@ -464,6 +483,9 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @doc false
   defdelegate handle_task_move(socket, task, new_column_id, new_position), to: TaskActions
+
+  @doc "See `KanbanWeb.BoardLive.BoardState.show_move_to_ready?/4`."
+  defdelegate show_move_to_ready?(can_modify, ready_column_id, column, task), to: BoardState
 
   @doc "See `KanbanWeb.BoardLive.BoardState.goal_hierarchy_column?/1`."
   defdelegate goal_hierarchy_column?(column), to: BoardState

@@ -125,6 +125,49 @@ defmodule KanbanWeb.BoardLive.TaskActions do
     |> BoardState.reload_board_columns()
   end
 
+  @doc """
+  Moves an already-authorized, board-scoped `task` from Backlog to the end of
+  the board's Ready column (the hover arrow on Backlog cards). Re-checks on
+  the server that the task is still a work/defect task sitting in a column
+  named Backlog and that the board has a Ready column, then reuses
+  `handle_task_move/4` so the WIP-limit flash, move events and broadcast are
+  identical to a drag.
+  """
+  def move_task_to_ready(socket, task) do
+    board_id = socket.assigns.board.id
+    current_column = Columns.get_column_for_board(task.column_id, board_id)
+
+    cond do
+      task.type not in [:work, :defect] ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to move task"))}
+
+      not Columns.named?(current_column, "Backlog") ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("This task is no longer in Backlog, so it was not moved to Ready")
+         )}
+
+      true ->
+        move_backlog_task_to_ready(socket, task, Columns.get_column_by_name(board_id, "Ready"))
+    end
+  end
+
+  defp move_backlog_task_to_ready(socket, _task, nil),
+    do: {:noreply, put_flash(socket, :error, gettext("Column not found on this board"))}
+
+  defp move_backlog_task_to_ready(socket, task, ready) do
+    end_of_ready = length(Tasks.list_tasks(ready))
+
+    {:noreply, socket} = handle_task_move(socket, task, ready.id, end_of_ready)
+    # A click (unlike a drop) has no client-side DOM move, so re-insert the
+    # column stream items (as reload_board_data/1 does) to render the task in
+    # its new column. (A `reset: true` here left #columns empty under
+    # LiveViewTest, so this upserts instead.)
+    {:noreply, stream(socket, :columns, Columns.list_columns(socket.assigns.board))}
+  end
+
   def do_promote_goal(socket, goal) do
     case Tasks.promote_goal_to_ready(goal, socket.assigns.board.id) do
       {:ok, count} ->

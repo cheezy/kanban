@@ -78,13 +78,7 @@ defmodule KanbanWeb.BoardLive.BoardState do
   def page_title(:board_settings), do: "Board Settings"
 
   def load_tasks_for_columns(socket, columns) do
-    grouped = Tasks.list_tasks_by_columns(columns)
-
-    tasks_by_column =
-      Enum.into(columns, %{}, fn column ->
-        tasks = grouped |> Map.get(column.id, []) |> sort_column_tasks(column)
-        {column.id, tasks}
-      end)
+    tasks_by_column = group_tasks_by_column(columns)
 
     goal_progress = Goals.compute_goal_progress(tasks_by_column, socket.assigns.board.id)
     backlog_goals_with_children = Goals.compute_backlog_promotable_goals(columns, tasks_by_column)
@@ -104,7 +98,39 @@ defmodule KanbanWeb.BoardLive.BoardState do
     |> assign(:backlog_goals_with_children, backlog_goals_with_children)
     |> assign(:goals_by_id, goals_by_id)
     |> assign(:goals, goals)
+    |> assign(:ready_column_id, ready_column_id(columns))
     |> assign(:tasks_version, :os.system_time(:millisecond))
+  end
+
+  defp group_tasks_by_column(columns) do
+    grouped = Tasks.list_tasks_by_columns(columns)
+
+    Enum.into(columns, %{}, fn column ->
+      tasks = grouped |> Map.get(column.id, []) |> sort_column_tasks(column)
+      {column.id, tasks}
+    end)
+  end
+
+  @doc """
+  The id of the board's Ready column (first column named "Ready", ignoring
+  case and surrounding whitespace, by position), or `nil` when there is
+  none. Computed in memory from the already-loaded columns, once per load.
+  """
+  def ready_column_id(columns) do
+    columns
+    |> Enum.sort_by(& &1.position)
+    |> Enum.find_value(fn column -> if Columns.named?(column, "Ready"), do: column.id end)
+  end
+
+  @doc """
+  Whether a board card gets the hover "Move to Ready" arrow: the viewer can
+  modify the board, the board has a Ready column, the card's column is
+  actually named Backlog (not merely mapped to :backlog by `column_status/1`)
+  and the task is work or a defect (goals have their own promote button).
+  """
+  def show_move_to_ready?(can_modify, ready_column_id, column, task) do
+    can_modify == true and not is_nil(ready_column_id) and
+      Columns.named?(column, "Backlog") and Map.get(task, :type) in [:work, :defect]
   end
 
   @goal_hierarchy_columns ~w(Backlog Ready Done)
