@@ -175,6 +175,8 @@ See the [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) for details on creating
 - `GET /api/tasks/:id/tree` - Get task tree (goals with children)
 - `GET /api/tasks/:id/dependencies` - Get full dependency tree
 - `GET /api/tasks/:id/dependents` - Get tasks that depend on this task
+- `GET /api/tasks/:id/comments` - Read a task's most recent comments (`limit`, default 50), oldest first ([docs](docs/api/get_tasks_id_comments.md))
+- `POST /api/tasks/:id/comments` - Add a comment as the token's user, attributed to your agent name ([docs](docs/api/post_tasks_id_comments.md))
 - `POST /api/tasks` - Create task(s) or goal with nested tasks
 - `PATCH /api/tasks/:id` - Update task fields
 

@@ -52,6 +52,19 @@ defmodule Kanban.Tasks.CommentsTest do
       assert comment.author_user_id == user.id
     end
 
+    test "an author_agent_name over 255 characters is a changeset error, not a crash",
+         %{user: user, task: task} do
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               user
+               |> scope()
+               |> Comments.create_comment(task, %{"content" => "Hi"},
+                 author_agent_name: String.duplicate("a", 256)
+               )
+
+      assert %{author_agent_name: [_]} = errors_on(changeset)
+      assert Comments.list_comments(task) == []
+    end
+
     test "lets owner, modify and read-only members comment", ctx do
       %{modifier: modifier, reader: reader} = add_members(ctx)
 
@@ -408,6 +421,40 @@ defmodule Kanban.Tasks.CommentsTest do
 
     test "returns an empty list when there are none", %{task: task} do
       assert Comments.list_comments(task) == []
+    end
+  end
+
+  describe "list_recent_comments/2" do
+    test "keeps the most recent comments, returned oldest first, with authors",
+         %{user: user, task: task, column: column} do
+      for n <- 1..4, do: comment_at(task, user, "c#{n}", 100 - n)
+      comment_at(task_fixture(column), user, "elsewhere", 1)
+
+      assert {comments, true} = Tasks.list_recent_comments(task, 3)
+      assert Enum.map(comments, & &1.content) == ["c2", "c3", "c4"]
+      assert Enum.all?(comments, &(&1.author.id == user.id))
+    end
+
+    test "has_more is false when every comment fits", %{user: user, task: task} do
+      for n <- 1..2, do: comment_at(task, user, "c#{n}", 10 - n)
+
+      assert {comments, false} = Comments.list_recent_comments(task, 2)
+      assert length(comments) == 2
+    end
+
+    test "breaks ties on inserted_at by id", %{user: user, task: task} do
+      first = comment_at(task, user, "a", 5)
+      second = comment_at(task, user, "b", 5)
+
+      assert {[kept], true} = Comments.list_recent_comments(task, 1)
+      assert kept.id == max(first.id, second.id)
+
+      assert {both, false} = Comments.list_recent_comments(task, 2)
+      assert Enum.map(both, & &1.id) == Enum.sort([first.id, second.id])
+    end
+
+    test "returns an empty list when there are none", %{task: task} do
+      assert Comments.list_recent_comments(task, 50) == {[], false}
     end
   end
 
@@ -801,6 +848,22 @@ defmodule Kanban.Tasks.CommentsTest do
 
       assert few == many
     end
+  end
+
+  # Inserts a comment with a fixed inserted_at so ordering is deterministic.
+  defp comment_at(task, user, content, seconds_ago) do
+    at =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(-seconds_ago)
+      |> NaiveDateTime.truncate(:second)
+
+    Repo.insert!(%TaskComment{
+      task_id: task.id,
+      author_user_id: user.id,
+      content: content,
+      inserted_at: at,
+      updated_at: at
+    })
   end
 
   defp scope(user), do: Scope.for_user(user)

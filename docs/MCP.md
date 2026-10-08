@@ -90,7 +90,7 @@ names and types are the same as in the REST API's
 | `stride_complete_task` | [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md) | `id`, `after_doing_result`, `before_review_result`, `reviewer_result` (required), plus every other completion field |
 | `stride_get_task` | [GET /api/tasks/:id](api/get_tasks_id.md) | `id` (required), `response_view` |
 | `stride_list_tasks` | [GET /api/tasks](api/get_tasks.md) (paginated mode) | `limit`, `cursor`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`, `column_id`, `response_view` |
-| `stride_add_comment` | none | `id`, `content` (both required) |
+| `stride_add_comment` | [POST /api/tasks/:id/comments](api/post_tasks_id_comments.md) | `id`, `content` (both required), `agent_name` |
 
 Notes:
 
@@ -113,6 +113,13 @@ Notes:
   included. The comment is stored with the token's
   user as its author. A token user with no membership on the board is refused
   with `error_code` `not_authorized` (HTTP status 403).
+  The comment's `author_agent_name` is the token's agent model (as
+  `ai_agent:<model>`), else `agent_name`, else the agent name the token last
+  sent. This is the same order, and the same shared action, as
+  [POST /api/tasks/:id/comments](api/post_tasks_id_comments.md), so a comment
+  carries the same attribution over MCP and REST. `agent_name` is at most 255
+  characters and is display attribution only. The tool returns the comment in
+  the REST response shape.
   `stride_claim_task` and `stride_complete_task` still need `owner` or
   `modify` access, as they do over REST.
 

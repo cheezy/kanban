@@ -56,9 +56,15 @@ Authorization: Bearer <your_api_token>
     "inserted_at": "2025-12-28T10:00:00Z",
     "updated_at": "2025-12-28T11:00:00Z",
     "completed_at": null
-  }
+  },
+  "comment_count": 2
 }
 ```
+
+`comment_count` is the number of comments on the task. Fetch them with
+[GET /api/tasks/:id/comments](get_tasks_id_comments.md). It sits next to `data`,
+not inside it, and only this full view carries it: the `response_view=slim`
+and `fields` views leave it out.
 
 ### Forbidden (403)
 
@@ -210,4 +216,5 @@ curl -X GET \
 
 - [GET /api/tasks](get_tasks.md) - List tasks (filters, cursor pagination)
 - [GET /api/tasks/:id/tree](get_tasks_id_tree.md) - Get task with all children (for goals)
+- [GET /api/tasks/:id/comments](get_tasks_id_comments.md) - List the task's comments
 - [POST /api/tasks/claim](post_tasks_claim.md) - Claim this task

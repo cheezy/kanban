@@ -59,6 +59,7 @@ of type `goal` is rejected with HTTP 422.
 - [GET /api/tasks](api/get_tasks.md) - List tasks; optional filters (`column_id`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`) and opt-in cursor pagination (`limit`, `cursor` → `meta.next_cursor`). Syncing with `updated_since`? See [Incremental sync](api/get_tasks.md#incremental-sync)
 - [GET /api/tasks/:id](api/get_tasks_id.md) - Get specific task details
 - [GET /api/tasks/:id/tree](api/get_tasks_id_tree.md) - Get task with all children (for goals)
+- [GET /api/tasks/:id/comments](api/get_tasks_id_comments.md) - Read a task's comments, such as feedback a human left on the board. `GET /api/tasks/:id` carries a `comment_count`
 
 **Task Management:**
 - [POST /api/tasks/claim](api/post_tasks_claim.md) - Claim a task and receive `before_doing` hook
@@ -66,6 +67,7 @@ of type `goal` is rejected with HTTP 422.
 - [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md) - Complete a task and receive hooks
 - [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) - Finalize review
 - [PATCH /api/tasks/:id/mark_done](api/patch_tasks_id_mark_done.md) - Bypass review and mark as done (⚠️ limited functionality)
+- [POST /api/tasks/:id/comments](api/post_tasks_id_comments.md) - Leave a comment humans can read in the UI, attributed to your agent name
 
 **Task Creation:**
 - [POST /api/tasks](api/post_tasks.md) - Create a task or goal with nested child tasks

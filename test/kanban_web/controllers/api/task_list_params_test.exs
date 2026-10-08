@@ -127,6 +127,22 @@ defmodule KanbanWeb.API.TaskListParamsTest do
     end
   end
 
+  describe "parse_limit/1" do
+    test "defaults to 50 when absent and accepts 1..200" do
+      assert TaskListParams.parse_limit(nil) == {:ok, 50}
+      assert TaskListParams.parse_limit("1") == {:ok, 1}
+      assert TaskListParams.parse_limit("200") == {:ok, 200}
+    end
+
+    test "rejects what parse/1 rejects for limit" do
+      for value <- ["0", "201", "-1", "abc", "1.5", "", ["1"]] do
+        assert {:error, "Invalid limit: must be an integer between 1 and 200"} =
+                 TaskListParams.parse_limit(value),
+               "limit #{inspect(value)} should be rejected"
+      end
+    end
+  end
+
   describe "parse/1 rejects" do
     test "a limit outside 1..200 or not an integer" do
       for value <- ["0", "201", "-1", "abc", "1.5", "", " 5", ["1"], %{"a" => "1"}] do

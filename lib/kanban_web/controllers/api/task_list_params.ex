@@ -112,6 +112,15 @@ defmodule KanbanWeb.API.TaskListParams do
   end
 
   @doc """
+  Parses a `limit` query value by the same rule as the task list: a
+  whole-number string from 1 to #{@max_limit}. Absent (`nil`) means the
+  default, #{@default_limit}. Returns `{:error, message}` for anything else.
+  """
+  @spec parse_limit(term()) :: {:ok, pos_integer()} | {:error, String.t()}
+  def parse_limit(nil), do: {:ok, @default_limit}
+  def parse_limit(value), do: parse_value(:limit, value)
+
+  @doc """
   Encodes a task id as an opaque cursor. `nil` (no further page) stays `nil`.
   """
   @spec encode_cursor(pos_integer() | nil) :: String.t() | nil

@@ -139,6 +139,8 @@ defmodule KanbanWeb.Router do
     get "/tasks/:id/dependents", TaskController, :dependents
     get "/tasks/:id/tree", TaskController, :tree
     get "/tasks/:id/after_goal_status", TaskController, :after_goal_status
+    get "/tasks/:id/comments", TaskCommentController, :index
+    post "/tasks/:id/comments", TaskCommentController, :create
     resources "/tasks", TaskController, only: [:index, :show, :create, :update]
 
     # Model Context Protocol over Streamable HTTP (W2231), behind the same

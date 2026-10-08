@@ -255,6 +255,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 - [GET /api/tasks/:id/tree](get_tasks_id_tree.md) — Get task with all children (for goals)
 - [GET /api/tasks/:id/dependencies](get_tasks_id_dependencies.md) — Get tasks this task depends on
 - [GET /api/tasks/:id/dependents](get_tasks_id_dependents.md) — Get tasks that depend on this task
+- [GET /api/tasks/:id/comments](get_tasks_id_comments.md) — List a task's comments, most recent `limit` (default 50, max 200), oldest first
 
 ### Task Management
 
@@ -265,6 +266,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 - [PUT /api/tasks/:id/changed_files](put_tasks_id_changed_files.md) — Upload the per-file diff snapshot (sole writer for `tasks.changed_files`)
 - [PATCH /api/tasks/:id/mark_done](patch_tasks_id_mark_done.md) — Bypass review and mark task as done
 - [PATCH /api/tasks/:id/mark_reviewed](patch_tasks_id_mark_reviewed.md) — Finalize review and receive `after_review` hook
+- [POST /api/tasks/:id/comments](post_tasks_id_comments.md) — Add a comment, authored by the token's user and attributed to your agent name
 
 ### Task Creation
 
@@ -283,6 +285,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 | GET | `/api/tasks/:id/tree` | Get task tree | No |
 | GET | `/api/tasks/:id/dependencies` | Get task dependencies | No |
 | GET | `/api/tasks/:id/dependents` | Get dependent tasks | No |
+| GET | `/api/tasks/:id/comments` | List task comments | No |
 | POST | `/api/tasks` | Create a task | No |
 | POST | `/api/tasks/batch` | Create multiple goals | No |
 | POST | `/api/tasks/claim` | Claim a task | `before_doing` |
@@ -292,6 +295,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 | PUT | `/api/tasks/:id/changed_files` | Upload per-file diff snapshot (sole writer) | No |
 | PATCH | `/api/tasks/:id/mark_done` | Bypass review, mark done | No |
 | PATCH | `/api/tasks/:id/mark_reviewed` | Finalize review | `after_review`* |
+| POST | `/api/tasks/:id/comments` | Add a task comment | No |
 | POST | `/api/mcp` | MCP server: JSON-RPC over Streamable HTTP | Through its claim and complete tools |
 | GET, DELETE | `/api/mcp` | Not supported, returns `405` | No |
 

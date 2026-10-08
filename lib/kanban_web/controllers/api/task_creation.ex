@@ -26,6 +26,7 @@ defmodule KanbanWeb.API.TaskCreation do
   alias Kanban.ApiTokens
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias KanbanWeb.API.AgentAttribution
   alias KanbanWeb.API.TaskActions
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskJSON
@@ -190,26 +191,18 @@ defmodule KanbanWeb.API.TaskCreation do
     end
   end
 
-  # D137 resolution order: explicit created_by_agent field → token agent_model
-  # ("ai_agent:<model>") → top-level agent_name param → token last_agent_name
-  # → unset (the agents feed renders unattributed rows as "?").
+  # D137: an explicit created_by_agent field wins; otherwise the shared
+  # KanbanWeb.API.AgentAttribution order applies (token agent_model, then the
+  # agent_name param, then the token's last_agent_name, else unset, which the
+  # agents feed renders as "?").
   defp maybe_add_created_by_agent(task_params, api_token, agent_name) do
     if Map.has_key?(task_params, "created_by_agent") do
       task_params
     else
-      case resolve_created_by_agent(api_token, agent_name) do
+      case AgentAttribution.resolve(api_token, agent_name) do
         nil -> task_params
         agent -> Map.put(task_params, "created_by_agent", agent)
       end
-    end
-  end
-
-  defp resolve_created_by_agent(api_token, agent_name) do
-    cond do
-      api_token.agent_model -> "ai_agent:#{api_token.agent_model}"
-      ApiTokens.usable_agent_name?(agent_name) -> agent_name
-      ApiTokens.usable_agent_name?(api_token.last_agent_name) -> api_token.last_agent_name
-      true -> nil
     end
   end
 

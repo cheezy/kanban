@@ -1322,6 +1322,122 @@
         }
       }
     },
+    "/api/tasks/{id}/comments": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TaskId"
+        }
+      ],
+      "get": {
+        "operationId": "listTaskComments",
+        "summary": "List a task's comments",
+        "tags": [
+          "Discovery"
+        ],
+        "description": "Returns the most recent comments on a task on the token's board, oldest first. A task on another board returns 404.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CommentLimit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The comments, oldest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCommentList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTaskComment",
+        "summary": "Add a comment to a task",
+        "tags": [
+          "Management"
+        ],
+        "description": "Adds a comment authored by the token's user. Any board member may comment, including read-only members; a user with no membership on the board gets 403. The comment is attributed to the token's agent model, else agent_name, else the agent name the token last sent.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  },
+                  "agent_name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "Display name of the agent writing the comment. Attribution only: the author is always the token's user."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created comment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCommentEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/mcp": {
       "post": {
         "operationId": "mcpMessage",
@@ -1671,6 +1787,17 @@
         "description": "Restrict to one column on the token's board. Works in both legacy and paginated mode. A column that does not exist or is on another board returns 404, and so does a whole number outside the signed 64-bit range. A value that is not an integer returns 400.",
         "schema": {
           "type": "integer"
+        }
+      },
+      "CommentLimit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "description": "How many of the most recent comments to return, 1-200. Defaults to 50. The comments are returned oldest first.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
         }
       }
     },
@@ -2741,6 +2868,11 @@
           },
           "skills_update_required": {
             "$ref": "#/components/schemas/SkillsUpdateRequired"
+          },
+          "comment_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of comments on the task. Present only on the full view of GET /api/tasks/{id} and the MCP get-task tool; fetch them with GET /api/tasks/{id}/comments."
           }
         }
       },
@@ -2996,6 +3128,109 @@
             "items": {
               "$ref": "#/components/schemas/TaskSummary"
             }
+          }
+        }
+      },
+      "TaskComment": {
+        "type": "object",
+        "required": [
+          "id",
+          "task_id",
+          "content",
+          "author_name",
+          "author_agent_name",
+          "mentioned_user_ids",
+          "edited_at",
+          "inserted_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "task_id": {
+            "type": "integer"
+          },
+          "content": {
+            "type": "string"
+          },
+          "author_name": {
+            "type": "string",
+            "description": "The author's name, else email; \"Unknown\" for a comment with no author."
+          },
+          "author_agent_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The agent that wrote the comment, if any. Display attribution only."
+          },
+          "mentioned_user_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Board members the comment mentions."
+          },
+          "edited_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "inserted_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "TaskCommentEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TaskComment"
+          }
+        }
+      },
+      "TaskCommentListMeta": {
+        "type": "object",
+        "required": [
+          "limit",
+          "has_more"
+        ],
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "True when older comments were left out because of limit."
+          }
+        }
+      },
+      "TaskCommentList": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskComment"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/TaskCommentListMeta"
           }
         }
       },

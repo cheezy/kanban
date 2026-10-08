@@ -84,10 +84,20 @@ defmodule KanbanWeb.API.TaskJSON do
     |> maybe_add_skills_version(assigns)
   end
 
+  # W2214: comment_count rides at the envelope root, and only when the caller
+  # threads it (TaskActions.get_task/3, i.e. the full GET /api/tasks/:id and
+  # MCP stride_get_task), so data/1 — shared by index, tree, claim and
+  # complete — and the slim and fields views are untouched.
   def show(%{task: task} = assigns) do
     %{data: data(task)}
     |> maybe_add_skills_version(assigns)
+    |> maybe_add_comment_count(assigns)
   end
+
+  defp maybe_add_comment_count(body, %{comment_count: count}) when is_integer(count),
+    do: Map.put(body, :comment_count, count)
+
+  defp maybe_add_comment_count(body, _assigns), do: body
 
   @doc """
   Task tree view. Under `response_view=slim` (W2057) the children render as

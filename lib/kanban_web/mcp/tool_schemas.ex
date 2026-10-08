@@ -6,7 +6,8 @@ defmodule KanbanWeb.MCP.ToolSchemas do
   Argument names and types follow the REST API's OpenAPI document
   (`priv/openapi/stride-api.json`): the list tool takes the `GET /api/tasks`
   query parameters, the claim and complete tools take the request bodies of
-  `POST /api/tasks/claim` and `PATCH /api/tasks/:id/complete`. The status,
+  `POST /api/tasks/claim` and `PATCH /api/tasks/:id/complete`, and the comment
+  tool takes the request body of `POST /api/tasks/:id/comments`. The status,
   type and priority enums are read from the `Kanban.Tasks.Task` schema at
   compile time so they cannot drift from it.
   """
@@ -168,12 +169,18 @@ defmodule KanbanWeb.MCP.ToolSchemas do
       "name" => "stride_add_comment",
       "title" => "Add comment",
       "description" =>
-        "Adds a comment to a task on the token's board, authored by the token's user. Any board member may comment, including read-only members.",
+        "Adds a comment to a task on the token's board, authored by the token's user. Any board member may comment, including read-only members. The comment is attributed to the token's agent model, else agent_name, else the agent name the token last sent.",
       "inputSchema" => %{
         "type" => "object",
         "properties" => %{
           "id" => @task_id,
-          "content" => %{"type" => "string", "minLength" => 1, "maxLength" => 10_000}
+          "content" => %{"type" => "string", "minLength" => 1, "maxLength" => 10_000},
+          "agent_name" => %{
+            "type" => "string",
+            "maxLength" => 255,
+            "description" =>
+              "Display name of the agent writing the comment. Attribution only: the author is always the token's user."
+          }
         },
         "required" => ["id", "content"],
         "additionalProperties" => false

@@ -766,6 +766,121 @@ defmodule KanbanWeb.API.McpControllerTest do
       assert Tasks.get_task_with_comments!(task.id).comments == []
     end
 
+    test "attributes the comment to agent_name and returns the REST comment shape", %{
+      conn: conn,
+      user: user,
+      ready_column: ready_column
+    } do
+      task = ready_task(ready_column, user)
+
+      {false, body} =
+        call_tool(conn, "stride_add_comment", %{
+          "id" => task.identifier,
+          "content" => "Signed",
+          "agent_name" => "MCP Agent"
+        })
+
+      assert body["data"]["author_agent_name"] == "MCP Agent"
+
+      assert Map.keys(body["data"]) |> Enum.sort() ==
+               ~w(author_agent_name author_name content edited_at id inserted_at mentioned_user_ids task_id updated_at)
+
+      assert [%{author_agent_name: "MCP Agent"}] = Tasks.get_task_with_comments!(task.id).comments
+    end
+
+    test "without agent_name it resolves the same name a REST POST from the token does", %{
+      conn: conn,
+      token_struct: token_struct,
+      user: user,
+      ready_column: ready_column
+    } do
+      task = ready_task(ready_column, user)
+      ApiTokens.stamp_last_agent_name(token_struct, "Remembered")
+
+      {false, mcp} =
+        call_tool(conn, "stride_add_comment", %{"id" => task.identifier, "content" => "via MCP"})
+
+      rest =
+        conn
+        |> recycle()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("content-type", "application/json")
+        |> post(
+          ~p"/api/tasks/#{task.identifier}/comments",
+          Jason.encode!(%{"content" => "via REST"})
+        )
+        |> json_response(201)
+
+      assert mcp["data"]["author_agent_name"] == "Remembered"
+      assert rest["data"]["author_agent_name"] == mcp["data"]["author_agent_name"]
+    end
+
+    test "the token's agent_model wins over agent_name, as over REST", %{
+      board: board,
+      user: user,
+      ready_column: ready_column
+    } do
+      task = ready_task(ready_column, user)
+
+      {:ok, {_t, token}} =
+        ApiTokens.create_api_token(user, board, %{"name" => "Model", "agent_model" => "claude-x"})
+
+      {false, body} =
+        call_tool(authed(build_conn(), token), "stride_add_comment", %{
+          "id" => task.identifier,
+          "content" => "x",
+          "agent_name" => "Param"
+        })
+
+      assert body["data"]["author_agent_name"] == "ai_agent:claude-x"
+    end
+
+    test "an agent_name over 255 characters is rejected by the schema", %{
+      conn: conn,
+      user: user,
+      ready_column: ready_column
+    } do
+      task = ready_task(ready_column, user)
+
+      body =
+        conn
+        |> rpc("tools/call", %{
+          "name" => "stride_add_comment",
+          "arguments" => %{
+            "id" => task.identifier,
+            "content" => "x",
+            "agent_name" => String.duplicate("a", 256)
+          }
+        })
+        |> json_response(200)
+
+      assert body["error"]["code"] == -32_602
+      assert Tasks.get_task_with_comments!(task.id).comments == []
+    end
+
+    test "content with a NUL character is a validation error, not a crash", %{
+      conn: conn,
+      user: user,
+      ready_column: ready_column
+    } do
+      task = ready_task(ready_column, user)
+
+      {true, body} =
+        call_tool(conn, "stride_add_comment", %{"id" => task.identifier, "content" => "a\u0000b"})
+
+      assert body["http_status"] == 422
+      assert body["errors"]["content"] == ["is invalid"]
+      assert Tasks.get_task_with_comments!(task.id).comments == []
+    end
+
+    test "tools/list advertises the optional agent_name argument", %{conn: conn} do
+      tools = conn |> rpc("tools/list") |> json_response(200) |> get_in(["result", "tools"])
+      schema = Enum.find(tools, &(&1["name"] == "stride_add_comment"))["inputSchema"]
+
+      assert schema["properties"]["agent_name"]["maxLength"] == 255
+      refute "agent_name" in schema["required"]
+    end
+
     test "an empty comment is rejected by the schema", %{
       conn: conn,
       user: user,

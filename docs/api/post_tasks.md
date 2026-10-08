@@ -111,10 +111,12 @@ create time the value is resolved from the first available source:
 
 1. An explicit `task.created_by_agent` in the payload (always wins)
 2. The API token's `agent_model`, recorded as `ai_agent:<model>`
-3. The request's top-level `agent_name` parameter
+3. The request's top-level `agent_name` parameter, when it is a usable name
 4. The token's remembered `last_agent_name` — stamped automatically whenever a
-   claim, complete, or create request carries a usable `agent_name` (non-blank
-   and not the `"Unknown"` placeholder)
+   claim, complete, create, or comment request carries a usable `agent_name`.
+   A usable name is valid UTF-8, contains no NUL, has at least one visible
+   character (whitespace and invisible format characters such as zero-width
+   or bidi controls do not count), and is not the `"Unknown"` placeholder
 5. Otherwise the task is created unattributed (`created_by_agent` is `null`)
    and the agents page renders its created row with the neutral `?` avatar
 

@@ -3,6 +3,7 @@ defmodule Kanban.Tasks.TaskComment do
   import Ecto.Changeset
 
   @content_max_length 10_000
+  @agent_name_max_length 255
 
   schema "task_comments" do
     field :content, :string
@@ -22,7 +23,7 @@ defmodule Kanban.Tasks.TaskComment do
   end
 
   @doc """
-  Maximum number of characters a comment's `content` may hold.
+  Maximum number of codepoints a comment's `content` may hold.
   """
   def content_max_length, do: @content_max_length
 
@@ -36,16 +37,49 @@ defmodule Kanban.Tasks.TaskComment do
 
   The same rule covers authorship: `:author_user_id`, `:author_agent_name`,
   `:mentioned_user_ids` and the virtual `:newly_mentioned_user_ids` are
-  server-set fields that live on the struct and are never cast, so a client
+  server-set fields that are never cast (they live on the struct, or for
+  `:author_agent_name` come through `put_author_agent_name/2`), so a client
   cannot post a comment impersonating another user or agent, or mention
-  someone the server did not resolve. `:content` is capped at `content_max_length/0` characters.
+  someone the server did not resolve. `:content` is capped at `content_max_length/0`
+  codepoints (so a run of combining marks cannot store megabytes), may not
+  contain a NUL character, and is blank when it holds only whitespace and
+  invisible format characters.
   """
   def changeset(task_comment, attrs) do
     task_comment
     |> cast(attrs, [:content])
     |> validate_required([:content, :task_id])
-    |> validate_length(:content, max: @content_max_length)
+    |> validate_length(:content, max: @content_max_length, count: :codepoints)
+    |> validate_change(:content, &validate_storable_text/2)
     |> foreign_key_constraint(:task_id)
     |> foreign_key_constraint(:author_user_id)
   end
+
+  @doc """
+  Puts the server-resolved `author_agent_name` on a create changeset and
+  checks it fits the column (at most #{@agent_name_max_length} characters), so
+  an over-long name is a changeset error rather than a database error. The
+  value comes from the server's attribution step, never from `attrs`.
+  """
+  def put_author_agent_name(changeset, agent_name) do
+    changeset
+    |> put_change(:author_agent_name, agent_name)
+    |> validate_length(:author_agent_name, max: @agent_name_max_length, count: :codepoints)
+    |> validate_change(:author_agent_name, &validate_storable_text/2)
+  end
+
+  # PostgreSQL text cannot hold a NUL character, so one is a changeset error
+  # rather than a database error. Text made only of whitespace and invisible
+  # format characters (zero-width spaces, bidi marks) is blank. Whitespace-only
+  # text is left to validate_required, which already reports it.
+  defp validate_storable_text(field, value) when is_binary(value) do
+    cond do
+      String.contains?(value, <<0>>) -> [{field, "is invalid"}]
+      String.trim(value) == "" -> []
+      String.replace(value, ~r/[\s\p{Cf}]/u, "") == "" -> [{field, "can't be blank"}]
+      true -> []
+    end
+  end
+
+  defp validate_storable_text(_field, _value), do: []
 end

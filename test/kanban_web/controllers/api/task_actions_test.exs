@@ -177,6 +177,77 @@ defmodule KanbanWeb.API.TaskActionsTest do
     end
   end
 
+  describe "add_comment/4 attribution" do
+    setup %{user: user, ready: ready} do
+      {:ok, task} = Tasks.create_task(ready, %{"title" => "T", "created_by_id" => user.id})
+      %{task: task}
+    end
+
+    test "attributes the comment to agent_name and stamps the token",
+         %{conn: conn, task: task} do
+      assert {:ok, comment} = TaskActions.add_comment(conn, task.identifier, "hi", "Claude")
+      assert comment.author_agent_name == "Claude"
+      assert comment.author.id == conn.assigns.current_user.id
+      assert ApiTokens.get_api_token!(conn.assigns.api_token.id).last_agent_name == "Claude"
+    end
+
+    test "the token's agent_model wins", %{conn: conn, task: task} do
+      api_token = %{conn.assigns.api_token | agent_model: "claude-x"}
+      conn = Plug.Conn.assign(conn, :api_token, api_token)
+
+      assert {:ok, comment} = TaskActions.add_comment(conn, task.identifier, "hi", "Param")
+      assert comment.author_agent_name == "ai_agent:claude-x"
+    end
+
+    test "falls back to the token's last agent name", %{conn: conn, task: task} do
+      api_token = %{conn.assigns.api_token | last_agent_name: "Remembered"}
+      conn = Plug.Conn.assign(conn, :api_token, api_token)
+
+      assert {:ok, comment} = TaskActions.add_comment(conn, task.identifier, "hi")
+      assert comment.author_agent_name == "Remembered"
+    end
+
+    test "a refused write does not stamp the token", %{conn: conn, task: task} do
+      conn = Plug.Conn.assign(conn, :current_user, user_fixture())
+
+      assert {:error, :not_authorized} =
+               TaskActions.add_comment(conn, task.identifier, "nope", "Stranger")
+
+      assert ApiTokens.get_api_token!(conn.assigns.api_token.id).last_agent_name == nil
+    end
+  end
+
+  describe "list_comments/3" do
+    setup %{conn: conn, user: user, ready: ready} do
+      {:ok, task} = Tasks.create_task(ready, %{"title" => "T", "created_by_id" => user.id})
+      for n <- 1..3, do: {:ok, _} = TaskActions.add_comment(conn, task.identifier, "c#{n}")
+      %{task: task}
+    end
+
+    test "returns the index template with comments and meta", %{conn: conn, task: task} do
+      assert {:ok, :index, assigns} = TaskActions.list_comments(conn, task.identifier, %{})
+      assert length(assigns[:comments]) == 3
+      assert assigns[:meta] == %{limit: 50, has_more: false}
+    end
+
+    test "honours limit", %{conn: conn, task: task} do
+      assert {:ok, :index, assigns} =
+               TaskActions.list_comments(conn, task.identifier, %{"limit" => "2"})
+
+      assert length(assigns[:comments]) == 2
+      assert assigns[:meta] == %{limit: 2, has_more: true}
+    end
+
+    test "an invalid limit is an invalid_param error", %{conn: conn, task: task} do
+      assert {:error, {:invalid_param, "Invalid limit" <> _}} =
+               TaskActions.list_comments(conn, task.identifier, %{"limit" => "0"})
+    end
+
+    test "an unknown task is not_found", %{conn: conn} do
+      assert {:error, :not_found} = TaskActions.list_comments(conn, "W999999", %{})
+    end
+  end
+
   describe "authorize_board_write/2" do
     test "allows owner and modify, refuses read_only", %{board: board, user: owner} do
       assert TaskActions.authorize_board_write(board, owner) == :ok

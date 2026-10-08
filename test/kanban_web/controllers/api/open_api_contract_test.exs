@@ -508,6 +508,65 @@ defmodule KanbanWeb.API.OpenApiContractTest do
       assert rendered_keys(body["meta"]) == schema_keys(spec, "PageMeta")
     end
 
+    test "TaskComment lists exactly the keys of TaskCommentJSON.comment/1", %{
+      spec: spec,
+      task: task
+    } do
+      comment = %Kanban.Tasks.TaskComment{id: 1, task_id: task.id, content: "x"}
+
+      assert rendered_keys(KanbanWeb.API.TaskCommentJSON.comment(comment)) ==
+               schema_keys(spec, "TaskComment")
+    end
+
+    test "TaskCommentListMeta lists exactly the keys of a real comment list meta", %{
+      conn: conn,
+      spec: spec
+    } do
+      user = user_fixture()
+      board = board_fixture(user)
+      task = board |> column_fixture() |> task_fixture()
+
+      {:ok, {_token, plain_token}} =
+        ApiTokens.create_api_token(user, board, %{"name" => "OpenAPI contract"})
+
+      body =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer " <> plain_token)
+        |> get(~p"/api/tasks/#{task.id}/comments")
+        |> json_response(200)
+
+      assert rendered_keys(body["meta"]) == schema_keys(spec, "TaskCommentListMeta")
+    end
+
+    test "stride_add_comment takes the POST /api/tasks/{id}/comments body, plus id", %{
+      spec: spec
+    } do
+      body =
+        get_in(spec, [
+          "paths",
+          "/api/tasks/{id}/comments",
+          "post",
+          "requestBody",
+          "content",
+          "application/json",
+          "schema"
+        ])
+
+      tool = KanbanWeb.MCP.ToolSchemas.fetch("stride_add_comment")["inputSchema"]
+      tool_props = Map.delete(tool["properties"], "id")
+
+      assert Map.keys(tool_props) |> Enum.sort() == Map.keys(body["properties"]) |> Enum.sort()
+
+      for {name, prop} <- body["properties"] do
+        assert Map.take(tool_props[name], ["type", "minLength", "maxLength"]) ==
+                 Map.take(prop, ["type", "minLength", "maxLength"]),
+               "#{name} drifted between the MCP inputSchema and the OpenAPI request body"
+      end
+
+      assert tool["required"] -- ["id"] == body["required"]
+    end
+
     test "every task enum matches the Ecto schema", %{spec: spec} do
       schemas = get_in(spec, ["components", "schemas"])
       parameters = get_in(spec, ["components", "parameters"])

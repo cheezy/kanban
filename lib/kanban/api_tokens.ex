@@ -276,14 +276,20 @@ defmodule Kanban.ApiTokens do
   @unknown_agent_name "Unknown"
 
   @doc """
-  Returns true when `agent_name` is a usable display name: a non-blank binary
-  that is not the `"Unknown"` claim/complete fallback literal (D137).
+  Returns true when `agent_name` is a usable display name: a valid UTF-8
+  binary with at least one visible character (whitespace and invisible
+  format characters such as zero-width spaces and bidi marks do not count),
+  no NUL character, and not the `"Unknown"` claim/complete fallback literal
+  (D137).
   """
   def usable_agent_name?(agent_name) when is_binary(agent_name) do
-    String.trim(agent_name) != "" and agent_name != @unknown_agent_name
+    String.valid?(agent_name) and not String.contains?(agent_name, <<0>>) and
+      visible?(agent_name) and agent_name != @unknown_agent_name
   end
 
   def usable_agent_name?(_agent_name), do: false
+
+  defp visible?(text), do: String.replace(text, ~r/[\s\p{Cf}]/u, "") != ""
 
   @doc """
   Best-effort stamp of the last usable agent name presented by this token

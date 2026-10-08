@@ -27,6 +27,7 @@ defmodule KanbanWeb.MCP.Tools do
   """
 
   alias KanbanWeb.API.TaskActions
+  alias KanbanWeb.API.TaskCommentJSON
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskJSON
   alias KanbanWeb.API.TaskListParams
@@ -121,8 +122,8 @@ defmodule KanbanWeb.MCP.Tools do
   end
 
   defp run("stride_add_comment", args, conn) do
-    case TaskActions.add_comment(conn, args["id"], args["content"]) do
-      {:ok, comment} -> success(%{data: comment_data(comment)})
+    case TaskActions.add_comment(conn, args["id"], args["content"], args["agent_name"]) do
+      {:ok, comment} -> success(TaskCommentJSON.show(%{comment: comment}))
       {:error, reason} -> failure(reason)
     end
   end
@@ -181,15 +182,6 @@ defmodule KanbanWeb.MCP.Tools do
     meta
     |> Map.put(:truncated, true)
     |> Map.put(:next_cursor, TaskListParams.encode_cursor(last_id))
-  end
-
-  defp comment_data(comment) do
-    %{
-      id: comment.id,
-      task_id: comment.task_id,
-      content: comment.content,
-      inserted_at: comment.inserted_at
-    }
   end
 
   @doc """

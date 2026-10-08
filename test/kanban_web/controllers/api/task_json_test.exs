@@ -859,4 +859,34 @@ defmodule KanbanWeb.API.TaskJSONTest do
              field_diff(review_fields_in(slim), expected_set(@ack_review_fields))
     end
   end
+
+  describe "show/1 comment_count (W2214)" do
+    setup %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Counted"})
+      %{task: task}
+    end
+
+    test "the bare show carries comment_count at the envelope root only when assigned",
+         %{task: task} do
+      with_count = TaskJSON.show(%{task: task, comment_count: 3})
+
+      assert with_count.comment_count == 3
+      refute Map.has_key?(with_count.data, :comment_count)
+      without = TaskJSON.show(%{task: task})
+      refute Map.has_key?(without, :comment_count)
+    end
+
+    test "a zero count is rendered", %{task: task} do
+      assert TaskJSON.show(%{task: task, comment_count: 0}).comment_count == 0
+    end
+
+    test "slim, fields and hook views never carry it", %{task: task} do
+      assigns = %{task: task, comment_count: 3}
+
+      for {key, value} <- [response_view: :slim, fields: [:title], hook: %{}, hooks: []] do
+        body = assigns |> Map.put(key, value) |> TaskJSON.show()
+        refute Map.has_key?(body, :comment_count), "#{key} view carried comment_count"
+      end
+    end
+  end
 end

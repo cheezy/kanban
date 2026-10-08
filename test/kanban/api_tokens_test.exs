@@ -286,5 +286,13 @@ defmodule Kanban.ApiTokensTest do
       refute ApiTokens.usable_agent_name?(nil)
       refute ApiTokens.usable_agent_name?(:agent)
     end
+
+    test "usable_agent_name?/1 refuses invisible, NUL-bearing and invalid UTF-8 names" do
+      refute ApiTokens.usable_agent_name?("\u200b")
+      refute ApiTokens.usable_agent_name?("\u200e\u202e \ufeff")
+      refute ApiTokens.usable_agent_name?("Claude\u0000")
+      refute ApiTokens.usable_agent_name?(<<0xFF, 0x41>>)
+      assert ApiTokens.usable_agent_name?("\u200bClaude")
+    end
   end
 end

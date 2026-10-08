@@ -63,6 +63,39 @@ defmodule Kanban.Tasks.TaskCommentTest do
       assert changeset.valid?
     end
 
+    test "counts the content cap in codepoints, not graphemes" do
+      task = insert_task()
+      # One grapheme cluster of 1 + 100 codepoints: 10,000 of them would be
+      # 1,010,000 codepoints, far past the cap.
+      cluster = "e" <> String.duplicate("\u0301", 100)
+      content = String.duplicate(cluster, 100)
+
+      changeset = TaskComment.changeset(%TaskComment{task_id: task.id}, %{content: content})
+
+      refute changeset.valid?
+      assert %{content: [_]} = errors_on(changeset)
+    end
+
+    test "rejects content with a NUL character" do
+      task = insert_task()
+
+      changeset = TaskComment.changeset(%TaskComment{task_id: task.id}, %{content: "a\u0000b"})
+
+      assert "is invalid" in errors_on(changeset).content
+    end
+
+    test "treats content of only invisible format characters as blank" do
+      task = insert_task()
+
+      for content <- ["\u200b", "\u200e\u202e", " \ufeff "] do
+        changeset = TaskComment.changeset(%TaskComment{task_id: task.id}, %{content: content})
+        assert errors_on(changeset).content == ["can't be blank"], inspect(content)
+      end
+
+      visible = TaskComment.changeset(%TaskComment{task_id: task.id}, %{content: "\u200bok"})
+      assert visible.valid?
+    end
+
     test "rejects content longer than the maximum length" do
       task = insert_task()
       content = String.duplicate("a", TaskComment.content_max_length() + 1)
@@ -269,6 +302,63 @@ defmodule Kanban.Tasks.TaskCommentTest do
 
       assert comment.inserted_at
       assert comment.updated_at
+    end
+  end
+
+  describe "put_author_agent_name/2" do
+    test "puts the name as a change and accepts 255 characters" do
+      task = insert_task()
+      name = String.duplicate("a", 255)
+
+      changeset =
+        %TaskComment{task_id: task.id}
+        |> TaskComment.changeset(%{content: "Hi"})
+        |> TaskComment.put_author_agent_name(name)
+
+      assert changeset.valid?
+      assert get_change(changeset, :author_agent_name) == name
+    end
+
+    test "rejects a name over 255 characters, counted in codepoints" do
+      task = insert_task()
+
+      too_long =
+        %TaskComment{task_id: task.id}
+        |> TaskComment.changeset(%{content: "Hi"})
+        |> TaskComment.put_author_agent_name(String.duplicate("é", 256))
+
+      refute too_long.valid?
+      assert %{author_agent_name: [_]} = errors_on(too_long)
+
+      fits =
+        %TaskComment{task_id: task.id}
+        |> TaskComment.changeset(%{content: "Hi"})
+        |> TaskComment.put_author_agent_name(String.duplicate("é", 255))
+
+      assert fits.valid?
+    end
+
+    test "rejects a name with a NUL character" do
+      task = insert_task()
+
+      changeset =
+        %TaskComment{task_id: task.id}
+        |> TaskComment.changeset(%{content: "Hi"})
+        |> TaskComment.put_author_agent_name("Claude\u0000")
+
+      assert "is invalid" in errors_on(changeset).author_agent_name
+    end
+
+    test "nil leaves the comment unattributed" do
+      task = insert_task()
+
+      changeset =
+        %TaskComment{task_id: task.id}
+        |> TaskComment.changeset(%{content: "Hi"})
+        |> TaskComment.put_author_agent_name(nil)
+
+      assert changeset.valid?
+      assert get_field(changeset, :author_agent_name) == nil
     end
   end
 

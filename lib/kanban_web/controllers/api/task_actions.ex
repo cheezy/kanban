@@ -26,6 +26,7 @@ defmodule KanbanWeb.API.TaskActions do
   alias Kanban.Columns
   alias Kanban.Hooks.Validator
   alias Kanban.Tasks
+  alias KanbanWeb.API.AgentAttribution
   alias KanbanWeb.API.CompletionResultGate
   alias KanbanWeb.API.TaskListParams
 
@@ -205,7 +206,8 @@ defmodule KanbanWeb.API.TaskActions do
   """
   def get_task(conn, id_or_identifier, params) do
     with {:ok, task} <- fetch_task(id_or_identifier, conn.assigns.current_board) do
-      {:ok, :show, [task: task, response_view: view_for(params)]}
+      {:ok, :show,
+       [task: task, response_view: view_for(params), comment_count: length(task.comments)]}
     end
   end
 
@@ -256,28 +258,61 @@ defmodule KanbanWeb.API.TaskActions do
   end
 
   @doc """
+  Lists a task's comments (`GET /api/tasks/:id/comments`): the `limit` most
+  recent (default 50, at most 200), oldest first. The task is fetched with the
+  same board-scoped lookup as every other action, so a cross-board id is a
+  plain not-found. The limit is validated before any query runs.
+  """
+  def list_comments(conn, id_or_identifier, params) do
+    with {:ok, limit} <- comment_limit(params),
+         {:ok, task} <- fetch_task(id_or_identifier, conn.assigns.current_board) do
+      {comments, has_more} = Tasks.list_recent_comments(task, limit)
+      emit_telemetry(conn, :comments_listed, %{task_id: task.id, count: length(comments)})
+      {:ok, :index, [comments: comments, meta: %{limit: limit, has_more: has_more}]}
+    end
+  end
+
+  defp comment_limit(params) do
+    case TaskListParams.parse_limit(params["limit"]) do
+      {:ok, limit} -> {:ok, limit}
+      {:error, message} -> {:error, {:invalid_param, message}}
+    end
+  end
+
+  @doc """
   Adds a comment to a task on the token's board, authored by the token's user.
+  This one function backs both `POST /api/tasks/:id/comments` and the MCP
+  `stride_add_comment` tool, so their validation and attribution cannot drift.
+
   The task is fetched with the same board-scoped lookup as every other action,
   so a cross-board identifier is a plain not-found. Authorization is
   `Kanban.Tasks.CommentPolicy`, applied inside `Tasks.create_comment/4`: any
   board member may comment, read-only included, and a user with no membership
   on the board gets `{:error, :not_authorized}`. Claim and complete still need
   `authorize_board_write/2`.
+
+  `agent_name` is display attribution only, resolved through
+  `KanbanWeb.API.AgentAttribution` (token `agent_model`, then `agent_name`,
+  then the token's `last_agent_name`). After a successful write the token's
+  `last_agent_name` is stamped from `agent_name`, as claim and complete do.
   """
-  def add_comment(conn, id_or_identifier, content) do
-    %{current_board: board, current_user: user} = conn.assigns
+  def add_comment(conn, id_or_identifier, content, agent_name \\ nil) do
+    %{current_board: board, current_user: user, api_token: api_token} = conn.assigns
+    author_agent_name = AgentAttribution.resolve(api_token, agent_name)
 
     with {:ok, task} <- fetch_task(id_or_identifier, board),
-         {:ok, comment} <- comment_as(user, task, content) do
+         {:ok, comment} <- comment_as(user, task, content, author_agent_name) do
+      stamp_agent_identity(conn, %{"agent_name" => agent_name})
       emit_telemetry(conn, :comment_created, %{task_id: task.id})
-      {:ok, comment}
+      {:ok, %{comment | author: user}}
     end
   end
 
-  defp comment_as(user, task, content) do
+  defp comment_as(user, task, content, author_agent_name) do
     scope = Scope.for_user(user)
+    opts = [author_agent_name: author_agent_name]
 
-    case Tasks.create_comment(scope, task, %{"content" => content}) do
+    case Tasks.create_comment(scope, task, %{"content" => content}, opts) do
       {:error, :unauthorized} -> {:error, :not_authorized}
       other -> other
     end
@@ -325,9 +360,17 @@ defmodule KanbanWeb.API.TaskActions do
         nil
 
       _ ->
-        # It's an identifier like "W14"
-        column_ids = board |> Columns.list_columns() |> Enum.map(& &1.id)
-        Tasks.get_task_by_identifier_for_view(id_or_identifier, column_ids)
+        get_task_by_identifier(id_or_identifier, board)
+    end
+  end
+
+  # An identifier like "W14". Text PostgreSQL cannot hold as a query parameter
+  # (invalid UTF-8, or a NUL character) names no task, so it is the same nil,
+  # and the same 404, as a missing identifier rather than a database error.
+  defp get_task_by_identifier(identifier, board) do
+    if String.valid?(identifier) and not String.contains?(identifier, <<0>>) do
+      column_ids = board |> Columns.list_columns() |> Enum.map(& &1.id)
+      Tasks.get_task_by_identifier_for_view(identifier, column_ids)
     end
   end
 

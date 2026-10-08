@@ -46,7 +46,8 @@ defmodule Kanban.Tasks.Comments do
 
   Options:
 
-    * `:author_agent_name` — the agent that wrote the comment, if any.
+    * `:author_agent_name` — the agent that wrote the comment, if any. Longer
+      than 255 characters is a changeset error on `:author_agent_name`.
   """
   def create_comment(scope, task, attrs, opts \\ [])
 
@@ -113,6 +114,31 @@ defmodule Kanban.Tasks.Comments do
   end
 
   @doc """
+  Lists the `limit` most recent of `task`'s comments, returned oldest first
+  with `:author` preloaded, together with whether older comments were left
+  out: `{comments, has_more}`.
+
+  The most recent comments are the ones kept because a reader of a long
+  thread needs the latest feedback. Ties on `inserted_at` are broken by id,
+  so the cut is deterministic.
+
+  Performs no authorization, exactly like `list_comments/1`.
+  """
+  def list_recent_comments(%Task{id: task_id}, limit)
+      when is_integer(limit) and limit > 0 do
+    rows =
+      TaskComment
+      |> where([c], c.task_id == ^task_id)
+      |> order_by([c], desc: c.inserted_at, desc: c.id)
+      |> limit(^(limit + 1))
+      |> preload(:author)
+      |> Repo.all()
+
+    kept = rows |> Enum.take(limit) |> Enum.reverse()
+    {kept, length(rows) > limit}
+  end
+
+  @doc """
   Lists `task`'s comments (oldest first, `:author` preloaded) together with
   what the scope may do: `can_comment` for the thread and `can_edit` /
   `can_delete` per comment.
@@ -156,12 +182,9 @@ defmodule Kanban.Tasks.Comments do
   def list_comment_thread(_scope, %Task{}), do: {:error, :not_found}
 
   defp insert_comment(%{user: %{id: user_id}}, task_id, board_id, attrs, opts) do
-    %TaskComment{
-      task_id: task_id,
-      author_user_id: user_id,
-      author_agent_name: Keyword.get(opts, :author_agent_name)
-    }
+    %TaskComment{task_id: task_id, author_user_id: user_id}
     |> TaskComment.changeset(attrs)
+    |> TaskComment.put_author_agent_name(Keyword.get(opts, :author_agent_name))
     |> put_mentions(board_id)
     |> Repo.insert()
     |> with_newly_mentioned([])
