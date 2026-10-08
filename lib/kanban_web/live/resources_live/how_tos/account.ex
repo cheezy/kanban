@@ -37,7 +37,7 @@ defmodule KanbanWeb.ResourcesLive.HowTos.Account do
           %{
             title: "Open Two-Factor Settings",
             content:
-              "Click the **Settings** gear at the bottom of the sidebar, then choose the **Two-factor** tab. If you have not signed in recently, Stride asks you to sign in again before showing your settings.",
+              "Click the **Settings** gear at the bottom of the sidebar, then choose the **Two-factor** tab. If you have not signed in recently, Stride asks you to sign in again before showing your settings.\n\nUntil two-factor is on, Stride also shows a reminder card after you sign in; its **Set up two-factor authentication** button takes you to the same place. **Not now** hides the card for 10 days.",
             image: nil
           },
           %{

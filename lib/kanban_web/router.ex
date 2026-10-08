@@ -206,7 +206,8 @@ defmodule KanbanWeb.Router do
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
         {KanbanWeb.UserAuth, :require_admin},
-        {KanbanWeb.NotificationsOnMount, :default}
+        {KanbanWeb.NotificationsOnMount, :default},
+        {KanbanWeb.TwoFactorReminderOnMount, :default}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/messages", MessageLive.Index, :index
@@ -234,7 +235,8 @@ defmodule KanbanWeb.Router do
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
         {KanbanWeb.UserAuth, :require_sudo_mode},
-        {KanbanWeb.NotificationsOnMount, :default}
+        {KanbanWeb.NotificationsOnMount, :default},
+        {KanbanWeb.TwoFactorReminderOnMount, :default}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/users/settings", UserLive.Settings, :edit
@@ -246,7 +248,8 @@ defmodule KanbanWeb.Router do
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
         {KanbanWeb.UserAuth, :require_authenticated},
-        {KanbanWeb.NotificationsOnMount, :default}
+        {KanbanWeb.NotificationsOnMount, :default},
+        {KanbanWeb.TwoFactorReminderOnMount, :default}
       ],
       root_layout: {KanbanWeb.Layouts, :app_chrome} do
       live "/boards", BoardLive.Index, :index

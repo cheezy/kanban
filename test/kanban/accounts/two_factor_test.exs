@@ -5,6 +5,7 @@ defmodule Kanban.Accounts.TwoFactorTest do
 
   alias Kanban.Accounts
   alias Kanban.Accounts.TwoFactor
+  alias Kanban.Accounts.User
   alias Kanban.Accounts.UserTotp
   alias Kanban.AuditLog
   alias Kanban.Encryption
@@ -35,6 +36,79 @@ defmodule Kanban.Accounts.TwoFactorTest do
 
   setup do
     %{user: user_fixture()}
+  end
+
+  describe "show_reminder?/2" do
+    test "show_reminder?/2 is true for a user who never enrolled or dismissed", %{user: user} do
+      assert user.two_factor_reminder_dismissed_at == nil
+      assert TwoFactor.show_reminder?(user)
+      assert Accounts.show_two_factor_reminder?(user)
+    end
+
+    test "show_reminder?/2 is false once two-factor is on", %{user: user} do
+      enroll(user)
+
+      refute TwoFactor.show_reminder?(user)
+    end
+
+    test "show_reminder?/2 stays true during an unconfirmed enrollment", %{user: user} do
+      {:ok, _enrollment} = Accounts.begin_two_factor_enrollment(user)
+      assert %UserTotp{confirmed_at: nil} = TwoFactor.get_user_totp(user)
+
+      assert TwoFactor.show_reminder?(user)
+    end
+
+    test "show_reminder?/2 hides the reminder for 10 days after dismissal and shows it again after",
+         %{user: user} do
+      dismissed_at = ~U[2026-10-01 12:00:00Z]
+      {:ok, user} = TwoFactor.dismiss_reminder(user, dismissed_at)
+
+      refute TwoFactor.show_reminder?(user, dismissed_at)
+      refute TwoFactor.show_reminder?(user, DateTime.add(dismissed_at, 9, :day))
+      refute TwoFactor.show_reminder?(user, DateTime.add(dismissed_at, 10 * 86_400 - 1, :second))
+      assert TwoFactor.show_reminder?(user, DateTime.add(dismissed_at, 10, :day))
+      assert TwoFactor.show_reminder?(user, DateTime.add(dismissed_at, 11, :day))
+    end
+
+    test "comes back after two-factor is turned off again", %{user: user} do
+      %{recovery_codes: [recovery | _]} = enroll(user)
+      refute TwoFactor.show_reminder?(user)
+
+      assert Accounts.disable_two_factor(user, recovery) == :ok
+
+      assert TwoFactor.show_reminder?(user)
+    end
+
+    test "stays false for a two-factor user whose snooze has run out", %{user: user} do
+      enroll(user)
+      {:ok, user} = TwoFactor.dismiss_reminder(user, ~U[2026-01-01 00:00:00Z])
+
+      refute TwoFactor.show_reminder?(user, ~U[2026-10-01 00:00:00Z])
+    end
+  end
+
+  describe "dismiss_reminder/2" do
+    test "dismiss_reminder/2 records the time on the user's own row only", %{user: user} do
+      other = user_fixture()
+
+      assert {:ok, %User{two_factor_reminder_dismissed_at: ~U[2026-10-08 09:30:15Z]}} =
+               TwoFactor.dismiss_reminder(user, ~U[2026-10-08 09:30:15.123456Z])
+
+      assert Repo.reload!(user).two_factor_reminder_dismissed_at == ~U[2026-10-08 09:30:15Z]
+      assert Repo.reload!(other).two_factor_reminder_dismissed_at == nil
+      assert Repo.reload!(other).updated_at == other.updated_at
+    end
+
+    test "defaults to now and can be repeated", %{user: user} do
+      before = DateTime.utc_now(:second)
+
+      assert {:ok, %User{two_factor_reminder_dismissed_at: first}} =
+               Accounts.dismiss_two_factor_reminder(user)
+
+      assert DateTime.compare(first, before) != :lt
+      assert {:ok, %User{}} = Accounts.dismiss_two_factor_reminder(user)
+      refute user |> Repo.reload!() |> Accounts.show_two_factor_reminder?()
+    end
   end
 
   describe "begin_enrollment/1" do

@@ -538,7 +538,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
             "lib/kanban_web/live/user_live/login.ex",
             "lib/kanban_web/live/user_live/settings.ex",
             "lib/kanban_web/live/user_live/settings_components.ex",
-            "lib/kanban_web/components/layouts.ex"
+            "lib/kanban_web/components/layouts.ex",
+            "lib/kanban_web/components/two_factor_reminder.ex"
           ],
           &File.read!/1
         )

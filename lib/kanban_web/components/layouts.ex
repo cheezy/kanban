@@ -10,6 +10,7 @@ defmodule KanbanWeb.Layouts do
 
   alias KanbanWeb.Avatar
   alias KanbanWeb.NotificationBell
+  alias KanbanWeb.TwoFactorReminder
 
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML
@@ -91,7 +92,13 @@ defmodule KanbanWeb.Layouts do
         <%!-- D48: in dark the canvas must sit at --bg (base-200, 16%), not the
               raised-card tone (base-100, 20%), so cards/columns read above it.
               dark: variant keeps light mode (base-100, 98%) identical. --%>
-        <main class="flex-1 min-h-0 overflow-auto bg-base-100 dark:bg-base-200">
+        <%!-- tabindex="-1" lets scripts move focus here (as when the two-factor
+              reminder is dismissed) without adding <main> to the tab order. --%>
+        <main
+          tabindex="-1"
+          class="flex-1 min-h-0 overflow-auto bg-base-100 dark:bg-base-200 focus:outline-none"
+        >
+          <TwoFactorReminder.card current_scope={@current_scope} />
           {render_slot(@inner_block)}
         </main>
       </div>

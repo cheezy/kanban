@@ -18,11 +18,16 @@ defmodule Kanban.Accounts.Scope do
   `unread_notifications` is the user's unread notification count. It is
   `nil` until `KanbanWeb.NotificationsOnMount` loads it, so controller-rendered
   pages (which never run that hook) show the bell without a badge.
+
+  `two_factor_reminder` is true only on the page a user without two-factor
+  lands on right after a password sign-in. `KanbanWeb.TwoFactorReminderOnMount`
+  sets it from the `:two_factor_reminder` flash; controller pages and later
+  navigations leave it false, so `KanbanWeb.Layouts.app/1` shows no card there.
   """
 
   alias Kanban.Accounts.User
 
-  defstruct user: nil, unread_notifications: nil
+  defstruct user: nil, unread_notifications: nil, two_factor_reminder: false
 
   @doc """
   Creates a scope for the given user.

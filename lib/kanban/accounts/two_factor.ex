@@ -35,6 +35,11 @@ defmodule Kanban.Accounts.TwoFactor do
       looked at, right or wrong, so many requests sent at once cannot slip past
       the limit; once it is reached, checks return `{:error, :rate_limited}`
       (or `false`) until the window passes.
+
+  ## Setup reminder
+
+  `show_reminder?/2` decides, at password sign-in, whether a user without
+  two-factor sees the reminder card; `dismiss_reminder/2` snoozes it.
   """
 
   import Ecto.Query, warn: false
@@ -54,6 +59,8 @@ defmodule Kanban.Accounts.TwoFactor do
   # Leaves out i, l, o and 1, which are easy to misread.
   @recovery_alphabet ~c"023456789abcdefghjkmnpqrstuvwxyz"
   @recovery_code_length 10
+  # How long "Not now" on the setup reminder hides it (W2347).
+  @reminder_snooze_days 10
 
   @typedoc "What an authenticator app needs to add the account."
   @type enrollment :: %{secret: binary(), otpauth_uri: String.t()}
@@ -78,6 +85,38 @@ defmodule Kanban.Accounts.TwoFactor do
     UserTotp
     |> where([t], t.user_id == ^user_id and not is_nil(t.confirmed_at))
     |> Repo.exists?()
+  end
+
+  @doc """
+  Returns true when the user should see the two-factor setup reminder.
+
+  That is when two-factor is not on (an unconfirmed enrollment does not
+  count) and the user never dismissed the reminder, or dismissed it at least
+  #{@reminder_snooze_days} days before `now`. The stored dismissal time is
+  checked first, so a snoozed user costs no two-factor query.
+  """
+  @spec show_reminder?(User.t(), DateTime.t()) :: boolean()
+  def show_reminder?(%User{} = user, now \\ DateTime.utc_now()) do
+    reminder_due?(user.two_factor_reminder_dismissed_at, now) and not enabled?(user)
+  end
+
+  defp reminder_due?(nil, _now), do: true
+
+  defp reminder_due?(%DateTime{} = dismissed_at, now) do
+    snooze_ends = DateTime.add(dismissed_at, @reminder_snooze_days, :day)
+    DateTime.compare(snooze_ends, now) != :gt
+  end
+
+  @doc """
+  Records that the user dismissed the setup reminder at `now`, snoozing it
+  for #{@reminder_snooze_days} days. Only this user's row changes.
+  """
+  @spec dismiss_reminder(User.t(), DateTime.t()) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def dismiss_reminder(%User{} = user, now \\ DateTime.utc_now()) do
+    user
+    |> User.two_factor_reminder_dismissed_changeset(now)
+    |> Repo.update()
   end
 
   @doc """

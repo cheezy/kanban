@@ -354,6 +354,8 @@ defmodule Kanban.Accounts do
   defdelegate consume_recovery_code(user, code), to: TwoFactor
   defdelegate regenerate_recovery_codes(user, code), to: TwoFactor
   defdelegate disable_two_factor(user, code), to: TwoFactor, as: :disable
+  defdelegate show_two_factor_reminder?(user), to: TwoFactor, as: :show_reminder?
+  defdelegate dismiss_two_factor_reminder(user), to: TwoFactor, as: :dismiss_reminder
 
   ## Session
 

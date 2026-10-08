@@ -10,6 +10,7 @@ defmodule Kanban.Accounts.User do
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
     field :disabled_at, :utc_datetime
+    field :two_factor_reminder_dismissed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
 
     has_many :board_users, Kanban.Boards.BoardUser
@@ -192,6 +193,18 @@ defmodule Kanban.Accounts.User do
   def disabled_changeset(user, disabled_at)
       when is_nil(disabled_at) or is_struct(disabled_at, DateTime) do
     change(user, disabled_at: disabled_at)
+  end
+
+  @doc """
+  A changeset recording when the user dismissed the two-factor setup reminder.
+
+  Like `:disabled_at`, `:two_factor_reminder_dismissed_at` is cast by no
+  user-facing changeset, so this is the only way to set it and nothing else
+  on the user changes through it. The time is truncated to the second the
+  column stores.
+  """
+  def two_factor_reminder_dismissed_changeset(user, %DateTime{} = dismissed_at) do
+    change(user, two_factor_reminder_dismissed_at: DateTime.truncate(dismissed_at, :second))
   end
 
   @doc """

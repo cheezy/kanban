@@ -17,18 +17,18 @@ msgstr ""
 msgid "Actions"
 msgstr "Aktionen"
 
-#: lib/kanban_web/components/layouts.ex:445
-#: lib/kanban_web/components/layouts.ex:457
+#: lib/kanban_web/components/layouts.ex:452
+#: lib/kanban_web/components/layouts.ex:464
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "Verbindungsversuch"
 
-#: lib/kanban_web/components/layouts.ex:452
+#: lib/kanban_web/components/layouts.ex:459
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "Etwas ist schiefgelaufen!"
 
-#: lib/kanban_web/components/layouts.ex:440
+#: lib/kanban_web/components/layouts.ex:447
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "Wir können das Internet nicht finden"
@@ -77,15 +77,15 @@ msgstr "In Bearbeitung"
 msgid "Log in"
 msgstr "Anmelden"
 
-#: lib/kanban_web/components/layouts.ex:225
+#: lib/kanban_web/components/layouts.ex:232
 #: lib/kanban_web/components/nav_components.ex:140
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "Abmelden"
 
 #: lib/kanban_web/components/board_tabs.ex:143
-#: lib/kanban_web/components/layouts.ex:200
-#: lib/kanban_web/components/layouts.ex:201
+#: lib/kanban_web/components/layouts.ex:207
+#: lib/kanban_web/components/layouts.ex:208
 #: lib/kanban_web/components/nav_components.ex:135
 #: lib/kanban_web/live/user_live/notification_preferences.ex:124
 #: lib/kanban_web/live/user_live/settings_components.ex:32
@@ -376,8 +376,8 @@ msgstr "Aufgabendetails aktualisieren"
 msgid "WIP limit reached for this column"
 msgstr "WIP-Limit für diese Spalte erreicht"
 
-#: lib/kanban_web/components/layouts.ex:153
-#: lib/kanban_web/components/layouts.ex:403
+#: lib/kanban_web/components/layouts.ex:160
+#: lib/kanban_web/components/layouts.ex:410
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -773,7 +773,7 @@ msgstr "Dashboard"
 msgid "This account has already been confirmed. You can log in."
 msgstr "Dieses Konto wurde bereits bestätigt. Sie können sich anmelden."
 
-#: lib/kanban_web/components/layouts.ex:336
+#: lib/kanban_web/components/layouts.ex:343
 #: lib/kanban_web/components/marketing_components.ex:88
 #: lib/kanban_web/components/marketing_components.ex:283
 #: lib/kanban_web/components/nav_components.ex:137
@@ -2111,7 +2111,7 @@ msgstr "Zurück"
 msgid "Read more"
 msgstr "Weiterlesen"
 
-#: lib/kanban_web/components/layouts.ex:329
+#: lib/kanban_web/components/layouts.ex:336
 #: lib/kanban_web/components/marketing_components.ex:84
 #: lib/kanban_web/components/marketing_components.ex:277
 #: lib/kanban_web/components/nav_components.ex:136
@@ -2197,7 +2197,7 @@ msgid "Could not find a user with that email address"
 msgstr "Es wurde kein Benutzer mit dieser E-Mail-Adresse gefunden"
 
 #: lib/kanban_web/components/board_tabs.ex:125
-#: lib/kanban_web/components/layouts.ex:317
+#: lib/kanban_web/components/layouts.ex:324
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:5
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
@@ -4212,7 +4212,7 @@ msgid_plural "%{count} active"
 msgstr[0] "%{count} aktiv"
 msgstr[1] "%{count} aktiv"
 
-#: lib/kanban_web/components/layouts.ex:296
+#: lib/kanban_web/components/layouts.ex:303
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:568
 #: lib/kanban_web/live/admin/user_live/index.html.heex:107
 #: lib/kanban_web/live/board_live/index.html.heex:5
@@ -4299,7 +4299,7 @@ msgstr "Zu erledigen"
 msgid "Active goals"
 msgstr "Aktive Ziele"
 
-#: lib/kanban_web/components/layouts.ex:303
+#: lib/kanban_web/components/layouts.ex:310
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
 #: lib/kanban_web/live/agents_live.ex:338
 #, elixir-autogen, elixir-format
@@ -4339,7 +4339,7 @@ msgstr "Neues Ziel"
 msgid "Pre-configured for AI workflow"
 msgstr "Vorkonfiguriert für KI-Workflow"
 
-#: lib/kanban_web/components/layouts.ex:131
+#: lib/kanban_web/components/layouts.ex:138
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr "Hauptnavigation"
@@ -4349,7 +4349,7 @@ msgstr "Hauptnavigation"
 msgid "Promote children to Ready"
 msgstr "Unterelemente nach „Bereit“ hochstufen"
 
-#: lib/kanban_web/components/layouts.ex:310
+#: lib/kanban_web/components/layouts.ex:317
 #: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
@@ -4362,12 +4362,12 @@ msgstr "Prüfungswarteschlange"
 msgid "Start with a blank board"
 msgstr "Mit einem leeren Board beginnen"
 
-#: lib/kanban_web/components/layouts.ex:140
+#: lib/kanban_web/components/layouts.ex:147
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr "Stride-Startseite"
 
-#: lib/kanban_web/components/layouts.ex:160
+#: lib/kanban_web/components/layouts.ex:167
 #: lib/kanban_web/live/agents_live.ex:336
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
@@ -5475,7 +5475,7 @@ msgstr "alle Boards"
 msgid "Toggle menu"
 msgstr "Menü umschalten"
 
-#: lib/kanban_web/components/layouts.ex:382
+#: lib/kanban_web/components/layouts.ex:389
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr "Seitenleiste umschalten"
@@ -7975,7 +7975,7 @@ msgstr "Letzte 90 Tage"
 msgid "New column"
 msgstr "Neue Spalte"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:263
+#: lib/kanban_web/controllers/user_session_controller.ex:276
 #: lib/kanban_web/live/user_live/two_factor_component.ex:380
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
@@ -9731,12 +9731,13 @@ msgstr "Speichern Sie diese Wiederherstellungscodes jetzt. Sie werden nicht noch
 msgid "Scan this QR code with your authenticator app, or enter the key by hand. Then enter the 6-digit code the app shows."
 msgstr "Scannen Sie diesen QR-Code mit Ihrer Authenticator-App oder geben Sie den Schlüssel von Hand ein. Geben Sie dann den 6-stelligen Code ein, den die App anzeigt."
 
+#: lib/kanban_web/components/two_factor_reminder.ex:60
 #: lib/kanban_web/live/user_live/two_factor_component.ex:77
 #, elixir-autogen, elixir-format
 msgid "Set up two-factor authentication"
 msgstr "Zwei-Faktor-Authentifizierung einrichten"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:244
+#: lib/kanban_web/controllers/user_session_controller.ex:257
 #: lib/kanban_web/live/user_live/two_factor_component.ex:373
 #, elixir-autogen, elixir-format
 msgid "That code is not valid. Check it and try again."
@@ -9816,17 +9817,17 @@ msgstr "Stattdessen die Authenticator-App verwenden"
 msgid "Verify"
 msgstr "Bestätigen"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:223
+#: lib/kanban_web/controllers/user_session_controller.ex:236
 #, elixir-autogen, elixir-format
 msgid "Welcome back!"
 msgstr "Willkommen zurück!"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:226
+#: lib/kanban_web/controllers/user_session_controller.ex:239
 #, elixir-autogen, elixir-format
 msgid "Welcome back! You signed in with a recovery code, which can't be used again. Create new recovery codes in Settings → Two-factor."
 msgstr "Willkommen zurück! Sie haben sich mit einem Wiederherstellungscode angemeldet, der nicht erneut verwendet werden kann. Erstellen Sie neue Wiederherstellungscodes unter Einstellungen → Zwei-Faktor."
 
-#: lib/kanban_web/controllers/user_session_controller.ex:259
+#: lib/kanban_web/controllers/user_session_controller.ex:272
 #: lib/kanban_web/live/user_live/two_factor.ex:104
 #, elixir-autogen, elixir-format
 msgid "Your sign-in attempt expired. Please sign in again."
@@ -9837,7 +9838,7 @@ msgstr "Ihr Anmeldeversuch ist abgelaufen. Bitte melden Sie sich erneut an."
 msgid "New task"
 msgstr "Neue Aufgabe"
 
-#: lib/kanban_web/components/layouts.ex:171
+#: lib/kanban_web/components/layouts.ex:178
 #, elixir-autogen, elixir-format
 msgid "Resources and information"
 msgstr "Ressourcen und Informationen"
@@ -9846,3 +9847,23 @@ msgstr "Ressourcen und Informationen"
 #, elixir-autogen, elixir-format
 msgid "Task details"
 msgstr "Aufgabendetails"
+
+#: lib/kanban_web/components/two_factor_reminder.ex:50
+#, elixir-autogen, elixir-format
+msgid "Add a code from an authenticator app to your password, so a stolen password alone cannot open your account."
+msgstr "Ergänzen Sie Ihr Passwort um einen Code aus einer Authenticator-App, damit ein gestohlenes Passwort allein Ihr Konto nicht öffnen kann."
+
+#: lib/kanban_web/components/two_factor_reminder.ex:74
+#, elixir-autogen, elixir-format
+msgid "Not now"
+msgstr "Jetzt nicht"
+
+#: lib/kanban_web/components/two_factor_reminder.ex:47
+#, elixir-autogen, elixir-format
+msgid "Protect your account with two-factor authentication"
+msgstr "Schützen Sie Ihr Konto mit Zwei-Faktor-Authentifizierung"
+
+#: lib/kanban_web/components/two_factor_reminder.ex:81
+#, elixir-autogen, elixir-format
+msgid "Read the setup guide"
+msgstr "Einrichtungsanleitung lesen"

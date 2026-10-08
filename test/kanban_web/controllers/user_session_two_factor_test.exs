@@ -273,4 +273,58 @@ defmodule KanbanWeb.UserSessionTwoFactorTest do
       assert Accounts.get_user_by_email_and_password(user.email, new_password)
     end
   end
+
+  describe "the two-factor reminder at sign-in" do
+    test "password sign-in without two-factor sets the reminder flash", %{conn: conn} do
+      user = user_fixture()
+
+      conn = log_in(conn, user)
+
+      assert redirected_to(conn) == ~p"/boards"
+      assert get_session(conn, :user_token)
+      assert flash(conn, :two_factor_reminder) == true
+      assert flash(conn, :info) == "Welcome back!"
+    end
+
+    test "no reminder flash for a two-factor user or a snoozed user", %{
+      conn: conn,
+      user: user,
+      totp: totp
+    } do
+      challenged = log_in(conn, user)
+      assert redirected_to(challenged) == ~p"/users/two-factor"
+      refute flash(challenged, :two_factor_reminder)
+
+      verified = verify(challenged, code(totp.secret, 1))
+      assert get_session(verified, :user_token)
+      refute flash(verified, :two_factor_reminder)
+
+      snoozed = user_fixture()
+      {:ok, _snoozed} = Accounts.dismiss_two_factor_reminder(snoozed)
+
+      conn = log_in(build_conn(), snoozed)
+      assert get_session(conn, :user_token)
+      refute flash(conn, :two_factor_reminder)
+    end
+
+    test "a password change never sets the reminder", %{conn: conn} do
+      user = user_fixture()
+      new_password = "a brand new password!"
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> post(~p"/users/update-password", %{
+          "user" => %{
+            "email" => user.email,
+            "password" => new_password,
+            "password_confirmation" => new_password
+          }
+        })
+
+      assert redirected_to(conn) == ~p"/users/settings"
+      assert get_session(conn, :user_token)
+      refute flash(conn, :two_factor_reminder)
+    end
+  end
 end

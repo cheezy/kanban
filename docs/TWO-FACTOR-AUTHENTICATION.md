@@ -71,6 +71,34 @@ dashes and capital letters are ignored when one is typed in.
 app or an unused recovery code, which is then used up. Turning two-factor off
 deletes the stored key and recovery codes.
 
+## The setup reminder
+
+Two-factor is opt-in, so Stride reminds people who have not turned it on.
+When someone signs in with their email and password and two-factor is off,
+the page they land on, including a page they were sent back to after signing
+in, shows a card above its content: **Protect your account with two-factor
+authentication**. It links to **Settings → Two-factor**
+(`/users/settings?section=two_factor`) and to the in-app guide
+(`/resources/two-factor-authentication`).
+
+- The card belongs to that sign-in. It goes away when the person moves to
+  another page or reloads, and comes back at their next sign-in.
+- **Not now** hides it straight away and snoozes it for 10 days. The snooze
+  is stored on the account (`users.two_factor_reminder_dismissed_at`), so it
+  holds on every device. Once 10 days have passed, the next sign-in shows it
+  again.
+- It never shows once two-factor is on. Starting set-up without finishing it
+  does not count as on, and turning two-factor off brings the reminder back at
+  the next sign-in unless it is snoozed.
+- The decision is made once, at the password step
+  (`Kanban.Accounts.TwoFactor.show_reminder?/2`), and carried to the page as a
+  flash that `KanbanWeb.TwoFactorReminderOnMount` reads in the signed-in
+  LiveView pages; no page checks two-factor itself. Finishing the two-factor
+  challenge and changing the password never set it, and controller-rendered
+  pages (About, Changelog) never show it.
+- Re-entering the password to open Settings counts as a sign-in for someone
+  without two-factor, so the card can appear on the Settings page then.
+
 ## Audit events
 
 Each change is recorded in the audit log against the user:

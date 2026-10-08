@@ -102,7 +102,20 @@ defmodule KanbanWeb.UserSessionController do
     else
       conn
       |> put_flash(:info, info)
+      |> maybe_put_two_factor_reminder(user)
       |> UserAuth.log_in_user(user, user_params)
+    end
+  end
+
+  # Decided once, after the password verified, and only on this path: the
+  # two-factor challenge and a password change also call log_in_user/3 and
+  # must not set it. The landing LiveView reads the flash in
+  # KanbanWeb.TwoFactorReminderOnMount; no page queries two-factor itself.
+  defp maybe_put_two_factor_reminder(conn, user) do
+    if Accounts.show_two_factor_reminder?(user) do
+      put_flash(conn, :two_factor_reminder, true)
+    else
+      conn
     end
   end
 
