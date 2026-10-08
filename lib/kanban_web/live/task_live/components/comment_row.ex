@@ -58,6 +58,7 @@ defmodule KanbanWeb.TaskLive.Components.CommentRow do
     <article
       id={comment_dom_id(@dom_prefix, @comment)}
       data-comment
+      data-comment-id={@comment.id}
       style="display: flex; align-items: flex-start; gap: 10px;"
     >
       <span style="margin-top: 1px; flex-shrink: 0; display: inline-flex;">

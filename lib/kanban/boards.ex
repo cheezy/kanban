@@ -62,7 +62,7 @@ defmodule Kanban.Boards do
 
   # Board-scoped member lookups for comment @mentions (see Kanban.Boards.MemberSearch).
   defdelegate search_board_members(scope, board, query, limit), to: MemberSearch
-  defdelegate members_among(board_id, user_ids), to: MemberSearch
+  defdelegate members_among(board_id, user_ids, opts \\ []), to: MemberSearch
 
   defp board_sort_key(board) do
     access_priority =

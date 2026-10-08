@@ -174,13 +174,39 @@ defmodule KanbanWeb.Avatar do
 
   defp avatar_color(_kind, _palette), do: @neutral_background
 
-  defp avatar_initials(name) when is_binary(name) and byte_size(name) > 0 do
+  defp avatar_initials(name), do: initials(name)
+
+  @doc """
+  Up to two uppercase initials for `name`: the first letter or digit of each
+  of its first two words, where `separator` (a string or regex, default a
+  space) splits words.
+
+  Punctuation is skipped, so `"Bob [Bracket] (QA)"` gives `"BB"`, not `"B["`,
+  and a word with no letter or digit is ignored. Returns `"?"` when nothing
+  usable is left.
+
+      iex> KanbanWeb.Avatar.initials("Jamie K")
+      "JK"
+
+      iex> KanbanWeb.Avatar.initials("Bob [Bracket] (QA)")
+      "BB"
+
+      iex> KanbanWeb.Avatar.initials("-- !!")
+      "?"
+  """
+  @spec initials(term(), String.t() | Regex.t()) :: String.t()
+  def initials(name, separator \\ " ")
+
+  def initials(name, separator) when is_binary(name) do
     name
-    |> String.split(" ", trim: true)
+    |> String.split(separator, trim: true)
+    |> Enum.flat_map(&(Regex.run(~r/[\p{L}\p{N}]/u, &1) || []))
     |> Enum.take(2)
-    |> Enum.map_join("", &String.first/1)
-    |> String.upcase()
+    |> case do
+      [] -> "?"
+      letters -> letters |> Enum.join() |> String.upcase()
+    end
   end
 
-  defp avatar_initials(_), do: "?"
+  def initials(_name, _separator), do: "?"
 end

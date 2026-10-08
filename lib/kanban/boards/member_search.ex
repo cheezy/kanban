@@ -23,6 +23,7 @@ defmodule Kanban.Boards.MemberSearch do
   @doc """
   Searches `board`'s members for the mention autocomplete.
 
+  Disabled users are never returned, since they can no longer act on a mention.
   Matches `query` case-insensitively against the member's name or email
   (`%` and `_` match literally) and returns at most `limit` results, `limit`
   being clamped to 1..#{@max_limit}. An empty query returns the first members
@@ -59,16 +60,28 @@ defmodule Kanban.Boards.MemberSearch do
   Performs no authorization: the caller must derive `board_id` server-side
   (for comments, from the comment's task) rather than accept it from a client.
   Issues no query when `user_ids` is empty.
-  """
-  def members_among(_board_id, []), do: []
 
-  def members_among(board_id, user_ids) when is_integer(board_id) and is_list(user_ids) do
+  ## Options
+
+    * `:active_only` — when `true`, disabled users are absent too. Use it to
+      decide who may be newly mentioned; leave it off to render existing
+      mentions, so a member disabled later still shows by name.
+  """
+  def members_among(board_id, user_ids, opts \\ [])
+
+  def members_among(_board_id, [], _opts), do: []
+
+  def members_among(board_id, user_ids, opts) when is_integer(board_id) and is_list(user_ids) do
     BoardUser
     |> join(:inner, [bu], u in assoc(bu, :user))
     |> where([bu, u], bu.board_id == ^board_id and u.id in ^user_ids)
+    |> maybe_active_only(Keyword.get(opts, :active_only, false))
     |> select([_bu, u], %{id: u.id, name: u.name, email: u.email})
     |> Repo.all()
   end
+
+  defp maybe_active_only(query, true), do: where(query, [_bu, u], is_nil(u.disabled_at))
+  defp maybe_active_only(query, _), do: query
 
   defp member?(%{user: %{id: user_id}}, board_id) when is_integer(user_id) do
     BoardUser
@@ -84,6 +97,7 @@ defmodule Kanban.Boards.MemberSearch do
     BoardUser
     |> join(:inner, [bu], u in assoc(bu, :user))
     |> where([bu], bu.board_id == ^board_id)
+    |> maybe_active_only(true)
     |> where([_bu, u], ilike(u.name, ^pattern) or ilike(u.email, ^pattern))
     |> order_by([_bu, u], asc: fragment("lower(coalesce(nullif(?, ''), ?))", u.name, u.email))
     |> order_by([_bu, u], asc: u.id)

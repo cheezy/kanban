@@ -63,6 +63,12 @@
   --color-warning-content: oklch(98% 0.022 95.277);
   --color-error: oklch(58% 0.253 17.585);
   --color-error-content: oklch(96% 0.015 12.422);
+  /* Error TEXT (form validation messages). --color-error is a fill colour and
+     reads at only ~4.2-4.5:1 as text, so text uses this AA-checked ink. */
+  --color-error-ink: oklch(72% 0.16 17.585);
+  /* Placeholder text: replaces Tailwind's 50%-of-currentColor placeholder (an
+     opacity in disguise, which D214 rules out for text) with an AA-checked ink. */
+  --color-placeholder-ink: oklch(72% 0.005 270);
   --radius-selector: 0.25rem;
   --radius-field: 0.25rem;
   --radius-box: 0.5rem;
@@ -101,6 +107,12 @@
   --color-warning-content: oklch(98% 0.022 95.277);
   --color-error: oklch(58% 0.253 17.585);
   --color-error-content: oklch(96% 0.015 12.422);
+  /* Error TEXT (form validation messages). --color-error is a fill colour and
+     reads at only ~4.2-4.5:1 as text, so text uses this AA-checked ink. */
+  --color-error-ink: oklch(50% 0.21 17.585);
+  /* Placeholder text: replaces Tailwind's 50%-of-currentColor placeholder (an
+     opacity in disguise, which D214 rules out for text) with an AA-checked ink. */
+  --color-placeholder-ink: oklch(48% 0.005 270);
   --radius-selector: 0.25rem;
   --radius-field: 0.25rem;
   --radius-box: 0.5rem;
@@ -1616,4 +1628,22 @@
   padding: 6px 10px;
   color: var(--ink-3);
   font-style: italic;
+}
+
+/* The comment a notification linked to (#comment-<id>), marked by the
+   CommentAnchor hook so the reader can see which comment brought them here. */
+[data-comment-thread] [data-comment-targeted] {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+/* Placeholders use the AA-checked --color-placeholder-ink (defined per theme in
+   the daisyUI theme blocks above) instead of Tailwind's preflight default of
+   50% of currentColor. Disabled fields keep daisyUI's own dimmer placeholder. */
+@layer base {
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-placeholder-ink);
+  }
 }

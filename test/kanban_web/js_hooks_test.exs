@@ -9,7 +9,10 @@ defmodule KanbanWeb.JsHooksTest do
   use ExUnit.Case, async: true
 
   @node System.find_executable("node")
-  @suites ["assets/js/hooks/mention_autocomplete.test.mjs"]
+  @suites [
+    "assets/js/hooks/mention_autocomplete.test.mjs",
+    "assets/js/hooks/comment_anchor.test.mjs"
+  ]
 
   if is_nil(@node), do: @moduletag(skip: "node is not installed")
 

@@ -1124,6 +1124,13 @@ defmodule Kanban.BoardsTest do
       assert length(results) == 1
     end
 
+    test "never returns a disabled member", %{owner: owner, board: board, ada: ada} do
+      {:ok, _} = Kanban.Accounts.disable_user(ada, admin_fixture())
+
+      assert {:ok, []} =
+               owner |> Scope.for_user() |> Boards.search_board_members(board, "ada", 10)
+    end
+
     test "treats % and _ in the query literally", %{owner: owner, board: board} do
       scope = Scope.for_user(owner)
       assert {:ok, []} = Boards.search_board_members(scope, board, "%", 10)
@@ -1169,6 +1176,25 @@ defmodule Kanban.BoardsTest do
 
       assert results |> Enum.map(& &1.id) |> Enum.sort() == Enum.sort([member.id, owner.id])
       assert Enum.all?(results, &Map.has_key?(&1, :email))
+    end
+
+    test "keeps disabled members by default and drops them with active_only: true" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      {:ok, _} = Kanban.Accounts.disable_user(member, admin_fixture())
+
+      assert board.id
+             |> Boards.members_among([member.id, owner.id])
+             |> Enum.map(& &1.id)
+             |> Enum.sort() ==
+               Enum.sort([member.id, owner.id])
+
+      assert board.id
+             |> Boards.members_among([member.id, owner.id], active_only: true)
+             |> Enum.map(& &1.id) ==
+               [owner.id]
     end
   end
 

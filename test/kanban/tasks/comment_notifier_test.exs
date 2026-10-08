@@ -76,7 +76,7 @@ defmodule Kanban.Tasks.CommentNotifierTest do
 
       assert attrs == %{
                title: "#{task.identifier}: #{task.title}",
-               url_path: "/boards/#{board.id}/tasks/#{task.id}/edit",
+               url_path: "/boards/#{board.id}/tasks/#{task.id}/edit#comment-42",
                actor_name: "Owner Person",
                metadata: %{"comment_id" => 42},
                board_id: board.id,
@@ -87,12 +87,31 @@ defmodule Kanban.Tasks.CommentNotifierTest do
       refute Map.has_key?(attrs, :body)
     end
 
-    test "an agent-authored comment names the agent as the actor",
+    test "an agent-authored comment names the agent and the token's user",
          %{owner: owner, board: board, task: task} do
       comment = %TaskComment{id: 1, author_agent_name: "Claude Opus 5.5"}
 
-      assert %{actor_name: "Claude Opus 5.5"} =
+      assert %{actor_name: "Claude Opus 5.5 (Owner Person)"} =
                CommentNotifier.notification_attrs(comment, task, board.id, owner)
+    end
+
+    test "an agent-authored comment by a nameless user names only the agent",
+         %{board: board, task: task} do
+      comment = %TaskComment{id: 1, author_agent_name: "Claude"}
+      nameless = %{name: nil, email: "someone@example.com"}
+
+      assert %{actor_name: "Claude"} =
+               CommentNotifier.notification_attrs(comment, task, board.id, nameless)
+    end
+
+    test "a long agent name is trimmed so the user's name survives within 255",
+         %{owner: owner, board: board, task: task} do
+      comment = %TaskComment{id: 1, author_agent_name: String.duplicate("a", 255)}
+
+      %{actor_name: actor} = CommentNotifier.notification_attrs(comment, task, board.id, owner)
+
+      assert String.length(actor) == 255
+      assert String.ends_with?(actor, " (Owner Person)")
     end
 
     test "never falls back to the author's email", %{board: board, task: task} do
@@ -115,7 +134,7 @@ defmodule Kanban.Tasks.CommentNotifierTest do
 
   describe "comment create" do
     test "mentioning two members emits exactly two :mentioned notifications",
-         %{owner: owner, task: task, ada: ada, bo: bo} do
+         %{owner: owner, board: board, task: task, ada: ada, bo: bo} do
       {:ok, comment} = create(owner, task, "cc #{mention(ada)} and #{mention(bo)}")
 
       rows = mention_rows()
@@ -125,6 +144,7 @@ defmodule Kanban.Tasks.CommentNotifierTest do
         assert row.task_id == task.id
         assert row.metadata == %{"comment_id" => comment.id}
         assert row.actor_name == "Owner Person"
+        assert row.url_path == "/boards/#{board.id}/tasks/#{task.id}/edit#comment-#{comment.id}"
         assert row.body == nil
         refute row.title =~ "cc"
       end
@@ -162,7 +182,7 @@ defmodule Kanban.Tasks.CommentNotifierTest do
          %{owner: owner, task: task, ada: ada} do
       {:ok, _comment} = create(owner, task, mention(ada), author_agent_name: "Claude Opus 5.5")
 
-      assert [%Notification{actor_name: "Claude Opus 5.5"}] = mention_rows()
+      assert [%Notification{actor_name: "Claude Opus 5.5 (Owner Person)"}] = mention_rows()
     end
 
     test "a comment with no mentions notifies nobody", %{owner: owner, task: task} do

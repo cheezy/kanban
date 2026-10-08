@@ -415,7 +415,14 @@ defmodule KanbanWeb.API.TaskCommentControllerTest do
         |> where(event_type: :mentioned)
         |> Repo.all()
 
-      assert [%{user_id: user_id, actor_name: "Claude", task_id: task_id, metadata: metadata}] =
+      assert [
+               %{
+                 user_id: user_id,
+                 actor_name: "Claude (Owner Person)",
+                 task_id: task_id,
+                 metadata: metadata
+               }
+             ] =
                notifications
 
       assert user_id == member.id

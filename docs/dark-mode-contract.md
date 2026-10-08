@@ -210,6 +210,13 @@ about scope and consistency, not color:
 | `bg-gray-100` | `bg-base-300` or `var(--surface-sunken)` |
 | `border-gray-200` | `border-base-300` or `var(--line)` |
 | `border-gray-300` | `var(--line-strong)` |
+| `text-error` on **text** (validation messages) | `text-[var(--color-error-ink)]`. `--color-error` is a fill colour and reads at only about 4.2–4.5:1 as text |
+
+Placeholder text uses `--color-placeholder-ink`, applied globally to
+`input::placeholder` and `textarea::placeholder` in `assets/css/app.css`. It
+replaces Tailwind's preflight default of 50% of `currentColor`, which is an
+opacity on text in all but name. Both inks are defined in the daisyUI theme
+blocks and gated by `mix dark_mode.contrast` against `--color-base-100/200/300`.
 
 ### Composite gradient tokens
 

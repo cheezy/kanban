@@ -66,6 +66,46 @@ defmodule KanbanWeb.API.TaskActionsTest do
     end
   end
 
+  describe "fetch_task/3 with lean: true" do
+    test "finds the task by identifier and id with only its column loaded", %{
+      board: board,
+      user: user,
+      ready: ready
+    } do
+      {:ok, task} = Tasks.create_task(ready, %{"title" => "T", "created_by_id" => user.id})
+
+      for key <- [task.identifier, Integer.to_string(task.id)] do
+        assert {:ok, found} = TaskActions.fetch_task(key, board, lean: true)
+        assert found.id == task.id
+        assert found.column.id == ready.id
+        refute Ecto.assoc_loaded?(found.task_histories)
+        refute Ecto.assoc_loaded?(found.comments)
+      end
+    end
+
+    test "a cross-board id, a cross-board identifier and bad input are all not_found", %{
+      board: board
+    } do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      other_ready = other_board |> Columns.list_columns() |> Enum.find(&(&1.name == "Ready"))
+
+      {:ok, other} =
+        Tasks.create_task(other_ready, %{"title" => "O", "created_by_id" => other_user.id})
+
+      for key <- [
+            Integer.to_string(other.id),
+            other.identifier,
+            "W99999999",
+            "99999999999999999999999",
+            <<0xFF, 0xFE>>,
+            "W1" <> <<0>>
+          ] do
+        assert TaskActions.fetch_task(key, board, lean: true) == {:error, :not_found}
+      end
+    end
+  end
+
   describe "claim/2" do
     test "returns the show template with the claimed task and hook", %{
       conn: conn,

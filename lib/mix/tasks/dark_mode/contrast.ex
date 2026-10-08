@@ -283,8 +283,9 @@ defmodule Mix.Tasks.DarkMode.Contrast do
   end
 
   defp daisy_specs do
-    for bg <- ~w(--color-base-100 --color-base-200 --color-base-300) do
-      spec("daisyui-base", "--color-base-content", bg, @aa_text)
+    for fg <- ~w(--color-base-content --color-error-ink --color-placeholder-ink),
+        bg <- ~w(--color-base-100 --color-base-200 --color-base-300) do
+      spec("daisyui-base", fg, bg, @aa_text)
     end
   end
 

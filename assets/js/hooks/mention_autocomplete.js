@@ -96,9 +96,13 @@ const MentionAutocomplete = {
     this.listbox.addEventListener("mousemove", this.onListMousemove)
   },
 
-  // A LiveView patch drops textarea attributes the server did not render.
+  // A LiveView patch drops textarea attributes the server did not render, and
+  // resets aria-expanded to the server's "false".
   updated() {
-    if (this.isOpen()) this.syncActiveDescendant()
+    if (this.isOpen()) {
+      this.el.setAttribute("aria-expanded", "true")
+      this.syncActiveDescendant()
+    }
   },
 
   destroyed() {
@@ -166,6 +170,7 @@ const MentionAutocomplete = {
 
     this.listbox.replaceChildren(...options)
     this.listbox.hidden = false
+    this.el.setAttribute("aria-expanded", "true")
     this.place()
     this.setActive(members.length > 0 ? 0 : -1)
   },
@@ -260,6 +265,7 @@ const MentionAutocomplete = {
     this.listbox.hidden = true
     this.listbox.replaceChildren()
     this.listbox.classList.remove(ABOVE_CLASS)
+    this.el.setAttribute("aria-expanded", "false")
     this.el.removeAttribute("aria-activedescendant")
   },
 }

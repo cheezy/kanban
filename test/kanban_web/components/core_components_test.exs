@@ -130,4 +130,19 @@ defmodule KanbanWeb.CoreComponentsTest do
       refute html =~ "flex-none"
     end
   end
+
+  describe "error/1" do
+    test "uses the AA-checked error ink, not the error fill colour" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <CoreComponents.error>can't be blank</CoreComponents.error>
+        """)
+
+      assert html =~ "can't be blank"
+      assert html =~ "text-[var(--color-error-ink)]"
+      refute html =~ ~r/\btext-error\b/
+    end
+  end
 end

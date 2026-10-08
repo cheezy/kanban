@@ -44,6 +44,9 @@ defmodule KanbanWeb.TaskLive.Components.MentionField do
         required
         autocomplete="off"
         phx-hook="MentionAutocomplete"
+        role="combobox"
+        aria-haspopup="listbox"
+        aria-expanded="false"
         aria-autocomplete="list"
         aria-controls={@listbox_id}
         data-mention-listbox={@listbox_id}

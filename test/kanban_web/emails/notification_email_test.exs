@@ -149,6 +149,21 @@ defmodule KanbanWeb.Emails.NotificationEmailTest do
       assert build_email(user, %{board: board}).text_body =~ "Board: Roadmap"
     end
 
+    test "lets a long unbroken actor name wrap instead of widening the email",
+         %{user: user} do
+      actor = String.duplicate("A", 239) <> " (Alice)"
+
+      email = user |> notification(%{actor_name: actor}) |> NotificationEmail.build(user)
+
+      [actor_paragraph] =
+        Regex.run(~r/<p style="([^"]*)">By #{Regex.escape(actor)}<\/p>/, email.html_body,
+          capture: :all_but_first
+        )
+
+      assert actor_paragraph =~ "overflow-wrap:anywhere"
+      assert actor_paragraph =~ "word-break:break-word"
+    end
+
     test "HTML-escapes the title, actor and board name", %{user: user} do
       board = board_fixture(user, %{name: "<i>Board</i>"})
 

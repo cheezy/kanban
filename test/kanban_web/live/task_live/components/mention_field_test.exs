@@ -38,6 +38,15 @@ defmodule KanbanWeb.TaskLive.Components.MentionFieldTest do
     assert html =~ ~s(placeholder="Write here")
   end
 
+  test "renders the textarea as a collapsed listbox combobox" do
+    html = render_component(&MentionField.mention_textarea/1, field: field())
+    textarea = html |> LazyHTML.from_fragment() |> LazyHTML.query("textarea")
+
+    assert LazyHTML.attribute(textarea, "role") == ["combobox"]
+    assert LazyHTML.attribute(textarea, "aria-haspopup") == ["listbox"]
+    assert LazyHTML.attribute(textarea, "aria-expanded") == ["false"]
+  end
+
   test "renders a hidden, patch-ignored listbox with translated texts" do
     html = render_component(&MentionField.mention_textarea/1, field: field())
 

@@ -265,7 +265,7 @@ defmodule KanbanWeb.API.TaskActions do
   """
   def list_comments(conn, id_or_identifier, params) do
     with {:ok, limit} <- comment_limit(params),
-         {:ok, task} <- fetch_task(id_or_identifier, conn.assigns.current_board) do
+         {:ok, task} <- fetch_task(id_or_identifier, conn.assigns.current_board, lean: true) do
       {comments, has_more} = Tasks.list_recent_comments(task, limit)
       emit_telemetry(conn, :comments_listed, %{task_id: task.id, count: length(comments)})
       {:ok, :index, [comments: comments, meta: %{limit: limit, has_more: has_more}]}
@@ -300,7 +300,7 @@ defmodule KanbanWeb.API.TaskActions do
     %{current_board: board, current_user: user, api_token: api_token} = conn.assigns
     author_agent_name = AgentAttribution.resolve(api_token, agent_name)
 
-    with {:ok, task} <- fetch_task(id_or_identifier, board),
+    with {:ok, task} <- fetch_task(id_or_identifier, board, lean: true),
          {:ok, comment} <- comment_as(user, task, content, author_agent_name) do
       stamp_agent_identity(conn, %{"agent_name" => agent_name})
       emit_telemetry(conn, :comment_created, %{task_id: task.id})
@@ -335,15 +335,22 @@ defmodule KanbanWeb.API.TaskActions do
   Fetches a task by numeric id or identifier, scoped to `board`.
 
   Returns `{:ok, task}`, `{:error, :not_found}` or `{:error, :forbidden}`.
+
+  ## Options
+
+    * `:lean` — when `true`, the task comes back with only its `:column`
+      preloaded instead of the full view (history, comments, assignees). Use it
+      for actions that only need the task to exist on the board, such as the
+      comment endpoints. Not-found handling is identical either way.
   """
-  def fetch_task(id_or_identifier, board) do
-    case get_task_by_id_or_identifier(id_or_identifier, board) do
+  def fetch_task(id_or_identifier, board, opts \\ []) do
+    case get_task_by_id_or_identifier(id_or_identifier, board, Keyword.get(opts, :lean, false)) do
       nil -> {:error, :not_found}
       task -> verify_board_ownership(task, board)
     end
   end
 
-  defp get_task_by_id_or_identifier(id_or_identifier, board) do
+  defp get_task_by_id_or_identifier(id_or_identifier, board, lean?) do
     case Integer.parse(id_or_identifier) do
       {id, ""} when id in @bigint_range ->
         # Board-scope the numeric-id lookup so a cross-board id and a
@@ -351,7 +358,7 @@ defmodule KanbanWeb.API.TaskActions do
         # letting verify_board_ownership distinguish them downstream returned
         # 403 for a cross-board id vs 404 for a missing one — a task-existence
         # oracle (D160), the same class W399 closed for column lookups.
-        if Tasks.get_task_for_board(id, board.id), do: Tasks.get_task_for_view(id)
+        get_task_by_id(id, board, lean?)
 
       {_out_of_range_id, ""} ->
         # D360: a whole number no task id can hold is simply "not found" —
@@ -360,18 +367,31 @@ defmodule KanbanWeb.API.TaskActions do
         nil
 
       _ ->
-        get_task_by_identifier(id_or_identifier, board)
+        get_task_by_identifier(id_or_identifier, board, lean?)
     end
+  end
+
+  defp get_task_by_id(id, board, true), do: Tasks.get_task_with_column(id, board.id)
+
+  defp get_task_by_id(id, board, false) do
+    if Tasks.get_task_for_board(id, board.id), do: Tasks.get_task_for_view(id)
   end
 
   # An identifier like "W14". Text PostgreSQL cannot hold as a query parameter
   # (invalid UTF-8, or a NUL character) names no task, so it is the same nil,
   # and the same 404, as a missing identifier rather than a database error.
-  defp get_task_by_identifier(identifier, board) do
+  defp get_task_by_identifier(identifier, board, lean?) do
     if String.valid?(identifier) and not String.contains?(identifier, <<0>>) do
-      column_ids = board |> Columns.list_columns() |> Enum.map(& &1.id)
-      Tasks.get_task_by_identifier_for_view(identifier, column_ids)
+      load_by_identifier(identifier, board, lean?)
     end
+  end
+
+  defp load_by_identifier(identifier, board, true),
+    do: Tasks.get_task_by_identifier_with_column(identifier, board.id)
+
+  defp load_by_identifier(identifier, board, false) do
+    column_ids = board |> Columns.list_columns() |> Enum.map(& &1.id)
+    Tasks.get_task_by_identifier_for_view(identifier, column_ids)
   end
 
   defp verify_board_ownership(%{column: %{board_id: board_id}} = task, %{id: board_id}),

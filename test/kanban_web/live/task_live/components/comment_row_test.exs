@@ -29,6 +29,12 @@ defmodule KanbanWeb.TaskLive.Components.CommentRowTest do
   end
 
   describe "comment_row/1" do
+    test "carries the comment id for notification deep links" do
+      html = render_row(entry(comment(%{id: 105})))
+
+      assert html =~ ~s(data-comment-id="105")
+    end
+
     test "renders \"Unknown\" for a comment with no author" do
       html = render_row(entry(comment(%{author: nil})))
 

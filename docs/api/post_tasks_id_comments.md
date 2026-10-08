@@ -75,11 +75,13 @@ text.
   may not contain `@[` or `](user:`. It is only a hint for someone reading the
   raw text. The board shows the member's current name, looked up by `ID`.
 - Mentions are resolved on the server against the task's board. Only current
-  members of that board are stored in `mentioned_user_ids`, at most 20 per
-  comment. A token for anyone else stays plain text and is left out of
-  `mentioned_user_ids`.
+  members of that board whose accounts are not disabled are stored in
+  `mentioned_user_ids`, at most 20 per comment. A token for anyone else stays
+  plain text and is left out of `mentioned_user_ids`.
 - `content` is returned as you sent it, so the tokens stay in the text.
-- Each newly mentioned member except you gets a mention notification.
+- Each newly mentioned member except you gets a mention notification. It names
+  the resolved agent followed by your token's user, for example
+  `Claude (Ada Lovelace)`, because the agent name is chosen by the client.
 
 ```json
 {
@@ -138,7 +140,8 @@ The token is empty or unknown, was revoked or expired, or its user is disabled:
 
 ### Forbidden (403)
 
-Your token's user is no longer a member of the board:
+The board's comment policy refused your token's user even though the token
+itself is still valid:
 
 ```json
 {
@@ -149,6 +152,10 @@ Your token's user is no longer a member of the board:
 ```
 
 Membership is checked live on every comment, not only when the token was made.
+You will rarely see this response: removing a user from a board also revokes
+their API tokens for that board, so a removed member gets the
+[401 `Invalid API token`](#unauthorized-401) response instead. Read-only
+members can still comment.
 
 ### Not Found (404)
 

@@ -4,7 +4,7 @@
 import {test} from "node:test"
 import assert from "node:assert/strict"
 
-import {findTrigger, sanitizeMembers, mentionToken, placeAbove} from "./mention_autocomplete.js"
+import MentionAutocomplete, {findTrigger, sanitizeMembers, mentionToken, placeAbove} from "./mention_autocomplete.js"
 
 const at = value => findTrigger(value, value.length)
 
@@ -76,4 +76,75 @@ test("placeAbove opens upward only when there is no room below but room above", 
   assert.equal(placeAbove(100, 160, 200, 800), false)
   // No room below, but no room above either: stay below.
   assert.equal(placeAbove(150, 760, 200, 800), false)
+})
+
+// Minimal stand-ins for the DOM pieces render/close/updated touch, so the
+// combobox state can be checked without a browser.
+function fakeElement() {
+  const attrs = {}
+  return {
+    attrs,
+    setAttribute: (name, value) => { attrs[name] = String(value) },
+    removeAttribute: name => { delete attrs[name] },
+    getAttribute: name => (name in attrs ? attrs[name] : null),
+  }
+}
+
+function comboboxHook() {
+  globalThis.window = {innerHeight: 800}
+  globalThis.document = {
+    createElement: () => ({...fakeElement(), dataset: {}, scrollIntoView() {}}),
+  }
+
+  const el = fakeElement()
+  el.setAttribute("aria-expanded", "false")
+  el.getBoundingClientRect = () => ({top: 100, bottom: 160})
+
+  let children = []
+  const listbox = {
+    id: "composer-mentions",
+    hidden: true,
+    dataset: {emptyText: "No matching members"},
+    offsetHeight: 120,
+    classList: {remove() {}, toggle() {}},
+    replaceChildren: (...nodes) => { children = nodes },
+    querySelectorAll: () => children.filter(node => node.attrs.role === "option"),
+  }
+
+  return Object.assign(Object.create(MentionAutocomplete), {
+    el, listbox, members: [], activeIndex: -1, seq: 0, timer: null,
+  })
+}
+
+test("opening the list sets aria-expanded to true and closing sets it back to false", () => {
+  const hook = comboboxHook()
+
+  hook.render([{id: 7, label: "Grace"}], "gr")
+  assert.equal(hook.el.getAttribute("aria-expanded"), "true")
+  assert.equal(hook.el.getAttribute("aria-activedescendant"), "composer-mentions-opt-7")
+
+  hook.close()
+  assert.equal(hook.el.getAttribute("aria-expanded"), "false")
+  assert.equal(hook.el.getAttribute("aria-activedescendant"), null)
+})
+
+test("an empty result still opens the list, so aria-expanded is true", () => {
+  const hook = comboboxHook()
+
+  hook.render([], "zz")
+  assert.equal(hook.listbox.hidden, false)
+  assert.equal(hook.el.getAttribute("aria-expanded"), "true")
+})
+
+test("a LiveView patch that resets aria-expanded while open is re-synced by updated()", () => {
+  const hook = comboboxHook()
+  hook.render([{id: 7, label: "Grace"}], "gr")
+
+  hook.el.setAttribute("aria-expanded", "false")
+  hook.updated()
+  assert.equal(hook.el.getAttribute("aria-expanded"), "true")
+
+  hook.close()
+  hook.updated()
+  assert.equal(hook.el.getAttribute("aria-expanded"), "false")
 })

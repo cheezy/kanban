@@ -680,6 +680,30 @@ defmodule Kanban.Tasks.CommentsTest do
       assert Repo.reload!(comment).mentioned_user_ids == [modifier.id]
     end
 
+    test "a disabled member is neither stored as mentioned nor newly mentioned",
+         %{user: user, task: task, modifier: modifier} do
+      {:ok, _} = Kanban.Accounts.disable_user(modifier, admin_fixture())
+
+      assert {:ok, comment} =
+               user |> scope() |> Comments.create_comment(task, %{"content" => mention(modifier)})
+
+      assert comment.mentioned_user_ids == []
+      assert comment.newly_mentioned_user_ids == []
+    end
+
+    test "a member disabled after being mentioned still renders by name",
+         %{user: user, task: task, modifier: modifier} do
+      assert {:ok, _} =
+               user |> scope() |> Comments.create_comment(task, %{"content" => mention(modifier)})
+
+      {:ok, _} = Kanban.Accounts.disable_user(modifier, admin_fixture())
+
+      assert {:ok, %{entries: [%{mentions: mentions}]}} =
+               user |> scope() |> Comments.list_comment_thread(task)
+
+      assert Map.has_key?(mentions, modifier.id)
+    end
+
     test "create resolves membership against the task's own board",
          %{user: user, task: task} do
       other_owner = user_fixture()

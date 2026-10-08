@@ -8,6 +8,7 @@ defmodule KanbanWeb.Layouts do
   import KanbanWeb.MarketingComponents
   import KanbanWeb.MarketingClosing
 
+  alias KanbanWeb.Avatar
   alias KanbanWeb.NotificationBell
 
   # Embed all files in layouts/* within this module.
@@ -332,15 +333,7 @@ defmodule KanbanWeb.Layouts do
     ]
   end
 
-  defp user_initials(user) do
-    name = user_display_name(user)
-
-    name
-    |> String.split(~r/[\s@.]/, trim: true)
-    |> Enum.take(2)
-    |> Enum.map_join("", &String.first/1)
-    |> String.upcase()
-  end
+  defp user_initials(user), do: user |> user_display_name() |> Avatar.initials(~r/[\s@.]/)
 
   defp user_display_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp user_display_name(%{email: email}) when is_binary(email), do: email

@@ -20,6 +20,7 @@ defmodule Kanban.Tasks do
 
   alias Kanban.Tasks.AgentQueries
   alias Kanban.Tasks.AgentWorkflow
+  alias Kanban.Tasks.BoardLookup
   alias Kanban.Tasks.Comments
   alias Kanban.Tasks.Creation
   alias Kanban.Tasks.Dependencies
@@ -67,6 +68,8 @@ defmodule Kanban.Tasks do
   defdelegate get_task_for_view!(id), to: Queries
   defdelegate get_task_for_view(id), to: Queries
   defdelegate get_task_by_identifier_for_view(identifier, column_ids), to: Queries
+  defdelegate get_task_with_column(id, board_id), to: BoardLookup
+  defdelegate get_task_by_identifier_with_column(identifier, board_id), to: BoardLookup
 
   # ── Creation delegations ───────────────────────────────────────────
 

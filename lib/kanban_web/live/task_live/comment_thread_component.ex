@@ -303,7 +303,7 @@ defmodule KanbanWeb.TaskLive.CommentThreadComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <section id={@id} data-comment-thread>
+    <section id={@id} data-comment-thread phx-hook="CommentAnchor">
       <SectionHead.section_head title={gettext("Comments")} count_label={count_label(@entries)} />
 
       <p

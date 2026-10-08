@@ -133,6 +133,45 @@ defmodule KanbanWeb.AvatarTest do
 
       assert html =~ ~r/>\s*AM\s*</
     end
+
+    test "punctuation around words never becomes an initial" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <Avatar.avatar kind={:human} name="Bob [Bracket] (QA)" palette="human-blue" />
+        """)
+
+      assert html =~ ~r/>\s*BB\s*</
+      refute html =~ "B["
+    end
+  end
+
+  describe "initials/2" do
+    doctest KanbanWeb.Avatar
+
+    test "skips leading punctuation and punctuation-only words" do
+      assert Avatar.initials("(QA) [lead]") == "QL"
+      assert Avatar.initials("— Grace Hopper") == "GH"
+      assert Avatar.initials("\"Ada\" Lovelace") == "AL"
+    end
+
+    test "uses letters and digits from any script" do
+      assert Avatar.initials("élodie ünal") == "ÉÜ"
+      assert Avatar.initials("Claude 5.5") == "C5"
+    end
+
+    test "splits on a custom separator" do
+      assert Avatar.initials("jane.doe@example.com", ~r/[\s@.]/) == "JD"
+      assert Avatar.initials("[ops]@example.com", ~r/[\s@.]/) == "OE"
+    end
+
+    test "falls back to ? when nothing usable is left" do
+      assert Avatar.initials("") == "?"
+      assert Avatar.initials("   ") == "?"
+      assert Avatar.initials("[] ()") == "?"
+      assert Avatar.initials(nil) == "?"
+    end
   end
 
   describe "avatar/1 — size attribute" do

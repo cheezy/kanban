@@ -26,6 +26,7 @@ import {hooks as colocatedHooks} from "phoenix-colocated/kanban"
 import AutoDismissFlash from "./hooks/auto-dismiss-flash"
 import SortableHook from "./hooks/sortable"
 import ColumnSortableHook from "./hooks/column_sortable"
+import CommentAnchor from "./hooks/comment_anchor"
 import DelayedModalClickAway from "./hooks/delayed_modal_click_away"
 import Dropdown from "./hooks/dropdown"
 import MentionAutocomplete from "./hooks/mention_autocomplete"
@@ -38,6 +39,7 @@ const MyHooks = {
   AutoDismissFlash,
   Sortable: SortableHook,
   ColumnSortable: ColumnSortableHook,
+  CommentAnchor,
   DelayedModalClickAway,
   Dropdown,
   MentionAutocomplete,

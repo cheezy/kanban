@@ -18,8 +18,10 @@ defmodule Kanban.Tasks.CommentNotifier do
   `Kanban.Notifications` hides board-scoped rows once membership ends.
 
   The actor is the comment's `author_agent_name` when an agent wrote it
-  (comments posted through the API or MCP), otherwise the author's name —
-  never their email.
+  (comments posted through the API or MCP), followed by the token user's name
+  in parentheses because the client chooses the agent name — for example
+  `"Claude (Ada Lovelace)"`. Otherwise it is the author's name. It is never
+  their email, and it is trimmed to 255 characters.
 
   Dedupe keys are `mentioned:<comment id>:<version>`, where the version is
   `created` for a new comment and the `edited_at` second of an edit. A retry
@@ -41,6 +43,7 @@ defmodule Kanban.Tasks.CommentNotifier do
 
   @event_type :mentioned
   @title_max 255
+  @actor_max 255
 
   @doc """
   Returns the ids in `comment.mentioned_user_ids` that are not in
@@ -86,7 +89,7 @@ defmodule Kanban.Tasks.CommentNotifier do
   def notification_attrs(%TaskComment{} = comment, %Task{} = task, board_id, author) do
     %{
       title: title(task),
-      url_path: "/boards/#{board_id}/tasks/#{task.id}/edit",
+      url_path: "/boards/#{board_id}/tasks/#{task.id}/edit#comment-#{comment.id}",
       actor_name: actor_name(comment, author),
       metadata: %{"comment_id" => comment.id},
       board_id: board_id,
@@ -116,12 +119,28 @@ defmodule Kanban.Tasks.CommentNotifier do
 
   defp blank?(value), do: is_nil(value) or value == ""
 
-  defp actor_name(%TaskComment{author_agent_name: agent}, _author)
-       when is_binary(agent) and agent != "",
-       do: agent
+  # The agent name is chosen by the API client, so the token's user is shown
+  # beside it: "Claude (Ada Lovelace)". The agent part is trimmed to keep the
+  # whole within the notification's 255-character actor limit. The author's
+  # email is never used.
+  defp actor_name(%TaskComment{author_agent_name: agent}, author)
+       when is_binary(agent) and agent != "" do
+    case author_name(author) do
+      nil -> String.slice(agent, 0, @actor_max)
+      name -> agent_with_user(agent, name)
+    end
+  end
 
-  defp actor_name(_comment, %{name: name}) when is_binary(name) and name != "", do: name
-  defp actor_name(_comment, _author), do: nil
+  defp actor_name(_comment, author), do: author_name(author)
+
+  defp author_name(%{name: name}) when is_binary(name) and name != "", do: name
+  defp author_name(_author), do: nil
+
+  defp agent_with_user(agent, name) do
+    suffix = " (" <> name <> ")"
+    room = max(@actor_max - String.length(suffix), 1)
+    String.slice(String.slice(agent, 0, room) <> suffix, 0, @actor_max)
+  end
 
   defp dedupe_key(%TaskComment{id: id, edited_at: nil}), do: "mentioned:#{id}:created"
 

@@ -247,10 +247,11 @@ defmodule Kanban.Tasks.Comments do
   end
 
   # Only a valid changeset is worth a membership query; an invalid one is
-  # never written.
+  # never written. Disabled members are dropped here, so they are never stored
+  # as mentioned and never notified.
   defp put_mentions(%Ecto.Changeset{valid?: true} = changeset, board_id) do
     ids = changeset |> Ecto.Changeset.get_field(:content) |> Mentions.parse()
-    member_ids = board_id |> Boards.members_among(ids) |> Enum.map(& &1.id)
+    member_ids = board_id |> Boards.members_among(ids, active_only: true) |> Enum.map(& &1.id)
 
     Ecto.Changeset.put_change(changeset, :mentioned_user_ids, Mentions.resolve(ids, member_ids))
   end

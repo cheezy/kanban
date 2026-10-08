@@ -107,7 +107,7 @@ defmodule KanbanWeb.Emails.NotificationEmail do
       Enum.map_join(
         lines,
         "\n",
-        &~s(<p style="white-space:pre-line;margin:0 0 12px">#{escape(&1)}</p>)
+        &~s(<p style="white-space:pre-line;overflow-wrap:anywhere;word-break:break-word;margin:0 0 12px">#{escape(&1)}</p>)
       )
 
     """
