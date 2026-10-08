@@ -872,4 +872,48 @@ defmodule Kanban.Tasks.TaskTest do
              "the unguarded :where_context column should be named as missing a validator"
     end
   end
+
+  describe "labels association" do
+    alias Kanban.Accounts.Scope
+    alias Kanban.Labels
+    alias Kanban.Labels.Label
+
+    test "a new task preloads an empty label list", %{column: column} do
+      task = task_fixture(column)
+
+      assert %Task{labels: []} = Repo.preload(task, :labels)
+    end
+
+    test "a task's labels preload through the many_to_many association", %{
+      user: user,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      bug = Kanban.LabelsFixtures.label_fixture(board, %{name: "Bug"})
+      ui = Kanban.LabelsFixtures.label_fixture(board, %{name: "UI"})
+
+      scope = Scope.for_user(user)
+      {:ok, _} = Labels.set_task_labels(scope, task, [bug.id, ui.id])
+
+      labels = Task |> Repo.get!(task.id) |> Repo.preload(:labels) |> Map.fetch!(:labels)
+      assert labels |> Enum.map(& &1.id) |> Enum.sort() == Enum.sort([bug.id, ui.id])
+    end
+
+    test "deleting a task removes its label rows but keeps the labels", %{
+      user: user,
+      board: board,
+      column: column
+    } do
+      task = task_fixture(column)
+      label = Kanban.LabelsFixtures.label_fixture(board)
+      scope = Scope.for_user(user)
+      {:ok, _} = Labels.set_task_labels(scope, task, [label.id])
+
+      Repo.delete!(task)
+
+      assert Repo.get(Label, label.id)
+      assert Repo.aggregate(Kanban.Labels.TaskLabel, :count) == 0
+    end
+  end
 end
