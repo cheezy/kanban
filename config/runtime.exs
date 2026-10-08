@@ -176,6 +176,24 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
+  # The key Kanban.Encryption uses for values encrypted at rest (TOTP
+  # secrets): 32 random bytes, base64-encoded. Each environment needs its own,
+  # and it must be kept: losing or replacing it makes every stored TOTP secret
+  # unreadable, so every enrolled user has to enroll again.
+  encryption_key =
+    case Base.decode64(String.trim(System.get_env("ENCRYPTION_KEY") || "")) do
+      {:ok, <<_::binary-size(32)>> = key} ->
+        key
+
+      _missing_or_invalid ->
+        raise """
+        environment variable ENCRYPTION_KEY is missing or is not 32 base64-encoded bytes.
+        You can generate one by calling: openssl rand -base64 32
+        """
+    end
+
+  config :kanban, Kanban.Encryption, key: encryption_key
+
   host = System.get_env("PHX_HOST") || "www.stridelikeaboss.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
 

@@ -5,6 +5,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
   import Phoenix.LiveViewTest
 
   alias Kanban.Accounts
+  alias Kanban.Accounts.TwoFactor
 
   describe "Settings page" do
     test "renders settings page — Profile is the default tab, Password swaps in on select",
@@ -68,7 +69,7 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       assert has_element?(lv, ~s(nav a#settings-notifications-link[href="/users/notifications"]))
       # the link leaves the page, so it is not one of the tablist's tabs
       refute has_element?(lv, ~s([role="tablist"] #settings-notifications-link))
-      # below 360px the link takes its own row so the tabs keep their width
+      # below md the link takes its own row so the tabs keep their width
       assert has_element?(lv, ~s(#settings-notifications-link[class*="basis-full"]))
       assert has_element?(lv, ~s([role="tablist"] button[role="tab"]), "Profile")
 
@@ -311,6 +312,177 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       assert result =~ "Save password"
       assert result =~ "should be at least 12 character(s)"
       assert result =~ "does not match password"
+    end
+  end
+
+  describe "two-factor section" do
+    setup %{conn: conn} do
+      user = user_fixture()
+      %{conn: log_in_user(conn, user), user: user}
+    end
+
+    # The code an authenticator would show `offset_steps` 30-second steps from now.
+    defp totp(secret, offset_steps \\ 0) do
+      NimbleTOTP.verification_code(secret, time: System.os_time(:second) + offset_steps * 30)
+    end
+
+    defp open_two_factor(conn) do
+      {:ok, lv, _html} = live(conn, ~p"/users/settings?section=two_factor")
+      lv
+    end
+
+    defp enroll(user) do
+      {:ok, %{secret: secret}} = Accounts.begin_two_factor_enrollment(user)
+      {:ok, codes} = Accounts.confirm_two_factor_enrollment(user, totp(secret))
+      %{secret: secret, recovery_codes: codes}
+    end
+
+    test "is a tab on the settings page and opens off by default", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/users/settings")
+
+      assert has_element?(lv, ~s([role="tablist"] button[phx-value-section="two_factor"]))
+
+      html = render_click(lv, "select_section", %{"section" => "two_factor"})
+
+      assert html =~ "Two-factor authentication is off."
+      assert has_element?(lv, "#two-factor-begin")
+    end
+
+    test "opens from a ?section=two_factor link", %{conn: conn} do
+      lv = open_two_factor(conn)
+
+      assert has_element?(lv, "#two_factor #two-factor-status")
+    end
+
+    test "enrolls with a valid code, shows the recovery codes once, then shows it on",
+         %{conn: conn, user: user} do
+      lv = open_two_factor(conn)
+
+      lv |> element("#two-factor-begin") |> render_click()
+
+      assert has_element?(lv, ~s(#two-factor-qr[src^="data:image/svg+xml;base64,"]))
+      secret = TwoFactor.get_user_totp(user).secret
+      key = lv |> element("#two-factor-key") |> render()
+      assert key =~ secret |> Base.encode32(padding: false) |> String.slice(0, 4)
+      refute Accounts.two_factor_enabled?(user)
+
+      html =
+        lv
+        |> form("#two-factor-confirm-form", %{"code" => totp(secret)})
+        |> render_submit()
+
+      assert Accounts.two_factor_enabled?(user)
+      assert html =~ "Save these recovery codes now"
+
+      assert lv |> element("#two-factor-recovery-codes") |> render() =~
+               ~r/[0-9a-z]{5}-[0-9a-z]{5}/
+
+      assert html
+             |> LazyHTML.from_fragment()
+             |> LazyHTML.query("#two-factor-recovery-codes li")
+             |> Enum.count() == 10
+
+      # the secret leaves the page once enrollment is confirmed
+      refute has_element?(lv, "#two-factor-qr")
+      refute has_element?(lv, "#two-factor-key")
+
+      html = lv |> element("#two-factor-codes-saved") |> render_click()
+      assert html =~ "Two-factor authentication is on."
+      refute has_element?(lv, "#two-factor-recovery-codes")
+
+      # a fresh visit never shows the codes again
+      lv = open_two_factor(conn)
+      assert has_element?(lv, "#two-factor-disable-form")
+      refute has_element?(lv, "#two-factor-recovery-codes")
+    end
+
+    test "a wrong code during enrollment shows an error and keeps it off",
+         %{conn: conn, user: user} do
+      lv = open_two_factor(conn)
+      lv |> element("#two-factor-begin") |> render_click()
+      secret = TwoFactor.get_user_totp(user).secret
+      wrong = if totp(secret) == "000000", do: "111111", else: "000000"
+
+      html = lv |> form("#two-factor-confirm-form", %{"code" => wrong}) |> render_submit()
+
+      assert html =~ "That code is not valid."
+      assert has_element?(lv, ~s(#two-factor-confirm-code[aria-invalid="true"]))
+      assert has_element?(lv, "#two-factor-qr")
+      refute Accounts.two_factor_enabled?(user)
+    end
+
+    test "cancelling enrollment discards the pending secret", %{conn: conn, user: user} do
+      lv = open_two_factor(conn)
+      lv |> element("#two-factor-begin") |> render_click()
+
+      lv |> element("#two-factor-cancel") |> render_click()
+
+      assert has_element?(lv, "#two-factor-begin")
+      assert TwoFactor.get_user_totp(user) == nil
+    end
+
+    test "disable with a wrong code shows an error and keeps two-factor on",
+         %{conn: conn, user: user} do
+      %{secret: secret} = enroll(user)
+      lv = open_two_factor(conn)
+      wrong = if totp(secret, 1) == "000000", do: "111111", else: "000000"
+
+      html = lv |> form("#two-factor-disable-form", %{"code" => wrong}) |> render_submit()
+
+      assert html =~ "That code is not valid."
+      assert Accounts.two_factor_enabled?(user)
+    end
+
+    test "disable with a current code turns it off", %{conn: conn, user: user} do
+      %{secret: secret} = enroll(user)
+      lv = open_two_factor(conn)
+
+      html =
+        lv |> form("#two-factor-disable-form", %{"code" => totp(secret, 1)}) |> render_submit()
+
+      assert html =~ "Two-factor authentication is off."
+      assert has_element?(lv, "#two-factor-begin")
+      refute Accounts.two_factor_enabled?(user)
+    end
+
+    test "disable with a recovery code turns it off", %{conn: conn, user: user} do
+      %{recovery_codes: [recovery | _]} = enroll(user)
+      lv = open_two_factor(conn)
+
+      lv |> form("#two-factor-disable-form", %{"code" => recovery}) |> render_submit()
+
+      assert has_element?(lv, "#two-factor-begin")
+      refute Accounts.two_factor_enabled?(user)
+    end
+
+    test "regenerating with a current code shows ten new codes once", %{conn: conn, user: user} do
+      %{secret: secret, recovery_codes: [old | _]} = enroll(user)
+      lv = open_two_factor(conn)
+
+      html =
+        lv |> form("#two-factor-regenerate-form", %{"code" => totp(secret, 1)}) |> render_submit()
+
+      assert html
+             |> LazyHTML.from_fragment()
+             |> LazyHTML.query("#two-factor-recovery-codes li")
+             |> Enum.count() == 10
+
+      assert Accounts.consume_recovery_code(user, old) == {:error, :invalid_code}
+
+      lv |> element("#two-factor-codes-saved") |> render_click()
+      refute has_element?(lv, "#two-factor-recovery-codes")
+    end
+
+    test "regenerating with a wrong code shows an error", %{conn: conn, user: user} do
+      %{secret: secret, recovery_codes: [old | _]} = enroll(user)
+      lv = open_two_factor(conn)
+      wrong = if totp(secret, 1) == "000000", do: "111111", else: "000000"
+
+      html = lv |> form("#two-factor-regenerate-form", %{"code" => wrong}) |> render_submit()
+
+      assert html =~ "That code is not valid."
+      refute has_element?(lv, "#two-factor-recovery-codes")
+      assert Accounts.consume_recovery_code(user, old) == :ok
     end
   end
 

@@ -2,14 +2,15 @@ defmodule Kanban.Accounts do
   @moduledoc """
   The Accounts context.
 
-  Admin-facing user management (listing, disabling/enabling, and deletion)
-  lives in `Kanban.Accounts.AdminManagement` and is delegated to below.
+  Admin user management (`Kanban.Accounts.AdminManagement`) and TOTP
+  two-factor authentication (`Kanban.Accounts.TwoFactor`) are delegated below.
   """
 
   import Ecto.Query, warn: false
   alias Kanban.Repo
 
   alias Kanban.Accounts.AdminManagement
+  alias Kanban.Accounts.TwoFactor
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserNotifier
   alias Kanban.Accounts.UserToken
@@ -342,6 +343,17 @@ defmodule Kanban.Accounts do
   defdelegate disable_user(user, current_user), to: AdminManagement
   defdelegate enable_user(user, current_user), to: AdminManagement
   defdelegate delete_user(user, current_user), to: AdminManagement
+
+  ## Two-factor authentication
+
+  defdelegate two_factor_enabled?(user), to: TwoFactor, as: :enabled?
+  defdelegate begin_two_factor_enrollment(user), to: TwoFactor, as: :begin_enrollment
+  defdelegate cancel_two_factor_enrollment(user), to: TwoFactor, as: :cancel_enrollment
+  defdelegate confirm_two_factor_enrollment(user, code), to: TwoFactor, as: :confirm_enrollment
+  defdelegate valid_two_factor_code?(user, code), to: TwoFactor, as: :valid_code?
+  defdelegate consume_recovery_code(user, code), to: TwoFactor
+  defdelegate regenerate_recovery_codes(user, code), to: TwoFactor
+  defdelegate disable_two_factor(user, code), to: TwoFactor, as: :disable
 
   ## Session
 

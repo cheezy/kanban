@@ -88,12 +88,12 @@ msgstr "Se Déconnecter"
 #: lib/kanban_web/components/layouts.ex:193
 #: lib/kanban_web/components/nav_components.ex:135
 #: lib/kanban_web/live/user_live/notification_preferences.ex:124
-#: lib/kanban_web/live/user_live/settings_components.ex:29
+#: lib/kanban_web/live/user_live/settings_components.ex:32
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr "Paramètres"
 
-#: lib/kanban_web/live/user_live/settings.ex:291
+#: lib/kanban_web/live/user_live/settings.ex:309
 #, elixir-autogen, elixir-format
 msgid "A link to confirm your email change has been sent to the new address."
 msgstr "Un lien pour confirmer votre changement d'email a été envoyé à la nouvelle adresse."
@@ -126,12 +126,12 @@ msgstr "Création du compte en cours..."
 msgid "Email"
 msgstr "Email"
 
-#: lib/kanban_web/live/user_live/settings.ex:190
+#: lib/kanban_web/live/user_live/settings.ex:207
 #, elixir-autogen, elixir-format
 msgid "Email change link is invalid or it has expired."
 msgstr "Le lien de changement d'email est invalide ou a expiré."
 
-#: lib/kanban_web/live/user_live/settings.ex:187
+#: lib/kanban_web/live/user_live/settings.ex:204
 #, elixir-autogen, elixir-format
 msgid "Email changed successfully."
 msgstr "Email modifié avec succès."
@@ -145,7 +145,7 @@ msgstr "Nouveau mot de passe"
 #: lib/kanban_web/live/user_live/login.ex:59
 #: lib/kanban_web/live/user_live/registration.ex:73
 #: lib/kanban_web/live/user_live/settings.ex:71
-#: lib/kanban_web/live/user_live/settings_components.ex:101
+#: lib/kanban_web/live/user_live/settings_components.ex:106
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr "Mot de passe"
@@ -199,6 +199,7 @@ msgstr "Tableau mis à jour avec succès"
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
+#: lib/kanban_web/live/user_live/two_factor_component.ex:137
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "Annuler"
@@ -5480,7 +5481,7 @@ msgstr "Retour à la file"
 msgid "Back to review queue"
 msgstr "Retour à la file de relecture"
 
-#: lib/kanban_web/live/user_live/settings.ex:310
+#: lib/kanban_web/live/user_live/settings.ex:328
 #, elixir-autogen, elixir-format
 msgid "Profile updated."
 msgstr "Profil mis à jour."
@@ -5627,7 +5628,7 @@ msgid "Not found"
 msgstr "Introuvable"
 
 #: lib/kanban_web/live/user_live/settings.ex:17
-#: lib/kanban_web/live/user_live/settings_components.ex:100
+#: lib/kanban_web/live/user_live/settings_components.ex:105
 #, elixir-autogen, elixir-format
 msgid "Profile"
 msgstr "Profil"
@@ -5713,7 +5714,7 @@ msgstr "Votre nom"
 msgid "Your name and email address. Email changes require confirmation by clicking a link sent to the new address."
 msgstr "Votre nom et votre adresse e-mail. Les changements d'e-mail nécessitent une confirmation en cliquant sur un lien envoyé à la nouvelle adresse."
 
-#: lib/kanban_web/live/user_live/settings_components.ex:101
+#: lib/kanban_web/live/user_live/settings_components.ex:106
 #, elixir-autogen, elixir-format
 msgid "change credentials"
 msgstr "modifier les identifiants"
@@ -5723,7 +5724,7 @@ msgstr "modifier les identifiants"
 msgid "if you suspect a key is compromised."
 msgstr "si vous soupçonnez qu'une clé est compromise."
 
-#: lib/kanban_web/live/user_live/settings_components.ex:100
+#: lib/kanban_web/live/user_live/settings_components.ex:105
 #, elixir-autogen, elixir-format
 msgid "name · email"
 msgstr "nom · e-mail"
@@ -6651,8 +6652,8 @@ msgstr "Stride enveloppe chaque tâche dans un cycle de vie en quatre étapes. L
 msgid "Code review"
 msgstr "Revue de code"
 
-#: lib/kanban_web/live/user_live/settings_components.ex:41
-#: lib/kanban_web/live/user_live/settings_components.ex:48
+#: lib/kanban_web/live/user_live/settings_components.ex:44
+#: lib/kanban_web/live/user_live/settings_components.ex:52
 #, elixir-autogen, elixir-format
 msgid "Settings sections"
 msgstr "Sections des paramètres"
@@ -7904,6 +7905,7 @@ msgid "New column"
 msgstr "Nouvelle colonne"
 
 #: lib/kanban_web/controllers/user_session_controller.ex:103
+#: lib/kanban_web/live/user_live/two_factor_component.ex:380
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
 msgstr "Trop de tentatives. Veuillez patienter quelques minutes et réessayer."
@@ -9059,7 +9061,7 @@ msgstr "Notification introuvable."
 #: lib/kanban_web/live/notification_live/index.html.heex:5
 #: lib/kanban_web/live/notification_live/index.html.heex:18
 #: lib/kanban_web/live/user_live/notification_preferences.ex:127
-#: lib/kanban_web/live/user_live/settings_components.ex:74
+#: lib/kanban_web/live/user_live/settings_components.ex:78
 #, elixir-autogen, elixir-format
 msgid "Notifications"
 msgstr "Notifications"
@@ -9177,7 +9179,7 @@ msgstr "Type de notification inconnu."
 msgid "You are added to or removed from a board, or your access changes."
 msgstr "Vous êtes ajouté à un tableau ou retiré de celui-ci, ou votre accès change."
 
-#: lib/kanban_web/live/user_live/settings_components.ex:75
+#: lib/kanban_web/live/user_live/settings_components.ex:79
 #, elixir-autogen, elixir-format
 msgid "in-app · email"
 msgstr "app · e-mail"
@@ -9317,7 +9319,7 @@ msgstr "Accès au tableau"
 msgid "Comments and mentions"
 msgstr "Commentaires et mentions"
 
-#: lib/kanban_web/live/user_live/settings_components.ex:32
+#: lib/kanban_web/live/user_live/settings_components.ex:35
 #, elixir-autogen, elixir-format
 msgid "Manage your profile, password and notifications. Changes apply to your account immediately."
 msgstr "Gérez votre profil, votre mot de passe et vos notifications. Les modifications s'appliquent immédiatement à votre compte."
@@ -9579,3 +9581,129 @@ msgstr "Membres du tableau"
 #, elixir-autogen, elixir-format
 msgid "No matching members"
 msgstr "Aucun membre correspondant"
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:122
+#: lib/kanban_web/live/user_live/two_factor_component.ex:195
+#, elixir-autogen, elixir-format
+msgid "6-digit code"
+msgstr "Code à 6 chiffres"
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:66
+#, elixir-autogen, elixir-format
+msgid "Add a second step to signing in: a 6-digit code from an authenticator app such as 1Password, Google Authenticator or Authy."
+msgstr "Ajoutez une seconde étape à la connexion : un code à 6 chiffres provenant d'une application d'authentification comme 1Password, Google Authenticator ou Authy."
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:127
+#: lib/kanban_web/live/user_live/two_factor_component.ex:200
+#: lib/kanban_web/live/user_live/two_factor_component.ex:230
+#, elixir-autogen, elixir-format
+msgid "Checking..."
+msgstr "Vérification..."
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:224
+#, elixir-autogen, elixir-format
+msgid "Code or recovery code"
+msgstr "Code ou code de récupération"
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:149
+#, elixir-autogen, elixir-format
+msgid "Each code can be used once to sign in or to turn off two-factor if you lose your authenticator."
+msgstr "Chaque code peut servir une seule fois pour vous connecter ou désactiver la double authentification si vous perdez votre authentificateur."
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:218
+#, elixir-autogen, elixir-format
+msgid "Enter a code from your authenticator app, or a recovery code if you no longer have it."
+msgstr "Saisissez un code de votre application d'authentification, ou un code de récupération si vous ne l'avez plus."
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:201
+#, elixir-autogen, elixir-format
+msgid "Generate new codes"
+msgstr "Générer de nouveaux codes"
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:173
+#, elixir-autogen, elixir-format
+msgid "I have saved these codes"
+msgstr "J'ai enregistré ces codes"
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:102
+#, elixir-autogen, elixir-format
+msgid "Key"
+msgstr "Clé"
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:188
+#, elixir-autogen, elixir-format
+msgid "New recovery codes"
+msgstr "Nouveaux codes de récupération"
+
+#: lib/kanban_web/live/user_live/settings.ex:153
+#, elixir-autogen, elixir-format
+msgid "Protect your account with a code from an authenticator app in addition to your password."
+msgstr "Protégez votre compte avec un code d'application d'authentification en plus de votre mot de passe."
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:94
+#, elixir-autogen, elixir-format
+msgid "QR code for your authenticator app"
+msgstr "Code QR pour votre application d'authentification"
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:191
+#, elixir-autogen, elixir-format
+msgid "Replaces all of your recovery codes. The old ones stop working."
+msgstr "Remplace tous vos codes de récupération. Les anciens cessent de fonctionner."
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:148
+#, elixir-autogen, elixir-format
+msgid "Save these recovery codes now. They will not be shown again."
+msgstr "Enregistrez ces codes de récupération maintenant. Ils ne seront plus affichés."
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:83
+#, elixir-autogen, elixir-format
+msgid "Scan this QR code with your authenticator app, or enter the key by hand. Then enter the 6-digit code the app shows."
+msgstr "Scannez ce code QR avec votre application d'authentification, ou saisissez la clé à la main. Saisissez ensuite le code à 6 chiffres affiché par l'application."
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:77
+#, elixir-autogen, elixir-format
+msgid "Set up two-factor authentication"
+msgstr "Configurer la double authentification"
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:373
+#, elixir-autogen, elixir-format
+msgid "That code is not valid. Check it and try again."
+msgstr "Ce code n'est pas valide. Vérifiez-le et réessayez."
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:215
+#: lib/kanban_web/live/user_live/two_factor_component.ex:231
+#, elixir-autogen, elixir-format
+msgid "Turn off two-factor"
+msgstr "Désactiver la double authentification"
+
+#: lib/kanban_web/live/user_live/settings_components.ex:107
+#, elixir-autogen, elixir-format
+msgid "Two-factor"
+msgstr "Double authentification"
+
+#: lib/kanban_web/live/user_live/settings.ex:151
+#, elixir-autogen, elixir-format
+msgid "Two-factor authentication"
+msgstr "Double authentification"
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:252
+#: lib/kanban_web/live/user_live/two_factor_component.ex:358
+#, elixir-autogen, elixir-format
+msgid "Two-factor authentication is off."
+msgstr "La double authentification est désactivée."
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:251
+#: lib/kanban_web/live/user_live/two_factor_component.ex:319
+#, elixir-autogen, elixir-format
+msgid "Two-factor authentication is on."
+msgstr "La double authentification est activée."
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:128
+#, elixir-autogen, elixir-format
+msgid "Verify and turn on"
+msgstr "Vérifier et activer"
+
+#: lib/kanban_web/live/user_live/settings_components.ex:107
+#, elixir-autogen, elixir-format
+msgid "authenticator app"
+msgstr "application d'authentification"

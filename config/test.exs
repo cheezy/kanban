@@ -118,3 +118,7 @@ config :kanban, :after_goal_grace_window_ms, 1
 # (127.0.0.1 / nil peer) does not cause cross-test interference. The
 # throttle-specific tests opt back in with known limits via Application.put_env.
 config :kanban, Kanban.RateLimit, enabled: false
+
+# Key for Kanban.Encryption (TOTP secrets at rest). A fixed test-only key;
+# production reads ENCRYPTION_KEY in runtime.exs.
+config :kanban, Kanban.Encryption, key: "test-only-encryption-key-32byte!"

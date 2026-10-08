@@ -360,6 +360,10 @@ defmodule KanbanWeb.API.ErrorDocsTest do
     test "every get_docs context and validation field link passes the anchor check" do
       source = File.read!(@error_docs_source)
 
+      # The context atoms only exist once ErrorDocs is loaded; in a full run
+      # this test can be the first to touch it.
+      Code.ensure_loaded!(ErrorDocs)
+
       contexts =
         ~r/^\s*def get_docs\(:(\w+)/m
         |> Regex.scan(source, capture: :all_but_first)

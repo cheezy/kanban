@@ -1,22 +1,25 @@
 defmodule KanbanWeb.UserLive.SettingsComponents do
   @moduledoc """
-  The account settings shell shared by `KanbanWeb.UserLive.Settings` (Profile
-  and Password) and `KanbanWeb.UserLive.NotificationPreferences`: the page
+  The account settings shell shared by `KanbanWeb.UserLive.Settings` (Profile,
+  Password and Two-factor) and `KanbanWeb.UserLive.NotificationPreferences`: the page
   header, the section menu and the card each section renders in.
 
   The two pages live in different `live_session`s (the settings page is
   sudo-gated, notification preferences are not), so they cannot be one
-  LiveView. On the settings page Profile and Password are tabs that swap in
-  place (`tabs`); on any other page they are links back to the settings page.
+  LiveView. On the settings page Profile, Password and Two-factor are tabs that
+  swap in place (`tabs`); on any other page they are links back to the settings
+  page.
   Notifications is always a link, marked as the current page when active.
   """
   use KanbanWeb, :html
 
-  attr :active, :atom, required: true, values: [:profile, :password, :notifications]
+  attr :active, :atom,
+    required: true,
+    values: [:profile, :password, :two_factor, :notifications]
 
   attr :tabs, :boolean,
     default: false,
-    doc: "render Profile and Password as in-page tabs (the settings page itself)"
+    doc: "render the account sections as in-page tabs (the settings page itself)"
 
   slot :inner_block, required: true
 
@@ -41,12 +44,13 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
           aria-label={gettext("Settings sections")}
           class="flex flex-row flex-wrap md:flex-nowrap md:flex-col gap-1 md:w-[184px] md:flex-shrink-0 md:pt-1"
         >
-          <%!-- Below 360px Profile and Password share a row and Notifications takes its own. --%>
+          <%!-- Below md the account sections share a row and Notifications takes its own:
+                four items in one phone-width row would squeeze every label. --%>
           <div
             role={@tabs && "tablist"}
             aria-orientation={@tabs && "vertical"}
             aria-label={@tabs && gettext("Settings sections")}
-            class="flex flex-row md:flex-col gap-1 basis-full min-[360px]:basis-0 min-[360px]:flex-[2] md:flex-initial"
+            class="flex flex-row md:flex-col gap-1 basis-full md:basis-auto md:flex-initial"
           >
             <%= for {section, label, hint} <- account_sections() do %>
               <.section_tab
@@ -73,7 +77,7 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
             active={@active == :notifications}
             label={gettext("Notifications")}
             hint={gettext("in-app · email")}
-            class="basis-full min-[360px]:basis-0 min-[360px]:flex-1 md:flex-initial"
+            class="basis-full md:basis-auto md:flex-initial"
           />
         </nav>
 
@@ -88,17 +92,19 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
   end
 
   @doc """
-  Returns the path a Profile or Password menu link points at: the settings
+  Returns the path an account section's menu link points at: the settings
   page, opened on that section.
   """
-  @spec account_section_path(:profile | :password) :: String.t()
+  @spec account_section_path(:profile | :password | :two_factor) :: String.t()
   def account_section_path(:profile), do: ~p"/users/settings"
   def account_section_path(:password), do: ~p"/users/settings?section=password"
+  def account_section_path(:two_factor), do: ~p"/users/settings?section=two_factor"
 
   defp account_sections do
     [
       {:profile, gettext("Profile"), gettext("name · email")},
-      {:password, gettext("Password"), gettext("change credentials")}
+      {:password, gettext("Password"), gettext("change credentials")},
+      {:two_factor, gettext("Two-factor"), gettext("authenticator app")}
     ]
   end
 

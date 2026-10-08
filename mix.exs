@@ -74,6 +74,8 @@ defmodule Kanban.MixProject do
       {:elixlsx, "~> 0.6"},
       {:req, "~> 0.5"},
       {:hammer, "~> 7.4"},
+      {:nimble_totp, "~> 1.0"},
+      {:eqrcode, "~> 0.2.1"},
       {:tz, "~> 0.28"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},

@@ -112,3 +112,7 @@ config :phoenix_live_view,
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Key for Kanban.Encryption (TOTP secrets at rest). A fixed, public dev-only
+# key: dev data is not secret. Production reads ENCRYPTION_KEY in runtime.exs.
+config :kanban, Kanban.Encryption, key: "dev-only-encryption-key-32bytes!"

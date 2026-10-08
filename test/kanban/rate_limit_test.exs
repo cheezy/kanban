@@ -106,4 +106,26 @@ defmodule Kanban.RateLimitTest do
       assert :ok = RateLimit.check(:issue, ip: unique_ip(), identity: "   ")
     end
   end
+
+  describe ":two_factor surface (identity-only)" do
+    test "limits per identity with no IP ceiling" do
+      user_a = "user:#{System.unique_integer([:positive])}"
+      user_b = "user:#{System.unique_integer([:positive])}"
+
+      # default id_limit is 10 failures in the window
+      for _ <- 1..10, do: RateLimit.record_failure(:two_factor, identity: user_a)
+
+      assert {:error, {:rate_limited, _}} = RateLimit.peek(:two_factor, identity: user_a)
+      # another user (same absent IP) is unaffected: there is no shared IP bucket
+      assert :ok = RateLimit.peek(:two_factor, identity: user_b)
+    end
+
+    test "allows up to the limit before denying" do
+      user = "user:#{System.unique_integer([:positive])}"
+
+      for _ <- 1..9, do: RateLimit.record_failure(:two_factor, identity: user)
+
+      assert :ok = RateLimit.peek(:two_factor, identity: user)
+    end
+  end
 end

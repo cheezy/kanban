@@ -60,6 +60,13 @@ All three paths converge on the same resend mechanism: the response is neutral
 or not the address is registered or already confirmed, so the endpoint cannot
 be used to enumerate accounts, and resends are throttled to one per minute.
 
+## User Accounts: Two-Factor Authentication
+
+A person can add an authenticator-app code to their password under
+**Settings → Two-factor**. It protects the human's account only: API tokens,
+and so agents, are not affected. See
+[Two-Factor Authentication](TWO-FACTOR-AUTHENTICATION.md) for how it works.
+
 ## Authentication Method: Bearer Token
 
 All API requests require authentication using a Bearer token in the Authorization header:

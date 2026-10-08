@@ -36,6 +36,32 @@ clearly-labeled placeholder so non-server tasks (`mix help`,
 `mix phx.server` against an externally-reachable network without
 setting your own key first.
 
+### Encryption key (`ENCRYPTION_KEY`)
+
+Secrets stored in the database, such as each user's two-factor
+authenticator secret, are encrypted with AES-256-GCM using
+`ENCRYPTION_KEY`: 32 random bytes, base64-encoded.
+
+```bash
+# generate one key per environment:
+openssl rand -base64 32
+```
+
+- **Production needs it.** A production release refuses to boot (and
+  the migration release command fails) when `ENCRYPTION_KEY` is missing
+  or does not decode to exactly 32 bytes. Set it as a secret on each
+  deployed app before deploying, e.g.
+  `fly secrets set ENCRYPTION_KEY="$(openssl rand -base64 32)" -a <app>`.
+- **Each environment needs its own key.** Never copy one environment's
+  key into another.
+- **Keep it, and back it up.** Losing or replacing the key makes every
+  stored authenticator secret unreadable, so every user who turned on
+  two-factor authentication has to set it up again. After a lost or
+  replaced key, clear the unreadable rows with `DELETE FROM user_totps;`
+  so those users can enroll again.
+- **Development and test need nothing.** `config/dev.exs` and
+  `config/test.exs` use fixed, public keys.
+
 ---
 
 ## What is Stride?

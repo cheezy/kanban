@@ -144,6 +144,23 @@ defmodule KanbanWeb.UserLive.Settings do
             </div>
           </.form>
         </.settings_card>
+
+        <.settings_card
+          :if={@section == :two_factor}
+          id="two_factor"
+          title={gettext("Two-factor authentication")}
+          hint={
+            gettext(
+              "Protect your account with a code from an authenticator app in addition to your password."
+            )
+          }
+        >
+          <.live_component
+            module={KanbanWeb.UserLive.TwoFactorComponent}
+            id="two-factor"
+            user={@current_scope.user}
+          />
+        </.settings_card>
       </.settings_shell>
     </Layouts.app>
     """
@@ -209,10 +226,11 @@ defmodule KanbanWeb.UserLive.Settings do
     {:ok, socket}
   end
 
-  # The other settings pages link here with ?section=password to open that tab.
+  # The other settings pages link here with ?section=password (or two_factor)
+  # to open that tab.
   @impl true
   def handle_params(%{"section" => section}, _uri, socket)
-      when section in ["profile", "password"] do
+      when section in ["profile", "password", "two_factor"] do
     {:noreply, assign(socket, :section, String.to_existing_atom(section))}
   end
 
@@ -220,7 +238,7 @@ defmodule KanbanWeb.UserLive.Settings do
 
   @impl true
   def handle_event("select_section", %{"section" => section}, socket)
-      when section in ["profile", "password"] do
+      when section in ["profile", "password", "two_factor"] do
     {:noreply, assign(socket, :section, String.to_existing_atom(section))}
   end
 

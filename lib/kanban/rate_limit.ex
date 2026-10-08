@@ -20,6 +20,14 @@ defmodule Kanban.RateLimit do
     * `:resend`    — 15 min / 3  / 15   (per submission)
     * `:issue`     — 5 min  / 5  / 20   (per submission)
     * `:api_token` — 1 min  / 20        (IP-only, failure-counted)
+    * `:two_factor` — 5 min / 10 / —    (identity-only, per attempt)
+
+  `:two_factor` counts every second-factor code attempt per user (`identity:
+  "user:<id>"`, no IP) wherever a code is checked, with `check/2` so the
+  count is taken atomically before the code is looked at, and an open session
+  cannot script guesses at a 6-digit code, in sequence or in parallel. It has no IP ceiling: the callers are
+  authenticated, and a shared ceiling keyed on an absent IP would let one user
+  lock everyone out.
 
   Thresholds are a product/ops decision — override per environment via:
 
@@ -29,7 +37,7 @@ defmodule Kanban.RateLimit do
   ## Operations
 
     * `check/2`  — increment and evaluate; use for per-submission surfaces
-      (`:reset`, `:resend`, `:issue`).
+      (`:reset`, `:resend`, `:issue`, `:two_factor`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
       (`:login`, `:api_token`) so a flood cannot force password hashing or DB
       lookups.
@@ -44,10 +52,11 @@ defmodule Kanban.RateLimit do
     reset: %{scale_ms: 900_000, id_limit: 3, ip_limit: 15},
     resend: %{scale_ms: 900_000, id_limit: 3, ip_limit: 15},
     issue: %{scale_ms: 300_000, id_limit: 5, ip_limit: 20},
-    api_token: %{scale_ms: 60_000, ip_limit: 20}
+    api_token: %{scale_ms: 60_000, ip_limit: 20},
+    two_factor: %{scale_ms: 300_000, id_limit: 10}
   }
 
-  @type surface :: :login | :reset | :resend | :issue | :api_token
+  @type surface :: :login | :reset | :resend | :issue | :api_token | :two_factor
   @type opts :: [ip: term(), identity: String.t() | nil]
   @type result :: :ok | {:error, {:rate_limited, non_neg_integer()}}
 
@@ -114,11 +123,15 @@ defmodule Kanban.RateLimit do
     end)
   end
 
-  # The IP-only ceiling always applies; the combined IP+identity key only when
-  # an identity is present (absent for :api_token, and defensively for any
-  # surface called without one).
+  # The IP-only ceiling applies to every surface that has one; the combined
+  # IP+identity key only when an identity is present (absent for :api_token,
+  # and defensively for any surface called without one).
   defp keyed_checks(limits, surface, ip, identity) do
-    ip_check = [{"#{surface}:ip:#{ip}", limits.ip_limit}]
+    ip_check =
+      case Map.fetch(limits, :ip_limit) do
+        {:ok, ip_limit} -> [{"#{surface}:ip:#{ip}", ip_limit}]
+        :error -> []
+      end
 
     case {identity, Map.fetch(limits, :id_limit)} do
       {nil, _} -> ip_check

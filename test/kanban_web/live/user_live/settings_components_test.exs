@@ -13,11 +13,14 @@ defmodule KanbanWeb.UserLive.SettingsComponentsTest do
   end
 
   describe "account_section_path/1" do
-    test "points Profile at the settings page and Password at its tab" do
+    test "points Profile at the settings page and the other sections at their tabs" do
       assert SettingsComponents.account_section_path(:profile) == "/users/settings"
 
       assert SettingsComponents.account_section_path(:password) ==
                "/users/settings?section=password"
+
+      assert SettingsComponents.account_section_path(:two_factor) ==
+               "/users/settings?section=two_factor"
     end
   end
 
@@ -31,11 +34,11 @@ defmodule KanbanWeb.UserLive.SettingsComponentsTest do
       assert html =~ "SECTION BODY"
     end
 
-    test "with tabs, Profile and Password are in-page tabs and Notifications is a link" do
+    test "with tabs, the account sections are in-page tabs and Notifications is a link" do
       html = shell(%{active: :password, tabs: true})
       doc = LazyHTML.from_fragment(html)
 
-      assert doc |> LazyHTML.query(~s([role="tablist"] button[role="tab"])) |> Enum.count() == 2
+      assert doc |> LazyHTML.query(~s([role="tablist"] button[role="tab"])) |> Enum.count() == 3
 
       assert doc
              |> LazyHTML.query(~s(button[aria-selected="true"][phx-value-section="password"]))
@@ -63,6 +66,12 @@ defmodule KanbanWeb.UserLive.SettingsComponentsTest do
       assert doc
              |> LazyHTML.query(
                ~s(a#settings-password-link[href="/users/settings?section=password"])
+             )
+             |> Enum.count() == 1
+
+      assert doc
+             |> LazyHTML.query(
+               ~s(a#settings-two_factor-link[href="/users/settings?section=two_factor"])
              )
              |> Enum.count() == 1
 
