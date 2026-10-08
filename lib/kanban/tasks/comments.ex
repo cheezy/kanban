@@ -17,6 +17,9 @@ defmodule Kanban.Tasks.Comments do
   `Kanban.Tasks.Mentions.max_mentions/0` of them — are stored in
   `mentioned_user_ids`. The returned comment's virtual
   `newly_mentioned_user_ids` names the members that write newly mentions.
+  After the write commits, `Kanban.Tasks.CommentNotifier` sends each of them
+  except the author a `:mentioned` notification; a notification failure is
+  logged and never changes the save's result.
 
   Errors are `{:error, :unauthorized}` when the policy refuses,
   `{:error, :not_found}` when the task or comment no longer exists, and
@@ -29,6 +32,7 @@ defmodule Kanban.Tasks.Comments do
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Repo
+  alias Kanban.Tasks.CommentNotifier
   alias Kanban.Tasks.CommentPolicy
   alias Kanban.Tasks.Mentions
   alias Kanban.Tasks.Task
@@ -55,8 +59,7 @@ defmodule Kanban.Tasks.Comments do
   def create_comment(scope, %Task{id: task_id}, attrs, opts) when is_integer(task_id) do
     with {:ok, board_id} <- authorize_create(scope, task_id),
          {:ok, comment} <- insert_comment(scope, task_id, board_id, attrs, opts) do
-      broadcast(task_id, board_id)
-      {:ok, comment}
+      after_write(scope, comment, [], board_id)
     end
   end
 
@@ -77,8 +80,7 @@ defmodule Kanban.Tasks.Comments do
   def update_comment(scope, %TaskComment{id: id}, attrs) do
     with {:ok, current, board_id} <- fetch_authorized(id, &CommentPolicy.can_edit?(scope, &1, &2)),
          {:ok, updated} <- persist_update(current, attrs, board_id) do
-      broadcast(updated.task_id, board_id)
-      {:ok, updated}
+      after_write(scope, updated, current.mentioned_user_ids, board_id)
     end
   end
 
@@ -276,6 +278,14 @@ defmodule Kanban.Tasks.Comments do
   defp mention_label(%{name: name}) when is_binary(name) and name != "", do: name
   defp mention_label(%{email: email}), do: email
 
+  # Side effects of a committed create or update: the board broadcast, then the
+  # mention notifications for the users this write newly mentions.
+  defp after_write(scope, comment, previous_mentioned_ids, board_id) do
+    broadcast(comment.task_id, board_id)
+    CommentNotifier.notify_mentions(comment, previous_mentioned_ids, board_id, scope_user(scope))
+    {:ok, comment}
+  end
+
   defp after_delete(scope, deleted, board_id) do
     maybe_audit_owner_delete(scope, deleted, board_id)
     broadcast(deleted.task_id, board_id)
@@ -330,6 +340,9 @@ defmodule Kanban.Tasks.Comments do
       {comment, board_id} -> {:ok, comment, board_id}
     end
   end
+
+  defp scope_user(%{user: user}), do: user
+  defp scope_user(_scope), do: nil
 
   defp authorize(true), do: :ok
   defp authorize(false), do: {:error, :unauthorized}

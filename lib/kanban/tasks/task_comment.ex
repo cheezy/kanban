@@ -2,6 +2,8 @@ defmodule Kanban.Tasks.TaskComment do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{}
+
   @content_max_length 10_000
   @agent_name_max_length 255
 

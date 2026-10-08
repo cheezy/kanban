@@ -374,6 +374,36 @@ defmodule KanbanWeb.API.TaskCommentControllerTest do
       assert body["data"]["mentioned_user_ids"] == [member.id]
     end
 
+    test "a mention notification names the posting agent as its actor", %{
+      conn: conn,
+      user: owner,
+      board: board,
+      task: task
+    } do
+      member = user_fixture(%{name: "Member"})
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, member, :modify, owner)
+
+      body =
+        conn
+        |> post_comment(task.identifier, %{
+          "content" => "@[Member](user:#{member.id}) please look",
+          "agent_name" => "Claude"
+        })
+        |> json_response(201)
+
+      notifications =
+        Kanban.Notifications.Notification
+        |> where(event_type: :mentioned)
+        |> Repo.all()
+
+      assert [%{user_id: user_id, actor_name: "Claude", task_id: task_id, metadata: metadata}] =
+               notifications
+
+      assert user_id == member.id
+      assert task_id == task.id
+      assert metadata == %{"comment_id" => body["data"]["id"]}
+    end
+
     test "a posted comment is returned by GET", %{conn: conn, task: task} do
       created =
         conn
