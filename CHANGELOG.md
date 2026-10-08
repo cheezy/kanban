@@ -5,6 +5,84 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.19.0] - 2026-10-08
+
+Accounts can now be protected with two-factor authentication: a 6-digit code from an authenticator app, plus single-use recovery codes. People who have not turned it on are reminded after they sign in, and a new Resources guide walks them through it. Production now needs an `ENCRYPTION_KEY` secret before it will boot.
+
+### Added
+
+#### Two-factor authentication
+
+A new **Two-factor** tab under Settings turns on two-factor authentication. Stride shows a QR code and the same key as text; two-factor is on only once a code from the authenticator app is accepted with **Verify and turn on**. Stride then shows ten recovery codes, once. Leaving or cancelling before the code is accepted leaves two-factor off. Like the rest of Settings, the tab needs a recent sign-in.
+
+From the same tab, **New recovery codes** replaces all ten codes after a current code from the app, and **Turn off two-factor** accepts a current code or an unused recovery code, which is then used up. Turning it off deletes the stored key and recovery codes. Recovery codes ignore spaces, dashes and capital letters when typed.
+
+A code is accepted for its own 30-second window and one window either side, to allow for a phone clock that is slightly off, and each code works only once. API tokens are not affected: agents keep authenticating with their bearer token.
+
+#### A second step at sign-in
+
+With two-factor on, a correct email and password no longer signs a person in by itself. Stride sends them to a new **Two-factor authentication** page (`/users/two-factor`) for the code from their app, or a recovery code through **Use a recovery code instead**. The session token is issued only once a code is accepted. Until then the session holds only a pending-sign-in marker, which expires after five minutes.
+
+- **Keep me signed in on this device** is honoured once the code is accepted, and someone sent to sign in from another page is returned to it.
+- Signing in with a recovery code uses it up, and Stride suggests creating new codes.
+- If the account is disabled or two-factor is turned off while a sign-in is pending, the code is refused and the person starts again.
+- Re-authenticating to reach Settings asks for the second factor too. Changing the password from Settings, which already needed a recent sign-in, does not ask again.
+
+#### A reminder for people without two-factor
+
+When someone without two-factor signs in with their password, the page they land on shows a card above its content. That includes a page they were sent back to after signing in. The card links to **Settings → Two-factor** and to the setup guide. **Not now** hides it straight away and snoozes it for 10 days. The snooze is stored on the account, so it holds on every device, and once 10 days have passed the next sign-in shows it again.
+
+The card belongs to that sign-in: it goes away when the person moves to another page or reloads, and it never shows once two-factor is on. Starting set-up without finishing it does not count as on. Re-entering the password to open Settings counts as a sign-in for someone without two-factor, so the card can appear on the Settings page then. Pages outside the signed-in app (the Resources pages, About and Changelog) do not show it.
+
+#### A guide to setting up two-factor
+
+**Resources → Setting Up Two-Factor Authentication** covers:
+- turning two-factor on and saving the recovery codes;
+- signing in, including with a recovery code;
+- getting new codes and moving to a new phone;
+- what to do if the authenticator is lost or a code is refused.
+
+`docs/TWO-FACTOR-AUTHENTICATION.md` is the technical reference behind it.
+
+#### Two-factor audit events
+
+Each change is recorded in the audit log against the user:
+- `two_factor_enabled`
+- `recovery_codes_regenerated`
+- `two_factor_disabled`
+- `login_succeeded_two_factor`
+- `two_factor_recovery_code_used`
+- `two_factor_challenge_failed`
+
+No code, key or recovery code is written to the audit log.
+
+### Security
+
+- **Secrets are encrypted at rest.** The authenticator key is stored encrypted with AES-256-GCM. Recovery codes are stored only as keyed HMAC-SHA256 digests bound to the user, and are compared in constant time. A database dump alone can neither generate codes nor be searched for recovery codes.
+- **Codes cannot be replayed.** Accepting a code and recording its time step is one conditional database write, so two requests racing with the same code cannot both succeed.
+- **Code attempts are throttled.** Each check counts, right or wrong, before the code is looked at, so requests sent at once cannot slip past the limits:
+  - 10 attempts per user in 5 minutes;
+  - 30 wrong sign-in codes per IP address in 5 minutes;
+  - 30 wrong sign-in codes per account in 24 hours.
+  A throttled sign-in gets the same message as a throttled password sign-in, so the response does not say which limit was hit.
+- **Session tokens are no longer stored in metrics.** Phoenix socket telemetry carried the connecting user's session, including the raw session token, along with CSRF and socket tokens, and the metrics store saved all of it. Credential-shaped keys are now dropped at any depth before an event is stored, and a migration removes the same data from existing rows. That migration cannot be reversed.
+
+### Fixed
+
+- **Settings tabs and sign-in pages work better with screen readers.**
+  - Only the selected settings tab points at its panel.
+  - The profile, password and two-factor cards are tab panels labelled by their tab.
+  - These pages now have a main landmark: sign-in, two-factor, registration, confirmation, password reset and unsubscribe.
+- **Accessibility fixes across the app:**
+  - The top bar is a banner landmark, and the sidebar's two navigation regions are named.
+  - Dialogs are named by their title; they previously pointed at elements that did not exist.
+  - Section headings no longer skip levels.
+  - Definition lists hold only term and description pairs.
+  - Labels sit only on elements that allow them.
+  - The agent activity list can be reached and scrolled with the keyboard.
+  - The Resources search box has a label.
+- **Contrast fixes:** board badges, chart axis labels and the Workflows page text and links now meet the contrast floor in light and dark mode.
+
 ## [2.18.0] - 2026-10-08
 
 Task comments are now a conversation between people and agents. Every comment shows who wrote it, authors can edit and delete their own comments, board members can be @mentioned and are notified, threads update live, and agents can read and post comments through the API and MCP.

@@ -50,7 +50,7 @@ Plug Stride into the tools teams and agents already use.
 
 Meet the security and compliance needs of larger organisations.
 
-- Two-factor authentication with an authenticator app, plus single-use recovery codes.
+- ✅ Two-factor authentication with an authenticator app, plus single-use recovery codes, a reminder after sign-in for people who haven't turned it on, and a step-by-step setup guide.
 - ✅ A permanent, tamper-proof audit log of important account and board activity.
 - ✅ An audit log viewer for administrators, with filters and CSV or JSON export.
 - Telemetry for every important event — sign-ins and account changes, board access, task and goal activity, agent work, notifications, rate limits and data exports — with a documented event catalogue, no personal data in event details, and a configurable retention period for stored metrics.

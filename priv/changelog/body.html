@@ -3,6 +3,290 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [2.19.0] - 2026-10-08
+        </h2>
+
+        <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          Accounts can now be protected with two-factor authentication: a
+          6-digit code from an authenticator app, plus single-use recovery
+          codes. People who have not turned it on are reminded after they sign
+          in, and a new Resources guide walks them through it. Production now
+          needs an <code>ENCRYPTION_KEY</code> secret before it will boot.
+        </p>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Two-factor authentication
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              A new <strong>Two-factor</strong> tab under Settings turns on
+              two-factor authentication. Stride shows a QR code and the same
+              key as text; two-factor is on only once a code from the
+              authenticator app is accepted with
+              <strong>Verify and turn on</strong>. Stride then shows ten
+              recovery codes, once. Leaving or cancelling before the code is
+              accepted leaves two-factor off. Like the rest of Settings, the
+              tab needs a recent sign-in.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              From the same tab, <strong>New recovery codes</strong> replaces
+              all ten codes after a current code from the app, and
+              <strong>Turn off two-factor</strong> accepts a current code or an
+              unused recovery code, which is then used up. Turning it off
+              deletes the stored key and recovery codes. Recovery codes ignore
+              spaces, dashes and capital letters when typed.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              A code is accepted for its own 30-second window and one window
+              either side, to allow for a phone clock that is slightly off, and
+              each code works only once. API tokens are not affected: agents
+              keep authenticating with their bearer token.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              A second step at sign-in
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              With two-factor on, a correct email and password no longer signs
+              a person in by itself. Stride sends them to a new
+              <strong>Two-factor authentication</strong> page
+              (<code>/users/two-factor</code>) for the code from their app, or a
+              recovery code through
+              <strong>Use a recovery code instead</strong>. The session token
+              is issued only once a code is accepted. Until then the session
+              holds only a pending-sign-in marker, which expires after five
+              minutes.
+            </p>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <strong>Keep me signed in on this device</strong> is honoured
+                once the code is accepted, and someone sent to sign in from
+                another page is returned to it.
+              </li>
+              <li>
+                Signing in with a recovery code uses it up, and Stride suggests
+                creating new codes.
+              </li>
+              <li>
+                If the account is disabled or two-factor is turned off while a
+                sign-in is pending, the code is refused and the person starts
+                again.
+              </li>
+              <li>
+                Re-authenticating to reach Settings asks for the second factor
+                too. Changing the password from Settings, which already needed a
+                recent sign-in, does not ask again.
+              </li>
+            </ul>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              A reminder for people without two-factor
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              When someone without two-factor signs in with their password, the
+              page they land on shows a card above its content. That includes a
+              page they were sent back to after signing in. The card links to
+              <strong>Settings → Two-factor</strong> and to the setup guide.
+              <strong>Not now</strong> hides it straight away and snoozes it for
+              10 days. The snooze is stored on the account, so it holds on
+              every device, and once 10 days have passed the next sign-in shows
+              it again.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The card belongs to that sign-in: it goes away when the person
+              moves to another page or reloads, and it never shows once
+              two-factor is on. Starting set-up without finishing it does not
+              count as on. Re-entering the password to open Settings counts as
+              a sign-in for someone without two-factor, so the card can appear
+              on the Settings page then. Pages outside the signed-in app (the
+              Resources pages, About and Changelog) do not show it.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              A guide to setting up two-factor
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              <strong>Resources → Setting Up Two-Factor Authentication</strong>
+              covers:
+            </p>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>turning two-factor on and saving the recovery codes;</li>
+              <li>signing in, including with a recovery code;</li>
+              <li>getting new codes and moving to a new phone;</li>
+              <li>what to do if the authenticator is lost or a code is refused.</li>
+            </ul>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              <code>docs/TWO-FACTOR-AUTHENTICATION.md</code> is the technical
+              reference behind it.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Two-factor audit events
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Each change is recorded in the audit log against the user:
+            </p>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li><code>two_factor_enabled</code></li>
+              <li><code>recovery_codes_regenerated</code></li>
+              <li><code>two_factor_disabled</code></li>
+              <li><code>login_succeeded_two_factor</code></li>
+              <li><code>two_factor_recovery_code_used</code></li>
+              <li><code>two_factor_challenge_failed</code></li>
+            </ul>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              No code, key or recovery code is written to the audit log.
+            </p>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Security
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>Secrets are encrypted at rest.</strong> The authenticator
+              key is stored encrypted with AES-256-GCM. Recovery codes are
+              stored only as keyed HMAC-SHA256 digests bound to the user, and
+              are compared in constant time. A database dump alone can neither
+              generate codes nor be searched for recovery codes.
+            </li>
+            <li>
+              <strong>Codes cannot be replayed.</strong> Accepting a code and
+              recording its time step is one conditional database write, so two
+              requests racing with the same code cannot both succeed.
+            </li>
+            <li>
+              <strong>Code attempts are throttled.</strong> Each check counts,
+              right or wrong, before the code is looked at, so requests sent at
+              once cannot slip past the limits:
+              <ul class="list-disc list-inside ml-6 mt-1 space-y-1">
+                <li>10 attempts per user in 5 minutes;</li>
+                <li>30 wrong sign-in codes per IP address in 5 minutes;</li>
+                <li>30 wrong sign-in codes per account in 24 hours.</li>
+              </ul>
+              A throttled sign-in gets the same message as a throttled password
+              sign-in, so the response does not say which limit was hit.
+            </li>
+            <li>
+              <strong>Session tokens are no longer stored in metrics.</strong>
+              Phoenix socket telemetry carried the connecting user's session,
+              including the raw session token, along with CSRF and socket
+              tokens, and the metrics store saved all of it. Credential-shaped
+              keys are now dropped at any depth before an event is stored, and a
+              migration removes the same data from existing rows. That migration
+              cannot be reversed.
+            </li>
+          </ul>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Fixed
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>Settings tabs and sign-in pages work better with screen readers.</strong>
+              <ul class="list-disc list-inside ml-6 mt-1 space-y-1">
+                <li>Only the selected settings tab points at its panel.</li>
+                <li>
+                  The profile, password and two-factor cards are tab panels
+                  labelled by their tab.
+                </li>
+                <li>
+                  These pages now have a main landmark: sign-in, two-factor,
+                  registration, confirmation, password reset and unsubscribe.
+                </li>
+              </ul>
+            </li>
+            <li>
+              <strong>Accessibility fixes across the app:</strong>
+              <ul class="list-disc list-inside ml-6 mt-1 space-y-1">
+                <li>
+                  The top bar is a banner landmark, and the sidebar's two
+                  navigation regions are named.
+                </li>
+                <li>
+                  Dialogs are named by their title; they previously pointed at
+                  elements that did not exist.
+                </li>
+                <li>Section headings no longer skip levels.</li>
+                <li>Definition lists hold only term and description pairs.</li>
+                <li>Labels sit only on elements that allow them.</li>
+                <li>
+                  The agent activity list can be reached and scrolled with the
+                  keyboard.
+                </li>
+                <li>The Resources search box has a label.</li>
+              </ul>
+            </li>
+            <li>
+              <strong>Contrast fixes:</strong> board badges, chart axis labels
+              and the Workflows page text and links now meet the contrast floor
+              in light and dark mode.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.18.0] - 2026-10-08
         </h2>
 
