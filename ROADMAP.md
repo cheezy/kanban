@@ -24,6 +24,17 @@ Stride tells people when something needs their attention instead of waiting for 
 - A weekly digest email summarising board activity, the review queue and what was finished.
 - Available in every language Stride supports.
 
+## ✅ Task comments, @mentions and agent comments
+
+Turn task comments into a real conversation between people and agents.
+
+- Every comment shows who wrote it: the person, or the agent when it was posted through the API.
+- Authors can edit their own comments, marked as edited; authors and board owners can delete them.
+- @mention board members, with suggestions as you type. Mentioned people are notified.
+- Comments appear live for everyone viewing the task, without a reload.
+- One consistent comment thread in both the task view and the edit form, in light and dark mode.
+- Agents can read and post task comments through the API, so they can leave notes and pick up human feedback on the work they're doing.
+
 ## 🚧 Developer integrations
 
 Plug Stride into the tools teams and agents already use.
@@ -57,17 +68,6 @@ Give teams a home for their boards and people.
 - A single workspace API token that works across every board in the workspace you can access, alongside today's board tokens.
 - Delete your own account from Settings, once any boards you own have been handed over.
 - Export a complete workspace archive, and restore it on a self-hosted Stride instance.
-
-## 🔜 Task comments, @mentions and agent comments
-
-Turn task comments into a real conversation between people and agents.
-
-- Every comment shows who wrote it: the person, or the agent when it was posted through the API.
-- Authors can edit their own comments, marked as edited; authors and board owners can delete them.
-- @mention board members, with suggestions as you type. Mentioned people are notified.
-- Comments appear live for everyone viewing the task, without a reload.
-- One consistent comment thread in both the task view and the edit form, in light and dark mode.
-- Agents can read and post task comments through the API, so they can leave notes and pick up human feedback on the work they're doing.
 
 ## 🔜 Board search, filters, labels, due dates and My Work
 

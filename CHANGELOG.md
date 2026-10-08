@@ -5,6 +5,46 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.18.0] - 2026-10-08
+
+Task comments are now a conversation between people and agents. Every comment shows who wrote it, authors can edit and delete their own comments, board members can be @mentioned and are notified, threads update live, and agents can read and post comments through the API and MCP.
+
+### Added
+
+#### Comment authorship, editing and deleting
+
+Every comment now records who wrote it and, when it came through the API or MCP, the agent that wrote it. The thread shows the author's avatar and name, or the agent's name with the person whose token it ran under ("via Ada Lovelace"). Comments written before this release have no recorded author and show as "Unknown", rather than having one invented. Deleting a user keeps their comments and drops only the attribution.
+
+Authors can edit their own comments, and an edited comment is marked as edited with the time of the edit on hover. Authors can delete their own comments, and board owners can delete any comment on their board. An owner deleting someone else's comment is recorded in the audit log as `comment_deleted_by_owner`. Any board member can comment, read-only members included, because commenting is discussion rather than a change to the task. These rights are checked live, so someone removed from a board loses them at once. The board UI, the REST API and the MCP tool share one permission check, so they cannot drift apart.
+
+#### One live comment thread
+
+The task view and the edit form now share one comment thread, in light and dark mode. New, edited and deleted comments appear for everyone viewing the task without a reload. Posting a comment scrolls it into view inside the thread; comments arriving from other people do not move your place. Posting a comment from the edit form keeps any unsaved changes to the task.
+
+#### @mentions with suggestions as you type
+
+Typing `@` in a comment suggests board members, matched by name or email. The list works with the arrow keys, Enter or Tab to pick and Escape to close, and is announced to screen readers as a combobox. A mention is stored as an `@[Name](user:ID)` token and shown as a chip with the member's current name. Mentions are checked on the server: only current members of the task's board whose accounts are not disabled count, at most 20 per comment, and anything else stays plain text.
+
+Each newly mentioned member gets a **Mentioned** notification in the app and, by default, by email. The author is never notified of their own mention, and editing a comment notifies only the people the edit newly mentions. The notification links to the task's edit form and scrolls to the comment, which is outlined so it is easy to find. It never copies the comment's text, so someone who later leaves the board keeps no copy. When an agent wrote the comment, the notification names the agent and the person whose token it ran under, for example "Claude (Ada Lovelace)", and never shows an email address. Mention emails can be turned off under Settings like any other notification.
+
+#### Task comments in the API and MCP
+
+- `GET /api/tasks/:id/comments` lists a task's comments oldest first. `limit` (1 to 200, default 50) returns the most recent comments, and `meta.has_more` says whether there are older ones.
+- `POST /api/tasks/:id/comments` adds a comment as the token's user. `content` is 1 to 10,000 characters and may carry mentions. The agent name shown on the comment is resolved in the same order as a created task's `created_by_agent`: the token's agent model, then the `agent_name` sent, then the agent name the token last sent.
+- `GET /api/tasks/:id` and the MCP `stride_get_task` tool now include a `comment_count`, so an agent can tell when a thread is worth fetching.
+- The MCP `stride_add_comment` tool now accepts `agent_name`, runs the same action as the REST endpoint and returns the comment in the REST shape, so a comment is attributed the same way over both.
+
+Both endpoints are documented in `docs/api/`, described in the OpenAPI specification, and listed in the agent onboarding response.
+
+### Changed
+
+- Only info flashes now hide on their own, after 5 seconds. Error flashes stay until dismissed, so an error is not missed.
+
+### Fixed
+
+- Avatar initials skip punctuation, so a name such as "Bob [Bracket]" shows "BB" rather than "B[".
+- Form error messages and input placeholder text now meet the contrast floor in both light and dark mode.
+
 ## [2.17.0] - 2026-10-06
 
 MCP clients such as Claude Code can now work Stride tasks through typed tools. Security audit events are now stored in the database, site admins can browse and export them, and the stored log can be moved out of the application's reach: a separate owner role owns the table and its functions, retention runs through one owner-owned purge function, and an operator command finishes the job in production.
