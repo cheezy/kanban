@@ -69,6 +69,48 @@ defmodule Kanban.Repo.ScrubCredentialsFromMetricsEventsTest do
     assert metadata(id) == %{"socket" => "Phoenix.Socket", "result" => "ok"}
   end
 
+  # Production rows carry `params` (a channel join payload) and `connect_info`
+  # as JSON arrays too; `#-` raises on an array when the path step is a key,
+  # which aborted the first production deploy of this migration.
+  test "leaves array-valued params and connect_info alone and still scrubs the row",
+       %{migration: migration} do
+    id =
+      insert(%{
+        "connect_info" => [1, 2],
+        "params" => ["token", "_csrf_token"],
+        "live_socket_id" => "users_sessions:raw-session-token",
+        "result" => "ok"
+      })
+
+    scrub(migration)
+
+    assert metadata(id) == %{
+             "connect_info" => [1, 2],
+             "params" => ["token", "_csrf_token"],
+             "result" => "ok"
+           }
+  end
+
+  test "scrubs the session when params is an array", %{migration: migration} do
+    id =
+      insert(%{
+        "connect_info" => %{"session" => %{"user_token" => "raw"}, "peer_data" => true},
+        "params" => ["token"]
+      })
+
+    scrub(migration)
+
+    assert metadata(id) == %{"connect_info" => %{"peer_data" => true}, "params" => ["token"]}
+  end
+
+  test "leaves a top-level array untouched", %{migration: migration} do
+    id = insert(["live_socket_id", "token"])
+
+    scrub(migration)
+
+    assert metadata(id) == ["live_socket_id", "token"]
+  end
+
   test "leaves rows without credentials untouched", %{migration: migration} do
     clean = %{"user_id" => "7", "params" => %{"vsn" => "2.0.0"}, "socket" => "Phoenix.Socket"}
     id = insert(clean)
