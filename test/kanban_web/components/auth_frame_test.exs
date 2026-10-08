@@ -42,6 +42,12 @@ defmodule KanbanWeb.AuthFrameTest do
       refute html =~ "linear-gradient(155deg, oklch(96% 0.025 60)"
     end
 
+    test "is the page's main landmark, so the form is not outside every landmark" do
+      doc = LazyHTML.from_fragment(render_default())
+
+      assert doc |> LazyHTML.query("main.stride-screen [data-auth-frame]") |> Enum.count() == 1
+    end
+
     test "constrains the content column to max-width 440" do
       html = render_default()
 

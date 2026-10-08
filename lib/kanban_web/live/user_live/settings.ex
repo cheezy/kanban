@@ -14,6 +14,7 @@ defmodule KanbanWeb.UserLive.Settings do
         <.settings_card
           :if={@section == :profile}
           id="profile"
+          tab={:profile}
           title={gettext("Profile")}
           hint={
             gettext(
@@ -68,6 +69,7 @@ defmodule KanbanWeb.UserLive.Settings do
         <.settings_card
           :if={@section == :password}
           id="password"
+          tab={:password}
           title={gettext("Password")}
           hint={
             gettext(
@@ -148,6 +150,7 @@ defmodule KanbanWeb.UserLive.Settings do
         <.settings_card
           :if={@section == :two_factor}
           id="two_factor"
+          tab={:two_factor}
           title={gettext("Two-factor authentication")}
           hint={
             gettext(

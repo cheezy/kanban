@@ -38,7 +38,9 @@ defmodule KanbanWeb.AuthFrame do
 
   def auth_frame(assigns) do
     ~H"""
-    <div
+    <%!-- <main>: auth pages render this frame straight into the root layout,
+          which has no main landmark of its own (Layouts.app supplies one). --%>
+    <main
       class="stride-screen"
       style="min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 32px 20px;"
     >
@@ -77,7 +79,7 @@ defmodule KanbanWeb.AuthFrame do
 
         {render_slot(@inner_block)}
       </div>
-    </div>
+    </main>
     """
   end
 

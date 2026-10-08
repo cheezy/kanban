@@ -113,13 +113,16 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
   attr :hint, :string, default: nil
   attr :active, :boolean, default: false
 
+  # Only the selected section's card is rendered, so only the selected tab
+  # sets aria-controls: pointing at a panel that is not in the page is invalid.
   defp section_tab(assigns) do
     ~H"""
     <button
       type="button"
       role="tab"
+      id={"settings-tab-#{@section}"}
       aria-selected={if @active, do: "true", else: "false"}
-      aria-controls={"section-#{@section}"}
+      aria-controls={@active && Atom.to_string(@section)}
       phx-click="select_section"
       phx-value-section={Atom.to_string(@section)}
       class="flex-1 md:flex-initial"
@@ -192,12 +195,19 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
   attr :hint, :string, default: nil
   attr :level, :integer, default: 2, values: [2, 3], doc: "heading level of the title"
   attr :compact, :boolean, default: false, doc: "tighter body padding for row lists"
+
+  attr :tab, :atom,
+    default: nil,
+    doc: "the settings tab this card is the panel for; makes it a labelled tabpanel"
+
   slot :inner_block, required: true
 
   def settings_card(assigns) do
     ~H"""
     <section
       id={@id}
+      role={@tab && "tabpanel"}
+      aria-labelledby={@tab && "settings-tab-#{@tab}"}
       style="background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;"
     >
       <header style="padding: 14px 18px 12px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-start; gap: 12px; background: var(--surface);">

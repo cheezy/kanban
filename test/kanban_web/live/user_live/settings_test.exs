@@ -91,6 +91,26 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       assert has_element?(lv, ~s(button[role="tab"][aria-selected="true"]), "Password")
     end
 
+    test "each tab's aria-controls names the panel shown for it, labelled by the tab", %{
+      conn: conn
+    } do
+      conn = log_in_user(conn, user_fixture())
+
+      for section <- ~w(profile password two_factor) do
+        {:ok, lv, _html} = live(conn, ~p"/users/settings?section=#{section}")
+
+        assert has_element?(
+                 lv,
+                 ~s(button#settings-tab-#{section}[aria-selected="true"][aria-controls="#{section}"])
+               )
+
+        assert has_element?(
+                 lv,
+                 ~s(section##{section}[role="tabpanel"][aria-labelledby="settings-tab-#{section}"])
+               )
+      end
+    end
+
     test "ignores an unknown ?section and opens Profile", %{conn: conn} do
       {:ok, lv, _html} =
         conn

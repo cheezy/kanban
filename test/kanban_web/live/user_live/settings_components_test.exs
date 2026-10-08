@@ -52,6 +52,22 @@ defmodule KanbanWeb.UserLive.SettingsComponentsTest do
       refute html =~ ~s(aria-current="page")
     end
 
+    test "only the selected tab points at its panel, and every tab has an id" do
+      html = shell(%{active: :password, tabs: true})
+      doc = LazyHTML.from_fragment(html)
+
+      for section <- ~w(profile password two_factor) do
+        assert doc |> LazyHTML.query("button#settings-tab-#{section}") |> Enum.count() == 1
+      end
+
+      assert doc
+             |> LazyHTML.query(~s(button#settings-tab-password[aria-controls="password"]))
+             |> Enum.count() == 1
+
+      # the other panels are not rendered, so nothing may point at them
+      assert doc |> LazyHTML.query("button[aria-controls]") |> Enum.count() == 1
+    end
+
     test "without tabs, every section is a link and the active one is the current page" do
       html = shell(%{active: :notifications})
       doc = LazyHTML.from_fragment(html)
