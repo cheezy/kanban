@@ -75,6 +75,49 @@ defmodule KanbanWeb.API.AgentJSONTest do
       assert create["description"] =~ "a goal cannot contain a goal"
     end
 
+    # W2215: agents discover the comment API from onboarding, so both verbs must
+    # be listed, each pointing at its own reference page.
+    test "lists GET /api/tasks/:id/comments under discovery", %{conn: conn} do
+      body = json_response(conn, 200)
+
+      list =
+        body
+        |> get_in(["api_reference", "endpoints", "discovery"])
+        |> Enum.find(&(&1["method"] == "GET" and &1["path"] == "/api/tasks/:id/comments"))
+
+      assert list, "expected GET /api/tasks/:id/comments in api_reference.endpoints.discovery"
+      assert list["auth_required"] == true
+      assert list["documentation_url"] =~ "/docs/api/get_tasks_id_comments.md"
+      assert list["description"] =~ "oldest first"
+      assert list["description"] =~ "comment_count"
+    end
+
+    test "lists POST /api/tasks/:id/comments under management", %{conn: conn} do
+      body = json_response(conn, 200)
+
+      create =
+        body
+        |> get_in(["api_reference", "endpoints", "management"])
+        |> Enum.find(&(&1["method"] == "POST" and &1["path"] == "/api/tasks/:id/comments"))
+
+      assert create, "expected POST /api/tasks/:id/comments in api_reference.endpoints.management"
+      assert create["auth_required"] == true
+      assert create["required_parameters"] == ["content"]
+      assert create["returns_hooks"] == []
+      assert create["documentation_url"] =~ "/docs/api/post_tasks_id_comments.md"
+      assert create["description"] =~ "@[Name](user:ID)"
+      assert create["description"] =~ "agent_model, then agent_name, then the token's last agent"
+      assert create["description"] =~ "never put a secret in one"
+    end
+
+    test "the quick reference card names both comment endpoints", %{conn: conn} do
+      body = json_response(conn, 200)
+      comments = get_in(body, ["quick_reference_card", "key_endpoints", "comments"])
+
+      assert comments =~ "GET /api/tasks/:id/comments"
+      assert comments =~ "POST /api/tasks/:id/comments"
+    end
+
     # D358: there is no `review` task status — a task awaiting review keeps
     # `in_progress` and only its column changes — so the hook environment
     # docs must list exactly the Task status enum.

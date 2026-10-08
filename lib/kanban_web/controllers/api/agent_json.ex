@@ -1,5 +1,6 @@
 defmodule KanbanWeb.API.AgentJSON do
   alias Kanban.Hooks
+  alias KanbanWeb.API.Agent.EndpointDocs
   alias KanbanWeb.API.Agent.MultiAgentInstructions
   alias KanbanWeb.API.Agent.SchemaDoc
   alias KanbanWeb.API.Agent.SetupDocs
@@ -269,107 +270,7 @@ defmodule KanbanWeb.API.AgentJSON do
         base_url: base_url,
         authentication: "Bearer token in Authorization header",
         openapi_url: "#{base_url}/api/openapi.json",
-        endpoints: %{
-          discovery: [
-            %{
-              method: "GET",
-              path: "/api/tasks/next",
-              description: "Get next available task",
-              auth_required: true,
-              documentation_url: "#{@docs_base_url}/docs/api/get_tasks_next.md"
-            },
-            %{
-              method: "GET",
-              path: "/api/tasks",
-              description:
-                "List tasks; optional filters (column_id, status, type, priority, assigned_to_id, parent, updated_since) and cursor pagination (limit, cursor -> meta.next_cursor). For incremental sync with updated_since, read the Incremental sync caveats in the docs first: full view only, bound from server-stamped updated_at with an overlap, upsert by id",
-              auth_required: true,
-              documentation_url: "#{@docs_base_url}/docs/api/get_tasks.md"
-            },
-            %{
-              method: "GET",
-              path: "/api/tasks/:id",
-              description: "Get specific task",
-              auth_required: true,
-              documentation_url: "#{@docs_base_url}/docs/api/get_tasks_id.md"
-            },
-            %{
-              method: "GET",
-              path: "/api/tasks/:id/tree",
-              description: "Get task tree (goals with children)",
-              auth_required: true,
-              documentation_url: "#{@docs_base_url}/docs/api/get_tasks_id_tree.md"
-            }
-          ],
-          management: [
-            %{
-              method: "POST",
-              path: "/api/tasks/claim",
-              description: "Claim a task - REQUIRES before_doing_result parameter",
-              required_parameters: ["before_doing_result"],
-              hook_validation_required: true,
-              returns_hooks: ["before_doing"],
-              auth_required: true,
-              documentation_url: "#{@docs_base_url}/docs/api/post_tasks_claim.md"
-            },
-            %{
-              method: "POST",
-              path: "/api/tasks/:id/unclaim",
-              description: "Unclaim a task",
-              returns_hooks: [],
-              auth_required: true,
-              documentation_url: "#{@docs_base_url}/docs/api/post_tasks_id_unclaim.md"
-            },
-            %{
-              method: "PATCH",
-              path: "/api/tasks/:id/complete",
-              description:
-                "Complete a task - REQUIRES after_doing_result parameter. changed_files in the body is silently ignored; use PUT /api/tasks/:id/changed_files instead.",
-              required_parameters: ["after_doing_result"],
-              hook_validation_required: true,
-              returns_hooks: ["after_doing", "before_review", "after_review (conditional)"],
-              auth_required: true,
-              documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_complete.md"
-            },
-            %{
-              method: "PUT",
-              path: "/api/tasks/:id/changed_files",
-              description:
-                "Upload the per-file diff snapshot — sole writer for tasks.changed_files. Encoding defined in docs/diff-contract.md.",
-              required_parameters: ["changed_files"],
-              hook_validation_required: false,
-              returns_hooks: [],
-              auth_required: true,
-              documentation_url: "#{@docs_base_url}/docs/api/put_tasks_id_changed_files.md"
-            },
-            %{
-              method: "PATCH",
-              path: "/api/tasks/:id/mark_reviewed",
-              description: "Finalize review",
-              returns_hooks: ["after_review (if approved)"],
-              auth_required: true,
-              documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_mark_reviewed.md"
-            }
-          ],
-          creation: [
-            %{
-              method: "POST",
-              path: "/api/tasks",
-              description:
-                "Create task, or goal with nested work and defect tasks (a goal cannot contain a goal). A work or defect task whose column is at its WIP limit returns 422; goals are never WIP-checked",
-              auth_required: true,
-              documentation_url: "#{@docs_base_url}/docs/api/post_tasks.md"
-            },
-            %{
-              method: "POST",
-              path: "/api/tasks/batch",
-              description:
-                "Create multiple goals with nested tasks in one request (efficient for project planning)",
-              auth_required: true,
-              documentation_url: "#{@docs_base_url}/docs/api/post_tasks_batch.md"
-            }
-          ]
-        }
+        endpoints: EndpointDocs.endpoints()
       },
       required_reading: %{
         action: "READ_BEFORE_CREATING_TASKS",
@@ -528,7 +429,9 @@ defmodule KanbanWeb.API.AgentJSON do
           complete:
             "PATCH /api/tasks/:id/complete (REQUIRES after_doing_result AND before_review_result parameters)",
           mark_reviewed: "PATCH /api/tasks/:id/mark_reviewed",
-          unclaim: "POST /api/tasks/:id/unclaim"
+          unclaim: "POST /api/tasks/:id/unclaim",
+          comments:
+            "GET /api/tasks/:id/comments (list) and POST /api/tasks/:id/comments (add; content required)"
         },
         hook_result_format: %{
           exit_code: 0,

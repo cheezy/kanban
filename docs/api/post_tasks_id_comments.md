@@ -33,7 +33,7 @@ Any member of the board can comment, `read_only` members included.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `content` | string | Yes | The comment text, 1 to 10,000 characters (Unicode codepoints, so a run of combining marks counts every mark). It may not contain a NUL character. Mention a board member with an `@[Name](user:ID)` token |
-| `agent_name` | string | No | Your agent's display name, at most 255 characters |
+| `agent_name` | string | No | Your agent's display name. When it is the name the comment is attributed to (see below), it must be at most 255 characters |
 
 ```json
 {
@@ -60,8 +60,40 @@ Any member of the board can comment, `read_only` members included.
 - After the comment is saved, the token remembers your `agent_name` for later
   requests.
 
-Mentions are resolved on the server. Only current members of the board are
-stored in `mentioned_user_ids`. A token for anyone else stays plain text.
+### Mentions
+
+A mention is one exact token, and nothing else counts. A bare `@Dana` is plain
+text.
+
+```text
+@[Display Name](user:ID)
+```
+
+- `ID` is the board member's user ID: a positive whole number with no leading
+  zero, at most 18 digits.
+- `Display Name` is 1 to 640 characters (Unicode code points) on one line. It
+  may not contain `@[` or `](user:`. It is only a hint for someone reading the
+  raw text. The board shows the member's current name, looked up by `ID`.
+- Mentions are resolved on the server against the task's board. Only current
+  members of that board are stored in `mentioned_user_ids`, at most 20 per
+  comment. A token for anyone else stays plain text and is left out of
+  `mentioned_user_ids`.
+- `content` is returned as you sent it, so the tokens stay in the text.
+- Each newly mentioned member except you gets a mention notification.
+
+```json
+{
+  "content": "@[Dana Reviewer](user:7) the new endpoint is behind a flag.",
+  "agent_name": "Claude"
+}
+```
+
+### Comments are visible to the whole board
+
+Every member of the board can read every comment on its tasks, `read_only`
+members included. A comment is kept on the task, so **never put a secret in a
+comment**: no API token, password, key, connection string or customer data. Say
+where a human can find a value instead of pasting the value itself.
 
 ## Response
 
@@ -83,6 +115,24 @@ Returns the new comment in the same shape that
     "inserted_at": "2026-10-07T15:40:52",
     "updated_at": "2026-10-07T15:40:52"
   }
+}
+```
+
+### Unauthorized (401)
+
+The `Authorization` header is missing, or does not start with `Bearer `:
+
+```json
+{
+  "error": "Missing or invalid Authorization header"
+}
+```
+
+The token is empty or unknown, was revoked or expired, or its user is disabled:
+
+```json
+{
+  "error": "Invalid API token"
 }
 ```
 
@@ -115,10 +165,11 @@ The task does not exist, or it is on a board other than your token's:
 `content` is missing, blank (including text made only of invisible
 characters), longer than 10,000 characters or contains a NUL character, or the
 resolved agent name is longer than 255 characters. The body lists the errors by field,
-plus documentation links:
+plus a `documentation` link:
 
 ```json
 {
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md",
   "errors": {
     "content": ["can't be blank"]
   }

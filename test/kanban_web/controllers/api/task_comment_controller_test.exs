@@ -201,6 +201,25 @@ defmodule KanbanWeb.API.TaskCommentControllerTest do
       {:ok, _} = ApiTokens.revoke_api_token(token)
       assert conn |> get(~p"/api/tasks/#{task.identifier}/comments") |> json_response(401)
     end
+
+    # W2215: the 401 bodies documented in docs/api/get_tasks_id_comments.md.
+    test "a revoked token's 401 carries the invalid-token body",
+         %{conn: conn, token: token, task: task} do
+      {:ok, _} = ApiTokens.revoke_api_token(token)
+
+      assert conn |> get(~p"/api/tasks/#{task.identifier}/comments") |> json_response(401) ==
+               %{"error" => "Invalid API token"}
+    end
+
+    test "a missing Authorization header is a 401 with the missing-header body",
+         %{task: task} do
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> get(~p"/api/tasks/#{task.identifier}/comments")
+
+      assert json_response(conn, 401) == %{"error" => "Missing or invalid Authorization header"}
+    end
   end
 
   describe "POST /api/tasks/:id/comments" do
@@ -412,6 +431,28 @@ defmodule KanbanWeb.API.TaskCommentControllerTest do
 
       body = conn |> get(~p"/api/tasks/#{task.identifier}/comments") |> json_response(200)
       assert body["data"] == [created["data"]]
+    end
+
+    # W2215: the 401 bodies documented in docs/api/post_tasks_id_comments.md.
+    test "a revoked token is a 401 with the invalid-token body and saves nothing",
+         %{conn: conn, token: token, task: task} do
+      {:ok, _} = ApiTokens.revoke_api_token(token)
+
+      assert conn |> post_comment(task.identifier, %{"content" => "x"}) |> json_response(401) ==
+               %{"error" => "Invalid API token"}
+
+      assert Tasks.list_comments(task) == []
+    end
+
+    test "a missing Authorization header is a 401 with the missing-header body",
+         %{task: task} do
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> post_comment(task.identifier, %{"content" => "x"})
+
+      assert json_response(conn, 401) == %{"error" => "Missing or invalid Authorization header"}
+      assert Tasks.list_comments(task) == []
     end
   end
 
