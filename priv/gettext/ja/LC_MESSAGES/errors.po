@@ -95,3 +95,28 @@ msgstr "%{number}と等しい必要があります"
 ## From Kanban.Tasks.Task.HierarchyValidations (D354)
 msgid "must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"
 msgstr "目標内のタスクは 'work' または 'defect' である必要があります。目標に別の目標を含めることはできません"
+
+## From Kanban.Webhooks.UrlGuard (W2226)
+msgid "must be at most 2048 characters"
+msgstr "2048 文字以内で入力してください"
+
+msgid "is not a valid URL"
+msgstr "有効な URL ではありません"
+
+msgid "must start with https://"
+msgstr "https:// で始まる必要があります"
+
+msgid "must not contain a username or password"
+msgstr "ユーザー名やパスワードを含めることはできません"
+
+msgid "has an invalid port"
+msgstr "ポートが無効です"
+
+msgid "has an invalid host name"
+msgstr "ホスト名が無効です"
+
+msgid "points to a private or reserved network address"
+msgstr "プライベートまたは予約済みのネットワークアドレスを指しています"
+
+msgid "has a host name that could not be found"
+msgstr "ホスト名が見つかりませんでした"

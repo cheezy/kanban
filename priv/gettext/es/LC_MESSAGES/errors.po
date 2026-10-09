@@ -104,3 +104,28 @@ msgstr "debe ser igual a %{number}"
 ## From Kanban.Tasks.Task.HierarchyValidations (D354)
 msgid "must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"
 msgstr "debe ser 'work' o 'defect' para una tarea dentro de un objetivo; un objetivo no puede contener otro objetivo"
+
+## From Kanban.Webhooks.UrlGuard (W2226)
+msgid "must be at most 2048 characters"
+msgstr "debe tener como máximo 2048 caracteres"
+
+msgid "is not a valid URL"
+msgstr "no es una URL válida"
+
+msgid "must start with https://"
+msgstr "debe empezar por https://"
+
+msgid "must not contain a username or password"
+msgstr "no debe contener un nombre de usuario ni una contraseña"
+
+msgid "has an invalid port"
+msgstr "tiene un puerto no válido"
+
+msgid "has an invalid host name"
+msgstr "tiene un nombre de host no válido"
+
+msgid "points to a private or reserved network address"
+msgstr "apunta a una dirección de red privada o reservada"
+
+msgid "has a host name that could not be found"
+msgstr "tiene un nombre de host que no se pudo encontrar"

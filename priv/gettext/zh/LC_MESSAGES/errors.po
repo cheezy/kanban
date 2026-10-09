@@ -95,3 +95,28 @@ msgstr "必须等于 %{number}"
 ## From Kanban.Tasks.Task.HierarchyValidations (D354)
 msgid "must be 'work' or 'defect' for a task inside a goal; a goal cannot contain another goal"
 msgstr "目标中的任务必须是 'work' 或 'defect'；一个目标不能包含另一个目标"
+
+## From Kanban.Webhooks.UrlGuard (W2226)
+msgid "must be at most 2048 characters"
+msgstr "长度不能超过 2048 个字符"
+
+msgid "is not a valid URL"
+msgstr "不是有效的 URL"
+
+msgid "must start with https://"
+msgstr "必须以 https:// 开头"
+
+msgid "must not contain a username or password"
+msgstr "不能包含用户名或密码"
+
+msgid "has an invalid port"
+msgstr "端口无效"
+
+msgid "has an invalid host name"
+msgstr "主机名无效"
+
+msgid "points to a private or reserved network address"
+msgstr "指向私有或保留的网络地址"
+
+msgid "has a host name that could not be found"
+msgstr "找不到该主机名"
