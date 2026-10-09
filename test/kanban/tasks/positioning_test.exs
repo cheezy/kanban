@@ -344,4 +344,61 @@ defmodule Kanban.Tasks.PositioningTest do
       refute Enum.any?([mover, occupant], &bumped?/1)
     end
   end
+
+  describe "wip_count/1 and move_task_unchecked/3 (W2238 bulk move)" do
+    test "wip_count counts live work and defect tasks only", %{board: board} do
+      col = column_fixture(board, %{name: "Counted"})
+      task_fixture(col)
+      task_fixture(col, %{type: :defect})
+      task_fixture(col, %{type: :goal, title: "Goal"})
+      col |> task_fixture() |> archive!()
+
+      assert Positioning.wip_count(col) == 2
+    end
+
+    test "move_task_unchecked ignores the WIP limit and does not broadcast", %{board: board} do
+      src = column_fixture(board, %{name: "From"})
+      dst = column_fixture(board, %{name: "Full", wip_limit: 1})
+      occupant = task_fixture(dst)
+      mover = task_fixture(src)
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      assert {:ok, moved} = Positioning.move_task_unchecked(mover, dst, 1)
+      assert moved.column_id == dst.id
+      assert moved.position == 1
+      assert Repo.get!(Kanban.Tasks.Task, occupant.id).position == 0
+      refute_receive {Kanban.Tasks, _event, _task}, 50
+    end
+  end
+
+  describe "a move with a stale task struct (W2238)" do
+    test "renumbers the column the task is in now, not the one it was loaded from", %{
+      board: board
+    } do
+      from_col = column_fixture(board, %{name: "Loaded in"})
+      moved_to = column_fixture(board, %{name: "Moved to"})
+      dropped_on = column_fixture(board, %{name: "Dropped on"})
+      task = task_fixture(from_col)
+      _sibling = task_fixture(from_col)
+      resident = task_fixture(moved_to)
+      stale = Repo.get!(Kanban.Tasks.Task, task.id)
+
+      # Another move commits first (as a bulk move does while a drag waits on
+      # the column locks), then the drag applies with the struct it loaded.
+      assert {:ok, _} = Kanban.Tasks.move_task(task, moved_to, 0)
+      assert {:ok, moved} = Kanban.Tasks.move_task(stale, dropped_on, 0)
+
+      assert moved.column_id == dropped_on.id
+      assert positions_of(moved_to) == [{resident.id, 0}]
+      assert from_col |> positions_of() |> Enum.map(&elem(&1, 1)) == [0]
+    end
+
+    defp positions_of(column) do
+      Kanban.Tasks.Task
+      |> where([t], t.column_id == ^column.id and is_nil(t.archived_at))
+      |> order_by([t], asc: t.position)
+      |> select([t], {t.id, t.position})
+      |> Repo.all()
+    end
+  end
 end

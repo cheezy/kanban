@@ -66,14 +66,31 @@ defmodule Kanban.Tasks.Positioning do
   end
 
   defp wip_limit_exceeded?(new_column) do
-    current_count =
-      Task
-      |> where([t], t.column_id == ^new_column.id)
-      |> where([t], t.type in [:work, :defect])
-      |> where([t], is_nil(t.archived_at))
-      |> Repo.aggregate(:count)
+    new_column.wip_limit > 0 and wip_count(new_column) >= new_column.wip_limit
+  end
 
-    new_column.wip_limit > 0 and current_count >= new_column.wip_limit
+  @doc """
+  The number of live (unarchived) work and defect tasks in `column` — the
+  count its WIP limit applies to. Goals never count.
+  """
+  def wip_count(%Column{id: column_id}) do
+    Task
+    |> where([t], t.column_id == ^column_id)
+    |> where([t], t.type in [:work, :defect])
+    |> where([t], is_nil(t.archived_at))
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
+  Moves `task` into `column` at display `index` with no WIP check and no
+  broadcast. For `Kanban.Tasks.BulkActions`, which checks the WIP limit once
+  for the whole batch, runs every move inside its own transaction (this one
+  joins it) and broadcasts once after commit. Like every move, it re-reads
+  the task under the column locks, so a struct loaded before an earlier move
+  in the same batch is safe to pass.
+  """
+  def move_task_unchecked(%Task{} = task, %Column{} = column, index) do
+    perform_move(task, column, index, task.column_id)
   end
 
   @doc """
@@ -247,14 +264,19 @@ defmodule Kanban.Tasks.Positioning do
     end)
   end
 
-  defp perform_move(task, new_column, new_position, old_column_id) do
+  defp perform_move(stale_task, new_column, new_position, stale_column_id) do
     Repo.transaction(fn ->
       # Lock columns in consistent order to prevent deadlocks
-      [old_column_id, new_column.id]
-      |> Enum.sort()
-      |> Enum.each(fn col_id ->
-        Repo.query!("SELECT pg_advisory_xact_lock($1)", [col_id])
-      end)
+      lock_columns([stale_column_id, new_column.id])
+
+      # The caller's struct may predate a move that committed while this one
+      # waited on the locks (a bulk move holds every column of the board), so
+      # the source column and position are re-read under the locks (W2238).
+      # Renumbering from the stale values left a gap in the column the task
+      # had already moved to.
+      task = Repo.get!(Task, stale_task.id)
+      old_column_id = task.column_id
+      if old_column_id != stale_column_id, do: lock_columns([old_column_id])
 
       Logger.info(
         "perform_move: task_id=#{task.id}, old_column=#{old_column_id}, new_column=#{new_column.id}, new_position=#{new_position}, old_position=#{task.position}"
@@ -282,6 +304,14 @@ defmodule Kanban.Tasks.Positioning do
       end
 
       updated_task
+    end)
+  end
+
+  defp lock_columns(column_ids) do
+    column_ids
+    |> Enum.sort()
+    |> Enum.each(fn col_id ->
+      Repo.query!("SELECT pg_advisory_xact_lock($1)", [col_id])
     end)
   end
 

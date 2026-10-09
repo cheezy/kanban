@@ -17,11 +17,13 @@ defmodule Kanban.Tasks do
   - `Tasks.Identifiers` - Identifier generation
   - `Tasks.History` - Move/priority/assignment history
   - `Tasks.MyWork` - Cross-board queue of tasks assigned to the current user
+  - `Tasks.BulkActions` - Board-scoped bulk move, assign, label and archive
   """
 
   alias Kanban.Tasks.AgentQueries
   alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.BoardLookup
+  alias Kanban.Tasks.BulkActions
   alias Kanban.Tasks.Comments
   alias Kanban.Tasks.Creation
   alias Kanban.Tasks.Dependencies
@@ -108,6 +110,18 @@ defmodule Kanban.Tasks do
   defdelegate move_task(task, new_column, new_position), to: Positioning
   defdelegate reorder_tasks(column, task_ids), to: Positioning
   defdelegate can_add_task?(column), to: Positioning
+
+  # ── Bulk action delegations ────────────────────────────────────────
+
+  defdelegate bulk_move_tasks(scope, board, task_ids, column_id), to: BulkActions, as: :move
+  defdelegate bulk_assign_tasks(scope, board, task_ids, user_id), to: BulkActions, as: :assign
+  defdelegate bulk_add_label(scope, board, task_ids, label_id), to: BulkActions, as: :add_label
+
+  defdelegate bulk_remove_label(scope, board, task_ids, label_id),
+    to: BulkActions,
+    as: :remove_label
+
+  defdelegate bulk_archive_tasks(scope, board, task_ids), to: BulkActions, as: :archive
 
   # ── Dependency delegations ─────────────────────────────────────────
 

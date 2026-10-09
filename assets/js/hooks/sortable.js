@@ -132,7 +132,8 @@ const SortableHook = {
 
     // The server sets data-sortable-disabled while board filters are active:
     // a filtered column's indexes are not the real positions, so dragging is
-    // turned off (and the server rejects any move that slips through).
+    // turned off (and the server rejects any move that slips through). It is
+    // also set in bulk selection mode, where a click selects the card.
     const disabled = this.el.dataset.sortableDisabled === "true"
 
     this.sortable = Sortable.create(this.el, {
@@ -165,8 +166,9 @@ const SortableHook = {
       // Pointerdowns on these elements never start a drag — the click is
       // forwarded normally so the edit/archive/delete buttons and the
       // Backlog card's move-to-Ready arrow still work, and clicks on
-      // empty-state placeholders aren't intercepted.
-      filter: ".empty-state, .task-actions, .task-actions *, .move-to-ready, .move-to-ready *",
+      // empty-state placeholders aren't intercepted. The bulk-selection
+      // checkbox (.bulk-select) is exempt for the same reason.
+      filter: ".empty-state, .task-actions, .task-actions *, .move-to-ready, .move-to-ready *, .bulk-select, .bulk-select *",
       preventOnFilter: false,
       delay: 0,
       delayOnTouchOnly: true,

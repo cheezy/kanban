@@ -514,7 +514,11 @@ defmodule Kanban.Boards do
       user_id: user.id
     })
 
-    board = Repo.preload(board, :columns, force: true)
+    board =
+      Repo.preload(board, [columns: from(c in Kanban.Columns.Column, order_by: c.position)],
+        force: true
+      )
+
     {:ok, board}
   end
 

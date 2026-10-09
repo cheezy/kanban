@@ -16,6 +16,7 @@
   </:breadcrumbs>
 
   <:actions>
+    <KanbanWeb.BulkActionBar.selection_toggle :if={@can_modify} active={@selection_mode} />
     <.link
       :if={@can_modify}
       patch={~p"/boards/#{@board}/goals/new"}
@@ -168,6 +169,13 @@
           active={@filters_active}
           drag_hint={@filters_active and @can_modify}
         />
+        <KanbanWeb.BulkActionBar.bulk_action_bar
+          :if={@can_modify and @selection_mode}
+          count={MapSet.size(@selected_ids)}
+          columns={@board_columns}
+          members={@filter_options.members}
+          labels={@filter_options.labels}
+        />
         <div
           id="snap-indicator"
           class="md:hidden flex items-center justify-center gap-1.5 pb-2"
@@ -219,6 +227,11 @@
                     if @can_modify and not at_limit,
                       do: ~p"/boards/#{@board}/columns/#{column}/tasks/new"
                   }
+                />
+                <KanbanWeb.BulkActionBar.select_column_button
+                  :if={@can_modify and @selection_mode and visible_tasks != []}
+                  column_id={column.id}
+                  all_selected={Enum.all?(visible_tasks, &MapSet.member?(@selected_ids, &1.id))}
                 />
                 <%= if over_limit do %>
                   <div
@@ -276,7 +289,7 @@
               data-wip-limit={column.wip_limit}
               data-task-count={task_count}
               data-server-sorted={if goal_hierarchy_column?(column), do: "true"}
-              data-sortable-disabled={if @filters_active, do: "true"}
+              data-sortable-disabled={if @filters_active or @selection_mode, do: "true"}
             >
               <div
                 id={"empty-state-#{column.id}"}
@@ -293,10 +306,21 @@
                 id={"task-#{task.id}"}
                 data-id={task.id}
                 data-position={task.position}
-                class="group relative"
+                data-selected={if MapSet.member?(@selected_ids, task.id), do: "true"}
+                class={[
+                  "group relative rounded-md",
+                  MapSet.member?(@selected_ids, task.id) &&
+                    "outline outline-2 outline-offset-1 outline-[var(--ink)]"
+                ]}
               >
+                <KanbanWeb.BulkActionBar.select_checkbox
+                  :if={@can_modify and @selection_mode}
+                  task_id={task.id}
+                  title={task.title}
+                  selected={MapSet.member?(@selected_ids, task.id)}
+                />
                 <div
-                  :if={@can_modify}
+                  :if={@can_modify and not @selection_mode}
                   class="task-actions absolute top-1 right-1 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity z-10"
                 >
                   <.link
@@ -339,11 +363,13 @@
                 </div>
 
                 <div
-                  phx-click="view_task"
+                  phx-click={if @selection_mode, do: "bulk_toggle", else: "view_task"}
                   phx-value-id={task.id}
                   class={[
                     "cursor-pointer",
-                    (@can_modify and not @filters_active and task.type != :goal) &&
+                    @selection_mode && "pl-7",
+                    (@can_modify and not @filters_active and not @selection_mode and
+                       task.type != :goal) &&
                       "cursor-grab active:cursor-grabbing"
                   ]}
                 >
@@ -359,7 +385,8 @@
                     column={column_status(column.name)}
                     board_id={@board.id}
                     show_move_to_ready={
-                      show_move_to_ready?(@can_modify, @ready_column_id, column, task)
+                      show_move_to_ready?(@can_modify, @ready_column_id, column, task) and
+                        not @selection_mode
                     }
                   />
                 </div>

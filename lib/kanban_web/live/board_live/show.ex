@@ -10,6 +10,7 @@ defmodule KanbanWeb.BoardLive.Show do
   alias KanbanWeb.BoardLive.ApiTokens
   alias KanbanWeb.BoardLive.Authorization
   alias KanbanWeb.BoardLive.BoardState
+  alias KanbanWeb.BoardLive.BulkSelection
   alias KanbanWeb.BoardLive.ColumnActions
   alias KanbanWeb.BoardLive.FilterActions
   alias KanbanWeb.BoardLive.Params
@@ -38,6 +39,7 @@ defmodule KanbanWeb.BoardLive.Show do
        filters_active: false,
        visible_tasks_by_column: %{}
      )
+     |> BulkSelection.init()
      |> stream(:undismissed_messages, undismissed_messages)}
   end
 
@@ -83,6 +85,9 @@ defmodule KanbanWeb.BoardLive.Show do
     do: FilterActions.handle_filter_change(socket, params)
 
   def handle_event("clear_filters", _params, socket), do: FilterActions.clear_filters(socket)
+
+  def handle_event("bulk_" <> _ = event, params, socket),
+    do: BulkSelection.handle_bulk_event(event, params, socket)
 
   @impl true
   def handle_event("dismiss_message", %{"id" => id}, socket) do

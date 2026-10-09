@@ -15,6 +15,7 @@ defmodule KanbanWeb.BoardLive.BoardState do
   alias Kanban.Tasks
   alias Kanban.Tasks.BoardFilters
   alias KanbanWeb.BoardAccent
+  alias KanbanWeb.BoardLive.BulkSelection
   alias KanbanWeb.BoardLive.Goals
 
   @doc false
@@ -86,7 +87,10 @@ defmodule KanbanWeb.BoardLive.BoardState do
   distorts them. `:visible_tasks_by_column` holds what the columns render —
   the same map when no filter is active, otherwise a second, filtered query
   using the socket's `:board_filters` (W2235). Every reload goes through here,
-  so PubSub-triggered reloads keep the current filters.
+  so PubSub-triggered reloads keep the current filters, and the bulk
+  selection is pruned to the cards still visible (W2238). `:board_columns`
+  keeps the column list for the bulk action bar and for re-rendering cards
+  when the selection changes.
   """
   def load_tasks_for_columns(socket, columns) do
     tasks_by_column = group_tasks_by_column(columns, [])
@@ -100,6 +104,8 @@ defmodule KanbanWeb.BoardLive.BoardState do
     |> assign_goal_data(columns, tasks_by_column)
     |> assign(:ready_column_id, ready_column_id(columns))
     |> assign(:tasks_version, :os.system_time(:millisecond))
+    |> assign(:board_columns, columns)
+    |> BulkSelection.prune()
   end
 
   defp visible_tasks(columns, tasks_by_column, filters) do
