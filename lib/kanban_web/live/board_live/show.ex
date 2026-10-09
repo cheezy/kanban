@@ -9,6 +9,7 @@ defmodule KanbanWeb.BoardLive.Show do
   alias KanbanWeb.BoardHeader
   alias KanbanWeb.BoardLive.ApiTokens
   alias KanbanWeb.BoardLive.Authorization
+  alias KanbanWeb.BoardLive.BoardEvents
   alias KanbanWeb.BoardLive.BoardState
   alias KanbanWeb.BoardLive.BulkSelection
   alias KanbanWeb.BoardLive.ColumnActions
@@ -361,70 +362,6 @@ defmodule KanbanWeb.BoardLive.Show do
     {:noreply, assign(socket, :field_visibility, vis)}
   end
 
-  def handle_info({Kanban.Tasks, :task_created, _task}, socket) do
-    # Reload board when a task is created
-    BoardState.reload_board_data(socket)
-  end
-
-  def handle_info({Kanban.Tasks, :task_updated, _task}, socket) do
-    if socket.assigns[:skip_next_reload],
-      do: {:noreply, socket},
-      else: BoardState.reload_board_data(socket)
-  end
-
-  @impl true
-  def handle_info({Kanban.Tasks, :task_moved, task}, socket),
-    do: BoardState.handle_remote_task_move(socket, task)
-
-  def handle_info({Kanban.Tasks, :task_deleted, _task}, socket) do
-    if socket.assigns[:skip_next_reload],
-      do: {:noreply, socket},
-      else: BoardState.reload_board_data(socket)
-  end
-
-  @impl true
-  def handle_info({Kanban.Tasks, :task_status_changed, _task}, socket) do
-    if socket.assigns[:skip_next_reload],
-      do: {:noreply, socket},
-      else: BoardState.reload_board_data(socket)
-  end
-
-  @impl true
-  def handle_info({:task_updated, _task}, socket) do
-    # Reload board when a task is updated via API (simple format)
-    BoardState.reload_board_data(socket)
-  end
-
-  @impl true
-  def handle_info({:task_moved_to_review, _task}, socket) do
-    # Reload board when a task is moved to Review column via API
-    BoardState.reload_board_data(socket)
-  end
-
-  @impl true
-  def handle_info({:task_completed, _task}, socket) do
-    # Reload board when a task is completed via API
-    BoardState.reload_board_data(socket)
-  end
-
-  @impl true
-  def handle_info({Kanban.Tasks, :task_reviewed, _task}, socket) do
-    if socket.assigns[:skip_next_reload],
-      do: {:noreply, socket},
-      else: BoardState.reload_board_data(socket)
-  end
-
-  # Comment create/edit/delete broadcasts on this board topic too. The board
-  # columns render no comments; the comment thread inside the task view and
-  # task edit modals does, so forward the change to it. refresh/1 targets the
-  # thread component directly (never ViewComponent, whose permission assigns a
-  # partial send_update would reset) and skips a thread that is not open.
-  @impl true
-  def handle_info({Kanban.Tasks.Comments, :comment_changed, payload}, socket) do
-    KanbanWeb.TaskLive.CommentThreadComponent.refresh(payload)
-    {:noreply, socket}
-  end
-
   # The comment thread is a live component, whose own flash LiveView drops,
   # so it sends its messages here to be shown.
   @impl true
@@ -435,13 +372,12 @@ defmodule KanbanWeb.BoardLive.Show do
   def handle_info({component, msg}, socket) when component in @parent_message_components,
     do: {:noreply, component.apply_parent_message(socket, msg)}
 
-  def handle_info({:field_visibility_updated, new_visibility}, socket) do
-    {:noreply, assign(socket, :field_visibility, new_visibility)}
-  end
-
   def handle_info(:clear_skip_reload, socket) do
     {:noreply, assign(socket, :skip_next_reload, false)}
   end
+
+  # Everything broadcast on the board's "board:<id>" topic.
+  def handle_info(message, socket), do: BoardEvents.handle(message, socket)
 
   # Shared board-scoped id parser. Public because the extracted
   # KanbanWeb.BoardLive.Authorization module calls it (Show.parse_task_id/1)

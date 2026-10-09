@@ -1568,9 +1568,30 @@ defmodule KanbanWeb.BoardLiveTest do
       # Clicking the arrow does not open the task view.
       refute has_element?(show_live, "#task-view-modal")
 
-      # Other viewers of the board receive the move live.
-      assert_push_event(other_viewer, "task_moved_remotely", %{task_id: task_id})
-      assert task_id == task.id
+      # Other viewers get the card re-rendered in Ready, without the arrow.
+      assert has_element?(other_viewer, "#tasks-#{ready.id} #task-#{task.id}")
+      refute has_element?(other_viewer, arrow_selector(task))
+    end
+
+    test "a move by another session updates the arrow on an open board", %{
+      conn: conn,
+      user: user
+    } do
+      %{board: board, backlog: backlog, doing: doing} = backlog_ready_board(user)
+      leaving = task_fixture(backlog, %{title: "Leaving Backlog"})
+      arriving = task_fixture(doing, %{title: "Arriving in Backlog"})
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      assert has_element?(view, arrow_selector(leaving))
+      refute has_element?(view, arrow_selector(arriving))
+
+      {:ok, _} = leaving |> Kanban.Repo.reload!() |> Kanban.Tasks.move_task(doing, 0)
+      {:ok, _} = arriving |> Kanban.Repo.reload!() |> Kanban.Tasks.move_task(backlog, 0)
+
+      assert has_element?(view, "#tasks-#{doing.id} #task-#{leaving.id}")
+      refute has_element?(view, arrow_selector(leaving))
+      assert has_element?(view, "#tasks-#{backlog.id} #task-#{arriving.id}")
+      assert has_element?(view, arrow_selector(arriving))
     end
 
     test "clicking the Ready arrow with an empty Ready column lands the task at position 0", %{

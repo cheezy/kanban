@@ -1356,7 +1356,13 @@
   overflow-y: visible;
 }
 
-.stride-screen .tooltip {
+/* Lift a tooltip only while its bubble can show. A permanent z-index: 50
+   put every tooltip trigger (the columns' "Add Task" links, card buttons)
+   above the sticky bulk action bar (z-index 30) as the board scrolled under
+   it; the bar cannot instead go above 50 without covering the modals. */
+.stride-screen .tooltip:hover,
+.stride-screen .tooltip:focus-within,
+.stride-screen .tooltip.tooltip-open {
   z-index: 50;
 }
 

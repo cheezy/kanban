@@ -71,11 +71,12 @@ defmodule KanbanWeb.BoardFilterBar do
           />
         </div>
         <%!-- W2236: keyboard hint for the KeyboardShortcuts hook. Hidden below
-             md, where there is rarely a keyboard; a click opens the help. --%>
+             md, where there is rarely a keyboard; a click opens the help and
+             remembers this button so closing the help focuses it again. --%>
         <button
           type="button"
           id="board-shortcuts-hint"
-          phx-click="toggle_shortcuts_help"
+          phx-click={JS.push_focus() |> JS.push("toggle_shortcuts_help")}
           title={gettext("Press / to search or ? for all shortcuts")}
           aria-label={gettext("Keyboard shortcuts")}
           class="hidden md:inline-flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"

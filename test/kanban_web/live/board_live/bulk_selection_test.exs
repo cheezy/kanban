@@ -120,6 +120,33 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
       assert reload(zulu).archived_at == nil
     end
 
+    test "a selected task moved by another session leaves the selection", %{
+      conn: conn,
+      board: board,
+      todo: todo,
+      done: done
+    } do
+      review = column_fixture(board, %{name: "Review"})
+      kept = task_fixture(todo, %{title: "Kept"})
+      moved = task_fixture(todo, %{title: "Moved away"})
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      enter_selection(view)
+      view |> element("#bulk-select-column-#{todo.id}") |> render_click()
+      assert view |> element("#bulk-selected-count") |> render() =~ "2 selected"
+
+      {:ok, _} = moved |> reload() |> Tasks.move_task(done, 0)
+
+      assert view |> element("#bulk-selected-count") |> render() =~ "1 selected"
+      assert render(view) =~ "A selected task moved to another column"
+      refute has_element?(view, "#bulk-select-#{moved.id}[aria-checked=true]")
+
+      view |> form("#bulk-move-form", %{column_id: review.id}) |> render_submit()
+
+      assert reload(kept).column_id == review.id
+      assert reload(moved).column_id == done.id
+    end
+
     test "a WIP breach changes nothing and says so", %{conn: conn, board: board, todo: todo} do
       limited = column_fixture(board, %{name: "Limited", wip_limit: 1})
       _occupant = task_fixture(limited)
@@ -345,11 +372,76 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
         socket(%{
           can_modify: true,
           selected_ids: MapSet.new([1, 2, 3]),
-          visible_tasks_by_column: %{10 => [%{id: 1}], 11 => [%{id: 3}]}
+          visible_tasks_by_column: %{
+            10 => [%{id: 1, column_id: 10}],
+            11 => [%{id: 3, column_id: 11}]
+          }
         })
         |> BulkSelection.prune()
 
       assert pruned.assigns.selected_ids == MapSet.new([1, 3])
+    end
+
+    test "drops a selected task whose column changed since the previous load, with a flash" do
+      pruned =
+        socket(%{
+          can_modify: true,
+          flash: %{},
+          selected_ids: MapSet.new([1, 2, 3]),
+          visible_tasks_by_column: %{
+            10 => [%{id: 1, column_id: 10}],
+            11 => [%{id: 2, column_id: 11}, %{id: 3, column_id: 11}]
+          }
+        })
+        |> BulkSelection.prune(%{1 => 10, 2 => 10, 3 => 11})
+
+      assert pruned.assigns.selected_ids == MapSet.new([1, 3])
+      assert pruned.assigns.flash["info"] =~ "A selected task moved to another column"
+    end
+
+    test "counts several moved tasks in the flash and keeps one that only changed position" do
+      pruned =
+        socket(%{
+          can_modify: true,
+          flash: %{},
+          selected_ids: MapSet.new([1, 2, 3]),
+          visible_tasks_by_column: %{
+            11 => [%{id: 1, column_id: 11}, %{id: 2, column_id: 11}, %{id: 3, column_id: 10}]
+          }
+        })
+        |> BulkSelection.prune(%{1 => 10, 2 => 10, 3 => 10})
+
+      assert pruned.assigns.selected_ids == MapSet.new([3])
+      assert pruned.assigns.flash["info"] =~ "2 selected tasks moved to another column"
+    end
+
+    test "without a previous load nothing counts as moved" do
+      pruned =
+        socket(%{
+          can_modify: true,
+          flash: %{},
+          selected_ids: MapSet.new([1]),
+          visible_tasks_by_column: %{11 => [%{id: 1, column_id: 11}]}
+        })
+        |> BulkSelection.prune()
+
+      assert pruned.assigns.selected_ids == MapSet.new([1])
+      assert pruned.assigns.flash == %{}
+    end
+  end
+
+  describe "task_columns/1" do
+    test "maps each visible task to its column, and is empty before any load" do
+      socket =
+        socket(%{
+          visible_tasks_by_column: %{
+            10 => [%{id: 1, column_id: 10}],
+            11 => [%{id: 2, column_id: 11}]
+          }
+        })
+
+      assert BulkSelection.task_columns(socket) == %{1 => 10, 2 => 11}
+      assert %{} |> socket() |> BulkSelection.task_columns() == %{}
     end
 
     test "clears the selection and mode for a viewer who cannot modify" do

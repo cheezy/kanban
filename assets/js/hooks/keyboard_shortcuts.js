@@ -12,6 +12,13 @@
 //
 // The hook only ever pushes fixed event names with empty payloads; it never
 // sends anything the user typed to the server.
+//
+// Opening the overlay with ? first runs the JS command in the hook element's
+// data-push-focus attribute (the server renders JS.push_focus()) against the
+// element that has focus, so the overlay's phx-remove JS.pop_focus() can return
+// focus there however the overlay is closed. JS.push_focus() inside the
+// overlay's own phx-mounted would remember the overlay instead, which is gone
+// by the time focus is popped.
 const SEARCH_INPUT_ID = "board-search"
 const HELP_OVERLAY_ID = "keyboard-shortcuts-help"
 
@@ -101,7 +108,14 @@ const KeyboardShortcuts = {
 
   toggleHelp(event) {
     event.preventDefault()
+    if (!this.helpOpen()) this.rememberFocus()
     this.pushEvent("toggle_shortcuts_help", {})
+  },
+
+  rememberFocus() {
+    const pushFocus = this.el.dataset.pushFocus
+    const active = document.activeElement
+    if (pushFocus && active && active !== document.body) this.liveSocket.execJS(active, pushFocus)
   },
 
   clearSelection(event) {

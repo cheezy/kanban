@@ -15,15 +15,15 @@ defmodule KanbanWeb.BoardLive.LabelsManagerComponent do
   labels, so a label on another board can never be targeted, and one deleted
   in another session gets a "no longer exists" flash rather than a crash.
 
-  A live component's own flash never reaches the page, so denials and label
-  changes are sent to the parent LiveView, which applies them with
-  `apply_parent_message/2`.
+  A live component's own flash never reaches the page, so denials are sent to
+  the parent LiveView, which applies them with `apply_parent_message/2`. Label
+  changes need no message: `Kanban.Labels` broadcasts them on the board's
+  topic, which reaches this page and every other open view of the board.
   """
   use KanbanWeb, :live_component
 
   alias Kanban.Labels
   alias Kanban.Labels.Label
-  alias KanbanWeb.BoardLive.FilterActions
   alias KanbanWeb.LabelChip
 
   @impl true
@@ -40,13 +40,8 @@ defmodule KanbanWeb.BoardLive.LabelsManagerComponent do
   end
 
   @doc """
-  Applies a message this component sent to its parent LiveView: a label
-  change reloads the board filter bar's options, and a flash is shown.
+  Applies a flash this component sent to its parent LiveView.
   """
-  def apply_parent_message(socket, :labels_changed) do
-    FilterActions.reload_options(socket, socket.assigns.board)
-  end
-
   def apply_parent_message(socket, {:flash, kind, message}) when kind in [:info, :error] do
     Phoenix.LiveView.put_flash(socket, kind, message)
   end
@@ -62,7 +57,6 @@ defmodule KanbanWeb.BoardLive.LabelsManagerComponent do
 
     case Labels.create_label(scope, board, params) do
       {:ok, _label} ->
-        notify_parent(:labels_changed)
         {:noreply, reset_new_form(socket)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -93,7 +87,6 @@ defmodule KanbanWeb.BoardLive.LabelsManagerComponent do
     with_label(socket, id, fn socket, label ->
       case Labels.update_label(socket.assigns.current_scope, label, params) do
         {:ok, _label} ->
-          notify_parent(:labels_changed)
           {:noreply, socket |> cancel_edit() |> reload_labels()}
 
         {:error, %Ecto.Changeset{} = changeset} ->
@@ -110,7 +103,6 @@ defmodule KanbanWeb.BoardLive.LabelsManagerComponent do
     with_label(socket, id, fn socket, label ->
       case Labels.delete_label(socket.assigns.current_scope, label) do
         {:ok, _label} ->
-          notify_parent(:labels_changed)
           {:noreply, socket |> cancel_edit() |> reload_labels()}
 
         {:error, %Ecto.Changeset{}} ->

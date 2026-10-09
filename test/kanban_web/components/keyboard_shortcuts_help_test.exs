@@ -77,7 +77,9 @@ defmodule KanbanWeb.KeyboardShortcutsHelpTest do
       assert html =~ ~s(phx-click-away="close_shortcuts_help")
     end
 
-    test "remembers the focused element on open and restores it on close" do
+    # The opener pushes focus (see show_test.exs). A push_focus in phx-mounted
+    # would remember the panel itself, which is gone when focus is popped.
+    test "focuses the panel on open and pops focus on close, without pushing the panel" do
       document = render_help() |> LazyHTML.from_fragment()
 
       [mounted] =
@@ -88,7 +90,7 @@ defmodule KanbanWeb.KeyboardShortcutsHelpTest do
       [removed] =
         document |> LazyHTML.query("#keyboard-shortcuts-help") |> LazyHTML.attribute("phx-remove")
 
-      assert [["push_focus", _], ["focus_first", _]] = Jason.decode!(mounted)
+      assert [["focus_first", _]] = Jason.decode!(mounted)
       assert [["pop_focus", _]] = Jason.decode!(removed)
     end
 

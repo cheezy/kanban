@@ -9,9 +9,11 @@ defmodule KanbanWeb.KeyboardShortcutsHelp do
   `"close_shortcuts_help"`. Because the open state is a server assign, the
   overlay is testable without a browser.
 
-  Opening it remembers the element that had focus (`JS.push_focus/0`) and
-  removing it returns focus there (`JS.pop_focus/0`), so a keyboard user is not
-  dropped back at the top of the page when the overlay closes.
+  Removing it returns focus (`JS.pop_focus/0`) to the element whoever opened
+  it pushed: the hook pushes the focused element before a `?` opens it, and
+  the filter bar's hint button pushes itself. The overlay cannot push focus
+  from its own `phx-mounted`: there `JS.push_focus/0` remembers the overlay,
+  so the pop would focus a removed node and leave focus on `body`.
 
   It renders only the static, translated rows from `shortcuts/0` — no user
   content ever reaches it.
@@ -53,7 +55,7 @@ defmodule KanbanWeb.KeyboardShortcutsHelp do
           role="dialog"
           aria-modal="true"
           aria-labelledby={"#{@id}-title"}
-          phx-mounted={JS.push_focus() |> JS.focus_first(to: "##{@id}-panel")}
+          phx-mounted={JS.focus_first(to: "##{@id}-panel")}
           phx-window-keydown="close_shortcuts_help"
           phx-key="escape"
           phx-click-away="close_shortcuts_help"

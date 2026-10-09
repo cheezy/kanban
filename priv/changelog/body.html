@@ -3,6 +3,288 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [2.20.0] - 2026-10-09
+        </h2>
+
+        <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          Busy boards are faster to work with. A board can be searched and
+          filtered, and the filtered view lives in the URL so it can be
+          shared. Boards have coloured labels, shown on task cards and
+          settable by agents through the API. A new <strong>My Work</strong>
+          page lists everything assigned to you across your boards. Several
+          tasks can be moved, assigned, labelled or archived at once, and
+          <code>/</code> and <code>?</code> are keyboard shortcuts on the
+          board.
+        </p>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Board search and filters
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              A filter bar above the columns searches a board by text and
+              filters it by type, priority, assignee and label.
+            </p>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                Search matches a task's title or identifier, ignoring case.
+              </li>
+              <li>
+                The assignee filter offers every board member, plus
+                <strong>Unassigned</strong>.
+              </li>
+              <li>
+                Filters combine, and <strong>Clear filters</strong> removes
+                them all.
+              </li>
+              <li>
+                A goal stays on the board when one of its child tasks that is
+                not archived matches, so a matching task is never shown
+                without its goal.
+              </li>
+              <li>
+                Drag reordering is off while a filter is active, and the bar
+                says so.
+              </li>
+            </ul>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The filters are part of the page address (<code>?q=</code>,
+              <code>?type=</code>, <code>?priority=</code>,
+              <code>?assignee=</code>, <code>?label=</code>), so a filtered
+              view can be bookmarked or shared. Opening a link with a value
+              the board does not recognise shows the board without that filter
+              instead of failing. If the label or member a filter names is
+              deleted or removed while the board is open, the filter is dropped
+              and the address updated. Read-only members can search and filter
+              like everyone else.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Board labels
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Owners and members with modify access manage a board's labels in
+              the new <strong>Labels</strong> section of the board settings.
+              They can add, rename, recolour and delete labels, and each
+              change saves straight away.
+            </p>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                Each label has a name of up to 40 characters and one of nine
+                colours. Names are unique on a board, ignoring case.
+              </li>
+              <li>
+                Deleting a label removes it from its tasks; the tasks
+                themselves are kept.
+              </li>
+              <li>
+                Read-only members see the board's labels but cannot change
+                them.
+              </li>
+            </ul>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The task form has a label picker. Task cards show up to three
+              label chips, then a <code>+N</code> count for the rest; goal
+              cards show none. When a label is created, renamed, recoloured or
+              deleted, every open copy of the board updates its cards and its
+              label filter without a reload. A member added to or removed from
+              the board appears in, or leaves, the assignee filter the same
+              way.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              My Work
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              A new <strong>My Work</strong> page (<code>/my-work</code>),
+              linked from the sidebar, lists every open task assigned to you
+              across the boards you belong to. Tasks are grouped by board and
+              ordered by priority within each board, and each one links to the
+              task on its board.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Archived and completed tasks are left out, and so are tasks
+              sitting in a board's Done column. Tasks on a board you have been
+              removed from are no longer listed.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Bulk actions
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              <strong>Select</strong> in the board header turns on selection
+              mode for owners and members with modify access. Each card gets a
+              checkbox, and each column gets a <strong>Select all</strong>
+              button. A bar that stays at the top of the board shows how many
+              tasks are selected and acts on all of them at once:
+            </p>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <strong>Move</strong> them to another column;
+              </li>
+              <li>
+                <strong>Assign</strong> them to a board member, or unassign
+                them;
+              </li>
+              <li>
+                <strong>Add</strong> or <strong>Remove</strong> a label;
+              </li>
+              <li>
+                <strong>Archive</strong> them, after a confirmation.
+              </li>
+            </ul>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Each action succeeds or fails as a whole. A move that would take
+              a column past its WIP limit changes nothing. Move, assign and
+              archive skip goals, because doing any of them to a goal also
+              affects its child tasks; the board says how many goals were
+              skipped. Labels can be added to and removed from goals.
+            </p>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              A card that is filtered out, deleted, archived or moved off the
+              board leaves the selection. So does a card that moves to another
+              column, for example when someone else drags it, so a bulk action
+              cannot quietly undo that move; the board says when this happens.
+              <strong>Clear selection</strong>, <strong>Done selecting</strong>
+              or Escape clears the selection.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Keyboard shortcuts
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              On a board, <code>/</code> puts the cursor in the search box and
+              <code>?</code> opens a list of the shortcuts. Escape closes the
+              list, or clears the selected tasks. The shortcuts are ignored
+              while typing in a field or while another dialog is open. Closing
+              the list puts focus back where it was. On wider screens, a
+              <code>/ ?</code> hint in the filter bar opens the list too.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Labels in the API and MCP server
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Agents work with labels by <strong>name</strong>. The API never
+              exposes label ids and never creates labels.
+            </p>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                <code>POST /api/tasks</code> and <code>POST
+                /api/tasks/batch</code> attach existing labels with a
+                <code>labels</code> list of names. <code>PATCH
+                /api/tasks/:id</code> replaces a task's labels, and
+                <code>"labels": []</code> removes them all.
+              </li>
+              <li>
+                Names are matched against the token's board, ignoring case and
+                surrounding spaces. An unknown name returns 422 naming every
+                unknown label, and nothing is written.
+              </li>
+              <li>
+                Task responses include <code>labels</code> as <code>{name,
+                color}</code> objects.
+              </li>
+              <li>
+                <code>GET /api/tasks</code> takes
+                <code>?label=&lt;name&gt;</code>, which filters the same way
+                as the board's label filter. The MCP server's
+                <code>stride_list_tasks</code> tool takes the same
+                <code>label</code> argument.
+              </li>
+            </ul>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Move a Backlog task to Ready from its card
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Task cards in the Backlog column have a <strong>Move to
+              Ready</strong> arrow, shown on hover or keyboard focus (and
+              always on touch screens). It moves the task to the bottom of the
+              Ready column. It appears for owners and members with modify
+              access on boards that have a Ready column, and never on goal
+              cards.
+            </p>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Fixed
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>The 2.19.0 metrics clean-up migration no longer fails on
+              production data.</strong> Some stored metrics events hold their
+              <code>params</code> or <code>connect_info</code> as a list
+              rather than an object, and the migration that removes session
+              tokens from metrics stopped with an error on those rows. It now
+              leaves list values alone and still removes the tokens.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.19.0] - 2026-10-08
         </h2>
 

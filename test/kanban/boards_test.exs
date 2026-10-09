@@ -587,6 +587,43 @@ defmodule Kanban.BoardsTest do
     end
   end
 
+  describe ":members_changed broadcast" do
+    setup do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+      %{owner: owner, board: board, member: user_fixture()}
+    end
+
+    test "adding, changing and removing a member broadcast the board id", ctx do
+      board_id = ctx.board.id
+
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.member, :read_only, ctx.owner)
+      assert_receive {Boards, :members_changed, ^board_id}
+
+      {:ok, _} = Boards.update_user_access(ctx.board, ctx.member, :modify, ctx.owner)
+      assert_receive {Boards, :members_changed, ^board_id}
+
+      {:ok, _} = Boards.remove_user_from_board(ctx.board, ctx.member, ctx.owner)
+      assert_receive {Boards, :members_changed, ^board_id}
+    end
+
+    test "a refused or failed membership write broadcasts nothing", ctx do
+      outsider = user_fixture()
+
+      assert {:error, :unauthorized} =
+               Boards.add_user_to_board(ctx.board, ctx.member, :modify, outsider)
+
+      assert {:error, :not_found} =
+               Boards.remove_user_from_board(ctx.board, ctx.member, ctx.owner)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Boards.add_user_to_board(ctx.board, ctx.member, :owner, ctx.owner)
+
+      refute_receive {Boards, :members_changed, _}, 50
+    end
+  end
+
   describe "remove_user_from_board/2" do
     test "removes a user from a board" do
       owner = user_fixture()

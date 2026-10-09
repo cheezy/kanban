@@ -35,6 +35,20 @@ Turn task comments into a real conversation between people and agents.
 - One consistent comment thread in both the task view and the edit form, in light and dark mode.
 - Agents can read and post task comments through the API, so they can leave notes and pick up human feedback on the work they're doing.
 
+## ✅ Board search, filters, labels and My Work
+
+Make busy boards fast to work with.
+
+- Search and filter a board by text, type, priority, assignee and label. Filtered views live in the URL, so you can share or bookmark them.
+- Board labels with names and colours, managed in board settings and shown on task cards. Label changes appear on every open copy of the board straight away.
+- A **My Work** page listing the open tasks assigned to you across all your boards, grouped by board.
+- Select several tasks at once to move, assign, label or archive them together.
+- Keyboard shortcuts: press `/` to search the board and `?` to see every shortcut.
+- Labels available through the API and MCP server, so agents can set them and filter by them.
+- Read-only members keep full search and filtering, but never see editing actions.
+
+Deadlines stay with delivery targets rather than individual tasks, so tasks don't get their own due dates.
+
 ## 🚧 Developer integrations
 
 Plug Stride into the tools teams and agents already use.
@@ -68,20 +82,6 @@ Give teams a home for their boards and people.
 - A single workspace API token that works across every board in the workspace you can access, alongside today's board tokens.
 - Delete your own account from Settings, once any boards you own have been handed over.
 - Export a complete workspace archive, and restore it on a self-hosted Stride instance.
-
-## 🔜 Board search, filters, labels and My Work
-
-Make busy boards fast to work with.
-
-- Search and filter a board by text, type, priority, assignee and label. Filtered views live in the URL, so you can share or bookmark them.
-- Board labels with names and colours, managed in board settings and shown on task cards.
-- A **My Work** page listing everything assigned to you across all your boards, grouped by board.
-- Select several tasks at once to move, assign, label or archive them together.
-- Keyboard shortcuts: press `/` to search the board and `?` to see every shortcut.
-- Labels available through the API, so agents can set them and filter by them.
-- Read-only members keep full search and filtering, but never see editing actions.
-
-Deadlines stay with delivery targets rather than individual tasks, so tasks don't get their own due dates.
 
 ## 🔄 Ongoing plugin improvement
 

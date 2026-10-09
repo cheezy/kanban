@@ -22,6 +22,11 @@ defmodule Kanban.Labels do
     * `resolve_label_names/3` looks names up only among the board's own
       labels, so a name used on another board is indistinguishable from one
       that exists nowhere (W2239, the REST API's `labels` field).
+
+  A successful `create_label/3`, `update_label/3` or `delete_label/2`
+  broadcasts `{Kanban.Labels, :labels_changed, board_id}` on the board's
+  `"board:<id>"` topic, so every open board re-renders its cards' label chips
+  and refreshes its label filter. The message carries only the board id.
   """
   import Ecto.Query, warn: false
 
@@ -213,6 +218,7 @@ defmodule Kanban.Labels do
       %Label{board_id: board_id}
       |> Label.changeset(attrs)
       |> Repo.insert()
+      |> broadcast_labels_changed(board_id)
     end
   end
 
@@ -233,6 +239,7 @@ defmodule Kanban.Labels do
       label
       |> Label.changeset(attrs)
       |> Repo.update(stale_error_field: :id)
+      |> broadcast_labels_changed(board_id)
     end
   end
 
@@ -249,9 +256,23 @@ defmodule Kanban.Labels do
   """
   def delete_label(scope, %Label{board_id: board_id} = label) do
     with :ok <- authorize_write(scope, board_id) do
-      Repo.delete(label, stale_error_field: :id)
+      label
+      |> Repo.delete(stale_error_field: :id)
+      |> broadcast_labels_changed(board_id)
     end
   end
+
+  defp broadcast_labels_changed({:ok, _label} = result, board_id) do
+    Phoenix.PubSub.broadcast(
+      Kanban.PubSub,
+      "board:#{board_id}",
+      {__MODULE__, :labels_changed, board_id}
+    )
+
+    result
+  end
+
+  defp broadcast_labels_changed(error, _board_id), do: error
 
   @doc """
   Replaces a task's labels with the given label ids. An empty list clears

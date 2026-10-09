@@ -33,7 +33,7 @@ let listeners
 
 beforeEach(() => {
   listeners = new Set()
-  state = {search: null, helpOpen: false, dialogs: []}
+  state = {search: null, helpOpen: false, dialogs: [], active: body}
 
   globalThis.window = {
     addEventListener: (type, fn) => { if (type === "keydown") listeners.add(fn) },
@@ -46,17 +46,23 @@ beforeEach(() => {
       if (id === "keyboard-shortcuts-help") return state.helpOpen ? {id} : null
       return null
     },
-    querySelectorAll: () => state.dialogs
+    querySelectorAll: () => state.dialogs,
+    get activeElement() { return state.active },
+    body
   }
 })
 
-function mountHook(selectedCount = "0") {
+const PUSH_FOCUS = '[["push_focus",{}]]'
+
+function mountHook(selectedCount = "0", pushFocus = PUSH_FOCUS) {
   const pushed = []
+  const executed = []
   const hook = Object.create(KeyboardShortcuts)
-  hook.el = {dataset: {selectedCount}}
+  hook.el = {dataset: pushFocus ? {selectedCount, pushFocus} : {selectedCount}}
   hook.pushEvent = (event, payload) => pushed.push([event, payload])
+  hook.liveSocket = {execJS: (el, js) => executed.push([el, js])}
   hook.mounted()
-  return {hook, pushed}
+  return {hook, pushed, executed}
 }
 
 function press(event) {
@@ -176,6 +182,41 @@ test("? pushes only the fixed toggle event with an empty payload", () => {
   const {pushed} = mountHook()
   const event = press(keydown("?"))
   assert.equal(event.prevented, true)
+  assert.deepEqual(pushed, [["toggle_shortcuts_help", {}]])
+})
+
+test("? remembers the focused element before opening the overlay", () => {
+  const toggle = {tagName: "BUTTON", id: "bulk-select-toggle"}
+  state.active = toggle
+  const {pushed, executed} = mountHook()
+
+  press(keydown("?", {target: toggle}))
+
+  assert.deepEqual(executed, [[toggle, PUSH_FOCUS]])
+  assert.deepEqual(pushed, [["toggle_shortcuts_help", {}]])
+})
+
+test("? remembers nothing when focus is on the page body", () => {
+  const {pushed, executed} = mountHook()
+  press(keydown("?"))
+  assert.deepEqual(executed, [])
+  assert.deepEqual(pushed, [["toggle_shortcuts_help", {}]])
+})
+
+test("? remembers nothing when the server rendered no push-focus command", () => {
+  state.active = {tagName: "BUTTON"}
+  const {pushed, executed} = mountHook("0", null)
+  press(keydown("?"))
+  assert.deepEqual(executed, [])
+  assert.deepEqual(pushed, [["toggle_shortcuts_help", {}]])
+})
+
+test("? closing the overlay does not push focus again", () => {
+  state.helpOpen = true
+  state.active = {tagName: "BUTTON"}
+  const {pushed, executed} = mountHook()
+  press(keydown("?"))
+  assert.deepEqual(executed, [])
   assert.deepEqual(pushed, [["toggle_shortcuts_help", {}]])
 })
 

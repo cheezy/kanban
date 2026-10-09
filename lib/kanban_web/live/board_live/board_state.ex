@@ -8,7 +8,7 @@ defmodule KanbanWeb.BoardLive.BoardState do
   """
 
   import Phoenix.Component, only: [assign: 3]
-  import Phoenix.LiveView, only: [push_event: 3, stream: 3, stream: 4]
+  import Phoenix.LiveView, only: [stream: 3, stream: 4]
 
   alias Kanban.Boards
   alias Kanban.Columns
@@ -96,6 +96,7 @@ defmodule KanbanWeb.BoardLive.BoardState do
     tasks_by_column = group_tasks_by_column(columns, [])
     filters = socket.assigns[:board_filters]
     filters_active = BoardFilters.active?(filters)
+    previous_columns = BulkSelection.task_columns(socket)
 
     socket
     |> assign(:tasks_by_column, tasks_by_column)
@@ -105,7 +106,7 @@ defmodule KanbanWeb.BoardLive.BoardState do
     |> assign(:ready_column_id, ready_column_id(columns))
     |> assign(:tasks_version, :os.system_time(:millisecond))
     |> assign(:board_columns, columns)
-    |> BulkSelection.prune()
+    |> BulkSelection.prune(previous_columns)
   end
 
   defp visible_tasks(columns, tasks_by_column, filters) do
@@ -223,29 +224,19 @@ defmodule KanbanWeb.BoardLive.BoardState do
   defp maybe_restream_columns(socket, _columns, false), do: socket
 
   @doc """
-  Applies a task moved by another client. Unfiltered, the client moves the
-  card itself from the `task_moved_remotely` event. While filters are active
-  the moved card may not be on the page at all — and the client reloads the
-  whole page when it cannot find it — so the columns are re-rendered from
-  the server instead. Either way the tasks and board metrics are re-read so
-  the goal strip and header counts recompute.
+  Applies a task moved by another client by re-rendering the columns from the
+  server, filtered or not. Each card's controls depend on its column (the
+  Backlog-only Move to Ready arrow, the per-column card styling), so a card
+  must never just be moved in the DOM: it would keep the controls of the
+  column it left. The tasks and board metrics are re-read so the goal strip
+  and header counts recompute.
   """
-  def handle_remote_task_move(socket, task) do
+  def handle_remote_task_move(socket, _task) do
     columns = Columns.list_columns(socket.assigns.board)
-
-    socket =
-      if BoardFilters.active?(socket.assigns[:board_filters]) do
-        stream(socket, :columns, columns)
-      else
-        push_event(socket, "task_moved_remotely", %{
-          task_id: task.id,
-          new_column_id: task.column_id,
-          new_position: task.position
-        })
-      end
 
     {:noreply,
      socket
+     |> stream(:columns, columns)
      |> load_tasks_for_columns(columns)
      |> refresh_board_metrics()}
   end

@@ -368,6 +368,55 @@ defmodule Kanban.LabelsTest do
     end
   end
 
+  describe ":labels_changed broadcast" do
+    setup ctx do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{ctx.board.id}")
+      :ok
+    end
+
+    test "create, update and delete each broadcast the board id once they commit", ctx do
+      board_id = ctx.board.id
+
+      {:ok, label} = Labels.create_label(ctx.owner_scope, ctx.board, %{name: "Bug", color: :red})
+      assert_receive {Labels, :labels_changed, ^board_id}
+
+      {:ok, label} = Labels.update_label(ctx.modify_scope, label, %{color: :purple})
+      assert_receive {Labels, :labels_changed, ^board_id}
+
+      {:ok, _} = Labels.delete_label(ctx.owner_scope, label)
+      assert_receive {Labels, :labels_changed, ^board_id}
+    end
+
+    test "an unauthorized or invalid write broadcasts nothing", ctx do
+      label = label_fixture(ctx.board, %{name: "Bug"})
+
+      assert {:error, :unauthorized} =
+               Labels.create_label(ctx.read_only_scope, ctx.board, %{name: "X", color: :red})
+
+      assert {:error, :unauthorized} =
+               Labels.update_label(ctx.outsider_scope, label, %{name: "Y"})
+
+      assert {:error, :unauthorized} = Labels.delete_label(ctx.read_only_scope, label)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Labels.update_label(ctx.owner_scope, label, %{name: ""})
+
+      Repo.delete!(label)
+      assert {:error, %Ecto.Changeset{}} = Labels.delete_label(ctx.owner_scope, label)
+
+      refute_receive {Labels, :labels_changed, _}, 50
+    end
+
+    test "a label change on another board is not broadcast on this one", ctx do
+      other_scope = Scope.for_user(ctx.other_owner)
+
+      {:ok, _} =
+        Labels.create_label(other_scope, ctx.other_board, %{name: "Elsewhere", color: :red})
+
+      refute_receive {Labels, :labels_changed, _}, 50
+    end
+  end
+
   describe "delete_label/2 on an already-deleted label" do
     test "returns an :id error instead of raising", ctx do
       label = label_fixture(ctx.board, %{name: "Bug"})

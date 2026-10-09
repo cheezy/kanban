@@ -4,6 +4,9 @@
 // most visible. Hook is mounted on the indicator strip element itself; the
 // strip is `md:hidden` so it only shows on mobile, but the observer runs
 // regardless (it's harmless at md+).
+//
+// The dots are server-rendered, so every patch that re-renders them resets
+// them to dim; updated() marks the active one again.
 const SnapIndicator = {
   mounted() {
     this.container = document.getElementById(this.el.dataset.targetId)
@@ -23,17 +26,30 @@ const SnapIndicator = {
       {root: this.container, threshold: [0, 0.5, 1]}
     )
 
-    Array.from(this.container.children)
-      .filter((child) => child.dataset.columnId)
-      .forEach((col) => this._observer.observe(col))
+    this.columnElements().forEach((col) => this._observer.observe(col))
   },
 
   updated() {
     // Re-observe any newly streamed columns after a LiveView update.
     if (!this._observer || !this.container) return
-    Array.from(this.container.children)
-      .filter((child) => child.dataset.columnId)
-      .forEach((col) => this._observer.observe(col))
+    const columns = this.columnElements()
+    columns.forEach((col) => this._observer.observe(col))
+    this.forgetRemovedColumns(columns)
+    // The server re-renders the dots with their default (dim) classes, which
+    // drops the active one, so mark it again rather than waiting for a scroll.
+    this.updateActive()
+  },
+
+  columnElements() {
+    return Array.from(this.container.children).filter((child) => child.dataset.columnId)
+  },
+
+  forgetRemovedColumns(columns) {
+    if (!this.visibilityByColumn) return
+    const present = new Set(columns.map((col) => col.dataset.columnId))
+    Object.keys(this.visibilityByColumn).forEach((id) => {
+      if (!present.has(id)) delete this.visibilityByColumn[id]
+    })
   },
 
   destroyed() {

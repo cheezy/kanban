@@ -114,6 +114,40 @@ defmodule KanbanWeb.BoardLive.FilterActions do
     })
   end
 
+  @doc """
+  Reloads the selector options for `board` after its labels or members
+  changed, and drops a current filter that names a label or member the board
+  no longer has, so the board, the filter bar and the URL never disagree.
+  Returns `{socket, changed?}`; when `changed?` the caller re-renders the
+  cards and calls `sync_url/1`.
+  """
+  def refresh_options(socket, board) do
+    socket = reload_options(socket, board)
+
+    case socket.assigns[:board_filters] do
+      %BoardFilters{} = previous ->
+        filters = restrict(previous, socket.assigns.filter_options)
+        {assign(socket, :board_filters, filters), filters != previous}
+
+      _none ->
+        {socket, false}
+    end
+  end
+
+  @doc """
+  Replaces the board URL with one carrying the current filters, on the board
+  view itself. Inside a modal the URL is left alone: the modal's close link is
+  built from the current filters, so closing it lands on the corrected URL.
+  """
+  def sync_url(%{assigns: %{live_action: :show}} = socket),
+    do:
+      push_patch(socket,
+        to: board_path(socket.assigns.board, socket.assigns.board_filters),
+        replace: true
+      )
+
+  def sync_url(socket), do: socket
+
   # The cache serves this board and already holds every id the URL names.
   defp cached?(%{board_id: board_id} = options, %{id: board_id}, parsed) do
     known?(parsed.label_id, Enum.map(options.labels, & &1.id)) and

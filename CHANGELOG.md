@@ -5,6 +5,74 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.20.0] - 2026-10-09
+
+Busy boards are faster to work with. A board can be searched and filtered, and the filtered view lives in the URL so it can be shared. Boards have coloured labels, shown on task cards and settable by agents through the API. A new **My Work** page lists everything assigned to you across your boards. Several tasks can be moved, assigned, labelled or archived at once, and `/` and `?` are keyboard shortcuts on the board.
+
+### Added
+
+#### Board search and filters
+
+A filter bar above the columns searches a board by text and filters it by type, priority, assignee and label.
+
+- Search matches a task's title or identifier, ignoring case.
+- The assignee filter offers every board member, plus **Unassigned**.
+- Filters combine, and **Clear filters** removes them all.
+- A goal stays on the board when one of its child tasks that is not archived matches, so a matching task is never shown without its goal.
+- Drag reordering is off while a filter is active, and the bar says so.
+
+The filters are part of the page address (`?q=`, `?type=`, `?priority=`, `?assignee=`, `?label=`), so a filtered view can be bookmarked or shared. Opening a link with a value the board does not recognise shows the board without that filter instead of failing. If the label or member a filter names is deleted or removed while the board is open, the filter is dropped and the address updated. Read-only members can search and filter like everyone else.
+
+#### Board labels
+
+Owners and members with modify access manage a board's labels in the new **Labels** section of the board settings. They can add, rename, recolour and delete labels, and each change saves straight away.
+
+- Each label has a name of up to 40 characters and one of nine colours. Names are unique on a board, ignoring case.
+- Deleting a label removes it from its tasks; the tasks themselves are kept.
+- Read-only members see the board's labels but cannot change them.
+
+The task form has a label picker. Task cards show up to three label chips, then a `+N` count for the rest; goal cards show none. When a label is created, renamed, recoloured or deleted, every open copy of the board updates its cards and its label filter without a reload. A member added to or removed from the board appears in, or leaves, the assignee filter the same way.
+
+#### My Work
+
+A new **My Work** page (`/my-work`), linked from the sidebar, lists every open task assigned to you across the boards you belong to. Tasks are grouped by board and ordered by priority within each board, and each one links to the task on its board.
+
+Archived and completed tasks are left out, and so are tasks sitting in a board's Done column. Tasks on a board you have been removed from are no longer listed.
+
+#### Bulk actions
+
+**Select** in the board header turns on selection mode for owners and members with modify access. Each card gets a checkbox, and each column gets a **Select all** button. A bar that stays at the top of the board shows how many tasks are selected and acts on all of them at once:
+
+- **Move** them to another column;
+- **Assign** them to a board member, or unassign them;
+- **Add** or **Remove** a label;
+- **Archive** them, after a confirmation.
+
+Each action succeeds or fails as a whole. A move that would take a column past its WIP limit changes nothing. Move, assign and archive skip goals, because doing any of them to a goal also affects its child tasks; the board says how many goals were skipped. Labels can be added to and removed from goals.
+
+A card that is filtered out, deleted, archived or moved off the board leaves the selection. So does a card that moves to another column, for example when someone else drags it, so a bulk action cannot quietly undo that move; the board says when this happens. **Clear selection**, **Done selecting** or Escape clears the selection.
+
+#### Keyboard shortcuts
+
+On a board, `/` puts the cursor in the search box and `?` opens a list of the shortcuts. Escape closes the list, or clears the selected tasks. The shortcuts are ignored while typing in a field or while another dialog is open. Closing the list puts focus back where it was. On wider screens, a `/ ?` hint in the filter bar opens the list too.
+
+#### Labels in the API and MCP server
+
+Agents work with labels by **name**. The API never exposes label ids and never creates labels.
+
+- [POST /api/tasks](docs/api/post_tasks.md#labels) and [POST /api/tasks/batch](docs/api/post_tasks_batch.md#labels) attach existing labels with a `labels` list of names. [PATCH /api/tasks/:id](docs/api/patch_tasks_id.md#labels) replaces a task's labels, and `"labels": []` removes them all.
+- Names are matched against the token's board, ignoring case and surrounding spaces. An unknown name returns 422 naming every unknown label, and nothing is written.
+- Task responses include `labels` as `{name, color}` objects.
+- [GET /api/tasks](docs/api/get_tasks.md#filtering-by-label) takes `?label=<name>`, which filters the same way as the board's label filter. The MCP server's `stride_list_tasks` tool takes the same `label` argument.
+
+#### Move a Backlog task to Ready from its card
+
+Task cards in the Backlog column have a **Move to Ready** arrow, shown on hover or keyboard focus (and always on touch screens). It moves the task to the bottom of the Ready column. It appears for owners and members with modify access on boards that have a Ready column, and never on goal cards.
+
+### Fixed
+
+- **The 2.19.0 metrics clean-up migration no longer fails on production data.** Some stored metrics events hold their `params` or `connect_info` as a list rather than an object, and the migration that removes session tokens from metrics stopped with an error on those rows. It now leaves list values alone and still removes the tokens.
+
 ## [2.19.0] - 2026-10-08
 
 Accounts can now be protected with two-factor authentication: a 6-digit code from an authenticator app, plus single-use recovery codes. People who have not turned it on are reminded after they sign in, and a new Resources guide walks them through it. Production now needs an `ENCRYPTION_KEY` secret before it will boot.

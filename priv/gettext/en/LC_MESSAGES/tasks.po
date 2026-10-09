@@ -18,14 +18,14 @@ msgid_plural "Moved %{count} tasks to Ready"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:217
+#: lib/kanban_web/live/board_live/bulk_selection.ex:263
 #, elixir-autogen, elixir-format
 msgid "%{count} goal was skipped: goals cannot be moved, assigned or archived in bulk."
 msgid_plural "%{count} goals were skipped: goals cannot be moved, assigned or archived in bulk."
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:124
+#: lib/kanban_web/live/board_live/bulk_selection.ex:170
 #, elixir-autogen, elixir-format
 msgid "Added the label to %{count} task"
 msgid_plural "Added the label to %{count} tasks"
@@ -39,28 +39,28 @@ msgid_plural "Archive %{count} selected tasks? Goals are skipped."
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:148
+#: lib/kanban_web/live/board_live/bulk_selection.ex:194
 #, elixir-autogen, elixir-format
 msgid "Archived %{count} task"
 msgid_plural "Archived %{count} tasks"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:116
+#: lib/kanban_web/live/board_live/bulk_selection.ex:162
 #, elixir-autogen, elixir-format
 msgid "Assigned %{count} task"
 msgid_plural "Assigned %{count} tasks"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:205
+#: lib/kanban_web/live/board_live/bulk_selection.ex:251
 #, elixir-autogen, elixir-format
 msgid "Moved %{count} task to %{column}"
 msgid_plural "Moved %{count} tasks to %{column}"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:137
+#: lib/kanban_web/live/board_live/bulk_selection.ex:183
 #, elixir-autogen, elixir-format
 msgid "Removed the label from %{count} task"
 msgid_plural "Removed the label from %{count} tasks"

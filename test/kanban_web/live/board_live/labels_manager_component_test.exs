@@ -199,6 +199,41 @@ defmodule KanbanWeb.BoardLive.LabelsManagerComponentTest do
       assert has_element?(view, "#board-filter-label option", "Fresh")
     end
 
+    test "renaming, recolouring and deleting a label update the open board's cards", %{
+      conn: c,
+      owner: o,
+      board: b
+    } do
+      label = label_fixture(b, %{name: "Bug", color: :red})
+      task = b |> column_fixture() |> task_fixture()
+      {:ok, _} = o |> Scope.for_user() |> Labels.set_task_labels(task, [label.id])
+      card_chip = "#task-#{task.id} [data-label-chip]"
+
+      {:ok, view, _html} = live(log_in_user(c, o), ~p"/boards/#{b}")
+      assert has_element?(view, "#task-#{task.id} [data-label-chip=red]", "Bug")
+      render_patch(view, ~p"/boards/#{b}/settings")
+
+      view |> element("#label-edit-#{label.id}") |> render_click()
+
+      view
+      |> element("#label-edit-form-#{label.id}")
+      |> render_submit(%{
+        "label_id" => label.id,
+        "label" => %{"name" => "Defect", "color" => "purple"}
+      })
+
+      render_patch(view, ~p"/boards/#{b}")
+      assert has_element?(view, "#task-#{task.id} [data-label-chip=purple]", "Defect")
+      refute has_element?(view, card_chip, "Bug")
+
+      render_patch(view, ~p"/boards/#{b}/settings")
+      view |> element("#label-delete-#{label.id}") |> render_click()
+      render_patch(view, ~p"/boards/#{b}")
+
+      refute has_element?(view, card_chip)
+      refute has_element?(view, "#board-filter-label")
+    end
+
     test "an id from another board or a stale id is refused", %{conn: c, owner: o, board: b} do
       other_board = board_fixture(o)
       foreign = label_fixture(other_board, %{name: "Foreign"})
@@ -356,25 +391,6 @@ defmodule KanbanWeb.BoardLive.LabelsManagerComponentTest do
       socket = LabelsManagerComponent.apply_parent_message(socket, {:flash, :error, "Nope"})
 
       assert socket.assigns.flash == %{"error" => "Nope"}
-    end
-
-    test "reloads the filter options for a label change" do
-      owner = user_fixture()
-      board = board_fixture(owner)
-      label_fixture(board, %{name: "Bug"})
-
-      socket = %Phoenix.LiveView.Socket{
-        assigns: %{
-          __changed__: %{},
-          board: board,
-          current_scope: Scope.for_user(owner),
-          filter_options: %{board_id: board.id, labels: [], members: []}
-        }
-      }
-
-      socket = LabelsManagerComponent.apply_parent_message(socket, :labels_changed)
-
-      assert Enum.map(socket.assigns.filter_options.labels, & &1.name) == ["Bug"]
     end
   end
 end

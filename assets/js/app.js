@@ -72,41 +72,6 @@ window.addEventListener("phx:comment-thread:scroll-to", event => {
   if (row) row.scrollIntoView({block: "nearest", behavior: "smooth"})
 })
 
-// Handle remote task moves (from other clients)
-window.addEventListener("phx:task_moved_remotely", (e) => {
-  const {task_id, new_column_id, new_position} = e.detail
-  console.log(`Task ${task_id} moved remotely to column ${new_column_id} at position ${new_position}`)
-
-  // Find the task element
-  const taskElement = document.querySelector(`[data-id="${task_id}"]`)
-  if (!taskElement) {
-    console.log(`Task element ${task_id} not found, will reload`)
-    window.location.reload()
-    return
-  }
-
-  // Find the target column's sortable container
-  const targetColumn = document.querySelector(`[data-column-id="${new_column_id}"][phx-hook="Sortable"]`)
-  if (!targetColumn) {
-    console.log(`Target column ${new_column_id} not found, will reload`)
-    window.location.reload()
-    return
-  }
-
-  // Remove from current location
-  taskElement.remove()
-
-  // Insert at new position
-  const children = Array.from(targetColumn.children).filter(child => !child.classList.contains('empty-state'))
-  if (new_position >= children.length) {
-    targetColumn.appendChild(taskElement)
-  } else {
-    targetColumn.insertBefore(taskElement, children[new_position])
-  }
-
-  console.log(`Task ${task_id} moved successfully to column ${new_column_id}`)
-})
-
 // Close any open <details class="js-mobile-menu"> when the user presses Escape,
 // and return focus to its summary. Used by the marketing nav disclosure.
 window.addEventListener("keydown", (e) => {

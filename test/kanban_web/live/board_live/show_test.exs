@@ -3196,13 +3196,58 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       refute_push_event(view, "task_moved_remotely", %{})
     end
 
-    test "an unfiltered board still lets the client apply remote moves", ctx do
+    test "an unfiltered board re-renders a remote move from the server", ctx do
+      other = column_fixture(ctx.board, %{name: "Review"})
       {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
 
-      send(view.pid, {Kanban.Tasks, :task_moved, %{ctx.beta | position: 0}})
+      {:ok, _} = ctx.beta |> Kanban.Repo.reload!() |> Kanban.Tasks.move_task(other, 0)
 
-      assert_push_event(view, "task_moved_remotely", %{task_id: task_id})
-      assert task_id == ctx.beta.id
+      assert has_element?(view, "#tasks-#{other.id} #task-#{ctx.beta.id}")
+      refute has_element?(view, "#tasks-#{ctx.column.id} #task-#{ctx.beta.id}")
+    end
+
+    test "deleting the label the board is filtered by drops the filter and fixes the URL",
+         ctx do
+      label = Kanban.LabelsFixtures.label_fixture(ctx.board, %{name: "Frontend"})
+      attach_filter_label(ctx.user, ctx.alpha, label)
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?label=#{label.id}")
+      refute card?(view, ctx.beta)
+
+      {:ok, _} = ctx.user |> Kanban.Accounts.Scope.for_user() |> Kanban.Labels.delete_label(label)
+
+      assert_patch(view, ~p"/boards/#{ctx.board}")
+      assert card?(view, ctx.alpha)
+      assert card?(view, ctx.beta)
+      refute has_element?(view, "#board-filter-clear")
+    end
+
+    test "removing the member the board is filtered by drops the filter and fixes the URL",
+         ctx do
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, member, :modify, ctx.user)
+      {:ok, _} = Kanban.Tasks.update_task(ctx.alpha, %{assigned_to_id: member.id})
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?assignee=#{member.id}&q=a")
+      refute card?(view, ctx.beta)
+
+      {:ok, _} = Kanban.Boards.remove_user_from_board(ctx.board, member, ctx.user)
+
+      assert_patch(view, ~p"/boards/#{ctx.board}?q=a")
+      assert card?(view, ctx.beta)
+    end
+
+    test "a label change that leaves the filters valid does not patch the URL", ctx do
+      label = Kanban.LabelsFixtures.label_fixture(ctx.board, %{name: "Frontend"})
+      attach_filter_label(ctx.user, ctx.alpha, label)
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}?label=#{label.id}")
+
+      {:ok, _} =
+        ctx.user
+        |> Kanban.Accounts.Scope.for_user()
+        |> Kanban.Labels.update_label(label, %{name: "Backend"})
+
+      assert has_element?(view, "#task-#{ctx.alpha.id} [data-label-chip]", "Backend")
+      refute card?(view, ctx.beta)
+      refute_patched(view)
     end
 
     test "repeated filter changes keep a single board subscription", ctx do
@@ -3354,6 +3399,42 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert has_element?(view, "#task-#{ctx.task.id} [data-label-chip]", "Frontend")
     end
 
+    test "a label renamed, recoloured or deleted in another session updates the open card",
+         ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      label = Kanban.Repo.get_by!(Kanban.Labels.Label, board_id: ctx.board.id)
+      other_scope = Kanban.Accounts.Scope.for_user(ctx.user)
+
+      {:ok, label} =
+        Kanban.Labels.update_label(other_scope, label, %{name: "Backend", color: :orange})
+
+      assert has_element?(view, "#task-#{ctx.task.id} [data-label-chip=orange]", "Backend")
+      assert has_element?(view, "#board-filter-label option", "Backend")
+      refute has_element?(view, "#board-filter-label option", "Frontend")
+
+      {:ok, _} = Kanban.Labels.delete_label(other_scope, label)
+
+      refute has_element?(view, "#task-#{ctx.task.id} [data-label-chip]")
+      refute has_element?(view, "#board-filter-label")
+    end
+
+    test "a label created and a member added in another session reach the filter selects",
+         ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      member = user_fixture(%{name: "Late Member"})
+      refute has_element?(view, "#board-filter-assignee option", "Late Member")
+
+      {:ok, _} =
+        ctx.user
+        |> Kanban.Accounts.Scope.for_user()
+        |> Kanban.Labels.create_label(ctx.board, %{name: "Late label", color: :blue})
+
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, member, :modify, ctx.user)
+
+      assert has_element?(view, "#board-filter-label option", "Late label")
+      assert has_element?(view, "#board-filter-assignee option", "Late Member")
+    end
+
     test "a labelled goal card shows no label chips", ctx do
       {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
 
@@ -3379,7 +3460,22 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert has_element?(view, "#board-view[phx-hook='KeyboardShortcuts']")
       assert has_element?(view, "#board-view[data-selected-count='0']")
       assert has_element?(view, "input#board-search[aria-keyshortcuts='/']")
-      assert has_element?(view, "#board-shortcuts-hint[phx-click='toggle_shortcuts_help']")
+    end
+
+    test "both openers push the focused element so closing the help can restore it", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      document = view |> render() |> LazyHTML.from_fragment()
+
+      [wrapper_js] =
+        document |> LazyHTML.query("#board-view") |> LazyHTML.attribute("data-push-focus")
+
+      [hint_js] =
+        document |> LazyHTML.query("#board-shortcuts-hint") |> LazyHTML.attribute("phx-click")
+
+      assert [["push_focus", _]] = Jason.decode!(wrapper_js)
+
+      assert [["push_focus", _], ["push", %{"event" => "toggle_shortcuts_help"}]] =
+               Jason.decode!(hint_js)
     end
 
     test "toggle_shortcuts_help shows then hides the overlay", ctx do

@@ -12,7 +12,8 @@ defmodule KanbanWeb.JsHooksTest do
   @suites [
     "assets/js/hooks/mention_autocomplete.test.mjs",
     "assets/js/hooks/comment_anchor.test.mjs",
-    "assets/js/hooks/keyboard_shortcuts.test.mjs"
+    "assets/js/hooks/keyboard_shortcuts.test.mjs",
+    "assets/js/hooks/snap_indicator.test.mjs"
   ]
 
   if is_nil(@node), do: @moduletag(skip: "node is not installed")

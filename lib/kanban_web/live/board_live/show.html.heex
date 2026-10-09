@@ -65,6 +65,7 @@
     id="board-view"
     class="mx-auto max-w-[1920px] px-2 pt-2 pb-2 sm:px-3 lg:px-4"
     phx-hook="KeyboardShortcuts"
+    data-push-focus={JS.push_focus()}
     data-selected-count={
       if @can_modify and @selection_mode, do: MapSet.size(@selected_ids), else: 0
     }

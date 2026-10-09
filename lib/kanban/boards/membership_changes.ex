@@ -6,7 +6,9 @@ defmodule Kanban.Boards.MembershipChanges do
   Removal and a downgrade to `:read_only` revoke the user's API tokens for
   the board in the same transaction. Once a write commits, the affected user
   gets a `board_access_changed` notification through
-  `Kanban.Notifications.Events.board_access_changed/4`.
+  `Kanban.Notifications.Events.board_access_changed/4`, and
+  `{Kanban.Boards, :members_changed, board_id}` is broadcast on the board's
+  `"board:<id>"` topic so open boards refresh their assignee filter.
 
   Exposed through the `Kanban.Boards` facade via `defdelegate` — call these
   as `Boards.add_user_to_board/4` and so on rather than reaching into this
@@ -108,6 +110,12 @@ defmodule Kanban.Boards.MembershipChanges do
     do: {:ok, board_user}
 
   defp notify_membership({:ok, board_user, revoked}, board, user, change, actor) do
+    Phoenix.PubSub.broadcast(
+      Kanban.PubSub,
+      "board:#{board.id}",
+      {Kanban.Boards, :members_changed, board.id}
+    )
+
     Events.board_access_changed(board, user, event_change(change),
       actor: actor,
       access: if(change == :removed, do: nil, else: board_user.access),

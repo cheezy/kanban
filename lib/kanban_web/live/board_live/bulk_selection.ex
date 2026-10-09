@@ -35,16 +35,62 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
   def init(socket), do: reset(socket, false)
 
   @doc """
-  Keeps only the selected ids that are still visible on the board, and turns
-  selection mode off for a viewer who cannot modify it.
+  The column each visible task is in, as `%{task_id => column_id}`. Taken
+  before a reload, so `prune/2` can tell which selected tasks moved.
   """
-  def prune(socket) do
+  def task_columns(socket) do
+    socket.assigns
+    |> Map.get(:visible_tasks_by_column, %{})
+    |> Map.values()
+    |> List.flatten()
+    |> Map.new(&{&1.id, &1.column_id})
+  end
+
+  @doc """
+  Keeps only the selected ids that are still visible on the board and still in
+  the column they were in before this reload (`previous`, from
+  `task_columns/1`), and turns selection mode off for a viewer who cannot
+  modify it.
+
+  A selected task that moved, by another session or a drag, leaves the
+  selection with a flash saying so: acting on it would silently undo that
+  move, for example a bulk move pulling it back out of Done.
+  """
+  def prune(socket, previous \\ %{}) do
     if socket.assigns[:can_modify] == true do
-      selected = socket.assigns[:selected_ids] || MapSet.new()
-      assign(socket, :selected_ids, MapSet.intersection(selected, visible_ids(socket)))
+      {kept, moved} =
+        split_selection(socket.assigns[:selected_ids], task_columns(socket), previous)
+
+      socket
+      |> assign(:selected_ids, MapSet.new(kept))
+      |> flash_moved(length(moved))
     else
       reset(socket, false)
     end
+  end
+
+  # {still visible in the same column, visible but in another column}; ids
+  # that are no longer visible are in neither.
+  defp split_selection(nil, _current, _previous), do: {[], []}
+
+  defp split_selection(selected, current, previous) do
+    selected
+    |> Enum.filter(&Map.has_key?(current, &1))
+    |> Enum.split_with(&(Map.get(previous, &1, current[&1]) == current[&1]))
+  end
+
+  defp flash_moved(socket, 0), do: socket
+
+  defp flash_moved(socket, count) do
+    put_flash(
+      socket,
+      :info,
+      ngettext(
+        "A selected task moved to another column, so it was taken out of the selection.",
+        "%{count} selected tasks moved to another column, so they were taken out of the selection.",
+        count
+      )
+    )
   end
 
   @doc "Handles a `bulk_*` event from the board."
