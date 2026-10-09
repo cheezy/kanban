@@ -34,6 +34,7 @@ defmodule KanbanWeb.TaskLive.Form.TaskParams do
   def scope_error_label(:column_id), do: gettext("Security error: Invalid column")
   def scope_error_label(:parent_id), do: gettext("Security error: Invalid parent goal")
   def scope_error_label(:assigned_to_id), do: gettext("Security error: Invalid assignee")
+  def scope_error_label(:label_ids), do: gettext("Security error: Invalid label")
 
   @doc """
   When a goal's `assigned_to_id` is being changed, ask the Tasks context how

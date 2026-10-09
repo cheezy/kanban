@@ -29,6 +29,7 @@ defmodule Kanban.Labels do
   alias Kanban.Labels.Label
   alias Kanban.Labels.TaskLabel
   alias Kanban.Repo
+  alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.Task
 
   @doc """
@@ -92,6 +93,37 @@ defmodule Kanban.Labels do
         |> Repo.all()
     end
   end
+
+  @doc """
+  Returns the ids of the labels attached to a task, for a member of the
+  label's board. Returns `[]` when the scope has no user, the user is not a
+  member of the board, or the task is unsaved.
+
+  ## Examples
+
+      iex> list_task_label_ids(scope, task)
+      [3, 7]
+
+  """
+  def list_task_label_ids(scope, %Task{id: task_id}) when is_integer(task_id) do
+    case scope_user(scope) do
+      nil ->
+        []
+
+      %{id: user_id} ->
+        TaskLabel
+        |> join(:inner, [tl], l in Label, on: l.id == tl.label_id)
+        |> join(:inner, [tl, l], bu in BoardUser,
+          on: bu.board_id == l.board_id and bu.user_id == ^user_id
+        )
+        |> where([tl], tl.task_id == ^task_id)
+        |> order_by([tl, l], asc: l.id)
+        |> select([tl, l], l.id)
+        |> Repo.all()
+    end
+  end
+
+  def list_task_label_ids(_scope, %Task{}), do: []
 
   @doc """
   Returns a changeset for tracking label changes, for building forms.
@@ -171,6 +203,11 @@ defmodule Kanban.Labels do
   when the caller cannot modify the task's board, or
   `{:error, :invalid_labels}` when any id is not a label on the task's board.
 
+  A successful write broadcasts `:task_updated` on the board's topic once the
+  transaction has committed, so every open board re-renders the task's label
+  chips (the task form saves the task first and its labels second, so the
+  task save's own broadcast can arrive before the labels exist).
+
   ## Examples
 
       iex> set_task_labels(scope, task, [label.id])
@@ -186,8 +223,10 @@ defmodule Kanban.Labels do
     label_ids = Enum.uniq(label_ids)
 
     with :ok <- authorize_write(scope, board_id),
-         :ok <- validate_label_ids(label_ids, board_id) do
-      replace_task_labels(task, label_ids)
+         :ok <- validate_label_ids(label_ids, board_id),
+         {:ok, task} <- replace_task_labels(task, label_ids) do
+      Broadcaster.broadcast_task_change(task, :task_updated)
+      {:ok, task}
     end
   end
 

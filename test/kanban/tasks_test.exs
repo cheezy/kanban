@@ -116,6 +116,97 @@ defmodule Kanban.TasksTest do
     end
   end
 
+  describe "labels preload on board task lists (W2234)" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      scope = Kanban.Accounts.Scope.for_user(user)
+      label = Kanban.LabelsFixtures.label_fixture(board, %{name: "Frontend"})
+      labelled = task_fixture(column, %{title: "Labelled"})
+      plain = task_fixture(column, %{title: "Plain"})
+      {:ok, _} = Kanban.Labels.set_task_labels(scope, labelled, [label.id])
+
+      %{
+        board: board,
+        column: column,
+        scope: scope,
+        label: label,
+        labelled: labelled,
+        plain: plain
+      }
+    end
+
+    defp labels_by_title(tasks) do
+      Map.new(tasks, fn t -> {t.title, Enum.map(t.labels, & &1.id)} end)
+    end
+
+    test "list_tasks/2 preloads each task's labels", ctx do
+      tasks = Tasks.list_tasks(ctx.column)
+
+      assert Enum.all?(tasks, &Ecto.assoc_loaded?(&1.labels))
+      assert labels_by_title(tasks) == %{"Labelled" => [ctx.label.id], "Plain" => []}
+    end
+
+    test "list_tasks_by_columns/2 preloads each task's labels", ctx do
+      tasks = [ctx.column] |> Tasks.list_tasks_by_columns() |> Map.fetch!(ctx.column.id)
+
+      assert Enum.all?(tasks, &Ecto.assoc_loaded?(&1.labels))
+      assert labels_by_title(tasks) == %{"Labelled" => [ctx.label.id], "Plain" => []}
+    end
+
+    test "a filtered list_tasks_by_columns/2 also preloads labels", ctx do
+      filters = %Kanban.Tasks.BoardFilters{label_id: ctx.label.id}
+
+      grouped = Tasks.list_tasks_by_columns([ctx.column], filters: filters)
+      assert [task] = Map.fetch!(grouped, ctx.column.id)
+
+      assert task.id == ctx.labelled.id
+      assert Enum.map(task.labels, & &1.id) == [ctx.label.id]
+    end
+
+    test "the number of queries does not grow with the number of labelled cards", ctx do
+      count_one = count_queries(fn -> Tasks.list_tasks_by_columns([ctx.column]) end)
+
+      for i <- 1..5 do
+        task = task_fixture(ctx.column, %{title: "More #{i}"})
+        {:ok, _} = Kanban.Labels.set_task_labels(ctx.scope, task, [ctx.label.id])
+      end
+
+      assert count_queries(fn -> Tasks.list_tasks_by_columns([ctx.column]) end) == count_one
+    end
+
+    defp count_queries(fun) do
+      test_pid = self()
+      handler_id = "w2234-query-count-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :repo, :query],
+        fn _event, _measurements, _metadata, _config ->
+          if self() == test_pid, do: send(test_pid, :repo_query)
+        end,
+        nil
+      )
+
+      try do
+        fun.()
+      after
+        :telemetry.detach(handler_id)
+      end
+
+      drain_queries(0)
+    end
+
+    defp drain_queries(n) do
+      receive do
+        :repo_query -> drain_queries(n + 1)
+      after
+        0 -> n
+      end
+    end
+  end
+
   describe "list_tasks_by_columns/2" do
     test "returns empty map for empty column list" do
       assert Tasks.list_tasks_by_columns([]) == %{}

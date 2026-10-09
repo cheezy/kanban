@@ -26,7 +26,7 @@ defmodule Kanban.Tasks.Queries do
     |> where([t], t.column_id == ^column.id)
     |> maybe_filter_archived(include_archived)
     |> order_by([t], t.position)
-    |> preload(:assigned_to)
+    |> preload([:assigned_to, :labels])
     |> Repo.all()
   end
 
@@ -35,7 +35,8 @@ defmodule Kanban.Tasks.Queries do
 
   Issues a single query (one pool checkout) regardless of how many columns are
   requested. Tasks are ordered by `position` within each column's bucket and
-  `:assigned_to` is preloaded — matching the single-column `list_tasks/2` shape.
+  `:assigned_to` and `:labels` are preloaded (one batched query each, never
+  one per card) — matching the single-column `list_tasks/2` shape.
 
   The returned map only contains keys for columns that have at least one task.
   Callers that need an entry for every requested column should merge against a
@@ -57,7 +58,7 @@ defmodule Kanban.Tasks.Queries do
     |> maybe_filter_archived(Keyword.get(opts, :include_archived, false))
     |> BoardFilters.apply_filters(Keyword.get(opts, :filters))
     |> order_by([t], [t.column_id, t.position])
-    |> preload(:assigned_to)
+    |> preload([:assigned_to, :labels])
     |> Repo.all()
     |> Enum.group_by(& &1.column_id)
   end

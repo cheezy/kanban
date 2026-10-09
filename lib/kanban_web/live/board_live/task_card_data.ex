@@ -3,7 +3,7 @@ defmodule KanbanWeb.BoardLive.TaskCardData do
   Pure task-card view-model builder for `KanbanWeb.BoardLive.Show`, extracted
   from the LiveView (W1446). Adapts a `%Kanban.Tasks.Task{}` into the duck-typed
   map shape `KanbanWeb.TaskCard` renders — avatars, goal fields, meta counts,
-  reviewer verdict fields, and done/cycle-time fields.
+  reviewer verdict fields, done/cycle-time fields, and labels.
 
   Every function here is pure: it takes task + precomputed board data and returns
   display maps with no socket access. The dual string/atom key lookup
@@ -36,6 +36,7 @@ defmodule KanbanWeb.BoardLive.TaskCardData do
     |> Map.merge(task_card_meta_counts(task))
     |> Map.merge(task_card_review_fields(task))
     |> Map.merge(task_card_done_fields(task))
+    |> Map.merge(task_card_label_fields(task))
   end
 
   defp task_card_avatars(task) do
@@ -78,6 +79,16 @@ defmodule KanbanWeb.BoardLive.TaskCardData do
   defp task_card_done_fields(task) do
     %{cycle_time: cycle_time_for(task)}
   end
+
+  # Labels come preloaded by the board's batched task query. An unloaded
+  # association (Map.from_struct keeps the %Ecto.Association.NotLoaded{}) is
+  # normalized to [] so the card never has to tell the two apart. Sorted by
+  # name ignoring case, matching Kanban.Labels.list_labels/2.
+  defp task_card_label_fields(%{labels: labels}) when is_list(labels) do
+    %{labels: Enum.sort_by(labels, &{String.downcase(&1.name), &1.id})}
+  end
+
+  defp task_card_label_fields(_task), do: %{labels: []}
 
   defp reviewer_skipped?(reviewer) when is_map(reviewer) do
     case get_in_either(reviewer, [:dispatched, "dispatched"]) do

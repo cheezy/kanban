@@ -2,7 +2,8 @@ defmodule KanbanWeb.TaskLive.Form.OptionBuilders do
   @moduledoc """
   Pure builders for the task form's dropdown options and initial changeset.
   Used by `KanbanWeb.TaskLive.FormComponent.update/2` to populate the
-  `column_options`, `assignable_users`, and `goal_options` assigns.
+  `column_options`, `assignable_users`, and `goal_options` assigns, and by
+  `KanbanWeb.TaskLive.Form.LabelSelection` for `label_options`.
   """
   use KanbanWeb, :verified_routes
   use Gettext, backend: KanbanWeb.Gettext
@@ -101,6 +102,15 @@ defmodule KanbanWeb.TaskLive.Form.OptionBuilders do
       end)
 
     [{gettext("Unassigned"), nil} | users_list]
+  end
+
+  @doc """
+  Build the label picker's options from a board's labels: one
+  `%{id, name, color}` map per label, in the given order. The maps render
+  directly through `KanbanWeb.LabelChip.label_chip/1`.
+  """
+  def build_label_options(labels) do
+    Enum.map(labels, fn label -> %{id: label.id, name: label.name, color: label.color} end)
   end
 
   @doc """

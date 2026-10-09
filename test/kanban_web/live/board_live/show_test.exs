@@ -3284,4 +3284,35 @@ defmodule KanbanWeb.BoardLive.ShowTest do
                live(conn, ~p"/boards/#{ctx.board}?q=alpha")
     end
   end
+
+  describe "label chips on board cards (W2234)" do
+    setup [:register_and_log_in_user]
+
+    setup %{user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "Doing"})
+      scope = Kanban.Accounts.Scope.for_user(user)
+      label = Kanban.LabelsFixtures.label_fixture(board, %{name: "Frontend", color: :teal})
+      task = task_fixture(column, %{title: "Labelled card"})
+      goal = task_fixture(column, %{title: "Labelled goal", type: :goal})
+      {:ok, _} = Kanban.Labels.set_task_labels(scope, task, [label.id])
+      {:ok, _} = Kanban.Labels.set_task_labels(scope, goal, [label.id])
+
+      %{board: board, task: task, goal: goal}
+    end
+
+    test "a labelled task card renders its label chip", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      assert has_element?(view, "#task-#{ctx.task.id} [data-card-labels] [data-label-chip=teal]")
+      assert has_element?(view, "#task-#{ctx.task.id} [data-label-chip]", "Frontend")
+    end
+
+    test "a labelled goal card shows no label chips", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      assert has_element?(view, "#task-#{ctx.goal.id}")
+      refute has_element?(view, "#task-#{ctx.goal.id} [data-label-chip]")
+    end
+  end
 end

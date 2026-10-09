@@ -664,4 +664,76 @@ defmodule KanbanWeb.TaskCardTest do
       assert html =~ "flex: 1; min-width: 0"
     end
   end
+
+  describe "task_card/1 — label chips (W2234)" do
+    defp labels(n),
+      do: for(i <- 1..n, do: %Kanban.Labels.Label{id: i, name: "Label #{i}", color: :green})
+
+    defp render_card(task) do
+      assigns = %{task: task}
+
+      rendered_to_string(~H"""
+      <TaskCard.task_card task={@task} />
+      """)
+    end
+
+    defp chip_count(html), do: html |> String.split("data-label-chip=") |> length() |> Kernel.-(1)
+
+    test "renders a chip per label when a task has up to three" do
+      html = render_card(task(%{labels: labels(2)}))
+
+      assert html =~ "data-card-labels"
+      assert chip_count(html) == 2
+      assert html =~ "Label 1"
+      assert html =~ "Label 2"
+      refute html =~ "data-label-overflow"
+    end
+
+    test "renders three chips and a +N overflow for more labels" do
+      html = render_card(task(%{labels: labels(5)}))
+
+      assert chip_count(html) == 3
+      refute html =~ "Label 4"
+      assert html =~ "+2"
+    end
+
+    test "renders no label row for a task without labels" do
+      refute render_card(task()) =~ "data-card-labels"
+      refute render_card(task(%{labels: []})) =~ "data-card-labels"
+      refute render_card(task(%{labels: %Ecto.Association.NotLoaded{}})) =~ "data-card-labels"
+    end
+
+    test "goal cards stay unchanged and show no label chips" do
+      html = render_card(task(%{type: :goal, labels: labels(2)}))
+
+      refute html =~ "data-card-labels"
+      refute html =~ "data-label-chip"
+    end
+
+    test "label names are escaped and only whitelisted colours reach the style" do
+      label = %Kanban.Labels.Label{
+        id: 1,
+        name: "<script>alert(1)</script>",
+        color: "red;background:url(x)"
+      }
+
+      html = render_card(task(%{labels: [label]}))
+
+      refute html =~ "<script>alert(1)</script>"
+      assert html =~ "&lt;script&gt;"
+      refute html =~ "url(x)"
+      assert html =~ "var(--label-gray)"
+    end
+
+    test "renders the chips in a dense card too" do
+      assigns = %{task: task(%{labels: labels(1)})}
+
+      html =
+        rendered_to_string(~H"""
+        <TaskCard.task_card task={@task} dense />
+        """)
+
+      assert chip_count(html) == 1
+    end
+  end
 end

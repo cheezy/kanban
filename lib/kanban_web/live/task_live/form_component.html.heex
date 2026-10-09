@@ -155,6 +155,8 @@
       />
     <% end %>
 
+    <.label_picker labels={@label_options} selected={@selected_label_ids} />
+
     <%= if field_visible?(@field_visibility, "complexity") do %>
       <%!-- Complexity & Planning Section --%>
       <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line);">

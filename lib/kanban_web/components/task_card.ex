@@ -17,7 +17,9 @@ defmodule KanbanWeb.TaskCard do
   `:title`) and on plain maps assembled by the LiveView for fields the
   schema doesn't carry directly (`:claimed_by`, `:completed_by`,
   `:author`, `:goal`, `:hook`, `:diff`, `:tests_passed`,
-  `:tests_total`). Each avatar field, when present, is a
+  `:tests_total`, `:labels`). `:labels` is a list of `%Kanban.Labels.Label{}`
+  (or `%{name, color}` maps); up to three render as chips plus a `+N`
+  overflow count, and a missing or unloaded value renders none. Each avatar field, when present, is a
   `%{kind, name, palette}` map ready to pass to
   `KanbanWeb.Avatar.avatar/1`.
   """
@@ -27,6 +29,7 @@ defmodule KanbanWeb.TaskCard do
 
   alias KanbanWeb.Avatar
   alias KanbanWeb.GoalCard
+  alias KanbanWeb.LabelChip
 
   @doc """
   Renders a task card.
@@ -82,6 +85,7 @@ defmodule KanbanWeb.TaskCard do
     ]}>
       <.top_row task={@task} column={@column} />
       <.title_row task={@task} column={@column} />
+      <LabelChip.label_chips labels={card_labels(@task)} max={3} size={:sm} />
       <p
         :if={Map.get(@task, :type) == :goal and present_text?(Map.get(@task, :description))}
         style={[
@@ -435,6 +439,13 @@ defmodule KanbanWeb.TaskCard do
   end
 
   # --- Helpers -------------------------------------------------------------
+
+  defp card_labels(task) do
+    case Map.get(task, :labels) do
+      labels when is_list(labels) -> labels
+      _ -> []
+    end
+  end
 
   # The primary avatar slot at the top-right of the card: prefer
   # claimed_by, then column-dependent completed_by, then author.

@@ -92,4 +92,73 @@ defmodule KanbanWeb.LabelChipTest do
       assert names == ~w(Gray Red Orange Yellow Green Teal Blue Purple Pink)
     end
   end
+
+  describe "label_chip/1 size (W2234)" do
+    test "the default :md size keeps the settings chip metrics" do
+      html = render_label(%Label{name: "Bug", color: :red})
+
+      assert html =~ "font-size: 11.5px"
+      assert html =~ "padding: 2px 8px"
+    end
+
+    test ":sm renders the compact card chip" do
+      assigns = %{label: %Label{name: "Bug", color: :red}}
+
+      html =
+        rendered_to_string(~H"""
+        <LabelChip.label_chip label={@label} size={:sm} />
+        """)
+
+      assert html =~ "font-size: 10.5px"
+      assert html =~ "padding: 1px 6px"
+      assert html =~ "max-width: 10em"
+      refute html =~ "font-size: 11.5px"
+    end
+  end
+
+  describe "label_chips/1 (W2234)" do
+    defp render_chips(labels, max \\ 3) do
+      assigns = %{labels: labels, max: max}
+
+      rendered_to_string(~H"""
+      <LabelChip.label_chips labels={@labels} max={@max} size={:sm} />
+      """)
+    end
+
+    defp labels(n),
+      do: for(i <- 1..n, do: %Label{id: i, name: "Label #{i}", color: :blue})
+
+    test "renders every label as a chip when there are no more than max" do
+      html = render_chips(labels(3))
+
+      assert html |> String.split("data-label-chip=") |> length() == 4
+      refute html =~ "data-label-overflow"
+    end
+
+    test "renders max chips plus a +N count for the rest" do
+      html = render_chips(labels(5))
+
+      assert html |> String.split("data-label-chip=") |> length() == 4
+      assert html =~ "Label 3"
+      refute html =~ "Label 4"
+      assert html =~ "data-label-overflow"
+      assert html =~ "+2"
+      assert html =~ ~s(title="2 more labels")
+    end
+
+    test "uses the singular for one more label" do
+      assert render_chips(labels(4)) =~ ~s(title="1 more label")
+    end
+
+    test "renders nothing for no labels" do
+      refute render_chips([]) =~ "data-card-labels"
+    end
+
+    test "the overflow count uses a token colour and no opacity" do
+      html = render_chips(labels(4))
+
+      assert html =~ "color: var(--ink-3)"
+      refute html =~ "opacity"
+    end
+  end
 end

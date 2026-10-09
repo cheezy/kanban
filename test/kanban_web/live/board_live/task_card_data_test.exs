@@ -149,4 +149,30 @@ defmodule KanbanWeb.BoardLive.TaskCardDataTest do
       assert %{promoted: true} = TaskCardData.task_card_data(task, MapSet.new(), %{})
     end
   end
+
+  describe "task_card_data labels (W2234)" do
+    test "carries a labelled task's labels, sorted by name ignoring case" do
+      task = %Task{
+        id: 9,
+        type: :work,
+        labels: [
+          %Kanban.Labels.Label{id: 2, name: "beta", color: :red},
+          %Kanban.Labels.Label{id: 1, name: "Alpha", color: :blue},
+          %Kanban.Labels.Label{id: 3, name: "alpha", color: :green}
+        ]
+      }
+
+      assert TaskCardData.task_card_data(task).labels |> Enum.map(& &1.id) == [1, 3, 2]
+    end
+
+    test "an unlabelled task gets an empty list" do
+      assert TaskCardData.task_card_data(%Task{id: 10, type: :work, labels: []}).labels == []
+    end
+
+    test "an unloaded labels association becomes an empty list" do
+      data = TaskCardData.task_card_data(%Task{id: 11, type: :work})
+
+      assert data.labels == []
+    end
+  end
 end

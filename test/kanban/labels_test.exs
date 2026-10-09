@@ -412,6 +412,25 @@ defmodule Kanban.LabelsTest do
       assert task_label_ids(ctx.task) == []
     end
 
+    test "broadcasts :task_updated on the board topic after the write commits", ctx do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{ctx.board.id}")
+      task_id = ctx.task.id
+
+      {:ok, _} = Labels.set_task_labels(ctx.owner_scope, ctx.task, [ctx.a.id])
+
+      assert_receive {Kanban.Tasks, :task_updated, %Task{id: ^task_id, labels: [label]}}
+      assert label.id == ctx.a.id
+    end
+
+    test "a rejected write broadcasts nothing", ctx do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{ctx.board.id}")
+
+      assert {:error, :unauthorized} =
+               Labels.set_task_labels(ctx.read_only_scope, ctx.task, [ctx.a.id])
+
+      refute_receive {Kanban.Tasks, :task_updated, _}, 50
+    end
+
     test "collapses duplicate ids into one row", ctx do
       assert {:ok, %Task{labels: [_]}} =
                Labels.set_task_labels(ctx.owner_scope, ctx.task, [ctx.a.id, ctx.a.id])
@@ -463,6 +482,36 @@ defmodule Kanban.LabelsTest do
 
       assert {:ok, _} = Labels.set_task_labels(ctx.owner_scope, task, [ctx.a.id])
       assert task_label_ids(task) == [ctx.a.id]
+    end
+  end
+
+  describe "list_task_label_ids/2 (W2234)" do
+    setup ctx do
+      task = task_fixture(ctx.column)
+      a = label_fixture(ctx.board)
+      b = label_fixture(ctx.board)
+      {:ok, _} = Labels.set_task_labels(ctx.owner_scope, task, [b.id, a.id])
+
+      %{task: task, a: a, b: b}
+    end
+
+    test "returns the task's label ids to any board member", ctx do
+      expected = Enum.sort([ctx.a.id, ctx.b.id])
+
+      assert Labels.list_task_label_ids(ctx.owner_scope, ctx.task) == expected
+      assert Labels.list_task_label_ids(ctx.modify_scope, ctx.task) == expected
+      assert Labels.list_task_label_ids(ctx.read_only_scope, ctx.task) == expected
+    end
+
+    test "returns [] to a non-member, a nil scope and a scope that is not a %Scope{}", ctx do
+      assert Labels.list_task_label_ids(ctx.outsider_scope, ctx.task) == []
+      assert Labels.list_task_label_ids(nil, ctx.task) == []
+      assert Labels.list_task_label_ids(%{user: ctx.owner}, ctx.task) == []
+    end
+
+    test "returns [] for an unlabelled task and an unsaved task", ctx do
+      assert Labels.list_task_label_ids(ctx.owner_scope, task_fixture(ctx.column)) == []
+      assert Labels.list_task_label_ids(ctx.owner_scope, %Task{}) == []
     end
   end
 end

@@ -4107,4 +4107,210 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert visible_html =~ "not_applicable"
     end
   end
+
+  describe "label picker (W2234)" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      scope = user_scope_fixture(user)
+      frontend = Kanban.LabelsFixtures.label_fixture(board, %{name: "Frontend", color: :blue})
+      backend = Kanban.LabelsFixtures.label_fixture(board, %{name: "Backend", color: :red})
+
+      other_board = board_fixture(user_fixture())
+      foreign = Kanban.LabelsFixtures.label_fixture(other_board, %{name: "Foreign label"})
+
+      %{
+        user: user,
+        board: board,
+        column: column,
+        scope: scope,
+        frontend: frontend,
+        backend: backend,
+        foreign: foreign
+      }
+    end
+
+    defp render_form(ctx, task, action) do
+      render_component(FormComponent,
+        id: if(action == :edit_task, do: "edit-#{task.id}", else: :new),
+        title: "Task",
+        action: action,
+        board: ctx.board,
+        task: task,
+        column_id: if(action == :new_task, do: ctx.column.id),
+        current_scope: ctx.scope,
+        patch: "/boards/#{ctx.board.id}"
+      )
+    end
+
+    defp form_socket(ctx, task, action) do
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: ctx.scope,
+            task: task,
+            board: ctx.board,
+            action: action,
+            column_id: if(action == :new_task, do: ctx.column.id),
+            patch: "/boards/#{ctx.board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+    end
+
+    defp save(socket, params) do
+      {:noreply, socket} = FormComponent.handle_event("save", %{"task" => params}, socket)
+      socket
+    end
+
+    defp label_ids(ctx, task), do: Kanban.Labels.list_task_label_ids(ctx.scope, task)
+
+    defp checked_ids(html) do
+      ~r/name="task\[label_ids\]\[\]" value="(\d+)"\s+checked/
+      |> Regex.scan(html, capture: :all_but_first)
+      |> Enum.map(fn [id] -> String.to_integer(id) end)
+      |> Enum.sort()
+    end
+
+    test "shows a picker with only the current board's labels", ctx do
+      html = render_form(ctx, %Tasks.Task{column_id: ctx.column.id}, :new_task)
+
+      assert html =~ "data-label-picker"
+      assert html =~ "Frontend"
+      assert html =~ "Backend"
+      refute html =~ "Foreign label"
+      assert html =~ ~s(name="task[label_ids][]" value="")
+      assert checked_ids(html) == []
+    end
+
+    test "a board with no labels shows the empty state and posts no label ids", ctx do
+      board = board_fixture(ctx.user)
+      column = column_fixture(board)
+
+      html =
+        render_form(
+          %{ctx | board: board, column: column},
+          %Tasks.Task{column_id: column.id},
+          :new_task
+        )
+
+      assert html =~ "This board has no labels yet."
+      refute html =~ "task[label_ids][]"
+    end
+
+    test "selecting two labels and saving persists them; reopening shows them checked", ctx do
+      task = task_fixture(ctx.column, %{title: "Labelled"})
+      ids = [ctx.frontend.id, ctx.backend.id]
+
+      ctx
+      |> form_socket(task, :edit_task)
+      |> save(%{"title" => "Labelled", "label_ids" => ["" | Enum.map(ids, &to_string/1)]})
+
+      assert label_ids(ctx, task) == Enum.sort(ids)
+
+      reopened = Tasks.get_task!(task.id)
+      assert checked_ids(render_form(ctx, reopened, :edit_task)) == Enum.sort(ids)
+    end
+
+    test "creating a task with labels persists them", ctx do
+      ctx
+      |> form_socket(%Tasks.Task{column_id: ctx.column.id}, :new_task)
+      |> save(%{
+        "title" => "Fresh labelled task",
+        "label_ids" => ["", to_string(ctx.frontend.id)]
+      })
+
+      created = Kanban.Repo.get_by!(Tasks.Task, title: "Fresh labelled task")
+      assert label_ids(ctx, created) == [ctx.frontend.id]
+    end
+
+    test "unchecking every label clears them", ctx do
+      task = task_fixture(ctx.column, %{title: "Clear me"})
+      {:ok, _} = Kanban.Labels.set_task_labels(ctx.scope, task, [ctx.frontend.id])
+
+      ctx |> form_socket(task, :edit_task) |> save(%{"title" => "Clear me", "label_ids" => [""]})
+
+      assert label_ids(ctx, task) == []
+    end
+
+    test "a save without label_ids leaves the labels untouched", ctx do
+      task = task_fixture(ctx.column, %{title: "Keep"})
+      {:ok, _} = Kanban.Labels.set_task_labels(ctx.scope, task, [ctx.backend.id])
+
+      ctx |> form_socket(task, :edit_task) |> save(%{"title" => "Kept"})
+
+      assert Tasks.get_task!(task.id).title == "Kept"
+      assert label_ids(ctx, task) == [ctx.backend.id]
+    end
+
+    test "a label id from another board rejects the save and changes nothing", ctx do
+      task = task_fixture(ctx.column, %{title: "Original"})
+
+      socket =
+        ctx
+        |> form_socket(task, :edit_task)
+        |> save(%{
+          "title" => "Hijacked",
+          "label_ids" => ["", to_string(ctx.frontend.id), to_string(ctx.foreign.id)]
+        })
+
+      assert socket.assigns.error_message == "Security error: Invalid label"
+      assert Tasks.get_task!(task.id).title == "Original"
+      assert label_ids(ctx, task) == []
+
+      owner_scope = Kanban.Accounts.Scope.for_user(ctx.user)
+      assert Kanban.Labels.list_task_label_ids(owner_scope, task) == []
+    end
+
+    test "a label deleted while the form was open is dropped and reported", ctx do
+      task = task_fixture(ctx.column, %{title: "Race"})
+      socket = form_socket(ctx, task, :edit_task)
+
+      {:ok, _} = Kanban.Labels.delete_label(ctx.scope, ctx.backend)
+
+      socket =
+        save(socket, %{
+          "title" => "Race",
+          "label_ids" => ["", to_string(ctx.frontend.id), to_string(ctx.backend.id)]
+        })
+
+      assert label_ids(ctx, task) == [ctx.frontend.id]
+      assert socket.assigns.flash["error"] =~ "deleted"
+    end
+
+    test "validate keeps the checked labels across re-renders", ctx do
+      task = task_fixture(ctx.column, %{title: "Validate"})
+      socket = form_socket(ctx, task, :edit_task)
+
+      {:noreply, socket} =
+        FormComponent.handle_event(
+          "validate",
+          %{"task" => %{"title" => "Validate", "label_ids" => ["", to_string(ctx.backend.id)]}},
+          socket
+        )
+
+      assert socket.assigns.selected_label_ids == [ctx.backend.id]
+
+      {:noreply, socket} =
+        FormComponent.handle_event("validate", %{"task" => %{"title" => "Validate 2"}}, socket)
+
+      assert socket.assigns.selected_label_ids == [ctx.backend.id]
+    end
+
+    test "a read-only member cannot save labels through the form", ctx do
+      reader = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, reader, :read_only, ctx.user)
+      task = task_fixture(ctx.column, %{title: "Read only"})
+
+      ctx
+      |> Map.put(:scope, user_scope_fixture(reader))
+      |> form_socket(task, :edit_task)
+      |> save(%{"title" => "Read only", "label_ids" => ["", to_string(ctx.frontend.id)]})
+
+      assert label_ids(ctx, task) == []
+    end
+  end
 end

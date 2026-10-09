@@ -4,14 +4,17 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   import KanbanWeb.ReviewReportHelpers.Panels, only: [review_panel_visible?: 1]
   import KanbanWeb.TaskLive.Form.EmbedSections, only: [embed_sections: 1]
   import KanbanWeb.TaskLive.Form.GuidanceSections, only: [guidance_sections: 1]
+  import KanbanWeb.TaskLive.Form.LabelPicker, only: [label_picker: 1]
   import KanbanWeb.TaskLive.Form.PlanningSections, only: [planning_sections: 1]
 
   alias Kanban.Columns
   alias Kanban.Tasks
   alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.TaskLive.Form.FieldEvents
+  alias KanbanWeb.TaskLive.Form.LabelSelection
   alias KanbanWeb.TaskLive.Form.OptionBuilders
   alias KanbanWeb.TaskLive.Form.ParamNormalizer
+  alias KanbanWeb.TaskLive.Form.RelationalScopes
   alias KanbanWeb.TaskLive.Form.TaskParams
   alias KanbanWeb.TaskLive.Form.TechnicalDetails
 
@@ -38,15 +41,27 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     {:ok,
      socket
      |> assign(assigns)
-     |> assign(:task, task_data.task_with_associations)
-     |> assign(:column_options, task_data.column_options)
-     |> assign(:assignable_users, task_data.assignable_users)
+     |> assign_task_data(task_data)
      |> assign_new(:current_scope, fn -> nil end)
-     |> assign(:goal_options, task_data.goal_options)
-     |> assign(:field_visibility, board.field_visibility || %{})
+     |> assign_labels_and_visibility(assigns, task, action)
      |> assign(:error_message, nil)
      |> assign(:technical_details_raw, TechnicalDetails.encode(task_data.changeset))
      |> assign_form(task_data.changeset)}
+  end
+
+  defp assign_task_data(socket, task_data) do
+    assign(socket,
+      task: task_data.task_with_associations,
+      column_options: task_data.column_options,
+      assignable_users: task_data.assignable_users,
+      goal_options: task_data.goal_options
+    )
+  end
+
+  defp assign_labels_and_visibility(socket, %{board: board} = assigns, task, action) do
+    socket
+    |> LabelSelection.assign_options(assigns[:current_scope], board, task, action)
+    |> assign(:field_visibility, board.field_visibility || %{})
   end
 
   defp prepare_task_data(task, board, action, assigns) do
@@ -100,6 +115,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     {:noreply,
      socket
      |> assign(:error_message, nil)
+     |> LabelSelection.track(task_params)
      |> maybe_assign_technical_details_raw(raw)
      |> assign_form(changeset)}
   end
@@ -219,7 +235,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
     case TechnicalDetails.decode(task_params) do
       {:ok, decoded_params} ->
-        save_task(socket, socket.assigns.action, decoded_params)
+        save_task_and_labels(socket, decoded_params)
 
       {:error, _raw} ->
         changeset =
@@ -236,6 +252,21 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     end
   end
 
+  # Label ids are not a task field: resolve them within this board first (an
+  # id the picker never offered rejects the save), then save the task and
+  # write the labels once it exists. See KanbanWeb.TaskLive.Form.LabelSelection.
+  defp save_task_and_labels(socket, params) do
+    offered = Enum.map(socket.assigns.label_options, & &1.id)
+
+    case LabelSelection.pop(params, offered, socket.assigns.initial_label_ids) do
+      {:invalid, params} ->
+        reject_with_scope_error(socket, params, :label_ids)
+
+      {change, params} ->
+        socket |> assign(:label_change, change) |> save_task(socket.assigns.action, params)
+    end
+  end
+
   defp save_task(socket, :edit_task, task_params) do
     task_params = ParamNormalizer.preserve_stored_values(task_params, socket.assigns.task)
 
@@ -244,20 +275,12 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     # column_id check is preserved; parent_id and assigned_to_id are now
     # validated the same way. Each check is independent — a single bad
     # field rejects the whole save with a targeted changeset error.
-    case validate_relational_scopes(socket, task_params) do
+    case RelationalScopes.validate(task_params, socket.assigns.board) do
       :ok ->
         perform_task_update(socket, task_params)
 
       {:error, field, message} ->
-        changeset =
-          socket.assigns.task
-          |> Tasks.Task.changeset(task_params)
-          |> Ecto.Changeset.add_error(field, message)
-
-        {:noreply,
-         socket
-         |> assign(:error_message, TaskParams.scope_error_label(field))
-         |> assign_form(changeset)}
+        reject_with_scope_error(socket, task_params, field, message)
     end
   end
 
@@ -282,73 +305,16 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     end
   end
 
-  defp validate_relational_scopes(socket, task_params) do
-    board = socket.assigns.board
+  defp reject_with_scope_error(socket, task_params, field, message \\ nil) do
+    changeset = Tasks.Task.changeset(socket.assigns.task, task_params)
 
-    with :ok <- validate_column_scope(task_params, board),
-         :ok <- validate_parent_scope(task_params, board) do
-      validate_assigned_to_scope(task_params, board)
-    end
-  end
+    changeset =
+      if message, do: Ecto.Changeset.add_error(changeset, field, message), else: changeset
 
-  defp validate_column_scope(task_params, board) do
-    case Map.get(task_params, "column_id") do
-      nil ->
-        :ok
-
-      "" ->
-        :ok
-
-      column_id ->
-        column = Columns.get_column!(column_id)
-
-        if column.board_id == board.id do
-          :ok
-        else
-          {:error, :column_id, gettext("Column does not belong to this board")}
-        end
-    end
-  end
-
-  defp validate_parent_scope(task_params, board) do
-    case Map.get(task_params, "parent_id") do
-      nil ->
-        :ok
-
-      "" ->
-        :ok
-
-      parent_id_input ->
-        with {:ok, parent_id} <- TaskParams.coerce_id(parent_id_input),
-             %{} <- Tasks.get_task_for_board(parent_id, board.id) do
-          :ok
-        else
-          _ -> {:error, :parent_id, gettext("Parent goal does not belong to this board")}
-        end
-    end
-  end
-
-  defp validate_assigned_to_scope(task_params, board) do
-    case Map.get(task_params, "assigned_to_id") do
-      nil ->
-        :ok
-
-      "" ->
-        :ok
-
-      assigned_input ->
-        with {:ok, user_id} <- TaskParams.coerce_id(assigned_input),
-             true <- board_member?(board, user_id) do
-          :ok
-        else
-          _ -> {:error, :assigned_to_id, gettext("Assignee does not have access to this board")}
-        end
-    end
-  end
-
-  # Called from validate_assigned_to_scope/2; analyzer regex misses predicate `?` callers.
-  defp board_member?(board, user_id) do
-    not is_nil(Kanban.Boards.get_user_access(board.id, user_id))
+    {:noreply,
+     socket
+     |> assign(:error_message, TaskParams.scope_error_label(field))
+     |> assign_form(changeset)}
   end
 
   defp perform_task_update(socket, task_params) do
@@ -357,12 +323,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
     case save_task_update(socket, task_params) do
       {:ok, task} ->
-        notify_parent({:saved, task})
-
-        {:noreply,
-         socket
-         |> put_flash(:info, TaskParams.build_update_flash(cascade_count))
-         |> push_patch(to: socket.assigns.patch)}
+        finish_task_update(socket, task, cascade_count)
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply,
@@ -370,6 +331,16 @@ defmodule KanbanWeb.TaskLive.FormComponent do
          |> assign(:error_message, gettext("Please fix the errors below"))
          |> assign_form(changeset)}
     end
+  end
+
+  defp finish_task_update(socket, task, cascade_count) do
+    socket = LabelSelection.apply_change(socket, task)
+    notify_parent({:saved, task})
+
+    {:noreply,
+     socket
+     |> put_flash(:info, TaskParams.build_update_flash(cascade_count))
+     |> push_patch(to: socket.assigns.patch)}
   end
 
   # Passing the acting user lets Tasks.update_task/3 skip the task_assigned
@@ -403,6 +374,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   defp create_task_in_column(socket, column, task_params) do
     case Tasks.create_task(column, task_params) do
       {:ok, task} ->
+        socket = LabelSelection.apply_change(socket, task)
         notify_parent({:saved, task})
 
         {:noreply,
