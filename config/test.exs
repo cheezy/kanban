@@ -117,6 +117,7 @@ config :kanban, Kanban.Webhooks.Transport,
   req_options: [plug: {Req.Test, Kanban.Webhooks.Transport}]
 
 config :kanban, Kanban.Webhooks.DeliveryWorker, resolver: {Kanban.WebhooksFixtures, :resolve}
+config :kanban, Kanban.Webhooks, resolver: {Kanban.WebhooksFixtures, :resolve}
 
 # Speed up the after_goal grace window for tests so timing assertions
 # can run synchronously via Oban.drain_queue(with_scheduled: true).

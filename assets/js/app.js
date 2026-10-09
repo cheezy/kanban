@@ -73,6 +73,12 @@ window.addEventListener("phx:comment-thread:scroll-to", event => {
   if (row) row.scrollIntoView({block: "nearest", behavior: "smooth"})
 })
 
+// Copies an element's text to the clipboard: JS.dispatch("stride:copy", to: "#id").
+// Used by the one-time webhook signing secret, so the secret never sits in an attribute.
+window.addEventListener("stride:copy", event => {
+  if (navigator.clipboard) navigator.clipboard.writeText(event.target.textContent.trim())
+})
+
 // Return keyboard focus after a card's Move to Ready arrow leaves with its card.
 installFocusAfterMove(window, document)
 

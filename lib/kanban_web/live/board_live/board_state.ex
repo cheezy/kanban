@@ -7,6 +7,8 @@ defmodule KanbanWeb.BoardLive.BoardState do
   choices in each reload are deliberate (see the comments on each).
   """
 
+  use Gettext, backend: KanbanWeb.Gettext
+
   import Phoenix.Component, only: [assign: 3]
   import Phoenix.LiveView, only: [stream: 3, stream: 4]
 
@@ -78,6 +80,7 @@ defmodule KanbanWeb.BoardLive.BoardState do
   def page_title(:edit_task_in_column), do: "Edit Task"
   def page_title(:manage_members), do: "Manage Members"
   def page_title(:board_settings), do: "Board Settings"
+  def page_title(:integrations), do: gettext("Integrations")
 
   @doc """
   Loads every column's tasks and the goal-derived assigns.

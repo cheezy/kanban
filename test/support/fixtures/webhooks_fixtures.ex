@@ -31,7 +31,8 @@ defmodule Kanban.WebhooksFixtures do
   end
 
   @doc """
-  The DNS table the delivery worker uses in tests (`config/test.exs`):
+  The DNS table the delivery worker and `Kanban.Webhooks` use in tests
+  (`config/test.exs`):
 
     * `hooks.example.com` - a public address
     * `hooks.slack.com` - a public address

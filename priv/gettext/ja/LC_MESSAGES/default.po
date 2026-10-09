@@ -83,7 +83,7 @@ msgstr "ログイン"
 msgid "Log out"
 msgstr "ログアウト"
 
-#: lib/kanban_web/components/board_tabs.ex:154
+#: lib/kanban_web/components/board_tabs.ex:152
 #: lib/kanban_web/components/nav_components.ex:135
 #: lib/kanban_web/components/side_nav.ex:102
 #: lib/kanban_web/components/side_nav.ex:103
@@ -153,6 +153,7 @@ msgstr "パスワード"
 #: lib/kanban_web/live/admin/message_live/index.html.heex:25
 #: lib/kanban_web/live/board_live/form.html.heex:52
 #: lib/kanban_web/live/board_live/settings_form_component.ex:173
+#: lib/kanban_web/live/board_live/webhook_form.ex:96
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/components/comment_row.ex:139
@@ -330,7 +331,7 @@ msgstr "新しいタスクを作成"
 
 #: lib/kanban_web/live/archive_live/index.ex:474
 #: lib/kanban_web/live/archive_live/index.ex:499
-#: lib/kanban_web/live/board_live/show.ex:197
+#: lib/kanban_web/live/board_live/show.ex:205
 #: lib/kanban_web/live/board_live/task_actions.ex:304
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
@@ -427,8 +428,8 @@ msgstr "重大"
 msgid "Defect"
 msgstr "不具合"
 
-#: lib/kanban_web/live/board_live/show.ex:233
-#: lib/kanban_web/live/board_live/show.ex:434
+#: lib/kanban_web/live/board_live/show.ex:241
+#: lib/kanban_web/live/board_live/show.ex:442
 #: lib/kanban_web/live/board_live/task_actions.ex:92
 #: lib/kanban_web/live/board_live/task_actions.ex:142
 #, elixir-autogen, elixir-format
@@ -721,7 +722,7 @@ msgstr "ボードに追加するには、ユーザーが既にシステムに登
 msgid "You cannot add yourself to the board"
 msgstr "自分自身をボードに追加することはできません"
 
-#: lib/kanban_web/live/board_live/show.ex:129
+#: lib/kanban_web/live/board_live/show.ex:137
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete columns"
 msgstr "ボードの所有者のみが列を削除できます"
@@ -737,7 +738,7 @@ msgstr "ボードの所有者のみが列を管理できます"
 msgid "Only the board owner can create columns"
 msgstr "ボードの所有者のみが列を作成できます"
 
-#: lib/kanban_web/live/board_live/show.ex:259
+#: lib/kanban_web/live/board_live/show.ex:267
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can reorder columns"
 msgstr "ボードの所有者のみが列を並べ替えできます"
@@ -766,6 +767,7 @@ msgid "No history available"
 msgstr "利用可能な履歴がありません"
 
 #: lib/kanban_web/components/task_metadata_grid.ex:61
+#: lib/kanban_web/live/board_live/webhook_views.ex:285
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:16
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:48
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:141
@@ -1146,7 +1148,7 @@ msgstr "ブロック中"
 msgid "Cannot add columns to AI optimized boards"
 msgstr "AI最適化ボードには列を追加できません"
 
-#: lib/kanban_web/live/board_live/show.ex:134
+#: lib/kanban_web/live/board_live/show.ex:142
 #, elixir-autogen, elixir-format
 msgid "Cannot delete columns on AI optimized boards"
 msgstr "AI最適化ボードでは列を削除できません"
@@ -1156,7 +1158,7 @@ msgstr "AI最適化ボードでは列を削除できません"
 msgid "Cannot edit columns on AI optimized boards"
 msgstr "AI最適化ボードでは列を編集できません"
 
-#: lib/kanban_web/live/board_live/show.ex:264
+#: lib/kanban_web/live/board_live/show.ex:272
 #, elixir-autogen, elixir-format
 msgid "Cannot reorder columns on AI optimized boards"
 msgstr "AI最適化ボードでは列を並び替えできません"
@@ -1372,7 +1374,7 @@ msgstr "失敗時の動作"
 
 #: lib/kanban_web/live/board_live/column_actions.ex:66
 #: lib/kanban_web/live/board_live/field_visibility.ex:45
-#: lib/kanban_web/live/board_live/show.ex:276
+#: lib/kanban_web/live/board_live/show.ex:284
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr "フィールド表示を変更できるのはボードの所有者だけです"
@@ -1404,6 +1406,7 @@ msgstr "従うべきパターン"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:203
 #: lib/kanban_web/components/acceptance_checklist.ex:289
+#: lib/kanban_web/live/board_live/webhook_views.ex:350
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:75
 #: lib/kanban_web/live/task_live/form_component.html.heex:402
 #, elixir-autogen, elixir-format
@@ -1639,13 +1642,14 @@ msgstr "テレメトリイベントを追加"
 msgid "Add Unit Test"
 msgstr "ユニットテストを追加"
 
-#: lib/kanban_web/live/board_live/show.html.heex:841
+#: lib/kanban_web/live/board_live/show.html.heex:866
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to revoke this token?"
 msgstr "このトークンを取り消してもよろしいですか?"
 
-#: lib/kanban_web/live/board_live/show.html.heex:613
-#: lib/kanban_web/live/board_live/show.html.heex:643
+#: lib/kanban_web/live/board_live/show.html.heex:638
+#: lib/kanban_web/live/board_live/show.html.heex:668
+#: lib/kanban_web/live/board_live/webhook_views.ex:72
 #: lib/kanban_web/live/user_live/confirmation.ex:61
 #: lib/kanban_web/live/user_live/confirmation.ex:87
 #: lib/kanban_web/live/user_live/confirmation.ex:365
@@ -1654,7 +1658,7 @@ msgstr "このトークンを取り消してもよろしいですか?"
 msgid "Copy"
 msgstr "コピー"
 
-#: lib/kanban_web/live/board_live/show.html.heex:747
+#: lib/kanban_web/live/board_live/show.html.heex:772
 #, elixir-autogen, elixir-format
 msgid "Creating..."
 msgstr "作成中..."
@@ -1700,12 +1704,12 @@ msgstr "手動テスト"
 msgid "Manual test description"
 msgstr "手動テストの説明"
 
-#: lib/kanban_web/live/board_live/show.html.heex:686
+#: lib/kanban_web/live/board_live/show.html.heex:711
 #, elixir-autogen, elixir-format
 msgid "My AI Agent"
 msgstr "マイAIエージェント"
 
-#: lib/kanban_web/live/board_live/show.html.heex:772
+#: lib/kanban_web/live/board_live/show.html.heex:797
 #, elixir-autogen, elixir-format
 msgid "No API tokens yet. Generate one above to get started."
 msgstr "まだAPIトークンがありません。上記で生成して開始してください。"
@@ -1722,7 +1726,7 @@ msgstr "Phoenixチャネル"
 msgid "PubSub Broadcasts"
 msgstr "PubSubブロードキャスト"
 
-#: lib/kanban_web/live/board_live/show.html.heex:849
+#: lib/kanban_web/live/board_live/show.html.heex:874
 #, elixir-autogen, elixir-format
 msgid "Revoke"
 msgstr "取り消し"
@@ -1791,12 +1795,14 @@ msgstr "channel:event"
 msgid "topic:event"
 msgstr "topic:event"
 
-#: lib/kanban_web/live/board_live/show.html.heex:650
+#: lib/kanban_web/live/board_live/show.html.heex:675
+#: lib/kanban_web/live/board_live/webhook_views.ex:88
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "閉じる"
 
-#: lib/kanban_web/live/board_live/show.html.heex:614
+#: lib/kanban_web/live/board_live/show.html.heex:639
+#: lib/kanban_web/live/board_live/webhook_views.ex:79
 #: lib/kanban_web/live/user_live/confirmation.ex:62
 #: lib/kanban_web/live/user_live/confirmation.ex:366
 #, elixir-autogen, elixir-format
@@ -1909,12 +1915,12 @@ msgstr "このファイルに関するメモ"
 msgid "Please fix the errors below"
 msgstr "下記のエラーを修正してください"
 
-#: lib/kanban_web/live/board_live/show.html.heex:719
+#: lib/kanban_web/live/board_live/show.html.heex:744
 #, elixir-autogen, elixir-format
 msgid "Task automation"
 msgstr "タスク自動化"
 
-#: lib/kanban_web/live/board_live/show.html.heex:706
+#: lib/kanban_web/live/board_live/show.html.heex:731
 #, elixir-autogen, elixir-format
 msgid "claude-4.5-opus"
 msgstr "claude-4.5-opus"
@@ -1934,7 +1940,7 @@ msgstr "lib/kanban/tasks.ex"
 msgid "mix test"
 msgstr "mix test"
 
-#: lib/kanban_web/live/board_live/show.html.heex:615
+#: lib/kanban_web/live/board_live/show.html.heex:640
 #: lib/kanban_web/live/user_live/confirmation.ex:63
 #: lib/kanban_web/live/user_live/confirmation.ex:367
 #, elixir-autogen, elixir-format
@@ -1972,13 +1978,14 @@ msgstr "ボード:"
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
 #: lib/kanban_web/live/admin/user_live/index.html.heex:222
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
-#: lib/kanban_web/live/board_live/show.html.heex:864
+#: lib/kanban_web/live/board_live/show.html.heex:889
+#: lib/kanban_web/live/board_live/webhook_views.ex:206
 #: lib/kanban_web/live/task_live/components/comment_row.ex:123
 #, elixir-autogen, elixir-format
 msgid "Delete"
 msgstr "削除"
 
-#: lib/kanban_web/live/board_live/show.ex:179
+#: lib/kanban_web/live/board_live/show.ex:187
 #: lib/kanban_web/live/board_live/task_actions.ex:277
 #, elixir-autogen, elixir-format
 msgid "Failed to archive task"
@@ -2017,7 +2024,7 @@ msgstr "セキュリティエラー: 無効な列"
 msgid "Select capability to add..."
 msgstr "追加する能力を選択..."
 
-#: lib/kanban_web/live/board_live/show.html.heex:733
+#: lib/kanban_web/live/board_live/show.html.heex:758
 #, elixir-autogen, elixir-format
 msgid "code_generation, testing, documentation"
 msgstr "code_generation, testing, documentation"
@@ -2027,7 +2034,7 @@ msgstr "code_generation, testing, documentation"
 msgid "API token deleted successfully"
 msgstr "APIトークンが正常に削除されました"
 
-#: lib/kanban_web/live/board_live/show.html.heex:856
+#: lib/kanban_web/live/board_live/show.html.heex:881
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this token?"
 msgstr "このトークンを削除してもよろしいですか？"
@@ -2216,7 +2223,7 @@ msgstr "このガイドのすべての手順を完了しました。"
 msgid "Could not find a user with that email address"
 msgstr "そのメールアドレスのユーザーが見つかりませんでした"
 
-#: lib/kanban_web/components/board_tabs.ex:136
+#: lib/kanban_web/components/board_tabs.ex:134
 #: lib/kanban_web/components/side_nav.ex:226
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:5
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
@@ -2712,7 +2719,7 @@ msgstr "ボードが見つかりません"
 msgid "Check this box if this task is for human workers only and should not be claimed by AI agents"
 msgstr "このタスクが人間専用でAIエージェントがクレームすべきでない場合はチェックを入れてください"
 
-#: lib/kanban_web/live/board_live/show.ex:215
+#: lib/kanban_web/live/board_live/show.ex:223
 #: lib/kanban_web/live/board_live/task_actions.ex:236
 #, elixir-autogen, elixir-format
 msgid "Failed to move goal to Ready"
@@ -2921,7 +2928,7 @@ msgstr "メッセージが見つかりません。"
 msgid "No messages yet."
 msgstr "メッセージはまだありません。"
 
-#: lib/kanban_web/live/board_live/show.ex:120
+#: lib/kanban_web/live/board_live/show.ex:128
 #, elixir-autogen, elixir-format
 msgid "Could not dismiss message."
 msgstr "メッセージを閉じることができませんでした。"
@@ -3026,31 +3033,31 @@ msgid "While many large organizations attempt to improve outcomes by measuring p
 msgstr "多くの大組織が生産性を測ることで成果を改善しようとしますが、私たちの経験では真の成果は次から生まれます:"
 
 #: lib/kanban_web/live/archive_live/index.ex:164
-#: lib/kanban_web/live/board_live/show.ex:175
+#: lib/kanban_web/live/board_live/show.ex:183
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to archive tasks on this board"
 msgstr "このボードでタスクをアーカイブする権限がありません"
 
 #: lib/kanban_web/live/archive_live/index.ex:490
-#: lib/kanban_web/live/board_live/show.ex:193
+#: lib/kanban_web/live/board_live/show.ex:201
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
 msgstr "このボードでタスクを削除する権限がありません"
 
-#: lib/kanban_web/live/board_live/show.ex:294
-#: lib/kanban_web/live/board_live/show.ex:309
-#: lib/kanban_web/live/board_live/show.ex:318
+#: lib/kanban_web/live/board_live/show.ex:302
+#: lib/kanban_web/live/board_live/show.ex:317
+#: lib/kanban_web/live/board_live/show.ex:326
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to manage API tokens"
 msgstr "APIトークンを管理する権限がありません"
 
-#: lib/kanban_web/live/board_live/show.ex:229
-#: lib/kanban_web/live/board_live/show.ex:430
+#: lib/kanban_web/live/board_live/show.ex:237
+#: lib/kanban_web/live/board_live/show.ex:438
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to move tasks on this board"
 msgstr "このボードでタスクを移動する権限がありません"
 
-#: lib/kanban_web/live/board_live/show.ex:211
+#: lib/kanban_web/live/board_live/show.ex:219
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to promote goals on this board"
 msgstr "このボードでゴールをプロモートする権限がありません"
@@ -3120,7 +3127,7 @@ msgid "Failed to submit the issue. Please try again later."
 msgstr "問題の送信に失敗しました。後でもう一度お試しください。"
 
 #: lib/kanban_web/live/board_live/field_visibility.ex:30
-#: lib/kanban_web/live/board_live/show.ex:281
+#: lib/kanban_web/live/board_live/show.ex:289
 #, elixir-autogen, elixir-format
 msgid "Invalid field name"
 msgstr "無効なフィールド名"
@@ -3642,8 +3649,8 @@ msgstr "エージェントAPI経由のAPIトークンの漏洩またはスコー
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:44
 #: lib/kanban_web/controllers/page_html/security.html.heex:38
-#: lib/kanban_web/live/board_live/show.html.heex:562
-#: lib/kanban_web/live/board_live/show.html.heex:570
+#: lib/kanban_web/live/board_live/show.html.heex:587
+#: lib/kanban_web/live/board_live/show.html.heex:595
 #, elixir-autogen, elixir-format
 msgid "API tokens"
 msgstr "APIトークン"
@@ -4426,7 +4433,7 @@ msgstr "未プロモート"
 msgid "Agents pull from this column. A task here should be fully specified — give them what they need."
 msgstr "エージェントはこの列からプルします。ここのタスクは完全に指定されている必要があります — 必要なものを与えてください。"
 
-#: lib/kanban_web/components/board_tabs.ex:130
+#: lib/kanban_web/components/board_tabs.ex:128
 #: lib/kanban_web/components/bulk_action_bar.ex:235
 #: lib/kanban_web/live/archive_live/index.html.heex:9
 #, elixir-autogen, elixir-format
@@ -4434,7 +4441,7 @@ msgid "Archive"
 msgstr "アーカイブ"
 
 #: lib/kanban_web/components/agents_header.ex:429
-#: lib/kanban_web/components/board_tabs.ex:127
+#: lib/kanban_web/components/board_tabs.ex:125
 #: lib/kanban_web/components/task_metadata_grid.ex:69
 #: lib/kanban_web/emails/digest_email.ex:131
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:89
@@ -4442,7 +4449,7 @@ msgstr "アーカイブ"
 msgid "Board"
 msgstr "ボード"
 
-#: lib/kanban_web/components/board_tabs.ex:57
+#: lib/kanban_web/components/board_tabs.ex:58
 #, elixir-autogen, elixir-format
 msgid "Board sections"
 msgstr "ボードのセクション"
@@ -4462,7 +4469,7 @@ msgstr "ここで人間がレビューします。承認して「Done」へ、�
 msgid "In-flight work. Hooks run before and after; the activity rail lights up here."
 msgstr "進行中の作業。フックは前後に実行され、アクティビティレールがここで点灯します。"
 
-#: lib/kanban_web/components/board_tabs.ex:148
+#: lib/kanban_web/components/board_tabs.ex:146
 #, elixir-autogen, elixir-format
 msgid "Members"
 msgstr "メンバー"
@@ -4472,7 +4479,7 @@ msgstr "メンバー"
 msgid "Shipped. Cycle time is recorded so the next estimate gets sharper."
 msgstr "出荷済み。サイクルタイムが記録され、次回の見積もりがより正確になります。"
 
-#: lib/kanban_web/components/board_tabs.ex:142
+#: lib/kanban_web/components/board_tabs.ex:140
 #, elixir-autogen, elixir-format
 msgid "Tokens"
 msgstr "APIトークン"
@@ -4781,67 +4788,68 @@ msgstr "name@example.com"
 msgid "Manage members"
 msgstr "メンバーを管理"
 
-#: lib/kanban_web/live/board_live/show.html.heex:763
+#: lib/kanban_web/live/board_live/show.html.heex:788
 #, elixir-autogen, elixir-format
 msgid "Active tokens"
 msgstr "アクティブなトークン"
 
-#: lib/kanban_web/live/board_live/show.html.heex:727
+#: lib/kanban_web/live/board_live/show.html.heex:752
 #, elixir-autogen, elixir-format
 msgid "Agent capabilities"
 msgstr "エージェント機能"
 
-#: lib/kanban_web/live/board_live/show.html.heex:700
+#: lib/kanban_web/live/board_live/show.html.heex:725
 #, elixir-autogen, elixir-format
 msgid "Agent model (optional)"
 msgstr "エージェントモデル（オプション）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:573
+#: lib/kanban_web/live/board_live/show.html.heex:598
 #, elixir-autogen, elixir-format
 msgid "Bearer tokens that authenticate agents on %{board_name}. Rotating a token does not release in-flight claims — the old token remains valid for a 60-second grace window."
 msgstr "%{board_name} 上のエージェントを認証するBearerトークンです。トークンをローテーションしても進行中のクレームは解放されません — 古いトークンは60秒の猶予期間中は有効のままです。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:738
+#: lib/kanban_web/live/board_live/show.html.heex:763
 #, elixir-autogen, elixir-format
 msgid "Comma-separated. Valid: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
 msgstr "カンマ区切り。有効な値: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing。空にするとすべてのタスクを許可します。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:596
+#: lib/kanban_web/live/board_live/show.html.heex:621
+#: lib/kanban_web/live/board_live/webhook_views.ex:46
 #, elixir-autogen, elixir-format
 msgid "Copy it now — you won't be able to see it again."
 msgstr "今すぐコピーしてください — 二度と見ることはできません。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:666
+#: lib/kanban_web/live/board_live/show.html.heex:691
 #, elixir-autogen, elixir-format
 msgid "Create new token"
 msgstr "新しいトークンを作成"
 
-#: lib/kanban_web/live/board_live/show.html.heex:755
+#: lib/kanban_web/live/board_live/show.html.heex:780
 #, elixir-autogen, elixir-format
 msgid "Generate token"
 msgstr "トークンを生成"
 
-#: lib/kanban_web/live/board_live/show.html.heex:832
+#: lib/kanban_web/live/board_live/show.html.heex:857
 #, elixir-autogen, elixir-format
 msgid "Never used"
 msgstr "未使用"
 
-#: lib/kanban_web/live/board_live/show.html.heex:713
+#: lib/kanban_web/live/board_live/show.html.heex:738
 #, elixir-autogen, elixir-format
 msgid "Purpose (optional)"
 msgstr "目的（オプション）"
 
-#: lib/kanban_web/live/board_live/show.html.heex:593
+#: lib/kanban_web/live/board_live/show.html.heex:618
 #, elixir-autogen, elixir-format
 msgid "Token created"
 msgstr "トークンを作成しました"
 
-#: lib/kanban_web/live/board_live/show.html.heex:678
+#: lib/kanban_web/live/board_live/show.html.heex:703
 #, elixir-autogen, elixir-format
 msgid "Token name"
 msgstr "トークン名"
 
-#: lib/kanban_web/live/board_live/show.html.heex:818
+#: lib/kanban_web/live/board_live/show.html.heex:843
 #, elixir-autogen, elixir-format
 msgid "revoked"
 msgstr "取り消し済み"
@@ -4968,6 +4976,7 @@ msgid "Throughput · last 12 hours"
 msgstr "スループット · 過去12時間"
 
 #: lib/kanban_web/components/goal_sidebar.ex:75
+#: lib/kanban_web/live/board_live/webhook_views.ex:289
 #, elixir-autogen, elixir-format
 msgid "Time"
 msgstr "時間"
@@ -7962,6 +7971,7 @@ msgid "Confirmed"
 msgstr "確認済み"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:99
+#: lib/kanban_web/live/board_live/webhook_views.ex:128
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr "無効"
@@ -8025,6 +8035,7 @@ msgid "Delete this account permanently? This cannot be undone."
 msgstr "このアカウントを完全に削除しますか？この操作は取り消せません。"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:182
+#: lib/kanban_web/live/board_live/webhook_views.ex:156
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr "無効にする"
@@ -8035,6 +8046,7 @@ msgid "Disable this account? They will be signed out and unable to log in."
 msgstr "このアカウントを無効にしますか？サインアウトされ、ログインできなくなります。"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:193
+#: lib/kanban_web/live/board_live/webhook_views.ex:156
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr "有効にする"
@@ -9810,7 +9822,7 @@ msgstr "新しいタスク"
 msgid "Resources and information"
 msgstr "リソースと情報"
 
-#: lib/kanban_web/live/board_live/show.html.heex:538
+#: lib/kanban_web/live/board_live/show.html.heex:563
 #, elixir-autogen, elixir-format
 msgid "Task details"
 msgstr "タスクの詳細"
@@ -10215,3 +10227,213 @@ msgstr "このショートカット一覧を表示または非表示"
 msgid "A selected task moved to another column, so it was taken out of the selection."
 msgid_plural "%{count} selected tasks moved to another column, so they were taken out of the selection."
 msgstr[0] "選択中のタスク %{count} 件が別の列に移動したため、選択から外しました。"
+
+#: lib/kanban_web/live/board_live/webhook_form.ex:37
+#, elixir-autogen, elixir-format
+msgid "Add an endpoint"
+msgstr "エンドポイントを追加"
+
+#: lib/kanban_web/live/board_live/webhook_form.ex:103
+#, elixir-autogen, elixir-format
+msgid "Add endpoint"
+msgstr "エンドポイントを追加"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:286
+#, elixir-autogen, elixir-format
+msgid "Attempt"
+msgstr "試行"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:174
+#, elixir-autogen, elixir-format
+msgid "Could not update the endpoint. Reload and try again."
+msgstr "エンドポイントを更新できませんでした。再読み込みしてもう一度お試しください。"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:202
+#, elixir-autogen, elixir-format
+msgid "Delete this endpoint and its delivery log?"
+msgstr "このエンドポイントと配信ログを削除しますか？"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:179
+#, elixir-autogen, elixir-format
+msgid "Deliveries"
+msgstr "配信"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:248
+#, elixir-autogen, elixir-format
+msgid "Each endpoint receives the task events you choose. Generic endpoints get a signed JSON POST; Slack endpoints get a message in a channel."
+msgstr "各エンドポイントは選択したタスクイベントを受け取ります。汎用エンドポイントには署名付きの JSON POST が、Slack エンドポイントにはチャンネルへのメッセージが送られます。"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:168
+#, elixir-autogen, elixir-format
+msgid "Enable the endpoint before sending a test event"
+msgstr "テストイベントを送信する前にエンドポイントを有効にしてください"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:135
+#, elixir-autogen, elixir-format
+msgid "Endpoint created"
+msgstr "エンドポイントを作成しました"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:101
+#, elixir-autogen, elixir-format
+msgid "Endpoint deleted"
+msgstr "エンドポイントを削除しました"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:180
+#, elixir-autogen, elixir-format
+msgid "Endpoint disabled"
+msgstr "エンドポイントを無効にしました"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:181
+#, elixir-autogen, elixir-format
+msgid "Endpoint enabled"
+msgstr "エンドポイントを有効にしました"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:155
+#, elixir-autogen, elixir-format
+msgid "Endpoint not found"
+msgstr "エンドポイントが見つかりません"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:288
+#, elixir-autogen, elixir-format
+msgid "Error"
+msgstr "エラー"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:284
+#, elixir-autogen, elixir-format
+msgid "Event"
+msgstr "イベント"
+
+#: lib/kanban_web/live/board_live/webhook_form.ex:74
+#, elixir-autogen, elixir-format
+msgid "Events"
+msgstr "イベント"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:349
+#, elixir-autogen, elixir-format
+msgid "Failed"
+msgstr "失敗"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:354
+#, elixir-autogen, elixir-format
+msgid "Generic webhook"
+msgstr "汎用 Webhook"
+
+#: lib/kanban_web/components/board_tabs.ex:158
+#: lib/kanban_web/live/board_live/board_state.ex:83
+#: lib/kanban_web/live/board_live/show.html.heex:538
+#: lib/kanban_web/live/board_live/show.html.heex:546
+#, elixir-autogen, elixir-format
+msgid "Integrations"
+msgstr "連携"
+
+#: lib/kanban_web/live/board_live/webhook_form.ex:41
+#, elixir-autogen, elixir-format
+msgid "Kind"
+msgstr "種類"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:278
+#, elixir-autogen, elixir-format
+msgid "No deliveries yet."
+msgstr "まだ配信はありません。"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:258
+#, elixir-autogen, elixir-format
+msgid "No endpoints yet. Add one below to send task events to another service."
+msgstr "エンドポイントはまだありません。下で追加すると、タスクイベントを別のサービスに送信できます。"
+
+#: lib/kanban_web/live/board_live/integrations.ex:35
+#: lib/kanban_web/live/board_live/integrations_component.ex:227
+#, elixir-autogen, elixir-format
+msgid "Only the board owner can manage integrations"
+msgstr "連携を管理できるのはボードのオーナーだけです"
+
+#: lib/kanban_web/live/board_live/webhook_form.ex:67
+#, elixir-autogen, elixir-format
+msgid "Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."
+msgstr "Slack の Incoming Webhook URL（https://hooks.slack.com/…）を貼り付けてください。"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:259
+#, elixir-autogen, elixir-format
+msgid "Recent deliveries"
+msgstr "最近の配信"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:270
+#, elixir-autogen, elixir-format
+msgid "Refresh"
+msgstr "更新"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:287
+#, elixir-autogen, elixir-format
+msgid "Response"
+msgstr "レスポンス"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:194
+#, elixir-autogen, elixir-format
+msgid "Rotate secret"
+msgstr "シークレットを再生成"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:189
+#, elixir-autogen, elixir-format
+msgid "Rotate the signing secret? The old secret stops working immediately."
+msgstr "署名シークレットを再生成しますか？古いシークレットはすぐに使えなくなります。"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:87
+#, elixir-autogen, elixir-format
+msgid "Secret rotated"
+msgstr "シークレットを再生成しました"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:167
+#, elixir-autogen, elixir-format
+msgid "Send test"
+msgstr "テスト送信"
+
+#: lib/kanban_web/live/board_live/show.html.heex:549
+#, elixir-autogen, elixir-format
+msgid "Send this board's task events to your own services or a Slack channel."
+msgstr "このボードのタスクイベントを独自のサービスや Slack チャンネルに送信します。"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:43
+#, elixir-autogen, elixir-format
+msgid "Signing secret"
+msgstr "署名シークレット"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:353
+#, elixir-autogen, elixir-format
+msgid "Slack"
+msgstr "Slack"
+
+#: lib/kanban_web/live/board_live/webhook_form.ex:68
+#, elixir-autogen, elixir-format
+msgid "Stride sends a signed JSON POST to this HTTPS address."
+msgstr "Stride はこの HTTPS アドレスに署名付きの JSON POST を送信します。"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:348
+#, elixir-autogen, elixir-format
+msgid "Succeeded"
+msgstr "成功"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:112
+#, elixir-autogen, elixir-format
+msgid "Test event queued. Refresh the deliveries in a few seconds."
+msgstr "テストイベントをキューに追加しました。数秒後に配信を更新してください。"
+
+#: lib/kanban_web/live/board_live/webhook_form.ex:53
+#, elixir-autogen, elixir-format
+msgid "URL"
+msgstr "URL"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:47
+#, elixir-autogen, elixir-format
+msgid "Use it to verify the X-Stride-Signature header on each request."
+msgstr "各リクエストの X-Stride-Signature ヘッダーの検証に使用します。"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:245
+#, elixir-autogen, elixir-format
+msgid "Webhooks"
+msgstr "Webhook"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:362
+#: lib/kanban_web/live/board_live/webhook_views.ex:366
+#, elixir-autogen, elixir-format
+msgid "unknown host"
+msgstr "不明なホスト"

@@ -456,6 +456,83 @@ defmodule Kanban.WebhooksTest do
     end
   end
 
+  describe "list_deliveries/3" do
+    test "the owner gets the newest attempts first, at most limit", ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      ids = for n <- 1..22, do: delivery_fixture(endpoint, %{attempt: n}).id
+      newest_first = Enum.reverse(ids)
+
+      assert ctx.owner_scope |> Webhooks.list_deliveries(endpoint) |> Enum.map(& &1.id) ==
+               Enum.take(newest_first, 20)
+
+      assert ctx.owner_scope |> Webhooks.list_deliveries(endpoint, 5) |> Enum.map(& &1.id) ==
+               Enum.take(newest_first, 5)
+    end
+
+    test "only the given endpoint's attempts, without the stored payload", ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      other = webhook_endpoint_fixture(ctx.board)
+      mine = delivery_fixture(endpoint, %{status: :failed, response_status: 500, error: "boom"})
+      delivery_fixture(other)
+
+      assert [delivery] = Webhooks.list_deliveries(ctx.owner_scope, endpoint)
+      assert delivery.id == mine.id
+      assert %{status: :failed, response_status: 500, error: "boom", attempt: 1} = delivery
+      assert delivery.inserted_at
+      refute delivery.payload == %{"id" => "evt"}
+    end
+
+    test "anyone but the owner gets []", ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      delivery_fixture(endpoint)
+
+      for scope <- ctx.non_owner_scopes do
+        assert Webhooks.list_deliveries(scope, endpoint) == []
+      end
+    end
+
+    test "an endpoint struct naming another board reads nothing", ctx do
+      foreign = webhook_endpoint_fixture(ctx.other_board)
+      delivery_fixture(foreign)
+
+      assert Webhooks.list_deliveries(ctx.owner_scope, %{foreign | board_id: ctx.board.id}) == []
+    end
+  end
+
+  describe "configured resolver" do
+    test "create_endpoint/4 without opts resolves through the configured resolver", ctx do
+      assert {:error, changeset} =
+               Webhooks.create_endpoint(
+                 ctx.owner_scope,
+                 ctx.board,
+                 Map.put(@valid, "url", "https://internal.example.com/h")
+               )
+
+      assert "points to a private or reserved network address" in errors_on(changeset).url
+
+      assert {:ok, {%Endpoint{}, _secret}} =
+               Webhooks.create_endpoint(ctx.owner_scope, ctx.board, @valid)
+    end
+
+    test "update_endpoint/4 checks a changed URL through it", ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+
+      assert {:error, changeset} =
+               Webhooks.update_endpoint(ctx.owner_scope, endpoint, %{
+                 "url" => "https://internal.example.com/h"
+               })
+
+      assert "points to a private or reserved network address" in errors_on(changeset).url
+    end
+
+    test "explicit opts win over the configured resolver", ctx do
+      opts = [resolver: fn _ -> {:ok, [{10, 0, 0, 1}]} end]
+
+      assert {:error, _changeset} =
+               Webhooks.create_endpoint(ctx.owner_scope, ctx.board, @valid, opts)
+    end
+  end
+
   describe "Delivery.changeset/2" do
     test "accepts a ping or a known event and checks attempt and response_status" do
       assert %{valid?: true} =

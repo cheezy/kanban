@@ -32,6 +32,7 @@ defmodule KanbanWeb.BoardLive.ModalNamesTest do
     for {path, name} <- [
           {~p"/boards/#{board}/settings", "Board settings"},
           {~p"/boards/#{board}/members", "Manage members"},
+          {~p"/boards/#{board}/integrations", "Integrations"},
           {~p"/boards/#{board}/columns/new", "New column"},
           {~p"/boards/#{board}/columns/#{column}/edit", "Edit column"},
           {~p"/boards/#{board}/columns/#{column}/tasks/new", "New task"},

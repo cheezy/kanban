@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Webhooks and Slack notifications for your board.** Board owners have a new **Integrations** tab. Add a webhook endpoint and Stride sends it a signed JSON request whenever a task is created, updated, moved, claimed, unclaimed, completed, sent to review, reviewed or deleted; choose which of those events each endpoint gets. Add a Slack incoming-webhook URL instead and the same events arrive as messages in a Slack channel. The signing secret is shown once, when you add an endpoint or rotate its secret, so copy it then. Each endpoint has **Send test**, an on/off switch and a log of its 20 most recent deliveries with their status and response code. Failed deliveries are retried for about an hour (up to 8 attempts), and Stride never sends to private or internal network addresses.
+
 ### Fixed
 
 - **Column changes reach open boards.** Adding, renaming, reordering or deleting a column now updates every open copy of the board without a reload.

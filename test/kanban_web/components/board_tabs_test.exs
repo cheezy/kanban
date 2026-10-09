@@ -92,6 +92,40 @@ defmodule KanbanWeb.BoardTabsTest do
     end
   end
 
+  describe "board_tabs/1 — Integrations tab" do
+    test "owner? sees Integrations on an AI-optimized and on a plain board" do
+      for ai? <- [true, false] do
+        assigns = %{board: board(%{ai_optimized_board: ai?})}
+
+        html =
+          rendered_to_string(~H"""
+          <BoardTabs.board_tabs board={@board} owner? />
+          """)
+
+        assert html =~ ~r/>\s*Integrations\s*</
+        assert html =~ ~s(href="/boards/42/integrations")
+      end
+    end
+
+    test "can_modify?, a read-only member? and no flags do not see Integrations" do
+      for flags <- [%{can_modify?: true}, %{member?: true}, %{}] do
+        assigns = Map.merge(%{board: board(%{ai_optimized_board: true})}, flags)
+
+        html =
+          rendered_to_string(~H"""
+          <BoardTabs.board_tabs
+            board={@board}
+            can_modify?={assigns[:can_modify?] || false}
+            member?={assigns[:member?] || false}
+          />
+          """)
+
+        refute html =~ ~r/>\s*Integrations\s*</
+        refute html =~ "/integrations"
+      end
+    end
+  end
+
   describe "board_tabs/1 — active underline" do
     test "active tab has --stride-orange underline + bold + colored icon" do
       assigns = %{board: board()}

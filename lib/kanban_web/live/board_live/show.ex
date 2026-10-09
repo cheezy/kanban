@@ -14,6 +14,7 @@ defmodule KanbanWeb.BoardLive.Show do
   alias KanbanWeb.BoardLive.BulkSelection
   alias KanbanWeb.BoardLive.ColumnActions
   alias KanbanWeb.BoardLive.FilterActions
+  alias KanbanWeb.BoardLive.Integrations
   alias KanbanWeb.BoardLive.Params
   alias KanbanWeb.BoardLive.TaskActions
   alias KanbanWeb.BoardLive.TaskCardData
@@ -24,6 +25,7 @@ defmodule KanbanWeb.BoardLive.Show do
   alias KanbanWeb.TaskCard
 
   @parent_message_components [
+    KanbanWeb.BoardLive.IntegrationsComponent,
     KanbanWeb.BoardLive.LabelsManagerComponent,
     KanbanWeb.BoardLive.MembersFormComponent
   ]
@@ -72,6 +74,12 @@ defmodule KanbanWeb.BoardLive.Show do
   def handle_params(%{"id" => id}, _, socket) when socket.assigns.live_action == :api_tokens do
     Params.with_board(socket, id, fn board, user_access ->
       ApiTokens.resolve_api_tokens_view(socket, board, user_access)
+    end)
+  end
+
+  def handle_params(%{"id" => id}, _, socket) when socket.assigns.live_action == :integrations do
+    Params.with_board(socket, id, fn board, user_access ->
+      Integrations.resolve_integrations_view(socket, board, user_access)
     end)
   end
 

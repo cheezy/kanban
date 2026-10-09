@@ -12,7 +12,8 @@ defmodule KanbanWeb.BoardTabs do
   member (`:member?`, `:can_modify?` or `:owner?`), because members see
   the board's labels there and modify users manage them (W2233); the
   board-details form inside it stays owner-only. The Tokens tab needs
-  `:can_modify?` or `:owner?`.
+  `:can_modify?` or `:owner?`. The Integrations tab (webhook and Slack
+  endpoints, W2228) is owner-only, on every board.
   """
   use KanbanWeb, :html
 
@@ -23,10 +24,12 @@ defmodule KanbanWeb.BoardTabs do
 
     * `board` — board struct or map with `:id`. Required.
     * `active` — the currently active tab atom (one of
-      `:board | :archive | :metrics | :tokens | :members | :settings`).
+      `:board | :archive | :metrics | :tokens | :members | :settings |
+      :integrations`).
       An unknown atom renders no active underline. Default `:board`.
     * `owner?` — when true, every tab gated by `can_modify?` is
-      visible too. Default false.
+      visible too, and so is the owner-only Integrations tab. Default
+      false.
     * `can_modify?` — when true (or when `owner?` is true), the
       Settings tab and (on an AI-optimized board) the Tokens tab are
       visible. Default false.
@@ -40,16 +43,14 @@ defmodule KanbanWeb.BoardTabs do
   attr :member?, :boolean, default: false
 
   def board_tabs(assigns) do
-    assigns =
-      assign(
-        assigns,
-        :tabs,
-        visible_tabs(
-          assigns.board,
-          assigns.can_modify? || assigns.owner?,
-          assigns.member? || assigns.can_modify? || assigns.owner?
-        )
-      )
+    flags = %{
+      owner?: assigns.owner?,
+      modify?: assigns.can_modify? || assigns.owner?,
+      member?: assigns.member? || assigns.can_modify? || assigns.owner?,
+      ai_optimized?: Map.get(assigns.board, :ai_optimized_board, false)
+    }
+
+    assigns = assign(assigns, :tabs, visible_tabs(assigns.board, flags))
 
     ~H"""
     <nav
@@ -106,19 +107,16 @@ defmodule KanbanWeb.BoardTabs do
 
   # --- Helpers -------------------------------------------------------------
 
-  defp visible_tabs(board, modify?, member?) do
-    ai_optimized? = Map.get(board, :ai_optimized_board, false)
-
+  defp visible_tabs(board, flags) do
     board
     |> all_tabs()
-    |> Enum.reject(fn tab ->
-      case tab.id do
-        :settings -> not member?
-        :tokens -> not (modify? and ai_optimized?)
-        _ -> false
-      end
-    end)
+    |> Enum.reject(&hidden?(&1.id, flags))
   end
+
+  defp hidden?(:settings, flags), do: not flags.member?
+  defp hidden?(:tokens, flags), do: not (flags.modify? and flags.ai_optimized?)
+  defp hidden?(:integrations, flags), do: not flags.owner?
+  defp hidden?(_tab, _flags), do: false
 
   defp all_tabs(board) do
     bid = Map.fetch!(board, :id)
@@ -154,6 +152,12 @@ defmodule KanbanWeb.BoardTabs do
         label: gettext("Settings"),
         icon: "hero-cog-6-tooth",
         path: "/boards/#{bid}/settings"
+      },
+      %{
+        id: :integrations,
+        label: gettext("Integrations"),
+        icon: "hero-puzzle-piece",
+        path: "/boards/#{bid}/integrations"
       }
     ]
   end

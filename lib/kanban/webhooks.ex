@@ -18,13 +18,16 @@ defmodule Kanban.Webhooks do
 
   A new or changed URL must pass `Kanban.Webhooks.UrlGuard.check/2`, which
   resolves its host. The `opts` of `create_endpoint/4` and
-  `update_endpoint/4` are passed to it (tests inject `:resolver`).
+  `update_endpoint/4` are passed to it, on top of a `:resolver` configured
+  with `config :kanban, Kanban.Webhooks, resolver: {module, function}`
+  (the test environment points it at a fixed table, so no test does DNS).
 
   Delivery (W2227): `Kanban.Webhooks.Events` turns task changes into jobs
   for `Kanban.Webhooks.DeliveryWorker`, which sends them. Both query the
   endpoint and delivery tables themselves, privately, so this context exposes
   no unscoped lookup by id; `signing_secret/1` only decrypts an endpoint the
-  caller already holds.
+  caller already holds. `list_deliveries/3` is the owner-scoped read of an
+  endpoint's delivery log for the Integrations tab (W2228).
 
   Related modules: `Kanban.Webhooks.Endpoint` and `Kanban.Webhooks.Delivery`
   (schemas), `Kanban.Webhooks.Signer` (the signature header),
@@ -41,10 +44,13 @@ defmodule Kanban.Webhooks do
   alias Kanban.Boards.Board
   alias Kanban.Integrations.SecretBox
   alias Kanban.Repo
+  alias Kanban.Webhooks.Delivery
   alias Kanban.Webhooks.DeliveryWorker
   alias Kanban.Webhooks.Endpoint
   alias Kanban.Webhooks.Payload
   alias Kanban.Webhooks.UrlGuard
+
+  @delivery_log_fields ~w(id endpoint_id event status attempt response_status error delivered_at inserted_at)a
 
   @doc """
   Lists a board's endpoints, oldest first, for its owner; `[]` for anyone
@@ -89,6 +95,8 @@ defmodule Kanban.Webhooks do
   plaintext the caller will ever get.
   """
   def create_endpoint(scope, %Board{id: board_id}, attrs, opts \\ []) do
+    opts = guard_opts(opts)
+
     with :ok <- authorize_owner(scope, board_id) do
       %Endpoint{board_id: board_id, created_by_id: scope.user.id}
       |> Endpoint.changeset(attrs, opts)
@@ -105,6 +113,8 @@ defmodule Kanban.Webhooks do
   loaded yields `{:error, changeset}` with an error on `:id`.
   """
   def update_endpoint(scope, %Endpoint{board_id: board_id} = endpoint, attrs, opts \\ []) do
+    opts = guard_opts(opts)
+
     with :ok <- authorize_owner(scope, board_id) do
       endpoint
       |> Endpoint.changeset(attrs, opts)
@@ -161,6 +171,31 @@ defmodule Kanban.Webhooks do
     end
   end
 
+  @doc """
+  The endpoint's most recent delivery attempts, newest first, at most
+  `limit`, for the board's owner; `[]` for anyone else. The stored payload
+  is not loaded.
+  """
+  def list_deliveries(scope, %Endpoint{} = endpoint, limit \\ 20)
+      when is_integer(limit) and limit > 0 do
+    case authorize_owner(scope, endpoint.board_id) do
+      :ok -> query_deliveries(endpoint, limit)
+      {:error, :unauthorized} -> []
+    end
+  end
+
+  # The join re-checks the board, so an endpoint struct naming a board it is
+  # not on reads nothing.
+  defp query_deliveries(%Endpoint{id: id, board_id: board_id}, limit) do
+    Delivery
+    |> join(:inner, [d], e in assoc(d, :endpoint))
+    |> where([d, e], d.endpoint_id == ^id and e.board_id == ^board_id)
+    |> order_by([d], desc: d.inserted_at, desc: d.id)
+    |> limit(^limit)
+    |> select([d], struct(d, @delivery_log_fields))
+    |> Repo.all()
+  end
+
   defp check_enabled(%Endpoint{enabled: true}), do: :ok
   defp check_enabled(%Endpoint{}), do: {:error, :disabled}
 
@@ -187,6 +222,16 @@ defmodule Kanban.Webhooks do
     case scope_user(scope) do
       nil -> {:error, :unauthorized}
       user -> if Boards.owner?(%Board{id: board_id}, user), do: :ok, else: {:error, :unauthorized}
+    end
+  end
+
+  # Explicit opts win over the configured resolver.
+  defp guard_opts(opts), do: Keyword.merge(configured_guard_opts(), opts)
+
+  defp configured_guard_opts do
+    case Application.get_env(:kanban, __MODULE__, [])[:resolver] do
+      {module, function} -> [resolver: &apply(module, function, [&1])]
+      nil -> []
     end
   end
 

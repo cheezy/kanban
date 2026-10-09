@@ -532,6 +532,31 @@
     />
   </KanbanWeb.DelayedModal.delayed_modal>
 
+  <KanbanWeb.DelayedModal.delayed_modal
+    :if={@live_action == :integrations and @is_owner}
+    id="board-integrations-modal"
+    label={gettext("Integrations")}
+    show
+    on_cancel={JS.patch(FilterActions.board_path(@board, @board_filters))}
+    padding="p-4 md:p-8 lg:p-14"
+    mobile_fullscreen
+  >
+    <div class="stride-screen" style="margin-bottom: 14px;">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.015em;">
+        {gettext("Integrations")}
+      </h2>
+      <p style="margin: 4px 0 0; font-size: 12.5px; color: var(--ink-3); line-height: 1.5;">
+        {gettext("Send this board's task events to your own services or a Slack channel.")}
+      </p>
+    </div>
+    <.live_component
+      module={KanbanWeb.BoardLive.IntegrationsComponent}
+      id={"board-integrations-#{@board.id}"}
+      board={@board}
+      current_scope={@current_scope}
+    />
+  </KanbanWeb.DelayedModal.delayed_modal>
+
   <div :if={@viewing_task_id && @show_task_modal} id={"task-modal-wrapper-#{@viewing_task_id}"}>
     <KanbanWeb.DelayedModal.delayed_modal
       id="task-view-modal"
