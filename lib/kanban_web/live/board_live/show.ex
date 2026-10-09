@@ -37,7 +37,8 @@ defmodule KanbanWeb.BoardLive.Show do
        board_filters: %BoardFilters{},
        filter_options: FilterActions.empty_options(),
        filters_active: false,
-       visible_tasks_by_column: %{}
+       visible_tasks_by_column: %{},
+       show_shortcuts_help: false
      )
      |> BulkSelection.init()
      |> stream(:undismissed_messages, undismissed_messages)}
@@ -89,7 +90,13 @@ defmodule KanbanWeb.BoardLive.Show do
   def handle_event("bulk_" <> _ = event, params, socket),
     do: BulkSelection.handle_bulk_event(event, params, socket)
 
-  @impl true
+  # W2236: the keyboard shortcut help overlay (KeyboardShortcutsHelp).
+  def handle_event("toggle_shortcuts_help", _params, socket),
+    do: {:noreply, update(socket, :show_shortcuts_help, &(not &1))}
+
+  def handle_event("close_shortcuts_help", _params, socket),
+    do: {:noreply, assign(socket, :show_shortcuts_help, false)}
+
   def handle_event("dismiss_message", %{"id" => id}, socket) do
     user = socket.assigns.current_scope.user
     message_id = String.to_integer(id)
@@ -125,7 +132,6 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  @impl true
   def handle_event("view_task", %{"id" => id}, socket) do
     case TaskActions.lookup_viewable_task(socket, id) do
       {:ok, %{id: task_id, type: :goal}} ->
@@ -140,19 +146,16 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  @impl true
   def handle_event("open_goal", %{"board-id" => board_id, "goal-id" => goal_id}, socket) do
     {:noreply, push_navigate(socket, to: ~p"/boards/#{board_id}/goals/#{goal_id}")}
   end
 
-  @impl true
   def handle_event("close_task_view", _, socket) do
     require Logger
     Logger.debug("close_task_view event")
     {:noreply, assign(socket, viewing_task_id: nil, show_task_modal: false)}
   end
 
-  @impl true
   def handle_event("archive_task", %{"id" => id}, socket) do
     case Authorization.authorize_modify_for_task(socket, id) do
       {:ok, task} ->
@@ -171,7 +174,6 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  @impl true
   def handle_event("delete_task", %{"id" => id}, socket) do
     case Authorization.authorize_modify_for_task(socket, id) do
       {:ok, task} ->
@@ -190,7 +192,6 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  @impl true
   def handle_event("promote_goal_to_ready", %{"id" => id}, socket) do
     case Authorization.authorize_modify_for_task(socket, id) do
       {:ok, goal} ->
@@ -209,7 +210,6 @@ defmodule KanbanWeb.BoardLive.Show do
     end
   end
 
-  @impl true
   def handle_event("move_task_to_ready", %{"id" => id}, socket) do
     case Authorization.authorize_modify_for_task(socket, id) do
       {:ok, task} ->

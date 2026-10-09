@@ -8,7 +8,8 @@ defmodule KanbanWeb.BoardFilterBar do
   `label` values. `KanbanWeb.BoardLive.FilterActions` turns those into URL
   params; nothing here interprets them. A Clear button (`"clear_filters"`)
   appears while any filter is active, and a hint explains that drag
-  reordering is off while filtering.
+  reordering is off while filtering. A `/` `?` keyboard hint beside the
+  search opens the shortcut help (`"toggle_shortcuts_help"`, W2236).
 
   Rendered for every viewer, including read-only members and public
   read-only visitors: filtering changes only what this viewer sees.
@@ -62,12 +63,27 @@ defmodule KanbanWeb.BoardFilterBar do
             placeholder={gettext("Search title or ID")}
             aria-label={gettext("Search tasks")}
             autocomplete="off"
+            aria-keyshortcuts="/"
             maxlength={FilterParams.max_search_length()}
             phx-debounce="300"
             class="w-full"
             style={control_style()}
           />
         </div>
+        <%!-- W2236: keyboard hint for the KeyboardShortcuts hook. Hidden below
+             md, where there is rarely a keyboard; a click opens the help. --%>
+        <button
+          type="button"
+          id="board-shortcuts-hint"
+          phx-click="toggle_shortcuts_help"
+          title={gettext("Press / to search or ? for all shortcuts")}
+          aria-label={gettext("Keyboard shortcuts")}
+          class="hidden md:inline-flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          style="align-items: center; gap: 3px; padding: 2px 4px; border-radius: 5px; background: transparent; border: none; cursor: pointer;"
+        >
+          <kbd class="kbd" aria-hidden="true">/</kbd>
+          <kbd class="kbd" aria-hidden="true">?</kbd>
+        </button>
         <.input
           type="select"
           id="board-filter-type"

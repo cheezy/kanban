@@ -3315,4 +3315,100 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       refute has_element?(view, "#task-#{ctx.goal.id} [data-label-chip]")
     end
   end
+
+  describe "keyboard shortcuts (W2236)" do
+    setup [:register_and_log_in_user]
+
+    setup %{user: user} do
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Shortcut card"})
+      %{board: board, task: task}
+    end
+
+    test "the board wrapper carries the KeyboardShortcuts hook and the search input has id board-search",
+         ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      assert has_element?(view, "#board-view[phx-hook='KeyboardShortcuts']")
+      assert has_element?(view, "#board-view[data-selected-count='0']")
+      assert has_element?(view, "input#board-search[aria-keyshortcuts='/']")
+      assert has_element?(view, "#board-shortcuts-hint[phx-click='toggle_shortcuts_help']")
+    end
+
+    test "toggle_shortcuts_help shows then hides the overlay", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      refute has_element?(view, "#keyboard-shortcuts-help")
+
+      render_hook(view, "toggle_shortcuts_help", %{})
+      assert has_element?(view, "#keyboard-shortcuts-help [role='dialog'][aria-modal='true']")
+      assert has_element?(view, "#keyboard-shortcuts-help", "Keyboard shortcuts")
+
+      render_hook(view, "toggle_shortcuts_help", %{})
+      refute has_element?(view, "#keyboard-shortcuts-help")
+    end
+
+    test "the keyboard hint opens the overlay", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      view |> element("#board-shortcuts-hint") |> render_click()
+      assert has_element?(view, "#keyboard-shortcuts-help")
+    end
+
+    test "the close button and Escape close the overlay", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      render_hook(view, "toggle_shortcuts_help", %{})
+      view |> element("#keyboard-shortcuts-help-close") |> render_click()
+      refute has_element?(view, "#keyboard-shortcuts-help")
+
+      render_hook(view, "toggle_shortcuts_help", %{})
+      view |> element("#keyboard-shortcuts-help-panel") |> render_keydown(%{"key" => "Escape"})
+      refute has_element?(view, "#keyboard-shortcuts-help")
+    end
+
+    test "close_shortcuts_help is idempotent when the overlay is already closed", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      render_hook(view, "close_shortcuts_help", %{})
+      render_hook(view, "close_shortcuts_help", %{})
+      refute has_element?(view, "#keyboard-shortcuts-help")
+    end
+
+    test "the wrapper reports the selection size so Escape can clear it", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      render_hook(view, "bulk_toggle_mode", %{})
+      render_hook(view, "bulk_toggle", %{"id" => to_string(ctx.task.id)})
+      assert has_element?(view, "#board-view[data-selected-count='1']")
+
+      render_hook(view, "bulk_clear", %{})
+      assert has_element?(view, "#board-view[data-selected-count='0']")
+    end
+
+    test "the overlay opens over a board with a task modal already showing", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}/tasks/#{ctx.task}/edit")
+
+      render_hook(view, "toggle_shortcuts_help", %{})
+      assert has_element?(view, "#keyboard-shortcuts-help")
+    end
+
+    test "a read-only viewer still gets the shortcuts and the overlay", ctx do
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, member, :read_only, ctx.user)
+      conn = log_in_user(ctx.conn, member)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{ctx.board}")
+
+      assert has_element?(
+               view,
+               "#board-view[phx-hook='KeyboardShortcuts'][data-selected-count='0']"
+             )
+
+      assert has_element?(view, "#board-search")
+
+      render_hook(view, "toggle_shortcuts_help", %{})
+      assert has_element?(view, "#keyboard-shortcuts-help")
+    end
+  end
 end

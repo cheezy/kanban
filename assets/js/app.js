@@ -29,6 +29,7 @@ import ColumnSortableHook from "./hooks/column_sortable"
 import CommentAnchor from "./hooks/comment_anchor"
 import DelayedModalClickAway from "./hooks/delayed_modal_click_away"
 import Dropdown from "./hooks/dropdown"
+import KeyboardShortcuts from "./hooks/keyboard_shortcuts"
 import MentionAutocomplete from "./hooks/mention_autocomplete"
 import PasswordToggle from "./hooks/password_toggle"
 import Sidebar from "./hooks/sidebar"
@@ -42,6 +43,7 @@ const MyHooks = {
   CommentAnchor,
   DelayedModalClickAway,
   Dropdown,
+  KeyboardShortcuts,
   MentionAutocomplete,
   PasswordToggle,
   Sidebar,

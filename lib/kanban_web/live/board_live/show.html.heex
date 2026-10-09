@@ -61,7 +61,14 @@
     board={@board}
   />
 
-  <div class="mx-auto max-w-[1920px] px-2 pt-2 pb-2 sm:px-3 lg:px-4">
+  <div
+    id="board-view"
+    class="mx-auto max-w-[1920px] px-2 pt-2 pb-2 sm:px-3 lg:px-4"
+    phx-hook="KeyboardShortcuts"
+    data-selected-count={
+      if @can_modify and @selection_mode, do: MapSet.size(@selected_ids), else: 0
+    }
+  >
     <div
       id="undismissed_messages"
       phx-update="stream"
@@ -859,4 +866,6 @@
       </section>
     </div>
   </.modal>
+
+  <KanbanWeb.KeyboardShortcutsHelp.keyboard_shortcuts_help :if={@show_shortcuts_help} />
 </Layouts.app>

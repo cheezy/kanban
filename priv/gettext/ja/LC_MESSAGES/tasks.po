@@ -17,7 +17,7 @@ msgid "Moved 1 task to Ready"
 msgid_plural "Moved %{count} tasks to Ready"
 msgstr[0] ""
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:216
+#: lib/kanban_web/live/board_live/bulk_selection.ex:217
 #, elixir-autogen, elixir-format
 msgid "%{count} goal was skipped: goals cannot be moved, assigned or archived in bulk."
 msgid_plural "%{count} goals were skipped: goals cannot be moved, assigned or archived in bulk."
@@ -47,7 +47,7 @@ msgid "Assigned %{count} task"
 msgid_plural "Assigned %{count} tasks"
 msgstr[0] "%{count} 件のタスクを割り当てました"
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:204
+#: lib/kanban_web/live/board_live/bulk_selection.ex:205
 #, elixir-autogen, elixir-format
 msgid "Moved %{count} task to %{column}"
 msgid_plural "Moved %{count} tasks to %{column}"
