@@ -37,6 +37,7 @@ defmodule Mix.Tasks.DarkMode.Contrast do
   |---------------------|-----------|------------------------------------------|
   | Text on surface     | 4.5:1     | WCAG 2.1 AA, normal-size text (1.4.3)    |
   | Status / brand text | 4.5:1     | WCAG 2.1 AA, normal-size text            |
+  | Label text          | 4.5:1     | WCAG 2.1 AA, normal-size text            |
   | Brand accent on bg  | 3.0:1     | WCAG 2.1 AA, graphical objects (1.4.11)  |
   | Border vs surface   | 1.5:1     | Not a WCAG ratio. A border is decorative |
   |                     |           | separation, so the AA text ratio does    |
@@ -70,6 +71,12 @@ defmodule Mix.Tasks.DarkMode.Contrast do
   # `--st-<name>-soft` fill. Single source of truth for `status_specs/0` and
   # `chip_border_specs/0` so the two families can never drift apart.
   @status_tokens ~w(backlog ready doing review done blocked)
+
+  # The label colours (W2233), each of which defines a `--label-<color>` ink and
+  # a `--label-<color>-soft` fill. Mirrors `Kanban.Labels.Label.colors/0`; it is
+  # hardcoded so this Mix task stays independent of the domain, and the contrast
+  # test locks the two lists together.
+  @label_colors ~w(gray red orange yellow green teal blue purple pink)
 
   # Selectors that anchor each token-defining block in app.css. The light Stride
   # block opens with `.stride-marketing,` at the start of a line; the dark block
@@ -213,6 +220,7 @@ defmodule Mix.Tasks.DarkMode.Contrast do
       border_specs(),
       status_specs(),
       chip_border_specs(),
+      label_specs(),
       brand_specs(),
       daisy_specs()
     ])
@@ -270,6 +278,18 @@ defmodule Mix.Tasks.DarkMode.Contrast do
   defp chip_border_specs do
     for s <- @status_tokens do
       spec("chip-border", "--line", "--st-#{s}-soft", @border_min)
+    end
+  end
+
+  # W2233: every label chip is ink-on-soft text plus a `--line` border, so each
+  # colour carries both the AA text pair and the W1922 chip-border pair. As with
+  # the status softs, a label soft is never gated against a surface.
+  defp label_specs do
+    for c <- @label_colors do
+      [
+        spec("label-text", "--label-#{c}", "--label-#{c}-soft", @aa_text),
+        spec("chip-border", "--line", "--label-#{c}-soft", @border_min)
+      ]
     end
   end
 

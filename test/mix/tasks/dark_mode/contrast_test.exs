@@ -92,6 +92,25 @@ defmodule Mix.Tasks.DarkMode.ContrastTest do
       end
     end
 
+    test "every label colour has an AA text pair and a chip-border pair" do
+      text = specs_in("label-text")
+      chip = specs_in("chip-border")
+
+      for color <- Kanban.Labels.Label.colors() do
+        ink = "--label-#{color}"
+        soft = "--label-#{color}-soft"
+
+        assert Enum.any?(text, &(&1.fg == ink and &1.bg == soft and &1.threshold == 4.5)),
+               "#{ink} on #{soft} must be checked at the AA text ratio"
+
+        assert Enum.any?(chip, &(&1.fg == "--line" and &1.bg == soft)),
+               "#{soft} must be checked for chip delineation"
+      end
+
+      # The task hardcodes its colour list; it must not drift from the schema.
+      assert length(text) == length(Kanban.Labels.Label.colors())
+    end
+
     test "chip-border specs use the border floor, not a text floor" do
       for spec <- specs_in("chip-border"), do: assert(spec.threshold == 1.5)
     end

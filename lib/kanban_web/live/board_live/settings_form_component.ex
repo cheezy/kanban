@@ -5,11 +5,17 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
   visibility toggles. Mounted as a `live_component` from
   `KanbanWeb.BoardLive.Show` when the `:board_settings` live action
   is active.
+
+  The board-details form is owner-only, matching `Boards.update_board/3`;
+  everyone who can open the modal also sees the board's labels through
+  `KanbanWeb.BoardLive.LabelsManagerComponent`, which owner and modify users
+  can edit (W2233).
   """
   use KanbanWeb, :live_component
 
   alias Kanban.Boards
   alias KanbanWeb.BoardLive.FieldVisibility
+  alias KanbanWeb.BoardLive.LabelsManagerComponent
 
   @impl true
   def update(%{board: board, current_scope: scope} = assigns, socket) do
@@ -18,6 +24,7 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
     {:ok,
      socket
      |> assign(assigns)
+     |> assign_access(board, scope.user)
      |> assign(:form, to_form(Boards.change_board(board)))
      |> assign(:field_visibility, field_visibility)
      |> assign(:scope, scope)}
@@ -37,14 +44,14 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
     case Boards.update_board(socket.assigns.board, board_params, socket.assigns.scope.user) do
       {:ok, board} ->
         notify_parent({:saved, board})
-
-        {:noreply,
-         socket
-         |> put_flash(:info, gettext("Board updated successfully"))
-         |> push_patch(to: socket.assigns.patch)}
+        {:noreply, flash_and_close(socket, :info, gettext("Board updated successfully"))}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
+
+      {:error, :unauthorized} ->
+        message = gettext("Only the board owner can change board details")
+        {:noreply, flash_and_close(socket, :error, message)}
     end
   end
 
@@ -59,12 +66,36 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 
+  # Show passes the access it already computed; fall back to looking it up so
+  # the component also works when mounted without them.
+  defp assign_access(socket, board, user) do
+    socket
+    |> assign_new(:is_owner, fn -> Boards.owner?(board, user) end)
+    |> assign_new(:can_modify, fn -> Boards.can_modify?(board, user) end)
+  end
+
+  # A live component's flash only reaches the page on a patch, so every flash
+  # here closes the modal with one.
+  defp flash_and_close(socket, kind, message) do
+    socket
+    |> put_flash(kind, message)
+    |> push_patch(to: socket.assigns.patch)
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
     <div class="stride-screen">
+      <p
+        :if={!@is_owner}
+        data-settings-owner-only
+        style="margin: 0 0 14px; font-size: 12px; color: var(--ink-3); line-height: 1.5;"
+      >
+        {gettext("Only the board owner can change board details and field visibility.")}
+      </p>
       <.form
         :let={f}
+        :if={@is_owner}
         for={@form}
         id={"board-settings-form-#{@board.id}"}
         phx-change="validate"
@@ -151,6 +182,14 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
           </button>
         </div>
       </.form>
+
+      <.live_component
+        module={LabelsManagerComponent}
+        id={"board-labels-#{@board.id}"}
+        board={@board}
+        current_scope={@current_scope}
+        can_modify={@can_modify}
+      />
     </div>
     """
   end

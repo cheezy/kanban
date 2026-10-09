@@ -110,8 +110,10 @@ Note what the gate can and cannot see: `chip-border` proves the *token pair*
 (`--line` against each soft fill) is perceivable. It cannot prove a given
 component actually uses that pair — a chip that omits the border, or borders
 itself in its own fill colour, references no `--line` and so is invisible to
-`dark_mode.contrast`. Catching those is a `mix dark_mode.scan` job ("soft fill
-without a contrasting border"), not a contrast-pair job.
+`dark_mode.contrast`. Catching those is not a contrast-pair job, and
+`mix dark_mode.scan` has no rule for it either: today only a component's own
+tests can prove its chip carries the border (the label chip's test asserts it,
+see below).
 
 `mix dark_mode.contrast` therefore gates the pair that is actually load-bearing
 — `--line` against every `--st-*-soft` fill, at the 1.5:1 border floor (the
@@ -125,6 +127,36 @@ shipped to review with `border: 1px solid transparent` over a soft fill, passing
 every automated gate while being effectively shapeless, because no spec measured
 element-vs-element delineation. Green gates on a chip are not evidence the chip
 was checked unless a `chip-border` pair covers it.
+
+### Label colour tokens
+
+Board labels (W2233) have their own palette: one `--label-<color>` ink and one
+`--label-<color>-soft` fill for each colour in `Kanban.Labels.Label.colors/0`
+(gray, red, orange, yellow, green, teal, blue, purple, pink). They follow the
+status scheme: in light mode the ink is 45% L on a 96% L soft, and in dark mode
+it is about 78% L on a 22% L soft. Both themes define both halves, so no dark
+chip inherits a light ink. Like every other Stride token, they resolve only
+inside `.stride-screen` / `.stride-marketing`.
+
+- **Renderer.** `KanbanWeb.LabelChip.label_chip/1` is the one sanctioned way to
+  draw a label. It always pairs the soft fill with `1px solid var(--line)`, and
+  `test/kanban_web/components/label_chip_test.exs` asserts that border for every
+  colour. It interpolates only whitelisted colour names into `style`; anything
+  else falls back to gray.
+- **Gates.** `mix dark_mode.contrast` checks each colour twice:
+  - ink on soft at 4.5:1, in the `label-text` category
+  - `--line` on soft at 1.5:1, in the `chip-border` category
+
+  As with the status softs, a label soft is never gated against a surface.
+- **Headroom.** The light softs sit only ~1.55:1 from `--line`, so raising
+  their chroma or lowering their lightness will push red and orange below the
+  border floor.
+- **Adding a colour.** Change these three together:
+  - the `Label` schema's `@colors`
+  - both theme blocks of `assets/css/app.css`
+  - `@label_colors` in `lib/mix/tasks/dark_mode/contrast.ex`
+
+  The contrast test fails if the task's list drifts from the schema.
 
 ## Theme activation mechanism
 

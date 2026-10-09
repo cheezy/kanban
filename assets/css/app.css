@@ -914,6 +914,32 @@
   --st-done-soft:    oklch(96% 0.03 155);
   --st-blocked-soft: oklch(96% 0.03 25);
 
+  /* Label colours (W2233) — one ink + soft pair per Kanban.Labels.Label colour,
+     on the same 45% L ink / 96% L soft scheme as the status pairs above so ink
+     on soft clears WCAG AA. Soft chroma stays low: the light softs sit only
+     ~1.55:1 from --line, so raising it would drop the chip border below the
+     1.5 delineation floor. Rendered only by KanbanWeb.LabelChip.label_chip/1,
+     which always pairs a soft with a 1px var(--line) border. */
+  --label-gray:   oklch(45% 0.005 270);
+  --label-red:    oklch(45% 0.17 25);
+  --label-orange: oklch(45% 0.14 50);
+  --label-yellow: oklch(45% 0.11 90);
+  --label-green:  oklch(45% 0.13 150);
+  --label-teal:   oklch(45% 0.10 190);
+  --label-blue:   oklch(45% 0.14 250);
+  --label-purple: oklch(45% 0.16 300);
+  --label-pink:   oklch(45% 0.16 350);
+
+  --label-gray-soft:   oklch(96% 0.004 270);
+  --label-red-soft:    oklch(96% 0.04 25);
+  --label-orange-soft: oklch(96% 0.045 50);
+  --label-yellow-soft: oklch(96% 0.06 90);
+  --label-green-soft:  oklch(96% 0.04 150);
+  --label-teal-soft:   oklch(96% 0.035 190);
+  --label-blue-soft:   oklch(96% 0.035 250);
+  --label-purple-soft: oklch(96% 0.04 300);
+  --label-pink-soft:   oklch(96% 0.04 350);
+
   /* Flash toast surfaces — DEDICATED to the flash card (core_components flash/1).
      Deliberately more saturated and further from --bg (98.8% L) than the shared
      --st-*-soft chips, so a notice reads as a distinct card rather than a
@@ -1048,6 +1074,29 @@
   --st-review:  oklch(78% 0.18 277);
   --st-done:    oklch(78% 0.14 155);
   --st-blocked: oklch(78% 0.18 25);
+
+  /* Label colours (W2233) — dark variants on the status scheme: ~78% L inks
+     over 22% L softs. Both halves are redefined here so no dark chip inherits
+     the 45% L light ink. */
+  --label-gray:   oklch(78% 0.005 270);
+  --label-red:    oklch(78% 0.16 25);
+  --label-orange: oklch(78% 0.14 50);
+  --label-yellow: oklch(78% 0.13 90);
+  --label-green:  oklch(78% 0.14 150);
+  --label-teal:   oklch(78% 0.11 190);
+  --label-blue:   oklch(78% 0.13 250);
+  --label-purple: oklch(78% 0.16 300);
+  --label-pink:   oklch(78% 0.15 350);
+
+  --label-gray-soft:   oklch(22% 0.005 270);
+  --label-red-soft:    oklch(22% 0.06 25);
+  --label-orange-soft: oklch(22% 0.06 50);
+  --label-yellow-soft: oklch(22% 0.06 90);
+  --label-green-soft:  oklch(22% 0.05 150);
+  --label-teal-soft:   oklch(22% 0.05 190);
+  --label-blue-soft:   oklch(22% 0.06 250);
+  --label-purple-soft: oklch(22% 0.06 300);
+  --label-pink-soft:   oklch(22% 0.06 350);
 
   /* Composite gradients — dark variants. The banner drops to low lightness
      (~24-26% L) while preserving the orange/amber/violet hue family, so the

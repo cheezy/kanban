@@ -56,6 +56,29 @@ defmodule KanbanWeb.BoardTabsTest do
       assert html =~ ~r/>\s*Settings\s*</
     end
 
+    test "can_modify? (not owner) sees the Settings tab" do
+      assigns = %{board: board()}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardTabs.board_tabs board={@board} can_modify? />
+        """)
+
+      assert html =~ ~r/>\s*Settings\s*</
+    end
+
+    test "a read-only member? sees Settings but not Tokens" do
+      assigns = %{board: board(%{ai_optimized_board: true})}
+
+      html =
+        rendered_to_string(~H"""
+        <BoardTabs.board_tabs board={@board} member? />
+        """)
+
+      assert html =~ ~r/>\s*Settings\s*</
+      refute html =~ ~r/>\s*Tokens\s*</
+    end
+
     test "non-owner does NOT see Tokens or Settings" do
       assigns = %{board: board()}
 

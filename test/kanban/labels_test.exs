@@ -256,6 +256,18 @@ defmodule Kanban.LabelsTest do
     end
   end
 
+  describe "change_label/2" do
+    test "returns a label changeset, defaulting to a new label" do
+      assert %Ecto.Changeset{data: %Label{id: nil}, valid?: false} = Labels.change_label()
+
+      label = %Label{name: "Bug", color: :red}
+      changeset = Labels.change_label(label, %{name: "  Defect  "})
+
+      assert changeset.data == label
+      assert Ecto.Changeset.get_change(changeset, :name) == "Defect"
+    end
+  end
+
   describe "update_label/3" do
     test "updates the name and colour for the owner and a modify member", ctx do
       label = label_fixture(ctx.board, %{name: "Bug", color: :red})
@@ -290,6 +302,22 @@ defmodule Kanban.LabelsTest do
 
       assert {:ok, %Label{name: "BUG"}} =
                Labels.update_label(ctx.owner_scope, label, %{name: "BUG"})
+    end
+
+    test "clearing the name returns a blank error instead of raising", ctx do
+      label = label_fixture(ctx.board, %{name: "Bug"})
+
+      assert {:error, changeset} = Labels.update_label(ctx.owner_scope, label, %{name: ""})
+      assert "can't be blank" in errors_on(changeset).name
+      assert %Label{name: "Bug"} = Repo.get!(Label, label.id)
+    end
+
+    test "a label deleted since it was loaded returns an :id error instead of raising", ctx do
+      label = label_fixture(ctx.board, %{name: "Bug"})
+      Repo.delete!(label)
+
+      assert {:error, changeset} = Labels.update_label(ctx.owner_scope, label, %{name: "Defect"})
+      assert Keyword.has_key?(changeset.errors, :id)
     end
 
     test "cannot move a label to another board", ctx do
@@ -337,6 +365,16 @@ defmodule Kanban.LabelsTest do
       assert Repo.get(Task, task_two.id)
       assert task_label_ids(task_one) == [kept.id]
       assert task_label_ids(task_two) == []
+    end
+  end
+
+  describe "delete_label/2 on an already-deleted label" do
+    test "returns an :id error instead of raising", ctx do
+      label = label_fixture(ctx.board, %{name: "Bug"})
+      Repo.delete!(label)
+
+      assert {:error, changeset} = Labels.delete_label(ctx.owner_scope, label)
+      assert Keyword.has_key?(changeset.errors, :id)
     end
   end
 

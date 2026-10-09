@@ -426,6 +426,10 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   @impl true
+  def handle_info({KanbanWeb.BoardLive.LabelsManagerComponent, msg}, socket),
+    do: {:noreply, KanbanWeb.BoardLive.LabelsManagerComponent.apply_parent_message(socket, msg)}
+
+  @impl true
   def handle_info({:field_visibility_updated, new_visibility}, socket) do
     {:noreply, assign(socket, :field_visibility, new_visibility)}
   end

@@ -1,15 +1,18 @@
 defmodule KanbanWeb.BoardTabs do
   @moduledoc """
   Horizontal tab row that sits directly under the board name header on
-  every board-scoped screen. Mirrors the `BoardTabs` JSX block at lines
-  271-315 of `design_handoff_stride/design_source/primitives.jsx`.
+  every board-scoped screen. Mirrors the `BoardTabs` block of the design
+  handoff's `primitives.jsx`, which is kept outside version control.
 
   The active tab gets a `var(--stride-orange)` underline + colored icon
   and bold text; inactive tabs use `var(--ink-3)` text and an
   `var(--ink-4)` icon. Tabs that don't have a real route yet (List,
   Goals, Members) point back to the board show page like the
-  placeholder SideNav items. Owner-only tabs (Tokens, Settings) are
-  hidden unless the `:owner?` attr is true.
+  placeholder SideNav items. The Settings tab is shown to every board
+  member (`:member?`, `:can_modify?` or `:owner?`), because members see
+  the board's labels there and modify users manage them (W2233); the
+  board-details form inside it stays owner-only. The Tokens tab needs
+  `:can_modify?` or `:owner?`.
   """
   use KanbanWeb, :html
 
@@ -22,22 +25,30 @@ defmodule KanbanWeb.BoardTabs do
     * `active` — the currently active tab atom (one of
       `:board | :archive | :metrics | :tokens | :members | :settings`).
       An unknown atom renders no active underline. Default `:board`.
-    * `owner?` — when true, owner-only tabs (Settings) plus tabs
-      gated by `can_modify?` are visible. Default false.
+    * `owner?` — when true, every tab gated by `can_modify?` is
+      visible too. Default false.
     * `can_modify?` — when true (or when `owner?` is true), the
-      Tokens tab is visible. Default false.
+      Settings tab and (on an AI-optimized board) the Tokens tab are
+      visible. Default false.
+    * `member?` — when true, the Settings tab is visible to a read-only
+      member too. Default false.
   """
   attr :board, :map, required: true
   attr :active, :atom, default: :board
   attr :owner?, :boolean, default: false
   attr :can_modify?, :boolean, default: false
+  attr :member?, :boolean, default: false
 
   def board_tabs(assigns) do
     assigns =
       assign(
         assigns,
         :tabs,
-        visible_tabs(assigns.board, assigns.owner?, assigns.can_modify? || assigns.owner?)
+        visible_tabs(
+          assigns.board,
+          assigns.can_modify? || assigns.owner?,
+          assigns.member? || assigns.can_modify? || assigns.owner?
+        )
       )
 
     ~H"""
@@ -95,15 +106,15 @@ defmodule KanbanWeb.BoardTabs do
 
   # --- Helpers -------------------------------------------------------------
 
-  defp visible_tabs(board, owner?, tokens_visible?) do
+  defp visible_tabs(board, modify?, member?) do
     ai_optimized? = Map.get(board, :ai_optimized_board, false)
 
     board
     |> all_tabs()
     |> Enum.reject(fn tab ->
       case tab.id do
-        :settings -> not owner?
-        :tokens -> not (tokens_visible? and ai_optimized?)
+        :settings -> not member?
+        :tokens -> not (modify? and ai_optimized?)
         _ -> false
       end
     end)

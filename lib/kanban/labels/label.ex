@@ -35,11 +35,16 @@ defmodule Kanban.Labels.Label do
   def changeset(label, attrs) do
     label
     |> cast(attrs, [:name, :color])
-    |> update_change(:name, &String.trim/1)
+    |> update_change(:name, &trim/1)
     |> validate_required([:name, :color])
     |> validate_length(:name, max: @max_name_length, count: :codepoints)
     |> unique_constraint(:name, name: :labels_board_id_lower_name_index)
   end
+
+  # Clearing the name of an existing label casts it to nil, which is a change,
+  # so the trim must tolerate nil and leave it to validate_required.
+  defp trim(name) when is_binary(name), do: String.trim(name)
+  defp trim(name), do: name
 
   @doc "The fixed list of colour token names a label may use."
   def colors, do: @colors

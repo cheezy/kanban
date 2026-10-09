@@ -97,12 +97,21 @@ defmodule KanbanWeb.BoardLive.FilterActions do
     if cached?(options, board, parsed) do
       socket
     else
-      assign(socket, :filter_options, %{
-        board_id: board.id,
-        labels: Labels.list_viewable_labels(socket.assigns.current_scope, board),
-        members: Boards.list_board_members(board.id)
-      })
+      reload_options(socket, board)
     end
+  end
+
+  @doc """
+  Reloads the cached selector options for `board`. Called when the board's
+  labels change (W2233), so the filter bar never offers a deleted label or
+  misses a new or renamed one.
+  """
+  def reload_options(socket, board) do
+    assign(socket, :filter_options, %{
+      board_id: board.id,
+      labels: Labels.list_viewable_labels(socket.assigns.current_scope, board),
+      members: Boards.list_board_members(board.id)
+    })
   end
 
   # The cache serves this board and already holds every id the URL names.

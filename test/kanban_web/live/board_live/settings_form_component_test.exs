@@ -195,6 +195,50 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponentTest do
     end
   end
 
+  describe "a modify member (W2233)" do
+    setup [:setup_owner]
+
+    setup %{board: board, user: owner} do
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      %{member_scope: Scope.for_user(member)}
+    end
+
+    test "update/2 computes owner and modify access", %{board: board, member_scope: scope} do
+      socket = build_update_socket(board, scope)
+
+      refute socket.assigns.is_owner
+      assert socket.assigns.can_modify
+    end
+
+    test "save is refused with a flash instead of crashing", %{
+      board: board,
+      user: owner,
+      member_scope: scope
+    } do
+      socket = build_update_socket(board, scope)
+
+      {:noreply, socket} =
+        SettingsFormComponent.handle_event("save", %{"board" => %{"name" => "Hijack"}}, socket)
+
+      assert socket.assigns.flash["error"] == "Only the board owner can change board details"
+      assert socket.redirected == {:live, :patch, %{kind: :push, to: "/boards/#{board.id}"}}
+      assert Boards.get_board!(board.id, owner).name == "Old name"
+      refute_received {SettingsFormComponent, {:saved, _}}
+    end
+
+    test "render hides the board-details form", %{board: board, member_scope: scope} do
+      html =
+        render_component(
+          &SettingsFormComponent.render/1,
+          %{assign_for_render(board, scope) | is_owner: false}
+        )
+
+      refute html =~ "board-settings-form-#{board.id}"
+      assert html =~ "Only the board owner can change board details and field visibility."
+    end
+  end
+
   describe "handle_event toggle_field" do
     setup [:setup_owner]
 
@@ -278,6 +322,8 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponentTest do
       patch: "/boards/#{board.id}",
       form: form,
       field_visibility: board.field_visibility || %{},
+      is_owner: true,
+      can_modify: true,
       myself: %Phoenix.LiveComponent.CID{cid: 1}
     }
   end

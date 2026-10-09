@@ -94,6 +94,19 @@ defmodule Kanban.Labels do
   end
 
   @doc """
+  Returns a changeset for tracking label changes, for building forms.
+
+  ## Examples
+
+      iex> change_label(%Label{}, %{name: "Bug"})
+      %Ecto.Changeset{data: %Label{}}
+
+  """
+  def change_label(%Label{} = label \\ %Label{}, attrs \\ %{}) do
+    Label.changeset(label, attrs)
+  end
+
+  @doc """
   Creates a label on the given board.
 
   ## Examples
@@ -116,6 +129,9 @@ defmodule Kanban.Labels do
   @doc """
   Updates a label's name or colour. The label's board cannot be changed.
 
+  A label deleted since it was loaded yields `{:error, changeset}` with an
+  error on `:id`, rather than raising `Ecto.StaleEntryError`.
+
   ## Examples
 
       iex> update_label(scope, label, %{color: :green})
@@ -126,13 +142,14 @@ defmodule Kanban.Labels do
     with :ok <- authorize_write(scope, board_id) do
       label
       |> Label.changeset(attrs)
-      |> Repo.update()
+      |> Repo.update(stale_error_field: :id)
     end
   end
 
   @doc """
   Deletes a label. Its task_labels rows are removed by the database cascade;
-  the tasks themselves are never touched.
+  the tasks themselves are never touched. A label already deleted elsewhere
+  yields `{:error, changeset}` with an error on `:id`, rather than raising.
 
   ## Examples
 
@@ -142,7 +159,7 @@ defmodule Kanban.Labels do
   """
   def delete_label(scope, %Label{board_id: board_id} = label) do
     with :ok <- authorize_write(scope, board_id) do
-      Repo.delete(label)
+      Repo.delete(label, stale_error_field: :id)
     end
   end
 
