@@ -143,8 +143,8 @@ objects in `data`. The response envelope adds a little on top.
 - Keep passing `meta.next_cursor` back as `cursor` until it is `null`. Together
   the pages hold every task exactly once.
 - The cursor does not carry filters. Send the same `status`, `type`,
-  `priority`, `assigned_to_id`, `parent`, `updated_since` and `column_id` with
-  every page, as with [GET /api/tasks](api/get_tasks.md).
+  `priority`, `assigned_to_id`, `parent`, `updated_since`, `column_id` and
+  `label` with every page, as with [GET /api/tasks](api/get_tasks.md).
 - The slim view is never cut and its `meta` has no `truncated` key. The REST
   endpoint `GET /api/tasks` is not affected either.
 

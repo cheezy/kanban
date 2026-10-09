@@ -453,6 +453,22 @@ defmodule Kanban.LabelsTest do
       assert task_label_ids(ctx.task) == [ctx.a.id]
     end
 
+    test "a task deleted since it was loaded returns :not_found instead of raising", ctx do
+      {:ok, _} = Kanban.Tasks.delete_task(ctx.task)
+
+      assert {:error, :not_found} = Labels.set_task_labels(ctx.owner_scope, ctx.task, [ctx.a.id])
+    end
+
+    test "a label deleted since it was chosen is rejected, not raised as a foreign-key error",
+         ctx do
+      {:ok, _} = Labels.delete_label(ctx.owner_scope, ctx.b)
+
+      assert {:error, :invalid_labels} =
+               Labels.set_task_labels(ctx.owner_scope, ctx.task, [ctx.a.id, ctx.b.id])
+
+      assert task_label_ids(ctx.task) == []
+    end
+
     test "rejects nonexistent and non-integer ids with the same error", ctx do
       missing_id = ctx.c.id + 1_000_000
 

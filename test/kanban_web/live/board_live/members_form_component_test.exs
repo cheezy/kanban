@@ -231,7 +231,11 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
         )
 
       assert is_nil(socket.assigns.searched_user)
-      assert socket.assigns.flash["error"] == "Could not find a user with that email address"
+
+      assert_received {MembersFormComponent,
+                       {:replace_flash, [error: "Could not find a user with that email address"]}}
+
+      assert socket.assigns.flash == %{}
     end
 
     test "self: refuses to add the current user", %{board: board, scope: scope, user: user} do
@@ -241,7 +245,11 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
         MembersFormComponent.handle_event("search_user", %{"email" => user.email}, socket)
 
       assert is_nil(socket.assigns.searched_user)
-      assert socket.assigns.flash["error"] == "You cannot add yourself to the board"
+
+      assert_received {MembersFormComponent,
+                       {:replace_flash, [error: "You cannot add yourself to the board"]}}
+
+      assert socket.assigns.flash == %{}
     end
 
     test "already a member: refuses to add again",
@@ -254,7 +262,11 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
         MembersFormComponent.handle_event("search_user", %{"email" => member.email}, socket)
 
       assert is_nil(socket.assigns.searched_user)
-      assert socket.assigns.flash["error"] == "User is already added to the board"
+
+      assert_received {MembersFormComponent,
+                       {:replace_flash, [error: "User is already added to the board"]}}
+
+      assert socket.assigns.flash == %{}
     end
   end
 
@@ -274,7 +286,8 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       {:noreply, socket} =
         MembersFormComponent.handle_event("add_user", %{"access" => "modify"}, socket)
 
-      assert socket.assigns.flash["info"] == "User added successfully"
+      assert_received {MembersFormComponent, {:replace_flash, [info: "User added successfully"]}}
+      assert socket.assigns.flash == %{}
       assert is_nil(socket.assigns.searched_user)
       assert socket.assigns.search_email == ""
 
@@ -295,7 +308,8 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       {:noreply, socket} =
         MembersFormComponent.handle_event("add_user", %{"access" => "read_only"}, socket)
 
-      assert socket.assigns.flash["info"] == "User added successfully"
+      assert_received {MembersFormComponent, {:replace_flash, [info: "User added successfully"]}}
+      assert socket.assigns.flash == %{}
 
       access_list = Enum.map(socket.assigns.board_users, & &1.access)
       assert :read_only in access_list
@@ -319,7 +333,10 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       {:noreply, socket} =
         MembersFormComponent.handle_event("add_user", %{"access" => "modify"}, socket)
 
-      assert socket.assigns.flash["error"] == "Failed to add user to board"
+      assert_received {MembersFormComponent,
+                       {:replace_flash, [error: "Failed to add user to board"]}}
+
+      assert socket.assigns.flash == %{}
     end
 
     test "non-owner: refuses to add", %{board: board} do
@@ -337,7 +354,11 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       {:noreply, socket} =
         MembersFormComponent.handle_event("add_user", %{"access" => "modify"}, socket)
 
-      assert socket.assigns.flash["error"] == "Only the board owner can manage board membership"
+      assert_received {MembersFormComponent,
+                       {:replace_flash,
+                        [error: "Only the board owner can manage board membership"]}}
+
+      assert socket.assigns.flash == %{}
     end
   end
 
@@ -357,7 +378,10 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
           socket
         )
 
-      assert socket.assigns.flash["info"] == "User removed successfully"
+      assert_received {MembersFormComponent,
+                       {:replace_flash, [info: "User removed successfully"]}}
+
+      assert socket.assigns.flash == %{}
       assert Enum.all?(socket.assigns.board_users, &(&1.user.id != member.id))
     end
 
@@ -371,7 +395,8 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
           socket
         )
 
-      assert socket.assigns.flash["error"] == "User not found"
+      assert_received {MembersFormComponent, {:replace_flash, [error: "User not found"]}}
+      assert socket.assigns.flash == %{}
     end
 
     test "user exists but is not on the board: flashes failure",
@@ -386,7 +411,10 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
           socket
         )
 
-      assert socket.assigns.flash["error"] == "Failed to remove user from board"
+      assert_received {MembersFormComponent,
+                       {:replace_flash, [error: "Failed to remove user from board"]}}
+
+      assert socket.assigns.flash == %{}
     end
 
     test "non-owner: refuses to remove", %{board: board, user: owner} do
@@ -404,7 +432,71 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
           socket
         )
 
-      assert socket.assigns.flash["error"] == "Only the board owner can manage board membership"
+      assert_received {MembersFormComponent,
+                       {:replace_flash,
+                        [error: "Only the board owner can manage board membership"]}}
+
+      assert socket.assigns.flash == %{}
+    end
+  end
+
+  describe "apply_parent_message/2" do
+    test "replaces the page's flash with the relayed one" do
+      socket =
+        %Phoenix.LiveView.Socket{assigns: %{flash: %{"error" => "old"}, __changed__: %{}}}
+        |> MembersFormComponent.apply_parent_message({:replace_flash, [info: "new"]})
+
+      assert socket.assigns.flash == %{"info" => "new"}
+    end
+
+    test "an empty relay clears the page's flash" do
+      socket =
+        %Phoenix.LiveView.Socket{assigns: %{flash: %{"error" => "old"}, __changed__: %{}}}
+        |> MembersFormComponent.apply_parent_message({:replace_flash, []})
+
+      assert socket.assigns.flash == %{}
+    end
+  end
+
+  describe "flash on the members page" do
+    setup [:setup_owner]
+
+    test "a successful search clears an earlier search error from the page",
+         %{conn: conn, user: user, board: board} do
+      candidate = user_fixture()
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/boards/#{board}/members")
+
+      lv
+      |> form("#member-search-form", %{"email" => "nobody-here@example.com"})
+      |> render_submit()
+
+      assert render(lv) =~ "Could not find a user with that email address"
+
+      lv |> form("#member-search-form", %{"email" => candidate.email}) |> render_submit()
+      refute render(lv) =~ "Could not find a user with that email address"
+    end
+
+    test "a search error is shown on the page", %{conn: conn, user: user, board: board} do
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/boards/#{board}/members")
+
+      lv
+      |> form("#member-search-form", %{"email" => "nobody-here@example.com"})
+      |> render_submit()
+
+      assert render(lv) =~ "Could not find a user with that email address"
+    end
+
+    test "adding a member shows the success flash on the page",
+         %{conn: conn, user: user, board: board} do
+      candidate = user_fixture()
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/boards/#{board}/members")
+
+      lv |> form("#member-search-form", %{"email" => candidate.email}) |> render_submit()
+      lv |> element(~s(button[phx-value-access="read_only"])) |> render_click()
+      html = render(lv)
+
+      assert html =~ "User added successfully"
+      assert html =~ candidate.email
     end
   end
 

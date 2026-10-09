@@ -1,7 +1,7 @@
-defmodule Kanban.Tasks.QueriesTest do
+defmodule Kanban.Tasks.GoalGroupingTest do
   use ExUnit.Case, async: true
 
-  alias Kanban.Tasks.Queries
+  alias Kanban.Tasks.GoalGrouping
 
   # Within each test, ordering is driven by the relative `inserted_at`
   # values supplied via `at/1` — smaller integer = older, sorts first.
@@ -25,7 +25,7 @@ defmodule Kanban.Tasks.QueriesTest do
 
   describe "sort_by_goal_hierarchy/1" do
     test "returns empty list unchanged" do
-      assert Queries.sort_by_goal_hierarchy([]) == []
+      assert GoalGrouping.sort_by_goal_hierarchy([]) == []
     end
 
     test "standalone tasks come first, sorted by inserted_at" do
@@ -33,7 +33,7 @@ defmodule Kanban.Tasks.QueriesTest do
       t2 = task(%{id: 2, identifier: "W1", inserted_at: at(0)})
       t3 = task(%{id: 3, identifier: "W2", inserted_at: at(1)})
 
-      result = Queries.sort_by_goal_hierarchy([t1, t2, t3])
+      result = GoalGrouping.sort_by_goal_hierarchy([t1, t2, t3])
       assert Enum.map(result, & &1.identifier) == ["W1", "W2", "W3"]
     end
 
@@ -43,7 +43,7 @@ defmodule Kanban.Tasks.QueriesTest do
       child_a = task(%{id: 3, identifier: "W1", parent_id: 2, inserted_at: at(2)})
       child_b = task(%{id: 4, identifier: "W2", parent_id: 2, inserted_at: at(3)})
 
-      result = Queries.sort_by_goal_hierarchy([child_b, goal, standalone, child_a])
+      result = GoalGrouping.sort_by_goal_hierarchy([child_b, goal, standalone, child_a])
       assert Enum.map(result, & &1.identifier) == ["W5", "G1", "W1", "W2"]
     end
 
@@ -53,7 +53,7 @@ defmodule Kanban.Tasks.QueriesTest do
       g1_child = task(%{id: 3, identifier: "W5", parent_id: 1, inserted_at: at(1)})
       g2_child = task(%{id: 4, identifier: "W10", parent_id: 2, inserted_at: at(3)})
 
-      result = Queries.sort_by_goal_hierarchy([g2_child, g2, g1_child, g1])
+      result = GoalGrouping.sort_by_goal_hierarchy([g2_child, g2, g1_child, g1])
       assert Enum.map(result, & &1.identifier) == ["G1", "W5", "G2", "W10"]
     end
 
@@ -61,7 +61,7 @@ defmodule Kanban.Tasks.QueriesTest do
       standalone = task(%{id: 1, identifier: "W1", inserted_at: at(0)})
       goal = task(%{id: 2, identifier: "G1", type: :goal, inserted_at: at(1)})
 
-      result = Queries.sort_by_goal_hierarchy([standalone, goal])
+      result = GoalGrouping.sort_by_goal_hierarchy([standalone, goal])
       assert Enum.map(result, & &1.identifier) == ["W1", "G1"]
     end
 
@@ -69,7 +69,7 @@ defmodule Kanban.Tasks.QueriesTest do
       defect = task(%{id: 1, identifier: "D1", type: :defect, inserted_at: at(0)})
       work = task(%{id: 2, identifier: "W1", inserted_at: at(1)})
 
-      result = Queries.sort_by_goal_hierarchy([work, defect])
+      result = GoalGrouping.sort_by_goal_hierarchy([work, defect])
       assert Enum.map(result, & &1.identifier) == ["D1", "W1"]
     end
 
@@ -79,7 +79,7 @@ defmodule Kanban.Tasks.QueriesTest do
       standalone = task(%{id: 1, identifier: "W3", inserted_at: at(0)})
       orphan_child = task(%{id: 2, identifier: "W7", parent_id: 99, inserted_at: at(1)})
 
-      result = Queries.sort_by_goal_hierarchy([orphan_child, standalone])
+      result = GoalGrouping.sort_by_goal_hierarchy([orphan_child, standalone])
       assert Enum.map(result, & &1.identifier) == ["W3", "W7"]
     end
 
@@ -90,7 +90,7 @@ defmodule Kanban.Tasks.QueriesTest do
       goal_child = task(%{id: 4, identifier: "W5", parent_id: 3, inserted_at: at(3)})
 
       result =
-        Queries.sort_by_goal_hierarchy([orphan_child, goal_child, goal, standalone])
+        GoalGrouping.sort_by_goal_hierarchy([orphan_child, goal_child, goal, standalone])
 
       assert Enum.map(result, & &1.identifier) == ["W1", "W2", "G1", "W5"]
     end

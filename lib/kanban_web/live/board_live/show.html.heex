@@ -190,9 +190,12 @@
           data-target-id="columns"
           aria-hidden="true"
         >
+          <%!-- Rendered from @board_columns, not @streams.columns: a stream may only
+               be rendered by its phx-update="stream" container, and consuming it here
+               too emptied #columns after a stream reset (a task modal round-trip). --%>
           <span
-            :for={{id, _column} <- @streams.columns}
-            data-indicator-dot={id}
+            :for={column <- @board_columns}
+            data-indicator-dot={column.id}
             class="w-2 h-2 rounded-full bg-base-content opacity-30 transition-opacity"
           />
         </div>

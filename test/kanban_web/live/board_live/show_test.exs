@@ -3257,11 +3257,40 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       render_patch(view, ~p"/boards/#{ctx.board}?q=alpha")
 
-      # Back on the board the filters are still applied. (Asserted on the
-      # filter bar: this LiveViewTest DOM drops the streamed columns after a
-      # modal round-trip whether or not filters are set.)
+      # Back on the board the filters are still applied, and the columns are
+      # still rendered after the round-trip.
       assert has_element?(view, "#board-search[value='alpha']")
       assert has_element?(view, "#board-filter-clear")
+      assert card?(view, ctx.alpha)
+      refute card?(view, ctx.beta)
+    end
+
+    test "columns and snap-indicator dots survive a task modal round-trip", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      column_count = length(Kanban.Columns.list_columns(ctx.board))
+
+      render_patch(view, ~p"/boards/#{ctx.board}/tasks/#{ctx.alpha}/edit")
+      html = render_patch(view, ~p"/boards/#{ctx.board}")
+
+      assert card?(view, ctx.alpha)
+      assert card?(view, ctx.beta)
+
+      document = LazyHTML.from_fragment(html)
+
+      dot_ids =
+        document
+        |> LazyHTML.query("#snap-indicator [data-indicator-dot]")
+        |> LazyHTML.attribute("data-indicator-dot")
+
+      column_ids =
+        document
+        |> LazyHTML.query("#columns > [data-column-id]")
+        |> LazyHTML.attribute("data-column-id")
+
+      # The SnapIndicator hook keys column visibility by data-column-id, so each
+      # dot must carry exactly those values for one to ever highlight.
+      assert length(dot_ids) == column_count
+      assert dot_ids == column_ids
     end
 
     test "a label created after the board opened can still be filtered by URL", ctx do
@@ -3275,6 +3304,23 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert card?(view, ctx.gamma)
       refute card?(view, ctx.alpha)
       assert render(view) =~ "Late label"
+    end
+
+    test "a member added after the board opened can still be filtered by URL", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+      refute render(view) =~ "late-member"
+
+      member =
+        user_fixture(%{email: "late-member-#{System.unique_integer([:positive])}@example.com"})
+
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, member, :modify, ctx.user)
+      {:ok, _} = Kanban.Tasks.update_task(ctx.gamma, %{assigned_to_id: member.id})
+
+      render_patch(view, ~p"/boards/#{ctx.board}?assignee=#{member.id}")
+
+      assert has_element?(view, "#board-filter-assignee option[value='#{member.id}']")
+      assert card?(view, ctx.gamma)
+      refute card?(view, ctx.alpha)
     end
 
     test "a filtered URL does not open a board the viewer cannot see", ctx do

@@ -163,8 +163,7 @@ defmodule KanbanWeb.BoardLive.TaskActions do
     {:noreply, socket} = handle_task_move(socket, task, ready.id, end_of_ready)
     # A click (unlike a drop) has no client-side DOM move, so re-insert the
     # column stream items (as reload_board_data/1 does) to render the task in
-    # its new column. (A `reset: true` here left #columns empty under
-    # LiveViewTest, so this upserts instead.)
+    # its new column.
     {:noreply, stream(socket, :columns, Columns.list_columns(socket.assigns.board))}
   end
 

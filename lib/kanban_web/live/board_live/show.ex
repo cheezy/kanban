@@ -22,6 +22,11 @@ defmodule KanbanWeb.BoardLive.Show do
   alias KanbanWeb.GoalsStrip
   alias KanbanWeb.TaskCard
 
+  @parent_message_components [
+    KanbanWeb.BoardLive.LabelsManagerComponent,
+    KanbanWeb.BoardLive.MembersFormComponent
+  ]
+
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.user
@@ -356,13 +361,11 @@ defmodule KanbanWeb.BoardLive.Show do
     {:noreply, assign(socket, :field_visibility, vis)}
   end
 
-  @impl true
   def handle_info({Kanban.Tasks, :task_created, _task}, socket) do
     # Reload board when a task is created
     BoardState.reload_board_data(socket)
   end
 
-  @impl true
   def handle_info({Kanban.Tasks, :task_updated, _task}, socket) do
     if socket.assigns[:skip_next_reload],
       do: {:noreply, socket},
@@ -373,7 +376,6 @@ defmodule KanbanWeb.BoardLive.Show do
   def handle_info({Kanban.Tasks, :task_moved, task}, socket),
     do: BoardState.handle_remote_task_move(socket, task)
 
-  @impl true
   def handle_info({Kanban.Tasks, :task_deleted, _task}, socket) do
     if socket.assigns[:skip_next_reload],
       do: {:noreply, socket},
@@ -430,16 +432,13 @@ defmodule KanbanWeb.BoardLive.Show do
     {:noreply, put_flash(socket, kind, message)}
   end
 
-  @impl true
-  def handle_info({KanbanWeb.BoardLive.LabelsManagerComponent, msg}, socket),
-    do: {:noreply, KanbanWeb.BoardLive.LabelsManagerComponent.apply_parent_message(socket, msg)}
+  def handle_info({component, msg}, socket) when component in @parent_message_components,
+    do: {:noreply, component.apply_parent_message(socket, msg)}
 
-  @impl true
   def handle_info({:field_visibility_updated, new_visibility}, socket) do
     {:noreply, assign(socket, :field_visibility, new_visibility)}
   end
 
-  @impl true
   def handle_info(:clear_skip_reload, socket) do
     {:noreply, assign(socket, :skip_next_reload, false)}
   end

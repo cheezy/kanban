@@ -98,6 +98,47 @@ defmodule Kanban.Tasks.MyWorkTest do
       assert listed == MapSet.new([open.id, in_progress.id, blocked.id])
     end
 
+    test "excludes a blocked task moved into a Done column", %{
+      user: user,
+      scope: scope,
+      board: board,
+      column: column
+    } do
+      done = column_fixture(board, %{name: "Done"})
+      kept = assigned_task(column, user)
+      blocked = assigned_task(column, user)
+      set_status(blocked, :blocked)
+
+      {:ok, moved} = Task |> Repo.get!(blocked.id) |> Tasks.move_task(done, 0)
+      assert moved.status == :blocked
+
+      assert ids(MyWork.list_assigned_tasks(scope)) == [kept.id]
+    end
+
+    test "matches a Done column name with surrounding tabs or newlines", %{
+      user: user,
+      scope: scope,
+      board: board
+    } do
+      done = column_fixture(board, %{name: "\tDone\n"})
+      task = assigned_task(done, user)
+      set_status(task, :blocked)
+
+      assert MyWork.list_assigned_tasks(scope) == []
+    end
+
+    test "matches the Done column name ignoring case and surrounding spaces", %{
+      user: user,
+      scope: scope,
+      board: board
+    } do
+      done = column_fixture(board, %{name: "  dONE "})
+      task = assigned_task(done, user)
+      set_status(task, :blocked)
+
+      assert MyWork.list_assigned_tasks(scope) == []
+    end
+
     test "includes goal-type tasks assigned to the user", %{
       user: user,
       scope: scope,

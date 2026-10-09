@@ -678,8 +678,9 @@ Use the web UI or inspect responses to find column IDs for your board.
 ## Filtering and Sorting
 
 Server-side filters cover `column_id`, `status`, `type`, `priority`,
-`assigned_to_id`, `parent` and `updated_since` — see
-[Pagination and filters](#pagination-and-filters). Prefer them on large boards:
+`assigned_to_id`, `parent`, `updated_since` and `label` — see
+[Pagination and filters](#pagination-and-filters) and
+[Filtering by label](#filtering-by-label). Prefer them on large boards:
 the unpaginated response returns every task on the board in one body.
 
 The API does not sort beyond the fixed orders described above, and some

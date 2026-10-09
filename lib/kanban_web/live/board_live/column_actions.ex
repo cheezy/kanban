@@ -38,6 +38,7 @@ defmodule KanbanWeb.BoardLive.ColumnActions do
          socket
          |> put_flash(:info, gettext("Column deleted successfully"))
          |> assign(:has_columns, not Enum.empty?(columns))
+         |> assign(:board_columns, columns)
          |> stream_delete(:columns, column)}
 
       {:error, _changeset} ->

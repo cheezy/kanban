@@ -24,7 +24,8 @@ defmodule Kanban.Tasks.MyWork do
 
   @doc """
   Returns the non-archived, not-completed tasks assigned to the scoped user on
-  boards the user is a member of.
+  boards the user is a member of. A task sitting in a Done column is finished
+  whatever its status says, so it is left out too.
 
   One query: tasks are ordered by board name (then board id, so two boards with
   the same name never interleave), then by priority from `:critical` down to
@@ -48,6 +49,7 @@ defmodule Kanban.Tasks.MyWork do
     user_id
     |> open_assigned_tasks()
     |> BoardScope.apply_board_scope_with_column_join(scope)
+    |> exclude_done_columns()
     |> join(:inner, [_t, c], b in assoc(c, :board))
     |> order_by_board_then_priority()
     |> preload([_t, c, _bu, b], column: {c, board: b})
@@ -62,6 +64,14 @@ defmodule Kanban.Tasks.MyWork do
     from(t in Task,
       where: t.assigned_to_id == ^user_id and is_nil(t.archived_at) and t.status != :completed
     )
+  end
+
+  # A blocked task keeps its :blocked status when it is moved into a Done column
+  # (`Kanban.Tasks.Positioning.determine_status_for_column/2`), so the status
+  # filter alone would keep listing it. Only the known name "Done" puts a column
+  # in the :done stage (`Kanban.Columns.Stage`), so the name decides here too.
+  defp exclude_done_columns(query) do
+    where(query, [_t, c], fragment("lower(btrim(?, E' \\t\\n\\r\\f'))", c.name) != "done")
   end
 
   # Bindings: task, column, board_user (from BoardScope), board. Priority is a

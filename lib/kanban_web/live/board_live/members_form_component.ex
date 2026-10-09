@@ -5,6 +5,13 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
   access, and remove existing non-owner members. Mounted as a
   `live_component` from `KanbanWeb.BoardLive.Show` when the
   `:manage_members` live action is active.
+
+  A live component's own flash never reaches the page (LiveView copies it to
+  the parent only on a patch or navigate), so every flash `Membership` sets —
+  successes, errors and owner-only denials alike — is relayed to the parent
+  LiveView, which applies it with `apply_parent_message/2`. The relayed flash
+  replaces the page's, so a search that succeeds after a failed one clears the
+  old error exactly as `Membership`'s own `clear_flash/1` intends.
   """
   use KanbanWeb, :live_component
 
@@ -26,15 +33,37 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
 
   @impl true
   def handle_event("search_user", %{"email" => email}, socket) do
-    Membership.search_user(socket, socket.assigns.scope.user, email)
+    socket |> Membership.search_user(socket.assigns.scope.user, email) |> relay_flash()
   end
 
   def handle_event("add_user", %{"access" => access}, socket) do
-    Membership.add_user(socket, socket.assigns.scope.user, access)
+    socket |> Membership.add_user(socket.assigns.scope.user, access) |> relay_flash()
   end
 
   def handle_event("remove_user", %{"user_id" => user_id}, socket) do
-    Membership.remove_user(socket, socket.assigns.scope.user, user_id)
+    socket |> Membership.remove_user(socket.assigns.scope.user, user_id) |> relay_flash()
+  end
+
+  @doc """
+  Applies a message this component sent to its parent LiveView: the flash the
+  last membership event produced replaces the page's flash.
+  """
+  def apply_parent_message(socket, {:replace_flash, flashes}) do
+    Enum.reduce(flashes, Phoenix.LiveView.clear_flash(socket), fn {kind, message}, acc ->
+      Phoenix.LiveView.put_flash(acc, kind, message)
+    end)
+  end
+
+  @relayed_flash_kinds %{"info" => :info, "error" => :error}
+
+  defp relay_flash({:noreply, socket}) do
+    flashes =
+      for {kind, message} <- socket.assigns.flash,
+          Map.has_key?(@relayed_flash_kinds, kind),
+          do: {Map.fetch!(@relayed_flash_kinds, kind), message}
+
+    send(self(), {__MODULE__, {:replace_flash, flashes}})
+    {:noreply, clear_flash(socket)}
   end
 
   @impl true

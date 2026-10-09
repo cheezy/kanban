@@ -28,6 +28,7 @@ defmodule Kanban.Tasks do
   alias Kanban.Tasks.Creation
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.GoalCompletion
+  alias Kanban.Tasks.GoalGrouping
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.Interventions
   alias Kanban.Tasks.Lifecycle
@@ -45,8 +46,8 @@ defmodule Kanban.Tasks do
 
   defdelegate list_board_tasks_page(board_id, filters, opts), to: Queries
 
-  defdelegate sort_by_goal_hierarchy(tasks), to: Queries
-  defdelegate group_rows_by_goal(tasks), to: Queries
+  defdelegate sort_by_goal_hierarchy(tasks), to: GoalGrouping
+  defdelegate group_rows_by_goal(tasks), to: GoalGrouping
   defdelegate list_children_for_goal(user, goal_id), to: Queries
   defdelegate list_goal_choices_for_board(board_id, exclude_task_id), to: Queries
   defdelegate get_task_with_comments!(id), to: Queries

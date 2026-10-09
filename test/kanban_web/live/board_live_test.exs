@@ -520,9 +520,13 @@ defmodule KanbanWeb.BoardLiveTest do
       # Use a column name that doesn't collide with BoardHeader's "To Do"
       # KV stat label so the post-delete refute is unambiguous.
       column = column_fixture(board, %{name: "Inbox"})
+      # A second column keeps the board out of its empty state after the
+      # delete, so the snap-indicator dots still render and can be checked.
+      kept = column_fixture(board, %{name: "Kept"})
 
       {:ok, show_live, html} = live(conn, ~p"/boards/#{board}")
       assert html =~ "Inbox"
+      assert has_element?(show_live, ~s(#snap-indicator [data-indicator-dot="#{column.id}"]))
 
       # Trigger the delete_column event directly
       show_live |> render_click("delete_column", %{"id" => column.id})
@@ -530,6 +534,8 @@ defmodule KanbanWeb.BoardLiveTest do
       html = render(show_live)
       assert html =~ "Column deleted successfully"
       refute html =~ "Inbox"
+      refute has_element?(show_live, ~s(#snap-indicator [data-indicator-dot="#{column.id}"]))
+      assert has_element?(show_live, ~s(#snap-indicator [data-indicator-dot="#{kept.id}"]))
     end
 
     test "displays New column button", %{conn: conn, user: user} do

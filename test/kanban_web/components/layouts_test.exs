@@ -1,6 +1,7 @@
 defmodule KanbanWeb.LayoutsTest do
   @moduledoc """
-  Tests for the SideNav rendering in `KanbanWeb.Layouts`.
+  Tests for the app layout in `KanbanWeb.Layouts` and the `KanbanWeb.SideNav`
+  it renders.
 
   Covers the Agents, Metrics and My Work nav entries — both inside a board
   scope and outside one — and their active-state highlights.
@@ -14,6 +15,7 @@ defmodule KanbanWeb.LayoutsTest do
 
   alias Kanban.Accounts.Scope
   alias KanbanWeb.Layouts
+  alias KanbanWeb.SideNav
 
   defp scope_for(user), do: Scope.for_user(user)
 
@@ -24,7 +26,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       assert html =~ "Agents"
@@ -38,7 +40,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       assert html =~ "Agents"
@@ -52,7 +54,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       hrefs = Regex.scan(~r/href="\/agents"/, html)
@@ -65,7 +67,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       # The active entry's row carries the active background token
@@ -86,7 +88,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       [_, after_href] = String.split(html, ~s(href="/agents"), parts: 2)
@@ -105,7 +107,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       assert html =~ "Metrics"
@@ -125,7 +127,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       hrefs = Regex.scan(~r/href="\/metrics"/, html)
@@ -138,7 +140,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       [_, after_href] = String.split(html, ~s(href="/metrics"), parts: 2)
@@ -155,7 +157,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       assert html =~ ~s(href="/boards")
@@ -170,7 +172,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       assert html =~ "My Work"
@@ -185,7 +187,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       assert length(Regex.scan(~r/href="\/my-work"/, html)) == 1
@@ -197,7 +199,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       [_, after_href] = String.split(html, ~s(href="/my-work"), parts: 2)
@@ -214,7 +216,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       [_, after_href] = String.split(html, ~s(href="/my-work"), parts: 2)
@@ -225,7 +227,7 @@ defmodule KanbanWeb.LayoutsTest do
     end
 
     test "My Work is listed second in the primary nav items, after Boards" do
-      assert [:boards, :my_work | _] = Enum.map(Layouts.primary_nav_items(), & &1.id)
+      assert [:boards, :my_work | _] = Enum.map(SideNav.primary_nav_items(), & &1.id)
     end
   end
 
@@ -236,7 +238,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       # The sidebar must carry id="app-sidebar" so the JS Sidebar hook can target it.
@@ -261,7 +263,7 @@ defmodule KanbanWeb.LayoutsTest do
 
       html =
         rendered_to_string(~H"""
-        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
         """)
 
       labels =

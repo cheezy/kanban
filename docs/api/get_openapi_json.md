@@ -127,8 +127,8 @@ the file is restored.
   pipeline. The two public operations, `getAgentOnboarding` and
   `getOpenApiSpec`, override it with `security: []`.
 - **All of `GET /api/tasks`'s query parameters:** `limit`, `cursor`, `status`,
-  `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`, `column_id`
-  and `response_view`. See [GET /api/tasks](get_tasks.md#pagination-and-filters).
+  `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`, `column_id`,
+  `label` and `response_view`. See [GET /api/tasks](get_tasks.md#pagination-and-filters).
 - **Shared component schemas.** These are `Task` (the full render),
   `TaskSummary` (the `response_view=slim` row), `TaskAck` (the slim
   `/complete` and `/changed_files` acknowledgement), `PageMeta`, `Hook`,

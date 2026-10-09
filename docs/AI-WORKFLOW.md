@@ -56,7 +56,7 @@ of type `goal` is rejected with HTTP 422.
 
 **Task Discovery:**
 - [GET /api/tasks/next](api/get_tasks_next.md) - Get next available task matching agent capabilities
-- [GET /api/tasks](api/get_tasks.md) - List tasks; optional filters (`column_id`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`) and opt-in cursor pagination (`limit`, `cursor` → `meta.next_cursor`). Syncing with `updated_since`? See [Incremental sync](api/get_tasks.md#incremental-sync)
+- [GET /api/tasks](api/get_tasks.md) - List tasks; optional filters (`column_id`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`, `label`) and opt-in cursor pagination (`limit`, `cursor` → `meta.next_cursor`). Syncing with `updated_since`? See [Incremental sync](api/get_tasks.md#incremental-sync)
 - [GET /api/tasks/:id](api/get_tasks_id.md) - Get specific task details
 - [GET /api/tasks/:id/tree](api/get_tasks_id_tree.md) - Get task with all children (for goals)
 - [GET /api/tasks/:id/comments](api/get_tasks_id_comments.md) - Read a task's comments, such as feedback a human left on the board. `GET /api/tasks/:id` carries a `comment_count`

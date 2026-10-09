@@ -258,8 +258,9 @@ defmodule Kanban.Labels do
   them. Duplicate ids are collapsed.
 
   Returns `{:ok, task}` with `:labels` preloaded, `{:error, :unauthorized}`
-  when the caller cannot modify the task's board, or
-  `{:error, :invalid_labels}` when any id is not a label on the task's board.
+  when the caller cannot modify the task's board, `{:error, :invalid_labels}`
+  when any id is not a label on the task's board (including one deleted
+  concurrently), or `{:error, :not_found}` when the task was deleted.
 
   A successful write broadcasts `:task_updated` on the board's topic once the
   transaction has committed, so every open board re-renders the task's label
@@ -281,55 +282,75 @@ defmodule Kanban.Labels do
     label_ids = Enum.uniq(label_ids)
 
     with :ok <- authorize_write(scope, board_id),
-         :ok <- validate_label_ids(label_ids, board_id),
-         {:ok, task} <- replace_task_labels(task, label_ids) do
+         :ok <- validate_label_id_types(label_ids),
+         {:ok, task} <- replace_task_labels(task, label_ids, board_id) do
       Broadcaster.broadcast_task_change(task, :task_updated)
       {:ok, task}
     end
   end
 
-  defp validate_label_ids(label_ids, board_id) do
-    if Enum.all?(label_ids, &is_integer/1) and
-         count_board_labels(label_ids, board_id) == length(label_ids) do
-      :ok
-    else
-      {:error, :invalid_labels}
+  defp validate_label_id_types(label_ids) do
+    if Enum.all?(label_ids, &is_integer/1), do: :ok, else: {:error, :invalid_labels}
+  end
+
+  # The board check runs inside the transaction, after the task lock, and takes
+  # a FOR KEY SHARE lock on every label it accepts: a label deleted concurrently is
+  # then either already gone (an :invalid_labels error) or cannot be deleted
+  # until this write commits, so the insert never hits a foreign-key error.
+  defp replace_task_labels(%Task{id: task_id} = task, label_ids, board_id) do
+    Repo.transact(fn ->
+      with :ok <- lock_task(task_id),
+           :ok <- lock_board_labels(label_ids, board_id) do
+        write_task_labels(task, label_ids)
+      end
+    end)
+  end
+
+  # Locks the task row so concurrent label edits on the same task are
+  # serialized: the last writer's set wins instead of the two interleaving.
+  defp lock_task(task_id) do
+    Task
+    |> where([t], t.id == ^task_id)
+    |> lock("FOR UPDATE")
+    |> select([t], t.id)
+    |> Repo.one()
+    |> case do
+      nil -> {:error, :not_found}
+      _id -> :ok
     end
   end
 
-  defp count_board_labels(label_ids, board_id) do
-    Label
-    |> where([l], l.id in ^label_ids and l.board_id == ^board_id)
-    |> Repo.aggregate(:count)
+  defp lock_board_labels([], _board_id), do: :ok
+
+  defp lock_board_labels(label_ids, board_id) do
+    locked =
+      Label
+      |> where([l], l.id in ^label_ids and l.board_id == ^board_id)
+      |> lock("FOR KEY SHARE")
+      |> select([l], l.id)
+      |> Repo.all()
+
+    if length(locked) == length(label_ids), do: :ok, else: {:error, :invalid_labels}
   end
 
-  defp replace_task_labels(%Task{id: task_id} = task, label_ids) do
-    Repo.transact(fn ->
-      # Lock the task row so concurrent label edits on the same task are
-      # serialized: the last writer's set wins instead of the two interleaving.
-      Task
-      |> where([t], t.id == ^task_id)
-      |> lock("FOR UPDATE")
-      |> Repo.one!()
+  defp write_task_labels(%Task{id: task_id} = task, label_ids) do
+    TaskLabel
+    |> where([tl], tl.task_id == ^task_id)
+    |> Repo.delete_all()
 
-      TaskLabel
-      |> where([tl], tl.task_id == ^task_id)
-      |> Repo.delete_all()
+    now = NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
 
-      now = NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+    rows =
+      Enum.map(label_ids, fn label_id ->
+        %{task_id: task_id, label_id: label_id, inserted_at: now, updated_at: now}
+      end)
 
-      rows =
-        Enum.map(label_ids, fn label_id ->
-          %{task_id: task_id, label_id: label_id, inserted_at: now, updated_at: now}
-        end)
+    Repo.insert_all(TaskLabel, rows,
+      on_conflict: :nothing,
+      conflict_target: [:task_id, :label_id]
+    )
 
-      Repo.insert_all(TaskLabel, rows,
-        on_conflict: :nothing,
-        conflict_target: [:task_id, :label_id]
-      )
-
-      {:ok, Repo.preload(task, :labels, force: true)}
-    end)
+    {:ok, Repo.preload(task, :labels, force: true)}
   end
 
   defp authorize_write(scope, board_id) do

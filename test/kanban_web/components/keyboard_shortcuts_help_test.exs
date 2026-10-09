@@ -77,6 +77,21 @@ defmodule KanbanWeb.KeyboardShortcutsHelpTest do
       assert html =~ ~s(phx-click-away="close_shortcuts_help")
     end
 
+    test "remembers the focused element on open and restores it on close" do
+      document = render_help() |> LazyHTML.from_fragment()
+
+      [mounted] =
+        document
+        |> LazyHTML.query("#keyboard-shortcuts-help-panel")
+        |> LazyHTML.attribute("phx-mounted")
+
+      [removed] =
+        document |> LazyHTML.query("#keyboard-shortcuts-help") |> LazyHTML.attribute("phx-remove")
+
+      assert [["push_focus", _], ["focus_first", _]] = Jason.decode!(mounted)
+      assert [["pop_focus", _]] = Jason.decode!(removed)
+    end
+
     test "uses theme tokens rather than hardcoded colours" do
       html = render_help()
 

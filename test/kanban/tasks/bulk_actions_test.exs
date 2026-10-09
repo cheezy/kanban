@@ -208,6 +208,15 @@ defmodule Kanban.Tasks.BulkActionsTest do
     test "refuses an empty selection", %{scope: scope, board: board, done: done} do
       assert {:error, :empty_selection} = BulkActions.move(scope, board, [], done.id)
     end
+
+    test "checks the target before the tasks, as the moduledoc documents",
+         %{scope: scope, board: board, todo: todo} do
+      task = task_fixture(todo)
+      {_other_board, other_column, foreign_task} = other_board_task()
+
+      assert {:error, :invalid_column} =
+               BulkActions.move(scope, board, [task.id, foreign_task.id], other_column.id)
+    end
   end
 
   describe "assign/4" do

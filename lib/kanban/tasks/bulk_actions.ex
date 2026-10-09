@@ -10,15 +10,19 @@ defmodule Kanban.Tasks.BulkActions do
        access on the board, re-read from the database on every call so a
        hidden control or a stale socket is never the only check
        (`{:error, :unauthorized}`).
-    2. **A non-empty selection** (`{:error, :empty_selection}`).
-    3. **Board-scoped ids.** Every id must be an integer naming a live
-       (unarchived) task in one of this board's columns, and the number of
-       tasks found must equal the number of distinct ids. A foreign, archived,
-       deleted or malformed id aborts the whole action
-       (`{:error, :not_found}`).
-    4. **A board-scoped target**: the column (`:invalid_column`), the
+    2. **A non-empty selection of integer ids** (`{:error, :empty_selection}`;
+       a malformed id is `{:error, :not_found}`).
+    3. **A board-scoped target**: the column (`:invalid_column`), the
        assignee — any member of the board (`:invalid_assignee`) — or the label
        (`:invalid_label`).
+    4. **Board-scoped tasks.** Inside the transaction (after a move has locked
+       the board's columns), every id must name a live (unarchived) task in one
+       of this board's columns, and the number of tasks found must equal the
+       number of distinct ids. A foreign, archived or deleted id aborts the
+       whole action (`{:error, :not_found}`).
+
+  The first failing guard decides the error, so a selection holding a foreign
+  task id sent with an invalid target reports the target error.
 
   The writes then run in one `Ecto.Multi`, so an action succeeds or fails as
   a whole. When it changed anything, exactly one `:task_updated` broadcast is
