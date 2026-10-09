@@ -2,6 +2,7 @@ defmodule KanbanWeb.API.TaskJSON do
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.ErrorDocs
   alias KanbanWeb.API.SkillsVersion
+  alias KanbanWeb.API.TaskNestedJSON
 
   @doc """
   Task list view. Under `response_view=slim` (W2057) each row is the canonical
@@ -252,7 +253,8 @@ defmodule KanbanWeb.API.TaskJSON do
                               reviewed_at reviewed_by_id completed_at
                               completed_by_id completed_by_agent
                               completion_summary completion_notes
-                              actual_complexity actual_files_changed)
+                              actual_complexity actual_files_changed
+                              labels)
 
   @doc """
   The `fields` projection allow-list (W2076): the single source of truth
@@ -270,8 +272,9 @@ defmodule KanbanWeb.API.TaskJSON do
   # uses — except dependencies, which takes render_task_summary/1's
   # `|| []` normalisation so the summary-8 subset of a projection stays
   # byte-identical to response_view=slim. Like data/1 above, it is one flat
-  # literal map — ABC size counts its 27 field reads, but there is no logic
-  # to extract.
+  # literal map — ABC size counts its 28 field reads, but there is no logic
+  # to extract. `labels` (W2239) joined once the full show began serving it,
+  # and renders through the same TaskNestedJSON.labels/1 data/1 uses.
   # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
   defp projectable_data(%Task{} = task) do
     %{
@@ -301,7 +304,8 @@ defmodule KanbanWeb.API.TaskJSON do
       "completion_summary" => task.completion_summary,
       "completion_notes" => task.completion_notes,
       "actual_complexity" => task.actual_complexity,
-      "actual_files_changed" => task.actual_files_changed
+      "actual_files_changed" => task.actual_files_changed,
+      "labels" => TaskNestedJSON.labels(task)
     }
   end
 
@@ -362,9 +366,10 @@ defmodule KanbanWeb.API.TaskJSON do
       logging_requirements: task.logging_requirements,
       error_user_message: task.error_user_message,
       error_on_failure: task.error_on_failure,
-      key_files: render_key_files(task),
-      verification_steps: render_verification_steps(task),
-      behaviour_test_matrix: render_behaviour_test_matrix(task),
+      key_files: TaskNestedJSON.key_files(task),
+      verification_steps: TaskNestedJSON.verification_steps(task),
+      behaviour_test_matrix: TaskNestedJSON.behaviour_test_matrix(task),
+      labels: TaskNestedJSON.labels(task),
       technology_requirements: task.technology_requirements,
       pitfalls: task.pitfalls,
       out_of_scope: task.out_of_scope,
@@ -402,47 +407,6 @@ defmodule KanbanWeb.API.TaskJSON do
       updated_at: task.updated_at
     }
   end
-
-  defp render_key_files(%Task{key_files: key_files}) when is_list(key_files) do
-    Enum.map(key_files, fn kf ->
-      %{
-        file_path: kf.file_path,
-        note: kf.note,
-        position: kf.position
-      }
-    end)
-  end
-
-  defp render_key_files(_), do: []
-
-  defp render_verification_steps(%Task{verification_steps: steps}) when is_list(steps) do
-    Enum.map(steps, fn step ->
-      %{
-        step_type: step.step_type,
-        step_text: step.step_text,
-        expected_result: step.expected_result,
-        position: step.position
-      }
-    end)
-  end
-
-  defp render_verification_steps(_), do: []
-
-  defp render_behaviour_test_matrix(%Task{behaviour_test_matrix: rows}) when is_list(rows) do
-    Enum.map(rows, fn row ->
-      %{
-        category: row.category,
-        behaviour: row.behaviour,
-        test_name: row.test_name,
-        type: row.type,
-        status: row.status,
-        na_reason: row.na_reason,
-        position: row.position
-      }
-    end)
-  end
-
-  defp render_behaviour_test_matrix(_), do: []
 
   # The directive fires only when the reported version is STRICTLY OLDER than
   # this server's (D267). It used to fire on anything not byte-equal to the

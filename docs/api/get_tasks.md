@@ -23,6 +23,7 @@ Authorization: Bearer <your_api_token>
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `column_id` | integer | No | Filter tasks by column ID. If omitted, returns all tasks from all columns. Combines with every filter below. A whole number outside the signed 64-bit range returns 404, the same as a column that does not exist. |
+| `label` | string | No | Only tasks carrying the label with this **name** on the token's board, matched case-insensitively with surrounding whitespace ignored, plus goals with at least one non-archived child that carries it — the same rule as the board's label filter. Works in both modes and combines with every other filter. A name the board has no label for returns an empty `data` list, not an error. See [Filtering by label](#filtering-by-label). |
 | `response_view` | string | No | `slim` returns a compact summary row per task instead of the full object. Any other value — including `full`, an unrecognised string, or the parameter being absent — returns the unchanged full response. Works in both modes. |
 | `limit` | integer | No | **Paginated mode.** Page size, `1`–`200`. Default `50`. |
 | `cursor` | string | No | **Paginated mode.** Opaque cursor from a previous page's `meta.next_cursor`. Omit for the first page. |
@@ -87,6 +88,12 @@ Returns an array of tasks:
           "step_text": "mix test test/kanban_web/controllers/auth_controller_test.exs",
           "expected_result": "All tests pass",
           "position": 0
+        }
+      ],
+      "labels": [
+        {
+          "name": "Security",
+          "color": "red"
         }
       ],
       "technology_requirements": null,
@@ -197,9 +204,9 @@ summary shape returned by
 
 **Opt-in.** Sending any of `limit`, `cursor`, `status`, `type`, `priority`,
 `assigned_to_id`, `parent` or `updated_since` switches the endpoint into
-paginated mode. `column_id` and `response_view` on their own do **not** — they
-keep the unpaginated response, which is unchanged: no `meta` key, same rows,
-same order. A page key sent with an empty value (`?limit=`) still opts in, and
+paginated mode. `column_id`, `label` and `response_view` on their own do
+**not** — they keep the unpaginated response, which is unchanged: no `meta`
+key, same rows, same order. A page key sent with an empty value (`?limit=`) still opts in, and
 is then rejected with a `400` rather than silently ignored.
 
 **How paging works.**
@@ -233,9 +240,36 @@ they also combine with `column_id`:
   returning a task you already have. Treat results as upserts keyed by `id`.
   A bare date such as `2026-01-31` is rejected — include a time.
 
+- `label` takes one label name; see [Filtering by label](#filtering-by-label).
+
 **Board scoping.** Every page is scoped to the token's board. A cursor, a
 `parent` identifier or a `column_id` taken from another board can never return
 that board's tasks.
+
+### Filtering by label
+
+`label` narrows either response — unpaginated or paginated — to the tasks that
+carry one label, and it combines (AND) with `column_id` and every other filter.
+
+- The value is a label **name**, not an id: the API never exposes label ids.
+  It is matched case-insensitively against the token's board's labels, and
+  surrounding whitespace is ignored, so `?label=bug` and `?label=%20Bug%20` both
+  match a label named `Bug`.
+- A goal is included when at least one of its non-archived children carries
+  the label, even if the goal itself does not, so a matching child is never
+  listed without its goal. This is the same rule the board's filter bar uses,
+  so the API and the board show the same tasks for the same label.
+- Only this board's labels are consulted. A name the board has no label for —
+  whether or not another board has one — returns an empty `data` list, never an
+  error, so the response does not reveal other boards' labels.
+- A blank value, a value longer than 40 characters, or an array or map shape
+  such as `label[]=Bug` returns `400`; see [Bad Request (400)](#bad-request-400).
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  "https://www.stridelikeaboss.com/api/tasks?label=Bug&status=open&limit=50"
+```
 
 ### Incremental sync
 
@@ -373,7 +407,8 @@ Every paginated-mode parameter is validated before any data is read. An invalid
 value returns `400` with an `error` message naming the parameter, plus
 `documentation` and `getting_started` links. The first invalid parameter is
 reported, checked in the order `limit`, `cursor`, `status`, `type`, `priority`,
-`assigned_to_id`, `parent`, `updated_since`, then `column_id`:
+`assigned_to_id`, `parent`, `updated_since`, `label`, then `column_id` (outside
+paginated mode, `label` is likewise checked before `column_id`):
 
 | Cause | `error` |
 |---|---|
@@ -385,6 +420,7 @@ reported, checked in the order `limit`, `cursor`, `status`, `type`, `priority`,
 | `assigned_to_id` is not a positive integer | `Invalid assigned_to_id: must be a positive integer` |
 | `parent` is empty or longer than 255 bytes (UTF-8) | `Invalid parent: must be a goal identifier such as G12` |
 | `updated_since` is not an ISO 8601 datetime (including a bare date) | `Invalid updated_since: must be an ISO 8601 datetime such as 2026-01-31T12:00:00Z` |
+| `label` is empty, blank, longer than 40 characters, or an array or map shape (both modes) | `Invalid label: must be a label name of 1 to 40 characters` |
 | `column_id` is not an integer (both modes) | `Invalid column_id: must be an integer` |
 
 ```json
@@ -455,6 +491,7 @@ not an integer at all, such as `abc`, still gets the 400. See
 |-------|------|-------------|
 | `key_files` | array | Files that will be modified (prevents conflicts) - see structure below |
 | `verification_steps` | array | Commands to run to verify success - see structure below |
+| `labels` | array | The task's labels, each `{name, color}`, ordered by name ignoring case - see structure below. Present in the full object only, not in `response_view=slim` rows |
 | `security_considerations` | array | Security concerns or requirements (array of strings) |
 | `testing_strategy` | object | Overall testing approach (JSON object) |
 | `integration_points` | object | Systems or APIs this touches (JSON object) |
@@ -536,6 +573,21 @@ Each item in the `verification_steps` array has:
 }
 ```
 
+#### `labels` Array
+
+Each item in the `labels` array has:
+
+```json
+{
+  "name": "Bug",   // The label's name on this board (1 to 40 characters)
+  "color": "red"   // One of gray, red, orange, yellow, green, teal, blue, purple, pink
+}
+```
+
+Labels are set by name on [POST /api/tasks](post_tasks.md#labels) and
+[PATCH /api/tasks/:id](patch_tasks_id.md#labels), and are managed (created,
+renamed, deleted) in the board settings, not through the API.
+
 ## Example Usage
 
 ### Get all tasks
@@ -578,6 +630,14 @@ Use the full view for a sync. Adding `response_view=slim` still filters
 correctly, but slim rows carry no `updated_at`, so the response cannot give you
 the next watermark. See [Incremental sync](#incremental-sync).
 
+### List the tasks with a label
+
+```bash
+curl -X GET \
+  -H "Authorization: Bearer stride_dev_abc123..." \
+  "https://www.stridelikeaboss.com/api/tasks?label=Bug"
+```
+
 ### List a goal's child tasks
 
 ```bash
@@ -590,7 +650,7 @@ curl -X GET \
 
 - Get overview of all tasks on the board
 - Filter tasks by column (e.g., see all tasks in Ready)
-- Find tasks by status, type, priority, assignee or parent goal (server-side filters)
+- Find tasks by status, type, priority, assignee, parent goal or label (server-side filters)
 - Sync incrementally with `updated_since` and cursor pagination, using the full view and a server-time watermark with overlap (see [Incremental sync](#incremental-sync))
 - Build dashboards or reports
 - Monitor task progress

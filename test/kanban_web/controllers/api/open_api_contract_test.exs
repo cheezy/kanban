@@ -312,7 +312,8 @@ defmodule KanbanWeb.API.OpenApiContractTest do
         spec |> operation_parameters("/api/tasks", op) |> Enum.map(& &1["name"]) |> MapSet.new()
 
       expected =
-        ~w(limit cursor status type priority assigned_to_id parent updated_since column_id response_view)
+        ~w(limit cursor status type priority assigned_to_id parent updated_since column_id
+           response_view label)
 
       missing = expected |> MapSet.new() |> MapSet.difference(names) |> MapSet.to_list()
 
@@ -470,6 +471,19 @@ defmodule KanbanWeb.API.OpenApiContractTest do
 
     test "Task lists exactly the keys of the full task render", %{spec: spec, task: task} do
       assert rendered_keys(TaskJSON.show(%{task: task}).data) == schema_keys(spec, "Task")
+    end
+
+    test "TaskLabel matches the rendered label shape and the label colours (W2239)", %{
+      spec: spec
+    } do
+      schema = spec["components"]["schemas"]["TaskLabel"]
+      assert schema["properties"] |> Map.keys() |> Enum.sort() == ["color", "name"]
+
+      assert schema["properties"]["color"]["enum"] ==
+               Enum.map(Kanban.Labels.Label.colors(), &Atom.to_string/1)
+
+      assert spec["components"]["schemas"]["Task"]["properties"]["labels"]["items"] ==
+               %{"$ref" => "#/components/schemas/TaskLabel"}
     end
 
     test "TaskSummary lists exactly the keys of render_task_summary/1", %{spec: spec, task: task} do

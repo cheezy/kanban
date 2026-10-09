@@ -28,6 +28,7 @@ Each goal object in the `goals` array should follow the same format as a single 
 - Planning & context fields (why, what, where_context)
 - Implementation guidance (acceptance_criteria, verification_steps)
 - Child tasks array (`tasks`)
+- `labels` — label names on this board, on the goal and on each child task (see [Labels](#labels))
 - All other optional fields
 
 See the [POST /api/tasks documentation](post_tasks.md) for complete field descriptions.
@@ -321,6 +322,22 @@ the refused goal is written. A child with a non-empty `tasks` list of its own is
 refused the same way, with `details.tasks` instead of `details.type`, because
 tasks nest one level only; its inner list is never silently dropped.
 
+An unknown label name, or a malformed `labels` value, on the goal at index 1
+or on one of its children. Unlike the failures above, labels are checked for
+**the whole batch before the first goal is created**, so this 422 creates **no
+goal at all** — not even the goals before `index`. A child's error is prefixed
+with its 0-based position in that goal's `tasks`:
+
+```json
+{
+  "error": "Failed to create goal at index 1",
+  "index": 1,
+  "details": {
+    "labels": ["tasks[0] unknown labels: \"Secret\""]
+  }
+}
+```
+
 Column WIP limits are not checked by this endpoint. Every entry creates a
 `goal`, goals are exempt from WIP limits, and child tasks are not checked
 against the target column's limit when they are created, so a full column never
@@ -337,7 +354,22 @@ with [POST /api/tasks](post_tasks.md#unprocessable-entity-422), which returns a
 - Goals are created in the order they appear in the `goals` array
 - If any goal fails to create, the operation stops and returns an error
 - Previously created goals in the batch are **not** rolled back
+- Label errors are the exception: they are checked for the whole batch first, so a label error creates no goal (see [Labels](#labels))
 - The error response includes the index of the failed goal
+
+### Labels
+
+`labels` works on every goal and on every child task exactly as on
+[POST /api/tasks](post_tasks.md#labels): an array of label names, matched
+case-insensitively against the token's board, never creating a label. The
+difference is when it is checked. Every goal's and every child's labels are
+resolved before the first goal is created, so a batch with any unknown label
+name returns 422 for the first goal that has one and **creates nothing** — the
+[Goal Creation Order](#goal-creation-order) rule that earlier goals stay created
+does not apply to label errors. A name that exists only on another board is
+reported in the same words as one that exists nowhere. The 201 response keeps
+its compact goal and child shapes; read a task's labels with
+[GET /api/tasks/:id](get_tasks_id.md).
 
 ### Dependency Handling
 
@@ -494,6 +526,10 @@ If the 3rd goal in a batch of 5 fails:
 - Goals 4 and 5 are **not** created
 - The response indicates the failure at index 2 (0-indexed)
 
+A label error is not a partial success: labels are checked for every goal
+before any is created, so it creates nothing and the whole batch can be resent
+once the names are fixed.
+
 To continue after an error:
 1. Note the failed index from the error response
 2. Fix the validation errors in that goal
@@ -511,6 +547,7 @@ To continue after an error:
 | `priority: ["is invalid"]` | Invalid priority | Use `low`, `medium`, `high`, or `critical` |
 | `complexity: ["is invalid"]` | Invalid complexity | Use `small`, `medium`, or `large` |
 | `dependencies: ["must be an array"]` | Wrong type | Use array of strings |
+| `labels: ["unknown labels: ..."]` | A goal or child names a label this board does not have (nothing in the batch is created) | Use an existing label name, or create the label in the board settings first |
 
 ## Performance Considerations
 

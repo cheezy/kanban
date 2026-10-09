@@ -84,6 +84,7 @@ All parameters are optional. Only include the fields you want to update.
 | `out_of_scope` | array of strings | Items explicitly out of scope |
 | `security_considerations` | array of strings | Security considerations |
 | `required_capabilities` | array of strings | Required agent capabilities |
+| `labels` | array of strings | Label **names** on this board. Replaces the task's labels; `[]` clears them; omitting the field leaves them unchanged. An unknown name returns 422 and nothing changes (see [Labels](#labels)) |
 
 #### Embedded Collections
 
@@ -135,6 +136,19 @@ These fields are not unwritable; they are written **somewhere else**. Use the en
   }
 }
 ```
+
+#### Replace a task's labels
+
+```json
+{
+  "task": {
+    "labels": ["Bug", "backend"]
+  }
+}
+```
+
+Send `"labels": []` to remove every label. A body carrying only `labels` is a
+valid update and returns 200.
 
 #### Update with planning context
 
@@ -304,6 +318,19 @@ Validation errors:
 }
 ```
 
+An unknown label name, or a `labels` value that is not an array of 1 to 40
+character names. The labels are checked before the update is applied, so
+**nothing changes** — not the labels, and not any other field in the same
+request:
+
+```json
+{
+  "errors": {
+    "labels": ["unknown labels: \"Nope\""]
+  }
+}
+```
+
 ### Not Found (404)
 
 Task not found:
@@ -335,6 +362,25 @@ When `dependencies` array is updated:
 - If all dependencies are completed, task status changes from `blocked` to `open`
 - If task has incomplete dependencies, status changes to `blocked`
 - Dependent tasks cannot be deleted while they are listed as dependencies
+
+### Labels
+`labels` sets the task's labels by **name**, matched case-insensitively against
+the labels of the token's board (surrounding whitespace ignored; duplicates and
+case variants attach a label once):
+- Present, it **replaces** the task's whole set of labels.
+- An empty array, `[]`, **clears** them. `null` is rejected.
+- Omitted, the task's labels are **left unchanged**, whatever else the request
+  updates.
+- Every name is resolved before anything is written. An unknown name — including
+  one that exists only on another board, which is reported in the same words —
+  returns 422 and the task is not changed at all.
+- Labels are never created here; manage them in the board settings.
+- The response's `data.labels` lists the result as `{name, color}`, ordered by
+  name ignoring case.
+
+The [forbidden-field refusal](#forbidden-field-422) still runs first: a request
+that also names a field this endpoint will not change is rejected as a whole, so
+its `labels` are not applied either.
 
 ### Column Changes
 This endpoint cannot move a task between columns. Sending a `column_id` that differs from the task's current column returns **403**; sending the task's current `column_id` is accepted as a no-op.

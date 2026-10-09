@@ -8,7 +8,8 @@ defmodule KanbanWeb.API.TaskUpdate do
   passed. It fetches the task board-scoped, refuses a column move (403 —
   columns change only through the workflow endpoints), refuses any field this
   endpoint cannot change (D227, a 422 rather than a silent 200), and otherwise
-  applies the update and renders the task. The mass-assignment audit log and
+  applies the update and renders the task. `labels` is resolved by
+  `KanbanWeb.API.TaskLabels` before the update and applied after it (W2239). The mass-assignment audit log and
   telemetry fire on every path that filtered a forbidden field.
 
   Like `KanbanWeb.API.TaskErrors`, this module takes `conn` and renders; the
@@ -23,6 +24,7 @@ defmodule KanbanWeb.API.TaskUpdate do
   alias KanbanWeb.API.ErrorDocs
   alias KanbanWeb.API.TaskActions
   alias KanbanWeb.API.TaskErrors
+  alias KanbanWeb.API.TaskLabels
   alias KanbanWeb.API.TaskParamFilter
 
   @doc """
@@ -117,9 +119,39 @@ defmodule KanbanWeb.API.TaskUpdate do
     |> json(body)
   end
 
+  # W2239: `labels` is popped before the changeset and resolved first, so an
+  # unknown name is a 422 that changes nothing. Present, it replaces the set
+  # (an empty list clears it); absent, the task's labels are left untouched.
   defp apply_api_task_update(conn, task, safe_params) do
-    case Tasks.api_update_task(task, safe_params) do
+    scope = TaskLabels.scope(conn)
+
+    case pop_label_plan(conn, scope, safe_params) do
+      {:ok, params, label_plan} ->
+        update_task_and_labels(conn, scope, task, params, label_plan)
+
+      {:error, message} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> render(:error, changeset: TaskLabels.error_changeset([message]))
+    end
+  end
+
+  defp pop_label_plan(conn, scope, params) do
+    case Map.pop(params, "labels", :absent) do
+      {:absent, params} ->
+        {:ok, params, nil}
+
+      {raw, params} ->
+        with {:ok, ids} <- TaskLabels.resolve(scope, conn.assigns.current_board, raw) do
+          {:ok, params, ids}
+        end
+    end
+  end
+
+  defp update_task_and_labels(conn, scope, task, params, label_plan) do
+    case Tasks.api_update_task(task, params) do
       {:ok, updated_task} ->
+        TaskLabels.apply_plan(scope, updated_task, label_plan)
         updated_task = Tasks.get_task_for_view!(updated_task.id)
         TaskActions.emit_telemetry(conn, :task_updated, %{task_id: updated_task.id})
         render(conn, :show, task: updated_task)

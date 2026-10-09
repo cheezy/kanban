@@ -19,6 +19,9 @@ defmodule Kanban.Labels do
       board. Any other id — from another board, nonexistent, or malformed —
       yields the same `{:error, :invalid_labels}`, so labels on other boards
       cannot be attached or probed.
+    * `resolve_label_names/3` looks names up only among the board's own
+      labels, so a name used on another board is indistinguishable from one
+      that exists nowhere (W2239, the REST API's `labels` field).
   """
   import Ecto.Query, warn: false
 
@@ -124,6 +127,61 @@ defmodule Kanban.Labels do
   end
 
   def list_task_label_ids(_scope, %Task{}), do: []
+
+  @doc """
+  Resolves label names to the ids of the board's labels, for a member of the
+  board (W2239).
+
+  Names are trimmed and matched case-insensitively, mirroring the
+  case-insensitive uniqueness of label names on a board; an exact-case match
+  wins should two labels ever fold to the same name. Duplicates (including
+  case variants) collapse to their first occurrence, and ids are returned in
+  request order.
+
+  Only the given board's labels are consulted, so a name that exists on
+  another board is reported exactly like a name that exists nowhere:
+  `{:error, {:unknown_labels, names}}`, listing every unresolved name
+  (trimmed, de-duplicated, in request order). A scope that is not a member of
+  the board resolves nothing. Callers validate that `names` is a list of
+  strings first.
+
+  ## Examples
+
+      iex> resolve_label_names(scope, board, ["bug", " Docs "])
+      {:ok, [3, 7]}
+
+      iex> resolve_label_names(scope, board, ["Bug", "Nope"])
+      {:error, {:unknown_labels, ["Nope"]}}
+
+  """
+  def resolve_label_names(_scope, %Board{}, []), do: {:ok, []}
+
+  def resolve_label_names(scope, %Board{} = board, names) when is_list(names) do
+    labels = list_labels(scope, board)
+
+    names
+    |> Enum.map(&String.trim/1)
+    |> Enum.uniq_by(&String.downcase/1)
+    |> Enum.reduce({[], []}, &collect_label_id(labels, &1, &2))
+    |> resolution_result()
+  end
+
+  defp resolution_result({ids, []}), do: {:ok, ids |> Enum.reverse() |> Enum.uniq()}
+  defp resolution_result({_ids, unknown}), do: {:error, {:unknown_labels, Enum.reverse(unknown)}}
+
+  defp collect_label_id(labels, name, {ids, unknown}) do
+    case find_label_by_name(labels, name) do
+      nil -> {ids, [name | unknown]}
+      %Label{id: id} -> {[id | ids], unknown}
+    end
+  end
+
+  defp find_label_by_name(labels, name) do
+    folded = String.downcase(name)
+
+    Enum.find(labels, &(&1.name == name)) ||
+      Enum.find(labels, &(String.downcase(&1.name) == folded))
+  end
 
   @doc """
   Returns a changeset for tracking label changes, for building forms.

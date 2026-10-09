@@ -162,6 +162,7 @@ defmodule Kanban.Tasks.Queries do
         :created_by,
         :completed_by,
         :reviewed_by,
+        :labels,
         task_histories:
           from(h in TaskHistory,
             order_by: [desc: h.inserted_at],
@@ -195,6 +196,7 @@ defmodule Kanban.Tasks.Queries do
             :created_by,
             :completed_by,
             :reviewed_by,
+            :labels,
             task_histories:
               from(h in TaskHistory,
                 order_by: [desc: h.inserted_at],
@@ -232,6 +234,7 @@ defmodule Kanban.Tasks.Queries do
           :created_by,
           :completed_by,
           :reviewed_by,
+          :labels,
           task_histories:
             from(h in TaskHistory,
               order_by: [desc: h.inserted_at],

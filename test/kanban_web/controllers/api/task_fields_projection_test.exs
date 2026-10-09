@@ -78,4 +78,14 @@ defmodule KanbanWeb.API.TaskFieldsProjectionTest do
                "bogus is not in the allow-listed fields for GET /api/tasks/:id"
     end
   end
+
+  describe "labels projection (W2239)" do
+    test "fields=labels is accepted" do
+      assert TaskFieldsProjection.resolve(%{"fields" => "labels"}) ==
+               {:ok, ["id", "identifier", "labels"]}
+
+      assert TaskFieldsProjection.resolve(%{"fields" => "title,labels"}) ==
+               {:ok, ["id", "identifier", "title", "labels"]}
+    end
+  end
 end

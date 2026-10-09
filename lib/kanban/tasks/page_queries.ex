@@ -22,6 +22,7 @@ defmodule Kanban.Tasks.PageQueries do
 
   alias Kanban.Columns.Column
   alias Kanban.Repo
+  alias Kanban.Tasks.BoardFilters
   alias Kanban.Tasks.Task
 
   @doc """
@@ -29,9 +30,10 @@ defmodule Kanban.Tasks.PageQueries do
   from.
 
   `filters` is a map whose keys may be `:column_id`, `:status`, `:type`,
-  `:priority`, `:assigned_to_id`, `:parent` (a goal identifier) and
-  `:updated_since` (a `NaiveDateTime`, inclusive); all present filters are
-  ANDed. `opts` requires `:limit` and accepts `:after_id` (the decoded cursor).
+  `:priority`, `:assigned_to_id`, `:parent` (a goal identifier),
+  `:updated_since` (a `NaiveDateTime`, inclusive) and `:label_id` (matched as
+  `Kanban.Tasks.BoardFilters` matches it, so a goal with a matching child is
+  included); all present filters are ANDed. `opts` requires `:limit` and accepts `:after_id` (the decoded cursor).
 
   Returns `{tasks, next_id}` where `next_id` is the id of the last task on this
   page when a further page exists, and `nil` when this is the last page.
@@ -52,7 +54,7 @@ defmodule Kanban.Tasks.PageQueries do
     |> Enum.reduce(query, fn filter, acc -> apply_filter(acc, filter, board_id) end)
     |> order_by([t], asc: t.id)
     |> limit(^(limit + 1))
-    |> preload(:assigned_to)
+    |> preload([:assigned_to, :labels])
     |> Repo.all()
     |> split_page(limit)
   end
@@ -77,6 +79,12 @@ defmodule Kanban.Tasks.PageQueries do
 
   defp apply_filter(query, {:updated_since, since}, _board_id),
     do: where(query, [t], t.updated_at >= ^since)
+
+  # W2239: the board filter bar's own label rule, so API and board results
+  # agree — including a goal shown for a matching child. The base query is
+  # already board-scoped, and the label must be on the task's own board.
+  defp apply_filter(query, {:label_id, id}, _board_id),
+    do: BoardFilters.apply_filters(query, %BoardFilters{label_id: id})
 
   defp apply_filter(query, {:parent, identifier}, board_id) do
     goal_ids =

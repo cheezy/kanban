@@ -566,6 +566,33 @@ defmodule KanbanWeb.API.McpControllerTest do
       assert by_id == rest
     end
 
+    test "stride_list_tasks filters by label like GET /api/tasks (W2239)", %{
+      conn: conn,
+      user: user,
+      board: board,
+      ready_column: ready_column
+    } do
+      bug = Kanban.LabelsFixtures.label_fixture(board, %{name: "Bug"})
+      tagged = ready_task(ready_column, user, "Tagged")
+      _other = ready_task(ready_column, user, "Untagged")
+
+      {:ok, _} =
+        user
+        |> Kanban.Accounts.Scope.for_user()
+        |> Kanban.Labels.set_task_labels(tagged, [bug.id])
+
+      {false, page} = call_tool(conn, "stride_list_tasks", %{"label" => "bug"})
+
+      rest =
+        conn |> get(~p"/api/tasks?label=bug&limit=50&response_view=slim") |> json_response(200)
+
+      assert page == rest
+      assert Enum.map(page["data"], & &1["id"]) == [tagged.id]
+
+      {false, none} = call_tool(conn, "stride_list_tasks", %{"label" => "Nope"})
+      assert none["data"] == []
+    end
+
     test "stride_list_tasks pages like GET /api/tasks and returns next_cursor", %{
       conn: conn,
       user: user,

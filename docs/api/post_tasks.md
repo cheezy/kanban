@@ -28,6 +28,7 @@ Authorization: Bearer <your_api_token>
 | `task.priority` | string | No | Priority: `low`, `medium`, `high`, `critical` (default: `medium`) |
 | `task.complexity` | string | **Strongly Recommended** | Complexity: `small`, `medium`, `large` (default: `small`) |
 | `task.needs_review` | boolean | No | Whether task requires human review (default: `true`) |
+| `task.labels` | array | No | Label **names** on this board to attach, e.g. `["Bug", "backend"]`, matched case-insensitively. Labels must already exist on the board; an unknown name returns 422 and nothing is created (see [Labels](#labels)). Each child under `task.tasks` may carry its own `labels` |
 
 #### Task Scheduling & Dependencies
 
@@ -294,6 +295,39 @@ The `security_considerations` array specifies security concerns, potential vulne
   - Personal or sensitive data handling
   - Session or token management
 
+#### Labels
+
+`task.labels` attaches existing board labels to the new task by **name**:
+
+```json
+{
+  "task": {
+    "title": "Fix login redirect loop",
+    "type": "defect",
+    "labels": ["Bug", "auth"]
+  }
+}
+```
+
+- Names are matched case-insensitively against the labels of the token's
+  board, with surrounding whitespace ignored. Duplicates, including case
+  variants such as `"bug"` and `"BUG"`, attach the label once.
+- Each name must be a string of 1 to 40 characters, and `labels` must be an
+  array. Send `[]` (or omit the field) for no labels; `null` is rejected.
+- Labels are **never created** by the API. Create, rename and delete labels in
+  the board settings; the API only attaches labels that already exist.
+- Every name is checked before anything is written. If any name is not a label
+  on this board, the request returns 422 naming every unknown name and **no
+  task is created** — for a goal, neither the goal nor any child. A name that
+  exists only on another board is reported in exactly the same words as one
+  that exists nowhere.
+- A goal's own `labels` apply to the goal; each child task in `task.tasks` can
+  carry its own `labels`, which are checked the same way.
+- The response's `data.labels` lists the attached labels as `{name, color}`,
+  ordered by name ignoring case. Goal-creation responses keep their compact
+  shapes; fetch a task with [GET /api/tasks/:id](get_tasks_id.md) to read its
+  labels.
+
 ### Request Body Examples
 
 #### Create a detailed task (recommended approach)
@@ -551,6 +585,9 @@ The `security_considerations` array specifies security concerns, potential vulne
     "created_by_id": 5,
     "created_by_agent": "ai_agent:claude-sonnet-4-5",
     "required_capabilities": ["code_generation"],
+    "labels": [
+      {"name": "Bug", "color": "red"}
+    ],
     "inserted_at": "2025-12-28T13:00:00Z",
     "updated_at": "2025-12-28T13:00:00Z"
   }
@@ -682,6 +719,27 @@ accepted:
 
 The response also carries the usual `documentation` link.
 
+An unknown label name (see [Labels](#labels)). Every unknown name is listed,
+including one that exists only on another board, and nothing is created. An
+unknown name on a nested child is prefixed with that child's 0-based index in
+`task.tasks`:
+
+```json
+{
+  "errors": {
+    "labels": [
+      "unknown labels: \"Nope\"",
+      "tasks[1] unknown labels: \"Secret\""
+    ]
+  }
+}
+```
+
+A `labels` value that is not an array of 1 to 40 character names (for example
+`"Bug"`, `[1]`, `[""]` or `null`) returns `"labels": ["must be an array of
+label names, each 1 to 40 characters"]` the same way. Both responses also
+carry the usual `documentation` link.
+
 WIP limit reached. A `work` or `defect` task whose target column (Backlog by
 default) already holds as many non-archived `work` and `defect` tasks as the
 column's WIP limit allows is rejected, and nothing is persisted. The message is
@@ -720,6 +778,7 @@ returns the same 422.
 - The `created_by_id` is automatically set to your user ID
 - If your API token has an `agent_model`, it's recorded as `created_by_agent`
 - Task identifiers are automatically generated (e.g., W22, G10)
+- `labels` attaches existing board labels by name; it never creates a label (see [Labels](#labels))
 
 ### Goal Creation with Nested Tasks
 

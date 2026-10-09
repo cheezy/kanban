@@ -30,7 +30,14 @@ defmodule Kanban.Tasks.Goals do
 
       task ->
         task =
-          Repo.preload(task, [:column, :assigned_to, :created_by, :completed_by, :reviewed_by])
+          Repo.preload(task, [
+            :column,
+            :assigned_to,
+            :created_by,
+            :completed_by,
+            :reviewed_by,
+            :labels
+          ])
 
         children =
           if task.type == :goal,
@@ -55,7 +62,7 @@ defmodule Kanban.Tasks.Goals do
 
     if preload? do
       base
-      |> preload([:column, :assigned_to, :created_by, :completed_by, :reviewed_by])
+      |> preload([:column, :assigned_to, :created_by, :completed_by, :reviewed_by, :labels])
       |> Repo.all()
     else
       Repo.all(base)

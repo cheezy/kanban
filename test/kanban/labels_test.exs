@@ -514,4 +514,81 @@ defmodule Kanban.LabelsTest do
       assert Labels.list_task_label_ids(ctx.owner_scope, %Task{}) == []
     end
   end
+
+  describe "resolve_label_names/3 (W2239)" do
+    test "matches trimmed names case-insensitively and returns ids in request order", ctx do
+      bug = label_fixture(ctx.board, %{name: "Bug"})
+      docs = label_fixture(ctx.board, %{name: "Docs"})
+
+      assert Labels.resolve_label_names(ctx.owner_scope, ctx.board, [" docs ", "BUG"]) ==
+               {:ok, [docs.id, bug.id]}
+    end
+
+    test "collapses duplicates and case variants to their first occurrence", ctx do
+      bug = label_fixture(ctx.board, %{name: "Bug"})
+
+      assert Labels.resolve_label_names(ctx.owner_scope, ctx.board, ["bug", "Bug", " BUG"]) ==
+               {:ok, [bug.id]}
+    end
+
+    test "an empty list resolves to no ids", ctx do
+      assert Labels.resolve_label_names(ctx.owner_scope, ctx.board, []) == {:ok, []}
+    end
+
+    test "lists every unknown name, trimmed and de-duplicated, in request order", ctx do
+      label_fixture(ctx.board, %{name: "Bug"})
+
+      assert Labels.resolve_label_names(ctx.owner_scope, ctx.board, [
+               "Zed ",
+               "Bug",
+               "alpha",
+               "zed"
+             ]) == {:error, {:unknown_labels, ["Zed", "alpha"]}}
+    end
+
+    test "another board's label is reported exactly like a nonexistent one", ctx do
+      label_fixture(ctx.other_board, %{name: "Secret"})
+
+      elsewhere = Labels.resolve_label_names(ctx.owner_scope, ctx.board, ["Secret"])
+      nowhere = Labels.resolve_label_names(ctx.owner_scope, ctx.board, ["Nowhere"])
+
+      assert elsewhere == {:error, {:unknown_labels, ["Secret"]}}
+      assert nowhere == {:error, {:unknown_labels, ["Nowhere"]}}
+    end
+
+    test "read-only members resolve; outsiders and nil scopes resolve nothing", ctx do
+      bug = label_fixture(ctx.board, %{name: "Bug"})
+
+      assert Labels.resolve_label_names(ctx.read_only_scope, ctx.board, ["Bug"]) ==
+               {:ok, [bug.id]}
+
+      for scope <- [ctx.outsider_scope, nil, %Scope{user: nil}] do
+        assert Labels.resolve_label_names(scope, ctx.board, ["Bug"]) ==
+                 {:error, {:unknown_labels, ["Bug"]}}
+      end
+    end
+
+    test "prefers an exact-case match when two names fold together", ctx do
+      # Postgres lower() under a "C" ctype folds only ASCII, so "Éclair" and
+      # "éclair" can coexist on one board while String.downcase/1 folds both
+      # to "éclair". Where the database folds them too, the second insert hits
+      # the unique index and there is no collision to resolve.
+      upper = label_fixture(ctx.board, %{name: "Éclair"})
+
+      case %Label{board_id: ctx.board.id}
+           |> Label.changeset(%{name: "éclair", color: :red})
+           |> Repo.insert() do
+        {:ok, lower} ->
+          assert Labels.resolve_label_names(ctx.owner_scope, ctx.board, ["éclair"]) ==
+                   {:ok, [lower.id]}
+
+          assert Labels.resolve_label_names(ctx.owner_scope, ctx.board, ["Éclair"]) ==
+                   {:ok, [upper.id]}
+
+        {:error, _changeset} ->
+          assert Labels.resolve_label_names(ctx.owner_scope, ctx.board, ["éclair"]) ==
+                   {:ok, [upper.id]}
+      end
+    end
+  end
 end

@@ -30,6 +30,7 @@ defmodule KanbanWeb.API.TaskCreation do
   alias KanbanWeb.API.TaskActions
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskJSON
+  alias KanbanWeb.API.TaskLabels
   alias KanbanWeb.API.TaskParamFilter
 
   @doc """
@@ -86,22 +87,38 @@ defmodule KanbanWeb.API.TaskCreation do
 
     log_create_forbidden_fields(conn, rejected_goal_fields, rejected_child_fields)
 
+    # W2239: labels are resolved and validated before any row is written, so
+    # an unknown name is a 422 that leaves nothing behind.
+    conn
+    |> TaskLabels.scope()
+    |> TaskLabels.prepare_create(conn.assigns.current_board, safe_task_params, safe_child_tasks)
+    |> create_with_labels(conn, column, creator)
+  end
+
+  defp create_with_labels({:ok, task_params, child_tasks, label_plan}, conn, column, creator) do
     task_params_with_creator =
       build_task_params_with_creator(
-        safe_task_params,
+        task_params,
         creator.user,
         creator.api_token,
         creator.agent_name
       )
 
-    if safe_child_tasks != [] do
+    insert_task_or_goal(conn, column, task_params_with_creator, child_tasks, label_plan)
+  end
+
+  defp create_with_labels({:error, changeset}, conn, _column, _creator),
+    do: handle_task_creation({:error, changeset}, conn, nil)
+
+  defp insert_task_or_goal(conn, column, task_params, child_tasks, label_plan) do
+    if child_tasks != [] do
       column
-      |> Tasks.api_create_goal_with_tasks(task_params_with_creator, safe_child_tasks)
-      |> handle_goal_creation(conn)
+      |> Tasks.api_create_goal_with_tasks(task_params, child_tasks)
+      |> handle_goal_creation(conn, label_plan)
     else
       column
-      |> Tasks.api_create_task(task_params_with_creator)
-      |> handle_task_creation(conn)
+      |> Tasks.api_create_task(task_params)
+      |> handle_task_creation(conn, label_plan)
     end
   end
 
@@ -113,7 +130,8 @@ defmodule KanbanWeb.API.TaskCreation do
     |> Map.delete("column_id")
   end
 
-  defp handle_task_creation({:ok, task}, conn) do
+  defp handle_task_creation({:ok, task}, conn, label_plan) do
+    conn |> TaskLabels.scope() |> TaskLabels.apply_plan(task, label_plan.task)
     task = Tasks.get_task_for_view!(task.id)
     TaskActions.emit_telemetry(conn, :task_created, %{task_id: task.id})
 
@@ -123,7 +141,7 @@ defmodule KanbanWeb.API.TaskCreation do
     |> render(:show, task: task)
   end
 
-  defp handle_task_creation({:error, %Ecto.Changeset{} = changeset}, conn) do
+  defp handle_task_creation({:error, %Ecto.Changeset{} = changeset}, conn, _label_plan) do
     conn
     |> put_status(:unprocessable_entity)
     |> render(:error, changeset: changeset)
@@ -131,11 +149,14 @@ defmodule KanbanWeb.API.TaskCreation do
 
   # D356: a work or defect task created in a column at its WIP limit. Without
   # this clause the reason fell through to FunctionClauseError and a 500.
-  defp handle_task_creation({:error, :wip_limit_reached} = error, conn) do
+  defp handle_task_creation({:error, :wip_limit_reached} = error, conn, _label_plan) do
     TaskErrors.handle_task_error(conn, error)
   end
 
-  defp handle_goal_creation({:ok, %{goal: goal, child_tasks: child_tasks}}, conn) do
+  defp handle_goal_creation({:ok, %{goal: goal, child_tasks: child_tasks}}, conn, label_plan) do
+    scope = TaskLabels.scope(conn)
+    TaskLabels.apply_plan(scope, goal, label_plan.task)
+    TaskLabels.apply_children(scope, child_tasks, label_plan.children)
     goal = Tasks.get_task_for_view!(goal.id)
 
     TaskActions.emit_telemetry(conn, :goal_created, %{
@@ -152,7 +173,11 @@ defmodule KanbanWeb.API.TaskCreation do
     })
   end
 
-  defp handle_goal_creation({:error, _operation, %Ecto.Changeset{} = changeset}, conn) do
+  defp handle_goal_creation(
+         {:error, _operation, %Ecto.Changeset{} = changeset},
+         conn,
+         _label_plan
+       ) do
     conn
     |> put_status(:unprocessable_entity)
     |> render(:error, changeset: changeset)

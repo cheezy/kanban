@@ -28,6 +28,7 @@ defmodule KanbanWeb.API.TaskActions do
   alias Kanban.Tasks
   alias KanbanWeb.API.AgentAttribution
   alias KanbanWeb.API.CompletionResultGate
+  alias KanbanWeb.API.TaskLabels
   alias KanbanWeb.API.TaskListParams
 
   require Logger
@@ -221,23 +222,39 @@ defmodule KanbanWeb.API.TaskActions do
     board = conn.assigns.current_board
 
     with {:ok, page} <- TaskListParams.parse(params),
-         {:ok, column_filter} <- page_column_filter(board, params["column_id"]) do
-      {:ok, :index, task_page(conn, board, page, column_filter, view_for(params))}
+         {:ok, filter} <- page_extra_filters(conn, board, params) do
+      {:ok, :index, task_page(conn, board, page, filter, view_for(params))}
     else
       {:error, :not_found} -> {:error, :not_found}
       {:error, message} when is_binary(message) -> {:error, {:invalid_param, message}}
     end
   end
 
-  defp task_page(conn, board, page, column_filter, view) do
-    filters = page |> TaskListParams.filters() |> Map.merge(column_filter)
+  defp task_page(conn, board, page, extra_filters, view) do
+    filters = page |> TaskListParams.filters() |> Map.merge(extra_filters)
     opts = [limit: page.limit, after_id: page.cursor]
-    {tasks, next_id} = Tasks.list_board_tasks_page(board.id, filters, opts)
+    {tasks, next_id} = list_page_tasks(board, filters, opts)
     meta = %{next_cursor: TaskListParams.encode_cursor(next_id), limit: page.limit}
 
     emit_telemetry(conn, :task_listed, %{count: length(tasks)})
     [tasks: tasks, response_view: view, page_meta: meta]
   end
+
+  # The label and column filters, validated after the page keys: label first,
+  # then column_id (the order docs/api/get_tasks.md documents).
+  defp page_extra_filters(conn, board, params) do
+    with {:ok, label} <- TaskListParams.parse_label(params),
+         {:ok, column_filter} <- page_column_filter(board, params["column_id"]) do
+      {:ok, Map.merge(column_filter, TaskLabels.page_filter(conn, label))}
+    end
+  end
+
+  # W2239: a label name the board does not have matches nothing — an empty
+  # page, never an error, so no other board's label names can be probed.
+  defp list_page_tasks(_board, %{label_id: :none}, _opts), do: {[], nil}
+
+  defp list_page_tasks(board, filters, opts),
+    do: Tasks.list_board_tasks_page(board.id, filters, opts)
 
   defp page_column_filter(_board, nil), do: {:ok, %{}}
 

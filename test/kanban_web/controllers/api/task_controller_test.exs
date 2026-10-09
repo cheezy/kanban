@@ -4034,7 +4034,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
                "allow-listed #{name} must already be served by the full show response"
       end
 
-      assert length(names) == 27
+      assert length(names) == 28
     end
 
     test "a projection works when fetching by identifier string", %{conn: conn, task: task} do
@@ -9067,6 +9067,501 @@ defmodule KanbanWeb.API.TaskControllerTest do
       # "GET /api/tasks" describe above.
       with_param = json_response(get(conn, ~p"/api/tasks?response_view=slim"), 200)
       assert length(with_param["data"]) == length(without["data"]) + 1
+    end
+  end
+
+  describe "labels (W2239)" do
+    setup %{board: board} do
+      bug = Kanban.LabelsFixtures.label_fixture(board, %{name: "Bug", color: :red})
+      docs = Kanban.LabelsFixtures.label_fixture(board, %{name: "docs", color: :blue})
+
+      other_board = ai_optimized_board_fixture(user_fixture())
+      secret = Kanban.LabelsFixtures.label_fixture(other_board, %{name: "Secret", color: :pink})
+
+      %{bug: bug, docs: docs, secret: secret}
+    end
+
+    @bug_json %{"name" => "Bug", "color" => "red"}
+    @docs_json %{"name" => "docs", "color" => "blue"}
+    @shape_error "must be an array of label names, each 1 to 40 characters"
+
+    defp labels_of(conn, id),
+      do: json_response(get(conn, ~p"/api/tasks/#{id}"), 200)["data"]["labels"]
+
+    defp titled_count(board, title) do
+      board
+      |> Columns.list_columns()
+      |> Enum.flat_map(&Tasks.list_tasks/1)
+      |> Enum.count(&(&1.title == title))
+    end
+
+    defp labelled_task!(column, user, title, labels) do
+      {:ok, task} = Tasks.create_task(column, %{"title" => title, "created_by_id" => user.id})
+
+      {:ok, task} =
+        user
+        |> Kanban.Accounts.Scope.for_user()
+        |> Kanban.Labels.set_task_labels(task, Enum.map(labels, & &1.id))
+
+      task
+    end
+
+    test "POST accepts labels and the full response and GET serve them", %{
+      conn: conn,
+      column: column
+    } do
+      created =
+        post(conn, ~p"/api/tasks",
+          task: %{"title" => "Labelled", "column_id" => column.id, "labels" => ["docs", "Bug"]}
+        )
+
+      body = json_response(created, 201)["data"]
+      assert body["labels"] == [@bug_json, @docs_json]
+      assert labels_of(conn, body["id"]) == [@bug_json, @docs_json]
+    end
+
+    test "POST without labels serves an empty labels array", %{conn: conn, column: column} do
+      created = post(conn, ~p"/api/tasks", task: %{"title" => "Plain", "column_id" => column.id})
+      assert json_response(created, 201)["data"]["labels"] == []
+    end
+
+    test "duplicate and case-only-different names attach each label once", %{
+      conn: conn,
+      column: column
+    } do
+      created =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Dupes",
+            "column_id" => column.id,
+            "labels" => ["bug", " BUG ", "Bug", "DOCS"]
+          }
+        )
+
+      assert json_response(created, 201)["data"]["labels"] == [@bug_json, @docs_json]
+    end
+
+    test "an unknown label name is a 422 naming it and creates nothing", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      resp =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Unknown label",
+            "column_id" => column.id,
+            "labels" => ["Bug", "Nope", "Gone"]
+          }
+        )
+
+      assert json_response(resp, 422)["errors"] == %{
+               "labels" => [~s(unknown labels: "Nope", "Gone")]
+             }
+
+      assert titled_count(board, "Unknown label") == 0
+    end
+
+    test "another board's label is indistinguishable from a nonexistent one", %{
+      conn: conn,
+      board: board,
+      column: column,
+      secret: secret
+    } do
+      params = %{"title" => "Cross board", "column_id" => column.id, "labels" => ["Secret"]}
+
+      exists_elsewhere = conn |> post(~p"/api/tasks", task: params) |> response(422)
+      {:ok, _} = Kanban.Repo.delete(secret)
+      exists_nowhere = conn |> post(~p"/api/tasks", task: params) |> response(422)
+
+      assert exists_elsewhere == exists_nowhere
+      assert titled_count(board, "Cross board") == 0
+    end
+
+    test "a malformed labels value is a 422 and creates nothing", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      for bad <- ["Bug", [1], [""], ["   "], [String.duplicate("x", 41)], nil, %{"0" => "Bug"}] do
+        resp =
+          post(conn, ~p"/api/tasks",
+            task: %{"title" => "Malformed", "column_id" => column.id, "labels" => bad}
+          )
+
+        assert json_response(resp, 422)["errors"] == %{"labels" => [@shape_error]}, inspect(bad)
+      end
+
+      assert titled_count(board, "Malformed") == 0
+    end
+
+    test "a goal and its nested children receive their own labels", %{conn: conn, column: column} do
+      created =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Labelled goal",
+            "type" => "goal",
+            "column_id" => column.id,
+            "labels" => ["docs"],
+            "tasks" => [
+              %{"title" => "Child one", "type" => "work", "labels" => ["Bug"]},
+              %{"title" => "Child two", "type" => "work"},
+              %{"title" => "Child three", "type" => "defect", "labels" => ["bug", "docs"]}
+            ]
+          }
+        )
+
+      body = json_response(created, 201)
+      assert labels_of(conn, body["goal"]["id"]) == [@docs_json]
+
+      by_title = Map.new(body["child_tasks"], &{&1["title"], &1["id"]})
+      assert labels_of(conn, by_title["Child one"]) == [@bug_json]
+      assert labels_of(conn, by_title["Child two"]) == []
+      assert labels_of(conn, by_title["Child three"]) == [@bug_json, @docs_json]
+
+      # The goal-creation summaries are not widened.
+      refute Enum.any?(body["child_tasks"], &Map.has_key?(&1, "labels"))
+      refute Map.has_key?(body["goal"], "labels")
+    end
+
+    test "a bad child label rejects the goal and every child", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      resp =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Rejected goal",
+            "type" => "goal",
+            "column_id" => column.id,
+            "tasks" => [
+              %{"title" => "Rejected child ok", "type" => "work", "labels" => ["Bug"]},
+              %{"title" => "Rejected child bad", "type" => "work", "labels" => ["Secret"]}
+            ]
+          }
+        )
+
+      assert json_response(resp, 422)["errors"] == %{
+               "labels" => [~s(tasks[1] unknown labels: "Secret")]
+             }
+
+      for title <- ["Rejected goal", "Rejected child ok", "Rejected child bad"],
+          do: assert(titled_count(board, title) == 0)
+    end
+
+    test "PATCH replaces the set, an empty array clears it and omitting it leaves it", %{
+      conn: conn,
+      column: column,
+      user: user,
+      bug: bug
+    } do
+      task = labelled_task!(column, user, "Patch me", [bug])
+
+      replaced = patch(conn, ~p"/api/tasks/#{task.id}", task: %{"labels" => ["DOCS"]})
+      assert json_response(replaced, 200)["data"]["labels"] == [@docs_json]
+
+      untouched = patch(conn, ~p"/api/tasks/#{task.id}", task: %{"title" => "Renamed"})
+      assert json_response(untouched, 200)["data"]["labels"] == [@docs_json]
+      assert json_response(untouched, 200)["data"]["title"] == "Renamed"
+
+      cleared = patch(conn, ~p"/api/tasks/#{task.id}", task: %{"labels" => []})
+      assert json_response(cleared, 200)["data"]["labels"] == []
+      assert labels_of(conn, task.id) == []
+    end
+
+    test "PATCH with title and labels applies both", %{conn: conn, column: column, user: user} do
+      task = labelled_task!(column, user, "Both", [])
+
+      resp =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"title" => "Both done", "labels" => ["bug"]}
+        )
+
+      data = json_response(resp, 200)["data"]
+      assert data["title"] == "Both done"
+      assert data["labels"] == [@bug_json]
+    end
+
+    test "PATCH with an unknown label is a 422 that changes nothing", %{
+      conn: conn,
+      column: column,
+      user: user,
+      bug: bug
+    } do
+      task = labelled_task!(column, user, "Keep me", [bug])
+
+      resp =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"title" => "Changed", "labels" => ["Secret"]}
+        )
+
+      assert json_response(resp, 422)["errors"] == %{"labels" => [~s(unknown labels: "Secret")]}
+
+      data = json_response(get(conn, ~p"/api/tasks/#{task.id}"), 200)["data"]
+      assert data["title"] == "Keep me"
+      assert data["labels"] == [@bug_json]
+    end
+
+    test "PATCH with labels and a forbidden field is the D227 refusal and labels stay", %{
+      conn: conn,
+      column: column,
+      user: user,
+      bug: bug
+    } do
+      task = labelled_task!(column, user, "Forbidden mix", [bug])
+
+      resp =
+        patch(conn, ~p"/api/tasks/#{task.id}", task: %{"labels" => [], "status" => "completed"})
+
+      assert json_response(resp, 422)["error"] == "task update rejected"
+      assert labels_of(conn, task.id) == [@bug_json]
+    end
+
+    test "GET /api/tasks?label= returns exactly the board filter's tasks", %{
+      conn: conn,
+      board: board,
+      column: column,
+      user: user,
+      bug: bug,
+      docs: docs
+    } do
+      tagged = labelled_task!(column, user, "Tagged", [bug])
+      both = labelled_task!(column, user, "Both labels", [bug, docs])
+      _other = labelled_task!(column, user, "Docs only", [docs])
+      _none = labelled_task!(column, user, "Unlabelled", [])
+
+      {:ok, goal} =
+        Tasks.create_task(column, %{
+          "title" => "Goal of tagged",
+          "type" => "goal",
+          "created_by_id" => user.id
+        })
+
+      {:ok, child} =
+        Tasks.create_task(column, %{
+          "title" => "Tagged child",
+          "parent_id" => goal.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, _} =
+        user |> Kanban.Accounts.Scope.for_user() |> Kanban.Labels.set_task_labels(child, [bug.id])
+
+      board_filter_ids =
+        board
+        |> Columns.list_columns()
+        |> Tasks.list_tasks_by_columns(filters: %Kanban.Tasks.BoardFilters{label_id: bug.id})
+        |> Map.values()
+        |> List.flatten()
+        |> Enum.map(& &1.id)
+        |> Enum.sort()
+
+      legacy = json_response(get(conn, ~p"/api/tasks?label=BUG"), 200)["data"]
+      assert legacy |> Enum.map(& &1["id"]) |> Enum.sort() == board_filter_ids
+      assert Enum.sort(board_filter_ids) == Enum.sort([tagged.id, both.id, goal.id, child.id])
+      assert Enum.find(legacy, &(&1["id"] == tagged.id))["labels"] == [@bug_json]
+
+      by_column =
+        json_response(get(conn, ~p"/api/tasks?label=Bug&column_id=#{column.id}"), 200)["data"]
+
+      assert by_column |> Enum.map(& &1["id"]) |> Enum.sort() == board_filter_ids
+
+      paged = json_response(get(conn, ~p"/api/tasks?label=bug&limit=50"), 200)
+      assert paged["data"] |> Enum.map(& &1["id"]) |> Enum.sort() == board_filter_ids
+      assert paged["meta"]["next_cursor"] == nil
+
+      typed = json_response(get(conn, ~p"/api/tasks?label=bug&type=goal"), 200)["data"]
+      assert Enum.map(typed, & &1["id"]) == [goal.id]
+
+      slim = json_response(get(conn, ~p"/api/tasks?label=bug&response_view=slim"), 200)["data"]
+      assert slim |> Enum.map(& &1["id"]) |> Enum.sort() == board_filter_ids
+      refute Enum.any?(slim, &Map.has_key?(&1, "labels"))
+    end
+
+    test "a label name the board does not have returns an empty list in both modes", %{
+      conn: conn,
+      column: column,
+      user: user,
+      bug: bug
+    } do
+      labelled_task!(column, user, "Has bug", [bug])
+
+      for name <- ["Secret", "Nope"], query <- [%{}, %{"limit" => "10"}] do
+        resp = get(conn, ~p"/api/tasks", Map.put(query, "label", name))
+        assert json_response(resp, 200)["data"] == []
+      end
+    end
+
+    test "a malformed label value is a 400 in both modes", %{conn: conn} do
+      for path <- [
+            "/api/tasks?label=",
+            "/api/tasks?label=%20%20",
+            "/api/tasks?label[]=Bug",
+            "/api/tasks?label[k]=Bug",
+            "/api/tasks?label=#{String.duplicate("x", 41)}",
+            "/api/tasks?label=&limit=10",
+            "/api/tasks?label[]=Bug&limit=10",
+            "/api/tasks?label=&column_id=1"
+          ] do
+        body = json_response(get(conn, path), 400)
+        assert body["error"] =~ "Invalid label", path
+      end
+    end
+
+    test "every route that serves the full task serves its labels", %{
+      conn: conn,
+      board: board,
+      user: user,
+      bug: bug
+    } do
+      columns = Columns.list_columns(board)
+      ready = Enum.find(columns, &(&1.name == "Ready"))
+      task = labelled_task!(ready, user, "Truthful", [bug])
+
+      assert labels_of(conn, task.identifier) == [@bug_json]
+
+      {:ok, goal} =
+        Tasks.create_task(ready, %{
+          "title" => "Tree goal",
+          "type" => "goal",
+          "created_by_id" => user.id
+        })
+
+      _ = labelled_task!(ready, user, "Tree child placeholder", [])
+
+      {:ok, child} =
+        Tasks.create_task(ready, %{
+          "title" => "Tree child",
+          "parent_id" => goal.id,
+          "created_by_id" => user.id
+        })
+
+      {:ok, _} =
+        user |> Kanban.Accounts.Scope.for_user() |> Kanban.Labels.set_task_labels(goal, [bug.id])
+
+      {:ok, _} =
+        user |> Kanban.Accounts.Scope.for_user() |> Kanban.Labels.set_task_labels(child, [bug.id])
+
+      tree = json_response(get(conn, ~p"/api/tasks/#{goal.id}/tree"), 200)["data"]
+      assert tree["task"]["labels"] == [@bug_json]
+      assert Enum.map(tree["children"], & &1["labels"]) == [[@bug_json]]
+
+      next = json_response(get(conn, ~p"/api/tasks/next"), 200)["data"]
+      assert next["labels"] == labels_of(conn, next["id"])
+
+      claimed =
+        post(conn, ~p"/api/tasks/claim", %{
+          "identifier" => task.identifier,
+          "before_doing_result" => valid_before_doing_result()
+        })
+
+      assert json_response(claimed, 200)["data"]["labels"] == [@bug_json]
+
+      unclaimed = post(conn, ~p"/api/tasks/#{task.id}/unclaim", %{"reason" => "W2239 check"})
+      assert json_response(unclaimed, 200)["data"]["labels"] == [@bug_json]
+
+      post(conn, ~p"/api/tasks/claim", %{
+        "identifier" => task.identifier,
+        "before_doing_result" => valid_before_doing_result()
+      })
+
+      completed = patch(conn, ~p"/api/tasks/#{task.id}/complete", base_completion_params())
+      assert json_response(completed, 200)["data"]["labels"] == [@bug_json]
+    end
+
+    test "fields=labels projects the labels", %{conn: conn, column: column, user: user, bug: bug} do
+      task = labelled_task!(column, user, "Projected", [bug])
+
+      data = json_response(get(conn, ~p"/api/tasks/#{task.id}?fields=labels"), 200)["data"]
+      assert data == %{"id" => task.id, "identifier" => task.identifier, "labels" => [@bug_json]}
+    end
+
+    test "slim and summary responses are byte-identical with and without labels", %{
+      conn: conn,
+      column: column,
+      user: user,
+      bug: bug
+    } do
+      {:ok, dep} =
+        Tasks.create_task(column, %{"title" => "Dependency", "created_by_id" => user.id})
+
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "Summary task",
+          "dependencies" => [dep.identifier],
+          "created_by_id" => user.id
+        })
+
+      paths = [
+        ~p"/api/tasks/#{task.id}?response_view=slim",
+        ~p"/api/tasks?response_view=slim",
+        ~p"/api/tasks/#{task.id}/dependencies",
+        ~p"/api/tasks/#{dep.id}/dependents"
+      ]
+
+      before = Enum.map(paths, &response(get(conn, &1), 200))
+
+      scope = Kanban.Accounts.Scope.for_user(user)
+      {:ok, _} = Kanban.Labels.set_task_labels(scope, task, [bug.id])
+      {:ok, _} = Kanban.Labels.set_task_labels(scope, dep, [bug.id])
+
+      assert Enum.map(paths, &response(get(conn, &1), 200)) == before
+      assert labels_of(conn, task.id) == [@bug_json]
+    end
+
+    test "POST /api/tasks/batch applies labels to goals and child tasks", %{conn: conn} do
+      goals = [
+        %{
+          "title" => "Batch goal A",
+          "labels" => ["Bug"],
+          "tasks" => [
+            %{"title" => "Batch child A1", "type" => "work", "labels" => ["docs"]},
+            %{"title" => "Batch child A2", "type" => "work"}
+          ]
+        },
+        %{
+          "title" => "Batch goal B",
+          "tasks" => [
+            %{"title" => "Batch child B1", "type" => "work", "labels" => ["bug", "docs"]}
+          ]
+        }
+      ]
+
+      body = json_response(post(conn, ~p"/api/tasks/batch", goals: goals), 201)
+      [a, b] = body["goals"]
+
+      assert labels_of(conn, a["goal"]["id"]) == [@bug_json]
+      assert labels_of(conn, b["goal"]["id"]) == []
+
+      titles = Map.new(a["child_tasks"] ++ b["child_tasks"], &{&1["title"], &1["id"]})
+      assert labels_of(conn, titles["Batch child A1"]) == [@docs_json]
+      assert labels_of(conn, titles["Batch child A2"]) == []
+      assert labels_of(conn, titles["Batch child B1"]) == [@bug_json, @docs_json]
+    end
+
+    test "a bad label anywhere in a batch is a 422 for that goal and creates no goal", %{
+      conn: conn,
+      board: board
+    } do
+      goals = [
+        %{
+          "title" => "Batch ok goal",
+          "tasks" => [%{"title" => "Batch ok child", "type" => "work"}]
+        },
+        %{
+          "title" => "Batch bad goal",
+          "tasks" => [%{"title" => "Batch bad child", "type" => "work", "labels" => ["Secret"]}]
+        }
+      ]
+
+      body = json_response(post(conn, ~p"/api/tasks/batch", goals: goals), 422)
+      assert body["error"] == "Failed to create goal at index 1"
+      assert body["index"] == 1
+      assert body["details"] == %{"labels" => [~s(tasks[0] unknown labels: "Secret")]}
+
+      for title <- ["Batch ok goal", "Batch ok child", "Batch bad goal", "Batch bad child"],
+          do: assert(titled_count(board, title) == 0)
     end
   end
 end

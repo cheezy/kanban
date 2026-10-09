@@ -889,4 +889,55 @@ defmodule KanbanWeb.API.TaskJSONTest do
       end
     end
   end
+
+  describe "labels in the task views (W2239)" do
+    setup %{column: column, board: board, user: user} do
+      zed = Kanban.LabelsFixtures.label_fixture(board, %{name: "zed", color: :green})
+      alpha = Kanban.LabelsFixtures.label_fixture(board, %{name: "Alpha", color: :red})
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Labelled view task"})
+
+      {:ok, task} =
+        user
+        |> Kanban.Accounts.Scope.for_user()
+        |> Kanban.Labels.set_task_labels(task, [
+          zed.id,
+          alpha.id
+        ])
+
+      %{task: task}
+    end
+
+    test "the full view renders labels as name and color, ordered by name ignoring case", %{
+      task: task
+    } do
+      %{data: data} = TaskJSON.show(%{task: task})
+
+      assert data.labels == [%{name: "Alpha", color: :red}, %{name: "zed", color: :green}]
+    end
+
+    test "a task without preloaded labels renders an empty list", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Not preloaded"})
+      assert %Ecto.Association.NotLoaded{} = task.labels
+
+      assert TaskJSON.show(%{task: task}).data.labels == []
+    end
+
+    test "the summary, slim and ack views never carry labels", %{task: task} do
+      summary = TaskJSON.render_task_summary(task)
+      assert map_size(summary) == 11
+      refute Map.has_key?(summary, :labels)
+
+      refute Map.has_key?(TaskJSON.show(%{task: task, response_view: :slim}).data, :labels)
+      refute Map.has_key?(TaskJSON.ack(%{task: task}).data, :labels)
+
+      for row <- TaskJSON.index(%{tasks: [task], response_view: :slim}).data,
+          do: refute(Map.has_key?(row, :labels))
+    end
+
+    test "the fields projection serves the same labels as the full view", %{task: task} do
+      assert TaskJSON.show(%{task: task, fields: ["labels"]}).data == %{
+               "labels" => TaskJSON.show(%{task: task}).data.labels
+             }
+    end
+  end
 end

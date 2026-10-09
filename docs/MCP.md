@@ -89,7 +89,7 @@ names and types are the same as in the REST API's
 | `stride_claim_task` | [POST /api/tasks/claim](api/post_tasks_claim.md) | `before_doing_result` (required), `identifier`, `agent_name`, `skills_version` |
 | `stride_complete_task` | [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md) | `id`, `after_doing_result`, `before_review_result`, `reviewer_result` (required), plus every other completion field |
 | `stride_get_task` | [GET /api/tasks/:id](api/get_tasks_id.md) | `id` (required), `response_view` |
-| `stride_list_tasks` | [GET /api/tasks](api/get_tasks.md) (paginated mode) | `limit`, `cursor`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`, `column_id`, `response_view` |
+| `stride_list_tasks` | [GET /api/tasks](api/get_tasks.md) (paginated mode) | `limit`, `cursor`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`, `column_id`, `label`, `response_view` |
 | `stride_add_comment` | [POST /api/tasks/:id/comments](api/post_tasks_id_comments.md) | `id`, `content` (both required), `agent_name` |
 
 Notes:
@@ -108,7 +108,9 @@ Notes:
   `meta.next_cursor` back as `cursor` to get the next page. On the last page
   `meta.next_cursor` is `null`. Pass `"response_view": "full"` to get whole
   tasks. A full-view page is capped by a byte budget, as described in
-  [Full-view size limit](#full-view-size-limit).
+  [Full-view size limit](#full-view-size-limit). `label` takes a label name and
+  filters exactly as `?label=` does on
+  [GET /api/tasks](api/get_tasks.md#filtering-by-label).
 - **`stride_add_comment`** is open to any member of the board, `read_only`
   included. The comment is stored with the token's
   user as its author. A token user with no membership on the board is refused

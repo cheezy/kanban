@@ -239,4 +239,32 @@ defmodule KanbanWeb.API.TaskListParamsTest do
       assert cursor =~ ~r/\A[A-Za-z0-9_-]+\z/
     end
   end
+
+  describe "parse_label/1 (W2239)" do
+    test "is nil when label is absent" do
+      assert TaskListParams.parse_label(%{}) == {:ok, nil}
+      assert TaskListParams.parse_label(%{"column_id" => "1"}) == {:ok, nil}
+    end
+
+    test "accepts a label name of 1 to 40 characters, trimmed" do
+      assert TaskListParams.parse_label(%{"label" => "Bug"}) == {:ok, "Bug"}
+      assert TaskListParams.parse_label(%{"label" => "  needs review "}) == {:ok, "needs review"}
+
+      forty = String.duplicate("é", 40)
+      assert TaskListParams.parse_label(%{"label" => forty}) == {:ok, forty}
+    end
+
+    test "rejects blank, over-long, non-string and invalid UTF-8 values" do
+      for value <- ["", "   ", String.duplicate("x", 41), ["Bug"], %{"k" => "Bug"}, 7, <<255>>] do
+        assert TaskListParams.parse_label(%{"label" => value}) ==
+                 {:error, "Invalid label: must be a label name of 1 to 40 characters"},
+               inspect(value)
+      end
+    end
+
+    test "label is not a page key" do
+      refute TaskListParams.paginated?(%{"label" => "Bug"})
+      refute TaskListParams.paginated?(%{"label" => ""})
+    end
+  end
 end

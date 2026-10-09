@@ -135,6 +135,9 @@
           },
           {
             "$ref": "#/components/parameters/UpdatedSince"
+          },
+          {
+            "$ref": "#/components/parameters/Label"
           }
         ],
         "responses": {
@@ -412,7 +415,7 @@
       "post": {
         "operationId": "batchCreateGoals",
         "summary": "Create several goals with nested tasks",
-        "description": "Goals are created one at a time and processing stops at the first goal that fails; goals before it stay created. Each goal is created with its children in one transaction. A child task `type` must be exactly `work` or `defect`: a goal cannot contain another goal, so a child of type `goal` is rejected the same way, before any identifier is assigned. A child with a non-empty `tasks` list of its own is rejected too, with `details.tasks`. An invalid child type returns 422 with the failing goal's `index` (the child's position is not reported) and `details.type`, and neither that goal nor any of its children is persisted. A goal's own `type` is ignored: every top-level entry is created as a goal. Every goal and child gets its own identifier, unique on the board across the whole batch. Batch creation does not check column WIP limits: goals are exempt and child tasks are not checked when they are created, so a full target column does not reject a batch. Once created, child tasks count toward the column's limit like any other work or defect task.",
+        "description": "Goals are created one at a time and processing stops at the first goal that fails; goals before it stay created. Each goal is created with its children in one transaction. A child task `type` must be exactly `work` or `defect`: a goal cannot contain another goal, so a child of type `goal` is rejected the same way, before any identifier is assigned. A child with a non-empty `tasks` list of its own is rejected too, with `details.tasks`. An invalid child type returns 422 with the failing goal's `index` (the child's position is not reported) and `details.type`, and neither that goal nor any of its children is persisted. A goal's own `type` is ignored: every top-level entry is created as a goal. Every goal and child gets its own identifier, unique on the board across the whole batch. Batch creation does not check column WIP limits: goals are exempt and child tasks are not checked when they are created, so a full target column does not reject a batch. Once created, child tasks count toward the column's limit like any other work or defect task. `labels` on a goal or a child task is an array of label names on the token's board; every label in the whole batch is checked before the first goal is created, so an unknown name returns 422 with that goal's `index` and `details.labels`, and no goal in the batch is created.",
         "tags": [
           "Creation"
         ],
@@ -1780,6 +1783,17 @@
           "format": "date-time"
         }
       },
+      "Label": {
+        "name": "label",
+        "in": "query",
+        "required": false,
+        "description": "Only tasks carrying this label, matched by name (case-insensitive, surrounding whitespace ignored) against the token's board's labels, plus goals with at least one non-archived child carrying it — the same rule as the board's label filter. Works in both legacy and paginated mode and is not itself a page key. A name the board has no label for returns an empty list, whether or not another board uses it. A blank value, a value longer than 40 characters, or an array or map shape (label[]=x) returns 400; when the key is repeated, the last value is used.",
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        }
+      },
       "ColumnId": {
         "name": "column_id",
         "in": "query",
@@ -1948,6 +1962,7 @@
           "key_files",
           "verification_steps",
           "behaviour_test_matrix",
+          "labels",
           "technology_requirements",
           "pitfalls",
           "out_of_scope",
@@ -2144,6 +2159,13 @@
             "items": {
               "$ref": "#/components/schemas/BehaviourTestMatrixRow"
             }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskLabel"
+            },
+            "description": "The task's labels on its board, ordered by name ignoring case. Label ids are not exposed: write and filter labels by name."
           },
           "technology_requirements": {
             "type": [
@@ -2757,6 +2779,33 @@
             "type": [
               "integer",
               "null"
+            ]
+          }
+        }
+      },
+      "TaskLabel": {
+        "type": "object",
+        "required": [
+          "name",
+          "color"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "color": {
+            "type": "string",
+            "enum": [
+              "gray",
+              "red",
+              "orange",
+              "yellow",
+              "green",
+              "teal",
+              "blue",
+              "purple",
+              "pink"
             ]
           }
         }
@@ -3428,7 +3477,7 @@
         "properties": {
           "task": {
             "type": "object",
-            "description": "Task fields. For a goal, set type to goal and nest child tasks under `tasks`; each child must be work or defect, because goals cannot be nested. On update, changing a goal's child to type goal is rejected with 422. See docs/api/post_tasks.md.",
+            "description": "Task fields. For a goal, set type to goal and nest child tasks under `tasks`; each child must be work or defect, because goals cannot be nested. On update, changing a goal's child to type goal is rejected with 422. See docs/api/post_tasks.md. `labels` is an array of label names resolved case-insensitively against the token's board; each child under `tasks` may carry its own. Labels are never created: an unknown name, including one that exists only on another board, returns 422 naming it, before anything is written. On update `labels` replaces the set, an empty array clears it, and omitting it leaves the labels unchanged.",
             "additionalProperties": true
           },
           "agent_name": {

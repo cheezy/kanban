@@ -120,6 +120,7 @@ that names no task or a task on another board. See
 | `parent_id` | integer | ID of the parent goal (null if no parent). Read-only through the API: set by the server when a goal is created with nested tasks or via the batch endpoint; a human can change it in the board UI |
 | `required_capabilities` | array | Required agent capabilities to work on this task |
 | `dependencies` | array | Array of task IDs that must be completed before this task |
+| `labels` | array | The task's labels as `{name, color}` objects, ordered by name ignoring case. Set them by name with [POST /api/tasks](post_tasks.md#labels) or [PATCH /api/tasks/:id](patch_tasks_id.md#labels) |
 | `inserted_at` | string | When task was created (ISO 8601) |
 | `updated_at` | string | When task was last updated (ISO 8601) |
 | `completed_at` | string | When task was completed (null if not completed) |
@@ -130,7 +131,7 @@ that names no task or a task on another board. See
 fields instead of the full body. The contract:
 
 - **Allow-list.** Only the summary and review/completion field names are
-  projectable — these 27 names (source of truth:
+  projectable — these 28 names (source of truth:
   `KanbanWeb.API.TaskJSON.projectable_field_names/0`):
   `id`, `identifier`, `title`, `type`, `status`, `priority`, `complexity`,
   `dependencies`, `created_by_agent`, `parent_id`, `claim_expires_at`,
@@ -138,7 +139,7 @@ fields instead of the full body. The contract:
   `workflow_steps`, `explorer_result`, `reviewer_result`, `reviewed_at`,
   `reviewed_by_id`, `completed_at`, `completed_by_id`, `completed_by_agent`,
   `completion_summary`, `completion_notes`, `actual_complexity`,
-  `actual_files_changed`.
+  `actual_files_changed`, `labels`.
   Naming anything else rejects the WHOLE request with a 422
   (`"task fields rejected"`); no partial projection is returned.
 - **`id` and `identifier` are always included**, even when not requested, so

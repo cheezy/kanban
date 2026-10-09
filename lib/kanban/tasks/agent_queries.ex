@@ -138,7 +138,7 @@ defmodule Kanban.Tasks.AgentQueries do
             ),
           asc: t.position
         ],
-        preload: [:column, :assigned_to, :created_by]
+        preload: [:column, :assigned_to, :created_by, :labels]
       )
 
     query =

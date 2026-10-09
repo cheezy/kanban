@@ -154,6 +154,13 @@ defmodule KanbanWeb.MCP.ToolSchemas do
             "description" => "ISO 8601 timestamp: only tasks updated at or after it."
           },
           "column_id" => %{"type" => "integer"},
+          "label" => %{
+            "type" => "string",
+            "minLength" => 1,
+            "maxLength" => 40,
+            "description" =>
+              "Label name, case-insensitive: only tasks with that label on the token's board, plus goals with a matching child. A name the board has no label for returns an empty page."
+          },
           "response_view" =>
             Map.put(
               @response_view,

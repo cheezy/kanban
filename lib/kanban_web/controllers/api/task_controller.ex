@@ -4,6 +4,7 @@ defmodule KanbanWeb.API.TaskController do
   alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias Kanban.Tasks.BoardFilters
   alias KanbanWeb.API.BatchGoalCreation
   alias KanbanWeb.API.ChangedFilesTransport
   alias KanbanWeb.API.TaskActions
@@ -11,6 +12,7 @@ defmodule KanbanWeb.API.TaskController do
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskFieldsProjection
   alias KanbanWeb.API.TaskJSON
+  alias KanbanWeb.API.TaskLabels
   alias KanbanWeb.API.TaskListParams
   alias KanbanWeb.API.TaskRequestRejections
   alias KanbanWeb.API.TaskTransitions
@@ -29,19 +31,27 @@ defmodule KanbanWeb.API.TaskController do
     # W2224: pagination and filters are opt-in by key presence. With none of
     # the page keys present the two legacy branches below run exactly as
     # before, so the unpaginated response stays byte-identical.
-    cond do
-      TaskListParams.paginated?(params) ->
-        list_board_tasks_page(conn, params)
+    if TaskListParams.paginated?(params),
+      do: list_board_tasks_page(conn, params),
+      else: list_legacy_tasks(conn, board, params, view)
+  end
 
-      params["column_id"] ->
-        list_tasks_by_column_id(conn, board, params["column_id"], view)
+  # W2239: `label` filters the legacy response too. It is validated before any
+  # query; absent, both legacy branches run exactly as before.
+  defp list_legacy_tasks(conn, board, params, view) do
+    case {TaskListParams.parse_label(params), params["column_id"]} do
+      {{:ok, label}, nil} ->
+        list_all_board_tasks(conn, board, label, view)
 
-      true ->
-        list_all_board_tasks(conn, board, view)
+      {{:ok, label}, raw_column_id} ->
+        list_tasks_by_column_id(conn, board, raw_column_id, label, view)
+
+      {{:error, message}, _column_id} ->
+        TaskErrors.error_response(conn, :bad_request, message, :invalid_param)
     end
   end
 
-  defp list_tasks_by_column_id(conn, board, raw_column_id, view) do
+  defp list_tasks_by_column_id(conn, board, raw_column_id, label, view) do
     case parse_id(raw_column_id) do
       {:ok, column_id} ->
         # Board-scoped lookup so a cross-board column id and a nonexistent
@@ -53,7 +63,7 @@ defmodule KanbanWeb.API.TaskController do
             TaskErrors.handle_task_error(conn, {:error, :not_found})
 
           column ->
-            tasks = Tasks.list_tasks(column)
+            tasks = column_tasks(conn, [column], label)
             emit_telemetry(conn, :task_listed, %{count: length(tasks)})
             render(conn, :index, tasks: tasks, response_view: view)
         end
@@ -68,11 +78,27 @@ defmodule KanbanWeb.API.TaskController do
     end
   end
 
-  defp list_all_board_tasks(conn, board, view) do
+  defp list_all_board_tasks(conn, board, label, view) do
     columns = Columns.list_columns(board)
-    tasks = Enum.flat_map(columns, &Tasks.list_tasks/1)
+    tasks = column_tasks(conn, columns, label)
     emit_telemetry(conn, :task_listed, %{count: length(tasks)})
     render(conn, :index, tasks: tasks, response_view: view)
+  end
+
+  # The label filter is the board filter bar's own (BoardFilters), applied
+  # after the column lookup so a bad column_id keeps its 404. A name the board
+  # has no label for matches nothing.
+  defp column_tasks(_conn, columns, nil), do: Enum.flat_map(columns, &Tasks.list_tasks/1)
+
+  defp column_tasks(conn, columns, label) do
+    case TaskLabels.label_filter(conn, label) do
+      {:label, id} ->
+        grouped = Tasks.list_tasks_by_columns(columns, filters: %BoardFilters{label_id: id})
+        Enum.flat_map(columns, &Map.get(grouped, &1.id, []))
+
+      :none ->
+        []
+    end
   end
 
   # W2224: the paginated mode lives in TaskActions.list_page/2, shared with the

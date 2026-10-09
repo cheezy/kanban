@@ -9,9 +9,9 @@ defmodule KanbanWeb.API.TaskListParams do
   the endpoint switches to the paginated path, and a blank or malformed value
   is a `400` rather than a silent fall back to the legacy response. With none of
   them present the legacy, unpaginated response is returned unchanged.
-  `column_id` and `response_view` are deliberately not page keys: on their own
-  they keep the legacy behaviour, and in paginated mode they combine with the
-  filters.
+  `column_id`, `label` and `response_view` are deliberately not page keys: on
+  their own they keep the legacy behaviour, and in paginated mode they combine
+  with the filters.
 
   Validation is pure — no conn, no database — so every rejection happens before
   any data is touched, on the `KanbanWeb.API.TaskFieldsProjection.resolve/1`
@@ -25,6 +25,7 @@ defmodule KanbanWeb.API.TaskListParams do
   """
 
   alias Kanban.Tasks.Task
+  alias KanbanWeb.API.TaskLabels
 
   @page_fields [
     :limit,
@@ -119,6 +120,28 @@ defmodule KanbanWeb.API.TaskListParams do
   @spec parse_limit(term()) :: {:ok, pos_integer()} | {:error, String.t()}
   def parse_limit(nil), do: {:ok, @default_limit}
   def parse_limit(value), do: parse_value(:limit, value)
+
+  @doc """
+  Parses the `label` filter (W2239): a label name of 1 to 40 characters,
+  trimmed. Absent means no label filter. A blank, over-long or non-string
+  value (such as `label[]=x`) is `{:error, message}`.
+
+  `label` is not a page key — like `column_id` it filters the legacy response
+  as well as a page — so it never switches the endpoint into paginated mode.
+  """
+  @spec parse_label(map()) :: {:ok, String.t() | nil} | {:error, String.t()}
+  def parse_label(params) when is_map(params) do
+    case Map.fetch(params, "label") do
+      :error ->
+        {:ok, nil}
+
+      {:ok, value} ->
+        case TaskLabels.validate_filter_name(value) do
+          {:ok, name} -> {:ok, name}
+          :error -> {:error, "Invalid label: must be a label name of 1 to 40 characters"}
+        end
+    end
+  end
 
   @doc """
   Encodes a task id as an opaque cursor. `nil` (no further page) stays `nil`.

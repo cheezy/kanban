@@ -250,7 +250,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 ### Task Discovery
 
 - [GET /api/tasks/next](get_tasks_next.md) — Get next available task matching your capabilities
-- [GET /api/tasks](get_tasks.md) — List tasks; optional filters (`column_id`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`) and opt-in cursor pagination (`limit`, `cursor` → `meta.next_cursor`). Syncing with `updated_since`? See [Incremental sync](get_tasks.md#incremental-sync)
+- [GET /api/tasks](get_tasks.md) — List tasks; optional filters (`column_id`, `label`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`) and opt-in cursor pagination (`limit`, `cursor` → `meta.next_cursor`). Syncing with `updated_since`? See [Incremental sync](get_tasks.md#incremental-sync)
 - [GET /api/tasks/:id](get_tasks_id.md) — Get specific task details
 - [GET /api/tasks/:id/tree](get_tasks_id_tree.md) — Get task with all children (for goals)
 - [GET /api/tasks/:id/dependencies](get_tasks_id_dependencies.md) — Get tasks this task depends on
@@ -261,7 +261,7 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 
 - [POST /api/tasks/claim](post_tasks_claim.md) — Claim a task and receive `before_doing` hook
 - [POST /api/tasks/:id/unclaim](post_tasks_id_unclaim.md) — Unclaim a task you can't complete
-- [PATCH /api/tasks/:id](patch_tasks_id.md) — Update task fields (title, description, etc.)
+- [PATCH /api/tasks/:id](patch_tasks_id.md) — Update task fields (title, description, labels, etc.)
 - [PATCH /api/tasks/:id/complete](patch_tasks_id_complete.md) — Complete a task and receive hooks
 - [PUT /api/tasks/:id/changed_files](put_tasks_id_changed_files.md) — Upload the per-file diff snapshot (sole writer for `tasks.changed_files`)
 - [PATCH /api/tasks/:id/mark_done](patch_tasks_id_mark_done.md) — Bypass review and mark task as done
@@ -272,6 +272,22 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 
 - [POST /api/tasks](post_tasks.md) — Create a task or goal with nested child tasks
 - [POST /api/tasks/batch](post_tasks_batch.md) — Create multiple goals with nested tasks in one request
+
+### Labels
+
+Tasks carry board labels, addressed **by name** — the API never exposes label
+ids. Set them with `labels` (an array of names) on
+[POST /api/tasks](post_tasks.md#labels),
+[POST /api/tasks/batch](post_tasks_batch.md#labels) and
+[PATCH /api/tasks/:id](patch_tasks_id.md#labels), where `PATCH` replaces the set
+and `[]` clears it; filter with `?label=<name>` on
+[GET /api/tasks](get_tasks.md#filtering-by-label); read them as `labels`
+(`{name, color}` objects) in the full task view. Names are matched
+case-insensitively against the token's board only, and labels are never created
+through the API — manage them in the board settings. An unknown name returns 422
+naming it — under `errors.labels`, or `details.labels` on
+[POST /api/tasks/batch](post_tasks_batch.md#labels) — and nothing is written; as
+a filter it simply matches nothing.
 
 ### Endpoint Summary
 
