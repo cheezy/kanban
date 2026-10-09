@@ -129,3 +129,7 @@ msgstr "verweist auf eine private oder reservierte Netzwerkadresse"
 
 msgid "has a host name that could not be found"
 msgstr "hat einen Hostnamen, der nicht gefunden wurde"
+
+## From Kanban.Webhooks.Endpoint (W2227)
+msgid "must be a Slack incoming webhook URL starting with https://hooks.slack.com/"
+msgstr "muss eine Slack-Incoming-Webhook-URL sein, die mit https://hooks.slack.com/ beginnt"

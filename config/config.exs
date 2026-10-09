@@ -95,19 +95,20 @@ config :phoenix, :filter_parameters, ["password", "token"]
 # :filter_parameters does not cover; this filter strips unsubscribe tokens.
 config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 
-# Oban configuration — runs the after_goal grace-window worker (W493) and
-# notification email delivery (W2201).
+# Oban configuration — runs the after_goal grace-window worker (W493),
+# notification email delivery (W2201) and webhook delivery (W2227).
 # `:after_goal_grace` queue has a depth of 5 because each job is a single
 # row update plus a status check; bursts are bounded by goal-completion
 # rate, not throughput. `:notifications` sends one email per job, so its
-# depth of 10 bounds concurrent SMTP sessions.
+# depth of 10 bounds concurrent SMTP sessions. `:webhooks` makes one HTTP
+# POST per job, so its depth of 10 bounds concurrent outbound connections.
 # The Cron plugin runs the claim-expiry sweeper every five minutes (W2204),
 # the weekly digest fan-out on Mondays at 13:00 UTC (W2207) and the
 # delivery-target status sweeper hourly at minute 17 (W2291).
 config :kanban, Oban,
   repo: Kanban.Repo,
   engine: Oban.Engines.Basic,
-  queues: [after_goal_grace: 5, notifications: 10],
+  queues: [after_goal_grace: 5, notifications: 10, webhooks: 10],
   plugins: [
     {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
     {Oban.Plugins.Cron,

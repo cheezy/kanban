@@ -305,7 +305,8 @@ defmodule Kanban.Labels do
     with :ok <- authorize_write(scope, board_id),
          :ok <- validate_label_id_types(label_ids),
          {:ok, task} <- replace_task_labels(task, label_ids, board_id) do
-      Broadcaster.broadcast_task_change(task, :task_updated)
+      # No webhook: labels are not in the payload (as for bulk label changes).
+      Broadcaster.broadcast_task_change(task, :task_updated, webhook: false)
       {:ok, task}
     end
   end

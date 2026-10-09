@@ -110,6 +110,14 @@ config :phoenix_live_view,
 # until tests drain them explicitly via Oban.Testing helpers.
 config :kanban, Oban, testing: :manual
 
+# Webhook deliveries (W2227): route every request to a Req.Test stub and
+# resolve webhook hosts from a fixed table, so no test touches the network
+# or DNS. Both are static, so tests stay async.
+config :kanban, Kanban.Webhooks.Transport,
+  req_options: [plug: {Req.Test, Kanban.Webhooks.Transport}]
+
+config :kanban, Kanban.Webhooks.DeliveryWorker, resolver: {Kanban.WebhooksFixtures, :resolve}
+
 # Speed up the after_goal grace window for tests so timing assertions
 # can run synchronously via Oban.drain_queue(with_scheduled: true).
 config :kanban, :after_goal_grace_window_ms, 1

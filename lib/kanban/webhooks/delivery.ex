@@ -23,8 +23,9 @@ defmodule Kanban.Webhooks.Delivery do
   end
 
   @doc """
-  Casts a delivery record. The endpoint is set on the struct, never cast.
-  `event` is one of `Endpoint.event_types/0` or `"ping"` (a test event).
+  Casts a delivery record. The endpoint is set on the struct, never cast;
+  an endpoint deleted meanwhile is an error on `:endpoint_id`. `event` is
+  one of `Endpoint.event_types/0` or `"ping"` (a test event).
   """
   def changeset(delivery, attrs) do
     delivery
@@ -36,5 +37,6 @@ defmodule Kanban.Webhooks.Delivery do
       greater_than_or_equal_to: 100,
       less_than_or_equal_to: 599
     )
+    |> foreign_key_constraint(:endpoint_id)
   end
 end

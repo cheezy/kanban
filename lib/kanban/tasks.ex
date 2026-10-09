@@ -179,7 +179,7 @@ defmodule Kanban.Tasks do
   def complete_task(task, user, params, agent_name \\ "Unknown"),
     do: AgentWorkflow.complete_task(task, user, params, agent_name)
 
-  defdelegate mark_reviewed(task, user), to: AgentWorkflow
+  defdelegate mark_reviewed(task, user, opts \\ []), to: AgentWorkflow
   defdelegate mark_done(task, user), to: AgentWorkflow
 
   # ── Goal completion delegations ────────────────────────────────────

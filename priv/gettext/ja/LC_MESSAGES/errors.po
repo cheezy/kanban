@@ -120,3 +120,7 @@ msgstr "プライベートまたは予約済みのネットワークアドレス
 
 msgid "has a host name that could not be found"
 msgstr "ホスト名が見つかりませんでした"
+
+## From Kanban.Webhooks.Endpoint (W2227)
+msgid "must be a Slack incoming webhook URL starting with https://hooks.slack.com/"
+msgstr "https://hooks.slack.com/ で始まる Slack の Incoming Webhook URL である必要があります"

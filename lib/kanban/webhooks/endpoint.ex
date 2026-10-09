@@ -33,6 +33,8 @@ defmodule Kanban.Webhooks.Endpoint do
 
   @kinds [:generic, :slack]
 
+  @slack_url_message "must be a Slack incoming webhook URL starting with https://hooks.slack.com/"
+
   schema "webhook_endpoints" do
     field :kind, Ecto.Enum, values: @kinds, default: :generic
     field :url, EncryptedString, redact: true
@@ -57,7 +59,8 @@ defmodule Kanban.Webhooks.Endpoint do
   @doc """
   Casts the owner-editable fields: `kind`, `url`, `event_types` and
   `enabled`. The URL gets `UrlGuard.validate_syntax/2` (no DNS); `opts` is
-  passed through to it. At least one known event type is required.
+  passed through to it. At least one known event type is required, and a
+  `:slack` endpoint's URL must be a Slack incoming webhook (`slack_url?/1`).
   """
   def changeset(endpoint, attrs, opts \\ []) do
     endpoint
@@ -68,7 +71,24 @@ defmodule Kanban.Webhooks.Endpoint do
     |> validate_some_event_types()
     |> validate_subset(:event_types, @event_types)
     |> validate_url(opts)
+    |> validate_slack_url()
   end
+
+  @doc """
+  Whether `url` is a Slack incoming-webhook URL: `https` on the default port
+  to `hooks.slack.com`, with no username or password. Any path is allowed.
+  """
+  def slack_url?(url) when is_binary(url) do
+    case URI.new(url) do
+      {:ok, %URI{scheme: "https", host: host, port: 443, userinfo: nil}} when is_binary(host) ->
+        String.downcase(host) == "hooks.slack.com"
+
+      _other ->
+        false
+    end
+  end
+
+  def slack_url?(_url), do: false
 
   # Checked on the field, not the change: casting [] onto the default [] is
   # no change at all, so validate_length/3 would never see it.
@@ -85,6 +105,18 @@ defmodule Kanban.Webhooks.Endpoint do
           type: :list
         )
     end
+  end
+
+  # Checked on the fields, not the changes, so switching an endpoint's kind
+  # to :slack while keeping a generic URL is refused too. A URL that already
+  # has an error keeps only that one.
+  defp validate_slack_url(changeset) do
+    url = get_field(changeset, :url)
+
+    if get_field(changeset, :kind) == :slack and is_binary(url) and
+         is_nil(changeset.errors[:url]) and not slack_url?(url),
+       do: add_error(changeset, :url, @slack_url_message, validation: :slack_url),
+       else: changeset
   end
 
   defp validate_url(changeset, opts) do

@@ -9,6 +9,7 @@ defmodule Kanban.Tasks.Broadcaster do
 
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias Kanban.Webhooks.Events
 
   require Logger
 
@@ -17,8 +18,14 @@ defmodule Kanban.Tasks.Broadcaster do
 
   The broadcast tuple uses `Kanban.Tasks` (not this module) to maintain
   compatibility with existing LiveView pattern matches.
+
+  It also emits the matching webhook event (`emit_webhook/4`) unless
+  `opts[:webhook]` is `false`: bulk actions pass it because they emit per
+  task themselves, single label edits (`Kanban.Labels`) because labels are
+  not in the payload, and goal repositioning because it can run inside the
+  moving task's transaction.
   """
-  def broadcast_task_change(%Task{} = task, event) do
+  def broadcast_task_change(%Task{} = task, event, opts \\ []) do
     task_with_column = Repo.preload(task, [:column, :created_by, :completed_by, :reviewed_by])
     column = task_with_column.column
 
@@ -35,6 +42,7 @@ defmodule Kanban.Tasks.Broadcaster do
       )
 
       broadcast_agent_event(task_with_column, event, board_id)
+      emit_webhook(task_with_column, event, board_id, opts)
 
       :telemetry.execute(
         [:kanban, :pubsub, :broadcast],
@@ -44,6 +52,18 @@ defmodule Kanban.Tasks.Broadcaster do
     else
       Logger.warning("Cannot broadcast #{event} for task #{task.id} - no column found")
     end
+  end
+
+  @doc """
+  Emits the webhook event for a task change (`Kanban.Webhooks.Events`)
+  unless `opts[:webhook]` is `false`. Besides `broadcast_task_change/3`, the
+  callers are the direct broadcasts in `Kanban.Tasks.AgentWorkflow`, review
+  decisions in `Kanban.Reviews` and `Kanban.Tasks.BulkActions`; the changes
+  that emit nothing are listed in the `Kanban.Webhooks.Events` moduledoc.
+  Call it after the change has committed. Never raises.
+  """
+  def emit_webhook(%Task{} = task, event, board_id, opts \\ []) do
+    if Keyword.get(opts, :webhook, true), do: Events.emit(board_id, event, task), else: :ok
   end
 
   @doc """

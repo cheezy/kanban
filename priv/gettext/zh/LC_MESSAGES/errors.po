@@ -120,3 +120,7 @@ msgstr "指向私有或保留的网络地址"
 
 msgid "has a host name that could not be found"
 msgstr "找不到该主机名"
+
+## From Kanban.Webhooks.Endpoint (W2227)
+msgid "must be a Slack incoming webhook URL starting with https://hooks.slack.com/"
+msgstr "必须是以 https://hooks.slack.com/ 开头的 Slack 传入 Webhook URL"

@@ -73,7 +73,7 @@ defmodule Kanban.Tasks.BulkActions do
   def move(scope, %Board{} = board, task_ids, column_id) do
     with {:ok, _user, ids} <- prepare(scope, board, task_ids),
          {:ok, column} <- fetch_column(board, column_id) do
-      board |> move_multi(ids, column) |> commit()
+      board |> move_multi(ids, column) |> commit(&emit_webhooks(&1, board, :task_moved))
     end
   end
 
@@ -87,7 +87,9 @@ defmodule Kanban.Tasks.BulkActions do
   def assign(scope, %Board{} = board, task_ids, assignee_id) do
     with {:ok, user, ids} <- prepare(scope, board, task_ids),
          :ok <- validate_assignee(board, assignee_id) do
-      board |> assign_multi(ids, assignee_id) |> commit(&notify_assigned(&1, user))
+      board
+      |> assign_multi(ids, assignee_id)
+      |> commit(&notify_assigned(&1, user, board))
     end
   end
 
@@ -118,7 +120,7 @@ defmodule Kanban.Tasks.BulkActions do
   @spec archive(Scope.t() | nil, Board.t(), list()) :: result()
   def archive(scope, %Board{} = board, task_ids) do
     with {:ok, _user, ids} <- prepare(scope, board, task_ids) do
-      board |> tasks_multi(ids, &archive_all/2) |> commit(&emit_archive_telemetry/1)
+      board |> tasks_multi(ids, &archive_all/2) |> commit(&after_archive(&1, board))
     end
   end
 
@@ -348,8 +350,21 @@ defmodule Kanban.Tasks.BulkActions do
     |> to_summary(tasks)
   end
 
-  defp notify_assigned(summary, user),
-    do: Enum.each(summary.changed, &Events.task_assigned(&1, user))
+  defp notify_assigned(summary, user, board) do
+    Enum.each(summary.changed, &Events.task_assigned(&1, user))
+    emit_webhooks(summary, board, :task_updated)
+  end
+
+  defp after_archive(summary, board) do
+    emit_archive_telemetry(summary)
+    emit_webhooks(summary, board, :task_updated)
+  end
+
+  # One webhook event per changed task; the single board broadcast below
+  # passes `webhook: false` so the last task is not emitted twice. Label
+  # actions emit none: labels are not part of the webhook payload.
+  defp emit_webhooks(summary, board, event),
+    do: Enum.each(summary.changed, &Broadcaster.emit_webhook(&1, event, board.id))
 
   defp emit_archive_telemetry(summary), do: Enum.each(summary.changed, &archive_event/1)
 
@@ -410,6 +425,8 @@ defmodule Kanban.Tasks.BulkActions do
 
   # One refresh for the whole action: every open board reloads on
   # `:task_updated`, so a single event re-renders all the changed cards.
-  defp broadcast_once(%Task{} = task), do: Broadcaster.broadcast_task_change(task, :task_updated)
+  defp broadcast_once(%Task{} = task),
+    do: Broadcaster.broadcast_task_change(task, :task_updated, webhook: false)
+
   defp broadcast_once(_none), do: :ok
 end

@@ -1,5 +1,6 @@
 defmodule Kanban.WebhooksTest do
   use Kanban.DataCase, async: true
+  use Oban.Testing, repo: Kanban.Repo
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
@@ -11,6 +12,7 @@ defmodule Kanban.WebhooksTest do
   alias Kanban.Repo
   alias Kanban.Webhooks
   alias Kanban.Webhooks.Delivery
+  alias Kanban.Webhooks.DeliveryWorker
   alias Kanban.Webhooks.Endpoint
 
   @public [{93, 184, 216, 34}]
@@ -75,7 +77,9 @@ defmodule Kanban.WebhooksTest do
     end
 
     test "a slack endpoint can be created", ctx do
-      attrs = Map.put(@valid, "kind", "slack")
+      attrs =
+        %{@valid | "url" => "https://hooks.slack.com/services/T0/B0/x"}
+        |> Map.put("kind", "slack")
 
       assert {:ok, {%Endpoint{kind: :slack}, _}} =
                Webhooks.create_endpoint(ctx.owner_scope, ctx.board, attrs, @opts)
@@ -341,6 +345,114 @@ defmodule Kanban.WebhooksTest do
     test "event_types/0 and kinds/0 list the public values" do
       assert "task.created" in Endpoint.event_types()
       assert Endpoint.kinds() == [:generic, :slack]
+    end
+  end
+
+  describe "Slack URLs" do
+    @slack_message "must be a Slack incoming webhook URL starting with https://hooks.slack.com/"
+
+    defp slack_errors(attrs) do
+      %Endpoint{}
+      |> Endpoint.changeset(Map.put(attrs, "kind", "slack"), allow_http: true)
+      |> errors_on()
+    end
+
+    test "a slack endpoint needs an https://hooks.slack.com/ URL" do
+      for url <- [
+            "https://hooks.example.com/services/x",
+            "http://hooks.slack.com/services/x",
+            "https://hooks.slack.com:8443/services/x",
+            "https://evil.hooks.slack.com/services/x",
+            "https://hooks.slack.com.evil.example/x"
+          ] do
+        assert %{url: [@slack_message]} = slack_errors(%{@valid | "url" => url}), url
+      end
+
+      assert slack_errors(%{@valid | "url" => "https://HOOKS.slack.com/services/T0/B0/x"}) == %{}
+    end
+
+    test "switching an endpoint's kind to slack keeps the URL check" do
+      endpoint = %Endpoint{
+        kind: :generic,
+        url: "https://hooks.example.com/x",
+        event_types: ["task.created"]
+      }
+
+      assert %{url: [@slack_message]} =
+               endpoint
+               |> Endpoint.changeset(%{"kind" => "slack"}, allow_http: false)
+               |> errors_on()
+    end
+
+    test "a URL the guard already refused gets only the guard's error" do
+      assert %{url: ["must not contain a username or password"]} =
+               slack_errors(%{@valid | "url" => "https://u:p@hooks.slack.com/x"})
+    end
+
+    test "generic endpoints are not limited to Slack" do
+      assert endpoint_errors(@valid) == %{}
+    end
+
+    test "slack_url?/1" do
+      assert Endpoint.slack_url?("https://hooks.slack.com/services/T0/B0/x")
+      refute Endpoint.slack_url?("https://user@hooks.slack.com/x")
+      refute Endpoint.slack_url?("not a url at all")
+      refute Endpoint.slack_url?(nil)
+    end
+
+    test "the message is translated in every locale" do
+      assert File.read!("priv/gettext/errors.pot") =~ ~s(msgid "#{@slack_message}")
+
+      for locale <- ~w(de en es fr ja pt zh) do
+        assert File.read!("priv/gettext/#{locale}/LC_MESSAGES/errors.po") =~
+                 ~s(msgid "#{@slack_message}"),
+               locale
+      end
+    end
+  end
+
+  describe "send_test_event/2" do
+    test "the owner queues one ping delivery to the endpoint", ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+
+      assert {:ok, %Oban.Job{}} = Webhooks.send_test_event(ctx.owner_scope, endpoint)
+
+      assert [job] = all_enqueued(worker: DeliveryWorker)
+      assert job.args["endpoint_id"] == endpoint.id
+      assert job.args["event"] == "ping"
+      assert job.args["payload"]["board"]["id"] == ctx.board.id
+      assert job.args["payload"]["task"] == nil
+    end
+
+    test "non-owners are :unauthorized and nothing is queued", ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+
+      for scope <- ctx.non_owner_scopes do
+        assert Webhooks.send_test_event(scope, endpoint) == {:error, :unauthorized}
+      end
+
+      refute_enqueued(worker: DeliveryWorker)
+    end
+
+    test "a disabled endpoint is {:error, :disabled}", ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board, enabled: false)
+
+      assert Webhooks.send_test_event(ctx.owner_scope, endpoint) == {:error, :disabled}
+      refute_enqueued(worker: DeliveryWorker)
+    end
+  end
+
+  describe "delivery internals" do
+    test "the context exposes no unscoped endpoint or delivery lookup" do
+      Code.ensure_loaded!(Webhooks)
+
+      for {name, arity} <- [
+            list_subscribed_endpoint_ids: 2,
+            get_endpoint_for_delivery: 1,
+            record_delivery: 2
+          ] do
+        refute function_exported?(Webhooks, name, arity)
+      end
     end
   end
 

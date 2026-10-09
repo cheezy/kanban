@@ -43,6 +43,7 @@ defmodule Kanban.Reviews do
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Tasks.AgentWorkflow
+  alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.Task
 
   @review_column_name "Review"
@@ -280,18 +281,37 @@ defmodule Kanban.Reviews do
         {:error, :not_authorized}
 
       user ->
-        scope |> run_review_transaction(task, user, base_attrs, opts) |> notify_reviewed(user)
+        scope
+        |> run_review_transaction(task, user, base_attrs, opts)
+        |> notify_reviewed(user, Keyword.get(opts, :move_after_review?, true))
     end
   end
 
   # Runs after Repo.transaction/1 has returned, so a rolled-back review
-  # never notifies.
-  defp notify_reviewed({:ok, task} = result, reviewer) do
+  # never notifies. When the review also moved the task, its webhook event
+  # was held back inside the transaction (`webhook: false` below) and is
+  # emitted here, before task.reviewed.
+  defp notify_reviewed({:ok, task} = result, reviewer, moved?) do
     Events.task_reviewed(task, reviewer)
+    emit_reviewed_webhooks(task, moved?)
     result
   end
 
-  defp notify_reviewed(error, _reviewer), do: error
+  defp notify_reviewed(error, _reviewer, _moved?), do: error
+
+  defp emit_reviewed_webhooks(task, moved?) do
+    case Repo.preload(task, :column) do
+      %Task{column: %{board_id: board_id}} = task ->
+        if moved?, do: Broadcaster.emit_webhook(task, moved_event(task), board_id)
+        Broadcaster.emit_webhook(task, :task_reviewed, board_id)
+
+      _no_column ->
+        :ok
+    end
+  end
+
+  defp moved_event(%Task{review_status: :approved}), do: :task_completed
+  defp moved_event(%Task{}), do: :task_returned_to_doing
 
   defp run_review_transaction(scope, task, user, base_attrs, opts) do
     Repo.transaction(fn -> commit_review!(scope, task, user, base_attrs, opts) end)
@@ -326,7 +346,7 @@ defmodule Kanban.Reviews do
   end
 
   defp maybe_mark_reviewed(task, user, true),
-    do: normalize_workflow(AgentWorkflow.mark_reviewed(task, user))
+    do: normalize_workflow(AgentWorkflow.mark_reviewed(task, user, webhook: false))
 
   defp maybe_mark_reviewed(task, _user, false), do: {:ok, task}
 

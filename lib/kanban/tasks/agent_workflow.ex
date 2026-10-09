@@ -166,6 +166,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
     )
 
     Events.task_unclaimed(task, user, reason)
+    Broadcaster.emit_webhook(updated_task, :task_unclaimed, task.column.board_id)
     {:ok, updated_task}
   end
 
@@ -242,8 +243,11 @@ defmodule Kanban.Tasks.AgentWorkflow do
   Review back to Doing column and keeps status as :in_progress.
 
   Only tasks in the Review column can be marked as reviewed.
+
+  `webhook: false` skips the task's webhook event; `Kanban.Reviews` passes it
+  because it calls this inside its own transaction and emits after commit.
   """
-  def mark_reviewed(task, user) do
+  def mark_reviewed(task, user, opts \\ []) do
     task = Repo.preload(task, [:column, :assigned_to, :created_by])
     board_id = task.column.board_id
 
@@ -258,10 +262,10 @@ defmodule Kanban.Tasks.AgentWorkflow do
         {:error, :review_not_performed}
 
       task.review_status == :approved ->
-        move_to_done(task, user, board_id)
+        move_to_done(task, user, board_id, opts)
 
       task.review_status in [:changes_requested, :rejected] ->
-        move_to_doing(task, user, board_id)
+        move_to_doing(task, user, board_id, opts)
 
       true ->
         {:error, :invalid_review_status}
@@ -354,7 +358,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
     |> Repo.one()
   end
 
-  defp finalize_completion(task, user, board_id, done_column) do
+  defp finalize_completion(task, user, board_id, done_column, opts \\ []) do
     updated_task = Queries.get_task_for_view!(task.id)
     old_column_id = task.column_id
 
@@ -379,6 +383,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
     # board-topic broadcast above stays untouched so the board LiveView contract
     # is unchanged and the feed is not double-fired.
     Broadcaster.broadcast_agent_event(updated_task, :task_completed, board_id)
+    Broadcaster.emit_webhook(updated_task, :task_completed, board_id, opts)
 
     Dependencies.unblock_dependent_tasks(updated_task.identifier, board_id)
 
@@ -449,6 +454,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
     # never reaches the agent activity feed live and only appears after some
     # later event triggers a refresh (or a manual reload).
     Broadcaster.broadcast_agent_event(updated_task, :task_claimed, board_id)
+    Broadcaster.emit_webhook(updated_task, :task_claimed, board_id)
 
     {:ok, hook_info} = Hooks.get_hook_info(updated_task, board, "before_doing", agent_name)
     {:ok, updated_task, hook_info}
@@ -505,6 +511,8 @@ defmodule Kanban.Tasks.AgentWorkflow do
       "board:#{board_id}",
       {:task_moved_to_review, updated_task}
     )
+
+    Broadcaster.emit_webhook(updated_task, :task_moved_to_review, board_id)
 
     if updated_task.needs_review do
       # Moving to Review is the terminal step for needs_review tasks (no
@@ -692,7 +700,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
     WorkflowSteps.validate_shape(changeset, params)
   end
 
-  defp move_to_done(task, user, board_id) do
+  defp move_to_done(task, user, board_id, opts) do
     board = Repo.get!(Kanban.Boards.Board, board_id)
     agent_name = task.completed_by_agent || "Unknown"
     done_column = get_column_by_name(board_id, "Done")
@@ -700,7 +708,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
     case run_move_to_done_transaction(task, user, done_column) do
       {:ok, last_child_tag} when last_child_tag in [:last_child, :not_last_child] ->
         maybe_schedule_after_goal_grace(task, last_child_tag)
-        updated_task = finalize_completion(task, user, board_id, done_column)
+        updated_task = finalize_completion(task, user, board_id, done_column, opts)
 
         hooks =
           Metadata.build_mark_reviewed_hooks(updated_task, board, agent_name,
@@ -765,7 +773,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
     end)
   end
 
-  defp move_to_doing(task, user, board_id) do
+  defp move_to_doing(task, user, board_id, opts) do
     doing_column = get_column_by_name(board_id, "Doing")
 
     result =
@@ -809,6 +817,8 @@ defmodule Kanban.Tasks.AgentWorkflow do
           "board:#{board_id}",
           {:task_returned_to_doing, updated_task}
         )
+
+        Broadcaster.emit_webhook(updated_task, :task_returned_to_doing, board_id, opts)
 
         {:ok, updated_task}
 

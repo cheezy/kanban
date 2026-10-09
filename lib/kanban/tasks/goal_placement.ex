@@ -121,8 +121,10 @@ defmodule Kanban.Tasks.GoalPlacement do
     Logger.info("Goal #{parent_goal.identifier} placed at position #{target_position}")
 
     updated_goal = Queries.get_task!(parent_goal.id)
-    Broadcaster.broadcast_task_change(updated_goal, :task_moved)
-    # This runs inside the caller's transaction, so defer the notification.
+    # This runs inside the caller's transaction, so no webhook is queued here
+    # (the moving task emits its own event after commit) and the notification
+    # is deferred.
+    Broadcaster.broadcast_task_change(updated_goal, :task_moved, webhook: false)
     Events.goal_completed_after_commit(updated_goal)
     {:ok, :moved}
   end

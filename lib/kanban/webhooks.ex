@@ -20,9 +20,17 @@ defmodule Kanban.Webhooks do
   resolves its host. The `opts` of `create_endpoint/4` and
   `update_endpoint/4` are passed to it (tests inject `:resolver`).
 
+  Delivery (W2227): `Kanban.Webhooks.Events` turns task changes into jobs
+  for `Kanban.Webhooks.DeliveryWorker`, which sends them. Both query the
+  endpoint and delivery tables themselves, privately, so this context exposes
+  no unscoped lookup by id; `signing_secret/1` only decrypts an endpoint the
+  caller already holds.
+
   Related modules: `Kanban.Webhooks.Endpoint` and `Kanban.Webhooks.Delivery`
-  (schemas), `Kanban.Webhooks.Signer` (the signature header) and
-  `Kanban.Webhooks.UrlGuard` (SSRF protection).
+  (schemas), `Kanban.Webhooks.Signer` (the signature header),
+  `Kanban.Webhooks.UrlGuard` (SSRF protection), `Kanban.Webhooks.Payload`
+  (the envelope), `Kanban.Webhooks.SlackFormatter` (Slack messages) and
+  `Kanban.Webhooks.Transport` (the HTTP request).
   """
 
   import Ecto.Query, warn: false
@@ -33,7 +41,9 @@ defmodule Kanban.Webhooks do
   alias Kanban.Boards.Board
   alias Kanban.Integrations.SecretBox
   alias Kanban.Repo
+  alias Kanban.Webhooks.DeliveryWorker
   alias Kanban.Webhooks.Endpoint
+  alias Kanban.Webhooks.Payload
   alias Kanban.Webhooks.UrlGuard
 
   @doc """
@@ -136,6 +146,23 @@ defmodule Kanban.Webhooks do
   checks no scope, so it must never be reachable from a request.
   """
   def signing_secret(%Endpoint{encrypted_secret: ciphertext}), do: SecretBox.decrypt(ciphertext)
+
+  @doc """
+  Queues a `ping` delivery to the endpoint so its owner can check the
+  receiver. Returns `{:ok, job}`, `{:error, :unauthorized}` for anyone but
+  the board's owner, or `{:error, :disabled}` for a disabled endpoint (the
+  worker never sends to one).
+  """
+  def send_test_event(scope, %Endpoint{board_id: board_id} = endpoint) do
+    with :ok <- authorize_owner(scope, board_id),
+         :ok <- check_enabled(endpoint) do
+      payload = Board |> Repo.get!(board_id) |> Payload.ping()
+      DeliveryWorker.enqueue(endpoint.id, "ping", payload)
+    end
+  end
+
+  defp check_enabled(%Endpoint{enabled: true}), do: :ok
+  defp check_enabled(%Endpoint{}), do: {:error, :disabled}
 
   defp check_reachable(%Changeset{valid?: true} = changeset, opts) do
     case Changeset.get_change(changeset, :url) do
