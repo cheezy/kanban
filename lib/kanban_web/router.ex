@@ -263,6 +263,7 @@ defmodule KanbanWeb.Router do
 
       live "/agents", AgentsLive, :index
       live "/review", ReviewLive, :index
+      live "/my-work", MyWorkLive, :index
       live "/notifications", NotificationLive.Index, :index
       # Notification preferences live here rather than in the sudo-gated
       # settings session: they are not credentials, and the unsubscribe pages

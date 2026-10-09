@@ -42,7 +42,7 @@ defmodule KanbanWeb.Layouts do
     default: nil,
     doc:
       "Highlights the matching SideNav item when rendered inside the app shell. " <>
-        "Accepted values: :boards, :agents, :review, :metrics, :resources, :about, :settings."
+        "Accepted values: :boards, :my_work, :agents, :review, :metrics, :resources, :about, :settings."
 
   attr :page_title, :string,
     default: nil,
@@ -117,7 +117,7 @@ defmodule KanbanWeb.Layouts do
 
   @doc """
   The authenticated-app SideNav. Renders the Stride logo header, primary nav
-  items (Boards/Agents/Review queue/Metrics) styled to the design source, plus
+  items (Boards/My Work/Agents/Review queue/Metrics) styled to the design source, plus
   a small secondary section for Resources/Settings, and a footer with the
   current user's identity + log-out.
   """
@@ -281,11 +281,11 @@ defmodule KanbanWeb.Layouts do
 
   @doc """
   The canonical primary workspace navigation items, in sidebar order:
-  Boards, Agents, Review queue, Metrics.
+  Boards, My Work, Agents, Review queue, Metrics.
 
   Each entry is a `%{id:, label:, icon:, path:, badge:}` map. This is the
   single source of truth for those labels, icons and routes — `side_nav/1`
-  renders all four. Anything that needs one of these destinations must
+  renders all five. Anything that needs one of these destinations must
   read it from here rather than re-declaring the literal, so a route or
   label change lands everywhere at once.
 
@@ -303,6 +303,13 @@ defmodule KanbanWeb.Layouts do
         label: gettext("Boards"),
         icon: "hero-squares-2x2",
         path: "/boards",
+        badge: nil
+      },
+      %{
+        id: :my_work,
+        label: gettext("My Work"),
+        icon: "hero-user-circle",
+        path: "/my-work",
         badge: nil
       },
       %{

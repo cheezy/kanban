@@ -16,6 +16,7 @@ defmodule Kanban.Tasks do
   - `Tasks.Comments` - Task comments, authorized by `Tasks.CommentPolicy`
   - `Tasks.Identifiers` - Identifier generation
   - `Tasks.History` - Move/priority/assignment history
+  - `Tasks.MyWork` - Cross-board queue of tasks assigned to the current user
   """
 
   alias Kanban.Tasks.AgentQueries
@@ -28,6 +29,7 @@ defmodule Kanban.Tasks do
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.Interventions
   alias Kanban.Tasks.Lifecycle
+  alias Kanban.Tasks.MyWork
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
   alias Kanban.Tasks.Task
@@ -46,6 +48,10 @@ defmodule Kanban.Tasks do
   defdelegate list_children_for_goal(user, goal_id), to: Queries
   defdelegate list_goal_choices_for_board(board_id, exclude_task_id), to: Queries
   defdelegate get_task_with_comments!(id), to: Queries
+
+  def list_assigned_tasks(scope, opts \\ []), do: MyWork.list_assigned_tasks(scope, opts)
+
+  defdelegate group_tasks_by_board(tasks), to: MyWork, as: :group_by_board
 
   def create_comment(scope, task, attrs, opts \\ []),
     do: Comments.create_comment(scope, task, attrs, opts)

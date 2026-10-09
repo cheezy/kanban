@@ -17,18 +17,18 @@ msgstr ""
 msgid "Actions"
 msgstr "アクション"
 
-#: lib/kanban_web/components/layouts.ex:452
-#: lib/kanban_web/components/layouts.ex:464
+#: lib/kanban_web/components/layouts.ex:459
+#: lib/kanban_web/components/layouts.ex:471
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "再接続を試みています"
 
-#: lib/kanban_web/components/layouts.ex:459
+#: lib/kanban_web/components/layouts.ex:466
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "エラーが発生しました"
 
-#: lib/kanban_web/components/layouts.ex:447
+#: lib/kanban_web/components/layouts.ex:454
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "インターネットに接続できません"
@@ -378,7 +378,7 @@ msgid "WIP limit reached for this column"
 msgstr "この列のWIP制限に達しました"
 
 #: lib/kanban_web/components/layouts.ex:160
-#: lib/kanban_web/components/layouts.ex:410
+#: lib/kanban_web/components/layouts.ex:417
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -411,6 +411,7 @@ msgstr "作成日"
 #: lib/kanban_web/components/board_filter_bar.ex:157
 #: lib/kanban_web/components/review_report_panel.ex:403
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:121
+#: lib/kanban_web/live/my_work_live.ex:152
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
 #: lib/kanban_web/task_tokens.ex:55
 #, elixir-autogen, elixir-format
@@ -436,6 +437,7 @@ msgstr "タスクの移動に失敗しました"
 
 #: lib/kanban_web/components/board_filter_bar.ex:158
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:120
+#: lib/kanban_web/live/my_work_live.ex:153
 #: lib/kanban_web/live/task_live/form_component.html.heex:121
 #: lib/kanban_web/task_tokens.ex:56
 #, elixir-autogen, elixir-format
@@ -444,6 +446,7 @@ msgstr "高"
 
 #: lib/kanban_web/components/board_filter_bar.ex:160
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:118
+#: lib/kanban_web/live/my_work_live.ex:155
 #: lib/kanban_web/live/task_live/form_component.html.heex:119
 #: lib/kanban_web/task_tokens.ex:58
 #, elixir-autogen, elixir-format
@@ -452,6 +455,7 @@ msgstr "低"
 
 #: lib/kanban_web/components/board_filter_bar.ex:159
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:119
+#: lib/kanban_web/live/my_work_live.ex:154
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:25
 #: lib/kanban_web/live/task_live/components/actual_vs_estimated_section.ex:32
 #: lib/kanban_web/live/task_live/form_component.html.heex:120
@@ -785,7 +789,7 @@ msgstr "ダッシュボード"
 msgid "This account has already been confirmed. You can log in."
 msgstr "このアカウントは既に確認されています。ログインできます。"
 
-#: lib/kanban_web/components/layouts.ex:343
+#: lib/kanban_web/components/layouts.ex:350
 #: lib/kanban_web/components/marketing_components.ex:88
 #: lib/kanban_web/components/marketing_components.ex:283
 #: lib/kanban_web/components/nav_components.ex:137
@@ -2125,7 +2129,7 @@ msgstr "前へ"
 msgid "Read more"
 msgstr "続きを読む"
 
-#: lib/kanban_web/components/layouts.ex:336
+#: lib/kanban_web/components/layouts.ex:343
 #: lib/kanban_web/components/marketing_components.ex:84
 #: lib/kanban_web/components/marketing_components.ex:277
 #: lib/kanban_web/components/nav_components.ex:136
@@ -2210,7 +2214,7 @@ msgid "Could not find a user with that email address"
 msgstr "そのメールアドレスのユーザーが見つかりませんでした"
 
 #: lib/kanban_web/components/board_tabs.ex:136
-#: lib/kanban_web/components/layouts.ex:324
+#: lib/kanban_web/components/layouts.ex:331
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:5
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
@@ -4312,7 +4316,7 @@ msgstr "To Do"
 msgid "Active goals"
 msgstr "アクティブなゴール"
 
-#: lib/kanban_web/components/layouts.ex:310
+#: lib/kanban_web/components/layouts.ex:317
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
 #: lib/kanban_web/live/agents_live.ex:338
 #, elixir-autogen, elixir-format
@@ -4362,7 +4366,7 @@ msgstr "プライマリナビゲーション"
 msgid "Promote children to Ready"
 msgstr "子要素を「Ready」にプロモート"
 
-#: lib/kanban_web/components/layouts.ex:317
+#: lib/kanban_web/components/layouts.ex:324
 #: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
@@ -4386,6 +4390,7 @@ msgstr "Stride ホーム"
 #: lib/kanban_web/live/board_live/show.html.heex:4
 #: lib/kanban_web/live/goal_live/show.ex:87
 #: lib/kanban_web/live/metrics_live/workspace.ex:204
+#: lib/kanban_web/live/my_work_live.ex:37
 #: lib/kanban_web/live/notification_live/index.html.heex:3
 #: lib/kanban_web/live/review_live.html.heex:3
 #, elixir-autogen, elixir-format
@@ -5482,7 +5487,7 @@ msgstr "すべてのボード"
 msgid "Toggle menu"
 msgstr "メニューを切り替え"
 
-#: lib/kanban_web/components/layouts.ex:389
+#: lib/kanban_web/components/layouts.ex:396
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr "サイドバーを切り替え"
@@ -8307,6 +8312,7 @@ msgstr "値"
 
 #: lib/kanban_web/controllers/metrics_pdf_html/throughput.html.heex:243
 #: lib/kanban_web/controllers/metrics_pdf_html/throughput.html.heex:282
+#: lib/kanban_web/live/my_work_live.ex:72
 #, elixir-autogen, elixir-format
 msgid "%{count} task"
 msgid_plural "%{count} tasks"
@@ -10023,3 +10029,27 @@ msgstr "タスクは保存されましたが、その間に削除されたラベ
 #, elixir-autogen, elixir-format
 msgid "Task saved, but its labels could not be updated"
 msgstr "タスクは保存されましたが、ラベルを更新できませんでした"
+
+#: lib/kanban_web/live/my_work_live.ex:48
+#, elixir-autogen, elixir-format
+msgid "%{count} task assigned to you"
+msgid_plural "%{count} tasks assigned to you"
+msgstr[0] "あなたに割り当てられたタスク %{count} 件"
+
+#: lib/kanban_web/components/layouts.ex:310
+#: lib/kanban_web/live/my_work_live.ex:27
+#: lib/kanban_web/live/my_work_live.ex:39
+#: lib/kanban_web/live/my_work_live.ex:45
+#, elixir-autogen, elixir-format
+msgid "My Work"
+msgstr "マイワーク"
+
+#: lib/kanban_web/live/my_work_live.ex:130
+#, elixir-autogen, elixir-format
+msgid "Nothing assigned to you"
+msgstr "割り当てられたタスクはありません"
+
+#: lib/kanban_web/live/my_work_live.ex:133
+#, elixir-autogen, elixir-format
+msgid "Tasks assigned to you on your boards will appear here."
+msgstr "ボードであなたに割り当てられたタスクがここに表示されます。"

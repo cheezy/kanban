@@ -2,8 +2,8 @@ defmodule KanbanWeb.LayoutsTest do
   @moduledoc """
   Tests for the SideNav rendering in `KanbanWeb.Layouts`.
 
-  Covers the Agents nav entry — both inside a board scope and outside
-  one — and the active-state highlight on /agents.
+  Covers the Agents, Metrics and My Work nav entries — both inside a board
+  scope and outside one — and their active-state highlights.
   """
   use KanbanWeb.ConnCase, async: true
 
@@ -160,6 +160,72 @@ defmodule KanbanWeb.LayoutsTest do
 
       assert html =~ ~s(href="/boards")
       assert html =~ ~s(href="/metrics")
+    end
+  end
+
+  describe "side_nav/1 — My Work entry (W2237)" do
+    test "renders a My Work link pointing to /my-work outside a board" do
+      user = user_fixture()
+      assigns = %{current_scope: scope_for(user), active: nil, board: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        """)
+
+      assert html =~ "My Work"
+      assert html =~ ~s(href="/my-work")
+      assert html =~ "hero-user-circle"
+    end
+
+    test "renders the My Work link exactly once when inside a board scope" do
+      user = user_fixture()
+      board = board_fixture(user)
+      assigns = %{current_scope: scope_for(user), active: nil, board: board}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        """)
+
+      assert length(Regex.scan(~r/href="\/my-work"/, html)) == 1
+    end
+
+    test "active state highlights the My Work entry when :my_work is passed" do
+      user = user_fixture()
+      assigns = %{current_scope: scope_for(user), active: :my_work, board: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        """)
+
+      [_, after_href] = String.split(html, ~s(href="/my-work"), parts: 2)
+      [row_inner, _] = String.split(after_href, "</a>", parts: 2)
+
+      assert row_inner =~ "var(--surface)"
+      assert row_inner =~ "var(--stride-orange)"
+      assert row_inner =~ "My Work"
+    end
+
+    test "the My Work entry is not highlighted when another page is active" do
+      user = user_fixture()
+      assigns = %{current_scope: scope_for(user), active: :agents, board: nil}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.side_nav current_scope={@current_scope} active={@active} board={@board} />
+        """)
+
+      [_, after_href] = String.split(html, ~s(href="/my-work"), parts: 2)
+      [row_inner, _] = String.split(after_href, "</a>", parts: 2)
+
+      assert row_inner =~ "var(--ink-4)"
+      refute row_inner =~ "var(--stride-orange)"
+    end
+
+    test "My Work is listed second in the primary nav items, after Boards" do
+      assert [:boards, :my_work | _] = Enum.map(Layouts.primary_nav_items(), & &1.id)
     end
   end
 
