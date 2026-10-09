@@ -22,15 +22,13 @@ defmodule KanbanWeb.ArchiveLive.Filters do
 
   # --- Row filters ----------------------------------------------------------
 
-  @doc "Filter by archive reason. `:completed` includes legacy nil-reason rows."
+  @doc """
+  Filter by archive reason, using each row's effective reason
+  (`Kanban.Archives.effective_reason/1`), so a reasonless row counts as
+  `:completed` only when its task completed.
+  """
   def apply_reason(rows, :all), do: rows
-
-  def apply_reason(rows, :completed) do
-    Enum.filter(rows, fn task ->
-      reason = task.archive_reason
-      reason == :completed or is_nil(reason)
-    end)
-  end
+  def apply_reason(rows, reason), do: Enum.filter(rows, &reason_matches?(&1, reason))
 
   @doc "Filter by assignee — `:all`, `:unassigned` (nil), or an integer user id."
   def apply_assignee(rows, :all), do: rows
@@ -78,9 +76,8 @@ defmodule KanbanWeb.ArchiveLive.Filters do
       (is_nil(to) or Date.compare(date, to) != :gt)
   end
 
-  @doc "True when a row matches the given reason bucket (nil counts as :completed)."
-  def reason_matches?(%{archive_reason: nil}, :completed), do: true
-  def reason_matches?(%{archive_reason: r}, target), do: r == target
+  @doc "True when a row's effective reason is the given reason bucket."
+  def reason_matches?(task, target), do: Kanban.Archives.effective_reason(task) == target
 
   # --- Input coercion -------------------------------------------------------
 

@@ -224,6 +224,19 @@ defmodule KanbanWeb.API.TaskLabels do
   end
 
   @doc """
+  Applies a goal's plan to the created goal and its child tasks. A `nil` plan
+  (the batch's `goals` was not a list) applies nothing.
+  """
+  @spec apply_goal_plan(scope(), Kanban.Tasks.Task.t(), [Kanban.Tasks.Task.t()], map() | nil) ::
+          :ok
+  def apply_goal_plan(_scope, _goal, _children, nil), do: :ok
+
+  def apply_goal_plan(scope, goal, children, plan) do
+    apply_plan(scope, goal, plan.task)
+    apply_children(scope, children, plan.children)
+  end
+
+  @doc """
   Applies each child's plan to the created child tasks. Children are created
   at consecutive positions in request order, so sorting by position pairs
   each created child with the request entry it came from.

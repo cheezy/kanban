@@ -418,6 +418,7 @@ defmodule KanbanWeb.TaskCard do
     ~H"""
     <button
       type="button"
+      id={"move-to-ready-#{@task_id}"}
       phx-click="move_task_to_ready"
       phx-value-id={@task_id}
       aria-label={gettext("Move to Ready")}

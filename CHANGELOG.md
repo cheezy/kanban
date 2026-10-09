@@ -5,6 +5,18 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Column changes reach open boards.** Adding, renaming, reordering or deleting a column now updates every open copy of the board without a reload.
+- **Removing a member unassigns their tasks.** When a member is removed from a board, they are unassigned from its open tasks, which then show under **Unassigned** instead of naming someone who can no longer see the board. Archived tasks keep their assignee.
+- **The Archive page no longer calls every archived task Completed.** A task archived without a reason counts as completed only if it was finished; otherwise it shows a neutral **Archived** label. The Completed filter and the counts follow the same rule, and the CSV export leaves the reason blank for these tasks.
+- **The GOAL badge is easier to read.** The badge on goal cards and the **Promote children to Ready** button now meet the contrast minimum in light and dark mode.
+- **Keyboard focus stays on the board after Move to Ready.** Using a card's Move to Ready arrow from the keyboard now moves focus to the next Backlog card's arrow, or the previous one's, or to the moved card when no arrow is left, instead of dropping it to the top of the page. Clicking the arrow with a mouse leaves focus alone.
+- **Tasks created through the API appear with their labels.** An open board used to show a task created through the API without its label chips for a moment. The labels are now written before the board is told about the new task.
+- **An open task form keeps up with label changes.** A label deleted while the task form is open disappears from the picker and is no longer selected, so saving does not report an error. Renamed and new labels show up too, and anything already typed in the form is kept.
+
 ## [2.20.0] - 2026-10-09
 
 Busy boards are faster to work with. A board can be searched and filtered, and the filtered view lives in the URL so it can be shared. Boards have coloured labels, shown on task cards and settable by agents through the API. A new **My Work** page lists everything assigned to you across your boards. Several tasks can be moved, assigned, labelled or archived at once, and `/` and `?` are keyboard shortcuts on the board.

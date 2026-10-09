@@ -35,6 +35,7 @@ import PasswordToggle from "./hooks/password_toggle"
 import Sidebar from "./hooks/sidebar"
 import SnapIndicator from "./hooks/snap_indicator"
 import topbar from "../vendor/topbar"
+import {install as installFocusAfterMove} from "./focus_after_move"
 
 const MyHooks = {
   AutoDismissFlash,
@@ -71,6 +72,9 @@ window.addEventListener("phx:comment-thread:scroll-to", event => {
   const row = document.getElementById(event.detail.id)
   if (row) row.scrollIntoView({block: "nearest", behavior: "smooth"})
 })
+
+// Return keyboard focus after a card's Move to Ready arrow leaves with its card.
+installFocusAfterMove(window, document)
 
 // Close any open <details class="js-mobile-menu"> when the user presses Escape,
 // and return focus to its summary. Used by the marketing nav disclosure.

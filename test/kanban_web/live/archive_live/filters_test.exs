@@ -16,15 +16,14 @@ defmodule KanbanWeb.ArchiveLive.FiltersTest do
       assert Filters.apply_reason(rows, :all) == rows
     end
 
-    test ":completed includes legacy nil-reason rows and excludes others" do
+    test ":completed includes reasonless rows only when their task completed" do
       completed = task(archive_reason: :completed)
-      legacy = task(archive_reason: nil)
+      done = task(archive_reason: nil, status: :completed)
+      never_done = task(archive_reason: nil, status: :in_progress)
       cancelled = task(archive_reason: :cancelled)
 
-      result = Filters.apply_reason([completed, legacy, cancelled], :completed)
-      assert completed in result
-      assert legacy in result
-      refute cancelled in result
+      result = Filters.apply_reason([completed, done, never_done, cancelled], :completed)
+      assert result == [completed, done]
     end
   end
 
@@ -93,9 +92,13 @@ defmodule KanbanWeb.ArchiveLive.FiltersTest do
   end
 
   describe "reason_matches?/2" do
-    test "a nil reason matches :completed" do
-      assert Filters.reason_matches?(%{archive_reason: nil}, :completed)
-      refute Filters.reason_matches?(%{archive_reason: :cancelled}, :completed)
+    test "a nil reason matches :completed only when the task completed" do
+      assert [archive_reason: nil, status: :completed]
+             |> task()
+             |> Filters.reason_matches?(:completed)
+
+      refute [archive_reason: nil, status: :open] |> task() |> Filters.reason_matches?(:completed)
+      refute [archive_reason: :cancelled] |> task() |> Filters.reason_matches?(:completed)
     end
   end
 

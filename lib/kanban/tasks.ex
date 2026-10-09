@@ -4,7 +4,9 @@ defmodule Kanban.Tasks do
 
   Thin facade that delegates to focused submodules:
   - `Tasks.Queries` - Read-only task queries
-  - `Tasks.Creation` - Task and goal creation
+  - `Tasks.Creation` - Task creation
+  - `Tasks.GoalCreation` - Goal creation with nested child tasks
+  - `Tasks.CreationSupport` - Helpers shared by the two creation paths
   - `Tasks.Lifecycle` - Update, delete, archive, unarchive
   - `Tasks.Positioning` - Movement, reordering, WIP limits
   - `Tasks.Dependencies` - Blocking, circular deps, dependency tree
@@ -28,6 +30,7 @@ defmodule Kanban.Tasks do
   alias Kanban.Tasks.Creation
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.GoalCompletion
+  alias Kanban.Tasks.GoalCreation
   alias Kanban.Tasks.GoalGrouping
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.Interventions
@@ -85,12 +88,13 @@ defmodule Kanban.Tasks do
   def create_task(column, attrs \\ %{}), do: Creation.create_task(column, attrs)
 
   def create_goal_with_tasks(column, goal_attrs, child_tasks_attrs \\ []),
-    do: Creation.create_goal_with_tasks(column, goal_attrs, child_tasks_attrs)
+    do: GoalCreation.create_goal_with_tasks(column, goal_attrs, child_tasks_attrs)
 
-  defdelegate api_create_task(column, attrs), to: Creation
+  def api_create_task(column, attrs, opts \\ []),
+    do: Creation.api_create_task(column, attrs, opts)
 
-  def api_create_goal_with_tasks(column, goal_attrs, child_tasks_attrs \\ []),
-    do: Creation.api_create_goal_with_tasks(column, goal_attrs, child_tasks_attrs)
+  def api_create_goal_with_tasks(column, goal_attrs, child_tasks_attrs \\ [], opts \\ []),
+    do: GoalCreation.api_create_goal_with_tasks(column, goal_attrs, child_tasks_attrs, opts)
 
   # ── Lifecycle delegations ──────────────────────────────────────────
 

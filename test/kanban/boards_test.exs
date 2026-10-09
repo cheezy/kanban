@@ -3,6 +3,7 @@ defmodule Kanban.BoardsTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
   alias Kanban.Accounts.Scope
@@ -625,6 +626,45 @@ defmodule Kanban.BoardsTest do
   end
 
   describe "remove_user_from_board/2" do
+    test "unassigns the removed user from the board's open tasks only" do
+      owner = user_fixture()
+      member = user_fixture()
+      other_member = user_fixture()
+      board = board_fixture(owner)
+      other_board = board_fixture(owner)
+      column = column_fixture(board)
+      other_column = column_fixture(other_board)
+
+      for b <- [board, other_board], u <- [member, other_member] do
+        {:ok, _} = Boards.add_user_to_board(b, u, :modify, owner)
+      end
+
+      open = task_fixture(column, %{assigned_to_id: member.id})
+      archived = task_fixture(column, %{assigned_to_id: member.id})
+      {:ok, _} = Tasks.archive_task(archived)
+      elsewhere = task_fixture(other_column, %{assigned_to_id: member.id})
+      someone_else = task_fixture(column, %{assigned_to_id: other_member.id})
+
+      {:ok, _} = Boards.remove_user_from_board(board, member, owner)
+
+      assignee = fn task -> Kanban.Repo.get!(Kanban.Tasks.Task, task.id).assigned_to_id end
+      assert assignee.(open) == nil
+      assert assignee.(archived) == member.id
+      assert assignee.(elsewhere) == member.id
+      assert assignee.(someone_else) == other_member.id
+    end
+
+    test "a refused removal unassigns nothing" do
+      owner = user_fixture()
+      member = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      task = board |> column_fixture() |> task_fixture(%{assigned_to_id: member.id})
+
+      assert {:error, :unauthorized} = Boards.remove_user_from_board(board, member, member)
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, task.id).assigned_to_id == member.id
+    end
+
     test "removes a user from a board" do
       owner = user_fixture()
       board = board_fixture(owner)

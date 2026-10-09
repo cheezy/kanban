@@ -187,6 +187,47 @@ defmodule KanbanWeb.GoalCardTest do
     end
   end
 
+  describe "goal_card/1 — text contrast" do
+    test "the GOAL pill and the promote button draw soft text on the ink colour" do
+      assigns = %{task: goal_task()}
+
+      document =
+        ~H"""
+        <GoalCard.goal_card task={@task} />
+        """
+        |> rendered_to_string()
+        |> LazyHTML.from_fragment()
+
+      pill_style =
+        document
+        |> LazyHTML.query("span")
+        |> Enum.find(&(LazyHTML.text(&1) |> String.trim() == "GOAL"))
+        |> LazyHTML.attribute("style")
+        |> hd()
+
+      [button_style] =
+        document
+        |> LazyHTML.query("button[phx-click=promote_goal_to_ready]")
+        |> LazyHTML.attribute("style")
+
+      for style <- [pill_style, button_style] do
+        assert style =~ "background: var(--stride-violet-ink); color: var(--stride-violet-soft);"
+        refute style =~ "--color-primary-content"
+      end
+    end
+
+    test "a custom goal colour keeps its ink and soft pair" do
+      assigns = %{task: goal_task(%{goal_color: "red", goal_soft: "pink", goal_ink: "maroon"})}
+
+      html =
+        rendered_to_string(~H"""
+        <GoalCard.goal_card task={@task} />
+        """)
+
+      assert html =~ "background: maroon; color: pink;"
+    end
+  end
+
   describe "goal_card/1 — promote button" do
     test "renders the promote button by default (not yet promoted)" do
       assigns = %{task: goal_task()}

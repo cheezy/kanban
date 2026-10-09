@@ -193,6 +193,22 @@ defmodule KanbanWeb.BoardLive.BoardState do
      |> refresh_board_metrics()}
   end
 
+  @doc """
+  Re-reads the board's columns after one was added, renamed, deleted or
+  reordered, possibly by another session. The stream is reset, because
+  re-inserting items alone never removes a deleted column.
+  """
+  def reload_columns(socket) do
+    columns = Columns.list_columns(socket.assigns.board)
+
+    {:noreply,
+     socket
+     |> assign(:has_columns, columns != [])
+     |> stream(:columns, columns, reset: true)
+     |> load_tasks_for_columns(columns)
+     |> refresh_board_metrics()}
+  end
+
   # Re-reads the metrics for the currently-loaded board and reassigns
   # `:board` so the BoardHeader KV counts stay in sync after every
   # task move / create / delete / status change.

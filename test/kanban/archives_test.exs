@@ -46,6 +46,15 @@ defmodule Kanban.ArchivesTest do
     task
   end
 
+  # A reasonless row counts as :completed only when the task completed.
+  defp mark_completed!(task) do
+    Kanban.Tasks.Task
+    |> Ecto.Query.where([t], t.id == ^task.id)
+    |> Repo.update_all(set: [status: :completed, completed_at: DateTime.utc_now(:second)])
+
+    task
+  end
+
   describe "list_archived/1 — base behaviour" do
     test "returns an empty list when no tasks are archived" do
       assert Archives.list_archived() == []
@@ -86,14 +95,15 @@ defmodule Kanban.ArchivesTest do
       assert ids == [keeper.id]
     end
 
-    test "reason :completed includes legacy rows with nil archive_reason",
+    test "reason :completed includes reasonless rows only when the task completed",
          %{column: column} do
       explicit = archived_task!(column, %{archive_reason: :completed})
-      legacy = archived_task!(column, %{archive_reason: nil})
+      done = column |> archived_task!(%{archive_reason: nil}) |> mark_completed!()
+      _never_done = archived_task!(column, %{archive_reason: nil})
       _other = archived_task!(column, %{archive_reason: :cancelled})
 
       ids = Archives.list_archived(reason: :completed) |> Enum.map(& &1.id) |> Enum.sort()
-      assert ids == Enum.sort([explicit.id, legacy.id])
+      assert ids == Enum.sort([explicit.id, done.id])
     end
 
     test "reason nil returns every reason including legacy", %{column: column} do
@@ -202,6 +212,22 @@ defmodule Kanban.ArchivesTest do
     end
   end
 
+  describe "effective_reason/1" do
+    test "uses the archive reason when set, else whether the task completed" do
+      alias Kanban.Tasks.Task
+
+      assert Archives.effective_reason(%Task{archive_reason: :wontdo}) == :wontdo
+      assert Archives.effective_reason(%Task{archive_reason: :completed}) == :completed
+
+      assert Archives.effective_reason(%Task{completed_at: DateTime.utc_now(:second)}) ==
+               :completed
+
+      assert Archives.effective_reason(%Task{status: :completed}) == :completed
+      assert Archives.effective_reason(%Task{status: :in_progress}) == :none
+      assert Archives.effective_reason(%{archive_reason: nil}) == :none
+    end
+  end
+
   describe "archive_stats/1" do
     test "returns zeros for an empty archive" do
       assert Archives.archive_stats() == %{total: 0, completed: 0}
@@ -216,12 +242,16 @@ defmodule Kanban.ArchivesTest do
       assert Archives.archive_stats().total == 3
     end
 
-    test "buckets :completed including legacy nil-reason rows", %{column: column} do
+    test "buckets :completed including reasonless rows whose task completed", %{
+      column: column
+    } do
       archived_task!(column, %{archive_reason: :completed})
+      column |> archived_task!(%{archive_reason: nil}) |> mark_completed!()
       archived_task!(column, %{archive_reason: nil})
       archived_task!(column, %{archive_reason: :cancelled})
 
-      assert Archives.archive_stats().completed == 2
+      assert Archives.archive_stats() == %{total: 4, completed: 2}
+      assert Archives.archive_stats_for_board(column.board_id) == %{total: 4, completed: 2}
     end
 
     test "is scope-aware", %{column: column} do
@@ -262,14 +292,25 @@ defmodule Kanban.ArchivesTest do
       assert row =~ "completed"
     end
 
-    test "renders a nil archive_reason as completed (legacy rule)",
+    test "a reasonless row is completed when the task completed, blank otherwise",
          %{board: board, column: column} do
-      archived_task!(column, %{title: "Legacy", archive_reason: nil})
+      done =
+        column |> archived_task!(%{title: "Finished", archive_reason: nil}) |> mark_completed!()
 
-      [_header, row | _] = board.id |> Archives.export_csv_for_board() |> String.split("\r\n")
+      archived_task!(column, %{title: "Abandoned", archive_reason: nil})
+
+      [_header | rows] = board.id |> Archives.export_csv_for_board() |> String.split("\r\n")
+
       # Columns: Identifier,Title,Type,Goal,Assignee,Reason,...
-      reason = row |> String.split(",") |> Enum.at(5)
-      assert reason == "completed"
+      reasons =
+        rows
+        |> Enum.reject(&(&1 == ""))
+        |> Map.new(fn row ->
+          fields = String.split(row, ",")
+          {Enum.at(fields, 1), Enum.at(fields, 5)}
+        end)
+
+      assert reasons == %{done.title => "completed", "Abandoned" => ""}
     end
 
     test "falls back name -> email -> blank for the assignee column",

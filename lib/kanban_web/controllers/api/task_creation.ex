@@ -108,17 +108,25 @@ defmodule KanbanWeb.API.TaskCreation do
   end
 
   defp create_with_labels({:error, changeset}, conn, _column, _creator),
-    do: handle_task_creation({:error, changeset}, conn, nil)
+    do: handle_task_creation({:error, changeset}, conn)
 
+  # The labels are written before the create is broadcast, so an open board
+  # never shows the new card without its label chips.
   defp insert_task_or_goal(conn, column, task_params, child_tasks, label_plan) do
+    scope = TaskLabels.scope(conn)
+
     if child_tasks != [] do
       column
-      |> Tasks.api_create_goal_with_tasks(task_params, child_tasks)
-      |> handle_goal_creation(conn, label_plan)
+      |> Tasks.api_create_goal_with_tasks(task_params, child_tasks,
+        before_broadcast: &TaskLabels.apply_goal_plan(scope, &1, &2, label_plan)
+      )
+      |> handle_goal_creation(conn)
     else
       column
-      |> Tasks.api_create_task(task_params)
-      |> handle_task_creation(conn, label_plan)
+      |> Tasks.api_create_task(task_params,
+        before_broadcast: &TaskLabels.apply_plan(scope, &1, label_plan.task)
+      )
+      |> handle_task_creation(conn)
     end
   end
 
@@ -130,8 +138,7 @@ defmodule KanbanWeb.API.TaskCreation do
     |> Map.delete("column_id")
   end
 
-  defp handle_task_creation({:ok, task}, conn, label_plan) do
-    conn |> TaskLabels.scope() |> TaskLabels.apply_plan(task, label_plan.task)
+  defp handle_task_creation({:ok, task}, conn) do
     task = Tasks.get_task_for_view!(task.id)
     TaskActions.emit_telemetry(conn, :task_created, %{task_id: task.id})
 
@@ -141,7 +148,7 @@ defmodule KanbanWeb.API.TaskCreation do
     |> render(:show, task: task)
   end
 
-  defp handle_task_creation({:error, %Ecto.Changeset{} = changeset}, conn, _label_plan) do
+  defp handle_task_creation({:error, %Ecto.Changeset{} = changeset}, conn) do
     conn
     |> put_status(:unprocessable_entity)
     |> render(:error, changeset: changeset)
@@ -149,14 +156,11 @@ defmodule KanbanWeb.API.TaskCreation do
 
   # D356: a work or defect task created in a column at its WIP limit. Without
   # this clause the reason fell through to FunctionClauseError and a 500.
-  defp handle_task_creation({:error, :wip_limit_reached} = error, conn, _label_plan) do
+  defp handle_task_creation({:error, :wip_limit_reached} = error, conn) do
     TaskErrors.handle_task_error(conn, error)
   end
 
-  defp handle_goal_creation({:ok, %{goal: goal, child_tasks: child_tasks}}, conn, label_plan) do
-    scope = TaskLabels.scope(conn)
-    TaskLabels.apply_plan(scope, goal, label_plan.task)
-    TaskLabels.apply_children(scope, child_tasks, label_plan.children)
+  defp handle_goal_creation({:ok, %{goal: goal, child_tasks: child_tasks}}, conn) do
     goal = Tasks.get_task_for_view!(goal.id)
 
     TaskActions.emit_telemetry(conn, :goal_created, %{
@@ -173,11 +177,7 @@ defmodule KanbanWeb.API.TaskCreation do
     })
   end
 
-  defp handle_goal_creation(
-         {:error, _operation, %Ecto.Changeset{} = changeset},
-         conn,
-         _label_plan
-       ) do
+  defp handle_goal_creation({:error, _operation, %Ecto.Changeset{} = changeset}, conn) do
     conn
     |> put_status(:unprocessable_entity)
     |> render(:error, changeset: changeset)

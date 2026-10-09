@@ -13,8 +13,8 @@ defmodule Kanban.Tasks.Task.HierarchyValidations do
   `errors.po`; it must not drift without updating those entries. The
   nested-tasks message only ever reaches the API, so it is not translated.
 
-  `child_task_error/1` is called by `Kanban.Tasks.Creation` on the children of
-  a goal-with-tasks create, before any identifier is generated.
+  `child_task_error/1` is called by `Kanban.Tasks.GoalCreation` on the
+  children of a goal-with-tasks create, before any identifier is generated.
 
   `validate_goal_has_no_parent/1` is called by every `Kanban.Tasks.Task`
   changeset that can set `type` or `parent_id`. It only fires when one of those

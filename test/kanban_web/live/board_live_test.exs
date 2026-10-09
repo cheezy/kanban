@@ -1573,6 +1573,46 @@ defmodule KanbanWeb.BoardLiveTest do
       refute has_element?(other_viewer, arrow_selector(task))
     end
 
+    test "after a move, focus is sent to the next Backlog arrow, else the previous one", %{
+      conn: conn,
+      user: user
+    } do
+      %{board: board, backlog: backlog} = backlog_ready_board(user)
+      first = task_fixture(backlog, %{title: "First"})
+      _goal = task_fixture(backlog, %{title: "Goal in between", type: :goal})
+      second = task_fixture(backlog, %{title: "Second"})
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      capture_log(fn -> view |> element(arrow_selector(first)) |> render_click() end)
+      first_fallback = "task-#{first.id}"
+      second_arrow = "move-to-ready-#{second.id}"
+
+      assert_push_event(view, "move_to_ready:focus", %{
+        to: ^second_arrow,
+        fallback: ^first_fallback
+      })
+
+      third = task_fixture(backlog, %{title: "Third"})
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      capture_log(fn -> view |> element(arrow_selector(third)) |> render_click() end)
+      assert_push_event(view, "move_to_ready:focus", %{to: ^second_arrow})
+
+      capture_log(fn -> view |> element(arrow_selector(second)) |> render_click() end)
+      assert_push_event(view, "move_to_ready:focus", %{to: nil, fallback: fallback})
+      assert fallback == "task-#{second.id}"
+    end
+
+    test "a refused move sends no focus event", %{conn: conn, user: user} do
+      %{board: board, backlog: backlog, doing: doing} = backlog_ready_board(user)
+      task = task_fixture(backlog, %{title: "Stale"})
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      task |> Ecto.Changeset.change(column_id: doing.id) |> Kanban.Repo.update!()
+
+      capture_log(fn -> render_click(view, "move_task_to_ready", %{"id" => "#{task.id}"}) end)
+      refute_push_event(view, "move_to_ready:focus", %{})
+    end
+
     test "a move by another session updates the arrow on an open board", %{
       conn: conn,
       user: user

@@ -120,7 +120,7 @@ defmodule KanbanWeb.API.TaskLabelsTest do
     end
   end
 
-  describe "apply_plan/3 and apply_children/3" do
+  describe "apply_plan/3, apply_goal_plan/4 and apply_children/3" do
     setup %{board: board} do
       column = Kanban.ColumnsFixtures.column_fixture(board)
       %{column: column}
@@ -150,6 +150,19 @@ defmodule KanbanWeb.API.TaskLabelsTest do
 
       assert log =~ "API labels not applied"
       assert Kanban.Labels.list_task_label_ids(ctx.scope, task) == []
+    end
+
+    test "apply_goal_plan/4 labels the goal and its children; nil applies nothing", ctx do
+      {:ok, goal} = Kanban.Tasks.create_task(ctx.column, %{"title" => "Goal", "type" => "goal"})
+      {:ok, child} = Kanban.Tasks.create_task(ctx.column, %{"title" => "Child"})
+
+      assert TaskLabels.apply_goal_plan(ctx.scope, goal, [child], nil) == :ok
+      assert Kanban.Labels.list_task_label_ids(ctx.scope, goal) == []
+
+      plan = %{task: [ctx.bug.id], children: [[ctx.bug.id]]}
+      assert TaskLabels.apply_goal_plan(ctx.scope, goal, [child], plan) == :ok
+      assert Kanban.Labels.list_task_label_ids(ctx.scope, goal) == [ctx.bug.id]
+      assert Kanban.Labels.list_task_label_ids(ctx.scope, child) == [ctx.bug.id]
     end
 
     test "children are paired with their plans by position", ctx do

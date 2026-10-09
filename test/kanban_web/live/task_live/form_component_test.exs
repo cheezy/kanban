@@ -4201,6 +4201,22 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       refute html =~ "task[label_ids][]"
     end
 
+    test "refresh_labels reloads the options and drops a deleted label from the selection",
+         ctx do
+      task = task_fixture(ctx.column, %{title: "Open form"})
+      {:ok, _} = Kanban.Labels.set_task_labels(ctx.scope, task, [ctx.frontend.id, ctx.backend.id])
+      socket = form_socket(ctx, task, :edit_task)
+
+      {:ok, _} = Kanban.Labels.delete_label(ctx.scope, ctx.backend)
+      {:ok, _} = Kanban.Labels.update_label(ctx.scope, ctx.frontend, %{name: "Frontend v2"})
+      {:ok, refreshed} = FormComponent.update(%{refresh_labels: true}, socket)
+
+      assert Enum.map(refreshed.assigns.label_options, & &1.name) == ["Frontend v2"]
+      assert refreshed.assigns.selected_label_ids == [ctx.frontend.id]
+      assert refreshed.assigns.initial_label_ids == [ctx.frontend.id]
+      assert refreshed.assigns.form == socket.assigns.form
+    end
+
     test "selecting two labels and saving persists them; reopening shows them checked", ctx do
       task = task_fixture(ctx.column, %{title: "Labelled"})
       ids = [ctx.frontend.id, ctx.backend.id]

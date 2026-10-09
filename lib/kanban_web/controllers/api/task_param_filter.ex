@@ -33,7 +33,7 @@ defmodule KanbanWeb.API.TaskParamFilter do
   #
   # parent_id is forbidden here even though the changeset casts it: the ONLY
   # legitimate parent link is the goal id the server injects into child attrs
-  # during batch goal creation (Creation.prepare_child_task_attrs/5). A
+  # during batch goal creation (GoalCreation.prepare_child_task_attrs/5). A
   # client-supplied parent_id would otherwise link the new task under a goal on
   # another board (cross-board IDOR) and, via assignment inheritance, copy that
   # goal's assigned_to_id — an indirect write of the forbidden assigned_to_id

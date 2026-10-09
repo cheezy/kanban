@@ -629,20 +629,31 @@ defmodule KanbanWeb.ArchiveLiveTest do
       assert length(menus) == 1
     end
 
-    test "filter_archive correctly buckets :completed including legacy nil-reason rows",
+    test "filter_archive buckets a reasonless row as completed only when its task completed",
          %{conn: conn, board: board, column: column} do
-      legacy = task_fixture(column, %{title: "Legacy archived"})
+      finished = task_fixture(column, %{title: "Legacy finished"})
+      abandoned = task_fixture(column, %{title: "Archived from Review"})
       explicit = task_fixture(column, %{title: "Explicitly completed"})
 
-      {:ok, _} = Tasks.archive_task(legacy, %{archive_reason: nil})
+      Kanban.Tasks.Task
+      |> Ecto.Query.where([t], t.id == ^finished.id)
+      |> Kanban.Repo.update_all(
+        set: [status: :completed, completed_at: DateTime.utc_now(:second)]
+      )
+
+      {:ok, _} = finished |> Kanban.Repo.reload!() |> Tasks.archive_task(%{archive_reason: nil})
+      {:ok, _} = Tasks.archive_task(abandoned, %{archive_reason: nil})
       {:ok, _} = Tasks.archive_task(explicit, %{archive_reason: :completed})
 
-      {:ok, index_live, _html} = live(conn, ~p"/boards/#{board}/archive")
+      {:ok, index_live, html} = live(conn, ~p"/boards/#{board}/archive")
+      assert html =~ "Archived from Review"
+      assert has_element?(index_live, ~s([data-archive-row-reason="none"]), "Archived")
 
       html = render_click(index_live, "filter_archive", %{"reason" => "completed"})
 
-      assert html =~ "Legacy archived"
+      assert html =~ "Legacy finished"
       assert html =~ "Explicitly completed"
+      refute html =~ "Archived from Review"
     end
 
     @tag :capture_log

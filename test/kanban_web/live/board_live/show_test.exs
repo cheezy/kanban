@@ -3196,6 +3196,62 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       refute_push_event(view, "task_moved_remotely", %{})
     end
 
+    test "column changes made in another session reach the open board", ctx do
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")
+
+      {:ok, added} = Kanban.Columns.create_column(ctx.board, %{name: "Late column"}, ctx.user)
+      assert has_element?(view, "#columns > [data-column-id='#{added.id}']")
+      assert has_element?(view, "[data-indicator-dot='#{added.id}']")
+
+      {:ok, _} = Kanban.Columns.update_column(added, %{name: "Renamed column"}, ctx.user)
+      assert render(view) =~ "Renamed column"
+
+      {:ok, _} = Kanban.Columns.delete_column(added)
+      refute has_element?(view, "#columns > [data-column-id='#{added.id}']")
+      refute has_element?(view, "[data-indicator-dot='#{added.id}']")
+      assert card?(view, ctx.alpha)
+    end
+
+    test "an open edit form drops a label deleted elsewhere and keeps what was typed", ctx do
+      scope = Kanban.Accounts.Scope.for_user(ctx.user)
+      kept = Kanban.LabelsFixtures.label_fixture(ctx.board, %{name: "Kept"})
+      doomed = Kanban.LabelsFixtures.label_fixture(ctx.board, %{name: "Doomed"})
+      {:ok, _} = Kanban.Labels.set_task_labels(scope, ctx.alpha, [kept.id, doomed.id])
+
+      {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}/tasks/#{ctx.alpha}/edit")
+
+      view
+      |> form("#task-form", task: %{title: "Typed but unsaved"})
+      |> render_change()
+
+      assert has_element?(view, ~s(#task-form input[value="#{doomed.id}"][checked]))
+
+      {:ok, _} = Kanban.Labels.delete_label(scope, doomed)
+      {:ok, _} = Kanban.Labels.update_label(scope, kept, %{name: "Kept renamed"})
+
+      refute has_element?(view, ~s(#task-form input[value="#{doomed.id}"]))
+      assert has_element?(view, ~s(#task-form input[value="#{kept.id}"][checked]))
+      assert has_element?(view, "#task-form [data-label-picker]", "Kept renamed")
+
+      assert has_element?(
+               view,
+               ~s(#task-form input[name="task[title]"][value="Typed but unsaved"])
+             )
+    end
+
+    test "an open new-task form offers a label created elsewhere", ctx do
+      scope = Kanban.Accounts.Scope.for_user(ctx.user)
+
+      {:ok, view, _html} =
+        live(ctx.conn, ~p"/boards/#{ctx.board}/columns/#{ctx.column}/tasks/new")
+
+      {:ok, added} =
+        Kanban.Labels.create_label(scope, ctx.board, %{"name" => "Fresh", "color" => "red"})
+
+      assert has_element?(view, ~s(#task-form input[value="#{added.id}"]))
+      refute has_element?(view, ~s(#task-form input[value="#{added.id}"][checked]))
+    end
+
     test "an unfiltered board re-renders a remote move from the server", ctx do
       other = column_fixture(ctx.board, %{name: "Review"})
       {:ok, view, _html} = live(ctx.conn, ~p"/boards/#{ctx.board}")

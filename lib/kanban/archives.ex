@@ -3,8 +3,11 @@ defmodule Kanban.Archives do
   Read-only context for the workspace Archive view.
 
   A task is "archived" when its `:archived_at` field is set. The
-  `:archive_reason` field categorizes why; legacy archived rows have
-  `nil` and are treated as `:completed` for filtering and stats purposes.
+  `:archive_reason` field categorizes why. A task archived without a reason
+  (archiving from the board, single or in bulk, and legacy rows) counts as
+  `:completed` only when it actually completed — `completed_at` is set or its
+  status is `:completed`; otherwise its effective reason is `:none`. See
+  `effective_reason/1`, which the stats, filters, rows and CSV export share.
 
   All public functions are scope-aware: when a `Kanban.Accounts.Scope`
   is passed, results are filtered to tasks on boards the scoped user can
@@ -33,10 +36,8 @@ defmodule Kanban.Archives do
 
     * `:reason` — one of `:completed`, `:duplicate`, `:wontdo`,
       `:deferred`, `:cancelled`. Filters the result to rows whose
-      `archive_reason` matches. `nil` (the default) returns every
-      reason. When the value is `:completed`, legacy rows with a `nil`
-      `archive_reason` are included because the Archive view treats
-      them as `:completed`.
+      effective reason (`effective_reason/1`) matches. `nil` (the default)
+      returns every reason.
     * `:scope` — a `Kanban.Accounts.Scope.t/0`. Limits results to tasks
       on boards the scoped user is a member of. When `nil`, all archived
       tasks are returned.
@@ -110,12 +111,34 @@ defmodule Kanban.Archives do
   end
 
   @doc """
+  The reason an archived task is shown and counted under: its
+  `archive_reason` when set; otherwise `:completed` when the task actually
+  completed (`completed_at` set or status `:completed`), and `:none` when it
+  never did — such as a card archived from Review.
+
+  ## Examples
+
+      iex> effective_reason(%Task{archive_reason: :wontdo})
+      :wontdo
+
+      iex> effective_reason(%Task{archive_reason: nil, status: :in_progress})
+      :none
+
+  """
+  @spec effective_reason(map()) :: atom()
+  def effective_reason(%{archive_reason: reason}) when not is_nil(reason), do: reason
+  def effective_reason(%{completed_at: %DateTime{}}), do: :completed
+  def effective_reason(%{status: :completed}), do: :completed
+  def effective_reason(_task), do: :none
+
+  @doc """
   Returns archive counters for the header band of the Archive view.
 
   Buckets:
 
     * `:total` — every archived task in the scope
-    * `:completed` — `archive_reason` is `:completed` OR `nil` (legacy)
+    * `:completed` — tasks whose effective reason is `:completed`
+      (`effective_reason/1`)
 
   ## Options
 
@@ -130,7 +153,11 @@ defmodule Kanban.Archives do
       Task
       |> archived_query()
       |> BoardScope.apply_board_scope(Keyword.get(opts, :scope))
-      |> select([t], %{reason: t.archive_reason})
+      |> select([t], %{
+        archive_reason: t.archive_reason,
+        completed_at: t.completed_at,
+        status: t.status
+      })
       |> Repo.all()
 
     build_stats(rows)
@@ -151,7 +178,11 @@ defmodule Kanban.Archives do
       Task
       |> archived_query()
       |> where([_t, column: c], c.board_id == ^board_id)
-      |> select([t], %{reason: t.archive_reason})
+      |> select([t], %{
+        archive_reason: t.archive_reason,
+        completed_at: t.completed_at,
+        status: t.status
+      })
       |> Repo.all()
 
     build_stats(rows)
@@ -176,9 +207,15 @@ defmodule Kanban.Archives do
 
   defp apply_reason(query, nil), do: query
 
+  # Mirrors effective_reason/1: a reasonless row is :completed only when the
+  # task completed.
   defp apply_reason(query, :completed) do
-    # The Archive view treats nil-reason legacy rows as :completed.
-    where(query, [t], t.archive_reason == :completed or is_nil(t.archive_reason))
+    where(
+      query,
+      [t],
+      t.archive_reason == :completed or
+        (is_nil(t.archive_reason) and (not is_nil(t.completed_at) or t.status == :completed))
+    )
   end
 
   defp apply_reason(query, reason) when is_atom(reason) do
@@ -187,9 +224,7 @@ defmodule Kanban.Archives do
 
   # --- archive_stats helpers ------------------------------------------------
 
-  defp count_completed(rows) do
-    Enum.count(rows, fn %{reason: r} -> r in [:completed, nil] end)
-  end
+  defp count_completed(rows), do: Enum.count(rows, &(effective_reason(&1) == :completed))
 
   # --- CSV export helpers ---------------------------------------------------
 
@@ -200,7 +235,7 @@ defmodule Kanban.Archives do
       to_string(task.type),
       csv_goal_title(task),
       csv_user_label(task.assigned_to),
-      csv_reason(task.archive_reason),
+      csv_reason(effective_reason(task)),
       csv_archived_at(task.archived_at),
       csv_user_label(task.archived_by)
     ]
@@ -215,9 +250,9 @@ defmodule Kanban.Archives do
   defp csv_user_label(%{email: email}) when is_binary(email), do: email
   defp csv_user_label(_), do: ""
 
-  # The Archive view treats a nil archive_reason as :completed (legacy rows),
-  # so the export reflects the same bucketing.
-  defp csv_reason(nil), do: "completed"
+  # The same bucketing as the Archive view; a task archived without a reason
+  # that never completed has a blank cell.
+  defp csv_reason(:none), do: ""
   defp csv_reason(reason), do: to_string(reason)
 
   defp csv_archived_at(%DateTime{} = at), do: DateTime.to_iso8601(at)

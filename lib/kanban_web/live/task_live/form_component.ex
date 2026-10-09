@@ -20,10 +20,15 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   @field_events FieldEvents.events()
 
+  # The board's labels changed while the form was open (sent by
+  # KanbanWeb.BoardLive.BoardEvents); only the label picker is rebuilt.
+  @impl true
+  def update(%{refresh_labels: true}, socket),
+    do: {:ok, LabelSelection.refresh_options(socket)}
+
   # A re-render of the hosting LiveView (a flash, for example) can re-send the
   # same task. Rebuilding the form from it would throw away what the user has
   # typed, so keep the form unless the stored task itself changed.
-  @impl true
   def update(
         %{task: %{id: id, updated_at: updated_at}, board: board} = assigns,
         %{assigns: %{form: _, task: %{id: id, updated_at: updated_at}}} = socket

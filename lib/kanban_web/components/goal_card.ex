@@ -65,7 +65,7 @@ defmodule KanbanWeb.GoalCard do
       "display: flex; flex-direction: column; gap: #{@gap}px;",
       "cursor: grab; position: relative;"
     ]}>
-      <.top_row task={@task} color={@color} ink={@ink} author={@author} />
+      <.top_row task={@task} color={@color} ink={@ink} soft={@soft} author={@author} />
 
       <div style={[
         "font-size: 13px; line-height: 1.3; letter-spacing: -0.005em;",
@@ -91,7 +91,7 @@ defmodule KanbanWeb.GoalCard do
         title={gettext("Move goal and tasks to Ready")}
         style={[
           "margin-top: 2px; padding: 4px 8px; border-radius: 4px;",
-          "background: #{@color}; color: var(--color-primary-content); border: none;",
+          "background: #{@ink}; color: #{@soft}; border: none;",
           "font-size: 11px; font-weight: 500; cursor: pointer;",
           "display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;"
         ]}
@@ -127,6 +127,7 @@ defmodule KanbanWeb.GoalCard do
   attr :task, :map, required: true
   attr :color, :string, required: true
   attr :ink, :string, required: true
+  attr :soft, :string, required: true
   attr :author, :map, default: nil
 
   defp top_row(assigns) do
@@ -145,9 +146,11 @@ defmodule KanbanWeb.GoalCard do
       <span class="ident" style={"font-size: 10.5px; color: #{@ink}; font-weight: 600;"}>
         {@task.identifier}
       </span>
+      <%!-- Soft text on the ink colour: the saturated accent behind
+           --color-primary-content fell below AA for this 9.5px text. --%>
       <span style={[
         "font-size: 9.5px; padding: 0 5px; border-radius: 3px;",
-        "background: #{@color}; color: var(--color-primary-content);",
+        "background: #{@ink}; color: #{@soft};",
         "font-family: var(--font-mono); letter-spacing: 0.02em; font-weight: 600;"
       ]}>
         {gettext("GOAL")}

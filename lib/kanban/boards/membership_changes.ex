@@ -4,7 +4,8 @@ defmodule Kanban.Boards.MembershipChanges do
   and removing them.
 
   Removal and a downgrade to `:read_only` revoke the user's API tokens for
-  the board in the same transaction. Once a write commits, the affected user
+  the board in the same transaction, and removal also unassigns the user from
+  the board's open tasks. Once a write commits, the affected user
   gets a `board_access_changed` notification through
   `Kanban.Notifications.Events.board_access_changed/4`, and
   `{Kanban.Boards, :members_changed, board_id}` is broadcast on the board's
@@ -15,12 +16,15 @@ defmodule Kanban.Boards.MembershipChanges do
   module directly.
   """
 
+  import Ecto.Query, only: [from: 2]
+
   alias Kanban.ApiTokens
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Notifications.Events
   alias Kanban.Repo
+  alias Kanban.Tasks.Task
 
   @doc """
   Adds a user to a board with the specified access level.
@@ -51,7 +55,8 @@ defmodule Kanban.Boards.MembershipChanges do
   end
 
   @doc """
-  Removes a user from a board, revoking their API tokens for it.
+  Removes a user from a board, revoking their API tokens for it and
+  unassigning them from the board's open tasks, in one transaction.
 
   On success the removed user gets a `board_access_changed` notification
   saying how many tokens were revoked, unless they removed themselves.
@@ -77,12 +82,26 @@ defmodule Kanban.Boards.MembershipChanges do
           |> Ecto.Multi.run(:revoke_tokens, fn _repo, _changes ->
             {:ok, ApiTokens.revoke_user_tokens_for_board(board.id, user.id)}
           end)
+          |> Ecto.Multi.update_all(:unassign, open_assignments(board.id, user.id),
+            set: [assigned_to_id: nil, updated_at: NaiveDateTime.utc_now(:second)]
+          )
           |> run_board_user_multi()
           |> notify_membership(board, user, :removed, current_user)
       end
     else
       {:error, :unauthorized}
     end
+  end
+
+  # The removed user's assignments on this board's open (unarchived) tasks.
+  # They can no longer see the board, so leaving them assigned would hide the
+  # work from everyone else's view of who owns it. Archived tasks keep their
+  # assignee as a record.
+  defp open_assignments(board_id, user_id) do
+    from(t in Task,
+      join: c in assoc(t, :column),
+      where: c.board_id == ^board_id and t.assigned_to_id == ^user_id and is_nil(t.archived_at)
+    )
   end
 
   # Runs a BoardUser-mutating multi, returning the board user and how many

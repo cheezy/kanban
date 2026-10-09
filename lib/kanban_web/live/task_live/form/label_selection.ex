@@ -46,6 +46,26 @@ defmodule KanbanWeb.TaskLive.Form.LabelSelection do
     |> assign(:selected_label_ids, selected)
   end
 
+  @doc """
+  Reloads the picker's options after the board's labels changed while the
+  form was open: a renamed or recoloured label shows its new chip, a new one
+  appears unticked, and a deleted one leaves both the options and the
+  selection, so it is neither shown ticked nor posted. Only the label assigns
+  change, so whatever else the user has typed stays put.
+  """
+  def refresh_options(socket) do
+    %{current_scope: scope, board: board} = socket.assigns
+    options = scope |> Labels.list_labels(board) |> OptionBuilders.build_label_options()
+    live_ids = MapSet.new(options, & &1.id)
+
+    socket
+    |> assign(:label_options, options)
+    |> assign(:initial_label_ids, only_live(socket.assigns.initial_label_ids, live_ids))
+    |> assign(:selected_label_ids, only_live(socket.assigns.selected_label_ids, live_ids))
+  end
+
+  defp only_live(ids, live_ids), do: Enum.filter(ids, &MapSet.member?(live_ids, &1))
+
   defp initial_label_ids(scope, %{id: id} = task, :edit_task) when is_integer(id),
     do: Labels.list_task_label_ids(scope, task)
 

@@ -151,15 +151,25 @@ defmodule KanbanWeb.ArchiveRowTest do
       refute title_cell =~ "text-decoration: line-through"
     end
 
-    test "nil archive_reason normalizes to :completed (legacy archived rows)" do
-      html = render_row(%{archive_reason: nil})
+    test "a nil archive_reason is :completed when the task completed" do
+      html = render_row(%{archive_reason: nil, completed_at: DateTime.utc_now(:second)})
       assert html =~ ~s(data-archive-row-reason="completed")
-      # The reason pill displays the Completed label.
-      pill =
-        Regex.run(~r/<span[^>]*data-archive-row-reason-pill[^>]*>[\s\S]*?<\/span>/, html)
-        |> List.first()
+      assert reason_pill(html) =~ "Completed"
+      assert html =~ ~s(data-archive-row-outcome="completed")
+    end
 
-      assert pill =~ "Completed"
+    test "a nil archive_reason is a neutral Archived when the task never completed" do
+      html = render_row(%{archive_reason: nil, status: :in_progress, completed_at: nil})
+      assert html =~ ~s(data-archive-row-reason="none")
+      assert reason_pill(html) =~ "Archived"
+      refute reason_pill(html) =~ "Completed"
+      refute html =~ ~s(data-archive-row-outcome="completed")
+    end
+
+    defp reason_pill(html) do
+      ~r/<span[^>]*data-archive-row-reason-pill[^>]*>[\s\S]*?<\/span>/
+      |> Regex.run(html)
+      |> List.first()
     end
   end
 

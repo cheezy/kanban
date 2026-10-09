@@ -331,7 +331,7 @@ msgstr "新しいタスクを作成"
 #: lib/kanban_web/live/archive_live/index.ex:474
 #: lib/kanban_web/live/archive_live/index.ex:499
 #: lib/kanban_web/live/board_live/show.ex:197
-#: lib/kanban_web/live/board_live/task_actions.ex:262
+#: lib/kanban_web/live/board_live/task_actions.ex:304
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
 msgstr "タスクの削除に失敗しました"
@@ -341,13 +341,13 @@ msgstr "タスクの削除に失敗しました"
 msgid "Save Task"
 msgstr "タスクを保存"
 
-#: lib/kanban_web/live/task_live/form_component.ex:382
+#: lib/kanban_web/live/task_live/form_component.ex:387
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "タスクが正常に作成されました"
 
 #: lib/kanban_web/live/archive_live/index.ex:470
-#: lib/kanban_web/live/board_live/task_actions.ex:248
+#: lib/kanban_web/live/board_live/task_actions.ex:290
 #, elixir-autogen, elixir-format
 msgid "Task deleted successfully"
 msgstr "タスクが正常に削除されました"
@@ -372,7 +372,7 @@ msgstr "タイトル"
 msgid "Update task details"
 msgstr "タスクの詳細を更新"
 
-#: lib/kanban_web/live/task_live/form_component.ex:400
+#: lib/kanban_web/live/task_live/form_component.ex:405
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "この列のWIP制限に達しました"
@@ -422,7 +422,7 @@ msgstr "重大"
 #: lib/kanban_web/live/issue_live/form_component.ex:303
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:71
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
-#: lib/kanban_web/task_tokens.ex:180
+#: lib/kanban_web/task_tokens.ex:184
 #, elixir-autogen, elixir-format
 msgid "Defect"
 msgstr "不具合"
@@ -512,7 +512,7 @@ msgstr "WIP制限を超過"
 #: lib/kanban_web/components/board_filter_bar.ex:169
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:70
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
-#: lib/kanban_web/task_tokens.ex:179
+#: lib/kanban_web/task_tokens.ex:183
 #, elixir-autogen, elixir-format
 msgid "Work"
 msgstr "作業"
@@ -1201,7 +1201,7 @@ msgstr "避けるべきよくある落とし穴"
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:135
 #: lib/kanban_web/live/task_live/form_component.html.heex:135
 #: lib/kanban_web/task_tokens.ex:90
-#: lib/kanban_web/task_tokens.ex:95
+#: lib/kanban_web/task_tokens.ex:96
 #, elixir-autogen, elixir-format
 msgid "Completed"
 msgstr "完了"
@@ -1846,7 +1846,7 @@ msgstr "包括的なAPIドキュメント"
 #: lib/kanban_web/live/task_live/components/child_tasks_section.ex:72
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:56
 #: lib/kanban_web/live/task_live/form_component.html.heex:103
-#: lib/kanban_web/task_tokens.ex:181
+#: lib/kanban_web/task_tokens.ex:185
 #, elixir-autogen, elixir-format
 msgid "Goal"
 msgstr "ゴール"
@@ -1882,7 +1882,7 @@ msgstr "Strideは単なるカンバンボード以上のものです。人間と
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "この協働アプローチにより、チームは繰り返しのコーディング作業をAIエージェントに委任しつつ、人間は高レベルな意思決定、アーキテクチャ、マージ前のAI生成コードのレビューに集中できます。"
 
-#: lib/kanban_web/live/task_live/form_component.ex:404
+#: lib/kanban_web/live/task_live/form_component.ex:409
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "タスクを追加できません: この列のWIP上限に達しています"
@@ -1902,9 +1902,9 @@ msgstr "期待される結果"
 msgid "Note about this file"
 msgstr "このファイルに関するメモ"
 
-#: lib/kanban_web/live/task_live/form_component.ex:249
-#: lib/kanban_web/live/task_live/form_component.ex:331
-#: lib/kanban_web/live/task_live/form_component.ex:391
+#: lib/kanban_web/live/task_live/form_component.ex:254
+#: lib/kanban_web/live/task_live/form_component.ex:336
+#: lib/kanban_web/live/task_live/form_component.ex:396
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "下記のエラーを修正してください"
@@ -1979,7 +1979,7 @@ msgid "Delete"
 msgstr "削除"
 
 #: lib/kanban_web/live/board_live/show.ex:179
-#: lib/kanban_web/live/board_live/task_actions.ex:235
+#: lib/kanban_web/live/board_live/task_actions.ex:277
 #, elixir-autogen, elixir-format
 msgid "Failed to archive task"
 msgstr "タスクのアーカイブに失敗しました"
@@ -1990,7 +1990,7 @@ msgstr "タスクのアーカイブに失敗しました"
 msgid "Failed to unarchive task"
 msgstr "タスクのアーカイブ解除に失敗しました"
 
-#: lib/kanban_web/live/board_live/task_actions.ex:229
+#: lib/kanban_web/live/board_live/task_actions.ex:271
 #, elixir-autogen, elixir-format
 msgid "Task archived successfully"
 msgstr "タスクをアーカイブしました"
@@ -2001,13 +2001,13 @@ msgid "Task unarchived successfully"
 msgstr "タスクのアーカイブを解除しました"
 
 #: lib/kanban_web/live/task_live/form/relational_scopes.ex:45
-#: lib/kanban_web/live/task_live/form_component.ex:297
+#: lib/kanban_web/live/task_live/form_component.ex:302
 #, elixir-autogen, elixir-format
 msgid "Column does not belong to this board"
 msgstr "列はこのボードに属していません"
 
 #: lib/kanban_web/live/task_live/form/task_params.ex:34
-#: lib/kanban_web/live/task_live/form_component.ex:301
+#: lib/kanban_web/live/task_live/form_component.ex:306
 #, elixir-autogen, elixir-format
 msgid "Security error: Invalid column"
 msgstr "セキュリティエラー: 無効な列"
@@ -2064,7 +2064,7 @@ msgstr "すべてのリソースに戻る"
 msgid "Browse all guides"
 msgstr "すべてのガイドを見る"
 
-#: lib/kanban_web/live/board_live/task_actions.ex:258
+#: lib/kanban_web/live/board_live/task_actions.ex:300
 #, elixir-autogen, elixir-format
 msgid "Cannot delete task: other tasks depend on it. Remove dependencies first."
 msgstr "タスクを削除できません: 他のタスクが依存しています。先に依存関係を削除してください。"
@@ -2713,7 +2713,7 @@ msgid "Check this box if this task is for human workers only and should not be c
 msgstr "このタスクが人間専用でAIエージェントがクレームすべきでない場合はチェックを入れてください"
 
 #: lib/kanban_web/live/board_live/show.ex:215
-#: lib/kanban_web/live/board_live/task_actions.ex:194
+#: lib/kanban_web/live/board_live/task_actions.ex:236
 #, elixir-autogen, elixir-format
 msgid "Failed to move goal to Ready"
 msgstr "ゴールを Ready に移動できませんでした"
@@ -2728,7 +2728,7 @@ msgstr "人間のタスク"
 msgid "Move goal and tasks to Ready"
 msgstr "ゴールとタスクを「準備完了」に移動"
 
-#: lib/kanban_web/live/board_live/task_actions.ex:191
+#: lib/kanban_web/live/board_live/task_actions.ex:233
 #, elixir-autogen, elixir-format
 msgid "Only goals can be promoted"
 msgstr "プロモートできるのはゴールのみです"
@@ -2994,7 +2994,7 @@ msgstr "ボードの所有者のみがボードのメンバーを管理できま
 msgid "Tango is a Canada-based software company focused on building modern, scalable digital products by combining cutting-edge technology with AI-assisted development. We help organizations move faster, build smarter, and deliver higher-quality software without unnecessary complexity."
 msgstr "Tangoはカナダを拠点とするソフトウェア企業で、最先端の技術とAI支援開発を組み合わせて、現代的で拡張性のあるデジタル製品を構築することに注力しています。組織がより速く、賢く、不要な複雑さなしに、より高品質なソフトウェアを届けられるよう支援します。"
 
-#: lib/kanban_web/live/board_live/task_actions.ex:217
+#: lib/kanban_web/live/board_live/task_actions.ex:259
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:213
 #, elixir-autogen, elixir-format
 msgid "Task not found"
@@ -4327,7 +4327,7 @@ msgstr "アクティブなゴール"
 msgid "Agents"
 msgstr "エージェント"
 
-#: lib/kanban_web/components/goal_card.ex:153
+#: lib/kanban_web/components/goal_card.ex:156
 #, elixir-autogen, elixir-format
 msgid "GOAL"
 msgstr "ゴール"
@@ -4401,7 +4401,7 @@ msgstr "Stride ホーム"
 msgid "Workspace"
 msgstr "ワークスペース"
 
-#: lib/kanban_web/components/goal_card.ex:196
+#: lib/kanban_web/components/goal_card.ex:199
 #, elixir-autogen, elixir-format
 msgid "children complete"
 msgstr "子要素が完了"
@@ -4559,33 +4559,33 @@ msgstr "レビュアーをスキップ — 作者自身がセルフレビュー"
 msgid "actual: %{size}"
 msgstr "実際: %{size}"
 
-#: lib/kanban_web/components/task_card.ex:480
+#: lib/kanban_web/components/task_card.ex:481
 #, elixir-autogen, elixir-format
 msgid "decision matrix"
 msgstr "決定マトリクス"
 
-#: lib/kanban_web/components/task_card.ex:485
+#: lib/kanban_web/components/task_card.ex:486
 #, elixir-autogen, elixir-format
 msgid "no subagent"
 msgstr "サブエージェントなし"
 
-#: lib/kanban_web/components/task_card.ex:483
+#: lib/kanban_web/components/task_card.ex:484
 #, elixir-autogen, elixir-format
 msgid "self-explored"
 msgstr "セルフ探索"
 
 #: lib/kanban_web/components/task_card.ex:247
-#: lib/kanban_web/components/task_card.ex:484
+#: lib/kanban_web/components/task_card.ex:485
 #, elixir-autogen, elixir-format
 msgid "self-reviewed"
 msgstr "セルフレビュー"
 
-#: lib/kanban_web/components/task_card.ex:481
+#: lib/kanban_web/components/task_card.ex:482
 #, elixir-autogen, elixir-format
 msgid "small task"
 msgstr "小さなタスク"
 
-#: lib/kanban_web/components/task_card.ex:482
+#: lib/kanban_web/components/task_card.ex:483
 #, elixir-autogen, elixir-format
 msgid "trivial change"
 msgstr "些細な変更"
@@ -5375,6 +5375,7 @@ msgid "unknown"
 msgstr "不明"
 
 #: lib/kanban_web/live/archive_live/index.html.heex:192
+#: lib/kanban_web/task_tokens.ex:95
 #, elixir-autogen, elixir-format
 msgid "Archived"
 msgstr "アーカイブ済み"
@@ -5910,22 +5911,22 @@ msgstr "ページが見つかりません"
 msgid "Sorry, we couldn't find the page you're looking for. The resource might have been moved, deleted, or you may not have permission to access it."
 msgstr "申し訳ありません。お探しのページが見つかりませんでした。リソースが移動または削除されたか、アクセス権がない可能性があります。"
 
-#: lib/kanban_web/task_tokens.ex:194
+#: lib/kanban_web/task_tokens.ex:198
 #, elixir-autogen, elixir-format
 msgid "After Doing"
 msgstr "実行後"
 
-#: lib/kanban_web/task_tokens.ex:196
+#: lib/kanban_web/task_tokens.ex:200
 #, elixir-autogen, elixir-format
 msgid "After Review"
 msgstr "レビュー後"
 
-#: lib/kanban_web/task_tokens.ex:193
+#: lib/kanban_web/task_tokens.ex:197
 #, elixir-autogen, elixir-format
 msgid "Before Doing"
 msgstr "実行前"
 
-#: lib/kanban_web/task_tokens.ex:195
+#: lib/kanban_web/task_tokens.ex:199
 #, elixir-autogen, elixir-format
 msgid "Before Review"
 msgstr "レビュー前"
@@ -6457,8 +6458,8 @@ msgstr "人間が記録されたタスクに目を通し、スコープを明確
 msgid "Ideation fills the Backlog, but agents never touch it directly. A human curates first: review what was captured, decide which tasks need a human sign-off, and promote the ready work into the Ready column."
 msgstr "アイデア出しは Backlog を埋めますが、エージェントが直接それに触れることはありません。まず人間が整理します。記録された内容をレビューし、どのタスクに人間の承認が必要かを決め、準備の整った作業を Ready 列へと昇格させます。"
 
-#: lib/kanban_web/components/task_card.ex:423
 #: lib/kanban_web/components/task_card.ex:424
+#: lib/kanban_web/components/task_card.ex:425
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:130
 #, elixir-autogen, elixir-format
 msgid "Move to Ready"
@@ -7882,7 +7883,7 @@ msgstr "エージェントデータを現在更新できませんでした。最
 
 #: lib/kanban_web/live/board_live/authorization.ex:84
 #: lib/kanban_web/live/board_live/bulk_selection.ex:275
-#: lib/kanban_web/live/task_live/form_component.ex:131
+#: lib/kanban_web/live/task_live/form_component.ex:136
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to modify tasks on this board"
 msgstr "このボードでタスクを変更する権限がありません"
@@ -9566,32 +9567,32 @@ msgstr "優先度：低"
 msgid "Medium priority"
 msgstr "優先度：中"
 
-#: lib/kanban_web/task_tokens.ex:169
+#: lib/kanban_web/task_tokens.ex:173
 #, elixir-autogen, elixir-format
 msgctxt "agent action"
 msgid "claimed"
 msgstr "クレーム"
 
 #: lib/kanban_web/components/review_detail_header.ex:84
-#: lib/kanban_web/task_tokens.ex:170
+#: lib/kanban_web/task_tokens.ex:174
 #, elixir-autogen, elixir-format
 msgctxt "agent action"
 msgid "completed"
 msgstr "完了"
 
-#: lib/kanban_web/task_tokens.ex:172
+#: lib/kanban_web/task_tokens.ex:176
 #, elixir-autogen, elixir-format
 msgctxt "agent action"
 msgid "created"
 msgstr "作成"
 
-#: lib/kanban_web/task_tokens.ex:171
+#: lib/kanban_web/task_tokens.ex:175
 #, elixir-autogen, elixir-format
 msgctxt "agent action"
 msgid "reviewed"
 msgstr "レビュー"
 
-#: lib/kanban_web/task_tokens.ex:173
+#: lib/kanban_web/task_tokens.ex:177
 #, elixir-autogen, elixir-format
 msgctxt "agent action"
 msgid "unclaimed"
@@ -10028,12 +10029,12 @@ msgstr "+%{count}"
 msgid "Security error: Invalid label"
 msgstr "セキュリティエラー: 無効なラベル"
 
-#: lib/kanban_web/live/task_live/form/label_selection.ex:179
+#: lib/kanban_web/live/task_live/form/label_selection.ex:199
 #, elixir-autogen, elixir-format
 msgid "Task saved, but a label deleted in the meantime was not applied"
 msgstr "タスクは保存されましたが、その間に削除されたラベルは適用されませんでした"
 
-#: lib/kanban_web/live/task_live/form/label_selection.ex:182
+#: lib/kanban_web/live/task_live/form/label_selection.ex:202
 #, elixir-autogen, elixir-format
 msgid "Task saved, but its labels could not be updated"
 msgstr "タスクは保存されましたが、ラベルを更新できませんでした"

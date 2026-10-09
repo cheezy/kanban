@@ -428,6 +428,57 @@ defmodule Kanban.ColumnsTest do
     end
   end
 
+  describe ":columns_changed broadcast" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+      %{user: user, board: board}
+    end
+
+    test "create, update, reorder and delete each broadcast the board id", %{
+      user: user,
+      board: board
+    } do
+      board_id = board.id
+
+      {:ok, first} = Columns.create_column(board, %{name: "First"}, user)
+      assert_receive {Columns, :columns_changed, ^board_id}
+
+      {:ok, second} = Columns.create_column(board, %{name: "Second"}, user)
+      assert_receive {Columns, :columns_changed, ^board_id}
+
+      {:ok, _} = Columns.update_column(first, %{name: "Renamed"}, user)
+      assert_receive {Columns, :columns_changed, ^board_id}
+
+      :ok = Columns.reorder_columns(board, [second.id, first.id])
+      assert_receive {Columns, :columns_changed, ^board_id}
+
+      {:ok, _} = Columns.delete_column(second)
+      assert_receive {Columns, :columns_changed, ^board_id}
+    end
+
+    test "a refused or invalid write broadcasts nothing", %{user: user, board: board} do
+      column = column_fixture(board)
+      flush_columns_changed()
+      outsider = user_fixture()
+
+      assert {:error, :unauthorized} = Columns.create_column(board, %{name: "X"}, outsider)
+      assert {:error, :unauthorized} = Columns.update_column(column, %{name: "Y"}, outsider)
+      assert {:error, %Ecto.Changeset{}} = Columns.update_column(column, %{name: nil}, user)
+
+      refute_receive {Columns, :columns_changed, _}, 50
+    end
+
+    defp flush_columns_changed do
+      receive do
+        {Columns, :columns_changed, _} -> flush_columns_changed()
+      after
+        0 -> :ok
+      end
+    end
+  end
+
   describe "reorder_columns/2" do
     test "reorders columns based on list of IDs" do
       user = user_fixture()

@@ -382,8 +382,7 @@ defmodule KanbanWeb.ArchiveRow do
 
   defp note_visible?(_reason, _note), do: false
 
-  defp normalized_reason(%{archive_reason: nil}), do: :completed
-  defp normalized_reason(%{archive_reason: reason}), do: reason
+  defp normalized_reason(task), do: Kanban.Archives.effective_reason(task)
 
   defp loaded(map, key) do
     case Map.get(map, key) do

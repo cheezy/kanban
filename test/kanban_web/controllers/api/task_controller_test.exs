@@ -9540,6 +9540,54 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert labels_of(conn, titles["Batch child B1"]) == [@bug_json, @docs_json]
     end
 
+    # An open board reloads on every task broadcast. The labels' own
+    # :task_updated has to arrive before :task_created, or the board renders
+    # the new card once without its label chips.
+    test "POST writes the labels before the create is broadcast", %{
+      conn: conn,
+      board: board,
+      column: column
+    } do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      body =
+        post(conn, ~p"/api/tasks",
+          task: %{"title" => "Chips first", "column_id" => column.id, "labels" => ["Bug"]}
+        )
+        |> json_response(201)
+
+      assert task_events(body["data"]["id"]) == [:task_updated, :task_created]
+    end
+
+    test "POST /api/tasks/batch writes every label before the creates are broadcast", %{
+      conn: conn,
+      board: board
+    } do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+      goals = [
+        %{
+          "title" => "Chips goal",
+          "labels" => ["Bug"],
+          "tasks" => [%{"title" => "Chips child", "type" => "work", "labels" => ["docs"]}]
+        }
+      ]
+
+      [created] = json_response(post(conn, ~p"/api/tasks/batch", goals: goals), 201)["goals"]
+      [child] = created["child_tasks"]
+
+      assert task_events(created["goal"]["id"]) == [:task_updated, :task_created]
+      assert task_events(child["id"]) == [:task_updated, :task_created]
+    end
+
+    defp task_events(task_id) do
+      {:messages, messages} = Process.info(self(), :messages)
+
+      for {Kanban.Tasks, event, %{id: ^task_id}} <- messages,
+          event in [:task_created, :task_updated],
+          do: event
+    end
+
     test "a bad label anywhere in a batch is a 422 for that goal and creates no goal", %{
       conn: conn,
       board: board

@@ -115,19 +115,7 @@ defmodule KanbanWeb.API.BatchGoalCreation do
   end
 
   defp create_single_goal_in_batch(goal_params, index, ctx, acc) do
-    {safe_goal_params, rejected_goal_fields} =
-      TaskParamFilter.filter_forbidden_create_fields(goal_params)
-
-    child_tasks_raw = Map.get(goal_params, "tasks", [])
-
-    {safe_child_tasks, rejected_child_fields} =
-      TaskParamFilter.filter_child_tasks(child_tasks_raw)
-
-    TaskCreation.log_create_forbidden_fields(
-      ctx.conn,
-      rejected_goal_fields,
-      rejected_child_fields
-    )
+    {safe_goal_params, safe_child_tasks} = filter_goal_params(goal_params, ctx.conn)
 
     task_params_with_creator =
       TaskCreation.build_task_params_with_creator(
@@ -137,7 +125,12 @@ defmodule KanbanWeb.API.BatchGoalCreation do
         ctx.agent_name
       )
 
-    case Tasks.api_create_goal_with_tasks(ctx.column, task_params_with_creator, safe_child_tasks) do
+    case Tasks.api_create_goal_with_tasks(
+           ctx.column,
+           task_params_with_creator,
+           safe_child_tasks,
+           before_broadcast: label_writer(ctx)
+         ) do
       {:ok, %{goal: goal, child_tasks: created_child_tasks}} ->
         handle_successful_goal_creation(goal, created_child_tasks, index, ctx, acc)
 
@@ -146,17 +139,30 @@ defmodule KanbanWeb.API.BatchGoalCreation do
     end
   end
 
-  defp apply_label_plan(%{label_plan: nil}, _goal, _children), do: :ok
+  # Strips the client-supplied fields a create may not set from the goal and
+  # its children, logging any that were sent.
+  defp filter_goal_params(goal_params, conn) do
+    {safe_goal_params, rejected_goal_fields} =
+      TaskParamFilter.filter_forbidden_create_fields(goal_params)
 
-  defp apply_label_plan(%{label_plan: plan, conn: conn}, goal, children) do
+    {safe_child_tasks, rejected_child_fields} =
+      goal_params
+      |> Map.get("tasks", [])
+      |> TaskParamFilter.filter_child_tasks()
+
+    TaskCreation.log_create_forbidden_fields(conn, rejected_goal_fields, rejected_child_fields)
+    {safe_goal_params, safe_child_tasks}
+  end
+
+  # The labels are written before the create is broadcast, so an open board
+  # never shows the new cards without their label chips.
+  defp label_writer(%{conn: conn, label_plan: plan}) do
     scope = TaskLabels.scope(conn)
-    TaskLabels.apply_plan(scope, goal, plan.task)
-    TaskLabels.apply_children(scope, children, plan.children)
+    &TaskLabels.apply_goal_plan(scope, &1, &2, plan)
   end
 
   defp handle_successful_goal_creation(goal, created_child_tasks, index, ctx, acc) do
     %{conn: conn} = ctx
-    apply_label_plan(ctx, goal, created_child_tasks)
     goal = Tasks.get_task_for_view!(goal.id)
 
     TaskController.emit_telemetry(conn, :goal_created, %{

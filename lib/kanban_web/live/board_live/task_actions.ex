@@ -159,12 +159,54 @@ defmodule KanbanWeb.BoardLive.TaskActions do
 
   defp move_backlog_task_to_ready(socket, task, ready) do
     end_of_ready = length(Tasks.list_tasks(ready))
+    next_arrow = next_arrow_id(socket, task)
 
     {:noreply, socket} = handle_task_move(socket, task, ready.id, end_of_ready)
     # A click (unlike a drop) has no client-side DOM move, so re-insert the
     # column stream items (as reload_board_data/1 does) to render the task in
     # its new column.
-    {:noreply, stream(socket, :columns, Columns.list_columns(socket.assigns.board))}
+    {:noreply,
+     socket
+     |> stream(:columns, Columns.list_columns(socket.assigns.board))
+     |> push_focus_after_move(task, ready.id, next_arrow)}
+  end
+
+  # The arrow leaves with its card, so a keyboard user would be dropped on
+  # the page body. Name where focus should go instead: the next Backlog card's
+  # arrow, else the previous one's, else the moved card. The client
+  # (assets/js/focus_after_move.js) only acts on it after keyboard input.
+  defp next_arrow_id(socket, task) do
+    {before, rest} =
+      socket
+      |> arrow_cards(task.column_id)
+      |> Enum.split_while(&(&1.id != task.id))
+
+    case {Enum.drop(rest, 1), Enum.reverse(before)} do
+      {[next | _], _} -> "move-to-ready-#{next.id}"
+      {[], [previous | _]} -> "move-to-ready-#{previous.id}"
+      _none -> nil
+    end
+  end
+
+  # The visible cards in a column that carry a Move to Ready arrow.
+  defp arrow_cards(socket, column_id) do
+    socket.assigns
+    |> Map.get(:visible_tasks_by_column, %{})
+    |> Map.get(column_id, [])
+    |> Enum.filter(&(&1.type in [:work, :defect]))
+  end
+
+  defp push_focus_after_move(socket, task, ready_id, next_arrow) do
+    moved? =
+      socket.assigns
+      |> Map.get(:tasks_by_column, %{})
+      |> Map.get(ready_id, [])
+      |> Enum.any?(&(&1.id == task.id))
+
+    if moved?,
+      do:
+        push_event(socket, "move_to_ready:focus", %{to: next_arrow, fallback: "task-#{task.id}"}),
+      else: socket
   end
 
   def do_promote_goal(socket, goal) do

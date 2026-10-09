@@ -3,6 +3,76 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [Unreleased]
+        </h2>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Fixed
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>Column changes reach open boards.</strong> Adding,
+              renaming, reordering or deleting a column now updates every open
+              copy of the board without a reload.
+            </li>
+            <li>
+              <strong>Removing a member unassigns their tasks.</strong> When a
+              member is removed from a board, they are unassigned from its
+              open tasks, which then show under <strong>Unassigned</strong>
+              instead of naming someone who can no longer see the board.
+              Archived tasks keep their assignee.
+            </li>
+            <li>
+              <strong>The Archive page no longer calls every archived task
+              Completed.</strong> A task archived without a reason counts as
+              completed only if it was finished; otherwise it shows a neutral
+              <strong>Archived</strong> label. The Completed filter and the
+              counts follow the same rule, and the CSV export leaves the
+              reason blank for these tasks.
+            </li>
+            <li>
+              <strong>The GOAL badge is easier to read.</strong> The badge on
+              goal cards and the <strong>Promote children to Ready</strong>
+              button now meet the contrast minimum in light and dark mode.
+            </li>
+            <li>
+              <strong>Keyboard focus stays on the board after Move to
+              Ready.</strong> Using a card's Move to Ready arrow from the
+              keyboard now moves focus to the next Backlog card's arrow, or
+              the previous one's, or to the moved card when no arrow is left,
+              instead of dropping it to the top of the page. Clicking the
+              arrow with a mouse leaves focus alone.
+            </li>
+            <li>
+              <strong>Tasks created through the API appear with their
+              labels.</strong> An open board used to show a task created
+              through the API without its label chips for a moment. The labels
+              are now written before the board is told about the new task.
+            </li>
+            <li>
+              <strong>An open task form keeps up with label changes.</strong>
+              A label deleted while the task form is open disappears from the
+              picker and is no longer selected, so saving does not report an
+              error. Renamed and new labels show up too, and anything already
+              typed in the form is kept.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.20.0] - 2026-10-09
         </h2>
 

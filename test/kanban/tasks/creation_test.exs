@@ -470,4 +470,75 @@ defmodule Kanban.Tasks.CreationTest do
       end
     end
   end
+
+  describe ":before_broadcast" do
+    setup %{column: column} do
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{column.board_id}")
+      :ok
+    end
+
+    test "api_create_task/3 runs it with the saved task before :task_created",
+         %{column: column} do
+      test_pid = self()
+      callback = fn task -> send(test_pid, {:before_broadcast, task.id}) end
+
+      {:ok, task} =
+        Tasks.api_create_task(column, %{"title" => "Hooked", "type" => "work"},
+          before_broadcast: callback
+        )
+
+      assert next_message() == {:before_broadcast, task.id}
+      assert {Kanban.Tasks, :task_created, %Task{id: id}} = next_message()
+      assert id == task.id
+    end
+
+    test "api_create_goal_with_tasks/4 runs it with the goal and children before any broadcast",
+         %{column: column} do
+      test_pid = self()
+
+      callback = fn goal, children ->
+        send(test_pid, {:before_broadcast, goal.id, Enum.map(children, & &1.title)})
+      end
+
+      {:ok, %{goal: goal}} =
+        Tasks.api_create_goal_with_tasks(
+          column,
+          %{"title" => "Hooked goal"},
+          [%{"title" => "Hooked child", "type" => "work"}],
+          before_broadcast: callback
+        )
+
+      assert next_message() == {:before_broadcast, goal.id, ["Hooked child"]}
+      assert {Kanban.Tasks, :task_created, %Task{id: id}} = next_message()
+      assert id == goal.id
+    end
+
+    test "without it the task is created and broadcast as before", %{column: column} do
+      {:ok, task} = Tasks.api_create_task(column, %{"title" => "Plain", "type" => "work"})
+      assert {Kanban.Tasks, :task_created, %Task{id: id}} = next_message()
+      assert id == task.id
+    end
+
+    test "a failed create never runs it", %{column: column} do
+      test_pid = self()
+
+      assert {:error, %Ecto.Changeset{}} =
+               Tasks.api_create_task(column, %{"title" => @over},
+                 before_broadcast: fn _ -> send(test_pid, :ran) end
+               )
+
+      refute_received :ran
+    end
+  end
+
+  # Only the hook's message and board broadcasts; fixtures also mail the test.
+  defp next_message do
+    receive do
+      {:before_broadcast, _, _} = message -> message
+      {:before_broadcast, _} = message -> message
+      {Kanban.Tasks, _event, _task} = message -> message
+    after
+      500 -> :no_message
+    end
+  end
 end

@@ -1,6 +1,11 @@
 defmodule Kanban.Columns do
   @moduledoc """
   The Columns context.
+
+  A successful create, update, delete or reorder broadcasts
+  `{Kanban.Columns, :columns_changed, board_id}` on the board's
+  `"board:<id>"` topic, so every open copy of the board re-renders its
+  columns. The message carries only the board id.
   """
 
   import Ecto.Query, warn: false
@@ -144,6 +149,7 @@ defmodule Kanban.Columns do
       %Column{board_id: board.id}
       |> Column.changeset(attrs)
       |> Repo.insert()
+      |> broadcast_columns_changed(board.id)
     else
       {:error, :unauthorized}
     end
@@ -174,6 +180,7 @@ defmodule Kanban.Columns do
       column
       |> Column.changeset(attrs)
       |> Repo.update()
+      |> broadcast_columns_changed(column.board_id)
     else
       {:error, :unauthorized}
     end
@@ -198,7 +205,7 @@ defmodule Kanban.Columns do
     case result do
       {:ok, deleted_column} ->
         reorder_after_deletion(deleted_column)
-        {:ok, deleted_column}
+        broadcast_columns_changed({:ok, deleted_column}, deleted_column.board_id)
 
       error ->
         error
@@ -236,8 +243,21 @@ defmodule Kanban.Columns do
       end)
     end)
 
+    broadcast_columns_changed({:ok, board}, board.id)
     :ok
   end
+
+  defp broadcast_columns_changed({:ok, _} = result, board_id) do
+    Phoenix.PubSub.broadcast(
+      Kanban.PubSub,
+      "board:#{board_id}",
+      {__MODULE__, :columns_changed, board_id}
+    )
+
+    result
+  end
+
+  defp broadcast_columns_changed(error, _board_id), do: error
 
   # Private functions
 
