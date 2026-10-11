@@ -175,6 +175,40 @@ call, each `emit_telemetry(conn, action, metadata)` API call and each
 
 Pass API and audit action names as literal atoms, so the scan can see them.
 
+## Metrics retention
+
+`KanbanWeb.Telemetry.MetricsStorage` stores persisted metrics in the
+`metrics_events` table. Since W2345 they are not kept forever:
+`Kanban.Metrics.RetentionWorker` (`lib/kanban/metrics/retention_worker.ex`), a
+daily Oban cron job at 03:23 UTC on the `:maintenance` queue, removes rows
+whose `recorded_at` is older than the retention period. A row recorded exactly
+at the cutoff is kept.
+
+```elixir
+config :kanban, Kanban.Metrics.RetentionWorker, retention_days: 90, batch_size: 1_000
+```
+
+- `retention_days` defaults to 90 in `config/config.exs` and is read each time
+  the job runs. A missing value, or one that is not a positive whole number,
+  removes nothing and logs a `metrics retention skipped` warning.
+- Rows are removed `batch_size` at a time, one `DELETE` per batch, so a large
+  backlog never holds one long lock. An invalid `batch_size` falls back to
+  1,000.
+- The job never touches `audit_events`, which has its own retention rules and
+  database roles (see [Audit log hardening](audit-log-hardening.md)).
+- `Kanban.Metrics.UserActivity`, behind the admin users page, reads
+  `metrics_events`, so its counts cover the retention period only.
+
+When it finishes, the job emits `[:kanban, :metrics, :retention_completed]`:
+
+| Field | Value |
+|---|---|
+| `count` (measurement) | Rows removed |
+| `batches` (measurement) | `DELETE` batches run; an empty table runs one |
+| `retention_days` (metadata) | The retention period used |
+
+A run skipped for an invalid setting emits nothing.
+
 ## Testing events
 
 `Kanban.TelemetryHelpers` (`test/support/telemetry_helpers.ex`) attaches a

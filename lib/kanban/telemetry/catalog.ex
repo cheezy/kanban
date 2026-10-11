@@ -320,6 +320,16 @@ defmodule Kanban.Telemetry.Catalog do
       metadata: [:task_id],
       description: "A reviewer closed the diff panel in the review queue.",
       legacy: true
+    },
+    %{
+      name: [:kanban, :metrics, :retention_completed],
+      kind: :event,
+      domain: :metrics,
+      measurements: [:count, :batches],
+      metadata: [:retention_days],
+      description:
+        "The daily metrics retention job finished. count is the number of metrics_events rows removed, batches the number of DELETE batches run.",
+      legacy: false
     }
   ]
 

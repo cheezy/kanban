@@ -102,26 +102,36 @@ config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 # rate, not throughput. `:notifications` sends one email per job, so its
 # depth of 10 bounds concurrent SMTP sessions. `:webhooks` makes one HTTP
 # POST per job, so its depth of 10 bounds concurrent outbound connections.
+# `:maintenance` runs housekeeping jobs one at a time, so a long cleanup
+# never competes with itself for table locks.
 # The Cron plugin runs the claim-expiry sweeper every five minutes (W2204),
-# the weekly digest fan-out on Mondays at 13:00 UTC (W2207) and the
-# delivery-target status sweeper hourly at minute 17 (W2291).
+# the weekly digest fan-out on Mondays at 13:00 UTC (W2207), the
+# delivery-target status sweeper hourly at minute 17 (W2291) and the
+# metrics retention cleanup daily at 03:23 UTC (W2345).
 config :kanban, Oban,
   repo: Kanban.Repo,
   engine: Oban.Engines.Basic,
-  queues: [after_goal_grace: 5, notifications: 10, webhooks: 10],
+  queues: [after_goal_grace: 5, notifications: 10, webhooks: 10, maintenance: 1],
   plugins: [
     {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
     {Oban.Plugins.Cron,
      crontab: [
        {"*/5 * * * *", Kanban.Notifications.ClaimExpiryWorker},
        {"0 13 * * 1", Kanban.Notifications.DigestFanoutWorker},
-       {"17 * * * *", Kanban.Notifications.TargetStatusWorker}
+       {"17 * * * *", Kanban.Notifications.TargetStatusWorker},
+       {"23 3 * * *", Kanban.Metrics.RetentionWorker}
      ]}
   ]
 
 # How far back the claim-expiry sweeper looks for expired claims, so the
 # first run after a deploy does not notify about historical claims.
 config :kanban, Kanban.Notifications.ClaimExpiryWorker, lookback_seconds: 2 * 60 * 60
+
+# How many days of stored telemetry metrics (the metrics_events table) to keep.
+# The daily Kanban.Metrics.RetentionWorker removes older rows, batch_size rows
+# per DELETE. A missing value, or one that is not a positive whole number of
+# days, removes nothing and logs a warning. Never applies to audit_events.
+config :kanban, Kanban.Metrics.RetentionWorker, retention_days: 90, batch_size: 1_000
 
 # Configurable grace window (in milliseconds) between detecting the
 # last child's completion and assuming the agent will not report

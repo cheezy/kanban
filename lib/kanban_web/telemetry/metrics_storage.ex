@@ -1,6 +1,8 @@
 defmodule KanbanWeb.Telemetry.MetricsStorage do
   @moduledoc """
-  Stores telemetry metrics history in PostgreSQL for unlimited persistence.
+  Stores telemetry metrics history in PostgreSQL, in the `metrics_events`
+  table. Rows are kept for the configured retention period (90 days by
+  default); `Kanban.Metrics.RetentionWorker` removes older ones daily.
 
   Event metadata is stored as JSON after sanitising: keys that carry a
   credential (session, tokens, CSRF, passwords, secrets, cookies,

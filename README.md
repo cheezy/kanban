@@ -62,6 +62,33 @@ openssl rand -base64 32
 - **Development and test need nothing.** `config/dev.exs` and
   `config/test.exs` use fixed, public keys.
 
+### Metrics retention (`retention_days`)
+
+Stored telemetry metrics (the `metrics_events` table) carry user ids, board
+ids and request paths. A daily job, `Kanban.Metrics.RetentionWorker`, removes
+rows older than the retention period at 03:23 UTC. The period is 90 days by
+default and is set in `config/config.exs`:
+
+```elixir
+config :kanban, Kanban.Metrics.RetentionWorker, retention_days: 90, batch_size: 1_000
+```
+
+- **Change `retention_days` to keep metrics longer or shorter.** It must be a
+  positive whole number of days. A missing or invalid value removes nothing
+  and logs a `metrics retention skipped` warning.
+- **`batch_size` is the number of rows removed per `DELETE`**, so a large
+  backlog never holds one long lock on the table. The first run after an
+  upgrade can take several batches.
+- **The admin users page counts activity within the retention period.** Its
+  per-user counts are read from `metrics_events`, so older activity drops out.
+- **Audit events are not affected.** The `audit_events` table has its own
+  retention rules; see [Audit log hardening](docs/audit-log-hardening.md).
+- **The schedule starts on the next server start.** The job is an Oban cron
+  entry, and a running server does not pick up new cron entries.
+
+See [Telemetry Events](docs/telemetry.md#metrics-retention) for the event the
+job emits.
+
 ---
 
 ## What is Stride?
