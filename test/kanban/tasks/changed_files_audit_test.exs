@@ -1,6 +1,8 @@
 defmodule Kanban.Tasks.ChangedFilesAuditTest do
   use ExUnit.Case, async: true
 
+  import Kanban.TelemetryHelpers
+
   alias Kanban.Tasks.ChangedFilesAudit
   alias Kanban.Tasks.Task
 
@@ -37,16 +39,7 @@ defmodule Kanban.Tasks.ChangedFilesAuditTest do
 
   describe "audit_review_bound_task/2" do
     test "emits telemetry and returns the task unchanged when the diff is missing" do
-      test_pid = self()
-
-      :telemetry.attach(
-        "test-cfa-missing",
-        [:kanban, :task, :changed_files_missing],
-        fn _event, measurements, metadata, _config ->
-          send(test_pid, {:telemetry, measurements, metadata})
-        end,
-        nil
-      )
+      attach_telemetry([:kanban, :task, :changed_files_missing])
 
       task = %Task{
         id: 7,
@@ -57,41 +50,20 @@ defmodule Kanban.Tasks.ChangedFilesAuditTest do
 
       assert ChangedFilesAudit.audit_review_bound_task(task, 55) == task
 
-      assert_received {:telemetry, %{count: 1}, %{task_id: 7, identifier: "D999", board_id: 55}}
-
-      :telemetry.detach("test-cfa-missing")
+      assert_received {:telemetry_event, [:kanban, :task, :changed_files_missing], %{count: 1},
+                       %{task_id: 7, identifier: "D999", board_id: 55}}
     end
 
     test "does not emit telemetry for a no-op change (both empty)" do
-      test_pid = self()
-
-      :telemetry.attach(
-        "test-cfa-noop",
-        [:kanban, :task, :changed_files_missing],
-        fn _event, measurements, metadata, _config ->
-          send(test_pid, {:telemetry, measurements, metadata})
-        end,
-        nil
-      )
+      attach_telemetry([:kanban, :task, :changed_files_missing])
 
       task = %Task{id: 8, identifier: "W888", actual_files_changed: nil, changed_files: []}
       assert ChangedFilesAudit.audit_review_bound_task(task, 55) == task
-      refute_received {:telemetry, _measurements, _metadata}
-
-      :telemetry.detach("test-cfa-noop")
+      refute_received {:telemetry_event, _event, _measurements, _metadata}
     end
 
     test "does not emit telemetry when a diff is present" do
-      test_pid = self()
-
-      :telemetry.attach(
-        "test-cfa-present",
-        [:kanban, :task, :changed_files_missing],
-        fn _event, measurements, metadata, _config ->
-          send(test_pid, {:telemetry, measurements, metadata})
-        end,
-        nil
-      )
+      attach_telemetry([:kanban, :task, :changed_files_missing])
 
       task = %Task{
         id: 9,
@@ -101,9 +73,7 @@ defmodule Kanban.Tasks.ChangedFilesAuditTest do
       }
 
       assert ChangedFilesAudit.audit_review_bound_task(task, 55) == task
-      refute_received {:telemetry, _measurements, _metadata}
-
-      :telemetry.detach("test-cfa-present")
+      refute_received {:telemetry_event, _event, _measurements, _metadata}
     end
   end
 end

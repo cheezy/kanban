@@ -131,3 +131,11 @@ config :kanban, Kanban.RateLimit, enabled: false
 # Key for Kanban.Encryption (TOTP secrets at rest). A fixed test-only key;
 # production reads ENCRYPTION_KEY in runtime.exs.
 config :kanban, Kanban.Encryption, key: "test-only-encryption-key-32byte!"
+
+# Telemetry strict mode (W2336). Kanban.Telemetry.emit/3 and span/3 raise on an
+# event or metadata key that Kanban.Telemetry.Catalog does not declare, so a
+# telemetry mistake fails the test that made it. This is set ONLY here: in dev
+# and prod an undeclared event is logged and skipped and an undeclared key is
+# dropped, so telemetry can never take down a request. Forbidden keys (personal
+# data, credentials) are dropped in every environment, strict or not.
+config :kanban, Kanban.Telemetry, strict: true
