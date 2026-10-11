@@ -6,12 +6,16 @@ defmodule Kanban.TelemetryTest do
 
   alias Kanban.Telemetry
   alias Kanban.Telemetry.Catalog
+  alias Kanban.TelemetrySourceScan
 
   @emitted [:kanban, :telemetry_test, :emitted]
   @leaked [:kanban, :telemetry_test, :leaked]
   @work [:kanban, :telemetry_test, :work]
   @dropped [:kanban, :telemetry, :metadata_dropped]
   @real [:kanban, :task, :changed_files_missing]
+
+  # Kanban.AuditLog never sends these to telemetry; the stored row keeps them.
+  @audit_omitted_keys [:email, :ip, :filters]
 
   # Test-only entries, passed with the :catalog option so the real catalog
   # carries no fake events. @leaked deliberately declares forbidden keys.
@@ -390,6 +394,22 @@ defmodule Kanban.TelemetryTest do
       end
     end
 
+    test "every emitted event is in the catalog" do
+      sites = Enum.reject(TelemetrySourceScan.scan("lib").sites, &(&1.name == :dynamic))
+
+      # Guards against a scan that silently finds nothing.
+      assert length(sites) >= 70
+
+      for site <- sites do
+        where = "#{site.file}:#{site.line}"
+        assert {:ok, entry} = Catalog.fetch(site.name), "#{where} emits an uncatalogued event"
+        assert entry.kind == if(site.kind == :span, do: :span, else: :event), where
+
+        undeclared = site_keys(site) -- entry.metadata
+        assert undeclared == [], "#{where} sends undeclared keys #{inspect(undeclared)}"
+      end
+    end
+
     test "fetch/1 finds an entry by name and returns :error otherwise" do
       assert {:ok, %{name: @real}} = Catalog.fetch(@real)
       assert :error = Catalog.fetch([:kanban, :nowhere, :happened])
@@ -454,6 +474,10 @@ defmodule Kanban.TelemetryTest do
       assert_receive {:telemetry_event, @emitted, _measurements, %{task_id: 43}}
     end
   end
+
+  defp site_keys(%{keys: :unknown}), do: []
+  defp site_keys(%{kind: :audit, keys: keys}), do: keys -- @audit_omitted_keys
+  defp site_keys(%{keys: keys}), do: keys
 
   defp stop_with_email do
     {:done, %{result_status: :ok, email: "a@example.com"}}

@@ -35,7 +35,12 @@ defmodule KanbanWeb.AuditLogWiringTest do
 
     post(conn, ~p"/users/log-in", %{"user" => %{"email" => email, "password" => "wrong"}})
 
-    assert_receive {:audit, %{email: ^email}}
+    # Telemetry never carries the email or IP; the stored audit row does.
+    assert_receive {:audit, metadata}
+    refute Map.has_key?(metadata, :email)
+    refute Map.has_key?(metadata, :ip)
+    assert [row] = AuditLog.list_events(action: :login_failed, actor_email: email)
+    assert row.metadata["email"] == email
   end
 
   test "creating an API token emits :api_token_created" do

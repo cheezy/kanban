@@ -39,7 +39,10 @@ defmodule KanbanWeb.API.TaskTransitions do
   def proceed_with_unclaim(conn, task, user, reason) do
     case Tasks.unclaim_task(task, user, reason) do
       {:ok, task} ->
-        TaskActions.emit_telemetry(conn, :task_unclaimed, %{task_id: task.id, reason: reason})
+        # The free-text reason goes to the log line and the unclaim
+        # notification only; an agent can write anything there, so telemetry
+        # never carries it.
+        TaskActions.emit_telemetry(conn, :task_unclaimed, %{task_id: task.id})
         render(conn, :show, task: task)
 
       {:error, :not_authorized} ->
@@ -92,15 +95,23 @@ defmodule KanbanWeb.API.TaskTransitions do
   end
 
   defp render_reviewed_task(conn, task, opts \\ []) do
-    event_name =
-      if task.status == :completed, do: :task_marked_done, else: :task_returned_to_doing
+    emit_reviewed_telemetry(conn, task)
+    render(conn, :show, [{:task, task} | opts])
+  end
 
-    TaskActions.emit_telemetry(conn, event_name, %{
+  # Literal event names, so the catalog test can find every API action.
+  defp emit_reviewed_telemetry(conn, %{status: :completed} = task) do
+    TaskActions.emit_telemetry(conn, :task_marked_done, %{
       task_id: task.id,
       review_status: task.review_status
     })
+  end
 
-    render(conn, :show, [{:task, task} | opts])
+  defp emit_reviewed_telemetry(conn, task) do
+    TaskActions.emit_telemetry(conn, :task_returned_to_doing, %{
+      task_id: task.id,
+      review_status: task.review_status
+    })
   end
 
   @doc """

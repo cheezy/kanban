@@ -268,7 +268,7 @@ defmodule KanbanWeb.ReviewReportPanel do
   # --- Telemetry -----------------------------------------------------------
 
   defp emit_telemetry(:structured, task) do
-    :telemetry.execute(
+    Kanban.Telemetry.emit(
       [:kanban, :review, :structured_used],
       %{count: 1},
       telemetry_metadata(task)
@@ -276,7 +276,7 @@ defmodule KanbanWeb.ReviewReportPanel do
   end
 
   defp emit_telemetry(:fallback, task) do
-    :telemetry.execute(
+    Kanban.Telemetry.emit(
       [:kanban, :review, :fallback_used],
       %{count: 1},
       telemetry_metadata(task)

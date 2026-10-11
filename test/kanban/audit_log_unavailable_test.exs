@@ -35,7 +35,9 @@ defmodule Kanban.AuditLogUnavailableTest do
                  )
       end)
 
-    assert_receive {:audit, %{email: "unavailable@example.com"}}
+    # The event still fires, without the email, even though the row failed.
+    assert_receive {:audit, metadata}
+    refute Map.has_key?(metadata, :email)
     assert log =~ "security_audit_persist_failed"
     assert log =~ "DBConnection.OwnershipError"
     refute log =~ "hunter2"

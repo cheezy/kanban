@@ -4,6 +4,7 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Notifications.EmailWorker
   alias Kanban.Notifications.Notification
@@ -11,6 +12,7 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
   alias Kanban.Tasks
   alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskTelemetry
 
   defp setup_board(_ctx) do
     user = user_fixture()
@@ -1167,6 +1169,78 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       _claimed = claim_for(task, ctx.user, ctx.board)
 
       assert Notification |> where(event_type: :task_assigned) |> Repo.all() == []
+    end
+  end
+
+  describe "complete_task/4 — telemetry" do
+    setup :setup_board
+
+    test "completed event carries task_id in metadata", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => false})
+      claimed = claim_for(task, ctx.user, ctx.board)
+      attach_telemetry([:kanban, :task, :completed])
+
+      {:ok, _final, _hooks} =
+        AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert_receive {:telemetry_event, [:kanban, :task, :completed], measurements, metadata}
+      assert measurements == %{count: 1}
+      assert metadata == %{task_id: task.id, completed_by: ctx.user.id}
+    end
+
+    test "moved_to_review normalises time_spent_minutes", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+      attach_telemetry([:kanban, :task, :moved_to_review])
+      params = Map.put(valid_complete_params(), "time_spent_minutes", "45")
+
+      {:ok, _completed, _hooks} = AgentWorkflow.complete_task(claimed, ctx.user, params, "Claude")
+
+      assert_receive {:telemetry_event, [:kanban, :task, :moved_to_review], measurements,
+                      metadata}
+
+      assert measurements == %{count: 1, time_spent_minutes: 45}
+      assert metadata == %{task_id: task.id, completed_by_id: ctx.user.id}
+    end
+
+    test "moved_to_review omits missing time_spent_minutes" do
+      # complete_task/4 requires time_spent_minutes, so a missing value cannot
+      # reach this event through it; the emitter is exercised directly.
+      attach_telemetry([:kanban, :task, :moved_to_review])
+
+      :ok = TaskTelemetry.moved_to_review(%Task{id: 11, time_spent_minutes: nil}, 3)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :moved_to_review], measurements,
+                      %{task_id: 11, completed_by_id: 3}}
+
+      assert measurements == %{count: 1}
+    end
+
+    test "returned_to_doing carries task_id and the review status in metadata", ctx do
+      task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      {:ok, completed, _hooks} =
+        AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      reviewed =
+        completed
+        |> Repo.preload([:column])
+        |> set_review_status(:changes_requested, ctx.user)
+
+      attach_telemetry([:kanban, :task, :returned_to_doing])
+      {:ok, _back_in_doing} = AgentWorkflow.mark_reviewed(reviewed, ctx.user)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :returned_to_doing], measurements,
+                      metadata}
+
+      assert measurements == %{count: 1}
+
+      assert metadata == %{
+               task_id: task.id,
+               reviewed_by: ctx.user.id,
+               review_status: :changes_requested
+             }
     end
   end
 end

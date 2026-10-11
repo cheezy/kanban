@@ -2,6 +2,7 @@ defmodule KanbanWeb.UserAuthTest do
   use KanbanWeb.ConnCase, async: true
 
   import Kanban.AccountsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts
   alias Kanban.Accounts.Scope
@@ -21,6 +22,16 @@ defmodule KanbanWeb.UserAuthTest do
   end
 
   describe "log_in_user/3" do
+    test "emits user.login with the user id", %{conn: conn, user: user} do
+      attach_telemetry([:kanban, :user, :login])
+      user_id = user.id
+
+      UserAuth.log_in_user(conn, user)
+
+      assert_received {:telemetry_event, [:kanban, :user, :login], %{count: 1},
+                       %{user_id: ^user_id}}
+    end
+
     test "stores the user token in the session", %{conn: conn, user: user} do
       conn = UserAuth.log_in_user(conn, user)
       assert token = get_session(conn, :user_token)
@@ -249,6 +260,28 @@ defmodule KanbanWeb.UserAuthTest do
       assert %{value: new_signed_token, max_age: max_age} = conn.resp_cookies[@remember_me_cookie]
       assert new_signed_token != signed_token
       assert max_age == @remember_me_cookie_max_age
+    end
+
+    test "reissue does not emit login", %{conn: conn, user: user} do
+      attach_telemetry([:kanban, :user, :login])
+      logged_in_conn = conn |> fetch_cookies() |> UserAuth.log_in_user(user)
+      user_id = user.id
+
+      # A real sign-in counts once.
+      assert_received {:telemetry_event, [:kanban, :user, :login], %{count: 1},
+                       %{user_id: ^user_id}}
+
+      token = get_session(logged_in_conn, :user_token)
+      offset_user_token(token, -10, :day)
+
+      conn =
+        conn
+        |> put_session(:user_token, token)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      # The token was renewed, but renewing a session is not a login.
+      assert get_session(conn, :user_token) != token
+      refute_received {:telemetry_event, [:kanban, :user, :login], _measurements, _metadata}
     end
   end
 

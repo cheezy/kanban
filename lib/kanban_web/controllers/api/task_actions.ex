@@ -457,7 +457,7 @@ defmodule KanbanWeb.API.TaskActions do
   are distinguishable.
   """
   def emit_telemetry(conn, event_name, metadata) do
-    :telemetry.execute(
+    Kanban.Telemetry.emit(
       [:kanban, :api, event_name],
       %{count: 1},
       Map.merge(metadata, %{

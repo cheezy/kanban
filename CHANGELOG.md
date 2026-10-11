@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The GOAL badge is easier to read.** The badge on goal cards and the **Promote children to Ready** button now meet the contrast minimum in light and dark mode.
 - **Keyboard focus stays on the board after Move to Ready.** Using a card's Move to Ready arrow from the keyboard now moves focus to the next Backlog card's arrow, or the previous one's, or to the moved card when no arrow is left, instead of dropping it to the top of the page. Clicking the arrow with a mouse leaves focus alone.
 - **Tasks created through the API appear with their labels.** An open board used to show a task created through the API without its label chips for a moment. The labels are now written before the board is told about the new task.
+- **The sign-in count on the metrics dashboard counts real sign-ins only.** Staying signed in used to add a sign-in each time the session was quietly renewed, which inflated the count. Monitoring events also no longer carry email or IP addresses from security events, or the free-text reason an agent gives when it releases a task. The audit log itself still records the email and IP address.
 - **An open task form keeps up with label changes.** A label deleted while the task form is open disappears from the picker and is no longer selected, so saving does not report an error. Renamed and new labels show up too, and anything already typed in the form is kept.
 
 ## [2.20.0] - 2026-10-09

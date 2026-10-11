@@ -416,7 +416,7 @@ defmodule Kanban.Boards do
   def create_board(user, attrs \\ %{}) do
     case run_create_board_transaction(user, attrs) do
       {:ok, board} ->
-        :telemetry.execute([:kanban, :board, :creation], %{count: 1}, %{
+        Kanban.Telemetry.emit([:kanban, :board, :creation], %{count: 1}, %{
           board_id: board.id,
           user_id: user.id
         })
@@ -509,7 +509,7 @@ defmodule Kanban.Boards do
       Columns.create_column(board, column_attrs, user)
     end)
 
-    :telemetry.execute([:kanban, :board, :creation], %{count: 1}, %{
+    Kanban.Telemetry.emit([:kanban, :board, :creation], %{count: 1}, %{
       board_id: board.id,
       user_id: user.id
     })

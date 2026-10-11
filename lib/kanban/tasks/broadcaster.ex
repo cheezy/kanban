@@ -44,7 +44,7 @@ defmodule Kanban.Tasks.Broadcaster do
       broadcast_agent_event(task_with_column, event, board_id)
       emit_webhook(task_with_column, event, board_id, opts)
 
-      :telemetry.execute(
+      Kanban.Telemetry.emit(
         [:kanban, :pubsub, :broadcast],
         %{count: 1},
         %{event: event, task_id: task.id, board_id: board_id}

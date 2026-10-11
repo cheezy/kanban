@@ -198,7 +198,7 @@ defmodule Kanban.Tasks.Creation do
   end
 
   defp emit_task_creation_telemetry({:ok, task} = result, column, opts) do
-    :telemetry.execute([:kanban, :task, :creation], %{count: 1}, %{
+    Kanban.Telemetry.emit([:kanban, :task, :creation], %{count: 1}, %{
       task_id: task.id,
       column_id: column.id
     })

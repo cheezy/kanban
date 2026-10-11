@@ -125,7 +125,7 @@ defmodule Kanban.ApiTokens do
       {:ok, api_token} ->
         plain_text_token = Ecto.Changeset.get_change(changeset, :token)
 
-        :telemetry.execute(
+        Kanban.Telemetry.emit(
           [:kanban, :api, :token_created],
           %{count: 1},
           %{user_id: user.id, board_id: board.id, token_id: api_token.id}
@@ -170,7 +170,7 @@ defmodule Kanban.ApiTokens do
     |> Repo.update()
     |> case do
       {:ok, api_token} = result ->
-        :telemetry.execute(
+        Kanban.Telemetry.emit(
           [:kanban, :api, :token_revoked],
           %{count: 1},
           %{user_id: api_token.user_id, token_id: api_token.id}
@@ -205,7 +205,7 @@ defmodule Kanban.ApiTokens do
     |> Repo.delete()
     |> case do
       {:ok, api_token} = result ->
-        :telemetry.execute(
+        Kanban.Telemetry.emit(
           [:kanban, :api, :token_deleted],
           %{count: 1},
           %{user_id: api_token.user_id, token_id: api_token.id}
@@ -266,7 +266,7 @@ defmodule Kanban.ApiTokens do
     |> ApiToken.update_last_used_changeset()
     |> Repo.update()
 
-    :telemetry.execute(
+    Kanban.Telemetry.emit(
       [:kanban, :api, :token_used],
       %{count: 1},
       %{user_id: api_token.user_id, token_id: api_token.id}

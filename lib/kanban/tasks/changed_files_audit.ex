@@ -40,7 +40,7 @@ defmodule Kanban.Tasks.ChangedFilesAudit do
   @spec audit_review_bound_task(Task.t(), integer() | nil) :: Task.t()
   def audit_review_bound_task(%Task{} = task, board_id) do
     if diff_missing?(task) do
-      :telemetry.execute(
+      Kanban.Telemetry.emit(
         @telemetry_event,
         %{count: 1},
         %{task_id: task.id, identifier: task.identifier, board_id: board_id}

@@ -59,6 +59,7 @@ defmodule Kanban.Tasks.BulkActions do
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
+  alias Kanban.Tasks.TaskTelemetry
 
   @type result ::
           {:ok, %{count: non_neg_integer(), skipped_goals: non_neg_integer()}}
@@ -368,13 +369,7 @@ defmodule Kanban.Tasks.BulkActions do
 
   defp emit_archive_telemetry(summary), do: Enum.each(summary.changed, &archive_event/1)
 
-  defp archive_event(%Task{} = task) do
-    :telemetry.execute(
-      [:kanban, :task, :archived],
-      %{task_id: task.id},
-      %{identifier: task.identifier, via: :bulk}
-    )
-  end
+  defp archive_event(%Task{} = task), do: TaskTelemetry.archived(task, %{via: :bulk})
 
   # ── Shared ─────────────────────────────────────────────────────────
 

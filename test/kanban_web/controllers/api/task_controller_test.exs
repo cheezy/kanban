@@ -3,6 +3,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.ApiTokens
   alias Kanban.Columns
@@ -4300,6 +4301,40 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert response["claim_expires_at"] != nil
     end
 
+    test "claim telemetry still feeds the admin users activity counts", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user
+    } do
+      {:ok, _task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Counted Claim",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      attach_telemetry([:kanban, :api, :task_claimed])
+
+      conn =
+        post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
+
+      assert json_response(conn, 200)
+      assert_receive {:telemetry_event, [:kanban, :api, :task_claimed], %{count: 1}, metadata}
+
+      # MetricsStorage does not run in tests; hand it the event its counter
+      # handler would forward, as the live app does.
+      {:noreply, _state} =
+        KanbanWeb.Telemetry.MetricsStorage.handle_info(
+          {:telemetry_event, [:kanban, :api, :task_claimed, :count], 1, metadata},
+          %{metrics: []}
+        )
+
+      assert [%{user_id: user_id, tasks_claimed: 1}] =
+               Kanban.Metrics.UserActivity.list_user_activity()
+
+      assert user_id == user.id
+    end
+
     test "returns 409 when no tasks available", %{conn: conn} do
       conn =
         post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
@@ -4763,6 +4798,22 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       assert notification.user_id == user.id
       assert notification.body == "task too complex"
+    end
+
+    test "unclaim telemetry carries no free-text reason", %{
+      conn: conn,
+      claimed_task: task,
+      user: user
+    } do
+      attach_telemetry([:kanban, :api, :task_unclaimed])
+
+      conn = post(conn, ~p"/api/tasks/#{task.id}/unclaim", %{"reason" => "secret plans"})
+      assert json_response(conn, 200)
+
+      assert_receive {:telemetry_event, [:kanban, :api, :task_unclaimed], %{count: 1}, metadata}
+      refute Map.has_key?(metadata, :reason)
+      assert metadata.task_id == task.id
+      assert metadata.user_id == user.id
     end
 
     test "ignores a non-text reason instead of failing after the unclaim", %{

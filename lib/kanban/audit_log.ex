@@ -4,9 +4,12 @@ defmodule Kanban.AuditLog do
 
   Each event is emitted three ways from a single call:
 
-    * a `:telemetry` event `[:kanban, :audit, <action>]` (measurement
-      `%{count: 1}`, metadata the sanitized fields) — the monitoring/alerting
-      bus, and what tests attach to;
+    * a `:telemetry` event `[:kanban, :audit, <action>]`, emitted through
+      `Kanban.Telemetry` (measurement `%{count: 1}`, metadata the sanitized
+      fields minus `email`, `ip` and `filters`) — the monitoring/alerting bus,
+      and what tests attach to. Telemetry can leave the app, so it never
+      carries personal data; the log line and the stored row below keep those
+      fields, because they are the compliance record;
     * a structured `Logger.info("security_audit", ...)` line carrying the same
       fields as Logger metadata (never string-interpolated); and
     * one row in the append-only `audit_events` table
@@ -62,6 +65,10 @@ defmodule Kanban.AuditLog do
 
   @telemetry_prefix [:kanban, :audit]
 
+  # Personal data kept in the audit row and log line but never sent to
+  # telemetry. `filters` (audit-log exports) can contain an actor email.
+  @telemetry_omitted_keys [:email, :ip, :filters]
+
   # A key is dropped when its name CONTAINS any of these substrings, so
   # credential-shaped keys the original exact-match list never anticipated
   # (:reset_token, :api_key, :refresh_token, :session_token, :otp_secret, …)
@@ -91,12 +98,20 @@ defmodule Kanban.AuditLog do
   def event(action, metadata \\ []) when is_atom(action) and is_list(metadata) do
     clean = sanitize(metadata)
 
-    :telemetry.execute(@telemetry_prefix ++ [action], %{count: 1}, Map.new(clean))
+    emit_telemetry(action, clean)
     Logger.info("security_audit", [audit_event: action] ++ clean)
 
     persist(action, clean)
 
     :ok
+  end
+
+  # strict: false because event/2 must never crash its caller: an action or
+  # key missing from Kanban.Telemetry.Catalog is logged and dropped instead.
+  defp emit_telemetry(action, clean) do
+    metadata = Keyword.drop(clean, @telemetry_omitted_keys)
+
+    Kanban.Telemetry.emit(@telemetry_prefix ++ [action], %{count: 1}, metadata, strict: false)
   end
 
   @doc """

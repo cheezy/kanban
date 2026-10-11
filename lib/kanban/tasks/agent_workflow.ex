@@ -26,6 +26,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskTelemetry
   alias Kanban.Tasks.WorkflowSteps
 
   require Logger
@@ -366,11 +367,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
     Logger.info("Task #{task.id} completed and moved to Done by user #{user.id}")
 
-    :telemetry.execute(
-      [:kanban, :task, :completed],
-      %{task_id: updated_task.id},
-      %{completed_by: user.id}
-    )
+    TaskTelemetry.completed(updated_task, user.id)
 
     Phoenix.PubSub.broadcast(
       Kanban.PubSub,
@@ -500,11 +497,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
       "Task #{task.id} completed and moved to Review by user #{user.id}. Time spent: #{params["time_spent_minutes"]} minutes"
     )
 
-    :telemetry.execute(
-      [:kanban, :task, :moved_to_review],
-      %{task_id: updated_task.id, time_spent_minutes: params["time_spent_minutes"]},
-      %{completed_by_id: user.id}
-    )
+    TaskTelemetry.moved_to_review(updated_task, user.id)
 
     Phoenix.PubSub.broadcast(
       Kanban.PubSub,
@@ -806,11 +799,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
           "Task #{task.id} needs changes (review status: #{task.review_status}) and moved back to Doing by user #{user.id}"
         )
 
-        :telemetry.execute(
-          [:kanban, :task, :returned_to_doing],
-          %{task_id: updated_task.id},
-          %{reviewed_by: user.id, review_status: task.review_status}
-        )
+        TaskTelemetry.returned_to_doing(updated_task, user.id, task.review_status)
 
         Phoenix.PubSub.broadcast(
           Kanban.PubSub,

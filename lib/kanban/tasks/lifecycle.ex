@@ -16,6 +16,7 @@ defmodule Kanban.Tasks.Lifecycle do
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
+  alias Kanban.Tasks.TaskTelemetry
 
   @doc """
   Updates a task.
@@ -405,21 +406,10 @@ defmodule Kanban.Tasks.Lifecycle do
 
   defp handle_archive_result({:error, _step, changeset, _changes}), do: {:error, changeset}
 
-  defp emit_archive_telemetry(task) do
-    :telemetry.execute(
-      [:kanban, :task, :archived],
-      %{task_id: task.id},
-      %{identifier: task.identifier}
-    )
-  end
+  defp emit_archive_telemetry(task), do: TaskTelemetry.archived(task)
 
-  defp emit_cascade_telemetry(child, goal_id) do
-    :telemetry.execute(
-      [:kanban, :task, :archived],
-      %{task_id: child.id},
-      %{identifier: child.identifier, via: :goal_cascade, goal_id: goal_id}
-    )
-  end
+  defp emit_cascade_telemetry(child, goal_id),
+    do: TaskTelemetry.archived(child, %{via: :goal_cascade, goal_id: goal_id})
 
   defp cascade_archive_children(_repo, %Task{type: type}, _parent_attrs, _archived_at)
        when type != :goal do
@@ -495,11 +485,7 @@ defmodule Kanban.Tasks.Lifecycle do
 
     case clear_archive_with_fresh_position(task, clear_attrs) do
       {:ok, updated_task} ->
-        :telemetry.execute(
-          [:kanban, :task, :unarchived],
-          %{task_id: updated_task.id},
-          %{identifier: updated_task.identifier}
-        )
+        TaskTelemetry.unarchived(updated_task)
 
         Broadcaster.broadcast_task_change(updated_task, :task_updated)
 
@@ -577,11 +563,9 @@ defmodule Kanban.Tasks.Lifecycle do
   end
 
   defp emit_bulk_archive_telemetry(count, board_id) do
-    :telemetry.execute(
-      [:kanban, :task, :bulk_archived],
-      %{count: count},
-      %{board_id: board_id}
-    )
+    Kanban.Telemetry.emit([:kanban, :task, :bulk_archived], %{count: count}, %{
+      board_id: board_id
+    })
   end
 
   defp delete_goal_if_no_children(goal_id) do

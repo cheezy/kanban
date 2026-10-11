@@ -17,7 +17,7 @@ defmodule KanbanWeb.Plugs.ApiTelemetry do
       status = conn.status
 
       # Emit request count and duration
-      :telemetry.execute(
+      Kanban.Telemetry.emit(
         [:kanban, :api, :request],
         %{count: 1, duration: duration},
         %{endpoint: endpoint, method: conn.method, status: status}
@@ -25,7 +25,7 @@ defmodule KanbanWeb.Plugs.ApiTelemetry do
 
       # Emit error count if status >= 400
       if status >= 400 do
-        :telemetry.execute(
+        Kanban.Telemetry.emit(
           [:kanban, :api, :error],
           %{count: 1},
           %{endpoint: endpoint, status: status, method: conn.method}

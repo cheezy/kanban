@@ -32,9 +32,15 @@ defmodule KanbanWeb.UserAuth do
 
   Redirects to the session's `:user_return_to` path
   or falls back to the `signed_in_path/1`.
+
+  Emits `[:kanban, :user, :login]`. Only a real sign-in comes through here; the
+  session token reissue in `fetch_current_scope_for_user/2` does not, so it is
+  not counted as a login.
   """
   def log_in_user(conn, user, params \\ %{}) do
     user_return_to = get_session(conn, :user_return_to)
+
+    Kanban.Telemetry.emit([:kanban, :user, :login], %{count: 1}, %{user_id: user.id})
 
     conn
     |> create_or_extend_session(user, params)
@@ -112,14 +118,15 @@ defmodule KanbanWeb.UserAuth do
   # either when logging in, during sudo mode, or to renew a session which
   # will soon expire.
   #
+  # It does not emit the login telemetry event: a renewal is not a sign-in, so
+  # log_in_user/3 emits it instead.
+  #
   # When the session is created, rather than extended, the renew_session
   # function will clear the session to avoid fixation attacks. See the
   # renew_session function to customize this behaviour.
   defp create_or_extend_session(conn, user, params) do
     token = Accounts.generate_user_session_token(user)
     remember_me = get_session(conn, :user_remember_me)
-
-    :telemetry.execute([:kanban, :user, :login], %{count: 1}, %{user_id: user.id})
 
     conn
     |> renew_session(user)

@@ -441,8 +441,8 @@ defmodule Kanban.Tasks.BulkActionsTest do
       assert reload(t2).archived_at
 
       t1_id = t1.id
-      assert_receive {:archived_event, %{task_id: ^t1_id}, %{via: :bulk}}
-      assert_receive {:archived_event, %{task_id: _}, %{via: :bulk}}
+      assert_receive {:archived_event, %{count: 1}, %{task_id: ^t1_id, via: :bulk}}
+      assert_receive {:archived_event, %{count: 1}, %{task_id: _, via: :bulk}}
       assert_receive {Kanban.Tasks, :task_updated, _}
       refute_receive {Kanban.Tasks, :task_updated, _}, 50
     end

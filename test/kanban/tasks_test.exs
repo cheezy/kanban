@@ -5,6 +5,7 @@ defmodule Kanban.TasksTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
@@ -4000,29 +4001,16 @@ defmodule Kanban.TasksTest do
     end
 
     test "includes telemetry data for broadcasts", %{column: column, board: board} do
-      # Attach a test telemetry handler
-      test_pid = self()
-
-      :telemetry.attach(
-        "test-handler",
-        [:kanban, :pubsub, :broadcast],
-        fn _event_name, measurements, metadata, _config ->
-          send(test_pid, {:telemetry, measurements, metadata})
-        end,
-        nil
-      )
+      attach_telemetry([:kanban, :pubsub, :broadcast])
 
       {:ok, task} = Tasks.create_task(column, %{title: "Test task"})
 
       # Should receive telemetry event
-      assert_received {:telemetry, %{count: 1},
+      assert_received {:telemetry_event, [:kanban, :pubsub, :broadcast], %{count: 1},
                        %{event: :task_created, task_id: task_id, board_id: board_id}}
 
       assert task_id == task.id
       assert board_id == board.id
-
-      # Clean up
-      :telemetry.detach("test-handler")
     end
   end
 
@@ -7432,22 +7420,32 @@ defmodule Kanban.TasksTest do
       column = column_fixture(board)
       task = task_fixture(column)
 
-      :telemetry.attach(
-        "test-archive-handler",
-        [:kanban, :task, :archived],
-        fn event, measurements, metadata, _config ->
-          send(self(), {:telemetry_event, event, measurements, metadata})
-        end,
-        nil
-      )
+      attach_telemetry([:kanban, :task, :archived])
 
       assert {:ok, archived_task} = Tasks.archive_task(task)
 
       assert_receive {:telemetry_event, [:kanban, :task, :archived], measurements, metadata}
-      assert measurements.task_id == archived_task.id
+      assert measurements == %{count: 1}
+      assert metadata.task_id == archived_task.id
       assert metadata.identifier == archived_task.identifier
+    end
 
-      :telemetry.detach("test-archive-handler")
+    test "archiving a goal emits archived for each child with via and goal_id" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      goal = task_fixture(column, %{type: :goal, title: "Goal"})
+      child = task_fixture(column, %{title: "Child", parent_id: goal.id})
+
+      attach_telemetry([:kanban, :task, :archived])
+
+      assert {:ok, _archived_goal} = Tasks.archive_task(goal)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :archived], %{count: 1},
+                      %{task_id: child_id, via: :goal_cascade, goal_id: goal_id}}
+
+      assert child_id == child.id
+      assert goal_id == goal.id
     end
 
     test "archives a task with review_status set but reviewed_by_id nil" do
@@ -7599,40 +7597,22 @@ defmodule Kanban.TasksTest do
       _t1 = task_fixture(column) |> set_completed!(days_ago(45))
       _t2 = task_fixture(column) |> set_completed!(days_ago(60))
 
-      :telemetry.attach(
-        "test-bulk-archive-handler",
-        [:kanban, :task, :bulk_archived],
-        fn event, measurements, metadata, _config ->
-          send(self(), {:telemetry_event, event, measurements, metadata})
-        end,
-        nil
-      )
+      attach_telemetry([:kanban, :task, :bulk_archived])
 
       assert {:ok, 2} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
 
       assert_receive {:telemetry_event, [:kanban, :task, :bulk_archived], measurements, metadata}
       assert measurements.count == 2
       assert metadata.board_id == board.id
-
-      :telemetry.detach("test-bulk-archive-handler")
     end
 
     test "still emits telemetry (with count 0) when no tasks match",
          %{board: board} do
-      :telemetry.attach(
-        "test-bulk-archive-empty-handler",
-        [:kanban, :task, :bulk_archived],
-        fn event, measurements, metadata, _config ->
-          send(self(), {:telemetry_event, event, measurements, metadata})
-        end,
-        nil
-      )
+      attach_telemetry([:kanban, :task, :bulk_archived])
 
       assert {:ok, 0} = Tasks.bulk_archive_completed_tasks_older_than(board.id)
 
       assert_receive {:telemetry_event, [:kanban, :task, :bulk_archived], %{count: 0}, %{}}
-
-      :telemetry.detach("test-bulk-archive-empty-handler")
     end
   end
 
@@ -7669,22 +7649,13 @@ defmodule Kanban.TasksTest do
       task = task_fixture(column)
       {:ok, archived_task} = Tasks.archive_task(task)
 
-      :telemetry.attach(
-        "test-unarchive-handler",
-        [:kanban, :task, :unarchived],
-        fn event, measurements, metadata, _config ->
-          send(self(), {:telemetry_event, event, measurements, metadata})
-        end,
-        nil
-      )
+      attach_telemetry([:kanban, :task, :unarchived])
 
       assert {:ok, unarchived_task} = Tasks.unarchive_task(archived_task)
 
       assert_receive {:telemetry_event, [:kanban, :task, :unarchived], measurements, metadata}
-      assert measurements.task_id == unarchived_task.id
-      assert metadata.identifier == unarchived_task.identifier
-
-      :telemetry.detach("test-unarchive-handler")
+      assert measurements == %{count: 1}
+      assert metadata == %{task_id: unarchived_task.id, identifier: unarchived_task.identifier}
     end
   end
 
@@ -8458,27 +8429,19 @@ defmodule Kanban.TasksTest do
       user: user,
       completion_params: params
     } do
-      test_pid = self()
-
-      :telemetry.attach(
-        "test-d128-missing",
-        [:kanban, :task, :changed_files_missing],
-        fn _event, measurements, metadata, _config ->
-          send(test_pid, {:telemetry, measurements, metadata})
-        end,
-        nil
-      )
+      attach_telemetry([:kanban, :task, :changed_files_missing])
 
       # actual_files_changed is set (params) but changed_files defaults to [] —
       # the non-blocking safety net should flag it while completion still succeeds.
       {:ok, result, _hooks} = Tasks.complete_task(task, user, params)
 
       assert result.column_id
-      assert_received {:telemetry, %{count: 1}, %{task_id: task_id, identifier: identifier}}
+
+      assert_received {:telemetry_event, _event, %{count: 1},
+                       %{task_id: task_id, identifier: identifier}}
+
       assert task_id == result.id
       assert identifier == result.identifier
-
-      :telemetry.detach("test-d128-missing")
     end
 
     test "does not flag a review-bound task whose changed_files diff is present (D128)", %{
@@ -8492,22 +8455,11 @@ defmodule Kanban.TasksTest do
         ])
 
       task = Kanban.Repo.reload!(task)
-      test_pid = self()
-
-      :telemetry.attach(
-        "test-d128-present",
-        [:kanban, :task, :changed_files_missing],
-        fn _event, measurements, metadata, _config ->
-          send(test_pid, {:telemetry, measurements, metadata})
-        end,
-        nil
-      )
+      attach_telemetry([:kanban, :task, :changed_files_missing])
 
       {:ok, _result, _hooks} = Tasks.complete_task(task, user, params)
 
-      refute_received {:telemetry, _measurements, _metadata}
-
-      :telemetry.detach("test-d128-present")
+      refute_received {:telemetry_event, _event, _measurements, _metadata}
     end
 
     test "does not flag a needs_review=false task (out of review scope) (D128)", %{
@@ -8526,23 +8478,12 @@ defmodule Kanban.TasksTest do
           "needs_review" => false
         })
 
-      test_pid = self()
-
-      :telemetry.attach(
-        "test-d128-noreview",
-        [:kanban, :task, :changed_files_missing],
-        fn _event, measurements, metadata, _config ->
-          send(test_pid, {:telemetry, measurements, metadata})
-        end,
-        nil
-      )
+      attach_telemetry([:kanban, :task, :changed_files_missing])
 
       # actual_files_changed set + changed_files empty, but needs_review=false auto-
       # moves to Done — it is never review-bound, so the audit must not fire.
       assert {:ok, _final_task, _hooks} = Tasks.complete_task(auto_task, user, params)
-      refute_received {:telemetry, _measurements, _metadata}
-
-      :telemetry.detach("test-d128-noreview")
+      refute_received {:telemetry_event, _event, _measurements, _metadata}
     end
 
     test "accepts review_report as optional parameter", %{

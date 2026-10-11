@@ -5,8 +5,10 @@ This document describes how the kanban app declares and emits its
 covers the foundation every later telemetry task builds on: one catalog of
 events, one emit path that enforces it, and one test helper.
 
-Existing call sites still emit with direct `:telemetry.execute/3` calls. They
-are listed in the catalog but move onto `Kanban.Telemetry` in later tasks.
+Every event the app emits goes through `Kanban.Telemetry`. Since W2337 no
+code outside `lib/kanban/telemetry.ex` calls `:telemetry.execute/3` or
+`:telemetry.span/3` directly, and a test fails if one does (see
+[Checking the call sites](#checking-the-call-sites)).
 
 ## The catalog
 
@@ -27,7 +29,7 @@ Each entry is a map with these fields:
 | `measurements` | The measurement keys the event carries |
 | `metadata` | The metadata keys the event may carry; anything else is dropped |
 | `description` | One sentence saying what happened |
-| `legacy` | `true` for an event emitted before the catalog existed |
+| `legacy` | `true` for an event whose name predates the catalog |
 
 ### Naming rule
 
@@ -38,13 +40,58 @@ A span prefix names the operation being timed, `[:kanban, domain, operation]`,
 because `:telemetry` appends `:start`, `:stop` and `:exception` to it.
 
 Legacy entries keep their existing names, such as `[:kanban, :board, :creation]`,
-because metrics and dashboards depend on them.
+even where they break the naming rule, because metrics, dashboards and the
+stored `metrics_events` history depend on them. Never rename one.
 
-### Not yet catalogued
+### Runtime-named families
 
-Two families build their event names at runtime and are not listed yet:
-`[:kanban, :audit, action]` from `Kanban.AuditLog.event/2`, and
-`[:kanban, :api, action]` from `KanbanWeb.API.TaskActions.emit_telemetry/3`.
+Two families build their event name from an action atom at runtime. Each
+action has its own catalog entry, generated from a list of
+`{action, metadata keys, description}` tuples in the catalog module:
+
+- `[:kanban, :api, action]`, from `KanbanWeb.API.TaskActions.emit_telemetry/3`
+  (the `@api_actions` list). Every entry also declares `board_id`, `user_id`,
+  `path` and `method`, which `emit_telemetry/3` adds.
+  `Kanban.Metrics.UserActivity` counts the stored `kanban.api.task_*` events
+  per `user_id` for the admin users page, so `user_id` must stay.
+- `[:kanban, :audit, action]`, from `Kanban.AuditLog.event/2` (the
+  `@audit_actions` list). See [Audit events](#audit-events).
+
+## Event data rules
+
+These rules were applied to the existing events in W2337:
+
+- **Ids are metadata, never measurements.** A measurement is a number to add
+  up or average; a task id is a label. The task events `archived`,
+  `unarchived`, `completed`, `moved_to_review` and `returned_to_doing` measure
+  `count: 1` and carry `task_id` in their metadata.
+- **Measurements are numbers or absent.** `[:kanban, :task, :moved_to_review]`
+  measures `time_spent_minutes` as the integer saved on the task, and leaves
+  it out when there is none, never a string or `nil`.
+- **`[:kanban, :user, :login]` counts real sign-ins only.** It is emitted from
+  `KanbanWeb.UserAuth.log_in_user/3`, so renewing an old session token does not
+  count as a login.
+- **No free text from agents.** `[:kanban, :api, :task_unclaimed]` does not
+  carry the unclaim `reason`; the unclaim notification and the application
+  log still do.
+
+The task lifecycle events are emitted through `Kanban.Tasks.TaskTelemetry`.
+
+### Audit events
+
+`Kanban.AuditLog.event/2` records each security event three ways. The stored
+`audit_events` row and the `security_audit` log line are the compliance record
+and keep the actor's `email` and `ip`. The telemetry copy can leave the app,
+so it never carries `email`, `ip` or the export `filters` (which can contain
+an email).
+
+The audit emit passes `strict: false`, because `event/2` must never crash its
+caller: an action or key missing from the catalog is logged and dropped there,
+not raised. The call-site test below covers the audit actions instead.
+
+Open question: `[:kanban, :audit, :sudo_mode_entered]` fires on every mount of
+a LiveView that requires sudo mode, not only when sudo mode starts, so its
+volume is high. W2337 leaves it unchanged.
 
 ## Emitting an event
 
@@ -104,10 +151,29 @@ raise.
 ## Adding an event
 
 1. Add an entry to the list in `Kanban.Telemetry.Catalog`, with every field,
-   following the naming rule and declaring no forbidden key.
+   following the naming rule and declaring no forbidden key. A new API or
+   audit action is a new tuple in `@api_actions` or `@audit_actions`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, or declares a forbidden key.
+
+## Checking the call sites
+
+`Kanban.TelemetrySourceScan` (`test/support/telemetry_source_scan.ex`) parses
+every `.ex` file under `lib/` and finds each `Kanban.Telemetry.emit/3` and `span/3`
+call, each `emit_telemetry(conn, action, metadata)` API call and each
+`AuditLog.event(action, metadata)` call. Two tests use it:
+
+- `test/kanban/telemetry_test.exs`, "every emitted event is in the catalog",
+  fails when a call site emits an event that is not catalogued, or sends a
+  literal metadata key its entry does not declare.
+- `test/kanban/telemetry/emit_sites_test.exs` fails when code outside
+  `lib/kanban/telemetry.ex` calls `:telemetry.execute` or `:telemetry.span`,
+  when an event name is built at runtime anywhere but the API and audit
+  emitters, when a catalog entry has no call site, or when a
+  `kanban.api.task_*` entry stops declaring `user_id`.
+
+Pass API and audit action names as literal atoms, so the scan can see them.
 
 ## Testing events
 

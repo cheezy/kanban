@@ -125,7 +125,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   end
 
   defp emit_auth_failed_telemetry(conn, reason) do
-    :telemetry.execute(
+    Kanban.Telemetry.emit(
       [:kanban, :api, :auth_failed],
       %{count: 1},
       %{

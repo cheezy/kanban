@@ -242,7 +242,7 @@ defmodule KanbanWeb.ReviewLive do
         if socket.assigns.diff_panel_opened_for_task_id == task_id do
           socket
         else
-          :telemetry.execute(
+          Kanban.Telemetry.emit(
             [:kanban, :review_diff_panel, :opened],
             %{system_time: System.system_time(), count: 1},
             %{task_id: task_id}
@@ -262,7 +262,7 @@ defmodule KanbanWeb.ReviewLive do
         socket
 
       task_id ->
-        :telemetry.execute(
+        Kanban.Telemetry.emit(
           [:kanban, :review_diff_panel, :closed],
           %{system_time: System.system_time(), count: 1},
           %{task_id: task_id}

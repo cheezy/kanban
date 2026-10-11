@@ -113,7 +113,7 @@ defmodule Kanban.Accounts do
 
     case result do
       {:ok, user} ->
-        :telemetry.execute([:kanban, :user, :registration], %{count: 1}, %{user_id: user.id})
+        Kanban.Telemetry.emit([:kanban, :user, :registration], %{count: 1}, %{user_id: user.id})
         {:ok, user}
 
       error ->

@@ -102,7 +102,7 @@ defmodule Kanban.Hooks.Metadata do
     # `project_id` field; `Board` is the project-equivalent schema. Both
     # keys are emitted so downstream consumers expecting either terminology
     # resolve to the same value.
-    :telemetry.execute(
+    Kanban.Telemetry.emit(
       [:kanban, :api, :after_goal_delivered],
       %{count: 1},
       %{goal_id: task.parent_id, board_id: board.id, project_id: board.id}

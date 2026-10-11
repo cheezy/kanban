@@ -382,7 +382,7 @@ defmodule Kanban.Tasks.Comments do
       {__MODULE__, :comment_changed, payload}
     )
 
-    :telemetry.execute(
+    Kanban.Telemetry.emit(
       [:kanban, :pubsub, :broadcast],
       %{count: 1},
       Map.put(payload, :event, :comment_changed)

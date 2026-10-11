@@ -39,13 +39,43 @@ defmodule Kanban.AuditLogTest do
   end
 
   test "emits a telemetry event with count and sanitized metadata" do
+    attach(:api_token_revoked)
+
+    AuditLog.event(:api_token_revoked, user_id: 3, token_id: 9)
+
+    assert_receive {:audit, %{count: 1}, metadata}
+    assert metadata == %{user_id: 3, token_id: 9}
+  end
+
+  test "telemetry metadata omits email and ip" do
     attach(:login_failed)
 
     AuditLog.event(:login_failed, email: "a@example.com", ip: {203, 0, 113, 5})
 
     assert_receive {:audit, %{count: 1}, metadata}
-    assert metadata.email == "a@example.com"
-    assert metadata.ip == "203.0.113.5"
+    refute Map.has_key?(metadata, :email)
+    refute Map.has_key?(metadata, :ip)
+
+    # The persisted row is the compliance record and keeps both.
+    row = only_event!()
+    assert row.action == "login_failed"
+    assert row.metadata["email"] == "a@example.com"
+    assert row.ip == "203.0.113.5"
+  end
+
+  test "telemetry metadata omits export filters, which can carry an email" do
+    attach(:audit_log_exported)
+
+    AuditLog.event(:audit_log_exported,
+      user_id: 5,
+      ip: {127, 0, 0, 1},
+      format: "csv",
+      filters: %{"actor_email" => "who@example.com"}
+    )
+
+    assert_receive {:audit, %{count: 1}, metadata}
+    assert metadata == %{user_id: 5, format: "csv"}
+    assert only_event!().metadata["filters"] == %{"actor_email" => "who@example.com"}
   end
 
   test "formats IPv6 tuples to strings" do
@@ -57,8 +87,9 @@ defmodule Kanban.AuditLogTest do
     )
 
     assert_receive {:audit, _m, metadata}
-    assert metadata.ip == "2001:db8::1"
+    refute Map.has_key?(metadata, :ip)
     assert metadata.reason == "not_found"
+    assert only_event!().ip == "2001:db8::1"
   end
 
   test "drops sensitive keys before emitting" do
@@ -71,9 +102,13 @@ defmodule Kanban.AuditLogTest do
     )
 
     assert_receive {:audit, _m, metadata}
-    assert metadata.email == "a@example.com"
     refute Map.has_key?(metadata, :password)
     refute Map.has_key?(metadata, :token)
+
+    stored = only_event!().metadata
+    assert stored["email"] == "a@example.com"
+    refute Map.has_key?(stored, "password")
+    refute Map.has_key?(stored, "token")
   end
 
   test "drops credential-shaped keys the exact-match list never anticipated (D159)" do
@@ -89,13 +124,20 @@ defmodule Kanban.AuditLogTest do
     )
 
     assert_receive {:audit, _m, metadata}
-    # The row id survives; every credential-shaped key is redacted.
-    assert metadata.user_id == 7
     refute Map.has_key?(metadata, :reset_token)
     refute Map.has_key?(metadata, :api_key)
     refute Map.has_key?(metadata, :refresh_token)
     refute Map.has_key?(metadata, :session_token)
     refute Map.has_key?(metadata, :otp_secret)
+
+    # The row id survives in the stored row; every credential-shaped key is
+    # redacted there too.
+    stored = only_event!().metadata
+    assert stored["user_id"] == 7
+
+    for key <- ~w(reset_token api_key refresh_token session_token otp_secret) do
+      refute Map.has_key?(stored, key)
+    end
   end
 
   test "keeps benign *_id keys even when they contain a sensitive substring (D159)" do

@@ -268,7 +268,7 @@ defmodule Kanban.Tasks.GoalCreation do
   end
 
   defp emit_goal_creation_telemetry(goal, child_tasks, column) do
-    :telemetry.execute(
+    Kanban.Telemetry.emit(
       [:kanban, :goal, :created_with_tasks],
       %{goal_count: 1, task_count: length(child_tasks)},
       %{goal_id: goal.id, column_id: column.id}
