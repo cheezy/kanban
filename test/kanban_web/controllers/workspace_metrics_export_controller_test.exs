@@ -8,6 +8,7 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
   alias Kanban.Tasks
@@ -105,6 +106,14 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
     end
   end
 
+  # The start and stop metadata of the next export span, without the span
+  # context.
+  defp export_span_metadata do
+    assert_receive {:telemetry_event, [:kanban, :export, :start], _, start}
+    assert_receive {:telemetry_event, [:kanban, :export, :stop], %{duration: _}, stop}
+    {Map.delete(start, :telemetry_span_context), Map.delete(stop, :telemetry_span_context)}
+  end
+
   describe "format dispatch" do
     test "the default format is PDF", %{conn: conn, user: user} do
       board_with_completed_task!(user)
@@ -126,6 +135,18 @@ defmodule KanbanWeb.WorkspaceMetricsExportControllerTest do
       assert [disposition] = get_resp_header(conn, "content-disposition")
       assert disposition =~ ".xlsx"
       assert byte_size(conn.resp_body) > 0
+    end
+
+    test "excel export emits the export span", %{conn: conn, user: user} do
+      board_with_completed_task!(user)
+      attach_telemetry([[:kanban, :export, :start], [:kanban, :export, :stop]])
+
+      conn = get(conn, ~p"/metrics/export?format=excel&window_days=30")
+      assert conn.status == 200
+
+      assert export_span_metadata() ==
+               {%{kind: :workspace_metrics, format: :xlsx},
+                %{kind: :workspace_metrics, format: :xlsx}}
     end
 
     test "an unknown format falls back to PDF", %{conn: conn, user: user} do

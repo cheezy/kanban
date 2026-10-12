@@ -61,12 +61,21 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
 
   @excel_content_type "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
+  # Timed as the [:kanban, :export] span. Only the export kind and file format
+  # are reported: never the board selection or any other parameter.
   def export(conn, params) do
-    opts = build_export_opts(conn.assigns.current_scope, params)
-    assigns = build_report_assigns(opts)
+    format = export_format(params)
 
-    dispatch_format(conn, params, assigns)
+    Kanban.Telemetry.span([:kanban, :export], %{kind: :workspace_metrics, format: format}, fn ->
+      opts = build_export_opts(conn.assigns.current_scope, params)
+      assigns = build_report_assigns(opts)
+      conn = dispatch_format(conn, format, assigns)
+      {conn, %{kind: :workspace_metrics, format: format}}
+    end)
   end
+
+  defp export_format(%{"format" => "excel"}), do: :xlsx
+  defp export_format(_params), do: :pdf
 
   # Public so the parameter contract — criteria 2, 3, 5 and 6 — is unit-testable
   # without driving a real renderer. Mirrors the reference controller's
@@ -126,8 +135,8 @@ defmodule KanbanWeb.WorkspaceMetricsExportController do
   defp parse_board_id(value) when is_integer(value), do: [value]
   defp parse_board_id(_value), do: []
 
-  defp dispatch_format(conn, %{"format" => "excel"}, assigns), do: send_excel(conn, assigns)
-  defp dispatch_format(conn, _params, assigns), do: send_pdf(conn, assigns)
+  defp dispatch_format(conn, :xlsx, assigns), do: send_excel(conn, assigns)
+  defp dispatch_format(conn, :pdf, assigns), do: send_pdf(conn, assigns)
 
   defp send_pdf(conn, assigns) do
     html =

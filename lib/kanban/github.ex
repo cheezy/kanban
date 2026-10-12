@@ -18,18 +18,34 @@ defmodule Kanban.GitHub do
 
     * `{:ok, issue_url}` - The URL of the created issue on success
     * `{:error, reason}` - Error tuple on failure
+
+  Every call emits the `[:kanban, :github, :issue_created]` telemetry event
+  with `outcome: :ok` or `outcome: :error` (including when GitHub is not
+  configured). The title, body, labels, URL and error text are never emitted.
   """
   def create_issue(title, body, labels \\ []) do
     config = Application.get_env(:kanban, :github, [])
     token = config[:token]
     repo = config[:repo]
 
-    if is_nil(token) or is_nil(repo) do
-      {:error, :not_configured}
-    else
-      do_create_issue(token, repo, title, body, labels)
-    end
+    result =
+      if is_nil(token) or is_nil(repo) do
+        {:error, :not_configured}
+      else
+        do_create_issue(token, repo, title, body, labels)
+      end
+
+    emit_issue_created(result)
+    result
   end
+
+  defp emit_issue_created(result) do
+    outcome = issue_outcome(result)
+    Kanban.Telemetry.emit([:kanban, :github, :issue_created], %{count: 1}, %{outcome: outcome})
+  end
+
+  defp issue_outcome({:ok, _issue_url}), do: :ok
+  defp issue_outcome({:error, _reason}), do: :error
 
   defp do_create_issue(token, repo, title, body, labels) do
     url = "#{@github_api_url}/repos/#{repo}/issues"

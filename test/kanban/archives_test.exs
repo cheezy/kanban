@@ -11,6 +11,7 @@ defmodule Kanban.ArchivesTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
   alias Kanban.Archives
@@ -264,6 +265,46 @@ defmodule Kanban.ArchivesTest do
   end
 
   describe "export_csv_for_board/1" do
+    @export_events [
+      [:kanban, :export, :start],
+      [:kanban, :export, :stop],
+      [:kanban, :export, :exception]
+    ]
+
+    test "csv export emits span", %{board: board, column: column} do
+      archived_task!(column, %{title: "Counted", archive_reason: :completed})
+      attach_telemetry(@export_events)
+
+      Archives.export_csv_for_board(board.id)
+
+      assert_receive {:telemetry_event, [:kanban, :export, :start], %{system_time: _}, start_meta}
+
+      assert %{kind: :archive_csv, format: :csv} = start_meta
+
+      assert_receive {:telemetry_event, [:kanban, :export, :stop],
+                      %{duration: duration, row_count: 1}, stop_meta}
+
+      assert is_integer(duration) and duration >= 0
+      assert Map.delete(stop_meta, :telemetry_span_context) == %{kind: :archive_csv, format: :csv}
+    end
+
+    test "failed export emits exception" do
+      attach_telemetry(@export_events)
+
+      # An id outside the bigint range fails to encode in the query, so the
+      # export raises after the span has started.
+      assert_raise DBConnection.EncodeError, fn ->
+        Archives.export_csv_for_board(9_223_372_036_854_775_808)
+      end
+
+      assert_receive {:telemetry_event, [:kanban, :export, :exception], %{duration: _}, metadata}
+
+      # :telemetry replaces the span's kind with the error class here; the
+      # format is kept.
+      assert %{kind: :error, format: :csv, reason: %DBConnection.EncodeError{}} = metadata
+      refute_received {:telemetry_event, [:kanban, :export, :stop], _, _}
+    end
+
     test "emits the header row even when the archive is empty", %{board: board} do
       csv = Archives.export_csv_for_board(board.id)
 

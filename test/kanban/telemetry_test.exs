@@ -365,7 +365,10 @@ defmodule Kanban.TelemetryTest do
 
       for entry <- entries do
         assert entry |> Map.keys() |> Enum.sort() == Enum.sort(@entry_fields)
-        assert [:kanban, domain | [_ | _]] = entry.name
+        # A span prefix may be [:kanban, domain] when the domain is itself the
+        # operation ([:kanban, :export]); an event always has an action.
+        assert [:kanban, domain | _rest] = entry.name
+        assert length(entry.name) >= if(entry.kind == :span, do: 2, else: 3)
         assert Enum.all?(entry.name, &is_atom/1)
         assert entry.domain == domain
         assert entry.kind in [:event, :span]

@@ -75,7 +75,11 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     |> halt()
   end
 
+  # A request with no Authorization header, or one that is not a Bearer
+  # header, reports reason "missing_token".
   defp halt_with_auth_error(conn, {:error, :missing_token}) do
+    emit_auth_failed_telemetry(conn, "missing_token")
+
     conn
     |> put_status(:unauthorized)
     |> json(%{error: "Missing or invalid Authorization header"})

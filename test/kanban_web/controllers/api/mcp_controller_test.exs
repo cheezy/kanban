@@ -3,6 +3,7 @@ defmodule KanbanWeb.API.McpControllerTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.ApiTokens
   alias Kanban.Columns
@@ -338,6 +339,38 @@ defmodule KanbanWeb.API.McpControllerTest do
 
       assert body["error"]["code"] == -32_602
       assert body["error"]["data"]["errors"] == ["arguments.id must be of type string or integer"]
+    end
+  end
+
+  describe "telemetry" do
+    @mcp_stop [:kanban, :mcp, :request, :stop]
+
+    defp mcp_outcome do
+      assert_receive {:telemetry_event, @mcp_stop, %{duration: _}, metadata}
+      Map.delete(metadata, :telemetry_span_context)
+    end
+
+    test "tools/call reports ok and tool_error outcomes", %{
+      conn: conn,
+      user: user,
+      ready_column: ready_column
+    } do
+      task = ready_task(ready_column, user)
+      attach_telemetry(@mcp_stop)
+
+      {false, _body} = call_tool(conn, "stride_get_task", %{"id" => task.identifier})
+      assert mcp_outcome() == %{method: :tools_call, outcome: :ok}
+
+      {true, _body} = call_tool(conn, "stride_get_task", %{"id" => "W999999"})
+      assert mcp_outcome() == %{method: :tools_call, outcome: :tool_error}
+    end
+
+    test "malformed JSON reports parse_error", %{conn: conn} do
+      attach_telemetry(@mcp_stop)
+
+      conn |> post_mcp(~s({"jsonrpc": "2.0", )) |> json_response(400)
+
+      assert mcp_outcome() == %{method: :unknown, outcome: :parse_error}
     end
   end
 

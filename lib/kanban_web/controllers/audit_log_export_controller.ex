@@ -48,6 +48,15 @@ defmodule KanbanWeb.AuditLogExportController do
       filters: Filters.summary(parsed)
     )
 
+    # Timed as the [:kanban, :export] span. Unlike the audit event above, the
+    # telemetry copy carries only the kind and format: never the filters,
+    # which can contain an email, nor the admin's IP address.
+    Kanban.Telemetry.span([:kanban, :export], %{kind: :audit_log, format: format}, fn ->
+      {stream_export(conn, format, parsed), %{kind: :audit_log, format: format}}
+    end)
+  end
+
+  defp stream_export(conn, format, parsed) do
     conn =
       conn
       |> put_export_content_type(format)

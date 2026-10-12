@@ -3,6 +3,8 @@ defmodule Kanban.RateLimitTest do
   # suite runs with it disabled (config/test.exs).
   use ExUnit.Case, async: false
 
+  import Kanban.TelemetryHelpers
+
   alias Kanban.RateLimit
 
   setup do
@@ -174,6 +176,48 @@ defmodule Kanban.RateLimitTest do
 
       assert retry_after_ms > 300_000
       assert :ok = RateLimit.peek(:two_factor_daily, identity: "user:other")
+    end
+  end
+
+  describe "telemetry" do
+    @denied [:kanban, :rate_limit, :denied]
+
+    test "denied emits rate_limit.denied" do
+      ip = unique_ip()
+      email = unique_email()
+      attach_telemetry(@denied)
+
+      for _ <- 1..3, do: assert(:ok = RateLimit.check(:reset, ip: ip, identity: email))
+      refute_received {:telemetry_event, @denied, _, _}
+
+      assert {:error, {:rate_limited, _}} = RateLimit.check(:reset, ip: ip, identity: email)
+
+      assert_receive {:telemetry_event, @denied, %{count: 1}, metadata}
+      # The surface only: never the key, the IP address or the email.
+      assert metadata == %{surface: :reset}
+    end
+
+    test "an allowed check emits nothing" do
+      attach_telemetry(@denied)
+
+      assert :ok = RateLimit.check(:issue, ip: unique_ip(), identity: unique_email())
+      assert :ok = RateLimit.peek(:login, ip: unique_ip(), identity: unique_email())
+
+      refute_received {:telemetry_event, @denied, _, _}
+    end
+
+    test "a denied peek on an IP-keyed surface emits only the surface" do
+      ip = unique_ip()
+      attach_telemetry(@denied)
+
+      # record_failure/2 discards its verdict, so it never reports a denial.
+      for _ <- 1..21, do: RateLimit.record_failure(:api_token, ip: ip)
+      refute_received {:telemetry_event, @denied, _, _}
+
+      assert {:error, {:rate_limited, _}} = RateLimit.peek(:api_token, ip: ip)
+
+      assert_receive {:telemetry_event, @denied, %{count: 1}, metadata}
+      assert metadata == %{surface: :api_token}
     end
   end
 end

@@ -28,18 +28,13 @@ defmodule KanbanWeb.API.McpController do
   plug :validate_protocol_version when action == :handle
   plug :require_json_content_type when action == :handle
 
-  def handle(%Plug.Conn{private: %{kanban_mcp_parse_error: true}} = conn, _params) do
-    conn
-    |> put_status(:bad_request)
-    |> json(JsonRpc.error(nil, JsonRpc.parse_error(), "Parse error"))
-  end
+  def handle(%Plug.Conn{private: %{kanban_mcp_parse_error: true}} = conn, _params),
+    do: reply(conn, Server.parse_error_reply())
 
-  def handle(conn, _params) do
-    case Server.handle_payload(conn.body_params, conn) do
-      :accepted -> send_resp(conn, :accepted, "")
-      {:reply, status, body} -> conn |> put_status(status) |> json(body)
-    end
-  end
+  def handle(conn, _params), do: reply(conn, Server.handle_payload(conn.body_params, conn))
+
+  defp reply(conn, :accepted), do: send_resp(conn, :accepted, "")
+  defp reply(conn, {:reply, status, body}), do: conn |> put_status(status) |> json(body)
 
   # One action per verb, both answering 405. A single action routed from both
   # GET and DELETE is the "action reuse" pattern Sobelow's Config.CSRFRoute

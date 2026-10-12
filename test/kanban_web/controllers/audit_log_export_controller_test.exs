@@ -3,6 +3,7 @@ defmodule KanbanWeb.AuditLogExportControllerTest do
   use KanbanWeb.ConnCase, async: false
 
   import Kanban.AccountsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.AuditLog
   alias Kanban.AuditLog.AuditEvent
@@ -61,6 +62,21 @@ defmodule KanbanWeb.AuditLogExportControllerTest do
 
       assert %{"metadata" => %{"note" => "line1\nline2, \"quoted\" ✓"}} =
                Enum.find(rows, &(&1["action"] == "sudo_mode_entered"))
+    end
+
+    test "export emits the export span without filters", %{conn: conn} do
+      attach_telemetry([[:kanban, :export, :start], [:kanban, :export, :stop]])
+
+      conn = get(conn, ~p"/admin/audit-log/export?format=json&action=login_failed")
+      assert conn.status == 200
+
+      assert_receive {:telemetry_event, [:kanban, :export, :start], _, start}
+      assert_receive {:telemetry_event, [:kanban, :export, :stop], %{duration: _}, stop}
+
+      # Only the kind and format: never the filters, the admin or an IP address.
+      for metadata <- [start, stop] do
+        assert Map.delete(metadata, :telemetry_span_context) == %{kind: :audit_log, format: :json}
+      end
     end
 
     test "honours the viewer's filters", %{conn: conn} do

@@ -5,6 +5,7 @@ defmodule KanbanWeb.ArchiveExportControllerTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Tasks
 
@@ -36,6 +37,26 @@ defmodule KanbanWeb.ArchiveExportControllerTest do
 
       assert conn.resp_body =~ "Identifier,Title,Type,Goal,Assignee,Archive Reason"
       assert conn.resp_body =~ "Exported Task"
+    end
+
+    test "controller export emits span", %{conn: conn, user: user} do
+      board = board_fixture(user)
+
+      board
+      |> column_fixture()
+      |> task_fixture(%{title: "Exported Task"})
+      |> Tasks.archive_task()
+
+      attach_telemetry([[:kanban, :export, :start], [:kanban, :export, :stop]])
+
+      conn = get(conn, ~p"/boards/#{board}/archive/export")
+      assert conn.status == 200
+
+      assert_receive {:telemetry_event, [:kanban, :export, :start], _,
+                      %{kind: :archive_csv, format: :csv}}
+
+      assert_receive {:telemetry_event, [:kanban, :export, :stop], %{row_count: 1},
+                      %{kind: :archive_csv, format: :csv}}
     end
 
     test "exports a header-only CSV for an empty archive", %{conn: conn, user: user} do

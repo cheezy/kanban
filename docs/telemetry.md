@@ -37,7 +37,9 @@ A new event is named `[:kanban, domain, past_tense_action]`, for example
 `[:kanban, :task, :archived]`. The domain is a singular noun (`:task`,
 `:board`, `:user`, `:api`), and the action is a past-tense verb or verb phrase.
 A span prefix names the operation being timed, `[:kanban, domain, operation]`,
-because `:telemetry` appends `:start`, `:stop` and `:exception` to it.
+or `[:kanban, domain]` when the domain is itself the operation, as in
+`[:kanban, :export]`. `:telemetry` appends `:start`, `:stop` and `:exception`
+to it, so the emitted names still have three segments.
 
 Legacy entries keep their existing names, such as `[:kanban, :board, :creation]`,
 even where they break the naming rule, because metrics, dashboards and the
@@ -47,7 +49,9 @@ stored `metrics_events` history depend on them. Never rename one.
 
 Two families build their event name from an action atom at runtime. Each
 action has its own catalog entry, generated from a list of
-`{action, metadata keys, description}` tuples in the catalog module:
+`{action, metadata keys, description}` tuples in
+`Kanban.Telemetry.Catalog.Families` (`lib/kanban/telemetry/catalog/families.ex`),
+which the catalog appends to its own list:
 
 - `[:kanban, :api, action]`, from `KanbanWeb.API.TaskActions.emit_telemetry/3`
   (the `@api_actions` list). Every entry also declares `board_id`, `user_id`,
@@ -143,22 +147,75 @@ table.
   `column.deleted`, not an event per task. Creating an AI-optimized board emits
   `[:kanban, :board, :creation]` and one `column.created` per default column.
 
+### Export, rate-limit, MCP, GitHub and API auth events
+
+W2343 added these. Two of them are spans: their `:start`, `:stop` and
+`:exception` events measure how long the work took.
+
+| Event | Kind | Metadata | Emitted by |
+|---|---|---|---|
+| `[:kanban, :export]` | span | `kind`, `format` | `Kanban.Archives.export_csv_for_board/1` and the metrics, workspace metrics and audit log export controllers |
+| `[:kanban, :rate_limit, :denied]` | event | `surface` | `Kanban.RateLimit.check/2` and `peek/2` |
+| `[:kanban, :mcp, :request]` | span | `method`, `outcome` | `KanbanWeb.MCP.Server` |
+| `[:kanban, :github, :issue_created]` | event | `outcome` | `Kanban.GitHub.create_issue/3` |
+| `[:kanban, :api, :auth_failed]` | event | `reason`, `path`, `method` | `KanbanWeb.Plugs.AuthenticateApiToken` |
+
+- **Exports.** `kind` is `:archive_csv` (board archive CSV), `:metrics_pdf`
+  (board metrics report), `:workspace_metrics` (workspace metrics report) or
+  `:audit_log`. `format` is `:csv`, `:pdf`, `:xlsx` or `:json`. The stop event
+  also measures `row_count` for `:archive_csv`, the number of archived tasks
+  exported; the other exports have no row count to report. A board, its
+  name, the metric filters and the audit-log filters never appear, nor the
+  admin's IP address. A failed metrics report that redirects with an error
+  still ends with a stop event; only an exception produces the exception
+  event.
+- **On an exception**, `:telemetry` replaces `kind` with the error class
+  (`:error`, `:exit` or `:throw`) and adds `reason` and `stacktrace`; `format`
+  is kept. Match the exception to its start with `telemetry_span_context`.
+- **Rate-limit denials** carry only `surface`, such as `:login`, `:reset` or
+  `:api_token`. The rate-limit key, IP address and identity are never sent,
+  not even hashed, because a key is often an email or an IP address. Every
+  denied `check/2` or `peek/2` emits one event; `record_failure/2` discards its
+  verdict and never emits.
+- **MCP requests.** Every JSON-RPC message is one span, so a batch emits one
+  per message. `method` is `:initialize`, `:ping`, `:tools_list`,
+  `:tools_call`, `:notification`, `:response` or `:unknown`; the method or
+  tool name the client sent is never emitted. The stop event adds `outcome`:
+  `:ok`, `:parse_error`, `:invalid_request`, `:invalid_params`,
+  `:unknown_method`, `:unknown_tool` or `:tool_error` (a tool that ran and
+  returned `isError`). A body rejected before any message is read, including
+  malformed JSON, is one span with `method: :unknown`. Requests stopped by the
+  transport checks before the server sees them (a missing token, a foreign
+  `Origin`, a wrong content type or protocol version) emit no MCP span; a
+  missing or bad token emits `[:kanban, :api, :auth_failed]` instead.
+  `[:kanban, :api, :mcp_tool_called]` is unchanged.
+- **GitHub issues.** `outcome` is `:ok` or `:error`. An issue report made while
+  the GitHub integration is not configured counts as `:error`. The title,
+  body, labels, issue URL and error text are never emitted.
+- **`missing_token`** is a new `reason` for `[:kanban, :api, :auth_failed]`,
+  sent when an API request has no `Authorization` header or one that is not a
+  `Bearer` header. The other reasons are `rate_limited`, `token_not_found`,
+  `token_revoked`, `token_expired` and `user_disabled`.
+
 ## Emitting an event
 
 ```elixir
 Kanban.Telemetry.emit([:kanban, :task, :changed_files_missing], %{count: 1},
   task_id: task.id, identifier: task.identifier, board_id: board_id)
 
-Kanban.Telemetry.span([:kanban, :board, :export], %{board_id: board.id}, fn ->
-  {export_board(board), %{board_id: board.id}}
+Kanban.Telemetry.span([:kanban, :export], %{kind: :archive_csv, format: :csv}, fn ->
+  rows = list_archived_for_board(board_id)
+  {build_csv(rows), %{row_count: length(rows)}, %{kind: :archive_csv, format: :csv}}
 end)
 ```
 
 `emit/3` wraps `:telemetry.execute/3`, and `span/3` wraps `:telemetry.span/3`
 with the same semantics, so `Telemetry.Metrics` duration summaries work
-unchanged. Measurements and metadata may be maps or keyword lists. (The span
-example names an operation that is not in the catalog yet; add an entry before
-emitting one.)
+unchanged. Measurements and metadata may be maps or keyword lists. The span's
+function returns `{result, stop_metadata}`, or
+`{result, extra_stop_measurements, stop_metadata}` as above, and `span/3`
+returns `result`. The stop event carries only the metadata the function
+returns, so repeat any start key the stop event needs.
 
 ### Metadata filtering
 
@@ -202,7 +259,8 @@ raise.
 
 1. Add an entry to the list in `Kanban.Telemetry.Catalog`, with every field,
    following the naming rule and declaring no forbidden key. A new API or
-   audit action is a new tuple in `@api_actions` or `@audit_actions`.
+   audit action is a new tuple in `@api_actions` or `@audit_actions` in
+   `Kanban.Telemetry.Catalog.Families`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, or declares a forbidden key.

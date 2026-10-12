@@ -54,6 +54,9 @@ defmodule Kanban.RateLimit do
     * `record_failure/2` — increment the failure counter after an authentication
       attempt fails; pair with `peek/2`.
 
+  A denied `check/2` or `peek/2` emits the `[:kanban, :rate_limit, :denied]`
+  telemetry event carrying only the `surface`.
+
   All three return `:ok` or `{:error, {:rate_limited, retry_after_ms}}`.
   """
 
@@ -83,7 +86,7 @@ defmodule Kanban.RateLimit do
   @doc "Increment the counters and evaluate. For per-submission surfaces."
   @spec check(surface(), opts()) :: result()
   def check(surface, opts) do
-    if enabled?(), do: evaluate(surface, opts, 1), else: :ok
+    if enabled?(), do: surface |> evaluate(opts, 1) |> report_denial(surface), else: :ok
   end
 
   @doc """
@@ -92,7 +95,7 @@ defmodule Kanban.RateLimit do
   """
   @spec peek(surface(), opts()) :: result()
   def peek(surface, opts) do
-    if enabled?(), do: evaluate_peek(surface, opts), else: :ok
+    if enabled?(), do: surface |> evaluate_peek(opts) |> report_denial(surface), else: :ok
   end
 
   @doc "Record a failed attempt (increment the counters, ignore the verdict)."
@@ -101,6 +104,17 @@ defmodule Kanban.RateLimit do
     if enabled?(), do: evaluate(surface, opts, 1)
     :ok
   end
+
+  # A denied check or peek emits [:kanban, :rate_limit, :denied] with the
+  # surface only. The key, IP address and identity never leave this module, not
+  # even hashed: a key is often an email or an IP. record_failure/2 discards its
+  # verdict, so it never reports a denial.
+  defp report_denial({:error, {:rate_limited, _retry_after_ms}} = denied, surface) do
+    Kanban.Telemetry.emit([:kanban, :rate_limit, :denied], %{count: 1}, %{surface: surface})
+    denied
+  end
+
+  defp report_denial(result, _surface), do: result
 
   # Defaults on (prod/dev); the test environment turns it off globally and the
   # throttle-specific tests opt back in with known limits, so the broad suite

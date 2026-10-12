@@ -1,6 +1,8 @@
 defmodule KanbanWeb.MCP.ServerTest do
   use ExUnit.Case, async: true
 
+  import Kanban.TelemetryHelpers
+
   alias KanbanWeb.MCP.Server
 
   # Only tools/call needs a real conn; every method under test here never
@@ -100,6 +102,84 @@ defmodule KanbanWeb.MCP.ServerTest do
           ] do
         assert {:reply, 400, %{error: %{code: -32_600}}} = Server.handle_payload(body, @conn)
       end
+    end
+  end
+
+  describe "telemetry" do
+    @request_events [
+      [:kanban, :mcp, :request, :start],
+      [:kanban, :mcp, :request, :stop],
+      [:kanban, :mcp, :request, :exception]
+    ]
+
+    setup do
+      attach_telemetry(@request_events)
+      :ok
+    end
+
+    # The stop metadata of the next request span, without the span context.
+    defp stop_metadata do
+      assert_receive {:telemetry_event, [:kanban, :mcp, :request, :stop], %{duration: _},
+                      metadata}
+
+      Map.delete(metadata, :telemetry_span_context)
+    end
+
+    test "unknown tool outcome carries no name" do
+      name = "evil_tool<script>"
+
+      assert %{error: %{code: -32_602}} = handle("tools/call", %{"name" => name})
+
+      assert_receive {:telemetry_event, [:kanban, :mcp, :request, :start], _, start_metadata}
+      assert Map.delete(start_metadata, :telemetry_span_context) == %{method: :tools_call}
+
+      metadata = stop_metadata()
+      assert metadata == %{method: :tools_call, outcome: :unknown_tool}
+      refute name in Map.values(metadata)
+    end
+
+    test "each message reports its method and outcome" do
+      cases = [
+        {request("ping"), :ping, :ok},
+        {request("initialize"), :initialize, :ok},
+        {request("tools/list"), :tools_list, :ok},
+        {request("sampling/createMessage"), :unknown, :unknown_method},
+        {request("tools/call", %{}), :tools_call, :invalid_params},
+        {request("tools/call", %{"name" => "stride_get_task", "arguments" => [1]}), :tools_call,
+         :invalid_params},
+        {request("tools/call", %{"name" => "stride_get_task", "arguments" => %{}}), :tools_call,
+         :invalid_params},
+        {%{"jsonrpc" => "2.0", "method" => "notifications/initialized"}, :notification, :ok},
+        {%{"jsonrpc" => "2.0", "id" => 1, "result" => %{}}, :response, :ok},
+        {"ping", :unknown, :invalid_request}
+      ]
+
+      for {message, method, outcome} <- cases do
+        Server.handle_message(message, @conn)
+        assert stop_metadata() == %{method: method, outcome: outcome}, inspect(message)
+      end
+    end
+
+    test "a batch reports one span per message" do
+      Server.handle_payload(
+        %{"_json" => [request("ping", %{}, 1), request("nope", %{}, 2)]},
+        @conn
+      )
+
+      assert stop_metadata() == %{method: :ping, outcome: :ok}
+      assert stop_metadata() == %{method: :unknown, outcome: :unknown_method}
+    end
+
+    test "a rejected body reports invalid_request and a parse error reports parse_error" do
+      assert {:reply, 400, %{error: %{code: -32_600}}} =
+               Server.handle_payload(%{"_json" => []}, @conn)
+
+      assert stop_metadata() == %{method: :unknown, outcome: :invalid_request}
+
+      assert {:reply, 400, %{id: nil, error: %{code: -32_700, message: "Parse error"}}} =
+               Server.parse_error_reply()
+
+      assert stop_metadata() == %{method: :unknown, outcome: :parse_error}
     end
   end
 end

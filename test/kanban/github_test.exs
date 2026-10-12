@@ -1,6 +1,8 @@
 defmodule Kanban.GitHubTest do
   use ExUnit.Case, async: false
 
+  import Kanban.TelemetryHelpers
+
   alias Kanban.GitHub
 
   describe "valid_labels/0" do
@@ -55,6 +57,49 @@ defmodule Kanban.GitHubTest do
       end)
 
       :ok
+    end
+
+    @issue_created [:kanban, :github, :issue_created]
+
+    test "a created issue emits github.issue_created with outcome ok" do
+      Application.put_env(:kanban, :github, token: "test-token", repo: "owner/repo")
+
+      Application.put_env(:kanban, :http_client, fn _url, _opts ->
+        {:ok, %Req.Response{status: 201, body: %{"html_url" => "https://github.com/o/r/1"}}}
+      end)
+
+      attach_telemetry(@issue_created)
+
+      assert {:ok, _url} = GitHub.create_issue("Secret title", "Secret body", ["defect"])
+
+      assert_receive {:telemetry_event, @issue_created, %{count: 1}, metadata}
+      # Only the outcome: never the title, body, labels or issue URL.
+      assert metadata == %{outcome: :ok}
+    end
+
+    test "a failed request emits github.issue_created with outcome error" do
+      Application.put_env(:kanban, :github, token: "test-token", repo: "owner/repo")
+
+      Application.put_env(:kanban, :http_client, fn _url, _opts ->
+        {:ok, %Req.Response{status: 500, body: %{"message" => "boom"}}}
+      end)
+
+      attach_telemetry(@issue_created)
+
+      assert {:error, _reason} = GitHub.create_issue("title", "body", [])
+
+      assert_receive {:telemetry_event, @issue_created, %{count: 1}, metadata}
+      assert metadata == %{outcome: :error}
+    end
+
+    test "an unconfigured integration emits github.issue_created with outcome error" do
+      Application.delete_env(:kanban, :github)
+      attach_telemetry(@issue_created)
+
+      assert {:error, :not_configured} = GitHub.create_issue("title", "body", [])
+
+      assert_receive {:telemetry_event, @issue_created, %{count: 1}, metadata}
+      assert metadata == %{outcome: :error}
     end
 
     test "returns error when not configured" do

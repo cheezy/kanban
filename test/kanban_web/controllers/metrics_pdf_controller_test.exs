@@ -5,6 +5,7 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Tasks
 
@@ -12,6 +13,14 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
     user = user_fixture()
     conn = log_in_user(build_conn(), user)
     %{conn: conn, user: user}
+  end
+
+  # The start and stop metadata of the next export span, without the span
+  # context.
+  defp export_span_metadata do
+    assert_receive {:telemetry_event, [:kanban, :export, :start], _, start}
+    assert_receive {:telemetry_event, [:kanban, :export, :stop], %{duration: _}, stop}
+    {Map.delete(start, :telemetry_span_context), Map.delete(stop, :telemetry_span_context)}
   end
 
   describe "export/2 - access control" do
@@ -781,6 +790,25 @@ defmodule KanbanWeb.MetricsPdfControllerTest do
       board = ai_optimized_board_fixture(user)
       column = column_fixture(board)
       %{board: board, column: column}
+    end
+
+    test "excel export emits the export span", %{conn: conn, board: board} do
+      attach_telemetry([[:kanban, :export, :start], [:kanban, :export, :stop]])
+
+      conn = get(conn, ~p"/boards/#{board}/metrics/throughput/export?format=excel")
+      assert conn.status == 200
+
+      # Only the kind and format: never the board, its name or the metric filters.
+      assert export_span_metadata() ==
+               {%{kind: :metrics_pdf, format: :xlsx}, %{kind: :metrics_pdf, format: :xlsx}}
+    end
+
+    test "an unknown metric emits no export span", %{conn: conn, board: board} do
+      attach_telemetry([:kanban, :export, :start])
+
+      get(conn, ~p"/boards/#{board}/metrics/unknown-metric/export")
+
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
     end
 
     test "exports throughput as Excel when format=excel", %{

@@ -33,7 +33,7 @@ defmodule KanbanWeb.MetricsPdfController do
 
     case Boards.get_board(board_id, user) do
       {:ok, board} ->
-        dispatch_export_format(conn, board, metric, params)
+        export_board(conn, board, metric, params)
 
       {:error, :not_found} ->
         conn
@@ -42,11 +42,25 @@ defmodule KanbanWeb.MetricsPdfController do
     end
   end
 
-  defp dispatch_export_format(conn, board, metric, %{"format" => "excel"} = params) do
+  # Timed as the [:kanban, :export] span. Only the export kind and file format
+  # are reported: never the board, its name or the metric filters.
+  defp export_board(conn, board, metric, params) do
+    format = export_format(params)
+
+    Kanban.Telemetry.span([:kanban, :export], %{kind: :metrics_pdf, format: format}, fn ->
+      conn = dispatch_export_format(conn, board, metric, format, params)
+      {conn, %{kind: :metrics_pdf, format: format}}
+    end)
+  end
+
+  defp export_format(%{"format" => "excel"}), do: :xlsx
+  defp export_format(_params), do: :pdf
+
+  defp dispatch_export_format(conn, board, metric, :xlsx, params) do
     generate_and_send_excel(conn, board, metric, params)
   end
 
-  defp dispatch_export_format(conn, board, metric, params) do
+  defp dispatch_export_format(conn, board, metric, :pdf, params) do
     generate_and_send_pdf(conn, board, metric, params)
   end
 

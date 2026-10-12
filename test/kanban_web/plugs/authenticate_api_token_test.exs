@@ -4,6 +4,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
   import Ecto.Query
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.ApiTokens
   alias KanbanWeb.Plugs.AuthenticateApiToken
@@ -43,6 +44,29 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
       assert conn.halted
       assert conn.status == 401
       assert json_response(conn, 401) == %{"error" => "Missing or invalid Authorization header"}
+    end
+
+    test "missing token emits auth_failed", %{conn: conn} do
+      attach_telemetry([:kanban, :api, :auth_failed])
+
+      conn = AuthenticateApiToken.call(conn, [])
+
+      assert conn.status == 401
+
+      assert_receive {:telemetry_event, [:kanban, :api, :auth_failed], %{count: 1}, metadata}
+      assert %{reason: "missing_token", path: _path, method: _method} = metadata
+      assert metadata |> Map.keys() |> Enum.sort() == [:method, :path, :reason]
+    end
+
+    test "a non-Bearer Authorization header also reports missing_token", %{conn: conn} do
+      attach_telemetry([:kanban, :api, :auth_failed])
+
+      conn
+      |> put_req_header("authorization", "InvalidFormat token123")
+      |> AuthenticateApiToken.call([])
+
+      assert_receive {:telemetry_event, [:kanban, :api, :auth_failed], _,
+                      %{reason: "missing_token"}}
     end
 
     test "returns 401 for invalid token format", %{conn: conn} do

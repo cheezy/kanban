@@ -87,12 +87,17 @@ defmodule Kanban.Archives do
   formula injection (a leading `=`, `+`, `-`, `@`, tab, or CR is prefixed
   with a single quote so spreadsheet apps do not execute it) by the shared
   `Kanban.CSV` encoder.
+
+  Runs inside the `[:kanban, :export]` telemetry span with
+  `kind: :archive_csv`, measuring the number of archived tasks exported as
+  `row_count`. A failed export emits the span's exception event and re-raises.
   """
   @spec export_csv_for_board(integer()) :: binary()
   def export_csv_for_board(board_id) when is_integer(board_id) do
-    board_id
-    |> list_archived_for_board()
-    |> build_csv()
+    Kanban.Telemetry.span([:kanban, :export], %{kind: :archive_csv, format: :csv}, fn ->
+      rows = list_archived_for_board(board_id)
+      {build_csv(rows), %{row_count: length(rows)}, %{kind: :archive_csv, format: :csv}}
+    end)
   end
 
   @doc """
