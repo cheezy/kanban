@@ -39,6 +39,7 @@ defmodule Kanban.Tasks.Interventions do
   alias Kanban.Targets
   alias Kanban.Targets.DeliveryTarget
   alias Kanban.Tasks.Broadcaster
+  alias Kanban.Tasks.GoalTelemetry
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
 
@@ -111,6 +112,7 @@ defmodule Kanban.Tasks.Interventions do
       goal
       |> run_reassign(new_assigned_to_id)
       |> notify_reassigned(goal, scope)
+      |> GoalTelemetry.reassigned(scope)
     else
       {:error, :unauthorized}
     end
@@ -231,7 +233,7 @@ defmodule Kanban.Tasks.Interventions do
   def reprioritize_goal_unstarted(scope, %Task{} = goal, new_priority) do
     if can_intervene?(scope, goal) do
       with {:ok, priority} <- validate_priority(new_priority) do
-        run_reprioritize(goal, priority)
+        goal |> run_reprioritize(priority) |> GoalTelemetry.reprioritized(scope, priority)
       end
     else
       {:error, :unauthorized}
@@ -334,7 +336,10 @@ defmodule Kanban.Tasks.Interventions do
       priors = Map.new(restorations, &{&1.id, &1.prior})
       child_ids = restorations |> Enum.map(& &1.id) |> Enum.reject(&(&1 == goal.id))
       {item_changeset, history} = undo_changeset_and_history(field, priors)
-      undo_transaction(goal, child_ids, item_changeset, history)
+
+      goal
+      |> undo_transaction(child_ids, item_changeset, history)
+      |> GoalTelemetry.undone(field, scope)
     else
       {:error, :unauthorized}
     end

@@ -9,6 +9,7 @@ defmodule Kanban.Tasks.Dependencies do
   import Ecto.Query, warn: false
 
   alias Kanban.Repo
+  alias Kanban.Tasks.GoalTelemetry
   alias Kanban.Tasks.Task
 
   @doc """
@@ -61,7 +62,9 @@ defmodule Kanban.Tasks.Dependencies do
   Gets all tasks that are blocked by incomplete dependencies and unblocks them
   if their dependencies are now complete.
 
-  Called after a task is marked as done to unblock dependent tasks.
+  Called after a task is marked as done to unblock dependent tasks. Emits
+  `[:kanban, :task, :unblocked]` for each dependent that is no longer blocked;
+  a dependent still waiting on another task emits nothing.
   """
   def unblock_dependent_tasks(completed_task_identifier, board_id) do
     dependent_tasks =
@@ -75,7 +78,9 @@ defmodule Kanban.Tasks.Dependencies do
       |> Repo.all()
 
     Enum.each(dependent_tasks, fn task ->
-      update_task_blocking_status(task)
+      task
+      |> update_task_blocking_status()
+      |> GoalTelemetry.unblocked(board_id)
     end)
 
     :ok

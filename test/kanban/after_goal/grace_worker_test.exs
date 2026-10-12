@@ -18,6 +18,7 @@ defmodule Kanban.AfterGoal.GraceWorkerTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
   import ExUnit.CaptureLog
+  import Kanban.TelemetryHelpers
 
   alias Kanban.AfterGoal.GraceWorker
   alias Kanban.Columns
@@ -90,6 +91,27 @@ defmodule Kanban.AfterGoal.GraceWorkerTest do
         |> Kanban.Repo.update()
 
       %{goal: pending_goal, done_column: done, board: board}
+    end
+
+    test "emits grace_window_expired and a grace-worker after_goal_succeeded",
+         %{goal: goal, board: board} do
+      attach_telemetry([
+        [:kanban, :goal, :grace_window_expired],
+        [:kanban, :goal, :after_goal_succeeded]
+      ])
+
+      assert :ok = perform_job(GraceWorker, %{"goal_id" => goal.id})
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :after_goal_succeeded], measurements,
+                      %{goal_id: goal_id, board_id: board_id, source: :grace_worker}}
+
+      assert {goal_id, board_id} == {goal.id, board.id}
+      assert measurements == %{count: 1}
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :grace_window_expired], %{count: 1},
+                      metadata}
+
+      assert metadata == %{goal_id: goal.id, board_id: board.id}
     end
 
     test "flips after_goal_status to :succeeded and returns :ok", %{goal: goal} do
@@ -192,6 +214,26 @@ defmodule Kanban.AfterGoal.GraceWorkerTest do
       refetched = Kanban.Repo.reload(succeeded)
       assert refetched.after_goal_status == :succeeded
       assert length(refetched.after_goal_attempts) == 1
+    end
+
+    test "already promoted goal emits nothing" do
+      user = user_fixture()
+      column = user |> board_fixture() |> column_fixture()
+
+      goal =
+        column
+        |> task_fixture(%{title: "Promoted by the agent", type: :goal})
+        |> Ecto.Changeset.change(%{after_goal_status: :succeeded})
+        |> Kanban.Repo.update!()
+
+      attach_telemetry([
+        [:kanban, :goal, :grace_window_expired],
+        [:kanban, :goal, :after_goal_succeeded]
+      ])
+
+      assert :ok = perform_job(GraceWorker, %{"goal_id" => goal.id})
+
+      refute_receive {:telemetry_event, _event, _measurements, _metadata}
     end
   end
 

@@ -36,8 +36,10 @@ Each entry is a map with these fields:
 A new event is named `[:kanban, domain, past_tense_action]`, for example
 `[:kanban, :task, :archived]`. The domain is a singular noun (`:task`,
 `:board`, `:user`, `:api`), and the action is a past-tense verb or verb phrase.
-An irregular past tense counts, as in `[:kanban, :notification, :read]` and
-`[:kanban, :digest, :sent]`.
+An irregular past tense counts, as in `[:kanban, :notification, :read]`,
+`[:kanban, :digest, :sent]` and `[:kanban, :goal, :reassignment_undone]`, and
+so does a past-tense verb followed by `to` and a destination, as in
+`[:kanban, :goal, :promoted_to_ready]`.
 A span prefix names the operation being timed, `[:kanban, domain, operation]`,
 or `[:kanban, domain]` when the domain is itself the operation, as in
 `[:kanban, :export]`. `:telemetry` appends `:start`, `:stop` and `:exception`
@@ -380,6 +382,64 @@ notifications marked read or digest recipients, and may be 0.
   `target.status_changed`; that notification reports through
   `notification.created` and the email events like any other.
 
+### Goal, dependency and after_goal events
+
+W2341 added these. They are declared in
+`Kanban.Telemetry.Catalog.GoalEvents` (`lib/kanban/telemetry/catalog/goal_events.ex`)
+and emitted by `Kanban.Tasks.GoalTelemetry`. Each is emitted only after its
+change has committed, so a refused, invalid or rolled-back change emits
+nothing. Every event measures `count: 1`.
+
+| Event | Metadata | Emitted by |
+|---|---|---|
+| `[:kanban, :task, :unblocked]` | `task_id`, `board_id` | `Kanban.Tasks.Dependencies.unblock_dependent_tasks/2`, once per dependent that is no longer blocked |
+| `[:kanban, :goal, :completed]` | `goal_id`, `board_id` | `Kanban.Tasks.AgentWorkflow` (API completion, `mark_reviewed` and approvals in the review queue), from the id `Kanban.Tasks.GoalCompletion.finalize_child/2` returns |
+| `[:kanban, :goal, :promoted_to_ready]` | `goal_id`, `board_id` | `Kanban.Tasks.Goals.promote_goal_to_ready/2`; also measures `task_count` |
+| `[:kanban, :goal, :after_goal_succeeded]` | `goal_id`, `board_id`, `source` | `Kanban.Tasks.Goals.mark_after_goal_succeeded_and_promote/2`; also measures `duration_ms` for an agent report |
+| `[:kanban, :goal, :after_goal_failed]` | `goal_id`, `board_id`, `exit_code` | `Kanban.Tasks.Goals.record_after_goal_failure/2`; also measures `duration_ms` |
+| `[:kanban, :goal, :grace_window_scheduled]` | `goal_id`, `board_id` | `Kanban.AfterGoal.schedule_grace_window/1`; also measures `grace_window_ms` |
+| `[:kanban, :goal, :grace_window_expired]` | `goal_id`, `board_id` | `Kanban.Tasks.Goals.mark_after_goal_succeeded_and_promote/2`, when `Kanban.AfterGoal.GraceWorker` moves a pending goal to Done |
+| `[:kanban, :goal, :reassigned]` | `goal_id`, `board_id`, `actor_user_id`, `assigned_to_id` | `Kanban.Tasks.Interventions.reassign_goal_unstarted/3` |
+| `[:kanban, :goal, :reprioritized]` | `goal_id`, `board_id`, `actor_user_id`, `priority` | `Kanban.Tasks.Interventions.reprioritize_goal_unstarted/3` |
+| `[:kanban, :goal, :reassignment_undone]` | `goal_id`, `board_id`, `actor_user_id` | `Kanban.Tasks.Interventions.undo_reassignment/3` |
+| `[:kanban, :goal, :reprioritization_undone]` | `goal_id`, `board_id`, `actor_user_id` | `Kanban.Tasks.Interventions.undo_reprioritization/3` |
+
+- **`goal.completed` fires once per goal, after the commit.** It fires when a
+  completion of the goal's last child first moves the goal's
+  `after_goal_status` from `nil` to `:pending`, a change that happens at most
+  once per goal, so a re-opened and re-completed child does not fire it again.
+  The agent workflow emits it after its own transaction commits. An approval
+  in the review queue runs that workflow inside `Kanban.Reviews`' transaction,
+  which wraps it in `GoalTelemetry.after_commit/1`: `goal.completed`,
+  `task.unblocked` and `grace_window_scheduled` are held back and emitted
+  only once the review has committed, and dropped if it rolls back. Outside
+  that wrapper, `goal.completed` is never emitted while a transaction is
+  open. An API completion of the last child therefore emits both
+  `task.completed` and `goal.completed`. The goal itself reaches Done later,
+  which `after_goal_succeeded` reports.
+- **after_goal output is never sent.** A project's after_goal hook can print
+  anything, including secrets. `after_goal_failed` carries only the exit code
+  (`nil` when it is not an integer) and the reported `duration_ms`.
+  `after_goal_succeeded` has `source` `:agent` for an agent report, measuring
+  its `duration_ms` when it is an integer, or `:grace_worker` when the grace
+  window expired. A duplicate report for a goal already in Done emits nothing.
+- **A dependent that is still blocked emits nothing.** `task.unblocked` fires
+  only for a dependent whose last incomplete dependency was just completed.
+- **`promoted_to_ready` needs a move.** It fires only when at least one task
+  moved to Ready, and `task_count` counts them, the goal included.
+- **`grace_window_expired` fires only when the worker promotes the goal.** It
+  is emitted beside the worker's `after_goal_succeeded`, so a goal the agent
+  already reported on, or one that is missing, emits nothing, and neither
+  does a worker run that loses the race to an agent report.
+- **Intervention counts leave out the goal.** `moved_count` counts the
+  children changed or restored and `skipped_count` the claimed children (or,
+  for an undo, the children that could no longer be restored).
+  `actor_user_id` is the user who intervened.
+- **Not covered.** A goal whose last child is dragged into Done on the board,
+  or completed through the deprecated `mark_done/2`, emits no
+  `goal.completed`. Recomputing a task's blocking status after its
+  dependencies are edited emits no `task.unblocked`.
+
 ## Emitting an event
 
 ```elixir
@@ -449,8 +509,10 @@ raise.
    `Kanban.Telemetry.Catalog.UserEvents`, a new notification, email delivery
    or digest event is an entry in
    `Kanban.Telemetry.Catalog.NotificationEvents`, a new delivery target event
-   is an entry in `Kanban.Telemetry.Catalog.TargetEvents`, and a new broadcast
-   message event is an entry in `Kanban.Telemetry.Catalog.MessageEvents`.
+   is an entry in `Kanban.Telemetry.Catalog.TargetEvents`, a new broadcast
+   message event is an entry in `Kanban.Telemetry.Catalog.MessageEvents`, and
+   a new goal, dependency or after_goal event is an entry in
+   `Kanban.Telemetry.Catalog.GoalEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, or declares a forbidden key.

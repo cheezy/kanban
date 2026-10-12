@@ -25,7 +25,10 @@ defmodule Kanban.Tasks.GoalCompletionTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
+  alias Kanban.ApiTokens
+  alias Kanban.Columns
   alias Kanban.Repo
   alias Kanban.Tasks
   alias Kanban.Tasks.GoalCompletion
@@ -124,5 +127,159 @@ defmodule Kanban.Tasks.GoalCompletionTest do
       reloaded_child = Tasks.get_task!(child.id)
       assert reloaded_child.status == :completed
     end
+  end
+
+  describe "goal.completed telemetry" do
+    setup %{user: user} do
+      board = ai_optimized_board_fixture(user)
+      cols = board |> Columns.list_columns() |> Map.new(&{&1.name, &1})
+      {:ok, goal} = Tasks.create_task(cols["Doing"], goal_attrs(user))
+
+      %{agent_board: board, cols: cols, agent_goal: goal}
+    end
+
+    test "last child emits goal.completed", ctx do
+      %{user: user, agent_board: board, cols: cols, agent_goal: goal} = ctx
+      first = claimed_child!(cols["Doing"], user, goal)
+      last = claimed_child!(cols["Doing"], user, goal)
+      attach_telemetry([:kanban, :goal, :completed])
+
+      assert {:ok, _, _} = Tasks.complete_task(first, user, completion_params())
+      refute_received {:telemetry_event, [:kanban, :goal, :completed], _, _}
+
+      assert {:ok, _, _} = Tasks.complete_task(last, user, completion_params())
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :completed], %{count: 1}, metadata}
+      assert metadata == %{goal_id: goal.id, board_id: board.id}
+      refute_receive {:telemetry_event, [:kanban, :goal, :completed], _, _}
+    end
+
+    test "re-completing the last child emits no second goal.completed", ctx do
+      %{user: user, cols: cols, agent_goal: goal} = ctx
+      child = claimed_child!(cols["Doing"], user, goal)
+      attach_telemetry([:kanban, :goal, :completed])
+
+      assert {:ok, _, _} = Tasks.complete_task(child, user, completion_params())
+      assert_receive {:telemetry_event, [:kanban, :goal, :completed], _, _}
+
+      # Re-open the child, as a reviewer sending it back would, and finish it again.
+      Task
+      |> where([t], t.id == ^child.id)
+      |> Repo.update_all(
+        set: [status: :in_progress, column_id: cols["Doing"].id, completed_at: nil]
+      )
+
+      reopened = Tasks.get_task!(child.id)
+      assert {:ok, _, _} = Tasks.complete_task(reopened, user, completion_params())
+
+      refute_receive {:telemetry_event, [:kanban, :goal, :completed], _, _}
+    end
+
+    test "goal without children", ctx do
+      %{user: user, cols: cols} = ctx
+      {:ok, childless} = Tasks.create_task(cols["Doing"], goal_attrs(user))
+      orphan = claimed_child!(cols["Doing"], user, nil)
+      attach_telemetry([:kanban, :goal, :completed])
+
+      assert {:ok, _, _} = Tasks.complete_task(orphan, user, completion_params())
+
+      refute_receive {:telemetry_event, [:kanban, :goal, :completed], _, _}
+      assert Tasks.get_task!(childless.id).after_goal_status == nil
+    end
+
+    test "api completion emits goal.completed", ctx do
+      %{user: user, agent_board: board, cols: cols, agent_goal: goal} = ctx
+      child = claimed_child!(cols["Doing"], user, goal)
+
+      attach_telemetry([[:kanban, :task, :completed], [:kanban, :goal, :completed]])
+
+      response =
+        board
+        |> api_conn(user)
+        |> Phoenix.ConnTest.dispatch(
+          KanbanWeb.Endpoint,
+          :patch,
+          "/api/tasks/#{child.id}/complete",
+          Map.merge(completion_params(), %{
+            "after_doing_result" => %{"exit_code" => 0, "output" => "ok", "duration_ms" => 100},
+            "before_review_result" => %{"exit_code" => 0, "output" => "ok", "duration_ms" => 100}
+          })
+        )
+
+      assert response.status == 200
+
+      assert_receive {:telemetry_event, [:kanban, :task, :completed], %{count: 1},
+                      %{task_id: task_id}}
+
+      assert task_id == child.id
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :completed], %{count: 1}, metadata}
+      assert metadata == %{goal_id: goal.id, board_id: board.id}
+    end
+  end
+
+  describe "finalize_child/2" do
+    test "returns the goal id only for the call that completes the goal",
+         %{column: column, goal: goal} do
+      first = task_fixture(column, %{title: "C1", parent_id: goal.id})
+      last = task_fixture(column, %{title: "C2", parent_id: goal.id})
+
+      assert {:ok, :not_last_child, nil} = GoalCompletion.finalize_child(first)
+      assert {:ok, :last_child, goal_id} = GoalCompletion.finalize_child(last)
+      assert goal_id == goal.id
+
+      # A later last-child event (a re-completed sibling) no longer flips the goal.
+      assert {:ok, :last_child, nil} = GoalCompletion.finalize_child(last)
+    end
+
+    test "returns nil for a task with no parent", %{column: column} do
+      orphan = task_fixture(column, %{title: "Orphan"})
+      assert {:ok, :not_last_child, nil} = GoalCompletion.finalize_child(orphan)
+    end
+  end
+
+  defp goal_attrs(user) do
+    %{
+      "title" => "Goal #{System.unique_integer([:positive])}",
+      "type" => "goal",
+      "created_by_id" => user.id
+    }
+  end
+
+  defp claimed_child!(column, user, goal) do
+    attrs = %{
+      "title" => "Child #{System.unique_integer([:positive])}",
+      "status" => "in_progress",
+      "needs_review" => false,
+      "claimed_at" => DateTime.utc_now(),
+      "claim_expires_at" => DateTime.add(DateTime.utc_now(), 3600, :second),
+      "assigned_to_id" => user.id,
+      "created_by_id" => user.id
+    }
+
+    attrs = if goal, do: Map.put(attrs, "parent_id", goal.id), else: attrs
+    {:ok, child} = Tasks.create_task(column, attrs)
+    child
+  end
+
+  defp completion_params do
+    %{
+      "completion_summary" => "Implemented the feature",
+      "actual_complexity" => "small",
+      "actual_files_changed" => "1 file",
+      "time_spent_minutes" => 10
+    }
+  end
+
+  defp api_conn(board, user) do
+    {:ok, {_token, plain_token}} =
+      ApiTokens.create_api_token(user, board, %{
+        "name" => "Telemetry token",
+        "agent_capabilities" => ["code_generation", "testing"]
+      })
+
+    Phoenix.ConnTest.build_conn()
+    |> Plug.Conn.put_req_header("accept", "application/json")
+    |> Plug.Conn.put_req_header("authorization", "Bearer #{plain_token}")
   end
 end

@@ -19,6 +19,7 @@ defmodule Kanban.AfterGoal do
   """
 
   alias Kanban.AfterGoal.GraceWorker
+  alias Kanban.Tasks.GoalTelemetry
   alias Kanban.Tasks.Task
 
   @doc """
@@ -38,12 +39,14 @@ defmodule Kanban.AfterGoal do
   treats a failed schedule as best-effort.
   """
   @spec schedule_grace_window(Task.t()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def schedule_grace_window(%Task{id: goal_id, type: :goal}) do
-    scheduled_at = DateTime.utc_now() |> DateTime.add(grace_window_ms(), :millisecond)
+  def schedule_grace_window(%Task{id: goal_id, type: :goal} = goal) do
+    window_ms = grace_window_ms()
+    scheduled_at = DateTime.utc_now() |> DateTime.add(window_ms, :millisecond)
 
     %{goal_id: goal_id}
     |> GraceWorker.new(scheduled_at: scheduled_at)
     |> Oban.insert()
+    |> GoalTelemetry.grace_window_scheduled(goal, window_ms)
   end
 
   @doc """

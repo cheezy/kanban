@@ -34,6 +34,8 @@ defmodule Kanban.Reviews do
   workflow-step failure rolls back the review-field write. Once the
   transaction commits, `Kanban.Notifications.Events.task_reviewed/2` tells
   the task's completer the outcome; a rolled-back review notifies nobody.
+  The goal events an approval causes, such as `[:kanban, :goal, :completed]`,
+  are held back until that commit too (`Kanban.Tasks.GoalTelemetry.after_commit/1`).
   """
 
   import Ecto.Query, warn: false
@@ -44,6 +46,7 @@ defmodule Kanban.Reviews do
   alias Kanban.Repo
   alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.Broadcaster
+  alias Kanban.Tasks.GoalTelemetry
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskTelemetry
 
@@ -316,7 +319,11 @@ defmodule Kanban.Reviews do
   defp moved_event(%Task{}), do: :task_returned_to_doing
 
   defp run_review_transaction(scope, task, user, base_attrs, opts) do
-    Repo.transaction(fn -> commit_review!(scope, task, user, base_attrs, opts) end)
+    # Goal telemetry the approval causes (goal.completed, task.unblocked,
+    # goal.grace_window_scheduled) is held back until this transaction commits.
+    GoalTelemetry.after_commit(fn ->
+      Repo.transaction(fn -> commit_review!(scope, task, user, base_attrs, opts) end)
+    end)
   end
 
   defp commit_review!(scope, task, user, base_attrs, opts) do

@@ -23,6 +23,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   alias Kanban.Tasks.Dependencies
   alias Kanban.Tasks.GoalCompletion
   alias Kanban.Tasks.Goals
+  alias Kanban.Tasks.GoalTelemetry
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
   alias Kanban.Tasks.Task
@@ -540,9 +541,10 @@ defmodule Kanban.Tasks.AgentWorkflow do
     done_column = get_column_by_name(board_id, "Done")
 
     case run_auto_done_transaction(updated_task, done_column) do
-      {:ok, last_child_tag} when last_child_tag in [:last_child, :not_last_child] ->
+      {:ok, {last_child_tag, completed_goal_id}} ->
         maybe_schedule_after_goal_grace(updated_task, last_child_tag)
         final_task = finalize_completion(updated_task, user, board_id, done_column)
+        GoalTelemetry.completed(completed_goal_id, board_id)
 
         hooks =
           Metadata.build_completion_hooks(final_task, board, agent_name,
@@ -556,12 +558,13 @@ defmodule Kanban.Tasks.AgentWorkflow do
     end
   end
 
-  # Auto-done transaction. Uses `GoalCompletion.finalize_child_and_check_goal_complete/2`
+  # Auto-done transaction. Uses `GoalCompletion.finalize_child/2`
   # so the child Done write and the parent-goal "is-this-the-last-child"
   # check live in one transactionally-locked unit (W490) — the controller
-  # never duplicates that check. Returns `{:ok, :last_child}` or
-  # `{:ok, :not_last_child}` so callers can decide whether to append the
-  # after_goal hook to the response payload (W491).
+  # never duplicates that check. Returns `{:ok, {tag, completed_goal_id}}`:
+  # the tag decides whether to append the after_goal hook to the response
+  # payload (W491), and the goal id (set only when this completion first
+  # completed the goal) is emitted as goal.completed after the commit.
   defp run_auto_done_transaction(updated_task, done_column) do
     Repo.transaction(fn ->
       next_position = Positioning.get_next_position_locked(done_column)
@@ -574,8 +577,8 @@ defmodule Kanban.Tasks.AgentWorkflow do
         position: next_position
       }
 
-      case GoalCompletion.finalize_child_and_check_goal_complete(updated_task, done_attrs) do
-        {:ok, tag} when tag in [:last_child, :not_last_child] -> tag
+      case GoalCompletion.finalize_child(updated_task, done_attrs) do
+        {:ok, tag, completed_goal_id} -> {tag, completed_goal_id}
         {:error, _step, changeset, _changes} -> Repo.rollback(changeset)
       end
     end)
@@ -706,9 +709,11 @@ defmodule Kanban.Tasks.AgentWorkflow do
     done_column = get_column_by_name(board_id, "Done")
 
     case run_move_to_done_transaction(task, user, done_column) do
-      {:ok, last_child_tag} when last_child_tag in [:last_child, :not_last_child] ->
+      {:ok, {last_child_tag, completed_goal_id}} ->
         maybe_schedule_after_goal_grace(task, last_child_tag)
         updated_task = finalize_completion(task, user, board_id, done_column, opts)
+        # Held back until commit when Kanban.Reviews runs this in its transaction.
+        GoalTelemetry.completed(completed_goal_id, board_id)
 
         hooks =
           Metadata.build_mark_reviewed_hooks(updated_task, board, agent_name,
@@ -747,12 +752,11 @@ defmodule Kanban.Tasks.AgentWorkflow do
     end
   end
 
-  # Approved-review transition. Uses `GoalCompletion.finalize_child_and_check_goal_complete/2`
+  # Approved-review transition. Uses `GoalCompletion.finalize_child/2`
   # (W490) — the same context primitive the auto-done /complete path uses
   # — so the after_goal-on-mark_reviewed wiring is not a fork (W491 pitfall
   # repeated here: do not duplicate the after_goal logic). Returns
-  # `{:ok, :last_child}` or `{:ok, :not_last_child}` so the caller can
-  # decide whether to append after_goal to the response payload.
+  # `{:ok, {tag, completed_goal_id}}`, as `run_auto_done_transaction/2` does.
   defp run_move_to_done_transaction(task, user, done_column) do
     Repo.transaction(fn ->
       next_position = Positioning.get_next_position_locked(done_column)
@@ -766,8 +770,8 @@ defmodule Kanban.Tasks.AgentWorkflow do
         position: next_position
       }
 
-      case GoalCompletion.finalize_child_and_check_goal_complete(task, done_attrs) do
-        {:ok, tag} when tag in [:last_child, :not_last_child] -> tag
+      case GoalCompletion.finalize_child(task, done_attrs) do
+        {:ok, tag, completed_goal_id} -> {tag, completed_goal_id}
         {:error, _step, changeset, _changes} -> Repo.rollback(changeset)
       end
     end)

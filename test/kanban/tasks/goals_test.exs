@@ -21,6 +21,7 @@ defmodule Kanban.Tasks.GoalsTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Notifications.GoalCompletedWorker
   alias Kanban.Notifications.Notification
@@ -417,6 +418,95 @@ defmodule Kanban.Tasks.GoalsTest do
 
       users = :after_goal_failed |> goal_rows() |> Enum.map(& &1.user_id) |> Enum.sort()
       assert users == Enum.sort([ctx.user.id, ctx.assignee.id])
+    end
+  end
+
+  describe "goal telemetry" do
+    @agent_failure %{
+      "exit_code" => 3,
+      "output" => "hook printed this line",
+      "duration_ms" => 1200,
+      "reported_at" => "2026-10-12T12:00:00Z"
+    }
+
+    test "after_goal failure emits exit code only", %{goal: goal} do
+      attach_telemetry([:kanban, :goal, :after_goal_failed])
+
+      assert {:ok, _} = Goals.record_after_goal_failure(goal, @agent_failure)
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :after_goal_failed], measurements,
+                      metadata}
+
+      assert metadata.exit_code == 3
+      refute inspect({measurements, metadata}) =~ "hook printed"
+    end
+
+    test "after_goal failure metadata shape", %{board: board, goal: goal} do
+      attach_telemetry([:kanban, :goal, :after_goal_failed])
+
+      assert {:ok, _} = Goals.record_after_goal_failure(goal, @agent_failure)
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :after_goal_failed], measurements,
+                      metadata}
+
+      assert metadata == %{goal_id: goal.id, board_id: board.id, exit_code: 3}
+      assert measurements == %{count: 1, duration_ms: 1200}
+      refute Map.has_key?(metadata, :output)
+    end
+
+    test "an agent's after_goal success emits after_goal_succeeded once", %{
+      board: board,
+      goal: goal
+    } do
+      column_fixture(board, %{name: "Done"})
+      success = %{"exit_code" => 0, "output" => "pushed", "duration_ms" => 900}
+
+      attach_telemetry([
+        [:kanban, :goal, :after_goal_succeeded],
+        [:kanban, :goal, :grace_window_expired]
+      ])
+
+      assert {:ok, _} = Goals.mark_after_goal_succeeded_and_promote(goal, success)
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :after_goal_succeeded],
+                      %{count: 1, duration_ms: 900},
+                      %{goal_id: goal_id, board_id: board_id, source: :agent} = metadata}
+
+      assert {goal_id, board_id} == {goal.id, board.id}
+      refute inspect(metadata) =~ "pushed"
+      # An agent report is not a grace window expiry.
+      refute_received {:telemetry_event, [:kanban, :goal, :grace_window_expired], _, _}
+
+      # A duplicate report is idempotent and emits nothing more.
+      assert {:ok, _} = Goals.mark_after_goal_succeeded_and_promote(goal, success)
+      refute_receive {:telemetry_event, _event, _measurements, _metadata}
+    end
+
+    test "promote_goal_to_ready emits the number of tasks moved", %{user: user} do
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      _ready = column_fixture(board, %{name: "Ready"})
+      goal = task_fixture(backlog, %{title: "Backlog Goal", type: :goal})
+      task_fixture(backlog, %{title: "Child", parent_id: goal.id})
+      attach_telemetry([:kanban, :goal, :promoted_to_ready])
+
+      assert {:ok, 2} = Tasks.promote_goal_to_ready(goal, board.id)
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :promoted_to_ready],
+                      %{count: 1, task_count: 2}, metadata}
+
+      assert metadata == %{goal_id: goal.id, board_id: board.id}
+
+      # Nothing is left in the Backlog, so a second promotion emits nothing.
+      assert {:ok, 0} = goal.id |> Tasks.get_task!() |> Tasks.promote_goal_to_ready(board.id)
+      refute_receive {:telemetry_event, [:kanban, :goal, :promoted_to_ready], _, _}
+    end
+
+    test "a promotion refused for a missing column emits nothing", %{board: board, goal: goal} do
+      attach_telemetry([:kanban, :goal, :promoted_to_ready])
+
+      assert {:error, _} = Tasks.promote_goal_to_ready(goal, board.id)
+      refute_receive {:telemetry_event, [:kanban, :goal, :promoted_to_ready], _, _}
     end
   end
 end

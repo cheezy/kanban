@@ -1,6 +1,8 @@
 defmodule Kanban.AfterGoalTest do
   use Kanban.DataCase, async: false
 
+  import Kanban.TelemetryHelpers
+
   alias Kanban.AfterGoal
   alias Kanban.AfterGoal.GraceWorker
   alias Kanban.Tasks.Task
@@ -50,6 +52,17 @@ defmodule Kanban.AfterGoalTest do
 
       assert DateTime.compare(job.scheduled_at, expected_min) in [:eq, :gt]
       assert DateTime.compare(job.scheduled_at, expected_max) in [:eq, :lt]
+    end
+
+    test "emits grace_window_scheduled with the window length" do
+      attach_telemetry([:kanban, :goal, :grace_window_scheduled])
+
+      assert {:ok, %Oban.Job{}} = AfterGoal.schedule_grace_window(%Task{id: 42, type: :goal})
+
+      window_ms = AfterGoal.grace_window_ms()
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :grace_window_scheduled],
+                      %{count: 1, grace_window_ms: ^window_ms}, %{goal_id: 42, board_id: nil}}
     end
   end
 end

@@ -74,11 +74,34 @@ defmodule Kanban.Tasks.GoalCompletion do
           | {:ok, :not_last_child}
           | {:error, atom(), term(), map()}
   def finalize_child_and_check_goal_complete(%Task{} = child, attrs \\ %{}) do
+    case finalize_child(child, attrs) do
+      {:ok, tag, _completed_goal_id} -> {:ok, tag}
+      {:error, _step, _value, _changes} = err -> err
+    end
+  end
+
+  @doc """
+  Same transition as `finalize_child_and_check_goal_complete/2`, but also
+  returns the id of the goal this call completed.
+
+  The third element is the parent goal's id only when this call's
+  compare-and-set flipped the goal's `after_goal_status` from `nil` to
+  `:pending`, and `nil` otherwise. `after_goal_status` never returns to
+  `nil`, so at most one call per goal ever returns its id — a sibling that is
+  re-opened and re-completed still gets `:last_child`, but `nil` here. That
+  makes the id the exactly-once signal for `[:kanban, :goal, :completed]`,
+  which the caller passes to `Kanban.Tasks.GoalTelemetry.completed/2` once its
+  outermost transaction has committed.
+  """
+  @spec finalize_child(Task.t(), map() | keyword()) ::
+          {:ok, :last_child | :not_last_child, pos_integer() | nil}
+          | {:error, atom(), term(), map()}
+  def finalize_child(%Task{} = child, attrs \\ %{}) do
     child
     |> build_done_multi(merge_done_defaults(attrs))
     |> Repo.transaction()
     |> case do
-      {:ok, %{goal_check: result}} -> {:ok, result}
+      {:ok, %{goal_check: {tag, completed_goal_id}}} -> {:ok, tag, completed_goal_id}
       {:error, _step, _value, _changes} = err -> err
     end
   end
@@ -103,7 +126,7 @@ defmodule Kanban.Tasks.GoalCompletion do
   # guarantee: PostgreSQL holds it until the enclosing transaction
   # commits, so concurrent sibling completions queue behind each other
   # and each sees a consistent post-update sibling count.
-  defp check_parent_goal_complete(_repo, %Task{parent_id: nil}), do: {:ok, :not_last_child}
+  defp check_parent_goal_complete(_repo, %Task{parent_id: nil}), do: {:ok, {:not_last_child, nil}}
 
   defp check_parent_goal_complete(repo, %Task{parent_id: parent_id}) do
     case lock_parent_goal(repo, parent_id) do
@@ -121,14 +144,13 @@ defmodule Kanban.Tasks.GoalCompletion do
           # update_parent_goal_position promotion logic from racing the
           # child completion to move the goal to Done before the agent
           # has reported after_goal (W493).
-          maybe_mark_after_goal_pending(repo, parent)
-          {:ok, :last_child}
+          {:ok, {:last_child, maybe_mark_after_goal_pending(repo, parent)}}
         else
-          {:ok, :not_last_child}
+          {:ok, {:not_last_child, nil}}
         end
 
       _ ->
-        {:ok, :not_last_child}
+        {:ok, {:not_last_child, nil}}
     end
   end
 
@@ -137,14 +159,17 @@ defmodule Kanban.Tasks.GoalCompletion do
   # then re-opened then re-completed) never overwrite a later
   # `:succeeded`. The compare-and-set is enforced at the SQL level so a
   # concurrent endpoint update flipping status to `:succeeded` cannot be
-  # clobbered by this code path.
+  # clobbered by this code path. Returns the goal id when this call made the
+  # flip, which happens at most once per goal, and nil otherwise.
   defp maybe_mark_after_goal_pending(repo, %Task{id: goal_id}) do
     from(t in Task,
       where: t.id == ^goal_id and is_nil(t.after_goal_status)
     )
     |> repo.update_all(set: [after_goal_status: :pending])
-
-    :ok
+    |> case do
+      {1, _} -> goal_id
+      {_count, _} -> nil
+    end
   end
 
   defp lock_parent_goal(repo, parent_id) do

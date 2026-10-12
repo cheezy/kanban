@@ -11,6 +11,7 @@ defmodule Kanban.Tasks.Goals do
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.GoalPlacement
+  alias Kanban.Tasks.GoalTelemetry
   alias Kanban.Tasks.History
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
@@ -158,8 +159,10 @@ defmodule Kanban.Tasks.Goals do
   def promote_goal_to_ready(%Task{type: :goal} = goal, board_id) do
     with {:ok, backlog_column} <- find_column_by_name(board_id, "Backlog"),
          {:ok, ready_column} <- find_column_by_name(board_id, "Ready") do
-      tasks_to_move = collect_backlog_tasks(goal, backlog_column)
-      execute_promotion(tasks_to_move, ready_column)
+      goal
+      |> collect_backlog_tasks(backlog_column)
+      |> execute_promotion(ready_column)
+      |> GoalTelemetry.promoted_to_ready(goal, board_id)
     end
   end
 
@@ -231,6 +234,7 @@ defmodule Kanban.Tasks.Goals do
         done_goal = Queries.get_task!(updated_goal.id)
         Broadcaster.broadcast_task_change(done_goal, :task_moved)
         Events.goal_completed(done_goal)
+        GoalTelemetry.after_goal_succeeded(done_goal, attempt)
 
         {:ok, updated_goal}
 
@@ -270,7 +274,7 @@ defmodule Kanban.Tasks.Goals do
     goal = Repo.get!(Task, goal.id)
     updated = append_after_goal_attempt(goal, attempt)
     Events.after_goal_failed(updated, attempt)
-    {:ok, updated}
+    GoalTelemetry.after_goal_failed({:ok, updated}, attempt)
   end
 
   defp append_after_goal_attempt(goal, attempt) do

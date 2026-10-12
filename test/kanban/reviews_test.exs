@@ -610,6 +610,79 @@ defmodule Kanban.ReviewsTest do
       refute_receive {:telemetry_event, [:kanban, :task, :review_changes_requested], _, _}
     end
 
+    test "approving a goal's last child emits its goal events once, after the commit",
+         %{column: column, user: user, board: board} do
+      goal = task_fixture(column, %{title: "Goal", type: :goal})
+      task = pending_task!(column, %{parent_id: goal.id})
+
+      dependent =
+        column
+        |> task_fixture(%{title: "Waits on the reviewed task"})
+        |> Ecto.Changeset.change(%{dependencies: [task.identifier], status: :blocked})
+        |> Kanban.Repo.update!()
+
+      events = [
+        [:kanban, :goal, :completed],
+        [:kanban, :task, :unblocked],
+        [:kanban, :goal, :grace_window_scheduled]
+      ]
+
+      test_pid = self()
+      handler_id = "reviews-goal-events-#{System.unique_integer([:positive])}"
+
+      :ok =
+        :telemetry.attach_many(
+          handler_id,
+          events,
+          fn event, _measurements, metadata, _config ->
+            send(test_pid, {:goal_event, event, metadata, Kanban.Repo.in_transaction?()})
+          end,
+          nil
+        )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
+      assert {:ok, _} = user |> Scope.for_user() |> Reviews.approve_review(task)
+
+      assert_receive {:goal_event, [:kanban, :goal, :completed], completed, false}
+      assert completed == %{goal_id: goal.id, board_id: board.id}
+
+      assert_receive {:goal_event, [:kanban, :task, :unblocked], unblocked, false}
+      assert unblocked == %{task_id: dependent.id, board_id: board.id}
+
+      assert_receive {:goal_event, [:kanban, :goal, :grace_window_scheduled], %{goal_id: goal_id},
+                      false}
+
+      assert goal_id == goal.id
+      refute_receive {:goal_event, _event, _metadata, _in_transaction?}
+    end
+
+    test "a refused approval emits no goal events", %{column: column} do
+      goal = task_fixture(column, %{title: "Goal", type: :goal})
+      task = pending_task!(column, %{parent_id: goal.id})
+      outsider = Scope.for_user(user_fixture())
+
+      attach_telemetry([
+        [:kanban, :goal, :completed],
+        [:kanban, :task, :unblocked],
+        [:kanban, :goal, :grace_window_scheduled]
+      ])
+
+      assert {:error, _} = Reviews.approve_review(outsider, task)
+      refute_receive {:telemetry_event, _event, _measurements, _metadata}
+    end
+
+    test "approving a task whose goal has another open child emits no goal.completed",
+         %{column: column, user: user} do
+      goal = task_fixture(column, %{title: "Goal", type: :goal})
+      task = pending_task!(column, %{parent_id: goal.id})
+      _sibling = task_fixture(column, %{title: "Still open", parent_id: goal.id})
+      attach_telemetry([:kanban, :goal, :completed])
+
+      assert {:ok, _} = user |> Scope.for_user() |> Reviews.approve_review(task)
+      refute_receive {:telemetry_event, [:kanban, :goal, :completed], _, _}
+    end
+
     test "request_changes_review emits review_changes_requested without the notes",
          %{column: column, user: user, board: board} do
       task = pending_task!(column)

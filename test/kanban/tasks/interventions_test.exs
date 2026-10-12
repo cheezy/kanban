@@ -6,6 +6,7 @@ defmodule Kanban.Tasks.InterventionsTest do
   import Kanban.ColumnsFixtures
   import Kanban.TargetsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
@@ -734,6 +735,116 @@ defmodule Kanban.Tasks.InterventionsTest do
       assert length(moved) == 2
       assert reload(goal).priority == :medium
       assert reload(child).priority == :low
+    end
+  end
+
+  describe "goal intervention telemetry" do
+    setup do
+      owner = user_fixture()
+      assignee = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, assignee, :modify, owner)
+      cols = board |> Columns.list_columns() |> Map.new(&{&1.name, &1})
+      goal = task_fixture(cols["Ready"], %{type: :goal})
+      child = task_fixture(cols["Backlog"], %{parent_id: goal.id})
+      task_fixture(cols["Ready"], %{parent_id: goal.id, status: :in_progress})
+
+      %{
+        owner: owner,
+        assignee: assignee,
+        board: board,
+        goal: goal,
+        child: child,
+        scope: Scope.for_user(owner)
+      }
+    end
+
+    test "reassigning and undoing it emit reassigned and reassignment_undone", ctx do
+      %{goal: goal, child: child, scope: scope, owner: owner, board: board} = ctx
+
+      attach_telemetry([
+        [:kanban, :goal, :reassigned],
+        [:kanban, :goal, :reassignment_undone]
+      ])
+
+      assert {:ok, _} = Interventions.reassign_goal_unstarted(scope, goal, ctx.assignee.id)
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :reassigned], measurements, metadata}
+      assert measurements == %{count: 1, moved_count: 1, skipped_count: 1}
+
+      assert metadata == %{
+               goal_id: goal.id,
+               board_id: board.id,
+               actor_user_id: owner.id,
+               assigned_to_id: ctx.assignee.id
+             }
+
+      restorations = [%{id: goal.id, prior: nil}, %{id: child.id, prior: nil}]
+      assert {:ok, _} = Interventions.undo_reassignment(scope, reload(goal), restorations)
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :reassignment_undone],
+                      %{count: 1, moved_count: 1, skipped_count: 0}, metadata}
+
+      assert metadata == %{goal_id: goal.id, board_id: board.id, actor_user_id: owner.id}
+    end
+
+    test "reprioritizing and undoing it emit reprioritized and reprioritization_undone", ctx do
+      %{goal: goal, child: child, scope: scope, owner: owner, board: board} = ctx
+
+      attach_telemetry([
+        [:kanban, :goal, :reprioritized],
+        [:kanban, :goal, :reprioritization_undone]
+      ])
+
+      assert {:ok, _} = Interventions.reprioritize_goal_unstarted(scope, goal, "critical")
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :reprioritized],
+                      %{count: 1, moved_count: 1, skipped_count: 1}, metadata}
+
+      assert metadata == %{
+               goal_id: goal.id,
+               board_id: board.id,
+               actor_user_id: owner.id,
+               priority: :critical
+             }
+
+      restorations = [
+        %{id: goal.id, prior: goal.priority},
+        %{id: child.id, prior: child.priority}
+      ]
+
+      assert {:ok, _} = Interventions.undo_reprioritization(scope, reload(goal), restorations)
+
+      assert_receive {:telemetry_event, [:kanban, :goal, :reprioritization_undone],
+                      %{count: 1, moved_count: 1, skipped_count: 0}, metadata}
+
+      assert metadata == %{goal_id: goal.id, board_id: board.id, actor_user_id: owner.id}
+    end
+
+    test "a refused or invalid intervention emits nothing", ctx do
+      %{goal: goal, scope: scope} = ctx
+      outsider = Scope.for_user(user_fixture())
+
+      attach_telemetry([
+        [:kanban, :goal, :reassigned],
+        [:kanban, :goal, :reprioritized],
+        [:kanban, :goal, :reassignment_undone],
+        [:kanban, :goal, :reprioritization_undone]
+      ])
+
+      assert {:error, :unauthorized} =
+               Interventions.reassign_goal_unstarted(outsider, goal, ctx.assignee.id)
+
+      assert {:error, :assignee_not_on_board} =
+               Interventions.reassign_goal_unstarted(scope, goal, user_fixture().id)
+
+      assert {:error, :invalid_priority} =
+               Interventions.reprioritize_goal_unstarted(scope, goal, "urgent")
+
+      assert {:error, :unauthorized} =
+               Interventions.undo_reassignment(outsider, goal, [%{id: goal.id, prior: nil}])
+
+      refute_receive {:telemetry_event, _event, _measurements, _metadata}
     end
   end
 

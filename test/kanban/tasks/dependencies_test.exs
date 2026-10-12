@@ -11,6 +11,7 @@ defmodule Kanban.Tasks.DependenciesTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Repo
   alias Kanban.Tasks.Dependencies
@@ -141,6 +142,45 @@ defmodule Kanban.Tasks.DependenciesTest do
   describe "unblock_dependent_tasks/2" do
     test "returns :ok even when nothing depends on the identifier", %{board: board} do
       assert Dependencies.unblock_dependent_tasks("W-nonexistent", board.id) == :ok
+    end
+
+    test "unblocking two dependents emits task.unblocked twice", %{board: board, column: column} do
+      dep = task_fixture(column)
+      first = column |> task_fixture() |> set_deps([dep.identifier]) |> set_status(:blocked)
+      second = column |> task_fixture() |> set_deps([dep.identifier]) |> set_status(:blocked)
+      set_status(dep, :completed)
+      attach_telemetry([:kanban, :task, :unblocked])
+
+      assert Dependencies.unblock_dependent_tasks(dep.identifier, board.id) == :ok
+
+      assert_receive {:telemetry_event, [:kanban, :task, :unblocked], %{count: 1}, md1}
+      assert_receive {:telemetry_event, [:kanban, :task, :unblocked], %{count: 1}, md2}
+      refute_receive {:telemetry_event, [:kanban, :task, :unblocked], _, _}
+
+      assert Enum.sort([md1, md2]) ==
+               Enum.sort([
+                 %{task_id: first.id, board_id: board.id},
+                 %{task_id: second.id, board_id: board.id}
+               ])
+    end
+
+    test "still blocked emits nothing", %{board: board, column: column} do
+      dep_a = task_fixture(column)
+      dep_b = task_fixture(column)
+
+      dependent =
+        column
+        |> task_fixture()
+        |> set_deps([dep_a.identifier, dep_b.identifier])
+        |> set_status(:blocked)
+
+      set_status(dep_a, :completed)
+      attach_telemetry([:kanban, :task, :unblocked])
+
+      assert Dependencies.unblock_dependent_tasks(dep_a.identifier, board.id) == :ok
+
+      assert Repo.get!(Task, dependent.id).status == :blocked
+      refute_receive {:telemetry_event, [:kanban, :task, :unblocked], _, _}
     end
   end
 end
