@@ -30,6 +30,9 @@ Each entry is a map with these fields:
 | `metadata` | The metadata keys the event may carry; anything else is dropped |
 | `description` | One sentence saying what happened |
 | `legacy` | `true` for an event whose name predates the catalog |
+| `metrics` | The metrics generated for the event, as `{type, measurement}` pairs; see [Metrics](#metrics) |
+| `persist` | Whether the event's first metric is stored in `metrics_events` |
+| `tags` | Optional. The low-cardinality metadata keys its metrics are broken down by |
 
 ### Naming rule
 
@@ -501,7 +504,10 @@ raise.
 ## Adding an event
 
 1. Add an entry to the list in `Kanban.Telemetry.Catalog`, with every field,
-   following the naming rule and declaring no forbidden key. A new API or
+   following the naming rule and declaring no forbidden key. Choose its
+   `metrics` and `persist` as described in [Metrics](#metrics). A
+   board, membership or column event is an entry in
+   `Kanban.Telemetry.Catalog.BoardEvents`. A new API or
    audit action is a new tuple in `@api_actions` or `@audit_actions` in
    `Kanban.Telemetry.Catalog.Families`, a new task activity event is an
    entry in `Kanban.Telemetry.Catalog.TaskEvents`, a new account, session or
@@ -515,7 +521,9 @@ raise.
    `Kanban.Telemetry.Catalog.GoalEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
-   entry is missing a field, repeats a name, or declares a forbidden key.
+   entry is missing a field, repeats a name, declares a forbidden key, or has
+   invalid metrics or tags, and `test/kanban_web/telemetry_test.exs` fails if
+   an event has no metric.
 
 ## Checking the call sites
 
@@ -534,6 +542,101 @@ call, each `emit_telemetry(conn, action, metadata)` API call and each
   `kanban.api.task_*` entry stops declaring `user_id`.
 
 Pass API and audit action names as literal atoms, so the scan can see them.
+
+## Metrics
+
+Since W2344 `KanbanWeb.Telemetry.metrics/0`, which LiveDashboard charts at
+`/admin/dashboard` and `KanbanWeb.Telemetry.MetricsStorage` stores from, builds
+its application metrics from the catalog. `KanbanWeb.Telemetry.CatalogMetrics`
+(`lib/kanban_web/telemetry/catalog_metrics.ex`) turns each `{type, measurement}`
+pair in an entry's `metrics` into one metric, so a new event cannot be left
+without one:
+
+| Entry | Metric name | Example |
+|---|---|---|
+| An event, `[counter: :count]` | The event name plus the measurement | `kanban.api.task_claimed.count` |
+| An event, `[sum: :count]` | The event name plus the measurement | `kanban.board.creation.count` |
+| An event, `[summary: :duration]` | The event name plus the measurement, in milliseconds | `kanban.api.request.duration` |
+| A span, `[summary: :duration]` | The `:stop` event name plus the measurement, in milliseconds | `kanban.export.stop.duration` |
+
+Most events take `[counter: :count]`. Use `:sum` when `count` is a number of
+things rather than 1, as for `token_bulk_revoked`, `sessions_revoked`,
+`notification.all_read` and `digest.fanout_completed`, and give every span
+`[summary: :duration]` first. The entry's description becomes the metric's
+description, and its `tags` become the metric's tags.
+
+Every metric name that existed before W2344 kept its name, type and tags,
+because the stored history and the admin users page read them. A test in
+`test/kanban_web/telemetry_test.exs` lists them.
+
+### Which metrics are stored
+
+`MetricsStorage` stores one row per event in `metrics_events` for an entry
+whose `persist` is `true`, and only its first metric: it attaches one handler
+per event. A new event should be stored only when it is rare enough not to
+flood the table and unauthenticated traffic cannot trigger it at will.
+
+Stored today:
+
+- everything that was stored before W2344, which keeps its history: sign-ups,
+  sign-ins, board creation, the API task actions below, after_goal delivery
+  in a `/complete` or `/mark_reviewed` response, the review panel counters,
+  the API request and error counts, and the Phoenix socket and channel
+  metrics (`phoenix.socket_connected.duration`, `phoenix.socket_drain.count`,
+  `phoenix.channel_joined.duration` and `phoenix.channel_handled_in.duration`),
+  which carry no `persist: false`;
+- since W2344, export, the GitHub issue report, the metrics retention run,
+  `after_goal` success and failure, failed notification email and the digest
+  fan-out.
+
+The API request and error counts are the exception to the rule for new
+events. `KanbanWeb.Plugs.ApiTelemetry` runs before the API token is checked,
+and on the public API routes with no token at all, so any request to an `/api`
+route, signed in or not, stores a `kanban.api.request.count` row and, for a
+status of 400 or above, a `kanban.api.error.count` row. They stay stored
+because their history predates W2344; the daily retention job bounds them.
+
+Only the API task actions that were stored before W2344 are stored:
+`task_claimed`, `task_completed`, `task_created`, `task_unclaimed`,
+`task_marked_done` and `task_returned_to_doing`, plus `next_task_fetched`.
+`Kanban.Metrics.UserActivity` counts every stored `kanban.api.task_*` row as
+admin activity, so storing another one, such as `task_listed`, would change
+those counts.
+
+These are never stored, whatever their options say:
+
+- VM metrics, and `kanban.repo.query`, `phoenix.endpoint` and
+  `phoenix.router_dispatch`, which fire on every query or request;
+- LiveView mount and `handle_event`, Oban job, and `kanban.pubsub` metrics,
+  which fire on every page load, click, job or change;
+- Swoosh metrics, whose metadata carries the email and the mailer config.
+
+`MetricsStorage.metrics_history/1` returns no history for a metric it never
+stores, without querying.
+
+### Framework metrics
+
+`KanbanWeb.Telemetry` also defines these, all shown live only:
+
+| Metric | Tags |
+|---|---|
+| `phoenix.live_view.mount.stop.duration` | `view` |
+| `phoenix.live_view.handle_event.stop.duration` | `view` |
+| `oban.job.stop.duration` | `worker`, `queue` |
+| `oban.job.exception.duration` | `worker`, `queue` |
+| `swoosh.deliver.stop.duration` | `mailer` |
+| `swoosh.deliver.exception.duration` | `mailer` |
+
+The LiveView event name is not a tag, because the browser sends it. A Swoosh
+delivery that returns an error still ends in `:stop`; `:exception` is a raise.
+
+### Tag rule
+
+A tag becomes a LiveDashboard label, so it must be a metadata key with a small,
+fixed set of values that says nothing about a person: `endpoint`, `method`,
+`status`, `kind`, `format`, `outcome` or `surface`. Never tag by `user_id`,
+`board_id`, `task_id` or any other id. `test/kanban/telemetry_test.exs` fails
+if an entry tags any other key.
 
 ## Metrics retention
 

@@ -18,7 +18,9 @@ defmodule Kanban.Telemetry.Catalog.MessageEvents do
       measurements: [:count],
       metadata: [:message_id, :sender_user_id],
       description: "An administrator published a broadcast message.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :message, :deleted],
@@ -28,7 +30,9 @@ defmodule Kanban.Telemetry.Catalog.MessageEvents do
       metadata: [:message_id, :sender_user_id],
       description:
         "A broadcast message was deleted, with its dismissals. sender_user_id is its author.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :message, :dismissed],
@@ -38,7 +42,9 @@ defmodule Kanban.Telemetry.Catalog.MessageEvents do
       metadata: [:message_id, :user_id],
       description:
         "A user dismissed a broadcast message for the first time. Dismissing it again emits nothing.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     }
   ]
 

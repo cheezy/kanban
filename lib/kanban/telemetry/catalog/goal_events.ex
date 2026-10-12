@@ -26,7 +26,9 @@ defmodule Kanban.Telemetry.Catalog.GoalEvents do
       metadata: [:task_id, :board_id],
       description:
         "A blocked task became unblocked because the last of its dependencies was completed.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :goal, :completed],
@@ -36,7 +38,9 @@ defmodule Kanban.Telemetry.Catalog.GoalEvents do
       metadata: [:goal_id, :board_id],
       description:
         "The last child of a goal was completed. Emitted once per goal, after the completion commits.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :goal, :promoted_to_ready],
@@ -46,7 +50,9 @@ defmodule Kanban.Telemetry.Catalog.GoalEvents do
       metadata: [:goal_id, :board_id],
       description:
         "A goal and its Backlog children were moved to Ready. task_count is the number of tasks moved.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :goal, :after_goal_succeeded],
@@ -56,7 +62,9 @@ defmodule Kanban.Telemetry.Catalog.GoalEvents do
       metadata: [:goal_id, :board_id, :source],
       description:
         "A goal's after_goal hook succeeded and the goal moved to Done. source is :agent for an agent report or :grace_worker when the grace window expired; duration_ms is the agent's reported run time.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: true
     },
     %{
       name: [:kanban, :goal, :after_goal_failed],
@@ -66,7 +74,9 @@ defmodule Kanban.Telemetry.Catalog.GoalEvents do
       metadata: [:goal_id, :board_id, :exit_code],
       description:
         "An agent reported a failed after_goal hook. Only the exit code and duration are sent, never the hook's output.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: true
     },
     %{
       name: [:kanban, :goal, :grace_window_scheduled],
@@ -76,7 +86,9 @@ defmodule Kanban.Telemetry.Catalog.GoalEvents do
       metadata: [:goal_id, :board_id],
       description:
         "The after_goal grace window was scheduled for a goal whose last child completed.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :goal, :grace_window_expired],
@@ -86,7 +98,9 @@ defmodule Kanban.Telemetry.Catalog.GoalEvents do
       metadata: [:goal_id, :board_id],
       description:
         "The after_goal grace window expired with no agent report, and the grace worker moved the goal to Done.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :goal, :reassigned],
@@ -96,7 +110,9 @@ defmodule Kanban.Telemetry.Catalog.GoalEvents do
       metadata: [:goal_id, :board_id, :actor_user_id, :assigned_to_id],
       description:
         "A goal and its unstarted children were reassigned. moved_count counts the children moved and skipped_count the claimed children left alone.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :goal, :reprioritized],
@@ -106,7 +122,9 @@ defmodule Kanban.Telemetry.Catalog.GoalEvents do
       metadata: [:goal_id, :board_id, :actor_user_id, :priority],
       description:
         "A goal and its unstarted children were given a new priority. moved_count counts the children changed and skipped_count the claimed children left alone.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :goal, :reassignment_undone],
@@ -116,7 +134,9 @@ defmodule Kanban.Telemetry.Catalog.GoalEvents do
       metadata: [:goal_id, :board_id, :actor_user_id],
       description:
         "A goal reassignment was undone. moved_count counts the children restored and skipped_count those that could no longer be restored.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :goal, :reprioritization_undone],
@@ -126,7 +146,9 @@ defmodule Kanban.Telemetry.Catalog.GoalEvents do
       metadata: [:goal_id, :board_id, :actor_user_id],
       description:
         "A goal reprioritization was undone. moved_count counts the children restored and skipped_count those that could no longer be restored.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     }
   ]
 

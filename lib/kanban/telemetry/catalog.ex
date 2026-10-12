@@ -26,6 +26,18 @@ defmodule Kanban.Telemetry.Catalog do
       because metrics, dashboards and the stored `metrics_events` history
       depend on them. Every event, legacy or not, is emitted through
       `Kanban.Telemetry`.
+    * `:metrics` - the metrics `KanbanWeb.Telemetry.CatalogMetrics` builds
+      for the event, as a keyword list of `{type, measurement}`. The type is
+      `:counter`, `:sum` or `:summary`. Most events take
+      `[counter: :count]`; a span takes `[summary: :duration]`, a duration
+      summary of its `:stop` event.
+    * `:persist` - whether `KanbanWeb.Telemetry.MetricsStorage` stores the
+      entry's first metric in `metrics_events`. Store only events that are
+      rare enough not to flood the table and that cannot be triggered at will
+      by unauthenticated traffic.
+    * `:tags` - optional. The metadata keys the metrics are broken down by.
+      Only low-cardinality labels such as `:endpoint` or `:outcome`; never an
+      id.
 
   ## Naming rule
 
@@ -71,14 +83,17 @@ defmodule Kanban.Telemetry.Catalog do
   Add a map to the list in this module, with every field above, and emit it
   with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`. A new API or
   audit action is a new tuple in `@api_actions` or `@audit_actions` in
-  `Kanban.Telemetry.Catalog.Families`. Task activity, account and user
-  administration, notification, delivery target, broadcast message, and goal,
-  dependency or after_goal events go in `TaskEvents`, `UserEvents`,
-  `NotificationEvents`, `TargetEvents`, `MessageEvents` and `GoalEvents`
-  under `Kanban.Telemetry.Catalog`. The test suite runs in strict mode, so a
-  key the entry does not declare raises there.
+  `Kanban.Telemetry.Catalog.Families`. Board, membership and column, task
+  activity, account and user administration, notification, delivery target,
+  broadcast message, and goal, dependency or after_goal events go in
+  `BoardEvents`, `TaskEvents`, `UserEvents`, `NotificationEvents`,
+  `TargetEvents`, `MessageEvents` and `GoalEvents` under
+  `Kanban.Telemetry.Catalog`. The test suite runs in strict mode, so a key the
+  entry does not declare raises there, and it fails if an entry's metrics,
+  persist flag or tags are invalid.
   """
 
+  alias Kanban.Telemetry.Catalog.BoardEvents
   alias Kanban.Telemetry.Catalog.Families
   alias Kanban.Telemetry.Catalog.GoalEvents
   alias Kanban.Telemetry.Catalog.MessageEvents
@@ -88,13 +103,16 @@ defmodule Kanban.Telemetry.Catalog do
   alias Kanban.Telemetry.Catalog.UserEvents
 
   @type entry :: %{
-          name: [atom(), ...],
-          kind: :event | :span,
-          domain: atom(),
-          measurements: [atom()],
-          metadata: [atom()],
-          description: String.t(),
-          legacy: boolean()
+          required(:name) => [atom(), ...],
+          required(:kind) => :event | :span,
+          required(:domain) => atom(),
+          required(:measurements) => [atom()],
+          required(:metadata) => [atom()],
+          required(:description) => String.t(),
+          required(:legacy) => boolean(),
+          required(:metrics) => [{:counter | :sum | :summary, atom()}, ...],
+          required(:persist) => boolean(),
+          optional(:tags) => [atom()]
         }
 
   @core_events [
@@ -106,121 +124,9 @@ defmodule Kanban.Telemetry.Catalog do
       metadata: [:event_name, :reason, :keys],
       description:
         "Kanban.Telemetry dropped metadata keys from an event, because they were forbidden or undeclared. Carries key names only, never values.",
-      legacy: false
-    },
-    %{
-      name: [:kanban, :board, :creation],
-      kind: :event,
-      domain: :board,
-      measurements: [:count],
-      metadata: [:board_id, :user_id],
-      description: "A board was created.",
-      legacy: true
-    },
-    %{
-      name: [:kanban, :board, :updated],
-      kind: :event,
-      domain: :board,
-      measurements: [:count],
-      metadata: [:board_id, :actor_user_id, :fields],
-      description:
-        "A board owner changed a board's settings. fields lists the changed field names, never their values.",
-      legacy: false
-    },
-    %{
-      name: [:kanban, :board, :deleted],
-      kind: :event,
-      domain: :board,
-      measurements: [:count],
-      metadata: [:board_id, :actor_user_id],
-      description: "A board owner deleted a board, with its columns, tasks and memberships.",
-      legacy: false
-    },
-    %{
-      name: [:kanban, :board, :field_visibility_changed],
-      kind: :event,
-      domain: :board,
-      measurements: [:count],
-      metadata: [:board_id, :actor_user_id, :fields],
-      description:
-        "A board owner changed which task fields the board shows. fields lists the toggled field names.",
-      legacy: false
-    },
-    %{
-      name: [:kanban, :board, :member_added],
-      kind: :event,
-      domain: :board,
-      measurements: [:count],
-      metadata: [:board_id, :user_id, :access, :actor_user_id],
-      description:
-        "A user was given access to a board. user_id is the member, actor_user_id the owner who added them.",
-      legacy: false
-    },
-    %{
-      name: [:kanban, :board, :member_removed],
-      kind: :event,
-      domain: :board,
-      measurements: [:count],
-      metadata: [:board_id, :user_id, :access, :actor_user_id],
-      description: "A user was removed from a board. access is the level they held.",
-      legacy: false
-    },
-    %{
-      name: [:kanban, :board, :member_access_changed],
-      kind: :event,
-      domain: :board,
-      measurements: [:count],
-      metadata: [:board_id, :user_id, :from_access, :to_access, :actor_user_id],
-      description: "A board member's access level changed.",
-      legacy: false
-    },
-    %{
-      name: [:kanban, :api, :token_bulk_revoked],
-      kind: :event,
-      domain: :api,
-      measurements: [:count],
-      metadata: [:board_id, :user_id, :actor_user_id, :reason],
-      description:
-        "A member's API tokens for a board were revoked because they were removed (reason :member_removed) or set to read_only (:read_only_access). count is the number revoked and may be 0.",
-      legacy: false
-    },
-    %{
-      name: [:kanban, :column, :created],
-      kind: :event,
-      domain: :column,
-      measurements: [:count],
-      metadata: [:board_id, :column_id, :actor_user_id],
-      description: "A board owner added a column.",
-      legacy: false
-    },
-    %{
-      name: [:kanban, :column, :updated],
-      kind: :event,
-      domain: :column,
-      measurements: [:count],
-      metadata: [:board_id, :column_id, :actor_user_id, :fields],
-      description:
-        "A board owner changed a column. fields lists the changed field names, never their values.",
-      legacy: false
-    },
-    %{
-      name: [:kanban, :column, :deleted],
-      kind: :event,
-      domain: :column,
-      measurements: [:count],
-      metadata: [:board_id, :column_id],
-      description: "A column was deleted, along with its tasks.",
-      legacy: false
-    },
-    %{
-      name: [:kanban, :column, :reordered],
-      kind: :event,
-      domain: :column,
-      measurements: [:count, :column_count],
-      metadata: [:board_id],
-      description:
-        "A board's columns were reordered. column_count is the number of column ids given.",
-      legacy: false
+      legacy: false,
+      metrics: [sum: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :registration],
@@ -229,7 +135,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:user_id],
       description: "A user registered.",
-      legacy: true
+      legacy: true,
+      metrics: [sum: :count],
+      persist: true
     },
     %{
       name: [:kanban, :user, :login],
@@ -239,7 +147,9 @@ defmodule Kanban.Telemetry.Catalog do
       metadata: [:user_id],
       description:
         "A user signed in through the browser. Renewing an existing session token does not count.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: true
     },
     %{
       name: [:kanban, :api, :token_created],
@@ -248,7 +158,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:user_id, :board_id, :token_id],
       description: "An API token was created.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :api, :token_revoked],
@@ -257,7 +169,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:user_id, :token_id],
       description: "An API token was revoked.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :api, :token_deleted],
@@ -266,7 +180,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:user_id, :token_id],
       description: "An API token was deleted.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :api, :token_used],
@@ -275,7 +191,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:user_id, :token_id],
       description: "An API token authenticated a request.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :api, :request],
@@ -284,7 +202,10 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count, :duration],
       metadata: [:endpoint, :method, :status],
       description: "An API request finished. Duration is in native time units.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count, summary: :duration],
+      persist: true,
+      tags: [:endpoint, :method]
     },
     %{
       name: [:kanban, :api, :error],
@@ -293,7 +214,10 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:endpoint, :status, :method],
       description: "An API request finished with a status of 400 or above.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: true,
+      tags: [:endpoint, :status]
     },
     %{
       name: [:kanban, :api, :auth_failed],
@@ -302,7 +226,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:reason, :path, :method],
       description: "An API request failed bearer-token authentication.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :api, :after_goal_delivered],
@@ -311,7 +237,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:goal_id, :board_id, :project_id],
       description: "An after_goal hook was included in a /complete or /mark_reviewed response.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: true
     },
     %{
       name: [:kanban, :task, :creation],
@@ -320,7 +248,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:task_id, :column_id],
       description: "A task was created.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :task, :archived],
@@ -330,7 +260,9 @@ defmodule Kanban.Telemetry.Catalog do
       metadata: [:task_id, :identifier, :via, :goal_id],
       description:
         "A task was archived, directly, in bulk (via: :bulk) or with its goal (via: :goal_cascade).",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :task, :unarchived],
@@ -339,7 +271,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:task_id, :identifier],
       description: "A task was restored from the archive.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :task, :bulk_archived],
@@ -348,7 +282,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:board_id],
       description: "A batch of tasks on a board was archived.",
-      legacy: true
+      legacy: true,
+      metrics: [sum: :count],
+      persist: false
     },
     %{
       name: [:kanban, :task, :completed],
@@ -357,7 +293,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:task_id, :completed_by],
       description: "An agent completed a task.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :task, :moved_to_review],
@@ -367,7 +305,9 @@ defmodule Kanban.Telemetry.Catalog do
       metadata: [:task_id, :completed_by_id],
       description:
         "A completed task moved to the Review column. time_spent_minutes is an integer, or absent when unknown.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :task, :returned_to_doing],
@@ -376,7 +316,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:task_id, :reviewed_by, :review_status],
       description: "A reviewed task was sent back to Doing.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :task, :changed_files_missing],
@@ -385,7 +327,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:task_id, :identifier, :board_id],
       description: "A task reached review reporting changed files but with no uploaded diff.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :goal, :created_with_tasks],
@@ -394,7 +338,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:goal_count, :task_count],
       metadata: [:goal_id, :column_id],
       description: "A goal was created together with its child tasks.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :goal_count],
+      persist: false
     },
     %{
       name: [:kanban, :pubsub, :broadcast],
@@ -403,7 +349,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:event, :task_id, :board_id],
       description: "A task or comment change was broadcast over PubSub.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :review, :structured_used],
@@ -412,7 +360,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:task_id, :identifier],
       description: "The review panel rendered from the structured review block.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: true
     },
     %{
       name: [:kanban, :review, :fallback_used],
@@ -421,7 +371,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:task_id, :identifier],
       description: "The review panel fell back to parsing the legacy review summary.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: true
     },
     %{
       name: [:kanban, :review_diff_panel, :opened],
@@ -430,7 +382,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:system_time, :count],
       metadata: [:task_id],
       description: "A reviewer opened the diff panel for a task in the review queue.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: true
     },
     %{
       name: [:kanban, :review_diff_panel, :closed],
@@ -439,7 +393,9 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:system_time, :count],
       metadata: [:task_id],
       description: "A reviewer closed the diff panel in the review queue.",
-      legacy: true
+      legacy: true,
+      metrics: [counter: :count],
+      persist: true
     },
     %{
       name: [:kanban, :metrics, :retention_completed],
@@ -449,7 +405,9 @@ defmodule Kanban.Telemetry.Catalog do
       metadata: [:retention_days],
       description:
         "The daily metrics retention job finished. count is the number of metrics_events rows removed, batches the number of DELETE batches run.",
-      legacy: false
+      legacy: false,
+      metrics: [sum: :count],
+      persist: true
     },
     %{
       name: [:kanban, :export],
@@ -459,7 +417,10 @@ defmodule Kanban.Telemetry.Catalog do
       metadata: [:kind, :format],
       description:
         "Data left Stride as a download. kind is :archive_csv, :metrics_pdf, :workspace_metrics or :audit_log, format the file type; row_count is measured for the archive CSV only.",
-      legacy: false
+      legacy: false,
+      metrics: [summary: :duration],
+      persist: true,
+      tags: [:kind, :format]
     },
     %{
       name: [:kanban, :rate_limit, :denied],
@@ -469,7 +430,10 @@ defmodule Kanban.Telemetry.Catalog do
       metadata: [:surface],
       description:
         "A rate-limit check refused a request. surface names the limited action, never the key, IP address or identity.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false,
+      tags: [:surface]
     },
     %{
       name: [:kanban, :mcp, :request],
@@ -479,7 +443,10 @@ defmodule Kanban.Telemetry.Catalog do
       metadata: [:method, :outcome],
       description:
         "An MCP JSON-RPC message was handled. method is a fixed label, never the name the client sent, and outcome is set on stop.",
-      legacy: false
+      legacy: false,
+      metrics: [summary: :duration],
+      persist: false,
+      tags: [:method, :outcome]
     },
     %{
       name: [:kanban, :github, :issue_created],
@@ -489,11 +456,15 @@ defmodule Kanban.Telemetry.Catalog do
       metadata: [:outcome],
       description:
         "An issue report to GitHub finished. outcome is :ok or :error, including when GitHub is not configured.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: true,
+      tags: [:outcome]
     }
   ]
 
   @events @core_events ++
+            BoardEvents.events() ++
             TaskEvents.events() ++
             UserEvents.events() ++
             Families.events() ++

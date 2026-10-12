@@ -24,9 +24,14 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
 
   @doc """
   Retrieves metrics history for a specific metric for LiveDashboard.
-  Returns a list of maps with :label, :measurement, and :time keys.
+  Returns a list of maps with :label, :measurement, and :time keys, and an
+  empty list without querying for a metric that is never stored.
   """
   def metrics_history(metric) do
+    if persist?(metric), do: stored_history(metric), else: []
+  end
+
+  defp stored_history(metric) do
     metric_name = format_label(metric.name)
 
     query =
@@ -64,7 +69,15 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
 
   @impl true
   def init(metrics) do
-    for metric <- metrics do
+    # Only stored metrics get a handler. The handler id holds the event name,
+    # so a second metric on the same event could never attach; uniq_by keeps
+    # the first, which is the one CatalogMetrics marks as stored.
+    stored =
+      metrics
+      |> Enum.filter(&persist?/1)
+      |> Enum.uniq_by(& &1.event_name)
+
+    for metric <- stored do
       event_name = metric.event_name
 
       :telemetry.attach(
@@ -75,7 +88,7 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
       )
     end
 
-    {:ok, %{metrics: metrics}}
+    {:ok, %{metrics: stored}}
   end
 
   @impl true
@@ -102,12 +115,10 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
   end
 
   def handle_event(_event_name, measurements, metadata, %{metric: metric}) do
-    # Skip database queries on metrics_events table to prevent recursive metrics collection.
-    # Also skip VM metrics and high-frequency infrastructure timing metrics (repo.query,
-    # phoenix.endpoint, router_dispatch) — they fire on every query/request, which floods
-    # metrics_events. They stay registered for LiveDashboard; only DB persistence is skipped.
-    if metrics_table_query?(metadata) or vm_metric?(metric.name) or
-         high_frequency_metric?(metric.name) do
+    # Skip database queries on metrics_events table to prevent recursive metrics collection,
+    # and every metric persist?/1 refuses. Skipped metrics stay registered for LiveDashboard;
+    # only DB persistence is skipped.
+    if metrics_table_query?(metadata) or not persist?(metric) do
       :ok
     else
       measurement_value = extract_measurement(measurements, metric.measurement)
@@ -118,6 +129,24 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
       end
     end
   end
+
+  # Whether a metric is stored. Refused: VM metrics, high-frequency framework
+  # metrics, Swoosh metrics (their metadata carries the email and the mailer
+  # config) and any metric whose reporter_options say persist: false, which
+  # is how KanbanWeb.Telemetry and the catalog mark live-only metrics.
+  defp persist?(%{name: name} = metric) do
+    not vm_metric?(name) and not high_frequency_metric?(name) and
+      not sensitive_metadata_metric?(name) and persist_option(metric) != false
+  end
+
+  defp persist_option(%{reporter_options: options}) when is_list(options),
+    do: Keyword.get(options, :persist)
+
+  defp persist_option(_metric), do: nil
+
+  # Called from persist?/1; analyzer regex misses predicate `?` callers.
+  defp sensitive_metadata_metric?([:swoosh | _]), do: true
+  defp sensitive_metadata_metric?(_), do: false
 
   # Called from handle_event/4; analyzer regex misses predicate `?` callers.
   defp vm_metric?(metric_name) when is_list(metric_name) do
@@ -134,11 +163,16 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
   # query, phoenix.endpoint / router_dispatch on every HTTP request. Persisting
   # each one floods metrics_events (e.g. Oban's ~1/s idle polling alone), so we
   # skip persistence here — the metrics remain registered in KanbanWeb.Telemetry
-  # for LiveDashboard. Business metrics (kanban.user.*, kanban.api.task_*, …) are
-  # kept.
+  # for LiveDashboard. LiveView mount/handle_event fire on every page load and
+  # click, Oban job metrics on every job, and pubsub broadcast on every task or
+  # comment change, so they are skipped too. Business metrics (kanban.user.*,
+  # kanban.api.task_*, …) are kept.
   defp high_frequency_metric?([:kanban, :repo, :query | _]), do: true
   defp high_frequency_metric?([:phoenix, :endpoint | _]), do: true
   defp high_frequency_metric?([:phoenix, :router_dispatch | _]), do: true
+  defp high_frequency_metric?([:phoenix, :live_view | _]), do: true
+  defp high_frequency_metric?([:oban, :job | _]), do: true
+  defp high_frequency_metric?([:kanban, :pubsub | _]), do: true
   defp high_frequency_metric?(_), do: false
 
   # Called from handle_event/4; analyzer regex misses predicate `?` callers.
@@ -229,5 +263,6 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
     def __metrics_table_query__?(metadata), do: metrics_table_query?(metadata)
     def __vm_metric__?(metric_name), do: vm_metric?(metric_name)
     def __high_frequency_metric__?(metric_name), do: high_frequency_metric?(metric_name)
+    def __persist__?(metric), do: persist?(metric)
   end
 end

@@ -245,6 +245,18 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
              ]) == true
     end
 
+    test "skips high-frequency framework metrics" do
+      for name <- [
+            [:phoenix, :live_view, :mount, :stop, :duration],
+            [:phoenix, :live_view, :handle_event, :stop, :duration],
+            [:oban, :job, :stop, :duration],
+            [:oban, :job, :exception, :duration],
+            [:kanban, :pubsub, :broadcast, :count]
+          ] do
+        assert MetricsStorage.__high_frequency_metric__?(name) == true, inspect(name)
+      end
+    end
+
     test "returns false for business metrics that should be persisted" do
       assert MetricsStorage.__high_frequency_metric__?([:kanban, :user, :registration, :count]) ==
                false
@@ -388,6 +400,67 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
     end
   end
 
+  describe "persist?/1" do
+    test "refuses a metric whose reporter options say persist: false" do
+      metric =
+        Telemetry.Metrics.counter("kanban.storage_test.live.count",
+          reporter_options: [persist: false]
+        )
+
+      assert MetricsStorage.__persist__?(metric) == false
+    end
+
+    test "refuses Swoosh metrics, whose metadata carries the email and mailer config" do
+      metric = Telemetry.Metrics.summary("swoosh.deliver.stop.duration")
+
+      assert MetricsStorage.__persist__?(metric) == false
+    end
+
+    test "refuses VM and high-frequency framework metrics" do
+      vm = Telemetry.Metrics.summary("vm.memory.total")
+      oban = Telemetry.Metrics.summary("oban.job.stop.duration")
+
+      assert MetricsStorage.__persist__?(vm) == false
+      assert MetricsStorage.__persist__?(oban) == false
+    end
+
+    test "stores business metrics, with or without reporter options" do
+      sum = Telemetry.Metrics.sum("kanban.api.task_created.count")
+
+      counter =
+        Telemetry.Metrics.counter("kanban.user.login.count", reporter_options: [persist: true])
+
+      assert MetricsStorage.__persist__?(sum) == true
+      assert MetricsStorage.__persist__?(counter) == true
+
+      assert MetricsStorage.__persist__?(%{name: [:test, :metric], measurement: :duration}) ==
+               true
+    end
+  end
+
+  describe "metrics_history/1 for an unstored metric" do
+    setup do
+      Repo.delete_all("metrics_events")
+      :ok
+    end
+
+    test "returns no history for a metric that is never stored" do
+      Repo.insert_all("metrics_events", [
+        %{
+          metric_name: "oban.job.stop.duration",
+          measurement: 1.0,
+          metadata: %{},
+          recorded_at: DateTime.utc_now(),
+          inserted_at: DateTime.utc_now()
+        }
+      ])
+
+      metric = Telemetry.Metrics.summary("oban.job.stop.duration")
+
+      assert MetricsStorage.metrics_history(metric) == []
+    end
+  end
+
   describe "start_link/1 and init/1 — GenServer lifecycle" do
     setup do
       Repo.delete_all("metrics_events")
@@ -431,6 +504,41 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
       assert row.measurement == 2.5
       assert row.metadata == %{"kind" => "test"}
     end
+
+    test "attaches no handler for unstored metrics and one handler per event" do
+      metrics = [
+        Telemetry.Metrics.counter("kanban.storage_test.pair.count"),
+        Telemetry.Metrics.summary("kanban.storage_test.pair.duration",
+          reporter_options: [persist: false]
+        ),
+        Telemetry.Metrics.summary("kanban.storage_test.live.duration",
+          reporter_options: [persist: false]
+        ),
+        Telemetry.Metrics.summary("oban.job.stop.duration")
+      ]
+
+      pid = start_supervised!({MetricsStorage, metrics})
+
+      on_exit(fn ->
+        :telemetry.detach({MetricsStorage, [:kanban, :storage_test, :pair], pid})
+      end)
+
+      handler_ids = fn event ->
+        event
+        |> :telemetry.list_handlers()
+        |> Enum.filter(&(&1.event_name == event))
+        |> Enum.map(& &1.id)
+        |> Enum.filter(&match?({MetricsStorage, _, ^pid}, &1))
+      end
+
+      assert handler_ids.([:kanban, :storage_test, :pair]) == [
+               {MetricsStorage, [:kanban, :storage_test, :pair], pid}
+             ]
+
+      assert handler_ids.([:kanban, :storage_test, :live]) == []
+      assert handler_ids.([:oban, :job, :stop]) == []
+      assert [%{name: [:kanban, :storage_test, :pair, :count]}] = :sys.get_state(pid).metrics
+    end
   end
 
   describe "handle_event/4" do
@@ -466,6 +574,28 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
       MetricsStorage.handle_event([:test], measurements, metadata, config)
 
       assert_received {:telemetry_event, [:test, :metric], 100, %{source: "tasks"}}
+
+      Process.unregister(MetricsStorage)
+    end
+
+    test "skips a metric marked persist: false" do
+      metric =
+        Telemetry.Metrics.counter("kanban.storage_test.live.count",
+          reporter_options: [persist: false]
+        )
+
+      Process.register(self(), MetricsStorage)
+
+      result =
+        MetricsStorage.handle_event(
+          [:kanban, :storage_test, :live],
+          %{count: 1},
+          %{},
+          %{metric: metric}
+        )
+
+      refute_received {:telemetry_event, _, _, _}
+      assert result == :ok
 
       Process.unregister(MetricsStorage)
     end

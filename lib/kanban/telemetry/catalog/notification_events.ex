@@ -26,7 +26,9 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       metadata: [:notification_id, :user_id, :event_type, :board_id, :in_app],
       description:
         "A notification was saved for one recipient. user_id is the recipient; in_app is false for an email-only row; board_id is absent for a board-less type.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :notification, :read],
@@ -36,7 +38,9 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       metadata: [:notification_id, :user_id, :event_type],
       description:
         "A user marked an unread notification read. Marking a read one again emits nothing.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :notification, :all_read],
@@ -46,7 +50,9 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       metadata: [:user_id],
       description:
         "A user marked all their notifications read. count is the number marked and may be 0.",
-      legacy: false
+      legacy: false,
+      metrics: [sum: :count],
+      persist: false
     },
     %{
       name: [:kanban, :notification, :preference_updated],
@@ -56,7 +62,9 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       metadata: [:user_id, :event_type, :in_app, :mail],
       description:
         "A user's delivery preference for one event type changed. in_app and mail are the saved flags; saving the same flags again emits nothing.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :notification, :unsubscribed],
@@ -66,7 +74,9 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       metadata: [:user_id, :event_type],
       description:
         "Email for one event type was turned off from an unsubscribe link. user_id comes from the verified link.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :notification, :email_sent],
@@ -75,7 +85,9 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       measurements: [:count],
       metadata: [:notification_id, :user_id, :event_type],
       description: "The mailer accepted a notification email.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :notification, :email_skipped],
@@ -85,7 +97,9 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       metadata: [:notification_id, :reason],
       description:
         "A notification email job sent nothing. reason is :not_found, :already_emailed, :user_disabled, :user_unconfirmed, :not_a_member or :unsubscribed.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :notification, :email_failed],
@@ -95,7 +109,9 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       metadata: [:notification_id, :user_id, :event_type, :error],
       description:
         "One notification email delivery attempt failed. error is :permanent_failure, :temporary_failure, :retries_exceeded or :delivery_failed, never the raw mailer reason.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: true
     },
     %{
       name: [:kanban, :digest, :sent],
@@ -105,7 +121,9 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       metadata: [:user_id, :week],
       description:
         "The mailer accepted one user's weekly digest. week is the ISO week, such as \"2026-W45\".",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :digest, :fanout_completed],
@@ -115,7 +133,9 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       metadata: [:week],
       description:
         "The weekly digest fan-out finished enqueuing. count is the number of recipients and may be 0.",
-      legacy: false
+      legacy: false,
+      metrics: [sum: :count],
+      persist: true
     }
   ]
 

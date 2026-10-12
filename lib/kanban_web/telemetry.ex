@@ -2,6 +2,8 @@ defmodule KanbanWeb.Telemetry do
   use Supervisor
   import Telemetry.Metrics
 
+  alias KanbanWeb.Telemetry.CatalogMetrics
+
   def start_link(arg) do
     Supervisor.start_link(__MODULE__, arg, name: __MODULE__)
   end
@@ -27,10 +29,22 @@ defmodule KanbanWeb.Telemetry do
     end
   end
 
+  @doc """
+  Returns every metric LiveDashboard shows and `MetricsStorage` may store.
+
+  The application metrics are generated from `Kanban.Telemetry.Catalog` by
+  `KanbanWeb.Telemetry.CatalogMetrics`. Phoenix, LiveView, Ecto, Oban, Swoosh
+  and VM metrics are defined here. LiveView, Oban and Swoosh metrics carry
+  `reporter_options: [persist: false]`: they fire on every page load, click,
+  job or email, so they are shown live and never stored.
+  """
   def metrics do
     phoenix_metrics() ++
-      application_metrics() ++
+      live_view_metrics() ++
+      CatalogMetrics.metrics() ++
       database_metrics() ++
+      oban_metrics() ++
+      swoosh_metrics() ++
       vm_metrics()
   end
 
@@ -60,99 +74,67 @@ defmodule KanbanWeb.Telemetry do
     ]
   end
 
-  defp application_metrics do
-    user_metrics() ++ board_metrics() ++ task_metrics() ++ api_metrics() ++ review_metrics()
-  end
-
-  defp user_metrics do
+  # Tagged by LiveView module only. The handle_event `event` name comes from
+  # the client, so it is not a safe, bounded label.
+  defp live_view_metrics do
     [
-      sum("kanban.user.registration.count",
-        description: "Total number of user registrations"
-      ),
-      counter("kanban.user.login.count", description: "Total number of user logins")
-    ]
-  end
-
-  defp board_metrics do
-    [
-      sum("kanban.board.creation.count", description: "Total number of boards created")
-    ]
-  end
-
-  defp task_metrics do
-    [
-      sum("kanban.api.task_created.count",
-        description: "Total number of tasks created via API"
-      ),
-      sum("kanban.api.task_completed.count",
-        description: "Total number of tasks completed via API"
-      ),
-      counter("kanban.api.task_claimed.count",
-        description: "Total number of tasks claimed by agents"
-      ),
-      counter("kanban.api.task_unclaimed.count",
-        description: "Total number of tasks unclaimed by agents"
-      ),
-      counter("kanban.api.task_marked_done.count",
-        description: "Total number of tasks marked as done after review"
-      ),
-      counter("kanban.api.task_returned_to_doing.count",
-        description: "Total number of tasks returned to doing from review"
-      ),
-      counter("kanban.api.next_task_fetched.count",
-        description: "Total number of next task requests"
-      ),
-      counter("kanban.api.after_goal_delivered.count",
-        description:
-          "Total number of after_goal hook deliveries surfaced in /complete or /mark_reviewed responses"
-      )
-    ]
-  end
-
-  defp api_metrics do
-    [
-      counter("kanban.api.request.count",
-        tags: [:endpoint, :method],
-        description: "Total number of API requests by endpoint and method"
-      ),
-      summary("kanban.api.request.duration",
-        tags: [:endpoint, :method],
+      summary("phoenix.live_view.mount.stop.duration",
+        tags: [:view],
+        tag_values: &__MODULE__.live_view_tags/1,
         unit: {:native, :millisecond},
-        description: "API request duration by endpoint and method"
+        reporter_options: [persist: false],
+        description: "LiveView mount time by view"
       ),
-      counter("kanban.api.error.count",
-        tags: [:endpoint, :status],
-        description: "API errors by endpoint and status code"
+      summary("phoenix.live_view.handle_event.stop.duration",
+        tags: [:view],
+        tag_values: &__MODULE__.live_view_tags/1,
+        unit: {:native, :millisecond},
+        reporter_options: [persist: false],
+        description: "LiveView handle_event time by view"
       )
     ]
   end
 
-  # Review-report rendering counters. The structured-JSON review panel emits one
-  # of these per render so we can track the leading indicator that
-  # `:fallback_used` stays at zero for newly-completed tasks. Emitted from the
-  # ReviewReportPanel — do not emit elsewhere.
-  #
-  # Review diff panel telemetry feeds the open-rate and time-spent-in-panel
-  # leading metrics from the review-queue-code-diffs requirements doc. The
-  # `:opened` event fires the first time a reviewer selects a file in the
-  # diff panel for a needs_review=true task; `:closed` fires when the
-  # selection clears (task switch, task deselect, or LiveView teardown).
-  # Emitted from `KanbanWeb.ReviewLive` — do not emit elsewhere.
-  defp review_metrics do
+  @doc false
+  # Called by reporters inside telemetry handlers, so it must never raise.
+  def live_view_tags(%{socket: %{view: view}}) when is_atom(view), do: %{view: inspect(view)}
+  def live_view_tags(_metadata), do: %{}
+
+  # Oban puts the worker and queue names, both strings, at the top level of
+  # the job metadata. The job id, args and attempt are never tags.
+  defp oban_metrics do
     [
-      counter("kanban.review.fallback_used.count",
-        description:
-          "Total renders of the review panel that fell back to the legacy summary parser"
+      summary("oban.job.stop.duration",
+        tags: [:worker, :queue],
+        unit: {:native, :millisecond},
+        reporter_options: [persist: false],
+        description: "Background job run time by worker and queue"
       ),
-      counter("kanban.review.structured_used.count",
-        description: "Total renders of the review panel using the structured JSON block"
+      summary("oban.job.exception.duration",
+        tags: [:worker, :queue],
+        unit: {:native, :millisecond},
+        reporter_options: [persist: false],
+        description: "Run time of background jobs that raised, by worker and queue"
+      )
+    ]
+  end
+
+  # Swoosh metadata carries the email and the mailer config, so only the
+  # mailer module is a tag. An {:error, _} delivery still ends in :stop;
+  # :exception is a raise.
+  defp swoosh_metrics do
+    [
+      summary("swoosh.deliver.stop.duration",
+        tags: [:mailer],
+        unit: {:native, :millisecond},
+        reporter_options: [persist: false],
+        description: "Email delivery time by mailer"
       ),
-      counter("kanban.review_diff_panel.opened.count",
-        description:
-          "Total review-queue sessions that opened the diff panel for at least one file"
-      ),
-      counter("kanban.review_diff_panel.closed.count",
-        description: "Total review-queue sessions that closed the diff panel"
+      summary("swoosh.deliver.exception.duration",
+        tags: [:mailer],
+        unit: {:native, :millisecond},
+        reporter_options: [persist: false],
+        description: "Time of email deliveries that raised, by mailer"
       )
     ]
   end
@@ -195,7 +177,8 @@ defmodule KanbanWeb.Telemetry do
   defp periodic_measurements do
     [
       # A module, function and arguments to be invoked periodically.
-      # This function must emit through Kanban.Telemetry.emit/3, and a metric must be added above.
+      # This function must emit through Kanban.Telemetry.emit/3, and its event must be
+      # declared in Kanban.Telemetry.Catalog, which generates its metric.
       # {KanbanWeb, :count_users, []}
     ]
   end

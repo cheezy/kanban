@@ -49,7 +49,22 @@ defmodule Kanban.TelemetryTest do
     }
   ]
 
-  @entry_fields [:name, :kind, :domain, :measurements, :metadata, :description, :legacy]
+  @entry_fields [
+    :name,
+    :kind,
+    :domain,
+    :measurements,
+    :metadata,
+    :description,
+    :legacy,
+    :metrics,
+    :persist
+  ]
+  @optional_entry_fields [:tags]
+  @metric_types [:counter, :sum, :summary]
+  # Metric tags become LiveDashboard labels, so only these bounded,
+  # non-personal metadata keys may be used as one. Never an id.
+  @tag_keys [:endpoint, :method, :status, :kind, :format, :outcome, :surface]
   @leaked_values ["a@example.com", "203.0.113.5", "Secret title", "Private body", "tok-123"]
   @particles ~w(out in up off down)
   # Irregular past tenses that do not end in "ed" (notification.read, digest.sent,
@@ -368,7 +383,10 @@ defmodule Kanban.TelemetryTest do
       assert length(names) == length(Enum.uniq(names))
 
       for entry <- entries do
-        assert entry |> Map.keys() |> Enum.sort() == Enum.sort(@entry_fields)
+        assert entry |> Map.keys() |> Kernel.--(@optional_entry_fields) |> Enum.sort() ==
+                 Enum.sort(@entry_fields),
+               "#{inspect(entry.name)} must declare exactly #{inspect(@entry_fields)}"
+
         # A span prefix may be [:kanban, domain] when the domain is itself the
         # operation ([:kanban, :export]); an event always has an action.
         assert [:kanban, domain | _rest] = entry.name
@@ -380,7 +398,64 @@ defmodule Kanban.TelemetryTest do
         assert is_boolean(entry.legacy)
         assert Enum.all?(entry.measurements, &is_atom/1)
         assert Enum.all?(entry.metadata, &is_atom/1)
+        assert is_boolean(entry.persist), "#{inspect(entry.name)} persist must be a boolean"
       end
+    end
+
+    test "every entry declares valid metrics" do
+      for entry <- Catalog.events() do
+        where = inspect(entry.name)
+        available = entry.measurements ++ if(entry.kind == :span, do: [:duration], else: [])
+
+        assert is_list(entry.metrics) and entry.metrics != [], "#{where} declares no metric"
+        assert Keyword.keyword?(entry.metrics), "#{where} metrics must be {type, measurement}"
+
+        for {type, measurement} <- entry.metrics do
+          assert type in @metric_types, "#{where} has unknown metric type #{inspect(type)}"
+
+          assert measurement in available,
+                 "#{where} has a metric on #{inspect(measurement)}, which it does not measure"
+
+          if type == :summary do
+            assert measurement == :duration, "#{where} summarises a non-duration measurement"
+          end
+        end
+
+        if entry.kind == :span do
+          assert hd(entry.metrics) == {:summary, :duration},
+                 "#{where} is a span, so its first metric is its duration summary"
+        end
+      end
+    end
+
+    test "metric tags are low-cardinality metadata keys" do
+      tagged = Enum.filter(Catalog.events(), &Map.has_key?(&1, :tags))
+
+      assert tagged != []
+
+      for %{name: name, tags: tags, metadata: metadata} <- tagged, tag <- tags do
+        assert tag in metadata, "#{inspect(name)} tags #{inspect(tag)}, which it does not carry"
+        assert tag in @tag_keys, "#{inspect(name)} tags #{inspect(tag)}, which is not bounded"
+        refute tag |> Atom.to_string() |> String.ends_with?("_id")
+        refute Telemetry.forbidden_key?(tag)
+      end
+    end
+
+    test "only the API task actions stored before the catalog metrics are stored" do
+      stored =
+        for %{name: [:kanban, :api, action], persist: true} <- Catalog.events(),
+            action |> Atom.to_string() |> String.starts_with?("task_"),
+            do: action
+
+      assert Enum.sort(stored) ==
+               Enum.sort([
+                 :task_claimed,
+                 :task_completed,
+                 :task_created,
+                 :task_marked_done,
+                 :task_returned_to_doing,
+                 :task_unclaimed
+               ])
     end
 
     test "catalog entries never declare a forbidden key" do

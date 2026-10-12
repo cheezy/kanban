@@ -71,6 +71,23 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:audit_log_exported, [:user_id, :format], "An admin exported the audit log."}
   ]
 
+  # The API actions whose metrics existed, and were stored in metrics_events,
+  # before the catalog generated them. They keep their sum or counter type and
+  # stay stored. Kanban.Metrics.UserActivity counts every stored
+  # kanban.api.task_* row as admin activity, so storing another task_* action
+  # (task_listed, task_updated, ...) would change those counts. Every other API
+  # action is a per-request read or write and is shown live only.
+  @stored_api_actions [
+    :next_task_fetched,
+    :task_claimed,
+    :task_completed,
+    :task_created,
+    :task_unclaimed,
+    :task_marked_done,
+    :task_returned_to_doing
+  ]
+  @summed_api_actions [:task_created, :task_completed]
+
   @api_events (for {action, keys, description} <- @api_actions do
                  %{
                    name: [:kanban, :api, action],
@@ -79,7 +96,13 @@ defmodule Kanban.Telemetry.Catalog.Families do
                    measurements: [:count],
                    metadata: keys ++ @api_common_metadata,
                    description: description,
-                   legacy: true
+                   legacy: true,
+                   metrics:
+                     if(action in @summed_api_actions,
+                       do: [sum: :count],
+                       else: [counter: :count]
+                     ),
+                   persist: action in @stored_api_actions
                  }
                end)
 
@@ -91,7 +114,9 @@ defmodule Kanban.Telemetry.Catalog.Families do
                      measurements: [:count],
                      metadata: keys,
                      description: description,
-                     legacy: true
+                     legacy: true,
+                     metrics: [counter: :count],
+                     persist: false
                    }
                  end)
 

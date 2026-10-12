@@ -26,7 +26,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       metadata: [:user_id],
       description:
         "A user signed out of the browser. user_id is absent when nobody was signed in.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :sessions_revoked],
@@ -36,7 +38,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       metadata: [:user_id],
       description:
         "A user's open sessions were disconnected after a password change or reset. count is the number of tokens revoked and may be 0; user_id is absent when no token names the user.",
-      legacy: false
+      legacy: false,
+      metrics: [sum: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :password_changed],
@@ -45,7 +49,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       measurements: [:count],
       metadata: [:user_id],
       description: "A signed-in user changed their password.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :password_reset_completed],
@@ -54,7 +60,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       measurements: [:count],
       metadata: [:user_id],
       description: "A user set a new password through a password reset link.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :email_change_requested],
@@ -64,7 +72,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       metadata: [:user_id],
       description:
         "A user asked to change their email address and a confirmation link was sent. Neither address is sent.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :email_changed],
@@ -74,7 +84,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       metadata: [:user_id],
       description:
         "A user confirmed an email change and their address was updated. Neither address is sent.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :confirmed],
@@ -83,7 +95,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       measurements: [:count],
       metadata: [:user_id],
       description: "A user confirmed their account.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :name_changed],
@@ -92,7 +106,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       measurements: [:count],
       metadata: [:user_id],
       description: "A user changed their display name. The name itself is never sent.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :type_changed],
@@ -102,7 +118,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       metadata: [:user_id, :from_type, :to_type],
       description:
         "A user's type changed, for example from :user to :admin. It carries no actor_user_id, because update_user_type/2 is not given one.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :disabled],
@@ -112,7 +130,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       metadata: [:user_id, :actor_user_id],
       description:
         "An administrator disabled an enabled user. user_id is the user, actor_user_id the administrator.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :enabled],
@@ -122,7 +142,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       metadata: [:user_id, :actor_user_id],
       description:
         "An administrator enabled a disabled user. user_id is the user, actor_user_id the administrator.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :user, :deleted],
@@ -132,7 +154,9 @@ defmodule Kanban.Telemetry.Catalog.UserEvents do
       metadata: [:user_id, :actor_user_id],
       description:
         "An administrator deleted a user. user_id is the deleted user's id, actor_user_id the administrator.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     }
   ]
 

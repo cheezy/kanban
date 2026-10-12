@@ -23,7 +23,9 @@ defmodule Kanban.Telemetry.Catalog.TargetEvents do
       measurements: [:count],
       metadata: [:target_id, :actor_user_id],
       description: "A user created a delivery target. actor_user_id is its owner.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :target, :updated],
@@ -33,7 +35,9 @@ defmodule Kanban.Telemetry.Catalog.TargetEvents do
       metadata: [:target_id, :actor_user_id, :fields],
       description:
         "A target's owner changed it. fields lists the changed field names, never their values; saving no change emits nothing.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :target, :archived],
@@ -42,7 +46,9 @@ defmodule Kanban.Telemetry.Catalog.TargetEvents do
       measurements: [:count],
       metadata: [:target_id, :actor_user_id],
       description: "A target's owner archived an active, complete target.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :target, :unarchived],
@@ -51,7 +57,9 @@ defmodule Kanban.Telemetry.Catalog.TargetEvents do
       measurements: [:count],
       metadata: [:target_id, :actor_user_id],
       description: "A target's owner restored an archived target.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :target, :goal_assigned],
@@ -61,7 +69,9 @@ defmodule Kanban.Telemetry.Catalog.TargetEvents do
       metadata: [:target_id, :goal_id, :board_id, :actor_user_id],
       description:
         "A goal was attached to a target. board_id is the goal's board; assigning the target a goal already has emits nothing.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :target, :goal_unassigned],
@@ -71,7 +81,9 @@ defmodule Kanban.Telemetry.Catalog.TargetEvents do
       metadata: [:target_id, :goal_id, :board_id, :actor_user_id],
       description:
         "A goal was detached from its target. target_id is the target it left; a goal with no target emits nothing.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     },
     %{
       name: [:kanban, :target, :status_changed],
@@ -81,7 +93,9 @@ defmodule Kanban.Telemetry.Catalog.TargetEvents do
       metadata: [:target_id, :from_status, :to_status],
       description:
         "The status sweep recorded a new delivery status for a target. from_status is absent on the first observation; both are :on_track, :at_risk, :missed or :complete.",
-      legacy: false
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
     }
   ]
 
