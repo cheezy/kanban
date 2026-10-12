@@ -5,9 +5,11 @@ defmodule Kanban.Notifications.ClaimExpiryWorkerTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Columns
   alias Kanban.Notifications
+  alias Kanban.Notifications.ClaimExpiryReport
   alias Kanban.Notifications.ClaimExpiryWorker
   alias Kanban.Notifications.Notification
   alias Kanban.Tasks.Task
@@ -164,6 +166,80 @@ defmodule Kanban.Notifications.ClaimExpiryWorkerTest do
 
       assert [%Task{id: id}] = Notifications.list_recently_expired_claims(ctx.now, 2 * 60 * 60)
       assert id == expired.id
+    end
+  end
+
+  describe "claim_expired telemetry" do
+    test "claim_expired is not emitted twice", ctx do
+      task = claimed_task(ctx, "Doing", 20)
+      attach_telemetry([:kanban, :task, :claim_expired])
+
+      assert :ok = sweep(ctx)
+      assert :ok = sweep(ctx)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :claim_expired], %{count: 1}, metadata}
+      assert metadata == %{task_id: task.id, board_id: ctx.board.id, user_id: ctx.owner.id}
+      refute_receive {:telemetry_event, [:kanban, :task, :claim_expired], _, _}
+
+      Task
+      |> where(id: ^task.id)
+      |> Repo.update_all(
+        set: [
+          claimed_at: DateTime.add(ctx.now, -65 * 60, :second),
+          claim_expires_at: DateTime.add(ctx.now, -5 * 60, :second)
+        ]
+      )
+
+      assert :ok = sweep(ctx)
+      assert_receive {:telemetry_event, [:kanban, :task, :claim_expired], _, %{task_id: id}}
+      assert id == task.id
+      refute_receive {:telemetry_event, [:kanban, :task, :claim_expired], _, _}
+    end
+
+    test "emits for a user who left the board, who gets no notification", ctx do
+      outsider = user_fixture()
+      task = claimed_task(ctx, "Doing", 10, assigned_to_id: outsider.id)
+      attach_telemetry([:kanban, :task, :claim_expired])
+
+      assert :ok = sweep(ctx)
+
+      assert expired_rows() == []
+      assert_receive {:telemetry_event, [:kanban, :task, :claim_expired], _, metadata}
+      assert metadata == %{task_id: task.id, board_id: ctx.board.id, user_id: outsider.id}
+    end
+
+    test "emits nothing when no claim expired", ctx do
+      claimed_task(ctx, "Doing", -30)
+      attach_telemetry([:kanban, :task, :claim_expired])
+
+      assert :ok = sweep(ctx)
+      refute_receive {:telemetry_event, [:kanban, :task, :claim_expired], _, _}
+    end
+
+    test "prunes reports older than the lookback window plus a day", ctx do
+      old = claimed_task(ctx, "Doing", 27 * 60)
+      recent = claimed_task(ctx, "Doing", 20 * 60)
+      assert ClaimExpiryReport.record(old) == :new
+      assert ClaimExpiryReport.record(recent) == :new
+
+      assert :ok = sweep(ctx)
+
+      task_ids = ClaimExpiryReport |> Repo.all() |> Enum.map(& &1.task_id)
+      assert task_ids == [recent.id]
+    end
+  end
+
+  describe "ClaimExpiryReport.record/1" do
+    test "returns :new for a claim the first time and :seen after that", ctx do
+      task = claimed_task(ctx, "Doing", 10)
+
+      assert ClaimExpiryReport.record(task) == :new
+      assert ClaimExpiryReport.record(task) == :seen
+      assert ClaimExpiryReport.record(%{task | claim_expires_at: ctx.now}) == :new
+    end
+
+    test "returns :seen for a task with no claim expiry" do
+      assert ClaimExpiryReport.record(%Task{id: 1, claim_expires_at: nil}) == :seen
     end
   end
 end

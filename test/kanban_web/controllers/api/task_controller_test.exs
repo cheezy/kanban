@@ -4335,6 +4335,35 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert user_id == user.id
     end
 
+    test "an API claim emits api.task_claimed and task.claimed once each", %{
+      conn: conn,
+      ready_column: ready_column,
+      user: user,
+      board: board
+    } do
+      {:ok, task} =
+        Tasks.create_task(ready_column, %{
+          "title" => "Claim Twice Counted",
+          "status" => "open",
+          "created_by_id" => user.id
+        })
+
+      attach_telemetry([[:kanban, :api, :task_claimed], [:kanban, :task, :claimed]])
+
+      conn =
+        post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})
+
+      assert json_response(conn, 200)
+      assert_receive {:telemetry_event, [:kanban, :api, :task_claimed], %{count: 1}, _}
+
+      assert_receive {:telemetry_event, [:kanban, :task, :claimed], %{count: 1},
+                      %{task_id: task_id, board_id: board_id, user_id: user_id}}
+
+      assert {task_id, board_id, user_id} == {task.id, board.id, user.id}
+      refute_receive {:telemetry_event, [:kanban, :api, :task_claimed], _, _}
+      refute_receive {:telemetry_event, [:kanban, :task, :claimed], _, _}
+    end
+
     test "returns 409 when no tasks available", %{conn: conn} do
       conn =
         post(conn, ~p"/api/tasks/claim", %{"before_doing_result" => valid_before_doing_result()})

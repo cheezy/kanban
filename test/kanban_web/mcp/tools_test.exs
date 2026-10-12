@@ -3,6 +3,7 @@ defmodule KanbanWeb.MCP.ToolsTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.ApiTokens
   alias Kanban.Columns
@@ -480,6 +481,25 @@ defmodule KanbanWeb.MCP.ToolsTest do
                content: [%{type: "text", text: ~s({"a":1})}],
                isError: false
              }
+    end
+  end
+
+  describe "claim telemetry" do
+    test "MCP claim emits task.claimed", %{conn: conn, user: user, board: board, ready: ready} do
+      {:ok, task} = Tasks.create_task(ready, %{"title" => "T", "created_by_id" => user.id})
+      attach_telemetry([:kanban, :task, :claimed])
+
+      args = %{
+        "identifier" => task.identifier,
+        "agent_name" => "MCP Agent",
+        "before_doing_result" => %{"exit_code" => 0, "output" => "ok", "duration_ms" => 100}
+      }
+
+      assert {:ok, %{isError: false}} = Tools.call("stride_claim_task", args, conn)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :claimed], %{count: 1}, metadata}
+      assert metadata == %{task_id: task.id, board_id: board.id, user_id: user.id}
+      refute_receive {:telemetry_event, [:kanban, :task, :claimed], _, _}
     end
   end
 end

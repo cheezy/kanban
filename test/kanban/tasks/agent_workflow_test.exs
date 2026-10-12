@@ -1243,4 +1243,71 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
              }
     end
   end
+
+  describe "claim and unclaim telemetry" do
+    setup :setup_board
+
+    test "claim emits claimed with task, board and user ids", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      attach_telemetry([:kanban, :task, :claimed])
+
+      {:ok, _claimed, _hook} =
+        AgentWorkflow.claim_next_task([], ctx.user, ctx.board.id, task.identifier, "Claude")
+
+      assert_receive {:telemetry_event, [:kanban, :task, :claimed], %{count: 1}, metadata}
+      assert metadata == %{task_id: task.id, board_id: ctx.board.id, user_id: ctx.user.id}
+      refute_receive {:telemetry_event, [:kanban, :task, :claimed], _, _}
+    end
+
+    test "no claimable task emits nothing", ctx do
+      attach_telemetry([:kanban, :task, :claimed])
+
+      assert {:error, :no_tasks_available} =
+               AgentWorkflow.claim_next_task([], ctx.user, ctx.board.id, nil, "Claude")
+
+      task = create_open_task(ctx.ready, ctx.user)
+
+      assert {:error, :not_authorized} =
+               AgentWorkflow.claim_next_task([], ctx.other, ctx.board.id, task.identifier, "C")
+
+      refute_receive {:telemetry_event, [:kanban, :task, :claimed], _, _}
+    end
+
+    test "unclaim without reason", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+      attach_telemetry([:kanban, :task, :unclaimed])
+
+      {:ok, _} = AgentWorkflow.unclaim_task(claimed, ctx.user)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :unclaimed], %{count: 1}, metadata}
+
+      assert metadata == %{
+               task_id: task.id,
+               board_id: ctx.board.id,
+               user_id: ctx.user.id,
+               has_reason: false
+             }
+    end
+
+    test "unclaim with a reason sends has_reason, never the reason", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+      attach_telemetry([:kanban, :task, :unclaimed])
+
+      {:ok, _} = AgentWorkflow.unclaim_task(claimed, ctx.user, "Blocked on vendor quirk")
+
+      assert_receive {:telemetry_event, [:kanban, :task, :unclaimed], _, metadata}
+      assert metadata.has_reason == true
+      refute inspect(metadata) =~ "vendor quirk"
+    end
+
+    test "a refused unclaim emits nothing", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      attach_telemetry([:kanban, :task, :unclaimed])
+
+      assert {:error, :not_claimed} = AgentWorkflow.unclaim_task(task, ctx.user, "  ")
+      refute_receive {:telemetry_event, [:kanban, :task, :unclaimed], _, _}
+    end
+  end
 end

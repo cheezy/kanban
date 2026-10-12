@@ -37,6 +37,7 @@ defmodule Kanban.Tasks.Comments do
   alias Kanban.Tasks.Mentions
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
+  alias Kanban.Tasks.TaskTelemetry
 
   @doc """
   Creates a comment on `task`, authored by the scope's user.
@@ -59,7 +60,9 @@ defmodule Kanban.Tasks.Comments do
   def create_comment(scope, %Task{id: task_id}, attrs, opts) when is_integer(task_id) do
     with {:ok, board_id} <- authorize_create(scope, task_id),
          {:ok, comment} <- insert_comment(scope, task_id, board_id, attrs, opts) do
-      after_write(scope, comment, [], board_id)
+      scope
+      |> after_write(comment, [], board_id)
+      |> TaskTelemetry.comment_created(board_id)
     end
   end
 

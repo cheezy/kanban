@@ -197,6 +197,60 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
   `Bearer` header. The other reasons are `rate_limited`, `token_not_found`,
   `token_revoked`, `token_expired` and `user_disabled`.
 
+### Task activity events
+
+W2340 added these. They are declared in
+`Kanban.Telemetry.Catalog.TaskEvents` (`lib/kanban/telemetry/catalog/task_events.ex`)
+and emitted by `Kanban.Tasks.TaskTelemetry` in the task context, so the board
+UI, the REST API and the MCP server each produce one event per change. Each is
+emitted only after its change has been saved, so a refused, invalid or
+rolled-back change emits nothing. Every event measures `count: 1`;
+`reordered` also measures `task_count` for a whole-column reorder.
+
+| Event | Metadata | Emitted by |
+|---|---|---|
+| `[:kanban, :task, :updated]` | `task_id`, `board_id`, `fields`, `source`, `actor_user_id` | `Kanban.Tasks.update_task/3` (`source: :ui`) and `api_update_task/2` (`:api`) |
+| `[:kanban, :task, :moved]` | `task_id`, `board_id`, `from_column_id`, `to_column_id` | `Kanban.Tasks.move_task/3`, to another column |
+| `[:kanban, :task, :reordered]` | `task_id`, `column_id`, `board_id` | `Kanban.Tasks.move_task/3` within one column, and `reorder_tasks/2` (no `task_id`) |
+| `[:kanban, :task, :deleted]` | `task_id`, `board_id` | `Kanban.Tasks.delete_task/1` |
+| `[:kanban, :task, :claimed]` | `task_id`, `board_id`, `user_id` | `Kanban.Tasks.AgentWorkflow.claim_next_task/5` |
+| `[:kanban, :task, :unclaimed]` | `task_id`, `board_id`, `user_id`, `has_reason` | `Kanban.Tasks.AgentWorkflow.unclaim_task/3` |
+| `[:kanban, :task, :claim_expired]` | `task_id`, `board_id`, `user_id` | `Kanban.Notifications.ClaimExpiryWorker` |
+| `[:kanban, :task, :review_approved]` | `task_id`, `board_id`, `reviewer_user_id` | `Kanban.Reviews.approve_review/3` |
+| `[:kanban, :task, :review_changes_requested]` | `task_id`, `board_id`, `reviewer_user_id` | `Kanban.Reviews.request_changes_review/3` |
+| `[:kanban, :task, :comment_created]` | `task_id`, `board_id`, `comment_id`, `user_id`, `by_agent` | `Kanban.Tasks.create_comment/4` |
+
+- **`fields` holds names only.** `updated` lists the changed field names as
+  atoms, sorted, and is not emitted for an update that changes nothing.
+  `actor_user_id` is the editing user when the caller passes one, otherwise
+  `nil`. A goal whose assignment cascades to its children emits one `updated`,
+  for the goal.
+- **Claims are counted once per path.** REST and MCP claims both go through
+  `claim_next_task/5`, which emits `task.claimed` once. A REST or MCP claim
+  also emits `[:kanban, :api, :task_claimed]`, as before: `api.*` events count
+  requests and `task.*` events count state changes, so both firing is
+  intended. The same holds for `unclaimed` and `[:kanban, :api, :task_unclaimed]`.
+  A failed claim, or one with no task available, emits nothing.
+- **`has_reason` replaces the reason.** `unclaimed` says whether a non-blank
+  reason was given; the reason itself is never sent.
+- **`claim_expired` is emitted once per claim.** The sweeper sees an expired
+  claim on every run in its two-hour window, so it records each claim (task id
+  and `claim_expires_at`) in the `claim_expiry_reports` table against a unique
+  index and emits only when the row is new. A re-run, a restart or a second
+  node therefore never emits twice, and a new claim on the same task is counted
+  again. It is emitted even when the assignee left the board and gets no
+  notification. Rows older than the window plus a day are pruned on each run.
+- **Review events never carry the notes.** `reviewer_user_id` is the reviewer.
+  An approval still emits `[:kanban, :task, :completed]` once, through
+  `mark_reviewed`; no second completion event is added.
+- **`comment_created` never carries the comment text.** `user_id` is the
+  author and `by_agent` is `true` when an agent wrote it.
+- **Not covered.** Bulk moves, assignments and labels from
+  `Kanban.Tasks.BulkActions`, automatic goal repositioning, the automatic
+  deletion of an empty parent goal, the sibling position shifts after a
+  delete, cascaded children, and comment edits and deletions emit none of
+  these events.
+
 ## Emitting an event
 
 ```elixir
@@ -260,7 +314,8 @@ raise.
 1. Add an entry to the list in `Kanban.Telemetry.Catalog`, with every field,
    following the naming rule and declaring no forbidden key. A new API or
    audit action is a new tuple in `@api_actions` or `@audit_actions` in
-   `Kanban.Telemetry.Catalog.Families`.
+   `Kanban.Telemetry.Catalog.Families`, and a new task activity event is an
+   entry in `Kanban.Telemetry.Catalog.TaskEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, or declares a forbidden key.

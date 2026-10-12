@@ -33,6 +33,7 @@ defmodule Kanban.Tasks.Positioning do
   alias Kanban.Tasks.History
   alias Kanban.Tasks.Queries
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskTelemetry
 
   require Logger
 
@@ -45,8 +46,9 @@ defmodule Kanban.Tasks.Positioning do
     result = check_wip_and_perform_move(task, new_column, new_position, old_column_id)
 
     case result do
-      {:ok, updated_task} ->
+      {:ok, {updated_task, from_column_id}} ->
         Broadcaster.broadcast_task_change(updated_task, :task_moved)
+        TaskTelemetry.moved(updated_task, from_column_id, new_column.board_id)
         {:ok, updated_task}
 
       error ->
@@ -90,13 +92,24 @@ defmodule Kanban.Tasks.Positioning do
   in the same batch is safe to pass.
   """
   def move_task_unchecked(%Task{} = task, %Column{} = column, index) do
-    perform_move(task, column, index, task.column_id)
+    with {:ok, {updated_task, _from_column_id}} <-
+           perform_move(task, column, index, task.column_id) do
+      {:ok, updated_task}
+    end
   end
 
   @doc """
   Reorders tasks within a column based on a list of task IDs.
   """
   def reorder_tasks(column, task_ids) do
+    column
+    |> run_reorder(task_ids)
+    |> TaskTelemetry.column_reordered(column, task_ids)
+
+    :ok
+  end
+
+  defp run_reorder(column, task_ids) do
     Repo.transaction(fn ->
       Repo.query!("SELECT pg_advisory_xact_lock($1)", [column.id])
 
@@ -119,8 +132,6 @@ defmodule Kanban.Tasks.Positioning do
       assign_reorder_positions(column, live_ids, old_positions, now)
       assign_remaining_positions(column, length(live_ids), old_positions, now)
     end)
-
-    :ok
   end
 
   defp live_positions(column) do
@@ -260,7 +271,9 @@ defmodule Kanban.Tasks.Positioning do
     tasks = Repo.all(query)
 
     Enum.each(tasks, fn task ->
-      Kanban.Tasks.update_task(task, %{position: task.position - 1})
+      # A position shift is bookkeeping, not an edit, so it emits no
+      # [:kanban, :task, :updated] event.
+      Kanban.Tasks.update_task(task, %{position: task.position - 1}, telemetry: false)
     end)
   end
 
@@ -303,7 +316,8 @@ defmodule Kanban.Tasks.Positioning do
         Goals.update_parent_goal_position(updated_task, old_column_id, new_column.id, now)
       end
 
-      updated_task
+      # The source column is the one re-read under the locks, not the caller's.
+      {updated_task, old_column_id}
     end)
   end
 

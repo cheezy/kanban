@@ -168,12 +168,17 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
     Events.task_unclaimed(task, user, reason)
     Broadcaster.emit_webhook(updated_task, :task_unclaimed, task.column.board_id)
+    TaskTelemetry.unclaimed(task, user.id, task.column.board_id, reason_given?(reason))
     {:ok, updated_task}
   end
 
   defp handle_unclaim_result({:error, changeset}, _task, _user, _reason) do
     {:error, changeset}
   end
+
+  # Only whether a reason was given reaches telemetry, never the reason.
+  defp reason_given?(reason) when is_binary(reason), do: String.trim(reason) != ""
+  defp reason_given?(_reason), do: false
 
   @doc """
   Completes a task by moving it to the Review column with completion summary.
@@ -393,8 +398,10 @@ defmodule Kanban.Tasks.AgentWorkflow do
     now = DateTime.utc_now()
     expires_at = now |> DateTime.add(60 * 60, :second)
 
-    result = run_claim_transaction(task, user, doing_column, now, expires_at)
-    handle_claim_result(result, task, board, board_id, doing_column, agent_name)
+    task
+    |> run_claim_transaction(user, doing_column, now, expires_at)
+    |> handle_claim_result(task, board, board_id, doing_column, agent_name)
+    |> TaskTelemetry.claimed(user.id, board_id)
   end
 
   defp run_claim_transaction(task, user, doing_column, now, expires_at) do

@@ -45,6 +45,7 @@ defmodule Kanban.Reviews do
   alias Kanban.Tasks.AgentWorkflow
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskTelemetry
 
   @review_column_name "Review"
 
@@ -284,6 +285,7 @@ defmodule Kanban.Reviews do
         scope
         |> run_review_transaction(task, user, base_attrs, opts)
         |> notify_reviewed(user, Keyword.get(opts, :move_after_review?, true))
+        |> TaskTelemetry.reviewed(base_attrs.review_status, user)
     end
   end
 

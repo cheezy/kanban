@@ -11,6 +11,7 @@ defmodule Kanban.ReviewsTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
@@ -580,6 +581,70 @@ defmodule Kanban.ReviewsTest do
 
       assert {:ok, _approved} = user |> Scope.for_user() |> Reviews.approve_review(task)
       assert reviewed_rows() == []
+    end
+  end
+
+  describe "review decision telemetry" do
+    setup %{board: board} do
+      _done = column_fixture(board, %{name: "Done", position: 2})
+      :ok
+    end
+
+    test "approve_review emits review_approved with the reviewer id and one completed event",
+         %{column: column, user: user, board: board} do
+      task = pending_task!(column)
+
+      attach_telemetry([
+        [:kanban, :task, :review_approved],
+        [:kanban, :task, :review_changes_requested],
+        [:kanban, :task, :completed]
+      ])
+
+      assert {:ok, _} = user |> Scope.for_user() |> Reviews.approve_review(task)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :review_approved], %{count: 1}, metadata}
+
+      assert metadata == %{task_id: task.id, board_id: board.id, reviewer_user_id: user.id}
+      assert_receive {:telemetry_event, [:kanban, :task, :completed], _, _}
+      refute_receive {:telemetry_event, [:kanban, :task, :completed], _, _}
+      refute_receive {:telemetry_event, [:kanban, :task, :review_changes_requested], _, _}
+    end
+
+    test "request_changes_review emits review_changes_requested without the notes",
+         %{column: column, user: user, board: board} do
+      task = pending_task!(column)
+      attach_telemetry([:kanban, :task, :review_changes_requested])
+
+      assert {:ok, _} =
+               user
+               |> Scope.for_user()
+               |> Reviews.request_changes_review(task,
+                 review_notes: "Please fix the flaky widget"
+               )
+
+      assert_receive {:telemetry_event, [:kanban, :task, :review_changes_requested], %{count: 1},
+                      metadata}
+
+      assert metadata == %{task_id: task.id, board_id: board.id, reviewer_user_id: user.id}
+      refute inspect(metadata) =~ "flaky widget"
+    end
+
+    test "a refused review emits nothing", %{column: column} do
+      task = pending_task!(column)
+
+      attach_telemetry([
+        [:kanban, :task, :review_approved],
+        [:kanban, :task, :review_changes_requested]
+      ])
+
+      assert {:error, :not_authorized} = Reviews.approve_review(nil, task)
+      outsider_scope = Scope.for_user(user_fixture())
+      assert {:error, :not_found} = Reviews.approve_review(outsider_scope, task)
+
+      assert {:error, :review_notes_required} =
+               Reviews.request_changes_review(outsider_scope, task, [])
+
+      refute_receive {:telemetry_event, _, _, _}
     end
   end
 end

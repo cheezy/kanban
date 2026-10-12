@@ -10094,4 +10094,193 @@ defmodule Kanban.TasksTest do
 
     completed
   end
+
+  describe "task activity telemetry" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      other_column = column_fixture(board, %{name: "In Progress"})
+      %{user: user, board: board, column: column, other_column: other_column}
+    end
+
+    test "update_task emits updated with ui source and sorted fields", ctx do
+      task = task_fixture(ctx.column)
+      attach_telemetry([:kanban, :task, :updated])
+
+      {:ok, _} =
+        Tasks.update_task(task, %{priority: :high, title: "Renamed secret"}, actor: ctx.user)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :updated], %{count: 1}, metadata}
+
+      assert metadata == %{
+               task_id: task.id,
+               board_id: ctx.board.id,
+               fields: [:priority, :title],
+               source: :ui,
+               actor_user_id: ctx.user.id
+             }
+
+      refute inspect(metadata) =~ "Renamed secret"
+    end
+
+    test "api_update_task emits updated with api source", ctx do
+      task = task_fixture(ctx.column)
+      attach_telemetry([:kanban, :task, :updated])
+
+      {:ok, _} = Tasks.api_update_task(task, %{"description" => "New text"})
+
+      assert_receive {:telemetry_event, [:kanban, :task, :updated], %{count: 1}, metadata}
+
+      assert metadata == %{
+               task_id: task.id,
+               board_id: ctx.board.id,
+               fields: [:description],
+               source: :api,
+               actor_user_id: nil
+             }
+    end
+
+    test "an update that changes nothing emits nothing", ctx do
+      task = task_fixture(ctx.column, %{title: "Same"})
+      attach_telemetry([:kanban, :task, :updated])
+
+      {:ok, _} = Tasks.update_task(task, %{title: "Same"})
+
+      refute_receive {:telemetry_event, [:kanban, :task, :updated], _, _}
+    end
+
+    test "an invalid update emits nothing", ctx do
+      task = task_fixture(ctx.column)
+      attach_telemetry([:kanban, :task, :updated])
+
+      {:error, _changeset} = Tasks.update_task(task, %{title: ""})
+
+      refute_receive {:telemetry_event, [:kanban, :task, :updated], _, _}
+    end
+
+    test "a goal assignment cascade emits one updated, for the goal", ctx do
+      goal = task_fixture(ctx.column, %{type: :goal})
+      child = task_fixture(ctx.column, %{parent_id: goal.id})
+      attach_telemetry([:kanban, :task, :updated])
+
+      {:ok, _} = Tasks.update_task(goal, %{assigned_to_id: ctx.user.id})
+
+      assert_receive {:telemetry_event, [:kanban, :task, :updated], _, %{task_id: goal_id}}
+      assert goal_id == goal.id
+      refute_receive {:telemetry_event, [:kanban, :task, :updated], _, %{task_id: _}}
+      assert Tasks.get_task!(child.id).assigned_to_id == ctx.user.id
+    end
+
+    test "delete_task emits deleted and no updated for the shifted tasks", ctx do
+      first = task_fixture(ctx.column)
+      _second = task_fixture(ctx.column)
+      _third = task_fixture(ctx.column)
+      attach_telemetry([[:kanban, :task, :deleted], [:kanban, :task, :updated]])
+
+      {:ok, _} = Tasks.delete_task(first)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :deleted], %{count: 1}, metadata}
+      assert metadata == %{task_id: first.id, board_id: ctx.board.id}
+      refute_receive {:telemetry_event, [:kanban, :task, :updated], _, _}
+    end
+
+    test "a delete refused for dependents emits nothing", ctx do
+      {:ok, first} = Tasks.create_task(ctx.column, %{"title" => "Task"})
+
+      {:ok, _dependent} =
+        Tasks.create_task(ctx.column, %{
+          "title" => "Dependent",
+          "dependencies" => [first.identifier]
+        })
+
+      attach_telemetry([:kanban, :task, :deleted])
+
+      assert {:error, :has_dependents} = Tasks.delete_task(first)
+      refute_receive {:telemetry_event, [:kanban, :task, :deleted], _, _}
+    end
+
+    test "move_task emits moved", ctx do
+      task = task_fixture(ctx.column)
+      attach_telemetry([[:kanban, :task, :moved], [:kanban, :task, :reordered]])
+
+      {:ok, _} = Tasks.move_task(task, ctx.other_column, 0)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :moved], %{count: 1}, metadata}
+
+      assert metadata == %{
+               task_id: task.id,
+               board_id: ctx.board.id,
+               from_column_id: ctx.column.id,
+               to_column_id: ctx.other_column.id
+             }
+
+      refute_receive {:telemetry_event, [:kanban, :task, :reordered], _, _}
+    end
+
+    test "same-column move emits reordered", ctx do
+      task = task_fixture(ctx.column)
+      _other = task_fixture(ctx.column)
+      attach_telemetry([[:kanban, :task, :moved], [:kanban, :task, :reordered]])
+
+      {:ok, _} = Tasks.move_task(task, ctx.column, 1)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :reordered], %{count: 1}, metadata}
+      assert metadata == %{task_id: task.id, column_id: ctx.column.id, board_id: ctx.board.id}
+      refute_receive {:telemetry_event, [:kanban, :task, :moved], _, _}
+    end
+
+    test "a move refused by the WIP limit emits nothing", ctx do
+      full = column_fixture(ctx.board, %{name: "Full", wip_limit: 1})
+      _occupant = task_fixture(full)
+      task = task_fixture(ctx.column)
+      attach_telemetry([[:kanban, :task, :moved], [:kanban, :task, :reordered]])
+
+      assert {:error, :wip_limit_reached} = Tasks.move_task(task, full, 0)
+      refute_receive {:telemetry_event, _, _, _}
+    end
+
+    test "reorder_tasks emits reordered with task_count", ctx do
+      first = task_fixture(ctx.column)
+      second = task_fixture(ctx.column)
+      attach_telemetry([:kanban, :task, :reordered])
+
+      :ok = Tasks.reorder_tasks(ctx.column, [second.id, first.id])
+
+      assert_receive {:telemetry_event, [:kanban, :task, :reordered], measurements, metadata}
+      assert measurements == %{count: 1, task_count: 2}
+      assert metadata == %{column_id: ctx.column.id, board_id: ctx.board.id}
+    end
+
+    test "comment event carries no body", ctx do
+      task = task_fixture(ctx.column)
+      scope = Kanban.Accounts.Scope.for_user(ctx.user)
+      attach_telemetry([:kanban, :task, :comment_created])
+
+      {:ok, comment} =
+        Tasks.create_comment(scope, task, %{"content" => "Private remark xyz"},
+          author_agent_name: "Claude"
+        )
+
+      assert_receive {:telemetry_event, [:kanban, :task, :comment_created], %{count: 1}, metadata}
+
+      assert metadata == %{
+               task_id: task.id,
+               board_id: ctx.board.id,
+               comment_id: comment.id,
+               user_id: ctx.user.id,
+               by_agent: true
+             }
+
+      refute inspect(metadata) =~ "Private remark"
+    end
+
+    test "a refused comment emits nothing", ctx do
+      task = task_fixture(ctx.column)
+      attach_telemetry([:kanban, :task, :comment_created])
+
+      assert {:error, :unauthorized} = Tasks.create_comment(nil, task, %{"content" => "x"})
+      refute_receive {:telemetry_event, [:kanban, :task, :comment_created], _, _}
+    end
+  end
 end

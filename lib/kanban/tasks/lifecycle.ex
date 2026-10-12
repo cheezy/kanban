@@ -34,6 +34,12 @@ defmodule Kanban.Tasks.Lifecycle do
     * `:actor` — the user making the change; assigning a task to yourself
       notifies nobody. Omitted, the change is treated as a system change and
       the assignee is notified.
+    * `:telemetry` — `false` skips the `[:kanban, :task, :updated]` event.
+      Only for internal bookkeeping writes that are not an edit, such as the
+      position shifts after a delete. Defaults to `true`.
+
+  A saved change emits `[:kanban, :task, :updated]` with `source: :ui` once
+  the write has committed (once for a goal, never per cascaded child).
   """
   def update_task(%Task{} = task, attrs, opts \\ []) do
     changeset = Task.changeset(task, attrs)
@@ -47,7 +53,15 @@ defmodule Kanban.Tasks.Lifecycle do
         update_without_cascade(task, changeset)
       end
 
-    notify_assignment(result, assignment_changed?, opts)
+    result
+    |> notify_assignment(assignment_changed?, opts)
+    |> emit_updated(changeset, opts)
+  end
+
+  defp emit_updated(result, changeset, opts) do
+    if Keyword.get(opts, :telemetry, true),
+      do: TaskTelemetry.updated(result, changeset, :ui, Keyword.get(opts, :actor)),
+      else: result
   end
 
   defp notify_assignment({:ok, updated} = result, true, opts) do
@@ -73,7 +87,10 @@ defmodule Kanban.Tasks.Lifecycle do
   def api_update_task(%Task{} = task, attrs) do
     changeset = Task.api_update_changeset(task, attrs)
     changeset = Dependencies.validate_circular_dependencies(changeset)
-    update_without_cascade(task, changeset)
+
+    task
+    |> update_without_cascade(changeset)
+    |> TaskTelemetry.updated(changeset, :api, nil)
   end
 
   @doc """
@@ -324,6 +341,7 @@ defmodule Kanban.Tasks.Lifecycle do
         {:ok, deleted_task} ->
           Positioning.reorder_after_deletion(deleted_task)
           Broadcaster.broadcast_task_change(deleted_task, :task_deleted)
+          TaskTelemetry.deleted(deleted_task)
 
           if parent_id do
             delete_goal_if_no_children(parent_id)
