@@ -123,7 +123,7 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:count],
       metadata: [:event_name, :reason, :keys],
       description:
-        "Kanban.Telemetry dropped metadata keys from an event, because they were forbidden or undeclared. Carries key names only, never values.",
+        "Kanban.Telemetry dropped metadata keys from an event, because they were forbidden or undeclared. count is the number of keys dropped. Carries key names only, never values.",
       legacy: false,
       metrics: [sum: :count],
       persist: false
@@ -281,7 +281,8 @@ defmodule Kanban.Telemetry.Catalog do
       domain: :task,
       measurements: [:count],
       metadata: [:board_id],
-      description: "A batch of tasks on a board was archived.",
+      description:
+        "A batch of completed tasks on a board was archived. count is the number of tasks archived and may be 0.",
       legacy: true,
       metrics: [sum: :count],
       persist: false

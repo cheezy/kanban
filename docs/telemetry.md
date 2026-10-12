@@ -1,9 +1,24 @@
 # Telemetry Events
 
-This document describes how the kanban app declares and emits its
-[`:telemetry`](https://hexdocs.pm/telemetry/) events. Introduced by W2336, it
+This document describes the [`:telemetry`](https://hexdocs.pm/telemetry/)
+events the kanban app emits, for operators who want to feed them into their
+own monitoring and for developers who add new ones. Introduced by W2336, it
 covers the foundation every later telemetry task builds on: one catalog of
 events, one emit path that enforces it, and one test helper.
+
+If you are setting up monitoring for the first time, read these first:
+
+1. [Event reference](#event-reference) lists every event with its
+   measurements, metadata and meaning.
+2. [Privacy rule](#privacy-rule) says what event data never contains, and
+   what your handler must not add.
+3. [Attaching a handler](#attaching-a-handler) shows how to receive events.
+4. [Metrics retention](#metrics-retention) says how long the app keeps the
+   metrics it stores itself.
+
+The sections in between explain individual event families in more detail.
+The event reference is rendered from the catalog, and a test fails when the
+two disagree (see [Adding an event](#adding-an-event)).
 
 Every event the app emits goes through `Kanban.Telemetry`. Since W2337 no
 code outside `lib/kanban/telemetry.ex` calls `:telemetry.execute/3` or
@@ -46,7 +61,8 @@ so does a past-tense verb followed by `to` and a destination, as in
 A span prefix names the operation being timed, `[:kanban, domain, operation]`,
 or `[:kanban, domain]` when the domain is itself the operation, as in
 `[:kanban, :export]`. `:telemetry` appends `:start`, `:stop` and `:exception`
-to it, so the emitted names still have three segments.
+to it, so `[:kanban, :export]` emits `[:kanban, :export, :stop]` and
+`[:kanban, :mcp, :request]` emits `[:kanban, :mcp, :request, :stop]`.
 
 Legacy entries keep their existing names, such as `[:kanban, :board, :creation]`,
 even where they break the naming rule, because metrics, dashboards and the
@@ -67,6 +83,104 @@ which the catalog appends to its own list:
   per `user_id` for the admin users page, so `user_id` must stay.
 - `[:kanban, :audit, action]`, from `Kanban.AuditLog.event/2` (the
   `@audit_actions` list). See [Audit events](#audit-events).
+
+## Privacy rule
+
+Event metadata never carries personal data, and carries free text only in the
+two bounded cases listed below. An event carries row ids (`task_id`,
+`user_id`, `board_id`), fixed labels (`reason`, `outcome`, `source`, `kind`),
+field names and counts. It never carries an email address, an IP address, a
+person's name, a title, a description, a comment, review notes, hook output or
+a token.
+
+Two kinds of metadata do carry text that the caller chose, so treat them as
+untrusted input in your handler:
+
+- **Request paths.** `path` on the `[:kanban, :api, ...]` task action events
+  and on `[:kanban, :api, :auth_failed]` is the request path, and so is
+  `endpoint` on `[:kanban, :api, :request]` and `[:kanban, :api, :error]` for
+  a route outside `/api/tasks` and `/api/agent`. `auth_failed`,
+  `api.request` and `api.error` also fire for a request with no valid token,
+  so a caller who is not signed in can choose part of these paths, such as
+  the task identifier in `/api/tasks/:id`.
+- **`agent_name`** on `[:kanban, :audit, :completion_notes_credential_suspected]`
+  is the name the agent reported for itself, cut to 2,000 characters.
+
+The app enforces this in three places:
+
+- **The catalog declares only safe keys.** A test fails if an entry declares a
+  forbidden key (see [Metadata filtering](#metadata-filtering)).
+- **The emit path drops anything else.** A forbidden key is removed before
+  the event is sent, in every environment, and so is an undeclared key, except
+  in [strict mode](#strict-mode), which is on only in tests and raises instead.
+  Each removal is reported as `[:kanban, :telemetry, :metadata_dropped]` with
+  the key names only.
+- **Free text is replaced by a summary.** For example
+  `[:kanban, :task, :unclaimed]` says whether a reason was given
+  (`has_reason`), never the reason itself, and an email failure carries a
+  bounded failure kind, never the mailer's reply.
+
+The rule binds your handlers too. Do not add personal data or free text to
+what you forward: do not look up a user's email or name from `user_id` and
+attach it, do not forward the exception event's `reason` or `stacktrace`
+verbatim (they are not filtered and can quote data from the failed operation),
+and do not tag a metric by an id. Forward ids as ids, and resolve them inside
+the app only when a person with access asks.
+
+## Attaching a handler
+
+Every event is a standard `:telemetry` event, so any handler attached with
+`:telemetry.attach/4` or `:telemetry.attach_many/4` receives it. Pick the
+events you need from the [Event reference](#event-reference), or read them at
+runtime from `Kanban.Telemetry.Catalog.events/0`.
+
+```elixir
+defmodule MyMonitoring.StrideEvents do
+  require Logger
+
+  @events [
+    [:kanban, :task, :claimed],
+    [:kanban, :task, :completed],
+    [:kanban, :rate_limit, :denied],
+    [:kanban, :export, :stop]
+  ]
+
+  def attach do
+    :telemetry.attach_many("my-monitoring-stride-events", @events, &__MODULE__.handle_event/4, nil)
+  end
+
+  def handle_event(event, measurements, metadata, _config) do
+    Logger.info("stride event",
+      event: Enum.join(event, "."),
+      count: measurements[:count],
+      board_id: metadata[:board_id]
+    )
+  end
+end
+```
+
+Call `MyMonitoring.StrideEvents.attach/0` once at boot, for example from
+`Kanban.Application.start/2` after the supervision tree has started.
+
+- **Handlers run in the emitting process**, synchronously, inside the request,
+  job or LiveView that emitted the event. Keep them fast: hand slow work, such
+  as a network call to a monitoring service, to a separate process.
+- **A handler that raises is detached** by `:telemetry` and receives nothing
+  more until it is attached again. Rescue inside the handler if it can fail.
+- **Use a handler id of your own**, unique across the app, so it never
+  replaces one of the app's handlers.
+- **For a span, attach to its `:stop` and `:exception` events.** Their
+  `duration` measurement is in native time units; convert it with
+  `System.convert_time_unit/3`. `[:kanban, :api, :request]` measures
+  `duration` the same way.
+- **Legacy names are stable.** An event marked legacy in the reference keeps
+  its name, so a handler attached to it keeps working.
+- **Watch `[:kanban, :telemetry, :metadata_dropped]`** to see when the app
+  dropped a key from an event, for example after a code change.
+
+The app's own consumers attach the same way: `KanbanWeb.Telemetry` builds its
+metrics from the catalog (see [Metrics](#metrics)), and
+`KanbanWeb.Telemetry.MetricsStorage` stores some of them.
 
 ## Event data rules
 
@@ -524,6 +638,18 @@ raise.
    entry is missing a field, repeats a name, declares a forbidden key, or has
    invalid metrics or tags, and `test/kanban_web/telemetry_test.exs` fails if
    an event has no metric.
+4. Refresh the [Event reference](#event-reference). Render it from the
+   catalog and paste the output between its two marker comments:
+
+   ```bash
+   MIX_ENV=test mix run --no-start -e 'IO.write(Kanban.TelemetryDoc.reference())'
+   ```
+
+   `test/kanban/telemetry_docs_test.exs` fails until you do. It also fails
+   when this doc names an event the catalog lacks, anywhere in the file, or
+   when a table here lists metadata keys that differ from the catalog entry's.
+   `Kanban.TelemetryDoc` (`test/support/telemetry_doc.ex`) holds the renderer
+   and the parsers the test uses.
 
 ## Checking the call sites
 
@@ -698,3 +824,260 @@ test in `$callers`, such as a `Task`). For events from unrelated processes,
 such as an Oban job or a GenServer, pass `any_process: true` and tell events
 apart by their metadata. Pass `pid:` to deliver to a process other than the
 caller.
+
+## Event reference
+
+Every event in `Kanban.Telemetry.Catalog`, grouped by domain, the second
+segment of its name. This list is rendered from the catalog, so it is complete;
+the sections above explain which code emits each family and when.
+
+- **Kind** is `event` for a single event or `span` for a span prefix. A span
+  emits three events, named by the prefix plus `:start`, `:stop` and
+  `:exception`, as listed below its table. `event, legacy` marks an event
+  whose name predates the catalog and may break the
+  [naming rule](#naming-rule); it keeps its name, so it is safe to rely on.
+- **Measurements** are the numbers the event carries. `count` is 1 unless the
+  description says otherwise.
+- **Metadata** are the keys the event may carry; a key can be absent from a
+  single event, for example when its value is unknown. The
+  [privacy rule](#privacy-rule) applies to every one of them.
+
+<!-- event-reference:start -->
+### Domain `api`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :api, :token_created]` | event, legacy | `count` | `user_id`, `board_id`, `token_id` | An API token was created. |
+| `[:kanban, :api, :token_revoked]` | event, legacy | `count` | `user_id`, `token_id` | An API token was revoked. |
+| `[:kanban, :api, :token_deleted]` | event, legacy | `count` | `user_id`, `token_id` | An API token was deleted. |
+| `[:kanban, :api, :token_used]` | event, legacy | `count` | `user_id`, `token_id` | An API token authenticated a request. |
+| `[:kanban, :api, :request]` | event, legacy | `count`, `duration` | `endpoint`, `method`, `status` | An API request finished. Duration is in native time units. |
+| `[:kanban, :api, :error]` | event, legacy | `count` | `endpoint`, `status`, `method` | An API request finished with a status of 400 or above. |
+| `[:kanban, :api, :auth_failed]` | event, legacy | `count` | `reason`, `path`, `method` | An API request failed bearer-token authentication. |
+| `[:kanban, :api, :after_goal_delivered]` | event, legacy | `count` | `goal_id`, `board_id`, `project_id` | An after_goal hook was included in a /complete or /mark_reviewed response. |
+| `[:kanban, :api, :token_bulk_revoked]` | event | `count` | `board_id`, `user_id`, `actor_user_id`, `reason` | A member's API tokens for a board were revoked because they were removed (reason :member_removed) or set to read_only (:read_only_access). count is the number revoked and may be 0. |
+| `[:kanban, :api, :next_task_fetched]` | event, legacy | `count` | `task_id`, `priority`, `board_id`, `user_id`, `path`, `method` | An agent fetched its next task. |
+| `[:kanban, :api, :task_claimed]` | event, legacy | `count` | `task_id`, `priority`, `api_token_id`, `specific_task`, `board_id`, `user_id`, `path`, `method` | An agent claimed a task. |
+| `[:kanban, :api, :task_completed]` | event, legacy | `count` | `task_id`, `time_spent_minutes`, `board_id`, `user_id`, `path`, `method` | An agent completed a task. |
+| `[:kanban, :api, :task_listed]` | event, legacy | `count` | `count`, `board_id`, `user_id`, `path`, `method` | An agent listed tasks. |
+| `[:kanban, :api, :comments_listed]` | event, legacy | `count` | `task_id`, `count`, `board_id`, `user_id`, `path`, `method` | An agent listed a task's comments. |
+| `[:kanban, :api, :comment_created]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent added a comment to a task. |
+| `[:kanban, :api, :task_created]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent created a task. |
+| `[:kanban, :api, :goal_created]` | event, legacy | `count` | `goal_id`, `child_task_count`, `batch`, `batch_index`, `board_id`, `user_id`, `path`, `method` | An agent created a goal with its child tasks. |
+| `[:kanban, :api, :batch_goals_created]` | event, legacy | `count` | `total_goals`, `board_id`, `user_id`, `path`, `method` | An agent created goals in one batch. |
+| `[:kanban, :api, :task_create_forbidden_fields_filtered]` | event, legacy | `count` | `goal_fields`, `child_fields`, `board_id`, `user_id`, `path`, `method` | Fields an agent may not set were dropped from a create request. |
+| `[:kanban, :api, :task_updated]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent updated a task. |
+| `[:kanban, :api, :task_update_column_change_forbidden]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent tried to move a task to another column with an update. |
+| `[:kanban, :api, :task_update_forbidden_fields_filtered]` | event, legacy | `count` | `task_id`, `fields`, `board_id`, `user_id`, `path`, `method` | Fields an agent may not set were dropped from an update request. |
+| `[:kanban, :api, :task_unclaimed]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent released a claimed task. |
+| `[:kanban, :api, :task_marked_done]` | event, legacy | `count` | `task_id`, `review_status`, `board_id`, `user_id`, `path`, `method` | A reviewed task was marked done. |
+| `[:kanban, :api, :task_returned_to_doing]` | event, legacy | `count` | `task_id`, `review_status`, `board_id`, `user_id`, `path`, `method` | A reviewed task was sent back to Doing. |
+| `[:kanban, :api, :after_goal_reported]` | event, legacy | `count` | `task_id`, `exit_code`, `board_id`, `user_id`, `path`, `method` | An agent reported its after_goal result. |
+| `[:kanban, :api, :task_changed_files_persisted]` | event, legacy | `count` | `task_id`, `file_count`, `board_id`, `user_id`, `path`, `method` | An agent's changed files were stored on a task. |
+| `[:kanban, :api, :dependencies_fetched]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent fetched a task's dependencies. |
+| `[:kanban, :api, :dependents_fetched]` | event, legacy | `count` | `task_id`, `count`, `board_id`, `user_id`, `path`, `method` | An agent fetched a task's dependents. |
+| `[:kanban, :api, :task_tree_fetched]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent fetched a task tree. |
+| `[:kanban, :api, :after_goal_status_fetched]` | event, legacy | `count` | `task_id`, `board_id`, `user_id`, `path`, `method` | An agent fetched a goal's after_goal status. |
+| `[:kanban, :api, :mcp_tool_called]` | event, legacy | `count` | `tool`, `is_error`, `board_id`, `user_id`, `path`, `method` | An agent called an MCP tool. |
+
+### Domain `audit`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :audit, :login_failed]` | event, legacy | `count` | none | A browser sign-in failed. |
+| `[:kanban, :audit, :password_reset_requested]` | event, legacy | `count` | none | A password reset was requested. |
+| `[:kanban, :audit, :api_token_auth_failed]` | event, legacy | `count` | `reason` | An API request presented a bad bearer token. |
+| `[:kanban, :audit, :api_token_created]` | event, legacy | `count` | `user_id`, `board_id`, `token_id` | An API token was created. |
+| `[:kanban, :audit, :api_token_revoked]` | event, legacy | `count` | `user_id`, `token_id` | An API token was revoked. |
+| `[:kanban, :audit, :comment_deleted_by_owner]` | event, legacy | `count` | `user_id`, `board_id`, `task_id`, `comment_id`, `author_user_id` | A board owner deleted someone else's comment. |
+| `[:kanban, :audit, :completion_notes_credential_suspected]` | event, legacy | `count` | `task_id`, `agent_name` | Completion notes looked like they contained a credential. |
+| `[:kanban, :audit, :two_factor_enabled]` | event, legacy | `count` | `user_id` | A user turned on two-factor authentication. |
+| `[:kanban, :audit, :two_factor_disabled]` | event, legacy | `count` | `user_id`, `method` | A user turned off two-factor authentication. |
+| `[:kanban, :audit, :recovery_codes_regenerated]` | event, legacy | `count` | `user_id` | A user regenerated their recovery codes. |
+| `[:kanban, :audit, :two_factor_recovery_code_used]` | event, legacy | `count` | `user_id` | A user signed in with a recovery code. |
+| `[:kanban, :audit, :login_succeeded_two_factor]` | event, legacy | `count` | `user_id`, `method` | A user completed a two-factor sign-in. |
+| `[:kanban, :audit, :two_factor_challenge_failed]` | event, legacy | `count` | `user_id`, `method` | A two-factor challenge failed. |
+| `[:kanban, :audit, :permission_denied]` | event, legacy | `count` | `user_id`, `gate` | A user was refused access by a permission gate. |
+| `[:kanban, :audit, :sudo_mode_entered]` | event, legacy | `count` | `user_id` | A recently authenticated user passed a sudo-mode check. |
+| `[:kanban, :audit, :audit_log_exported]` | event, legacy | `count` | `user_id`, `format` | An admin exported the audit log. |
+
+### Domain `board`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :board, :creation]` | event, legacy | `count` | `board_id`, `user_id` | A board was created. |
+| `[:kanban, :board, :updated]` | event | `count` | `board_id`, `actor_user_id`, `fields` | A board owner changed a board's settings. fields lists the changed field names, never their values. |
+| `[:kanban, :board, :deleted]` | event | `count` | `board_id`, `actor_user_id` | A board owner deleted a board, with its columns, tasks and memberships. |
+| `[:kanban, :board, :field_visibility_changed]` | event | `count` | `board_id`, `actor_user_id`, `fields` | A board owner changed which task fields the board shows. fields lists the toggled field names. |
+| `[:kanban, :board, :member_added]` | event | `count` | `board_id`, `user_id`, `access`, `actor_user_id` | A user was given access to a board. user_id is the member, actor_user_id the owner who added them. |
+| `[:kanban, :board, :member_removed]` | event | `count` | `board_id`, `user_id`, `access`, `actor_user_id` | A user was removed from a board. access is the level they held. |
+| `[:kanban, :board, :member_access_changed]` | event | `count` | `board_id`, `user_id`, `from_access`, `to_access`, `actor_user_id` | A board member's access level changed. |
+
+### Domain `column`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :column, :created]` | event | `count` | `board_id`, `column_id`, `actor_user_id` | A board owner added a column. |
+| `[:kanban, :column, :updated]` | event | `count` | `board_id`, `column_id`, `actor_user_id`, `fields` | A board owner changed a column. fields lists the changed field names, never their values. |
+| `[:kanban, :column, :deleted]` | event | `count` | `board_id`, `column_id` | A column was deleted, along with its tasks. |
+| `[:kanban, :column, :reordered]` | event | `count`, `column_count` | `board_id` | A board's columns were reordered. column_count is the number of column ids given. |
+
+### Domain `digest`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :digest, :sent]` | event | `count` | `user_id`, `week` | The mailer accepted one user's weekly digest. week is the ISO week, such as "2026-W45". |
+| `[:kanban, :digest, :fanout_completed]` | event | `count` | `week` | The weekly digest fan-out finished enqueuing. count is the number of recipients and may be 0. |
+
+### Domain `export`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :export]` | span | `duration` on `:stop` and `:exception`; `row_count` on `:stop` | `kind`, `format` | Data left Stride as a download. kind is :archive_csv, :metrics_pdf, :workspace_metrics or :audit_log, format the file type; row_count is measured for the archive CSV only. |
+
+- `[:kanban, :export]` is a span: it emits `[:kanban, :export, :start]`, `[:kanban, :export, :stop]` and `[:kanban, :export, :exception]`.
+
+### Domain `github`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :github, :issue_created]` | event | `count` | `outcome` | An issue report to GitHub finished. outcome is :ok or :error, including when GitHub is not configured. |
+
+### Domain `goal`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :goal, :created_with_tasks]` | event, legacy | `goal_count`, `task_count` | `goal_id`, `column_id` | A goal was created together with its child tasks. |
+| `[:kanban, :goal, :completed]` | event | `count` | `goal_id`, `board_id` | The last child of a goal was completed. Emitted once per goal, after the completion commits. |
+| `[:kanban, :goal, :promoted_to_ready]` | event | `count`, `task_count` | `goal_id`, `board_id` | A goal and its Backlog children were moved to Ready. task_count is the number of tasks moved. |
+| `[:kanban, :goal, :after_goal_succeeded]` | event | `count`, `duration_ms` | `goal_id`, `board_id`, `source` | A goal's after_goal hook succeeded and the goal moved to Done. source is :agent for an agent report or :grace_worker when the grace window expired; duration_ms is the agent's reported run time. |
+| `[:kanban, :goal, :after_goal_failed]` | event | `count`, `duration_ms` | `goal_id`, `board_id`, `exit_code` | An agent reported a failed after_goal hook. Only the exit code and duration are sent, never the hook's output. |
+| `[:kanban, :goal, :grace_window_scheduled]` | event | `count`, `grace_window_ms` | `goal_id`, `board_id` | The after_goal grace window was scheduled for a goal whose last child completed. |
+| `[:kanban, :goal, :grace_window_expired]` | event | `count` | `goal_id`, `board_id` | The after_goal grace window expired with no agent report, and the grace worker moved the goal to Done. |
+| `[:kanban, :goal, :reassigned]` | event | `count`, `moved_count`, `skipped_count` | `goal_id`, `board_id`, `actor_user_id`, `assigned_to_id` | A goal and its unstarted children were reassigned. moved_count counts the children moved and skipped_count the claimed children left alone. |
+| `[:kanban, :goal, :reprioritized]` | event | `count`, `moved_count`, `skipped_count` | `goal_id`, `board_id`, `actor_user_id`, `priority` | A goal and its unstarted children were given a new priority. moved_count counts the children changed and skipped_count the claimed children left alone. |
+| `[:kanban, :goal, :reassignment_undone]` | event | `count`, `moved_count`, `skipped_count` | `goal_id`, `board_id`, `actor_user_id` | A goal reassignment was undone. moved_count counts the children restored and skipped_count those that could no longer be restored. |
+| `[:kanban, :goal, :reprioritization_undone]` | event | `count`, `moved_count`, `skipped_count` | `goal_id`, `board_id`, `actor_user_id` | A goal reprioritization was undone. moved_count counts the children restored and skipped_count those that could no longer be restored. |
+
+### Domain `mcp`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :mcp, :request]` | span | `duration` on `:stop` and `:exception` | `method`, `outcome` | An MCP JSON-RPC message was handled. method is a fixed label, never the name the client sent, and outcome is set on stop. |
+
+- `[:kanban, :mcp, :request]` is a span: it emits `[:kanban, :mcp, :request, :start]`, `[:kanban, :mcp, :request, :stop]` and `[:kanban, :mcp, :request, :exception]`.
+
+### Domain `message`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :message, :created]` | event | `count` | `message_id`, `sender_user_id` | An administrator published a broadcast message. |
+| `[:kanban, :message, :deleted]` | event | `count` | `message_id`, `sender_user_id` | A broadcast message was deleted, with its dismissals. sender_user_id is its author. |
+| `[:kanban, :message, :dismissed]` | event | `count` | `message_id`, `user_id` | A user dismissed a broadcast message for the first time. Dismissing it again emits nothing. |
+
+### Domain `metrics`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :metrics, :retention_completed]` | event | `count`, `batches` | `retention_days` | The daily metrics retention job finished. count is the number of metrics_events rows removed, batches the number of DELETE batches run. |
+
+### Domain `notification`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :notification, :created]` | event | `count` | `notification_id`, `user_id`, `event_type`, `board_id`, `in_app` | A notification was saved for one recipient. user_id is the recipient; in_app is false for an email-only row; board_id is absent for a board-less type. |
+| `[:kanban, :notification, :read]` | event | `count` | `notification_id`, `user_id`, `event_type` | A user marked an unread notification read. Marking a read one again emits nothing. |
+| `[:kanban, :notification, :all_read]` | event | `count` | `user_id` | A user marked all their notifications read. count is the number marked and may be 0. |
+| `[:kanban, :notification, :preference_updated]` | event | `count` | `user_id`, `event_type`, `in_app`, `mail` | A user's delivery preference for one event type changed. in_app and mail are the saved flags; saving the same flags again emits nothing. |
+| `[:kanban, :notification, :unsubscribed]` | event | `count` | `user_id`, `event_type` | Email for one event type was turned off from an unsubscribe link. user_id comes from the verified link. |
+| `[:kanban, :notification, :email_sent]` | event | `count` | `notification_id`, `user_id`, `event_type` | The mailer accepted a notification email. |
+| `[:kanban, :notification, :email_skipped]` | event | `count` | `notification_id`, `reason` | A notification email job sent nothing. reason is :not_found, :already_emailed, :user_disabled, :user_unconfirmed, :not_a_member or :unsubscribed. |
+| `[:kanban, :notification, :email_failed]` | event | `count` | `notification_id`, `user_id`, `event_type`, `error` | One notification email delivery attempt failed. error is :permanent_failure, :temporary_failure, :retries_exceeded or :delivery_failed, never the raw mailer reason. |
+
+### Domain `pubsub`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :pubsub, :broadcast]` | event, legacy | `count` | `event`, `task_id`, `board_id` | A task or comment change was broadcast over PubSub. |
+
+### Domain `rate_limit`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :rate_limit, :denied]` | event | `count` | `surface` | A rate-limit check refused a request. surface names the limited action, never the key, IP address or identity. |
+
+### Domain `review`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :review, :structured_used]` | event, legacy | `count` | `task_id`, `identifier` | The review panel rendered from the structured review block. |
+| `[:kanban, :review, :fallback_used]` | event, legacy | `count` | `task_id`, `identifier` | The review panel fell back to parsing the legacy review summary. |
+
+### Domain `review_diff_panel`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :review_diff_panel, :opened]` | event, legacy | `system_time`, `count` | `task_id` | A reviewer opened the diff panel for a task in the review queue. |
+| `[:kanban, :review_diff_panel, :closed]` | event, legacy | `system_time`, `count` | `task_id` | A reviewer closed the diff panel in the review queue. |
+
+### Domain `target`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :target, :created]` | event | `count` | `target_id`, `actor_user_id` | A user created a delivery target. actor_user_id is its owner. |
+| `[:kanban, :target, :updated]` | event | `count` | `target_id`, `actor_user_id`, `fields` | A target's owner changed it. fields lists the changed field names, never their values; saving no change emits nothing. |
+| `[:kanban, :target, :archived]` | event | `count` | `target_id`, `actor_user_id` | A target's owner archived an active, complete target. |
+| `[:kanban, :target, :unarchived]` | event | `count` | `target_id`, `actor_user_id` | A target's owner restored an archived target. |
+| `[:kanban, :target, :goal_assigned]` | event | `count` | `target_id`, `goal_id`, `board_id`, `actor_user_id` | A goal was attached to a target. board_id is the goal's board; assigning the target a goal already has emits nothing. |
+| `[:kanban, :target, :goal_unassigned]` | event | `count` | `target_id`, `goal_id`, `board_id`, `actor_user_id` | A goal was detached from its target. target_id is the target it left; a goal with no target emits nothing. |
+| `[:kanban, :target, :status_changed]` | event | `count` | `target_id`, `from_status`, `to_status` | The status sweep recorded a new delivery status for a target. from_status is absent on the first observation; both are :on_track, :at_risk, :missed or :complete. |
+
+### Domain `task`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :task, :creation]` | event, legacy | `count` | `task_id`, `column_id` | A task was created. |
+| `[:kanban, :task, :archived]` | event, legacy | `count` | `task_id`, `identifier`, `via`, `goal_id` | A task was archived, directly, in bulk (via: :bulk) or with its goal (via: :goal_cascade). |
+| `[:kanban, :task, :unarchived]` | event, legacy | `count` | `task_id`, `identifier` | A task was restored from the archive. |
+| `[:kanban, :task, :bulk_archived]` | event, legacy | `count` | `board_id` | A batch of completed tasks on a board was archived. count is the number of tasks archived and may be 0. |
+| `[:kanban, :task, :completed]` | event, legacy | `count` | `task_id`, `completed_by` | An agent completed a task. |
+| `[:kanban, :task, :moved_to_review]` | event, legacy | `count`, `time_spent_minutes` | `task_id`, `completed_by_id` | A completed task moved to the Review column. time_spent_minutes is an integer, or absent when unknown. |
+| `[:kanban, :task, :returned_to_doing]` | event, legacy | `count` | `task_id`, `reviewed_by`, `review_status` | A reviewed task was sent back to Doing. |
+| `[:kanban, :task, :changed_files_missing]` | event, legacy | `count` | `task_id`, `identifier`, `board_id` | A task reached review reporting changed files but with no uploaded diff. |
+| `[:kanban, :task, :updated]` | event | `count` | `task_id`, `board_id`, `fields`, `source`, `actor_user_id` | A task was edited in the UI (source :ui) or through the API (:api). fields lists the changed field names, never their values. |
+| `[:kanban, :task, :moved]` | event | `count` | `task_id`, `board_id`, `from_column_id`, `to_column_id` | A task was moved from one column to another. |
+| `[:kanban, :task, :reordered]` | event | `count`, `task_count` | `task_id`, `column_id`, `board_id` | Tasks were reordered within one column: one task (with task_id) or a whole column (with task_count, the number of task ids given). |
+| `[:kanban, :task, :deleted]` | event | `count` | `task_id`, `board_id` | A task was deleted. |
+| `[:kanban, :task, :claimed]` | event | `count` | `task_id`, `board_id`, `user_id` | A task was claimed, through the API or the MCP server. user_id is the claiming user. |
+| `[:kanban, :task, :unclaimed]` | event | `count` | `task_id`, `board_id`, `user_id`, `has_reason` | A claimed task was released back to Ready. has_reason says whether a reason was given; the reason itself is never sent. |
+| `[:kanban, :task, :claim_expired]` | event | `count` | `task_id`, `board_id`, `user_id` | A claim expired before the task was completed. Emitted once per claim; user_id is the assignee whose claim expired. |
+| `[:kanban, :task, :review_approved]` | event | `count` | `task_id`, `board_id`, `reviewer_user_id` | A reviewer approved a task in the review queue. |
+| `[:kanban, :task, :review_changes_requested]` | event | `count` | `task_id`, `board_id`, `reviewer_user_id` | A reviewer requested changes to a task in the review queue. The review notes are never sent. |
+| `[:kanban, :task, :comment_created]` | event | `count` | `task_id`, `board_id`, `comment_id`, `user_id`, `by_agent` | A comment was added to a task. user_id is the author and by_agent says whether an agent wrote it; the comment text is never sent. |
+| `[:kanban, :task, :unblocked]` | event | `count` | `task_id`, `board_id` | A blocked task became unblocked because the last of its dependencies was completed. |
+
+### Domain `telemetry`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :telemetry, :metadata_dropped]` | event | `count` | `event_name`, `reason`, `keys` | Kanban.Telemetry dropped metadata keys from an event, because they were forbidden or undeclared. count is the number of keys dropped. Carries key names only, never values. |
+
+### Domain `user`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :user, :registration]` | event, legacy | `count` | `user_id` | A user registered. |
+| `[:kanban, :user, :login]` | event, legacy | `count` | `user_id` | A user signed in through the browser. Renewing an existing session token does not count. |
+| `[:kanban, :user, :logged_out]` | event | `count` | `user_id` | A user signed out of the browser. user_id is absent when nobody was signed in. |
+| `[:kanban, :user, :sessions_revoked]` | event | `count` | `user_id` | A user's open sessions were disconnected after a password change or reset. count is the number of tokens revoked and may be 0; user_id is absent when no token names the user. |
+| `[:kanban, :user, :password_changed]` | event | `count` | `user_id` | A signed-in user changed their password. |
+| `[:kanban, :user, :password_reset_completed]` | event | `count` | `user_id` | A user set a new password through a password reset link. |
+| `[:kanban, :user, :email_change_requested]` | event | `count` | `user_id` | A user asked to change their email address and a confirmation link was sent. Neither address is sent. |
+| `[:kanban, :user, :email_changed]` | event | `count` | `user_id` | A user confirmed an email change and their address was updated. Neither address is sent. |
+| `[:kanban, :user, :confirmed]` | event | `count` | `user_id` | A user confirmed their account. |
+| `[:kanban, :user, :name_changed]` | event | `count` | `user_id` | A user changed their display name. The name itself is never sent. |
+| `[:kanban, :user, :type_changed]` | event | `count` | `user_id`, `from_type`, `to_type` | A user's type changed, for example from :user to :admin. It carries no actor_user_id, because update_user_type/2 is not given one. |
+| `[:kanban, :user, :disabled]` | event | `count` | `user_id`, `actor_user_id` | An administrator disabled an enabled user. user_id is the user, actor_user_id the administrator. |
+| `[:kanban, :user, :enabled]` | event | `count` | `user_id`, `actor_user_id` | An administrator enabled a disabled user. user_id is the user, actor_user_id the administrator. |
+| `[:kanban, :user, :deleted]` | event | `count` | `user_id`, `actor_user_id` | An administrator deleted a user. user_id is the deleted user's id, actor_user_id the administrator. |
+<!-- event-reference:end -->

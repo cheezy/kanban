@@ -422,7 +422,7 @@ curl -X POST /api/tasks/:id/unclaim \
 2. **claimed_at** cleared to `null`
 3. **claim_expires_at** cleared to `null`
 4. **Task becomes immediately available** for other agents to claim
-5. **Telemetry event** emitted with your reason
+5. **Telemetry events** emitted, without your reason (see [Monitoring Unclaims](#monitoring-unclaims))
 6. **PubSub broadcast** notifies subscribers of change
 
 ### What You Should Do
@@ -450,17 +450,18 @@ curl -X POST /api/tasks/claim \
 
 ### Your Unclaim History
 
-Unclaim events are tracked in telemetry:
+Every successful unclaim emits two telemetry events:
 
-```
-Event: [:kanban, :task, :unclaimed]
-Metadata:
-  - task_id: 42
-  - api_token_id: 123
-  - reason: "Missing OAuth2 library dependencies"
-  - unclaimed_at: 2025-12-29T15:45:00Z
-  - was_claimed_for_minutes: 5
-```
+| Event | Metadata | Counts |
+|---|---|---|
+| `[:kanban, :task, :unclaimed]` | `task_id`, `board_id`, `user_id`, `has_reason` | The released claim |
+| `[:kanban, :api, :task_unclaimed]` | `task_id`, `board_id`, `user_id`, `path`, `method` | The API request |
+
+Both measure `count: 1`. `user_id` is the user the API token belongs to, and
+`has_reason` is `true` when you gave a non-blank reason. The reason itself is
+never sent in telemetry; it is kept in the unclaim notification and the
+application log. See [Telemetry Events](telemetry.md#event-reference) for
+every event the app emits.
 
 ### High Unclaim Rate Warning
 

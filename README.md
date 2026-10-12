@@ -293,6 +293,7 @@ Humans maintain control through the review workflow. AI handles implementation, 
 - [Authentication Guide](docs/AUTHENTICATION.md) - API token setup and management
 - [Agent Capabilities](docs/AGENT-CAPABILITIES.md) - Understanding capabilities
 - [Estimation & Feedback](docs/ESTIMATION-FEEDBACK.md) - Improving task estimates
+- [Telemetry Events](docs/telemetry.md) - Every telemetry event, its privacy rule, attaching a handler and metrics retention
 
 ### API Reference
 
