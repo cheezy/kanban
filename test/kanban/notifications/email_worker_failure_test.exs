@@ -6,6 +6,7 @@ defmodule Kanban.Notifications.EmailWorkerFailureTest do
   import ExUnit.CaptureLog
   import Kanban.AccountsFixtures
   import Kanban.NotificationsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Notifications.EmailWorker
 
@@ -58,5 +59,51 @@ defmodule Kanban.Notifications.EmailWorkerFailureTest do
     assert log =~ "permanent_failure"
     refute log =~ user.email
     refute log =~ "550"
+  end
+
+  test "mailer failure emits email_failed" do
+    user = user_fixture()
+    n = notification_fixture(user, %{title: "Private task title"})
+
+    attach_telemetry([
+      [:kanban, :notification, :email_failed],
+      [:kanban, :notification, :email_sent]
+    ])
+
+    capture_log([level: :warning], fn ->
+      assert {:error, :retries_exceeded} = perform_job(EmailWorker, %{notification_id: n.id})
+    end)
+
+    id = n.id
+    user_id = user.id
+
+    assert_receive {:telemetry_event, [:kanban, :notification, :email_failed], %{count: 1},
+                    %{
+                      notification_id: ^id,
+                      user_id: ^user_id,
+                      event_type: :board_access_changed,
+                      error: :retries_exceeded
+                    } = metadata}
+
+    refute inspect(metadata) =~ user.email
+    refute inspect(metadata) =~ "Private task title"
+    refute_receive {:telemetry_event, [:kanban, :notification, :email_sent], _, _}
+  end
+
+  test "email_failed carries the failure kind, never an SMTP reply that echoes the address" do
+    Application.put_env(:kanban, Kanban.Mailer, adapter: RejectingMailerAdapter)
+    user = user_fixture()
+    n = notification_fixture(user)
+    attach_telemetry([:kanban, :notification, :email_failed])
+
+    capture_log([level: :warning], fn ->
+      assert {:error, :permanent_failure} = perform_job(EmailWorker, %{notification_id: n.id})
+    end)
+
+    assert_receive {:telemetry_event, [:kanban, :notification, :email_failed], %{count: 1},
+                    %{error: :permanent_failure} = metadata}
+
+    refute inspect(metadata) =~ user.email
+    refute inspect(metadata) =~ "550"
   end
 end

@@ -52,6 +52,8 @@ defmodule Kanban.TelemetryTest do
   @entry_fields [:name, :kind, :domain, :measurements, :metadata, :description, :legacy]
   @leaked_values ["a@example.com", "203.0.113.5", "Secret title", "Private body", "tok-123"]
   @particles ~w(out in up off down)
+  # Irregular past tenses that do not end in "ed" (notification.read, digest.sent).
+  @irregular_past ~w(read sent)
 
   def raising_handler(_event, _measurements, _metadata, _config), do: raise("handler boom")
 
@@ -495,13 +497,14 @@ defmodule Kanban.TelemetryTest do
   end
 
   # A past-tense verb ("archived") or phrasal verb ("logged_out"): the last
-  # word ends in "ed", or it is a particle that follows a word ending in "ed".
+  # word ends in "ed" or is an irregular past tense ("read", "sent"), or it is
+  # a particle that follows a word ending in "ed".
   defp past_tense_action?(action) do
     words = action |> Atom.to_string() |> String.split("_")
 
     case Enum.reverse(words) do
       [last, previous | _rest] when last in @particles -> String.ends_with?(previous, "ed")
-      [last | _rest] -> String.ends_with?(last, "ed")
+      [last | _rest] -> String.ends_with?(last, "ed") or last in @irregular_past
     end
   end
 end

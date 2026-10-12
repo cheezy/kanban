@@ -72,12 +72,19 @@ defmodule Kanban.Telemetry.Catalog do
   with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`. A new API or
   audit action is a new tuple in `@api_actions` or `@audit_actions` in
   `Kanban.Telemetry.Catalog.Families`. A new task activity event goes in
-  `Kanban.Telemetry.Catalog.TaskEvents`, and a new account, session or user
-  administration event in `Kanban.Telemetry.Catalog.UserEvents`. The test
+  `Kanban.Telemetry.Catalog.TaskEvents`, a new account, session or user
+  administration event in `Kanban.Telemetry.Catalog.UserEvents`, a
+  notification, email delivery or digest event in
+  `Kanban.Telemetry.Catalog.NotificationEvents`, a delivery target event in
+  `Kanban.Telemetry.Catalog.TargetEvents`, and a broadcast message event in
+  `Kanban.Telemetry.Catalog.MessageEvents`. The test
   suite runs in strict mode, so a key the entry does not declare raises there.
   """
 
   alias Kanban.Telemetry.Catalog.Families
+  alias Kanban.Telemetry.Catalog.MessageEvents
+  alias Kanban.Telemetry.Catalog.NotificationEvents
+  alias Kanban.Telemetry.Catalog.TargetEvents
   alias Kanban.Telemetry.Catalog.TaskEvents
   alias Kanban.Telemetry.Catalog.UserEvents
 
@@ -487,7 +494,11 @@ defmodule Kanban.Telemetry.Catalog do
     }
   ]
 
-  @events @core_events ++ TaskEvents.events() ++ UserEvents.events() ++ Families.events()
+  @events @core_events ++
+            TaskEvents.events() ++
+            UserEvents.events() ++
+            Families.events() ++
+            NotificationEvents.events() ++ TargetEvents.events() ++ MessageEvents.events()
 
   @by_name Map.new(@events, fn entry -> {entry.name, entry} end)
 

@@ -42,6 +42,7 @@ defmodule Kanban.Targets do
   alias Kanban.Targets.Progress
   alias Kanban.Targets.Queries
   alias Kanban.Targets.StatusWatermark
+  alias Kanban.Targets.TargetTelemetry
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
 
@@ -104,6 +105,7 @@ defmodule Kanban.Targets do
         %DeliveryTarget{owner_id: user_id}
         |> DeliveryTarget.changeset(attrs)
         |> Repo.insert()
+        |> TargetTelemetry.created()
     end
   end
 
@@ -176,6 +178,7 @@ defmodule Kanban.Targets do
           target
           |> DeliveryTarget.changeset(attrs)
           |> Repo.update()
+          |> TargetTelemetry.updated(target)
         else
           {:error, :not_authorized}
         end
@@ -215,6 +218,7 @@ defmodule Kanban.Targets do
       target
       |> DeliveryTarget.archive_changeset(%{archived_at: DateTime.utc_now()})
       |> Repo.update()
+      |> TargetTelemetry.archived(target)
     else
       {:error, :not_found} -> {:error, :not_found}
       status when is_atom(status) -> {:error, :not_complete}
@@ -238,6 +242,7 @@ defmodule Kanban.Targets do
       target
       |> DeliveryTarget.archive_changeset(%{archived_at: nil})
       |> Repo.update()
+      |> TargetTelemetry.unarchived(target)
     end
   end
 
@@ -262,7 +267,9 @@ defmodule Kanban.Targets do
 
       %Task{} = fetched ->
         with :ok <- authorize_goal_board_write(scope, fetched) do
-          Tasks.update_task(fetched, %{target_id: target.id})
+          fetched
+          |> Tasks.update_task(%{target_id: target.id})
+          |> TargetTelemetry.goal_assigned(fetched, scope_user(scope))
         end
     end
   end
@@ -282,7 +289,9 @@ defmodule Kanban.Targets do
 
       %Task{} = fetched ->
         with :ok <- authorize_goal_board_write(scope, fetched) do
-          Tasks.update_task(fetched, %{target_id: nil})
+          fetched
+          |> Tasks.update_task(%{target_id: nil})
+          |> TargetTelemetry.goal_unassigned(fetched, scope_user(scope))
         end
     end
   end

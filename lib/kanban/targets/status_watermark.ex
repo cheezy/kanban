@@ -18,6 +18,7 @@ defmodule Kanban.Targets.StatusWatermark do
   alias Kanban.Repo
   alias Kanban.Targets.DeliveryTarget
   alias Kanban.Targets.Status
+  alias Kanban.Targets.TargetTelemetry
 
   @alert_statuses [:at_risk, :missed]
 
@@ -78,8 +79,13 @@ defmodule Kanban.Targets.StatusWatermark do
     })
     |> Ecto.Changeset.apply_action(:update)
     |> case do
-      {:ok, updated} -> compare_and_set(target, updated)
-      {:error, _changeset} = error -> error
+      {:ok, updated} ->
+        target
+        |> compare_and_set(updated)
+        |> TargetTelemetry.status_changed(target.last_notified_status)
+
+      {:error, _changeset} = error ->
+        error
     end
   end
 

@@ -36,6 +36,8 @@ Each entry is a map with these fields:
 A new event is named `[:kanban, domain, past_tense_action]`, for example
 `[:kanban, :task, :archived]`. The domain is a singular noun (`:task`,
 `:board`, `:user`, `:api`), and the action is a past-tense verb or verb phrase.
+An irregular past tense counts, as in `[:kanban, :notification, :read]` and
+`[:kanban, :digest, :sent]`.
 A span prefix names the operation being timed, `[:kanban, domain, operation]`,
 or `[:kanban, domain]` when the domain is itself the operation, as in
 `[:kanban, :export]`. `:telemetry` appends `:start`, `:stop` and `:exception`
@@ -297,6 +299,87 @@ rolled-back change emits nothing. Every event measures `count: 1`, except
 - **Not covered.** Login failures are already recorded by the audit log, and
   no audit row is added for these administrator actions.
 
+### Notification, email delivery, digest, delivery target and message events
+
+W2342 added these. They are declared in three catalog modules:
+`Kanban.Telemetry.Catalog.NotificationEvents`
+(`lib/kanban/telemetry/catalog/notification_events.ex`) for notifications,
+email delivery and the weekly digest, `Kanban.Telemetry.Catalog.TargetEvents`
+(`lib/kanban/telemetry/catalog/target_events.ex`) for delivery targets, and
+`Kanban.Telemetry.Catalog.MessageEvents`
+(`lib/kanban/telemetry/catalog/message_events.ex`) for admin broadcast
+messages. They are emitted by `Kanban.Notifications.NotificationTelemetry`,
+`Kanban.Targets.TargetTelemetry` and `Kanban.Messages.MessageTelemetry`, each
+only after its change has been saved, or after the mailer has answered, so a
+refused or invalid change emits nothing. Every event measures `count: 1`,
+except `all_read` and `fanout_completed`, whose `count` is the number of
+notifications marked read or digest recipients, and may be 0.
+
+| Event | Metadata | Emitted by |
+|---|---|---|
+| `[:kanban, :notification, :created]` | `notification_id`, `user_id`, `event_type`, `board_id`, `in_app` | `Kanban.Notifications.notify/3`, once per saved row |
+| `[:kanban, :notification, :read]` | `notification_id`, `user_id`, `event_type` | `Kanban.Notifications.mark_read/2` |
+| `[:kanban, :notification, :all_read]` | `user_id` | `Kanban.Notifications.mark_all_read/1` |
+| `[:kanban, :notification, :preference_updated]` | `user_id`, `event_type`, `in_app`, `mail` | `Kanban.Notifications.update_preference/3` |
+| `[:kanban, :notification, :unsubscribed]` | `user_id`, `event_type` | `Kanban.Notifications.unsubscribe/2` |
+| `[:kanban, :notification, :email_sent]` | `notification_id`, `user_id`, `event_type` | `Kanban.Notifications.EmailWorker` |
+| `[:kanban, :notification, :email_skipped]` | `notification_id`, `reason` | `Kanban.Notifications.EmailWorker` |
+| `[:kanban, :notification, :email_failed]` | `notification_id`, `user_id`, `event_type`, `error` | `Kanban.Notifications.EmailWorker` |
+| `[:kanban, :digest, :sent]` | `user_id`, `week` | `Kanban.Notifications.DigestWorker` |
+| `[:kanban, :digest, :fanout_completed]` | `week` | `Kanban.Notifications.DigestFanoutWorker` |
+| `[:kanban, :target, :created]` | `target_id`, `actor_user_id` | `Kanban.Targets.create_target/2` |
+| `[:kanban, :target, :updated]` | `target_id`, `actor_user_id`, `fields` | `Kanban.Targets.update_target/3` |
+| `[:kanban, :target, :archived]` | `target_id`, `actor_user_id` | `Kanban.Targets.archive_target/2` |
+| `[:kanban, :target, :unarchived]` | `target_id`, `actor_user_id` | `Kanban.Targets.unarchive_target/2` |
+| `[:kanban, :target, :goal_assigned]` | `target_id`, `goal_id`, `board_id`, `actor_user_id` | `Kanban.Targets.assign_goal/3` |
+| `[:kanban, :target, :goal_unassigned]` | `target_id`, `goal_id`, `board_id`, `actor_user_id` | `Kanban.Targets.unassign_goal/2` |
+| `[:kanban, :target, :status_changed]` | `target_id`, `from_status`, `to_status` | `Kanban.Targets.record_observed_status/3` |
+| `[:kanban, :message, :created]` | `message_id`, `sender_user_id` | `Kanban.Messages.create_message/2` |
+| `[:kanban, :message, :deleted]` | `message_id`, `sender_user_id` | `Kanban.Messages.delete_message/1` |
+| `[:kanban, :message, :dismissed]` | `message_id`, `user_id` | `Kanban.Messages.dismiss_message/2` |
+
+- **Ids, event types and counts only.** No event carries an email address, a
+  notification's title or body, a message's title or body, a target's name or
+  description, or a raw mailer error. `mail` is the saved email flag of a
+  preference, a boolean.
+- **Email delivery has three outcomes.** `email_sent` fires once the mailer
+  has accepted the email. `email_skipped` fires when the job sends nothing,
+  with `reason` `:not_found`, `:already_emailed`, `:user_disabled`,
+  `:user_unconfirmed`, `:not_a_member` or `:unsubscribed`. The job reads the
+  recipient's email preference again before sending, so turning email off
+  after a job was queued skips it with `:unsubscribed`. `email_failed` fires
+  once per failed attempt, so a job Oban retries can emit it more than once;
+  `error` is the bounded failure kind from `EmailWorker.failure_kind/1`,
+  because SMTP replies often echo the recipient address.
+- **A save that changes nothing emits nothing.** `read` needs an unread
+  notification, `preference_updated` a changed flag, `updated` a changed field
+  (`fields` lists the names, never the values), `archived` an active target,
+  `unarchived` an archived one, `goal_assigned` a new target for the goal,
+  `goal_unassigned` a goal that had one, and `dismissed` a first dismissal.
+- **`status_changed` fires only on a change.** The hourly sweep records a
+  target's status only when it differs from the stored watermark, and the
+  event fires only when that write lands, including a silent move back to
+  `:on_track` or `:complete`. `from_status` is absent on the first
+  observation. A stale write from an overlapping sweep emits nothing.
+- **An unsubscribe link emits two events.** It saves the preference through
+  `update_preference/3`, so `preference_updated` fires when email was on, and
+  `unsubscribed` fires every time the link is used. `user_id` comes from the
+  verified link.
+- **Delivery targets have no board.** A target spans boards, so only
+  `goal_assigned` and `goal_unassigned` carry a `board_id`, the goal's.
+  Creating, editing and archiving are owner-only, so `actor_user_id` is the
+  owner.
+- **`created` follows `notify/3`'s own transaction.** `notify/3` is meant to
+  be called after the change that triggers it has committed; a caller that
+  runs it inside an outer transaction that later rolls back will already have
+  emitted `created`.
+- **Not covered.** A recipient whose email preference is already off when
+  the notification is created gets no email job, so no email event fires for
+  them. Digest skips and digest delivery failures emit no event. The status
+  sweep emits no event of its own for the owner notification it sends beyond
+  `target.status_changed`; that notification reports through
+  `notification.created` and the email events like any other.
+
 ## Emitting an event
 
 ```elixir
@@ -361,9 +444,13 @@ raise.
    following the naming rule and declaring no forbidden key. A new API or
    audit action is a new tuple in `@api_actions` or `@audit_actions` in
    `Kanban.Telemetry.Catalog.Families`, a new task activity event is an
-   entry in `Kanban.Telemetry.Catalog.TaskEvents`, and a new account, session
-   or user administration event is an entry in
-   `Kanban.Telemetry.Catalog.UserEvents`.
+   entry in `Kanban.Telemetry.Catalog.TaskEvents`, a new account, session or
+   user administration event is an entry in
+   `Kanban.Telemetry.Catalog.UserEvents`, a new notification, email delivery
+   or digest event is an entry in
+   `Kanban.Telemetry.Catalog.NotificationEvents`, a new delivery target event
+   is an entry in `Kanban.Telemetry.Catalog.TargetEvents`, and a new broadcast
+   message event is an entry in `Kanban.Telemetry.Catalog.MessageEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, or declares a forbidden key.

@@ -3,6 +3,7 @@ defmodule Kanban.MessagesTest do
 
   import Kanban.AccountsFixtures
   import Kanban.MessagesFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Messages
   alias Kanban.Messages.Message
@@ -197,6 +198,64 @@ defmodule Kanban.MessagesTest do
 
       {:ok, _} = Messages.dismiss_message(reader, message.id)
       assert Messages.list_undismissed_for_user(reader) == []
+    end
+  end
+
+  describe "telemetry" do
+    @message_created [:kanban, :message, :created]
+    @message_deleted [:kanban, :message, :deleted]
+    @message_dismissed [:kanban, :message, :dismissed]
+
+    test "create_message and delete_message emit ids, never the text" do
+      sender = user_fixture()
+      attach_telemetry([@message_created, @message_deleted])
+
+      assert {:ok, message} =
+               Messages.create_message(sender, %{title: "Private title", body: "Private body"})
+
+      message_id = message.id
+      sender_id = sender.id
+
+      assert_receive {:telemetry_event, @message_created, %{count: 1},
+                      %{message_id: ^message_id, sender_user_id: ^sender_id} = created}
+
+      assert {:ok, _} = Messages.delete_message(message)
+
+      assert_receive {:telemetry_event, @message_deleted, %{count: 1},
+                      %{message_id: ^message_id, sender_user_id: ^sender_id} = deleted}
+
+      for metadata <- [created, deleted] do
+        refute inspect(metadata) =~ "Private"
+      end
+    end
+
+    test "an invalid message emits nothing" do
+      sender = user_fixture()
+      attach_telemetry(@message_created)
+
+      assert {:error, %Ecto.Changeset{}} = Messages.create_message(sender, %{title: nil})
+
+      refute_receive {:telemetry_event, @message_created, _, _}
+    end
+
+    test "dismiss_message emits once per user and message" do
+      sender = user_fixture()
+      reader = user_fixture()
+      message = message_fixture(sender)
+      attach_telemetry(@message_dismissed)
+
+      assert {:ok, _} = Messages.dismiss_message(reader, message.id)
+
+      message_id = message.id
+      reader_id = reader.id
+
+      assert_receive {:telemetry_event, @message_dismissed, %{count: 1},
+                      %{message_id: ^message_id, user_id: ^reader_id}}
+
+      assert {:ok, _} = Messages.dismiss_message(reader, message.id)
+      assert {:error, :not_found} = Messages.dismiss_message(reader, -1)
+
+      refute_receive {:telemetry_event, @message_dismissed, _, _}
     end
   end
 end

@@ -6,12 +6,14 @@ defmodule Kanban.NotificationsTest do
   import Kanban.ColumnsFixtures
   import Kanban.NotificationsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
   alias Kanban.Notifications
   alias Kanban.Notifications.Notification
   alias Kanban.Notifications.Preference
+  alias Kanban.Telemetry.Catalog
 
   @all_types [
     :review_requested,
@@ -811,6 +813,193 @@ defmodule Kanban.NotificationsTest do
 
       Repo.delete!(user)
       assert {:error, :not_found} = Notifications.unsubscribe(user.id, :review_requested)
+    end
+  end
+
+  describe "telemetry" do
+    @created [:kanban, :notification, :created]
+    @read [:kanban, :notification, :read]
+    @all_read [:kanban, :notification, :all_read]
+    @preference_updated [:kanban, :notification, :preference_updated]
+    @unsubscribed [:kanban, :notification, :unsubscribed]
+
+    test "notify emits created" do
+      %{owner: owner, member: member, board: board} = board_with_member()
+      attach_telemetry(@created)
+
+      {:ok, [n1, n2]} =
+        Notifications.notify(:review_requested, [owner, member], %{
+          title: "W1 is ready for review",
+          board_id: board.id
+        })
+
+      for {n, user} <- [{n1, owner}, {n2, member}] do
+        assert_receive {:telemetry_event, @created, %{count: 1},
+                        %{
+                          notification_id: notification_id,
+                          user_id: user_id,
+                          event_type: :review_requested,
+                          board_id: board_id,
+                          in_app: true
+                        }}
+
+        assert notification_id == n.id
+        assert user_id == user.id
+        assert board_id == board.id
+      end
+    end
+
+    test "notify emits nothing for a deduplicated or invalid notification" do
+      user = user_fixture()
+      attrs = %{title: "Once", dedupe_key: "telemetry-once"}
+      {:ok, [_]} = Notifications.notify(:board_access_changed, [user], attrs)
+      attach_telemetry(@created)
+
+      assert {:ok, []} = Notifications.notify(:board_access_changed, [user], attrs)
+      assert {:error, :invalid_event_type} = Notifications.notify("bogus", [user], attrs)
+
+      refute_receive {:telemetry_event, @created, _, _}
+    end
+
+    test "mark_read emits read only when the notification was unread" do
+      user = user_fixture()
+      n = notification_fixture(user)
+      attach_telemetry(@read)
+
+      assert {:ok, _} = user |> scope() |> Notifications.mark_read(n.id)
+
+      assert_receive {:telemetry_event, @read, %{count: 1},
+                      %{notification_id: id, user_id: user_id, event_type: :board_access_changed}}
+
+      assert id == n.id
+      assert user_id == user.id
+
+      assert {:ok, _} = user |> scope() |> Notifications.mark_read(n.id)
+      refute_receive {:telemetry_event, @read, _, _}
+    end
+
+    test "mark_all_read emits the number of notifications marked" do
+      user = user_fixture()
+      notification_fixture(user)
+      notification_fixture(user)
+      attach_telemetry(@all_read)
+
+      assert {:ok, 2} = user |> scope() |> Notifications.mark_all_read()
+
+      user_id = user.id
+      assert_receive {:telemetry_event, @all_read, %{count: 2}, %{user_id: ^user_id}}
+    end
+
+    test "mark_all_read with nothing unread" do
+      user = user_fixture()
+      attach_telemetry(@all_read)
+
+      assert {:ok, 0} = user |> scope() |> Notifications.mark_all_read()
+
+      user_id = user.id
+      assert_receive {:telemetry_event, @all_read, %{count: 0}, %{user_id: ^user_id}}
+    end
+
+    test "update_preference emits preference_updated only when a flag changes" do
+      user = user_fixture()
+      preference_fixture(user, :review_requested, %{in_app: true, email: true})
+      attach_telemetry(@preference_updated)
+
+      assert {:ok, _} =
+               user
+               |> scope()
+               |> Notifications.update_preference(:review_requested, %{email: false})
+
+      user_id = user.id
+
+      assert_receive {:telemetry_event, @preference_updated, %{count: 1},
+                      %{
+                        user_id: ^user_id,
+                        event_type: :review_requested,
+                        in_app: true,
+                        mail: false
+                      }}
+
+      assert {:ok, _} =
+               user
+               |> scope()
+               |> Notifications.update_preference(:review_requested, %{email: false})
+
+      assert {:error, :invalid_event_type} =
+               user |> scope() |> Notifications.update_preference(:bogus, %{email: false})
+
+      refute_receive {:telemetry_event, @preference_updated, _, _}
+    end
+
+    test "unsubscribe emits unsubscribed with the saved event type" do
+      user = user_fixture()
+      preference_fixture(user, :review_requested, %{in_app: true, email: true})
+      attach_telemetry([@unsubscribed, @preference_updated])
+
+      assert :ok = Notifications.unsubscribe(user.id, "review_requested")
+
+      user_id = user.id
+
+      assert_receive {:telemetry_event, @unsubscribed, %{count: 1},
+                      %{user_id: ^user_id, event_type: :review_requested}}
+
+      assert_receive {:telemetry_event, @preference_updated, %{count: 1},
+                      %{user_id: ^user_id, mail: false}}
+
+      # A repeated link still reports the unsubscribe, but nothing changed.
+      assert :ok = Notifications.unsubscribe(user.id, :review_requested)
+      assert_receive {:telemetry_event, @unsubscribed, %{count: 1}, %{user_id: ^user_id}}
+      refute_receive {:telemetry_event, @preference_updated, _, _}
+    end
+
+    test "unsubscribe emits nothing for an unknown user or event type" do
+      user = user_fixture()
+      attach_telemetry(@unsubscribed)
+
+      assert {:error, :invalid_event_type} = Notifications.unsubscribe(user.id, :bogus)
+      Repo.delete!(user)
+      assert {:error, :not_found} = Notifications.unsubscribe(user.id, :review_requested)
+
+      refute_receive {:telemetry_event, @unsubscribed, _, _}
+    end
+
+    test "notification events carry no personal data" do
+      %{member: member, board: board} = board_with_member()
+      events = [@created, @read, @all_read, @preference_updated, @unsubscribed]
+      attach_telemetry(events)
+
+      {:ok, [n]} =
+        Notifications.notify(:review_requested, [member], %{
+          title: "Private title",
+          body: "Private body",
+          actor_name: "Private Actor",
+          board_id: board.id
+        })
+
+      {:ok, _} = member |> scope() |> Notifications.mark_read(n.id)
+      {:ok, _} = member |> scope() |> Notifications.mark_all_read()
+      :ok = Notifications.unsubscribe(member.id, :review_requested)
+
+      received = collect_telemetry([])
+      assert received |> Enum.map(&elem(&1, 0)) |> Enum.uniq() |> Enum.sort() == Enum.sort(events)
+
+      for {event, metadata} <- received do
+        {:ok, entry} = Catalog.fetch(event)
+        assert Map.keys(metadata) -- entry.metadata == []
+
+        text = inspect(metadata)
+        refute text =~ member.email
+        refute text =~ "Private"
+      end
+    end
+  end
+
+  defp collect_telemetry(acc) do
+    receive do
+      {:telemetry_event, event, _measurements, metadata} ->
+        collect_telemetry([{event, metadata} | acc])
+    after
+      100 -> Enum.reverse(acc)
     end
   end
 end

@@ -37,6 +37,7 @@ defmodule Kanban.Notifications.DigestWorker do
   alias Kanban.Notifications.DigestRecipients
   alias Kanban.Notifications.EmailWorker
   alias Kanban.Notifications.Notification
+  alias Kanban.Notifications.NotificationTelemetry
   alias Kanban.Repo
   alias KanbanWeb.Emails.DigestEmail
 
@@ -109,7 +110,7 @@ defmodule Kanban.Notifications.DigestWorker do
     case user |> DigestEmail.build(digest, week) |> Mailer.deliver() do
       {:ok, _metadata} ->
         stamp_emailed(record)
-        :ok
+        NotificationTelemetry.digest_sent(user.id, week)
 
       {:error, reason} ->
         Repo.delete(record)

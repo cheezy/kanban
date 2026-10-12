@@ -10,8 +10,9 @@ defmodule Kanban.Notifications.EmailWorker do
 
   `perform/1` re-reads the notification and the recipient's current user row
   and returns `:ok` without sending when the notification is gone or already
-  emailed, the user is disabled or unconfirmed, or the user no longer
-  belongs to the notification's board.
+  emailed, the user is disabled or unconfirmed, the user no longer belongs
+  to the notification's board, or the user has turned email off for the
+  event type since the job was enqueued (an unsubscribe link, for example).
 
   Delivery is at-least-once: the email is sent before `emailed_at` is
   stamped, so a crash between the two can resend on retry (the stable
@@ -34,7 +35,10 @@ defmodule Kanban.Notifications.EmailWorker do
   alias Kanban.Accounts.User
   alias Kanban.Boards.BoardUser
   alias Kanban.Mailer
+  alias Kanban.Notifications
   alias Kanban.Notifications.Notification
+  alias Kanban.Notifications.NotificationTelemetry
+  alias Kanban.Notifications.Preference
   alias Kanban.Repo
   alias KanbanWeb.Emails.NotificationEmail
 
@@ -61,14 +65,24 @@ defmodule Kanban.Notifications.EmailWorker do
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"notification_id" => id}}) do
-    with {:ok, notification} <- fetch_pending(id),
-         :ok <- check_recipient(notification.user),
-         :ok <- check_membership(notification, notification.user) do
-      deliver(notification, notification.user)
-    else
+    case fetch_deliverable(id) do
+      {:ok, notification} ->
+        deliver(notification, notification.user)
+
       {:skip, reason} ->
         Logger.info("notification email #{id} skipped: #{reason}")
-        :ok
+        NotificationTelemetry.email_skipped(id, reason)
+    end
+  end
+
+  # Returns the notification when its email should be sent now, or
+  # {:skip, reason} for every reason it should not.
+  defp fetch_deliverable(id) do
+    with {:ok, notification} <- fetch_pending(id),
+         :ok <- check_recipient(notification.user),
+         :ok <- check_membership(notification, notification.user),
+         :ok <- check_preference(notification) do
+      {:ok, notification}
     end
   end
 
@@ -97,11 +111,21 @@ defmodule Kanban.Notifications.EmailWorker do
     end
   end
 
+  # notify/3 enqueues only for recipients who want email, but the preference
+  # can change before the job runs, so the current one is read again.
+  defp check_preference(%Notification{user_id: user_id, event_type: event_type}) do
+    preference =
+      Repo.get_by(Preference, user_id: user_id, event_type: event_type) ||
+        Notifications.default_preference(event_type)
+
+    if preference.email, do: :ok, else: {:skip, :unsubscribed}
+  end
+
   defp deliver(notification, user) do
     case notification |> NotificationEmail.build(user) |> Mailer.deliver() do
       {:ok, _metadata} ->
         stamp_emailed(notification)
-        :ok
+        NotificationTelemetry.email_sent(notification)
 
       {:error, reason} ->
         kind = failure_kind(reason)
@@ -110,6 +134,7 @@ defmodule Kanban.Notifications.EmailWorker do
           "notification email delivery failed (notification_id=#{notification.id}): #{kind}"
         )
 
+        NotificationTelemetry.email_failed(notification, kind)
         {:error, kind}
     end
   end

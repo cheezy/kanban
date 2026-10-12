@@ -5,6 +5,7 @@ defmodule Kanban.Notifications.EmailWorkerTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.NotificationsFixtures
+  import Kanban.TelemetryHelpers
   import Swoosh.TestAssertions
 
   alias Kanban.Boards
@@ -264,6 +265,115 @@ defmodule Kanban.Notifications.EmailWorkerTest do
       assert EmailWorker.failure_kind({:temporary_failure, "h", "421"}) == :temporary_failure
       assert EmailWorker.failure_kind({:retries_exceeded, :timeout}) == :retries_exceeded
       assert EmailWorker.failure_kind(:econnrefused) == :delivery_failed
+    end
+  end
+
+  describe "telemetry" do
+    @created [:kanban, :notification, :created]
+    @sent [:kanban, :notification, :email_sent]
+    @skipped [:kanban, :notification, :email_skipped]
+    @failed [:kanban, :notification, :email_failed]
+
+    test "created then email_sent" do
+      %{member: member, board: board} = board_with_member()
+      attach_telemetry([@created, @sent])
+
+      {:ok, [n]} =
+        Notifications.notify(:review_requested, [member], %{title: "Review", board_id: board.id})
+
+      id = n.id
+      member_id = member.id
+
+      assert_receive {:telemetry_event, @created, %{count: 1},
+                      %{notification_id: ^id, user_id: ^member_id}}
+
+      refute_received {:telemetry_event, @sent, _, _}
+
+      assert :ok = run_job(n)
+
+      assert_receive {:telemetry_event, @sent, %{count: 1},
+                      %{notification_id: ^id, user_id: ^member_id, event_type: :review_requested} =
+                        metadata}
+
+      refute inspect(metadata) =~ member.email
+    end
+
+    test "email_skipped carries the reason for a disabled user and an already emailed notification" do
+      user = user_fixture()
+      n = notification_fixture(user)
+      id = n.id
+      attach_telemetry([@sent, @skipped])
+
+      assert :ok = run_job(n)
+      assert_receive {:telemetry_event, @sent, %{count: 1}, %{notification_id: ^id}}
+
+      assert :ok = run_job(n)
+
+      assert_receive {:telemetry_event, @skipped, %{count: 1},
+                      %{notification_id: ^id, reason: :already_emailed}}
+
+      other = user_fixture()
+      m = notification_fixture(other)
+
+      other
+      |> Ecto.Changeset.change(disabled_at: DateTime.truncate(DateTime.utc_now(), :second))
+      |> Repo.update!()
+
+      assert :ok = run_job(m)
+      m_id = m.id
+
+      assert_receive {:telemetry_event, @skipped, %{count: 1},
+                      %{notification_id: ^m_id, reason: :user_disabled}}
+
+      refute_receive {:telemetry_event, @sent, _, %{notification_id: ^m_id}}
+    end
+
+    test "email_skipped reports a notification that no longer exists" do
+      user = user_fixture()
+      n = notification_fixture(user)
+      Repo.delete!(n)
+      attach_telemetry(@skipped)
+
+      assert :ok = run_job(n)
+
+      id = n.id
+
+      assert_receive {:telemetry_event, @skipped, %{count: 1},
+                      %{notification_id: ^id, reason: :not_found}}
+    end
+
+    test "a recipient who unsubscribed after the job was enqueued produces email_skipped" do
+      user = user_fixture()
+      n = notification_fixture(user)
+      id = n.id
+      assert_enqueued(worker: EmailWorker, args: %{notification_id: id})
+
+      :ok = Notifications.unsubscribe(user.id, :board_access_changed)
+      attach_telemetry([@sent, @skipped])
+
+      assert :ok = run_job(n)
+
+      refute_email_sent()
+      assert is_nil(Repo.reload!(n).emailed_at)
+
+      assert_receive {:telemetry_event, @skipped, %{count: 1},
+                      %{notification_id: ^id, reason: :unsubscribed}}
+
+      refute_received {:telemetry_event, @sent, _, _}
+    end
+
+    test "an opted-out recipient gets no email job and no email event" do
+      user = user_fixture()
+      preference_fixture(user, :board_access_changed, %{in_app: true, email: false})
+      attach_telemetry([@created, @sent, @skipped, @failed])
+
+      n = notification_fixture(user)
+      id = n.id
+
+      assert_receive {:telemetry_event, @created, %{count: 1}, %{notification_id: ^id}}
+      refute_enqueued(worker: EmailWorker, args: %{notification_id: id})
+      # created was the only event attached here that may arrive.
+      refute_receive {:telemetry_event, _event, _, _}
     end
   end
 end

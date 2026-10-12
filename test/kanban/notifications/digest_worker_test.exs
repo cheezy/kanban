@@ -6,6 +6,7 @@ defmodule Kanban.Notifications.DigestWorkerTest do
   import Kanban.BoardsFixtures
   import Kanban.NotificationsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
   import Swoosh.TestAssertions
 
   alias Kanban.Accounts.Scope
@@ -241,6 +242,61 @@ defmodule Kanban.Notifications.DigestWorkerTest do
     test "sends nothing for a user who no longer exists" do
       assert :ok = perform_job(DigestWorker, %{user_id: -1, week: @week, now: @now})
       assert_no_email_sent()
+    end
+  end
+
+  describe "telemetry" do
+    @digest_sent [:kanban, :digest, :sent]
+    @fanout_completed [:kanban, :digest, :fanout_completed]
+
+    test "DigestWorker emits digest.sent once the mailer accepts the digest" do
+      %{user: user} = active_user()
+      attach_telemetry(@digest_sent)
+
+      assert :ok = run_digest(user)
+
+      user_id = user.id
+
+      assert_receive {:telemetry_event, @digest_sent, %{count: 1},
+                      %{user_id: ^user_id, week: @week} = metadata}
+
+      refute inspect(metadata) =~ user.email
+
+      # The week is already sent, so the second run emits nothing.
+      assert :ok = run_digest(user)
+      refute_receive {:telemetry_event, @digest_sent, _, _}
+    end
+
+    test "DigestWorker emits nothing for a quiet week" do
+      user = user_fixture()
+      board_fixture(user)
+      attach_telemetry(@digest_sent)
+
+      assert :ok = run_digest(user)
+
+      refute_receive {:telemetry_event, @digest_sent, _, _}
+    end
+
+    test "DigestFanoutWorker emits fanout_completed with the recipient count" do
+      first = user_fixture()
+      board_fixture(first)
+      second = user_fixture()
+      board_fixture(second)
+      attach_telemetry(@fanout_completed)
+
+      assert :ok = perform_job(DigestFanoutWorker, %{"now" => @now})
+
+      count = length(enqueued_user_ids())
+      assert count == 2
+      assert_receive {:telemetry_event, @fanout_completed, %{count: ^count}, %{week: @week}}
+    end
+
+    test "DigestFanoutWorker reports zero recipients" do
+      attach_telemetry(@fanout_completed)
+
+      assert :ok = perform_job(DigestFanoutWorker, %{"now" => @now})
+
+      assert_receive {:telemetry_event, @fanout_completed, %{count: 0}, %{week: @week}}
     end
   end
 end

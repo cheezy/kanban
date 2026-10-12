@@ -3,6 +3,7 @@ defmodule Kanban.Targets.StatusWatermarkTest do
 
   import Kanban.AccountsFixtures
   import Kanban.TargetsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
   alias Kanban.Targets
@@ -116,6 +117,51 @@ defmodule Kanban.Targets.StatusWatermarkTest do
       assert updated.name == "Renamed"
       assert updated.last_notified_status == nil
       assert updated.status_changed_at == nil
+    end
+  end
+
+  describe "target.status_changed telemetry" do
+    @status_changed [:kanban, :target, :status_changed]
+
+    setup do
+      attach_telemetry(@status_changed)
+      %{target: user_fixture() |> delivery_target_fixture()}
+    end
+
+    test "a change emits from and to, starting from no status", %{target: target} do
+      target_id = target.id
+
+      {:ok, recorded} = Targets.record_observed_status(target, :at_risk, @observed)
+
+      assert_receive {:telemetry_event, @status_changed, %{count: 1},
+                      %{target_id: ^target_id, from_status: nil, to_status: :at_risk}}
+
+      {:ok, _} = Targets.record_observed_status(recorded, :on_track, @observed)
+
+      assert_receive {:telemetry_event, @status_changed, %{count: 1},
+                      %{target_id: ^target_id, from_status: :at_risk, to_status: :on_track}}
+    end
+
+    test "unchanged status emits nothing", %{target: target} do
+      {:ok, _} = Targets.record_observed_status(target, :at_risk, @observed)
+      assert_receive {:telemetry_event, @status_changed, _, _}
+
+      reloaded = Repo.get!(DeliveryTarget, target.id)
+      assert {:ok, _} = Targets.record_observed_status(reloaded, :at_risk, @observed)
+
+      refute_receive {:telemetry_event, @status_changed, _, _}
+    end
+
+    test "a stale or invalid write emits nothing", %{target: target} do
+      {:ok, _} = Targets.record_observed_status(target, :at_risk, @observed)
+      assert_receive {:telemetry_event, @status_changed, _, _}
+
+      assert {:error, :stale} = Targets.record_observed_status(target, :missed, @observed)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Targets.record_observed_status(target, :late, @observed)
+
+      refute_receive {:telemetry_event, @status_changed, _, _}
     end
   end
 end

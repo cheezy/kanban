@@ -62,6 +62,7 @@ defmodule Kanban.Notifications do
   alias Kanban.Notifications.DigestRecipients
   alias Kanban.Notifications.EmailWorker
   alias Kanban.Notifications.Notification
+  alias Kanban.Notifications.NotificationTelemetry
   alias Kanban.Notifications.Preference
   alias Kanban.Notifications.Recipients
   alias Kanban.Repo
@@ -167,7 +168,9 @@ defmodule Kanban.Notifications do
     with {:ok, type} <- event_type |> normalize_event_type() |> invalid_event_type_error(),
          :ok <- validate_task_board(type, attrs),
          {:ok, inserted} <- insert_for_recipients(type, recipients, attrs) do
-      broadcast_created(inserted)
+      inserted
+      |> broadcast_created()
+      |> NotificationTelemetry.created()
     end
   end
 
@@ -242,7 +245,7 @@ defmodule Kanban.Notifications do
       |> Repo.update_all(set: [read_at: now, updated_at: now])
 
     broadcast(user_id, {:notifications_read, unread_count(scope)})
-    {:ok, count}
+    NotificationTelemetry.all_read({:ok, count}, user_id)
   end
 
   @doc """
@@ -289,6 +292,7 @@ defmodule Kanban.Notifications do
           conflict_target: [:user_id, :event_type],
           returning: true
         )
+        |> NotificationTelemetry.preference_updated(current)
 
       :error ->
         {:error, :invalid_event_type}
@@ -314,6 +318,7 @@ defmodule Kanban.Notifications do
         user
         |> Scope.for_user()
         |> update_preference(event_type, %{email: false})
+        |> NotificationTelemetry.unsubscribed()
         |> ok_or_error()
     end
   end
@@ -463,6 +468,7 @@ defmodule Kanban.Notifications do
     notification
     |> Ecto.Changeset.change(read_at: DateTime.utc_now())
     |> Repo.update()
+    |> NotificationTelemetry.read()
   end
 
   defp stamp_read(%Notification{} = notification), do: {:ok, notification}

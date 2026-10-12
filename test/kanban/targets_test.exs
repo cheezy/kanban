@@ -11,6 +11,7 @@ defmodule Kanban.TargetsTest do
   import Kanban.ColumnsFixtures
   import Kanban.TargetsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
@@ -1786,5 +1787,159 @@ defmodule Kanban.TargetsTest do
       |> Repo.update()
 
     done
+  end
+
+  describe "telemetry" do
+    @target_created [:kanban, :target, :created]
+    @target_updated [:kanban, :target, :updated]
+    @target_archived [:kanban, :target, :archived]
+    @target_unarchived [:kanban, :target, :unarchived]
+    @goal_assigned [:kanban, :target, :goal_assigned]
+    @goal_unassigned [:kanban, :target, :goal_unassigned]
+
+    test "create_target emits created with the owner as actor", %{scope: scope, user: user} do
+      attach_telemetry(@target_created)
+
+      assert {:ok, target} =
+               Targets.create_target(scope, %{name: "Private name", target_date: ~D[2026-12-31]})
+
+      target_id = target.id
+      user_id = user.id
+
+      assert_receive {:telemetry_event, @target_created, %{count: 1},
+                      %{target_id: ^target_id, actor_user_id: ^user_id} = metadata}
+
+      refute inspect(metadata) =~ "Private name"
+    end
+
+    test "create_target emits nothing for invalid attributes or no user", %{scope: scope} do
+      attach_telemetry(@target_created)
+
+      assert {:error, %Ecto.Changeset{}} = Targets.create_target(scope, %{name: ""})
+      assert {:error, :not_authorized} = Targets.create_target(nil, %{name: "x"})
+
+      refute_receive {:telemetry_event, @target_created, _, _}
+    end
+
+    test "update_target emits the changed field names only", %{
+      scope: scope,
+      user: user,
+      other_scope: other_scope
+    } do
+      target = delivery_target_fixture(user)
+      attach_telemetry(@target_updated)
+
+      assert {:ok, updated} = Targets.update_target(scope, target, %{name: "Renamed"})
+
+      target_id = target.id
+      user_id = user.id
+
+      assert_receive {:telemetry_event, @target_updated, %{count: 1},
+                      %{target_id: ^target_id, actor_user_id: ^user_id, fields: [:name]} =
+                        metadata}
+
+      refute inspect(metadata) =~ "Renamed"
+
+      # Saving the same values, or an update by a non-owner, emits nothing.
+      assert {:ok, _} = Targets.update_target(scope, updated, %{name: "Renamed"})
+      assert {:error, :not_authorized} = Targets.update_target(other_scope, updated, %{name: "x"})
+      refute_receive {:telemetry_event, @target_updated, _, _}
+    end
+
+    test "archive_target and unarchive_target emit only on a real change", %{
+      scope: scope,
+      user: user,
+      column: column
+    } do
+      target = complete_target(scope, column, user)
+      attach_telemetry([@target_archived, @target_unarchived])
+
+      target_id = target.id
+      user_id = user.id
+
+      # Unarchiving an active target changes nothing.
+      assert {:ok, _} = Targets.unarchive_target(scope, target.id)
+      refute_receive {:telemetry_event, @target_unarchived, _, _}
+
+      assert {:ok, _} = Targets.archive_target(scope, target.id)
+
+      assert_receive {:telemetry_event, @target_archived, %{count: 1},
+                      %{target_id: ^target_id, actor_user_id: ^user_id}}
+
+      # Re-archiving re-stamps archived_at but is not a new archive.
+      assert {:ok, _} = Targets.archive_target(scope, target.id)
+      refute_receive {:telemetry_event, @target_archived, _, _}
+
+      assert {:ok, _} = Targets.unarchive_target(scope, target.id)
+
+      assert_receive {:telemetry_event, @target_unarchived, %{count: 1},
+                      %{target_id: ^target_id, actor_user_id: ^user_id}}
+    end
+
+    test "archive_target emits nothing for an incomplete target", %{scope: scope, user: user} do
+      target = delivery_target_fixture(user)
+      attach_telemetry(@target_archived)
+
+      assert {:error, :not_complete} = Targets.archive_target(scope, target.id)
+
+      refute_receive {:telemetry_event, @target_archived, _, _}
+    end
+
+    test "assign_goal and unassign_goal emit with the goal's board", %{
+      scope: scope,
+      user: user,
+      board: board,
+      column: column
+    } do
+      target = delivery_target_fixture(user)
+      goal = goal_fixture(column)
+      attach_telemetry([@goal_assigned, @goal_unassigned])
+
+      assert {:ok, assigned} = Targets.assign_goal(scope, goal, target)
+
+      target_id = target.id
+      goal_id = goal.id
+      board_id = board.id
+      user_id = user.id
+
+      assert_receive {:telemetry_event, @goal_assigned, %{count: 1},
+                      %{
+                        target_id: ^target_id,
+                        goal_id: ^goal_id,
+                        board_id: ^board_id,
+                        actor_user_id: ^user_id
+                      }}
+
+      # Assigning the target the goal already has changes nothing.
+      assert {:ok, _} = Targets.assign_goal(scope, assigned, target)
+      refute_receive {:telemetry_event, @goal_assigned, _, _}
+
+      assert {:ok, unassigned} = Targets.unassign_goal(scope, assigned)
+
+      assert_receive {:telemetry_event, @goal_unassigned, %{count: 1},
+                      %{
+                        target_id: ^target_id,
+                        goal_id: ^goal_id,
+                        board_id: ^board_id,
+                        actor_user_id: ^user_id
+                      }}
+
+      # A goal with no target has nothing to leave.
+      assert {:ok, _} = Targets.unassign_goal(scope, unassigned)
+      refute_receive {:telemetry_event, @goal_unassigned, _, _}
+    end
+
+    test "assign_goal emits nothing for a goal on an inaccessible board", %{
+      scope: scope,
+      user: user,
+      other_column: other_column
+    } do
+      target = delivery_target_fixture(user)
+      attach_telemetry(@goal_assigned)
+
+      assert {:error, :not_found} = Targets.assign_goal(scope, goal_fixture(other_column), target)
+
+      refute_receive {:telemetry_event, @goal_assigned, _, _}
+    end
   end
 end

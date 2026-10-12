@@ -17,6 +17,7 @@ defmodule Kanban.Notifications.DigestFanoutWorker do
   alias Kanban.Notifications
   alias Kanban.Notifications.Digest
   alias Kanban.Notifications.DigestWorker
+  alias Kanban.Notifications.NotificationTelemetry
 
   require Logger
 
@@ -28,7 +29,10 @@ defmodule Kanban.Notifications.DigestFanoutWorker do
 
     Enum.each(recipients, &enqueue(&1, week, now))
     Logger.info("weekly digest fan-out for #{week}: #{length(recipients)} recipient(s)")
-    :ok
+
+    recipients
+    |> length()
+    |> NotificationTelemetry.digest_fanout_completed(week)
   end
 
   # Oban.insert_all ignores `unique` on the Basic engine, so insert one by one.

@@ -14,6 +14,7 @@ defmodule Kanban.Messages do
 
   alias Kanban.Messages.Message
   alias Kanban.Messages.MessageDismissal
+  alias Kanban.Messages.MessageTelemetry
 
   @doc """
   Returns the list of messages for the admin view, newest first.
@@ -46,6 +47,7 @@ defmodule Kanban.Messages do
     %Message{sender_id: sender_id}
     |> Message.changeset(attrs)
     |> Repo.insert()
+    |> MessageTelemetry.created()
   end
 
   @doc """
@@ -54,7 +56,9 @@ defmodule Kanban.Messages do
   Cascades to all associated dismissals via the database foreign key.
   """
   def delete_message(%Message{} = message) do
-    Repo.delete(message)
+    message
+    |> Repo.delete()
+    |> MessageTelemetry.deleted()
   end
 
   @doc """
@@ -97,6 +101,7 @@ defmodule Kanban.Messages do
         %MessageDismissal{}
         |> MessageDismissal.changeset(attrs)
         |> Repo.insert(on_conflict: :nothing, conflict_target: [:message_id, :user_id])
+        |> MessageTelemetry.dismissed()
     end
   end
 
