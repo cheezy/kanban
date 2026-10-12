@@ -2,6 +2,7 @@ defmodule Kanban.AccountsTest do
   use Kanban.DataCase
 
   import Kanban.AccountsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts
   alias Kanban.Accounts.User
@@ -659,6 +660,211 @@ defmodule Kanban.AccountsTest do
     test "returns error for expired token", %{token: token} do
       Repo.update_all(UserToken, set: [inserted_at: ~N[2020-01-01 00:00:00]])
       assert {:error, :invalid_token} = Accounts.confirm_user(token)
+    end
+  end
+
+  describe "user telemetry" do
+    @user_events [
+      [:kanban, :user, :password_changed],
+      [:kanban, :user, :password_reset_completed],
+      [:kanban, :user, :email_change_requested],
+      [:kanban, :user, :email_changed],
+      [:kanban, :user, :confirmed],
+      [:kanban, :user, :name_changed],
+      [:kanban, :user, :type_changed]
+    ]
+
+    setup do
+      %{user: user_fixture()}
+    end
+
+    test "update_user_password emits password_changed", %{user: user} do
+      attach_telemetry([:kanban, :user, :password_changed])
+
+      assert {:ok, {_user, _tokens}} =
+               Accounts.update_user_password(user, %{password: "new valid password"})
+
+      assert_received {:telemetry_event, [:kanban, :user, :password_changed], %{count: 1},
+                       metadata}
+
+      assert metadata == %{user_id: user.id}
+    end
+
+    test "invalid password change emits nothing", %{user: user} do
+      attach_telemetry(@user_events)
+
+      assert {:error, _changeset} =
+               Accounts.update_user_password(user, %{
+                 password: "short",
+                 password_confirmation: "x"
+               })
+
+      refute_received {:telemetry_event, _event, _measurements, _metadata}
+    end
+
+    test "reset_user_password emits password_reset_completed", %{user: user} do
+      attach_telemetry([:kanban, :user, :password_reset_completed])
+
+      assert {:ok, {_user, _tokens}} =
+               Accounts.reset_user_password(user, %{password: "new valid password"})
+
+      assert_received {:telemetry_event, [:kanban, :user, :password_reset_completed], %{count: 1},
+                       %{user_id: user_id}}
+
+      assert user_id == user.id
+    end
+
+    test "an invalid password reset emits nothing", %{user: user} do
+      attach_telemetry(@user_events)
+
+      assert {:error, _changeset} = Accounts.reset_user_password(user, %{password: "short"})
+
+      refute_received {:telemetry_event, _event, _measurements, _metadata}
+    end
+
+    test "deliver_user_update_email_instructions emits email_change_requested", %{user: user} do
+      attach_telemetry([:kanban, :user, :email_change_requested])
+
+      token =
+        extract_user_token(fn url ->
+          Accounts.deliver_user_update_email_instructions(
+            %{user | email: unique_user_email()},
+            user.email,
+            url
+          )
+        end)
+
+      assert is_binary(token)
+
+      assert_received {:telemetry_event, [:kanban, :user, :email_change_requested], %{count: 1},
+                       metadata}
+
+      assert metadata == %{user_id: user.id}
+    end
+
+    test "update_user_email emits email_changed with the user id only", %{user: user} do
+      token =
+        extract_user_token(fn url ->
+          Accounts.deliver_user_update_email_instructions(
+            %{user | email: unique_user_email()},
+            user.email,
+            url
+          )
+        end)
+
+      attach_telemetry([:kanban, :user, :email_changed])
+
+      assert {:ok, _user} = Accounts.update_user_email(user, token)
+
+      assert_received {:telemetry_event, [:kanban, :user, :email_changed], %{count: 1}, metadata}
+
+      assert metadata == %{user_id: user.id}
+    end
+
+    test "update_user_email with an invalid token emits nothing", %{user: user} do
+      attach_telemetry(@user_events)
+
+      assert {:error, :transaction_aborted} = Accounts.update_user_email(user, "oops")
+
+      refute_received {:telemetry_event, _event, _measurements, _metadata}
+    end
+
+    test "confirm_user emits confirmed only for a new confirmation" do
+      user = unconfirmed_user_fixture()
+      {token, user_token} = UserToken.build_email_token(user, "confirm")
+      Repo.insert!(user_token)
+      {second_token, second_user_token} = UserToken.build_email_token(user, "confirm")
+
+      attach_telemetry([:kanban, :user, :confirmed])
+
+      assert {:ok, _user} = Accounts.confirm_user(token)
+      assert_received {:telemetry_event, [:kanban, :user, :confirmed], %{count: 1}, metadata}
+      assert metadata == %{user_id: user.id}
+
+      Repo.insert!(second_user_token)
+      assert {:error, :already_confirmed} = Accounts.confirm_user(second_token)
+      assert {:error, :invalid_token} = Accounts.confirm_user("invalid-token")
+      refute_received {:telemetry_event, [:kanban, :user, :confirmed], _measurements, _metadata}
+    end
+
+    test "update_user_name emits name_changed only when the name changes", %{user: user} do
+      attach_telemetry([:kanban, :user, :name_changed])
+
+      assert {:ok, renamed} = Accounts.update_user_name(user, %{"name" => "Grace Hopper"})
+
+      assert_received {:telemetry_event, [:kanban, :user, :name_changed], %{count: 1}, metadata}
+
+      assert metadata == %{user_id: user.id}
+
+      assert {:ok, _same} = Accounts.update_user_name(renamed, %{"name" => "Grace Hopper"})
+      assert {:error, _changeset} = Accounts.update_user_name(renamed, %{"name" => "<b>"})
+
+      refute_received {:telemetry_event, [:kanban, :user, :name_changed], _measurements,
+                       _metadata}
+    end
+
+    test "update_user_type emits from_type and to_type only when the type changes", %{
+      user: user
+    } do
+      attach_telemetry([:kanban, :user, :type_changed])
+
+      assert {:ok, admin} = Accounts.update_user_type(user, :admin)
+
+      assert_received {:telemetry_event, [:kanban, :user, :type_changed], %{count: 1}, metadata}
+
+      assert metadata == %{user_id: user.id, from_type: :user, to_type: :admin}
+
+      assert {:ok, _admin} = Accounts.update_user_type(admin, :admin)
+
+      refute_received {:telemetry_event, [:kanban, :user, :type_changed], _measurements,
+                       _metadata}
+    end
+
+    test "user events carry no personal data", %{user: user} do
+      user_entries = Enum.filter(Kanban.Telemetry.Catalog.events(), &(&1.domain == :user))
+
+      assert length(user_entries) == 14
+
+      for entry <- user_entries, key <- entry.metadata do
+        refute key in [:email, :name, :token, :password]
+        refute Kanban.Telemetry.forbidden_key?(key)
+      end
+
+      attach_telemetry(@user_events)
+
+      token =
+        extract_user_token(fn url ->
+          Accounts.deliver_user_update_email_instructions(
+            %{user | email: unique_user_email()},
+            user.email,
+            url
+          )
+        end)
+
+      {:ok, user} = Accounts.update_user_email(user, token)
+      {:ok, user} = Accounts.update_user_name(user, %{"name" => "Ada Lovelace"})
+
+      {:ok, {user, _tokens}} =
+        Accounts.update_user_password(user, %{password: "new valid password"})
+
+      {:ok, _user} = Accounts.update_user_type(user, :admin)
+
+      received = collect_events()
+      assert length(received) == 5
+
+      for {_event, metadata} <- received, {_key, value} <- metadata do
+        assert is_integer(value) or is_atom(value)
+        refute value in [user.email, user.name]
+      end
+    end
+  end
+
+  defp collect_events(acc \\ []) do
+    receive do
+      {:telemetry_event, event, _measurements, metadata} ->
+        collect_events([{event, metadata} | acc])
+    after
+      0 -> Enum.reverse(acc)
     end
   end
 end

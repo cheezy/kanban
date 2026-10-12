@@ -146,6 +146,29 @@ defmodule KanbanWeb.UserAuthTest do
       assert_receive %Phoenix.Socket.Broadcast{event: "disconnect", topic: ^live_socket_id}
     end
 
+    test "log out with no session", %{conn: conn} do
+      attach_telemetry([:kanban, :user, :logged_out])
+
+      conn |> fetch_cookies() |> UserAuth.log_out_user()
+
+      assert_received {:telemetry_event, [:kanban, :user, :logged_out], %{count: 1}, metadata}
+      refute Map.has_key?(metadata, :user_id)
+    end
+
+    test "emits user.logged_out with the signed-in user's id", %{conn: conn, user: user} do
+      user_token = Accounts.generate_user_session_token(user)
+      attach_telemetry([:kanban, :user, :logged_out])
+
+      conn
+      |> put_session(:user_token, user_token)
+      |> assign(:current_scope, Scope.for_user(user))
+      |> fetch_cookies()
+      |> UserAuth.log_out_user()
+
+      assert_received {:telemetry_event, [:kanban, :user, :logged_out], %{count: 1}, metadata}
+      assert metadata == %{user_id: user.id}
+    end
+
     test "works even if user is already logged out", %{conn: conn} do
       conn = conn |> fetch_cookies() |> UserAuth.log_out_user()
       refute get_session(conn, :user_token)
@@ -566,6 +589,37 @@ defmodule KanbanWeb.UserAuthTest do
   end
 
   describe "disconnect_sessions/1" do
+    test "disconnect_sessions with no tokens" do
+      attach_telemetry([:kanban, :user, :sessions_revoked])
+
+      assert :ok = UserAuth.disconnect_sessions([])
+
+      assert_received {:telemetry_event, [:kanban, :user, :sessions_revoked], %{count: 0},
+                       metadata}
+
+      assert metadata == %{}
+    end
+
+    test "emits user.sessions_revoked with the token count and user id", %{user: user} do
+      _ = Accounts.generate_user_session_token(user)
+      _ = Accounts.generate_user_session_token(user)
+
+      {:ok, {_user, expired_tokens}} =
+        Accounts.update_user_password(user, %{password: "new valid password"})
+
+      attach_telemetry([:kanban, :user, :sessions_revoked])
+
+      assert :ok = UserAuth.disconnect_sessions(expired_tokens)
+
+      count = length(expired_tokens)
+      assert count >= 2
+
+      assert_received {:telemetry_event, [:kanban, :user, :sessions_revoked], %{count: ^count},
+                       metadata}
+
+      assert metadata == %{user_id: user.id}
+    end
+
     test "broadcasts disconnect messages for each token" do
       tokens = [%{token: "token1"}, %{token: "token2"}]
 

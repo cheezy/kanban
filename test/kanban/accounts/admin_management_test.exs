@@ -3,6 +3,7 @@ defmodule Kanban.Accounts.AdminManagementTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts
   alias Kanban.Accounts.User
@@ -339,6 +340,77 @@ defmodule Kanban.Accounts.AdminManagementTest do
         })
 
       refute Map.has_key?(changeset.changes, :disabled_at)
+    end
+  end
+
+  describe "user administration telemetry" do
+    @admin_events [
+      [:kanban, :user, :disabled],
+      [:kanban, :user, :enabled],
+      [:kanban, :user, :deleted]
+    ]
+
+    test "disable_user emits disabled" do
+      user = user_fixture()
+      admin = admin_fixture()
+      attach_telemetry(@admin_events)
+
+      assert {:ok, disabled} = Accounts.disable_user(user, admin)
+
+      assert_received {:telemetry_event, [:kanban, :user, :disabled], %{count: 1}, metadata}
+      assert metadata == %{user_id: user.id, actor_user_id: admin.id}
+
+      assert {:ok, _again} = Accounts.disable_user(disabled, admin)
+      refute_received {:telemetry_event, _event, _measurements, _metadata}
+    end
+
+    test "a refused disable emits nothing" do
+      user = user_fixture()
+      admin = admin_fixture()
+      attach_telemetry(@admin_events)
+
+      assert {:error, :unauthorized} = Accounts.disable_user(user, user_fixture())
+      assert {:error, :cannot_disable_self} = Accounts.disable_user(admin, admin)
+      refute_received {:telemetry_event, _event, _measurements, _metadata}
+    end
+
+    test "enable_user emits enabled with the administrator as actor" do
+      user = user_fixture()
+      admin = admin_fixture()
+      {:ok, disabled} = Accounts.disable_user(user, admin)
+      attach_telemetry(@admin_events)
+
+      assert {:ok, enabled} = Accounts.enable_user(disabled, admin)
+
+      assert_received {:telemetry_event, [:kanban, :user, :enabled], %{count: 1}, metadata}
+      assert metadata == %{user_id: user.id, actor_user_id: admin.id}
+
+      assert {:ok, _still_enabled} = Accounts.enable_user(enabled, admin)
+      assert {:error, :unauthorized} = Accounts.enable_user(disabled, user_fixture())
+      refute_received {:telemetry_event, _event, _measurements, _metadata}
+    end
+
+    test "delete_user emits deleted with the deleted user's id" do
+      user = user_fixture()
+      admin = admin_fixture()
+      attach_telemetry(@admin_events)
+
+      assert {:ok, _deleted} = Accounts.delete_user(user, admin)
+
+      assert_received {:telemetry_event, [:kanban, :user, :deleted], %{count: 1}, metadata}
+      assert metadata == %{user_id: user.id, actor_user_id: admin.id}
+    end
+
+    test "a refused delete emits nothing" do
+      user = user_fixture()
+      admin = admin_fixture()
+      _board = board_fixture(user)
+      attach_telemetry(@admin_events)
+
+      assert {:error, :user_has_boards} = Accounts.delete_user(user, admin)
+      assert {:error, :cannot_delete_self} = Accounts.delete_user(admin, admin)
+      assert {:error, :unauthorized} = Accounts.delete_user(admin, user_fixture())
+      refute_received {:telemetry_event, _event, _measurements, _metadata}
     end
   end
 end

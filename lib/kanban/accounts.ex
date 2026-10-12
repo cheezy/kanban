@@ -13,6 +13,7 @@ defmodule Kanban.Accounts do
   alias Kanban.Accounts.TwoFactor
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserNotifier
+  alias Kanban.Accounts.UserTelemetry
   alias Kanban.Accounts.UserToken
 
   ## Database getters
@@ -174,9 +175,11 @@ defmodule Kanban.Accounts do
   to actually change.
   """
   def update_user_name(user, attrs) do
-    user
-    |> User.name_changeset(attrs)
+    changeset = User.name_changeset(user, attrs)
+
+    changeset
     |> Repo.update()
+    |> UserTelemetry.name_changed(changeset)
   end
 
   @doc """
@@ -187,17 +190,20 @@ defmodule Kanban.Accounts do
   def update_user_email(user, token) do
     context = "change:#{user.email}"
 
-    Repo.transact(fn ->
-      with {:ok, query} <- UserToken.verify_change_email_token_query(token, context),
-           %UserToken{sent_to: email} <- Repo.one(query),
-           {:ok, user} <- Repo.update(User.email_changeset(user, %{email: email})),
-           {_count, _result} <-
-             Repo.delete_all(from(UserToken, where: [user_id: ^user.id, context: ^context])) do
-        {:ok, user}
-      else
-        _ -> {:error, :transaction_aborted}
-      end
-    end)
+    result =
+      Repo.transact(fn ->
+        with {:ok, query} <- UserToken.verify_change_email_token_query(token, context),
+             %UserToken{sent_to: email} <- Repo.one(query),
+             {:ok, user} <- Repo.update(User.email_changeset(user, %{email: email})),
+             {_count, _result} <-
+               Repo.delete_all(from(UserToken, where: [user_id: ^user.id, context: ^context])) do
+          {:ok, user}
+        else
+          _ -> {:error, :transaction_aborted}
+        end
+      end)
+
+    UserTelemetry.email_changed(result)
   end
 
   @doc """
@@ -233,6 +239,7 @@ defmodule Kanban.Accounts do
     user
     |> User.password_changeset(attrs)
     |> update_user_and_delete_all_tokens()
+    |> UserTelemetry.password_changed()
   end
 
   @doc """
@@ -285,27 +292,30 @@ defmodule Kanban.Accounts do
 
   """
   def reset_user_password(user, attrs) do
-    Repo.transaction(fn ->
-      result =
-        user
-        |> User.password_changeset(attrs)
-        |> Repo.update()
+    result =
+      Repo.transaction(fn ->
+        result =
+          user
+          |> User.password_changeset(attrs)
+          |> Repo.update()
 
-      case result do
-        {:ok, user} ->
-          # Collect the token rows before deleting them so the caller can
-          # disconnect any still-mounted LiveView sockets — deleting the rows
-          # alone only stops future HTTP/reconnect attempts (W1676 M1). This
-          # mirrors update_user_and_delete_all_tokens/1.
-          tokens_query = UserToken.by_user_and_contexts_query(user, :all)
-          tokens_to_expire = Repo.all(tokens_query)
-          Repo.delete_all(tokens_query)
-          {user, tokens_to_expire}
+        case result do
+          {:ok, user} ->
+            # Collect the token rows before deleting them so the caller can
+            # disconnect any still-mounted LiveView sockets — deleting the rows
+            # alone only stops future HTTP/reconnect attempts (W1676 M1). This
+            # mirrors update_user_and_delete_all_tokens/1.
+            tokens_query = UserToken.by_user_and_contexts_query(user, :all)
+            tokens_to_expire = Repo.all(tokens_query)
+            Repo.delete_all(tokens_query)
+            {user, tokens_to_expire}
 
-        {:error, changeset} ->
-          Repo.rollback(changeset)
-      end
-    end)
+          {:error, changeset} ->
+            Repo.rollback(changeset)
+        end
+      end)
+
+    UserTelemetry.password_reset_completed(result)
   end
 
   @doc """
@@ -323,6 +333,7 @@ defmodule Kanban.Accounts do
     user
     |> User.type_changeset(type)
     |> Repo.update()
+    |> UserTelemetry.type_changed(user.type)
   end
 
   @doc """
@@ -395,7 +406,7 @@ defmodule Kanban.Accounts do
   """
   def confirm_user(token) do
     case run_confirm_user(token) do
-      {:ok, user} -> {:ok, user}
+      {:ok, %User{}} = ok -> UserTelemetry.confirmed(ok)
       error -> handle_confirm_error(error)
     end
   end
@@ -452,6 +463,7 @@ defmodule Kanban.Accounts do
     {encoded_token, user_token} = UserToken.build_email_token(user, "change:#{current_email}")
 
     Repo.insert!(user_token)
+    UserTelemetry.email_change_requested(user)
     UserNotifier.deliver_update_email_instructions(user, update_email_url_fun.(encoded_token))
   end
 

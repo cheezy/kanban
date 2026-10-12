@@ -51,6 +51,9 @@ defmodule KanbanWeb.UserAuth do
   Logs the user out.
 
   It clears all session data for safety. See renew_session.
+
+  Emits `[:kanban, :user, :logged_out]`, with the signed-in user's `user_id`
+  when the conn has a current scope, and without one otherwise.
   """
   def log_out_user(conn) do
     user_token = get_session(conn, :user_token)
@@ -59,6 +62,8 @@ defmodule KanbanWeb.UserAuth do
     if live_socket_id = get_session(conn, :live_socket_id) do
       KanbanWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})
     end
+
+    emit_logged_out(conn.assigns[:current_scope])
 
     conn
     |> renew_session(nil)
@@ -186,11 +191,34 @@ defmodule KanbanWeb.UserAuth do
 
   @doc """
   Disconnects existing sockets for the given tokens.
+
+  Emits `[:kanban, :user, :sessions_revoked]` with `count` set to the number of
+  tokens, which may be 0, and the `user_id` of the first token that has one.
   """
   def disconnect_sessions(tokens) do
     Enum.each(tokens, fn %{token: token} ->
       KanbanWeb.Endpoint.broadcast(user_session_topic(token), "disconnect", %{})
     end)
+
+    emit_sessions_revoked(length(tokens), Enum.find_value(tokens, &Map.get(&1, :user_id)))
+  end
+
+  defp emit_logged_out(%Scope{user: %{id: user_id}}) do
+    Kanban.Telemetry.emit([:kanban, :user, :logged_out], %{count: 1}, %{user_id: user_id})
+  end
+
+  defp emit_logged_out(_scope) do
+    Kanban.Telemetry.emit([:kanban, :user, :logged_out], %{count: 1}, %{})
+  end
+
+  defp emit_sessions_revoked(count, nil) do
+    Kanban.Telemetry.emit([:kanban, :user, :sessions_revoked], %{count: count}, %{})
+  end
+
+  defp emit_sessions_revoked(count, user_id) do
+    Kanban.Telemetry.emit([:kanban, :user, :sessions_revoked], %{count: count}, %{
+      user_id: user_id
+    })
   end
 
   defp user_session_topic(token), do: "users_sessions:#{Base.url_encode64(token)}"

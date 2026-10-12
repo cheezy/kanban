@@ -5,12 +5,17 @@ defmodule Kanban.Accounts.AdminManagement do
   Exposed through the `Kanban.Accounts` facade via `defdelegate` — call these
   as `Accounts.list_users/0`, `Accounts.disable_user/1`, and so on rather than
   reaching into this module directly.
+
+  A disable, enable or delete that changes something emits
+  `[:kanban, :user, :disabled]`, `:enabled` or `:deleted` through
+  `Kanban.Accounts.UserTelemetry`, with the administrator as `actor_user_id`.
   """
 
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts
   alias Kanban.Accounts.User
+  alias Kanban.Accounts.UserTelemetry
   alias Kanban.Accounts.UserToken
   alias Kanban.Boards
   alias Kanban.Repo
@@ -62,7 +67,7 @@ defmodule Kanban.Accounts.AdminManagement do
       not authorized_admin?(current_user) -> {:error, :unauthorized}
       user.id == current_user.id -> {:error, :cannot_disable_self}
       last_admin?(user) -> {:error, :last_admin}
-      true -> do_disable(user)
+      true -> user |> do_disable() |> UserTelemetry.disabled(user, current_user)
     end
   end
 
@@ -94,7 +99,7 @@ defmodule Kanban.Accounts.AdminManagement do
   """
   def enable_user(%User{} = user, %User{} = current_user) do
     if authorized_admin?(current_user) do
-      do_enable(user)
+      user |> do_enable() |> UserTelemetry.enabled(user, current_user)
     else
       {:error, :unauthorized}
     end
@@ -134,7 +139,7 @@ defmodule Kanban.Accounts.AdminManagement do
       user.id == current_user.id -> {:error, :cannot_delete_self}
       Boards.user_has_boards?(user) -> {:error, :user_has_boards}
       last_admin?(user) -> {:error, :last_admin}
-      true -> delete_user_and_tokens(user)
+      true -> user |> delete_user_and_tokens() |> UserTelemetry.deleted(user, current_user)
     end
   end
 

@@ -2,6 +2,7 @@ defmodule KanbanWeb.UserSessionControllerTest do
   use KanbanWeb.ConnCase, async: true
 
   import Kanban.AccountsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts
 
@@ -326,6 +327,30 @@ defmodule KanbanWeb.UserSessionControllerTest do
       assert Accounts.get_user_by_email_and_password(user.email, new_password)
     end
 
+    test "emits password_changed and sessions_revoked for the user", %{conn: conn, user: user} do
+      new_password = "a new valid password"
+      conn = log_in_user(conn, user)
+      attach_telemetry([[:kanban, :user, :password_changed], [:kanban, :user, :sessions_revoked]])
+
+      post(conn, ~p"/users/update-password", %{
+        "user" => %{
+          "email" => user.email,
+          "password" => new_password,
+          "password_confirmation" => new_password
+        }
+      })
+
+      assert_received {:telemetry_event, [:kanban, :user, :password_changed], %{count: 1},
+                       %{user_id: changed_id}}
+
+      assert_received {:telemetry_event, [:kanban, :user, :sessions_revoked], %{count: count},
+                       %{user_id: revoked_id}}
+
+      assert changed_id == user.id
+      assert revoked_id == user.id
+      assert count >= 1
+    end
+
     test "a session older than the sudo window is bounced to re-authenticate and does not change the password",
          %{conn: conn, user: user} do
       stale = DateTime.utc_now(:second) |> DateTime.add(-11, :minute)
@@ -356,6 +381,16 @@ defmodule KanbanWeb.UserSessionControllerTest do
       assert redirected_to(conn) == ~p"/"
       refute get_session(conn, :user_token)
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Logged out successfully"
+    end
+
+    test "emits user.logged_out with the user's id", %{conn: conn, user: user} do
+      conn = log_in_user(conn, user)
+      attach_telemetry([:kanban, :user, :logged_out])
+
+      delete(conn, ~p"/users/log-out")
+
+      assert_received {:telemetry_event, [:kanban, :user, :logged_out], %{count: 1}, metadata}
+      assert metadata == %{user_id: user.id}
     end
 
     test "succeeds even if the user is not logged in", %{conn: conn} do

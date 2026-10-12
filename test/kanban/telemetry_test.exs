@@ -51,6 +51,7 @@ defmodule Kanban.TelemetryTest do
 
   @entry_fields [:name, :kind, :domain, :measurements, :metadata, :description, :legacy]
   @leaked_values ["a@example.com", "203.0.113.5", "Secret title", "Private body", "tok-123"]
+  @particles ~w(out in up off down)
 
   def raising_handler(_event, _measurements, _metadata, _config), do: raise("handler boom")
 
@@ -393,7 +394,9 @@ defmodule Kanban.TelemetryTest do
 
       for %{name: name} <- new_events do
         assert [:kanban, _domain, action] = name
-        assert action |> Atom.to_string() |> String.ends_with?("ed")
+
+        assert past_tense_action?(action),
+               "#{inspect(name)} must end in a past-tense verb or phrasal verb"
       end
     end
 
@@ -489,5 +492,16 @@ defmodule Kanban.TelemetryTest do
   defp emit_from_unrelated_process(task_id) do
     {pid, ref} = spawn_monitor(fn -> emit_test(@emitted, %{count: 1}, %{task_id: task_id}) end)
     assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
+  end
+
+  # A past-tense verb ("archived") or phrasal verb ("logged_out"): the last
+  # word ends in "ed", or it is a particle that follows a word ending in "ed".
+  defp past_tense_action?(action) do
+    words = action |> Atom.to_string() |> String.split("_")
+
+    case Enum.reverse(words) do
+      [last, previous | _rest] when last in @particles -> String.ends_with?(previous, "ed")
+      [last | _rest] -> String.ends_with?(last, "ed")
+    end
   end
 end

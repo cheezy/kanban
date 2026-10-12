@@ -251,6 +251,52 @@ rolled-back change emits nothing. Every event measures `count: 1`;
   delete, cascaded children, and comment edits and deletions emit none of
   these events.
 
+### User, session and administrator events
+
+W2338 added these. They are declared in
+`Kanban.Telemetry.Catalog.UserEvents` (`lib/kanban/telemetry/catalog/user_events.ex`).
+The account and administrator events are emitted by
+`Kanban.Accounts.UserTelemetry`, and the two session events by
+`KanbanWeb.UserAuth`, next to the legacy `[:kanban, :user, :login]`. Each is
+emitted only after its change has been saved, so a refused, invalid or
+rolled-back change emits nothing. Every event measures `count: 1`, except
+`sessions_revoked`, whose `count` is the number of tokens revoked.
+
+| Event | Metadata | Emitted by |
+|---|---|---|
+| `[:kanban, :user, :logged_out]` | `user_id` | `KanbanWeb.UserAuth.log_out_user/1` |
+| `[:kanban, :user, :sessions_revoked]` | `user_id` | `KanbanWeb.UserAuth.disconnect_sessions/1` |
+| `[:kanban, :user, :password_changed]` | `user_id` | `Kanban.Accounts.update_user_password/2` |
+| `[:kanban, :user, :password_reset_completed]` | `user_id` | `Kanban.Accounts.reset_user_password/2` |
+| `[:kanban, :user, :email_change_requested]` | `user_id` | `Kanban.Accounts.deliver_user_update_email_instructions/3` |
+| `[:kanban, :user, :email_changed]` | `user_id` | `Kanban.Accounts.update_user_email/2` |
+| `[:kanban, :user, :confirmed]` | `user_id` | `Kanban.Accounts.confirm_user/1` |
+| `[:kanban, :user, :name_changed]` | `user_id` | `Kanban.Accounts.update_user_name/2` |
+| `[:kanban, :user, :type_changed]` | `user_id`, `from_type`, `to_type` | `Kanban.Accounts.update_user_type/2` |
+| `[:kanban, :user, :disabled]` | `user_id`, `actor_user_id` | `Kanban.Accounts.disable_user/2` |
+| `[:kanban, :user, :enabled]` | `user_id`, `actor_user_id` | `Kanban.Accounts.enable_user/2` |
+| `[:kanban, :user, :deleted]` | `user_id`, `actor_user_id` | `Kanban.Accounts.delete_user/2` |
+
+- **Ids and user types only.** No event carries an email address (old or
+  new), a name, a password or a token value. The two email events carry only
+  `user_id`.
+- **A save that changes nothing emits nothing.** `name_changed` needs a new
+  name and `type_changed` a new type. `disabled` fires only for an enabled
+  user and `enabled` only for a disabled one, so disabling a disabled user
+  again emits nothing.
+- **Administrator actions carry `actor_user_id`.** `disabled`, `enabled` and
+  `deleted` name the administrator. `type_changed` carries no
+  `actor_user_id`, because `update_user_type/2` is not given one. Outside the
+  tests, the only caller under `lib/` is a mix task.
+- **`logged_out` without a session.** Signing out when nobody is signed in
+  still emits `logged_out`, without a `user_id`.
+- **`sessions_revoked` counts every token.** A password change or reset
+  deletes all of the user's tokens (sessions and outstanding email links) and
+  then disconnects them; `count` is that number and may be 0. `user_id` is
+  left out when no token names a user.
+- **Not covered.** Login failures are already recorded by the audit log, and
+  no audit row is added for these administrator actions.
+
 ## Emitting an event
 
 ```elixir
@@ -314,8 +360,10 @@ raise.
 1. Add an entry to the list in `Kanban.Telemetry.Catalog`, with every field,
    following the naming rule and declaring no forbidden key. A new API or
    audit action is a new tuple in `@api_actions` or `@audit_actions` in
-   `Kanban.Telemetry.Catalog.Families`, and a new task activity event is an
-   entry in `Kanban.Telemetry.Catalog.TaskEvents`.
+   `Kanban.Telemetry.Catalog.Families`, a new task activity event is an
+   entry in `Kanban.Telemetry.Catalog.TaskEvents`, and a new account, session
+   or user administration event is an entry in
+   `Kanban.Telemetry.Catalog.UserEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, or declares a forbidden key.
