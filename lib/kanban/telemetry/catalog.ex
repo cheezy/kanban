@@ -103,6 +103,111 @@ defmodule Kanban.Telemetry.Catalog do
       legacy: true
     },
     %{
+      name: [:kanban, :board, :updated],
+      kind: :event,
+      domain: :board,
+      measurements: [:count],
+      metadata: [:board_id, :actor_user_id, :fields],
+      description:
+        "A board owner changed a board's settings. fields lists the changed field names, never their values.",
+      legacy: false
+    },
+    %{
+      name: [:kanban, :board, :deleted],
+      kind: :event,
+      domain: :board,
+      measurements: [:count],
+      metadata: [:board_id, :actor_user_id],
+      description: "A board owner deleted a board, with its columns, tasks and memberships.",
+      legacy: false
+    },
+    %{
+      name: [:kanban, :board, :field_visibility_changed],
+      kind: :event,
+      domain: :board,
+      measurements: [:count],
+      metadata: [:board_id, :actor_user_id, :fields],
+      description:
+        "A board owner changed which task fields the board shows. fields lists the toggled field names.",
+      legacy: false
+    },
+    %{
+      name: [:kanban, :board, :member_added],
+      kind: :event,
+      domain: :board,
+      measurements: [:count],
+      metadata: [:board_id, :user_id, :access, :actor_user_id],
+      description:
+        "A user was given access to a board. user_id is the member, actor_user_id the owner who added them.",
+      legacy: false
+    },
+    %{
+      name: [:kanban, :board, :member_removed],
+      kind: :event,
+      domain: :board,
+      measurements: [:count],
+      metadata: [:board_id, :user_id, :access, :actor_user_id],
+      description: "A user was removed from a board. access is the level they held.",
+      legacy: false
+    },
+    %{
+      name: [:kanban, :board, :member_access_changed],
+      kind: :event,
+      domain: :board,
+      measurements: [:count],
+      metadata: [:board_id, :user_id, :from_access, :to_access, :actor_user_id],
+      description: "A board member's access level changed.",
+      legacy: false
+    },
+    %{
+      name: [:kanban, :api, :token_bulk_revoked],
+      kind: :event,
+      domain: :api,
+      measurements: [:count],
+      metadata: [:board_id, :user_id, :actor_user_id, :reason],
+      description:
+        "A member's API tokens for a board were revoked because they were removed (reason :member_removed) or set to read_only (:read_only_access). count is the number revoked and may be 0.",
+      legacy: false
+    },
+    %{
+      name: [:kanban, :column, :created],
+      kind: :event,
+      domain: :column,
+      measurements: [:count],
+      metadata: [:board_id, :column_id, :actor_user_id],
+      description: "A board owner added a column.",
+      legacy: false
+    },
+    %{
+      name: [:kanban, :column, :updated],
+      kind: :event,
+      domain: :column,
+      measurements: [:count],
+      metadata: [:board_id, :column_id, :actor_user_id, :fields],
+      description:
+        "A board owner changed a column. fields lists the changed field names, never their values.",
+      legacy: false
+    },
+    %{
+      name: [:kanban, :column, :deleted],
+      kind: :event,
+      domain: :column,
+      measurements: [:count],
+      metadata: [:board_id, :column_id],
+      description: "A column was deleted, along with its tasks.",
+      legacy: false
+    },
+    %{
+      name: [:kanban, :column, :reordered],
+      kind: :event,
+      domain: :column,
+      measurements: [:count, :column_count],
+      metadata: [:board_id],
+      description:
+        "A board's columns were reordered. column_count is the number of column ids given.",
+      legacy: false
+    },
+    %{
       name: [:kanban, :user, :registration],
       kind: :event,
       domain: :user,

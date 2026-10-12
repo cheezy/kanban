@@ -3,6 +3,7 @@ defmodule Kanban.ApiTokensTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.ApiTokens
   alias Kanban.ApiTokens.ApiToken
@@ -293,6 +294,48 @@ defmodule Kanban.ApiTokensTest do
       refute ApiTokens.usable_agent_name?("Claude\u0000")
       refute ApiTokens.usable_agent_name?(<<0xFF, 0x41>>)
       assert ApiTokens.usable_agent_name?("\u200bClaude")
+    end
+  end
+
+  describe "token_bulk_revoked telemetry" do
+    @bulk_revoked [:kanban, :api, :token_bulk_revoked]
+
+    test "bulk revoke with no tokens" do
+      owner = user_fixture()
+      member = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, member, :modify, owner)
+      attach_telemetry(@bulk_revoked)
+
+      assert {:ok, _} = Kanban.Boards.remove_user_from_board(board, member, owner)
+
+      assert_received {:telemetry_event, @bulk_revoked, %{count: 0}, metadata}
+
+      assert metadata == %{
+               board_id: board.id,
+               user_id: member.id,
+               actor_user_id: owner.id,
+               reason: :member_removed
+             }
+    end
+
+    test "report_bulk_revocation/5 emits token_bulk_revoked with the number revoked" do
+      attach_telemetry(@bulk_revoked)
+
+      assert :ok = ApiTokens.report_bulk_revocation(1, 2, 3, 4, :read_only_access)
+
+      assert_received {:telemetry_event, @bulk_revoked, %{count: 3},
+                       %{board_id: 1, user_id: 2, actor_user_id: 4, reason: :read_only_access}}
+    end
+
+    test "revoke_user_tokens_for_board/2 emits nothing on its own, since it runs before commit" do
+      user = user_fixture()
+      board = board_fixture(user)
+      {:ok, {_token, _}} = ApiTokens.create_api_token(user, board, @valid_attrs)
+      attach_telemetry(@bulk_revoked)
+
+      assert {1, nil} = ApiTokens.revoke_user_tokens_for_board(board.id, user.id)
+      refute_received {:telemetry_event, @bulk_revoked, _, _}
     end
   end
 end

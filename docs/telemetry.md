@@ -93,6 +93,56 @@ Open question: `[:kanban, :audit, :sudo_mode_entered]` fires on every mount of
 a LiveView that requires sudo mode, not only when sudo mode starts, so its
 volume is high. W2337 leaves it unchanged.
 
+### Board, membership and column events
+
+W2339 added these events. Each one is emitted only after its change has been
+saved, so a refused, invalid or rolled-back change emits nothing, and neither
+does an update that changes no field. Every event measures `count: 1`, except
+`token_bulk_revoked` and `column.reordered`, described in the notes below the
+table.
+
+| Event | Metadata | Emitted by |
+|---|---|---|
+| `[:kanban, :board, :updated]` | `board_id`, `actor_user_id`, `fields` | `Kanban.Boards.update_board/3` |
+| `[:kanban, :board, :deleted]` | `board_id`, `actor_user_id` | `Kanban.Boards.delete_board/2` |
+| `[:kanban, :board, :field_visibility_changed]` | `board_id`, `actor_user_id`, `fields` | `Kanban.Boards.update_field_visibility/3` |
+| `[:kanban, :board, :member_added]` | `board_id`, `user_id`, `access`, `actor_user_id` | `Kanban.Boards.add_user_to_board/4` |
+| `[:kanban, :board, :member_removed]` | `board_id`, `user_id`, `access`, `actor_user_id` | `Kanban.Boards.remove_user_from_board/3` |
+| `[:kanban, :board, :member_access_changed]` | `board_id`, `user_id`, `from_access`, `to_access`, `actor_user_id` | `Kanban.Boards.update_user_access/4` |
+| `[:kanban, :api, :token_bulk_revoked]` | `board_id`, `user_id`, `actor_user_id`, `reason` | `Kanban.ApiTokens.report_bulk_revocation/5` |
+| `[:kanban, :column, :created]` | `board_id`, `column_id`, `actor_user_id` | `Kanban.Columns.create_column/3` |
+| `[:kanban, :column, :updated]` | `board_id`, `column_id`, `actor_user_id`, `fields` | `Kanban.Columns.update_column/3` |
+| `[:kanban, :column, :deleted]` | `board_id`, `column_id` | `Kanban.Columns.delete_column/1` |
+| `[:kanban, :column, :reordered]` | `board_id` | `Kanban.Columns.reorder_columns/2` |
+
+- **`fields` holds names only.** `board.updated` and `column.updated` list the
+  changed field names as atoms, and `board.field_visibility_changed` lists the
+  shown or hidden field names as strings. A board or column name, a
+  description or any other value never appears.
+- **Membership events** come from `Kanban.Boards.BoardTelemetry`, called by
+  `Kanban.Boards.MembershipChanges` once the membership change has committed.
+  They fire even when an owner changes their own membership, which sends no
+  notification. `user_id` is the member, `actor_user_id` the owner who made the
+  change, and `access`, `from_access` and `to_access` are `:owner`, `:modify`
+  or `:read_only`. For `member_removed`, `access` is the level the member held.
+- **`token_bulk_revoked` counts revoked tokens.** Its `count` is the number of
+  tokens revoked, and it is 0 when the member had none. `reason` is
+  `:member_removed`, or `:read_only_access` when an access save leaves the
+  member at `:read_only`. `Kanban.ApiTokens.revoke_user_tokens_for_board/2`
+  runs inside the membership transaction, so it emits nothing itself; the event
+  is sent after the commit. Saving `:read_only` again for a member who still
+  had tokens emits only this event, with no `member_access_changed`.
+- **`column.reordered`** measures `count: 1` and `column_count`, the number of
+  column ids given. It is emitted for every reorder that commits, even one that
+  keeps the current order.
+- **No actor on two column events.** `delete_column/1` and `reorder_columns/2`
+  are not given the acting user, so `column.deleted` and `column.reordered`
+  carry no `actor_user_id`.
+- **Cascades emit nothing extra.** Deleting a board emits only `board.deleted`,
+  not a `member_removed` per member, and deleting a column emits only
+  `column.deleted`, not an event per task. Creating an AI-optimized board emits
+  `[:kanban, :board, :creation]` and one `column.created` per default column.
+
 ## Emitting an event
 
 ```elixir

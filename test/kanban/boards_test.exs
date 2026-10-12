@@ -5,6 +5,7 @@ defmodule Kanban.BoardsTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
@@ -2090,5 +2091,260 @@ defmodule Kanban.BoardsTest do
     |> user_fixture()
     |> Ecto.Changeset.change(name: name)
     |> Kanban.Repo.update!()
+  end
+
+  describe "board and membership telemetry" do
+    @board_updated [:kanban, :board, :updated]
+    @board_deleted [:kanban, :board, :deleted]
+    @visibility_changed [:kanban, :board, :field_visibility_changed]
+    @member_added [:kanban, :board, :member_added]
+    @member_removed [:kanban, :board, :member_removed]
+    @access_changed [:kanban, :board, :member_access_changed]
+    @bulk_revoked [:kanban, :api, :token_bulk_revoked]
+
+    @membership_events [@member_added, @member_removed, @access_changed, @bulk_revoked]
+
+    test "board updated carries field names only" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      attach_telemetry(@board_updated)
+
+      assert {:ok, _} =
+               Boards.update_board(
+                 board,
+                 %{name: "Quarterly secrets", description: "Private plan text"},
+                 owner
+               )
+
+      board_id = board.id
+      owner_id = owner.id
+
+      assert_received {:telemetry_event, @board_updated, %{count: 1},
+                       %{board_id: ^board_id, actor_user_id: ^owner_id} = metadata}
+
+      assert metadata.fields == [:description, :name]
+      refute inspect(metadata) =~ "Quarterly secrets"
+      refute inspect(metadata) =~ "Private plan text"
+    end
+
+    test "no-op board update emits nothing" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      attach_telemetry(@board_updated)
+
+      assert {:ok, _} = Boards.update_board(board, %{name: board.name}, owner)
+      refute_received {:telemetry_event, @board_updated, _, _}
+    end
+
+    test "a refused or invalid board update emits nothing" do
+      owner = user_fixture()
+      stranger = user_fixture()
+      board = board_fixture(owner)
+      attach_telemetry(@board_updated)
+
+      assert {:error, :unauthorized} = Boards.update_board(board, %{name: "New"}, stranger)
+      assert {:error, %Ecto.Changeset{}} = Boards.update_board(board, %{name: "abc"}, owner)
+      refute_received {:telemetry_event, @board_updated, _, _}
+    end
+
+    test "delete_board emits board.deleted only when the board is deleted" do
+      owner = user_fixture()
+      stranger = user_fixture()
+      board = board_fixture(owner)
+      attach_telemetry(@board_deleted)
+
+      assert {:error, :unauthorized} = Boards.delete_board(board, stranger)
+      refute_received {:telemetry_event, @board_deleted, _, _}
+
+      assert {:ok, _} = Boards.delete_board(board, owner)
+
+      assert_received {:telemetry_event, @board_deleted, %{count: 1}, metadata}
+      assert metadata == %{board_id: board.id, actor_user_id: owner.id}
+    end
+
+    test "update_field_visibility emits the toggled field names" do
+      owner = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+      attach_telemetry(@visibility_changed)
+
+      toggled = Map.update!(board.field_visibility, "complexity", &(not &1))
+      assert {:ok, _} = Boards.update_field_visibility(board, toggled, owner)
+
+      assert_received {:telemetry_event, @visibility_changed, %{count: 1}, metadata}
+
+      assert metadata == %{board_id: board.id, actor_user_id: owner.id, fields: ["complexity"]}
+    end
+
+    test "an unchanged, refused or invalid field visibility update emits nothing" do
+      owner = user_fixture()
+      stranger = user_fixture()
+      board = ai_optimized_board_fixture(owner)
+      attach_telemetry(@visibility_changed)
+
+      assert {:ok, _} = Boards.update_field_visibility(board, board.field_visibility, owner)
+
+      assert {:error, :unauthorized} =
+               Boards.update_field_visibility(board, board.field_visibility, stranger)
+
+      unknown = Map.put(board.field_visibility, "not_a_field", true)
+      assert {:error, %Ecto.Changeset{}} = Boards.update_field_visibility(board, unknown, owner)
+
+      refute_received {:telemetry_event, @visibility_changed, _, _}
+    end
+
+    test "add_user_to_board emits member_added" do
+      owner = user_fixture()
+      member = user_fixture()
+      board = board_fixture(owner)
+      attach_telemetry(@membership_events)
+
+      assert {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+
+      assert_received {:telemetry_event, @member_added, %{count: 1}, metadata}
+
+      assert metadata == %{
+               board_id: board.id,
+               user_id: member.id,
+               access: :modify,
+               actor_user_id: owner.id
+             }
+
+      refute_received {:telemetry_event, @bulk_revoked, _, _}
+    end
+
+    test "a duplicate or refused add emits nothing" do
+      owner = user_fixture()
+      member = user_fixture()
+      stranger = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      attach_telemetry(@membership_events)
+
+      assert {:error, _} = Boards.add_user_to_board(board, member, :read_only, owner)
+      assert {:error, :unauthorized} = Boards.add_user_to_board(board, stranger, :modify, member)
+      refute_received {:telemetry_event, _, _, _}
+    end
+
+    test "remove_user_from_board emits both events" do
+      owner = user_fixture()
+      member = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      create_tokens(member, board, 2)
+      attach_telemetry(@membership_events)
+
+      assert {:ok, _} = Boards.remove_user_from_board(board, member, owner)
+
+      assert_received {:telemetry_event, @member_removed, %{count: 1}, removed}
+
+      assert removed == %{
+               board_id: board.id,
+               user_id: member.id,
+               access: :modify,
+               actor_user_id: owner.id
+             }
+
+      assert_received {:telemetry_event, @bulk_revoked, %{count: 2}, revoked}
+
+      assert revoked == %{
+               board_id: board.id,
+               user_id: member.id,
+               actor_user_id: owner.id,
+               reason: :member_removed
+             }
+    end
+
+    test "a refused or missing removal emits nothing" do
+      owner = user_fixture()
+      member = user_fixture()
+      outsider = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      attach_telemetry(@membership_events)
+
+      assert {:error, :unauthorized} = Boards.remove_user_from_board(board, owner, member)
+      assert {:error, :not_found} = Boards.remove_user_from_board(board, outsider, owner)
+      refute_received {:telemetry_event, _, _, _}
+    end
+
+    test "update_user_access emits from and to access levels" do
+      owner = user_fixture()
+      member = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :read_only, owner)
+      attach_telemetry(@membership_events)
+
+      assert {:ok, _} = Boards.update_user_access(board, member, :modify, owner)
+
+      assert_received {:telemetry_event, @access_changed, %{count: 1}, metadata}
+
+      assert metadata == %{
+               board_id: board.id,
+               user_id: member.id,
+               from_access: :read_only,
+               to_access: :modify,
+               actor_user_id: owner.id
+             }
+
+      refute_received {:telemetry_event, @bulk_revoked, _, _}
+    end
+
+    test "a downgrade to read_only also emits token_bulk_revoked" do
+      owner = user_fixture()
+      member = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      create_tokens(member, board, 1)
+      attach_telemetry(@membership_events)
+
+      assert {:ok, _} = Boards.update_user_access(board, member, :read_only, owner)
+
+      assert_received {:telemetry_event, @access_changed, %{count: 1},
+                       %{from_access: :modify, to_access: :read_only}}
+
+      assert_received {:telemetry_event, @bulk_revoked, %{count: 1},
+                       %{reason: :read_only_access, user_id: user_id}}
+
+      assert user_id == member.id
+    end
+
+    test "re-saving the same access level emits nothing" do
+      owner = user_fixture()
+      member = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      attach_telemetry(@membership_events)
+
+      assert {:ok, _} = Boards.update_user_access(board, member, :modify, owner)
+      refute_received {:telemetry_event, _, _, _}
+    end
+
+    test "re-saving read_only that still revokes tokens emits only token_bulk_revoked" do
+      owner = user_fixture()
+      member = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :read_only, owner)
+      create_tokens(member, board, 1)
+      attach_telemetry(@membership_events)
+
+      assert {:ok, _} = Boards.update_user_access(board, member, :read_only, owner)
+
+      assert_received {:telemetry_event, @bulk_revoked, %{count: 1}, %{reason: :read_only_access}}
+
+      refute_received {:telemetry_event, @access_changed, _, _}
+    end
+
+    test "an access change that is refused or for a non-member emits nothing" do
+      owner = user_fixture()
+      member = user_fixture()
+      outsider = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      attach_telemetry(@membership_events)
+
+      assert {:error, :unauthorized} = Boards.update_user_access(board, member, :owner, member)
+      assert {:error, :not_found} = Boards.update_user_access(board, outsider, :modify, owner)
+      refute_received {:telemetry_event, _, _, _}
+    end
   end
 end

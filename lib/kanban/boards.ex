@@ -14,6 +14,7 @@ defmodule Kanban.Boards do
 
   alias Kanban.Accounts.User
   alias Kanban.Boards.Board
+  alias Kanban.Boards.BoardTelemetry
   alias Kanban.Boards.BoardUser
   alias Kanban.Boards.MemberSearch
   alias Kanban.Boards.Membership
@@ -536,9 +537,11 @@ defmodule Kanban.Boards do
   """
   def update_board(%Board{} = board, attrs, user) do
     if owner?(board, user) do
-      board
-      |> Board.owner_changeset(attrs)
+      changeset = Board.owner_changeset(board, attrs)
+
+      changeset
       |> Repo.update()
+      |> BoardTelemetry.updated(changeset, user)
     else
       {:error, :unauthorized}
     end
@@ -555,7 +558,9 @@ defmodule Kanban.Boards do
   """
   def delete_board(%Board{} = board, user) do
     if owner?(board, user) do
-      Repo.delete(board)
+      board
+      |> Repo.delete()
+      |> BoardTelemetry.deleted(user)
     else
       {:error, :unauthorized}
     end
@@ -624,9 +629,11 @@ defmodule Kanban.Boards do
   """
   def update_field_visibility(%Board{} = board, field_visibility, user) do
     if owner?(board, user) do
-      board
-      |> Board.changeset(%{field_visibility: field_visibility})
+      changeset = Board.changeset(board, %{field_visibility: field_visibility})
+
+      changeset
       |> Repo.update()
+      |> BoardTelemetry.field_visibility_changed(changeset, user)
       |> case do
         {:ok, updated_board} ->
           Phoenix.PubSub.broadcast(

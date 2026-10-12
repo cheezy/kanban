@@ -229,6 +229,10 @@ defmodule Kanban.ApiTokens do
 
   Returns `{count, nil}` where `count` is the number of tokens revoked.
 
+  It emits no telemetry, because it runs inside a transaction that may still
+  roll back. The caller reports the revocation with `report_bulk_revocation/5`
+  once that transaction has committed.
+
   ## Examples
 
       iex> revoke_user_tokens_for_board(board.id, user.id)
@@ -242,6 +246,36 @@ defmodule Kanban.ApiTokens do
       where: t.board_id == ^board_id and t.user_id == ^user_id and is_nil(t.revoked_at)
     )
     |> Repo.update_all(set: [revoked_at: now])
+  end
+
+  @doc """
+  Emits `[:kanban, :api, :token_bulk_revoked]` for a revocation made by
+  `revoke_user_tokens_for_board/2`.
+
+  Call it only after the transaction that revoked the tokens has committed.
+  `count` is the number of tokens revoked and may be 0. `reason` is
+  `:member_removed` or `:read_only_access`. Returns `:ok`.
+
+  ## Examples
+
+      iex> report_bulk_revocation(board.id, user.id, 2, owner.id, :member_removed)
+      :ok
+
+  """
+  @spec report_bulk_revocation(
+          integer(),
+          integer(),
+          non_neg_integer(),
+          integer(),
+          :member_removed | :read_only_access
+        ) :: :ok
+  def report_bulk_revocation(board_id, user_id, count, actor_user_id, reason) do
+    Kanban.Telemetry.emit([:kanban, :api, :token_bulk_revoked], %{count: count}, %{
+      board_id: board_id,
+      user_id: user_id,
+      actor_user_id: actor_user_id,
+      reason: reason
+    })
   end
 
   @doc """

@@ -4,6 +4,8 @@ defmodule Kanban.ColumnsTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
   alias Kanban.Columns
   alias Kanban.Columns.Column
@@ -515,6 +517,130 @@ defmodule Kanban.ColumnsTest do
 
       assert Enum.at(columns, 0).id == column2.id
       assert Enum.at(columns, 1).id == column1.id
+    end
+  end
+
+  describe "column telemetry" do
+    @created [:kanban, :column, :created]
+    @updated [:kanban, :column, :updated]
+    @deleted [:kanban, :column, :deleted]
+    @reordered [:kanban, :column, :reordered]
+    @column_events [@created, @updated, @deleted, @reordered]
+
+    test "create_column emits column.created" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      attach_telemetry(@column_events)
+
+      assert {:ok, column} = Columns.create_column(board, %{name: "Private name"}, owner)
+
+      assert_received {:telemetry_event, @created, %{count: 1}, metadata}
+      assert metadata == %{board_id: board.id, column_id: column.id, actor_user_id: owner.id}
+    end
+
+    test "an invalid or refused create emits nothing" do
+      owner = user_fixture()
+      stranger = user_fixture()
+      board = board_fixture(owner)
+      attach_telemetry(@column_events)
+
+      assert {:error, %Ecto.Changeset{}} = Columns.create_column(board, %{name: nil}, owner)
+      assert {:error, :unauthorized} = Columns.create_column(board, %{name: "X"}, stranger)
+      refute_received {:telemetry_event, _, _, _}
+    end
+
+    test "update_column emits the changed field names and no values" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      attach_telemetry(@column_events)
+
+      assert {:ok, _} = Columns.update_column(column, %{name: "Secret rename"}, owner)
+
+      assert_received {:telemetry_event, @updated, %{count: 1}, metadata}
+
+      assert metadata == %{
+               board_id: board.id,
+               column_id: column.id,
+               actor_user_id: owner.id,
+               fields: [:name]
+             }
+
+      refute inspect(metadata) =~ "Secret rename"
+    end
+
+    test "a no-op column update emits nothing" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      attach_telemetry(@column_events)
+
+      assert {:ok, _} = Columns.update_column(column, %{name: column.name}, owner)
+      refute_received {:telemetry_event, _, _, _}
+    end
+
+    test "invalid column update emits nothing" do
+      owner = user_fixture()
+      stranger = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      attach_telemetry(@column_events)
+
+      assert {:error, %Ecto.Changeset{}} = Columns.update_column(column, %{name: nil}, owner)
+      assert {:error, :unauthorized} = Columns.update_column(column, %{name: "X"}, stranger)
+      refute_received {:telemetry_event, _, _, _}
+    end
+
+    test "delete_column emits column.deleted" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      attach_telemetry(@column_events)
+
+      assert {:ok, _} = Columns.delete_column(column)
+
+      assert_received {:telemetry_event, @deleted, %{count: 1}, metadata}
+      assert metadata == %{board_id: board.id, column_id: column.id}
+    end
+
+    test "deleting a column that still holds tasks emits column.deleted" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task_fixture(column)
+      attach_telemetry(@column_events)
+
+      assert {:ok, _} = Columns.delete_column(column)
+
+      assert_received {:telemetry_event, @deleted, %{count: 1}, %{column_id: column_id}}
+      assert column_id == column.id
+      refute_received {:telemetry_event, @deleted, _, _}
+    end
+
+    test "reorder_columns emits column.reordered with the column count" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      [c1, c2, c3] = for _ <- 1..3, do: column_fixture(board)
+      attach_telemetry(@column_events)
+
+      assert :ok = Columns.reorder_columns(board, [c3.id, c1.id, c2.id])
+
+      assert_received {:telemetry_event, @reordered, %{count: 1, column_count: 3}, metadata}
+      assert metadata == %{board_id: board.id}
+    end
+
+    test "creating an AI board emits column.created for each default column" do
+      owner = user_fixture()
+      attach_telemetry(@created)
+
+      {:ok, board} = Kanban.Boards.create_ai_optimized_board(owner, %{name: "AI board"})
+
+      for column <- board.columns do
+        column_id = column.id
+        assert_received {:telemetry_event, @created, %{count: 1}, %{column_id: ^column_id}}
+      end
+
+      assert length(board.columns) == 5
     end
   end
 end

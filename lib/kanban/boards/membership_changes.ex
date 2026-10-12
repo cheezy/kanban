@@ -9,7 +9,10 @@ defmodule Kanban.Boards.MembershipChanges do
   gets a `board_access_changed` notification through
   `Kanban.Notifications.Events.board_access_changed/4`, and
   `{Kanban.Boards, :members_changed, board_id}` is broadcast on the board's
-  `"board:<id>"` topic so open boards refresh their assignee filter.
+  `"board:<id>"` topic so open boards refresh their assignee filter. The
+  committed change is also reported as telemetry through
+  `Kanban.Boards.BoardTelemetry.membership_changed/4`, including changes a
+  user makes to their own membership.
 
   Exposed through the `Kanban.Boards` facade via `defdelegate` — call these
   as `Boards.add_user_to_board/4` and so on rather than reaching into this
@@ -21,6 +24,7 @@ defmodule Kanban.Boards.MembershipChanges do
   alias Kanban.ApiTokens
   alias Kanban.Boards
   alias Kanban.Boards.Board
+  alias Kanban.Boards.BoardTelemetry
   alias Kanban.Boards.BoardUser
   alias Kanban.Notifications.Events
   alias Kanban.Repo
@@ -129,6 +133,8 @@ defmodule Kanban.Boards.MembershipChanges do
     do: {:ok, board_user}
 
   defp notify_membership({:ok, board_user, revoked}, board, user, change, actor) do
+    BoardTelemetry.membership_changed(board_user, change, revoked, actor)
+
     Phoenix.PubSub.broadcast(
       Kanban.PubSub,
       "board:#{board.id}",
@@ -149,12 +155,16 @@ defmodule Kanban.Boards.MembershipChanges do
   defp notify_membership({:error, _reason} = error, _board, _user, _change, _actor), do: error
 
   defp event_change(:unchanged), do: :access_changed
+  defp event_change({:access_changed, _from}), do: :access_changed
   defp event_change(change), do: change
 
   # A save with no changes leaves updated_at alone, so a re-save that still
   # revoked tokens is stamped with the time of the revocation instead.
   defp membership_stamp(_board_user, :unchanged), do: DateTime.utc_now()
-  defp membership_stamp(%BoardUser{updated_at: updated_at}, :access_changed), do: updated_at
+
+  defp membership_stamp(%BoardUser{updated_at: updated_at}, {:access_changed, _from}),
+    do: updated_at
+
   defp membership_stamp(%BoardUser{inserted_at: inserted_at}, _change), do: inserted_at
 
   @doc """
@@ -208,5 +218,5 @@ defmodule Kanban.Boards.MembershipChanges do
   defp maybe_revoke_tokens_on_downgrade(multi, _board_id, _user_id, _access), do: multi
 
   defp access_change(%BoardUser{access: access}, access), do: :unchanged
-  defp access_change(_board_user, _new_access), do: :access_changed
+  defp access_change(%BoardUser{access: from}, _new_access), do: {:access_changed, from}
 end

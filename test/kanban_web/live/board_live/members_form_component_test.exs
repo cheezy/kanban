@@ -3,6 +3,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.TelemetryHelpers
   import Phoenix.LiveViewTest
 
   alias Kanban.Accounts.Scope
@@ -383,6 +384,39 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
 
       assert socket.assigns.flash == %{}
       assert Enum.all?(socket.assigns.board_users, &(&1.user.id != member.id))
+    end
+
+    test "owner: removing a member emits member_removed and token_bulk_revoked",
+         %{board: board, scope: scope, user: owner} do
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+
+      {:ok, {_token, _plain}} =
+        Kanban.ApiTokens.create_api_token(member, board, %{
+          name: "Member token",
+          agent_model: "claude",
+          agent_version: "v1",
+          agent_purpose: "x"
+        })
+
+      socket = build_update_socket(board, scope)
+      attach_telemetry([[:kanban, :board, :member_removed], [:kanban, :api, :token_bulk_revoked]])
+
+      {:noreply, _socket} =
+        MembersFormComponent.handle_event(
+          "remove_user",
+          %{"user_id" => Integer.to_string(member.id)},
+          socket
+        )
+
+      member_id = member.id
+      owner_id = owner.id
+
+      assert_received {:telemetry_event, [:kanban, :board, :member_removed], %{count: 1},
+                       %{user_id: ^member_id, actor_user_id: ^owner_id, access: :modify}}
+
+      assert_received {:telemetry_event, [:kanban, :api, :token_bulk_revoked], %{count: 1},
+                       %{user_id: ^member_id, reason: :member_removed}}
     end
 
     test "missing user id: flashes a not-found error", %{board: board, scope: scope} do

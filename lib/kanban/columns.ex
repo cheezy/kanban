@@ -5,7 +5,8 @@ defmodule Kanban.Columns do
   A successful create, update, delete or reorder broadcasts
   `{Kanban.Columns, :columns_changed, board_id}` on the board's
   `"board:<id>"` topic, so every open copy of the board re-renders its
-  columns. The message carries only the board id.
+  columns. The message carries only the board id. Each successful write also
+  emits a column telemetry event through `Kanban.Columns.ColumnTelemetry`.
   """
 
   import Ecto.Query, warn: false
@@ -13,6 +14,7 @@ defmodule Kanban.Columns do
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Columns.Column
+  alias Kanban.Columns.ColumnTelemetry
   alias Kanban.Repo
 
   @doc """
@@ -150,6 +152,7 @@ defmodule Kanban.Columns do
       |> Column.changeset(attrs)
       |> Repo.insert()
       |> broadcast_columns_changed(board.id)
+      |> ColumnTelemetry.created(user)
     else
       {:error, :unauthorized}
     end
@@ -177,10 +180,12 @@ defmodule Kanban.Columns do
     # owner?/2 only reads board.id, so authorizing against a stub struct
     # avoids loading the full board record here.
     if Boards.owner?(%Board{id: column.board_id}, user) do
-      column
-      |> Column.changeset(attrs)
+      changeset = Column.changeset(column, attrs)
+
+      changeset
       |> Repo.update()
       |> broadcast_columns_changed(column.board_id)
+      |> ColumnTelemetry.updated(changeset, user)
     else
       {:error, :unauthorized}
     end
@@ -205,7 +210,10 @@ defmodule Kanban.Columns do
     case result do
       {:ok, deleted_column} ->
         reorder_after_deletion(deleted_column)
-        broadcast_columns_changed({:ok, deleted_column}, deleted_column.board_id)
+
+        {:ok, deleted_column}
+        |> broadcast_columns_changed(deleted_column.board_id)
+        |> ColumnTelemetry.deleted()
 
       error ->
         error
@@ -223,27 +231,29 @@ defmodule Kanban.Columns do
   """
   def reorder_columns(board, column_ids) do
     # Use a transaction to handle the unique constraint on (board_id, position)
-    Repo.transaction(fn ->
-      # First, set all positions to large negative values based on ID to avoid constraint violations
-      columns = list_columns(board)
+    result =
+      Repo.transaction(fn ->
+        # First, set all positions to large negative values based on ID to avoid constraint violations
+        columns = list_columns(board)
 
-      Enum.each(columns, fn column ->
-        Column
-        |> where([c], c.id == ^column.id)
-        |> Repo.update_all(set: [position: -1 * column.id])
-      end)
+        Enum.each(columns, fn column ->
+          Column
+          |> where([c], c.id == ^column.id)
+          |> Repo.update_all(set: [position: -1 * column.id])
+        end)
 
-      # Then update each column with its new position
-      column_ids
-      |> Enum.with_index()
-      |> Enum.each(fn {column_id, index} ->
-        Column
-        |> where([c], c.id == ^column_id and c.board_id == ^board.id)
-        |> Repo.update_all(set: [position: index])
+        # Then update each column with its new position
+        column_ids
+        |> Enum.with_index()
+        |> Enum.each(fn {column_id, index} ->
+          Column
+          |> where([c], c.id == ^column_id and c.board_id == ^board.id)
+          |> Repo.update_all(set: [position: index])
+        end)
       end)
-    end)
 
     broadcast_columns_changed({:ok, board}, board.id)
+    ColumnTelemetry.reordered(result, board, column_ids)
     :ok
   end
 
