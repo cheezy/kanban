@@ -165,11 +165,14 @@ defmodule KanbanWeb.Telemetry.MetricsStorage do
   # skip persistence here — the metrics remain registered in KanbanWeb.Telemetry
   # for LiveDashboard. LiveView mount/handle_event fire on every page load and
   # click, Oban job metrics on every job, and pubsub broadcast on every task or
-  # comment change, so they are skipped too. Business metrics (kanban.user.*,
-  # kanban.api.task_*, …) are kept.
+  # comment change, so they are skipped too. phoenix.socket_connected fires on
+  # every websocket connect — every LiveView page load and every reconnect — and
+  # its metadata carries connect_info, so it is skipped as well. Business metrics
+  # (kanban.user.*, kanban.api.task_*, …) are kept.
   defp high_frequency_metric?([:kanban, :repo, :query | _]), do: true
   defp high_frequency_metric?([:phoenix, :endpoint | _]), do: true
   defp high_frequency_metric?([:phoenix, :router_dispatch | _]), do: true
+  defp high_frequency_metric?([:phoenix, :socket_connected | _]), do: true
   defp high_frequency_metric?([:phoenix, :live_view | _]), do: true
   defp high_frequency_metric?([:oban, :job | _]), do: true
   defp high_frequency_metric?([:kanban, :pubsub | _]), do: true

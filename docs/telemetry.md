@@ -714,11 +714,12 @@ flood the table and unauthenticated traffic cannot trigger it at will.
 
 Stored today:
 
-- everything that was stored before W2344, which keeps its history: sign-ups,
-  sign-ins, board creation, the API task actions below, after_goal delivery
-  in a `/complete` or `/mark_reviewed` response, the review panel counters,
-  the API request and error counts, and the Phoenix socket and channel
-  metrics (`phoenix.socket_connected.duration`, `phoenix.socket_drain.count`,
+- everything that was stored before W2344 except
+  `phoenix.socket_connected.duration` (see below), which keeps its history:
+  sign-ups, sign-ins, board creation, the API task actions below, after_goal
+  delivery in a `/complete` or `/mark_reviewed` response, the review panel
+  counters, the API request and error counts, and the Phoenix socket and
+  channel metrics (`phoenix.socket_drain.count`,
   `phoenix.channel_joined.duration` and `phoenix.channel_handled_in.duration`),
   which carry no `persist: false`;
 - since W2344, export, the GitHub issue report, the metrics retention run,
@@ -745,6 +746,11 @@ These are never stored, whatever their options say:
   `phoenix.router_dispatch`, which fire on every query or request;
 - LiveView mount and `handle_event`, Oban job, and `kanban.pubsub` metrics,
   which fire on every page load, click, job or change;
+- `phoenix.socket_connected.duration`, which fires on every WebSocket
+  connect, so on every LiveView page load and reconnect, and whose metadata
+  carries the connection's `connect_info`. It stays registered for
+  LiveDashboard under the same name, but it is not stored, and the rows stored
+  before it was excluded are left to the retention job;
 - Swoosh metrics, whose metadata carries the email and the mailer config.
 
 `MetricsStorage.metrics_history/1` returns no history for a metric it never

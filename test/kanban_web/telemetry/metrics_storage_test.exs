@@ -251,7 +251,9 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
             [:phoenix, :live_view, :handle_event, :stop, :duration],
             [:oban, :job, :stop, :duration],
             [:oban, :job, :exception, :duration],
-            [:kanban, :pubsub, :broadcast, :count]
+            [:kanban, :pubsub, :broadcast, :count],
+            [:phoenix, :socket_connected, :duration],
+            [:phoenix, :socket_connected]
           ] do
         assert MetricsStorage.__high_frequency_metric__?(name) == true, inspect(name)
       end
@@ -266,6 +268,14 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
 
       assert MetricsStorage.__high_frequency_metric__?([:phoenix, :channel_joined, :duration]) ==
                false
+
+      for name <- [
+            [:phoenix, :socket_drain, :count],
+            [:phoenix, :channel_handled_in, :duration],
+            [:phoenix, :socket_connected_other, :duration]
+          ] do
+        assert MetricsStorage.__high_frequency_metric__?(name) == false, inspect(name)
+      end
     end
 
     test "returns false for non-list metric names" do
@@ -424,6 +434,12 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
       assert MetricsStorage.__persist__?(oban) == false
     end
 
+    test "refuses phoenix.socket_connected.duration, which fires on every websocket connect" do
+      metric = Telemetry.Metrics.summary("phoenix.socket_connected.duration")
+
+      assert MetricsStorage.__persist__?(metric) == false
+    end
+
     test "stores business metrics, with or without reporter options" do
       sum = Telemetry.Metrics.sum("kanban.api.task_created.count")
 
@@ -456,6 +472,25 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
       ])
 
       metric = Telemetry.Metrics.summary("oban.job.stop.duration")
+
+      assert MetricsStorage.metrics_history(metric) == []
+    end
+
+    test "returns no history for a socket_connected metric that is never stored" do
+      Repo.insert_all("metrics_events", [
+        %{
+          metric_name: "phoenix.socket_connected.duration",
+          measurement: 1.0,
+          metadata: %{},
+          recorded_at: DateTime.utc_now(),
+          inserted_at: DateTime.utc_now()
+        }
+      ])
+
+      metric =
+        Telemetry.Metrics.summary("phoenix.socket_connected.duration",
+          unit: {:native, :millisecond}
+        )
 
       assert MetricsStorage.metrics_history(metric) == []
     end
@@ -574,6 +609,28 @@ defmodule KanbanWeb.Telemetry.MetricsStorageTest do
       MetricsStorage.handle_event([:test], measurements, metadata, config)
 
       assert_received {:telemetry_event, [:test, :metric], 100, %{source: "tasks"}}
+
+      Process.unregister(MetricsStorage)
+    end
+
+    test "skips a high-frequency socket_connected metric" do
+      metric =
+        Telemetry.Metrics.summary("phoenix.socket_connected.duration",
+          unit: {:native, :millisecond}
+        )
+
+      Process.register(self(), MetricsStorage)
+
+      result =
+        MetricsStorage.handle_event(
+          [:phoenix, :socket_connected],
+          %{duration: 1},
+          %{},
+          %{metric: metric}
+        )
+
+      refute_received {:telemetry_event, _, _, _}
+      assert result == :ok
 
       Process.unregister(MetricsStorage)
     end

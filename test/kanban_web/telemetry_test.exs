@@ -203,6 +203,22 @@ defmodule KanbanWeb.TelemetryTest do
       end
     end
 
+    test "phoenix.socket_connected.duration is registered but not stored" do
+      metric = find_metric("phoenix.socket_connected.duration")
+
+      assert %Summary{tags: [], unit: :millisecond} = metric
+      assert MetricsStorage.__persist__?(metric) == false
+
+      for name <- [
+            "phoenix.socket_drain.count",
+            "phoenix.channel_joined.duration",
+            "phoenix.channel_handled_in.duration"
+          ] do
+        stored = find_metric(name)
+        assert MetricsStorage.__persist__?(stored) == true, name
+      end
+    end
+
     test "no metric is tagged by an id" do
       for metric <- metrics(), tag <- metric.tags do
         refute tag |> Atom.to_string() |> String.ends_with?("_id"),
