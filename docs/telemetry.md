@@ -374,6 +374,23 @@ rolled-back change emits nothing. Every event measures `count: 1`;
 - **Review events never carry the notes.** `reviewer_user_id` is the reviewer.
   An approval still emits `[:kanban, :task, :completed]` once, through
   `mark_reviewed`; no second completion event is added.
+- **An approval's events report only a committed approval.** The approval
+  completes the task inside `Kanban.Reviews`' transaction, so
+  `task.completed` is held back with the goal events by
+  `Kanban.Telemetry.AfterCommit.after_commit/1`, emitted only once the review
+  has committed, and dropped if it rolls back or is refused. Its handler never
+  runs inside that transaction. After the commit the events arrive in a fixed
+  order: `task.completed` first, then the events the completion caused in the
+  order it caused them (`goal.grace_window_scheduled` when the task was its
+  goal's last child, `task.unblocked` for each dependent it unblocked, then
+  `goal.completed`), and last `review_approved`. A rolled-back or refused
+  approval emits none of them.
+  An API completion, `mark_done` and an API `mark_reviewed` run no
+  transaction of their own around it, so they still emit `task.completed`
+  straight away, once. Only that review transaction is waited for: were
+  `approve_review/3` itself called inside an outer transaction, the events
+  would be emitted when the review's own transaction returned, before the
+  outer one committed. Nothing calls it that way today.
 - **`comment_created` never carries the comment text.** `user_id` is the
   author and `by_agent` is `true` when an agent wrote it.
 - **Not covered.** Bulk moves, assignments and labels from
@@ -537,9 +554,11 @@ nothing. Every event measures `count: 1`.
   once per goal, so a re-opened and re-completed child does not fire it again.
   The agent workflow emits it after its own transaction commits. An approval
   in the review queue runs that workflow inside `Kanban.Reviews`' transaction,
-  which wraps it in `GoalTelemetry.after_commit/1`: `goal.completed`,
-  `task.unblocked` and `grace_window_scheduled` are held back and emitted
-  only once the review has committed, and dropped if it rolls back. Outside
+  which wraps it in `Kanban.Telemetry.AfterCommit.after_commit/1` (also
+  reachable as `GoalTelemetry.after_commit/1`): `goal.completed`,
+  `task.unblocked`, `grace_window_scheduled` and the child's `task.completed`
+  are held back and emitted only once the review has committed, and dropped
+  if it rolls back. Outside
   that wrapper, `goal.completed` is never emitted while a transaction is
   open. An API completion of the last child therefore emits both
   `task.completed` and `goal.completed`. The goal itself reaches Done later,

@@ -17,7 +17,9 @@ defmodule Kanban.Tasks.GoalTelemetry do
   `Kanban.Reviews` does, wraps that transaction in `after_commit/1`. The
   `completed`, `unblocked` and `grace_window_scheduled` events emitted while
   it runs are held back and emitted only once it has returned `{:ok, _}`, so a
-  rolled-back transaction emits none of them.
+  rolled-back transaction emits none of them. The hold is
+  `Kanban.Telemetry.AfterCommit`, which also holds
+  `Kanban.Tasks.TaskTelemetry.completed/2`.
   """
 
   import Ecto.Query, only: [from: 2]
@@ -25,9 +27,9 @@ defmodule Kanban.Tasks.GoalTelemetry do
   alias Kanban.Columns.Column
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias Kanban.Telemetry.AfterCommit
 
   @grace_worker_source "after_goal_grace_worker"
-  @held_key {__MODULE__, :held}
 
   @doc """
   Runs `fun`, a function that runs a database transaction and returns its
@@ -35,22 +37,13 @@ defmodule Kanban.Tasks.GoalTelemetry do
   `grace_window_scheduled` events emitted while it runs. They are emitted, in
   order, once `fun` has returned `{:ok, _}`, and dropped otherwise, so they
   only ever report changes that committed. Returns `fun`'s result unchanged.
+
+  Delegates to `Kanban.Telemetry.AfterCommit.after_commit/1`, so every other
+  event deferred through that module, such as `[:kanban, :task, :completed]`,
+  is held back with them.
   """
   @spec after_commit((-> result)) :: result when result: term()
-  def after_commit(fun) when is_function(fun, 0) do
-    previous = Process.put(@held_key, [])
-
-    {result, held} =
-      try do
-        result = fun.()
-        {result, Process.get(@held_key, [])}
-      after
-        restore_held(previous)
-      end
-
-    if match?({:ok, _}, result), do: held |> Enum.reverse() |> Enum.each(&emit_after_commit/1)
-    result
-  end
+  defdelegate after_commit(fun), to: AfterCommit
 
   @doc """
   Emits `[:kanban, :goal, :completed]` for `goal_id`, the id
@@ -73,7 +66,7 @@ defmodule Kanban.Tasks.GoalTelemetry do
     end
 
     cond do
-      holding?() -> emit_after_commit(emit)
+      AfterCommit.holding?() -> AfterCommit.defer(emit)
       Repo.in_transaction?() -> :ok
       true -> emit.()
     end
@@ -87,11 +80,10 @@ defmodule Kanban.Tasks.GoalTelemetry do
   @spec unblocked(result, integer()) :: result when result: term()
   def unblocked({:ok, %Task{status: status} = task} = result, board_id)
       when status != :blocked do
-    emit_after_commit(fn ->
-      Kanban.Telemetry.emit([:kanban, :task, :unblocked], %{count: 1}, %{
-        task_id: task.id,
-        board_id: board_id
-      })
+    metadata = %{task_id: task.id, board_id: board_id}
+
+    AfterCommit.defer(fn ->
+      Kanban.Telemetry.emit([:kanban, :task, :unblocked], %{count: 1}, metadata)
     end)
 
     result
@@ -174,7 +166,7 @@ defmodule Kanban.Tasks.GoalTelemetry do
   def grace_window_scheduled({:ok, %Oban.Job{}} = result, %Task{} = goal, window_ms) do
     metadata = %{goal_id: goal.id, board_id: board_id(goal)}
 
-    emit_after_commit(fn ->
+    AfterCommit.defer(fn ->
       Kanban.Telemetry.emit(
         [:kanban, :goal, :grace_window_scheduled],
         %{count: 1, grace_window_ms: window_ms},
@@ -248,21 +240,6 @@ defmodule Kanban.Tasks.GoalTelemetry do
   end
 
   def undone(result, _field, _scope), do: result
-
-  # Emits now, or holds the emit back while `after_commit/1` is running.
-  defp emit_after_commit(emit) do
-    case Process.get(@held_key) do
-      held when is_list(held) -> Process.put(@held_key, [emit | held])
-      _not_holding -> emit.()
-    end
-
-    :ok
-  end
-
-  defp holding?, do: is_list(Process.get(@held_key))
-
-  defp restore_held(nil), do: Process.delete(@held_key)
-  defp restore_held(previous), do: Process.put(@held_key, previous)
 
   # `moved` lists the goal itself first, so the children are the rest.
   defp intervention_counts({:ok, %{moved: [_goal | children], skipped: skipped}}) do

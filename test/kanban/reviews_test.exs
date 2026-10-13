@@ -42,6 +42,42 @@ defmodule Kanban.ReviewsTest do
     task
   end
 
+  defp blocked_dependent!(column, task) do
+    column
+    |> task_fixture(%{title: "Waits on the reviewed task"})
+    |> Ecto.Changeset.change(%{dependencies: [task.identifier], status: :blocked})
+    |> Repo.update!()
+  end
+
+  # Records each event with whether a transaction was still open when its
+  # handler ran, so a test can read the events back in delivery order.
+  defp attach_in_order(events) do
+    test_pid = self()
+    handler_id = "reviews-in-order-#{System.unique_integer([:positive])}"
+
+    :ok =
+      :telemetry.attach_many(
+        handler_id,
+        events,
+        fn event, _measurements, metadata, _config ->
+          if self() == test_pid,
+            do: send(test_pid, {:in_order, event, metadata, Repo.in_transaction?()})
+        end,
+        nil
+      )
+
+    on_exit(fn -> :telemetry.detach(handler_id) end)
+  end
+
+  defp received_in_order(acc \\ []) do
+    receive do
+      {:in_order, event, metadata, in_transaction?} ->
+        received_in_order([{event, metadata, in_transaction?} | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
+
   defp stamp!(task, %DateTime{} = at) do
     from(t in Kanban.Tasks.Task, where: t.id == ^task.id)
     |> Kanban.Repo.update_all(set: [review_requested_at: at])
@@ -700,6 +736,193 @@ defmodule Kanban.ReviewsTest do
 
       assert metadata == %{task_id: task.id, board_id: board.id, reviewer_user_id: user.id}
       refute inspect(metadata) =~ "flaky widget"
+    end
+
+    test "approve_review emits task.completed once, after the commit",
+         %{column: column, user: user} do
+      task = pending_task!(column)
+      attach_in_order([[:kanban, :task, :completed], [:kanban, :task, :review_approved]])
+
+      assert {:ok, _} = user |> Scope.for_user() |> Reviews.approve_review(task)
+
+      assert [
+               {[:kanban, :task, :completed], completed, false},
+               {[:kanban, :task, :review_approved], %{task_id: task_id}, false}
+             ] = received_in_order()
+
+      assert completed == %{task_id: task.id, completed_by: user.id}
+      assert task_id == task.id
+    end
+
+    test "approving a goal's last child emits task.completed with its goal events, in commit order",
+         %{column: column, user: user} do
+      goal = task_fixture(column, %{title: "Goal", type: :goal})
+      task = pending_task!(column, %{parent_id: goal.id})
+      dependent = blocked_dependent!(column, task)
+
+      attach_in_order([
+        [:kanban, :goal, :grace_window_scheduled],
+        [:kanban, :task, :completed],
+        [:kanban, :task, :unblocked],
+        [:kanban, :goal, :completed],
+        [:kanban, :task, :review_approved]
+      ])
+
+      assert {:ok, _} = user |> Scope.for_user() |> Reviews.approve_review(task)
+
+      # task.completed leads even though the approval schedules the goal's
+      # grace window before it finishes the task; the goal events follow in
+      # the order they were caused, then review_approved.
+      assert [
+               {[:kanban, :task, :completed], %{task_id: completed_id}, false},
+               {[:kanban, :goal, :grace_window_scheduled], %{goal_id: grace_goal_id}, false},
+               {[:kanban, :task, :unblocked], %{task_id: unblocked_id}, false},
+               {[:kanban, :goal, :completed], %{goal_id: completed_goal_id}, false},
+               {[:kanban, :task, :review_approved], %{task_id: approved_id}, false}
+             ] = received_in_order()
+
+      assert grace_goal_id == goal.id
+      assert completed_id == task.id
+      assert unblocked_id == dependent.id
+      assert completed_goal_id == goal.id
+      assert approved_id == task.id
+    end
+
+    test "a rolled-back approval emits no task.completed", %{column: column, user: user} do
+      goal = task_fixture(column, %{title: "Goal", type: :goal})
+      task = pending_task!(column, %{parent_id: goal.id})
+      dependent = blocked_dependent!(column, task)
+
+      # Fails the approval after task.completed has been queued: unblocking the
+      # dependent is the last write inside the review transaction. The trigger
+      # is created inside the sandboxed test transaction, so it is rolled back
+      # with it.
+      Repo.query!("""
+      CREATE FUNCTION kanban_reviews_test_refuse_unblock() RETURNS trigger AS $$
+      BEGIN
+        RAISE EXCEPTION 'unblock refused by test';
+      END;
+      $$ LANGUAGE plpgsql
+      """)
+
+      Repo.query!("""
+      CREATE TRIGGER kanban_reviews_test_refuse_unblock BEFORE UPDATE ON tasks
+      FOR EACH ROW WHEN (OLD.id = #{dependent.id})
+      EXECUTE FUNCTION kanban_reviews_test_refuse_unblock()
+      """)
+
+      attach_telemetry([
+        [:kanban, :task, :completed],
+        [:kanban, :task, :unblocked],
+        [:kanban, :task, :review_approved],
+        [:kanban, :goal, :completed],
+        [:kanban, :goal, :grace_window_scheduled]
+      ])
+
+      assert_raise Postgrex.Error, ~r/unblock refused by test/, fn ->
+        user |> Scope.for_user() |> Reviews.approve_review(task)
+      end
+
+      refute_receive {:telemetry_event, _event, _measurements, _metadata}
+      assert Repo.reload!(task).review_status != :approved
+
+      # The process is no longer holding, so a later completion emits at once.
+      Kanban.Tasks.TaskTelemetry.completed(task, user.id)
+      assert_receive {:telemetry_event, [:kanban, :task, :completed], _, %{task_id: task_id}}
+      assert task_id == task.id
+    end
+
+    test "a refused approval emits no task.completed",
+         %{column: column, board: board, user: owner} do
+      goal = task_fixture(column, %{title: "Goal", type: :goal})
+      task = pending_task!(column, %{parent_id: goal.id})
+      _dependent = blocked_dependent!(column, task)
+      reader = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      attach_telemetry([
+        [:kanban, :task, :completed],
+        [:kanban, :task, :review_approved],
+        [:kanban, :task, :unblocked],
+        [:kanban, :goal, :completed],
+        [:kanban, :goal, :grace_window_scheduled]
+      ])
+
+      assert {:error, :not_authorized} = Reviews.approve_review(nil, task)
+
+      assert {:error, :not_found} =
+               user_fixture() |> Scope.for_user() |> Reviews.approve_review(task)
+
+      # A read-only member gets as far as the transaction and is refused there.
+      assert {:error, :not_authorized} =
+               reader |> Scope.for_user() |> Reviews.approve_review(task)
+
+      refute_receive {:telemetry_event, _event, _measurements, _metadata}
+      assert Repo.reload!(task).review_status == nil
+    end
+
+    test "approving a task whose dependent is already unblocked emits no task.unblocked",
+         %{column: column, user: user} do
+      task = pending_task!(column)
+
+      _dependent =
+        column
+        |> task_fixture(%{title: "Already ready"})
+        |> Ecto.Changeset.change(%{dependencies: [task.identifier], status: :open})
+        |> Repo.update!()
+
+      attach_telemetry([[:kanban, :task, :completed], [:kanban, :task, :unblocked]])
+
+      assert {:ok, _} = user |> Scope.for_user() |> Reviews.approve_review(task)
+
+      assert_receive {:telemetry_event, [:kanban, :task, :completed], _, %{task_id: task_id}}
+      assert task_id == task.id
+      refute_receive {:telemetry_event, _event, _measurements, _metadata}
+    end
+
+    test "request_changes_review emits only review_changes_requested, after the commit",
+         %{column: column, user: user} do
+      task = pending_task!(column)
+
+      attach_in_order([
+        [:kanban, :task, :completed],
+        [:kanban, :task, :returned_to_doing],
+        [:kanban, :task, :review_changes_requested]
+      ])
+
+      assert {:ok, _} =
+               user
+               |> Scope.for_user()
+               |> Reviews.request_changes_review(task, review_notes: "Needs another pass")
+
+      assert [{[:kanban, :task, :review_changes_requested], %{task_id: task_id}, false}] =
+               received_in_order()
+
+      assert task_id == task.id
+    end
+
+    # Documents a known limitation rather than desired behaviour: only the
+    # review's own transaction is waited for, so an enclosing transaction that
+    # rolls back afterwards does not take the emitted events back.
+    test "inside an outer transaction that rolls back, the approval's events are still emitted",
+         %{column: column, user: user} do
+      task = pending_task!(column)
+      attach_in_order([[:kanban, :task, :completed], [:kanban, :task, :review_approved]])
+
+      assert {:error, :outer_rolled_back} =
+               Repo.transaction(fn ->
+                 {:ok, _} = user |> Scope.for_user() |> Reviews.approve_review(task)
+                 Repo.rollback(:outer_rolled_back)
+               end)
+
+      assert [
+               {[:kanban, :task, :completed], %{task_id: completed_id}, true},
+               {[:kanban, :task, :review_approved], %{task_id: approved_id}, true}
+             ] = received_in_order()
+
+      assert completed_id == task.id
+      assert approved_id == task.id
+      assert Repo.reload!(task).review_status == nil
     end
 
     test "a refused review emits nothing", %{column: column} do

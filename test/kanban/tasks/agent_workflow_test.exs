@@ -1242,6 +1242,34 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
                review_status: :changes_requested
              }
     end
+
+    test "mark_reviewed and mark_done each emit completed once, straight away", ctx do
+      [approved, done] =
+        for _ <- 1..2 do
+          task = create_open_task(ctx.ready, ctx.user, %{"needs_review" => true})
+          claimed = claim_for(task, ctx.user, ctx.board)
+
+          {:ok, completed, _hooks} =
+            AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+          Repo.preload(completed, [:column])
+        end
+
+      attach_telemetry([:kanban, :task, :completed])
+      approved = set_review_status(approved, :approved, ctx.user)
+
+      # Neither runs inside Kanban.Reviews' transaction, so nothing holds the
+      # event: it has been emitted by the time each call returns.
+      {:ok, _done_task, _hooks} = AgentWorkflow.mark_reviewed(approved, ctx.user)
+      assert_received {:telemetry_event, [:kanban, :task, :completed], %{count: 1}, reviewed_md}
+      assert reviewed_md == %{task_id: approved.id, completed_by: ctx.user.id}
+
+      {:ok, _done_task} = AgentWorkflow.mark_done(done, ctx.user)
+      assert_received {:telemetry_event, [:kanban, :task, :completed], %{count: 1}, done_md}
+      assert done_md == %{task_id: done.id, completed_by: ctx.user.id}
+
+      refute_receive {:telemetry_event, [:kanban, :task, :completed], _, _}
+    end
   end
 
   describe "claim and unclaim telemetry" do

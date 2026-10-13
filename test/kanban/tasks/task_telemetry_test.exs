@@ -7,6 +7,7 @@ defmodule Kanban.Tasks.TaskTelemetryTest do
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
   alias Kanban.Tasks.TaskTelemetry
+  alias Kanban.Telemetry.AfterCommit
 
   @task %Task{id: 7, identifier: "W7", time_spent_minutes: 20}
 
@@ -38,6 +39,43 @@ defmodule Kanban.Tasks.TaskTelemetryTest do
 
     assert_receive {:telemetry_event, _event, measurements, %{task_id: 7, completed_by: 2}}
     assert measurements == %{count: 1}
+  end
+
+  describe "completed under AfterCommit.after_commit/1" do
+    test "is held until the function returns {:ok, _}, then emitted once unchanged" do
+      attach_telemetry([:kanban, :task, :completed])
+      test_pid = self()
+
+      result =
+        AfterCommit.after_commit(fn ->
+          :ok = TaskTelemetry.completed(@task, 2)
+          send(test_pid, :inside_done)
+          {:ok, :committed}
+        end)
+
+      assert result == {:ok, :committed}
+
+      assert {:messages, [:inside_done, {:telemetry_event, [:kanban, :task, :completed], _, _}]} =
+               Process.info(self(), :messages)
+
+      assert_received {:telemetry_event, [:kanban, :task, :completed], measurements, metadata}
+
+      assert measurements == %{count: 1}
+      assert metadata == %{task_id: 7, completed_by: 2}
+      refute_received {:telemetry_event, _, _, _}
+    end
+
+    test "is dropped when the function does not commit" do
+      attach_telemetry([:kanban, :task, :completed])
+
+      assert {:error, :rolled_back} =
+               AfterCommit.after_commit(fn ->
+                 TaskTelemetry.completed(@task, 2)
+                 {:error, :rolled_back}
+               end)
+
+      refute_received {:telemetry_event, _, _, _}
+    end
   end
 
   test "moved_to_review measures an integer time_spent_minutes" do

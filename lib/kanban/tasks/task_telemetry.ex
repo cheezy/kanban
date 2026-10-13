@@ -16,6 +16,10 @@ defmodule Kanban.Tasks.TaskTelemetry do
   what the caller sees. Metadata carries ids, atoms, booleans and field names
   only, never a task's text, a comment body, review notes or an unclaim
   reason.
+
+  `completed/2` is called while a review approval's transaction is still
+  open, so it goes through `Kanban.Telemetry.AfterCommit` and is emitted only
+  once that transaction has committed, ahead of the events it causes.
   """
 
   import Ecto.Query, only: [from: 2]
@@ -25,6 +29,7 @@ defmodule Kanban.Tasks.TaskTelemetry do
   alias Kanban.Repo
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
+  alias Kanban.Telemetry.AfterCommit
 
   @doc """
   Emits `[:kanban, :task, :archived]`.
@@ -51,13 +56,20 @@ defmodule Kanban.Tasks.TaskTelemetry do
 
   @doc """
   Emits `[:kanban, :task, :completed]` for a task completed by `user_id`.
+
+  Under `Kanban.Telemetry.AfterCommit.after_commit/1`, as on an approval in
+  the review queue, it is held back until that transaction commits and
+  dropped if it does not, and it is emitted ahead of the goal and dependency
+  events the completion causes. Everywhere else it is emitted straight away.
   """
   @spec completed(Task.t(), integer()) :: :ok
   def completed(%Task{} = task, user_id) do
-    Kanban.Telemetry.emit([:kanban, :task, :completed], %{count: 1}, %{
-      task_id: task.id,
-      completed_by: user_id
-    })
+    metadata = %{task_id: task.id, completed_by: user_id}
+
+    AfterCommit.defer(
+      fn -> Kanban.Telemetry.emit([:kanban, :task, :completed], %{count: 1}, metadata) end,
+      :first
+    )
   end
 
   @doc """
