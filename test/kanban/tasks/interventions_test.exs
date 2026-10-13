@@ -182,6 +182,20 @@ defmodule Kanban.Tasks.InterventionsTest do
       assert task_assigned_rows() == []
     end
 
+    test "a reassignment whose write fails and rolls back notifies nobody", ctx do
+      %{cols: cols, goal: goal, assignee: assignee, scope: scope} = ctx
+      # An on-board assignee who WOULD be notified on success; a child whose
+      # stored title fails validate_required makes the transaction roll back.
+      child = task_fixture(cols["Backlog"], %{parent_id: goal.id})
+      {1, _} = from(t in Task, where: t.id == ^child.id) |> Repo.update_all(set: [title: ""])
+
+      assert {:error, %Ecto.Changeset{}} =
+               Interventions.reassign_goal_unstarted(scope, goal, assignee.id)
+
+      assert reload(goal).assigned_to_id == nil
+      assert task_assigned_rows() == []
+    end
+
     test "reassigns the goal and every Backlog/Ready open child", ctx do
       %{cols: cols, goal: goal, assignee: assignee, scope: scope} = ctx
       backlog_child = task_fixture(cols["Backlog"], %{parent_id: goal.id})

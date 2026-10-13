@@ -23,25 +23,27 @@ defmodule Kanban.Tasks.Interventions do
   reuses `Kanban.Queries.BoardScope`. The predicate fails closed — a `nil`
   scope, a scope without a user, or a goal on an inaccessible board all return
   `false`.
+
+  The transactions themselves — the `FOR UPDATE` candidate re-read, the
+  `Ecto.Multi` of updates and history rows, and the broadcast — live in
+  `Kanban.Tasks.InterventionTransactions`, which performs no authorization.
+  Every public function here checks `can_intervene?/2` before calling it, and
+  keeps the `task_assigned` notification and the `Kanban.Tasks.GoalTelemetry`
+  side effects.
   """
 
   import Ecto.Query, warn: false
 
-  alias Ecto.Multi
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
-  alias Kanban.Boards.BoardUser
-  alias Kanban.Columns.Column
-  alias Kanban.Columns.Stage
   alias Kanban.Notifications.Events
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Targets
   alias Kanban.Targets.DeliveryTarget
-  alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.GoalTelemetry
+  alias Kanban.Tasks.InterventionTransactions
   alias Kanban.Tasks.Task
-  alias Kanban.Tasks.TaskHistory
 
   @allowed_priorities [:low, :medium, :high, :critical]
 
@@ -110,7 +112,7 @@ defmodule Kanban.Tasks.Interventions do
   def reassign_goal_unstarted(scope, %Task{} = goal, new_assigned_to_id) do
     if can_intervene?(scope, goal) do
       goal
-      |> run_reassign(new_assigned_to_id)
+      |> InterventionTransactions.reassign(new_assigned_to_id)
       |> notify_reassigned(goal, scope)
       |> GoalTelemetry.reassigned(scope)
     else
@@ -119,8 +121,8 @@ defmodule Kanban.Tasks.Interventions do
   end
 
   # One task_assigned notification for the goal, never one per moved child.
-  # Hooked here rather than in finalize_intervention/2, which undo and
-  # reprioritize share.
+  # Hooked here rather than in Kanban.Tasks.InterventionTransactions, whose
+  # finalize step undo and reprioritize share.
   defp notify_reassigned(
          {:ok, %{moved: [%Task{assigned_to_id: new_id} = updated_goal | _]}} = result,
          %Task{assigned_to_id: old_id},
@@ -188,21 +190,15 @@ defmodule Kanban.Tasks.Interventions do
   # Shared read for the goal-level intervention previews: authorizes via
   # can_intervene?/2 (scope-first), then returns the goal (with :target and
   # column: :board preloaded) and the not-started, unclaimed children that would
-  # actually move. Partitions with the same `:open` eligibility the write uses,
-  # so the preview lists exactly the children that would move (claimed ones are
-  # excluded — they would be skipped). No row locking; the `FOR UPDATE` guard
-  # applies only inside the write transaction.
+  # actually move. `InterventionTransactions.preview_children/1` applies the same
+  # `:open` eligibility the write uses, so the preview lists exactly the children
+  # that would move (claimed ones are excluded — they would be skipped). No row
+  # locking; the `FOR UPDATE` guard applies only inside the write transaction.
   defp intervention_preview(scope, %Task{} = goal) do
     if can_intervene?(scope, goal) do
       goal = Repo.preload(goal, [:target, column: :board])
 
-      {eligible, _claimed} =
-        goal
-        |> not_started_children_query(lock: false)
-        |> Repo.all()
-        |> partition_candidates()
-
-      {:ok, goal, eligible}
+      {:ok, goal, InterventionTransactions.preview_children(goal)}
     else
       {:error, :unauthorized}
     end
@@ -233,7 +229,9 @@ defmodule Kanban.Tasks.Interventions do
   def reprioritize_goal_unstarted(scope, %Task{} = goal, new_priority) do
     if can_intervene?(scope, goal) do
       with {:ok, priority} <- validate_priority(new_priority) do
-        goal |> run_reprioritize(priority) |> GoalTelemetry.reprioritized(scope, priority)
+        goal
+        |> InterventionTransactions.reprioritize(priority)
+        |> GoalTelemetry.reprioritized(scope, priority)
       end
     else
       {:error, :unauthorized}
@@ -286,217 +284,19 @@ defmodule Kanban.Tasks.Interventions do
 
   defp validate_priority(_priority), do: {:error, :invalid_priority}
 
-  defp run_reassign(goal, new_assigned_to_id) do
-    item_changeset = fn task -> assign_changeset(task, new_assigned_to_id) end
-    history = fn task -> assignment_history(task.id, task.assigned_to_id, new_assigned_to_id) end
-
-    Multi.new()
-    |> Multi.run(:assignee, fn repo, _changes ->
-      check_assignee_on_board(repo, goal, new_assigned_to_id)
-    end)
-    |> Multi.run(:candidates, fn repo, _changes -> {:ok, read_candidates(repo, goal)} end)
-    |> Multi.merge(fn %{candidates: candidates} ->
-      {eligible, _skipped} = partition_candidates(candidates)
-      changes_multi(goal, eligible, item_changeset, history)
-    end)
-    |> Repo.transaction()
-    |> finalize_intervention()
-  end
-
-  defp run_reprioritize(goal, new_priority) do
-    item_changeset = fn task -> priority_changeset(task, new_priority) end
-    history = fn task -> priority_history(task.id, task.priority, new_priority) end
-
-    Multi.new()
-    |> Multi.run(:candidates, fn repo, _changes -> {:ok, read_candidates(repo, goal)} end)
-    |> Multi.merge(fn %{candidates: candidates} ->
-      {eligible, _skipped} = partition_candidates(candidates)
-      changes_multi(goal, eligible, item_changeset, history)
-    end)
-    |> Repo.transaction()
-    |> finalize_intervention()
-  end
-
-  defp read_candidates(repo, goal) do
-    goal
-    |> not_started_children_query()
-    |> repo.all()
-  end
-
-  # The undo write. Restores each task to its own prior value (per-task, from the
-  # snapshot) and reads only the snapshot's moved child ids — never the goal's
-  # broader current not-started set — so a task that never moved is never
-  # touched. Reuses the same candidate re-read (FOR UPDATE), partition, changeset
-  # + history reduce, and finalize as the forward ops; the goal is always
-  # restored, since-claimed children fall into `:skipped`. No assignee
-  # board-membership check: the prior value is a known-good historical state the
-  # authorized actor is reverting to, not a fresh off-board assignment.
+  # Authorizes, then builds the per-task priors and the moved child ids (goal
+  # excluded — it is always restored) for `InterventionTransactions.undo/4`,
+  # which restores each task to its own prior value and touches nothing else.
   defp run_undo(scope, goal, restorations, field) do
     if can_intervene?(scope, goal) do
       priors = Map.new(restorations, &{&1.id, &1.prior})
       child_ids = restorations |> Enum.map(& &1.id) |> Enum.reject(&(&1 == goal.id))
-      {item_changeset, history} = undo_changeset_and_history(field, priors)
 
       goal
-      |> undo_transaction(child_ids, item_changeset, history)
+      |> InterventionTransactions.undo(child_ids, field, priors)
       |> GoalTelemetry.undone(field, scope)
     else
       {:error, :unauthorized}
     end
-  end
-
-  defp undo_transaction(goal, child_ids, item_changeset, history) do
-    Multi.new()
-    |> Multi.run(:candidates, fn repo, _changes ->
-      {:ok, read_moved_children(repo, goal, child_ids)}
-    end)
-    |> Multi.merge(fn %{candidates: candidates} ->
-      {eligible, _skipped} = partition_candidates(candidates)
-      changes_multi(goal, eligible, item_changeset, history)
-    end)
-    |> Repo.transaction()
-    |> finalize_intervention()
-  end
-
-  defp undo_changeset_and_history(:assigned_to_id, priors) do
-    changeset = fn task -> assign_changeset(task, Map.fetch!(priors, task.id)) end
-
-    history = fn task ->
-      assignment_history(task.id, task.assigned_to_id, Map.fetch!(priors, task.id))
-    end
-
-    {changeset, history}
-  end
-
-  defp undo_changeset_and_history(:priority, priors) do
-    changeset = fn task -> priority_changeset(task, Map.fetch!(priors, task.id)) end
-
-    history = fn task ->
-      priority_history(task.id, task.priority, Map.fetch!(priors, task.id))
-    end
-
-    {changeset, history}
-  end
-
-  defp read_moved_children(repo, goal, child_ids) do
-    goal
-    |> not_started_children_query()
-    |> where([t], t.id in ^child_ids)
-    |> repo.all()
-  end
-
-  # nil unassigns and needs no membership check. Otherwise the assignee must
-  # belong to the goal's board — the FK guarantees the user exists, but the
-  # write must also honor BoardScope so work is never assigned off-board. Run
-  # inside the transaction (via the passed repo) so a step failure rolls the
-  # whole operation back rather than leaving a partial reassignment.
-  defp check_assignee_on_board(_repo, _goal, nil), do: {:ok, nil}
-
-  defp check_assignee_on_board(repo, goal, new_assigned_to_id) do
-    %{column: %{board_id: board_id}} = repo.preload(goal, :column)
-
-    member? =
-      from(bu in BoardUser,
-        where: bu.board_id == ^board_id and bu.user_id == ^new_assigned_to_id
-      )
-      |> repo.exists?()
-
-    if member?, do: {:ok, new_assigned_to_id}, else: {:error, :assignee_not_on_board}
-  end
-
-  # Re-read inside the transaction under FOR UPDATE so a concurrent claim that
-  # flips a child to :in_progress either lands before this lock (child is seen
-  # as claimed and skipped) or blocks behind it (child stays :open and is
-  # reassigned) — never a lost update. The lock targets only task rows because
-  # the column filter is a list of ids rather than a join. The write path locks
-  # (default); the read-only preview passes `lock: false`. Which columns count
-  # as not started is decided per board by Kanban.Columns.Stage.
-  defp not_started_children_query(%Task{} = goal, opts \\ []) do
-    not_started_column_ids = goal |> board_id() |> Stage.not_started_column_ids()
-
-    query =
-      from(t in Task,
-        where: t.parent_id == ^goal.id,
-        where: t.column_id in ^not_started_column_ids,
-        where: is_nil(t.archived_at)
-      )
-
-    if Keyword.get(opts, :lock, true) do
-      from(t in query, lock: "FOR UPDATE")
-    else
-      query
-    end
-  end
-
-  defp board_id(%Task{column_id: column_id}) do
-    from(c in Column, where: c.id == ^column_id, select: c.board_id)
-    |> Repo.one!()
-  end
-
-  defp partition_candidates(candidates) do
-    Enum.split_with(candidates, fn %Task{status: status} -> status == :open end)
-  end
-
-  # Builds the goal + per-child update/history steps shared by both
-  # interventions. `item_changeset` and `history` are closures that turn a task
-  # into its Ecto changesets, so the same reduce serves reassignment (assigned_to
-  # + assignment history) and reprioritization (priority + priority-change
-  # history).
-  defp changes_multi(goal, eligible, item_changeset, history) do
-    multi =
-      Multi.new()
-      |> Multi.update(:goal, item_changeset.(goal))
-      |> Multi.insert(:goal_history, history.(goal))
-
-    Enum.reduce(eligible, multi, fn child, acc ->
-      acc
-      |> Multi.update({:child, child.id}, item_changeset.(child))
-      |> Multi.insert({:child_history, child.id}, history.(child))
-    end)
-  end
-
-  defp assign_changeset(%Task{} = task, new_assigned_to_id) do
-    Task.changeset(task, %{assigned_to_id: new_assigned_to_id})
-  end
-
-  defp priority_changeset(%Task{} = task, new_priority) do
-    Task.changeset(task, %{priority: new_priority})
-  end
-
-  defp assignment_history(task_id, from_user_id, to_user_id) do
-    TaskHistory.changeset(%TaskHistory{}, %{
-      task_id: task_id,
-      type: :assignment,
-      from_user_id: from_user_id,
-      to_user_id: to_user_id
-    })
-  end
-
-  defp priority_history(task_id, from_priority, to_priority) do
-    TaskHistory.changeset(%TaskHistory{}, %{
-      task_id: task_id,
-      type: :priority_change,
-      from_priority: Atom.to_string(from_priority),
-      to_priority: Atom.to_string(to_priority)
-    })
-  end
-
-  defp finalize_intervention({:ok, changes}) do
-    {eligible, skipped} = partition_candidates(changes.candidates)
-
-    moved_children = Enum.map(eligible, fn child -> Map.fetch!(changes, {:child, child.id}) end)
-    moved = [changes.goal | moved_children]
-
-    Enum.each(moved, &Broadcaster.broadcast_task_change(&1, :task_updated))
-
-    {:ok, %{moved: moved, skipped: skipped}}
-  end
-
-  # A failed Multi step yields `{:error, step, failed_value, changes}`. The
-  # membership step fails with the atom `:assignee_not_on_board`; an update or
-  # insert step fails with an `%Ecto.Changeset{}` — pass whichever through, the
-  # transaction has already rolled back either way.
-  defp finalize_intervention({:error, _step, failed_value, _changes}) do
-    {:error, failed_value}
   end
 end
