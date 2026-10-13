@@ -36,13 +36,12 @@ defmodule KanbanWeb.TaskLive.Form.RelationalScopes do
       "" ->
         :ok
 
-      column_id ->
-        column = Columns.get_column!(column_id)
-
-        if column.board_id == board.id do
+      column_id_input ->
+        with {:ok, column_id} <- TaskParams.coerce_id(column_id_input),
+             %{} <- Columns.get_column_for_board(column_id, board.id) do
           :ok
         else
-          {:error, :column_id, gettext("Column does not belong to this board")}
+          _ -> {:error, :column_id, gettext("Column does not belong to this board")}
         end
     end
   end

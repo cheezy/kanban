@@ -59,6 +59,13 @@ defmodule KanbanWeb.TaskLive.Form.RelationalScopesTest do
              )
   end
 
+  test "a malformed or unknown column is rejected rather than raising", ctx do
+    for column_id <- ["not-a-number", "-1"] do
+      assert {:error, :column_id, _} =
+               RelationalScopes.validate(%{"column_id" => column_id}, ctx.board)
+    end
+  end
+
   test "a parent goal on another board, or a malformed one, is rejected", ctx do
     assert {:error, :parent_id, _} =
              RelationalScopes.validate(%{"parent_id" => to_string(ctx.other_goal.id)}, ctx.board)

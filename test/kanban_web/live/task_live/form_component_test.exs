@@ -1678,6 +1678,48 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert updated_socket.assigns.form.source.errors[:assigned_to_id] != nil
     end
 
+    # A column_id that is not a number, or names no column, used to raise in
+    # Columns.get_column!/1 and crash the form on both new and edit saves.
+    for {label, bad_column_id} <- [{"a non-numeric", "not-a-number"}, {"an unknown", "-1"}] do
+      test "a new task with #{label} column_id is refused without crashing" do
+        %{socket: socket} = new_task_socket()
+
+        task_params = %{"title" => "Bad Column", "column_id" => unquote(bad_column_id)}
+
+        {:noreply, updated_socket} =
+          FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+        assert Kanban.Repo.get_by(Tasks.Task, title: "Bad Column") == nil
+        assert updated_socket.assigns.error_message == "Security error: Invalid column"
+        assert updated_socket.assigns.form.source.errors[:column_id] != nil
+      end
+
+      test "an edit with #{label} column_id is refused without crashing" do
+        %{column: column} = ctx = new_task_socket()
+        task = task_fixture(column, %{title: "Editable Task"})
+        socket = form_socket(ctx.user, ctx.board, task, :edit_task)
+
+        task_params = %{"title" => "Editable Task", "column_id" => unquote(bad_column_id)}
+
+        {:noreply, updated_socket} =
+          FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+        assert Kanban.Repo.get!(Tasks.Task, task.id).column_id == column.id
+        assert updated_socket.assigns.error_message == "Security error: Invalid column"
+        assert updated_socket.assigns.form.source.errors[:column_id] != nil
+      end
+    end
+
+    test "a new task with a blank column_id goes in the column the form opened on" do
+      %{socket: socket, column: column} = new_task_socket()
+
+      task_params = %{"title" => "Blank Column", "column_id" => ""}
+
+      {:noreply, _socket} = FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      assert Kanban.Repo.get_by(Tasks.Task, title: "Blank Column").column_id == column.id
+    end
+
     test "a new task can still be created under a goal on the same board" do
       %{socket: socket, column: column} = new_task_socket()
       goal = task_fixture(column, %{title: "Same-Board Goal", type: :goal})
@@ -1767,24 +1809,30 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       column = column_fixture(board)
       other_column = user_fixture() |> board_fixture() |> column_fixture()
 
+      %{
+        socket: form_socket(user, board, %Tasks.Task{column_id: column.id}, :new_task),
+        user: user,
+        board: board,
+        column: column,
+        other_column: other_column
+      }
+    end
+
+    defp form_socket(user, board, task, action) do
       {:ok, socket} =
         FormComponent.update(
           %{
             current_scope: %{user: user},
-            task: %Tasks.Task{column_id: column.id},
+            task: task,
             board: board,
-            action: :new_task,
-            column_id: column.id,
+            action: action,
+            column_id: task.column_id,
             patch: "/boards/#{board.id}"
           },
           %Phoenix.LiveView.Socket{}
         )
 
-      %{
-        socket: Map.update!(socket, :assigns, &Map.put(&1, :flash, %{})),
-        column: column,
-        other_column: other_column
-      }
+      Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
     end
   end
 

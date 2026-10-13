@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **The new-task form checks the parent goal and assignee.** Saving a new task now runs the same checks as editing one. A crafted save can no longer put the new task under a goal on another board, or assign it to someone who has no access to the board, and a parent goal that is not a valid id is refused instead of crashing the form. The task context no longer crashes on such an id either, wherever it comes from.
+- **The new-task form checks the parent goal and assignee.** Saving a new task now runs the same checks as editing one. A crafted save can no longer put the new task under a goal on another board, or assign it to someone who has no access to the board, and a parent goal that is not a valid id is refused instead of crashing the form. The task context no longer crashes on such an id either, wherever it comes from. A column that is not a valid id, or no longer exists, is refused the same way when creating or editing a task.
 - **Column changes reach open boards.** Adding, renaming, reordering or deleting a column now updates every open copy of the board without a reload.
 - **Removing a member unassigns their tasks.** When a member is removed from a board, they are unassigned from its open tasks, which then show under **Unassigned** instead of naming someone who can no longer see the board. Archived tasks keep their assignee.
 - **The Archive page no longer calls every archived task Completed.** A task archived without a reason counts as completed only if it was finished; otherwise it shows a neutral **Archived** label. The Completed filter and the counts follow the same rule, and the CSV export leaves the reason blank for these tasks.

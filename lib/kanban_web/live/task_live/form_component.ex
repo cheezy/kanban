@@ -289,26 +289,33 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     end
   end
 
+  # Security: the column must be on the current board. A column_id that is not
+  # a number, or names no column, is refused the same way instead of raising.
   defp save_task(socket, :new_task, task_params) do
-    column_id = task_params["column_id"] || socket.assigns.column_id
+    case new_task_column(socket, task_params) do
+      %{} = column ->
+        # The changeset casts column_id, so a blank one would null the column out.
+        create_scoped_task(socket, column, Map.put(task_params, "column_id", column.id))
 
-    column = Columns.get_column!(column_id)
-
-    # Security: Verify column belongs to the current board
-    if column.board_id != socket.assigns.board.id do
-      changeset =
-        socket.assigns.task
-        |> Tasks.Task.changeset(task_params)
-        |> Ecto.Changeset.add_error(:column_id, gettext("Column does not belong to this board"))
-
-      {:noreply,
-       socket
-       |> assign(:error_message, gettext("Security error: Invalid column"))
-       |> assign_form(changeset)}
-    else
-      create_scoped_task(socket, column, task_params)
+      nil ->
+        message = gettext("Column does not belong to this board")
+        reject_with_scope_error(socket, task_params, :column_id, message)
     end
   end
+
+  # The submitted column, or the one the form opened on when none is given;
+  # nil unless it is a column on the current board.
+  defp new_task_column(socket, task_params) do
+    column_id = blank_to_nil(task_params["column_id"]) || socket.assigns.column_id
+
+    case TaskParams.coerce_id(column_id) do
+      {:ok, id} -> Columns.get_column_for_board(id, socket.assigns.board.id)
+      :error -> nil
+    end
+  end
+
+  defp blank_to_nil(""), do: nil
+  defp blank_to_nil(value), do: value
 
   # The same relational checks as an edit: a crafted save must not parent the
   # new task under another board's goal or assign a non-member.
