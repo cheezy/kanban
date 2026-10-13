@@ -306,7 +306,16 @@ defmodule KanbanWeb.TaskLive.FormComponent do
        |> assign(:error_message, gettext("Security error: Invalid column"))
        |> assign_form(changeset)}
     else
-      create_task_in_column(socket, column, task_params)
+      create_scoped_task(socket, column, task_params)
+    end
+  end
+
+  # The same relational checks as an edit: a crafted save must not parent the
+  # new task under another board's goal or assign a non-member.
+  defp create_scoped_task(socket, column, task_params) do
+    case RelationalScopes.validate(task_params, socket.assigns.board) do
+      :ok -> create_task_in_column(socket, column, task_params)
+      {:error, field, message} -> reject_with_scope_error(socket, task_params, field, message)
     end
   end
 

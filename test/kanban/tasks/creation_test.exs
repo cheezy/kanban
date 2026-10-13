@@ -587,16 +587,12 @@ defmodule Kanban.Tasks.CreationTest do
     test "locks only the new task's column for a parent_id that is not an id", %{column: column} do
       before = ColumnLockHelpers.held_column_locks()
 
-      # An explicit assignee skips the assignment-inheritance lookup, which
-      # raises on such an id before the column locks are reached.
-      result =
-        Tasks.create_task(column, %{
-          "title" => "Child",
-          "parent_id" => "not-an-id",
-          "assigned_to_id" => nil
-        })
+      # No assignee is given, so the assignment-inheritance lookup runs too: it
+      # must skip such an id rather than raise an Ecto.Query.CastError.
+      result = Tasks.create_task(column, %{"title" => "Child", "parent_id" => "not-an-id"})
 
-      assert {:error, %Ecto.Changeset{}} = result
+      assert {:error, %Ecto.Changeset{} = changeset} = result
+      assert changeset.errors[:parent_id]
       assert (ColumnLockHelpers.held_column_locks() -- before) in [[], [column.id]]
     end
   end

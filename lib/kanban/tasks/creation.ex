@@ -82,7 +82,9 @@ defmodule Kanban.Tasks.Creation do
     if CreationSupport.assigned_to_id_explicit?(attrs) do
       attrs
     else
-      case fetch_parent_id(attrs) do
+      # A parent_id that is not an integer id inherits nothing; the changeset
+      # then rejects it, rather than the lookup raising a CastError.
+      case attrs |> fetch_parent_id() |> to_integer_id() do
         nil -> attrs
         parent_id -> apply_inheritance_from_parent_id(attrs, parent_id, board_id)
       end

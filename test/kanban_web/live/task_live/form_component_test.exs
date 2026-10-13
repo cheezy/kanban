@@ -1634,6 +1634,61 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert updated_socket.assigns.form.source.errors[:parent_id] != nil
     end
 
+    # The new-task save used to check only the column, so a crafted save could
+    # parent the new task under another board's goal, assign a non-member, or
+    # send a non-numeric parent_id that crashed the form.
+    test "a new task cannot be created under a goal on a different board" do
+      %{socket: socket, other_column: other_column} = new_task_socket()
+      other_goal = task_fixture(other_column, %{title: "Cross-Board Goal", type: :goal})
+
+      task_params = %{"title" => "Cross-Board Child", "parent_id" => to_string(other_goal.id)}
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      assert Kanban.Repo.get_by(Tasks.Task, title: "Cross-Board Child") == nil
+      assert updated_socket.assigns.error_message == "Security error: Invalid parent goal"
+      assert updated_socket.assigns.form.source.errors[:parent_id] != nil
+    end
+
+    test "a new task with a non-numeric parent_id is refused without crashing" do
+      %{socket: socket} = new_task_socket()
+
+      task_params = %{"title" => "Bad Parent", "parent_id" => "not-a-number"}
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      assert Kanban.Repo.get_by(Tasks.Task, title: "Bad Parent") == nil
+      assert updated_socket.assigns.error_message == "Security error: Invalid parent goal"
+      assert updated_socket.assigns.form.source.errors[:parent_id] != nil
+    end
+
+    test "a new task cannot be assigned to a user without board access" do
+      %{socket: socket} = new_task_socket()
+      stranger = user_fixture()
+
+      task_params = %{"title" => "Stranger Task", "assigned_to_id" => to_string(stranger.id)}
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      assert Kanban.Repo.get_by(Tasks.Task, title: "Stranger Task") == nil
+      assert updated_socket.assigns.error_message == "Security error: Invalid assignee"
+      assert updated_socket.assigns.form.source.errors[:assigned_to_id] != nil
+    end
+
+    test "a new task can still be created under a goal on the same board" do
+      %{socket: socket, column: column} = new_task_socket()
+      goal = task_fixture(column, %{title: "Same-Board Goal", type: :goal})
+
+      task_params = %{"title" => "Same-Board Child", "parent_id" => to_string(goal.id)}
+
+      {:noreply, _socket} = FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      assert Kanban.Repo.get_by(Tasks.Task, title: "Same-Board Child").parent_id == goal.id
+    end
+
     test "prevents setting assigned_to_id to a user without board access" do
       owner = user_fixture()
       board = board_fixture(owner)
@@ -1704,6 +1759,32 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
         FormComponent.handle_event("save", %{"task" => task_params}, socket)
 
       refute updated_socket.assigns[:error_message] == "Security error: Invalid assignee"
+    end
+
+    defp new_task_socket do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      other_column = user_fixture() |> board_fixture() |> column_fixture()
+
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: user},
+            task: %Tasks.Task{column_id: column.id},
+            board: board,
+            action: :new_task,
+            column_id: column.id,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      %{
+        socket: Map.update!(socket, :assigns, &Map.put(&1, :flash, %{})),
+        column: column,
+        other_column: other_column
+      }
     end
   end
 
