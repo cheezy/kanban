@@ -10,6 +10,7 @@ defmodule Kanban.Tasks.CreationTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
 
+  alias Kanban.ColumnLockHelpers
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
 
@@ -19,7 +20,7 @@ defmodule Kanban.Tasks.CreationTest do
     user = user_fixture()
     board = board_fixture(user)
     column = column_fixture(board)
-    %{user: user, column: column}
+    %{user: user, board: board, column: column}
   end
 
   describe "create_task/2 length validation (D81)" do
@@ -528,6 +529,75 @@ defmodule Kanban.Tasks.CreationTest do
                )
 
       refute_received :ran
+    end
+  end
+
+  describe "creating a goal's child locks the goal's columns (D373)" do
+    # The lock-order trap: the goal sits in a column with a LOWER id than the
+    # new task's. A board drag locks ascending, so creation must take the
+    # goal's column before the new task's, in the same pass. The second
+    # session holds the goal's column, then asks for the new task's column:
+    # if creation took that first, the second session times out.
+    test "locks the goal's column before the new task's when its id is lower",
+         %{board: board} do
+      created_in = column_fixture(board, %{name: "Goal created in"})
+      goal_column = column_fixture(board, %{name: "Goal column"})
+      new_column = column_fixture(board, %{name: "New task column"})
+      assert goal_column.id < new_column.id
+
+      {:ok, goal} = Tasks.create_task(created_in, %{"title" => "Goal D373", "type" => "goal"})
+      ColumnLockHelpers.relocate!(goal.id, goal_column.id, 0)
+
+      holder = ColumnLockHelpers.hold_columns([goal_column.id], 300, new_column.id)
+
+      {waited, result} =
+        ColumnLockHelpers.timed(fn ->
+          Tasks.create_task(new_column, %{"title" => "Child D373", "parent_id" => goal.id})
+        end)
+
+      assert {:ok, {:ok, %Postgrex.Result{}}} = Elixir.Task.await(holder, 10_000)
+      assert {:ok, child} = result
+      assert waited >= 250
+      assert child.column_id == new_column.id
+      assert Repo.get!(Task, goal.id).column_id == new_column.id
+    end
+  end
+
+  describe "creation's goal column locks for a string parent_id (D373)" do
+    test "locks the goal's column when parent_id arrives as a string", %{board: board} do
+      created_in = column_fixture(board, %{name: "String goal created in"})
+      goal_column = column_fixture(board, %{name: "String goal column"})
+      new_column = column_fixture(board, %{name: "String child column"})
+
+      {:ok, goal} = Tasks.create_task(created_in, %{"title" => "Goal", "type" => "goal"})
+      ColumnLockHelpers.relocate!(goal.id, goal_column.id, 0)
+      before = ColumnLockHelpers.held_column_locks()
+
+      assert {:ok, child} =
+               Tasks.create_task(new_column, %{
+                 "title" => "Child",
+                 "parent_id" => Integer.to_string(goal.id)
+               })
+
+      assert child.parent_id == goal.id
+      assert goal_column.id in (ColumnLockHelpers.held_column_locks() -- before)
+      assert Repo.get!(Task, goal.id).column_id == new_column.id
+    end
+
+    test "locks only the new task's column for a parent_id that is not an id", %{column: column} do
+      before = ColumnLockHelpers.held_column_locks()
+
+      # An explicit assignee skips the assignment-inheritance lookup, which
+      # raises on such an id before the column locks are reached.
+      result =
+        Tasks.create_task(column, %{
+          "title" => "Child",
+          "parent_id" => "not-an-id",
+          "assigned_to_id" => nil
+        })
+
+      assert {:error, %Ecto.Changeset{}} = result
+      assert (ColumnLockHelpers.held_column_locks() -- before) in [[], [column.id]]
     end
   end
 

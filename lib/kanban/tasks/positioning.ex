@@ -29,6 +29,7 @@ defmodule Kanban.Tasks.Positioning do
   alias Kanban.Columns.Stage
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
+  alias Kanban.Tasks.ColumnLocks
   alias Kanban.Tasks.GoalPlacement
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.History
@@ -324,7 +325,7 @@ defmodule Kanban.Tasks.Positioning do
   defp goal_columns(task_id), do: GoalPlacement.parent_goal_column_ids(task_id)
 
   defp move_under_locks(move, column_id, locked) do
-    lock_columns(locked)
+    ColumnLocks.lock(locked)
     task = Repo.get!(Task, move.task_id)
 
     if task.column_id == column_id and goal_columns(task.id) -- locked == [],
@@ -362,15 +363,6 @@ defmodule Kanban.Tasks.Positioning do
 
     # The source column is the one re-read under the locks, not the caller's.
     {updated_task, old_column_id}
-  end
-
-  defp lock_columns(column_ids) do
-    column_ids
-    |> Enum.uniq()
-    |> Enum.sort()
-    |> Enum.each(fn col_id ->
-      Repo.query!("SELECT pg_advisory_xact_lock($1)", [col_id])
-    end)
   end
 
   defp move_task_to_temp_position(task) do

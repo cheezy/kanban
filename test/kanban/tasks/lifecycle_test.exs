@@ -12,6 +12,7 @@ defmodule Kanban.Tasks.LifecycleTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
+  alias Kanban.ColumnLockHelpers
   alias Kanban.Notifications
   alias Kanban.Notifications.EmailWorker
   alias Kanban.Notifications.Notification
@@ -147,6 +148,34 @@ defmodule Kanban.Tasks.LifecycleTest do
                )
 
       assert assignments() == []
+    end
+  end
+
+  describe "moving a task between goals re-places both under column locks (D373)" do
+    test "moving a task between goals via update_task re-places both goals under locks",
+         %{column: created_in, board: board} do
+      old_goal_column = column_fixture(board, %{name: "Old goal column"})
+      new_goal_column = column_fixture(board, %{name: "New goal column"})
+      old_goal = task_fixture(created_in, %{title: "Old goal", type: :goal})
+      new_goal = task_fixture(created_in, %{title: "New goal", type: :goal})
+      task = task_fixture(created_in, %{title: "Mover", parent_id: old_goal.id})
+      _stays = task_fixture(created_in, %{title: "Stays", parent_id: old_goal.id})
+
+      # Both goals sit in columns only the second session locks; each is
+      # re-placed into its children's column, so each must wait for it.
+      ColumnLockHelpers.relocate!(old_goal.id, old_goal_column.id, 0)
+      ColumnLockHelpers.relocate!(new_goal.id, new_goal_column.id, 0)
+      holder = ColumnLockHelpers.hold_columns([old_goal_column.id, new_goal_column.id], 400)
+
+      {waited, result} =
+        ColumnLockHelpers.timed(fn -> Tasks.update_task(task, %{parent_id: new_goal.id}) end)
+
+      assert {:ok, :held} = Elixir.Task.await(holder, 10_000)
+      assert {:ok, %Task{parent_id: parent_id}} = result
+      assert parent_id == new_goal.id
+      assert waited >= 300
+      assert Repo.get!(Task, old_goal.id).column_id == created_in.id
+      assert Repo.get!(Task, new_goal.id).column_id == created_in.id
     end
   end
 end

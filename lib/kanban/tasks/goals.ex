@@ -14,6 +14,7 @@ defmodule Kanban.Tasks.Goals do
   alias Kanban.Tasks.GoalTargetColumn
   alias Kanban.Tasks.GoalTelemetry
   alias Kanban.Tasks.History
+  alias Kanban.Tasks.LockedGoalPlacement
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
   alias Kanban.Tasks.Task
@@ -333,6 +334,16 @@ defmodule Kanban.Tasks.Goals do
       _ -> :ok
     end
   end
+
+  @doc """
+  Re-places `moving_task`'s parent goal while holding the advisory locks of
+  every column the re-placement can write to (D373). The entry point for
+  every caller except `Kanban.Tasks.Positioning`, which already holds them and
+  calls `update_parent_goal_position/4`. See `Kanban.Tasks.LockedGoalPlacement`.
+  """
+  defdelegate update_parent_goal_position_locked(moving_task, opts \\ []),
+    to: LockedGoalPlacement,
+    as: :place
 
   defp collect_backlog_tasks(goal, backlog_column) do
     children =

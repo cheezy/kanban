@@ -11,9 +11,11 @@ defmodule Kanban.Tasks.Creation do
 
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
+  alias Kanban.Tasks.ColumnLocks
   alias Kanban.Tasks.CreationSupport
   alias Kanban.Tasks.DbErrors
   alias Kanban.Tasks.Dependencies
+  alias Kanban.Tasks.GoalPlacement
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.Identifiers
   alias Kanban.Tasks.Positioning
@@ -133,27 +135,51 @@ defmodule Kanban.Tasks.Creation do
     |> Ecto.Multi.insert(:history, fn %{task: task} ->
       TaskHistory.changeset(%TaskHistory{}, %{task_id: task.id, type: :creation})
     end)
-    |> Ecto.Multi.run(:goal_recalc, fn _repo, %{task: task} ->
-      # Reposition the parent goal now that it has a new child. Reuses the same
-      # recalc entry point as the move (positioning.ex) and status-transition
-      # (agent_workflow.ex) paths so a Done goal that gains a non-Done child is
-      # pulled back to its leftmost occupied child column. The function no-ops
-      # safely for tasks without a goal parent (nil parent_id, or a non-goal
-      # parent), so no parent_id guard is needed here. The 2nd/3rd column args
-      # are unused by the recalc; passing the task's own column is self-documenting.
-      Goals.update_parent_goal_position(task, task.column_id, task.column_id)
+    |> Ecto.Multi.run(:goal_recalc, fn _repo, %{task: task, lock_and_prepare: prep} ->
+      # Reposition the parent goal now that it has a new child, so a Done goal
+      # that gains a non-Done child is pulled back to its leftmost occupied
+      # child column. :lock_and_prepare already holds the goal's column locks,
+      # so the locked entry point takes none and re-places the goal only if
+      # they still cover it (D373). It no-ops for a task without a goal parent.
+      Goals.update_parent_goal_position_locked(task, held: prep.locked_columns)
       {:ok, :ok}
     end)
   end
 
+  # Locks the new task's column and its parent goal's columns in ONE ascending
+  # pass, before anything is written: taking the goal's afterwards could
+  # deadlock against a board drag, which locks ascending (D368, D373).
   defp task_lock_and_prepare_fun(column, attrs) do
     fn _repo, _changes ->
+      locked = ColumnLocks.lock([column.id | parent_goal_column_ids(attrs, column.board_id)])
       next_position = Positioning.get_next_position_locked(column)
       task_type = Map.get(attrs, :type, Map.get(attrs, "type", :work))
       identifier = Identifiers.generate_identifier(column.board_id, task_type)
-      {:ok, %{position: next_position, identifier: identifier}}
+      {:ok, %{position: next_position, identifier: identifier, locked_columns: locked}}
     end
   end
+
+  # The goal's own column (it may have no live child yet) and its children's.
+  # Scoped to the new task's board, as the assignment inheritance is (D153).
+  defp parent_goal_column_ids(attrs, board_id) do
+    with id when is_integer(id) <- attrs |> fetch_parent_id() |> to_integer_id(),
+         %Task{type: :goal} = goal <- Queries.get_task_for_board(id, board_id) do
+      [goal.column_id | GoalPlacement.goal_column_ids(goal.id)]
+    else
+      _ -> []
+    end
+  end
+
+  defp to_integer_id(id) when is_integer(id), do: id
+
+  defp to_integer_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {int, ""} -> int
+      _ -> nil
+    end
+  end
+
+  defp to_integer_id(_id), do: nil
 
   defp task_insert_fun(column, attrs, changeset_fn) do
     fn %{lock_and_prepare: prep} ->

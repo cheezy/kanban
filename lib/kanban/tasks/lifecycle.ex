@@ -178,26 +178,17 @@ defmodule Kanban.Tasks.Lifecycle do
   # creation.ex so a Done goal that gains a non-Done child is pulled back onto
   # the board, and the goal a task left is advanced.
   #
-  # Reuses `Goals.update_parent_goal_position/3` — the same entry point used by
-  # creation.ex, positioning.ex, and agent_workflow.ex — so no positioning
-  # logic is duplicated. That function no-ops safely for tasks whose parent is
-  # nil or not a goal (via `get_parent_goal/1`), so no parent_id guard is
-  # needed here. Its 2nd/3rd column args are unused by the recalc; the task's
-  # own column is passed for self-documentation.
+  # Goes through `Goals.update_parent_goal_position_locked/2`, the locked entry
+  # point creation.ex and agent_workflow.ex use too, so each goal is re-placed
+  # while holding the locks of every column it writes to (D373). It no-ops for
+  # a task whose parent is nil or not a goal, so no parent_id guard is needed.
   #
   # `updated_task` carries the NEW parent_id; `task` is the pre-update struct,
   # so its parent_id is still the OLD value — recalculating both covers moves
-  # between goals and removals.
+  # between goals and removals. Each goal takes its own locked pass.
   defp recalculate_moved_task_parent_goals(task, updated_task) do
-    Goals.update_parent_goal_position(
-      updated_task,
-      updated_task.column_id,
-      updated_task.column_id
-    )
-
-    Goals.update_parent_goal_position(task, task.column_id, task.column_id)
-
-    :ok
+    Goals.update_parent_goal_position_locked(updated_task)
+    Goals.update_parent_goal_position_locked(task)
   end
 
   # Atomic goal-with-cascade update path. Runs:

@@ -15,6 +15,7 @@ defmodule Kanban.ReviewsTest do
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
+  alias Kanban.ColumnLockHelpers
   alias Kanban.Notifications.EmailWorker
   alias Kanban.Notifications.Notification
   alias Kanban.Reviews
@@ -375,6 +376,46 @@ defmodule Kanban.ReviewsTest do
       other_scope = Scope.for_user(user_fixture())
 
       assert Reviews.queue_stats(scope: other_scope).count == 0
+    end
+  end
+
+  describe "approving a goal's child inside the review transaction (D373)" do
+    # The approval moves the child to Done inside its own transaction, holding
+    # Done's lock, and then re-places the goal. Waiting there for a goal column
+    # with a LOWER id would break the ascending lock order and could deadlock
+    # against a board drag, so the re-placement must never wait.
+    test "never waits for a lower goal column another writer holds",
+         %{column: column, user: user, board: board} do
+      goal_column = column_fixture(board, %{name: "Goal column", position: 2})
+      done = column_fixture(board, %{name: "Done", position: 3})
+      assert goal_column.id < done.id
+
+      goal = task_fixture(column, %{title: "Goal", type: :goal})
+      child = task_fixture(column, %{title: "Child", parent_id: goal.id})
+
+      {:ok, child} =
+        Tasks.update_task(child, %{
+          needs_review: true,
+          completed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+          completed_by_agent: "Claude"
+        })
+
+      ColumnLockHelpers.relocate!(goal.id, goal_column.id, 0)
+      holder = ColumnLockHelpers.hold_columns([goal_column.id], 400)
+
+      {waited, result} =
+        ColumnLockHelpers.timed(fn ->
+          ExUnit.CaptureLog.capture_log(fn ->
+            send(self(), {:approved, Reviews.approve_review(Scope.for_user(user), child)})
+          end)
+        end)
+
+      assert {:ok, :held} = Elixir.Task.await(holder, 10_000)
+      assert result =~ "another writer holds one of the goal's columns"
+      assert_received {:approved, {:ok, _approved}}
+      assert waited < 250
+      assert Repo.get!(Kanban.Tasks.Task, child.id).column_id == done.id
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).column_id == goal_column.id
     end
   end
 

@@ -48,6 +48,42 @@ defmodule Kanban.Tasks.GoalPlacementTest do
     end
   end
 
+  describe "goal_column_ids/1 (D373)" do
+    test "lists the goal's column and its live children's, ignoring archived children" do
+      board = board_fixture(user_fixture())
+      backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+      archived_in = column_fixture(board, %{name: "Archived in"})
+
+      goal = task_fixture(backlog, %{title: "Goal", type: :goal})
+      _child = task_fixture(ready, %{title: "Child", parent_id: goal.id})
+      _same = task_fixture(ready, %{title: "Same column", parent_id: goal.id})
+      _other = task_fixture(doing, %{title: "Other column", parent_id: goal.id})
+      archived = task_fixture(archived_in, %{title: "Archived", parent_id: goal.id})
+
+      from(t in Task, where: t.id == ^archived.id)
+      |> Repo.update_all(set: [archived_at: DateTime.utc_now(:second)])
+
+      from(t in Task, where: t.id == ^goal.id) |> Repo.update_all(set: [column_id: backlog.id])
+
+      assert goal.id |> GoalPlacement.goal_column_ids() |> Enum.sort() ==
+               Enum.sort([backlog.id, ready.id, doing.id])
+    end
+
+    test "is empty for a goal with no live children, and for a task that is not a goal" do
+      board = board_fixture(user_fixture())
+      column = column_fixture(board)
+      goal = task_fixture(column, %{title: "Childless goal", type: :goal})
+      task = task_fixture(column, %{title: "Not a goal"})
+      _child_of_task = task_fixture(column, %{title: "Child of a task", parent_id: task.id})
+
+      assert GoalPlacement.goal_column_ids(goal.id) == []
+      assert GoalPlacement.goal_column_ids(task.id) == []
+      assert GoalPlacement.goal_column_ids(-1) == []
+    end
+  end
+
   describe "close_up_column_left_by/2 (D372)" do
     test "moves the live tasks below a moved task up by one and stamps only them" do
       board = board_fixture(user_fixture())

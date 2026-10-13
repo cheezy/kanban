@@ -6,6 +6,7 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
   import Kanban.BoardsFixtures
   import Kanban.TelemetryHelpers
 
+  alias Kanban.ColumnLockHelpers
   alias Kanban.Notifications.EmailWorker
   alias Kanban.Notifications.Notification
   alias Kanban.Repo
@@ -1336,6 +1337,31 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
 
       assert {:error, :not_claimed} = AgentWorkflow.unclaim_task(task, ctx.user, "  ")
       refute_receive {:telemetry_event, [:kanban, :task, :unclaimed], _, _}
+    end
+  end
+
+  describe "claiming a goal's child re-places the goal under column locks (D373)" do
+    setup :setup_board
+
+    # The claim re-places the goal after its own transaction commits. A board
+    # drag holding one of the goal's columns must make that re-placement wait
+    # rather than renumber the column under it.
+    test "claiming a goal's child re-places the goal under locks", ctx do
+      goal = create_open_task(ctx.ready, ctx.user, %{"type" => "goal"})
+      child = create_open_task(ctx.ready, ctx.user, %{"parent_id" => goal.id})
+      _sibling = create_open_task(ctx.ready, ctx.user, %{"parent_id" => goal.id})
+
+      # The test's own inserts locked Ready for the rest of the test, so the
+      # goal is parked in Review, a column only the second session locks.
+      ColumnLockHelpers.relocate!(goal.id, ctx.review.id)
+      holder = ColumnLockHelpers.hold_columns([ctx.review.id], 400)
+
+      {waited, claimed} = ColumnLockHelpers.timed(fn -> claim_for(child, ctx.user, ctx.board) end)
+
+      assert {:ok, :held} = Elixir.Task.await(holder, 10_000)
+      assert waited >= 300
+      assert claimed.column_id == ctx.doing.id
+      assert Repo.get!(Task, goal.id).column_id == ctx.ready.id
     end
   end
 end

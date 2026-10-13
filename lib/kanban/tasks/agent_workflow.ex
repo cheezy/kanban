@@ -365,11 +365,10 @@ defmodule Kanban.Tasks.AgentWorkflow do
     |> Repo.one()
   end
 
-  defp finalize_completion(task, user, board_id, done_column, opts \\ []) do
+  defp finalize_completion(task, user, board_id, _done_column, opts \\ []) do
     updated_task = Queries.get_task_for_view!(task.id)
-    old_column_id = task.column_id
 
-    Goals.update_parent_goal_position(updated_task, old_column_id, done_column.id)
+    Goals.update_parent_goal_position_locked(updated_task)
 
     Logger.info("Task #{task.id} completed and moved to Done by user #{user.id}")
 
@@ -442,10 +441,10 @@ defmodule Kanban.Tasks.AgentWorkflow do
     end)
   end
 
-  defp handle_claim_result({:ok, :claimed}, task, board, board_id, doing_column, agent_name) do
+  defp handle_claim_result({:ok, :claimed}, task, board, board_id, _doing_column, agent_name) do
     updated_task = Queries.get_task_for_view!(task.id)
 
-    Goals.update_parent_goal_position(updated_task, task.column_id, doing_column.id)
+    Goals.update_parent_goal_position_locked(updated_task)
 
     Phoenix.PubSub.broadcast(
       Kanban.PubSub,
@@ -494,12 +493,11 @@ defmodule Kanban.Tasks.AgentWorkflow do
   end
 
   defp handle_successful_completion(task, updated_task, user, columns, params, agent_name) do
-    %{board: board, review: review_column} = columns
+    %{board: board} = columns
     board_id = board.id
     updated_task = Repo.preload(updated_task, [:column, :assigned_to, :created_by])
-    old_column_id = task.column_id
 
-    Goals.update_parent_goal_position(updated_task, old_column_id, review_column.id)
+    Goals.update_parent_goal_position_locked(updated_task)
 
     Logger.info(
       "Task #{task.id} completed and moved to Review by user #{user.id}. Time spent: #{params["time_spent_minutes"]} minutes"
@@ -802,9 +800,8 @@ defmodule Kanban.Tasks.AgentWorkflow do
     case result do
       {:ok, :ok} ->
         updated_task = Queries.get_task_for_view!(task.id)
-        old_column_id = task.column_id
 
-        Goals.update_parent_goal_position(updated_task, old_column_id, doing_column.id)
+        Goals.update_parent_goal_position_locked(updated_task)
 
         Logger.info(
           "Task #{task.id} needs changes (review status: #{task.review_status}) and moved back to Doing by user #{user.id}"

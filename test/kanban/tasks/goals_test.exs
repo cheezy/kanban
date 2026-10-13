@@ -17,17 +17,20 @@ defmodule Kanban.Tasks.GoalsTest do
   use Oban.Testing, repo: Kanban.Repo
 
   import Ecto.Query
+  import ExUnit.CaptureLog
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
   import Kanban.TelemetryHelpers
 
+  alias Kanban.ColumnLockHelpers
   alias Kanban.Notifications.GoalCompletedWorker
   alias Kanban.Notifications.Notification
   alias Kanban.Repo
   alias Kanban.Tasks
   alias Kanban.Tasks.Goals
+  alias Kanban.Tasks.LockedGoalPlacement
   alias Kanban.Tasks.Task
 
   setup do
@@ -551,6 +554,283 @@ defmodule Kanban.Tasks.GoalsTest do
 
       assert {:error, _} = Tasks.promote_goal_to_ready(goal, board.id)
       refute_receive {:telemetry_event, [:kanban, :goal, :promoted_to_ready], _, _}
+    end
+  end
+
+  describe "update_parent_goal_position_locked/2 (D373)" do
+    setup %{board: board} do
+      original = Application.get_env(:kanban, LockedGoalPlacement)
+      on_exit(fn -> restore_env(original) end)
+
+      # Everything is created in `created_in`, the only column the test's own
+      # inserts lock, then placed without locks so each call's locks show.
+      created_in = column_fixture(board, %{name: "Created in"})
+      a = column_fixture(board, %{name: "A"})
+      b = column_fixture(board, %{name: "B"})
+      c = column_fixture(board, %{name: "C"})
+      goal = task_fixture(created_in, %{title: "Locked goal", type: :goal})
+      child = task_fixture(created_in, %{title: "Child", parent_id: goal.id})
+      sibling = task_fixture(created_in, %{title: "Sibling", parent_id: goal.id})
+      ColumnLockHelpers.relocate!(goal.id, c.id, 80)
+      ColumnLockHelpers.relocate!(child.id, a.id, 80)
+      ColumnLockHelpers.relocate!(sibling.id, b.id, 80)
+
+      %{
+        a: a,
+        b: b,
+        c: c,
+        locked_goal: goal,
+        child: Repo.get!(Task, child.id),
+        sibling: sibling
+      }
+    end
+
+    defp restore_env(nil), do: Application.delete_env(:kanban, LockedGoalPlacement)
+    defp restore_env(original), do: Application.put_env(:kanban, LockedGoalPlacement, original)
+
+    defp locks_taken_by(fun) do
+      before = ColumnLockHelpers.held_column_locks()
+      result = fun.()
+      {ColumnLockHelpers.held_column_locks() -- before, result}
+    end
+
+    defp column_of(task), do: Repo.get!(Task, task.id).column_id
+
+    test "re-places the parent goal under the locks of every column it touches", ctx do
+      {locked, result} =
+        locks_taken_by(fn -> Goals.update_parent_goal_position_locked(ctx.child) end)
+
+      assert result == :ok
+      # The goal's own column, both children's, and the target (A).
+      assert locked == Enum.sort([ctx.a.id, ctx.b.id, ctx.c.id])
+      assert column_of(ctx.locked_goal) == ctx.a.id
+    end
+
+    test "locks a single column when the goal and its children share it", ctx do
+      ColumnLockHelpers.relocate!(ctx.locked_goal.id, ctx.a.id, 81)
+      ColumnLockHelpers.relocate!(ctx.sibling.id, ctx.a.id, 82)
+
+      {locked, :ok} =
+        locks_taken_by(fn -> Goals.update_parent_goal_position_locked(ctx.child) end)
+
+      assert locked == [ctx.a.id]
+      assert column_of(ctx.locked_goal) == ctx.a.id
+    end
+
+    test "also locks the Done column when it is the target but holds no child",
+         %{board: board} = ctx do
+      done = column_fixture(board, %{name: "Done"})
+
+      from(t in Task, where: t.id in ^[ctx.child.id, ctx.sibling.id])
+      |> Repo.update_all(set: [status: :completed])
+
+      {locked, :ok} =
+        locks_taken_by(fn -> Goals.update_parent_goal_position_locked(ctx.child) end)
+
+      assert done.id in locked
+      assert column_of(ctx.locked_goal) == done.id
+    end
+
+    test "is a no-op for a task with no parent goal", %{column: column} = ctx do
+      orphan = task_fixture(column, %{title: "No parent"})
+      not_goal_child = %{ctx.child | parent_id: orphan.id}
+
+      {locked, results} =
+        locks_taken_by(fn ->
+          [
+            Goals.update_parent_goal_position_locked(orphan),
+            Goals.update_parent_goal_position_locked(not_goal_child)
+          ]
+        end)
+
+      assert results == [:ok, :ok]
+      assert locked == []
+    end
+
+    test "is a no-op that takes no lock for a goal with no live children", ctx do
+      archive!(ctx.child)
+      archive!(ctx.sibling)
+
+      {locked, :ok} =
+        locks_taken_by(fn -> Goals.update_parent_goal_position_locked(ctx.child) end)
+
+      assert locked == []
+      assert column_of(ctx.locked_goal) == ctx.c.id
+    end
+
+    test "serializes goal re-placement with a concurrent writer", ctx do
+      # A board drag holding the goal's column must make the re-placement wait
+      # rather than have the goal's rows renumbered under it.
+      holder = ColumnLockHelpers.hold_columns([ctx.c.id], 400)
+
+      {waited, :ok} =
+        ColumnLockHelpers.timed(fn -> Goals.update_parent_goal_position_locked(ctx.child) end)
+
+      assert {:ok, :held} = Elixir.Task.await(holder, 10_000)
+      assert waited >= 300
+      assert column_of(ctx.locked_goal) == ctx.a.id
+    end
+
+    test "retries when the goal's columns change between the read and the locks", ctx do
+      new_column = column_fixture(ctx.board, %{name: "New child column"})
+      calls = :counters.new(1, [])
+
+      Application.put_env(:kanban, LockedGoalPlacement,
+        after_column_read: fn _task ->
+          :counters.add(calls, 1, 1)
+
+          if :counters.get(calls, 1) == 1,
+            do: ColumnLockHelpers.relocate!(ctx.sibling.id, new_column.id, 80)
+        end
+      )
+
+      {locked, :ok} =
+        locks_taken_by(fn -> Goals.update_parent_goal_position_locked(ctx.child) end)
+
+      assert :counters.get(calls, 1) == 2
+      assert new_column.id in locked
+      assert column_of(ctx.locked_goal) == ctx.a.id
+    end
+
+    test "gives up quietly when the goal's columns keep changing", ctx do
+      x = column_fixture(ctx.board, %{name: "X"})
+      y = column_fixture(ctx.board, %{name: "Y"})
+      calls = :counters.new(1, [])
+
+      Application.put_env(:kanban, LockedGoalPlacement,
+        after_column_read: fn _task ->
+          :counters.add(calls, 1, 1)
+          n = :counters.get(calls, 1)
+
+          ColumnLockHelpers.relocate!(
+            ctx.sibling.id,
+            if(rem(n, 2) == 1, do: x.id, else: y.id),
+            80 + n
+          )
+        end
+      )
+
+      log =
+        capture_log(fn ->
+          assert Goals.update_parent_goal_position_locked(ctx.child) == :ok
+        end)
+
+      assert :counters.get(calls, 1) == 3
+      assert log =~ "gave up"
+      assert column_of(ctx.locked_goal) == ctx.c.id
+    end
+
+    test "max_placement_attempts sets the retry cap", ctx do
+      x = column_fixture(ctx.board, %{name: "X2"})
+      calls = :counters.new(1, [])
+
+      Application.put_env(:kanban, LockedGoalPlacement,
+        max_placement_attempts: 1,
+        after_column_read: fn _task ->
+          :counters.add(calls, 1, 1)
+          ColumnLockHelpers.relocate!(ctx.sibling.id, x.id, 80)
+        end
+      )
+
+      capture_log(fn -> assert Goals.update_parent_goal_position_locked(ctx.child) == :ok end)
+      assert :counters.get(calls, 1) == 1
+      assert column_of(ctx.locked_goal) == ctx.c.id
+    end
+
+    test "makes one attempt and rolls nothing back inside a caller's transaction", ctx do
+      x = column_fixture(ctx.board, %{name: "X3"})
+      calls = :counters.new(1, [])
+
+      Application.put_env(:kanban, LockedGoalPlacement,
+        after_column_read: fn _task ->
+          :counters.add(calls, 1, 1)
+          ColumnLockHelpers.relocate!(ctx.sibling.id, x.id, 80)
+        end
+      )
+
+      capture_log(fn ->
+        assert {:ok, :ok} =
+                 Repo.transaction(fn -> Goals.update_parent_goal_position_locked(ctx.child) end)
+      end)
+
+      assert :counters.get(calls, 1) == 1
+      assert column_of(ctx.locked_goal) == ctx.c.id
+    end
+
+    test "never waits inside a caller's transaction for a column another writer holds",
+         ctx do
+      holder = ColumnLockHelpers.hold_columns([ctx.c.id], 400)
+
+      {waited, {log, result}} =
+        ColumnLockHelpers.timed(fn ->
+          with_log(fn ->
+            Repo.transaction(fn -> Goals.update_parent_goal_position_locked(ctx.child) end)
+          end)
+          |> then(fn {result, log} -> {log, result} end)
+        end)
+
+      assert {:ok, :held} = Elixir.Task.await(holder, 10_000)
+      assert result == {:ok, :ok}
+      assert log =~ "another writer holds one of the goal's columns"
+      assert waited < 250
+      assert column_of(ctx.locked_goal) == ctx.c.id
+    end
+
+    test "places the goal inside a caller's transaction when its columns are free", ctx do
+      assert {:ok, :ok} =
+               Repo.transaction(fn -> Goals.update_parent_goal_position_locked(ctx.child) end)
+
+      assert column_of(ctx.locked_goal) == ctx.a.id
+    end
+
+    test "logs and swallows a database error outside a transaction", ctx do
+      Application.put_env(:kanban, LockedGoalPlacement,
+        after_column_read: fn _task -> raise %Postgrex.Error{message: "simulated collision"} end
+      )
+
+      log =
+        capture_log(fn ->
+          assert Goals.update_parent_goal_position_locked(ctx.child) == :ok
+        end)
+
+      assert log =~ "simulated collision"
+      assert column_of(ctx.locked_goal) == ctx.c.id
+    end
+
+    test "logs and swallows a connection error outside a transaction", ctx do
+      Application.put_env(:kanban, LockedGoalPlacement,
+        after_column_read: fn _task ->
+          raise DBConnection.ConnectionError, "simulated checkout timeout"
+        end
+      )
+
+      log =
+        capture_log(fn ->
+          assert Goals.update_parent_goal_position_locked(ctx.child) == :ok
+        end)
+
+      assert log =~ "simulated checkout timeout"
+      assert column_of(ctx.locked_goal) == ctx.c.id
+    end
+
+    test "with held: places the goal when the caller's locks cover it, taking none", ctx do
+      held = [ctx.a.id, ctx.b.id, ctx.c.id]
+
+      {locked, :ok} =
+        locks_taken_by(fn -> Goals.update_parent_goal_position_locked(ctx.child, held: held) end)
+
+      assert locked == []
+      assert column_of(ctx.locked_goal) == ctx.a.id
+    end
+
+    test "with held: leaves the goal when the caller's locks do not cover it", ctx do
+      {locked, :ok} =
+        locks_taken_by(fn ->
+          Goals.update_parent_goal_position_locked(ctx.child, held: [ctx.a.id])
+        end)
+
+      assert locked == []
+      assert column_of(ctx.locked_goal) == ctx.c.id
     end
   end
 end

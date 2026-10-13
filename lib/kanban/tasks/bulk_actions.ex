@@ -56,6 +56,7 @@ defmodule Kanban.Tasks.BulkActions do
   alias Kanban.Notifications.Events
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
+  alias Kanban.Tasks.ColumnLocks
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
@@ -239,9 +240,7 @@ defmodule Kanban.Tasks.BulkActions do
       from(c in Column, where: c.board_id == ^board_id, order_by: c.id)
       |> repo.all()
 
-    Enum.each(columns, fn column ->
-      repo.query!("SELECT pg_advisory_xact_lock($1)", [column.id])
-    end)
+    columns |> Enum.map(& &1.id) |> ColumnLocks.lock()
 
     {:ok, columns}
   end
