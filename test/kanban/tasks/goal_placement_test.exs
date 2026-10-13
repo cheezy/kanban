@@ -48,6 +48,50 @@ defmodule Kanban.Tasks.GoalPlacementTest do
     end
   end
 
+  describe "close_up_column_left_by/2 (D372)" do
+    test "moves the live tasks below a moved task up by one and stamps only them" do
+      board = board_fixture(user_fixture())
+      column = column_fixture(board)
+      elsewhere = column_fixture(board, %{name: "Elsewhere"})
+
+      above = task_fixture(column, %{title: "Above"})
+      moved = task_fixture(column, %{title: "Moved"})
+      archived = task_fixture(column, %{title: "Archived"})
+      below = task_fixture(column, %{title: "Below"})
+
+      from(t in Task, where: t.id == ^archived.id)
+      |> Repo.update_all(set: [archived_at: DateTime.utc_now(:second)])
+
+      [above, moved, archived, below] = age!([above, moved, archived, below])
+      from(t in Task, where: t.id == ^moved.id) |> Repo.update_all(set: [column_id: elsewhere.id])
+
+      assert :ok = GoalPlacement.close_up_column_left_by(moved, @now)
+
+      assert live_positions(column) == [{above.id, 0}, {below.id, 2}]
+      assert Repo.reload!(below).updated_at == ~N[2026-01-02 03:04:05]
+      assert Repo.reload!(above).updated_at == @old
+      assert Repo.reload!(archived).position == 2
+      assert Repo.reload!(archived).updated_at == @old
+    end
+
+    test "renumbers nothing for an archived task" do
+      board = board_fixture(user_fixture())
+      column = column_fixture(board)
+      archived = task_fixture(column, %{title: "Archived"})
+      below = task_fixture(column, %{title: "Below"})
+
+      from(t in Task, where: t.id == ^archived.id)
+      |> Repo.update_all(set: [archived_at: DateTime.utc_now(:second)])
+
+      [archived, below] = age!([archived, below])
+
+      assert :ok = GoalPlacement.close_up_column_left_by(archived, @now)
+
+      assert Repo.reload!(below).position == 1
+      assert Repo.reload!(below).updated_at == @old
+    end
+  end
+
   describe "move_goal_to_top_with_other_goals/3" do
     test "places the goal after the other goals and stamps it and the shifted tasks" do
       user = user_fixture()
@@ -84,5 +128,92 @@ defmodule Kanban.Tasks.GoalPlacementTest do
       assert Repo.reload!(archived).updated_at == @old
       assert Repo.reload!(archived).position == archived.position
     end
+
+    test "re-placing a goal from the last position leaves its old column contiguous" do
+      board = board_fixture(user_fixture())
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+      lone = column_fixture(board, %{name: "Lone"})
+      done = column_fixture(board, %{name: "Done"})
+
+      first = task_fixture(ready, %{title: "First"})
+      second = task_fixture(ready, %{title: "Second"})
+      goal = task_fixture(ready, %{title: "Goal", type: :goal})
+      # A goal that is the only live task in its column leaves nothing to
+      # renumber, including when it is promoted to Done.
+      lone_goal = task_fixture(lone, %{title: "Lone goal", type: :goal})
+      [first, second, goal, lone_goal] = age!([first, second, goal, lone_goal])
+      assert live_positions(ready) == [{first.id, 0}, {second.id, 1}, {goal.id, 2}]
+
+      assert {:ok, :moved} = GoalPlacement.move_goal_to_top_with_other_goals(goal, doing, @now)
+
+      assert live_positions(ready) == [{first.id, 0}, {second.id, 1}]
+      assert Repo.reload!(first).updated_at == @old
+      assert Repo.reload!(second).updated_at == @old
+
+      assert {:ok, :moved} =
+               GoalPlacement.move_goal_to_top_with_other_goals(lone_goal, done, @now)
+
+      assert live_positions(lone) == []
+      assert Repo.reload!(lone_goal).column_id == done.id
+      assert Repo.reload!(lone_goal).status == :completed
+    end
+
+    test "re-placing a goal from a mid-column position renumbers the tasks below it and bumps their updated_at" do
+      board = board_fixture(user_fixture())
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+
+      above = task_fixture(ready, %{title: "Above"})
+      goal = task_fixture(ready, %{title: "Goal", type: :goal})
+      below = task_fixture(ready, %{title: "Below"})
+      archived = task_fixture(ready, %{title: "Archived"})
+      last = task_fixture(ready, %{title: "Last"})
+
+      from(t in Task, where: t.id == ^archived.id)
+      |> Repo.update_all(set: [archived_at: DateTime.utc_now(:second)])
+
+      [above, goal, below, archived, last] = age!([above, goal, below, archived, last])
+      assert live_positions(ready) == [{above.id, 0}, {goal.id, 1}, {below.id, 2}, {last.id, 4}]
+
+      assert {:ok, :moved} = GoalPlacement.move_goal_to_top_with_other_goals(goal, doing, @now)
+
+      # The archived gap at 3 predates the move and is not this close-up's to fill.
+      assert live_positions(ready) == [{above.id, 0}, {below.id, 1}, {last.id, 3}]
+      assert Repo.reload!(above).updated_at == @old
+      assert Repo.reload!(below).updated_at == ~N[2026-01-02 03:04:05]
+      assert Repo.reload!(last).updated_at == ~N[2026-01-02 03:04:05]
+
+      assert Repo.reload!(archived).position == 3
+      assert Repo.reload!(archived).updated_at == @old
+    end
+
+    test "an archived goal's stale position renumbers nothing in the column it leaves" do
+      board = board_fixture(user_fixture())
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+
+      goal = task_fixture(ready, %{title: "Goal", type: :goal})
+      below = task_fixture(ready, %{title: "Below"})
+
+      from(t in Task, where: t.id == ^goal.id)
+      |> Repo.update_all(set: [archived_at: DateTime.utc_now(:second)])
+
+      [goal, below] = age!([goal, below])
+
+      assert {:ok, :moved} = GoalPlacement.move_goal_to_top_with_other_goals(goal, doing, @now)
+
+      assert live_positions(ready) == [{below.id, 1}]
+      assert Repo.reload!(below).updated_at == @old
+    end
+  end
+
+  defp live_positions(column) do
+    from(t in Task,
+      where: t.column_id == ^column.id and is_nil(t.archived_at),
+      order_by: [asc: t.position],
+      select: {t.id, t.position}
+    )
+    |> Repo.all()
   end
 end

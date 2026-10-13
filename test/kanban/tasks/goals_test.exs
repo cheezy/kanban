@@ -47,6 +47,15 @@ defmodule Kanban.Tasks.GoalsTest do
     task
   end
 
+  defp live_positions(column) do
+    from(t in Task,
+      where: t.column_id == ^column.id and is_nil(t.archived_at),
+      order_by: [asc: t.position],
+      select: {t.id, t.position}
+    )
+    |> Repo.all()
+  end
+
   defp complete!(task) do
     {:ok, task} =
       Tasks.update_task(task, %{
@@ -246,10 +255,11 @@ defmodule Kanban.Tasks.GoalsTest do
       backlog = column_fixture(board, %{name: "Backlog"})
       _ready = column_fixture(board, %{name: "Ready"})
 
+      # Above the goal, so closing up the Backlog (D372) does not move it either.
+      bystander = task_fixture(backlog, %{title: "Not in the goal"})
       goal = task_fixture(backlog, %{title: "Backlog Goal", type: :goal})
       child_a = task_fixture(backlog, %{title: "Child A", parent_id: goal.id})
       child_b = task_fixture(backlog, %{title: "Child B", parent_id: goal.id})
-      bystander = task_fixture(backlog, %{title: "Not in the goal"})
       [goal, child_a, child_b, bystander] = age!([goal, child_a, child_b, bystander])
 
       assert {:ok, 3} = Tasks.promote_goal_to_ready(goal, board.id)
@@ -259,6 +269,28 @@ defmodule Kanban.Tasks.GoalsTest do
 
       # One value per promotion, shared by every promoted row.
       assert [_single] = [goal, child_a, child_b] |> Enum.map(&stamp/1) |> Enum.uniq()
+    end
+
+    test "promote_goal_to_ready leaves the Backlog column contiguous (D372)", %{user: user} do
+      board = board_fixture(user)
+      backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, %{name: "Ready"})
+
+      above = task_fixture(backlog, %{title: "Above the goal"})
+      goal = task_fixture(backlog, %{title: "Backlog Goal", type: :goal})
+      child = task_fixture(backlog, %{title: "Child", parent_id: goal.id})
+      below = task_fixture(backlog, %{title: "Below the goal"})
+      [above, goal, child, below] = age!([above, goal, child, below])
+
+      assert live_positions(backlog) ==
+               [{above.id, 0}, {goal.id, 1}, {child.id, 2}, {below.id, 3}]
+
+      assert {:ok, 2} = Tasks.promote_goal_to_ready(goal, board.id)
+
+      assert live_positions(backlog) == [{above.id, 0}, {below.id, 1}]
+      assert live_positions(ready) == [{goal.id, 0}, {child.id, 1}]
+      refute bumped?(above)
+      assert stamp(below) == stamp(goal)
     end
 
     test "a goal following its child bumps the goal and the siblings shifted for it", %{
@@ -333,6 +365,18 @@ defmodule Kanban.Tasks.GoalsTest do
 
       assert updated.after_goal_status == :succeeded
       assert Tasks.get_task!(goal.id).column_id == done.id
+    end
+
+    test "closes the gap the goal leaves when it moves into the Done column (D372)",
+         %{board: board, column: column, goal: goal} do
+      below = task_fixture(column, %{title: "Below the goal"})
+      done = column_fixture(board, %{name: "Done"})
+      assert live_positions(column) == [{goal.id, 0}, {below.id, 1}]
+
+      assert {:ok, _updated} = Goals.mark_after_goal_succeeded_and_promote(goal, @attempt)
+
+      assert Tasks.get_task!(goal.id).column_id == done.id
+      assert live_positions(column) == [{below.id, 0}]
     end
 
     test "moves the goal into the Done column when one exists elsewhere",

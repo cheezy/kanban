@@ -94,27 +94,53 @@ defmodule Kanban.Tasks.GoalPlacement do
     |> Repo.all()
   end
 
-  @doc """
-  Moves `parent_goal` into `target_column`, placing it after the column's
-  other live goals and no lower than its first live child, and shifts the
-  live tasks at or below that position down by one.
-
-  `now` is the whole-second UTC `updated_at` stamped on the goal and on every
-  shifted task (D357). Runs inside the caller's transaction.
-  """
-  def move_goal_to_top_with_other_goals(parent_goal, target_column, now) do
-    min_child_position = min_live_child_position(target_column.id, parent_goal.id)
-    last_goal_position = max_other_live_goal_position(target_column.id, parent_goal.id)
-
-    target_position = calculate_goal_target_position(min_child_position, last_goal_position)
-
-    Logger.info(
-      "Moving goal #{parent_goal.identifier} to column #{target_column.id} at position #{target_position} (min_child_position: #{inspect(min_child_position)}, last_goal_position: #{inspect(last_goal_position)})"
-    )
-
+  # Parks the goal at a temporary position in the target column, then closes
+  # the gap it left in its old column (D372). A goal whose column does not
+  # change never gets here: `Kanban.Tasks.Goals` re-places a goal only when its
+  # target column differs.
+  defp park_in_target_column(parent_goal, target_column, now) do
     Task
     |> where([t], t.id == ^parent_goal.id)
     |> Repo.update_all(set: [column_id: target_column.id, position: -999_999])
+
+    close_up_column_left_by(parent_goal, now)
+  end
+
+  @doc """
+  Closes the gap `task` left in its column once it has been moved out of it
+  (D372): the live tasks below its old position move up by one, in ascending
+  order so the partial unique `(column_id, position)` index never sees two
+  live rows on one slot. Only rows that move are written, each stamped with
+  `now` (D357).
+
+  `task` is the row as it stood before the move, read after any earlier move
+  in the same operation so its position is current. An archived task's stale
+  position is not part of the live sequence, so nothing is renumbered for one:
+  there is no gap to close, and a live row may legitimately share that slot.
+  Takes no lock — it runs on whatever the caller holds.
+  """
+  def close_up_column_left_by(%Task{archived_at: archived_at}, _now)
+      when not is_nil(archived_at),
+      do: :ok
+
+  def close_up_column_left_by(%Task{column_id: column_id, position: old_position}, now) do
+    from(t in Task,
+      where: t.column_id == ^column_id and t.position > ^old_position and is_nil(t.archived_at),
+      select: %{id: t.id, position: t.position},
+      order_by: [asc: t.position]
+    )
+    |> Repo.all()
+    |> Enum.each(fn task ->
+      Task
+      |> where([t], t.id == ^task.id)
+      |> Repo.update_all(set: [position: task.position - 1, updated_at: now])
+    end)
+  end
+
+  # Parks the goal, closes the gap it left, makes room in the target column
+  # and writes the goal's final position and status.
+  defp place_goal(parent_goal, target_column, target_position, now) do
+    park_in_target_column(parent_goal, target_column, now)
 
     tasks_to_shift = live_tasks_to_shift(target_column.id, target_position, parent_goal.id)
 
@@ -143,6 +169,39 @@ defmodule Kanban.Tasks.GoalPlacement do
     Task
     |> where([t], t.id == ^parent_goal.id)
     |> Repo.update_all(set: updates)
+
+    :placed
+  end
+
+  @doc """
+  Moves `parent_goal` into `target_column`, placing it after the column's
+  other live goals and no lower than its first live child, and shifts the
+  live tasks at or below that position down by one. The live tasks below the
+  goal's old position in the column it left move up by one, so that column
+  keeps no gap (D372).
+
+  `now` is the whole-second UTC `updated_at` stamped on the goal and on every
+  shifted task (D357). The writes join the caller's transaction when there is
+  one and are otherwise a transaction of their own, so a failure part-way
+  never leaves the goal or either column half-moved.
+  """
+  def move_goal_to_top_with_other_goals(parent_goal, target_column, now) do
+    min_child_position = min_live_child_position(target_column.id, parent_goal.id)
+    last_goal_position = max_other_live_goal_position(target_column.id, parent_goal.id)
+
+    target_position = calculate_goal_target_position(min_child_position, last_goal_position)
+
+    Logger.info(
+      "Moving goal #{parent_goal.identifier} to column #{target_column.id} at position #{target_position} (min_child_position: #{inspect(min_child_position)}, last_goal_position: #{inspect(last_goal_position)})"
+    )
+
+    # One all-or-nothing unit (D372): `Kanban.Tasks.Positioning` already runs
+    # this inside its locked transaction, which this joins, but the agent
+    # workflow re-places a goal after its own transaction has committed, where
+    # a failure part-way would otherwise leave the goal parked at -999_999 and
+    # its old column half closed up.
+    {:ok, :placed} =
+      Repo.transaction(fn -> place_goal(parent_goal, target_column, target_position, now) end)
 
     Logger.info("Goal #{parent_goal.identifier} placed at position #{target_position}")
 

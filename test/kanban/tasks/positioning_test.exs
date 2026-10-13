@@ -678,4 +678,80 @@ defmodule Kanban.Tasks.PositioningTest do
       assert live_order(col) == [second.id, first.id]
     end
   end
+
+  describe "a child move that re-places its parent goal (D372)" do
+    # Everything is created in one column, so creating the child (which
+    # re-places its goal) cannot disturb the layout, then placed directly.
+    defp place!(task, column, position) do
+      Kanban.Tasks.Task
+      |> where([t], t.id == ^task.id)
+      |> Repo.update_all(set: [column_id: column.id, position: position, updated_at: @old])
+
+      Repo.reload!(task)
+    end
+
+    defp live_positions(column) do
+      Kanban.Tasks.Task
+      |> where([t], t.column_id == ^column.id and is_nil(t.archived_at))
+      |> order_by([t], asc: t.position)
+      |> select([t], {t.id, t.position})
+      |> Repo.all()
+    end
+
+    test "a child move that re-places its parent goal leaves every touched column contiguous",
+         %{board: board} do
+      created_in = column_fixture(board, %{name: "Created in"})
+      goal_col = column_fixture(board, %{name: "Goal column"})
+      from_col = column_fixture(board, %{name: "Mover from"})
+      to_col = column_fixture(board, %{name: "Mover to"})
+
+      goal = task_fixture(created_in, %{title: "Goal", type: :goal})
+      mover = task_fixture(created_in, %{title: "Mover", parent_id: goal.id})
+      above = task_fixture(created_in, %{title: "Above goal"})
+      below = task_fixture(created_in, %{title: "Below goal"})
+      left_behind = task_fixture(created_in, %{title: "Left behind"})
+      resident = task_fixture(created_in, %{title: "Resident"})
+
+      above = place!(above, goal_col, 0)
+      goal = place!(goal, goal_col, 1)
+      below = place!(below, goal_col, 2)
+      mover = place!(mover, from_col, 0)
+      left_behind = place!(left_behind, from_col, 1)
+      resident = place!(resident, to_col, 0)
+
+      assert {:ok, moved} = Positioning.move_task(mover, to_col, 0)
+
+      # The goal follows its only child into the target column, ahead of it.
+      assert live_positions(to_col) == [{goal.id, 0}, {moved.id, 1}, {resident.id, 2}]
+      assert live_positions(goal_col) == [{above.id, 0}, {below.id, 1}]
+      assert live_positions(from_col) == [{left_behind.id, 0}]
+      assert live_positions(created_in) == []
+
+      assert Repo.reload!(above).updated_at == @old
+      assert Repo.reload!(below).updated_at == Repo.reload!(moved).updated_at
+    end
+
+    test "a child move that leaves its parent goal in its column renumbers nothing for the goal",
+         %{board: board} do
+      created_in = column_fixture(board, %{name: "Created in"})
+      goal_col = column_fixture(board, %{name: "Goal column"})
+      to_col = column_fixture(board, %{name: "Mover to"})
+
+      goal = task_fixture(created_in, %{title: "Goal", type: :goal})
+      staying = task_fixture(created_in, %{title: "Staying child", parent_id: goal.id})
+      mover = task_fixture(created_in, %{title: "Mover", parent_id: goal.id})
+
+      goal = place!(goal, goal_col, 0)
+      staying = place!(staying, goal_col, 1)
+      mover = place!(mover, goal_col, 2)
+
+      assert {:ok, moved} = Positioning.move_task(mover, to_col, 0)
+
+      # The staying child keeps the goal in its leftmost child column.
+      assert live_positions(goal_col) == [{goal.id, 0}, {staying.id, 1}]
+      assert live_positions(to_col) == [{moved.id, 0}]
+      assert Repo.reload!(goal).updated_at == @old
+      assert Repo.reload!(staying).updated_at == @old
+    end
+  end
 end
