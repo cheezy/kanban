@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Monitoring charts for every app event, page, background job and email.** The admin dashboard's Metrics page now charts every monitoring event Stride sends, plus how long pages take to load and respond to clicks, how long background jobs run and which ones fail, and how long email delivery takes. A new monitoring event automatically gets a chart, so none is left out. Charts are broken down by fixed labels such as the page, the job's worker and queue, or the mailer, never by a user, board or task. Page, job and email timings are shown live and never stored, so the stored metrics history does not grow with traffic; a few rare events, such as failed notification email and after_goal results, are now kept in it. Existing charts keep their names and history, and the admin users page counts activity exactly as before.
 - **A reference for every monitoring event.** [Telemetry Events](docs/telemetry.md) now lists every event Stride sends, with its numbers, its labels and what it means, and explains how to receive the events in your own monitoring, what they never contain, and how long stored metrics are kept. It is linked from the README, and a test fails whenever the list and the app disagree.
 
+### Changed
+
+- **Internal: the goal column decision moved into its own module.** The rules that decide which column a goal belongs in, based on where its tasks are, moved from `Kanban.Tasks.Goals` into a new `Kanban.Tasks.GoalTargetColumn` module, which brings `Kanban.Tasks.Goals` back under the module size limit. Goals still move exactly as before, and nothing changes for users or API clients.
+
 ### Fixed
 
 - **Column changes reach open boards.** Adding, renaming, reordering or deleting a column now updates every open copy of the board without a reload.
