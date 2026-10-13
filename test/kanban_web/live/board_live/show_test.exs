@@ -3294,6 +3294,11 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       {:ok, added} =
         Kanban.Labels.create_label(scope, ctx.board, %{"name" => "Fresh", "color" => "red"})
 
+      # The label reaches the form in two hops: the view handles the
+      # :labels_changed broadcast, then the send_update it answers with. The
+      # first render drains the broadcast; the second sees the refreshed form.
+      _ = render(view)
+      _ = render(view)
       assert has_element?(view, ~s(#task-form input[value="#{added.id}"]))
       refute has_element?(view, ~s(#task-form input[value="#{added.id}"][checked]))
     end
