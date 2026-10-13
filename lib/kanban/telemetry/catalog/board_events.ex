@@ -132,7 +132,7 @@ defmodule Kanban.Telemetry.Catalog.BoardEvents do
       kind: :event,
       domain: :column,
       measurements: [:count],
-      metadata: [:board_id, :column_id],
+      metadata: [:board_id, :column_id, :actor_user_id],
       description: "A column was deleted, along with its tasks.",
       legacy: false,
       metrics: [counter: :count],
@@ -143,7 +143,7 @@ defmodule Kanban.Telemetry.Catalog.BoardEvents do
       kind: :event,
       domain: :column,
       measurements: [:count, :column_count],
-      metadata: [:board_id],
+      metadata: [:board_id, :actor_user_id],
       description:
         "A board's columns were reordered. column_count is the number of column ids given.",
       legacy: false,

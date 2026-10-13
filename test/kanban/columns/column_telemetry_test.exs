@@ -26,8 +26,8 @@ defmodule Kanban.Columns.ColumnTelemetryTest do
 
     assert ColumnTelemetry.created(error, @actor) == error
     assert ColumnTelemetry.updated(error, changeset, @actor) == error
-    assert ColumnTelemetry.deleted(error) == error
-    assert ColumnTelemetry.reordered({:error, :rollback}, %{id: 4}, [1, 2]) == :ok
+    assert ColumnTelemetry.deleted(error, @actor) == error
+    assert ColumnTelemetry.reordered({:error, :rollback}, %{id: 4}, [1, 2], @actor) == :ok
     refute_received {:telemetry_event, _, _, _}
   end
 
@@ -36,17 +36,18 @@ defmodule Kanban.Columns.ColumnTelemetryTest do
 
     assert ColumnTelemetry.created({:ok, @column}, @actor) == {:ok, @column}
     assert ColumnTelemetry.updated({:ok, @column}, changeset, @actor) == {:ok, @column}
-    assert ColumnTelemetry.deleted({:ok, @column}) == {:ok, @column}
-    assert ColumnTelemetry.reordered({:ok, nil}, %{id: 4}, [1, 2]) == :ok
+    assert ColumnTelemetry.deleted({:ok, @column}, @actor) == {:ok, @column}
+    assert ColumnTelemetry.reordered({:ok, nil}, %{id: 4}, [1, 2], @actor) == :ok
 
     assert_received {:telemetry_event, [:kanban, :column, :created], _, %{column_id: 3}}
 
     assert_received {:telemetry_event, [:kanban, :column, :updated], _,
                      %{column_id: 3, fields: [:wip_limit]}}
 
-    assert_received {:telemetry_event, [:kanban, :column, :deleted], _, %{column_id: 3}}
+    assert_received {:telemetry_event, [:kanban, :column, :deleted], _,
+                     %{board_id: 4, column_id: 3, actor_user_id: 9}}
 
     assert_received {:telemetry_event, [:kanban, :column, :reordered],
-                     %{count: 1, column_count: 2}, %{board_id: 4}}
+                     %{count: 1, column_count: 2}, %{board_id: 4, actor_user_id: 9}}
   end
 end

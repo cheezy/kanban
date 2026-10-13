@@ -247,8 +247,8 @@ table.
 | `[:kanban, :api, :token_bulk_revoked]` | `board_id`, `user_id`, `actor_user_id`, `reason` | `Kanban.ApiTokens.report_bulk_revocation/5` |
 | `[:kanban, :column, :created]` | `board_id`, `column_id`, `actor_user_id` | `Kanban.Columns.create_column/3` |
 | `[:kanban, :column, :updated]` | `board_id`, `column_id`, `actor_user_id`, `fields` | `Kanban.Columns.update_column/3` |
-| `[:kanban, :column, :deleted]` | `board_id`, `column_id` | `Kanban.Columns.delete_column/1` |
-| `[:kanban, :column, :reordered]` | `board_id` | `Kanban.Columns.reorder_columns/2` |
+| `[:kanban, :column, :deleted]` | `board_id`, `column_id`, `actor_user_id` | `Kanban.Columns.delete_column/2` |
+| `[:kanban, :column, :reordered]` | `board_id`, `actor_user_id` | `Kanban.Columns.reorder_columns/3` |
 
 - **`fields` holds names only.** `board.updated` and `column.updated` list the
   changed field names as atoms, and `board.field_visibility_changed` lists the
@@ -270,9 +270,6 @@ table.
 - **`column.reordered`** measures `count: 1` and `column_count`, the number of
   column ids given. It is emitted for every reorder that commits, even one that
   keeps the current order.
-- **No actor on two column events.** `delete_column/1` and `reorder_columns/2`
-  are not given the acting user, so `column.deleted` and `column.reordered`
-  carry no `actor_user_id`.
 - **Cascades emit nothing extra.** Deleting a board emits only `board.deleted`,
   not a `member_removed` per member, and deleting a column emits only
   `column.deleted`, not an event per task. Creating an AI-optimized board emits
@@ -954,8 +951,8 @@ the sections above explain which code emits each family and when.
 |---|---|---|---|---|
 | `[:kanban, :column, :created]` | event | `count` | `board_id`, `column_id`, `actor_user_id` | A board owner added a column. |
 | `[:kanban, :column, :updated]` | event | `count` | `board_id`, `column_id`, `actor_user_id`, `fields` | A board owner changed a column. fields lists the changed field names, never their values. |
-| `[:kanban, :column, :deleted]` | event | `count` | `board_id`, `column_id` | A column was deleted, along with its tasks. |
-| `[:kanban, :column, :reordered]` | event | `count`, `column_count` | `board_id` | A board's columns were reordered. column_count is the number of column ids given. |
+| `[:kanban, :column, :deleted]` | event | `count` | `board_id`, `column_id`, `actor_user_id` | A column was deleted, along with its tasks. |
+| `[:kanban, :column, :reordered]` | event | `count`, `column_count` | `board_id`, `actor_user_id` | A board's columns were reordered. column_count is the number of column ids given. |
 
 ### Domain `digest`
 

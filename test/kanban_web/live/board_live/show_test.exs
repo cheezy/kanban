@@ -6,6 +6,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
   import Kanban.AccountsFixtures
+  import Kanban.TelemetryHelpers
 
   describe "Show" do
     setup [:register_and_log_in_user]
@@ -3251,7 +3252,7 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       {:ok, _} = Kanban.Columns.update_column(added, %{name: "Renamed column"}, ctx.user)
       assert render(view) =~ "Renamed column"
 
-      {:ok, _} = Kanban.Columns.delete_column(added)
+      {:ok, _} = Kanban.Columns.delete_column(added, ctx.user)
       refute has_element?(view, "#columns > [data-column-id='#{added.id}']")
       refute has_element?(view, "[data-indicator-dot='#{added.id}']")
       assert card?(view, ctx.alpha)
@@ -3652,6 +3653,60 @@ defmodule KanbanWeb.BoardLive.ShowTest do
 
       render_hook(view, "toggle_shortcuts_help", %{})
       assert has_element?(view, "#keyboard-shortcuts-help")
+    end
+  end
+
+  describe "column telemetry actor (W2351)" do
+    setup [:register_and_log_in_user]
+
+    @deleted [:kanban, :column, :deleted]
+    @reordered [:kanban, :column, :reordered]
+
+    test "delete_column and move_column events emit the actor", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      [c1, c2, c3] = for _ <- 1..3, do: column_fixture(board)
+      attach_telemetry([@deleted, @reordered], any_process: true)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      user_id = user.id
+      board_id = board.id
+      c3_id = c3.id
+
+      render_hook(view, "move_column", %{
+        "column_id" => to_string(c1.id),
+        "column_ids" => Enum.map([c2, c1, c3], &to_string(&1.id))
+      })
+
+      assert_receive {:telemetry_event, @reordered, %{count: 1, column_count: 3},
+                      %{board_id: ^board_id, actor_user_id: ^user_id}}
+
+      render_hook(view, "delete_column", %{"id" => to_string(c3.id)})
+
+      assert_receive {:telemetry_event, @deleted, %{count: 1},
+                      %{board_id: ^board_id, column_id: ^c3_id, actor_user_id: ^user_id}}
+
+      assert render(view) =~ "Column deleted successfully"
+    end
+
+    test "a non-owner's delete_column and move_column events emit nothing", %{conn: conn} do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      [c1, c2] = for _ <- 1..2, do: column_fixture(board)
+      member = user_fixture()
+      Kanban.Boards.add_user_to_board(board, member, :modify, owner)
+      attach_telemetry([@deleted, @reordered], any_process: true)
+
+      {:ok, view, _html} = live(log_in_user(conn, member), ~p"/boards/#{board}")
+      board_id = board.id
+
+      render_hook(view, "move_column", %{
+        "column_id" => to_string(c1.id),
+        "column_ids" => [to_string(c2.id), to_string(c1.id)]
+      })
+
+      render_hook(view, "delete_column", %{"id" => to_string(c1.id)})
+
+      refute_receive {:telemetry_event, _, _, %{board_id: ^board_id}}, 50
     end
   end
 end

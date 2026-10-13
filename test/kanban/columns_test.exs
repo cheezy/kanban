@@ -322,13 +322,13 @@ defmodule Kanban.ColumnsTest do
     end
   end
 
-  describe "delete_column/1" do
+  describe "delete_column/2" do
     test "deletes the column" do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board)
 
-      assert {:ok, %Column{}} = Columns.delete_column(column)
+      assert {:ok, %Column{}} = Columns.delete_column(column, user)
       assert_raise Ecto.NoResultsError, fn -> Columns.get_column!(column.id) end
     end
 
@@ -341,7 +341,7 @@ defmodule Kanban.ColumnsTest do
       column3 = column_fixture(board, %{name: "Third"})
 
       # Delete the middle column
-      {:ok, _deleted} = Columns.delete_column(column2)
+      {:ok, _deleted} = Columns.delete_column(column2, user)
 
       # Refresh columns from database
       remaining_columns = Columns.list_columns(board)
@@ -361,7 +361,7 @@ defmodule Kanban.ColumnsTest do
       column2 = column_fixture(board, %{name: "Second"})
       column3 = column_fixture(board, %{name: "Third"})
 
-      {:ok, _deleted} = Columns.delete_column(column1)
+      {:ok, _deleted} = Columns.delete_column(column1, user)
 
       remaining_columns = Columns.list_columns(board)
 
@@ -380,7 +380,7 @@ defmodule Kanban.ColumnsTest do
       column1 = column_fixture(board1)
       column2 = column_fixture(board2)
 
-      {:ok, _deleted} = Columns.delete_column(column1)
+      {:ok, _deleted} = Columns.delete_column(column1, user)
 
       # Board2's column should be unaffected
       assert Columns.get_column!(column2.id).position == 0
@@ -453,10 +453,10 @@ defmodule Kanban.ColumnsTest do
       {:ok, _} = Columns.update_column(first, %{name: "Renamed"}, user)
       assert_receive {Columns, :columns_changed, ^board_id}
 
-      :ok = Columns.reorder_columns(board, [second.id, first.id])
+      :ok = Columns.reorder_columns(board, [second.id, first.id], user)
       assert_receive {Columns, :columns_changed, ^board_id}
 
-      {:ok, _} = Columns.delete_column(second)
+      {:ok, _} = Columns.delete_column(second, user)
       assert_receive {Columns, :columns_changed, ^board_id}
     end
 
@@ -481,7 +481,7 @@ defmodule Kanban.ColumnsTest do
     end
   end
 
-  describe "reorder_columns/2" do
+  describe "reorder_columns/3" do
     test "reorders columns based on list of IDs" do
       user = user_fixture()
       board = board_fixture(user)
@@ -491,7 +491,7 @@ defmodule Kanban.ColumnsTest do
       column3 = column_fixture(board, %{name: "Third"})
 
       # Reorder: Third, First, Second
-      Columns.reorder_columns(board, [column3.id, column1.id, column2.id])
+      Columns.reorder_columns(board, [column3.id, column1.id, column2.id], user)
 
       columns = Columns.list_columns(board)
 
@@ -511,7 +511,7 @@ defmodule Kanban.ColumnsTest do
       column2 = column_fixture(board)
 
       # Swap them
-      Columns.reorder_columns(board, [column2.id, column1.id])
+      Columns.reorder_columns(board, [column2.id, column1.id], user)
 
       columns = Columns.list_columns(board)
 
@@ -591,16 +591,17 @@ defmodule Kanban.ColumnsTest do
       refute_received {:telemetry_event, _, _, _}
     end
 
-    test "delete_column emits column.deleted" do
+    test "delete_column emits column.deleted with the acting user" do
       owner = user_fixture()
       board = board_fixture(owner)
       column = column_fixture(board)
       attach_telemetry(@column_events)
 
-      assert {:ok, _} = Columns.delete_column(column)
+      assert {:ok, _} = Columns.delete_column(column, owner)
 
       assert_received {:telemetry_event, @deleted, %{count: 1}, metadata}
-      assert metadata == %{board_id: board.id, column_id: column.id}
+      assert metadata == %{board_id: board.id, column_id: column.id, actor_user_id: owner.id}
+      assert Columns.list_columns(board) == []
     end
 
     test "deleting a column that still holds tasks emits column.deleted" do
@@ -610,23 +611,49 @@ defmodule Kanban.ColumnsTest do
       task_fixture(column)
       attach_telemetry(@column_events)
 
-      assert {:ok, _} = Columns.delete_column(column)
+      assert {:ok, _} = Columns.delete_column(column, owner)
 
-      assert_received {:telemetry_event, @deleted, %{count: 1}, %{column_id: column_id}}
+      assert_received {:telemetry_event, @deleted, %{count: 1},
+                       %{column_id: column_id, actor_user_id: actor_id}}
+
       assert column_id == column.id
+      assert actor_id == owner.id
       refute_received {:telemetry_event, @deleted, _, _}
     end
 
-    test "reorder_columns emits column.reordered with the column count" do
+    test "reorder_columns emits column.reordered with the column count and the acting user" do
       owner = user_fixture()
       board = board_fixture(owner)
       [c1, c2, c3] = for _ <- 1..3, do: column_fixture(board)
       attach_telemetry(@column_events)
 
-      assert :ok = Columns.reorder_columns(board, [c3.id, c1.id, c2.id])
+      assert :ok = Columns.reorder_columns(board, [c3.id, c1.id, c2.id], owner)
 
       assert_received {:telemetry_event, @reordered, %{count: 1, column_count: 3}, metadata}
-      assert metadata == %{board_id: board.id}
+      assert metadata == %{board_id: board.id, actor_user_id: owner.id}
+    end
+
+    test "reorder_columns with a partial or empty id list still emits the supplied count and the actor" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      [_c1, c2] = for _ <- 1..2, do: column_fixture(board)
+      expected = %{board_id: board.id, actor_user_id: owner.id}
+      attach_telemetry(@column_events)
+
+      assert :ok = Columns.reorder_columns(board, [c2.id], owner)
+      assert_received {:telemetry_event, @reordered, %{count: 1, column_count: 1}, ^expected}
+
+      assert :ok = Columns.reorder_columns(board, [], owner)
+      assert_received {:telemetry_event, @reordered, %{count: 1, column_count: 0}, ^expected}
+    end
+
+    test "the actor-less delete_column/1 and reorder_columns/2 no longer exist" do
+      Code.ensure_loaded!(Columns)
+
+      assert function_exported?(Columns, :delete_column, 2)
+      assert function_exported?(Columns, :reorder_columns, 3)
+      refute function_exported?(Columns, :delete_column, 1)
+      refute function_exported?(Columns, :reorder_columns, 2)
     end
 
     test "creating an AI board emits column.created for each default column" do

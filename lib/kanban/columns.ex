@@ -194,16 +194,20 @@ defmodule Kanban.Columns do
   @doc """
   Deletes a column and reorders the remaining columns.
 
+  `user` is the acting user, recorded as `actor_user_id` on the
+  `[:kanban, :column, :deleted]` telemetry event. This function does not
+  check board ownership; its caller does (see `KanbanWeb.BoardLive.Show`).
+
   ## Examples
 
-      iex> delete_column(column)
+      iex> delete_column(column, owner)
       {:ok, %Column{}}
 
-      iex> delete_column(column)
+      iex> delete_column(column, owner)
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_column(%Column{} = column) do
+  def delete_column(%Column{} = column, user) do
     result = Repo.delete(column)
 
     # Reorder remaining columns after deletion
@@ -213,7 +217,7 @@ defmodule Kanban.Columns do
 
         {:ok, deleted_column}
         |> broadcast_columns_changed(deleted_column.board_id)
-        |> ColumnTelemetry.deleted()
+        |> ColumnTelemetry.deleted(user)
 
       error ->
         error
@@ -223,13 +227,17 @@ defmodule Kanban.Columns do
   @doc """
   Reorders columns for a board based on a list of column IDs.
 
+  `user` is the acting user, recorded as `actor_user_id` on the
+  `[:kanban, :column, :reordered]` telemetry event. This function does not
+  check board ownership; its caller does (see `KanbanWeb.BoardLive.Show`).
+
   ## Examples
 
-      iex> reorder_columns(board, [3, 1, 2])
+      iex> reorder_columns(board, [3, 1, 2], owner)
       :ok
 
   """
-  def reorder_columns(board, column_ids) do
+  def reorder_columns(board, column_ids, user) do
     # Use a transaction to handle the unique constraint on (board_id, position)
     result =
       Repo.transaction(fn ->
@@ -253,7 +261,7 @@ defmodule Kanban.Columns do
       end)
 
     broadcast_columns_changed({:ok, board}, board.id)
-    ColumnTelemetry.reordered(result, board, column_ids)
+    ColumnTelemetry.reordered(result, board, column_ids, user)
     :ok
   end
 

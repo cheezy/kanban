@@ -30,7 +30,7 @@ defmodule KanbanWeb.BoardLive.ColumnActions do
   end
 
   defp perform_column_deletion(socket, column) do
-    case Columns.delete_column(column) do
+    case Columns.delete_column(column, socket.assigns.current_scope.user) do
       {:ok, _column} ->
         columns = Columns.list_columns(socket.assigns.board)
 
@@ -77,7 +77,11 @@ defmodule KanbanWeb.BoardLive.ColumnActions do
 
     Logger.info("Move column event: column_id=#{column_id}, new_order=#{inspect(column_ids)}")
 
-    Columns.reorder_columns(socket.assigns.board, column_ids)
+    Columns.reorder_columns(
+      socket.assigns.board,
+      column_ids,
+      socket.assigns.current_scope.user
+    )
 
     columns = Columns.list_columns(socket.assigns.board)
 

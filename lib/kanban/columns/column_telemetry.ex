@@ -8,9 +8,7 @@ defmodule Kanban.Columns.ColumnTelemetry do
   what the caller sees.
 
   Metadata carries ids and field names only, never a column's name or any
-  other value. `delete_column/1` and `reorder_columns/2` are not given the
-  acting user, so `[:kanban, :column, :deleted]` and
-  `[:kanban, :column, :reordered]` carry no `actor_user_id`.
+  other value. Every event carries the acting user's id as `actor_user_id`.
   """
 
   alias Ecto.Changeset
@@ -54,33 +52,35 @@ defmodule Kanban.Columns.ColumnTelemetry do
   def updated(result, _changeset, _actor), do: result
 
   @doc """
-  Emits `[:kanban, :column, :deleted]` when `result` is a deleted column.
-  Returns `result`.
+  Emits `[:kanban, :column, :deleted]` when `result` is a deleted column,
+  recording `actor` as the acting user. Returns `result`.
   """
-  @spec deleted(result) :: result when result: term()
-  def deleted({:ok, %Column{} = column} = result) do
+  @spec deleted(result, map()) :: result when result: term()
+  def deleted({:ok, %Column{} = column} = result, actor) do
     Kanban.Telemetry.emit([:kanban, :column, :deleted], %{count: 1}, %{
       board_id: column.board_id,
-      column_id: column.id
+      column_id: column.id,
+      actor_user_id: actor.id
     })
 
     result
   end
 
-  def deleted(result), do: result
+  def deleted(result, _actor), do: result
 
   @doc """
   Emits `[:kanban, :column, :reordered]` when the reorder transaction
-  committed. `column_count` is the number of column ids given. Returns `:ok`.
+  committed, recording `actor` as the acting user. `column_count` is the
+  number of column ids given. Returns `:ok`.
   """
-  @spec reordered(term(), map(), list()) :: :ok
-  def reordered({:ok, _changes}, board, column_ids) when is_list(column_ids) do
+  @spec reordered(term(), map(), list(), map()) :: :ok
+  def reordered({:ok, _changes}, board, column_ids, actor) when is_list(column_ids) do
     Kanban.Telemetry.emit(
       [:kanban, :column, :reordered],
       %{count: 1, column_count: length(column_ids)},
-      %{board_id: board.id}
+      %{board_id: board.id, actor_user_id: actor.id}
     )
   end
 
-  def reordered(_result, _board, _column_ids), do: :ok
+  def reordered(_result, _board, _column_ids, _actor), do: :ok
 end
