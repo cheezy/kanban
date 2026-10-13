@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Internal: the goal column decision moved into its own module.** The rules that decide which column a goal belongs in, based on where its tasks are, moved from `Kanban.Tasks.Goals` into a new `Kanban.Tasks.GoalTargetColumn` module, which brings `Kanban.Tasks.Goals` back under the module size limit. Goals still move exactly as before, and nothing changes for users or API clients.
+- **Internal: archiving moved into its own module.** Archiving a task (including archiving a goal's tasks with it), restoring an archived task, and archiving a board's old completed tasks moved from `Kanban.Tasks.Lifecycle` into a new `Kanban.Tasks.Archiving` module, which brings `Kanban.Tasks.Lifecycle` back under the module size limit. Archiving and restoring work exactly as before, and nothing changes for users or API clients.
 
 ### Fixed
 

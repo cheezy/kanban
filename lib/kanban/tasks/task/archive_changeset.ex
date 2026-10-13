@@ -24,7 +24,7 @@ defmodule Kanban.Tasks.Task.ArchiveChangeset do
   full-task validations so archiving a task does NOT retroactively reject
   pre-existing inconsistent state on unrelated fields.
 
-  See `Kanban.Tasks.Lifecycle.archive_task/2` for the caller.
+  See `Kanban.Tasks.Archiving.archive_task/2` for the caller.
   """
   def changeset(task, attrs) do
     task

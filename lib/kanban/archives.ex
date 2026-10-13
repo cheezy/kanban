@@ -15,7 +15,7 @@ defmodule Kanban.Archives do
   set is returned.
 
   This module is read-only by design — writes (archive, unarchive) live
-  on `Kanban.Tasks.AgentWorkflow` and `Kanban.Tasks.Lifecycle`. Mirrors
+  on `Kanban.Tasks.Archiving` and `Kanban.Tasks.BulkActions`. Mirrors
   the structure of `Kanban.Agents` and `Kanban.Reviews`.
   """
 

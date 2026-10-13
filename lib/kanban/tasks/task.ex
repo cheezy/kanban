@@ -459,7 +459,7 @@ defmodule Kanban.Tasks.Task do
   — skipping the unrelated full-task validations so archiving does not
   retroactively reject pre-existing inconsistent state on other fields.
 
-  See `Kanban.Tasks.Lifecycle.archive_task/2` for the caller.
+  See `Kanban.Tasks.Archiving.archive_task/2` for the caller.
   """
   defdelegate archive_changeset(task, attrs), to: ArchiveChangeset, as: :changeset
 end

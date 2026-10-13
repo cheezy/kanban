@@ -7,7 +7,8 @@ defmodule Kanban.Tasks do
   - `Tasks.Creation` - Task creation
   - `Tasks.GoalCreation` - Goal creation with nested child tasks
   - `Tasks.CreationSupport` - Helpers shared by the two creation paths
-  - `Tasks.Lifecycle` - Update, delete, archive, unarchive
+  - `Tasks.Lifecycle` - Update, delete, assignment cascade
+  - `Tasks.Archiving` - Archive, unarchive, bulk archive
   - `Tasks.Positioning` - Movement, reordering, WIP limits
   - `Tasks.Dependencies` - Blocking, circular deps, dependency tree
   - `Tasks.Goals` - Goal hierarchy, promotion, parent tracking
@@ -24,6 +25,7 @@ defmodule Kanban.Tasks do
 
   alias Kanban.Tasks.AgentQueries
   alias Kanban.Tasks.AgentWorkflow
+  alias Kanban.Tasks.Archiving
   alias Kanban.Tasks.BoardLookup
   alias Kanban.Tasks.BulkActions
   alias Kanban.Tasks.Comments
@@ -104,11 +106,14 @@ defmodule Kanban.Tasks do
   defdelegate update_changed_files(task, changed_files), to: Lifecycle
   defdelegate count_cascade_affected_children(task, new_assigned_to_id), to: Lifecycle
   defdelegate delete_task(task), to: Lifecycle
-  defdelegate archive_task(task), to: Lifecycle
-  defdelegate archive_task(task, attrs), to: Lifecycle
-  defdelegate bulk_archive_completed_tasks_older_than(board_id), to: Lifecycle
-  defdelegate bulk_archive_completed_tasks_older_than(board_id, cutoff_days), to: Lifecycle
-  defdelegate unarchive_task(task), to: Lifecycle
+
+  # ── Archiving delegations ──────────────────────────────────────────
+
+  defdelegate archive_task(task), to: Archiving
+  defdelegate archive_task(task, attrs), to: Archiving
+  defdelegate bulk_archive_completed_tasks_older_than(board_id), to: Archiving
+  defdelegate bulk_archive_completed_tasks_older_than(board_id, cutoff_days), to: Archiving
+  defdelegate unarchive_task(task), to: Archiving
 
   # ── Positioning delegations ────────────────────────────────────────
 

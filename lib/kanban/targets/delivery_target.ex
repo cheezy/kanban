@@ -54,7 +54,7 @@ defmodule Kanban.Targets.DeliveryTarget do
   unarchive.
 
   One changeset serves both directions, mirroring
-  `Kanban.Tasks.Task.archive_changeset/2`, which `Kanban.Tasks.Lifecycle` uses
+  `Kanban.Tasks.Task.archive_changeset/2`, which `Kanban.Tasks.Archiving` uses
   to archive *and* to unarchive (by passing `archived_at: nil`).
 
   `:archived_at` is the only castable field. `:owner_id` in particular is not
