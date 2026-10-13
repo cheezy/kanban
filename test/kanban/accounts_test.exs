@@ -5,6 +5,8 @@ defmodule Kanban.AccountsTest do
   import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts
+  alias Kanban.Accounts.EmailConfirmation
+  alias Kanban.Accounts.PasswordReset
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserToken
 
@@ -440,229 +442,6 @@ defmodule Kanban.AccountsTest do
     end
   end
 
-  describe "deliver_user_reset_password_instructions/2" do
-    setup do
-      %{user: user_fixture()}
-    end
-
-    test "sends token through notification", %{user: user} do
-      token =
-        extract_user_token(fn url ->
-          Accounts.deliver_user_reset_password_instructions(user, url)
-        end)
-
-      {:ok, token} = Base.url_decode64(token, padding: false)
-      assert user_token = Repo.get_by(UserToken, token: :crypto.hash(:sha256, token))
-      assert user_token.user_id == user.id
-      assert user_token.sent_to == user.email
-      assert user_token.context == "reset_password"
-    end
-  end
-
-  describe "get_user_by_reset_password_token/1" do
-    setup do
-      user = user_fixture()
-
-      token =
-        extract_user_token(fn url ->
-          Accounts.deliver_user_reset_password_instructions(user, url)
-        end)
-
-      %{user: user, token: token}
-    end
-
-    test "returns the user with valid token", %{user: %{id: id}, token: token} do
-      assert %User{id: ^id} = Accounts.get_user_by_reset_password_token(token)
-      assert Repo.get_by(UserToken, user_id: id)
-    end
-
-    test "does not return the user with invalid token", %{user: user} do
-      refute Accounts.get_user_by_reset_password_token("oops")
-      assert Repo.get_by(UserToken, user_id: user.id)
-    end
-
-    test "does not return the user if token expired", %{user: user, token: token} do
-      {1, nil} =
-        from(t in UserToken, where: t.user_id == ^user.id)
-        |> Repo.update_all(set: [inserted_at: ~N[2020-01-01 00:00:00]])
-
-      refute Accounts.get_user_by_reset_password_token(token)
-      assert Repo.get_by(UserToken, user_id: user.id)
-    end
-
-    test "rejects a token just outside the dedicated 15-minute reset window (D105/D136)", %{
-      user: user,
-      token: token
-    } do
-      # 1 minute past the window: still valid under the old 1-day window, but
-      # must be rejected under the 15-minute window the UI copy promises.
-      just_outside =
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.add(-(UserToken.reset_password_validity_in_minutes() + 1), :minute)
-        |> NaiveDateTime.truncate(:second)
-
-      {1, nil} =
-        from(t in UserToken, where: t.user_id == ^user.id)
-        |> Repo.update_all(set: [inserted_at: just_outside])
-
-      refute Accounts.get_user_by_reset_password_token(token)
-    end
-
-    test "still returns the user for a token just inside the 15-minute reset window (D105/D136)",
-         %{
-           user: %{id: id},
-           token: token
-         } do
-      just_inside =
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.add(-(UserToken.reset_password_validity_in_minutes() - 1), :minute)
-        |> NaiveDateTime.truncate(:second)
-
-      {1, nil} =
-        from(t in UserToken, where: t.user_id == ^id)
-        |> Repo.update_all(set: [inserted_at: just_inside])
-
-      assert %User{id: ^id} = Accounts.get_user_by_reset_password_token(token)
-    end
-
-    test "the enforced window matches the 15 minutes promised by the user-facing copy" do
-      # The forgot-password page and the reset email both say "15 minutes"
-      # (D136). If the enforced window changes, that copy must change with it.
-      assert UserToken.reset_password_validity_in_minutes() == 15
-    end
-  end
-
-  describe "reset_user_password/2" do
-    setup do
-      %{user: user_fixture()}
-    end
-
-    test "validates password", %{user: user} do
-      {:error, changeset} =
-        Accounts.reset_user_password(user, %{
-          password: "not valid",
-          password_confirmation: "another"
-        })
-
-      assert %{
-               password: ["should be at least 12 character(s)"],
-               password_confirmation: ["does not match password"]
-             } = errors_on(changeset)
-    end
-
-    test "validates maximum values for password for security", %{user: user} do
-      too_long = String.duplicate("db", 100)
-      {:error, changeset} = Accounts.reset_user_password(user, %{password: too_long})
-      assert "should be at most 72 character(s)" in errors_on(changeset).password
-    end
-
-    test "updates the password", %{user: user} do
-      {:ok, {updated_user, _}} =
-        Accounts.reset_user_password(user, %{password: "new valid password"})
-
-      assert is_nil(updated_user.password)
-      assert Accounts.get_user_by_email_and_password(user.email, "new valid password")
-    end
-
-    test "deletes all tokens for the given user", %{user: user} do
-      _ = Accounts.generate_user_session_token(user)
-
-      {:ok, {_, tokens}} =
-        Accounts.reset_user_password(user, %{password: "new valid password"})
-
-      assert length(tokens) == 1
-      refute Repo.get_by(UserToken, user_id: user.id)
-    end
-
-    test "returns the deleted token rows so sessions can be disconnected", %{user: user} do
-      session_token = Accounts.generate_user_session_token(user)
-
-      {:ok, {_, tokens}} =
-        Accounts.reset_user_password(user, %{password: "new valid password"})
-
-      assert [%UserToken{token: token}] = tokens
-      assert token == session_token
-    end
-  end
-
-  describe "get_user_by_confirmation_token/1" do
-    setup do
-      user = unconfirmed_user_fixture()
-
-      {encoded_token, user_token} =
-        Kanban.Accounts.UserToken.build_email_token(user, "confirm")
-
-      Repo.insert!(user_token)
-      %{user: user, token: encoded_token}
-    end
-
-    test "returns user with valid token", %{user: user, token: token} do
-      found_user = Accounts.get_user_by_confirmation_token(token)
-      assert found_user.id == user.id
-    end
-
-    test "returns nil for invalid token" do
-      assert Accounts.get_user_by_confirmation_token("invalid-token") == nil
-    end
-
-    test "returns nil for expired token", %{token: token} do
-      Repo.update_all(UserToken, set: [inserted_at: ~N[2020-01-01 00:00:00]])
-      assert Accounts.get_user_by_confirmation_token(token) == nil
-    end
-  end
-
-  describe "confirm_user/1" do
-    setup do
-      user = unconfirmed_user_fixture()
-
-      {encoded_token, user_token} =
-        Kanban.Accounts.UserToken.build_email_token(user, "confirm")
-
-      Repo.insert!(user_token)
-      %{user: user, token: encoded_token}
-    end
-
-    test "confirms user with valid token", %{user: user, token: token} do
-      assert {:ok, confirmed_user} = Accounts.confirm_user(token)
-      assert confirmed_user.id == user.id
-      assert confirmed_user.confirmed_at != nil
-    end
-
-    test "deletes confirmation tokens after successful confirmation", %{
-      user: user,
-      token: token
-    } do
-      assert {:ok, _} = Accounts.confirm_user(token)
-
-      refute Repo.get_by(UserToken, user_id: user.id, context: "confirm")
-    end
-
-    test "returns error for already confirmed user", %{user: user} do
-      # Confirm the user first
-      {first_token, first_user_token} =
-        Kanban.Accounts.UserToken.build_email_token(user, "confirm")
-
-      Repo.insert!(first_user_token)
-      {:ok, _} = Accounts.confirm_user(first_token)
-
-      # Generate a new token and try to confirm again
-      {second_token, second_user_token} =
-        Kanban.Accounts.UserToken.build_email_token(user, "confirm")
-
-      Repo.insert!(second_user_token)
-      assert {:error, :already_confirmed} = Accounts.confirm_user(second_token)
-    end
-
-    test "returns error for invalid token" do
-      assert {:error, :invalid_token} = Accounts.confirm_user("invalid-token")
-    end
-
-    test "returns error for expired token", %{token: token} do
-      Repo.update_all(UserToken, set: [inserted_at: ~N[2020-01-01 00:00:00]])
-      assert {:error, :invalid_token} = Accounts.confirm_user(token)
-    end
-  end
-
   describe "user telemetry" do
     @user_events [
       [:kanban, :user, :password_changed],
@@ -698,26 +477,6 @@ defmodule Kanban.AccountsTest do
                  password: "short",
                  password_confirmation: "x"
                })
-
-      refute_received {:telemetry_event, _event, _measurements, _metadata}
-    end
-
-    test "reset_user_password emits password_reset_completed", %{user: user} do
-      attach_telemetry([:kanban, :user, :password_reset_completed])
-
-      assert {:ok, {_user, _tokens}} =
-               Accounts.reset_user_password(user, %{password: "new valid password"})
-
-      assert_received {:telemetry_event, [:kanban, :user, :password_reset_completed], %{count: 1},
-                       %{user_id: user_id}}
-
-      assert user_id == user.id
-    end
-
-    test "an invalid password reset emits nothing", %{user: user} do
-      attach_telemetry(@user_events)
-
-      assert {:error, _changeset} = Accounts.reset_user_password(user, %{password: "short"})
 
       refute_received {:telemetry_event, _event, _measurements, _metadata}
     end
@@ -767,24 +526,6 @@ defmodule Kanban.AccountsTest do
       assert {:error, :transaction_aborted} = Accounts.update_user_email(user, "oops")
 
       refute_received {:telemetry_event, _event, _measurements, _metadata}
-    end
-
-    test "confirm_user emits confirmed only for a new confirmation" do
-      user = unconfirmed_user_fixture()
-      {token, user_token} = UserToken.build_email_token(user, "confirm")
-      Repo.insert!(user_token)
-      {second_token, second_user_token} = UserToken.build_email_token(user, "confirm")
-
-      attach_telemetry([:kanban, :user, :confirmed])
-
-      assert {:ok, _user} = Accounts.confirm_user(token)
-      assert_received {:telemetry_event, [:kanban, :user, :confirmed], %{count: 1}, metadata}
-      assert metadata == %{user_id: user.id}
-
-      Repo.insert!(second_user_token)
-      assert {:error, :already_confirmed} = Accounts.confirm_user(second_token)
-      assert {:error, :invalid_token} = Accounts.confirm_user("invalid-token")
-      refute_received {:telemetry_event, [:kanban, :user, :confirmed], _measurements, _metadata}
     end
 
     test "update_user_name emits name_changed only when the name changes", %{user: user} do
@@ -855,6 +596,87 @@ defmodule Kanban.AccountsTest do
       for {_event, metadata} <- received, {_key, value} <- metadata do
         assert is_integer(value) or is_atom(value)
         refute value in [user.email, user.name]
+      end
+    end
+  end
+
+  describe "facade delegation" do
+    @moved_functions [
+      {:deliver_user_reset_password_instructions, 2, PasswordReset},
+      {:get_user_by_reset_password_token, 1, PasswordReset},
+      {:reset_user_password, 2, PasswordReset},
+      {:get_user_by_confirmation_token, 1, EmailConfirmation},
+      {:confirm_user, 1, EmailConfirmation},
+      {:deliver_user_confirmation_instructions, 2, EmailConfirmation}
+    ]
+
+    @pre_split_functions [
+      get_user_by_email: 1,
+      get_user_by_email_and_password: 2,
+      get_user!: 1,
+      get_user: 1,
+      register_user: 1,
+      change_user_registration: 1,
+      change_user_registration: 2,
+      change_user_registration: 3,
+      sudo_mode?: 1,
+      sudo_mode?: 2,
+      change_user_email: 1,
+      change_user_email: 2,
+      change_user_email: 3,
+      update_user_name: 2,
+      update_user_email: 2,
+      change_user_password: 1,
+      change_user_password: 2,
+      change_user_password: 3,
+      update_user_password: 2,
+      deliver_user_reset_password_instructions: 2,
+      get_user_by_reset_password_token: 1,
+      reset_user_password: 2,
+      update_user_type: 2,
+      admin?: 1,
+      list_users: 0,
+      disable_user: 2,
+      enable_user: 2,
+      delete_user: 2,
+      two_factor_enabled?: 1,
+      begin_two_factor_enrollment: 1,
+      cancel_two_factor_enrollment: 1,
+      confirm_two_factor_enrollment: 2,
+      valid_two_factor_code?: 2,
+      consume_recovery_code: 2,
+      regenerate_recovery_codes: 2,
+      disable_two_factor: 2,
+      show_two_factor_reminder?: 1,
+      dismiss_two_factor_reminder: 1,
+      generate_user_session_token: 1,
+      get_user_by_session_token: 1,
+      get_user_by_confirmation_token: 1,
+      confirm_user: 1,
+      deliver_user_update_email_instructions: 3,
+      deliver_user_confirmation_instructions: 2,
+      delete_user_session_token: 1
+    ]
+
+    test "delegates moved functions: every pre-split public function is still exported by Kanban.Accounts" do
+      Code.ensure_loaded!(Accounts)
+
+      for {name, arity} <- @pre_split_functions do
+        assert function_exported?(Accounts, name, arity),
+               "Kanban.Accounts.#{name}/#{arity} is no longer exported"
+      end
+
+      assert {:docs_v1, _, _, _, _, _, docs} = Code.fetch_docs(Accounts)
+
+      delegates =
+        for {{:function, name, arity}, _, _, _, %{delegate_to: target}} <- docs,
+            into: %{},
+            do: {{name, arity}, target}
+
+      for {name, arity, module} <- @moved_functions do
+        Code.ensure_loaded!(module)
+        assert function_exported?(module, name, arity)
+        assert delegates[{name, arity}] == {module, name, arity}
       end
     end
   end

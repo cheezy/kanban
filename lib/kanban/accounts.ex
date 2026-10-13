@@ -2,14 +2,18 @@ defmodule Kanban.Accounts do
   @moduledoc """
   The Accounts context.
 
-  Admin user management (`Kanban.Accounts.AdminManagement`) and TOTP
-  two-factor authentication (`Kanban.Accounts.TwoFactor`) are delegated below.
+  Admin user management (`Kanban.Accounts.AdminManagement`), TOTP two-factor
+  authentication (`Kanban.Accounts.TwoFactor`), the password reset email flow
+  (`Kanban.Accounts.PasswordReset`) and the account confirmation email flow
+  (`Kanban.Accounts.EmailConfirmation`) are delegated below.
   """
 
   import Ecto.Query, warn: false
   alias Kanban.Repo
 
   alias Kanban.Accounts.AdminManagement
+  alias Kanban.Accounts.EmailConfirmation
+  alias Kanban.Accounts.PasswordReset
   alias Kanban.Accounts.TwoFactor
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserNotifier
@@ -243,82 +247,6 @@ defmodule Kanban.Accounts do
   end
 
   @doc """
-  Delivers the password reset email to the given user.
-
-  ## Examples
-
-      iex> deliver_user_reset_password_instructions(user, fn token -> "..." end)
-      {:ok, %{to: ..., body: ...}}
-
-  """
-  def deliver_user_reset_password_instructions(user, reset_password_url_fun)
-      when is_function(reset_password_url_fun, 1) do
-    {encoded_token, user_token} = UserToken.build_email_token(user, "reset_password")
-    Repo.insert!(user_token)
-    UserNotifier.deliver_reset_password_instructions(user, reset_password_url_fun.(encoded_token))
-  end
-
-  @doc """
-  Gets the user by reset password token.
-
-  ## Examples
-
-      iex> get_user_by_reset_password_token("validtoken")
-      %User{}
-
-      iex> get_user_by_reset_password_token("invalidtoken")
-      nil
-
-  """
-  def get_user_by_reset_password_token(token) do
-    with {:ok, query} <- UserToken.verify_reset_password_token_query(token),
-         %UserToken{user_id: user_id} <- Repo.one(query) do
-      Repo.get(User, user_id)
-    else
-      _ -> nil
-    end
-  end
-
-  @doc """
-  Resets the user password.
-
-  ## Examples
-
-      iex> reset_user_password(user, %{password: "new long password", password_confirmation: "new long password"})
-      {:ok, {%User{}, []}}
-
-      iex> reset_user_password(user, %{password: "valid", password_confirmation: "not the same"})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def reset_user_password(user, attrs) do
-    result =
-      Repo.transaction(fn ->
-        result =
-          user
-          |> User.password_changeset(attrs)
-          |> Repo.update()
-
-        case result do
-          {:ok, user} ->
-            # Collect the token rows before deleting them so the caller can
-            # disconnect any still-mounted LiveView sockets — deleting the rows
-            # alone only stops future HTTP/reconnect attempts (W1676 M1). This
-            # mirrors update_user_and_delete_all_tokens/1.
-            tokens_query = UserToken.by_user_and_contexts_query(user, :all)
-            tokens_to_expire = Repo.all(tokens_query)
-            Repo.delete_all(tokens_query)
-            {user, tokens_to_expire}
-
-          {:error, changeset} ->
-            Repo.rollback(changeset)
-        end
-      end)
-
-    UserTelemetry.password_reset_completed(result)
-  end
-
-  @doc """
   Updates a user's type.
 
   This should only be called programmatically by admins.
@@ -368,6 +296,22 @@ defmodule Kanban.Accounts do
   defdelegate show_two_factor_reminder?(user), to: TwoFactor, as: :show_reminder?
   defdelegate dismiss_two_factor_reminder(user), to: TwoFactor, as: :dismiss_reminder
 
+  ## Password reset
+
+  defdelegate deliver_user_reset_password_instructions(user, reset_password_url_fun),
+    to: PasswordReset
+
+  defdelegate get_user_by_reset_password_token(token), to: PasswordReset
+  defdelegate reset_user_password(user, attrs), to: PasswordReset
+
+  ## Email confirmation
+
+  defdelegate get_user_by_confirmation_token(token), to: EmailConfirmation
+  defdelegate confirm_user(token), to: EmailConfirmation
+
+  defdelegate deliver_user_confirmation_instructions(user, confirmation_url_fun),
+    to: EmailConfirmation
+
   ## Session
 
   @doc """
@@ -389,66 +333,6 @@ defmodule Kanban.Accounts do
     Repo.one(query)
   end
 
-  @doc """
-  Gets the user with the given confirmation token.
-  """
-  def get_user_by_confirmation_token(token) do
-    with {:ok, query} <- UserToken.verify_email_token_query(token, "confirm"),
-         %UserToken{user_id: user_id} <- Repo.one(query) do
-      get_user!(user_id)
-    else
-      _ -> nil
-    end
-  end
-
-  @doc """
-  Confirms a user account.
-  """
-  def confirm_user(token) do
-    case run_confirm_user(token) do
-      {:ok, %User{}} = ok -> UserTelemetry.confirmed(ok)
-      error -> handle_confirm_error(error)
-    end
-  end
-
-  defp run_confirm_user(token) do
-    with {:ok, query} <- UserToken.verify_email_token_query(token, "confirm"),
-         %UserToken{user_id: user_id} <- Repo.one(query),
-         %User{} = user <- Repo.get(User, user_id) do
-      finalize_confirm_user(user, user_id)
-    end
-  end
-
-  defp finalize_confirm_user(user, user_id) do
-    with {:ok, user} <- maybe_confirm_user(user),
-         {_count, nil} <- delete_confirm_tokens(user_id) do
-      {:ok, user}
-    end
-  end
-
-  defp handle_confirm_error(nil), do: {:error, :invalid_token}
-  defp handle_confirm_error({:already_confirmed, _user}), do: {:error, :already_confirmed}
-
-  defp handle_confirm_error(%User{confirmed_at: confirmed_at}) when not is_nil(confirmed_at),
-    do: {:error, :already_confirmed}
-
-  defp handle_confirm_error(_), do: {:error, :invalid_token}
-
-  defp delete_confirm_tokens(user_id) do
-    from(t in UserToken, where: t.user_id == ^user_id and t.context == "confirm")
-    |> Repo.delete_all()
-  end
-
-  defp maybe_confirm_user(%User{confirmed_at: nil} = user) do
-    user
-    |> User.confirm_changeset()
-    |> Repo.update()
-  end
-
-  defp maybe_confirm_user(%User{} = user) do
-    {:already_confirmed, user}
-  end
-
   @doc ~S"""
   Delivers the update email instructions to the given user.
 
@@ -465,26 +349,6 @@ defmodule Kanban.Accounts do
     Repo.insert!(user_token)
     UserTelemetry.email_change_requested(user)
     UserNotifier.deliver_update_email_instructions(user, update_email_url_fun.(encoded_token))
-  end
-
-  @doc """
-  Delivers the email confirmation instructions to the given user.
-  """
-  def deliver_user_confirmation_instructions(%User{} = user, confirmation_url_fun)
-      when is_function(confirmation_url_fun, 1) do
-    if user.confirmed_at do
-      {:error, :already_confirmed}
-    else
-      {encoded_token, user_token} = UserToken.build_email_token(user, "confirm")
-      Repo.insert!(user_token)
-
-      # Delivery runs off the request path (UserNotifier.dispatch_delivery), so
-      # a mailer failure can no longer be returned here — it is logged inside
-      # the delivery task (never the token, confirmation URL, or SMTP
-      # credentials), keeping bounces observable without re-opening the
-      # timing-based enumeration channel closed by D134.
-      UserNotifier.deliver_confirmation_instructions(user, confirmation_url_fun.(encoded_token))
-    end
   end
 
   @doc """
