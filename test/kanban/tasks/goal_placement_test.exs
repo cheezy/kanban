@@ -244,11 +244,78 @@ defmodule Kanban.Tasks.GoalPlacementTest do
     end
   end
 
+  # D372 made the re-placement one transaction for the callers that run it
+  # after their own transaction has committed. This proves a failure part-way
+  # undoes every write, with no caller transaction around the call (W2362).
+  describe "a failed re-placement with no caller transaction (W2362)" do
+    setup do
+      original = Application.get_env(:kanban, GoalPlacement)
+      on_exit(fn -> restore_env(original) end)
+    end
+
+    defp restore_env(nil), do: Application.delete_env(:kanban, GoalPlacement)
+    defp restore_env(original), do: Application.put_env(:kanban, GoalPlacement, original)
+
+    test "a failure after parking rolls the goal and both columns back" do
+      board = board_fixture(user_fixture())
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+
+      # Tasks below the goal make the close-up write rows before the failure;
+      # tasks in the target column sit where the shifts would have run.
+      above = task_fixture(ready, %{title: "Above"})
+      goal = task_fixture(ready, %{title: "Goal", type: :goal})
+      below = task_fixture(ready, %{title: "Below"})
+      last = task_fixture(ready, %{title: "Last"})
+      first_doing = task_fixture(doing, %{title: "First doing"})
+      second_doing = task_fixture(doing, %{title: "Second doing"})
+
+      [goal | _] = age!([goal, above, below, last, first_doing, second_doing])
+      before = snapshot([ready, doing])
+
+      test_pid = self()
+
+      Application.put_env(:kanban, GoalPlacement,
+        after_park: fn goal_id ->
+          send(test_pid, {:parked, goal_id, live_positions(ready)})
+          raise "re-placement failed after parking"
+        end
+      )
+
+      assert_raise RuntimeError, "re-placement failed after parking", fn ->
+        GoalPlacement.move_goal_to_top_with_other_goals(goal, doing, @now)
+      end
+
+      # The close-up had renumbered the old column before the failure.
+      goal_id = goal.id
+      assert_received {:parked, ^goal_id, closed_up}
+      assert closed_up == [{above.id, 0}, {below.id, 1}, {last.id, 2}]
+
+      assert snapshot([ready, doing]) == before
+
+      restored = Repo.reload!(goal)
+      assert {restored.column_id, restored.position} == {ready.id, 1}
+      assert restored.updated_at == @old
+    end
+  end
+
   defp live_positions(column) do
     from(t in Task,
       where: t.column_id == ^column.id and is_nil(t.archived_at),
       order_by: [asc: t.position],
       select: {t.id, t.position}
+    )
+    |> Repo.all()
+  end
+
+  # Every row in the columns, archived or not, with what a rollback restores.
+  defp snapshot(columns) do
+    column_ids = Enum.map(columns, & &1.id)
+
+    from(t in Task,
+      where: t.column_id in ^column_ids,
+      order_by: [asc: t.id],
+      select: {t.id, t.column_id, t.position, t.updated_at}
     )
     |> Repo.all()
   end

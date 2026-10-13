@@ -182,6 +182,7 @@ defmodule Kanban.Tasks.GoalPlacement do
   # and writes the goal's final position and status.
   defp place_goal(parent_goal, target_column, target_position, now) do
     park_in_target_column(parent_goal, target_column, now)
+    run_after_park_seam(parent_goal.id)
 
     tasks_to_shift = live_tasks_to_shift(target_column.id, target_position, parent_goal.id)
 
@@ -212,6 +213,14 @@ defmodule Kanban.Tasks.GoalPlacement do
     |> Repo.update_all(set: updates)
 
     :placed
+  end
+
+  # Test seam, unset outside tests: runs once the goal is parked and its old
+  # column closed up, so a test can fail a re-placement part-way (W2362).
+  defp run_after_park_seam(goal_id) do
+    config = Application.get_env(:kanban, __MODULE__, [])
+    after_park = Keyword.get(config, :after_park)
+    if after_park, do: after_park.(goal_id)
   end
 
   @doc """
