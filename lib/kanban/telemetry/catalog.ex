@@ -454,13 +454,13 @@ defmodule Kanban.Telemetry.Catalog do
       kind: :event,
       domain: :github,
       measurements: [:count],
-      metadata: [:outcome],
+      metadata: [:outcome, :reason],
       description:
-        "An issue report to GitHub finished. outcome is :ok or :error, including when GitHub is not configured.",
+        "An issue report to GitHub finished. outcome is :ok or :error, including when GitHub is not configured. reason is :none, :not_configured, :http_error or :transport_error, never the error text.",
       legacy: false,
       metrics: [counter: :count],
       persist: true,
-      tags: [:outcome]
+      tags: [:outcome, :reason]
     }
   ]
 

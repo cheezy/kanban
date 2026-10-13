@@ -285,7 +285,7 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
 | `[:kanban, :export]` | span | `kind`, `format` | `Kanban.Archives.export_csv_for_board/1` and the metrics, workspace metrics and audit log export controllers |
 | `[:kanban, :rate_limit, :denied]` | event | `surface` | `Kanban.RateLimit.check/2` and `peek/2` |
 | `[:kanban, :mcp, :request]` | span | `method`, `outcome` | `KanbanWeb.MCP.Server` |
-| `[:kanban, :github, :issue_created]` | event | `outcome` | `Kanban.GitHub.create_issue/3` |
+| `[:kanban, :github, :issue_created]` | event | `outcome`, `reason` | `Kanban.GitHub.create_issue/3` |
 | `[:kanban, :api, :auth_failed]` | event | `reason`, `path`, `method` | `KanbanWeb.Plugs.AuthenticateApiToken` |
 
 - **Exports.** `kind` is `:archive_csv` (board archive CSV), `:metrics_pdf`
@@ -318,8 +318,13 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
   missing or bad token emits `[:kanban, :api, :auth_failed]` instead.
   `[:kanban, :api, :mcp_tool_called]` is unchanged.
 - **GitHub issues.** `outcome` is `:ok` or `:error`. An issue report made while
-  the GitHub integration is not configured counts as `:error`. The title,
-  body, labels, issue URL and error text are never emitted.
+  the GitHub integration is not configured counts as `:error`. `reason` says
+  why: `:none` on success, `:not_configured` when the token or repo is
+  missing, `:http_error` when GitHub answers with anything but a 201 carrying
+  an issue URL, and `:transport_error` when the request never got an answer.
+  It is a fixed atom chosen in `Kanban.GitHub`, never the response body or
+  the HTTP client's error, and it is a metric tag alongside `outcome`. The
+  title, body, labels, issue URL and error text are never emitted.
 - **`missing_token`** is a new `reason` for `[:kanban, :api, :auth_failed]`,
   sent when an API request has no `Authorization` header or one that is not a
   `Bearer` header. The other reasons are `rate_limited`, `token_not_found`,
@@ -973,7 +978,7 @@ the sections above explain which code emits each family and when.
 
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
-| `[:kanban, :github, :issue_created]` | event | `count` | `outcome` | An issue report to GitHub finished. outcome is :ok or :error, including when GitHub is not configured. |
+| `[:kanban, :github, :issue_created]` | event | `count` | `outcome`, `reason` | An issue report to GitHub finished. outcome is :ok or :error, including when GitHub is not configured. reason is :none, :not_configured, :http_error or :transport_error, never the error text. |
 
 ### Domain `goal`
 

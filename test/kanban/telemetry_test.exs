@@ -63,8 +63,9 @@ defmodule Kanban.TelemetryTest do
   @optional_entry_fields [:tags]
   @metric_types [:counter, :sum, :summary]
   # Metric tags become LiveDashboard labels, so only these bounded,
-  # non-personal metadata keys may be used as one. Never an id.
-  @tag_keys [:endpoint, :method, :status, :kind, :format, :outcome, :surface]
+  # non-personal metadata keys may be used as one. Never an id. A reason is
+  # allowed only as a fixed atom set, such as github.issue_created's four.
+  @tag_keys [:endpoint, :method, :status, :kind, :format, :outcome, :surface, :reason]
   @leaked_values ["a@example.com", "203.0.113.5", "Secret title", "Private body", "tok-123"]
   @particles ~w(out in up off down)
   # Irregular past tenses that do not end in "ed" (notification.read, digest.sent,

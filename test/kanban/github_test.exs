@@ -73,8 +73,8 @@ defmodule Kanban.GitHubTest do
       assert {:ok, _url} = GitHub.create_issue("Secret title", "Secret body", ["defect"])
 
       assert_receive {:telemetry_event, @issue_created, %{count: 1}, metadata}
-      # Only the outcome: never the title, body, labels or issue URL.
-      assert metadata == %{outcome: :ok}
+      # Only the outcome and reason: never the title, body, labels or issue URL.
+      assert metadata == %{outcome: :ok, reason: :none}
     end
 
     test "a failed request emits github.issue_created with outcome error" do
@@ -86,10 +86,89 @@ defmodule Kanban.GitHubTest do
 
       attach_telemetry(@issue_created)
 
-      assert {:error, _reason} = GitHub.create_issue("title", "body", [])
+      assert {:error, message} = GitHub.create_issue("title", "body", [])
+      assert message =~ "GitHub API returned status 500"
 
       assert_receive {:telemetry_event, @issue_created, %{count: 1}, metadata}
-      assert metadata == %{outcome: :error}
+      assert metadata == %{outcome: :error, reason: :http_error}
+    end
+
+    test "classifies a 201 without html_url and non-201 statuses as http_error" do
+      Application.put_env(:kanban, :github, token: "test-token", repo: "owner/repo")
+      attach_telemetry(@issue_created)
+
+      for {status, body} <- [
+            {201, %{}},
+            {401, %{"message" => "Bad credentials"}},
+            {403, %{"message" => "API rate limit exceeded"}},
+            {404, %{"message" => "Not Found"}},
+            {422, %{"message" => "Validation Failed"}},
+            {500, %{"message" => "boom"}}
+          ] do
+        Application.put_env(:kanban, :http_client, fn _url, _opts ->
+          {:ok, %Req.Response{status: status, body: body}}
+        end)
+
+        assert {:error, message} = GitHub.create_issue("title", "body", [])
+        assert message =~ "GitHub API returned status #{status}"
+
+        assert_receive {:telemetry_event, @issue_created, %{count: 1}, metadata}
+        assert metadata == %{outcome: :error, reason: :http_error}
+      end
+    end
+
+    test "a transport failure emits github.issue_created with reason transport_error" do
+      Application.put_env(:kanban, :github, token: "test-token", repo: "owner/repo")
+      attach_telemetry(@issue_created)
+
+      for error <- [%Req.TransportError{reason: :econnrefused}, "boom"] do
+        Application.put_env(:kanban, :http_client, fn _url, _opts -> {:error, error} end)
+
+        assert {:error, message} = GitHub.create_issue("title", "body", [])
+        assert message =~ "HTTP request failed"
+
+        assert_receive {:telemetry_event, @issue_created, %{count: 1}, metadata}
+        assert metadata == %{outcome: :error, reason: :transport_error}
+      end
+    end
+
+    test "issue_created metadata never carries error text or request details" do
+      Application.put_env(:kanban, :github, token: "tok-123", repo: "owner/repo")
+      attach_telemetry(@issue_created)
+
+      clients = [
+        fn _url, _opts ->
+          {:ok, %Req.Response{status: 401, body: %{"message" => "Bad credentials"}}}
+        end,
+        fn _url, _opts -> {:error, %Req.TransportError{reason: :econnrefused}} end,
+        fn _url, _opts ->
+          {:ok, %Req.Response{status: 201, body: %{"html_url" => "https://github.com/o/r/9"}}}
+        end
+      ]
+
+      for client <- clients do
+        Application.put_env(:kanban, :http_client, client)
+        GitHub.create_issue("Secret title", "Private body", ["defect"])
+
+        assert_receive {:telemetry_event, @issue_created, %{count: 1}, metadata}
+        assert metadata |> Map.keys() |> Enum.sort() == [:outcome, :reason]
+        assert metadata |> Map.values() |> Enum.all?(&is_atom/1)
+
+        rendered = inspect(metadata)
+
+        for leaked <- [
+              "Bad credentials",
+              "econnrefused",
+              "tok-123",
+              "owner/repo",
+              "Secret title",
+              "Private body",
+              "defect",
+              "github.com"
+            ] do
+          refute rendered =~ leaked
+        end
+      end
     end
 
     test "an unconfigured integration emits github.issue_created with outcome error" do
@@ -99,7 +178,20 @@ defmodule Kanban.GitHubTest do
       assert {:error, :not_configured} = GitHub.create_issue("title", "body", [])
 
       assert_receive {:telemetry_event, @issue_created, %{count: 1}, metadata}
-      assert metadata == %{outcome: :error}
+      assert metadata == %{outcome: :error, reason: :not_configured}
+    end
+
+    test "a half-configured integration emits reason not_configured" do
+      attach_telemetry(@issue_created)
+
+      for config <- [[token: "token"], [repo: "owner/repo"], [token: nil, repo: "owner/repo"]] do
+        Application.put_env(:kanban, :github, config)
+
+        assert {:error, :not_configured} = GitHub.create_issue("title", "body", [])
+
+        assert_receive {:telemetry_event, @issue_created, %{count: 1}, metadata}
+        assert metadata == %{outcome: :error, reason: :not_configured}
+      end
     end
 
     test "returns error when not configured" do
