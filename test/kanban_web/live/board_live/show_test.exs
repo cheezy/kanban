@@ -1220,6 +1220,51 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       refute render(show_live) =~ "Failed to move task"
     end
 
+    test "a move returning {:error, :conflict} shows the conflict flash and the view stays alive",
+         %{conn: conn, user: user} do
+      board = board_fixture(user)
+      column1 = column_fixture(board)
+      column2 = column_fixture(board)
+      column3 = column_fixture(board)
+      task = task_fixture(column1)
+
+      # D368: a concurrent mover keeps changing the task's column between the
+      # move's unlocked read and its locks, so every attempt conflicts.
+      original = Application.get_env(:kanban, Kanban.Tasks.Positioning)
+
+      on_exit(fn ->
+        if original,
+          do: Application.put_env(:kanban, Kanban.Tasks.Positioning, original),
+          else: Application.delete_env(:kanban, Kanban.Tasks.Positioning)
+      end)
+
+      Application.put_env(:kanban, Kanban.Tasks.Positioning,
+        after_column_read: fn task_id ->
+          moving = Kanban.Repo.get!(Kanban.Tasks.Task, task_id)
+          elsewhere = if moving.column_id == column1.id, do: column2.id, else: column1.id
+          moving |> Ecto.Changeset.change(column_id: elsewhere) |> Kanban.Repo.update!()
+        end
+      )
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}")
+
+      ExUnit.CaptureLog.capture_log(fn ->
+        show_live
+        |> render_hook("move_task", %{
+          "task_id" => to_string(task.id),
+          "old_column_id" => to_string(column1.id),
+          "new_column_id" => to_string(column3.id),
+          "new_position" => 0
+        })
+      end)
+
+      html = render(show_live)
+      assert html =~ "This task was moved by someone else at the same time. Please try again."
+      refute html =~ "Failed to move task"
+      assert Process.alive?(show_live.pid)
+      refute Kanban.Repo.get!(Kanban.Tasks.Task, task.id).column_id == column3.id
+    end
+
     test "archive_task removes task from column and shows success flash", %{
       conn: conn,
       user: user

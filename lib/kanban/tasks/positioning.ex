@@ -29,6 +29,7 @@ defmodule Kanban.Tasks.Positioning do
   alias Kanban.Columns.Stage
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
+  alias Kanban.Tasks.GoalPlacement
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.History
   alias Kanban.Tasks.Queries
@@ -37,9 +38,14 @@ defmodule Kanban.Tasks.Positioning do
 
   require Logger
 
+  @default_max_move_attempts 3
+
   @doc """
   Moves a task to a different column at a specific position.
   Respects WIP limit of target column.
+
+  Returns `{:ok, task}`, `{:error, :wip_limit_reached}`, or `{:error, :conflict}`
+  when concurrent moves kept changing what it must lock (D368, `perform_move/4`).
   """
   def move_task(%Task{} = task, %Column{} = new_column, new_position) do
     old_column_id = task.column_id
@@ -277,52 +283,90 @@ defmodule Kanban.Tasks.Positioning do
     end)
   end
 
+  # D368: every lock a move needs (its columns and its parent goal's, which may
+  # be re-placed) is read unlocked and taken in ONE ascending pass, then re-read
+  # under the locks (W2238); on a change the transaction rolls back and retries,
+  # `max_move_attempts` in all, then `{:error, :conflict}`.
   defp perform_move(stale_task, new_column, new_position, stale_column_id) do
-    Repo.transaction(fn ->
-      # Lock columns in consistent order to prevent deadlocks
-      lock_columns([stale_column_id, new_column.id])
+    config = Application.get_env(:kanban, __MODULE__, [])
 
-      # The caller's struct may predate a move that committed while this one
-      # waited on the locks (a bulk move holds every column of the board), so
-      # the source column and position are re-read under the locks (W2238).
-      # Renumbering from the stale values left a gap in the column the task
-      # had already moved to.
-      task = Repo.get!(Task, stale_task.id)
-      old_column_id = task.column_id
-      if old_column_id != stale_column_id, do: lock_columns([old_column_id])
+    move = %{
+      task_id: stale_task.id,
+      column: new_column,
+      position: new_position,
+      stale_column_id: stale_column_id,
+      # Test seam, unset outside tests: runs where a concurrent move would land.
+      after_column_read: Keyword.get(config, :after_column_read)
+    }
 
-      Logger.info(
-        "perform_move: task_id=#{task.id}, old_column=#{old_column_id}, new_column=#{new_column.id}, new_position=#{new_position}, old_position=#{task.position}"
-      )
+    attempt_move(move, move_attempts(config))
+  end
 
-      move_task_to_temp_position(task)
+  # Inside a caller's transaction (a bulk move) a rollback aborts it: no retry.
+  defp move_attempts(config) do
+    if Repo.in_transaction?(),
+      do: 1,
+      else: Keyword.get(config, :max_move_attempts, @default_max_move_attempts)
+  end
 
-      now = DateTime.utc_now(:second)
-      is_cross_column_move = new_column.id != old_column_id
+  defp attempt_move(move, attempts_left) do
+    column_id = Repo.get!(Task, move.task_id).column_id
+    locked = [move.stale_column_id, column_id, move.column.id | goal_columns(move.task_id)]
+    if move.after_column_read, do: move.after_column_read.(move.task_id)
 
-      position =
-        if is_cross_column_move do
-          handle_cross_column_move(task, new_column, new_position, old_column_id, now)
-        else
-          insert_at_index(new_column, task, new_position, now)
-        end
+    case Repo.transaction(fn -> move_under_locks(move, column_id, locked) end) do
+      {:error, :column_changed} when attempts_left > 1 -> attempt_move(move, attempts_left - 1)
+      {:error, :column_changed} -> {:error, :conflict}
+      result -> result
+    end
+  end
 
-      updated_task = finalize_task_move(task, new_column, position, is_cross_column_move, now)
+  defp goal_columns(task_id), do: GoalPlacement.parent_goal_column_ids(task_id)
 
+  defp move_under_locks(move, column_id, locked) do
+    lock_columns(locked)
+    task = Repo.get!(Task, move.task_id)
+
+    if task.column_id == column_id and goal_columns(task.id) -- locked == [],
+      do: move_locked_task(task, move.column, move.position),
+      else: Repo.rollback(:column_changed)
+  end
+
+  defp move_locked_task(task, new_column, new_position) do
+    old_column_id = task.column_id
+
+    Logger.info(
+      "perform_move: task_id=#{task.id}, old_column=#{old_column_id}, new_column=#{new_column.id}, new_position=#{new_position}, old_position=#{task.position}"
+    )
+
+    move_task_to_temp_position(task)
+
+    now = DateTime.utc_now(:second)
+    is_cross_column_move = new_column.id != old_column_id
+
+    position =
       if is_cross_column_move do
-        old_column = Columns.get_column!(old_column_id)
-        History.create_move_history(updated_task, old_column.name, new_column.name)
-
-        Goals.update_parent_goal_position(updated_task, old_column_id, new_column.id, now)
+        handle_cross_column_move(task, new_column, new_position, old_column_id, now)
+      else
+        insert_at_index(new_column, task, new_position, now)
       end
 
-      # The source column is the one re-read under the locks, not the caller's.
-      {updated_task, old_column_id}
-    end)
+    updated_task = finalize_task_move(task, new_column, position, is_cross_column_move, now)
+
+    if is_cross_column_move do
+      old_column = Columns.get_column!(old_column_id)
+      History.create_move_history(updated_task, old_column.name, new_column.name)
+
+      Goals.update_parent_goal_position(updated_task, old_column_id, new_column.id, now)
+    end
+
+    # The source column is the one re-read under the locks, not the caller's.
+    {updated_task, old_column_id}
   end
 
   defp lock_columns(column_ids) do
     column_ids
+    |> Enum.uniq()
     |> Enum.sort()
     |> Enum.each(fn col_id ->
       Repo.query!("SELECT pg_advisory_xact_lock($1)", [col_id])

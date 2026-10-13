@@ -20,6 +20,31 @@ defmodule Kanban.Tasks.GoalPlacement do
 
   require Logger
 
+  @doc """
+  The columns a move of task `task_id` can write to through its parent goal:
+  the goal's own column and every column one of the goal's children sits in,
+  since `Kanban.Tasks.Goals.update_parent_goal_position/4` re-places the goal
+  in one of its children's columns and shifts that column's tasks. Returns `[]`
+  when the task has no parent goal. `Kanban.Tasks.Positioning` locks these
+  columns with the move's own (D368).
+  """
+  def parent_goal_column_ids(task_id) do
+    from(t in Task,
+      join: g in Task,
+      on: g.id == t.parent_id and g.type == :goal,
+      left_join: c in Task,
+      on: c.parent_id == g.id,
+      where: t.id == ^task_id,
+      select: {g.column_id, c.column_id}
+    )
+    |> Repo.all()
+    |> Enum.flat_map(fn {goal_column_id, child_column_id} ->
+      [goal_column_id, child_column_id]
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+  end
+
   defp calculate_goal_target_position(min_child_position, last_goal_position) do
     cond do
       min_child_position != nil && last_goal_position != nil ->

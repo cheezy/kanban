@@ -19,6 +19,35 @@ defmodule Kanban.Tasks.GoalPlacementTest do
     Enum.map(tasks, &Repo.reload!/1)
   end
 
+  describe "parent_goal_column_ids/1 (D368)" do
+    test "lists the parent goal's column and every column its children sit in" do
+      board = board_fixture(user_fixture())
+      backlog = column_fixture(board, %{name: "Backlog"})
+      ready = column_fixture(board, %{name: "Ready"})
+      doing = column_fixture(board, %{name: "Doing"})
+
+      goal = task_fixture(backlog, %{title: "Goal", type: :goal})
+      mover = task_fixture(ready, %{title: "Mover", parent_id: goal.id})
+      _sibling = task_fixture(doing, %{title: "Sibling", parent_id: goal.id})
+      _same_column = task_fixture(ready, %{title: "Same column", parent_id: goal.id})
+      # Creating children re-places the goal, so put it back where the test needs it.
+      from(t in Task, where: t.id == ^goal.id) |> Repo.update_all(set: [column_id: backlog.id])
+
+      assert mover.id |> GoalPlacement.parent_goal_column_ids() |> Enum.sort() ==
+               Enum.sort([backlog.id, ready.id, doing.id])
+    end
+
+    test "is empty for a task with no parent goal" do
+      board = board_fixture(user_fixture())
+      column = column_fixture(board)
+      task = task_fixture(column)
+      goal = task_fixture(column, %{title: "Childless goal", type: :goal})
+
+      assert GoalPlacement.parent_goal_column_ids(task.id) == []
+      assert GoalPlacement.parent_goal_column_ids(goal.id) == []
+    end
+  end
+
   describe "move_goal_to_top_with_other_goals/3" do
     test "places the goal after the other goals and stamps it and the shifted tasks" do
       user = user_fixture()

@@ -401,4 +401,281 @@ defmodule Kanban.Tasks.PositioningTest do
       |> Repo.all()
     end
   end
+
+  describe "lock order and concurrent column changes (D368)" do
+    setup do
+      original = Application.get_env(:kanban, Positioning)
+      on_exit(fn -> restore_env(original) end)
+    end
+
+    defp restore_env(nil), do: Application.delete_env(:kanban, Positioning)
+    defp restore_env(original), do: Application.put_env(:kanban, Positioning, original)
+
+    # Moves the task the way a concurrent mover would, without taking any
+    # advisory lock. Position 90 + n keeps clear of the column's own tasks.
+    defp relocate!(task_id, column_id, position \\ 90) do
+      Kanban.Tasks.Task
+      |> where([t], t.id == ^task_id)
+      |> Repo.update_all(set: [column_id: column_id, position: position])
+    end
+
+    # A raw connection outside the test sandbox: a second Postgres session,
+    # so its advisory locks really contend with the move's.
+    defp second_session do
+      config = Keyword.drop(Repo.config(), [:pool, :pool_size, :ownership_timeout])
+      # Linked to the test process, so it closes when the test ends.
+      {:ok, conn} = Postgrex.start_link(config)
+      conn
+    end
+
+    test "perform_move locks stale, current and target columns in one ascending pass when the task moved meanwhile",
+         %{board: board} do
+      # The fixture's insert locks the column it creates the task in for the
+      # rest of the test (the sandbox never commits), so it gets a column of
+      # its own that the second session never touches.
+      created_in = column_fixture(board, %{name: "Created in"})
+      current = column_fixture(board, %{name: "Current"})
+      stale_col = column_fixture(board, %{name: "Stale"})
+      target = column_fixture(board, %{name: "Target"})
+      assert current.id < stale_col.id and stale_col.id < target.id
+
+      task = task_fixture(created_in)
+      relocate!(task.id, current.id, 0)
+      # The mover's struct says Stale; the task really sits in Current.
+      stale = %{Repo.get!(Kanban.Tasks.Task, task.id) | column_id: stale_col.id}
+
+      conn = second_session()
+      test_pid = self()
+
+      # Like a bulk move: hold the lowest column, then (once the move has had
+      # time to take whatever it takes first) ask for a higher one. A move
+      # that locks Stale and Target before Current deadlocks with this.
+      locker =
+        Task.async(fn ->
+          Postgrex.transaction(conn, fn c ->
+            Postgrex.query!(c, "SELECT pg_advisory_xact_lock($1)", [current.id])
+            send(test_pid, :current_locked)
+            Process.sleep(300)
+            Postgrex.query(c, "SELECT pg_advisory_xact_lock($1)", [stale_col.id])
+          end)
+        end)
+
+      assert_receive :current_locked, 5_000
+
+      assert {:ok, moved} = Positioning.move_task(stale, target, 0)
+      assert {:ok, {:ok, %Postgrex.Result{}}} = Task.await(locker, 10_000)
+
+      assert moved.column_id == target.id
+      assert moved.position == 0
+      assert live_order(current) == []
+    end
+
+    test "a child move also locks its parent goal's columns, in the same ascending pass",
+         %{board: board} do
+      # As in the test above, everything is created in a column the second
+      # session never touches, then placed without locks.
+      created_in = column_fixture(board, %{name: "Goal created in"})
+      leftmost = column_fixture(board, %{name: "Leftmost child"})
+      from_col = column_fixture(board, %{name: "Mover from"})
+      to_col = column_fixture(board, %{name: "Mover to"})
+
+      goal = task_fixture(created_in, %{title: "Goal", type: :goal})
+      child = task_fixture(created_in, %{title: "Child", parent_id: goal.id})
+      mover = task_fixture(created_in, %{title: "Mover", parent_id: goal.id})
+      relocate!(goal.id, to_col.id, 0)
+      relocate!(child.id, leftmost.id, 0)
+      relocate!(mover.id, from_col.id, 0)
+      mover = Repo.get!(Kanban.Tasks.Task, mover.id)
+
+      # The goal is re-placed into its leftmost child column, which is none of
+      # the mover's own columns: a drag holding it must make the move wait
+      # rather than have the goal's rows written under it.
+      conn = second_session()
+      test_pid = self()
+
+      holder =
+        Task.async(fn ->
+          Postgrex.transaction(conn, fn c ->
+            Postgrex.query!(c, "SELECT pg_advisory_xact_lock($1)", [leftmost.id])
+            send(test_pid, :leftmost_locked)
+            Process.sleep(400)
+          end)
+        end)
+
+      assert_receive :leftmost_locked, 5_000
+      started = System.monotonic_time(:millisecond)
+      assert {:ok, moved} = Positioning.move_task(mover, to_col, 0)
+      waited = System.monotonic_time(:millisecond) - started
+      assert {:ok, :ok} = Task.await(holder, 10_000)
+
+      assert waited >= 300
+      assert moved.column_id == to_col.id
+      assert Repo.get!(Kanban.Tasks.Task, goal.id).column_id == leftmost.id
+    end
+
+    test "a move whose parent goal gains a child column meanwhile is retried",
+         %{board: board} do
+      col_a = column_fixture(board, %{name: "Goal A"})
+      col_b = column_fixture(board, %{name: "Goal B"})
+      col_new = column_fixture(board, %{name: "New child column"})
+      goal = task_fixture(col_a, %{title: "Goal", type: :goal})
+      mover = task_fixture(col_a, %{title: "Mover", parent_id: goal.id})
+      sibling = task_fixture(col_a, %{title: "Sibling", parent_id: goal.id})
+      calls = :counters.new(1, [])
+
+      Application.put_env(:kanban, Positioning,
+        after_column_read: fn _task_id ->
+          :counters.add(calls, 1, 1)
+          if :counters.get(calls, 1) == 1, do: relocate!(sibling.id, col_new.id)
+        end
+      )
+
+      assert {:ok, moved} = Positioning.move_task(mover, col_b, 0)
+      assert :counters.get(calls, 1) == 2
+      assert moved.column_id == col_b.id
+    end
+
+    test "a task moved once between the read and the locks is retried and lands where it was dropped",
+         %{board: board} do
+      src = column_fixture(board, %{name: "Src"})
+      other = column_fixture(board, %{name: "Other"})
+      dst = column_fixture(board, %{name: "Dst"})
+      task = task_fixture(src)
+      _left_behind = task_fixture(src)
+      resident = task_fixture(dst)
+      calls = :counters.new(1, [])
+
+      Application.put_env(:kanban, Positioning,
+        after_column_read: fn task_id ->
+          :counters.add(calls, 1, 1)
+          if :counters.get(calls, 1) == 1, do: relocate!(task_id, other.id)
+        end
+      )
+
+      assert {:ok, moved} = Positioning.move_task(task, dst, 0)
+      assert :counters.get(calls, 1) == 2
+
+      assert moved.column_id == dst.id
+      assert live_order(dst) == [task.id, resident.id]
+      assert Repo.get!(Kanban.Tasks.Task, resident.id).position == 1
+      assert live_order(other) == []
+    end
+
+    test "a move whose task keeps changing column returns {:error, :conflict} after the retry cap",
+         %{board: board} do
+      a = column_fixture(board, %{name: "A"})
+      b = column_fixture(board, %{name: "B"})
+      dst = column_fixture(board, %{name: "Dst"})
+      task = task_fixture(a)
+      calls = :counters.new(1, [])
+
+      Application.put_env(:kanban, Positioning,
+        after_column_read: fn task_id ->
+          :counters.add(calls, 1, 1)
+          n = :counters.get(calls, 1)
+          relocate!(task_id, if(rem(n, 2) == 1, do: b.id, else: a.id), 90 + n)
+        end
+      )
+
+      assert {:error, :conflict} = Positioning.move_task(task, dst, 0)
+      assert :counters.get(calls, 1) == 3
+      assert live_order(dst) == []
+      assert Repo.get!(Kanban.Tasks.Task, task.id).column_id == b.id
+    end
+
+    test "max_move_attempts sets the retry cap", %{board: board} do
+      a = column_fixture(board, %{name: "A2"})
+      b = column_fixture(board, %{name: "B2"})
+      dst = column_fixture(board, %{name: "Dst2"})
+      task = task_fixture(a)
+      calls = :counters.new(1, [])
+
+      Application.put_env(:kanban, Positioning,
+        max_move_attempts: 1,
+        after_column_read: fn task_id ->
+          :counters.add(calls, 1, 1)
+          relocate!(task_id, b.id)
+        end
+      )
+
+      assert {:error, :conflict} = Positioning.move_task(task, dst, 0)
+      assert :counters.get(calls, 1) == 1
+    end
+
+    test "concurrent BulkActions.move and Positioning.move_task over overlapping columns (sandbox shared mode, Task.async) complete without deadlock_detected and leave contiguous positions",
+         %{user: user, board: board} do
+      # The shared sandbox serialises the two through one connection, so this
+      # guards the outcome (no exception, no position gaps); the
+      # second-session test above is the one that exercises the lock order.
+      todo = column_fixture(board, %{name: "Todo"})
+      doing = column_fixture(board, %{name: "Doing"})
+      done = column_fixture(board, %{name: "Done"})
+      bulk_ids = for _ <- 1..3, do: task_fixture(todo).id
+      dragged = task_fixture(doing)
+      _stays = task_fixture(doing)
+      scope = user_scope_fixture(user)
+
+      results =
+        [
+          Task.async(fn -> Kanban.Tasks.BulkActions.move(scope, board, bulk_ids, done.id) end),
+          Task.async(fn -> Positioning.move_task(dragged, todo, 0) end)
+        ]
+        |> Task.await_many(10_000)
+
+      assert [{:ok, %{count: 3}}, {:ok, _moved}] = results
+
+      for column <- [todo, doing, done] do
+        count = length(live_order(column))
+
+        assert column |> positions_of() |> Enum.map(&elem(&1, 1)) ==
+                 Enum.to_list(0..(count - 1)//1)
+      end
+
+      assert hd(live_order(todo)) == dragged.id
+    end
+
+    test "a task deleted while the move waits on the locks raises Ecto.NoResultsError, as before D368",
+         %{board: board} do
+      src = column_fixture(board, %{name: "Del src"})
+      dst = column_fixture(board, %{name: "Del dst"})
+      task = task_fixture(src)
+
+      Application.put_env(:kanban, Positioning,
+        after_column_read: fn task_id ->
+          Repo.delete_all(where(Kanban.Tasks.Task, [t], t.id == ^task_id))
+        end
+      )
+
+      assert_raise Ecto.NoResultsError, fn -> Positioning.move_task(task, dst, 0) end
+      assert live_order(dst) == []
+    end
+
+    test "a task archived while the move waits on the locks is still moved, as before D368",
+         %{board: board} do
+      src = column_fixture(board, %{name: "Arch src"})
+      dst = column_fixture(board, %{name: "Arch dst"})
+      task = task_fixture(src)
+
+      Application.put_env(:kanban, Positioning,
+        after_column_read: fn task_id -> archive!(%{id: task_id}) end
+      )
+
+      # Archiving does not change the column, so the re-read under the locks
+      # matches and the move goes ahead on the archived task.
+      assert {:ok, moved} = Positioning.move_task(task, dst, 0)
+      assert moved.column_id == dst.id
+      refute is_nil(moved.archived_at)
+    end
+
+    test "a move whose stale, current and target column are the same reorders in place",
+         %{board: board} do
+      col = column_fixture(board, %{name: "Same"})
+      first = task_fixture(col)
+      second = task_fixture(col)
+
+      assert {:ok, moved} = Positioning.move_task(second, col, 0)
+      assert moved.position == 0
+      assert live_order(col) == [second.id, first.id]
+    end
+  end
 end

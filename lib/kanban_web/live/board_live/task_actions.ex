@@ -85,6 +85,9 @@ defmodule KanbanWeb.BoardLive.TaskActions do
       {:error, :wip_limit_reached} ->
         handle_task_move_wip_limit(socket, new_column)
 
+      {:error, :conflict} ->
+        handle_task_move_conflict(socket)
+
       {:error, reason} ->
         Logger.error("Task move failed: #{inspect(reason)}")
 
@@ -121,6 +124,22 @@ defmodule KanbanWeb.BoardLive.TaskActions do
     socket
     |> put_flash(:error, gettext("Cannot move task: column has reached its WIP limit"))
     |> push_event("wip_limit_violation", %{column_id: new_column.id})
+    |> push_event("move_failed", %{})
+    |> BoardState.reload_board_columns()
+  end
+
+  # The task kept changing column under concurrent moves (D368). A fixed
+  # message — nothing about the task or the other mover is echoed — and the
+  # board is reloaded so the card shows where it really is.
+  defp handle_task_move_conflict(socket) do
+    require Logger
+    Logger.warning("Task move failed: the task was moved concurrently")
+
+    socket
+    |> put_flash(
+      :error,
+      gettext("This task was moved by someone else at the same time. Please try again.")
+    )
     |> push_event("move_failed", %{})
     |> BoardState.reload_board_columns()
   end

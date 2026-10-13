@@ -228,9 +228,12 @@ defmodule Kanban.Tasks.BulkActions do
 
   # ── Move ───────────────────────────────────────────────────────────
 
-  # Every column of the board, locked in ascending id order — the order
-  # Positioning's single move uses — so the batch cannot deadlock against a
-  # concurrent drag, whichever columns that drag touches.
+  # Every column of the board, locked in ascending id order. A single move
+  # (Positioning.move_task) also takes all of its column locks in one
+  # ascending pass, never one after a higher-numbered lock (D368), so neither
+  # side can hold a higher column while waiting on a lower one: the batch and
+  # a concurrent drag cannot deadlock on these advisory locks, whichever
+  # columns the drag touches.
   defp lock_board_columns(repo, %Board{id: board_id}) do
     columns =
       from(c in Column, where: c.board_id == ^board_id, order_by: c.id)
