@@ -97,14 +97,24 @@ Two kinds of metadata do carry text that the caller chose, so treat them as
 untrusted input in your handler:
 
 - **Request paths.** `path` on the `[:kanban, :api, ...]` task action events
-  and on `[:kanban, :api, :auth_failed]` is the request path, and so is
-  `endpoint` on `[:kanban, :api, :request]` and `[:kanban, :api, :error]` for
-  a route outside `/api/tasks` and `/api/agent`. `auth_failed`,
-  `api.request` and `api.error` also fire for a request with no valid token,
-  so a caller who is not signed in can choose part of these paths, such as
-  the task identifier in `/api/tasks/:id`.
+  and on `[:kanban, :api, :auth_failed]` is the request path. `auth_failed`
+  also fires for a request with no valid token, so a caller who is not signed
+  in can choose part of that path, such as the task identifier in
+  `/api/tasks/:id`.
 - **`agent_name`** on `[:kanban, :audit, :completion_notes_credential_suspected]`
   is the name the agent reported for itself, cut to 2,000 characters.
+
+`endpoint` on `[:kanban, :api, :request]` and `[:kanban, :api, :error]` is not
+caller-chosen, although both events also fire for a request with no valid
+token. It is the template of the route the router matched, such as
+`/api/tasks/:id/complete`, or the fixed string `unmatched` when the route
+cannot be resolved. It is never built from the path the caller sent, so
+`/api/mcp/`, `/api///mcp`, `/api/openapi%2Ejson` and a task identifier all
+give one value. A request to a path with no route is rejected by the router
+before either event fires, so it is not counted at all. `endpoint` is a
+[tag](#tag-rule), so its set of values has to stay small. Rows stored before
+this rule can still carry a raw path until
+[retention](#metrics-retention) removes them.
 
 The app enforces this in three places:
 

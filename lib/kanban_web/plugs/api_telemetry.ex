@@ -2,8 +2,19 @@ defmodule KanbanWeb.Plugs.ApiTelemetry do
   @moduledoc """
   Plug to emit telemetry events for API requests.
   Tracks request count, duration, and errors for all API endpoints.
+
+  The `endpoint` metadata is a metric tag, so its set of values must stay
+  small and fixed. It is the template of the route the router matched, such
+  as `"/api/tasks/:id/complete"`, or the fixed string `"unmatched"` when there
+  is no router on the conn or the route cannot be resolved. It is never built
+  from the path the caller sent, so slash variants such as `/api///mcp//`,
+  percent-encoded spellings such as `/api/openapi%2Ejson` and any identifier
+  in the path collapse to one value. A request that matches no route never
+  reaches this plug: the router rejects it first.
   """
   import Plug.Conn
+
+  @unmatched "unmatched"
 
   def init(opts), do: opts
 
@@ -13,7 +24,7 @@ defmodule KanbanWeb.Plugs.ApiTelemetry do
     conn
     |> register_before_send(fn conn ->
       duration = System.monotonic_time() - start_time
-      endpoint = extract_endpoint(conn)
+      endpoint = endpoint_tag(conn)
       status = conn.status
 
       # Emit request count and duration
@@ -36,21 +47,21 @@ defmodule KanbanWeb.Plugs.ApiTelemetry do
     end)
   end
 
-  defp extract_endpoint(conn) do
-    case conn.path_info do
-      ["api", "tasks" | rest] -> extract_tasks_endpoint(rest)
-      ["api", "agent" | rest] -> extract_agent_endpoint(rest)
-      _ -> conn.request_path
-    end
+  # The router percent-decodes each path segment before it matches a route
+  # (Phoenix.Router call/2), so the lookup decodes them the same way. Without
+  # that, /api/openapi%2Ejson is served by the openapi route but looked up as
+  # no route, and /api/tasks/n%65xt would be tagged with the show route.
+  defp endpoint_tag(%Plug.Conn{private: %{phoenix_router: router}} = conn)
+       when is_atom(router) and not is_nil(router) do
+    segments = Enum.map(conn.path_info, &URI.decode/1)
+
+    router
+    |> Phoenix.Router.route_info(conn.method, segments, conn.host)
+    |> route_template()
   end
 
-  defp extract_tasks_endpoint([]), do: "/api/tasks"
-  defp extract_tasks_endpoint(["next"]), do: "/api/tasks/next"
-  defp extract_tasks_endpoint(["batch"]), do: "/api/tasks/batch"
-  defp extract_tasks_endpoint(["claim"]), do: "/api/tasks/claim"
-  defp extract_tasks_endpoint([_id]), do: "/api/tasks/:id"
-  defp extract_tasks_endpoint([_id, action]), do: "/api/tasks/:id/#{action}"
+  defp endpoint_tag(_conn), do: @unmatched
 
-  defp extract_agent_endpoint(["onboarding"]), do: "/api/agent/onboarding"
-  defp extract_agent_endpoint(_), do: "/api/agent"
+  defp route_template(%{route: route}) when is_binary(route), do: route
+  defp route_template(_no_route), do: @unmatched
 end
