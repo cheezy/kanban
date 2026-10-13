@@ -82,6 +82,9 @@ defmodule Kanban.Tasks.GoalTargetColumn do
   #    has not yet fired (W493). Hold the goal in its current column so
   #    it remains visible as In Progress (using pick_leftmost_child_column
   #    here would pick Done since that's where all the kids are).
+  #    build_goal_context/1 loads every column of the goal's own board, so
+  #    column_map always holds the goal's column; Map.fetch!/2 raises only
+  #    if that invariant breaks.
   # 3. Children spread across columns → pick the leftmost child column.
   defp determine_target_column(goal_context, parent_goal) do
     done_column = find_done_column(goal_context.all_columns)
@@ -90,8 +93,7 @@ defmodule Kanban.Tasks.GoalTargetColumn do
       cond do
         all_children_in_done?(goal_context, done_column) and
             after_goal_blocks_done?(parent_goal) ->
-          goal_context.column_map[parent_goal.column_id] ||
-            pick_leftmost_non_done_column(goal_context, done_column)
+          Map.fetch!(goal_context.column_map, parent_goal.column_id)
 
         all_children_in_done?(goal_context, done_column) ->
           done_column
@@ -110,22 +112,6 @@ defmodule Kanban.Tasks.GoalTargetColumn do
   # flip `:pending` → `:succeeded`.
   defp after_goal_blocks_done?(%Task{after_goal_status: :pending}), do: true
   defp after_goal_blocks_done?(_), do: false
-
-  # Fallback when the parent goal's current column is no longer in the
-  # board's column set (e.g., archived). Picks the leftmost column that
-  # is not Done so the goal stays visibly In Progress while after_goal
-  # is pending.
-  #
-  # Note (W2349): build_goal_context/1 loads every column of the goal's own
-  # board and Column has no archive field, so column_map always holds the
-  # goal's column and resolve/1 cannot currently reach this fallback. It is
-  # kept unchanged because this module was a behaviour-preserving move, so no
-  # test covers it.
-  defp pick_leftmost_non_done_column(goal_context, done_column) do
-    goal_context.all_columns
-    |> Enum.reject(fn col -> done_column && col.id == done_column.id end)
-    |> List.first() || List.first(goal_context.all_columns)
-  end
 
   defp all_children_in_done?(_goal_context, nil), do: false
 
