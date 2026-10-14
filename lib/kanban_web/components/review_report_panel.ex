@@ -11,7 +11,7 @@ defmodule KanbanWeb.ReviewReportPanel do
       `review_report` markdown body (D62) sourced from the structured payload.
       The status pill, acceptance-criteria grid, and the per-section verdict
       tiles (testing strategy, patterns, pitfalls, security considerations) are
-      owned by `ReviewLive`, not this panel. Emits the
+      owned by `ReviewLive`, not this panel. Counted by the
       `[:kanban, :review, :structured_used]` telemetry event so the rollout can
       confirm the new path is reached.
 
@@ -19,15 +19,19 @@ defmodule KanbanWeb.ReviewReportPanel do
       legacy `review_report` markdown is present. Reuses
       `KanbanWeb.ReviewReportHelpers` (the same regex-based extractors the
       `ReviewLive` page uses) to derive the three verdict tiles, then
-      renders the markdown body via Earmark. Emits
+      renders the markdown body via Earmark. Counted by
       `[:kanban, :review, :fallback_used]` so the leading indicator can
-      track legacy-path renders.
+      track the legacy path.
 
     * **Empty** — both fields absent. Renders nothing, so callers can
       embed the component unconditionally.
 
   Purely presentational. Accept the task as an assign — do not call
   `Kanban.Repo` from inside the component.
+
+  Rendering emits nothing: a render runs again on every change to the host
+  page, so it would count re-renders rather than views. Each host calls
+  `track_view/2` instead, where the task it shows changes.
   """
   use KanbanWeb, :html
 
@@ -46,7 +50,6 @@ defmodule KanbanWeb.ReviewReportPanel do
 
   def review_report_panel(assigns) do
     branch = pick_branch(assigns.task)
-    emit_telemetry(branch, assigns.task)
 
     assigns =
       assigns
@@ -266,6 +269,37 @@ defmodule KanbanWeb.ReviewReportPanel do
   defp review_report(_), do: nil
 
   # --- Telemetry -----------------------------------------------------------
+
+  @doc """
+  Records that a host page is showing `task`'s review report, and emits
+  `[:kanban, :review, :structured_used]` or `[:kanban, :review, :fallback_used]`
+  once for that task. Call it from the host's mount, `update/2` or event
+  handler wherever the shown task changes, never from a render; pass `nil`
+  when no task is shown.
+
+  The task id shown last is kept in the `:review_report_viewed_id` assign, so
+  showing the same task again, or re-rendering, emits nothing. The
+  disconnected first render emits nothing either, so a page load counts once.
+  A task with no report emits nothing.
+  """
+  def track_view(socket, task) do
+    id = if is_map(task), do: Map.get(task, :id)
+
+    cond do
+      id == socket.assigns[:review_report_viewed_id] ->
+        socket
+
+      is_nil(id) ->
+        Phoenix.Component.assign(socket, :review_report_viewed_id, nil)
+
+      not Phoenix.LiveView.connected?(socket) ->
+        socket
+
+      true ->
+        task |> pick_branch() |> emit_telemetry(task)
+        Phoenix.Component.assign(socket, :review_report_viewed_id, id)
+    end
+  end
 
   defp emit_telemetry(:structured, task) do
     Kanban.Telemetry.emit(

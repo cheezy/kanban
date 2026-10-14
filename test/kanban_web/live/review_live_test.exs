@@ -475,6 +475,52 @@ defmodule KanbanWeb.ReviewLiveTest do
     end
   end
 
+  describe "review report telemetry" do
+    setup [:register_and_log_in_user]
+
+    test "counts one structured_used per task viewed, not per re-render",
+         %{conn: conn, user: user} do
+      %{column: column} = setup_review_column(user)
+
+      task =
+        pending_task!(column, %{
+          actual_files_changed: "lib/a.ex, lib/b.ex",
+          changed_files: with_diffs(["lib/a.ex", "lib/b.ex"]),
+          reviewer_result: %{"summary" => "Looks fine", "issues" => []}
+        })
+
+      task_id = task.id
+      test_pid = self()
+      handler_id = "review-report-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :review, :structured_used],
+        fn _event, _measurements, %{task_id: id}, _ ->
+          if id == task_id, do: send(test_pid, :structured_used)
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
+      # The connected mount selects the task: one view.
+      {:ok, view, _html} = live(conn, ~p"/review")
+      assert_receive :structured_used
+
+      # Opening files in the diff panel re-renders the report; no new view.
+      render_hook(view, "select_changed_file", %{"path" => "lib/a.ex"})
+      render_hook(view, "select_changed_file", %{"path" => "lib/b.ex"})
+      refute_receive :structured_used, 100
+
+      # Leaving the task and coming back is a new view.
+      render_click(view, "deselect_item", %{})
+      render_hook(view, "select_item", %{"id" => to_string(task_id)})
+      assert_receive :structured_used
+      refute_receive :structured_used, 100
+    end
+  end
+
   describe "review_diff_panel telemetry" do
     setup [:register_and_log_in_user]
 

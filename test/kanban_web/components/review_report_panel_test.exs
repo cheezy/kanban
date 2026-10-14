@@ -41,6 +41,10 @@ defmodule KanbanWeb.ReviewReportPanelTest do
     handler_id
   end
 
+  # A LiveView socket that counts as connected (it has a transport pid).
+  defp connected_socket,
+    do: %Phoenix.LiveView.Socket{transport_pid: self(), assigns: %{__changed__: %{}}}
+
   describe "structured branch" do
     setup do
       task = %{
@@ -129,9 +133,45 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       event = [:kanban, :review, :structured_used]
       attach_telemetry(event, task)
 
-      _ = render_with(task)
+      ReviewReportPanel.track_view(connected_socket(), task)
 
       assert_receive {:telemetry_event, ^event, %{count: 1}, %{task_id: 1, identifier: "W42"}}
+    end
+
+    test "rendering emits nothing; only track_view/2 counts a view", %{task: task} do
+      event = [:kanban, :review, :structured_used]
+      attach_telemetry(event, task)
+
+      _ = render_with(task)
+      _ = render_with(task)
+
+      refute_received {:telemetry_event, ^event, _, _}
+    end
+
+    test "track_view/2 counts a task once, however often it is shown again", %{task: task} do
+      event = [:kanban, :review, :structured_used]
+      attach_telemetry(event, task)
+
+      socket = ReviewReportPanel.track_view(connected_socket(), task)
+      socket = ReviewReportPanel.track_view(socket, task)
+      assert socket.assigns.review_report_viewed_id == task.id
+      assert_receive {:telemetry_event, ^event, _, _}
+      refute_received {:telemetry_event, ^event, _, _}
+
+      # Showing nothing, then the task again, is a new view.
+      socket |> ReviewReportPanel.track_view(nil) |> ReviewReportPanel.track_view(task)
+      assert_receive {:telemetry_event, ^event, _, _}
+    end
+
+    test "track_view/2 emits nothing for the disconnected first render", %{task: task} do
+      event = [:kanban, :review, :structured_used]
+      attach_telemetry(event, task)
+
+      socket = %Phoenix.LiveView.Socket{assigns: %{__changed__: %{}}}
+      socket = ReviewReportPanel.track_view(socket, task)
+
+      refute Map.has_key?(socket.assigns, :review_report_viewed_id)
+      refute_received {:telemetry_event, ^event, _, _}
     end
 
     test "renders 'No issues' placeholder when issues list is empty", %{task: task} do
@@ -289,7 +329,7 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       event = [:kanban, :review, :fallback_used]
       attach_telemetry(event, task)
 
-      _ = render_with(task)
+      ReviewReportPanel.track_view(connected_socket(), task)
 
       assert_receive {:telemetry_event, ^event, %{count: 1}, %{task_id: 7, identifier: "W99"}}
     end
@@ -298,7 +338,7 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       event = [:kanban, :review, :structured_used]
       attach_telemetry(event, task)
 
-      _ = render_with(task)
+      ReviewReportPanel.track_view(connected_socket(), task)
 
       refute_received {:telemetry_event, ^event, _, _}
     end
@@ -344,7 +384,7 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       attach_telemetry(fallback, task)
       attach_telemetry(structured, task)
 
-      _ = render_with(task)
+      ReviewReportPanel.track_view(connected_socket(), task)
 
       refute_received {:telemetry_event, ^fallback, _, _}
       refute_received {:telemetry_event, ^structured, _, _}
@@ -483,6 +523,7 @@ defmodule KanbanWeb.ReviewReportPanelTest do
       attach_telemetry(event, task)
 
       html = render_with(task)
+      ReviewReportPanel.track_view(connected_socket(), task)
 
       assert html =~ ~s(data-review-report-panel="structured")
       refute html =~ ~s(data-review-report-panel="fallback")

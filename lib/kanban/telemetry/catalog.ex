@@ -360,7 +360,7 @@ defmodule Kanban.Telemetry.Catalog do
       domain: :review,
       measurements: [:count],
       metadata: [:task_id, :identifier],
-      description: "The review panel rendered from the structured review block.",
+      description: "A task's review report, built from the structured review block, was shown.",
       legacy: true,
       metrics: [counter: :count],
       persist: true
@@ -371,7 +371,7 @@ defmodule Kanban.Telemetry.Catalog do
       domain: :review,
       measurements: [:count],
       metadata: [:task_id, :identifier],
-      description: "The review panel fell back to parsing the legacy review summary.",
+      description: "A task's review report, parsed from the legacy review summary, was shown.",
       legacy: true,
       metrics: [counter: :count],
       persist: true

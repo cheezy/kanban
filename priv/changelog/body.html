@@ -269,6 +269,17 @@
             style="color: var(--ink-2);"
           >
             <li>
+              <strong>The review report metrics count views, not page
+              updates.</strong>
+              <code>kanban.review.structured_used.count</code> and
+              <code>kanban.review.fallback_used.count</code> were recorded
+              every time the page holding a review report re-rendered, so
+              opening a file in the review queue's diff panel, or any live
+              update, counted the same report again. They are now recorded
+              once each time a task's report is shown in the review queue, the
+              task view or the task form.
+            </li>
+            <li>
               <strong>The after_goal delivery metric counts real deliveries
               only.</strong>
               <code>kanban.api.after_goal_delivered.count</code> is now

@@ -47,6 +47,7 @@ defmodule KanbanWeb.ReviewLive do
      socket
      |> emit_panel_closed_if_open()
      |> assign(:selected, task)
+     |> ReviewReportPanel.track_view(task)
      |> assign(:request_changes_open?, false)
      |> assign(:selected_changed_file, nil)}
   end
@@ -57,6 +58,7 @@ defmodule KanbanWeb.ReviewLive do
      socket
      |> emit_panel_closed_if_open()
      |> assign(:selected, nil)
+     |> ReviewReportPanel.track_view(nil)
      |> assign(:request_changes_open?, false)
      |> assign(:selected_changed_file, nil)}
   end
@@ -192,6 +194,7 @@ defmodule KanbanWeb.ReviewLive do
     socket
     |> assign(:pending, new_pending)
     |> assign(:selected, reloaded)
+    |> ReviewReportPanel.track_view(reloaded)
     |> refetch_result_flash(reloaded)
   end
 
@@ -283,6 +286,7 @@ defmodule KanbanWeb.ReviewLive do
     |> assign(:pending, pending)
     |> assign(:stats, stats)
     |> assign(:selected, List.first(pending))
+    |> ReviewReportPanel.track_view(List.first(pending))
     |> assign(:request_changes_open?, false)
     |> assign(:selected_changed_file, nil)
     |> assign(:diff_panel_opened_for_task_id, nil)
@@ -299,6 +303,7 @@ defmodule KanbanWeb.ReviewLive do
     |> assign(:pending, new_pending)
     |> assign(:stats, new_stats)
     |> assign(:selected, new_selected)
+    |> ReviewReportPanel.track_view(new_selected)
     |> assign(:request_changes_open?, false)
     |> assign(:selected_changed_file, nil)
   end

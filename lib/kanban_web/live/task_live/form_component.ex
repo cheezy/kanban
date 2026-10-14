@@ -55,7 +55,9 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   defp assign_task_data(socket, task_data) do
-    assign(socket,
+    socket
+    |> ReviewReportPanel.track_view(task_data.review_task)
+    |> assign(
       task: task_data.task_with_associations,
       column_options: task_data.column_options,
       assignable_users: task_data.assignable_users,
@@ -87,7 +89,9 @@ defmodule KanbanWeb.TaskLive.FormComponent do
       column_options: column_options,
       assignable_users: assignable_users,
       goal_options: goal_options,
-      changeset: changeset
+      changeset: changeset,
+      # Only the edit form shows the task's review report.
+      review_task: if(action == :edit_task, do: task)
     }
   end
 

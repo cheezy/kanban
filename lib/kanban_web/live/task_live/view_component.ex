@@ -56,6 +56,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
      socket
      |> assign(incoming)
      |> assign(:task, task)
+     |> ReviewReportPanel.track_view(task)
      |> assign(:board_id, expected_board_id)
      |> assign_caller_defaults(assigns)
      |> reset_or_keep_selection(same_task?)}

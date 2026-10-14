@@ -1047,8 +1047,8 @@ the sections above explain which code emits each family and when.
 
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
-| `[:kanban, :review, :structured_used]` | event, legacy | `count` | `task_id`, `identifier` | The review panel rendered from the structured review block. |
-| `[:kanban, :review, :fallback_used]` | event, legacy | `count` | `task_id`, `identifier` | The review panel fell back to parsing the legacy review summary. |
+| `[:kanban, :review, :structured_used]` | event, legacy | `count` | `task_id`, `identifier` | A task's review report, built from the structured review block, was shown. |
+| `[:kanban, :review, :fallback_used]` | event, legacy | `count` | `task_id`, `identifier` | A task's review report, parsed from the legacy review summary, was shown. |
 
 ### Domain `review_diff_panel`
 
