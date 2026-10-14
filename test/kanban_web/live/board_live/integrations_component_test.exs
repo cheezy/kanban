@@ -292,6 +292,12 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
       assert cell =~ "…"
       [_, text] = Regex.run(~r/>\s*([^<]*?)\s*</, cell)
       assert String.length(text) <= 161
+
+      # The tooltip is cut too, so a log of 64 KB errors stays small.
+      [_, title] = Regex.run(~r/title="([^"]*)"/, cell)
+      assert String.starts_with?(title, "HTTP 500: xxx")
+      assert String.length(title) == 2_001
+      assert String.ends_with?(title, "…")
     end
 
     test "an endpoint id from another board, or a malformed id, is refused for every action",

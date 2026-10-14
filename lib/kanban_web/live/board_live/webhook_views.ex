@@ -9,7 +9,9 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
   event reaches the component, which re-checks ownership; the secret's Copy
   button only runs client-side. An endpoint's URL is never rendered,
   only its host: a Slack incoming-webhook URL is a credential. Text a
-  receiver sent back (the delivery error) is shown escaped and cut short.
+  receiver sent back (the delivery error) is shown escaped and cut short,
+  and its tooltip is cut too: a stored error can be 64 KB, and the log shows
+  up to 20 of them.
   """
   use KanbanWeb, :html
 
@@ -18,6 +20,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
   alias KanbanWeb.TimeAgo
 
   @error_preview 160
+  @error_title 2_000
 
   @doc """
   The signing secret, shown once after a create or a rotation, with a copy
@@ -301,7 +304,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
               <td style={cell_style()}>#{delivery.attempt}</td>
               <td style={cell_style()}>{delivery.response_status || "—"}</td>
               <td
-                title={delivery.error}
+                title={truncate(delivery.error, error_title())}
                 style={[
                   cell_style(),
                   "max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
@@ -386,6 +389,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
   end
 
   defp error_preview, do: @error_preview
+  defp error_title, do: @error_title
 
   defp cell_style, do: "padding: 5px 8px 5px 0; vertical-align: top;"
 end
