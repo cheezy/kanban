@@ -1,12 +1,13 @@
 defmodule Kanban.Webhooks.Endpoint do
   @moduledoc """
   A board's outbound webhook endpoint (W2226): a generic receiver of signed
-  JSON, or a Slack incoming webhook.
+  JSON, a Slack incoming webhook, or a Discord webhook (W2367).
 
   The signing secret is stored only as `SecretBox` ciphertext in
   `encrypted_secret`, and the URL is stored encrypted too, through
   `Kanban.Integrations.EncryptedString`, because a Slack incoming-webhook URL
-  is a credential: whoever holds it can post to the channel. Both are
+  or a Discord webhook URL (which embeds the webhook's token) is a
+  credential: whoever holds it can post to the channel. Both are
   redacted from `inspect/1`. The virtual `secret` field carries the plaintext on the
   struct returned by a create or a rotation, so it can be shown once; a
   struct loaded from the database never has it. `board_id`, `created_by_id`
@@ -31,9 +32,15 @@ defmodule Kanban.Webhooks.Endpoint do
     task.deleted
   )
 
-  @kinds [:generic, :slack]
+  @kinds [:generic, :slack, :discord]
 
   @slack_url_message "must be a Slack incoming webhook URL starting with https://hooks.slack.com/"
+
+  @discord_url_message "must be a Discord webhook URL starting with https://discord.com/api/webhooks/"
+
+  # Exact host names Discord serves webhooks from (ptb. and canary. are the
+  # URLs its test clients copy). Compared whole, never as a suffix.
+  @discord_hosts ~w(discord.com discordapp.com ptb.discord.com canary.discord.com)
 
   schema "webhook_endpoints" do
     field :kind, Ecto.Enum, values: @kinds, default: :generic
@@ -59,8 +66,10 @@ defmodule Kanban.Webhooks.Endpoint do
   @doc """
   Casts the owner-editable fields: `kind`, `url`, `event_types` and
   `enabled`. The URL gets `UrlGuard.validate_syntax/2` (no DNS); `opts` is
-  passed through to it. At least one known event type is required, and a
-  `:slack` endpoint's URL must be a Slack incoming webhook (`slack_url?/1`).
+  passed through to it. At least one known event type is required, a
+  `:slack` endpoint's URL must be a Slack incoming webhook (`slack_url?/1`),
+  and a `:discord` endpoint's URL must be a Discord webhook
+  (`discord_url?/1`).
   """
   def changeset(endpoint, attrs, opts \\ []) do
     endpoint
@@ -71,7 +80,7 @@ defmodule Kanban.Webhooks.Endpoint do
     |> validate_some_event_types()
     |> validate_subset(:event_types, @event_types)
     |> validate_url(opts)
-    |> validate_slack_url()
+    |> validate_kind_url()
   end
 
   @doc """
@@ -89,6 +98,30 @@ defmodule Kanban.Webhooks.Endpoint do
   end
 
   def slack_url?(_url), do: false
+
+  @doc """
+  Whether `url` is a Discord webhook URL: `https` on the default port, with
+  no username or password, to `discord.com`, `discordapp.com`,
+  `ptb.discord.com` or `canary.discord.com`, and a path of
+  `/api/webhooks/{id}/{token}` or `/api/v{n}/webhooks/{id}/{token}` (a
+  trailing slash and a query string such as `?wait=true` are allowed). Any
+  other Discord API route is refused.
+  """
+  def discord_url?(url) when is_binary(url) do
+    case URI.new(url) do
+      {:ok, %URI{scheme: "https", host: host, port: 443, userinfo: nil, path: path}}
+      when is_binary(host) and is_binary(path) ->
+        String.downcase(host) in @discord_hosts and discord_webhook_path?(path)
+
+      _other ->
+        false
+    end
+  end
+
+  def discord_url?(_url), do: false
+
+  defp discord_webhook_path?(path),
+    do: Regex.match?(~r<\A/api(?:/v\d{1,3})?/webhooks/\d{1,20}/[A-Za-z0-9_-]+/?\z>, path)
 
   # Checked on the field, not the change: casting [] onto the default [] is
   # no change at all, so validate_length/3 would never see it.
@@ -108,16 +141,25 @@ defmodule Kanban.Webhooks.Endpoint do
   end
 
   # Checked on the fields, not the changes, so switching an endpoint's kind
-  # to :slack while keeping a generic URL is refused too. A URL that already
-  # has an error keeps only that one.
-  defp validate_slack_url(changeset) do
+  # to :slack or :discord while keeping a generic URL is refused too. A URL
+  # that already has an error keeps only that one.
+  defp validate_kind_url(changeset) do
     url = get_field(changeset, :url)
 
-    if get_field(changeset, :kind) == :slack and is_binary(url) and
-         is_nil(changeset.errors[:url]) and not slack_url?(url),
-       do: add_error(changeset, :url, @slack_url_message, validation: :slack_url),
-       else: changeset
+    case kind_url_rule(get_field(changeset, :kind)) do
+      {valid?, message, validation} when is_binary(url) ->
+        if is_nil(changeset.errors[:url]) and not valid?.(url),
+          do: add_error(changeset, :url, message, validation: validation),
+          else: changeset
+
+      _no_rule ->
+        changeset
+    end
   end
+
+  defp kind_url_rule(:slack), do: {&slack_url?/1, @slack_url_message, :slack_url}
+  defp kind_url_rule(:discord), do: {&discord_url?/1, @discord_url_message, :discord_url}
+  defp kind_url_rule(_kind), do: nil
 
   defp validate_url(changeset, opts) do
     validate_change(changeset, :url, fn :url, url ->

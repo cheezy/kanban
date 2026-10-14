@@ -13,12 +13,14 @@ defmodule Kanban.Webhooks.DeliveryWorkerTest do
   alias Kanban.Webhooks
   alias Kanban.Webhooks.Delivery
   alias Kanban.Webhooks.DeliveryWorker
+  alias Kanban.Webhooks.DiscordFormatter
   alias Kanban.Webhooks.Endpoint
   alias Kanban.Webhooks.Payload
   alias Kanban.Webhooks.Signer
   alias Kanban.Webhooks.Transport
 
   @slack_url "https://hooks.slack.com/services/T000/B000/XXXX"
+  @discord_url "https://discord.com/api/webhooks/100000000000000001/not-a-real-token"
 
   setup do
     board = ai_optimized_board_fixture(user_fixture())
@@ -54,6 +56,8 @@ defmodule Kanban.Webhooks.DeliveryWorkerTest do
       Plug.Conn.send_resp(conn, status, body)
     end)
   end
+
+  defp stringify(map), do: map |> Jason.encode!() |> Jason.decode!()
 
   defp deliveries(endpoint) do
     Delivery |> where(endpoint_id: ^endpoint.id) |> order_by(:id) |> Repo.all()
@@ -290,6 +294,93 @@ defmodule Kanban.Webhooks.DeliveryWorkerTest do
       assert {:cancel, :not_slack_url} = perform_job(DeliveryWorker, args(ctx.slack, ctx.payload))
       refute_received {:request, _, _}
       assert [%Delivery{error: "not_slack_url"}] = deliveries(ctx.slack)
+    end
+  end
+
+  describe "a discord endpoint" do
+    setup ctx do
+      %{discord: webhook_endpoint_fixture(ctx.board, kind: :discord, url: @discord_url)}
+    end
+
+    test "receives the DiscordFormatter body with no x-stride-* headers", ctx do
+      stub(204, "")
+
+      assert :ok = perform_job(DeliveryWorker, args(ctx.discord, ctx.payload))
+
+      assert_received {:request, conn, body}
+      assert conn.host == "162.159.128.233"
+      assert Plug.Conn.get_req_header(conn, "host") == ["discord.com"]
+      assert conn.request_path == "/api/webhooks/100000000000000001/not-a-real-token"
+      assert Plug.Conn.get_req_header(conn, "content-type") == ["application/json"]
+
+      for header <- ~w(x-stride-signature x-stride-event x-stride-delivery) do
+        assert Plug.Conn.get_req_header(conn, header) == []
+      end
+
+      # perform_job/3 stores args with string keys, as the worker sees them.
+      envelope = ctx.payload |> Jason.encode!() |> Jason.decode!()
+      assert Jason.decode!(body) == envelope |> DiscordFormatter.format() |> stringify()
+      assert %{"allowed_mentions" => %{"parse" => []}, "embeds" => [_]} = Jason.decode!(body)
+      assert [%Delivery{status: :succeeded, response_status: 204}] = deliveries(ctx.discord)
+    end
+
+    test "keeps the query string of the stored URL", ctx do
+      endpoint =
+        webhook_endpoint_fixture(ctx.board, kind: :discord, url: @discord_url <> "?wait=true")
+
+      stub(200, "{}")
+
+      assert :ok = perform_job(DeliveryWorker, args(endpoint, ctx.payload))
+      assert_received {:request, conn, _body}
+      assert conn.query_string == "wait=true"
+    end
+
+    test "a ping is delivered as a Discord test message", ctx do
+      stub(204, "")
+
+      assert :ok = perform_job(DeliveryWorker, args(ctx.discord, Payload.ping(ctx.board), "ping"))
+      assert_received {:request, _conn, body}
+      assert %{"content" => "Stride test message" <> _} = Jason.decode!(body)
+    end
+
+    test "a stored URL that is not a Discord webhook is cancelled", ctx do
+      stub(200)
+
+      for url <- ["https://hooks.example.com/x", @slack_url] do
+        Repo.delete_all(Delivery)
+        # update_all skips the changeset (and its Discord check) but still
+        # encrypts through the field's type.
+        Endpoint |> where(id: ^ctx.discord.id) |> Repo.update_all(set: [url: url])
+
+        assert {:cancel, :not_discord_url} =
+                 perform_job(DeliveryWorker, args(ctx.discord, ctx.payload))
+
+        refute_received {:request, _, _}
+        assert [%Delivery{status: :failed, error: "not_discord_url"}] = deliveries(ctx.discord)
+      end
+    end
+
+    test "a 404 from a deleted Discord webhook is recorded and cancelled; a 429 is retried",
+         ctx do
+      unknown = ~s({"message": "Unknown Webhook", "code": 10015})
+
+      for status <- [401, 404] do
+        stub(status, unknown)
+
+        assert {:cancel, {:http_status, ^status}} =
+                 perform_job(DeliveryWorker, args(ctx.discord, ctx.payload))
+
+        assert %Delivery{status: :failed, response_status: ^status, error: error} =
+                 ctx.discord |> deliveries() |> List.last()
+
+        assert error == "HTTP #{status}: " <> unknown
+        refute error =~ "not-a-real-token"
+      end
+
+      stub(429, ~s({"retry_after": 1.5, "global": false}))
+
+      assert {:error, {:http_status, 429}} =
+               perform_job(DeliveryWorker, args(ctx.discord, ctx.payload))
     end
   end
 

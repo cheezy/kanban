@@ -85,6 +85,18 @@ defmodule Kanban.WebhooksTest do
                Webhooks.create_endpoint(ctx.owner_scope, ctx.board, attrs, @opts)
     end
 
+    test "a discord endpoint can be created", ctx do
+      attrs =
+        %{
+          @valid
+          | "url" => "https://discord.com/api/webhooks/100000000000000001/not-a-real-token"
+        }
+        |> Map.put("kind", "discord")
+
+      assert {:ok, {%Endpoint{kind: :discord}, _}} =
+               Webhooks.create_endpoint(ctx.owner_scope, ctx.board, attrs, @opts)
+    end
+
     test "every non-owner is :unauthorized and nothing is written", ctx do
       for scope <- ctx.non_owner_scopes do
         assert Webhooks.create_endpoint(scope, ctx.board, @valid, @opts) ==
@@ -344,7 +356,7 @@ defmodule Kanban.WebhooksTest do
 
     test "event_types/0 and kinds/0 list the public values" do
       assert "task.created" in Endpoint.event_types()
-      assert Endpoint.kinds() == [:generic, :slack]
+      assert Endpoint.kinds() == [:generic, :slack, :discord]
     end
   end
 
@@ -406,6 +418,131 @@ defmodule Kanban.WebhooksTest do
       for locale <- ~w(de en es fr ja pt zh) do
         assert File.read!("priv/gettext/#{locale}/LC_MESSAGES/errors.po") =~
                  ~s(msgid "#{@slack_message}"),
+               locale
+      end
+    end
+  end
+
+  describe "Discord URLs" do
+    @discord_message "must be a Discord webhook URL starting with https://discord.com/api/webhooks/"
+    @discord_url "https://discord.com/api/webhooks/100000000000000001/not-a-real-token"
+
+    defp discord_errors(attrs) do
+      %Endpoint{}
+      |> Endpoint.changeset(Map.put(attrs, "kind", "discord"), allow_http: true)
+      |> errors_on()
+    end
+
+    test "a discord endpoint needs a Discord webhook URL" do
+      for url <- [
+            "https://hooks.example.com/api/webhooks/1/tok",
+            "http://discord.com/api/webhooks/1/tok",
+            "https://discord.com:8443/api/webhooks/1/tok",
+            "https://evil-discord.com/api/webhooks/1/tok",
+            "https://discord.com.evil.example/api/webhooks/1/tok",
+            "https://evil.discord.com/api/webhooks/1/tok",
+            "https://discord.com/api/webhooks/1",
+            "https://discord.com/api/channels/1/messages",
+            "https://hooks.slack.com/services/T0/B0/x"
+          ] do
+        assert %{url: [@discord_message]} = discord_errors(%{@valid | "url" => url}), url
+      end
+
+      assert discord_errors(%{@valid | "url" => @discord_url}) == %{}
+    end
+
+    test "a discord endpoint with no URL gets only the blank error" do
+      assert discord_errors(Map.delete(@valid, "url")) == %{url: ["can't be blank"]}
+    end
+
+    test "switching an endpoint's kind to discord keeps the URL check" do
+      endpoint = %Endpoint{
+        kind: :generic,
+        url: "https://hooks.example.com/x",
+        event_types: ["task.created"]
+      }
+
+      assert %{url: [@discord_message]} =
+               endpoint
+               |> Endpoint.changeset(%{"kind" => "discord"}, allow_http: false)
+               |> errors_on()
+    end
+
+    test "a discord endpoint's URL cannot be changed to a non-Discord one" do
+      endpoint = %Endpoint{kind: :discord, url: @discord_url, event_types: ["task.created"]}
+
+      assert %{url: [@discord_message]} =
+               endpoint
+               |> Endpoint.changeset(%{"url" => "https://hooks.example.com/x"}, allow_http: false)
+               |> errors_on()
+
+      assert %{
+               url: [
+                 "must be a Slack incoming webhook URL starting with https://hooks.slack.com/"
+               ]
+             } =
+               endpoint
+               |> Endpoint.changeset(%{"kind" => "slack"}, allow_http: false)
+               |> errors_on()
+    end
+
+    test "a URL the guard already refused gets only the guard's error" do
+      assert %{url: ["must not contain a username or password"]} =
+               discord_errors(%{@valid | "url" => "https://u:p@discord.com/api/webhooks/1/x"})
+    end
+
+    test "discord_url?/1 accepts Discord webhook URLs" do
+      for url <- [
+            @discord_url,
+            "https://discordapp.com/api/webhooks/1/tok",
+            "https://ptb.discord.com/api/webhooks/1/tok",
+            "https://canary.discord.com/api/webhooks/1/tok",
+            "https://DISCORD.com/api/webhooks/1/Tok_en-9",
+            "https://discord.com/api/v10/webhooks/1/tok",
+            "https://discord.com/api/webhooks/1/tok/",
+            "https://discord.com/api/webhooks/1/tok?wait=true",
+            "https://discord.com/api/webhooks/1/tok?thread_id=123",
+            "https://discord.com:443/api/webhooks/1/tok"
+          ] do
+        assert Endpoint.discord_url?(url), url
+      end
+    end
+
+    test "discord_url?/1 refuses other hosts, schemes, ports, userinfo and paths" do
+      for url <- [
+            "http://discord.com/api/webhooks/1/tok",
+            "https://discord.com:8443/api/webhooks/1/tok",
+            "https://user@discord.com/api/webhooks/1/tok",
+            "https://www.discord.com/api/webhooks/1/tok",
+            "https://discord.gg/api/webhooks/1/tok",
+            "https://discordapp.net/api/webhooks/1/tok",
+            "https://evil-discord.com/api/webhooks/1/tok",
+            "https://discord.com.evil.example/api/webhooks/1/tok",
+            "https://discord.com",
+            "https://discord.com/",
+            "https://discord.com/api/webhooks/abc/tok",
+            "https://discord.com/api/webhooks/1/tok/slack",
+            "https://discord.com/api/webhooks/1/tok/github",
+            "https://discord.com/api/v10/channels/1/messages",
+            "https://discord.com/webhooks/1/tok",
+            "https://discord.com/api/webhooks/1/../../users/@me",
+            "https://discord.com/api/webhooks/1/tok%2Fx",
+            "not a url at all",
+            nil,
+            123
+          ] do
+        refute Endpoint.discord_url?(url), inspect(url)
+      end
+
+      refute Endpoint.slack_url?(@discord_url)
+    end
+
+    test "the Discord message is listed in errors.pot and every locale's errors.po" do
+      assert File.read!("priv/gettext/errors.pot") =~ ~s(msgid "#{@discord_message}")
+
+      for locale <- ~w(de en es fr ja pt zh) do
+        assert File.read!("priv/gettext/#{locale}/LC_MESSAGES/errors.po") =~
+                 ~s(msgid "#{@discord_message}"),
                locale
       end
     end

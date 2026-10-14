@@ -32,7 +32,8 @@ defmodule Kanban.Webhooks do
   Related modules: `Kanban.Webhooks.Endpoint` and `Kanban.Webhooks.Delivery`
   (schemas), `Kanban.Webhooks.Signer` (the signature header),
   `Kanban.Webhooks.UrlGuard` (SSRF protection), `Kanban.Webhooks.Payload`
-  (the envelope), `Kanban.Webhooks.SlackFormatter` (Slack messages) and
+  (the envelope), `Kanban.Webhooks.SlackFormatter` (Slack messages),
+  `Kanban.Webhooks.DiscordFormatter` (Discord messages) and
   `Kanban.Webhooks.Transport` (the HTTP request).
   """
 

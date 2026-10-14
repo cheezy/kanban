@@ -17,28 +17,33 @@ defmodule Kanban.Webhooks.DeliveryWorker do
        endpoint was saved. A blocked or invalid target records a failed
        delivery and cancels the job; a host that does not resolve records a
        failure and retries. A `:slack` endpoint whose stored URL is not a
-       Slack incoming webhook is cancelled the same way.
+       Slack incoming webhook, or a `:discord` endpoint whose stored URL is
+       not a Discord webhook (`Endpoint.discord_url?/1`), is cancelled the
+       same way.
     3. A generic endpoint gets the JSON envelope with the `X-Stride-Event`,
        `X-Stride-Delivery` and `X-Stride-Signature` headers; a Slack
-       endpoint gets a `Kanban.Webhooks.SlackFormatter` message and none of
-       those headers.
+       endpoint gets a `Kanban.Webhooks.SlackFormatter` message and a
+       Discord endpoint a `Kanban.Webhooks.DiscordFormatter` body, each with
+       only a content-type header and none of those.
     4. `Kanban.Webhooks.Transport` sends it to the approved address. A 2xx
        is a success. A 4xx other than 408 (Request Timeout) and 429 (Too
        Many Requests) is recorded and cancelled: the receiver refused the
-       request, and a revoked or deleted Slack webhook (403, 404, 410) will
-       not recover by itself. Anything else (5xx, 408, 429, redirects, which
-       are never followed) or a transport error is recorded and retried
-       with exponential backoff, up to 8 attempts.
+       request, and a revoked or deleted Slack webhook (403, 404, 410) or
+       Discord webhook (401, 404) will not recover by itself. Anything else
+       (5xx, 408, 429, redirects, which are never followed) or a transport
+       error is recorded and retried with exponential backoff, up to 8
+       attempts.
 
   Errors returned to Oban (and so stored in `oban_jobs.errors`) are bounded
-  terms such as `{:http_status, 500}`; the URL, which for Slack is a
-  credential, never appears in them or in the log.
+  terms such as `{:http_status, 500}`; the URL, which for Slack and Discord
+  is a credential, never appears in them or in the log.
   """
   use Oban.Worker, queue: :webhooks, max_attempts: 8
 
   alias Kanban.Repo
   alias Kanban.Webhooks
   alias Kanban.Webhooks.Delivery
+  alias Kanban.Webhooks.DiscordFormatter
   alias Kanban.Webhooks.Endpoint
   alias Kanban.Webhooks.Signer
   alias Kanban.Webhooks.SlackFormatter
@@ -118,10 +123,18 @@ defmodule Kanban.Webhooks.DeliveryWorker do
   defp check_kind(:slack, url),
     do: if(Endpoint.slack_url?(url), do: :ok, else: {:error, :not_slack_url})
 
+  defp check_kind(:discord, url),
+    do: if(Endpoint.discord_url?(url), do: :ok, else: {:error, :not_discord_url})
+
   defp check_kind(_kind, _url), do: :ok
 
   defp build_request(%Endpoint{kind: :slack}, %{"payload" => payload}) do
     body = payload |> SlackFormatter.format() |> Jason.encode!()
+    {:ok, body, [{"content-type", "application/json"}]}
+  end
+
+  defp build_request(%Endpoint{kind: :discord}, %{"payload" => payload}) do
+    body = payload |> DiscordFormatter.format() |> Jason.encode!()
     {:ok, body, [{"content-type", "application/json"}]}
   end
 

@@ -36,6 +36,7 @@ defmodule Kanban.WebhooksFixtures do
 
     * `hooks.example.com` - a public address
     * `hooks.slack.com` - a public address
+    * `discord.com` - a public address
     * `internal.example.com` - a private address
     * `rebind.example.com` - a public and a loopback address
 
@@ -43,6 +44,7 @@ defmodule Kanban.WebhooksFixtures do
   """
   def resolve("hooks.example.com"), do: {:ok, [{93, 184, 216, 34}]}
   def resolve("hooks.slack.com"), do: {:ok, [{54, 1, 2, 3}]}
+  def resolve("discord.com"), do: {:ok, [{162, 159, 128, 233}]}
   def resolve("internal.example.com"), do: {:ok, [{10, 0, 0, 1}]}
   def resolve("rebind.example.com"), do: {:ok, [{93, 184, 216, 34}, {127, 0, 0, 1}]}
   def resolve(_host), do: {:error, :nxdomain}
