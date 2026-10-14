@@ -235,6 +235,9 @@ working immediately, so update your receiver as soon as you rotate.
 
 - Answer with any `2xx` status to accept the delivery. Anything else, including
   a redirect, counts as a failure. Redirects are never followed.
+- A `4xx` refuses the delivery for good: Stride records it and does not try
+  again. The exceptions are `408` and `429`, which mean "not now" and are
+  retried. Answer `5xx` (or `429`) for a problem that will pass.
 - Answer within 10 seconds. Stride also gives up if it cannot connect within 5
   seconds.
 - Up to 64 KB of your response body is kept in the delivery log, so do not
@@ -259,13 +262,17 @@ change them, delete the endpoint and add a new one.
 
 ## Retries
 
-A delivery that fails is tried again, up to 8 attempts in all, after about 30
+A delivery that fails with a `5xx`, `408`, `429`, a redirect, a timeout or a
+connection error is tried again, up to 8 attempts in all, after about 30
 seconds, then 1, 2, 4, 8, 16 and 32 minutes. Each wait is stretched by up to a
 fifth at random, so the last attempt comes roughly an hour after the first.
 Each attempt adds an entry to the delivery log, and every retry carries the
 same `X-Stride-Delivery` id and body.
 
-An address that is refused when the delivery is attempted, such as a host that
-now resolves to a private address, fails at once with no retry. A host that
-does not resolve at all is retried, because that is often a passing DNS
-problem.
+Any other `4xx` stops the delivery after that attempt. For a Slack endpoint
+this is what a removed webhook or an archived channel returns (`403`, `404`
+or `410`), so a broken endpoint shows one failed entry per event rather than
+eight. An address that is refused when the delivery is attempted, such as a
+host that now resolves to a private address, also fails at once with no
+retry. A host that does not resolve at all is retried, because that is often
+a passing DNS problem.

@@ -23,9 +23,12 @@ defmodule Kanban.Webhooks.DeliveryWorker do
        endpoint gets a `Kanban.Webhooks.SlackFormatter` message and none of
        those headers.
     4. `Kanban.Webhooks.Transport` sends it to the approved address. A 2xx
-       is a success; anything else (redirects included, which are never
-       followed) or a transport error is recorded and retried with
-       exponential backoff, up to 8 attempts.
+       is a success. A 4xx other than 408 (Request Timeout) and 429 (Too
+       Many Requests) is recorded and cancelled: the receiver refused the
+       request, and a revoked or deleted Slack webhook (403, 404, 410) will
+       not recover by itself. Anything else (5xx, 408, 429, redirects, which
+       are never followed) or a transport error is recorded and retried
+       with exponential backoff, up to 8 attempts.
 
   Errors returned to Oban (and so stored in `oban_jobs.errors`) are bounded
   terms such as `{:http_status, 500}`; the URL, which for Slack is a
@@ -45,6 +48,9 @@ defmodule Kanban.Webhooks.DeliveryWorker do
   require Logger
 
   @max_backoff 3_600
+
+  # 4xx statuses worth another attempt: the receiver was slow or busy.
+  @retryable_4xx [408, 429]
 
   @doc "Queues one delivery of `payload` for `event` to the endpoint."
   @spec enqueue(integer(), String.t(), map()) :: {:ok, Oban.Job.t()} | {:error, term()}
@@ -167,7 +173,9 @@ defmodule Kanban.Webhooks.DeliveryWorker do
       error: "HTTP #{status}: " <> Transport.sanitize(body)
     })
 
-    {:error, {:http_status, status}}
+    if permanent_status?(status),
+      do: {:cancel, {:http_status, status}},
+      else: {:error, {:http_status, status}}
   end
 
   defp record_outcome({:error, exception}, endpoint, args, attempt) do
@@ -175,6 +183,9 @@ defmodule Kanban.Webhooks.DeliveryWorker do
     record(endpoint, args, attempt, %{status: :failed, error: "transport: #{inspect(reason)}"})
     {:error, {:transport, reason}}
   end
+
+  defp permanent_status?(status),
+    do: status in 400..499 and status not in @retryable_4xx
 
   defp transport_reason(%{reason: reason}) when is_atom(reason), do: reason
   defp transport_reason(%{__struct__: struct}), do: struct

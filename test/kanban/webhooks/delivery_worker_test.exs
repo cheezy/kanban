@@ -110,6 +110,29 @@ defmodule Kanban.Webhooks.DeliveryWorkerTest do
       assert error == "HTTP 500: boom"
     end
 
+    test "a 4xx other than 408 and 429 is recorded and cancelled, not retried", ctx do
+      for status <- [400, 401, 403, 404, 410, 422] do
+        stub(status, "invalid_token")
+
+        assert {:cancel, {:http_status, ^status}} =
+                 perform_job(DeliveryWorker, args(ctx.endpoint, ctx.payload))
+
+        assert %Delivery{status: :failed, response_status: ^status, error: error} =
+                 ctx.endpoint |> deliveries() |> List.last()
+
+        assert error == "HTTP #{status}: invalid_token"
+      end
+    end
+
+    test "408 and 429 are retried like a 5xx", ctx do
+      for status <- [408, 429] do
+        stub(status, "slow down")
+
+        assert {:error, {:http_status, ^status}} =
+                 perform_job(DeliveryWorker, args(ctx.endpoint, ctx.payload))
+      end
+    end
+
     test "a redirect is a failure and is not followed", ctx do
       test = self()
 
