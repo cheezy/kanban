@@ -17,6 +17,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
 
   alias Kanban.Webhooks.Endpoint
   alias KanbanWeb.BoardLive.WebhookForm
+  alias KanbanWeb.BoardLive.WebhookKinds
   alias KanbanWeb.TaskTokens
   alias KanbanWeb.TimeAgo
 
@@ -198,7 +199,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
           {gettext("Deliveries")}
         </button>
         <button
-          :if={@endpoint.kind == :generic}
+          :if={WebhookKinds.signed?(@endpoint.kind)}
           id={"webhook-rotate-#{@endpoint.id}"}
           type="button"
           phx-click="rotate"
@@ -249,18 +250,13 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
       data-endpoint-kind={@kind}
       style={[
         "font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px;",
-        kind_colors(@kind)
+        WebhookKinds.colors(@kind)
       ]}
     >
-      {kind_label(@kind)}
+      {WebhookKinds.label(@kind)}
     </span>
     """
   end
-
-  defp kind_colors(:slack),
-    do: "background: var(--stride-violet-soft); color: var(--stride-violet-ink);"
-
-  defp kind_colors(_kind), do: "background: var(--surface-sunken); color: var(--ink-2);"
 
   @doc """
   An endpoint's most recent delivery attempts, newest first, with a refresh
@@ -374,9 +370,8 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
   defp status_label(:failed), do: gettext("Failed")
   defp status_label(_pending), do: gettext("Pending")
 
-  @doc "The display name of an endpoint kind."
-  def kind_label(kind) when kind in [:slack, "slack"], do: gettext("Slack")
-  def kind_label(_kind), do: gettext("Generic webhook")
+  @doc "The display name of an endpoint kind; see `WebhookKinds.label/1`."
+  defdelegate kind_label(kind), to: WebhookKinds, as: :label
 
   @doc """
   The host of `url`, the only part of an endpoint's URL the page shows.

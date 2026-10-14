@@ -36,6 +36,15 @@ defmodule KanbanWeb.BoardLive.WebhookFormTest do
     assert render_form(%{"kind" => "slack"}) =~ "Slack incoming webhook URL"
   end
 
+  test "the URL placeholder follows the selected kind, and a blank kind gets the generic one" do
+    assert render_form(%{"kind" => "slack"}) =~
+             ~s(placeholder="https://hooks.slack.com/services/…")
+
+    assert render_form(%{"kind" => "generic"}) =~ ~s(placeholder="https://")
+    assert render_form(%{}) =~ ~s(placeholder="https://")
+    assert render_form(%{}) =~ "signed JSON POST"
+  end
+
   test "a field's errors show once it is used, not before" do
     assert render_form(%{"url" => "nope"}, action: :validate) =~ "must start with https://"
 

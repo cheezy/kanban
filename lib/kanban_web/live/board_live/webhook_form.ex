@@ -12,6 +12,7 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
   use KanbanWeb, :html
 
   alias Kanban.Webhooks.Endpoint
+  alias KanbanWeb.BoardLive.WebhookKinds
   alias KanbanWeb.BoardLive.WebhookViews
 
   @doc """
@@ -23,7 +24,7 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
   attr :myself, :any, required: true
 
   def endpoint_form(assigns) do
-    assigns = assign(assigns, :slack?, to_string(assigns.form[:kind].value) == "slack")
+    assigns = assign(assigns, :kind, assigns.form[:kind].value)
 
     ~H"""
     <.form
@@ -46,7 +47,7 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
               value={kind}
               selected={to_string(@form[:kind].value) == to_string(kind)}
             >
-              {WebhookViews.kind_label(kind)}
+              {WebhookKinds.label(kind)}
             </option>
           </select>
         </label>
@@ -60,13 +61,11 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
             id={@form[:url].id}
             name={@form[:url].name}
             value={Phoenix.HTML.Form.normalize_value("text", @form[:url].value)}
-            placeholder={if @slack?, do: "https://hooks.slack.com/services/…", else: "https://"}
+            placeholder={WebhookKinds.url_placeholder(@kind)}
             style={input_style()}
           />
           <span style="font-size: 11px; color: var(--ink-3); line-height: 1.4;">
-            {if @slack?,
-              do: gettext("Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."),
-              else: gettext("Stride sends a signed JSON POST to this HTTPS address.")}
+            {WebhookKinds.url_hint(@kind)}
           </span>
           <.field_errors field={@form[:url]} />
         </label>
@@ -102,7 +101,6 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
   def edit_form(assigns) do
     assigns =
       assigns
-      |> assign(:slack?, assigns.endpoint.kind == :slack)
       |> assign(:host, WebhookViews.url_host(assigns.endpoint.url))
       |> assign(:typed_url, typed_url(assigns.form))
 
@@ -129,7 +127,7 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
             data-edit-kind={@endpoint.kind}
             style="height: 32px; display: flex; align-items: center; font-size: 12.5px; color: var(--ink);"
           >
-            {WebhookViews.kind_label(@endpoint.kind)}
+            {WebhookKinds.label(@endpoint.kind)}
           </span>
         </div>
         <label style={[label_style(), "flex: 1 1 260px;"]}>
@@ -150,12 +148,10 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
             style="font-size: 11px; color: var(--ink-3); line-height: 1.4;"
           >
             {gettext("Leave blank to keep the current URL (%{host}).", host: @host)}
-            {if @slack?,
-              do: gettext("Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."),
-              else: gettext("Stride sends a signed JSON POST to this HTTPS address.")}
+            {WebhookKinds.url_hint(@endpoint.kind)}
           </span>
           <span
-            :if={!@slack?}
+            :if={WebhookKinds.signed?(@endpoint.kind)}
             data-rotate-note
             style="font-size: 11px; color: var(--ink-3); line-height: 1.4;"
           >
