@@ -16,7 +16,7 @@ defmodule KanbanWeb.UserLive.TwoFactor do
 
   alias KanbanWeb.TwoFactorPending
 
-  @input_style "padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono); letter-spacing: 0.08em;"
+  @input_style "padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-input); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono); letter-spacing: 0.08em;"
 
   @impl true
   def render(assigns) do

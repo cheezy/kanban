@@ -29,7 +29,7 @@ custom Tailwind variant —
 `assets/css/app.css:105` — makes the standard `dark:` Tailwind prefix work
 alongside the daisyUI tokens. On top of that, a set of **Stride custom tokens**
 (`--ink`, `--ink-2`, `--ink-3`, `--surface`, `--surface-2`, `--surface-sunken`,
-`--line`, `--line-2`, `--stride-orange`, `--stride-violet`, `--st-ok`,
+`--line`, `--line-2`, `--line-strong`, `--line-input`, `--stride-orange`, `--stride-violet`, `--st-ok`,
 `--st-blocked`, …) is scoped to `.stride-screen` (authenticated app) and
 `.stride-marketing` (public marketing surfaces), with light/dark values defined
 at `assets/css/app.css:887+` and `1160+`.
@@ -71,7 +71,9 @@ WCAG exempts incidental text (and forcing it to 4.5:1 would collapse it onto
 > `text-on-surface` category in `dark_mode.contrast`).
 
 **Dark borders** (raised so edges are visible, subtle not harsh):
-`var(--line)` 38% · `var(--line-2)` 44% · `var(--line-strong)` 50%.
+`var(--line)` 38% · `var(--line-2)` 44% · `var(--line-strong)` 50%. Form
+controls use `var(--line-input)` 55% instead. See
+[Form-control borders](#form-control-borders) below.
 
 **Dark brand accents** (brightened for vibrancy on dark; also feed
 `--loading-bar-gradient`): `var(--stride-orange)` 72% · `var(--stride-violet)`
@@ -158,6 +160,45 @@ inside `.stride-screen` / `.stride-marketing`.
 
   The contrast test fails if the task's list drifts from the schema.
 
+### Form-control borders
+
+**Every `<input>`, `<select>` and `<textarea>` draws its resting border with
+`var(--line-input)`, never `--line`, `--line-2` or `--line-strong`.** That
+includes compact toolbar and filter controls, such as the board filter bar, the
+bulk-action bar and the metrics filters. There are two routes:
+
+- **Inline-styled controls** write `border: 1px solid var(--line-input)`.
+- **The core `<.input>` component** renders daisyUI `.input`, `.select` and
+  `.textarea`, which take their border from `--input-color`. daisyUI defaults
+  that to `base-content` at 20% alpha (about 1.5:1). A rule in
+  `assets/css/app.css` sets `--input-color: var(--line-input)` inside
+  `.stride-screen` / `.stride-marketing`, and leaves the focus and `-error`
+  states to daisyUI.
+
+`test/kanban_web/form_control_border_test.exs` checks both routes. A Stride form control is
+filled with the panel colour it sits on (1.00:1), so its border is the only
+thing that shows where the field is. That makes it a graphical object under WCAG 2.1
+SC 1.4.11, which asks for **3:1** against the adjacent colour.
+
+| Theme | `--line-input` | Lowest pair |
+|---|---|---|
+| Light | 63% L | 3.21:1 on `--surface-sunken` |
+| Dark | 55% L | 3.39:1 on `--surface-2` |
+
+- **Why a separate token.** `--line-strong` is a decorative border, held to the
+  project's 1.5:1 floor. It measured 2.07:1 on the light `--surface` and 2.74:1
+  on the dark `--surface-2` (D375), and the `--line` toolbar selects measured
+  1.70:1. Darkening the decorative tokens to 3:1 would make every card, column
+  empty state and marketing section that uses them look heavy, so they stay
+  decorative and form controls get their own token.
+- **Gate.** `mix dark_mode.contrast` checks `--line-input` against `--bg`,
+  `--surface`, `--surface-2` and `--surface-sunken` at 3.0:1 in both themes, in
+  the `input-border` category. Both theme blocks define the token: the gate
+  layers dark over light, so a token missing from the dark block would inherit
+  the light value and pass unmeasured.
+- **Buttons, links and `<code>` blocks are not form controls.** They keep the
+  decorative tokens, because their text or fill identifies them.
+
 ## Theme activation mechanism
 
 There is **one** activation mechanism, and both token systems key off it: the
@@ -241,7 +282,7 @@ about scope and consistency, not color:
 | `bg-gray-50` | `bg-base-200` or `var(--surface-2)` |
 | `bg-gray-100` | `bg-base-300` or `var(--surface-sunken)` |
 | `border-gray-200` | `border-base-300` or `var(--line)` |
-| `border-gray-300` | `var(--line-strong)` |
+| `border-gray-300` | `var(--line-strong)`, or `var(--line-input)` on an `<input>`, `<select>` or `<textarea>` |
 | `text-error` on **text** (validation messages) | `text-[var(--color-error-ink)]`. `--color-error` is a fill colour and reads at only about 4.2–4.5:1 as text |
 
 Placeholder text uses `--color-placeholder-ink`, applied globally to

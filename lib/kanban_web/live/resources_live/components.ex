@@ -137,7 +137,7 @@ defmodule KanbanWeb.ResourcesLive.Components do
         style={[
           "background: var(--surface);",
           "color: var(--ink);",
-          "border: 1px solid var(--line);",
+          "border: 1px solid var(--line-input);",
           "border-radius: var(--r-md);"
         ]}
       />

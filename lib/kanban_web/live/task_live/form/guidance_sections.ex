@@ -32,7 +32,7 @@ defmodule KanbanWeb.TaskLive.Form.GuidanceSections do
               name="task[technology_requirements][]"
               value={tech}
               placeholder={gettext("Technology/library name")}
-              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
             />
             <button
               type="button"
@@ -70,7 +70,7 @@ defmodule KanbanWeb.TaskLive.Form.GuidanceSections do
               name="task[pitfalls][]"
               value={pitfall}
               placeholder={gettext("Common pitfall to avoid")}
-              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
             />
             <button
               type="button"
@@ -109,7 +109,7 @@ defmodule KanbanWeb.TaskLive.Form.GuidanceSections do
               name="task[out_of_scope][]"
               value={item}
               placeholder={gettext("Out of scope item")}
-              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
             />
             <button
               type="button"
@@ -150,7 +150,7 @@ defmodule KanbanWeb.TaskLive.Form.GuidanceSections do
               name="task[security_considerations][]"
               value={item}
               placeholder={gettext("Security consideration or requirement")}
-              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
             />
             <button
               type="button"

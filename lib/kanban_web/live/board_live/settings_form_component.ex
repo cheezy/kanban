@@ -227,7 +227,7 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
       style={[
         "padding: 8px 10px; border-radius: 5px;",
         "background: var(--surface); color: var(--ink);",
-        "border: 1px solid var(--line-strong);",
+        "border: 1px solid var(--line-input);",
         "font-size: 12.5px; line-height: 1.5; resize: vertical; min-height: 64px;"
       ]}
     ><%= Phoenix.HTML.Form.normalize_value("textarea", @field.value) %></textarea>
@@ -244,7 +244,7 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
       style={[
         "height: 32px; padding: 0 10px; border-radius: 5px;",
         "background: var(--surface); color: var(--ink);",
-        "border: 1px solid var(--line-strong);",
+        "border: 1px solid var(--line-input);",
         "font-size: 12.5px;"
       ]}
     />

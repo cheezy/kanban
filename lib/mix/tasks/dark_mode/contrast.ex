@@ -39,6 +39,8 @@ defmodule Mix.Tasks.DarkMode.Contrast do
   | Status / brand text | 4.5:1     | WCAG 2.1 AA, normal-size text            |
   | Label text          | 4.5:1     | WCAG 2.1 AA, normal-size text            |
   | Brand accent on bg  | 3.0:1     | WCAG 2.1 AA, graphical objects (1.4.11)  |
+  | Form-control border | 3.0:1     | WCAG 2.1 AA, graphical objects (1.4.11): |
+  |                     |           | the border alone identifies the control  |
   | Border vs surface   | 1.5:1     | Not a WCAG ratio. A border is decorative |
   |                     |           | separation, so the AA text ratio does    |
   |                     |           | not apply; 1.5:1 is a documented,        |
@@ -218,6 +220,7 @@ defmodule Mix.Tasks.DarkMode.Contrast do
       text_specs(),
       quiet_ink_specs(),
       border_specs(),
+      input_border_specs(),
       status_specs(),
       chip_border_specs(),
       label_specs(),
@@ -255,6 +258,17 @@ defmodule Mix.Tasks.DarkMode.Contrast do
     for fg <- ~w(--line --line-2 --line-strong),
         bg <- ~w(--bg --surface --surface-2 --surface-sunken) do
       spec("border-vs-surface", fg, bg, @border_min)
+    end
+  end
+
+  # D375: an input, select or textarea is filled with the panel colour, so its
+  # border is the only boundary that identifies the control. That makes it a
+  # graphical object under WCAG 2.1 SC 1.4.11 (3:1), not a decorative hairline,
+  # so form controls draw with --line-input and it is held to @aa_graphical.
+  # --line-strong stays in border_specs/0 at the decorative floor.
+  defp input_border_specs do
+    for bg <- ~w(--bg --surface --surface-2 --surface-sunken) do
+      spec("input-border", "--line-input", bg, @aa_graphical)
     end
   end
 

@@ -319,7 +319,7 @@
           <div class="flex gap-2 mb-2">
             <select
               name="task[required_capabilities][]"
-              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+              style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
             >
               <option value={cap} selected>{String.capitalize(cap)}</option>
               <%= for valid_cap <- Kanban.Tasks.Task.valid_capabilities() do %>
@@ -342,7 +342,7 @@
         <div class="flex gap-2 mb-2">
           <select
             id="new-capability-select"
-            style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+            style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
             phx-change="add-capability-from-select"
             phx-target={@myself}
             name="new_capability"

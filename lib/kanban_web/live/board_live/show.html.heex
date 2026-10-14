@@ -711,7 +711,7 @@
               required
               value={Phoenix.HTML.Form.normalize_value("text", @token_form[:name].value)}
               placeholder={gettext("My AI Agent")}
-              style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); font-size: 12.5px;"
+              style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-input); font-size: 12.5px;"
             />
             <span
               :for={msg <- Enum.map(@token_form[:name].errors, &translate_error(&1))}
@@ -731,7 +731,7 @@
                 name={@token_form[:agent_model].name}
                 type="text"
                 placeholder={gettext("claude-4.5-opus")}
-                style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); font-size: 12.5px;"
+                style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-input); font-size: 12.5px;"
               />
             </label>
 
@@ -744,7 +744,7 @@
                 name={@token_form[:agent_purpose].name}
                 type="text"
                 placeholder={gettext("Task automation")}
-                style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); font-size: 12.5px;"
+                style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-input); font-size: 12.5px;"
               />
             </label>
           </div>
@@ -759,7 +759,7 @@
               type="text"
               placeholder={gettext("code_generation, testing, documentation")}
               phx-debounce="blur"
-              style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong); font-size: 12.5px;"
+              style="height: 32px; padding: 0 10px; border-radius: 5px; background: var(--surface); color: var(--ink); border: 1px solid var(--line-input); font-size: 12.5px;"
             />
             <span style="font-size: 11px; color: var(--ink-3); line-height: 1.5; text-wrap: pretty;">
               {gettext(

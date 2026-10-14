@@ -23,7 +23,7 @@ defmodule KanbanWeb.UserLive.TwoFactorComponent do
 
   alias Kanban.Accounts
 
-  @input_style "width: 100%; max-width: 220px; padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13px; color: var(--ink); outline: none; font-family: var(--font-mono); letter-spacing: 0.08em;"
+  @input_style "width: 100%; max-width: 220px; padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-input); font-size: 13px; color: var(--ink); outline: none; font-family: var(--font-mono); letter-spacing: 0.08em;"
   @primary_style "height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: var(--color-base-100); border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
   @secondary_style "height: 32px; padding: 0 14px; border-radius: 5px; background: transparent; color: var(--ink-2); border: 1px solid var(--line-strong); font-size: 12.5px; font-weight: 500; cursor: pointer;"
 

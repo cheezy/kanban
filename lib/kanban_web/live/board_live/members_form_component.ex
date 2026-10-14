@@ -95,7 +95,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
             placeholder={gettext("name@example.com")}
             style={[
               "flex: 1; height: 32px; padding: 0 10px;",
-              "border-radius: 5px; border: 1px solid var(--line-strong);",
+              "border-radius: 5px; border: 1px solid var(--line-input);",
               "background: var(--surface); color: var(--ink);",
               "font-size: 12.5px; font-family: var(--font-mono);"
             ]}

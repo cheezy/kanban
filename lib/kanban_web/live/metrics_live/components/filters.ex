@@ -71,7 +71,7 @@ defmodule KanbanWeb.MetricsLive.Components.Filters do
               name="time_range"
               style={[
                 "padding: 6px 10px; border-radius: 6px;",
-                "border: 1px solid var(--line);",
+                "border: 1px solid var(--line-input);",
                 "background: var(--surface); color: var(--ink);",
                 "font-size: 12.5px;"
               ]}
@@ -111,7 +111,7 @@ defmodule KanbanWeb.MetricsLive.Components.Filters do
               name="agent_name"
               style={[
                 "padding: 6px 10px; border-radius: 6px;",
-                "border: 1px solid var(--line);",
+                "border: 1px solid var(--line-input);",
                 "background: var(--surface); color: var(--ink);",
                 "font-size: 12.5px;"
               ]}

@@ -50,7 +50,7 @@ defmodule KanbanWeb.UserLive.Login do
             autocomplete="username"
             required
             phx-mounted={JS.focus()}
-            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-input); font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
           />
         </label>
 
@@ -71,7 +71,7 @@ defmodule KanbanWeb.UserLive.Login do
             id={f[:password].id}
             autocomplete="current-password"
             required
-            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-input); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
           />
         </label>
 

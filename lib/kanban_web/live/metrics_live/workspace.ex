@@ -425,7 +425,7 @@ defmodule KanbanWeb.MetricsLive.Workspace do
           "padding: 4px 26px 4px 10px; border-radius: 5px;",
           "font: inherit; font-size: 12px; font-weight: 500;",
           "color: var(--ink-2);",
-          "background: var(--surface); border: 1px solid var(--line);",
+          "background: var(--surface); border: 1px solid var(--line-input);",
           "background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%), linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);",
           "background-position: calc(100% - 14px) center, calc(100% - 9px) center;",
           "background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;",

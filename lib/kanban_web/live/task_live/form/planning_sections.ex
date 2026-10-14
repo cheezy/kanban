@@ -38,7 +38,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
                 name="task[testing_strategy][unit_tests][]"
                 value={test}
                 placeholder={gettext("Unit test description")}
-                style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+                style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
               />
               <button
                 type="button"
@@ -73,7 +73,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
                 name="task[testing_strategy][integration_tests][]"
                 value={test}
                 placeholder={gettext("Integration test description")}
-                style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+                style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
               />
               <button
                 type="button"
@@ -108,7 +108,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
                 name="task[testing_strategy][manual_tests][]"
                 value={test}
                 placeholder={gettext("Manual test description")}
-                style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+                style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
               />
               <button
                 type="button"
@@ -156,7 +156,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
                 name="task[integration_points][telemetry_events][]"
                 value={event}
                 placeholder={gettext("[:kanban, :domain, :action]")}
-                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
               />
               <button
                 type="button"
@@ -191,7 +191,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
                 name="task[integration_points][pubsub_broadcasts][]"
                 value={broadcast}
                 placeholder={gettext("topic:event")}
-                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
               />
               <button
                 type="button"
@@ -226,7 +226,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
                 name="task[integration_points][phoenix_channels][]"
                 value={channel}
                 placeholder={gettext("channel:event")}
-                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
               />
               <button
                 type="button"
@@ -261,7 +261,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
                 name="task[integration_points][external_apis][]"
                 value={api}
                 placeholder={gettext("API endpoint or service")}
-                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+                style="flex: 1; padding: 6px 10px; font-size: 11.5px; font-family: var(--font-mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
               />
               <button
                 type="button"
@@ -300,7 +300,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
             name="task[dependencies][]"
             value={dep}
             placeholder={gettext("Task identifier (e.g., W01A)")}
-            style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px;"
+            style="flex: 1; padding: 6px 10px; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-input); border-radius: 6px;"
           />
           <button
             type="button"

@@ -47,7 +47,7 @@ defmodule KanbanWeb.UserLive.Registration do
             value={Phoenix.HTML.Form.normalize_value("text", @form[:name].value)}
             autocomplete="name"
             phx-mounted={JS.focus()}
-            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-input); font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
           />
           <.field_errors errors={@form[:name].errors} />
         </label>
@@ -63,7 +63,7 @@ defmodule KanbanWeb.UserLive.Registration do
             value={Phoenix.HTML.Form.normalize_value("email", @form[:email].value)}
             autocomplete="username"
             required
-            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-input); font-size: 13.5px; color: var(--ink); outline: none; font-family: inherit;"
           />
           <.field_errors errors={@form[:email].errors} />
         </label>
@@ -79,7 +79,7 @@ defmodule KanbanWeb.UserLive.Registration do
             id={@form[:password].id}
             autocomplete="new-password"
             required
-            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-input); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
           />
           <span style="font-size: 11px; color: var(--ink-3); line-height: 1.45;">
             {gettext("At least 12 characters")}

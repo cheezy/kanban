@@ -258,7 +258,7 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
     [
       "height: 32px; padding: 0 10px; border-radius: 5px; min-width: 0;",
       "background: var(--surface); color: var(--ink);",
-      "border: 1px solid var(--line-strong); font-size: 12.5px;"
+      "border: 1px solid var(--line-input); font-size: 12.5px;"
     ]
   end
 end

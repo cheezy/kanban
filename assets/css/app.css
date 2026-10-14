@@ -895,6 +895,12 @@
   --line: oklch(81% 0.004 270);
   --line-2: oklch(79% 0.005 270);
   --line-strong: oklch(77% 0.005 270);
+  /* D375: form-control boundary (input, select, textarea). The field fill is
+     the panel colour, so this border is the only thing that identifies the
+     control, and WCAG 2.1 SC 1.4.11 asks 3:1 for it. --line-strong is a
+     decorative 1.5:1 token at 1.90-2.07:1 here, so form controls get their own
+     token: 3.21:1 on the tightest surface (--surface-sunken). */
+  --line-input: oklch(63% 0.005 270);
 
   /* Status foreground — calm. W902 darkened from ~60% L (failed WCAG AA at
      2.74-3.69:1 on white) and W907 darkened further from 50% L to 45% L so
@@ -1048,6 +1054,9 @@
   --line: oklch(38% 0.005 270);
   --line-2: oklch(44% 0.005 270);
   --line-strong: oklch(50% 0.005 270);
+  /* D375: the form-control boundary at 3:1 (SC 1.4.11). --line-strong sat at
+     2.74:1 on --surface-2; this clears 3.39:1 on it, the tightest dark surface. */
+  --line-input: oklch(55% 0.005 270);
 
   /* Status softs — dark-tinted backgrounds (low chroma, low lightness) */
   --st-backlog-soft: oklch(22% 0.005 270);
@@ -1701,4 +1710,21 @@
   textarea::placeholder {
     color: var(--color-placeholder-ink);
   }
+}
+
+/* D375: daisyUI draws .input/.select/.textarea with --input-color, which
+   defaults to base-content at 20% alpha (about 1.5:1 on the panel). Inside the
+   Stride token scopes the resting border uses --line-input, the 3:1 form-control
+   token. This rule is unlayered so it beats daisyUI's own .input rule, and
+   :not() leaves daisyUI's focus and -error borders in charge of those states. */
+:where(.stride-screen, .stride-marketing)
+  :is(.input, .select, .textarea, .file-input):not(
+    :focus,
+    :focus-within,
+    .input-error,
+    .select-error,
+    .textarea-error,
+    .file-input-error
+  ) {
+  --input-color: var(--line-input);
 }

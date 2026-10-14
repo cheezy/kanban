@@ -36,7 +36,7 @@ defmodule KanbanWeb.UserLive.Settings do
                 id={@email_form[:name].id}
                 value={Phoenix.HTML.Form.normalize_value("text", @email_form[:name].value)}
                 autocomplete="name"
-                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: inherit;"
+                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-input); font-size: 12.5px; color: var(--ink); outline: none; font-family: inherit;"
               />
               <.field_errors errors={@email_form[:name].errors} />
             </.set_field>
@@ -49,7 +49,7 @@ defmodule KanbanWeb.UserLive.Settings do
                 value={Phoenix.HTML.Form.normalize_value("email", @email_form[:email].value)}
                 autocomplete="username"
                 required
-                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: inherit;"
+                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-input); font-size: 12.5px; color: var(--ink); outline: none; font-family: inherit;"
               />
               <.field_errors errors={@email_form[:email].errors} />
             </.set_field>
@@ -113,7 +113,7 @@ defmodule KanbanWeb.UserLive.Settings do
                 }
                 autocomplete="new-password"
                 required
-                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
+                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-input); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
               />
               <.field_errors errors={@password_form[:password].errors} />
             </.set_field>
@@ -130,7 +130,7 @@ defmodule KanbanWeb.UserLive.Settings do
                   )
                 }
                 autocomplete="new-password"
-                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
+                style="padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-input); font-size: 12.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
               />
               <.field_errors errors={@password_form[:password_confirmation].errors} />
             </.set_field>

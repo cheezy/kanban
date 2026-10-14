@@ -336,7 +336,7 @@ defmodule KanbanWeb.BoardLive.LabelsManagerComponent do
           style={[
             "flex: 1; min-width: 140px; height: 30px; padding: 0 10px; border-radius: 5px;",
             "background: var(--surface); color: var(--ink);",
-            "border: 1px solid var(--line-strong); font-size: 12.5px;"
+            "border: 1px solid var(--line-input); font-size: 12.5px;"
           ]}
         />
         <select
@@ -346,7 +346,7 @@ defmodule KanbanWeb.BoardLive.LabelsManagerComponent do
           style={[
             "height: 30px; padding: 0 8px; border-radius: 5px;",
             "background: var(--surface); color: var(--ink);",
-            "border: 1px solid var(--line-strong); font-size: 12.5px;"
+            "border: 1px solid var(--line-input); font-size: 12.5px;"
           ]}
         >
           <option

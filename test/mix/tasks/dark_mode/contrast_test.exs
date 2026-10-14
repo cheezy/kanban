@@ -83,6 +83,38 @@ defmodule Mix.Tasks.DarkMode.ContrastTest do
       end
     end
 
+    test "the form-control border is checked at 3:1 against every surface (D375)" do
+      inputs = specs_in("input-border")
+
+      for bg <- ~w(--bg --surface --surface-2 --surface-sunken) do
+        assert Enum.any?(
+                 inputs,
+                 &(&1.fg == "--line-input" and &1.bg == bg and &1.threshold == 3.0)
+               ),
+               "--line-input must be checked against #{bg} at 3.0:1"
+      end
+
+      assert length(inputs) == 4
+    end
+
+    test "each form-control border pair clears 3:1 in light and dark (D375)" do
+      output = capture_io(fn -> Contrast.run([]) end)
+
+      rows =
+        output
+        |> String.split("\n")
+        |> Enum.filter(&(&1 =~ "--line-input on"))
+
+      # Four surfaces in each of the two themes.
+      assert length(rows) == 8
+      for row <- rows, do: assert(row =~ "[ok  ]", "below 3:1: #{row}")
+    end
+
+    test "--line-strong stays a decorative border, not a form-control one (D375)" do
+      refute "input-border" |> specs_in() |> Enum.any?(&(&1.fg == "--line-strong"))
+      assert "border-vs-surface" |> specs_in() |> Enum.all?(&(&1.threshold == 1.5))
+    end
+
     test "every status soft fill is checked against the border token" do
       chip = specs_in("chip-border")
 

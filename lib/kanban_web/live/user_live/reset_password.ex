@@ -55,7 +55,7 @@ defmodule KanbanWeb.UserLive.ResetPassword do
             autocomplete="new-password"
             required
             phx-mounted={JS.focus()}
-            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-input); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
           />
           <span style="font-size: 11px; color: var(--ink-3); line-height: 1.45;">
             {gettext("At least 12 characters")}
@@ -74,7 +74,7 @@ defmodule KanbanWeb.UserLive.ResetPassword do
             value={Phoenix.HTML.Form.normalize_value("password", f[:password_confirmation].value)}
             autocomplete="new-password"
             required
-            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-strong); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
+            style="padding: 0 10px; height: 36px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-input); font-size: 13.5px; color: var(--ink); outline: none; font-family: var(--font-mono);"
           />
           <.field_errors errors={f[:password_confirmation].errors} />
         </label>
