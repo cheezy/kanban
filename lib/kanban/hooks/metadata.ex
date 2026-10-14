@@ -93,21 +93,11 @@ defmodule Kanban.Hooks.Metadata do
   defp maybe_append_after_goal(hooks, task, board, agent_name, true) do
     {:ok, after_goal} = Hooks.get_hook_info(task, board, "after_goal", agent_name)
 
-    # Telemetry: emitted only on real last-child deliveries through the
-    # /complete and /mark_reviewed response paths. The grace-worker
-    # back-compat promotion bypasses this module entirely (it calls
-    # Goals.mark_after_goal_succeeded_and_promote/2 directly), so the
-    # "do not count the empty no-op" pitfall is satisfied structurally.
-    # `project_id` is aliased to `board.id` — the codebase has no separate
-    # `project_id` field; `Board` is the project-equivalent schema. Both
-    # keys are emitted so downstream consumers expecting either terminology
-    # resolve to the same value.
-    Kanban.Telemetry.emit(
-      [:kanban, :api, :after_goal_delivered],
-      %{count: 1},
-      %{goal_id: task.parent_id, board_id: board.id, project_id: board.id}
-    )
-
+    # No telemetry here: the hook list is also built for completions and
+    # approvals that send no API response (the review queue), and inside the
+    # review transaction. `[:kanban, :api, :after_goal_delivered]` is emitted
+    # by KanbanWeb.API.TaskActions.emit_after_goal_delivered/3 when a
+    # response actually carries the after_goal hook.
     hooks ++ [after_goal]
   end
 end

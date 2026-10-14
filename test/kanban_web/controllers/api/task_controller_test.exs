@@ -5459,11 +5459,20 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "parent_id" => goal.id
         })
 
+      attach_telemetry([:kanban, :api, :after_goal_delivered])
       conn = patch(conn, ~p"/api/tasks/#{child.id}/complete", base_completion_params())
       response = json_response(conn, 200)
 
       hook_names = Enum.map(response["hooks"], & &1["name"])
       assert hook_names == ["after_doing", "before_review", "after_review", "after_goal"]
+
+      # The response carries the hook, so the delivery is counted, once.
+      assert_received {:telemetry_event, [:kanban, :api, :after_goal_delivered], %{count: 1},
+                       %{goal_id: goal_id, board_id: board_id, project_id: board_id}}
+
+      assert goal_id == goal.id
+      assert board_id == board.id
+      refute_received {:telemetry_event, [:kanban, :api, :after_goal_delivered], _, _}
 
       after_goal = Enum.find(response["hooks"], &(&1["name"] == "after_goal"))
       assert after_goal["blocking"] == true
@@ -5505,12 +5514,14 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "parent_id" => goal.id
         })
 
+      attach_telemetry([:kanban, :api, :after_goal_delivered])
       conn = patch(conn, ~p"/api/tasks/#{child_a.id}/complete", base_completion_params())
       response = json_response(conn, 200)
 
       hook_names = Enum.map(response["hooks"], & &1["name"])
       assert hook_names == ["after_doing", "before_review", "after_review"]
       refute Enum.any?(response["hooks"], &(&1["name"] == "after_goal"))
+      refute_received {:telemetry_event, [:kanban, :api, :after_goal_delivered], _, _}
     end
 
     test "auto-done orphan child (no parent) omits after_goal (W491)",
@@ -7296,6 +7307,8 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "reviewed_at" => DateTime.utc_now()
         })
 
+      attach_telemetry([:kanban, :api, :after_goal_delivered])
+
       conn =
         patch(conn, ~p"/api/tasks/#{child.id}/mark_reviewed", %{
           "after_review_result" => valid_after_review_result()
@@ -7305,6 +7318,11 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
       hook_names = Enum.map(response["hooks"], & &1["name"])
       assert hook_names == ["after_review", "after_goal"]
+
+      assert_received {:telemetry_event, [:kanban, :api, :after_goal_delivered], %{count: 1},
+                       %{goal_id: goal_id}}
+
+      assert goal_id == goal.id
 
       after_goal = Enum.find(response["hooks"], &(&1["name"] == "after_goal"))
       assert after_goal["blocking"] == true

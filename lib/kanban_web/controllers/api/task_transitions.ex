@@ -78,8 +78,10 @@ defmodule KanbanWeb.API.TaskTransitions do
     |> render_mark_reviewed_result(conn)
   end
 
-  defp render_mark_reviewed_result({:ok, task, hooks}, conn) when is_list(hooks),
-    do: render_reviewed_task(conn, task, hooks: hooks)
+  defp render_mark_reviewed_result({:ok, task, hooks}, conn) when is_list(hooks) do
+    TaskActions.emit_after_goal_delivered(conn, task, hooks)
+    render_reviewed_task(conn, task, hooks: hooks)
+  end
 
   defp render_mark_reviewed_result({:ok, task}, conn), do: render_reviewed_task(conn, task)
 

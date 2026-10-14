@@ -269,6 +269,17 @@
             style="color: var(--ink-2);"
           >
             <li>
+              <strong>The after_goal delivery metric counts real deliveries
+              only.</strong>
+              <code>kanban.api.after_goal_delivered.count</code> is now
+              recorded when a <code>/complete</code> or
+              <code>/mark_reviewed</code> API response carries the after_goal
+              hook. It used to be recorded whenever Stride worked out the hook
+              list, so approving a goal's last task in the review queue
+              counted a delivery that never happened, and counted it before
+              the approval was saved.
+            </li>
+            <li>
               <strong>Task history no longer crashes the task form.</strong>
               Opening a task whose history held an assignment with no user on
               either side, which happens once both users have been deleted,

@@ -734,6 +734,18 @@ defmodule Kanban.ReviewsTest do
       refute_receive {:goal_event, _event, _metadata, _in_transaction?}
     end
 
+    test "approving a goal's last child in the review queue emits no after_goal_delivered",
+         %{column: column, user: user} do
+      goal = task_fixture(column, %{title: "Goal", type: :goal})
+      task = pending_task!(column, %{parent_id: goal.id})
+      Kanban.TelemetryHelpers.attach_telemetry([:kanban, :api, :after_goal_delivered])
+
+      assert {:ok, _} = user |> Scope.for_user() |> Reviews.approve_review(task)
+
+      # No API response carries the after_goal hook, so nothing was delivered.
+      refute_receive {:telemetry_event, [:kanban, :api, :after_goal_delivered], _, _}
+    end
+
     test "a refused approval emits no goal events", %{column: column} do
       goal = task_fixture(column, %{title: "Goal", type: :goal})
       task = pending_task!(column, %{parent_id: goal.id})

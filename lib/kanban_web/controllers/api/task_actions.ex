@@ -183,6 +183,8 @@ defmodule KanbanWeb.API.TaskActions do
       time_spent_minutes: task.time_spent_minutes
     })
 
+    emit_after_goal_delivered(conn, task, hooks)
+
     template = if view_for(params) == :slim, do: :ack, else: :show
     {:ok, template, [task: task, hooks: hooks, agent_skills_version: params["skills_version"]]}
   end
@@ -467,6 +469,28 @@ defmodule KanbanWeb.API.TaskActions do
         method: conn.method
       })
     )
+  end
+
+  @doc """
+  Emits `[:kanban, :api, :after_goal_delivered]` when `hooks`, the list a
+  `/complete` or `/mark_reviewed` response (REST or MCP) is about to carry,
+  includes the goal's after_goal hook. It is emitted here, at the response,
+  and not where the hook list is built, so a completion or approval that sends
+  no API response, such as one from the review queue, is not counted, and a
+  refused request emits nothing.
+  """
+  def emit_after_goal_delivered(conn, task, hooks) when is_list(hooks) do
+    if Enum.any?(hooks, &match?(%{name: "after_goal"}, &1)) do
+      board_id = conn.assigns.current_board.id
+
+      Kanban.Telemetry.emit(
+        [:kanban, :api, :after_goal_delivered],
+        %{count: 1},
+        %{goal_id: task.parent_id, board_id: board_id, project_id: board_id}
+      )
+    end
+
+    :ok
   end
 
   @doc """
