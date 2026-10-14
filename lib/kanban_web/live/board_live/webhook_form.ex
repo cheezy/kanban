@@ -202,13 +202,21 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
 
   # The event checkboxes. The hidden empty value comes first so unticking
   # every box is submitted, and refused, rather than leaving the field out.
+  # Their ids come from the form's, so a reset create form (new ids, see
+  # IntegrationsComponent.reset_form/1) gets fresh inputs: LiveView's patch
+  # would otherwise carry the submitted ones over, still marked as used.
   defp events_fieldset(assigns) do
     assigns = assign(assigns, :selected, List.wrap(assigns.form[:event_types].value))
 
     ~H"""
     <fieldset style="margin: 12px 0 0; padding: 0; border: none;">
       <legend class="ucase" style={caption_style()}>{gettext("Events")}</legend>
-      <input type="hidden" name={@form[:event_types].name <> "[]"} value="" />
+      <input
+        type="hidden"
+        id={@form[:event_types].id <> "_empty"}
+        name={@form[:event_types].name <> "[]"}
+        value=""
+      />
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px; margin-top: 6px;">
         <label
           :for={event <- Endpoint.event_types()}
@@ -216,6 +224,7 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
         >
           <input
             type="checkbox"
+            id={@form[:event_types].id <> "_" <> String.replace(event, ".", "_")}
             name={@form[:event_types].name <> "[]"}
             value={event}
             checked={event in @selected}

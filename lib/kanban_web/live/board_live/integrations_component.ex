@@ -50,7 +50,7 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
      |> assign_new(:editing, fn -> nil end)
      |> assign_new(:deliveries, fn -> [] end)
      |> assign_new(:form_rev, fn -> 0 end)
-     |> assign_new(:form, &new_form/0)
+     |> assign_new(:form, fn %{form_rev: rev} -> new_form(rev) end)
      |> reload()}
   end
 
@@ -64,7 +64,7 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
     form =
       %Endpoint{}
       |> Webhooks.change_endpoint(params)
-      |> to_form(action: :validate, as: "endpoint")
+      |> to_form(action: :validate, as: "endpoint", id: form_id(socket.assigns.form_rev))
 
     {:noreply, assign(socket, :form, form)}
   end
@@ -179,7 +179,10 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   end
 
   defp handle_create({:error, %Changeset{} = changeset}, socket) do
-    {:noreply, assign(socket, :form, to_form(changeset, action: :insert, as: "endpoint"))}
+    form =
+      to_form(changeset, action: :insert, as: "endpoint", id: form_id(socket.assigns.form_rev))
+
+    {:noreply, assign(socket, :form, form)}
   end
 
   defp handle_create({:error, :unauthorized}, socket), do: deny(socket)
@@ -301,13 +304,22 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
     end
   end
 
+  # A new rev gives the empty form new input ids as well as a new form id.
+  # LiveView's patch reuses an element whose id is unchanged, and the old URL
+  # input would bring its "already used" state into the empty form, so
+  # changing the Kind would show "can't be blank" before anything was typed.
   defp reset_form(socket) do
+    rev = socket.assigns.form_rev + 1
+
     socket
-    |> assign(:form, new_form())
-    |> update(:form_rev, &(&1 + 1))
+    |> assign(:form_rev, rev)
+    |> assign(:form, new_form(rev))
   end
 
-  defp new_form, do: Webhooks.change_endpoint() |> to_form(as: "endpoint")
+  defp new_form(rev),
+    do: Webhooks.change_endpoint() |> to_form(as: "endpoint", id: form_id(rev))
+
+  defp form_id(rev), do: "endpoint-#{rev}"
 
   defp deny(socket) do
     notify_parent({:flash, :error, gettext("Only the board owner can manage integrations")})

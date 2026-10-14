@@ -214,6 +214,28 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
       refute has_element?(view, "#webhook-secret")
     end
 
+    test "after an endpoint is added the empty form gets new input ids", %{conn: conn} = ctx do
+      # LiveView's patch reuses an element whose id is unchanged, keeping the
+      # submitted input marked as used, so the empty form would show "can't
+      # be blank" as soon as the Kind changed. New ids give it fresh inputs.
+      conn = log_in_user(conn, ctx.owner)
+      {:ok, view, html} = live(conn, ~p"/boards/#{ctx.board}/integrations")
+
+      assert html =~ ~s(id="endpoint-0_url")
+      assert html =~ ~s(id="endpoint-0_event_types_task_created")
+
+      html = create(view, %{"kind" => "slack", "url" => @slack_url})
+
+      assert has_element?(view, "[data-endpoint-host]", "hooks.slack.com")
+
+      for id <- ~w(endpoint-1_kind endpoint-1_url endpoint-1_event_types_empty
+                   endpoint-1_event_types_task_created endpoint-1_event_types_task_deleted) do
+        assert has_element?(view, "##{id}"), "missing ##{id}"
+      end
+
+      refute html =~ ~s(id="endpoint-0_url")
+    end
+
     test "the tab's description and intro name Discord alongside Slack", %{conn: conn} = ctx do
       conn = log_in_user(conn, ctx.owner)
       {:ok, _view, html} = live(conn, ~p"/boards/#{ctx.board}/integrations")

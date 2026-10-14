@@ -10217,7 +10217,7 @@ msgstr "Add endpoint"
 msgid "Attempt"
 msgstr "Attempt"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:255
+#: lib/kanban_web/live/board_live/integrations_component.ex:258
 #, elixir-autogen, elixir-format
 msgid "Could not update the endpoint. Reload and try again."
 msgstr "Could not update the endpoint. Reload and try again."
@@ -10232,7 +10232,7 @@ msgstr "Delete this endpoint and its delivery log?"
 msgid "Deliveries"
 msgstr "Deliveries"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:249
+#: lib/kanban_web/live/board_live/integrations_component.ex:252
 #, elixir-autogen, elixir-format
 msgid "Enable the endpoint before sending a test event"
 msgstr "Enable the endpoint before sending a test event"
@@ -10247,18 +10247,18 @@ msgstr "Endpoint created"
 msgid "Endpoint deleted"
 msgstr "Endpoint deleted"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:261
+#: lib/kanban_web/live/board_live/integrations_component.ex:264
 #, elixir-autogen, elixir-format
 msgid "Endpoint disabled"
 msgstr "Endpoint disabled"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:262
+#: lib/kanban_web/live/board_live/integrations_component.ex:265
 #, elixir-autogen, elixir-format
 msgid "Endpoint enabled"
 msgstr "Endpoint enabled"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:196
-#: lib/kanban_web/live/board_live/integrations_component.ex:236
+#: lib/kanban_web/live/board_live/integrations_component.ex:199
+#: lib/kanban_web/live/board_live/integrations_component.ex:239
 #, elixir-autogen, elixir-format
 msgid "Endpoint not found"
 msgstr "Endpoint not found"
@@ -10273,7 +10273,7 @@ msgstr "Error"
 msgid "Event"
 msgstr "Event"
 
-#: lib/kanban_web/live/board_live/webhook_form.ex:210
+#: lib/kanban_web/live/board_live/webhook_form.ex:213
 #, elixir-autogen, elixir-format
 msgid "Events"
 msgstr "Events"
@@ -10307,13 +10307,13 @@ msgstr "Kind"
 msgid "No deliveries yet."
 msgstr "No deliveries yet."
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:344
+#: lib/kanban_web/live/board_live/integrations_component.ex:356
 #, elixir-autogen, elixir-format
 msgid "No endpoints yet. Add one below to send task events to another service."
 msgstr "No endpoints yet. Add one below to send task events to another service."
 
 #: lib/kanban_web/live/board_live/integrations.ex:35
-#: lib/kanban_web/live/board_live/integrations_component.ex:313
+#: lib/kanban_web/live/board_live/integrations_component.ex:325
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage integrations"
 msgstr "Only the board owner can manage integrations"
@@ -10394,7 +10394,7 @@ msgstr "URL"
 msgid "Use it to verify the X-Stride-Signature header on each request."
 msgstr "Use it to verify the X-Stride-Signature header on each request."
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:331
+#: lib/kanban_web/live/board_live/integrations_component.ex:343
 #, elixir-autogen, elixir-format
 msgid "Webhooks"
 msgstr "Webhooks"
@@ -10415,7 +10415,7 @@ msgstr ""
 msgid "Edit endpoint"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:188
+#: lib/kanban_web/live/board_live/integrations_component.ex:191
 #, elixir-autogen, elixir-format
 msgid "Endpoint updated"
 msgstr ""
@@ -10435,7 +10435,7 @@ msgstr ""
 msgid "Discord"
 msgstr "Discord"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:334
+#: lib/kanban_web/live/board_live/integrations_component.ex:346
 #, elixir-autogen, elixir-format
 msgid "Each endpoint receives the task events you choose. Generic endpoints get a signed JSON POST; Slack and Discord endpoints get a message in a channel."
 msgstr ""

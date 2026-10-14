@@ -10293,7 +10293,7 @@ msgstr "Adicionar endpoint"
 msgid "Attempt"
 msgstr "Tentativa"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:255
+#: lib/kanban_web/live/board_live/integrations_component.ex:258
 #, elixir-autogen, elixir-format
 msgid "Could not update the endpoint. Reload and try again."
 msgstr "Não foi possível atualizar o endpoint. Recarregue a página e tente novamente."
@@ -10308,7 +10308,7 @@ msgstr "Excluir este endpoint e seu registro de entregas?"
 msgid "Deliveries"
 msgstr "Entregas"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:249
+#: lib/kanban_web/live/board_live/integrations_component.ex:252
 #, elixir-autogen, elixir-format
 msgid "Enable the endpoint before sending a test event"
 msgstr "Ative o endpoint antes de enviar um evento de teste"
@@ -10323,18 +10323,18 @@ msgstr "Endpoint criado"
 msgid "Endpoint deleted"
 msgstr "Endpoint excluído"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:261
+#: lib/kanban_web/live/board_live/integrations_component.ex:264
 #, elixir-autogen, elixir-format
 msgid "Endpoint disabled"
 msgstr "Endpoint desativado"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:262
+#: lib/kanban_web/live/board_live/integrations_component.ex:265
 #, elixir-autogen, elixir-format
 msgid "Endpoint enabled"
 msgstr "Endpoint ativado"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:196
-#: lib/kanban_web/live/board_live/integrations_component.ex:236
+#: lib/kanban_web/live/board_live/integrations_component.ex:199
+#: lib/kanban_web/live/board_live/integrations_component.ex:239
 #, elixir-autogen, elixir-format
 msgid "Endpoint not found"
 msgstr "Endpoint não encontrado"
@@ -10349,7 +10349,7 @@ msgstr "Erro"
 msgid "Event"
 msgstr "Evento"
 
-#: lib/kanban_web/live/board_live/webhook_form.ex:210
+#: lib/kanban_web/live/board_live/webhook_form.ex:213
 #, elixir-autogen, elixir-format
 msgid "Events"
 msgstr "Eventos"
@@ -10383,13 +10383,13 @@ msgstr "Tipo"
 msgid "No deliveries yet."
 msgstr "Ainda não há entregas."
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:344
+#: lib/kanban_web/live/board_live/integrations_component.ex:356
 #, elixir-autogen, elixir-format
 msgid "No endpoints yet. Add one below to send task events to another service."
 msgstr "Ainda não há endpoints. Adicione um abaixo para enviar eventos de tarefa a outro serviço."
 
 #: lib/kanban_web/live/board_live/integrations.ex:35
-#: lib/kanban_web/live/board_live/integrations_component.ex:313
+#: lib/kanban_web/live/board_live/integrations_component.ex:325
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage integrations"
 msgstr "Somente o proprietário do quadro pode gerenciar integrações"
@@ -10470,7 +10470,7 @@ msgstr "URL"
 msgid "Use it to verify the X-Stride-Signature header on each request."
 msgstr "Use-o para verificar o cabeçalho X-Stride-Signature de cada requisição."
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:331
+#: lib/kanban_web/live/board_live/integrations_component.ex:343
 #, elixir-autogen, elixir-format
 msgid "Webhooks"
 msgstr "Webhooks"
@@ -10491,7 +10491,7 @@ msgstr "Esta tarefa foi movida por outra pessoa ao mesmo tempo. Por favor, tente
 msgid "Edit endpoint"
 msgstr "Editar endpoint"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:188
+#: lib/kanban_web/live/board_live/integrations_component.ex:191
 #, elixir-autogen, elixir-format
 msgid "Endpoint updated"
 msgstr "Endpoint atualizado"
@@ -10511,7 +10511,7 @@ msgstr "O segredo de assinatura continua o mesmo. Se o novo endereço pertencer 
 msgid "Discord"
 msgstr "Discord"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:334
+#: lib/kanban_web/live/board_live/integrations_component.ex:346
 #, elixir-autogen, elixir-format
 msgid "Each endpoint receives the task events you choose. Generic endpoints get a signed JSON POST; Slack and Discord endpoints get a message in a channel."
 msgstr "Cada endpoint recebe os eventos de tarefa que você escolher. Endpoints genéricos recebem um POST JSON assinado; endpoints do Slack e do Discord recebem uma mensagem em um canal."

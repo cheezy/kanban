@@ -21,7 +21,12 @@ defmodule KanbanWeb.BoardLive.WebhookFormTest do
     html = render_form(%{"event_types" => ["task.moved"]})
 
     assert html =~ ~s(id="webhook-endpoint-form-3")
-    assert html =~ ~r/<input type="hidden" name="endpoint\[event_types\]\[\]" value=""/
+
+    assert html =~
+             ~r/<input type="hidden" id="endpoint_event_types_empty" name="endpoint\[event_types\]\[\]" value=""/
+
+    # Each input's id comes from the form's, so a reset form gets fresh inputs.
+    assert html =~ ~s(id="endpoint_event_types_task_moved")
 
     for event <- Endpoint.event_types() do
       assert html =~ ~s(value="#{event}")
