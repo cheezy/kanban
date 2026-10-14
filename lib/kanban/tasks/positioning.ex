@@ -279,8 +279,11 @@ defmodule Kanban.Tasks.Positioning do
 
     Enum.each(tasks, fn task ->
       # A position shift is bookkeeping, not an edit, so it emits no
-      # [:kanban, :task, :updated] event.
-      Kanban.Tasks.update_task(task, %{position: task.position - 1}, telemetry: false)
+      # [:kanban, :task, :updated] event and no webhook.
+      Kanban.Tasks.update_task(task, %{position: task.position - 1},
+        telemetry: false,
+        webhook: false
+      )
     end)
   end
 

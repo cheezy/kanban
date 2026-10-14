@@ -339,6 +339,28 @@ defmodule Kanban.Webhooks.EventsTest do
       assert queued() == []
     end
 
+    test "update_task with webhook: false queues nothing", ctx do
+      task = task_fixture(ctx.cols["Backlog"])
+      Repo.delete_all(Oban.Job)
+
+      {:ok, _} = Tasks.update_task(task, %{"title" => "Quiet"}, webhook: false)
+
+      assert queued() == []
+    end
+
+    test "deleting a task queues no task.updated for the tasks shifted up behind it", ctx do
+      [first, second, third] =
+        for title <- ~w(One Two Three), do: task_fixture(ctx.cols["Backlog"], %{title: title})
+
+      Repo.delete_all(Oban.Job)
+
+      {:ok, _} = Tasks.delete_task(first)
+
+      assert queued() == [{ctx.all.id, "task.deleted"}]
+      assert Repo.get!(Kanban.Tasks.Task, second.id).position == second.position - 1
+      assert Repo.get!(Kanban.Tasks.Task, third.id).position == third.position - 1
+    end
+
     test "broadcast_task_change with webhook: false queues nothing", ctx do
       task = task_fixture(ctx.cols["Backlog"])
       Repo.delete_all(Oban.Job)

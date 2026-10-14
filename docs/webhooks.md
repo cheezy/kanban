@@ -34,6 +34,8 @@ sends one event for each task it changed. These changes send nothing:
 
 - a label being added to or removed from a task (labels are not in the payload);
 - saving a task without changing any of its fields;
+- the tasks below a deleted task moving up to close the gap (the deleted
+  task's own `task.deleted` is sent);
 - a task becoming unblocked when its last dependency is done;
 - a goal moving automatically because one of its tasks moved (the task's own
   event is sent);

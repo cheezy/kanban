@@ -38,6 +38,9 @@ defmodule Kanban.Tasks.Lifecycle do
     * `:telemetry` — `false` skips the `[:kanban, :task, :updated]` event.
       Only for internal bookkeeping writes that are not an edit, such as the
       position shifts after a delete. Defaults to `true`.
+    * `:webhook` — `false` skips the task's webhook event (the board
+      broadcast still happens). Same use as `:telemetry`. Defaults to `true`.
+      A save that changed nothing never emits one.
 
   A saved change emits `[:kanban, :task, :updated]` with `source: :ui` once
   the write has committed (once for a goal, never per cascaded child).
@@ -51,7 +54,7 @@ defmodule Kanban.Tasks.Lifecycle do
       if assignment_changed? and task.type == :goal do
         update_goal_with_cascade(task, changeset)
       else
-        update_without_cascade(task, changeset)
+        update_without_cascade(task, changeset, Keyword.take(opts, [:webhook]))
       end
 
     result
@@ -116,7 +119,7 @@ defmodule Kanban.Tasks.Lifecycle do
 
   # Existing single-task update path. Preserves the original side-effect
   # ordering (priority/assignment/dependencies/status histories, then broadcast).
-  defp update_without_cascade(task, changeset) do
+  defp update_without_cascade(task, changeset, broadcast_opts \\ []) do
     # Wrap only the DB write: a 22001 on a bounded column without a per-field
     # validator becomes {:error, value_too_long_changeset} (a clean 422) rather
     # than a raised Postgrex.Error / HTTP 500. The success-path side effects run
@@ -124,7 +127,7 @@ defmodule Kanban.Tasks.Lifecycle do
     case DbErrors.translate_value_too_long(fn -> Repo.update(changeset) end, &{:error, &1}) do
       {:ok, updated_task} ->
         updated_task = fire_update_side_effects(task, updated_task, changeset)
-        Broadcaster.broadcast_task_update(updated_task, changeset)
+        Broadcaster.broadcast_task_update(updated_task, changeset, broadcast_opts)
 
         {:ok, updated_task}
 
