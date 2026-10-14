@@ -10288,7 +10288,7 @@ msgstr "Events"
 msgid "Failed"
 msgstr "Failed"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:21
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:24
 #, elixir-autogen, elixir-format
 msgid "Generic webhook"
 msgstr "Generic webhook"
@@ -10323,7 +10323,7 @@ msgstr "No endpoints yet. Add one below to send task events to another service."
 msgid "Only the board owner can manage integrations"
 msgstr "Only the board owner can manage integrations"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:37
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:46
 #, elixir-autogen, elixir-format
 msgid "Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."
 msgstr "Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."
@@ -10373,12 +10373,12 @@ msgstr "Send this board's task events to your own services or a Slack channel."
 msgid "Signing secret"
 msgstr "Signing secret"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:20
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:22
 #, elixir-autogen, elixir-format
 msgid "Slack"
 msgstr "Slack"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:39
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:51
 #, elixir-autogen, elixir-format
 msgid "Stride sends a signed JSON POST to this HTTPS address."
 msgstr "Stride sends a signed JSON POST to this HTTPS address."
@@ -10439,3 +10439,13 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "The signing secret stays the same. If the new address belongs to a different receiver, use Rotate secret to replace it."
 msgstr ""
+
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:23
+#, elixir-autogen, elixir-format
+msgid "Discord"
+msgstr "Discord"
+
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:49
+#, elixir-autogen, elixir-format
+msgid "Paste a Discord channel webhook URL (https://discord.com/api/webhooks/…)."
+msgstr "Paste a Discord channel webhook URL (https://discord.com/api/webhooks/…)."

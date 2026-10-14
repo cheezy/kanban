@@ -50,10 +50,17 @@ defmodule KanbanWeb.BoardLive.WebhookViewsTest do
     end
   end
 
-  test "kind_label/1 names both kinds" do
+  test "kind_label/1 names every kind" do
     assert WebhookViews.kind_label(:slack) == "Slack"
     assert WebhookViews.kind_label("slack") == "Slack"
+    assert WebhookViews.kind_label(:discord) == "Discord"
+    assert WebhookViews.kind_label("discord") == "Discord"
     assert WebhookViews.kind_label(:generic) == "Generic webhook"
+
+    for kind <- Endpoint.kinds() -- [:generic] do
+      refute WebhookViews.kind_label(kind) == "Generic webhook",
+             "#{inspect(kind)} has no label of its own"
+    end
   end
 
   describe "endpoint_row/1" do
@@ -67,6 +74,26 @@ defmodule KanbanWeb.BoardLive.WebhookViewsTest do
 
       assert html =~ "hooks.slack.com"
       refute html =~ "services/T/B/X"
+      refute html =~ "webhook-rotate-7"
+      assert html =~ "webhook-delete-7"
+    end
+
+    test "a Discord row shows only the host, its Discord badge and no rotate action" do
+      assigns = %{
+        endpoint:
+          endpoint(kind: :discord, url: "https://discord.com/api/webhooks/123456789/abcDEF_-tok")
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <WebhookViews.endpoint_row endpoint={@endpoint} myself={nil} />
+        """)
+
+      assert html =~ "discord.com"
+      assert html =~ ~s(data-endpoint-kind="discord")
+      assert html =~ "Discord"
+      refute html =~ "api/webhooks"
+      refute html =~ "abcDEF_-tok"
       refute html =~ "webhook-rotate-7"
       assert html =~ "webhook-delete-7"
     end

@@ -10319,7 +10319,7 @@ msgstr "事件"
 msgid "Failed"
 msgstr "失败"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:21
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:24
 #, elixir-autogen, elixir-format
 msgid "Generic webhook"
 msgstr "通用 Webhook"
@@ -10354,7 +10354,7 @@ msgstr "暂无端点。在下方添加一个，即可将任务事件发送到其
 msgid "Only the board owner can manage integrations"
 msgstr "只有看板所有者才能管理集成"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:37
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:46
 #, elixir-autogen, elixir-format
 msgid "Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."
 msgstr "粘贴 Slack 传入 Webhook URL（https://hooks.slack.com/…）。"
@@ -10404,12 +10404,12 @@ msgstr "将此看板的任务事件发送到你自己的服务或 Slack 频道�
 msgid "Signing secret"
 msgstr "签名密钥"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:20
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:22
 #, elixir-autogen, elixir-format
 msgid "Slack"
 msgstr "Slack"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:39
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:51
 #, elixir-autogen, elixir-format
 msgid "Stride sends a signed JSON POST to this HTTPS address."
 msgstr "Stride 会向此 HTTPS 地址发送签名的 JSON POST。"
@@ -10470,3 +10470,13 @@ msgstr "留空则保留当前 URL（%{host}）。"
 #, elixir-autogen, elixir-format
 msgid "The signing secret stays the same. If the new address belongs to a different receiver, use Rotate secret to replace it."
 msgstr "签名密钥保持不变。如果新地址属于其他接收方，请使用“轮换密钥”替换它。"
+
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:23
+#, elixir-autogen, elixir-format
+msgid "Discord"
+msgstr "Discord"
+
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:49
+#, elixir-autogen, elixir-format
+msgid "Paste a Discord channel webhook URL (https://discord.com/api/webhooks/…)."
+msgstr "粘贴 Discord 频道 Webhook URL（https://discord.com/api/webhooks/…）。"

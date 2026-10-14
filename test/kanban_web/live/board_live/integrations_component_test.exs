@@ -18,6 +18,9 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
 
   @generic_url "https://hooks.example.com/stride/secret-path?token=abc"
   @slack_url "https://hooks.slack.com/services/T000/B000/XXXX"
+  @discord_url "https://discord.com/api/webhooks/123456789012345678/abcDEF_-tok"
+  @discord_error "must be a Discord webhook URL starting with https://discord.com/api/webhooks/"
+  @discord_hint "Paste a Discord channel webhook URL (https://discord.com/api/webhooks/…)."
   @not_found "Endpoint not found"
   @owner_only "Only the board owner can manage integrations"
 
@@ -142,6 +145,92 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
       refute has_element?(view, "#webhook-rotate-#{endpoint.id}")
       assert has_element?(view, ~s(#webhook-endpoint-#{endpoint.id} [data-endpoint-kind="slack"]))
       refute html =~ "T000/B000"
+    end
+
+    test "creates a Discord endpoint without revealing a secret or offering rotate",
+         %{conn: conn} = ctx do
+      view = open(conn, ctx.owner, ctx.board)
+      html = create(view, %{"kind" => "discord", "url" => @discord_url})
+
+      assert [%Endpoint{kind: :discord, url: @discord_url} = endpoint] = endpoints(ctx.board)
+      refute has_element?(view, "#webhook-secret")
+      refute has_element?(view, "#webhook-rotate-#{endpoint.id}")
+
+      assert has_element?(
+               view,
+               ~s(#webhook-endpoint-#{endpoint.id} [data-endpoint-kind="discord"]),
+               "Discord"
+             )
+
+      assert has_element?(
+               view,
+               "#webhook-endpoint-#{endpoint.id} [data-endpoint-host]",
+               "discord.com"
+             )
+
+      refute html =~ "api/webhooks/123456789012345678"
+      refute html =~ "abcDEF_-tok"
+    end
+
+    test "the Kind select lists Discord and switching to it shows the Discord placeholder and hint",
+         %{conn: conn} = ctx do
+      view = open(conn, ctx.owner, ctx.board)
+
+      assert has_element?(
+               view,
+               ~s(form[id^=webhook-endpoint-form] option[value="discord"]),
+               "Discord"
+             )
+
+      for {kind, placeholder, hint} <- [
+            {"slack", "https://hooks.slack.com/services/…", "Paste a Slack incoming webhook URL"},
+            {"discord", "https://discord.com/api/webhooks/…", @discord_hint},
+            {"slack", "https://hooks.slack.com/services/…", "Paste a Slack incoming webhook URL"}
+          ] do
+        html =
+          view
+          |> form()
+          |> render_change(%{
+            "endpoint" => %{"kind" => kind, "url" => "", "event_types" => ["task.created"]}
+          })
+
+        assert html =~ ~s(placeholder="#{placeholder}")
+        assert html =~ hint
+      end
+
+      assert endpoints(ctx.board) == []
+    end
+
+    test "a non-Discord URL for a Discord endpoint shows an inline error and saves nothing",
+         %{conn: conn} = ctx do
+      view = open(conn, ctx.owner, ctx.board)
+
+      for url <- [@slack_url, @generic_url, "https://discord.com/channels/1/2"] do
+        html = create(view, %{"kind" => "discord", "url" => url})
+        assert html =~ @discord_error, "expected the Discord error for #{inspect(url)}"
+      end
+
+      assert endpoints(ctx.board) == []
+      refute has_element?(view, "#webhook-secret")
+    end
+
+    test "the Discord hint and errors are translated (de)", %{conn: conn} = ctx do
+      conn = conn |> log_in_user(ctx.owner) |> Plug.Conn.put_session(:locale, "de")
+      {:ok, view, _html} = live(conn, ~p"/boards/#{ctx.board}/integrations")
+
+      changed =
+        view
+        |> form()
+        |> render_change(%{
+          "endpoint" => %{"kind" => "discord", "url" => "", "event_types" => ["task.created"]}
+        })
+
+      refute changed =~ @discord_hint
+      assert changed =~ "Discord-Kanal-Webhook-URL"
+
+      html = create(view, %{"kind" => "discord", "url" => @slack_url})
+      assert html =~ "muss eine Discord-Webhook-URL sein"
+      refute html =~ @discord_error
     end
 
     test "invalid or blocked URLs show an inline error and save nothing", %{conn: conn} = ctx do
@@ -597,6 +686,57 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
       assert saved.enabled
       assert saved.board_id == endpoint.board_id
       assert saved.event_types == ["task.moved"]
+    end
+
+    test "editing a Discord endpoint keeps it Discord and has no rotate note",
+         %{conn: conn} = ctx do
+      endpoint =
+        webhook_endpoint_fixture(ctx.board,
+          kind: :discord,
+          url: @discord_url,
+          event_types: ["task.created"]
+        )
+
+      new_url = "https://discord.com/api/webhooks/987654321098765432/newTOKEN_x"
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      form_html = view |> edit_form(endpoint) |> render()
+      assert has_element?(view, ~s(#webhook-edit-form-#{endpoint.id} [data-edit-kind="discord"]))
+      assert form_html =~ "Discord"
+      assert form_html =~ @discord_hint
+      refute form_html =~ "<select"
+      refute has_element?(view, "#webhook-edit-form-#{endpoint.id} [data-rotate-note]")
+      assert has_element?(view, ~s(#webhook-edit-url-#{endpoint.id}[value=""]))
+      refute form_html =~ "abcDEF_-tok"
+
+      html = save_edit(view, endpoint, %{"url" => @slack_url, "event_types" => ["task.moved"]})
+      assert html =~ @discord_error
+      assert Repo.get!(Endpoint, endpoint.id).url == @discord_url
+
+      save_edit(view, endpoint, %{
+        "kind" => "generic",
+        "url" => new_url,
+        "event_types" => ["task.moved", "task.deleted"]
+      })
+
+      saved = Repo.get!(Endpoint, endpoint.id)
+      assert saved.kind == :discord
+      assert saved.url == new_url
+      assert saved.event_types == ["task.moved", "task.deleted"]
+
+      html = render(view)
+      assert html =~ "Endpoint updated"
+      refute html =~ "newTOKEN_x"
+      refute html =~ "abcDEF_-tok"
+      refute has_element?(view, "#webhook-rotate-#{endpoint.id}")
+
+      assert has_element?(
+               view,
+               ~s(#webhook-endpoint-#{endpoint.id} [data-endpoint-kind="discord"]),
+               "Discord"
+             )
+
+      assert has_element?(view, "#webhook-endpoint-#{endpoint.id} code", "task.deleted")
     end
 
     test "the rendered HTML never contains the endpoint's full stored URL", %{conn: conn} = ctx do

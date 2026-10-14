@@ -10334,7 +10334,7 @@ msgstr "Événements"
 msgid "Failed"
 msgstr "Échouée"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:21
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:24
 #, elixir-autogen, elixir-format
 msgid "Generic webhook"
 msgstr "Webhook générique"
@@ -10369,7 +10369,7 @@ msgstr "Aucun endpoint pour l'instant. Ajoutez-en un ci-dessous pour envoyer les
 msgid "Only the board owner can manage integrations"
 msgstr "Seul le propriétaire du tableau peut gérer les intégrations"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:37
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:46
 #, elixir-autogen, elixir-format
 msgid "Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."
 msgstr "Collez une URL de webhook entrant Slack (https://hooks.slack.com/…)."
@@ -10419,12 +10419,12 @@ msgstr "Envoyez les événements de tâche de ce tableau à vos propres services
 msgid "Signing secret"
 msgstr "Secret de signature"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:20
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:22
 #, elixir-autogen, elixir-format
 msgid "Slack"
 msgstr "Slack"
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:39
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:51
 #, elixir-autogen, elixir-format
 msgid "Stride sends a signed JSON POST to this HTTPS address."
 msgstr "Stride envoie un POST JSON signé à cette adresse HTTPS."
@@ -10485,3 +10485,13 @@ msgstr "Laissez vide pour conserver l’URL actuelle (%{host})."
 #, elixir-autogen, elixir-format
 msgid "The signing secret stays the same. If the new address belongs to a different receiver, use Rotate secret to replace it."
 msgstr "Le secret de signature reste le même. Si la nouvelle adresse appartient à un autre destinataire, utilisez « Renouveler le secret » pour le remplacer."
+
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:23
+#, elixir-autogen, elixir-format
+msgid "Discord"
+msgstr "Discord"
+
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:49
+#, elixir-autogen, elixir-format
+msgid "Paste a Discord channel webhook URL (https://discord.com/api/webhooks/…)."
+msgstr "Collez une URL de webhook de salon Discord (https://discord.com/api/webhooks/…)."
