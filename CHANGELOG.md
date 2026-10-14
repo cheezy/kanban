@@ -5,12 +5,6 @@ All notable changes to the Kanban Board application will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Added
-
-- **Edit webhook and Slack endpoints.** Each endpoint on a board's **Integrations** tab now has an **Edit** action, so you can change which events it gets or where they go without deleting it and adding it again. Leave the URL blank to keep the current one; a new URL gets the same checks as a new endpoint. The kind cannot be changed. The endpoint keeps its delivery log, and a webhook keeps its signing secret, so use **Rotate secret** if the new address belongs to a different receiver. Deliveries already waiting to be retried go to the new address. See [Webhooks and Slack](docs/webhooks.md#test-pause-and-remove-an-endpoint).
-
 ## [2.21.0] - 2026-10-14
 
 Boards can now tell other systems what happens to their tasks: board owners send task events to a signed webhook, a Slack channel or a Discord channel from a new **Integrations** tab. Stride also sends a monitoring event for most things people and agents do, charts every one of them on the admin Metrics page, documents them in a new reference, and keeps stored metrics for 90 days.
@@ -25,6 +19,7 @@ Board owners have a new **Integrations** tab next to **Settings**. Each endpoint
 - A **Slack** endpoint posts a short message to a channel through a Slack incoming webhook.
 - A **Discord** endpoint posts a short message to a channel through a Discord channel webhook.
 - Each endpoint has **Send test**, an on/off switch and a log of its 20 most recent deliveries.
+- **Edit** changes which events an endpoint gets or where they go. Leave the URL blank to keep the current one; a new URL gets the same checks as a new endpoint. The kind cannot be changed. The endpoint keeps its delivery log, and a webhook keeps its signing secret, so use **Rotate secret** if the new address belongs to a different receiver. Deliveries already waiting to be retried go to the new address.
 - Failed deliveries are retried for about an hour, up to 8 attempts. A `4xx` other than `408` or `429` is not retried.
 - Stride never sends to a private or internal network address.
 
