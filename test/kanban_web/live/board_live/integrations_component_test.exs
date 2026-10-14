@@ -135,6 +135,27 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
       refute render(reloaded) =~ second
     end
 
+    test "Copy reports the outcome from the browser instead of always saying Copied!",
+         %{conn: conn} = ctx do
+      view = open(conn, ctx.owner, ctx.board)
+      create(view, %{})
+
+      copy = view |> element("#webhook-secret-copy") |> render()
+      # Only the clipboard's answer shows a status (assets/js/copy_to_clipboard.js),
+      # so the button itself never shows "Copied!".
+      assert copy =~ "stride:copy"
+      assert copy =~ "webhook-secret-copied"
+      assert copy =~ "webhook-secret-copy-failed"
+      refute copy =~ "&quot;show&quot;"
+
+      assert view |> element("#webhook-secret-copied") |> render() =~ "display: none"
+
+      assert view |> element("#webhook-secret-copy-failed") |> render() =~
+               "Couldn&#39;t copy it. Select the secret and copy it yourself."
+
+      assert view |> element("#webhook-secret-copy-failed") |> render() =~ "display: none"
+    end
+
     test "creates a Slack endpoint without revealing a secret or offering rotate",
          %{conn: conn} = ctx do
       view = open(conn, ctx.owner, ctx.board)

@@ -44,6 +44,8 @@
                 A <strong>generic webhook</strong> receives a signed JSON
                 <code>POST</code>. Its signing secret is shown once, when the
                 endpoint is added or its secret is rotated.
+                <strong>Copy</strong> says whether the secret reached the
+                clipboard, and asks you to copy it by hand if it did not.
               </li>
               <li>
                 A <strong>Slack</strong> endpoint posts a short message to a
@@ -224,6 +226,12 @@
               <strong>Removing a member unassigns their tasks.</strong> Their
               open tasks on the board show under <strong>Unassigned</strong>;
               archived tasks keep their assignee.
+            </li>
+            <li>
+              <strong>Board settings show why a save was refused.</strong> A
+              name longer than 50 characters, a blank name or a description
+              longer than 255 characters now shows its error under the field.
+              Before, <strong>Save</strong> did nothing and said nothing.
             </li>
             <li>
               <strong>The Archive page no longer calls every archived task

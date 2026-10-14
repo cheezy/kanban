@@ -36,6 +36,7 @@ import Sidebar from "./hooks/sidebar"
 import SnapIndicator from "./hooks/snap_indicator"
 import topbar from "../vendor/topbar"
 import {install as installFocusAfterMove} from "./focus_after_move"
+import {install as installCopyToClipboard} from "./copy_to_clipboard"
 
 const MyHooks = {
   AutoDismissFlash,
@@ -73,11 +74,12 @@ window.addEventListener("phx:comment-thread:scroll-to", event => {
   if (row) row.scrollIntoView({block: "nearest", behavior: "smooth"})
 })
 
-// Copies an element's text to the clipboard: JS.dispatch("stride:copy", to: "#id").
-// Used by the one-time webhook signing secret, so the secret never sits in an attribute.
-window.addEventListener("stride:copy", event => {
-  if (navigator.clipboard) navigator.clipboard.writeText(event.target.textContent.trim())
-})
+// Copies an element's text to the clipboard and shows whether it worked:
+// JS.dispatch("stride:copy", to: "#id", detail: %{copied: "id", failed: "id"}).
+// The status is shown with LiveView's JS commands so it survives a re-render.
+installCopyToClipboard(window, document, (el, visible) =>
+  visible ? liveSocket.js().show(el) : liveSocket.js().hide(el)
+)
 
 // Return keyboard focus after a card's Move to Ready arrow leaves with its card.
 installFocusAfterMove(window, document)

@@ -195,6 +195,62 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponentTest do
     end
   end
 
+  describe "field errors in the settings modal" do
+    setup [:setup_owner]
+
+    defp open_settings(conn, user, board) do
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/boards/#{board}/settings")
+      view
+    end
+
+    test "a name over 50 characters shows its error and leaves the board unchanged",
+         %{conn: conn, user: user, board: board, scope: scope} do
+      view = open_settings(conn, user, board)
+      long_name = String.duplicate("n", 51)
+
+      html =
+        view
+        |> form("#board-settings-form-#{board.id}", board: %{name: long_name})
+        |> render_submit()
+
+      assert html =~ "should be at most 50 character(s)"
+      assert has_element?(view, "#board-settings-form-#{board.id}")
+      assert {:ok, %{name: "Old name"}} = Boards.get_board(board.id, scope.user)
+    end
+
+    test "a description over 255 characters shows its error",
+         %{conn: conn, user: user, board: board} do
+      view = open_settings(conn, user, board)
+
+      html =
+        view
+        |> form("#board-settings-form-#{board.id}",
+          board: %{description: String.duplicate("d", 256)}
+        )
+        |> render_submit()
+
+      assert html =~ "should be at most 255 character(s)"
+    end
+
+    test "a blank name shows its error while typing", %{conn: conn, user: user, board: board} do
+      view = open_settings(conn, user, board)
+
+      html =
+        view
+        |> form("#board-settings-form-#{board.id}", board: %{name: ""})
+        |> render_change()
+
+      assert html =~ "can&#39;t be blank"
+    end
+
+    test "the form shows no error before anything is submitted",
+         %{conn: conn, user: user, board: board} do
+      view = open_settings(conn, user, board)
+
+      refute has_element?(view, "#board-settings-form-#{board.id} .hero-exclamation-circle")
+    end
+  end
+
   describe "a modify member (W2233)" do
     setup [:setup_owner]
 

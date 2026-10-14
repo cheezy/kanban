@@ -7,7 +7,9 @@ defmodule Kanban.Webhooks.SlackFormatter do
 
   Every value that comes from the board (titles, board and column names,
   identifiers) goes through `escape/1`, so a title cannot inject a Slack
-  link, a mention such as `<!channel>`, or formatting control characters.
+  link or a mention such as `<!channel>`. Slack's text formatting (`*bold*`,
+  `_italic_`, `~strike~`, backticks) is left as typed: Slack has no escape
+  for it in mrkdwn text, and the message needs mrkdwn for its links.
   """
 
   @max_title 200

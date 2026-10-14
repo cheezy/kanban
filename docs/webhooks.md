@@ -27,7 +27,7 @@ must be ticked.
 | `task.claimed` | An agent claims a task. |
 | `task.unclaimed` | A claim is released. |
 | `task.completed` | A task is completed, by an agent or by an approval in the review queue. |
-| `task.moved_to_review` | An agent completes a task, which moves it to the Review column. A task that does not need review then moves on to Done at once, so it sends `task.completed` straight after. |
+| `task.moved_to_review` | An agent completes a task, which moves it to the Review column. A task that does not need review then moves on to Done at once, so it also sends `task.completed`, and the two can arrive in either order. |
 | `task.reviewed` | A reviewer approves a task or requests changes. |
 | `task.deleted` | A task is deleted. |
 
@@ -42,6 +42,10 @@ sends one event for each task it changed. These changes send nothing:
 - a goal moving automatically because one of its tasks moved (the task's own
   event is sent);
 - tasks removed along with a deleted board or column.
+
+Events are not guaranteed to arrive in the order they happened. Two events
+sent close together, or an event that had to be retried, can reach you in
+either order, so use each body's `occurred_at` to put them in order.
 
 ## Set up a Slack endpoint
 
@@ -79,9 +83,12 @@ Each message names the task's identifier and title, what happened to it, its
 board and its column, with links to the task and the board in Stride. A test
 message reads "Stride test message for board …" with a link to the board.
 
-Titles, board names and column names are shown as plain text. A title such as
-`<!channel>` or `<https://example.com|click here>` cannot ping the channel or
-become a link. Titles longer than 200 characters are shortened.
+A title, board name or column name cannot ping the channel or become a
+disguised link: a title such as `<!channel>` or
+`<https://example.com|click here>` is shown as typed. Slack formatting is not
+removed, so `*bold*` or `_italic_` in a title still shows as bold or italic,
+and a web address in a title is shown as a link to that address. Titles
+longer than 200 characters are shortened.
 
 ## Set up a Discord endpoint
 

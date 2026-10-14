@@ -74,6 +74,7 @@ defmodule Kanban.Webhooks.DeliveryWorkerTest do
       assert Plug.Conn.get_req_header(conn, "x-stride-event") == ["task.moved"]
       assert Plug.Conn.get_req_header(conn, "x-stride-delivery") == ["dlv-1"]
       assert Plug.Conn.get_req_header(conn, "content-type") == ["application/json"]
+      assert Plug.Conn.get_req_header(conn, "user-agent") == ["Stride-Webhooks/1"]
 
       [signature] = Plug.Conn.get_req_header(conn, "x-stride-signature")
       {:ok, secret} = Webhooks.signing_secret(ctx.endpoint)
@@ -272,6 +273,8 @@ defmodule Kanban.Webhooks.DeliveryWorkerTest do
       assert_received {:request, conn, body}
       assert conn.host == "54.1.2.3"
       assert Plug.Conn.get_req_header(conn, "host") == ["hooks.slack.com"]
+      assert Plug.Conn.get_req_header(conn, "content-type") == ["application/json"]
+      assert Plug.Conn.get_req_header(conn, "user-agent") == ["Stride-Webhooks/1"]
 
       for header <- ~w(x-stride-signature x-stride-event x-stride-delivery) do
         assert Plug.Conn.get_req_header(conn, header) == []
@@ -312,6 +315,7 @@ defmodule Kanban.Webhooks.DeliveryWorkerTest do
       assert Plug.Conn.get_req_header(conn, "host") == ["discord.com"]
       assert conn.request_path == "/api/webhooks/100000000000000001/not-a-real-token"
       assert Plug.Conn.get_req_header(conn, "content-type") == ["application/json"]
+      assert Plug.Conn.get_req_header(conn, "user-agent") == ["Stride-Webhooks/1"]
 
       for header <- ~w(x-stride-signature x-stride-event x-stride-delivery) do
         assert Plug.Conn.get_req_header(conn, header) == []

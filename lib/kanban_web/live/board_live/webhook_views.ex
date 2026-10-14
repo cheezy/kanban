@@ -26,7 +26,9 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
 
   @doc """
   The signing secret, shown once after a create or a rotation, with a copy
-  button and a dismiss button.
+  button and a dismiss button. "Copied!" shows only once the browser accepts
+  the text (`assets/js/copy_to_clipboard.js`); otherwise a message asks the
+  user to copy it by hand.
   """
   attr :secret, :string, required: true
   attr :myself, :any, required: true
@@ -66,8 +68,10 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
             id="webhook-secret-copy"
             type="button"
             phx-click={
-              JS.dispatch("stride:copy", to: "#webhook-secret-value")
-              |> JS.show(to: "#webhook-secret-copied")
+              JS.dispatch("stride:copy",
+                to: "#webhook-secret-value",
+                detail: %{copied: "webhook-secret-copied", failed: "webhook-secret-copy-failed"}
+              )
             }
             style={[
               "padding: 6px 12px; border-radius: 5px; border: none;",
@@ -83,6 +87,13 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
             style="display: none; font-size: 11.5px; color: var(--ink-2);"
           >
             {gettext("Copied!")}
+          </span>
+          <span
+            id="webhook-secret-copy-failed"
+            role="status"
+            style="display: none; font-size: 11.5px; color: var(--st-blocked);"
+          >
+            {gettext("Couldn't copy it. Select the secret and copy it yourself.")}
           </span>
         </div>
       </div>

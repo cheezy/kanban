@@ -24,7 +24,8 @@ defmodule Kanban.Webhooks.DeliveryWorker do
        `X-Stride-Delivery` and `X-Stride-Signature` headers; a Slack
        endpoint gets a `Kanban.Webhooks.SlackFormatter` message and a
        Discord endpoint a `Kanban.Webhooks.DiscordFormatter` body, each with
-       only a content-type header and none of those.
+       only the content-type and `User-Agent: Stride-Webhooks/1` headers
+       and none of those.
     4. `Kanban.Webhooks.Transport` sends it to the approved address. A 2xx
        is a success. A 4xx other than 408 (Request Timeout) and 429 (Too
        Many Requests) is recorded and cancelled: the receiver refused the
@@ -56,6 +57,8 @@ defmodule Kanban.Webhooks.DeliveryWorker do
 
   # 4xx statuses worth another attempt: the receiver was slow or busy.
   @retryable_4xx [408, 429]
+
+  @base_headers [{"content-type", "application/json"}, {"user-agent", "Stride-Webhooks/1"}]
 
   @doc "Queues one delivery of `payload` for `event` to the endpoint."
   @spec enqueue(integer(), String.t(), map()) :: {:ok, Oban.Job.t()} | {:error, term()}
@@ -130,12 +133,12 @@ defmodule Kanban.Webhooks.DeliveryWorker do
 
   defp build_request(%Endpoint{kind: :slack}, %{"payload" => payload}) do
     body = payload |> SlackFormatter.format() |> Jason.encode!()
-    {:ok, body, [{"content-type", "application/json"}]}
+    {:ok, body, @base_headers}
   end
 
   defp build_request(%Endpoint{kind: :discord}, %{"payload" => payload}) do
     body = payload |> DiscordFormatter.format() |> Jason.encode!()
-    {:ok, body, [{"content-type", "application/json"}]}
+    {:ok, body, @base_headers}
   end
 
   defp build_request(endpoint, %{"payload" => payload} = args) do
@@ -143,13 +146,12 @@ defmodule Kanban.Webhooks.DeliveryWorker do
       body = Jason.encode!(payload)
 
       {:ok, body,
-       [
-         {"content-type", "application/json"},
-         {"user-agent", "Stride-Webhooks/1"},
-         {"x-stride-event", args["event"]},
-         {"x-stride-delivery", args["delivery_id"]},
-         {"x-stride-signature", Signer.sign(body, secret)}
-       ]}
+       @base_headers ++
+         [
+           {"x-stride-event", args["event"]},
+           {"x-stride-delivery", args["delivery_id"]},
+           {"x-stride-signature", Signer.sign(body, secret)}
+         ]}
     end
   end
 

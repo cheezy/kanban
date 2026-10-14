@@ -6,8 +6,9 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
   `KanbanWeb.BoardLive.Show` when the `:board_settings` live action
   is active.
 
-  The board-details form is owner-only, matching `Boards.update_board/3`;
-  everyone who can open the modal also sees the board's labels through
+  The board-details form is owner-only, matching `Boards.update_board/3`,
+  and a rejected name or description shows its error under the field.
+  Everyone who can open the modal also sees the board's labels through
   `KanbanWeb.BoardLive.LabelsManagerComponent`, which owner and modify users
   can edit (W2233).
   """
@@ -108,10 +109,12 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
         ]}>
           <.stride_field label={gettext("Name")}>
             <.stride_input field={f[:name]} type="text" />
+            <.field_errors field={f[:name]} />
           </.stride_field>
 
           <.stride_field label={gettext("Description")} style="margin-top: 12px;">
             <.stride_input field={f[:description]} type="textarea" />
+            <.field_errors field={f[:description]} />
           </.stride_field>
 
           <label style={[
@@ -246,6 +249,18 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
       ]}
     />
     """
+  end
+
+  attr :field, Phoenix.HTML.FormField, required: true
+
+  defp field_errors(assigns) do
+    ~H"""
+    <.error :for={msg <- errors_for(@field)}>{msg}</.error>
+    """
+  end
+
+  defp errors_for(field) do
+    if used_input?(field), do: Enum.map(field.errors, &translate_error/1), else: []
   end
 
   attr :myself, :any, required: true

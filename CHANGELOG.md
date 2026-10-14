@@ -15,7 +15,7 @@ Boards can now tell other systems what happens to their tasks: board owners send
 
 Board owners have a new **Integrations** tab next to **Settings**. Each endpoint receives the task events ticked when it was added: created, updated, moved, claimed, unclaimed, completed, moved to review, reviewed and deleted.
 
-- A **generic webhook** receives a signed JSON `POST`. Its signing secret is shown once, when the endpoint is added or its secret is rotated.
+- A **generic webhook** receives a signed JSON `POST`. Its signing secret is shown once, when the endpoint is added or its secret is rotated. **Copy** says whether the secret reached the clipboard, and asks you to copy it by hand if it did not.
 - A **Slack** endpoint posts a short message to a channel through a Slack incoming webhook.
 - A **Discord** endpoint posts a short message to a channel through a Discord channel webhook.
 - Each endpoint has **Send test**, an on/off switch and a log of its 20 most recent deliveries.
@@ -57,6 +57,7 @@ A daily job removes stored metrics older than 90 days. The period is set with `r
 
 - **Column changes reach open boards.** Adding, renaming, reordering or deleting a column updates every open copy of the board without a reload.
 - **Removing a member unassigns their tasks.** Their open tasks on the board show under **Unassigned**; archived tasks keep their assignee.
+- **Board settings show why a save was refused.** A name longer than 50 characters, a blank name or a description longer than 255 characters now shows its error under the field. Before, **Save** did nothing and said nothing.
 - **The Archive page no longer calls every archived task Completed.** A task archived without a reason shows **Archived** unless it was finished, and the Completed filter, the counts and the CSV export follow the same rule.
 - **Dragging a card while someone else moves cards no longer crashes the board.** A drag that raced a bulk move or another drag could deadlock. If the card keeps moving while you drop it, the board refreshes and asks you to try again.
 - **Claiming or finishing a task no longer clashes with a drag in its goal's column.** Moving the goal now waits for the drag. If the goal's tasks keep moving, the goal stays where it is and the claim or completion still succeeds.

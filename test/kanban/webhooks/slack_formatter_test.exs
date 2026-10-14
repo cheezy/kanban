@@ -76,6 +76,12 @@ defmodule Kanban.Webhooks.SlackFormatterTest do
     assert SlackFormatter.escape("&lt;") == "&amp;lt;"
   end
 
+  # docs/webhooks.md says Slack formatting in a title is shown, not removed.
+  test "escape/1 leaves Slack text formatting as typed" do
+    assert SlackFormatter.escape("*bold* _italic_ ~strike~ `code`") ==
+             "*bold* _italic_ ~strike~ `code`"
+  end
+
   test "long titles are cut to 200 characters" do
     message =
       "task.updated"
