@@ -68,6 +68,29 @@ defmodule Kanban.ApplicationTest do
       assert_eventually(fn -> not os_process_alive?(os_pid) end)
     end
 
+    test "on macOS the app's Chrome runs under Kanban.ChromeWatchdog, elsewhere directly" do
+      # Read the command line while the render is in progress: the cleanup
+      # handler closes this Chrome as soon as print_to_pdf stops.
+      handler_id = "watchdog-command-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:chromic_pdf, :print_to_pdf, :start],
+        &__MODULE__.record_chrome_command/4,
+        self()
+      )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
+      assert {:ok, _base64} = ChromicPDF.print_to_pdf({:html, "<p>watchdog</p>"})
+      assert_receive {:chrome_command, command}, 5_000
+
+      watched? =
+        command =~ "chrome_watchdog.sh" and command =~ "--kanban-watch-pid=#{System.pid()}"
+
+      assert watched? == match?({:unix, :darwin}, :os.type())
+    end
+
     test "concurrent print_to_pdf calls each finish and leave no Browser child" do
       results =
         1..3
@@ -150,6 +173,17 @@ defmodule Kanban.ApplicationTest do
     for browser <- ChromicPDFCleanup.linked_browsers(self()),
         {:ok, os_pid} <- [ChromicPDFCleanup.chrome_os_pid(browser)] do
       send(test_pid, {:chrome_os_pid, os_pid})
+    end
+  end
+
+  @doc false
+  # :telemetry handler: reports the command line of the rendering process's
+  # Chrome (read-only `ps`) while its on_demand browser is alive.
+  def record_chrome_command(_event, _measurements, _metadata, test_pid) do
+    for browser <- ChromicPDFCleanup.linked_browsers(self()),
+        {:ok, os_pid} <- [ChromicPDFCleanup.chrome_os_pid(browser)],
+        {command, 0} <- [System.cmd("ps", ["-o", "command=", "-p", Integer.to_string(os_pid)])] do
+      send(test_pid, {:chrome_command, command})
     end
   end
 

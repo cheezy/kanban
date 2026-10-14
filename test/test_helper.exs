@@ -4,7 +4,8 @@
 # DevTools Browser.close command after every print_to_pdf. The after_suite
 # callback is a safety net: it closes any resident browser the same way and
 # terminates the ChromicPDF child, because ExUnit does not shut the
-# application supervisor down cleanly. Neither runs if `mix test` is killed.
+# application supervisor down cleanly. Neither runs if `mix test` is killed;
+# on macOS, Kanban.ChromeWatchdog then stops the Chrome once this VM is gone.
 # Kanban.ChromicPDFCleanup's moduledoc has the details.
 Kanban.ChromicPDFCleanup.attach()
 ExUnit.after_suite(fn _result -> Kanban.ChromicPDFCleanup.stop() end)

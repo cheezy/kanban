@@ -41,8 +41,9 @@ defmodule Kanban.ChromicPDFCleanup do
       run in on_demand mode, would find its browser closed after the first
       source and fail loudly.
     * Nothing here runs when `mix test` is killed (for example by a hook
-      timeout). A Chrome that is mid-render at that moment can still be
-      orphaned.
+      timeout). On macOS, `Kanban.ChromeWatchdog` covers that case: Chrome
+      runs under its script, which stops Chrome once the VM is gone. The
+      Chrome OS pids seen here are that script's, which exits with Chrome.
 
   Every public function returns normally and never raises: the handler runs
   inside the caller's PDF request.

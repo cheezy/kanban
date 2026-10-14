@@ -25,8 +25,9 @@ defmodule Kanban.Application do
       {Oban, Application.fetch_env!(:kanban, Oban)},
       # Start a worker by calling: Kanban.Worker.start_link(arg)
       # {Kanban.Worker, arg},
-      # ChromicPDF for server-side PDF generation
-      {ChromicPDF, chromic_pdf_options()},
+      # ChromicPDF for server-side PDF generation. On macOS its Chrome runs
+      # under Kanban.ChromeWatchdog, which stops it once this VM is gone.
+      {ChromicPDF, Kanban.ChromeWatchdog.wrap(chromic_pdf_options())},
       # Start to serve requests, typically the last entry
       KanbanWeb.Endpoint
     ]
@@ -61,7 +62,9 @@ defmodule Kanban.Application do
 
   @doc false
   # Public (with @doc false) only so test/kanban/application_test.exs can pin
-  # the options handed to ChromicPDF.
+  # the options handed to ChromicPDF. start/2 passes them through
+  # Kanban.ChromeWatchdog.wrap/1 first; test/test_helper.exs uses them
+  # unwrapped for ChromicPDF.warm_up/1, whose Chrome exits on its own.
   #
   # `on_demand: true` is added only when the :chromic_pdf_on_demand flag is set,
   # which config/test.exs does (D367). Without it ChromicPDF starts a resident
