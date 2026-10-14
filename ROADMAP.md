@@ -55,8 +55,8 @@ Plug Stride into the tools teams and agents already use.
 
 - ✅ A task API that pages through large boards and filters results, with no change for existing integrations.
 - ✅ A published, machine-readable OpenAPI description of the Stride API, so client libraries can be generated.
-- Outbound webhooks for task events: signed, retried automatically, with a delivery log and a test button.
-- Slack notifications for board activity.
+- ✅ Outbound webhooks for task events: signed, retried automatically, with a delivery log and a test button.
+- ✅ Slack notifications for board activity.
 - GitHub integration that links pull requests to tasks by their identifier, shows pull request and CI status on task cards and in the task view, and moves a task to a chosen column when its pull request merges.
 - ✅ An MCP server, so MCP-capable agents can find, claim, complete and comment on tasks directly, using their existing API token.
 
@@ -67,7 +67,7 @@ Meet the security and compliance needs of larger organisations.
 - ✅ Two-factor authentication with an authenticator app, plus single-use recovery codes, a reminder after sign-in for people who haven't turned it on, and a step-by-step setup guide.
 - ✅ A permanent, tamper-proof audit log of important account and board activity.
 - ✅ An audit log viewer for administrators, with filters and CSV or JSON export.
-- Telemetry for every important event — sign-ins and account changes, board access, task and goal activity, agent work, notifications, rate limits and data exports — with a documented event catalogue, no personal data in event details, and a configurable retention period for stored metrics.
+- ✅ Telemetry for every important event — sign-ins and account changes, board access, task and goal activity, agent work, notifications, rate limits and data exports — with a documented event catalogue, no personal data in event details, and a configurable retention period for stored metrics.
 - Workspace security policies: require two-factor authentication for all members (with a grace period for existing members) and set how long audit records and archived tasks are kept.
 - Single sign-on with OIDC and SAML identity providers, limited to email domains the workspace has verified.
 - Automatic user provisioning and deprovisioning through SCIM. Removing someone signs them out everywhere and revokes their API tokens.

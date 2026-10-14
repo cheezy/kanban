@@ -120,22 +120,6 @@
 
           <div class="mb-6">
             <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
-              Monitoring charts
-            </h4>
-
-            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
-              The admin dashboard's <strong>Metrics</strong> page charts every
-              monitoring event, plus page load and response times, background
-              job run times and failures, and email delivery times. A new
-              event gets a chart automatically. Charts are broken down by
-              fixed labels such as the page, the worker or the mailer, never
-              by user, board or task. Page, job and email timings are shown
-              live and not stored.
-            </p>
-          </div>
-
-          <div class="mb-6">
-            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
               Stored metrics retention
             </h4>
 
@@ -197,36 +181,6 @@
               refused instead of crashing the form.
             </li>
           </ul>
-        </div>
-
-        <div class="mb-8">
-          <h3
-            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
-            style="color: var(--ink);"
-          >
-            Changed
-          </h3>
-
-          <div class="mb-6">
-            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
-              Internal: large modules split along their seams
-            </h4>
-
-            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
-              The goal column decision moved into
-              <code>Kanban.Tasks.GoalTargetColumn</code>, archiving into
-              <code>Kanban.Tasks.Archiving</code>, the goal intervention
-              transactions into
-              <code>Kanban.Tasks.InterventionTransactions</code>, and password
-              reset and account confirmation into
-              <code>Kanban.Accounts.PasswordReset</code> and
-              <code>Kanban.Accounts.EmailConfirmation</code>, bringing each
-              parent module back under the size limit. A new test proves a
-              failed goal move is fully undone, a flaky board test was fixed,
-              and an unreachable goal-column fallback was removed. Nothing
-              changes for users or API clients.
-            </p>
-          </div>
         </div>
 
         <div class="mb-8">
