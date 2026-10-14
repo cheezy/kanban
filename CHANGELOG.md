@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Task history no longer crashes the task form.** Opening a task whose history held an assignment with no user on either side, which happens once both users have been deleted, crashed the page; the missing user now shows as "Unknown". Reassigning or reprioritizing a goal's unstarted tasks also no longer records a change for a task whose assignee or priority was already the new one, such as "medium to medium".
 - **The new-task form checks the parent goal and assignee.** Saving a new task now runs the same checks as editing one. A crafted save can no longer put the new task under a goal on another board, or assign it to someone who has no access to the board, and a parent goal that is not a valid id is refused instead of crashing the form. The task context no longer crashes on such an id either, wherever it comes from. A column that is not a valid id, or no longer exists, is refused the same way when creating or editing a task.
 - **Column changes reach open boards.** Adding, renaming, reordering or deleting a column now updates every open copy of the board without a reload.
 - **Removing a member unassigns their tasks.** When a member is removed from a board, they are unassigned from its open tasks, which then show under **Unassigned** instead of naming someone who can no longer see the board. Archived tasks keep their assignee.

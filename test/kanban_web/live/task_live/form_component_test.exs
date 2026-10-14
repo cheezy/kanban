@@ -40,6 +40,46 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
+  describe "assignment history" do
+    test "a row whose users are missing renders 'Unknown' instead of crashing" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      task = task_fixture(column)
+      gone = user_fixture(%{name: "Gone Soon"})
+
+      # Neither user (an old no-op intervention row), and a user since deleted
+      # (the foreign keys nilify, so the id and the user are both nil).
+      Kanban.Repo.insert!(%Kanban.Tasks.TaskHistory{task_id: task.id, type: :assignment})
+
+      Kanban.Repo.insert!(%Kanban.Tasks.TaskHistory{
+        task_id: task.id,
+        type: :assignment,
+        from_user_id: gone.id,
+        to_user_id: user.id
+      })
+
+      Kanban.Repo.delete!(gone)
+
+      html =
+        render_component(FormComponent,
+          id: "edit-#{task.id}",
+          title: "Edit Task",
+          action: :edit_task,
+          board: board,
+          task: Tasks.get_task_with_history!(task.id),
+          column_id: nil,
+          current_scope: user_scope_fixture(user),
+          patch: "/boards/#{board.id}"
+        )
+
+      assert html =~ "Reassigned"
+      assert html =~ "Unknown"
+      assert html =~ "Assigned to"
+      refute html =~ "Gone Soon"
+    end
+  end
+
   describe "update/2 for new task" do
     test "initializes form with default values" do
       user = user_fixture()

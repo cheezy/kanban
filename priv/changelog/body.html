@@ -269,6 +269,15 @@
             style="color: var(--ink-2);"
           >
             <li>
+              <strong>Task history no longer crashes the task form.</strong>
+              Opening a task whose history held an assignment with no user on
+              either side, which happens once both users have been deleted,
+              crashed the page; the missing user now shows as "Unknown".
+              Reassigning or reprioritizing a goal's unstarted tasks also no
+              longer records a change for a task whose assignee or priority
+              was already the new one, such as "medium to medium".
+            </li>
+            <li>
               <strong>The new-task form checks the parent goal and
               assignee.</strong> Saving a new task now runs the same checks as
               editing one. A crafted save can no longer put the new task under

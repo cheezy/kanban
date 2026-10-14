@@ -163,6 +163,30 @@ defmodule KanbanWeb.TaskLive.Components.HistorySectionTest do
       assert html =~ "Alice"
       assert html =~ "Bob"
     end
+
+    test "renders 'Unknown' instead of crashing when a user is missing" do
+      # Both users deleted (the foreign keys nilify), or an old no-op row.
+      assigns = %{
+        histories: [
+          %{
+            type: :assignment,
+            from_user_id: nil,
+            to_user_id: nil,
+            from_user: nil,
+            to_user: nil,
+            inserted_at: ~N[2026-05-15 14:00:00]
+          }
+        ]
+      }
+
+      html =
+        rendered_to_string(~H"""
+        <HistorySection.history_section histories={@histories} />
+        """)
+
+      assert html =~ "Reassigned"
+      assert html =~ "Unknown"
+    end
   end
 
   describe "history_section/1 — chronological list" do

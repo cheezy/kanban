@@ -230,19 +230,24 @@ defmodule Kanban.Tasks.InterventionTransactions do
   # interventions. `item_changeset` and `history` are closures that turn a task
   # into its Ecto changesets, so the same reduce serves reassignment (assigned_to
   # + assignment history) and reprioritization (priority + priority-change
-  # history).
+  # history). A task whose value does not change gets no history row: `history`
+  # returns nil for it, so a no-op such as unassigning an unassigned child
+  # never records a change from nobody to nobody.
   defp changes_multi(goal, eligible, item_changeset, history) do
     multi =
       Multi.new()
       |> Multi.update(:goal, item_changeset.(goal))
-      |> Multi.insert(:goal_history, history.(goal))
+      |> maybe_insert_history(:goal_history, history.(goal))
 
     Enum.reduce(eligible, multi, fn child, acc ->
       acc
       |> Multi.update({:child, child.id}, item_changeset.(child))
-      |> Multi.insert({:child_history, child.id}, history.(child))
+      |> maybe_insert_history({:child_history, child.id}, history.(child))
     end)
   end
+
+  defp maybe_insert_history(multi, _name, nil), do: multi
+  defp maybe_insert_history(multi, name, changeset), do: Multi.insert(multi, name, changeset)
 
   defp assign_changeset(%Task{} = task, new_assigned_to_id) do
     Task.changeset(task, %{assigned_to_id: new_assigned_to_id})
@@ -252,6 +257,8 @@ defmodule Kanban.Tasks.InterventionTransactions do
     Task.changeset(task, %{priority: new_priority})
   end
 
+  defp assignment_history(_task_id, user_id, user_id), do: nil
+
   defp assignment_history(task_id, from_user_id, to_user_id) do
     TaskHistory.changeset(%TaskHistory{}, %{
       task_id: task_id,
@@ -260,6 +267,10 @@ defmodule Kanban.Tasks.InterventionTransactions do
       to_user_id: to_user_id
     })
   end
+
+  defp priority_history(_task_id, from_priority, to_priority)
+       when from_priority == to_priority,
+       do: nil
 
   defp priority_history(task_id, from_priority, to_priority) do
     TaskHistory.changeset(%TaskHistory{}, %{

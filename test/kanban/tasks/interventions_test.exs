@@ -273,6 +273,24 @@ defmodule Kanban.Tasks.InterventionsTest do
       assert assignment_to(child.id) == [assignee.id]
     end
 
+    test "records no assignment history for a task whose assignee does not change", ctx do
+      %{cols: cols, goal: goal, assignee: assignee, scope: scope} = ctx
+      unassigned = task_fixture(cols["Backlog"], %{parent_id: goal.id})
+      already = task_fixture(cols["Backlog"], %{parent_id: goal.id})
+      {:ok, _} = Tasks.update_task(already, %{assigned_to_id: assignee.id})
+
+      # Unassigning children that are already unassigned writes nothing.
+      assert {:ok, _} = Interventions.reassign_goal_unstarted(scope, goal, nil)
+      assert assignment_to(goal.id) == []
+      assert assignment_to(unassigned.id) == []
+      assert assignment_to(already.id) == [assignee.id, nil]
+
+      # Assigning only records the tasks that change.
+      assert {:ok, _} = Interventions.reassign_goal_unstarted(scope, reload(goal), assignee.id)
+      assert assignment_to(goal.id) == [assignee.id]
+      assert assignment_to(unassigned.id) == [assignee.id]
+    end
+
     test "returns {:ok, %{moved: ..., skipped: ...}} with only the goal when there are no children",
          ctx do
       %{goal: goal, assignee: assignee, scope: scope} = ctx
@@ -402,6 +420,17 @@ defmodule Kanban.Tasks.InterventionsTest do
       assert reload(claimed_child).priority == :low
     end
 
+    test "records no priority history for a task already at the new priority", ctx do
+      %{cols: cols, goal: goal, scope: scope} = ctx
+      same = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :high})
+      changed = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :low})
+
+      assert {:ok, _} = Interventions.reprioritize_goal_unstarted(scope, goal, :high)
+
+      assert priority_changes_to(same.id) == []
+      assert priority_changes_to(changed.id) == ["high"]
+    end
+
     test "records priority-change history for the goal and each moved child", ctx do
       %{cols: cols, goal: goal, scope: scope} = ctx
       child = task_fixture(cols["Backlog"], %{parent_id: goal.id, priority: :medium})
@@ -443,7 +472,9 @@ defmodule Kanban.Tasks.InterventionsTest do
       for task <- moved, do: assert(task.priority == :medium)
       assert reload(goal).priority == :medium
       assert reload(child).priority == :medium
-      assert priority_changes_to(goal.id) == ["medium"]
+      # Nothing changed, so no "medium to medium" history row is written.
+      assert priority_changes_to(goal.id) == []
+      assert priority_changes_to(child.id) == []
     end
 
     test "lowering to low succeeds", ctx do

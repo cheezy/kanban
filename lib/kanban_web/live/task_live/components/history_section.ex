@@ -54,22 +54,22 @@ defmodule KanbanWeb.TaskLive.Components.HistorySection do
                         <% history.from_user_id == nil && history.to_user_id != nil -> %>
                           <span class="font-semibold">{gettext("Assigned to")}</span>
                           <span class="font-semibold text-[var(--stride-violet)]">
-                            {history.to_user.name}
+                            {history_user_name(history.to_user)}
                           </span>
                         <% history.from_user_id != nil && history.to_user_id == nil -> %>
                           <span class="font-semibold">{gettext("Unassigned from")}</span>
                           <span class="font-semibold text-[var(--stride-violet)]">
-                            {history.from_user.name}
+                            {history_user_name(history.from_user)}
                           </span>
                         <% true -> %>
                           <span class="font-semibold">{gettext("Reassigned")}</span>
                           {gettext("from")}
                           <span class="font-semibold text-[var(--stride-violet)]">
-                            {history.from_user.name}
+                            {history_user_name(history.from_user)}
                           </span>
                           {gettext("to")}
                           <span class="font-semibold text-[var(--stride-violet)]">
-                            {history.to_user.name}
+                            {history_user_name(history.to_user)}
                           </span>
                       <% end %>
                   <% end %>
@@ -85,4 +85,9 @@ defmodule KanbanWeb.TaskLive.Components.HistorySection do
     </div>
     """
   end
+
+  # An assignment history row's user is nil once that user is deleted (the
+  # foreign keys nilify), so the name falls back as in TaskActivityLog.
+  defp history_user_name(%{name: name}) when is_binary(name), do: name
+  defp history_user_name(_user), do: gettext("Unknown")
 end

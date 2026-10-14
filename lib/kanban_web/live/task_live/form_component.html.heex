@@ -479,22 +479,22 @@
                       <% history.from_user_id == nil && history.to_user_id != nil -> %>
                         <span style="font-weight: 500;">{gettext("Assigned to")}</span>
                         <span style="font-weight: 500; color: var(--stride-violet-ink);">
-                          {history.to_user.name}
+                          {history_user_name(history.to_user)}
                         </span>
                       <% history.from_user_id != nil && history.to_user_id == nil -> %>
                         <span style="font-weight: 500;">{gettext("Unassigned from")}</span>
                         <span style="font-weight: 500; color: var(--stride-violet-ink);">
-                          {history.from_user.name}
+                          {history_user_name(history.from_user)}
                         </span>
                       <% true -> %>
                         <span style="font-weight: 500;">{gettext("Reassigned")}</span>
                         {gettext("from")}
                         <span style="font-weight: 500; color: var(--stride-violet-ink);">
-                          {history.from_user.name}
+                          {history_user_name(history.from_user)}
                         </span>
                         {gettext("to")}
                         <span style="font-weight: 500; color: var(--stride-violet-ink);">
-                          {history.to_user.name}
+                          {history_user_name(history.to_user)}
                         </span>
                     <% end %>
                   </p>

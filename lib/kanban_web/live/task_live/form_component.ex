@@ -488,4 +488,8 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   end
 
   # Used in form_component.html.heex (analyzer does not scan HEEx files).
+  # An assignment history row's user is nil once that user is deleted (the
+  # foreign keys nilify), so the name falls back as in TaskActivityLog.
+  defp history_user_name(%{name: name}) when is_binary(name), do: name
+  defp history_user_name(_user), do: gettext("Unknown")
 end
