@@ -135,5 +135,5 @@ msgid "must be a Slack incoming webhook URL starting with https://hooks.slack.co
 msgstr "debe ser una URL de webhook entrante de Slack que empiece por https://hooks.slack.com/"
 
 ## From Kanban.Webhooks.Endpoint (W2367)
-msgid "must be a Discord webhook URL starting with https://discord.com/api/webhooks/"
-msgstr "debe ser una URL de webhook de Discord que empiece por https://discord.com/api/webhooks/"
+msgid "must be a Discord webhook URL, for example https://discord.com/api/webhooks/…"
+msgstr "debe ser una URL de webhook de Discord, por ejemplo https://discord.com/api/webhooks/…"

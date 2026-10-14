@@ -1,13 +1,13 @@
 defmodule KanbanWeb.BoardLive.WebhookForm do
   @moduledoc """
-  The forms that add a webhook or Slack endpoint on the board's
+  The forms that add a webhook, Slack or Discord endpoint on the board's
   Integrations view (W2228) and edit one (W2364), split from
   `KanbanWeb.BoardLive.WebhookViews`. Field errors come from the endpoint
   changeset and are translated with `translate_error/1` (the errors domain).
 
   The edit form never renders the stored URL: its URL input echoes only what
-  the owner typed, and its hint names the stored URL's host. A Slack
-  incoming-webhook URL is a credential.
+  the owner typed, and its hint names the stored URL's host. A Slack or
+  Discord webhook URL is a credential.
   """
   use KanbanWeb, :html
 

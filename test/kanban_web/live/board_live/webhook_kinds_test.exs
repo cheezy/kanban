@@ -8,7 +8,7 @@ defmodule KanbanWeb.BoardLive.WebhookKindsTest do
   @discord_colors "background: var(--label-blue-soft); color: var(--label-blue);"
   @slack_hint "Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."
   @generic_hint "Stride sends a signed JSON POST to this HTTPS address."
-  @discord_hint "Paste a Discord channel webhook URL (https://discord.com/api/webhooks/…)."
+  @discord_hint "Paste the webhook URL you copied from Discord (for example https://discord.com/api/webhooks/…)."
 
   describe "label/1, colors/1, url_placeholder/1, url_hint/1 and signed?/1" do
     test "return the current values for :generic and :slack, as atoms and as strings" do

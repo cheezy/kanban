@@ -8,7 +8,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
   Every control that sends an event carries `phx-target={@myself}`, so the
   event reaches the component, which re-checks ownership; the secret's Copy
   button only runs client-side. An endpoint's URL is never rendered,
-  only its host: a Slack incoming-webhook URL is a credential. Text a
+  only its host: a Slack or Discord webhook URL is a credential. Text a
   receiver sent back (the delivery error) is shown escaped and cut short,
   and its tooltip is cut too: a stored error can be 64 KB, and the log shows
   up to 20 of them.

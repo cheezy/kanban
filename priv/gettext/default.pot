@@ -1646,13 +1646,13 @@ msgstr ""
 msgid "Add Unit Test"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:866
+#: lib/kanban_web/live/board_live/show.html.heex:868
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to revoke this token?"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:638
-#: lib/kanban_web/live/board_live/show.html.heex:668
+#: lib/kanban_web/live/board_live/show.html.heex:640
+#: lib/kanban_web/live/board_live/show.html.heex:670
 #: lib/kanban_web/live/board_live/webhook_views.ex:78
 #: lib/kanban_web/live/user_live/confirmation.ex:61
 #: lib/kanban_web/live/user_live/confirmation.ex:87
@@ -1662,7 +1662,7 @@ msgstr ""
 msgid "Copy"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:772
+#: lib/kanban_web/live/board_live/show.html.heex:774
 #, elixir-autogen, elixir-format
 msgid "Creating..."
 msgstr ""
@@ -1708,12 +1708,12 @@ msgstr ""
 msgid "Manual test description"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:711
+#: lib/kanban_web/live/board_live/show.html.heex:713
 #, elixir-autogen, elixir-format
 msgid "My AI Agent"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:797
+#: lib/kanban_web/live/board_live/show.html.heex:799
 #, elixir-autogen, elixir-format
 msgid "No API tokens yet. Generate one above to get started."
 msgstr ""
@@ -1730,7 +1730,7 @@ msgstr ""
 msgid "PubSub Broadcasts"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:874
+#: lib/kanban_web/live/board_live/show.html.heex:876
 #, elixir-autogen, elixir-format
 msgid "Revoke"
 msgstr ""
@@ -1799,13 +1799,13 @@ msgstr ""
 msgid "topic:event"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:675
+#: lib/kanban_web/live/board_live/show.html.heex:677
 #: lib/kanban_web/live/board_live/webhook_views.ex:94
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:639
+#: lib/kanban_web/live/board_live/show.html.heex:641
 #: lib/kanban_web/live/board_live/webhook_views.ex:85
 #: lib/kanban_web/live/user_live/confirmation.ex:62
 #: lib/kanban_web/live/user_live/confirmation.ex:366
@@ -1919,12 +1919,12 @@ msgstr ""
 msgid "Please fix the errors below"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:744
+#: lib/kanban_web/live/board_live/show.html.heex:746
 #, elixir-autogen, elixir-format
 msgid "Task automation"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:731
+#: lib/kanban_web/live/board_live/show.html.heex:733
 #, elixir-autogen, elixir-format
 msgid "claude-4.5-opus"
 msgstr ""
@@ -1944,7 +1944,7 @@ msgstr ""
 msgid "mix test"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:640
+#: lib/kanban_web/live/board_live/show.html.heex:642
 #: lib/kanban_web/live/user_live/confirmation.ex:63
 #: lib/kanban_web/live/user_live/confirmation.ex:367
 #, elixir-autogen, elixir-format
@@ -1982,7 +1982,7 @@ msgstr ""
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
 #: lib/kanban_web/live/admin/user_live/index.html.heex:222
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
-#: lib/kanban_web/live/board_live/show.html.heex:889
+#: lib/kanban_web/live/board_live/show.html.heex:891
 #: lib/kanban_web/live/board_live/webhook_views.ex:226
 #: lib/kanban_web/live/task_live/components/comment_row.ex:123
 #, elixir-autogen, elixir-format
@@ -2027,7 +2027,7 @@ msgstr ""
 msgid "Select capability to add..."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:758
+#: lib/kanban_web/live/board_live/show.html.heex:760
 #, elixir-autogen, elixir-format
 msgid "code_generation, testing, documentation"
 msgstr ""
@@ -2037,7 +2037,7 @@ msgstr ""
 msgid "API token deleted successfully"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:881
+#: lib/kanban_web/live/board_live/show.html.heex:883
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this token?"
 msgstr ""
@@ -3655,8 +3655,8 @@ msgstr ""
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:44
 #: lib/kanban_web/controllers/page_html/security.html.heex:38
-#: lib/kanban_web/live/board_live/show.html.heex:587
-#: lib/kanban_web/live/board_live/show.html.heex:595
+#: lib/kanban_web/live/board_live/show.html.heex:589
+#: lib/kanban_web/live/board_live/show.html.heex:597
 #, elixir-autogen, elixir-format
 msgid "API tokens"
 msgstr ""
@@ -4800,68 +4800,68 @@ msgstr ""
 msgid "Manage members"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:788
+#: lib/kanban_web/live/board_live/show.html.heex:790
 #, elixir-autogen, elixir-format
 msgid "Active tokens"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:752
+#: lib/kanban_web/live/board_live/show.html.heex:754
 #, elixir-autogen, elixir-format
 msgid "Agent capabilities"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:725
+#: lib/kanban_web/live/board_live/show.html.heex:727
 #, elixir-autogen, elixir-format
 msgid "Agent model (optional)"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:598
+#: lib/kanban_web/live/board_live/show.html.heex:600
 #, elixir-autogen, elixir-format
 msgid "Bearer tokens that authenticate agents on %{board_name}. Rotating a token does not release in-flight claims — the old token remains valid for a 60-second grace window."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:763
+#: lib/kanban_web/live/board_live/show.html.heex:765
 #, elixir-autogen, elixir-format
 msgid "Comma-separated. Valid: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:621
+#: lib/kanban_web/live/board_live/show.html.heex:623
 #: lib/kanban_web/live/board_live/webhook_views.ex:52
 #, elixir-autogen, elixir-format
 msgid "Copy it now — you won't be able to see it again."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:691
+#: lib/kanban_web/live/board_live/show.html.heex:693
 #, elixir-autogen, elixir-format
 msgid "Create new token"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:780
+#: lib/kanban_web/live/board_live/show.html.heex:782
 #, elixir-autogen, elixir-format
 msgid "Generate token"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:857
+#: lib/kanban_web/live/board_live/show.html.heex:859
 #, elixir-autogen, elixir-format
 msgid "Never used"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:738
+#: lib/kanban_web/live/board_live/show.html.heex:740
 #, elixir-autogen, elixir-format
 msgid "Purpose (optional)"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:618
+#: lib/kanban_web/live/board_live/show.html.heex:620
 #, elixir-autogen, elixir-format
 msgid "Token created"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:703
+#: lib/kanban_web/live/board_live/show.html.heex:705
 #, elixir-autogen, elixir-format
 msgid "Token name"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:843
+#: lib/kanban_web/live/board_live/show.html.heex:845
 #, elixir-autogen, elixir-format
 msgid "revoked"
 msgstr ""
@@ -9792,7 +9792,7 @@ msgstr ""
 msgid "Resources and information"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:563
+#: lib/kanban_web/live/board_live/show.html.heex:565
 #, elixir-autogen, elixir-format
 msgid "Task details"
 msgstr ""
@@ -10232,11 +10232,6 @@ msgstr ""
 msgid "Deliveries"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:334
-#, elixir-autogen, elixir-format
-msgid "Each endpoint receives the task events you choose. Generic endpoints get a signed JSON POST; Slack endpoints get a message in a channel."
-msgstr ""
-
 #: lib/kanban_web/live/board_live/integrations_component.ex:249
 #, elixir-autogen, elixir-format
 msgid "Enable the endpoint before sending a test event"
@@ -10363,11 +10358,6 @@ msgstr ""
 msgid "Send test"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/show.html.heex:549
-#, elixir-autogen, elixir-format
-msgid "Send this board's task events to your own services or a Slack channel."
-msgstr ""
-
 #: lib/kanban_web/live/board_live/webhook_views.ex:49
 #, elixir-autogen, elixir-format
 msgid "Signing secret"
@@ -10378,7 +10368,7 @@ msgstr ""
 msgid "Slack"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:51
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:54
 #, elixir-autogen, elixir-format
 msgid "Stride sends a signed JSON POST to this HTTPS address."
 msgstr ""
@@ -10445,7 +10435,17 @@ msgstr ""
 msgid "Discord"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/webhook_kinds.ex:49
+#: lib/kanban_web/live/board_live/integrations_component.ex:334
 #, elixir-autogen, elixir-format
-msgid "Paste a Discord channel webhook URL (https://discord.com/api/webhooks/…)."
+msgid "Each endpoint receives the task events you choose. Generic endpoints get a signed JSON POST; Slack and Discord endpoints get a message in a channel."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/show.html.heex:549
+#, elixir-autogen, elixir-format
+msgid "Send this board's task events to your own services or to a Slack or Discord channel."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/webhook_kinds.ex:50
+#, elixir-autogen, elixir-format
+msgid "Paste the webhook URL you copied from Discord (for example https://discord.com/api/webhooks/…)."
 msgstr ""

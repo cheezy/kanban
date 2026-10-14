@@ -19,8 +19,8 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
   @generic_url "https://hooks.example.com/stride/secret-path?token=abc"
   @slack_url "https://hooks.slack.com/services/T000/B000/XXXX"
   @discord_url "https://discord.com/api/webhooks/123456789012345678/abcDEF_-tok"
-  @discord_error "must be a Discord webhook URL starting with https://discord.com/api/webhooks/"
-  @discord_hint "Paste a Discord channel webhook URL (https://discord.com/api/webhooks/…)."
+  @discord_error "must be a Discord webhook URL, for example https://discord.com/api/webhooks/…"
+  @discord_hint "Paste the webhook URL you copied from Discord (for example https://discord.com/api/webhooks/…)."
   @not_found "Endpoint not found"
   @owner_only "Only the board owner can manage integrations"
 
@@ -214,6 +214,16 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
       refute has_element?(view, "#webhook-secret")
     end
 
+    test "the tab's description and intro name Discord alongside Slack", %{conn: conn} = ctx do
+      conn = log_in_user(conn, ctx.owner)
+      {:ok, _view, html} = live(conn, ~p"/boards/#{ctx.board}/integrations")
+
+      assert html =~
+               "Send this board&#39;s task events to your own services or to a Slack or Discord channel."
+
+      assert html =~ "Slack and Discord endpoints get a message in a channel."
+    end
+
     test "the Discord hint and errors are translated (de)", %{conn: conn} = ctx do
       conn = conn |> log_in_user(ctx.owner) |> Plug.Conn.put_session(:locale, "de")
       {:ok, view, _html} = live(conn, ~p"/boards/#{ctx.board}/integrations")
@@ -226,7 +236,7 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
         })
 
       refute changed =~ @discord_hint
-      assert changed =~ "Discord-Kanal-Webhook-URL"
+      assert changed =~ "die du in Discord kopiert hast"
 
       html = create(view, %{"kind" => "discord", "url" => @slack_url})
       assert html =~ "muss eine Discord-Webhook-URL sein"

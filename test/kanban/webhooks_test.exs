@@ -424,7 +424,7 @@ defmodule Kanban.WebhooksTest do
   end
 
   describe "Discord URLs" do
-    @discord_message "must be a Discord webhook URL starting with https://discord.com/api/webhooks/"
+    @discord_message "must be a Discord webhook URL, for example https://discord.com/api/webhooks/…"
     @discord_url "https://discord.com/api/webhooks/100000000000000001/not-a-real-token"
 
     defp discord_errors(attrs) do

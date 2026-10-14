@@ -46,7 +46,10 @@ defmodule KanbanWeb.BoardLive.WebhookKinds do
     do: gettext("Paste a Slack incoming webhook URL (https://hooks.slack.com/…).")
 
   def url_hint(kind) when kind in [:discord, "discord"],
-    do: gettext("Paste a Discord channel webhook URL (https://discord.com/api/webhooks/…).")
+    do:
+      gettext(
+        "Paste the webhook URL you copied from Discord (for example https://discord.com/api/webhooks/…)."
+      )
 
   def url_hint(_kind), do: gettext("Stride sends a signed JSON POST to this HTTPS address.")
 

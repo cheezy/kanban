@@ -12,8 +12,8 @@ defmodule KanbanWeb.BoardTabs do
   member (`:member?`, `:can_modify?` or `:owner?`), because members see
   the board's labels there and modify users manage them (W2233); the
   board-details form inside it stays owner-only. The Tokens tab needs
-  `:can_modify?` or `:owner?`. The Integrations tab (webhook and Slack
-  endpoints, W2228) is owner-only, on every board.
+  `:can_modify?` or `:owner?`. The Integrations tab (webhook, Slack and
+  Discord endpoints, W2228) is owner-only, on every board.
   """
   use KanbanWeb, :html
 

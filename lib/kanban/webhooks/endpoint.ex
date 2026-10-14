@@ -36,7 +36,7 @@ defmodule Kanban.Webhooks.Endpoint do
 
   @slack_url_message "must be a Slack incoming webhook URL starting with https://hooks.slack.com/"
 
-  @discord_url_message "must be a Discord webhook URL starting with https://discord.com/api/webhooks/"
+  @discord_url_message "must be a Discord webhook URL, for example https://discord.com/api/webhooks/…"
 
   # Exact host names Discord serves webhooks from (ptb. and canary. are the
   # URLs its test clients copy). Compared whole, never as a suffix.

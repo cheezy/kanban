@@ -1,7 +1,7 @@
 defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   @moduledoc """
   The board's Integrations view (W2228): the owner lists, adds, edits,
-  enables, disables and deletes webhook and Slack endpoints, sends a test
+  enables, disables and deletes webhook, Slack and Discord endpoints, sends a test
   event, rotates a generic endpoint's signing secret and reads each
   endpoint's recent deliveries. The markup is in
   `KanbanWeb.BoardLive.WebhookViews`.
@@ -24,8 +24,8 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   The signing secret is held in the `:revealed` assign, written only by the
   create and rotate handlers and cleared by dismiss or delete. `update/2`
   never sets it, and closing the modal unmounts the component, so the secret
-  cannot be shown again. A Slack endpoint's secret is never shown: Slack
-  messages are not signed.
+  cannot be shown again. A Slack or Discord endpoint has no secret to
+  show: their messages are not signed.
 
   A component's own flash never reaches the page, so flashes are sent to the
   parent LiveView, which applies them with `apply_parent_message/2`.
@@ -332,7 +332,7 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
         </h3>
         <p style="margin: 4px 0 12px; font-size: 11.5px; color: var(--ink-3); line-height: 1.5;">
           {gettext(
-            "Each endpoint receives the task events you choose. Generic endpoints get a signed JSON POST; Slack endpoints get a message in a channel."
+            "Each endpoint receives the task events you choose. Generic endpoints get a signed JSON POST; Slack and Discord endpoints get a message in a channel."
           )}
         </p>
         <WebhookViews.secret_reveal :if={@revealed} secret={@revealed.secret} myself={@myself} />
