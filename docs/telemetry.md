@@ -328,7 +328,11 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
 - **`missing_token`** is a new `reason` for `[:kanban, :api, :auth_failed]`,
   sent when an API request has no `Authorization` header or one that is not a
   `Bearer` header. The other reasons are `rate_limited`, `token_not_found`,
-  `token_revoked`, `token_expired` and `user_disabled`.
+  `token_revoked`, `token_expired` and `user_disabled`. Unlike most reasons
+  in the catalog, these are strings, not atoms. The audit copy,
+  `[:kanban, :audit, :api_token_auth_failed]`, carries the token lookup's own
+  atoms instead (`:missing_token`, `:not_found`, `:revoked`, `:expired` and
+  `:user_disabled`), and a rate-limited request writes no audit row.
 
 ### Task activity events
 
@@ -507,7 +511,7 @@ notifications marked read or digest recipients, and may be 0.
 - **`status_changed` fires only on a change.** The hourly sweep records a
   target's status only when it differs from the stored watermark, and the
   event fires only when that write lands, including a silent move back to
-  `:on_track` or `:complete`. `from_status` is absent on the first
+  `:on_track` or `:complete`. `from_status` is `nil` on the first
   observation. A stale write from an overlapping sweep emits nothing.
 - **An unsubscribe link emits two events.** It saves the preference through
   `update_preference/3`, so `preference_updated` fires when email was on, and
@@ -797,9 +801,9 @@ delivery that returns an error still ends in `:stop`; `:exception` is a raise.
 
 A tag becomes a LiveDashboard label, so it must be a metadata key with a small,
 fixed set of values that says nothing about a person: `endpoint`, `method`,
-`status`, `kind`, `format`, `outcome` or `surface`. Never tag by `user_id`,
-`board_id`, `task_id` or any other id. `test/kanban/telemetry_test.exs` fails
-if an entry tags any other key.
+`status`, `kind`, `format`, `outcome`, `surface` or `reason`. Never tag by
+`user_id`, `board_id`, `task_id` or any other id.
+`test/kanban/telemetry_test.exs` fails if an entry tags any other key.
 
 ## Metrics retention
 
@@ -1067,7 +1071,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :target, :unarchived]` | event | `count` | `target_id`, `actor_user_id` | A target's owner restored an archived target. |
 | `[:kanban, :target, :goal_assigned]` | event | `count` | `target_id`, `goal_id`, `board_id`, `actor_user_id` | A goal was attached to a target. board_id is the goal's board; assigning the target a goal already has emits nothing. |
 | `[:kanban, :target, :goal_unassigned]` | event | `count` | `target_id`, `goal_id`, `board_id`, `actor_user_id` | A goal was detached from its target. target_id is the target it left; a goal with no target emits nothing. |
-| `[:kanban, :target, :status_changed]` | event | `count` | `target_id`, `from_status`, `to_status` | The status sweep recorded a new delivery status for a target. from_status is absent on the first observation; both are :on_track, :at_risk, :missed or :complete. |
+| `[:kanban, :target, :status_changed]` | event | `count` | `target_id`, `from_status`, `to_status` | The status sweep recorded a new delivery status for a target. from_status is nil on the first observation; both are :on_track, :at_risk, :missed or :complete. |
 
 ### Domain `task`
 

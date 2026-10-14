@@ -92,7 +92,7 @@ defmodule Kanban.Telemetry.Catalog.TargetEvents do
       measurements: [:count],
       metadata: [:target_id, :from_status, :to_status],
       description:
-        "The status sweep recorded a new delivery status for a target. from_status is absent on the first observation; both are :on_track, :at_risk, :missed or :complete.",
+        "The status sweep recorded a new delivery status for a target. from_status is nil on the first observation; both are :on_track, :at_risk, :missed or :complete.",
       legacy: false,
       metrics: [counter: :count],
       persist: false
