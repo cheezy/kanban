@@ -1,9 +1,13 @@
 defmodule KanbanWeb.BoardLive.WebhookForm do
   @moduledoc """
-  The form that adds a webhook or Slack endpoint on the board's
-  Integrations view (W2228), split from `KanbanWeb.BoardLive.WebhookViews`.
-  Field errors come from the endpoint changeset and are translated with
-  `translate_error/1` (the errors domain).
+  The forms that add a webhook or Slack endpoint on the board's
+  Integrations view (W2228) and edit one (W2364), split from
+  `KanbanWeb.BoardLive.WebhookViews`. Field errors come from the endpoint
+  changeset and are translated with `translate_error/1` (the errors domain).
+
+  The edit form never renders the stored URL: its URL input echoes only what
+  the owner typed, and its hint names the stored URL's host. A Slack
+  incoming-webhook URL is a credential.
   """
   use KanbanWeb, :html
 
@@ -19,10 +23,7 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
   attr :myself, :any, required: true
 
   def endpoint_form(assigns) do
-    assigns =
-      assigns
-      |> assign(:slack?, to_string(assigns.form[:kind].value) == "slack")
-      |> assign(:selected, List.wrap(assigns.form[:event_types].value))
+    assigns = assign(assigns, :slack?, to_string(assigns.form[:kind].value) == "slack")
 
     ~H"""
     <.form
@@ -70,25 +71,7 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
           <.field_errors field={@form[:url]} />
         </label>
       </div>
-      <fieldset style="margin: 12px 0 0; padding: 0; border: none;">
-        <legend class="ucase" style={caption_style()}>{gettext("Events")}</legend>
-        <input type="hidden" name={@form[:event_types].name <> "[]"} value="" />
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px; margin-top: 6px;">
-          <label
-            :for={event <- Endpoint.event_types()}
-            style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink);"
-          >
-            <input
-              type="checkbox"
-              name={@form[:event_types].name <> "[]"}
-              value={event}
-              checked={event in @selected}
-            />
-            <code style="font-family: var(--font-mono); font-size: 11px;">{event}</code>
-          </label>
-        </div>
-        <.field_errors field={@form[:event_types]} />
-      </fieldset>
+      <.events_fieldset form={@form} />
       <.field_errors field={@form[:kind]} />
       <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
         <button
@@ -104,6 +87,148 @@ defmodule KanbanWeb.BoardLive.WebhookForm do
         </button>
       </div>
     </.form>
+    """
+  end
+
+  @doc """
+  The form that edits `endpoint`: its events and, optionally, its URL. The
+  kind is shown but cannot be changed. The URL input starts empty, and
+  saving it empty keeps the stored URL.
+  """
+  attr :form, Phoenix.HTML.Form, required: true
+  attr :endpoint, Endpoint, required: true
+  attr :myself, :any, required: true
+
+  def edit_form(assigns) do
+    assigns =
+      assigns
+      |> assign(:slack?, assigns.endpoint.kind == :slack)
+      |> assign(:host, WebhookViews.url_host(assigns.endpoint.url))
+      |> assign(:typed_url, typed_url(assigns.form))
+
+    ~H"""
+    <.form
+      for={@form}
+      id={"webhook-edit-form-#{@endpoint.id}"}
+      phx-change="validate_edit"
+      phx-submit="save_edit"
+      phx-value-id={@endpoint.id}
+      phx-target={@myself}
+      style={[
+        "margin-top: 10px; padding: 12px; border-radius: 8px;",
+        "background: var(--surface-sunken); border: 1px solid var(--line);"
+      ]}
+    >
+      <h4 style="margin: 0 0 10px; font-size: 12.5px; font-weight: 600; color: var(--ink);">
+        {gettext("Edit endpoint")}
+      </h4>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <div style={[label_style(), "flex: 0 1 180px;"]}>
+          <span class="ucase" style={caption_style()}>{gettext("Kind")}</span>
+          <span
+            data-edit-kind={@endpoint.kind}
+            style="height: 32px; display: flex; align-items: center; font-size: 12.5px; color: var(--ink);"
+          >
+            {WebhookViews.kind_label(@endpoint.kind)}
+          </span>
+        </div>
+        <label style={[label_style(), "flex: 1 1 260px;"]}>
+          <span class="ucase" style={caption_style()}>{gettext("URL")}</span>
+          <input
+            type="text"
+            inputmode="url"
+            autocomplete="off"
+            maxlength="2048"
+            id={"webhook-edit-url-#{@endpoint.id}"}
+            name={@form[:url].name}
+            value={@typed_url}
+            placeholder={@host}
+            style={input_style()}
+          />
+          <span
+            data-edit-url-hint
+            style="font-size: 11px; color: var(--ink-3); line-height: 1.4;"
+          >
+            {gettext("Leave blank to keep the current URL (%{host}).", host: @host)}
+            {if @slack?,
+              do: gettext("Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."),
+              else: gettext("Stride sends a signed JSON POST to this HTTPS address.")}
+          </span>
+          <span
+            :if={!@slack?}
+            data-rotate-note
+            style="font-size: 11px; color: var(--ink-3); line-height: 1.4;"
+          >
+            {gettext(
+              "The signing secret stays the same. If the new address belongs to a different receiver, use Rotate secret to replace it."
+            )}
+          </span>
+          <.field_errors field={@form[:url]} />
+        </label>
+      </div>
+      <.events_fieldset form={@form} />
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
+        <button
+          id={"webhook-edit-cancel-#{@endpoint.id}"}
+          type="button"
+          phx-click="cancel_edit"
+          phx-target={@myself}
+          style={[
+            "padding: 6px 12px; border-radius: 5px; cursor: pointer;",
+            "background: var(--surface); border: 1px solid var(--line-strong);",
+            "color: var(--ink); font-size: 12px; font-weight: 500;"
+          ]}
+        >
+          {gettext("Cancel")}
+        </button>
+        <button
+          type="submit"
+          phx-disable-with={gettext("Saving...")}
+          style={[
+            "padding: 6px 12px; border-radius: 5px; border: none;",
+            "background: var(--ink); color: var(--color-base-100);",
+            "font-size: 12px; font-weight: 500; cursor: pointer;"
+          ]}
+        >
+          {gettext("Save")}
+        </button>
+      </div>
+    </.form>
+    """
+  end
+
+  # Only the URL the owner typed, never the field's value, which falls back
+  # to the stored URL.
+  defp typed_url(%Phoenix.HTML.Form{params: %{"url" => url}}) when is_binary(url), do: url
+  defp typed_url(_form), do: ""
+
+  attr :form, Phoenix.HTML.Form, required: true
+
+  # The event checkboxes. The hidden empty value comes first so unticking
+  # every box is submitted, and refused, rather than leaving the field out.
+  defp events_fieldset(assigns) do
+    assigns = assign(assigns, :selected, List.wrap(assigns.form[:event_types].value))
+
+    ~H"""
+    <fieldset style="margin: 12px 0 0; padding: 0; border: none;">
+      <legend class="ucase" style={caption_style()}>{gettext("Events")}</legend>
+      <input type="hidden" name={@form[:event_types].name <> "[]"} value="" />
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px; margin-top: 6px;">
+        <label
+          :for={event <- Endpoint.event_types()}
+          style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink);"
+        >
+          <input
+            type="checkbox"
+            name={@form[:event_types].name <> "[]"}
+            value={event}
+            checked={event in @selected}
+          />
+          <code style="font-family: var(--font-mono); font-size: 11px;">{event}</code>
+        </label>
+      </div>
+      <.field_errors field={@form[:event_types]} />
+    </fieldset>
     """
   end
 

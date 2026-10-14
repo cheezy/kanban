@@ -153,7 +153,8 @@ msgstr "Passwort"
 #: lib/kanban_web/live/admin/message_live/index.html.heex:25
 #: lib/kanban_web/live/board_live/form.html.heex:52
 #: lib/kanban_web/live/board_live/settings_form_component.ex:173
-#: lib/kanban_web/live/board_live/webhook_form.ex:96
+#: lib/kanban_web/live/board_live/webhook_form.ex:79
+#: lib/kanban_web/live/board_live/webhook_form.ex:186
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/components/comment_row.ex:139
@@ -198,6 +199,7 @@ msgstr "Board erfolgreich aktualisiert"
 #: lib/kanban_web/live/board_live/form.html.heex:65
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:254
 #: lib/kanban_web/live/board_live/settings_form_component.ex:169
+#: lib/kanban_web/live/board_live/webhook_form.ex:182
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
@@ -342,7 +344,7 @@ msgstr "Aufgabe konnte nicht gelöscht werden"
 msgid "Save Task"
 msgstr "Aufgabe speichern"
 
-#: lib/kanban_web/live/task_live/form_component.ex:387
+#: lib/kanban_web/live/task_live/form_component.ex:407
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "Aufgabe erfolgreich erstellt"
@@ -353,7 +355,7 @@ msgstr "Aufgabe erfolgreich erstellt"
 msgid "Task deleted successfully"
 msgstr "Aufgabe erfolgreich gelöscht"
 
-#: lib/kanban_web/live/task_live/form/task_params.ex:73
+#: lib/kanban_web/live/task_live/form/task_params.ex:71
 #, elixir-autogen, elixir-format
 msgid "Task updated successfully"
 msgstr "Aufgabe erfolgreich aktualisiert"
@@ -373,7 +375,7 @@ msgstr "Titel"
 msgid "Update task details"
 msgstr "Aufgabendetails aktualisieren"
 
-#: lib/kanban_web/live/task_live/form_component.ex:405
+#: lib/kanban_web/live/task_live/form_component.ex:425
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "WIP-Limit für diese Spalte erreicht"
@@ -410,7 +412,7 @@ msgid "Created"
 msgstr "Erstellt"
 
 #: lib/kanban_web/components/board_filter_bar.ex:174
-#: lib/kanban_web/components/review_report_panel.ex:403
+#: lib/kanban_web/components/review_report_panel.ex:437
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:121
 #: lib/kanban_web/live/my_work_live.ex:154
 #: lib/kanban_web/live/task_live/form_component.html.heex:122
@@ -750,7 +752,7 @@ msgstr "Zurück zum Board"
 
 #: lib/kanban_web/components/task_activity_log.ex:51
 #: lib/kanban_web/live/task_live/components/history_section.ex:14
-#: lib/kanban_web/live/task_live/view_component.ex:406
+#: lib/kanban_web/live/task_live/view_component.ex:407
 #, elixir-autogen, elixir-format
 msgid "History"
 msgstr "Verlauf"
@@ -767,7 +769,7 @@ msgid "No history available"
 msgstr "Kein Verlauf verfügbar"
 
 #: lib/kanban_web/components/task_metadata_grid.ex:61
-#: lib/kanban_web/live/board_live/webhook_views.ex:286
+#: lib/kanban_web/live/board_live/webhook_views.ex:310
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:16
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:48
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:141
@@ -1224,7 +1226,7 @@ msgid "Completed by"
 msgstr "Abgeschlossen von"
 
 #: lib/kanban_web/live/task_live/components/completion_section.ex:41
-#: lib/kanban_web/live/task_live/view_component.ex:384
+#: lib/kanban_web/live/task_live/view_component.ex:385
 #, elixir-autogen, elixir-format
 msgid "Completion"
 msgstr "Abschluss"
@@ -1280,7 +1282,7 @@ msgstr "Datenbank-/Schema-Änderungen"
 
 #: lib/kanban_web/live/task_live/components/dependencies_section.ex:14
 #: lib/kanban_web/live/task_live/form/planning_sections.ex:292
-#: lib/kanban_web/live/task_live/view_component.ex:339
+#: lib/kanban_web/live/task_live/view_component.ex:340
 #, elixir-autogen, elixir-format
 msgid "Dependencies"
 msgstr "Abhängigkeiten"
@@ -1362,7 +1364,7 @@ msgstr "Prüfung erforderlich"
 #: lib/kanban_web/live/board_live/form.html.heex:148
 #: lib/kanban_web/live/board_live/settings_form_component.ex:283
 #: lib/kanban_web/live/task_live/form_component.html.heex:265
-#: lib/kanban_web/live/task_live/view_component.ex:312
+#: lib/kanban_web/live/task_live/view_component.ex:313
 #, elixir-autogen, elixir-format
 msgid "Observability"
 msgstr "Beobachtbarkeit"
@@ -1406,7 +1408,7 @@ msgstr "Zu befolgende Muster"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:203
 #: lib/kanban_web/components/acceptance_checklist.ex:289
-#: lib/kanban_web/live/board_live/webhook_views.ex:351
+#: lib/kanban_web/live/board_live/webhook_views.ex:375
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:75
 #: lib/kanban_web/live/task_live/form_component.html.heex:402
 #, elixir-autogen, elixir-format
@@ -1414,11 +1416,11 @@ msgid "Pending"
 msgstr "Ausstehend"
 
 #: lib/kanban_web/components/review_queue_item.ex:268
-#: lib/kanban_web/components/review_report_panel.ex:412
+#: lib/kanban_web/components/review_report_panel.ex:446
 #: lib/kanban_web/components/review_stats_strip.ex:86
 #: lib/kanban_web/live/board_live/form.html.heex:178
 #: lib/kanban_web/live/board_live/settings_form_component.ex:286
-#: lib/kanban_web/live/task_live/view_component.ex:273
+#: lib/kanban_web/live/task_live/view_component.ex:274
 #: lib/kanban_web/review_report_helpers.ex:56
 #, elixir-autogen, elixir-format
 msgid "Pitfalls"
@@ -1540,7 +1542,9 @@ msgstr "Aufgewendete Zeit (Minuten)"
 #: lib/kanban_web/components/task_metadata_grid.ex:247
 #: lib/kanban_web/export/metrics_excel.ex:76
 #: lib/kanban_web/live/task_live/components/comment_row.ex:213
+#: lib/kanban_web/live/task_live/components/history_section.ex:92
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
+#: lib/kanban_web/live/task_live/form_component.ex:498
 #, elixir-autogen, elixir-format
 msgid "Unknown"
 msgstr "Unbekannt"
@@ -1562,7 +1566,7 @@ msgstr "Validierungsregeln"
 msgid "Verification Steps"
 msgstr "Verifizierungsschritte"
 
-#: lib/kanban_web/live/task_live/view_component.ex:177
+#: lib/kanban_web/live/task_live/view_component.ex:178
 #, elixir-autogen, elixir-format
 msgid "What"
 msgstr "Was"
@@ -1577,7 +1581,7 @@ msgstr "Was (Umsetzung)"
 msgid "Where (Code Location)"
 msgstr "Wo (Code-Position)"
 
-#: lib/kanban_web/live/task_live/view_component.ex:176
+#: lib/kanban_web/live/task_live/view_component.ex:177
 #, elixir-autogen, elixir-format
 msgid "Why"
 msgstr "Warum"
@@ -1649,7 +1653,7 @@ msgstr "Möchten Sie dieses Token wirklich widerrufen?"
 
 #: lib/kanban_web/live/board_live/show.html.heex:638
 #: lib/kanban_web/live/board_live/show.html.heex:668
-#: lib/kanban_web/live/board_live/webhook_views.ex:73
+#: lib/kanban_web/live/board_live/webhook_views.ex:77
 #: lib/kanban_web/live/user_live/confirmation.ex:61
 #: lib/kanban_web/live/user_live/confirmation.ex:87
 #: lib/kanban_web/live/user_live/confirmation.ex:365
@@ -1796,13 +1800,13 @@ msgid "topic:event"
 msgstr "topic:event"
 
 #: lib/kanban_web/live/board_live/show.html.heex:675
-#: lib/kanban_web/live/board_live/webhook_views.ex:89
+#: lib/kanban_web/live/board_live/webhook_views.ex:93
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "Schließen"
 
 #: lib/kanban_web/live/board_live/show.html.heex:639
-#: lib/kanban_web/live/board_live/webhook_views.ex:80
+#: lib/kanban_web/live/board_live/webhook_views.ex:84
 #: lib/kanban_web/live/user_live/confirmation.ex:62
 #: lib/kanban_web/live/user_live/confirmation.ex:366
 #, elixir-autogen, elixir-format
@@ -1888,7 +1892,7 @@ msgstr "Stride ist mehr als ein Kanban-Board — es wurde von Grund auf entwicke
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "Dieser kollaborative Ansatz erlaubt es Teams, repetitive Programmieraufgaben an KI-Agenten zu delegieren, während sich Menschen auf übergeordnete Entscheidungen, Architektur und die Prüfung KI-generierten Codes vor dem Merge konzentrieren."
 
-#: lib/kanban_web/live/task_live/form_component.ex:409
+#: lib/kanban_web/live/task_live/form_component.ex:429
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "Aufgabe kann nicht hinzugefügt werden: WIP-Limit für diese Spalte erreicht"
@@ -1908,9 +1912,9 @@ msgstr "Erwartetes Ergebnis"
 msgid "Note about this file"
 msgstr "Hinweis zu dieser Datei"
 
-#: lib/kanban_web/live/task_live/form_component.ex:254
-#: lib/kanban_web/live/task_live/form_component.ex:336
-#: lib/kanban_web/live/task_live/form_component.ex:396
+#: lib/kanban_web/live/task_live/form_component.ex:258
+#: lib/kanban_web/live/task_live/form_component.ex:356
+#: lib/kanban_web/live/task_live/form_component.ex:416
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "Bitte beheben Sie die untenstehenden Fehler"
@@ -1979,7 +1983,7 @@ msgstr "Board:"
 #: lib/kanban_web/live/admin/user_live/index.html.heex:222
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
 #: lib/kanban_web/live/board_live/show.html.heex:889
-#: lib/kanban_web/live/board_live/webhook_views.ex:207
+#: lib/kanban_web/live/board_live/webhook_views.ex:225
 #: lib/kanban_web/live/task_live/components/comment_row.ex:123
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -2007,14 +2011,13 @@ msgstr "Aufgabe erfolgreich archiviert"
 msgid "Task unarchived successfully"
 msgstr "Aufgabe erfolgreich aus dem Archiv geholt"
 
-#: lib/kanban_web/live/task_live/form/relational_scopes.ex:45
-#: lib/kanban_web/live/task_live/form_component.ex:302
+#: lib/kanban_web/live/task_live/form/relational_scopes.ex:44
+#: lib/kanban_web/live/task_live/form_component.ex:305
 #, elixir-autogen, elixir-format
 msgid "Column does not belong to this board"
 msgstr "Spalte gehört nicht zu diesem Board"
 
-#: lib/kanban_web/live/task_live/form/task_params.ex:34
-#: lib/kanban_web/live/task_live/form_component.ex:306
+#: lib/kanban_web/live/task_live/form/task_params.ex:38
 #, elixir-autogen, elixir-format
 msgid "Security error: Invalid column"
 msgstr "Sicherheitsfehler: Ungültige Spalte"
@@ -2174,7 +2177,7 @@ msgstr[1] "%{count} Anleitungen werden angezeigt"
 msgid "Sort:"
 msgstr "Sortieren:"
 
-#: lib/kanban_web/live/task_live/view_component.ex:143
+#: lib/kanban_web/live/task_live/view_component.ex:144
 #, elixir-autogen, elixir-format
 msgid "Task Not Found"
 msgstr "Aufgabe nicht gefunden"
@@ -2189,7 +2192,7 @@ msgstr "Die gesuchte Anleitung existiert nicht oder wurde möglicherweise versch
 msgid "This board is shared publicly. You can view all tasks but cannot make any changes."
 msgstr "Dieses Board ist öffentlich freigegeben. Sie können alle Aufgaben einsehen, aber keine Änderungen vornehmen."
 
-#: lib/kanban_web/live/task_live/view_component.ex:146
+#: lib/kanban_web/live/task_live/view_component.ex:147
 #, elixir-autogen, elixir-format
 msgid "This task may have been deleted or you may not have permission to view it."
 msgstr "Diese Aufgabe wurde möglicherweise gelöscht oder Sie sind nicht berechtigt, sie anzusehen."
@@ -2233,7 +2236,7 @@ msgstr "Es wurde kein Benutzer mit dieser E-Mail-Adresse gefunden"
 #: lib/kanban_web/export/workspace_metrics_excel.ex:113
 #: lib/kanban_web/live/metrics_live/workspace.ex:206
 #: lib/kanban_web/live/metrics_live/workspace.ex:228
-#: lib/kanban_web/live/task_live/view_component.ex:317
+#: lib/kanban_web/live/task_live/view_component.ex:318
 #, elixir-autogen, elixir-format
 msgid "Metrics"
 msgstr "Kennzahlen"
@@ -2940,7 +2943,7 @@ msgstr "Nachricht konnte nicht geschlossen werden."
 msgid "Dismiss message"
 msgstr "Nachricht schließen"
 
-#: lib/kanban_web/live/task_live/form/task_params.ex:76
+#: lib/kanban_web/live/task_live/form/task_params.ex:74
 #, elixir-autogen, elixir-format
 msgid "Task updated successfully. 1 child task was also updated."
 msgid_plural "Task updated successfully. %{count} child tasks were also updated."
@@ -3098,7 +3101,7 @@ msgstr "Geschwindigkeit"
 msgid "was born from our hands-on work with two AI tools —"
 msgstr "entstand aus unserer praktischen Arbeit mit zwei KI-Tools —"
 
-#: lib/kanban_web/live/task_live/form/relational_scopes.ex:81
+#: lib/kanban_web/live/task_live/form/relational_scopes.ex:80
 #, elixir-autogen, elixir-format
 msgid "Assignee does not have access to this board"
 msgstr "Der Zugewiesene hat keinen Zugriff auf dieses Board"
@@ -3135,7 +3138,7 @@ msgstr "Senden des Problems fehlgeschlagen. Bitte versuchen Sie es später erneu
 msgid "Invalid field name"
 msgstr "Ungültiger Feldname"
 
-#: lib/kanban_web/live/task_live/form/relational_scopes.ex:63
+#: lib/kanban_web/live/task_live/form/relational_scopes.ex:62
 #, elixir-autogen, elixir-format
 msgid "Parent goal does not belong to this board"
 msgstr "Übergeordnetes Ziel gehört nicht zu diesem Board"
@@ -3155,12 +3158,12 @@ msgstr "Aufgaben in der Warteschlange"
 msgid "Review Wait Tasks"
 msgstr "Aufgaben in Review-Wartezeit"
 
-#: lib/kanban_web/live/task_live/form/task_params.ex:36
+#: lib/kanban_web/live/task_live/form/task_params.ex:40
 #, elixir-autogen, elixir-format
 msgid "Security error: Invalid assignee"
 msgstr "Sicherheitsfehler: Ungültiger Zugewiesener"
 
-#: lib/kanban_web/live/task_live/form/task_params.ex:35
+#: lib/kanban_web/live/task_live/form/task_params.ex:39
 #, elixir-autogen, elixir-format
 msgid "Security error: Invalid parent goal"
 msgstr "Sicherheitsfehler: Ungültiges übergeordnetes Ziel"
@@ -3365,7 +3368,7 @@ msgid "Review at the speed of approval"
 msgstr "Überprüfung im Tempo der Genehmigung"
 
 #: lib/kanban_web/components/marketing_closing.ex:113
-#: lib/kanban_web/components/review_report_panel.ex:415
+#: lib/kanban_web/components/review_report_panel.ex:449
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:162
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
 #, elixir-autogen, elixir-format
@@ -4113,7 +4116,7 @@ msgid "Team"
 msgstr "Team"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:50
-#: lib/kanban_web/live/task_live/view_component.ex:314
+#: lib/kanban_web/live/task_live/view_component.ex:315
 #, elixir-autogen, elixir-format
 msgid "Telemetry"
 msgstr "Telemetrie"
@@ -4227,7 +4230,7 @@ msgstr "Ihre Rechte"
 #: lib/kanban_web/components/goal_sidebar.ex:204
 #: lib/kanban_web/components/time_ago.ex:37
 #: lib/kanban_web/components/time_ago.ex:40
-#: lib/kanban_web/live/review_live.ex:344
+#: lib/kanban_web/live/review_live.ex:349
 #, elixir-autogen, elixir-format
 msgid "just now"
 msgstr "gerade eben"
@@ -4655,7 +4658,7 @@ msgstr "Gestartet"
 #: lib/kanban_web/components/acceptance_checklist.ex:84
 #: lib/kanban_web/components/acceptance_checklist.ex:154
 #: lib/kanban_web/components/review_queue_item.ex:250
-#: lib/kanban_web/live/task_live/view_component.ex:185
+#: lib/kanban_web/live/task_live/view_component.ex:186
 #, elixir-autogen, elixir-format
 msgid "Acceptance criteria"
 msgstr "Akzeptanzkriterien"
@@ -4739,6 +4742,7 @@ msgstr "Schließen"
 
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:251
 #: lib/kanban_web/live/board_live/settings_form_component.ex:181
+#: lib/kanban_web/live/board_live/webhook_form.ex:193
 #: lib/kanban_web/live/task_live/components/comment_row.ex:140
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -4822,7 +4826,7 @@ msgid "Comma-separated. Valid: api_design, code_generation, code_review, databas
 msgstr "Kommagetrennte Liste. Gültige Fähigkeiten: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leer lassen, um alle Aufgaben zuzulassen."
 
 #: lib/kanban_web/live/board_live/show.html.heex:621
-#: lib/kanban_web/live/board_live/webhook_views.ex:47
+#: lib/kanban_web/live/board_live/webhook_views.ex:51
 #, elixir-autogen, elixir-format
 msgid "Copy it now — you won't be able to see it again."
 msgstr "Kopieren Sie es jetzt — Sie werden es nicht erneut sehen können."
@@ -4895,7 +4899,7 @@ msgstr "Abgeschlossen"
 msgid "Contributors"
 msgstr "Mitwirkende"
 
-#: lib/kanban_web/live/task_live/view_component.ex:225
+#: lib/kanban_web/live/task_live/view_component.ex:226
 #, elixir-autogen, elixir-format
 msgid "Database changes"
 msgstr "Datenbankänderungen"
@@ -4910,7 +4914,7 @@ msgstr "Tage in Bearbeitung"
 msgid "Done / total"
 msgstr "Erledigt / gesamt"
 
-#: lib/kanban_web/live/task_live/view_component.ex:327
+#: lib/kanban_web/live/task_live/view_component.ex:328
 #, elixir-autogen, elixir-format
 msgid "Error handling"
 msgstr "Fehlerbehandlung"
@@ -4920,7 +4924,7 @@ msgstr "Fehlerbehandlung"
 msgid "In flight"
 msgstr "In Bearbeitung"
 
-#: lib/kanban_web/live/task_live/view_component.ex:195
+#: lib/kanban_web/live/task_live/view_component.ex:196
 #, elixir-autogen, elixir-format
 msgid "Key files"
 msgstr "Wichtige Dateien"
@@ -4930,22 +4934,22 @@ msgstr "Wichtige Dateien"
 msgid "Last activity"
 msgstr "Letzte Aktivität"
 
-#: lib/kanban_web/live/task_live/view_component.ex:320
+#: lib/kanban_web/live/task_live/view_component.ex:321
 #, elixir-autogen, elixir-format
 msgid "Logging"
 msgstr "Logging"
 
-#: lib/kanban_web/live/task_live/view_component.ex:333
+#: lib/kanban_web/live/task_live/view_component.ex:334
 #, elixir-autogen, elixir-format
 msgid "On failure"
 msgstr "Bei Fehler"
 
-#: lib/kanban_web/live/task_live/view_component.ex:280
+#: lib/kanban_web/live/task_live/view_component.ex:281
 #, elixir-autogen, elixir-format
 msgid "Out of scope"
 msgstr "Außerhalb des Umfangs"
 
-#: lib/kanban_web/live/task_live/view_component.ex:218
+#: lib/kanban_web/live/task_live/view_component.ex:219
 #, elixir-autogen, elixir-format
 msgid "Patterns to follow"
 msgstr "Zu befolgende Muster"
@@ -4956,19 +4960,19 @@ msgid "Progress"
 msgstr "Fortschritt"
 
 #: lib/kanban_web/live/task_live/form_component.html.heex:424
-#: lib/kanban_web/live/task_live/view_component.ex:369
+#: lib/kanban_web/live/task_live/view_component.ex:370
 #, elixir-autogen, elixir-format
 msgid "Review report"
 msgstr "Review-Bericht"
 
 #: lib/kanban_web/live/review_live.html.heex:297
-#: lib/kanban_web/live/task_live/view_component.ex:287
+#: lib/kanban_web/live/task_live/view_component.ex:288
 #: lib/kanban_web/review_report_helpers.ex:57
 #, elixir-autogen, elixir-format
 msgid "Security considerations"
 msgstr "Sicherheitsüberlegungen"
 
-#: lib/kanban_web/live/task_live/view_component.ex:294
+#: lib/kanban_web/live/task_live/view_component.ex:295
 #, elixir-autogen, elixir-format
 msgid "Technology requirements"
 msgstr "Technologieanforderungen"
@@ -4984,7 +4988,7 @@ msgid "Throughput · last 12 hours"
 msgstr "Durchsatz · letzte 12 Stunden"
 
 #: lib/kanban_web/components/goal_sidebar.ex:75
-#: lib/kanban_web/live/board_live/webhook_views.ex:290
+#: lib/kanban_web/live/board_live/webhook_views.ex:314
 #, elixir-autogen, elixir-format
 msgid "Time"
 msgstr "Zeit"
@@ -4994,12 +4998,12 @@ msgstr "Zeit"
 msgid "Time spent"
 msgstr "Aufgewendete Zeit"
 
-#: lib/kanban_web/live/task_live/view_component.ex:232
+#: lib/kanban_web/live/task_live/view_component.ex:233
 #, elixir-autogen, elixir-format
 msgid "Validation rules"
 msgstr "Validierungsregeln"
 
-#: lib/kanban_web/live/task_live/view_component.ex:239
+#: lib/kanban_web/live/task_live/view_component.ex:240
 #, elixir-autogen, elixir-format
 msgid "Verification steps"
 msgstr "Verifizierungsschritte"
@@ -5014,7 +5018,7 @@ msgstr "heute"
 msgid "7d"
 msgstr "7 Tg."
 
-#: lib/kanban_web/live/task_live/view_component.ex:359
+#: lib/kanban_web/live/task_live/view_component.ex:360
 #, elixir-autogen, elixir-format
 msgid "Actual vs estimated"
 msgstr "Tatsächlich vs. geschätzt"
@@ -5024,7 +5028,7 @@ msgstr "Tatsächlich vs. geschätzt"
 msgid "Capabilities"
 msgstr "Fähigkeiten"
 
-#: lib/kanban_web/live/task_live/view_component.ex:400
+#: lib/kanban_web/live/task_live/view_component.ex:401
 #, elixir-autogen, elixir-format
 msgid "Children"
 msgstr "Unterelemente"
@@ -5060,12 +5064,12 @@ msgstr "Menschliche Aufgabe"
 msgid "Idle"
 msgstr "Untätig"
 
-#: lib/kanban_web/live/task_live/view_component.ex:349
+#: lib/kanban_web/live/task_live/view_component.ex:350
 #, elixir-autogen, elixir-format
 msgid "Integration points"
 msgstr "Integrationspunkte"
 
-#: lib/kanban_web/live/task_live/view_component.ex:364
+#: lib/kanban_web/live/task_live/view_component.ex:365
 #, elixir-autogen, elixir-format
 msgid "Review status"
 msgstr "Prüfungsstatus"
@@ -5080,7 +5084,7 @@ msgstr "Erfolg"
 
 #: lib/kanban_web/components/review_queue_item.ex:256
 #: lib/kanban_web/components/review_stats_strip.ex:72
-#: lib/kanban_web/live/task_live/view_component.ex:344
+#: lib/kanban_web/live/task_live/view_component.ex:345
 #: lib/kanban_web/review_report_helpers.ex:54
 #, elixir-autogen, elixir-format
 msgid "Testing strategy"
@@ -5092,12 +5096,12 @@ msgstr "Teststrategie"
 msgid "Waiting for review"
 msgstr "Wartet auf Prüfung"
 
-#: lib/kanban_web/live/task_live/view_component.ex:178
+#: lib/kanban_web/live/task_live/view_component.ex:179
 #, elixir-autogen, elixir-format
 msgid "Where"
 msgstr "Wo"
 
-#: lib/kanban_web/live/task_live/view_component.ex:379
+#: lib/kanban_web/live/task_live/view_component.ex:380
 #, elixir-autogen, elixir-format
 msgid "Workflow steps"
 msgstr "Workflow-Schritte"
@@ -5192,19 +5196,19 @@ msgid "live"
 msgstr "live"
 
 #: lib/kanban_web/components/time_ago.ex:48
-#: lib/kanban_web/live/review_live.ex:350
+#: lib/kanban_web/live/review_live.ex:355
 #, elixir-autogen, elixir-format
 msgid "%{d}d ago"
 msgstr "vor %{d} Tg."
 
 #: lib/kanban_web/components/time_ago.ex:46
-#: lib/kanban_web/live/review_live.ex:348
+#: lib/kanban_web/live/review_live.ex:353
 #, elixir-autogen, elixir-format
 msgid "%{h}h ago"
 msgstr "vor %{h} Std."
 
 #: lib/kanban_web/components/time_ago.ex:43
-#: lib/kanban_web/live/review_live.ex:345
+#: lib/kanban_web/live/review_live.ex:350
 #, elixir-autogen, elixir-format
 msgid "%{m}m ago"
 msgstr "vor %{m} Min."
@@ -5214,7 +5218,7 @@ msgstr "vor %{m} Min."
 msgid "%{s}s ago"
 msgstr "vor %{s} Sek."
 
-#: lib/kanban_web/components/review_report_panel.ex:411
+#: lib/kanban_web/components/review_report_panel.ex:445
 #: lib/kanban_web/components/review_stats_strip.ex:59
 #, elixir-autogen, elixir-format
 msgid "Acceptance"
@@ -5254,19 +5258,19 @@ msgstr[1] "%{count} fehlgeschlagene Tests"
 msgid "No files changed."
 msgstr "Keine Dateien geändert."
 
-#: lib/kanban_web/live/review_live.ex:329
+#: lib/kanban_web/live/review_live.ex:334
 #, elixir-autogen, elixir-format
 msgid "%{count} task from %{agents} agent waiting on you"
 msgid_plural "%{count} tasks from %{agents} agents waiting on you"
 msgstr[0] "%{count} Aufgabe von %{agents} Agent wartet auf Sie"
 msgstr[1] "%{count} Aufgaben von %{agents} Agenten warten auf Sie"
 
-#: lib/kanban_web/live/review_live.ex:324
+#: lib/kanban_web/live/review_live.ex:329
 #, elixir-autogen, elixir-format
 msgid "0 tasks waiting on you."
 msgstr "0 Aufgaben warten auf Sie."
 
-#: lib/kanban_web/live/review_live.ex:93
+#: lib/kanban_web/live/review_live.ex:95
 #, elixir-autogen, elixir-format
 msgid "Approved %{ident}"
 msgstr "Genehmigt %{ident}"
@@ -5281,7 +5285,7 @@ msgstr "Ø Zeit bis zur Prüfung · 17 Min."
 msgid "Inbox zero — nothing is waiting for review."
 msgstr "Inbox Zero — nichts wartet auf Prüfung."
 
-#: lib/kanban_web/live/review_live.ex:155
+#: lib/kanban_web/live/review_live.ex:157
 #, elixir-autogen, elixir-format
 msgid "Notes are required when requesting changes."
 msgstr "Beim Anfordern von Änderungen sind Notizen erforderlich."
@@ -5291,7 +5295,7 @@ msgstr "Beim Anfordern von Änderungen sind Notizen erforderlich."
 msgid "Notes for the agent"
 msgstr "Notizen für den Agenten"
 
-#: lib/kanban_web/live/review_live.ex:150
+#: lib/kanban_web/live/review_live.ex:152
 #, elixir-autogen, elixir-format
 msgid "Requested changes on %{ident}"
 msgstr "Änderungen an %{ident} angefordert"
@@ -5306,17 +5310,17 @@ msgstr "Wählen Sie eine Aufgabe aus der Warteschlange, um eine Prüfung zu star
 msgid "Send request"
 msgstr "Anfrage senden"
 
-#: lib/kanban_web/live/review_live.ex:97
+#: lib/kanban_web/live/review_live.ex:99
 #, elixir-autogen, elixir-format
 msgid "Unable to approve task."
 msgstr "Aufgabe konnte nicht genehmigt werden."
 
-#: lib/kanban_web/live/review_live.ex:159
+#: lib/kanban_web/live/review_live.ex:161
 #, elixir-autogen, elixir-format
 msgid "Unable to request changes on task."
 msgstr "Änderungen an der Aufgabe konnten nicht angefordert werden."
 
-#: lib/kanban_web/live/review_live.ex:339
+#: lib/kanban_web/live/review_live.ex:344
 #, elixir-autogen, elixir-format
 msgid "oldest %{age}"
 msgstr "älteste %{age}"
@@ -6254,7 +6258,7 @@ msgstr "%{name} per E-Mail kontaktieren"
 msgid "Completed by %{name}"
 msgstr "Abgeschlossen von %{name}"
 
-#: lib/kanban_web/components/review_report_panel.ex:413
+#: lib/kanban_web/components/review_report_panel.ex:447
 #: lib/kanban_web/components/review_stats_strip.ex:79
 #: lib/kanban_web/review_report_helpers.ex:55
 #, elixir-autogen, elixir-format
@@ -6277,7 +6281,7 @@ msgid "changes requested"
 msgstr "Änderungen angefordert"
 
 #: lib/kanban_web/components/code_review_panel.ex:87
-#: lib/kanban_web/components/review_report_panel.ex:169
+#: lib/kanban_web/components/review_report_panel.ex:172
 #, elixir-autogen, elixir-format
 msgid "(no description)"
 msgstr "(keine Beschreibung)"
@@ -6288,22 +6292,22 @@ msgstr "(keine Beschreibung)"
 msgid "Changes requested"
 msgstr "Änderungen angefordert"
 
-#: lib/kanban_web/components/review_report_panel.ex:416
+#: lib/kanban_web/components/review_report_panel.ex:450
 #, elixir-autogen, elixir-format
 msgid "Code quality"
 msgstr "Code-Qualität"
 
-#: lib/kanban_web/components/review_report_panel.ex:404
+#: lib/kanban_web/components/review_report_panel.ex:438
 #, elixir-autogen, elixir-format
 msgid "Important"
 msgstr "Wichtig"
 
-#: lib/kanban_web/components/review_report_panel.ex:405
+#: lib/kanban_web/components/review_report_panel.ex:439
 #, elixir-autogen, elixir-format
 msgid "Minor"
 msgstr "Geringfügig"
 
-#: lib/kanban_web/components/review_report_panel.ex:414
+#: lib/kanban_web/components/review_report_panel.ex:448
 #, elixir-autogen, elixir-format
 msgid "Testing"
 msgstr "Tests"
@@ -6352,7 +6356,7 @@ msgid "TST"
 msgstr "TST"
 
 #: lib/kanban_web/live/review_live.html.heex:511
-#: lib/kanban_web/live/task_live/view_component.ex:389
+#: lib/kanban_web/live/task_live/view_component.ex:390
 #, elixir-autogen, elixir-format
 msgid "Changed files"
 msgstr "Geänderte Dateien"
@@ -6377,7 +6381,7 @@ msgstr "Diff bei 500 Zeilen abgeschnitten."
 msgid "No diff available for this file."
 msgstr "Für diese Datei ist kein Diff verfügbar."
 
-#: lib/kanban_web/components/review_report_panel.ex:143
+#: lib/kanban_web/components/review_report_panel.ex:146
 #, elixir-autogen, elixir-format
 msgid "No issues"
 msgstr "Keine Probleme"
@@ -6417,7 +6421,7 @@ msgstr "Keine abgeschlossenen Aufgaben älter als 30 Tage gefunden."
 msgid "Met"
 msgstr "Erfüllt"
 
-#: lib/kanban_web/components/review_report_panel.ex:417
+#: lib/kanban_web/components/review_report_panel.ex:451
 #, elixir-autogen, elixir-format
 msgid "Project check"
 msgstr "Projektprüfung"
@@ -6809,7 +6813,7 @@ msgstr "ist unvollständig: Das Review hat %{supplied} von %{expected} Akzeptanz
 msgid "must be a real assessment: the task supplied %{field}, so the review must record a passed/failed verdict for it, not not_assessed or absent"
 msgstr "muss eine echte Bewertung sein: Die Aufgabe hat %{field} angegeben, daher muss das Review dafür ein passed/failed-Urteil erfassen, nicht not_assessed oder fehlend"
 
-#: lib/kanban_web/components/review_report_panel.ex:71
+#: lib/kanban_web/components/review_report_panel.ex:74
 #, elixir-autogen, elixir-format
 msgid "Incomplete review — the task specified these sections, but the review did not assess them:"
 msgstr "Unvollständiges Review – die Aufgabe hat diese Abschnitte angegeben, aber das Review hat sie nicht bewertet:"
@@ -7303,7 +7307,7 @@ msgstr "Überprüft"
 msgid "Technical Details"
 msgstr "Technische Details"
 
-#: lib/kanban_web/live/task_live/view_component.ex:354
+#: lib/kanban_web/live/task_live/view_component.ex:355
 #, elixir-autogen, elixir-format
 msgid "Technical details"
 msgstr "Technische Details"
@@ -7959,7 +7963,7 @@ msgstr "Agentendaten konnten gerade nicht aktualisiert werden. Es werden die zul
 
 #: lib/kanban_web/live/board_live/authorization.ex:84
 #: lib/kanban_web/live/board_live/bulk_selection.ex:275
-#: lib/kanban_web/live/task_live/form_component.ex:136
+#: lib/kanban_web/live/task_live/form_component.ex:140
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to modify tasks on this board"
 msgstr "Sie sind nicht berechtigt, Aufgaben auf diesem Board zu bearbeiten"
@@ -7969,7 +7973,7 @@ msgstr "Sie sind nicht berechtigt, Aufgaben auf diesem Board zu bearbeiten"
 msgid "Diff not uploaded"
 msgstr "Diff nicht hochgeladen"
 
-#: lib/kanban_web/live/review_live.ex:208
+#: lib/kanban_web/live/review_live.ex:211
 #, elixir-autogen, elixir-format
 msgid "Diff reloaded."
 msgstr "Diff neu geladen."
@@ -7979,7 +7983,7 @@ msgstr "Diff neu geladen."
 msgid "Re-fetch diff"
 msgstr "Diff erneut abrufen"
 
-#: lib/kanban_web/live/review_live.ex:203
+#: lib/kanban_web/live/review_live.ex:206
 #, elixir-autogen, elixir-format
 msgid "The diff has not been re-uploaded yet — re-run the task's completion to send it."
 msgstr "Der Diff wurde noch nicht erneut hochgeladen – führen Sie den Abschluss der Aufgabe erneut aus, um ihn zu senden."
@@ -7989,7 +7993,7 @@ msgstr "Der Diff wurde noch nicht erneut hochgeladen – führen Sie den Abschlu
 msgid "This task changed files, but no diff arrived — the upload was lost in transit, so there is nothing to review here yet. Re-fetch to check whether the diff has since been uploaded."
 msgstr "Diese Aufgabe hat Dateien geändert, aber es ist kein Diff angekommen – der Upload ging unterwegs verloren, daher gibt es hier noch nichts zu überprüfen. Rufen Sie den Diff erneut ab, um zu prüfen, ob er inzwischen hochgeladen wurde."
 
-#: lib/kanban_web/live/review_live.ex:182
+#: lib/kanban_web/live/review_live.ex:184
 #, elixir-autogen, elixir-format
 msgid "This task is no longer available for review."
 msgstr "Diese Aufgabe steht nicht mehr zur Überprüfung zur Verfügung."
@@ -8038,7 +8042,7 @@ msgid "Confirmed"
 msgstr "Bestätigt"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:99
-#: lib/kanban_web/live/board_live/webhook_views.ex:129
+#: lib/kanban_web/live/board_live/webhook_views.ex:135
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr "Deaktiviert"
@@ -8102,7 +8106,7 @@ msgid "Delete this account permanently? This cannot be undone."
 msgstr "Dieses Konto endgültig löschen? Dies kann nicht rückgängig gemacht werden."
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:182
-#: lib/kanban_web/live/board_live/webhook_views.ex:157
+#: lib/kanban_web/live/board_live/webhook_views.ex:175
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr "Deaktivieren"
@@ -8113,7 +8117,7 @@ msgid "Disable this account? They will be signed out and unable to log in."
 msgstr "Dieses Konto deaktivieren? Der Benutzer wird abgemeldet und kann sich nicht mehr anmelden."
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:193
-#: lib/kanban_web/live/board_live/webhook_views.ex:157
+#: lib/kanban_web/live/board_live/webhook_views.ex:175
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr "Aktivieren"
@@ -8698,7 +8702,7 @@ msgstr "Zu prüfendes Verhalten"
 #: lib/kanban_web/live/board_live/settings_form_component.ex:293
 #: lib/kanban_web/live/review_live.html.heex:492
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:122
-#: lib/kanban_web/live/task_live/view_component.ex:266
+#: lib/kanban_web/live/task_live/view_component.ex:267
 #, elixir-autogen, elixir-format
 msgid "Behaviour/Test Matrix"
 msgstr "Verhaltens-/Testmatrix"
@@ -8865,7 +8869,7 @@ msgstr "%{seconds}s"
 msgid "Explorer Result"
 msgstr "Explorer-Ergebnis"
 
-#: lib/kanban_web/live/task_live/view_component.ex:374
+#: lib/kanban_web/live/task_live/view_component.ex:375
 #, elixir-autogen, elixir-format
 msgid "Explorer result"
 msgstr "Explorer-Ergebnis"
@@ -9585,6 +9589,7 @@ msgid "Are you sure you want to delete this comment?"
 msgstr "Sind Sie sicher, dass Sie diesen Kommentar löschen möchten?"
 
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:270
+#: lib/kanban_web/live/board_live/webhook_views.ex:160
 #: lib/kanban_web/live/task_live/components/comment_row.ex:111
 #, elixir-autogen, elixir-format
 msgid "Edit"
@@ -10108,17 +10113,17 @@ msgstr[1] "%{count} weitere Labels"
 msgid "+%{count}"
 msgstr "+%{count}"
 
-#: lib/kanban_web/live/task_live/form/task_params.ex:37
+#: lib/kanban_web/live/task_live/form/task_params.ex:41
 #, elixir-autogen, elixir-format
 msgid "Security error: Invalid label"
 msgstr "Sicherheitsfehler: Ungültiges Label"
 
-#: lib/kanban_web/live/task_live/form/label_selection.ex:199
+#: lib/kanban_web/live/task_live/form/label_selection.ex:194
 #, elixir-autogen, elixir-format
 msgid "Task saved, but a label deleted in the meantime was not applied"
 msgstr "Aufgabe gespeichert, aber ein zwischenzeitlich gelöschtes Label wurde nicht übernommen"
 
-#: lib/kanban_web/live/task_live/form/label_selection.ex:202
+#: lib/kanban_web/live/task_live/form/label_selection.ex:197
 #, elixir-autogen, elixir-format
 msgid "Task saved, but its labels could not be updated"
 msgstr "Aufgabe gespeichert, aber ihre Labels konnten nicht aktualisiert werden"
@@ -10303,92 +10308,93 @@ msgid_plural "%{count} selected tasks moved to another column, so they were take
 msgstr[0] "Eine ausgewählte Aufgabe wurde in eine andere Spalte verschoben und daher aus der Auswahl entfernt."
 msgstr[1] "%{count} ausgewählte Aufgaben wurden in eine andere Spalte verschoben und daher aus der Auswahl entfernt."
 
-#: lib/kanban_web/live/board_live/webhook_form.ex:37
+#: lib/kanban_web/live/board_live/webhook_form.ex:38
 #, elixir-autogen, elixir-format
 msgid "Add an endpoint"
 msgstr "Endpunkt hinzufügen"
 
-#: lib/kanban_web/live/board_live/webhook_form.ex:103
+#: lib/kanban_web/live/board_live/webhook_form.ex:86
 #, elixir-autogen, elixir-format
 msgid "Add endpoint"
 msgstr "Endpunkt hinzufügen"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:287
+#: lib/kanban_web/live/board_live/webhook_views.ex:311
 #, elixir-autogen, elixir-format
 msgid "Attempt"
 msgstr "Versuch"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:174
+#: lib/kanban_web/live/board_live/integrations_component.ex:255
 #, elixir-autogen, elixir-format
 msgid "Could not update the endpoint. Reload and try again."
 msgstr "Der Endpunkt konnte nicht aktualisiert werden. Lade die Seite neu und versuche es erneut."
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:203
+#: lib/kanban_web/live/board_live/webhook_views.ex:221
 #, elixir-autogen, elixir-format
 msgid "Delete this endpoint and its delivery log?"
 msgstr "Diesen Endpunkt und sein Zustellprotokoll löschen?"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:180
+#: lib/kanban_web/live/board_live/webhook_views.ex:198
 #, elixir-autogen, elixir-format
 msgid "Deliveries"
 msgstr "Zustellungen"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:248
+#: lib/kanban_web/live/board_live/integrations_component.ex:334
 #, elixir-autogen, elixir-format
 msgid "Each endpoint receives the task events you choose. Generic endpoints get a signed JSON POST; Slack endpoints get a message in a channel."
 msgstr "Jeder Endpunkt erhält die Aufgabenereignisse, die du auswählst. Generische Endpunkte erhalten einen signierten JSON-POST; Slack-Endpunkte erhalten eine Nachricht in einem Kanal."
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:168
+#: lib/kanban_web/live/board_live/integrations_component.ex:249
 #, elixir-autogen, elixir-format
 msgid "Enable the endpoint before sending a test event"
 msgstr "Aktiviere den Endpunkt, bevor du ein Testereignis sendest"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:135
+#: lib/kanban_web/live/board_live/integrations_component.ex:177
 #, elixir-autogen, elixir-format
 msgid "Endpoint created"
 msgstr "Endpunkt erstellt"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:101
+#: lib/kanban_web/live/board_live/integrations_component.ex:143
 #, elixir-autogen, elixir-format
 msgid "Endpoint deleted"
 msgstr "Endpunkt gelöscht"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:180
+#: lib/kanban_web/live/board_live/integrations_component.ex:261
 #, elixir-autogen, elixir-format
 msgid "Endpoint disabled"
 msgstr "Endpunkt deaktiviert"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:181
+#: lib/kanban_web/live/board_live/integrations_component.ex:262
 #, elixir-autogen, elixir-format
 msgid "Endpoint enabled"
 msgstr "Endpunkt aktiviert"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:155
+#: lib/kanban_web/live/board_live/integrations_component.ex:196
+#: lib/kanban_web/live/board_live/integrations_component.ex:236
 #, elixir-autogen, elixir-format
 msgid "Endpoint not found"
 msgstr "Endpunkt nicht gefunden"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:289
+#: lib/kanban_web/live/board_live/webhook_views.ex:313
 #, elixir-autogen, elixir-format
 msgid "Error"
 msgstr "Fehler"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:285
+#: lib/kanban_web/live/board_live/webhook_views.ex:309
 #, elixir-autogen, elixir-format
 msgid "Event"
 msgstr "Ereignis"
 
-#: lib/kanban_web/live/board_live/webhook_form.ex:74
+#: lib/kanban_web/live/board_live/webhook_form.ex:214
 #, elixir-autogen, elixir-format
 msgid "Events"
 msgstr "Ereignisse"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:350
+#: lib/kanban_web/live/board_live/webhook_views.ex:374
 #, elixir-autogen, elixir-format
 msgid "Failed"
 msgstr "Fehlgeschlagen"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:355
+#: lib/kanban_web/live/board_live/webhook_views.ex:379
 #, elixir-autogen, elixir-format
 msgid "Generic webhook"
 msgstr "Generischer Webhook"
@@ -10401,63 +10407,65 @@ msgstr "Generischer Webhook"
 msgid "Integrations"
 msgstr "Integrationen"
 
-#: lib/kanban_web/live/board_live/webhook_form.ex:41
+#: lib/kanban_web/live/board_live/webhook_form.ex:42
+#: lib/kanban_web/live/board_live/webhook_form.ex:127
 #, elixir-autogen, elixir-format
 msgid "Kind"
 msgstr "Art"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:279
+#: lib/kanban_web/live/board_live/webhook_views.ex:303
 #, elixir-autogen, elixir-format
 msgid "No deliveries yet."
 msgstr "Noch keine Zustellungen."
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:258
+#: lib/kanban_web/live/board_live/integrations_component.ex:344
 #, elixir-autogen, elixir-format
 msgid "No endpoints yet. Add one below to send task events to another service."
 msgstr "Noch keine Endpunkte. Füge unten einen hinzu, um Aufgabenereignisse an einen anderen Dienst zu senden."
 
 #: lib/kanban_web/live/board_live/integrations.ex:35
-#: lib/kanban_web/live/board_live/integrations_component.ex:227
+#: lib/kanban_web/live/board_live/integrations_component.ex:313
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage integrations"
 msgstr "Nur der Board-Besitzer kann Integrationen verwalten"
 
-#: lib/kanban_web/live/board_live/webhook_form.ex:67
+#: lib/kanban_web/live/board_live/webhook_form.ex:68
+#: lib/kanban_web/live/board_live/webhook_form.ex:154
 #, elixir-autogen, elixir-format
 msgid "Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."
 msgstr "Füge eine Slack-Incoming-Webhook-URL ein (https://hooks.slack.com/…)."
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:260
+#: lib/kanban_web/live/board_live/webhook_views.ex:284
 #, elixir-autogen, elixir-format
 msgid "Recent deliveries"
 msgstr "Letzte Zustellungen"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:271
+#: lib/kanban_web/live/board_live/webhook_views.ex:295
 #, elixir-autogen, elixir-format
 msgid "Refresh"
 msgstr "Aktualisieren"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:288
+#: lib/kanban_web/live/board_live/webhook_views.ex:312
 #, elixir-autogen, elixir-format
 msgid "Response"
 msgstr "Antwort"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:195
+#: lib/kanban_web/live/board_live/webhook_views.ex:213
 #, elixir-autogen, elixir-format
 msgid "Rotate secret"
 msgstr "Secret erneuern"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:190
+#: lib/kanban_web/live/board_live/webhook_views.ex:208
 #, elixir-autogen, elixir-format
 msgid "Rotate the signing secret? The old secret stops working immediately."
 msgstr "Das Signatur-Secret erneuern? Das alte Secret funktioniert sofort nicht mehr."
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:87
+#: lib/kanban_web/live/board_live/integrations_component.ex:129
 #, elixir-autogen, elixir-format
 msgid "Secret rotated"
 msgstr "Secret erneuert"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:168
+#: lib/kanban_web/live/board_live/webhook_views.ex:186
 #, elixir-autogen, elixir-format
 msgid "Send test"
 msgstr "Test senden"
@@ -10467,48 +10475,50 @@ msgstr "Test senden"
 msgid "Send this board's task events to your own services or a Slack channel."
 msgstr "Sende die Aufgabenereignisse dieses Boards an deine eigenen Dienste oder einen Slack-Kanal."
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:44
+#: lib/kanban_web/live/board_live/webhook_views.ex:48
 #, elixir-autogen, elixir-format
 msgid "Signing secret"
 msgstr "Signatur-Secret"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:354
+#: lib/kanban_web/live/board_live/webhook_views.ex:378
 #, elixir-autogen, elixir-format
 msgid "Slack"
 msgstr "Slack"
 
-#: lib/kanban_web/live/board_live/webhook_form.ex:68
+#: lib/kanban_web/live/board_live/webhook_form.ex:69
+#: lib/kanban_web/live/board_live/webhook_form.ex:155
 #, elixir-autogen, elixir-format
 msgid "Stride sends a signed JSON POST to this HTTPS address."
 msgstr "Stride sendet einen signierten JSON-POST an diese HTTPS-Adresse."
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:349
+#: lib/kanban_web/live/board_live/webhook_views.ex:373
 #, elixir-autogen, elixir-format
 msgid "Succeeded"
 msgstr "Erfolgreich"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:112
+#: lib/kanban_web/live/board_live/integrations_component.ex:154
 #, elixir-autogen, elixir-format
 msgid "Test event queued. Refresh the deliveries in a few seconds."
 msgstr "Testereignis eingereiht. Aktualisiere die Zustellungen in ein paar Sekunden."
 
-#: lib/kanban_web/live/board_live/webhook_form.ex:53
+#: lib/kanban_web/live/board_live/webhook_form.ex:54
+#: lib/kanban_web/live/board_live/webhook_form.ex:136
 #, elixir-autogen, elixir-format
 msgid "URL"
 msgstr "URL"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:48
+#: lib/kanban_web/live/board_live/webhook_views.ex:52
 #, elixir-autogen, elixir-format
 msgid "Use it to verify the X-Stride-Signature header on each request."
 msgstr "Verwende es, um den X-Stride-Signature-Header jeder Anfrage zu prüfen."
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:245
+#: lib/kanban_web/live/board_live/integrations_component.ex:331
 #, elixir-autogen, elixir-format
 msgid "Webhooks"
 msgstr "Webhooks"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:363
-#: lib/kanban_web/live/board_live/webhook_views.ex:367
+#: lib/kanban_web/live/board_live/webhook_views.ex:387
+#: lib/kanban_web/live/board_live/webhook_views.ex:391
 #, elixir-autogen, elixir-format
 msgid "unknown host"
 msgstr "unbekannter Host"
@@ -10517,3 +10527,23 @@ msgstr "unbekannter Host"
 #, elixir-autogen, elixir-format
 msgid "This task was moved by someone else at the same time. Please try again."
 msgstr "Diese Aufgabe wurde gleichzeitig von jemand anderem verschoben. Bitte versuchen Sie es erneut."
+
+#: lib/kanban_web/live/board_live/webhook_form.ex:123
+#, elixir-autogen, elixir-format
+msgid "Edit endpoint"
+msgstr "Endpunkt bearbeiten"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:188
+#, elixir-autogen, elixir-format
+msgid "Endpoint updated"
+msgstr "Endpunkt aktualisiert"
+
+#: lib/kanban_web/live/board_live/webhook_form.ex:152
+#, elixir-autogen, elixir-format
+msgid "Leave blank to keep the current URL (%{host})."
+msgstr "Leer lassen, um die aktuelle URL (%{host}) zu behalten."
+
+#: lib/kanban_web/live/board_live/webhook_form.ex:162
+#, elixir-autogen, elixir-format
+msgid "The signing secret stays the same. If the new address belongs to a different receiver, use Rotate secret to replace it."
+msgstr "Das Signatur-Secret bleibt gleich. Wenn die neue Adresse zu einem anderen Empfänger gehört, ersetze es mit „Secret erneuern“."

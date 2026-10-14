@@ -247,6 +247,9 @@ working immediately, so update your receiver as soon as you rotate.
 
 Each endpoint on the Integrations tab has these actions:
 
+- **Edit** changes which events the endpoint gets and, if you want, its
+  address. Leave the URL blank to keep the current one; the form shows only
+  its host. A new URL gets the same checks as a new endpoint.
 - **Send test** sends a `ping`, so you can check the receiver or the Slack
   channel before real events arrive.
 - **Deliveries** shows the 20 most recent attempts, newest first, each with its
@@ -257,8 +260,12 @@ Each endpoint on the Integrations tab has these actions:
 - **Rotate secret** (webhooks only) replaces the signing secret.
 - **Delete** removes the endpoint and its delivery log.
 
-An endpoint's address, kind and events cannot be changed after it is added. To
-change them, delete the endpoint and add a new one.
+Editing an endpoint keeps its delivery log and, for a webhook, its signing
+secret, so a receiver at the new address must verify with the same secret. If
+the new address belongs to a different receiver, use **Rotate secret** to
+replace it. Deliveries already queued or waiting to be retried go to the new
+address. An endpoint's kind cannot be changed: to switch between a webhook and
+Slack, delete the endpoint and add a new one.
 
 ## Retries
 

@@ -3,7 +3,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
   Function components for the webhook section of the board's Integrations
   view (W2228), rendered by `KanbanWeb.BoardLive.IntegrationsComponent`:
   the one-time secret reveal, an endpoint row and its delivery log. The
-  create form is `KanbanWeb.BoardLive.WebhookForm`.
+  create and edit forms are in `KanbanWeb.BoardLive.WebhookForm`.
 
   Every control that sends an event carries `phx-target={@myself}`, so the
   event reaches the component, which re-checks ownership; the secret's Copy
@@ -16,6 +16,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
   use KanbanWeb, :html
 
   alias Kanban.Webhooks.Endpoint
+  alias KanbanWeb.BoardLive.WebhookForm
   alias KanbanWeb.TaskTokens
   alias KanbanWeb.TimeAgo
 
@@ -100,12 +101,14 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
 
   @doc """
   One endpoint: kind, host, events, the enabled switch and its actions,
-  plus its delivery log when `log_open?`.
+  plus its edit form when `edit_form` is set and its delivery log when
+  `log_open?`.
   """
   attr :endpoint, Endpoint, required: true
   attr :myself, :any, required: true
   attr :log_open?, :boolean, default: false
   attr :deliveries, :list, default: []
+  attr :edit_form, :any, default: nil, doc: "the open edit form, or nil"
 
   def endpoint_row(assigns) do
     ~H"""
@@ -144,6 +147,18 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
         </code>
       </div>
       <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px;">
+        <button
+          id={"webhook-edit-#{@endpoint.id}"}
+          type="button"
+          phx-click="edit"
+          phx-value-id={@endpoint.id}
+          phx-target={@myself}
+          aria-expanded={to_string(@edit_form != nil)}
+          style={action_style()}
+        >
+          <.icon name="hero-pencil-square" class="w-3.5 h-3.5" />
+          {gettext("Edit")}
+        </button>
         <button
           id={"webhook-toggle-#{@endpoint.id}"}
           type="button"
@@ -210,6 +225,12 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
           {gettext("Delete")}
         </button>
       </div>
+      <WebhookForm.edit_form
+        :if={@edit_form}
+        form={@edit_form}
+        endpoint={@endpoint}
+        myself={@myself}
+      />
       <.delivery_log
         :if={@log_open?}
         endpoint_id={@endpoint.id}

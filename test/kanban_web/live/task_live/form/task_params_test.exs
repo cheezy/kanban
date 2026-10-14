@@ -31,7 +31,7 @@ defmodule KanbanWeb.TaskLive.Form.TaskParamsTest do
       max = 9_223_372_036_854_775_807
 
       assert TaskParams.coerce_id(max) == {:ok, max}
-      assert TaskParams.coerce_id(Integer.to_string(max)) == {:ok, max}
+      assert max |> Integer.to_string() |> TaskParams.coerce_id() == {:ok, max}
       assert TaskParams.coerce_id(max + 1) == :error
       assert TaskParams.coerce_id("99999999999999999999") == :error
     end

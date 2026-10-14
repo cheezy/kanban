@@ -1,18 +1,25 @@
 defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   @moduledoc """
-  The board's Integrations view (W2228): the owner lists, adds, enables,
-  disables and deletes webhook and Slack endpoints, sends a test event,
-  rotates a generic endpoint's signing secret and reads each endpoint's
-  recent deliveries. The markup is in `KanbanWeb.BoardLive.WebhookViews`.
+  The board's Integrations view (W2228): the owner lists, adds, edits,
+  enables, disables and deletes webhook and Slack endpoints, sends a test
+  event, rotates a generic endpoint's signing secret and reads each
+  endpoint's recent deliveries. The markup is in
+  `KanbanWeb.BoardLive.WebhookViews`.
 
   `KanbanWeb.BoardLive.Integrations` only lets the owner open the view.
-  Every event that names an endpoint (toggle, rotate, delete, send_test,
-  show_log) looks it up again with `Kanban.Webhooks.get_endpoint/3`, scoped
-  to this board and the current user, so a forged id (another board's
-  endpoint, or anything else) gets "Endpoint not found"; every write is
-  owner-checked again by the context, and `create` relies on
-  `Kanban.Webhooks.create_endpoint/4`'s own owner check. `validate`,
-  `hide_log` and `dismiss_secret` read and write no stored data.
+  Every event that names an endpoint (edit, validate_edit, save_edit,
+  toggle, rotate, delete, send_test, show_log) looks it up again with
+  `Kanban.Webhooks.get_endpoint/3`, scoped to this board and the current
+  user, so a forged id (another board's endpoint, or anything else) gets
+  "Endpoint not found"; every write is owner-checked again by the context,
+  and `create` relies on `Kanban.Webhooks.create_endpoint/4`'s own owner
+  check. `validate`, `cancel_edit`, `hide_log` and `dismiss_secret` read and
+  write no stored data.
+
+  An edit (W2364) takes only the URL, when one was typed, and the events from
+  its params: the kind and the enabled flag never change through it, and a
+  blank URL keeps the stored one. The edit form never shows the stored URL,
+  only its host, and the signing secret is kept.
 
   The signing secret is held in the `:revealed` assign, written only by the
   create and rotate handlers and cleared by dismiss or delete. `update/2`
@@ -40,6 +47,7 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
      |> assign(assigns)
      |> assign_new(:revealed, fn -> nil end)
      |> assign_new(:log_endpoint_id, fn -> nil end)
+     |> assign_new(:editing, fn -> nil end)
      |> assign_new(:deliveries, fn -> [] end)
      |> assign_new(:form_rev, fn -> 0 end)
      |> assign_new(:form, &new_form/0)
@@ -68,6 +76,40 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
     scope
     |> Webhooks.create_endpoint(board, params)
     |> handle_create(socket)
+  end
+
+  @impl true
+  def handle_event("edit", %{"id" => id}, socket) do
+    with_endpoint(socket, id, fn endpoint ->
+      form = endpoint |> Webhooks.change_endpoint() |> to_form(as: "endpoint_edit")
+      {:noreply, assign(socket, :editing, %{endpoint_id: endpoint.id, form: form})}
+    end)
+  end
+
+  @impl true
+  def handle_event("validate_edit", %{"id" => id} = params, socket) do
+    with_endpoint(socket, id, fn endpoint ->
+      form =
+        endpoint
+        |> Webhooks.change_endpoint(edit_attrs(params))
+        |> to_form(action: :validate, as: "endpoint_edit")
+
+      {:noreply, assign(socket, :editing, %{endpoint_id: endpoint.id, form: form})}
+    end)
+  end
+
+  @impl true
+  def handle_event("save_edit", %{"id" => id} = params, socket) do
+    with_endpoint(socket, id, fn endpoint ->
+      socket.assigns.current_scope
+      |> Webhooks.update_endpoint(endpoint, edit_attrs(params))
+      |> handle_edit(endpoint, socket)
+    end)
+  end
+
+  @impl true
+  def handle_event("cancel_edit", _params, socket) do
+    {:noreply, assign(socket, :editing, nil)}
   end
 
   @impl true
@@ -142,6 +184,45 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
 
   defp handle_create({:error, :unauthorized}, socket), do: deny(socket)
 
+  defp handle_edit({:ok, _endpoint}, _endpoint_before, socket) do
+    notify_parent({:flash, :info, gettext("Endpoint updated")})
+    {:noreply, socket |> assign(:editing, nil) |> reload()}
+  end
+
+  # An :id error is the stale-update error: the endpoint was deleted between
+  # the lookup and the write.
+  defp handle_edit({:error, %Changeset{} = changeset}, endpoint, socket) do
+    if Keyword.has_key?(changeset.errors, :id) do
+      notify_parent({:flash, :error, gettext("Endpoint not found")})
+      {:noreply, socket |> assign(:editing, nil) |> reload()}
+    else
+      form = to_form(changeset, action: :update, as: "endpoint_edit")
+      {:noreply, assign(socket, :editing, %{endpoint_id: endpoint.id, form: form})}
+    end
+  end
+
+  defp handle_edit({:error, :unauthorized}, _endpoint, socket), do: deny(socket)
+
+  # Only the URL and the events can be edited. A blank URL keeps the stored
+  # one, and events left out of the params (the form always sends them) keep
+  # the stored events.
+  defp edit_attrs(%{"endpoint_edit" => %{} = params}) do
+    params
+    |> Map.take(["event_types"])
+    |> put_typed_url(params["url"])
+  end
+
+  defp edit_attrs(_params), do: %{}
+
+  defp put_typed_url(attrs, url) when is_binary(url) do
+    case String.trim(url) do
+      "" -> attrs
+      trimmed -> Map.put(attrs, "url", trimmed)
+    end
+  end
+
+  defp put_typed_url(attrs, _url), do: attrs
+
   # The per-event ownership check: the id is looked up on this board for the
   # current user, never trusted.
   defp with_endpoint(socket, id, fun) do
@@ -199,6 +280,11 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
     |> assign(:endpoints, Webhooks.list_endpoints(scope, board))
     |> assign_log()
   end
+
+  # The edit form renders inside its endpoint's row, so it goes away with a
+  # deleted endpoint.
+  defp open_edit_form(%{endpoint_id: id, form: form}, %Endpoint{id: id}), do: form
+  defp open_edit_form(_editing, _endpoint), do: nil
 
   # The open log follows the endpoint list: a deleted endpoint closes it.
   defp assign_log(%{assigns: %{log_endpoint_id: id, endpoints: endpoints}} = socket) do
@@ -264,6 +350,7 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
             myself={@myself}
             log_open?={@log_endpoint_id == endpoint.id}
             deliveries={if @log_endpoint_id == endpoint.id, do: @deliveries, else: []}
+            edit_form={open_edit_form(@editing, endpoint)}
           />
         </ul>
         <div style="border-top: 1px solid var(--line); margin-top: 12px;">

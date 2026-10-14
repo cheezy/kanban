@@ -51,6 +51,18 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
 
   defp endpoints(board), do: Endpoint |> Repo.all() |> Enum.filter(&(&1.board_id == board.id))
 
+  defp edit_form(view, endpoint), do: element(view, "#webhook-edit-form-#{endpoint.id}")
+
+  defp open_edit(view, endpoint) do
+    view |> element("#webhook-edit-#{endpoint.id}") |> render_click()
+    assert has_element?(view, "#webhook-edit-form-#{endpoint.id}")
+    view
+  end
+
+  defp save_edit(view, endpoint, params) do
+    view |> edit_form(endpoint) |> render_submit(%{"endpoint_edit" => params})
+  end
+
   setup do
     Repo.delete_all(Oban.Job)
     owner = user_fixture()
@@ -321,6 +333,295 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
     end
   end
 
+  describe "editing an endpoint" do
+    test "editing an endpoint's events saves them, closes the form, flashes \"Endpoint updated\" and the row shows the new events",
+         %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board, event_types: ["task.created"])
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      save_edit(view, endpoint, %{"event_types" => ["", "task.moved", "task.deleted"]})
+
+      saved = Repo.get!(Endpoint, endpoint.id)
+      assert saved.event_types == ["task.moved", "task.deleted"]
+      assert saved.url == endpoint.url
+      assert render(view) =~ "Endpoint updated"
+      refute has_element?(view, "#webhook-edit-form-#{endpoint.id}")
+      assert has_element?(view, "#webhook-endpoint-#{endpoint.id} code", "task.moved")
+      assert has_element?(view, "#webhook-endpoint-#{endpoint.id} code", "task.deleted")
+      refute has_element?(view, "#webhook-endpoint-#{endpoint.id} code", "task.created")
+    end
+
+    test "the edit form ticks the current events, shows the kind read-only and leaves the URL empty",
+         %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board, event_types: ["task.moved"])
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      form_html = view |> edit_form(endpoint) |> render()
+      assert form_html =~ ~r/value="task.moved"\s+checked/
+      refute form_html =~ ~r/value="task.created"\s+checked/
+      refute form_html =~ "<select"
+      assert has_element?(view, ~s(#webhook-edit-form-#{endpoint.id} [data-edit-kind="generic"]))
+      assert has_element?(view, ~s(#webhook-edit-url-#{endpoint.id}[value=""]))
+      assert has_element?(view, "#webhook-edit-#{endpoint.id}[aria-expanded=true]")
+    end
+
+    test "unticking every event shows the inline error and saves nothing", %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board, event_types: ["task.created"])
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      html = save_edit(view, endpoint, %{"event_types" => [""]})
+
+      assert html =~ "should have at least 1 item(s)"
+      assert Repo.get!(Endpoint, endpoint.id).event_types == ["task.created"]
+      assert has_element?(view, "#webhook-edit-form-#{endpoint.id}")
+      refute html =~ "Endpoint updated"
+    end
+
+    test "a blocked or malformed URL shows an inline error and saves nothing",
+         %{conn: conn} = ctx do
+      generic = webhook_endpoint_fixture(ctx.board)
+      slack = webhook_endpoint_fixture(ctx.board, kind: :slack, url: @slack_url)
+      view = open(conn, ctx.owner, ctx.board)
+
+      for {endpoint, url, message} <- [
+            {generic, "not a url", "is not a valid URL"},
+            {generic, "ftp://hooks.example.com/h", "must start with https://"},
+            {generic, "https://10.0.0.1/h", "points to a private or reserved network address"},
+            {generic, "https://internal.example.com/h",
+             "points to a private or reserved network address"},
+            {generic, "https://nowhere.example.com/", "has a host name that could not be found"},
+            {slack, "https://hooks.example.com/x", "must be a Slack incoming webhook URL"}
+          ] do
+        open_edit(view, endpoint)
+        html = save_edit(view, endpoint, %{"url" => url, "event_types" => ["task.created"]})
+        assert html =~ message, "expected #{inspect(message)} for #{inspect(url)}"
+        assert has_element?(view, "#webhook-edit-form-#{endpoint.id}")
+      end
+
+      assert Repo.get!(Endpoint, generic.id).url == generic.url
+      assert Repo.get!(Endpoint, slack.id).url == @slack_url
+    end
+
+    test "validate_edit shows a URL error while typing and saves nothing", %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      html =
+        view
+        |> edit_form(endpoint)
+        |> render_change(%{"endpoint_edit" => %{"url" => "nope", "event_types" => [""]}})
+
+      assert html =~ "must start with https://"
+      assert html =~ "should have at least 1 item(s)"
+      assert has_element?(view, ~s(#webhook-edit-url-#{endpoint.id}[value="nope"]))
+
+      assert Repo.get!(Endpoint, endpoint.id) |> Map.take([:url, :event_types]) ==
+               Map.take(endpoint, [:url, :event_types])
+    end
+
+    test "saving with a blank URL keeps the stored URL; saving a new URL stores it and the row shows the new host",
+         %{conn: conn} = ctx do
+      endpoint =
+        webhook_endpoint_fixture(ctx.board, url: "https://old.example.com/stride/1")
+
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      save_edit(view, endpoint, %{"url" => "   ", "event_types" => ["task.moved"]})
+      assert Repo.get!(Endpoint, endpoint.id).url == "https://old.example.com/stride/1"
+      assert Repo.get!(Endpoint, endpoint.id).event_types == ["task.moved"]
+
+      open_edit(view, endpoint)
+
+      save_edit(view, endpoint, %{
+        "url" => " https://hooks.example.com/new ",
+        "event_types" => ["task.moved"]
+      })
+
+      html = render(view)
+      assert Repo.get!(Endpoint, endpoint.id).url == "https://hooks.example.com/new"
+      assert html =~ "Endpoint updated"
+
+      assert has_element?(
+               view,
+               "#webhook-endpoint-#{endpoint.id} [data-endpoint-host]",
+               "hooks.example.com"
+             )
+
+      refute html =~ "old.example.com"
+    end
+
+    test "edit and save_edit with another board's endpoint id, a deleted endpoint's id or a malformed id flash \"Endpoint not found\" and change nothing",
+         %{conn: conn} = ctx do
+      foreign = ctx.owner |> board_fixture() |> webhook_endpoint_fixture()
+      deleted = webhook_endpoint_fixture(ctx.board)
+      Repo.delete!(deleted)
+      view = open(conn, ctx.owner, ctx.board)
+
+      params = %{"url" => "https://hooks.example.com/forged", "event_types" => ["task.moved"]}
+
+      for id <- ["#{foreign.id}", "#{deleted.id}", "not-an-id"],
+          {event, value} <- [
+            {"edit", %{"id" => id}},
+            {"validate_edit", %{"id" => id, "endpoint_edit" => params}},
+            {"save_edit", %{"id" => id, "endpoint_edit" => params}},
+            {"save_edit", %{"id" => id}}
+          ] do
+        view |> with_target(target(ctx.board)) |> render_submit(event, value)
+        assert render(view) =~ @not_found, "#{event} with #{id} was not refused"
+      end
+
+      unchanged = Repo.get!(Endpoint, foreign.id)
+      assert unchanged.url == foreign.url
+      assert unchanged.event_types == foreign.event_types
+      assert endpoints(ctx.board) == []
+    end
+
+    test "an endpoint deleted while its edit form is open is refused on save and the form closes",
+         %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      {:ok, _} = ctx.owner |> Scope.for_user() |> Webhooks.delete_endpoint(endpoint)
+
+      save_edit(view, endpoint, %{"event_types" => ["task.moved"]})
+
+      assert render(view) =~ @not_found
+      refute has_element?(view, "#webhook-edit-form-#{endpoint.id}")
+      assert endpoints(ctx.board) == []
+    end
+
+    test "a generic endpoint's signing secret (Webhooks.signing_secret/1) and its delivery rows are unchanged after an edit that changes the URL",
+         %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      {:ok, secret} = Webhooks.signing_secret(endpoint)
+      delivery = delivery_fixture(endpoint, %{status: :succeeded, response_status: 200})
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      assert has_element?(view, "#webhook-edit-form-#{endpoint.id} [data-rotate-note]")
+
+      html =
+        save_edit(view, endpoint, %{
+          "url" => "https://hooks.example.com/moved",
+          "event_types" => ["task.created"]
+        })
+
+      saved = Repo.get!(Endpoint, endpoint.id)
+      assert saved.url == "https://hooks.example.com/moved"
+      assert {:ok, ^secret} = Webhooks.signing_secret(saved)
+      assert saved.encrypted_secret == endpoint.encrypted_secret
+
+      assert [%{id: id}] = ctx.owner |> Scope.for_user() |> Webhooks.list_deliveries(saved)
+
+      assert id == delivery.id
+      refute has_element?(view, "#webhook-secret")
+      refute html =~ secret
+    end
+
+    test "Cancel closes the edit form and nothing is saved", %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board, event_types: ["task.created"])
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      view
+      |> edit_form(endpoint)
+      |> render_change(%{"endpoint_edit" => %{"event_types" => ["", "task.moved"]}})
+
+      view |> element("#webhook-edit-cancel-#{endpoint.id}") |> render_click()
+
+      refute has_element?(view, "#webhook-edit-form-#{endpoint.id}")
+      assert has_element?(view, "#webhook-edit-#{endpoint.id}[aria-expanded=false]")
+      assert Repo.get!(Endpoint, endpoint.id).event_types == ["task.created"]
+    end
+
+    test "editing a disabled endpoint keeps it disabled", %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board, enabled: false)
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      save_edit(view, endpoint, %{"event_types" => ["task.moved"]})
+
+      refute Repo.get!(Endpoint, endpoint.id).enabled
+      assert has_element?(view, "#webhook-endpoint-#{endpoint.id} [data-endpoint-disabled]")
+    end
+
+    test "opening a second endpoint's edit form closes the first", %{conn: conn} = ctx do
+      first = webhook_endpoint_fixture(ctx.board)
+      second = webhook_endpoint_fixture(ctx.board)
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(first)
+
+      open_edit(view, second)
+
+      refute has_element?(view, "#webhook-edit-form-#{first.id}")
+      assert has_element?(view, "#webhook-edit-form-#{second.id}")
+    end
+
+    test "the edit form and its flash are translated", %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      conn = conn |> log_in_user(ctx.owner) |> Plug.Conn.put_session(:locale, "de")
+      {:ok, view, _html} = live(conn, ~p"/boards/#{ctx.board}/integrations")
+
+      open_edit(view, endpoint)
+      html = view |> edit_form(endpoint) |> render()
+      assert html =~ "Endpunkt bearbeiten"
+      assert html =~ "Leer lassen, um die aktuelle URL (hooks.example.com) zu behalten."
+
+      save_edit(view, endpoint, %{"event_types" => ["task.moved"]})
+      assert render(view) =~ "Endpunkt aktualisiert"
+    end
+
+    test "deleting the endpoint being edited closes its form", %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      view |> element("#webhook-delete-#{endpoint.id}") |> render_click()
+
+      refute has_element?(view, "#webhook-edit-form-#{endpoint.id}")
+    end
+
+    test "crafted edit params with kind and enabled leave both unchanged", %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board)
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      view
+      |> with_target(target(ctx.board))
+      |> render_submit("save_edit", %{
+        "id" => "#{endpoint.id}",
+        "endpoint_edit" => %{
+          "kind" => "slack",
+          "enabled" => "false",
+          "board_id" => "#{endpoint.board_id + 1}",
+          "event_types" => ["task.moved"]
+        }
+      })
+
+      saved = Repo.get!(Endpoint, endpoint.id)
+      assert saved.kind == :generic
+      assert saved.enabled
+      assert saved.board_id == endpoint.board_id
+      assert saved.event_types == ["task.moved"]
+    end
+
+    test "the rendered HTML never contains the endpoint's full stored URL", %{conn: conn} = ctx do
+      endpoint = webhook_endpoint_fixture(ctx.board, kind: :slack, url: @slack_url)
+      view = conn |> open(ctx.owner, ctx.board) |> open_edit(endpoint)
+
+      opened = render(view)
+
+      changed =
+        view
+        |> edit_form(endpoint)
+        |> render_change(%{"endpoint_edit" => %{"url" => "", "event_types" => ["task.moved"]}})
+
+      failed = save_edit(view, endpoint, %{"event_types" => [""]})
+
+      for html <- [opened, changed, failed] do
+        refute html =~ "T000/B000"
+        refute html =~ "services/T000"
+        assert html =~ "hooks.slack.com"
+      end
+
+      refute has_element?(view, "#webhook-edit-form-#{endpoint.id} [data-rotate-note]")
+    end
+  end
+
   describe "as a non-owner" do
     test "modify and read-only members opening the URL are redirected with a flash",
          %{conn: conn} = ctx do
@@ -352,6 +653,11 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
 
       scope = Scope.for_user(member)
       assert Webhooks.create_endpoint(scope, ctx.board, %{}) == {:error, :unauthorized}
+
+      endpoint = webhook_endpoint_fixture(ctx.board)
+
+      assert Webhooks.update_endpoint(scope, endpoint, %{"event_types" => ["task.moved"]}) ==
+               {:error, :unauthorized}
     end
   end
 

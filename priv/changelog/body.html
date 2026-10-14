@@ -3,6 +3,42 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
+          [Unreleased]
+        </h2>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Added
+          </h3>
+
+          <ul
+            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+            style="color: var(--ink-2);"
+          >
+            <li>
+              <strong>Edit webhook and Slack endpoints.</strong> Each endpoint
+              on a board's <strong>Integrations</strong> tab now has an
+              <strong>Edit</strong> action, so you can change which events it
+              gets or where they go without deleting it and adding it again.
+              Leave the URL blank to keep the current one; a new URL gets the
+              same checks as a new endpoint. The kind cannot be changed. The
+              endpoint keeps its delivery log, and a webhook keeps its signing
+              secret, so use <strong>Rotate secret</strong> if the new address
+              belongs to a different receiver. Deliveries already waiting to
+              be retried go to the new address.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h2
+          class="m-0 text-[16px] font-semibold font-mono tracking-tight"
+          style="color: var(--ink);"
+        >
           [2.21.0] - 2026-10-14
         </h2>
 
