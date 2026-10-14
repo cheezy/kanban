@@ -25,7 +25,7 @@ must be ticked.
 | `task.claimed` | An agent claims a task. |
 | `task.unclaimed` | A claim is released. |
 | `task.completed` | A task is completed, by an agent or by an approval in the review queue. |
-| `task.moved_to_review` | A completed task that needs review enters the Review column. |
+| `task.moved_to_review` | An agent completes a task, which moves it to the Review column. A task that does not need review then moves on to Done at once, so it sends `task.completed` straight after. |
 | `task.reviewed` | A reviewer approves a task or requests changes. |
 | `task.deleted` | A task is deleted. |
 
@@ -156,6 +156,11 @@ The task carries only the fields shown. Its description, notes, review notes,
 changed files and other working detail are never sent. A `ping` has
 `"event": "ping"` and `"task": null`. The body describes the task as it was
 when the event happened, and a retry sends exactly the same body.
+
+To keep track of a task, use `task.id`, which is never reused. Its
+`identifier` can be: a new task gets the next number after the highest one
+on the board, so when the task holding the highest number is deleted, the
+next task created is given the same identifier.
 
 ### Verify the signature
 
