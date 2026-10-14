@@ -193,6 +193,13 @@
               to the board. A parent goal, column, assignee or label that is
               not a valid id is refused instead of crashing the form.
             </li>
+            <li>
+              <strong>HTTP/2 is turned off on the web server.</strong> Bandit
+              1.4.0 through 1.12.5 let an HTTP/2 client keep server processes
+              busy indefinitely (EEF-CVE-2026-105659), and no fixed release is
+              out yet. The app is served over HTTP/1.1 behind Fly's proxy, so
+              nothing changes for visitors.
+            </li>
           </ul>
         </div>
 

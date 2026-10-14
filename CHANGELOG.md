@@ -51,6 +51,7 @@ A daily job removes stored metrics older than 90 days. The period is set with `r
 - **Monitoring events no longer carry personal data from security events.** Email and IP addresses, and the free-text reason an agent gives when it releases a task, are no longer sent. The audit log still records the email and IP address.
 - **API metrics can no longer be flooded with made-up paths.** API request metrics are labelled by the route a request matched, such as `/api/tasks/:id/complete`, or by `unmatched`, never by the path the caller typed.
 - **The new-task form checks the parent goal and assignee.** A crafted save can no longer put a task under a goal on another board, or assign it to someone without access to the board. A parent goal, column, assignee or label that is not a valid id is refused instead of crashing the form.
+- **HTTP/2 is turned off on the web server.** Bandit 1.4.0 through 1.12.5 let an HTTP/2 client keep server processes busy indefinitely ([EEF-CVE-2026-105659](https://osv.dev/vulnerability/EEF-CVE-2026-105659)), and no fixed release is out yet. The app is served over HTTP/1.1 behind Fly's proxy, so nothing changes for visitors.
 
 ### Fixed
 
