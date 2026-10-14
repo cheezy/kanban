@@ -126,9 +126,15 @@ defmodule Kanban.Tasks.Broadcaster do
 
   Inspects the changeset to determine the appropriate event type
   (status change, claim, completion, review, or generic update).
+
+  A changeset with no changes still broadcasts, so open boards refresh, but
+  emits no webhook: saving the task form unedited, or with only its labels
+  changed (they are saved separately), changed nothing a receiver can see.
+  `opts` are passed to `broadcast_task_change/3`.
   """
-  def broadcast_task_update(%Task{} = task, %Ecto.Changeset{} = changeset) do
-    broadcast_task_change(task, classify_task_update_event(changeset))
+  def broadcast_task_update(%Task{} = task, %Ecto.Changeset{} = changeset, opts \\ []) do
+    opts = if changeset.changes == %{}, do: Keyword.put(opts, :webhook, false), else: opts
+    broadcast_task_change(task, classify_task_update_event(changeset), opts)
   end
 
   defp classify_task_update_event(changeset) do

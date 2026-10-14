@@ -315,6 +315,30 @@ defmodule Kanban.Webhooks.EventsTest do
       assert queued() == []
     end
 
+    test "saving a task with nothing changed queues nothing; a real change queues task.updated",
+         ctx do
+      task = task_fixture(ctx.cols["Backlog"], %{title: "Same"})
+      Repo.delete_all(Oban.Job)
+
+      {:ok, _} = Tasks.update_task(task, %{})
+      {:ok, task} = Tasks.update_task(task, %{"title" => "Same"})
+      assert queued() == []
+
+      {:ok, _} = Tasks.update_task(task, %{"title" => "Different"})
+      assert queued() == [{ctx.all.id, "task.updated"}]
+    end
+
+    test "an unchanged update still broadcasts to the board", ctx do
+      task = task_fixture(ctx.cols["Backlog"])
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{ctx.board.id}")
+      Repo.delete_all(Oban.Job)
+
+      Broadcaster.broadcast_task_update(task, Ecto.Changeset.change(task))
+
+      assert_receive {Kanban.Tasks, :task_updated, %{id: id}} when id == task.id
+      assert queued() == []
+    end
+
     test "broadcast_task_change with webhook: false queues nothing", ctx do
       task = task_fixture(ctx.cols["Backlog"])
       Repo.delete_all(Oban.Job)

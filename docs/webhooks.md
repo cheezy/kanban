@@ -33,6 +33,7 @@ Each change sends one event, and only after the change is saved. A bulk action
 sends one event for each task it changed. These changes send nothing:
 
 - a label being added to or removed from a task (labels are not in the payload);
+- saving a task without changing any of its fields;
 - a task becoming unblocked when its last dependency is done;
 - a goal moving automatically because one of its tasks moved (the task's own
   event is sent);
