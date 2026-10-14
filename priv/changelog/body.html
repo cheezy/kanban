@@ -3,8 +3,17 @@
           class="m-0 text-[16px] font-semibold font-mono tracking-tight"
           style="color: var(--ink);"
         >
-          [Unreleased]
+          [2.21.0] - 2026-10-14
         </h2>
+
+        <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+          Boards can now tell other systems what happens to their tasks: board
+          owners send task events to a signed webhook or a Slack channel from
+          a new <strong>Integrations</strong> tab. Stride also sends a
+          monitoring event for most things people and agents do, charts every
+          one of them on the admin Metrics page, documents them in a new
+          reference, and keeps stored metrics for 90 days.
+        </p>
 
         <div class="mb-8">
           <h3
@@ -14,152 +23,178 @@
             Added
           </h3>
 
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Webhooks and Slack notifications
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Board owners have a new <strong>Integrations</strong> tab next
+              to <strong>Settings</strong>. Each endpoint receives the task
+              events ticked when it was added: created, updated, moved,
+              claimed, unclaimed, completed, moved to review, reviewed and
+              deleted.
+            </p>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                A <strong>generic webhook</strong> receives a signed JSON
+                <code>POST</code>. Its signing secret is shown once, when the
+                endpoint is added or its secret is rotated.
+              </li>
+              <li>
+                A <strong>Slack</strong> endpoint posts a short message to a
+                channel through a Slack incoming webhook.
+              </li>
+              <li>
+                Each endpoint has <strong>Send test</strong>, an on/off switch
+                and a log of its 20 most recent deliveries.
+              </li>
+              <li>
+                Failed deliveries are retried for about an hour, up to 8
+                attempts. A <code>4xx</code> other than <code>408</code> or
+                <code>429</code> is not retried.
+              </li>
+              <li>
+                Stride never sends to a private or internal network address.
+              </li>
+            </ul>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Webhooks and Slack (<code>docs/webhooks.md</code>) explains how
+              to set up each kind, what a delivery contains and how to verify
+              its signature.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Monitoring events across the app
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Stride now sends a monitoring event for:
+            </p>
+
+            <ul
+              class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
+              style="color: var(--ink-2);"
+            >
+              <li>
+                board settings, members and columns, including the API tokens
+                revoked when a member is removed or made read only;
+              </li>
+              <li>
+                task edits, moves, deletes, claims, released and expired
+                claims, review decisions and comments, whether they come from
+                the board, the API or MCP;
+              </li>
+              <li>
+                goals: the last task finished, tasks unblocked, Backlog tasks
+                promoted, after_goal hooks succeeding or failing, and goal
+                reassignments and reprioritizations;
+              </li>
+              <li>
+                sign-out, password and email changes, account confirmation,
+                display names and user administration;
+              </li>
+              <li>
+                notifications, notification email (sent, skipped or failed),
+                weekly digests, delivery targets and broadcast messages;
+              </li>
+              <li>
+                downloads, rate limiting, MCP messages, API requests with no
+                token and GitHub issue reports.
+              </li>
+            </ul>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Events carry ids, counts, types and the names of changed fields.
+              They never carry email or IP addresses, names, titles,
+              descriptions, comment or message text, tokens or hook output.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Monitoring charts
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The admin dashboard's <strong>Metrics</strong> page charts every
+              monitoring event, plus page load and response times, background
+              job run times and failures, and email delivery times. A new
+              event gets a chart automatically. Charts are broken down by
+              fixed labels such as the page, the worker or the mailer, never
+              by user, board or task. Page, job and email timings are shown
+              live and not stored.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Stored metrics retention
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              A daily job removes stored metrics older than 90 days. The
+              period is set with <code>retention_days</code> under
+              <code>Kanban.Metrics.RetentionWorker</code>; an invalid value
+              removes nothing. The admin users page counts activity within the
+              same period. The audit log is not affected.
+            </p>
+          </div>
+
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Telemetry reference
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              Telemetry Events (<code>docs/telemetry.md</code>) lists every
+              event with its measurements, labels and meaning, and explains
+              how to receive the events, what they never contain and how long
+              stored metrics are kept. A test fails whenever the list and the
+              app disagree.
+            </p>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <h3
+            class="m-0 mt-3 mb-2 text-[14px] font-semibold tracking-tight"
+            style="color: var(--ink);"
+          >
+            Security
+          </h3>
+
           <ul
             class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
             style="color: var(--ink-2);"
           >
             <li>
-              <strong>Webhooks and Slack notifications for your
-              board.</strong> Board owners have a new
-              <strong>Integrations</strong> tab. Add a webhook endpoint and
-              Stride sends it a signed JSON request whenever a task is
-              created, updated, moved, claimed, unclaimed, completed, sent to
-              review, reviewed or deleted; choose which of those events each
-              endpoint gets. Add a Slack incoming-webhook URL instead and the
-              same events arrive as messages in a Slack channel. The signing
-              secret is shown once, when you add an endpoint or rotate its
-              secret, so copy it then. Each endpoint has <strong>Send
-              test</strong>, an on/off switch and a log of its 20 most recent
-              deliveries with their status and response code. Failed
-              deliveries are retried for about an hour (up to 8 attempts), but
-              one the receiver refuses outright with a 4xx, such as a removed
-              Slack webhook's 404, is not retried. Stride never sends to
-              private or internal network addresses. Webhooks and Slack
-              (<code>docs/webhooks.md</code>) explains how to set up each
-              kind, what a delivery contains and how to verify its signature.
+              <strong>Monitoring events no longer carry personal data from
+              security events.</strong> Email and IP addresses, and the
+              free-text reason an agent gives when it releases a task, are no
+              longer sent. The audit log still records the email and IP
+              address.
             </li>
             <li>
-              <strong>Stored metrics are kept for 90 days.</strong> A daily
-              job now removes stored monitoring metrics older than the
-              retention period, which carry user ids, board ids and request
-              paths and were previously kept forever. The period defaults to
-              90 days and is set with <code>retention_days</code> under
-              <code>Kanban.Metrics.RetentionWorker</code> in the app config;
-              an invalid value removes nothing. The admin users page now
-              counts activity within that period. The audit log is not
-              affected.
+              <strong>API metrics can no longer be flooded with made-up
+              paths.</strong> API request metrics are labelled by the route a
+              request matched, such as <code>/api/tasks/:id/complete</code>,
+              or by <code>unmatched</code>, never by the path the caller
+              typed.
             </li>
             <li>
-              <strong>Monitoring events for board settings, membership and
-              columns.</strong> Changing or deleting a board, changing which
-              task fields it shows, adding or removing a member, changing a
-              member's access, and adding, changing, reordering or deleting a
-              column now each send a monitoring event. So does the automatic
-              revocation of a member's API tokens when they are removed from a
-              board or set to read only, with the number of tokens revoked.
-              Every column event, including deleting and reordering a column,
-              records which user made the change. The events carry ids, access
-              levels and the names of changed settings, never board or column
-              names, descriptions or other text.
-            </li>
-            <li>
-              <strong>Monitoring events for task activity.</strong> Editing,
-              moving, reordering and deleting a task now each send a
-              monitoring event, whether the change came from the board, the
-              API or an AI agent's MCP connection. So do claiming a task,
-              releasing a claim, a claim that expires before the task is
-              finished, approving a task or requesting changes in the review
-              queue, and adding a comment. Each expired claim is counted once.
-              The events carry ids and the names of changed fields, never task
-              titles or descriptions, comment text, review notes or the reason
-              given for releasing a task.
-            </li>
-            <li>
-              <strong>Monitoring events for downloads, rate limiting, agent
-              connections and issue reports.</strong> Downloading a board
-              archive, a board or workspace metrics report, or the audit log
-              now sends a monitoring event that records which download it was,
-              its file type and how long it took, plus the number of archived
-              tasks for an archive download. A request refused by rate
-              limiting sends an event naming only which limit was hit, never
-              an email or IP address. Every message an AI agent sends over its
-              MCP connection is timed and labelled with the kind of request
-              and its result, never the tool or method name the agent sent.
-              Reporting an issue to GitHub, and an API request with no token,
-              now send events too. The issue report event says why a report
-              failed: GitHub was not set up, GitHub answered with an error, or
-              no answer came back from GitHub. It never includes the error
-              text.
-            </li>
-            <li>
-              <strong>Monitoring events for sign-out, account changes and user
-              administration.</strong> Signing out, changing or resetting a
-              password, requesting and confirming an email change, confirming
-              an account, and changing a display name now each send a
-              monitoring event. So do the disconnection of a user's sessions
-              after a password change or reset, with the number of tokens
-              revoked, and an administrator changing a user's type, disabling,
-              enabling or deleting a user, with the administrator's id. The
-              events carry ids and user types only, never email addresses (old
-              or new), names, passwords or tokens.
-            </li>
-            <li>
-              <strong>Monitoring events for notifications, email delivery,
-              digests, delivery targets and messages.</strong> Creating a
-              notification, marking one or all notifications read, changing a
-              notification preference and unsubscribing from an email link now
-              each send a monitoring event. Notification email shows whether
-              each email was sent, skipped (with the reason) or failed (with
-              the kind of failure), so failing email can be spotted without
-              reading server logs. Sending a weekly digest, finishing the
-              weekly digest run, creating, editing, archiving and restoring a
-              delivery target, adding a goal to or removing it from a target,
-              and publishing, deleting and dismissing a broadcast message send
-              events too. A delivery target's status event fires only when its
-              status really changes, such as becoming at risk or missed.
-              Turning email off now also stops a notification email that was
-              already queued. The events carry ids, event types and counts
-              only, never an email address or the text of a notification or
-              message.
-            </li>
-            <li>
-              <strong>Monitoring events for goals, dependencies and after_goal
-              hooks.</strong> Finishing the last task of a goal now sends a
-              monitoring event, once per goal, whether the task was finished
-              by an agent or approved in the review queue. So do a blocked
-              task becoming ready when its last dependency is done, moving a
-              goal's Backlog tasks to Ready, an after_goal hook succeeding or
-              failing, the after_goal grace window being scheduled and
-              expiring, and reassigning or reprioritizing a goal's unstarted
-              tasks or undoing either. A failed after_goal hook reports its
-              exit code and run time, so it can be routed to your own alerting
-              tools. The events carry ids, priorities and counts only, never
-              task titles or descriptions or the hook's output.
-            </li>
-            <li>
-              <strong>Monitoring charts for every app event, page, background
-              job and email.</strong> The admin dashboard's Metrics page now
-              charts every monitoring event Stride sends, plus how long pages
-              take to load and respond to clicks, how long background jobs run
-              and which ones fail, and how long email delivery takes. A new
-              monitoring event automatically gets a chart, so none is left
-              out. Charts are broken down by fixed labels such as the page,
-              the job's worker and queue, or the mailer, never by a user,
-              board or task. Page, job and email timings are shown live and
-              never stored, so the stored metrics history does not grow with
-              traffic; a few rare events, such as failed notification email
-              and after_goal results, are now kept in it. Existing charts keep
-              their names and history, and the admin users page counts
-              activity exactly as before.
-            </li>
-            <li>
-              <strong>A reference for every monitoring event.</strong>
-              Telemetry Events (<code>docs/telemetry.md</code>) now lists
-              every event Stride sends, with its numbers, its labels and what
-              it means, and explains how to receive the events in your own
-              monitoring, what they never contain, and how long stored metrics
-              are kept. It is linked from the README, and a test fails
-              whenever the list and the app disagree.
+              <strong>The new-task form checks the parent goal and
+              assignee.</strong> A crafted save can no longer put a task under
+              a goal on another board, or assign it to someone without access
+              to the board. A parent goal or column that is not a valid id is
+              refused instead of crashing the form.
             </li>
           </ul>
         </div>
@@ -172,88 +207,26 @@
             Changed
           </h3>
 
-          <ul
-            class="list-disc list-inside mb-4 ml-4 space-y-2 text-[13px] leading-relaxed"
-            style="color: var(--ink-2);"
-          >
-            <li>
-              <strong>Internal: the goal column decision moved into its own
-              module.</strong> The rules that decide which column a goal
-              belongs in, based on where its tasks are, moved from
-              <code>Kanban.Tasks.Goals</code> into a new
-              <code>Kanban.Tasks.GoalTargetColumn</code> module, which brings
-              <code>Kanban.Tasks.Goals</code> back under the module size
-              limit. Goals still move exactly as before, and nothing changes
-              for users or API clients.
-            </li>
-            <li>
-              <strong>Internal: archiving moved into its own module.</strong>
-              Archiving a task (including archiving a goal's tasks with it),
-              restoring an archived task, and archiving a board's old
-              completed tasks moved from <code>Kanban.Tasks.Lifecycle</code>
-              into a new <code>Kanban.Tasks.Archiving</code> module, which
-              brings <code>Kanban.Tasks.Lifecycle</code> back under the module
-              size limit. Archiving and restoring work exactly as before, and
-              nothing changes for users or API clients.
-            </li>
-            <li>
-              <strong>Internal: the goal intervention transactions moved into
-              their own module.</strong> The database work behind reassigning
-              or reprioritizing a goal's unstarted tasks from the Agents page,
-              undoing either, and listing the tasks a preview shows moved from
-              <code>Kanban.Tasks.Interventions</code> into a new
-              <code>Kanban.Tasks.InterventionTransactions</code> module, which
-              brings <code>Kanban.Tasks.Interventions</code> back under the
-              module size limit. The permission check stays in
-              <code>Kanban.Tasks.Interventions</code>, in front of every
-              change. Reassigning, reprioritizing and undoing work exactly as
-              before, and nothing changes for users or API clients.
-            </li>
-            <li>
-              <strong>Internal: password reset and account confirmation moved
-              into their own modules.</strong> Sending a password reset link,
-              checking its token and setting the new password moved from
-              <code>Kanban.Accounts</code> into a new
-              <code>Kanban.Accounts.PasswordReset</code> module. Checking a
-              confirmation token, confirming an account and sending the
-              confirmation link moved into a new
-              <code>Kanban.Accounts.EmailConfirmation</code> module. Together
-              they bring <code>Kanban.Accounts</code> back under the module
-              size limit. <code>Kanban.Accounts</code> still offers every one
-              of these functions under the same name, so callers are
-              unchanged. Reset and confirmation links work exactly as before,
-              and nothing changes for users or API clients.
-            </li>
-            <li>
-              <strong>Internal: a test now proves a failed goal move is fully
-              undone.</strong> When moving a goal to another column fails
-              part-way, after the goal has left its old column and that
-              column's cards have moved up, the goal and the cards in both
-              columns go back exactly where they were. A new test checks this.
-              It fails if the database transaction around the move is removed.
-              <code>Kanban.Tasks.GoalPlacement</code> has a new test-only
-              setting, <code>after_park</code>, that lets the test cause the
-              failure. No runtime configuration sets it. Goals move exactly as
-              before, and nothing changes for users or API clients.
-            </li>
-            <li>
-              <strong>Internal: a board test no longer fails at
-              random.</strong> The test that a label created on another screen
-              shows up in an open new-task form sometimes checked the form
-              before the label reached it. It now waits for the label to
-              arrive first. Only the test changed, and nothing changes for
-              users or API clients.
-            </li>
-            <li>
-              <strong>Internal: removed a goal-column fallback that could
-              never run.</strong> While a goal's last task is done but its
-              after_goal hook has not reported yet, the goal stays in the
-              column it is in. The code that picked a different column if the
-              goal's own column was missing from its board has been removed,
-              because a goal's column is always on its own board. Goals move
-              exactly as before, and nothing changes for users or API clients.
-            </li>
-          </ul>
+          <div class="mb-6">
+            <h4 class="m-0 mt-2 mb-1 text-[13px] font-semibold" style="color: var(--ink);">
+              Internal: large modules split along their seams
+            </h4>
+
+            <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
+              The goal column decision moved into
+              <code>Kanban.Tasks.GoalTargetColumn</code>, archiving into
+              <code>Kanban.Tasks.Archiving</code>, the goal intervention
+              transactions into
+              <code>Kanban.Tasks.InterventionTransactions</code>, and password
+              reset and account confirmation into
+              <code>Kanban.Accounts.PasswordReset</code> and
+              <code>Kanban.Accounts.EmailConfirmation</code>, bringing each
+              parent module back under the size limit. A new test proves a
+              failed goal move is fully undone, a flaky board test was fixed,
+              and an unreachable goal-column fallback was removed. Nothing
+              changes for users or API clients.
+            </p>
+          </div>
         </div>
 
         <div class="mb-8">
@@ -269,178 +242,93 @@
             style="color: var(--ink-2);"
           >
             <li>
-              <strong>The review report metrics count views, not page
-              updates.</strong>
-              <code>kanban.review.structured_used.count</code> and
-              <code>kanban.review.fallback_used.count</code> were recorded
-              every time the page holding a review report re-rendered, so
-              opening a file in the review queue's diff panel, or any live
-              update, counted the same report again. They are now recorded
-              once each time a task's report is shown in the review queue, the
-              task view or the task form.
-            </li>
-            <li>
-              <strong>The after_goal delivery metric counts real deliveries
-              only.</strong>
-              <code>kanban.api.after_goal_delivered.count</code> is now
-              recorded when a <code>/complete</code> or
-              <code>/mark_reviewed</code> API response carries the after_goal
-              hook. It used to be recorded whenever Stride worked out the hook
-              list, so approving a goal's last task in the review queue
-              counted a delivery that never happened, and counted it before
-              the approval was saved.
-            </li>
-            <li>
-              <strong>Task history no longer crashes the task form.</strong>
-              Opening a task whose history held an assignment with no user on
-              either side, which happens once both users have been deleted,
-              crashed the page; the missing user now shows as "Unknown".
-              Reassigning or reprioritizing a goal's unstarted tasks also no
-              longer records a change for a task whose assignee or priority
-              was already the new one, such as "medium to medium".
-            </li>
-            <li>
-              <strong>The new-task form checks the parent goal and
-              assignee.</strong> Saving a new task now runs the same checks as
-              editing one. A crafted save can no longer put the new task under
-              a goal on another board, or assign it to someone who has no
-              access to the board, and a parent goal that is not a valid id is
-              refused instead of crashing the form. The task context no longer
-              crashes on such an id either, wherever it comes from. A column
-              that is not a valid id, or no longer exists, is refused the same
-              way when creating or editing a task.
-            </li>
-            <li>
               <strong>Column changes reach open boards.</strong> Adding,
-              renaming, reordering or deleting a column now updates every open
+              renaming, reordering or deleting a column updates every open
               copy of the board without a reload.
             </li>
             <li>
-              <strong>Removing a member unassigns their tasks.</strong> When a
-              member is removed from a board, they are unassigned from its
-              open tasks, which then show under <strong>Unassigned</strong>
-              instead of naming someone who can no longer see the board.
-              Archived tasks keep their assignee.
+              <strong>Removing a member unassigns their tasks.</strong> Their
+              open tasks on the board show under <strong>Unassigned</strong>;
+              archived tasks keep their assignee.
             </li>
             <li>
               <strong>The Archive page no longer calls every archived task
-              Completed.</strong> A task archived without a reason counts as
-              completed only if it was finished; otherwise it shows a neutral
-              <strong>Archived</strong> label. The Completed filter and the
-              counts follow the same rule, and the CSV export leaves the
-              reason blank for these tasks.
-            </li>
-            <li>
-              <strong>The GOAL badge is easier to read.</strong> The badge on
-              goal cards and the <strong>Promote children to Ready</strong>
-              button now meet the contrast minimum in light and dark mode.
-            </li>
-            <li>
-              <strong>Keyboard focus stays on the board after Move to
-              Ready.</strong> Using a card's Move to Ready arrow from the
-              keyboard now moves focus to the next Backlog card's arrow, or
-              the previous one's, or to the moved card when no arrow is left,
-              instead of dropping it to the top of the page. Clicking the
-              arrow with a mouse leaves focus alone.
-            </li>
-            <li>
-              <strong>Tasks created through the API appear with their
-              labels.</strong> An open board used to show a task created
-              through the API without its label chips for a moment. The labels
-              are now written before the board is told about the new task.
-            </li>
-            <li>
-              <strong>The sign-in count on the metrics dashboard counts real
-              sign-ins only.</strong> Staying signed in used to add a sign-in
-              each time the session was quietly renewed, which inflated the
-              count. Monitoring events also no longer carry email or IP
-              addresses from security events, or the free-text reason an agent
-              gives when it releases a task. The audit log itself still
-              records the email and IP address.
-            </li>
-            <li>
-              <strong>An open task form keeps up with label changes.</strong>
-              A label deleted while the task form is open disappears from the
-              picker and is no longer selected, so saving does not report an
-              error. Renamed and new labels show up too, and anything already
-              typed in the form is kept.
+              Completed.</strong> A task archived without a reason shows
+              <strong>Archived</strong> unless it was finished, and the
+              Completed filter, the counts and the CSV export follow the same
+              rule.
             </li>
             <li>
               <strong>Dragging a card while someone else moves cards no longer
-              crashes the board.</strong> A drag that ran at the same moment
-              as a bulk move or another drag over the same columns could
-              deadlock in the database, which crashed the board page and lost
-              the move. A move now takes all of its column locks at once, in
-              the same order a bulk move does, including the columns of the
-              card's goal when moving the card also moves the goal, so the two
-              can no longer deadlock. If the card keeps being moved by someone
-              else while you drop it, the board refreshes and shows "This task
-              was moved by someone else at the same time. Please try again."
-              instead of failing.
+              crashes the board.</strong> A drag that raced a bulk move or
+              another drag could deadlock. If the card keeps moving while you
+              drop it, the board refreshes and asks you to try again.
             </li>
             <li>
               <strong>Claiming or finishing a task no longer clashes with a
-              drag in its goal's column.</strong> When an agent claimed,
-              completed or sent back a goal's task, edited which goal a task
-              belongs to, or created a task under a goal, Stride moved the
-              goal to its new column without waiting for someone dragging
-              cards in that column. The two could renumber the column at once,
-              and the claim or completion could then fail with an error even
-              though it had already gone through, leaving the goal in its old
-              column. Moving the goal now waits for the drag, as a drag
-              already waits for it. If the goal's tasks keep moving while
-              Stride tries, the goal stays where it is and the claim or
-              completion still succeeds. Approving a task in the review queue
-              never waits for a drag: if one is under way in the goal's column
-              at that moment, the goal stays where it is until one of its
-              tasks moves again.
-            </li>
-            <li>
-              <strong>API monitoring charts can no longer be flooded with
-              made-up paths.</strong> API request and error metrics are
-              labelled by the route a request matched, such as
-              <code>/api/tasks/:id/complete</code>, or by
-              <code>unmatched</code>, and never by the path the caller typed.
-              Before, adding extra slashes to an address such as
-              <code>/api/openapi.json</code> created a new chart series and
-              new stored rows for every variant, even without signing in.
-              Labels for real API routes are unchanged.
-            </li>
-            <li>
-              <strong>The unclaim guide describes the real monitoring
-              events.</strong> It listed fields, including the reason for
-              releasing a task, that the release events do not carry. It now
-              names the two events a release sends and what they contain.
+              drag in its goal's column.</strong> Moving the goal now waits
+              for the drag. If the goal's tasks keep moving, the goal stays
+              where it is and the claim or completion still succeeds.
             </li>
             <li>
               <strong>A goal that moves to another column no longer leaves a
-              gap behind.</strong> When moving a task also moved its goal into
-              another column, when <strong>Promote children to Ready</strong>
-              moved a goal and its tasks out of Backlog, or when a finished
-              goal moved to Done, the cards below them in the column they left
-              kept their old positions, which left holes in that column's
-              positions. Those cards now move up to close the gap, and
-              archived cards keep their positions as before.
+              gap.</strong> The cards below it in the column it left move up.
             </li>
             <li>
-              <strong>Page loads no longer fill the stored metrics
-              history.</strong> How long a live connection takes to open was
-              stored once for every page load and every reconnect, along with
-              details of the connection. It is now shown live on the dashboard
-              under the same name and no longer stored. The chart no longer
-              shows earlier history, and rows stored before this change are
-              removed by the regular 90-day clean-up.
+              <strong>An open task form keeps up with label changes.</strong>
+              Deleted, renamed and new labels show up, and anything already
+              typed is kept.
             </li>
             <li>
-              <strong>Approving a task no longer counts a completion that did
-              not happen.</strong> Approving a task in the review queue sent
-              its "task completed" monitoring event while the approval could
-              still be undone, so an approval that failed part-way was still
-              counted as a completed task. The event is now sent only once the
-              approval is saved, together with the goal events the approval
-              causes and before the approval event itself, and a failed or
-              refused approval sends none of them. Completing or approving a
-              task through the API reports it exactly as before.
+              <strong>Tasks created through the API appear on open boards with
+              their labels.</strong>
+            </li>
+            <li>
+              <strong>Task history no longer crashes the task form</strong>
+              when an assignment names a deleted user; the user shows as
+              "Unknown". Reassigning or reprioritizing a goal's tasks no
+              longer records changes such as "medium to medium".
+            </li>
+            <li>
+              <strong>Keyboard focus stays on the board after Move to
+              Ready</strong>, moving to the nearest Backlog card's arrow.
+            </li>
+            <li>
+              <strong>The GOAL badge and the Promote children to Ready
+              button</strong> meet the contrast minimum in light and dark
+              mode.
+            </li>
+            <li>
+              <strong>Turning email off stops notification emails that were
+              already queued.</strong>
+            </li>
+            <li>
+              <strong>Metrics count what really happened:</strong>
+              <ul class="list-disc list-inside ml-6 mt-1 space-y-1">
+                <li>
+                  the sign-in count no longer counts quiet session renewals;
+                </li>
+                <li>
+                  approving a task counts a completion only once the approval
+                  is saved;
+                </li>
+                <li>
+                  <code>kanban.api.after_goal_delivered.count</code> counts
+                  only API responses that carry the after_goal hook;
+                </li>
+                <li>
+                  the review report metrics count each time a report is shown,
+                  not each re-render;
+                </li>
+                <li>
+                  live connection times are no longer stored for every page
+                  load.
+                </li>
+              </ul>
+            </li>
+            <li>
+              <strong>The unclaim guide describes the monitoring events a
+              release really sends.</strong>
             </li>
           </ul>
         </div>
