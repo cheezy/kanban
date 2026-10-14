@@ -287,7 +287,7 @@ Humans maintain control through the review workflow. AI handles implementation, 
 - [Agent Hook Execution Guide](docs/AGENT-HOOK-EXECUTION-GUIDE.md) - Deep dive into hooks
 - [Review Workflow](docs/REVIEW-WORKFLOW.md) - Mastering the review process
 - [Unclaim Tasks Guide](docs/UNCLAIM-TASKS.md) - When and how to unclaim tasks
-- [Webhooks and Slack](docs/webhooks.md) - Send a board's task events to your own systems or a Slack channel, and verify webhook signatures
+- [Webhooks and Slack](docs/webhooks.md) - Send a board's task events to your own systems or a Slack or Discord channel, and verify webhook signatures
 
 ### Configuration & Management
 

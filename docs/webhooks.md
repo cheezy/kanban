@@ -8,6 +8,8 @@ endpoint gets the task events it subscribes to:
   run, so you can feed Stride events into your own tools.
 - A **Slack** endpoint receives a short message in a Slack channel, through a
   Slack incoming webhook.
+- A **Discord** endpoint receives a short message in a Discord channel,
+  through a Discord channel webhook.
 
 Only the board's owner can see the Integrations tab or manage its endpoints.
 Members, including those with modify access, cannot.
@@ -80,6 +82,48 @@ message reads "Stride test message for board …" with a link to the board.
 Titles, board names and column names are shown as plain text. A title such as
 `<!channel>` or `<https://example.com|click here>` cannot ping the channel or
 become a link. Titles longer than 200 characters are shortened.
+
+## Set up a Discord endpoint
+
+### 1. Create the webhook in Discord
+
+You need the **Manage Webhooks** permission on the Discord server.
+
+1. In Discord, open **Server Settings**, then **Integrations**.
+2. Choose **Webhooks**, then **New Webhook**.
+3. Open the new webhook, give it a name (for example "Stride") and pick the
+   channel the messages should go to.
+4. Choose **Copy Webhook URL**. It looks like
+   `https://discord.com/api/webhooks/123456789012345678/AbC-dEf_ghi`.
+
+The URL is a credential: anyone who has it can post to that channel. Stride
+stores it encrypted and never shows it again.
+
+### 2. Add the Discord webhook to the board
+
+1. Open the board and choose the **Integrations** tab, next to **Settings**.
+2. Under **Add an endpoint**, set **Kind** to **Discord**.
+3. Paste the webhook URL into **URL**. A Discord endpoint accepts only a
+   Discord webhook address: an `https` URL on `discord.com`,
+   `discordapp.com`, `ptb.discord.com` or `canary.discord.com` whose path is
+   `/api/webhooks/<id>/<token>` (or `/api/v<n>/webhooks/<id>/<token>`). Any
+   other Discord address is refused.
+4. Tick the events to send, then choose **Add endpoint**.
+
+Discord messages are not signed, so a Discord endpoint has no signing secret
+and no **Rotate secret** action.
+
+### What the Discord messages look like
+
+Each message names the task's identifier and title, linked to the task in
+Stride, and what happened to it, with the event, the column and the board,
+linked to the board in Stride. A test message reads "Stride test message for
+board …" with a link to the board.
+
+Titles, board names and column names are shown as plain text. A title such as
+`@everyone`, `<@123456789012345678>` or `[click here](https://example.com)`
+cannot ping anyone in the channel or become a link, and Discord formatting in
+it is shown as typed. Long titles and names are shortened.
 
 ## Set up a webhook endpoint
 
@@ -250,8 +294,8 @@ Each endpoint on the Integrations tab has these actions:
 - **Edit** changes which events the endpoint gets and, if you want, its
   address. Leave the URL blank to keep the current one; the form shows only
   its host. A new URL gets the same checks as a new endpoint.
-- **Send test** sends a `ping`, so you can check the receiver or the Slack
-  channel before real events arrive.
+- **Send test** sends a `ping`, so you can check the receiver or the Slack or
+  Discord channel before real events arrive.
 - **Deliveries** shows the 20 most recent attempts, newest first, each with its
   event, status, attempt number, response code, error and time.
 - **Disable** stops sending without losing the endpoint; **Enable** resumes. A
@@ -264,8 +308,8 @@ Editing an endpoint keeps its delivery log and, for a webhook, its signing
 secret, so a receiver at the new address must verify with the same secret. If
 the new address belongs to a different receiver, use **Rotate secret** to
 replace it. Deliveries already queued or waiting to be retried go to the new
-address. An endpoint's kind cannot be changed: to switch between a webhook and
-Slack, delete the endpoint and add a new one.
+address. An endpoint's kind cannot be changed: to switch between a webhook,
+Slack and Discord, delete the endpoint and add a new one.
 
 ## Retries
 
@@ -278,8 +322,10 @@ same `X-Stride-Delivery` id and body.
 
 Any other `4xx` stops the delivery after that attempt. For a Slack endpoint
 this is what a removed webhook or an archived channel returns (`403`, `404`
-or `410`), so a broken endpoint shows one failed entry per event rather than
-eight. An address that is refused when the delivery is attempted, such as a
-host that now resolves to a private address, also fails at once with no
-retry. A host that does not resolve at all is retried, because that is often
-a passing DNS problem.
+or `410`), and for a Discord endpoint it is what a deleted webhook returns
+(`404`, or `401` when its token no longer matches), so a broken endpoint
+shows one failed entry per event rather than eight. The endpoint stays
+enabled; delete it, or edit it with a new webhook URL. An address that is
+refused when the delivery is attempted, such as a host that now resolves to a
+private address, also fails at once with no retry. A host that does not
+resolve at all is retried, because that is often a passing DNS problem.

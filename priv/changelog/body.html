@@ -44,11 +44,11 @@
 
         <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
           Boards can now tell other systems what happens to their tasks: board
-          owners send task events to a signed webhook or a Slack channel from
-          a new <strong>Integrations</strong> tab. Stride also sends a
-          monitoring event for most things people and agents do, charts every
-          one of them on the admin Metrics page, documents them in a new
-          reference, and keeps stored metrics for 90 days.
+          owners send task events to a signed webhook, a Slack channel or a
+          Discord channel from a new <strong>Integrations</strong> tab. Stride
+          also sends a monitoring event for most things people and agents do,
+          charts every one of them on the admin Metrics page, documents them
+          in a new reference, and keeps stored metrics for 90 days.
         </p>
 
         <div class="mb-8">
@@ -84,6 +84,10 @@
               <li>
                 A <strong>Slack</strong> endpoint posts a short message to a
                 channel through a Slack incoming webhook.
+              </li>
+              <li>
+                A <strong>Discord</strong> endpoint posts a short message to a
+                channel through a Discord channel webhook.
               </li>
               <li>
                 Each endpoint has <strong>Send test</strong>, an on/off switch

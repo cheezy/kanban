@@ -179,6 +179,17 @@ defmodule KanbanWeb.PageControllerTest do
     assert html_response(conn, 200)
   end
 
+  test "CHANGELOG.md and the /changelog page each have exactly one [Unreleased] section",
+       %{conn: conn} do
+    # New entries go under the existing [Unreleased] heading rather than a
+    # second one, in CHANGELOG.md and in priv/changelog/body.html alike.
+    markdown = File.read!("CHANGELOG.md")
+    body = conn |> get(~p"/changelog") |> html_response(200)
+
+    assert length(Regex.scan(~r/^## \[Unreleased\]$/m, markdown)) == 1
+    assert length(Regex.scan(~r/\[Unreleased\]/, body)) == 1
+  end
+
   test "the changelog body carries the data-changelog anchor for responsive containment",
        %{conn: conn} do
     body = conn |> get(~p"/changelog") |> html_response(200)

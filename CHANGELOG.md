@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.21.0] - 2026-10-14
 
-Boards can now tell other systems what happens to their tasks: board owners send task events to a signed webhook or a Slack channel from a new **Integrations** tab. Stride also sends a monitoring event for most things people and agents do, charts every one of them on the admin Metrics page, documents them in a new reference, and keeps stored metrics for 90 days.
+Boards can now tell other systems what happens to their tasks: board owners send task events to a signed webhook, a Slack channel or a Discord channel from a new **Integrations** tab. Stride also sends a monitoring event for most things people and agents do, charts every one of them on the admin Metrics page, documents them in a new reference, and keeps stored metrics for 90 days.
 
 ### Added
 
@@ -23,6 +23,7 @@ Board owners have a new **Integrations** tab next to **Settings**. Each endpoint
 
 - A **generic webhook** receives a signed JSON `POST`. Its signing secret is shown once, when the endpoint is added or its secret is rotated.
 - A **Slack** endpoint posts a short message to a channel through a Slack incoming webhook.
+- A **Discord** endpoint posts a short message to a channel through a Discord channel webhook.
 - Each endpoint has **Send test**, an on/off switch and a log of its 20 most recent deliveries.
 - Failed deliveries are retried for about an hour, up to 8 attempts. A `4xx` other than `408` or `429` is not retried.
 - Stride never sends to a private or internal network address.
