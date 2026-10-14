@@ -2,8 +2,8 @@ defmodule Kanban.Tasks.Task.FieldValidations do
   @moduledoc """
   Field normalisation and the single-field / cross-field changeset checks for
   `Kanban.Tasks.Task`: AI-context defaults, `technology_requirements`,
-  `dependencies`, claim expiry, completion, review metadata, and the
-  goal-only delivery target.
+  `dependencies`, claim expiry, completion, review metadata, the goal-only
+  delivery target, and the range of the id fields.
 
   Split from `Kanban.Tasks.Task` to keep the schema module under the project's
   module-size guideline. Each function is a changeset-in / changeset-out
@@ -15,6 +15,36 @@ defmodule Kanban.Tasks.Task.FieldValidations do
   import Ecto.Changeset
 
   alias Kanban.Tasks.Task.MapFieldValidations
+
+  # Postgres bigint, the type of every id column.
+  @max_bigint 9_223_372_036_854_775_807
+
+  @id_fields [
+    :column_id,
+    :assigned_to_id,
+    :parent_id,
+    :target_id,
+    :created_by_id,
+    :completed_by_id,
+    :reviewed_by_id,
+    :archived_by_id,
+    :duplicate_of_id
+  ]
+
+  @doc """
+  Adds an error to each id field whose value is not a positive Postgres bigint.
+  `cast/3` accepts any integer, and one beyond the bigint range would otherwise
+  raise when the row is written instead of returning `{:error, changeset}`.
+  """
+  def validate_id_ranges(changeset) do
+    Enum.reduce(@id_fields, changeset, fn field, acc ->
+      validate_number(acc, field,
+        greater_than: 0,
+        less_than_or_equal_to: @max_bigint,
+        message: "is not a valid id"
+      )
+    end)
+  end
 
   @doc """
   Puts the empty default (`[]` or `%{}`) on the AI-context fields

@@ -28,6 +28,7 @@ defmodule KanbanWeb.TaskLive.Form.LabelSelection do
 
   alias Kanban.Labels
   alias KanbanWeb.TaskLive.Form.OptionBuilders
+  alias KanbanWeb.TaskLive.Form.TaskParams
 
   @param "label_ids"
 
@@ -148,13 +149,7 @@ defmodule KanbanWeb.TaskLive.Form.LabelSelection do
   defp finish_ids({:ok, ids}), do: {:ok, ids |> Enum.reverse() |> Enum.uniq()}
   defp finish_ids(:error), do: :error
 
-  defp parse_id(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {id, ""} when id > 0 -> {:ok, id}
-      _ -> :error
-    end
-  end
-
+  defp parse_id(value) when is_binary(value), do: TaskParams.coerce_id(value)
   defp parse_id(_value), do: :error
 
   defp valid_ids(raw) do

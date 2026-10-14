@@ -73,6 +73,16 @@ defmodule KanbanWeb.TaskLive.Form.RelationalScopesTest do
     assert {:error, :parent_id, _} = RelationalScopes.validate(%{"parent_id" => "x"}, ctx.board)
   end
 
+  test "an id beyond the Postgres bigint range is rejected for every field rather than raising",
+       ctx do
+    for field <- ["column_id", "parent_id", "assigned_to_id"] do
+      field_atom = String.to_existing_atom(field)
+
+      assert {:error, ^field_atom, _} =
+               RelationalScopes.validate(%{field => "99999999999999999999"}, ctx.board)
+    end
+  end
+
   test "an assignee without access to the board is rejected", ctx do
     assert {:error, :assigned_to_id, _} =
              RelationalScopes.validate(

@@ -48,7 +48,7 @@ A daily job removes stored metrics older than 90 days. The period is set with `r
 
 - **Monitoring events no longer carry personal data from security events.** Email and IP addresses, and the free-text reason an agent gives when it releases a task, are no longer sent. The audit log still records the email and IP address.
 - **API metrics can no longer be flooded with made-up paths.** API request metrics are labelled by the route a request matched, such as `/api/tasks/:id/complete`, or by `unmatched`, never by the path the caller typed.
-- **The new-task form checks the parent goal and assignee.** A crafted save can no longer put a task under a goal on another board, or assign it to someone without access to the board. A parent goal or column that is not a valid id is refused instead of crashing the form.
+- **The new-task form checks the parent goal and assignee.** A crafted save can no longer put a task under a goal on another board, or assign it to someone without access to the board. A parent goal, column, assignee or label that is not a valid id is refused instead of crashing the form.
 
 ### Fixed
 
@@ -57,6 +57,8 @@ A daily job removes stored metrics older than 90 days. The period is set with `r
 - **The Archive page no longer calls every archived task Completed.** A task archived without a reason shows **Archived** unless it was finished, and the Completed filter, the counts and the CSV export follow the same rule.
 - **Dragging a card while someone else moves cards no longer crashes the board.** A drag that raced a bulk move or another drag could deadlock. If the card keeps moving while you drop it, the board refreshes and asks you to try again.
 - **Claiming or finishing a task no longer clashes with a drag in its goal's column.** Moving the goal now waits for the drag. If the goal's tasks keep moving, the goal stays where it is and the claim or completion still succeeds.
+- **An agent claiming, finishing or releasing a task no longer crashes a drag in the same column.** An agent can also no longer claim a card that a person has just dragged out of Ready; the card stays where it was dragged.
+- **A goal waits for its after_goal hook.** When its last task is finished, a goal now waits up to 5 minutes for the agent's after_goal report, instead of half a second, before it moves to Done on its own.
 - **A goal that moves to another column no longer leaves a gap.** The cards below it in the column it left move up.
 - **An open task form keeps up with label changes.** Deleted, renamed and new labels show up, and anything already typed is kept.
 - **Tasks created through the API appear on open boards with their labels.**

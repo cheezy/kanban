@@ -29,6 +29,7 @@ defmodule KanbanWeb.TaskLive.Form.LabelSelectionTest do
       assert LabelSelection.parse_ids(["3", "3abc"]) == :error
       assert LabelSelection.parse_ids(["-1"]) == :error
       assert LabelSelection.parse_ids(["0"]) == :error
+      assert LabelSelection.parse_ids(["99999999999999999999"]) == :error
       assert LabelSelection.parse_ids([%{"id" => "1"}]) == :error
       assert LabelSelection.parse_ids("3") == :error
     end

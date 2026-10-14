@@ -14,16 +14,26 @@ defmodule KanbanWeb.TaskLive.Form.TaskParamsTest do
       assert TaskParams.coerce_id(42) == {:ok, 42}
     end
 
-    test "returns {:ok, n} for a negative integer" do
-      assert TaskParams.coerce_id(-7) == {:ok, -7}
+    test "returns :error for a negative integer, which no row can have" do
+      assert TaskParams.coerce_id(-7) == :error
+      assert TaskParams.coerce_id("-7") == :error
     end
 
-    test "returns {:ok, 0} for zero" do
-      assert TaskParams.coerce_id(0) == {:ok, 0}
+    test "returns :error for zero" do
+      assert TaskParams.coerce_id(0) == :error
     end
 
     test "parses a binary that is exactly an integer" do
       assert TaskParams.coerce_id("123") == {:ok, 123}
+    end
+
+    test "accepts the largest Postgres bigint and refuses one beyond it" do
+      max = 9_223_372_036_854_775_807
+
+      assert TaskParams.coerce_id(max) == {:ok, max}
+      assert TaskParams.coerce_id(Integer.to_string(max)) == {:ok, max}
+      assert TaskParams.coerce_id(max + 1) == :error
+      assert TaskParams.coerce_id("99999999999999999999") == :error
     end
 
     test "returns :error for a binary with trailing garbage" do
@@ -106,6 +116,16 @@ defmodule KanbanWeb.TaskLive.Form.TaskParamsTest do
       goal = task_fixture(column, %{type: :goal})
 
       assert TaskParams.compute_cascade_count(goal, %{"title" => "Updated"}) == 0
+    end
+
+    test "returns 0 rather than raising for an assignee id beyond the bigint range", %{
+      column: column
+    } do
+      goal = task_fixture(column, %{type: :goal})
+      _child = task_fixture(column, %{type: :work, parent_id: goal.id})
+
+      assert TaskParams.compute_cascade_count(goal, %{"assigned_to_id" => "99999999999999999999"}) ==
+               0
     end
 
     test "returns 0 for a goal task with no children", %{column: column} do

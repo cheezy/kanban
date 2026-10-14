@@ -24,6 +24,9 @@ defmodule Kanban.Tasks.Creation do
   alias Kanban.Tasks.TaskHistory
   alias Kanban.Tasks.TaskType
 
+  # Postgres bigint, the type of every id column.
+  @max_bigint 9_223_372_036_854_775_807
+
   @doc """
   Creates a task for a column with automatic position assignment.
   Respects WIP limit - returns error if column is at capacity.
@@ -172,11 +175,13 @@ defmodule Kanban.Tasks.Creation do
     end
   end
 
-  defp to_integer_id(id) when is_integer(id), do: id
+  # Only a positive bigint can name a row; anything else would raise in the
+  # lookup, so it is left for the changeset to reject.
+  defp to_integer_id(id) when is_integer(id) and id > 0 and id <= @max_bigint, do: id
 
   defp to_integer_id(id) when is_binary(id) do
     case Integer.parse(id) do
-      {int, ""} -> int
+      {int, ""} -> to_integer_id(int)
       _ -> nil
     end
   end

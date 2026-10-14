@@ -95,6 +95,36 @@ defmodule Kanban.ColumnLockHelpers do
   end
 
   @doc """
+  Runs `fun` once, in the test process, right after the test's own connection
+  takes `pg_advisory_xact_lock(column_id)`: inside the locking transaction, at
+  the point where a concurrent writer that does not take that lock could land.
+  Detaches when the test ends.
+  """
+  def on_column_lock(column_id, fun) do
+    test_pid = self()
+    handler_id = "on-column-lock-#{System.unique_integer([:positive])}"
+    fired = :counters.new(1, [])
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :repo, :query],
+      fn _event, _measurements, metadata, _config ->
+        if self() == test_pid and lock_of?(metadata, column_id) and
+             :counters.get(fired, 1) == 0 do
+          :counters.add(fired, 1, 1)
+          fun.()
+        end
+      end,
+      nil
+    )
+
+    ExUnit.Callbacks.on_exit(fn -> :telemetry.detach(handler_id) end)
+  end
+
+  defp lock_of?(%{query: "SELECT pg_advisory_xact_lock($1)", params: [id]}, id), do: true
+  defp lock_of?(_metadata, _column_id), do: false
+
+  @doc """
   Runs `fun` and returns `{elapsed_ms, result}`.
   """
   def timed(fun) do

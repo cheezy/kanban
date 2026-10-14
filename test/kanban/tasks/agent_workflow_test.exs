@@ -182,6 +182,33 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert claimed.id == task.id
       assert claimed.assigned_to_id == ctx.user.id
     end
+
+    test "a card dragged out of Ready while the claim runs is not claimed", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      backlog = ctx.board |> Kanban.Columns.list_columns() |> Enum.find(&(&1.name == "Backlog"))
+
+      # The claim found the task in Ready; the drag lands once the claim holds
+      # Doing's lock, which is all a claim locks. It runs inside the claim's
+      # transaction, so the claim's rollback undoes it too: what the test can
+      # see is that the claim refused and wrote nothing.
+      ColumnLockHelpers.on_column_lock(ctx.doing.id, fn ->
+        ColumnLockHelpers.relocate!(task.id, backlog.id, 0)
+      end)
+
+      assert {:error, :no_tasks_available} =
+               AgentWorkflow.claim_next_task(
+                 [],
+                 ctx.user,
+                 ctx.board.id,
+                 task.identifier,
+                 "Claude"
+               )
+
+      task = Repo.get!(Task, task.id)
+      assert task.column_id == ctx.ready.id
+      assert task.status == :open
+      assert is_nil(task.assigned_to_id)
+    end
   end
 
   describe "unclaim_task/3" do

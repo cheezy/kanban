@@ -3,7 +3,8 @@ defmodule Kanban.Tasks.Positioning do
   Task positioning and movement within and between columns.
 
   Handles moving tasks, reordering, WIP limit checks, and position-related
-  helpers used by other submodules.
+  helpers used by other submodules. A board move's renumbering of the columns
+  it touches lives in `Kanban.Tasks.ColumnRenumbering`.
 
   ## `updated_at` on bulk writes (D357)
 
@@ -30,6 +31,7 @@ defmodule Kanban.Tasks.Positioning do
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.ColumnLocks
+  alias Kanban.Tasks.ColumnRenumbering
   alias Kanban.Tasks.GoalPlacement
   alias Kanban.Tasks.Goals
   alias Kanban.Tasks.History
@@ -352,7 +354,7 @@ defmodule Kanban.Tasks.Positioning do
       if is_cross_column_move do
         handle_cross_column_move(task, new_column, new_position, old_column_id, now)
       else
-        insert_at_index(new_column, task, new_position, now)
+        ColumnRenumbering.insert_at_index(new_column, task, new_position, now)
       end
 
     updated_task = finalize_task_move(task, new_column, position, is_cross_column_move, now)
@@ -380,57 +382,8 @@ defmodule Kanban.Tasks.Positioning do
 
   defp handle_cross_column_move(task, new_column, new_position, old_column_id, now) do
     old_column = Columns.get_column!(old_column_id)
-    reorder_after_removal(old_column, task.position, now)
-    insert_at_index(new_column, task, new_position, now)
-  end
-
-  # The board sends the index the card was dropped at among the column's other
-  # cards, not a stored position. Positions can have gaps (archiving a task
-  # does not renumber its column), and treating the index as a position then
-  # put the card one or more places away from where it was dropped. So the
-  # column's other live cards are laid out 0..n in their current order with the
-  # moving card's slot at the index, and only rows whose position really
-  # changes are written, and stamped (D357). Returns the moving card's position.
-  defp insert_at_index(column, task, index, now) do
-    others = other_live_positions(column, task.id)
-    position = index |> max(0) |> min(length(others))
-    {before, rest} = Enum.split(others, position)
-
-    changed =
-      (Enum.with_index(before) ++ Enum.with_index(rest, position + 1))
-      |> Enum.reject(fn {{_id, old}, new} -> old == new end)
-
-    write_positions(changed, now)
-    position
-  end
-
-  # The column's live tasks other than `moving_task_id` (which sits at a
-  # temporary negative position), as `{id, position}` in display order.
-  defp other_live_positions(column, moving_task_id) do
-    Task
-    |> where([t], t.column_id == ^column.id and is_nil(t.archived_at))
-    |> where([t], t.id != ^moving_task_id and t.position >= 0)
-    |> order_by([t], asc: t.position, asc: t.id)
-    |> select([t], {t.id, t.position})
-    |> Repo.all()
-  end
-
-  # Parks the changed rows at temporary negative positions first so the partial
-  # unique (column_id, position) index never sees a collision, then writes each
-  # row's new position once.
-  defp write_positions([], _now), do: :ok
-
-  defp write_positions(changed, now) do
-    ids = Enum.map(changed, fn {{id, _old}, _new} -> id end)
-
-    from(t in Task, where: t.id in ^ids, update: [set: [position: fragment("-1 * ?", t.id)]])
-    |> Repo.update_all([])
-
-    Enum.each(changed, fn {{id, _old}, new} ->
-      Task
-      |> where([t], t.id == ^id)
-      |> Repo.update_all(set: [position: new, updated_at: now])
-    end)
+    ColumnRenumbering.close_up_after_removal(old_column, task.position, now)
+    ColumnRenumbering.insert_at_index(new_column, task, new_position, now)
   end
 
   defp finalize_task_move(task, new_column, new_position, cross_column?, now) do
@@ -467,22 +420,5 @@ defmodule Kanban.Tasks.Positioning do
     if Enum.all?(updates, fn {field, value} -> Map.get(task, field) == value end),
       do: updates,
       else: Map.put(updates, :updated_at, now)
-  end
-
-  defp reorder_after_removal(column, removed_position, now) do
-    query =
-      from t in Task,
-        where: t.column_id == ^column.id,
-        where: t.position > ^removed_position,
-        where: is_nil(t.archived_at),
-        order_by: t.position
-
-    tasks = Repo.all(query)
-
-    Enum.each(tasks, fn task ->
-      Task
-      |> where([t], t.id == ^task.id)
-      |> Repo.update_all(set: [position: task.position - 1, updated_at: now])
-    end)
   end
 end

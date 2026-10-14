@@ -133,15 +133,12 @@ config :kanban, Kanban.Notifications.ClaimExpiryWorker, lookback_seconds: 2 * 60
 # days, removes nothing and logs a warning. Never applies to audit_events.
 config :kanban, Kanban.Metrics.RetentionWorker, retention_days: 90, batch_size: 1_000
 
-# Configurable grace window (in milliseconds) between detecting the
-# last child's completion and assuming the agent will not report
-# after_goal. Temporarily set to 500ms while the agent-side after_goal
-# client wiring is being built — every last-child completion currently
-# routes through the grace worker rather than an agent PATCH. Raise
-# this back toward 5 minutes (300_000) once stride-hook.sh, hook-bridge,
-# and the workflow skill all know how to call
-# `PATCH /api/tasks/:id/after_goal`. Tests override to 1ms.
-config :kanban, :after_goal_grace_window_ms, 500
+# Grace window (in milliseconds) between the last child's completion and
+# assuming the agent will not report after_goal: 5 minutes, long enough for
+# the after_goal hook to run and report through
+# `PATCH /api/tasks/:id/after_goal`. Only a goal whose plugin never reports is
+# promoted by the grace worker. Tests override to 1ms.
+config :kanban, :after_goal_grace_window_ms, 300_000
 
 # Use the `tz` package as the IANA time-zone database so
 # `DateTime.shift_zone/2` can convert stored UTC timestamps to an arbitrary

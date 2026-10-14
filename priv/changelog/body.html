@@ -177,8 +177,8 @@
               <strong>The new-task form checks the parent goal and
               assignee.</strong> A crafted save can no longer put a task under
               a goal on another board, or assign it to someone without access
-              to the board. A parent goal or column that is not a valid id is
-              refused instead of crashing the form.
+              to the board. A parent goal, column, assignee or label that is
+              not a valid id is refused instead of crashing the form.
             </li>
           </ul>
         </div>
@@ -223,6 +223,18 @@
               drag in its goal's column.</strong> Moving the goal now waits
               for the drag. If the goal's tasks keep moving, the goal stays
               where it is and the claim or completion still succeeds.
+            </li>
+            <li>
+              <strong>An agent claiming, finishing or releasing a task no
+              longer crashes a drag in the same column.</strong> An agent can
+              also no longer claim a card that a person has just dragged out
+              of Ready; the card stays where it was dragged.
+            </li>
+            <li>
+              <strong>A goal waits for its after_goal hook.</strong> When its
+              last task is finished, a goal now waits up to 5 minutes for the
+              agent's after_goal report, instead of half a second, before it
+              moves to Done on its own.
             </li>
             <li>
               <strong>A goal that moves to another column no longer leaves a

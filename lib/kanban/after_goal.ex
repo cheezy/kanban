@@ -29,10 +29,9 @@ defmodule Kanban.AfterGoal do
   any), so if the caller's transaction rolls back the job is never
   enqueued.
 
-  Sub-second precision is required because the production window is
-  currently 500ms while the agent-side `after_goal` wiring is in
-  flight; Oban's integer `schedule_in:` would round down to zero, so
-  we pass an explicit `scheduled_at:` instead.
+  The job is scheduled with an explicit `scheduled_at:` at millisecond
+  precision, so a sub-second window (the 1ms the tests use) is not
+  rounded down to zero as Oban's integer `schedule_in:` would.
 
   Returns `{:ok, %Oban.Job{}}` on success, `{:error, changeset}` on
   insert failure. Callers should not block on this — the protocol
@@ -50,18 +49,16 @@ defmodule Kanban.AfterGoal do
   end
 
   @doc """
-  Configured grace window in milliseconds. Defaults to 500ms while
-  the agent-side after_goal client wiring is being built — every
-  last-child completion will be promoted by the grace worker rather
-  than by an agent PATCH. The default will be raised back toward the
-  pre-G113 5-minute window once stride-hook.sh, hook-bridge, and the
-  workflow skill all know how to call `PATCH /api/tasks/:id/after_goal`.
+  Configured grace window in milliseconds. Defaults to 5 minutes
+  (300_000): long enough for an agent's after_goal hook to run and
+  report through `PATCH /api/tasks/:id/after_goal`, so the grace worker
+  only promotes goals whose plugin never reports.
 
   Tests override to 1ms so `Oban.drain_queue(with_scheduled: true)`
   picks the job up on the first pass.
   """
   @spec grace_window_ms() :: pos_integer()
   def grace_window_ms do
-    Application.get_env(:kanban, :after_goal_grace_window_ms, 500)
+    Application.get_env(:kanban, :after_goal_grace_window_ms, 300_000)
   end
 end

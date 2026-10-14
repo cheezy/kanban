@@ -29,7 +29,7 @@ defmodule Kanban.AfterGoalTest do
 
     test "defaults to 500ms when no value is configured" do
       Application.delete_env(:kanban, :after_goal_grace_window_ms)
-      assert AfterGoal.grace_window_ms() == 500
+      assert AfterGoal.grace_window_ms() == 300_000
     end
   end
 

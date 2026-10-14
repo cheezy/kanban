@@ -116,6 +116,7 @@ defmodule Kanban.Tasks.Task.Changesets do
       with: &EmbedValidations.validate_behaviour_test_row_embed/2
     )
     |> FieldValidations.normalize_ai_context_fields()
+    |> FieldValidations.validate_id_ranges()
     |> validate_required([:title, :position, :type, :priority, :status])
     |> validate_inclusion(:type, [:work, :defect, :goal],
       message: "must be 'work', 'defect', or 'goal'"
@@ -264,6 +265,7 @@ defmodule Kanban.Tasks.Task.Changesets do
       with: &EmbedValidations.validate_behaviour_test_row_embed/2
     )
     |> FieldValidations.normalize_ai_context_fields()
+    |> FieldValidations.validate_id_ranges()
     |> validate_required([:title, :position, :type, :priority])
     |> validate_inclusion(:type, [:work, :defect, :goal],
       message: "must be 'work', 'defect', or 'goal'"

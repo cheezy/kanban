@@ -1145,6 +1145,43 @@ defmodule Kanban.TasksTest do
     end
   end
 
+  describe "ids beyond the Postgres bigint range" do
+    @overflow "99999999999999999999"
+
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board)
+      %{column: column, task: task_fixture(column)}
+    end
+
+    test "create_task/2 refuses them with a changeset instead of raising", %{column: column} do
+      for field <- ["parent_id", "assigned_to_id"] do
+        attrs = %{"title" => "Overflow", "type" => "work", field => @overflow}
+
+        assert {:error, %Ecto.Changeset{} = changeset} = Tasks.create_task(column, attrs)
+        assert id_range_error?(changeset, field)
+      end
+    end
+
+    test "update_task/2 refuses them with a changeset instead of raising", %{task: task} do
+      for field <- ["parent_id", "assigned_to_id", "column_id", "duplicate_of_id"] do
+        assert {:error, %Ecto.Changeset{} = changeset} =
+                 Tasks.update_task(task, %{field => @overflow})
+
+        assert id_range_error?(changeset, field)
+      end
+
+      assert Tasks.get_task!(task.id).parent_id == nil
+    end
+
+    defp id_range_error?(changeset, field) do
+      changeset.errors
+      |> Keyword.get_values(String.to_existing_atom(field))
+      |> Enum.any?(&match?({"is not a valid id", _}, &1))
+    end
+  end
+
   describe "update_task/2 goal assignment cascade" do
     setup do
       alice = user_fixture()
@@ -1375,7 +1412,7 @@ defmodule Kanban.TasksTest do
       # from inside the Multi. The goal update (Multi step :goal) fails,
       # the transaction rolls back, and no child mutations persist.
       assert {:error, %Ecto.Changeset{} = failed} =
-               Tasks.update_task(goal, %{assigned_to_id: -1})
+               Tasks.update_task(goal, %{assigned_to_id: 2_000_000_000})
 
       assert %{assigned_to_id: ["does not exist"]} = errors_on(failed)
 

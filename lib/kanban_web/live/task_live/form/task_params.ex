@@ -11,16 +11,20 @@ defmodule KanbanWeb.TaskLive.Form.TaskParams do
 
   alias Kanban.Tasks
 
+  # Postgres bigint, the type of every id column.
+  @max_bigint 9_223_372_036_854_775_807
+
   @doc """
   Coerce a primary-key input into `{:ok, integer}` or `:error`. Accepts
-  integers and decimal strings. Used by the form's relational scope
+  positive integers and decimal strings within the Postgres bigint range; a
+  larger one would raise in the lookup. Used by the form's relational scope
   validators.
   """
-  def coerce_id(id) when is_integer(id), do: {:ok, id}
+  def coerce_id(id) when is_integer(id) and id > 0 and id <= @max_bigint, do: {:ok, id}
 
   def coerce_id(id) when is_binary(id) do
     case Integer.parse(id) do
-      {n, ""} -> {:ok, n}
+      {n, ""} -> coerce_id(n)
       _ -> :error
     end
   end
@@ -52,18 +56,12 @@ defmodule KanbanWeb.TaskLive.Form.TaskParams do
     end
   end
 
-  defp parse_assignment_target(nil), do: nil
-  defp parse_assignment_target(""), do: nil
-  defp parse_assignment_target(value) when is_integer(value), do: value
-
-  defp parse_assignment_target(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {n, ""} -> n
-      _ -> nil
+  defp parse_assignment_target(value) do
+    case coerce_id(value) do
+      {:ok, id} -> id
+      :error -> nil
     end
   end
-
-  defp parse_assignment_target(_), do: nil
 
   @doc """
   Build the success flash for `perform_task_update`, including pluralized

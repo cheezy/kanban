@@ -410,12 +410,14 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
       # The atomic update_query carries the assignment predicate so that a
       # concurrent claim attempt by a different user cannot race past an
-      # Elixir-level guard while the row is still :open. If 0 rows update,
-      # disambiguate the failure by inspecting the row inside the same
-      # transaction.
+      # Elixir-level guard while the row is still :open. It also requires the
+      # task to still be in the column it was found in, so a card a person
+      # drags out of Ready while the claim runs stays where they put it. If 0
+      # rows update, disambiguate the failure by inspecting the row inside the
+      # same transaction.
       update_query =
         from(t in Task,
-          where: t.id == ^task.id,
+          where: t.id == ^task.id and t.column_id == ^task.column_id,
           where: t.status == :open or (t.status == :in_progress and t.claim_expires_at < ^now),
           where: is_nil(t.assigned_to_id) or t.assigned_to_id == ^user.id
         )

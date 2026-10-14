@@ -157,8 +157,10 @@ defmodule Kanban.Tasks.GoalPlacement do
   old column. A goal re-placement holds it through
   `Kanban.Tasks.Goals.update_parent_goal_position_locked/2` or
   `Kanban.Tasks.Positioning` (D373). The promotion moves in
-  `Kanban.Tasks.Goals` (to Ready, to Done) still lock only the column they
-  move a task into, not the one this closes up.
+  `Kanban.Tasks.Goals` (to Ready, to Done) and the agent claim, completion
+  and unclaim still lock only the column they move a task into, not the one
+  this closes up, so each write also requires the task to still be in the
+  column: a task moved out after the positions were read is skipped.
   """
   def close_up_column_left_by(%Task{archived_at: archived_at}, _now)
       when not is_nil(archived_at),
@@ -173,7 +175,7 @@ defmodule Kanban.Tasks.GoalPlacement do
     |> Repo.all()
     |> Enum.each(fn task ->
       Task
-      |> where([t], t.id == ^task.id)
+      |> where([t], t.id == ^task.id and t.column_id == ^column_id)
       |> Repo.update_all(set: [position: task.position - 1, updated_at: now])
     end)
   end
@@ -188,9 +190,11 @@ defmodule Kanban.Tasks.GoalPlacement do
 
     Logger.info("Shifting #{length(tasks_to_shift)} tasks from position #{target_position}")
 
+    # Each write names the column too: an agent move can take a task out of
+    # the column without its lock (see `close_up_column_left_by/2`).
     Enum.each(tasks_to_shift, fn task ->
       Task
-      |> where([t], t.id == ^task.id)
+      |> where([t], t.id == ^task.id and t.column_id == ^target_column.id)
       |> Repo.update_all(set: [position: task.position + 1, updated_at: now])
     end)
 
