@@ -1,20 +1,29 @@
 defmodule Kanban.Tasks.SecurityConsiderationsScanTest do
   @moduledoc """
   Unit tests for the W2382 detective control over the security-consideration
-  strings a reviewer echoes into `reviewer_result`.
+  strings a reviewer echoes into `reviewer_result`, and for the W2384 read-only
+  report over the stored field.
   """
 
-  use ExUnit.Case, async: true
+  use Kanban.DataCase, async: true
 
   import ExUnit.CaptureLog
+  import Kanban.AccountsFixtures
+  import Kanban.BoardsFixtures
+  import Kanban.ColumnsFixtures
+  import Kanban.TasksFixtures
   import Kanban.TelemetryHelpers
 
   alias Kanban.Tasks.SecurityConsiderationsScan
+  alias Kanban.Tasks.Task
+
+  require Logger
 
   doctest Kanban.Tasks.SecurityConsiderationsScan
 
-  # Fake value only.
+  # Fake values only.
   @token "ghp_abcdefghij0123456789"
+  @other_token "ghp_zyxwvutsrq9876543210"
   @event [:kanban, :audit, :security_considerations_credential_suspected]
 
   defp result_with(section), do: %{"security_considerations" => section}
@@ -126,6 +135,122 @@ defmodule Kanban.Tasks.SecurityConsiderationsScanTest do
       assert :ok = SecurityConsiderationsScan.audit(nil, 123, "Claude Opus 5.5")
 
       refute_receive {:telemetry_event, @event, _measurements, _metadata}
+    end
+  end
+
+  describe "scan_stored/0" do
+    setup do
+      board = board_fixture(user_fixture())
+      %{column: column_fixture(board)}
+    end
+
+    # The write path refuses a credential-shaped consideration since W2382, so
+    # the pre-W2382 state is reproduced by writing the column directly.
+    defp store_considerations(task, considerations) do
+      {1, _} =
+        Task
+        |> where([t], t.id == ^task.id)
+        |> Repo.update_all(set: [security_considerations: considerations])
+
+      task
+    end
+
+    defp stored_task(column, considerations, attrs \\ %{}) do
+      column
+      |> task_fixture(attrs)
+      |> store_considerations(considerations)
+    end
+
+    test "scan_stored/0 reports the identifier and 1-based position of each credential-shaped stored consideration",
+         %{column: column} do
+      _clean = stored_task(column, ["API tokens are never logged"])
+
+      several =
+        stored_task(column, [
+          "fixture uses #{@token}",
+          "Inputs are validated",
+          "saw #{@other_token} in a log"
+        ])
+
+      single = stored_task(column, ["Scoped", "uses #{@token}"])
+
+      assert SecurityConsiderationsScan.scan_stored() == [
+               %{identifier: several.identifier, task_id: several.id, positions: [1, 3]},
+               %{identifier: single.identifier, task_id: single.id, positions: [2]}
+             ]
+    end
+
+    test "scan_stored/0 includes archived tasks and goals", %{column: column} do
+      archived = stored_task(column, ["uses #{@token}"])
+
+      Task
+      |> where([t], t.id == ^archived.id)
+      |> Repo.update_all(set: [archived_at: DateTime.utc_now(:second)])
+
+      goal = stored_task(column, ["uses #{@token}"], %{type: :goal})
+
+      report = SecurityConsiderationsScan.scan_stored()
+
+      assert Enum.map(report, & &1.task_id) == Enum.sort([archived.id, goal.id])
+    end
+
+    test "scan_stored/0 reads every batch when the matches span several", %{column: column} do
+      tasks = for _ <- 1..5, do: stored_task(column, ["uses #{@token}"])
+      _clean = stored_task(column, ["Inputs are validated"])
+
+      report = SecurityConsiderationsScan.scan_stored(batch_size: 2)
+
+      assert Enum.map(report, & &1.task_id) == tasks |> Enum.map(& &1.id) |> Enum.sort()
+      assert SecurityConsiderationsScan.scan_stored(batch_size: 1) == report
+    end
+
+    test "scan_stored/0 never returns or logs the matched value", %{column: column} do
+      task = stored_task(column, ["fixture uses #{@token}", "saw #{@other_token}"])
+      before = Repo.get!(Task, task.id)
+
+      # Lower the scan module's own level so a debug or info line naming the
+      # value would be captured; the primary level in test is :warning, and a
+      # module level is the one override :logger honours below it.
+      Logger.put_module_level(SecurityConsiderationsScan, :debug)
+
+      {report, log} =
+        try do
+          with_log([level: :debug], fn -> SecurityConsiderationsScan.scan_stored() end)
+        after
+          Logger.delete_module_level(SecurityConsiderationsScan)
+        end
+
+      assert [%{task_id: task_id}] = report
+      assert task_id == task.id
+      assert report |> hd() |> Map.keys() |> Enum.sort() == [:identifier, :positions, :task_id]
+      refute inspect(report) =~ @token
+      refute inspect(report) =~ @other_token
+      refute log =~ @token
+      refute log =~ @other_token
+
+      # Read-only: the stored row is unchanged.
+      assert Repo.get!(Task, task.id) == before
+    end
+
+    test "scan_stored/0 returns an empty list when no stored consideration matches",
+         %{column: column} do
+      _clean =
+        stored_task(column, [
+          "API tokens are never logged",
+          "[REDACTED — row text embedded a credential]"
+        ])
+
+      assert SecurityConsiderationsScan.scan_stored() == []
+    end
+
+    test "scan_stored/0 skips tasks with nil or empty security_considerations",
+         %{column: column} do
+      _nil = stored_task(column, nil)
+      _empty = stored_task(column, [])
+      hit = stored_task(column, ["uses #{@token}"])
+
+      assert [%{task_id: task_id}] = SecurityConsiderationsScan.scan_stored()
+      assert task_id == hit.id
     end
   end
 end

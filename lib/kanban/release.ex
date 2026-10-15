@@ -16,6 +16,10 @@ defmodule Kanban.Release do
       when the status is degraded. It is a no-op unless the
       `:audit_log_boot_check` flag is set, which only `config/prod.exs` does.
 
+  It also carries `scan_credential_considerations/0`, the read-only report of
+  stored `security_considerations` entries shaped like a credential (W2384),
+  described in `docs/matrix-row-refusal-contract.md`.
+
   Log lines from this module carry reason atoms and exception types only,
   never the admin URL, its host or its password.
   """
@@ -23,6 +27,7 @@ defmodule Kanban.Release do
   alias Kanban.AuditLog.Hardening
   alias Kanban.AuditLog.Hardening.Purge
   alias Kanban.Repo
+  alias Kanban.Tasks.SecurityConsiderationsScan
 
   require Logger
 
@@ -127,6 +132,28 @@ defmodule Kanban.Release do
       end)
 
     status
+  end
+
+  @doc """
+  Reports every stored task whose `security_considerations` carries a
+  credential-shaped entry, through the app Repo.
+
+  Runs `Kanban.Tasks.SecurityConsiderationsScan.scan_stored/0` and returns its
+  report: one map per matching task with `:identifier`, `:task_id` and the
+  1-based `:positions` of the matching entries, or `[]`. Read-only — it never
+  writes or prints, and neither the report nor a log line carries a matched
+  value. Run it
+  with `bin/kanban eval` and pipe the result to `IO.inspect/1`; an operator
+  edits any hit by hand.
+  """
+  @spec scan_credential_considerations() :: [SecurityConsiderationsScan.stored_hit()]
+  def scan_credential_considerations do
+    load_app()
+
+    {:ok, report, _} =
+      Ecto.Migrator.with_repo(Repo, fn _repo -> SecurityConsiderationsScan.scan_stored() end)
+
+    report
   end
 
   @doc """

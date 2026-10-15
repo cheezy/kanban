@@ -227,6 +227,37 @@ reviewer writes; this closes the one path where the server can refuse the value 
 any agent sees it. The same heuristic residual applies: a novel credential format is not
 matched.
 
+### Finding considerations stored before W2382 (W2384)
+
+The write-time check skips what a task already stores, so a task written before W2382 can
+still carry a credential-shaped consideration, and a security-review agent will echo it on
+the next completion. `Kanban.Tasks.SecurityConsiderationsScan.scan_stored/0` makes that
+residual finite: it reads every task — archived tasks and goals included — in keyset
+batches and reports each one whose stored `security_considerations` matches
+`Kanban.Tasks.CredentialShapes`. Run it in production through the release wrapper, the
+same way as the audit-log status check in
+[audit-log-database-roles.md](audit-log-database-roles.md):
+
+```sh
+/app/bin/kanban eval 'Kanban.Release.scan_credential_considerations() |> IO.inspect(limit: :infinity)'
+```
+
+`limit: :infinity` matters: the default inspect limit cuts a list after 50 entries, which
+would hide every hit past the fiftieth.
+
+It returns `[]` when nothing matches, or one map per task:
+`%{identifier: "W123", task_id: 456, positions: [2]}`, where `positions` are the 1-based
+positions of the matching entries. The report never carries the matched text, and the scan
+writes nothing, emits no event and never logs a matched value, so running it again is
+always safe.
+
+For each hit, an operator opens the task and edits the entries at those positions by hand
+— replace the value with the same `[REDACTED — row text embedded a credential]` sentinel
+the reviewer uses, or remove the entry — and treats the credential itself as exposed: it
+has been stored and may already have been echoed into a `reviewer_result`, so rotate it at
+its source. The scan never scrubs or rewrites data; deciding what to change stays with the
+operator. Re-run it afterwards to confirm the report is empty.
+
 ### What D188 changed in the plugin repositories
 
 All five plugin repositories previously asserted, as fact, that `completion_notes` "is

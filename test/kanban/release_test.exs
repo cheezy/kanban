@@ -6,9 +6,14 @@ defmodule Kanban.ReleaseTest do
   use Kanban.DataCase, async: false
 
   import ExUnit.CaptureLog
+  import Kanban.AccountsFixtures
+  import Kanban.BoardsFixtures
+  import Kanban.ColumnsFixtures
+  import Kanban.TasksFixtures
 
   alias Kanban.AuditLogRoleHelper
   alias Kanban.Release
+  alias Kanban.Tasks.Task
 
   @env "AUDIT_LOG_ADMIN_DATABASE_URL"
   # An obviously fake secret: the log assertions look for it verbatim.
@@ -227,6 +232,25 @@ defmodule Kanban.ReleaseTest do
     # The table check alone names app_role_is_superuser and the purge check is
     # hardened, so the combined status carries exactly that one reason.
     assert Release.audit_log_status() == {:degraded, [:app_role_is_superuser]}
+  end
+
+  test "scan_credential_considerations/0 starts the app, runs the scan and returns the report" do
+    # Fake value only. The write path refuses it since W2382, so it is stored
+    # directly, as a task written before that check would hold it.
+    token = "ghp_abcdefghij0123456789"
+    column = column_fixture(board_fixture(user_fixture()))
+    clean = task_fixture(column)
+    task = task_fixture(column)
+
+    Task
+    |> where([t], t.id == ^task.id)
+    |> Repo.update_all(set: [security_considerations: ["Scoped", "uses #{token}"]])
+
+    report = Release.scan_credential_considerations()
+
+    assert report == [%{identifier: task.identifier, task_id: task.id, positions: [2]}]
+    refute Enum.any?(report, &(&1.task_id == clean.id))
+    refute inspect(report) =~ token
   end
 
   test "audit_log_boot_check logs one warning naming the reasons when degraded and nothing when hardened" do
