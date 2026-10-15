@@ -322,6 +322,25 @@ the refused goal is written. A child with a non-empty `tasks` list of its own is
 refused the same way, with `details.tasks` instead of `details.type`, because
 tasks nest one level only; its inner list is never silently dropped.
 
+A `security_considerations` entry shaped like a real credential, on the goal at
+index 1 or on one of its children. The error names the entry by its 1-based
+position in that record's list and never echoes the value. Like the other
+failures above, the refused goal and all of its children are rolled back and
+goals before `index` stay created:
+
+```json
+{
+  "error": "Failed to create goal at index 1",
+  "index": 1,
+  "details": {
+    "security_considerations": ["entry 1 looks like it contains a credential; remove the secret value and describe the risk in words"]
+  }
+}
+```
+
+The formats checked, and the prose that passes, are listed under
+[Security Considerations Format](post_tasks.md#security-considerations-format).
+
 An unknown label name, or a malformed `labels` value, on the goal at index 1
 or on one of its children. Unlike the failures above, labels are checked for
 **the whole batch before the first goal is created**, so this 422 creates **no
@@ -547,6 +566,7 @@ To continue after an error:
 | `priority: ["is invalid"]` | Invalid priority | Use `low`, `medium`, `high`, or `critical` |
 | `complexity: ["is invalid"]` | Invalid complexity | Use `small`, `medium`, or `large` |
 | `dependencies: ["must be an array"]` | Wrong type | Use array of strings |
+| `security_considerations: ["entry N looks like it contains a credential; ..."]` | Entry N of a goal's or child's `security_considerations` carries a real-looking token or key | Remove the secret value and describe the risk in words |
 | `labels: ["unknown labels: ..."]` | A goal or child names a label this board does not have (nothing in the batch is created) | Use an existing label name, or create the label in the board settings first |
 
 ## Performance Considerations

@@ -9710,4 +9710,149 @@ defmodule KanbanWeb.API.TaskControllerTest do
           do: assert(titled_count(board, title) == 0)
     end
   end
+
+  describe "credential-shaped security_considerations (W2382)" do
+    # Fake value only: long enough to clear the Stride pattern's length floor.
+    @w2382_token "stride_dev_" <> "AbCdEfGhIjKlMnOpQrSt0123"
+
+    defp w2382_error(position) do
+      String.replace(
+        Kanban.Tasks.Task.MapFieldValidations.credential_entry_message(),
+        "%{position}",
+        Integer.to_string(position)
+      )
+    end
+
+    test "POST /api/tasks returns 422 for a credential-shaped consideration and creates nothing",
+         %{conn: conn, board: board} do
+      title = "W2382 create #{System.unique_integer([:positive])}"
+
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => title,
+            "security_considerations" => ["Scope queries to the board", "uses #{@w2382_token}"]
+          }
+        )
+
+      assert json_response(conn, 422)["errors"]["security_considerations"] == [w2382_error(2)]
+      refute conn.resp_body =~ @w2382_token
+      assert titled_count(board, title) == 0
+    end
+
+    test "POST /api/tasks accepts considerations that only describe credentials",
+         %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "W2382 prose",
+            "security_considerations" => [
+              "API tokens are never logged",
+              "api_key: [REDACTED — row text embedded a credential]"
+            ]
+          }
+        )
+
+      assert json_response(conn, 201)["data"]["security_considerations"] == [
+               "API tokens are never logged",
+               "api_key: [REDACTED — row text embedded a credential]"
+             ]
+    end
+
+    test "POST /api/tasks refuses a goal whose nested child carries a credential-shaped consideration",
+         %{conn: conn, board: board} do
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "W2382 nested goal",
+            "type" => "goal",
+            "tasks" => [
+              %{"title" => "W2382 nested ok", "type" => "work"},
+              %{
+                "title" => "W2382 nested bad",
+                "type" => "work",
+                "security_considerations" => [@w2382_token]
+              }
+            ]
+          }
+        )
+
+      assert json_response(conn, 422)
+      refute conn.resp_body =~ @w2382_token
+
+      for title <- ["W2382 nested goal", "W2382 nested ok", "W2382 nested bad"],
+          do: assert(titled_count(board, title) == 0)
+    end
+
+    test "PATCH /api/tasks/:id returns 422 for a credential-shaped consideration and leaves the task unchanged",
+         %{conn: conn, column: column, user: user} do
+      {:ok, task} =
+        Tasks.create_task(column, %{
+          "title" => "W2382 patch",
+          "created_by_id" => user.id,
+          "security_considerations" => ["Scope queries to the board"]
+        })
+
+      conn =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"security_considerations" => ["Scope queries to the board", @w2382_token]}
+        )
+
+      assert json_response(conn, 422)["errors"]["security_considerations"] == [w2382_error(2)]
+      refute conn.resp_body =~ @w2382_token
+
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, task.id).security_considerations == [
+               "Scope queries to the board"
+             ]
+    end
+
+    test "PATCH /api/tasks/:id still updates a task whose stored consideration is credential-shaped",
+         %{conn: conn, column: column, user: user} do
+      {:ok, task} =
+        Tasks.create_task(column, %{"title" => "W2382 legacy", "created_by_id" => user.id})
+
+      # Written before W2382's check existed: bypass the changeset to seed it.
+      task
+      |> Ecto.Changeset.change(security_considerations: [@w2382_token])
+      |> Kanban.Repo.update!()
+
+      renamed = patch(conn, ~p"/api/tasks/#{task.id}", task: %{"title" => "W2382 legacy renamed"})
+      assert json_response(renamed, 200)["data"]["title"] == "W2382 legacy renamed"
+
+      appended =
+        patch(conn, ~p"/api/tasks/#{task.id}",
+          task: %{"security_considerations" => [@w2382_token, "Scope queries to the board"]}
+        )
+
+      assert json_response(appended, 200)
+    end
+
+    test "POST /api/tasks/batch rejects the whole batch when one nested task carries a credential-shaped consideration",
+         %{conn: conn, board: board} do
+      goals_params = [
+        %{
+          "title" => "W2382 batch goal",
+          "type" => "goal",
+          "tasks" => [
+            %{"title" => "W2382 valid sibling", "type" => "work"},
+            %{
+              "title" => "W2382 bad child",
+              "type" => "work",
+              "security_considerations" => [@w2382_token]
+            }
+          ]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+
+      body = json_response(conn, 422)
+      assert body["index"] == 0
+      assert body["details"]["security_considerations"] == [w2382_error(1)]
+      refute conn.resp_body =~ @w2382_token
+
+      for title <- ["W2382 batch goal", "W2382 valid sibling", "W2382 bad child"],
+          do: assert(titled_count(board, title) == 0)
+    end
+  end
 end

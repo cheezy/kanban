@@ -82,7 +82,7 @@ All parameters are optional. Only include the fields you want to update.
 | `technology_requirements` | array of strings | Required technologies/libraries |
 | `pitfalls` | array of strings | Common pitfalls to avoid |
 | `out_of_scope` | array of strings | Items explicitly out of scope |
-| `security_considerations` | array of strings | Security considerations |
+| `security_considerations` | array of strings | Security considerations. An entry shaped like a real credential that the task does not already store returns 422 and nothing changes (see [Unprocessable Entity (422)](#unprocessable-entity-422)) |
 | `required_capabilities` | array of strings | Required agent capabilities |
 | `labels` | array of strings | Label **names** on this board. Replaces the task's labels; `[]` clears them; omitting the field leaves them unchanged. An unknown name returns 422 and nothing changes (see [Labels](#labels)) |
 
@@ -330,6 +330,27 @@ request:
   }
 }
 ```
+
+A `security_considerations` entry shaped like a real credential, such as a
+Stride API token, a GitHub or AWS key or a private key header. The error names
+the entry by its 1-based position and never echoes the value, and **nothing
+changes**:
+
+```json
+{
+  "errors": {
+    "security_considerations": ["entry 2 looks like it contains a credential; remove the secret value and describe the risk in words"]
+  }
+}
+```
+
+Only entries the request introduces are checked. A task written before this
+check existed may already store a credential-shaped entry; a PATCH of any other
+field, a request that sends the list back unchanged, and a request that keeps
+that entry while appending new ones all still succeed. Remove the stored entry
+by sending the list without it. The formats checked, and the prose that passes,
+are listed under
+[Security Considerations Format](post_tasks.md#security-considerations-format).
 
 ### Not Found (404)
 

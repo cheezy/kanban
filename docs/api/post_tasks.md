@@ -91,7 +91,7 @@ in the board UI.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `task.security_considerations` | array | **Strongly Recommended** | Security concerns, vulnerabilities to avoid, or security requirements (array of strings - see format below) |
+| `task.security_considerations` | array | **Strongly Recommended** | Security concerns, vulnerabilities to avoid, or security requirements (array of strings - see format below). An entry shaped like a real credential is rejected with a 422 |
 | `task.testing_strategy` | object | **Strongly Recommended** | Overall testing approach (JSON object - see format below) |
 | `task.integration_points` | object | No | Systems or APIs this touches (JSON object) |
 
@@ -275,6 +275,25 @@ The `security_considerations` array specifies security concerns, potential vulne
 - "Set secure cookie flags (HttpOnly, Secure, SameSite)"
 - "Invalidate sessions on logout"
 - "Rotate session tokens after privilege changes"
+
+**Credential-shaped entries are rejected.** Security-review agents echo each
+consideration verbatim into the review result Stride stores and shows on the
+Review queue, so an entry must never carry a real secret. An entry that matches
+a concrete credential format is refused with a
+[422](#unprocessable-entity-422) and nothing is stored. The formats are a Stride
+API token, `Bearer` followed by a token, a PEM or PGP private key header, a
+JWT, a `user:password@` segment in a URL, GitHub, OpenAI-style, AWS and Slack
+keys, and a `password=`/`secret=`/`api_key=`-style assignment of a long opaque
+value. Describe the risk in words instead.
+
+Prose about credentials is accepted, because the check matches token formats
+rather than words: "API tokens are never logged" and the redaction sentinel
+`[REDACTED — row text embedded a credential]` both pass, and so does a short
+placeholder such as `stride_dev_abc123`. Two non-secret shapes are refused
+anyway, because loosening the patterns to admit them would also admit real
+tokens: `bearer` followed by one unbroken word of 20 or more characters, and an
+`auth_token:`-style label followed by a long unbroken value such as a file
+path. Reword either one.
 
 **Why security_considerations is valuable:**
 
@@ -713,6 +732,22 @@ accepted:
 {
   "errors": {
     "tasks": ["must be empty for a task inside a goal; tasks cannot be nested more than one level"]
+  }
+}
+```
+
+The response also carries the usual `documentation` link.
+
+A `security_considerations` entry shaped like a real credential (see
+[Security Considerations Format](#security-considerations-format)). The error
+names the entry by its 1-based position and never echoes the value, and nothing
+is stored. When the entry is on a nested child task, the same 422 is returned
+and neither the goal nor any child is created:
+
+```json
+{
+  "errors": {
+    "security_considerations": ["entry 2 looks like it contains a credential; remove the secret value and describe the risk in words"]
   }
 }
 ```

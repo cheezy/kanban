@@ -1451,6 +1451,80 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
     end
   end
 
+  describe "handle_event save refuses a credential-shaped security consideration (W2382)" do
+    # Fake value only.
+    @form_token "ghp_abcdefghij0123456789"
+
+    defp w2382_form_socket(user, board, task, action, extra \\ %{}) do
+      assigns =
+        Map.merge(
+          %{
+            current_scope: %{user: user},
+            task: task,
+            board: board,
+            action: action,
+            patch: "/boards/#{board.id}"
+          },
+          extra
+        )
+
+      {:ok, socket} = FormComponent.update(assigns, %Phoenix.LiveView.Socket{})
+
+      Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+    end
+
+    test "a new task shows the position-only error on the field and is not created" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      socket =
+        w2382_form_socket(user, board, %Tasks.Task{column_id: column.id}, :new_task, %{
+          column_id: column.id
+        })
+
+      task_params = %{
+        "title" => "W2382 form task",
+        # The blank row is dropped before positions are counted.
+        "security_considerations" => ["", "uses #{@form_token}"]
+      }
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      refute Kanban.Repo.get_by(Tasks.Task, title: "W2382 form task")
+
+      assert {Kanban.Tasks.Task.MapFieldValidations.credential_entry_message(), [position: 1]} ==
+               updated_socket.assigns.form.source.errors[:security_considerations]
+
+      refute inspect(updated_socket.assigns.form.source.errors) =~ @form_token
+    end
+
+    test "an existing task with a stored credential-shaped consideration still saves other edits" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      task = task_fixture(column, %{title: "W2382 legacy form"})
+
+      task =
+        task
+        |> Ecto.Changeset.change(security_considerations: [@form_token])
+        |> Kanban.Repo.update!()
+
+      socket = w2382_form_socket(user, board, task, :edit_task)
+
+      task_params = %{
+        "title" => "W2382 legacy form renamed",
+        "security_considerations" => [@form_token]
+      }
+
+      {:noreply, _updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      assert Kanban.Repo.get!(Tasks.Task, task.id).title == "W2382 legacy form renamed"
+    end
+  end
+
   describe "handle_event save keeps the identifier server-owned (D354)" do
     test "a crafted edit save cannot copy another task's identifier" do
       user = user_fixture()

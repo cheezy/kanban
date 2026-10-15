@@ -137,3 +137,7 @@ msgstr "muss eine Slack-Incoming-Webhook-URL sein, die mit https://hooks.slack.c
 ## From Kanban.Webhooks.Endpoint (W2367)
 msgid "must be a Discord webhook URL, for example https://discord.com/api/webhooks/…"
 msgstr "muss eine Discord-Webhook-URL sein, zum Beispiel https://discord.com/api/webhooks/…"
+
+## From Kanban.Tasks.Task.MapFieldValidations (W2382)
+msgid "entry %{position} looks like it contains a credential; remove the secret value and describe the risk in words"
+msgstr "Eintrag %{position} scheint Anmeldedaten zu enthalten; entfernen Sie den geheimen Wert und beschreiben Sie das Risiko in Worten"

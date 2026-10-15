@@ -102,7 +102,8 @@ untrusted input in your handler:
   in can choose part of that path, such as the task identifier in
   `/api/tasks/:id`.
 - **`agent_name`** on `[:kanban, :audit, :completion_notes_credential_suspected]`
-  is the name the agent reported for itself, cut to 2,000 characters.
+  and `[:kanban, :audit, :security_considerations_credential_suspected]` is the
+  name the agent reported for itself, cut to 2,000 characters.
 
 `endpoint` on `[:kanban, :api, :request]` and `[:kanban, :api, :error]` is not
 caller-chosen, although both events also fire for a request with no valid
@@ -932,6 +933,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :api_token_revoked]` | event, legacy | `count` | `user_id`, `token_id` | An API token was revoked. |
 | `[:kanban, :audit, :comment_deleted_by_owner]` | event, legacy | `count` | `user_id`, `board_id`, `task_id`, `comment_id`, `author_user_id` | A board owner deleted someone else's comment. |
 | `[:kanban, :audit, :completion_notes_credential_suspected]` | event, legacy | `count` | `task_id`, `agent_name` | Completion notes looked like they contained a credential. |
+| `[:kanban, :audit, :security_considerations_credential_suspected]` | event, legacy | `count` | `task_id`, `agent_name` | A security consideration in a reviewer result looked like it contained a credential. |
 | `[:kanban, :audit, :two_factor_enabled]` | event, legacy | `count` | `user_id` | A user turned on two-factor authentication. |
 | `[:kanban, :audit, :two_factor_disabled]` | event, legacy | `count` | `user_id`, `method` | A user turned off two-factor authentication. |
 | `[:kanban, :audit, :recovery_codes_regenerated]` | event, legacy | `count` | `user_id` | A user regenerated their recovery codes. |

@@ -26,6 +26,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
   alias Kanban.Tasks.GoalTelemetry
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Queries
+  alias Kanban.Tasks.SecurityConsiderationsScan
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskTelemetry
   alias Kanban.Tasks.WorkflowSteps
@@ -206,19 +207,31 @@ defmodule Kanban.Tasks.AgentWorkflow do
         {:error, :not_authorized}
 
       true ->
-        # `completion_notes` is agent-authored free text that D188 made durable
-        # and human-rendered. The redaction rule that governs it is prompt text
-        # in five external plugin repos, so scan server-side and emit a security
-        # audit event when the value looks credential-bearing. Detect-only: the
-        # completion still proceeds and the narrative is preserved verbatim.
-        CompletionNotesScan.audit(
-          params["completion_notes"] || params[:completion_notes],
-          task.id,
-          agent_name
-        )
-
+        audit_credential_shapes(params, task.id, agent_name)
         do_complete_task(task, user, params, board, board_id, agent_name)
     end
+  end
+
+  # Detect-only scans: each emits a security audit event when agent-authored
+  # text looks credential-bearing, and the completion proceeds either way.
+  #
+  # `completion_notes` is free text that D188 made durable and human-rendered;
+  # the redaction rule that governs it is prompt text in external plugin repos.
+  # `reviewer_result` carries the reviewer's verbatim echo of the task's
+  # security considerations, which covers tasks written before W2382's
+  # write-time rejection existed.
+  defp audit_credential_shapes(params, task_id, agent_name) do
+    CompletionNotesScan.audit(
+      params["completion_notes"] || params[:completion_notes],
+      task_id,
+      agent_name
+    )
+
+    SecurityConsiderationsScan.audit(
+      params["reviewer_result"] || params[:reviewer_result],
+      task_id,
+      agent_name
+    )
   end
 
   defp do_complete_task(task, user, params, board, board_id, agent_name) do

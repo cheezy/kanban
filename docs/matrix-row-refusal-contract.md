@@ -194,6 +194,39 @@ Two residuals are accepted deliberately:
   someone who can already edit the task — it is not the agent completion channel this
   contract governs, and it crosses no privilege boundary.
 
+### Security considerations get a preventive control (W2382)
+
+The same redaction rule governs `security_considerations` verdicts. A
+security-review agent echoes each consideration verbatim into
+`reviewer_result.security_considerations.considerations[]`, which is persisted and
+rendered on the Review queue, and the agent's only defence was the prompt rule to emit
+`[REDACTED — row text embedded a credential]` instead. That rule proved unreliable on at
+least one runtime's default model, and a consideration never has a legitimate reason to
+carry a concrete token, so the server now refuses one at the source:
+
+- **Preventive, at write time.** Every task write path — `POST /api/tasks` (including
+  nested children), `POST /api/tasks/batch`, `PATCH /api/tasks/:id` and the task form —
+  rejects a `security_considerations` entry that matches the same high-signal credential
+  shapes, now kept in `Kanban.Tasks.CredentialShapes` and shared with the
+  `completion_notes` scan. The 422 names the entry by its 1-based position only and never
+  echoes the value, so the rejection does not copy the credential into a response, a log
+  line or a form error.
+- **Only what a write introduces.** The check reads the change, not the stored field, and
+  skips an entry the task already stores. A task written before this check existed stays
+  editable, claimable and completable; claim and complete never cast the field.
+- **Detective, at completion.** `Kanban.Tasks.SecurityConsiderationsScan` scans every
+  string in each `considerations[]` entry (`consideration`, `evidence`, `note`) and the
+  section's own note on `/complete`, and raises
+  `:security_considerations_credential_suspected` on a hit. Like the `completion_notes`
+  scan it never blocks or rewrites, and the event carries only the task id and agent
+  name. It covers tasks written before the write-time check, and anything an agent pastes
+  into its own evidence.
+
+The agent-side sentinel rule stays the primary control for every other field the
+reviewer writes; this closes the one path where the server can refuse the value before
+any agent sees it. The same heuristic residual applies: a novel credential format is not
+matched.
+
 ### What D188 changed in the plugin repositories
 
 All five plugin repositories previously asserted, as fact, that `completion_notes` "is
@@ -415,4 +448,8 @@ enforced: the fail-closed escalation, which ties a `failing` row to a `failed` s
 verdict and a matching issue and is what the review queue renders, and the completion
 API's non-empty-string requirement on `category` and `behaviour`, which the sentinel
 satisfies. The contract adds no new validator and no new field, so there is nothing new
-to bypass.
+to bypass. The one server-side validator that does exist alongside it — W2382's refusal
+of a credential-shaped `security_considerations` entry (see
+[Security considerations get a preventive control (W2382)](#security-considerations-get-a-preventive-control-w2382))
+— guards the task's input, not the matrix row or the reviewer's verdict, and is enforced
+by tests on every task write path.

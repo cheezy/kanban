@@ -414,6 +414,92 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert Repo.get!(Task, task_id).completion_notes =~ "ghp_"
     end
 
+    test "completion emits :security_considerations_credential_suspected for a credential-shaped verdict string and still completes",
+         ctx do
+      event = [:kanban, :audit, :security_considerations_credential_suspected]
+      attach_telemetry(event)
+
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+      task_id = task.id
+      # Fake value only.
+      token = "ghp_abcdefghij0123456789"
+
+      params =
+        Map.put(valid_complete_params(), "reviewer_result", %{
+          "dispatched" => true,
+          "summary" => String.duplicate("a", 40),
+          "duration_ms" => 500,
+          "acceptance_criteria_checked" => 3,
+          "issues_found" => 0,
+          "security_considerations" => %{
+            "status" => "passed",
+            "considerations" => [
+              %{"consideration" => "the fixture hard-codes #{token}", "status" => "mitigated"}
+            ]
+          }
+        })
+
+      # Detect-only: the completion still succeeds.
+      assert {:ok, _completed, _hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, params, "Claude")
+
+      assert_receive {:telemetry_event, ^event, %{count: 1},
+                      %{task_id: ^task_id, agent_name: "Claude"} = metadata}
+
+      refute inspect(metadata) =~ token
+      refute_receive {:telemetry_event, ^event, _measurements, _metadata}
+    end
+
+    test "a reviewer_result with clean considerations raises no security audit event", ctx do
+      event = [:kanban, :audit, :security_considerations_credential_suspected]
+      attach_telemetry(event)
+
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      params =
+        Map.put(valid_complete_params(), "reviewer_result", %{
+          "dispatched" => true,
+          "summary" => String.duplicate("a", 40),
+          "duration_ms" => 500,
+          "acceptance_criteria_checked" => 3,
+          "issues_found" => 0,
+          "security_considerations" => %{
+            "status" => "passed",
+            "considerations" => [
+              %{"consideration" => "API tokens are never logged", "status" => "mitigated"}
+            ]
+          }
+        })
+
+      assert {:ok, _completed, _hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, params, "Claude")
+
+      refute_receive {:telemetry_event, ^event, _measurements, _metadata}
+    end
+
+    test "a task whose stored consideration is credential-shaped can still be claimed and completed",
+         ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+
+      # Written before W2382's check existed: bypass the changeset to seed it.
+      task
+      |> Ecto.Changeset.change(
+        security_considerations: ["stride_dev_" <> "AbCdEfGhIjKlMnOpQrSt0123"]
+      )
+      |> Repo.update!()
+
+      claimed = claim_for(task, ctx.user, ctx.board)
+      assert claimed.status == :in_progress
+
+      assert {:ok, completed, _hooks} =
+               AgentWorkflow.complete_task(claimed, ctx.user, valid_complete_params(), "Claude")
+
+      assert completed.completion_summary == "Did the work"
+      assert completed.security_considerations == ["stride_dev_" <> "AbCdEfGhIjKlMnOpQrSt0123"]
+    end
+
     test "is optional — a completion without it still succeeds", ctx do
       task = create_open_task(ctx.ready, ctx.user)
       claimed = claim_for(task, ctx.user, ctx.board)

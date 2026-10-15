@@ -60,6 +60,8 @@ defmodule Kanban.Telemetry.Catalog.Families do
      "A board owner deleted someone else's comment."},
     {:completion_notes_credential_suspected, [:task_id, :agent_name],
      "Completion notes looked like they contained a credential."},
+    {:security_considerations_credential_suspected, [:task_id, :agent_name],
+     "A security consideration in a reviewer result looked like it contained a credential."},
     {:two_factor_enabled, [:user_id], "A user turned on two-factor authentication."},
     {:two_factor_disabled, [:user_id, :method], "A user turned off two-factor authentication."},
     {:recovery_codes_regenerated, [:user_id], "A user regenerated their recovery codes."},
