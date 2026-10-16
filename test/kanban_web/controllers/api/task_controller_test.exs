@@ -9715,6 +9715,18 @@ defmodule KanbanWeb.API.TaskControllerTest do
     # Fake value only: long enough to clear the Stride pattern's length floor.
     @w2382_token "stride_dev_" <> "AbCdEfGhIjKlMnOpQrSt0123"
 
+    test "logged request params redact security_considerations on every write shape" do
+      task = %{"title" => "kept", "security_considerations" => ["uses #{@w2382_token}"]}
+
+      assert %{"task" => %{"title" => "kept", "security_considerations" => "[FILTERED]"}} =
+               Phoenix.Logger.filter_values(%{"task" => task})
+
+      assert %{"goals" => [%{"tasks" => [%{"security_considerations" => "[FILTERED]"}]}]} =
+               Phoenix.Logger.filter_values(%{"goals" => [%{"tasks" => [task]}]})
+
+      refute inspect(Phoenix.Logger.filter_values(%{"task" => task})) =~ @w2382_token
+    end
+
     defp w2382_error(position) do
       String.replace(
         Kanban.Tasks.Task.MapFieldValidations.credential_entry_message(),

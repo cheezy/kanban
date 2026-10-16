@@ -89,7 +89,9 @@ config :error_tracker,
 # Redact secrets from logged request params. "token" covers the signed
 # unsubscribe token in notification email links (W2201), which travels as a
 # query parameter so it never appears in a logged request path.
-config :phoenix, :filter_parameters, ["password", "token"]
+# "security_considerations" keeps a credential-shaped consideration that a
+# task write rejects (W2382) out of the logged request params as well.
+config :phoenix, :filter_parameters, ["password", "token", "security_considerations"]
 
 # ErrorTracker stores raw query strings, params and headers, which
 # :filter_parameters does not cover; this filter strips unsubscribe tokens.

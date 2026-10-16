@@ -210,7 +210,9 @@ carry a concrete token, so the server now refuses one at the source:
   shapes, now kept in `Kanban.Tasks.CredentialShapes` and shared with the
   `completion_notes` scan. The 422 names the entry by its 1-based position only and never
   echoes the value, so the rejection does not copy the credential into a response, a log
-  line or a form error.
+  line or a form error. `security_considerations` is also in Phoenix's
+  `:filter_parameters`, so the rejected request's logged params show `[FILTERED]` rather
+  than the entry.
 - **Only what a write introduces.** The check reads the change, not the stored field, and
   skips an entry the task already stores. A task written before this check existed stays
   editable, claimable and completable; claim and complete never cast the field.
