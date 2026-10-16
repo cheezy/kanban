@@ -143,7 +143,7 @@ defmodule Kanban.Tasks.Queries do
     |> Repo.preload(
       task_histories:
         from(h in TaskHistory,
-          order_by: [desc: h.inserted_at],
+          order_by: [desc: h.inserted_at, desc: h.id],
           preload: [:from_user, :to_user]
         )
     )
@@ -165,7 +165,7 @@ defmodule Kanban.Tasks.Queries do
         :labels,
         task_histories:
           from(h in TaskHistory,
-            order_by: [desc: h.inserted_at],
+            order_by: [desc: h.inserted_at, desc: h.id],
             preload: [:from_user, :to_user]
           ),
         comments: comments_with_author_query(asc: :inserted_at)
@@ -199,7 +199,7 @@ defmodule Kanban.Tasks.Queries do
             :labels,
             task_histories:
               from(h in TaskHistory,
-                order_by: [desc: h.inserted_at],
+                order_by: [desc: h.inserted_at, desc: h.id],
                 preload: [:from_user, :to_user]
               ),
             comments: comments_with_author_query(asc: :inserted_at)
@@ -237,7 +237,7 @@ defmodule Kanban.Tasks.Queries do
           :labels,
           task_histories:
             from(h in TaskHistory,
-              order_by: [desc: h.inserted_at],
+              order_by: [desc: h.inserted_at, desc: h.id],
               preload: [:from_user, :to_user]
             ),
           comments: comments_with_author_query(asc: :inserted_at)

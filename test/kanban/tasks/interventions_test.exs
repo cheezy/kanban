@@ -283,7 +283,8 @@ defmodule Kanban.Tasks.InterventionsTest do
       assert {:ok, _} = Interventions.reassign_goal_unstarted(scope, goal, nil)
       assert assignment_to(goal.id) == []
       assert assignment_to(unassigned.id) == []
-      assert assignment_to(already.id) == [assignee.id, nil]
+      # History is newest first, so the unassignment precedes the earlier assignment.
+      assert assignment_to(already.id) == [nil, assignee.id]
 
       # Assigning only records the tasks that change.
       assert {:ok, _} = Interventions.reassign_goal_unstarted(scope, reload(goal), assignee.id)
