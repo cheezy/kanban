@@ -61,18 +61,26 @@ defmodule Kanban.Organizations.MembershipWrites do
   creates the membership, promotes a member of that Organization, or leaves an
   existing org-admin unchanged. A user in another Organization is refused with
   `:already_in_another_organization`. `actor` has already been checked.
+
+  ## Options
+
+    * `:account_created` - `true` when `user`'s account was created for this
+      appointment, reported in the telemetry and audit event. Defaults to
+      `false`.
   """
-  @spec appoint_org_admin(User.t(), integer(), User.t()) ::
+  @spec appoint_org_admin(User.t(), integer(), User.t(), [{:account_created, boolean()}]) ::
           {:ok, OrganizationMember.t()}
           | {:error, :already_in_another_organization | :not_found | Ecto.Changeset.t()}
-  def appoint_org_admin(%User{} = actor, organization_id, %User{} = user) do
+  def appoint_org_admin(%User{} = actor, organization_id, %User{} = user, opts \\ []) do
+    account_created = Keyword.get(opts, :account_created, false)
+
     Repo.transact(fn ->
       with :ok <- lock_organization(organization_id) do
         appoint_in_locked_organization(organization_id, user)
       end
     end)
     |> notify(fn change, membership ->
-      OrganizationTelemetry.org_admin_appointed(membership, change, actor)
+      OrganizationTelemetry.org_admin_appointed(membership, change, actor, account_created)
     end)
   end
 

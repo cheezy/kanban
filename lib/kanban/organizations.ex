@@ -28,6 +28,10 @@ defmodule Kanban.Organizations do
       membership write first takes a row lock on the organization, so two
       concurrent removals cannot both pass that check.
     * Removing an org-admin deletes the membership; it never demotes.
+    * `appoint_org_admin_by_email/4` appoints by email. An unknown email gets
+      a new account in the same transaction as the membership, and the
+      confirmation and password-reset emails after it commits; a disabled
+      account is refused with `{:error, :user_disabled}`.
 
   ## Telemetry and audit events
 
@@ -49,6 +53,7 @@ defmodule Kanban.Organizations do
   alias Kanban.Accounts
   alias Kanban.Accounts.User
   alias Kanban.Organizations.MembershipWrites
+  alias Kanban.Organizations.OrgAdminProvisioning
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrganizationTelemetry
@@ -316,6 +321,69 @@ defmodule Kanban.Organizations do
   end
 
   @doc """
+  Makes the user with `email` an org-admin of `organization`, creating their
+  account when there is none.
+
+  `actor` must be an enabled site admin; anyone else gets
+  `{:error, :unauthorized}` before the email is looked up. Surrounding
+  whitespace is trimmed, and the lookup ignores case.
+
+    * An enabled account is appointed through `appoint_org_admin/3`, with the
+      same results. No account is created and no email is sent.
+    * A disabled account is refused with `{:error, :user_disabled}`.
+    * An unknown email gets a new, unconfirmed account with a random password
+      that is never shown, created in one transaction with its `:org_admin`
+      membership (`Kanban.Organizations.OrgAdminProvisioning`). Once that has
+      committed, the confirmation email and the password-reset email are sent,
+      so the appointee confirms their address and sets their own password. An
+      invalid email returns the registration changeset, and a failed
+      membership write rolls the new account back; neither sends an email.
+
+  `urls` holds the links for the two emails, as functions of the encoded
+  token: `confirmation_url:` and `reset_password_url:`. Both are required, and
+  a missing one raises `ArgumentError`.
+
+  `[:kanban, :organization, :member_added]` and the `:org_admin_appointed`
+  audit event carry `account_created`, which is `true` only when the account
+  was created here.
+
+  ## Examples
+
+      iex> appoint_org_admin_by_email(admin, organization, "ada@acme.test",
+      ...>   confirmation_url: &url(~p"/users/confirm/\#{&1}"),
+      ...>   reset_password_url: &url(~p"/users/reset-password/\#{&1}")
+      ...> )
+      {:ok, %OrganizationMember{role: :org_admin}}
+
+      iex> appoint_org_admin_by_email(admin, organization, "disabled@acme.test", urls)
+      {:error, :user_disabled}
+
+  """
+  @spec appoint_org_admin_by_email(
+          User.t(),
+          Organization.t() | integer(),
+          String.t(),
+          OrgAdminProvisioning.urls()
+        ) ::
+          {:ok, OrganizationMember.t()}
+          | {:error,
+             :unauthorized
+             | :user_disabled
+             | :already_in_another_organization
+             | :not_found
+             | Ecto.Changeset.t()}
+  def appoint_org_admin_by_email(%User{} = actor, organization, email, urls)
+      when is_binary(email) do
+    urls = OrgAdminProvisioning.validate_urls!(urls)
+
+    if site_admin?(actor) do
+      appoint_by_email(actor, organization, String.trim(email), urls)
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  @doc """
   Removes `user`'s org-admin membership of `organization`.
 
   `actor` must be an enabled site admin; anyone else gets
@@ -350,6 +418,35 @@ defmodule Kanban.Organizations do
       {:error, :unauthorized}
     end
   end
+
+  defp appoint_by_email(actor, organization, email, urls) do
+    case Accounts.get_user_by_email(email) do
+      %User{} = user ->
+        appoint_existing_account(actor, organization, user)
+
+      nil ->
+        actor
+        |> OrgAdminProvisioning.provision(organization_id(organization), email, urls)
+        |> appoint_if_registered_meanwhile(actor, organization, email)
+    end
+  end
+
+  defp appoint_existing_account(_actor, _organization, %User{disabled_at: %DateTime{}}),
+    do: {:error, :user_disabled}
+
+  defp appoint_existing_account(actor, organization, %User{} = user),
+    do: appoint_org_admin(actor, organization, user)
+
+  # Another write registered the email between the lookup and the insert, so
+  # that account is appointed instead of creating a second one.
+  defp appoint_if_registered_meanwhile({:error, :email_taken}, actor, organization, email) do
+    case Accounts.get_user_by_email(email) do
+      %User{} = user -> appoint_existing_account(actor, organization, user)
+      nil -> {:error, :not_found}
+    end
+  end
+
+  defp appoint_if_registered_meanwhile(result, _actor, _organization, _email), do: result
 
   defp membership_query(%User{id: user_id}, organization) do
     organization_id = organization_id(organization)

@@ -38,9 +38,9 @@ defmodule Kanban.Telemetry.Catalog.OrganizationEvents do
       kind: :event,
       domain: :organization,
       measurements: [:count],
-      metadata: [:organization_id, :user_id, :role, :actor_user_id],
+      metadata: [:organization_id, :user_id, :role, :actor_user_id, :account_created],
       description:
-        "A user joined an Organization with role, as a new member or a newly appointed org-admin. actor_user_id is the site admin, or the joining user.",
+        "A user joined an Organization with role, as a new member or a newly appointed org-admin. actor_user_id is the site admin, or the joining user. account_created is true when the account was created for the appointment.",
       legacy: false,
       metrics: [counter: :count],
       persist: false

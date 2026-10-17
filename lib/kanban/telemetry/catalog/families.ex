@@ -75,8 +75,8 @@ defmodule Kanban.Telemetry.Catalog.Families do
      "A site admin created an Organization. user_id is the site admin."},
     {:organization_updated, [:user_id, :organization_id],
      "A site admin changed an Organization's details. user_id is the site admin."},
-    {:org_admin_appointed, [:user_id, :organization_id, :member_user_id],
-     "A site admin made a user an org-admin. user_id is the site admin, member_user_id the appointee."},
+    {:org_admin_appointed, [:user_id, :organization_id, :member_user_id, :account_created],
+     "A site admin made a user an org-admin. user_id is the site admin, member_user_id the appointee. account_created is true when the appointee's account was created for the appointment."},
     {:org_admin_removed, [:user_id, :organization_id, :member_user_id],
      "A site admin removed an org-admin. user_id is the site admin, member_user_id the removed user."}
   ]

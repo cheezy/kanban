@@ -4,7 +4,9 @@ defmodule Kanban.OrganizationsTest do
   import Kanban.AccountsFixtures
   import Kanban.OrganizationsFixtures
   import Kanban.TelemetryHelpers
+  import Swoosh.TestAssertions
 
+  alias Kanban.Accounts
   alias Kanban.Accounts.User
   alias Kanban.AuditLog
   alias Kanban.Organizations
@@ -16,6 +18,7 @@ defmodule Kanban.OrganizationsTest do
   @updated [:kanban, :organization, :updated]
   @member_added [:kanban, :organization, :member_added]
   @member_removed [:kanban, :organization, :member_removed]
+  @registration [:kanban, :user, :registration]
 
   defp disabled_admin_fixture do
     admin_fixture()
@@ -50,6 +53,62 @@ defmodule Kanban.OrganizationsTest do
     do: String.starts_with?(query, "SELECT") and query =~ "FOR UPDATE"
 
   defp membership_lookup?(_metadata), do: false
+
+  defp urls do
+    [
+      confirmation_url: &"https://stride.test/users/confirm/#{&1}",
+      reset_password_url: &"https://stride.test/users/reset-password/#{&1}"
+    ]
+  end
+
+  defp disabled_user_fixture do
+    user_fixture()
+    |> User.disabled_changeset(DateTime.utc_now(:second))
+    |> Repo.update!()
+  end
+
+  # The email lookup, not the site-admin check that runs before it.
+  defp email_lookup?(%{source: "users", query: query}),
+    do: String.starts_with?(query, "SELECT") and query =~ ~s|u0."email" = $1|
+
+  defp email_lookup?(_metadata), do: false
+
+  # The registration changeset's pre-insert uniqueness check on the email.
+  defp unique_email_check?(%{source: "users", query: query}),
+    do: String.starts_with?(query, "SELECT TRUE") and query =~ ~s|u0."email" = $1|
+
+  defp unique_email_check?(_metadata), do: false
+
+  # The generated password is 43 URL-safe base64 characters. Each email's only
+  # string of that shape must be the token inside its link, so removing the
+  # link must leave none behind.
+  defp assert_no_password_shaped_string(body, link_prefix) do
+    assert [_token] = Regex.scan(~r/[A-Za-z0-9_-]{43,}/, body) |> Enum.uniq()
+
+    without_link =
+      Regex.replace(~r/#{Regex.escape(link_prefix)}[A-Za-z0-9_-]+/, body, "")
+
+    assert Regex.scan(~r/[A-Za-z0-9_-]{43,}/, without_link) == []
+  end
+
+  defp users_with_email(email), do: from(u in User, where: u.email == ^email)
+
+  defp flush_emails do
+    email_subjects()
+    :ok
+  end
+
+  defp email_subjects do
+    receive_subjects([])
+  end
+
+  defp receive_subjects(acc) do
+    receive do
+      {:email, %Swoosh.Email{subject: subject}} -> receive_subjects([subject | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
 
   defp role_of(user) do
     case Repo.get_by(OrganizationMember, user_id: user.id) do
@@ -633,7 +692,8 @@ defmodule Kanban.OrganizationsTest do
                organization_id: organization.id,
                user_id: user.id,
                role: :member,
-               actor_user_id: user.id
+               actor_user_id: user.id,
+               account_created: false
              }
     end
 
@@ -738,13 +798,15 @@ defmodule Kanban.OrganizationsTest do
                organization_id: organization.id,
                user_id: user.id,
                role: :org_admin,
-               actor_user_id: admin.id
+               actor_user_id: admin.id,
+               account_created: false
              }
 
       assert [event] = AuditLog.list_events(action: :org_admin_appointed)
       assert event.actor_user_id == admin.id
       assert event.metadata["organization_id"] == organization.id
       assert event.metadata["member_user_id"] == user.id
+      assert event.metadata["account_created"] == false
     end
 
     test "promotes a member of the same Organization without emitting :member_added" do
@@ -831,6 +893,394 @@ defmodule Kanban.OrganizationsTest do
                Organizations.appoint_org_admin(admin_fixture(), organization_fixture(), user)
 
       assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+  end
+
+  describe "appoint_org_admin_by_email/4" do
+    test "appoints an existing enabled user, ignoring case and surrounding whitespace" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      user = user_fixture()
+      attach_telemetry([@member_added, @registration])
+      users_before = Repo.aggregate(User, :count)
+      typed = "  " <> String.upcase(user.email) <> "\n"
+
+      flush_emails()
+
+      assert {:ok, %OrganizationMember{role: :org_admin} = membership} =
+               Organizations.appoint_org_admin_by_email(admin, organization, typed, urls())
+
+      assert membership.user_id == user.id
+      assert role_of(user) == {organization.id, :org_admin}
+      assert Repo.aggregate(User, :count) == users_before
+      assert email_subjects() == []
+      refute_received {:telemetry_event, @registration, _, _}
+
+      assert_received {:telemetry_event, @member_added, %{count: 1}, metadata}
+      assert metadata.user_id == user.id
+      assert metadata.account_created == false
+
+      assert [event] = AuditLog.list_events(action: :org_admin_appointed)
+      assert event.metadata["member_user_id"] == user.id
+      assert event.metadata["account_created"] == false
+    end
+
+    test "promotes a member of the same Organization found by email" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      user = user_fixture()
+      organization_member_fixture(organization, user)
+
+      flush_emails()
+
+      assert {:ok, %OrganizationMember{role: :org_admin}} =
+               Organizations.appoint_org_admin_by_email(admin, organization, user.email, urls())
+
+      assert role_of(user) == {organization.id, :org_admin}
+    end
+
+    test "refuses a disabled user with :user_disabled and changes nothing" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      user = disabled_user_fixture()
+      attach_telemetry(@member_added)
+
+      flush_emails()
+
+      assert {:error, :user_disabled} =
+               Organizations.appoint_org_admin_by_email(admin, organization, user.email, urls())
+
+      assert role_of(user) == nil
+      assert email_subjects() == []
+      refute_received {:telemetry_event, @member_added, _, _}
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+
+    test "refuses an email whose user is in another Organization" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      other = organization_fixture()
+      user = user_fixture()
+      organization_member_fixture(other, user)
+
+      flush_emails()
+
+      assert {:error, :already_in_another_organization} =
+               Organizations.appoint_org_admin_by_email(admin, organization, user.email, urls())
+
+      assert role_of(user) == {other.id, :member}
+      assert email_subjects() == []
+    end
+
+    test "creates one unconfirmed user and one org_admin membership for an unknown email" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      attach_telemetry([@member_added, @registration])
+      users_before = Repo.aggregate(User, :count)
+      email = unique_user_email()
+
+      flush_emails()
+
+      assert {:ok, %OrganizationMember{role: :org_admin} = membership} =
+               Organizations.appoint_org_admin_by_email(admin, organization, " #{email} ", urls())
+
+      assert Repo.aggregate(User, :count) == users_before + 1
+      assert %User{} = user = Accounts.get_user_by_email(email)
+      assert user.email == email
+      assert membership.user_id == user.id
+      assert role_of(user) == {organization.id, :org_admin}
+      assert Repo.aggregate(OrganizationMember, :count) == 1
+      assert is_nil(user.confirmed_at)
+      assert is_nil(user.disabled_at)
+      assert user.type == :user
+
+      assert_received {:telemetry_event, @registration, %{count: 1}, %{user_id: user_id}}
+      assert user_id == user.id
+
+      assert_received {:telemetry_event, @member_added, %{count: 1}, metadata}
+
+      assert metadata == %{
+               organization_id: organization.id,
+               user_id: user.id,
+               role: :org_admin,
+               actor_user_id: admin.id,
+               account_created: true
+             }
+
+      assert [event] = AuditLog.list_events(action: :org_admin_appointed)
+      assert event.actor_user_id == admin.id
+      assert event.metadata["member_user_id"] == user.id
+      assert event.metadata["account_created"] == true
+
+      assert event.metadata |> Map.keys() |> Enum.sort() ==
+               ["account_created", "member_user_id", "organization_id", "user_id"]
+    end
+
+    test "sets a strong random password that satisfies the rules and is never returned" do
+      admin = admin_fixture()
+      first = unique_user_email()
+      second = unique_user_email()
+
+      flush_emails()
+
+      assert {:ok, %OrganizationMember{} = membership} =
+               Organizations.appoint_org_admin_by_email(
+                 admin,
+                 organization_fixture(),
+                 first,
+                 urls()
+               )
+
+      assert {:ok, %OrganizationMember{}} =
+               Organizations.appoint_org_admin_by_email(
+                 admin,
+                 organization_fixture(),
+                 second,
+                 urls()
+               )
+
+      # The result carries no user, so it carries no password either.
+      assert %Ecto.Association.NotLoaded{} = membership.user
+
+      first_user = Accounts.get_user_by_email(first)
+      second_user = Accounts.get_user_by_email(second)
+
+      for user <- [first_user, second_user] do
+        assert "$2b$" <> _ = user.hashed_password
+        assert is_nil(user.password)
+        # Neither a blank nor a guessable password unlocks the account.
+        refute User.valid_password?(user, valid_user_password())
+        refute User.valid_password?(user, user.email)
+      end
+    end
+
+    test "sends the confirmation and password-reset emails, without the password, after commit" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      email = unique_user_email()
+      test_pid = self()
+
+      flush_emails()
+
+      # Mid-transaction, after the user row is written, no email has gone out.
+      after_first_query(&membership_lookup?/1, fn ->
+        send(test_pid, {:emails_mid_transaction, email_subjects()})
+      end)
+
+      assert {:ok, %OrganizationMember{}} =
+               Organizations.appoint_org_admin_by_email(admin, organization, email, urls())
+
+      assert_received {:emails_mid_transaction, []}
+
+      assert_email_sent(fn sent ->
+        assert sent.subject == "Confirm your Stride account"
+        assert [{_name, ^email}] = sent.to
+        assert sent.html_body =~ "https://stride.test/users/confirm/"
+        assert_no_password_shaped_string(sent.html_body, "https://stride.test/users/confirm/")
+      end)
+
+      assert_email_sent(fn sent ->
+        assert sent.subject == "Reset your Stride password"
+        assert [{_name, ^email}] = sent.to
+        assert sent.html_body =~ "https://stride.test/users/reset-password/"
+
+        assert_no_password_shaped_string(
+          sent.html_body,
+          "https://stride.test/users/reset-password/"
+        )
+      end)
+
+      user = Accounts.get_user_by_email(email)
+
+      login_tokens =
+        from(t in Kanban.Accounts.UserToken,
+          where: t.user_id == ^user.id and t.context in ["confirm", "reset_password"]
+        )
+
+      assert Repo.aggregate(login_tokens, :count) == 2
+    end
+
+    test "rolls the new user back and sends nothing when the membership insert fails" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      other = organization_fixture()
+      email = unique_user_email()
+      attach_telemetry([@member_added, @registration])
+
+      flush_emails()
+
+      # A concurrent write puts the just-registered user into another
+      # Organization before the membership insert runs.
+      after_first_query(&membership_lookup?/1, fn ->
+        organization_member_fixture(other, Accounts.get_user_by_email(email))
+      end)
+
+      assert {:error, :already_in_another_organization} =
+               Organizations.appoint_org_admin_by_email(admin, organization, email, urls())
+
+      assert Accounts.get_user_by_email(email) == nil
+      assert Repo.aggregate(OrganizationMember, :count) == 0
+      assert email_subjects() == []
+      refute_received {:telemetry_event, @registration, _, _}
+      refute_received {:telemetry_event, @member_added, _, _}
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+
+    test "rolls the new user back for an Organization that does not exist" do
+      admin = admin_fixture()
+      email = unique_user_email()
+
+      flush_emails()
+
+      assert {:error, :not_found} =
+               Organizations.appoint_org_admin_by_email(admin, -1, email, urls())
+
+      assert Accounts.get_user_by_email(email) == nil
+      assert email_subjects() == []
+    end
+
+    test "returns a changeset error with no side effects for an invalid email" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      users_before = Repo.aggregate(User, :count)
+
+      flush_emails()
+
+      for {email, message} <- [
+            {"not an email", "must have the @ sign and no spaces"},
+            {"   ", "can't be blank"},
+            {String.duplicate("a", 160) <> "@example.com", "should be at most 160 character(s)"}
+          ] do
+        assert {:error, %Ecto.Changeset{} = changeset} =
+                 Organizations.appoint_org_admin_by_email(admin, organization, email, urls())
+
+        assert message in errors_on(changeset).email
+        # The generated password never leaves in the returned changeset.
+        refute Map.has_key?(changeset.changes, :password)
+        refute Map.has_key?(changeset.params, "password")
+      end
+
+      assert Repo.aggregate(User, :count) == users_before
+      assert Repo.aggregate(OrganizationMember, :count) == 0
+      assert email_subjects() == []
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+
+    test "appointing the same unknown email twice creates one account and emails once" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      email = unique_user_email()
+
+      flush_emails()
+
+      assert {:ok, %OrganizationMember{id: id}} =
+               Organizations.appoint_org_admin_by_email(admin, organization, email, urls())
+
+      assert {:ok, %OrganizationMember{id: ^id}} =
+               Organizations.appoint_org_admin_by_email(
+                 admin,
+                 organization,
+                 String.upcase(email),
+                 urls()
+               )
+
+      assert email |> users_with_email() |> Repo.aggregate(:count) == 1
+      assert email_subjects() == ["Confirm your Stride account", "Reset your Stride password"]
+      assert [_one] = AuditLog.list_events(action: :org_admin_appointed)
+    end
+
+    test "returns :not_found when the email is taken at insert but no account remains" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      email = unique_user_email()
+
+      # A concurrent registration passes the pre-insert check and wins the
+      # unique index, so this insert is refused; it is inside the rolled-back
+      # transaction, so the re-lookup finds no account to appoint.
+      after_first_query(&unique_email_check?/1, fn ->
+        attrs = valid_user_attributes(email: email)
+        {:ok, _user} = Accounts.register_user(attrs)
+      end)
+
+      flush_emails()
+
+      assert {:error, :not_found} =
+               Organizations.appoint_org_admin_by_email(admin, organization, email, urls())
+
+      assert Accounts.get_user_by_email(email) == nil
+      assert Repo.aggregate(OrganizationMember, :count) == 0
+      assert email_subjects() == []
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+
+    test "appoints the account another write registered after the lookup" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      email = unique_user_email()
+      attach_telemetry(@member_added)
+
+      flush_emails()
+
+      # The email lookup finds nothing, then a concurrent registration lands
+      # before this call registers its own account.
+      after_first_query(&email_lookup?/1, fn ->
+        attrs = valid_user_attributes(email: email)
+        {:ok, _user} = Accounts.register_user(attrs)
+      end)
+
+      assert {:ok, %OrganizationMember{role: :org_admin} = membership} =
+               Organizations.appoint_org_admin_by_email(admin, organization, email, urls())
+
+      user = Accounts.get_user_by_email(email)
+      assert membership.user_id == user.id
+      assert email |> users_with_email() |> Repo.aggregate(:count) == 1
+      assert email_subjects() == []
+
+      assert_received {:telemetry_event, @member_added, _, %{account_created: false}}
+    end
+
+    test "refuses every actor but an enabled site admin before looking the email up" do
+      organization = organization_fixture()
+      org_admin = user_fixture()
+      organization_member_fixture(organization, org_admin, :org_admin)
+      existing = user_fixture()
+      unknown = unique_user_email()
+
+      actors = [user_fixture(), org_admin, disabled_admin_fixture()]
+
+      flush_emails()
+
+      for actor <- actors, email <- [existing.email, unknown] do
+        assert {:error, :unauthorized} =
+                 Organizations.appoint_org_admin_by_email(actor, organization, email, urls())
+      end
+
+      assert role_of(existing) == nil
+      assert Accounts.get_user_by_email(unknown) == nil
+      assert email_subjects() == []
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+
+    test "raises ArgumentError without both URL functions, before any write" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      email = unique_user_email()
+
+      flush_emails()
+
+      for bad_urls <- [
+            [],
+            [confirmation_url: & &1],
+            [reset_password_url: & &1],
+            [confirmation_url: "not a function", reset_password_url: & &1],
+            %{confirmation_url: & &1, reset_password_url: & &1}
+          ] do
+        assert_raise ArgumentError, fn ->
+          Organizations.appoint_org_admin_by_email(admin, organization, email, bad_urls)
+        end
+      end
+
+      assert Accounts.get_user_by_email(email) == nil
     end
   end
 

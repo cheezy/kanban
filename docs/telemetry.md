@@ -595,8 +595,9 @@ nothing. Every event measures `count: 1`.
 
 ### Organization events
 
-W2390 added `created` and `updated`, and W2391 added `member_added` and
-`member_removed`. They are declared in
+W2390 added `created` and `updated`, W2391 added `member_added` and
+`member_removed`, and W2392 added `account_created` to `member_added`. They
+are declared in
 `Kanban.Telemetry.Catalog.OrganizationEvents` (`lib/kanban/telemetry/catalog/organization_events.ex`)
 and emitted by `Kanban.Organizations.OrganizationTelemetry`. Each is emitted
 only after its change has committed, so a refused, invalid or rolled-back
@@ -606,7 +607,7 @@ change emits nothing. Every event measures `count: 1`.
 |---|---|---|
 | `[:kanban, :organization, :created]` | `organization_id`, `actor_user_id` | `Kanban.Organizations.create_organization/2` |
 | `[:kanban, :organization, :updated]` | `organization_id`, `actor_user_id`, `fields` | `Kanban.Organizations.update_organization/3`, only when at least one field changed |
-| `[:kanban, :organization, :member_added]` | `organization_id`, `user_id`, `role`, `actor_user_id` | `Kanban.Organizations.add_member/3` and `appoint_org_admin/3`, only when a membership was created |
+| `[:kanban, :organization, :member_added]` | `organization_id`, `user_id`, `role`, `actor_user_id`, `account_created` | `Kanban.Organizations.add_member/3`, `appoint_org_admin/3` and `appoint_org_admin_by_email/4`, only when a membership was created |
 | `[:kanban, :organization, :member_removed]` | `organization_id`, `user_id`, `role`, `actor_user_id` | `Kanban.Organizations.remove_org_admin/3` |
 
 - **Who causes them.** Only an enabled site admin creates or edits an
@@ -630,7 +631,14 @@ change emits nothing. Every event measures `count: 1`.
   as `user_id`. Appointing a new or promoted org-admin records
   `:org_admin_appointed`, and removing one records `:org_admin_removed`, each
   with `organization_id`, the site admin as `user_id` and the org-admin as
-  `member_user_id`.
+  `member_user_id`. `:org_admin_appointed` also carries `account_created`.
+- **`account_created` marks a provisioned account.** It is `true` on
+  `member_added` and `:org_admin_appointed` only when
+  `appoint_org_admin_by_email/4` created the appointee's account in the same
+  transaction, and `false` otherwise, including every `add_member/3` join.
+  The registration event, `member_added` and the audit row for a provisioned
+  account wait for that transaction to commit; neither the event nor the
+  audit row carries the password or a token.
 
 ## Emitting an event
 
@@ -985,7 +993,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :audit_log_exported]` | event, legacy | `count` | `user_id`, `format` | An admin exported the audit log. |
 | `[:kanban, :audit, :organization_created]` | event, legacy | `count` | `user_id`, `organization_id` | A site admin created an Organization. user_id is the site admin. |
 | `[:kanban, :audit, :organization_updated]` | event, legacy | `count` | `user_id`, `organization_id` | A site admin changed an Organization's details. user_id is the site admin. |
-| `[:kanban, :audit, :org_admin_appointed]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id` | A site admin made a user an org-admin. user_id is the site admin, member_user_id the appointee. |
+| `[:kanban, :audit, :org_admin_appointed]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id`, `account_created` | A site admin made a user an org-admin. user_id is the site admin, member_user_id the appointee. account_created is true when the appointee's account was created for the appointment. |
 | `[:kanban, :audit, :org_admin_removed]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id` | A site admin removed an org-admin. user_id is the site admin, member_user_id the removed user. |
 
 ### Domain `board`
@@ -1087,7 +1095,7 @@ the sections above explain which code emits each family and when.
 |---|---|---|---|---|
 | `[:kanban, :organization, :created]` | event | `count` | `organization_id`, `actor_user_id` | A site admin created an Organization. actor_user_id is the site admin. |
 | `[:kanban, :organization, :updated]` | event | `count` | `organization_id`, `actor_user_id`, `fields` | A site admin changed an Organization's details. fields lists the changed field names, never their values. |
-| `[:kanban, :organization, :member_added]` | event | `count` | `organization_id`, `user_id`, `role`, `actor_user_id` | A user joined an Organization with role, as a new member or a newly appointed org-admin. actor_user_id is the site admin, or the joining user. |
+| `[:kanban, :organization, :member_added]` | event | `count` | `organization_id`, `user_id`, `role`, `actor_user_id`, `account_created` | A user joined an Organization with role, as a new member or a newly appointed org-admin. actor_user_id is the site admin, or the joining user. account_created is true when the account was created for the appointment. |
 | `[:kanban, :organization, :member_removed]` | event | `count` | `organization_id`, `user_id`, `role`, `actor_user_id` | A user's Organization membership was deleted. role is the role they held. actor_user_id is the site admin. |
 
 ### Domain `pubsub`

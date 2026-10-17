@@ -78,11 +78,12 @@ defmodule Kanban.Organizations.OrganizationTelemetry do
   @doc """
   Emits `[:kanban, :organization, :member_added]` when `change` is `:created`.
   `actor_user_id` is whoever caused the change: the joining user for
-  `Kanban.Organizations.add_member/3`. Returns `:ok`.
+  `Kanban.Organizations.add_member/3`. A member who joins this way already had
+  an account, so `account_created` is `false`. Returns `:ok`.
   """
   @spec member_added(OrganizationMember.t(), atom(), integer()) :: :ok
   def member_added(%OrganizationMember{} = membership, :created, actor_user_id) do
-    AfterCommit.defer(fn -> emit_member_added(membership, actor_user_id) end)
+    AfterCommit.defer(fn -> emit_member_added(membership, actor_user_id, false) end)
   end
 
   def member_added(%OrganizationMember{}, _change, _actor_user_id), do: :ok
@@ -93,18 +94,22 @@ defmodule Kanban.Organizations.OrganizationTelemetry do
   `[:kanban, :organization, :member_added]` when the membership is new. A
   promotion emits no `member_added`, because the user was already a member.
   The site admin is the audit event's `user_id` and the appointee its
-  `member_user_id`. Returns `:ok`.
+  `member_user_id`. `account_created` is `true` in both when the appointee's
+  account was created for this appointment, by
+  `Kanban.Organizations.appoint_org_admin_by_email/4`. Returns `:ok`.
   """
-  @spec org_admin_appointed(OrganizationMember.t(), :created | :promoted, map()) :: :ok
-  def org_admin_appointed(%OrganizationMember{} = membership, change, actor)
-      when change in [:created, :promoted] do
+  @spec org_admin_appointed(OrganizationMember.t(), :created | :promoted, map(), boolean()) ::
+          :ok
+  def org_admin_appointed(%OrganizationMember{} = membership, change, actor, account_created)
+      when change in [:created, :promoted] and is_boolean(account_created) do
     AfterCommit.defer(fn ->
-      if change == :created, do: emit_member_added(membership, actor.id)
+      if change == :created, do: emit_member_added(membership, actor.id, account_created)
 
       AuditLog.event(:org_admin_appointed,
         user_id: actor.id,
         organization_id: membership.organization_id,
-        member_user_id: membership.user_id
+        member_user_id: membership.user_id,
+        account_created: account_created
       )
     end)
   end
@@ -133,12 +138,13 @@ defmodule Kanban.Organizations.OrganizationTelemetry do
     end)
   end
 
-  defp emit_member_added(%OrganizationMember{} = membership, actor_user_id) do
+  defp emit_member_added(%OrganizationMember{} = membership, actor_user_id, account_created) do
     Kanban.Telemetry.emit([:kanban, :organization, :member_added], %{count: 1}, %{
       organization_id: membership.organization_id,
       user_id: membership.user_id,
       role: membership.role,
-      actor_user_id: actor_user_id
+      actor_user_id: actor_user_id,
+      account_created: account_created
     })
   end
 

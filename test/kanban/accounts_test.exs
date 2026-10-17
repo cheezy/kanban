@@ -131,6 +131,49 @@ defmodule Kanban.AccountsTest do
       {:ok, user} = Accounts.register_user(attrs)
       assert user.name == "José D'Acosta"
     end
+
+    test "emits :registration straight away outside a held transaction" do
+      attach_telemetry([:kanban, :user, :registration])
+
+      {:ok, user} = Accounts.register_user(valid_user_attributes())
+
+      assert_received {:telemetry_event, [:kanban, :user, :registration], %{count: 1},
+                       %{user_id: user_id}}
+
+      assert user_id == user.id
+    end
+
+    test "holds :registration until an enclosing after_commit/1 transaction commits" do
+      attach_telemetry([:kanban, :user, :registration])
+
+      {:ok, user} =
+        Kanban.Telemetry.AfterCommit.after_commit(fn ->
+          Repo.transact(fn ->
+            {:ok, user} = Accounts.register_user(valid_user_attributes())
+            refute_received {:telemetry_event, [:kanban, :user, :registration], _, _}
+            {:ok, user}
+          end)
+        end)
+
+      assert_received {:telemetry_event, [:kanban, :user, :registration], _, %{user_id: id}}
+      assert id == user.id
+    end
+
+    test "emits no :registration when the enclosing transaction rolls back" do
+      attach_telemetry([:kanban, :user, :registration])
+      email = unique_user_email()
+
+      assert {:error, :rolled_back} =
+               Kanban.Telemetry.AfterCommit.after_commit(fn ->
+                 Repo.transact(fn ->
+                   {:ok, _user} = Accounts.register_user(valid_user_attributes(email: email))
+                   {:error, :rolled_back}
+                 end)
+               end)
+
+      refute Accounts.get_user_by_email(email)
+      refute_received {:telemetry_event, [:kanban, :user, :registration], _, _}
+    end
   end
 
   describe "change_user_email/3 name validation (W395)" do

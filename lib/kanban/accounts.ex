@@ -19,6 +19,7 @@ defmodule Kanban.Accounts do
   alias Kanban.Accounts.UserNotifier
   alias Kanban.Accounts.UserTelemetry
   alias Kanban.Accounts.UserToken
+  alias Kanban.Telemetry.AfterCommit
 
   ## Database getters
 
@@ -101,6 +102,12 @@ defmodule Kanban.Accounts do
   @doc """
   Registers a user with password.
 
+  Emits `[:kanban, :user, :registration]` through
+  `Kanban.Telemetry.AfterCommit.defer/2`: straight away on its own, or once the
+  enclosing transaction commits when the caller wraps it in
+  `Kanban.Telemetry.AfterCommit.after_commit/1`, as
+  `Kanban.Organizations.appoint_org_admin_by_email/4` does.
+
   ## Examples
 
       iex> register_user(%{field: value})
@@ -118,7 +125,10 @@ defmodule Kanban.Accounts do
 
     case result do
       {:ok, user} ->
-        Kanban.Telemetry.emit([:kanban, :user, :registration], %{count: 1}, %{user_id: user.id})
+        AfterCommit.defer(fn ->
+          Kanban.Telemetry.emit([:kanban, :user, :registration], %{count: 1}, %{user_id: user.id})
+        end)
+
         {:ok, user}
 
       error ->
