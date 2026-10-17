@@ -213,6 +213,10 @@ defmodule KanbanWeb.Router do
       live "/messages", MessageLive.Index, :index
       live "/users", UserLive.Index, :index
       live "/audit-log", AuditLogLive.Index, :index
+      # Only site admins create Organizations and edit their details (D1).
+      live "/organizations", OrganizationLive.Index, :index
+      live "/organizations/new", OrganizationLive.Form, :new
+      live "/organizations/:id/edit", OrganizationLive.Form, :edit
     end
 
     # Same admin-only pipeline as the live_session above. `alias: false` keeps

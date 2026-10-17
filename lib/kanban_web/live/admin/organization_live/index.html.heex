@@ -1,0 +1,100 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
+    <.header>
+      {gettext("Organizations")}
+      <:subtitle>
+        {gettext("Paying Organizations and their members.")}
+      </:subtitle>
+      <:actions>
+        <.button id="new-organization" navigate={~p"/admin/organizations/new"} variant="primary">
+          <.icon name="hero-plus" class="size-4" />
+          {gettext("New Organization")}
+        </.button>
+      </:actions>
+    </.header>
+
+    <section class="mt-8">
+      <p :if={@organizations == []} id="organizations-empty" style="color: var(--ink-2);">
+        {gettext("No organizations yet.")}
+      </p>
+
+      <div :if={@organizations != []} class="overflow-x-auto">
+        <table id="organizations" class="table">
+          <thead class="[&>tr>th]:border-b [&>tr>th]:border-base-300">
+            <tr>
+              <th>{gettext("Name")}</th>
+              <th>{gettext("City and country")}</th>
+              <th>{gettext("Contact")}</th>
+              <th class="text-right">{gettext("Org-admins")}</th>
+              <th class="text-right">{gettext("Members")}</th>
+              <th class="w-0"><span class="sr-only">{gettext("Actions")}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              :for={{organization, index} <- Enum.with_index(@organizations)}
+              id={"organization-#{organization.id}"}
+              class={[
+                "border-b border-base-300",
+                rem(index, 2) == 1 && "bg-base-200"
+              ]}
+            >
+              <td>
+                <%!-- overflow-wrap:anywhere lowers the cell's min-content width,
+                      so an unspaced name wraps inside max-w-xs instead of
+                      widening the column; break-words alone does not. --%>
+                <span
+                  id={"organization-name-#{organization.id}"}
+                  class="block max-w-xs font-medium text-base-content [overflow-wrap:anywhere]"
+                >
+                  {organization.name}
+                </span>
+              </td>
+              <td>
+                <span class="text-base-content break-words">{location(organization)}</span>
+              </td>
+              <td>
+                <span class="text-base-content break-words">{organization.contact_name}</span>
+              </td>
+              <td class="text-right">
+                <span
+                  class="text-base-content tabular-nums"
+                  id={"org-admin-count-#{organization.id}"}
+                >
+                  {organization.org_admin_count}
+                </span>
+              </td>
+              <td class="text-right">
+                <span
+                  class="text-base-content tabular-nums"
+                  id={"member-count-#{organization.id}"}
+                >
+                  {organization.member_count}
+                </span>
+              </td>
+              <td class="w-0">
+                <div class="flex gap-2 whitespace-nowrap">
+                  <.button
+                    navigate={Form.detail_path(organization)}
+                    id={"view-organization-#{organization.id}"}
+                    class="btn btn-soft btn-sm"
+                  >
+                    {gettext("View")}
+                  </.button>
+                  <.button
+                    navigate={~p"/admin/organizations/#{organization}/edit"}
+                    id={"edit-organization-#{organization.id}"}
+                    class="btn btn-soft btn-sm"
+                  >
+                    <.icon name="hero-pencil-square" class="size-4" />
+                    {gettext("Edit")}
+                  </.button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</Layouts.app>

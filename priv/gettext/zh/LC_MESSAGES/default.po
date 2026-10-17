@@ -12,6 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #: lib/kanban_web/components/core_components.ex:476
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:30
 #: lib/kanban_web/live/admin/user_live/index.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Actions"
@@ -151,6 +152,7 @@ msgid "Password"
 msgstr "密码"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:25
+#: lib/kanban_web/live/admin/organization_live/form.ex:98
 #: lib/kanban_web/live/board_live/form.html.heex:52
 #: lib/kanban_web/live/board_live/settings_form_component.ex:176
 #: lib/kanban_web/live/board_live/webhook_form.ex:78
@@ -194,6 +196,7 @@ msgstr "看板创建成功"
 msgid "Board updated successfully"
 msgstr "看板更新成功"
 
+#: lib/kanban_web/live/admin/organization_live/form.ex:105
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:175
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
@@ -232,6 +235,8 @@ msgstr "编辑看板"
 msgid "Get started by creating columns for your board."
 msgstr "通过为看板创建列来开始。"
 
+#: lib/kanban_web/live/admin/organization_live/form.ex:65
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:25
 #: lib/kanban_web/live/admin/user_live/index.html.heex:95
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:110
@@ -3176,6 +3181,7 @@ msgid "You must be a board member to comment on this task"
 msgstr "您必须是看板成员才能对此任务发表评论"
 
 #: lib/kanban_web/live/admin/message_live/index.ex:85
+#: lib/kanban_web/live/admin/organization_live/form.ex:159
 #: lib/kanban_web/live/admin/user_live/index.ex:129
 #: lib/kanban_web/live/admin/user_live/index.ex:157
 #, elixir-autogen, elixir-format
@@ -3747,6 +3753,8 @@ msgid "Community support on GitHub"
 msgstr "GitHub 上的社区支持"
 
 #: lib/kanban_web/controllers/page_html/security.html.heex:227
+#: lib/kanban_web/live/admin/organization_live/form.ex:90
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:27
 #, elixir-autogen, elixir-format
 msgid "Contact"
 msgstr "联系"
@@ -4473,6 +4481,7 @@ msgid "In-flight work. Hooks run before and after; the activity rail lights up h
 msgstr "进行中的工作。钩子在前后运行;活动栏在此处亮起。"
 
 #: lib/kanban_web/components/board_tabs.ex:146
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "Members"
 msgstr "成员"
@@ -6572,6 +6581,7 @@ msgstr "代理编写代码以完成任务。"
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:359
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:416
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:74
+#: lib/kanban_web/live/admin/organization_live/form.ex:63
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr "详情"
@@ -8070,6 +8080,7 @@ msgstr "重新发送确认邮件"
 msgid "Send another confirmation email to this account?"
 msgstr "向此账户再发送一封确认邮件？"
 
+#: lib/kanban_web/live/admin/organization_live/form.ex:164
 #: lib/kanban_web/live/admin/user_live/index.ex:138
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
@@ -9517,6 +9528,7 @@ msgstr "用户 #%{id}（已删除）"
 msgid "Are you sure you want to delete this comment?"
 msgstr "您确定要删除此评论吗？"
 
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:90
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:270
 #: lib/kanban_web/live/board_live/webhook_views.ex:172
 #: lib/kanban_web/live/task_live/components/comment_row.ex:111
@@ -10485,3 +10497,135 @@ msgstr "粘贴你从 Discord 复制的 Webhook URL（例如 https://discord.com/
 #, elixir-autogen, elixir-format
 msgid "Couldn't copy it. Select the secret and copy it yourself."
 msgstr "无法复制。请选中密钥并手动复制。"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:73
+#, elixir-autogen, elixir-format
+msgid "Address"
+msgstr "地址"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:75
+#, elixir-autogen, elixir-format
+msgid "Address line 1"
+msgstr "地址第 1 行"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:76
+#, elixir-autogen, elixir-format
+msgid "Address line 2"
+msgstr "地址第 2 行"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:40
+#, elixir-autogen, elixir-format
+msgid "Back to organizations"
+msgstr "返回组织列表"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:78
+#, elixir-autogen, elixir-format
+msgid "City"
+msgstr "城市"
+
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "City and country"
+msgstr "城市和国家"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:94
+#, elixir-autogen, elixir-format
+msgid "Contact email"
+msgstr "联系人邮箱"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:92
+#, elixir-autogen, elixir-format
+msgid "Contact name"
+msgstr "联系人姓名"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:93
+#, elixir-autogen, elixir-format
+msgid "Contact phone"
+msgstr "联系人电话"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:81
+#, elixir-autogen, elixir-format
+msgid "Country"
+msgstr "国家"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:222
+#, elixir-autogen, elixir-format
+msgid "Create Organization"
+msgstr "创建组织"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:180
+#, elixir-autogen, elixir-format
+msgid "Edit Organization"
+msgstr "编辑组织"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:168
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "New Organization"
+msgstr "新建组织"
+
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "No organizations yet."
+msgstr "暂无组织。"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:47
+#, elixir-autogen, elixir-format
+msgid "Only site admins create Organizations and edit their details."
+msgstr "只有站点管理员可以创建组织并编辑其详细信息。"
+
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Org-admins"
+msgstr "组织管理员"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:219
+#, elixir-autogen, elixir-format
+msgid "Organization created."
+msgstr "组织已创建。"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:186
+#, elixir-autogen, elixir-format
+msgid "Organization not found."
+msgstr "未找到该组织。"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:220
+#, elixir-autogen, elixir-format
+msgid "Organization updated."
+msgstr "组织已更新。"
+
+#: lib/kanban_web/live/admin/organization_live/index.ex:22
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Organizations"
+msgstr "组织"
+
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Paying Organizations and their members."
+msgstr "付费组织及其成员。"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:80
+#, elixir-autogen, elixir-format
+msgid "Postal code"
+msgstr "邮政编码"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:79
+#, elixir-autogen, elixir-format
+msgid "Region"
+msgstr "省/州"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:223
+#, elixir-autogen, elixir-format
+msgid "Save Organization"
+msgstr "保存组织"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:162
+#, elixir-autogen, elixir-format
+msgid "The Organization could not be saved. Check the errors below."
+msgstr "无法保存该组织。请检查下面的错误。"
+
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:82
+#, elixir-autogen, elixir-format
+msgid "View"
+msgstr "查看"

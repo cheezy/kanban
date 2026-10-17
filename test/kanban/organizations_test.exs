@@ -503,6 +503,33 @@ defmodule Kanban.OrganizationsTest do
     end
   end
 
+  describe "change_organization/2" do
+    test "returns an unchanged changeset for a new Organization" do
+      changeset = Organizations.change_organization(%Organization{})
+
+      assert %Ecto.Changeset{data: %Organization{}} = changeset
+      assert changeset.changes == %{}
+    end
+
+    test "applies the Organization changeset's validations to attrs" do
+      organization = organization_fixture()
+
+      changeset =
+        Organizations.change_organization(organization, %{name: "  ", contact_email: "bad"})
+
+      refute changeset.valid?
+      assert %{name: ["can't be blank"], contact_email: [_message]} = errors_on(changeset)
+    end
+
+    test "writes nothing" do
+      organization = organization_fixture(%{name: "Before"})
+
+      _changeset = Organizations.change_organization(organization, %{name: "After"})
+
+      assert Repo.get!(Organization, organization.id).name == "Before"
+    end
+  end
+
   describe "list_organizations/1" do
     test "returns each Organization with its org-admin and member counts" do
       a = organization_fixture(%{name: "Alpha"})

@@ -12,6 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #: lib/kanban_web/components/core_components.ex:476
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:30
 #: lib/kanban_web/live/admin/user_live/index.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Actions"
@@ -151,6 +152,7 @@ msgid "Password"
 msgstr "パスワード"
 
 #: lib/kanban_web/live/admin/message_live/index.html.heex:25
+#: lib/kanban_web/live/admin/organization_live/form.ex:98
 #: lib/kanban_web/live/board_live/form.html.heex:52
 #: lib/kanban_web/live/board_live/settings_form_component.ex:176
 #: lib/kanban_web/live/board_live/webhook_form.ex:78
@@ -194,6 +196,7 @@ msgstr "ボードが正常に作成されました"
 msgid "Board updated successfully"
 msgstr "ボードが正常に更新されました"
 
+#: lib/kanban_web/live/admin/organization_live/form.ex:105
 #: lib/kanban_web/live/agents_live/components/intervention_dialogs.ex:175
 #: lib/kanban_web/live/board_live/form.html.heex:58
 #: lib/kanban_web/live/board_live/form.html.heex:65
@@ -232,6 +235,8 @@ msgstr "ボードを編集"
 msgid "Get started by creating columns for your board."
 msgstr "ボード用の列を作成して開始しましょう。"
 
+#: lib/kanban_web/live/admin/organization_live/form.ex:65
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:25
 #: lib/kanban_web/live/admin/user_live/index.html.heex:95
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:110
@@ -3176,6 +3181,7 @@ msgid "You must be a board member to comment on this task"
 msgstr "このタスクにコメントするにはボードメンバーである必要があります"
 
 #: lib/kanban_web/live/admin/message_live/index.ex:85
+#: lib/kanban_web/live/admin/organization_live/form.ex:159
 #: lib/kanban_web/live/admin/user_live/index.ex:129
 #: lib/kanban_web/live/admin/user_live/index.ex:157
 #, elixir-autogen, elixir-format
@@ -3747,6 +3753,8 @@ msgid "Community support on GitHub"
 msgstr "GitHub上のコミュニティサポート"
 
 #: lib/kanban_web/controllers/page_html/security.html.heex:227
+#: lib/kanban_web/live/admin/organization_live/form.ex:90
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:27
 #, elixir-autogen, elixir-format
 msgid "Contact"
 msgstr "お問い合わせ"
@@ -4473,6 +4481,7 @@ msgid "In-flight work. Hooks run before and after; the activity rail lights up h
 msgstr "進行中の作業。フックは前後に実行され、アクティビティレールがここで点灯します。"
 
 #: lib/kanban_web/components/board_tabs.ex:146
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "Members"
 msgstr "メンバー"
@@ -6557,6 +6566,7 @@ msgstr "エージェントがタスクを完了するためのコードを書き
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:359
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:416
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:74
+#: lib/kanban_web/live/admin/organization_live/form.ex:63
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr "詳細"
@@ -8070,6 +8080,7 @@ msgstr "確認メールを再送"
 msgid "Send another confirmation email to this account?"
 msgstr "このアカウントに確認メールをもう一度送信しますか？"
 
+#: lib/kanban_web/live/admin/organization_live/form.ex:164
 #: lib/kanban_web/live/admin/user_live/index.ex:138
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
@@ -9517,6 +9528,7 @@ msgstr "ユーザー #%{id}（削除済み）"
 msgid "Are you sure you want to delete this comment?"
 msgstr "このコメントを削除してもよろしいですか？"
 
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:90
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:270
 #: lib/kanban_web/live/board_live/webhook_views.ex:172
 #: lib/kanban_web/live/task_live/components/comment_row.ex:111
@@ -10485,3 +10497,135 @@ msgstr "Discord でコピーした Webhook URL を貼り付けてください（
 #, elixir-autogen, elixir-format
 msgid "Couldn't copy it. Select the secret and copy it yourself."
 msgstr "コピーできませんでした。シークレットを選択して手動でコピーしてください。"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:73
+#, elixir-autogen, elixir-format
+msgid "Address"
+msgstr "住所"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:75
+#, elixir-autogen, elixir-format
+msgid "Address line 1"
+msgstr "住所 1"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:76
+#, elixir-autogen, elixir-format
+msgid "Address line 2"
+msgstr "住所 2"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:40
+#, elixir-autogen, elixir-format
+msgid "Back to organizations"
+msgstr "組織一覧に戻る"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:78
+#, elixir-autogen, elixir-format
+msgid "City"
+msgstr "市区町村"
+
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "City and country"
+msgstr "市区町村と国"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:94
+#, elixir-autogen, elixir-format
+msgid "Contact email"
+msgstr "連絡先メールアドレス"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:92
+#, elixir-autogen, elixir-format
+msgid "Contact name"
+msgstr "連絡先の氏名"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:93
+#, elixir-autogen, elixir-format
+msgid "Contact phone"
+msgstr "連絡先の電話番号"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:81
+#, elixir-autogen, elixir-format
+msgid "Country"
+msgstr "国"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:222
+#, elixir-autogen, elixir-format
+msgid "Create Organization"
+msgstr "組織を作成"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:180
+#, elixir-autogen, elixir-format
+msgid "Edit Organization"
+msgstr "組織を編集"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:168
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:11
+#, elixir-autogen, elixir-format
+msgid "New Organization"
+msgstr "新しい組織"
+
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:18
+#, elixir-autogen, elixir-format
+msgid "No organizations yet."
+msgstr "組織はまだありません。"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:47
+#, elixir-autogen, elixir-format
+msgid "Only site admins create Organizations and edit their details."
+msgstr "組織の作成と詳細の編集は、サイト管理者のみが行えます。"
+
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Org-admins"
+msgstr "組織管理者"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:219
+#, elixir-autogen, elixir-format
+msgid "Organization created."
+msgstr "組織を作成しました。"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:186
+#, elixir-autogen, elixir-format
+msgid "Organization not found."
+msgstr "組織が見つかりません。"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:220
+#, elixir-autogen, elixir-format
+msgid "Organization updated."
+msgstr "組織を更新しました。"
+
+#: lib/kanban_web/live/admin/organization_live/index.ex:22
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Organizations"
+msgstr "組織"
+
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "Paying Organizations and their members."
+msgstr "有料の組織とそのメンバー。"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:80
+#, elixir-autogen, elixir-format
+msgid "Postal code"
+msgstr "郵便番号"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:79
+#, elixir-autogen, elixir-format
+msgid "Region"
+msgstr "都道府県・州"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:223
+#, elixir-autogen, elixir-format
+msgid "Save Organization"
+msgstr "組織を保存"
+
+#: lib/kanban_web/live/admin/organization_live/form.ex:162
+#, elixir-autogen, elixir-format
+msgid "The Organization could not be saved. Check the errors below."
+msgstr "組織を保存できませんでした。以下のエラーを確認してください。"
+
+#: lib/kanban_web/live/admin/organization_live/index.html.heex:82
+#, elixir-autogen, elixir-format
+msgid "View"
+msgstr "表示"

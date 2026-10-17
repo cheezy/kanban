@@ -117,6 +117,15 @@ defmodule Kanban.Organizations do
   end
 
   @doc """
+  Returns a changeset for tracking `organization` changes in a form. It
+  writes nothing, so it takes no actor.
+  """
+  @spec change_organization(Organization.t(), map()) :: Ecto.Changeset.t()
+  def change_organization(%Organization{} = organization, attrs \\ %{}) do
+    Organization.changeset(organization, attrs)
+  end
+
+  @doc """
   Returns every Organization, ordered by name, with `org_admin_count` and
   `member_count` filled in.
 
