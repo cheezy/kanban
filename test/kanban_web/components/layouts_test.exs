@@ -14,6 +14,7 @@ defmodule KanbanWeb.LayoutsTest do
   import Kanban.BoardsFixtures
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Organizations.OrganizationMember
   alias KanbanWeb.Layouts
   alias KanbanWeb.SideNav
 
@@ -228,6 +229,58 @@ defmodule KanbanWeb.LayoutsTest do
 
     test "My Work is listed second in the primary nav items, after Boards" do
       assert [:boards, :my_work | _] = Enum.map(SideNav.primary_nav_items(), & &1.id)
+    end
+  end
+
+  describe "side_nav/1 — Organization entry (W2395)" do
+    defp membership_scope(user, role) do
+      user
+      |> scope_for()
+      |> Scope.put_organization_membership(%OrganizationMember{role: role})
+    end
+
+    defp render_nav(scope, active \\ nil) do
+      assigns = %{current_scope: scope, active: active, board: nil}
+
+      rendered_to_string(~H"""
+      <SideNav.side_nav current_scope={@current_scope} active={@active} board={@board} />
+      """)
+    end
+
+    test "shows an Organization link to /org for an org-admin" do
+      html = render_nav(membership_scope(user_fixture(), :org_admin))
+
+      assert html =~ ~s(href="/org")
+      assert html =~ "Organization"
+    end
+
+    test "hides the link from a member, a free user, a site admin and a nil scope" do
+      for scope <- [
+            membership_scope(user_fixture(), :member),
+            scope_for(user_fixture()),
+            scope_for(admin_fixture()),
+            nil
+          ] do
+        refute render_nav(scope) =~ ~s(href="/org")
+      end
+    end
+
+    test "highlights the Organization link when active is :organization" do
+      html = render_nav(membership_scope(user_fixture(), :org_admin), :organization)
+
+      [link] = Regex.run(~r/<a[^>]*href="\/org"[^>]*>/, html)
+      assert link =~ "font-weight: 600"
+    end
+
+    test "organization_nav_items/1 returns one item only for an org-admin" do
+      org_admin_scope = membership_scope(user_fixture(), :org_admin)
+      member_scope = membership_scope(user_fixture(), :member)
+
+      assert [%{id: :organization, path: "/org"}] =
+               SideNav.organization_nav_items(org_admin_scope)
+
+      assert SideNav.organization_nav_items(member_scope) == []
+      assert SideNav.organization_nav_items(nil) == []
     end
   end
 

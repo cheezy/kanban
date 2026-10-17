@@ -108,14 +108,20 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
     ]
   end
 
+  @doc """
+  A section tab that sends `select_section` with its section name. Pair it with
+  a `settings_card/1` whose `tab` is the same section. The org console
+  (`KanbanWeb.OrgLive.Console`) uses it too.
+
+  Only the selected section's card is rendered, so only the selected tab sets
+  aria-controls: pointing at a panel that is not in the page is invalid.
+  """
   attr :section, :atom, required: true
   attr :label, :string, required: true
   attr :hint, :string, default: nil
   attr :active, :boolean, default: false
 
-  # Only the selected section's card is rendered, so only the selected tab
-  # sets aria-controls: pointing at a panel that is not in the page is invalid.
-  defp section_tab(assigns) do
+  def section_tab(assigns) do
     ~H"""
     <button
       type="button"

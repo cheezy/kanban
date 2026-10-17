@@ -19,18 +19,18 @@ msgstr ""
 msgid "Actions"
 msgstr "操作"
 
-#: lib/kanban_web/components/layouts.ex:213
-#: lib/kanban_web/components/layouts.ex:225
+#: lib/kanban_web/components/layouts.ex:214
+#: lib/kanban_web/components/layouts.ex:226
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "正在尝试重新连接"
 
-#: lib/kanban_web/components/layouts.ex:220
+#: lib/kanban_web/components/layouts.ex:221
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "出错了！"
 
-#: lib/kanban_web/components/layouts.ex:208
+#: lib/kanban_web/components/layouts.ex:209
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "无法连接到互联网"
@@ -80,15 +80,15 @@ msgid "Log in"
 msgstr "登录"
 
 #: lib/kanban_web/components/nav_components.ex:140
-#: lib/kanban_web/components/side_nav.ex:127
+#: lib/kanban_web/components/side_nav.ex:135
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "退出"
 
 #: lib/kanban_web/components/board_tabs.ex:152
 #: lib/kanban_web/components/nav_components.ex:135
-#: lib/kanban_web/components/side_nav.ex:102
-#: lib/kanban_web/components/side_nav.ex:103
+#: lib/kanban_web/components/side_nav.ex:110
+#: lib/kanban_web/components/side_nav.ex:111
 #: lib/kanban_web/live/user_live/notification_preferences.ex:124
 #: lib/kanban_web/live/user_live/settings_components.ex:32
 #, elixir-autogen, elixir-format
@@ -245,6 +245,7 @@ msgstr "通过为看板创建列来开始。"
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:110
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
+#: lib/kanban_web/live/org_live/console.html.heex:50
 #: lib/kanban_web/live/target_live/form.html.heex:29
 #: lib/kanban_web/live/user_live/settings.ex:32
 #, elixir-autogen, elixir-format
@@ -389,13 +390,13 @@ msgstr "更新任务详情"
 msgid "WIP limit reached for this column"
 msgstr "此列已达到在制品限制"
 
-#: lib/kanban_web/components/layouts.ex:171
+#: lib/kanban_web/components/layouts.ex:172
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
 #: lib/kanban_web/components/marketing_closing.ex:97
 #: lib/kanban_web/components/marketing_components.ex:56
-#: lib/kanban_web/components/side_nav.ex:55
+#: lib/kanban_web/components/side_nav.ex:63
 #, elixir-autogen, elixir-format
 msgid "Stride"
 msgstr "Stride"
@@ -809,7 +810,7 @@ msgstr "此账户已确认。您可以登录。"
 #: lib/kanban_web/components/marketing_components.ex:283
 #: lib/kanban_web/components/nav_components.ex:137
 #: lib/kanban_web/components/nav_components.ex:144
-#: lib/kanban_web/components/side_nav.ex:245
+#: lib/kanban_web/components/side_nav.ex:276
 #: lib/kanban_web/controllers/page_html/about.html.heex:3
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:7
 #: lib/kanban_web/controllers/page_html/tango.html.heex:7
@@ -2156,7 +2157,7 @@ msgstr "阅读更多"
 #: lib/kanban_web/components/marketing_components.ex:277
 #: lib/kanban_web/components/nav_components.ex:136
 #: lib/kanban_web/components/nav_components.ex:143
-#: lib/kanban_web/components/side_nav.ex:238
+#: lib/kanban_web/components/side_nav.ex:269
 #: lib/kanban_web/live/resources_live/show.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Resources"
@@ -2237,7 +2238,7 @@ msgid "Could not find a user with that email address"
 msgstr "未找到使用该邮箱的用户"
 
 #: lib/kanban_web/components/board_tabs.ex:134
-#: lib/kanban_web/components/side_nav.ex:226
+#: lib/kanban_web/components/side_nav.ex:234
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:5
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
@@ -4256,7 +4257,7 @@ msgid "%{count} active"
 msgid_plural "%{count} active"
 msgstr[0] "%{count} 个活跃"
 
-#: lib/kanban_web/components/side_nav.ex:198
+#: lib/kanban_web/components/side_nav.ex:206
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:568
 #: lib/kanban_web/live/admin/user_live/index.html.heex:107
 #: lib/kanban_web/live/board_live/index.html.heex:5
@@ -4343,7 +4344,7 @@ msgstr "待办"
 msgid "Active goals"
 msgstr "活动目标"
 
-#: lib/kanban_web/components/side_nav.ex:212
+#: lib/kanban_web/components/side_nav.ex:220
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
 #: lib/kanban_web/live/agents_live.ex:338
 #, elixir-autogen, elixir-format
@@ -4383,7 +4384,7 @@ msgstr "新建目标"
 msgid "Pre-configured for AI workflow"
 msgstr "已为 AI 工作流预配置"
 
-#: lib/kanban_web/components/side_nav.ex:33
+#: lib/kanban_web/components/side_nav.ex:41
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr "主导航"
@@ -4393,7 +4394,7 @@ msgstr "主导航"
 msgid "Promote children to Ready"
 msgstr "将子项提升至「就绪」"
 
-#: lib/kanban_web/components/side_nav.ex:219
+#: lib/kanban_web/components/side_nav.ex:227
 #: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
@@ -4406,12 +4407,12 @@ msgstr "审核队列"
 msgid "Start with a blank board"
 msgstr "从一个空白看板开始"
 
-#: lib/kanban_web/components/side_nav.ex:42
+#: lib/kanban_web/components/side_nav.ex:50
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr "Stride 首页"
 
-#: lib/kanban_web/components/side_nav.ex:62
+#: lib/kanban_web/components/side_nav.ex:70
 #: lib/kanban_web/live/agents_live.ex:336
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
@@ -4487,6 +4488,8 @@ msgstr "进行中的工作。钩子在前后运行;活动栏在此处亮起。"
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
+#: lib/kanban_web/live/org_live/console.ex:67
+#: lib/kanban_web/live/org_live/console.html.heex:113
 #, elixir-autogen, elixir-format
 msgid "Members"
 msgstr "成员"
@@ -5521,7 +5524,7 @@ msgstr "所有看板"
 msgid "Toggle menu"
 msgstr "切换菜单"
 
-#: lib/kanban_web/components/layouts.ex:150
+#: lib/kanban_web/components/layouts.ex:151
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr "切换侧边栏"
@@ -6588,6 +6591,8 @@ msgstr "代理编写代码以完成任务。"
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:74
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
+#: lib/kanban_web/live/org_live/console.ex:66
+#: lib/kanban_web/live/org_live/console.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr "详情"
@@ -7079,10 +7084,11 @@ msgstr "您对本服务的使用须遵守我们的"
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "您必须先确认您的账户才能登录。请检查您的电子邮件以获取确认链接。"
 
-#: lib/kanban_web/user_auth.ex:272
-#: lib/kanban_web/user_auth.ex:350
-#: lib/kanban_web/user_auth.ex:386
-#: lib/kanban_web/user_auth.ex:417
+#: lib/kanban_web/user_auth.ex:288
+#: lib/kanban_web/user_auth.ex:377
+#: lib/kanban_web/user_auth.ex:413
+#: lib/kanban_web/user_auth.ex:444
+#: lib/kanban_web/user_auth.ex:475
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "您必须确认您的账户才能访问此页面。"
@@ -9841,7 +9847,7 @@ msgstr "登录尝试已过期,请重新登录。"
 msgid "New task"
 msgstr "新任务"
 
-#: lib/kanban_web/components/side_nav.ex:73
+#: lib/kanban_web/components/side_nav.ex:81
 #, elixir-autogen, elixir-format
 msgid "Resources and information"
 msgstr "资源与信息"
@@ -10081,7 +10087,7 @@ msgid "%{count} task assigned to you"
 msgid_plural "%{count} tasks assigned to you"
 msgstr[0] "分配给你的 %{count} 个任务"
 
-#: lib/kanban_web/components/side_nav.ex:205
+#: lib/kanban_web/components/side_nav.ex:213
 #: lib/kanban_web/live/my_work_live.ex:27
 #: lib/kanban_web/live/my_work_live.ex:39
 #: lib/kanban_web/live/my_work_live.ex:45
@@ -10507,6 +10513,7 @@ msgstr "无法复制。请选中密钥并手动复制。"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:73
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:37
+#: lib/kanban_web/live/org_live/console.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Address"
 msgstr "地址"
@@ -10534,24 +10541,28 @@ msgstr "城市"
 
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:26
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:48
+#: lib/kanban_web/live/org_live/console.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "City and country"
 msgstr "城市和国家"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:94
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:60
+#: lib/kanban_web/live/org_live/console.html.heex:89
 #, elixir-autogen, elixir-format
 msgid "Contact email"
 msgstr "联系人邮箱"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:92
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:54
+#: lib/kanban_web/live/org_live/console.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Contact name"
 msgstr "联系人姓名"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:93
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:69
+#: lib/kanban_web/live/org_live/console.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Contact phone"
 msgstr "联系人电话"
@@ -10666,6 +10677,7 @@ msgid "Enter a valid email address. Nothing was changed."
 msgstr "请输入有效的电子邮件地址。未做任何更改。"
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:241
+#: lib/kanban_web/live/org_live/console.ex:72
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr "成员"
@@ -10676,6 +10688,7 @@ msgid "Only site admins appoint or remove org-admins."
 msgstr "只有站点管理员可以任命或移除组织管理员。"
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:240
+#: lib/kanban_web/live/org_live/console.ex:71
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr "组织管理员"
@@ -10729,3 +10742,46 @@ msgstr "该组织还没有成员。"
 #, elixir-autogen, elixir-format
 msgid "You cannot remove the last org-admin while the Organization has other members. Appoint another org-admin first."
 msgstr "组织还有其他成员时，不能移除最后一位组织管理员。请先任命另一位组织管理员。"
+
+#: lib/kanban_web/live/org_live/console.html.heex:114
+#, elixir-autogen, elixir-format
+msgid "Everyone in your Organization, org-admins first."
+msgstr "您组织中的所有成员，组织管理员排在最前。"
+
+#: lib/kanban_web/components/side_nav.ex:256
+#: lib/kanban_web/live/org_live/console.ex:38
+#, elixir-autogen, elixir-format
+msgid "Organization"
+msgstr "组织"
+
+#: lib/kanban_web/live/org_live/console.html.heex:21
+#: lib/kanban_web/live/org_live/console.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Organization sections"
+msgstr "组织分区"
+
+#: lib/kanban_web/live/org_live/console.html.heex:46
+#, elixir-autogen, elixir-format
+msgid "Read-only. Ask a site admin to change them."
+msgstr "只读。如需更改，请联系站点管理员。"
+
+#: lib/kanban_web/live/org_live/console.ex:49
+#: lib/kanban_web/user_auth/org_admin_gate.ex:103
+#, elixir-autogen, elixir-format
+msgid "You must be an org-admin of an Organization to access this page."
+msgstr "您必须是某个组织的组织管理员才能访问此页面。"
+
+#: lib/kanban_web/live/org_live/console.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Your Organization's details and members. Only a site admin changes the details or appoints org-admins."
+msgstr "您组织的详细信息和成员。只有站点管理员可以更改详细信息或任命组织管理员。"
+
+#: lib/kanban_web/live/org_live/console.ex:66
+#, elixir-autogen, elixir-format
+msgid "name · address · contact"
+msgstr "名称 · 地址 · 联系人"
+
+#: lib/kanban_web/live/org_live/console.ex:67
+#, elixir-autogen, elixir-format
+msgid "names · roles"
+msgstr "姓名 · 角色"

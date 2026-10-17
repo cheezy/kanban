@@ -19,18 +19,18 @@ msgstr ""
 msgid "Actions"
 msgstr "Ações"
 
-#: lib/kanban_web/components/layouts.ex:213
-#: lib/kanban_web/components/layouts.ex:225
+#: lib/kanban_web/components/layouts.ex:214
+#: lib/kanban_web/components/layouts.ex:226
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "Tentando reconectar"
 
-#: lib/kanban_web/components/layouts.ex:220
+#: lib/kanban_web/components/layouts.ex:221
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "Algo deu errado!"
 
-#: lib/kanban_web/components/layouts.ex:208
+#: lib/kanban_web/components/layouts.ex:209
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "Não conseguimos encontrar a internet"
@@ -80,15 +80,15 @@ msgid "Log in"
 msgstr "Entrar"
 
 #: lib/kanban_web/components/nav_components.ex:140
-#: lib/kanban_web/components/side_nav.ex:127
+#: lib/kanban_web/components/side_nav.ex:135
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "Sair"
 
 #: lib/kanban_web/components/board_tabs.ex:152
 #: lib/kanban_web/components/nav_components.ex:135
-#: lib/kanban_web/components/side_nav.ex:102
-#: lib/kanban_web/components/side_nav.ex:103
+#: lib/kanban_web/components/side_nav.ex:110
+#: lib/kanban_web/components/side_nav.ex:111
 #: lib/kanban_web/live/user_live/notification_preferences.ex:124
 #: lib/kanban_web/live/user_live/settings_components.ex:32
 #, elixir-autogen, elixir-format
@@ -245,6 +245,7 @@ msgstr "Comece criando colunas para o seu quadro."
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:110
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
+#: lib/kanban_web/live/org_live/console.html.heex:50
 #: lib/kanban_web/live/target_live/form.html.heex:29
 #: lib/kanban_web/live/user_live/settings.ex:32
 #, elixir-autogen, elixir-format
@@ -389,13 +390,13 @@ msgstr "Atualizar detalhes da tarefa"
 msgid "WIP limit reached for this column"
 msgstr "Limite WIP atingido para esta coluna"
 
-#: lib/kanban_web/components/layouts.ex:171
+#: lib/kanban_web/components/layouts.ex:172
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
 #: lib/kanban_web/components/marketing_closing.ex:97
 #: lib/kanban_web/components/marketing_components.ex:56
-#: lib/kanban_web/components/side_nav.ex:55
+#: lib/kanban_web/components/side_nav.ex:63
 #, elixir-autogen, elixir-format
 msgid "Stride"
 msgstr "Stride"
@@ -809,7 +810,7 @@ msgstr "Esta conta já foi confirmada. Você pode fazer login."
 #: lib/kanban_web/components/marketing_components.ex:283
 #: lib/kanban_web/components/nav_components.ex:137
 #: lib/kanban_web/components/nav_components.ex:144
-#: lib/kanban_web/components/side_nav.ex:245
+#: lib/kanban_web/components/side_nav.ex:276
 #: lib/kanban_web/controllers/page_html/about.html.heex:3
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:7
 #: lib/kanban_web/controllers/page_html/tango.html.heex:7
@@ -2157,7 +2158,7 @@ msgstr "Leia mais"
 #: lib/kanban_web/components/marketing_components.ex:277
 #: lib/kanban_web/components/nav_components.ex:136
 #: lib/kanban_web/components/nav_components.ex:143
-#: lib/kanban_web/components/side_nav.ex:238
+#: lib/kanban_web/components/side_nav.ex:269
 #: lib/kanban_web/live/resources_live/show.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Resources"
@@ -2239,7 +2240,7 @@ msgid "Could not find a user with that email address"
 msgstr "Não foi possível encontrar um usuário com esse e-mail"
 
 #: lib/kanban_web/components/board_tabs.ex:134
-#: lib/kanban_web/components/side_nav.ex:226
+#: lib/kanban_web/components/side_nav.ex:234
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:5
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
@@ -4260,7 +4261,7 @@ msgid_plural "%{count} active"
 msgstr[0] "%{count} ativa"
 msgstr[1] "%{count} ativas"
 
-#: lib/kanban_web/components/side_nav.ex:198
+#: lib/kanban_web/components/side_nav.ex:206
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:568
 #: lib/kanban_web/live/admin/user_live/index.html.heex:107
 #: lib/kanban_web/live/board_live/index.html.heex:5
@@ -4347,7 +4348,7 @@ msgstr "A fazer"
 msgid "Active goals"
 msgstr "Metas ativas"
 
-#: lib/kanban_web/components/side_nav.ex:212
+#: lib/kanban_web/components/side_nav.ex:220
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
 #: lib/kanban_web/live/agents_live.ex:338
 #, elixir-autogen, elixir-format
@@ -4387,7 +4388,7 @@ msgstr "Nova meta"
 msgid "Pre-configured for AI workflow"
 msgstr "Pré-configurado para fluxo de IA"
 
-#: lib/kanban_web/components/side_nav.ex:33
+#: lib/kanban_web/components/side_nav.ex:41
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr "Navegação principal"
@@ -4397,7 +4398,7 @@ msgstr "Navegação principal"
 msgid "Promote children to Ready"
 msgstr "Promover filhos para Pronto"
 
-#: lib/kanban_web/components/side_nav.ex:219
+#: lib/kanban_web/components/side_nav.ex:227
 #: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
@@ -4410,12 +4411,12 @@ msgstr "Fila de revisão"
 msgid "Start with a blank board"
 msgstr "Começar com um quadro em branco"
 
-#: lib/kanban_web/components/side_nav.ex:42
+#: lib/kanban_web/components/side_nav.ex:50
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr "Início do Stride"
 
-#: lib/kanban_web/components/side_nav.ex:62
+#: lib/kanban_web/components/side_nav.ex:70
 #: lib/kanban_web/live/agents_live.ex:336
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
@@ -4491,6 +4492,8 @@ msgstr "Trabalho em andamento. Hooks rodam antes e depois; a trilha de atividade
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
+#: lib/kanban_web/live/org_live/console.ex:67
+#: lib/kanban_web/live/org_live/console.html.heex:113
 #, elixir-autogen, elixir-format
 msgid "Members"
 msgstr "Membros"
@@ -5533,7 +5536,7 @@ msgstr "todos os quadros"
 msgid "Toggle menu"
 msgstr "Alternar menu"
 
-#: lib/kanban_web/components/layouts.ex:150
+#: lib/kanban_web/components/layouts.ex:151
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr "Alternar barra lateral"
@@ -6593,6 +6596,8 @@ msgstr "O agente escreve o código para concluir a tarefa."
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:74
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
+#: lib/kanban_web/live/org_live/console.ex:66
+#: lib/kanban_web/live/org_live/console.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr "Detalhes"
@@ -7109,10 +7114,11 @@ msgstr "O seu uso do serviço está sujeito à nossa "
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "Você deve confirmar sua conta antes de entrar. Verifique seu e-mail para encontrar o link de confirmação."
 
-#: lib/kanban_web/user_auth.ex:272
-#: lib/kanban_web/user_auth.ex:350
-#: lib/kanban_web/user_auth.ex:386
-#: lib/kanban_web/user_auth.ex:417
+#: lib/kanban_web/user_auth.ex:288
+#: lib/kanban_web/user_auth.ex:377
+#: lib/kanban_web/user_auth.ex:413
+#: lib/kanban_web/user_auth.ex:444
+#: lib/kanban_web/user_auth.ex:475
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "Você deve confirmar sua conta para acessar esta página."
@@ -9882,7 +9888,7 @@ msgstr "Sua tentativa de entrar expirou. Entre novamente."
 msgid "New task"
 msgstr "Nova tarefa"
 
-#: lib/kanban_web/components/side_nav.ex:73
+#: lib/kanban_web/components/side_nav.ex:81
 #, elixir-autogen, elixir-format
 msgid "Resources and information"
 msgstr "Recursos e informações"
@@ -10124,7 +10130,7 @@ msgid_plural "%{count} tasks assigned to you"
 msgstr[0] "%{count} tarefa atribuída a você"
 msgstr[1] "%{count} tarefas atribuídas a você"
 
-#: lib/kanban_web/components/side_nav.ex:205
+#: lib/kanban_web/components/side_nav.ex:213
 #: lib/kanban_web/live/my_work_live.ex:27
 #: lib/kanban_web/live/my_work_live.ex:39
 #: lib/kanban_web/live/my_work_live.ex:45
@@ -10552,6 +10558,7 @@ msgstr "Não foi possível copiar. Selecione o segredo e copie você mesmo."
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:73
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:37
+#: lib/kanban_web/live/org_live/console.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Address"
 msgstr "Endereço"
@@ -10579,24 +10586,28 @@ msgstr "Cidade"
 
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:26
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:48
+#: lib/kanban_web/live/org_live/console.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "City and country"
 msgstr "Cidade e país"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:94
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:60
+#: lib/kanban_web/live/org_live/console.html.heex:89
 #, elixir-autogen, elixir-format
 msgid "Contact email"
 msgstr "E-mail de contato"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:92
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:54
+#: lib/kanban_web/live/org_live/console.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Contact name"
 msgstr "Nome do contato"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:93
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:69
+#: lib/kanban_web/live/org_live/console.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Contact phone"
 msgstr "Telefone de contato"
@@ -10711,6 +10722,7 @@ msgid "Enter a valid email address. Nothing was changed."
 msgstr "Digite um endereço de e-mail válido. Nada foi alterado."
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:241
+#: lib/kanban_web/live/org_live/console.ex:72
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr "Membro"
@@ -10721,6 +10733,7 @@ msgid "Only site admins appoint or remove org-admins."
 msgstr "Somente administradores do site nomeiam ou removem administradores da organização."
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:240
+#: lib/kanban_web/live/org_live/console.ex:71
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr "Administrador da organização"
@@ -10774,3 +10787,46 @@ msgstr "Esta organização ainda não tem membros."
 #, elixir-autogen, elixir-format
 msgid "You cannot remove the last org-admin while the Organization has other members. Appoint another org-admin first."
 msgstr "Você não pode remover o último administrador da organização enquanto ela tiver outros membros. Nomeie outro administrador primeiro."
+
+#: lib/kanban_web/live/org_live/console.html.heex:114
+#, elixir-autogen, elixir-format
+msgid "Everyone in your Organization, org-admins first."
+msgstr "Todas as pessoas da sua organização, com os administradores da organização primeiro."
+
+#: lib/kanban_web/components/side_nav.ex:256
+#: lib/kanban_web/live/org_live/console.ex:38
+#, elixir-autogen, elixir-format
+msgid "Organization"
+msgstr "Organização"
+
+#: lib/kanban_web/live/org_live/console.html.heex:21
+#: lib/kanban_web/live/org_live/console.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Organization sections"
+msgstr "Seções da organização"
+
+#: lib/kanban_web/live/org_live/console.html.heex:46
+#, elixir-autogen, elixir-format
+msgid "Read-only. Ask a site admin to change them."
+msgstr "Somente leitura. Peça a um administrador do site para alterá-los."
+
+#: lib/kanban_web/live/org_live/console.ex:49
+#: lib/kanban_web/user_auth/org_admin_gate.ex:103
+#, elixir-autogen, elixir-format
+msgid "You must be an org-admin of an Organization to access this page."
+msgstr "Você precisa ser administrador de uma organização para acessar esta página."
+
+#: lib/kanban_web/live/org_live/console.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Your Organization's details and members. Only a site admin changes the details or appoints org-admins."
+msgstr "Os dados e os membros da sua organização. Apenas um administrador do site altera os dados ou nomeia administradores da organização."
+
+#: lib/kanban_web/live/org_live/console.ex:66
+#, elixir-autogen, elixir-format
+msgid "name · address · contact"
+msgstr "nome · endereço · contato"
+
+#: lib/kanban_web/live/org_live/console.ex:67
+#, elixir-autogen, elixir-format
+msgid "names · roles"
+msgstr "nomes · funções"

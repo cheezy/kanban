@@ -209,11 +209,20 @@ defmodule Kanban.Organizations do
   """
   @spec get_membership(User.t()) :: OrganizationMember.t() | nil
   def get_membership(%User{id: user_id}) do
-    OrganizationMember
-    |> where([m], m.user_id == ^user_id)
-    |> preload(organization: ^without_contact_query())
+    # One query (a join, not a preload): UserAuth runs this on every request.
+    from(m in OrganizationMember,
+      join: o in assoc(m, :organization),
+      where: m.user_id == ^user_id,
+      select: {m, struct(o, ^fields_without_contact())}
+    )
     |> Repo.one()
+    |> put_membership_organization()
   end
+
+  defp put_membership_organization(nil), do: nil
+
+  defp put_membership_organization({%OrganizationMember{} = membership, organization}),
+    do: %{membership | organization: organization}
 
   @doc """
   Returns true when `user` is an org-admin of `organization`.
@@ -467,9 +476,8 @@ defmodule Kanban.Organizations do
     )
   end
 
-  defp without_contact_query do
-    fields = Organization.__schema__(:fields) -- Organization.contact_fields()
-    from(o in Organization, select: struct(o, ^fields))
+  defp fields_without_contact do
+    Organization.__schema__(:fields) -- Organization.contact_fields()
   end
 
   defp organization_id(%Organization{id: id}), do: id

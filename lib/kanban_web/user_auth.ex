@@ -7,6 +7,8 @@ defmodule KanbanWeb.UserAuth do
 
   alias Kanban.Accounts
   alias Kanban.Accounts.Scope
+  alias Kanban.Organizations
+  alias KanbanWeb.UserAuth.OrgAdminGate
 
   # Make the remember me cookie valid for 14 days. This should match
   # the session validity setting in UserToken.
@@ -80,11 +82,21 @@ defmodule KanbanWeb.UserAuth do
     with {token, conn} <- ensure_user_token(conn),
          {user, token_inserted_at} <- Accounts.get_user_by_session_token(token) do
       conn
-      |> assign(:current_scope, Scope.for_user(user))
+      |> assign(:current_scope, build_scope(user))
       |> maybe_reissue_user_session_token(user, token_inserted_at)
     else
       nil -> assign(conn, :current_scope, Scope.for_user(nil))
     end
+  end
+
+  # The plug and every on_mount build the scope here, so both carry the user's
+  # Organization membership, loaded with one indexed query.
+  defp build_scope(nil), do: Scope.for_user(nil)
+
+  defp build_scope(user) do
+    user
+    |> Scope.for_user()
+    |> Scope.put_organization_membership(Organizations.get_membership(user))
   end
 
   defp ensure_user_token(conn) do
@@ -237,6 +249,10 @@ defmodule KanbanWeb.UserAuth do
       on user_token.
       Redirects to login page if there's no logged user.
 
+    * `:require_org_admin` - Continues only for a confirmed user whose
+      Organization membership has role `:org_admin`, and assigns
+      `current_organization`. See `KanbanWeb.UserAuth.OrgAdminGate`.
+
   ## Examples
 
   Use the `on_mount` lifecycle macro in LiveViews to mount or authenticate
@@ -314,6 +330,17 @@ defmodule KanbanWeb.UserAuth do
     end
   end
 
+  def on_mount(:require_org_admin, _params, session, socket) do
+    socket = mount_current_scope(socket, session)
+    user = socket.assigns.current_scope && socket.assigns.current_scope.user
+
+    if user && is_nil(user.confirmed_at) do
+      halt_unconfirmed_mount(socket)
+    else
+      OrgAdminGate.authorize_mount(socket)
+    end
+  end
+
   def on_mount(:require_sudo_mode, _params, session, socket) do
     socket = mount_current_scope(socket, session)
     user = socket.assigns.current_scope && socket.assigns.current_scope.user
@@ -361,7 +388,7 @@ defmodule KanbanWeb.UserAuth do
           Accounts.get_user_by_session_token(user_token)
         end || {nil, nil}
 
-      Scope.for_user(user)
+      build_scope(user)
     end)
   end
 
@@ -431,6 +458,24 @@ defmodule KanbanWeb.UserAuth do
         |> put_flash(:error, "You must be an admin to access this page.")
         |> redirect(to: ~p"/")
         |> halt()
+    end
+  end
+
+  @doc """
+  Plug for routes that require the user to be an org-admin of their
+  Organization. Assigns `current_organization`. See
+  `KanbanWeb.UserAuth.OrgAdminGate`.
+  """
+  def require_org_admin_user(conn, _opts) do
+    user = conn.assigns.current_scope && conn.assigns.current_scope.user
+
+    if user && is_nil(user.confirmed_at) do
+      halt_with_login_redirect(
+        conn,
+        gettext("You must confirm your account to access this page.")
+      )
+    else
+      OrgAdminGate.authorize_conn(conn)
     end
   end
 

@@ -277,6 +277,9 @@ defmodule KanbanWeb.Router do
       # force a password prompt first.
       live "/users/notifications", UserLive.NotificationPreferences, :edit
       live "/metrics", MetricsLive.Workspace, :index
+      # Org-admins are ordinary signed-in users, so the org console lives here;
+      # OrgLive.Console re-declares the :require_org_admin on_mount gate.
+      live "/org", OrgLive.Console, :index
       live "/boards/:id/edit", BoardLive.Form, :edit
 
       live "/boards/:id", BoardLive.Show, :show

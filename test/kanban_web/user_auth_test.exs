@@ -2,10 +2,14 @@ defmodule KanbanWeb.UserAuthTest do
   use KanbanWeb.ConnCase, async: true
 
   import Kanban.AccountsFixtures
+  import Kanban.OrganizationsFixtures
   import Kanban.TelemetryHelpers
 
   alias Kanban.Accounts
   alias Kanban.Accounts.Scope
+  alias Kanban.AuditLog
+  alias Kanban.Organizations.Organization
+  alias Kanban.Organizations.OrganizationMember
   alias KanbanWeb.UserAuth
   alias Phoenix.LiveView
 
@@ -638,6 +642,219 @@ defmodule KanbanWeb.UserAuthTest do
         event: "disconnect",
         topic: "users_sessions:dG9rZW4y"
       }
+    end
+  end
+
+  describe "organization membership in current_scope" do
+    test "fetch_current_scope_for_user/2 loads the membership with its Organization", %{
+      conn: conn,
+      user: user
+    } do
+      organization = organization_fixture()
+      organization_member_fixture(organization, user, :org_admin)
+      token = Accounts.generate_user_session_token(user)
+
+      conn = conn |> put_session(:user_token, token) |> UserAuth.fetch_current_scope_for_user([])
+
+      assert %OrganizationMember{role: :org_admin, organization: %Organization{id: id}} =
+               conn.assigns.current_scope.organization_membership
+
+      assert id == organization.id
+    end
+
+    test "fetch_current_scope_for_user/2 leaves the membership nil for a free user", %{
+      conn: conn,
+      user: user
+    } do
+      token = Accounts.generate_user_session_token(user)
+
+      conn = conn |> put_session(:user_token, token) |> UserAuth.fetch_current_scope_for_user([])
+
+      assert conn.assigns.current_scope.user.id == user.id
+      assert conn.assigns.current_scope.organization_membership == nil
+    end
+
+    test "on_mount loads the membership for a LiveView mount", %{conn: conn, user: user} do
+      organization = organization_fixture()
+      organization_member_fixture(organization, user, :member)
+      token = Accounts.generate_user_session_token(user)
+      session = conn |> put_session(:user_token, token) |> get_session()
+
+      {:cont, socket} = UserAuth.on_mount(:mount_current_scope, %{}, session, %LiveView.Socket{})
+
+      assert %OrganizationMember{role: :member, organization_id: organization_id} =
+               socket.assigns.current_scope.organization_membership
+
+      assert organization_id == organization.id
+    end
+
+    test "Scope.put_organization_membership/2 sets and clears the membership", %{user: user} do
+      membership = %OrganizationMember{role: :org_admin}
+      scope = user |> Scope.for_user() |> Scope.put_organization_membership(membership)
+
+      assert scope.organization_membership == membership
+      assert Scope.put_organization_membership(scope, nil).organization_membership == nil
+    end
+  end
+
+  describe "on_mount :require_org_admin" do
+    setup %{conn: conn} do
+      socket = %LiveView.Socket{
+        endpoint: KanbanWeb.Endpoint,
+        assigns: %{__changed__: %{}, flash: %{}}
+      }
+
+      %{conn: conn, socket: socket, organization: organization_fixture()}
+    end
+
+    defp mount_session(conn, user) do
+      token = Accounts.generate_user_session_token(user)
+      conn |> put_session(:user_token, token) |> get_session()
+    end
+
+    test "continues for an org-admin and assigns current_organization", %{
+      conn: conn,
+      socket: socket,
+      organization: organization,
+      user: user
+    } do
+      organization_member_fixture(organization, user, :org_admin)
+
+      assert {:cont, socket} =
+               UserAuth.on_mount(:require_org_admin, %{}, mount_session(conn, user), socket)
+
+      assert socket.assigns.current_organization.id == organization.id
+    end
+
+    test "refuses a member with a flash, an audit event and a redirect to /boards", %{
+      conn: conn,
+      socket: socket,
+      organization: organization,
+      user: user
+    } do
+      organization_member_fixture(organization, user, :member)
+
+      assert {:halt, socket} =
+               UserAuth.on_mount(:require_org_admin, %{}, mount_session(conn, user), socket)
+
+      assert socket.redirected == {:redirect, %{status: 302, to: ~p"/boards"}}
+
+      assert Phoenix.Flash.get(socket.assigns.flash, :error) ==
+               "You must be an org-admin of an Organization to access this page."
+
+      assert [event] = AuditLog.list_events(action: :permission_denied, actor_user_id: user.id)
+      assert event.metadata["gate"] == "require_org_admin"
+    end
+
+    test "refuses a user in no Organization", %{conn: conn, socket: socket, user: user} do
+      assert {:halt, socket} =
+               UserAuth.on_mount(:require_org_admin, %{}, mount_session(conn, user), socket)
+
+      assert socket.redirected == {:redirect, %{status: 302, to: ~p"/boards"}}
+      assert [_event] = AuditLog.list_events(action: :permission_denied, actor_user_id: user.id)
+    end
+
+    test "refuses a site admin who is not an org-admin", %{conn: conn, socket: socket} do
+      admin = admin_fixture()
+
+      assert {:halt, socket} =
+               UserAuth.on_mount(:require_org_admin, %{}, mount_session(conn, admin), socket)
+
+      assert socket.redirected == {:redirect, %{status: 302, to: ~p"/boards"}}
+      assert [_event] = AuditLog.list_events(action: :permission_denied, actor_user_id: admin.id)
+    end
+
+    test "halts an unconfirmed org-admin with the confirmation redirect", %{
+      conn: conn,
+      socket: socket,
+      organization: organization
+    } do
+      unconfirmed = unconfirmed_user_fixture()
+      organization_member_fixture(organization, unconfirmed, :org_admin)
+
+      assert {:halt, socket} =
+               UserAuth.on_mount(
+                 :require_org_admin,
+                 %{},
+                 mount_session(conn, unconfirmed),
+                 socket
+               )
+
+      assert socket.redirected == {:redirect, %{status: 302, to: ~p"/users/log-in"}}
+      assert AuditLog.list_events(action: :permission_denied, actor_user_id: unconfirmed.id) == []
+    end
+  end
+
+  describe "require_org_admin_user/2" do
+    setup do
+      %{organization: organization_fixture()}
+    end
+
+    defp run_org_admin_plug(conn, user) do
+      token = Accounts.generate_user_session_token(user)
+
+      conn
+      |> put_session(:user_token, token)
+      |> UserAuth.fetch_current_scope_for_user([])
+      |> fetch_flash()
+      |> UserAuth.require_org_admin_user([])
+    end
+
+    test "lets an org-admin through and assigns current_organization", %{
+      conn: conn,
+      organization: organization,
+      user: user
+    } do
+      organization_member_fixture(organization, user, :org_admin)
+
+      conn = run_org_admin_plug(conn, user)
+
+      refute conn.halted
+      assert conn.assigns.current_organization.id == organization.id
+    end
+
+    test "refuses a member with a flash, an audit event and a redirect to /boards", %{
+      conn: conn,
+      organization: organization,
+      user: user
+    } do
+      organization_member_fixture(organization, user, :member)
+
+      conn = run_org_admin_plug(conn, user)
+
+      assert conn.halted
+      assert redirected_to(conn) == ~p"/boards"
+
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+               "You must be an org-admin of an Organization to access this page."
+
+      assert [event] = AuditLog.list_events(action: :permission_denied, actor_user_id: user.id)
+      assert event.metadata["gate"] == "require_org_admin"
+    end
+
+    test "refuses a user in no Organization and a site admin", %{conn: conn, user: user} do
+      admin = admin_fixture()
+
+      for refused <- [user, admin] do
+        conn = run_org_admin_plug(conn, refused)
+
+        assert conn.halted
+        assert redirected_to(conn) == ~p"/boards"
+        refute Map.has_key?(conn.assigns, :current_organization)
+      end
+    end
+
+    test "halts an unconfirmed org-admin with the confirmation redirect", %{
+      conn: conn,
+      organization: organization
+    } do
+      unconfirmed = unconfirmed_user_fixture()
+      organization_member_fixture(organization, unconfirmed, :org_admin)
+
+      conn = run_org_admin_plug(conn, unconfirmed)
+
+      assert conn.halted
+      assert redirected_to(conn) == ~p"/users/log-in"
     end
   end
 end

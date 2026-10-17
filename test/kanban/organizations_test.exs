@@ -646,6 +646,33 @@ defmodule Kanban.OrganizationsTest do
       assert loaded.contact_phone == nil
       assert loaded.contact_email == nil
     end
+
+    test "loads the membership and its Organization with one query" do
+      organization = organization_fixture()
+      user = user_fixture()
+      organization_member_fixture(organization, user, :org_admin)
+
+      test_pid = self()
+      handler_id = "organizations-membership-query-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :repo, :query],
+        fn _event, _measurements, %{source: source}, _ ->
+          if self() == test_pid, do: send(test_pid, {:query, source})
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
+      assert %OrganizationMember{organization: %Organization{id: id}} =
+               Organizations.get_membership(user)
+
+      assert id == organization.id
+      assert_received {:query, "organization_members"}
+      refute_received {:query, _}
+    end
   end
 
   describe "org_admin?/2 and member?/2" do

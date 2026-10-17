@@ -19,18 +19,18 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:213
-#: lib/kanban_web/components/layouts.ex:225
+#: lib/kanban_web/components/layouts.ex:214
+#: lib/kanban_web/components/layouts.ex:226
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:220
+#: lib/kanban_web/components/layouts.ex:221
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:208
+#: lib/kanban_web/components/layouts.ex:209
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr ""
@@ -80,15 +80,15 @@ msgid "Log in"
 msgstr ""
 
 #: lib/kanban_web/components/nav_components.ex:140
-#: lib/kanban_web/components/side_nav.ex:127
+#: lib/kanban_web/components/side_nav.ex:135
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:152
 #: lib/kanban_web/components/nav_components.ex:135
-#: lib/kanban_web/components/side_nav.ex:102
-#: lib/kanban_web/components/side_nav.ex:103
+#: lib/kanban_web/components/side_nav.ex:110
+#: lib/kanban_web/components/side_nav.ex:111
 #: lib/kanban_web/live/user_live/notification_preferences.ex:124
 #: lib/kanban_web/live/user_live/settings_components.ex:32
 #, elixir-autogen, elixir-format
@@ -245,6 +245,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:110
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
+#: lib/kanban_web/live/org_live/console.html.heex:50
 #: lib/kanban_web/live/target_live/form.html.heex:29
 #: lib/kanban_web/live/user_live/settings.ex:32
 #, elixir-autogen, elixir-format
@@ -389,13 +390,13 @@ msgstr ""
 msgid "WIP limit reached for this column"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:171
+#: lib/kanban_web/components/layouts.ex:172
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
 #: lib/kanban_web/components/marketing_closing.ex:97
 #: lib/kanban_web/components/marketing_components.ex:56
-#: lib/kanban_web/components/side_nav.ex:55
+#: lib/kanban_web/components/side_nav.ex:63
 #, elixir-autogen, elixir-format
 msgid "Stride"
 msgstr ""
@@ -809,7 +810,7 @@ msgstr ""
 #: lib/kanban_web/components/marketing_components.ex:283
 #: lib/kanban_web/components/nav_components.ex:137
 #: lib/kanban_web/components/nav_components.ex:144
-#: lib/kanban_web/components/side_nav.ex:245
+#: lib/kanban_web/components/side_nav.ex:276
 #: lib/kanban_web/controllers/page_html/about.html.heex:3
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:7
 #: lib/kanban_web/controllers/page_html/tango.html.heex:7
@@ -2157,7 +2158,7 @@ msgstr ""
 #: lib/kanban_web/components/marketing_components.ex:277
 #: lib/kanban_web/components/nav_components.ex:136
 #: lib/kanban_web/components/nav_components.ex:143
-#: lib/kanban_web/components/side_nav.ex:238
+#: lib/kanban_web/components/side_nav.ex:269
 #: lib/kanban_web/live/resources_live/show.html.heex:7
 #, elixir-autogen, elixir-format
 msgid "Resources"
@@ -2239,7 +2240,7 @@ msgid "Could not find a user with that email address"
 msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:134
-#: lib/kanban_web/components/side_nav.ex:226
+#: lib/kanban_web/components/side_nav.ex:234
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:5
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html/report.html.heex:16
 #: lib/kanban_web/export/workspace_metrics_excel.ex:83
@@ -4260,7 +4261,7 @@ msgid_plural "%{count} active"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/components/side_nav.ex:198
+#: lib/kanban_web/components/side_nav.ex:206
 #: lib/kanban_web/controllers/workspace_metrics_pdf_html.ex:568
 #: lib/kanban_web/live/admin/user_live/index.html.heex:107
 #: lib/kanban_web/live/board_live/index.html.heex:5
@@ -4347,7 +4348,7 @@ msgstr ""
 msgid "Active goals"
 msgstr "Active goals"
 
-#: lib/kanban_web/components/side_nav.ex:212
+#: lib/kanban_web/components/side_nav.ex:220
 #: lib/kanban_web/live/admin/user_live/index.html.heex:47
 #: lib/kanban_web/live/agents_live.ex:338
 #, elixir-autogen, elixir-format
@@ -4387,7 +4388,7 @@ msgstr "New goal"
 msgid "Pre-configured for AI workflow"
 msgstr ""
 
-#: lib/kanban_web/components/side_nav.ex:33
+#: lib/kanban_web/components/side_nav.ex:41
 #, elixir-autogen, elixir-format
 msgid "Primary navigation"
 msgstr ""
@@ -4397,7 +4398,7 @@ msgstr ""
 msgid "Promote children to Ready"
 msgstr ""
 
-#: lib/kanban_web/components/side_nav.ex:219
+#: lib/kanban_web/components/side_nav.ex:227
 #: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
@@ -4410,12 +4411,12 @@ msgstr ""
 msgid "Start with a blank board"
 msgstr ""
 
-#: lib/kanban_web/components/side_nav.ex:42
+#: lib/kanban_web/components/side_nav.ex:50
 #, elixir-autogen, elixir-format
 msgid "Stride home"
 msgstr "Stride home"
 
-#: lib/kanban_web/components/side_nav.ex:62
+#: lib/kanban_web/components/side_nav.ex:70
 #: lib/kanban_web/live/agents_live.ex:336
 #: lib/kanban_web/live/board_live/index.html.heex:3
 #: lib/kanban_web/live/board_live/show.html.heex:4
@@ -4491,6 +4492,8 @@ msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
+#: lib/kanban_web/live/org_live/console.ex:67
+#: lib/kanban_web/live/org_live/console.html.heex:113
 #, elixir-autogen, elixir-format
 msgid "Members"
 msgstr ""
@@ -5533,7 +5536,7 @@ msgstr ""
 msgid "Toggle menu"
 msgstr ""
 
-#: lib/kanban_web/components/layouts.ex:150
+#: lib/kanban_web/components/layouts.ex:151
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr ""
@@ -6585,6 +6588,8 @@ msgstr ""
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:74
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
+#: lib/kanban_web/live/org_live/console.ex:66
+#: lib/kanban_web/live/org_live/console.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr ""
@@ -7033,10 +7038,11 @@ msgstr ""
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr ""
 
-#: lib/kanban_web/user_auth.ex:272
-#: lib/kanban_web/user_auth.ex:350
-#: lib/kanban_web/user_auth.ex:386
-#: lib/kanban_web/user_auth.ex:417
+#: lib/kanban_web/user_auth.ex:288
+#: lib/kanban_web/user_auth.ex:377
+#: lib/kanban_web/user_auth.ex:413
+#: lib/kanban_web/user_auth.ex:444
+#: lib/kanban_web/user_auth.ex:475
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr ""
@@ -9806,7 +9812,7 @@ msgstr ""
 msgid "New task"
 msgstr ""
 
-#: lib/kanban_web/components/side_nav.ex:73
+#: lib/kanban_web/components/side_nav.ex:81
 #, elixir-autogen, elixir-format
 msgid "Resources and information"
 msgstr ""
@@ -10048,7 +10054,7 @@ msgid_plural "%{count} tasks assigned to you"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/components/side_nav.ex:205
+#: lib/kanban_web/components/side_nav.ex:213
 #: lib/kanban_web/live/my_work_live.ex:27
 #: lib/kanban_web/live/my_work_live.ex:39
 #: lib/kanban_web/live/my_work_live.ex:45
@@ -10476,6 +10482,7 @@ msgstr ""
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:73
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:37
+#: lib/kanban_web/live/org_live/console.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Address"
 msgstr ""
@@ -10503,24 +10510,28 @@ msgstr ""
 
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:26
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:48
+#: lib/kanban_web/live/org_live/console.html.heex:71
 #, elixir-autogen, elixir-format
 msgid "City and country"
 msgstr ""
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:94
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:60
+#: lib/kanban_web/live/org_live/console.html.heex:89
 #, elixir-autogen, elixir-format
 msgid "Contact email"
 msgstr ""
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:92
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:54
+#: lib/kanban_web/live/org_live/console.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Contact name"
 msgstr ""
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:93
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:69
+#: lib/kanban_web/live/org_live/console.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Contact phone"
 msgstr ""
@@ -10635,6 +10646,7 @@ msgid "Enter a valid email address. Nothing was changed."
 msgstr ""
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:241
+#: lib/kanban_web/live/org_live/console.ex:72
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr ""
@@ -10645,6 +10657,7 @@ msgid "Only site admins appoint or remove org-admins."
 msgstr ""
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:240
+#: lib/kanban_web/live/org_live/console.ex:71
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr ""
@@ -10697,4 +10710,47 @@ msgstr ""
 #: lib/kanban_web/live/admin/organization_live/show.ex:102
 #, elixir-autogen, elixir-format
 msgid "You cannot remove the last org-admin while the Organization has other members. Appoint another org-admin first."
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.html.heex:114
+#, elixir-autogen, elixir-format
+msgid "Everyone in your Organization, org-admins first."
+msgstr ""
+
+#: lib/kanban_web/components/side_nav.ex:256
+#: lib/kanban_web/live/org_live/console.ex:38
+#, elixir-autogen, elixir-format
+msgid "Organization"
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.html.heex:21
+#: lib/kanban_web/live/org_live/console.html.heex:27
+#, elixir-autogen, elixir-format
+msgid "Organization sections"
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.html.heex:46
+#, elixir-autogen, elixir-format
+msgid "Read-only. Ask a site admin to change them."
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.ex:49
+#: lib/kanban_web/user_auth/org_admin_gate.ex:103
+#, elixir-autogen, elixir-format
+msgid "You must be an org-admin of an Organization to access this page."
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Your Organization's details and members. Only a site admin changes the details or appoints org-admins."
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.ex:66
+#, elixir-autogen, elixir-format
+msgid "name · address · contact"
+msgstr ""
+
+#: lib/kanban_web/live/org_live/console.ex:67
+#, elixir-autogen, elixir-format
+msgid "names · roles"
 msgstr ""

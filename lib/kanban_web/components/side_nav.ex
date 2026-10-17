@@ -9,12 +9,14 @@ defmodule KanbanWeb.SideNav do
   use KanbanWeb, :html
 
   alias KanbanWeb.Avatar
+  alias KanbanWeb.UserAuth.OrgAdminGate
 
   @doc """
   The authenticated-app SideNav. Renders the Stride logo header, primary nav
   items (Boards/My Work/Agents/Review queue/Metrics) styled to the design source, plus
   a small secondary section for Resources/Settings, and a footer with the
-  current user's identity + log-out.
+  current user's identity + log-out. An org-admin also gets an Organization
+  link to the org console (`organization_nav_items/1`).
   """
   attr :current_scope, :map, required: true
   attr :active, :atom, default: nil
@@ -24,7 +26,13 @@ defmodule KanbanWeb.SideNav do
     doc: "Reserved for future board-aware nav state. Currently unused by the nav itself."
 
   def side_nav(assigns) do
-    assigns = assign(assigns, :primary_items, primary_nav_items(assigns.board))
+    assigns =
+      assign(
+        assigns,
+        :primary_items,
+        primary_nav_items(assigns.board) ++ organization_nav_items(assigns.current_scope)
+      )
+
     assigns = assign(assigns, :secondary_items, secondary_nav_items())
 
     ~H"""
@@ -229,6 +237,29 @@ defmodule KanbanWeb.SideNav do
         badge: nil
       }
     ]
+  end
+
+  @doc """
+  The Organization link to the org console (`/org`), as a one-item list, when
+  `current_scope` belongs to an org-admin; otherwise an empty list. Members,
+  free users and site admins who are not org-admins get no link.
+  """
+  def organization_nav_items(current_scope) do
+    case OrgAdminGate.org_admin_membership(current_scope) do
+      nil ->
+        []
+
+      _membership ->
+        [
+          %{
+            id: :organization,
+            label: gettext("Organization"),
+            icon: "hero-building-office-2",
+            path: "/org",
+            badge: nil
+          }
+        ]
+    end
   end
 
   defp secondary_nav_items do

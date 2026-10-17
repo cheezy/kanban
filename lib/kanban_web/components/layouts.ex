@@ -42,7 +42,8 @@ defmodule KanbanWeb.Layouts do
     default: nil,
     doc:
       "Highlights the matching SideNav item when rendered inside the app shell. " <>
-        "Accepted values: :boards, :my_work, :agents, :review, :metrics, :resources, :about, :settings."
+        "Accepted values: :boards, :my_work, :agents, :review, :metrics, :organization, " <>
+        ":resources, :about, :settings."
 
   attr :page_title, :string,
     default: nil,

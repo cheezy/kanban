@@ -23,11 +23,23 @@ defmodule Kanban.Accounts.Scope do
   lands on right after a password sign-in. `KanbanWeb.TwoFactorReminderOnMount`
   sets it from the `:two_factor_reminder` flash; controller pages and later
   navigations leave it false, so `KanbanWeb.Layouts.app/1` shows no card there.
+
+  `organization_membership` is the user's `Kanban.Organizations.OrganizationMember`
+  with its Organization preloaded (without the contact fields), or `nil` when the
+  user belongs to no Organization. `KanbanWeb.UserAuth` loads it for every
+  controller request and LiveView mount; scopes built elsewhere (API requests,
+  background jobs) leave it `nil`.
   """
 
   alias Kanban.Accounts.User
+  alias Kanban.Organizations.OrganizationMember
 
-  defstruct user: nil, unread_notifications: nil, two_factor_reminder: false
+  @type t :: %__MODULE__{}
+
+  defstruct user: nil,
+            unread_notifications: nil,
+            two_factor_reminder: false,
+            organization_membership: nil
 
   @doc """
   Creates a scope for the given user.
@@ -39,4 +51,21 @@ defmodule Kanban.Accounts.Scope do
   end
 
   def for_user(nil), do: nil
+
+  @doc """
+  Sets the scope's Organization membership, or clears it with `nil`.
+
+  ## Examples
+
+      iex> put_organization_membership(scope, membership)
+      %Scope{organization_membership: %OrganizationMember{}}
+
+  """
+  def put_organization_membership(%__MODULE__{} = scope, %OrganizationMember{} = membership) do
+    %{scope | organization_membership: membership}
+  end
+
+  def put_organization_membership(%__MODULE__{} = scope, nil) do
+    %{scope | organization_membership: nil}
+  end
 end
