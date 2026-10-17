@@ -14,11 +14,48 @@ defmodule Kanban.OrganizationsTest do
 
   @created [:kanban, :organization, :created]
   @updated [:kanban, :organization, :updated]
+  @member_added [:kanban, :organization, :member_added]
+  @member_removed [:kanban, :organization, :member_removed]
 
   defp disabled_admin_fixture do
     admin_fixture()
     |> User.disabled_changeset(DateTime.utc_now(:second))
     |> Repo.update!()
+  end
+
+  # Runs `fun` once, in the test process, right after the first query that
+  # matches `match?`, while the code under test is still inside its
+  # transaction: the point where a concurrent writer could land.
+  defp after_first_query(match?, fun) do
+    test_pid = self()
+    handler_id = "organizations-test-#{System.unique_integer([:positive])}"
+    fired = :counters.new(1, [])
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :repo, :query],
+      fn _event, _measurements, metadata, _config ->
+        if self() == test_pid and :counters.get(fired, 1) == 0 and match?.(metadata) do
+          :counters.add(fired, 1, 1)
+          fun.()
+        end
+      end,
+      nil
+    )
+
+    on_exit(fn -> :telemetry.detach(handler_id) end)
+  end
+
+  defp membership_lookup?(%{source: "organization_members", query: query}),
+    do: String.starts_with?(query, "SELECT") and query =~ "FOR UPDATE"
+
+  defp membership_lookup?(_metadata), do: false
+
+  defp role_of(user) do
+    case Repo.get_by(OrganizationMember, user_id: user.id) do
+      nil -> nil
+      membership -> {membership.organization_id, membership.role}
+    end
   end
 
   defp valid_attrs(attrs \\ %{}) do
@@ -209,6 +246,27 @@ defmodule Kanban.OrganizationsTest do
       organization_member_fixture(organization, user_fixture())
 
       assert_raise Ecto.ConstraintError, fn -> Repo.delete!(organization) end
+    end
+  end
+
+  describe "OrganizationMember.role_changeset/2" do
+    test "sets the role on an existing membership" do
+      membership = organization_member_fixture(organization_fixture(), user_fixture())
+
+      changeset = OrganizationMember.role_changeset(membership, :org_admin)
+
+      assert changeset.valid?
+      assert changeset.changes == %{role: :org_admin}
+    end
+
+    test "rejects a role outside org_admin and member" do
+      membership = organization_member_fixture(organization_fixture(), user_fixture())
+
+      assert %{role: ["is invalid"]} =
+               errors_on(OrganizationMember.role_changeset(membership, :owner))
+
+      assert %{role: ["can't be blank"]} =
+               errors_on(OrganizationMember.role_changeset(membership, nil))
     end
   end
 
@@ -556,6 +614,361 @@ defmodule Kanban.OrganizationsTest do
       assert Organizations.list_members(organization_fixture()) == []
     end
   end
+
+  describe "add_member/3" do
+    test "adds a user with no Organization as a member and emits :member_added" do
+      attach_telemetry(@member_added)
+      organization = organization_fixture()
+      user = user_fixture()
+
+      assert {:ok, %OrganizationMember{role: :member} = membership} =
+               Organizations.add_member(organization, user, :member)
+
+      assert membership.organization_id == organization.id
+      assert role_of(user) == {organization.id, :member}
+
+      assert_received {:telemetry_event, @member_added, %{count: 1}, metadata}
+
+      assert metadata == %{
+               organization_id: organization.id,
+               user_id: user.id,
+               role: :member,
+               actor_user_id: user.id
+             }
+    end
+
+    test "accepts an organization id" do
+      organization = organization_fixture()
+      user = user_fixture()
+
+      assert {:ok, %OrganizationMember{}} =
+               Organizations.add_member(organization.id, user, :member)
+
+      assert role_of(user) == {organization.id, :member}
+    end
+
+    test "is a no-op success for a member of the same Organization" do
+      organization = organization_fixture()
+      user = user_fixture()
+      existing = organization_member_fixture(organization, user)
+      attach_telemetry(@member_added)
+
+      assert {:ok, %OrganizationMember{id: id, role: :member}} =
+               Organizations.add_member(organization, user, :member)
+
+      assert id == existing.id
+      assert Repo.aggregate(OrganizationMember, :count) == 1
+      refute_received {:telemetry_event, @member_added, _, _}
+    end
+
+    test "never downgrades an org-admin of the same Organization" do
+      organization = organization_fixture()
+      user = user_fixture()
+      organization_member_fixture(organization, user, :org_admin)
+
+      assert {:ok, %OrganizationMember{role: :org_admin}} =
+               Organizations.add_member(organization, user, :member)
+
+      assert role_of(user) == {organization.id, :org_admin}
+    end
+
+    test "refuses a user in another Organization and writes nothing" do
+      other = organization_fixture()
+      user = user_fixture()
+      organization_member_fixture(other, user)
+      attach_telemetry(@member_added)
+
+      assert {:error, :already_in_another_organization} =
+               Organizations.add_member(organization_fixture(), user, :member)
+
+      assert role_of(user) == {other.id, :member}
+      refute_received {:telemetry_event, @member_added, _, _}
+    end
+
+    test "maps a unique-index race to :already_in_another_organization" do
+      organization = organization_fixture()
+      other = organization_fixture()
+      user = user_fixture()
+      attach_telemetry(@member_added)
+
+      # A concurrent writer gives the user a membership after the lookup
+      # found none and before the insert runs.
+      after_first_query(&membership_lookup?/1, fn ->
+        organization_member_fixture(other, user)
+      end)
+
+      assert {:error, :already_in_another_organization} =
+               Organizations.add_member(organization, user, :member)
+
+      refute_received {:telemetry_event, @member_added, _, _}
+    end
+
+    test "returns a changeset error for a user deleted before the write" do
+      organization = organization_fixture()
+      user = user_fixture()
+      Repo.delete!(user)
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Organizations.add_member(organization, user, :member)
+
+      assert %{user_id: ["does not exist"]} = errors_on(changeset)
+      assert Repo.aggregate(OrganizationMember, :count) == 0
+    end
+
+    test "returns :not_found for an Organization that does not exist" do
+      assert {:error, :not_found} = Organizations.add_member(-1, user_fixture(), :member)
+    end
+  end
+
+  describe "appoint_org_admin/3" do
+    test "appoints a user with no Organization, emits :member_added and records the audit event" do
+      attach_telemetry(@member_added)
+      admin = admin_fixture()
+      organization = organization_fixture()
+      user = user_fixture()
+
+      assert {:ok, %OrganizationMember{role: :org_admin}} =
+               Organizations.appoint_org_admin(admin, organization, user)
+
+      assert role_of(user) == {organization.id, :org_admin}
+
+      assert_received {:telemetry_event, @member_added, %{count: 1}, metadata}
+
+      assert metadata == %{
+               organization_id: organization.id,
+               user_id: user.id,
+               role: :org_admin,
+               actor_user_id: admin.id
+             }
+
+      assert [event] = AuditLog.list_events(action: :org_admin_appointed)
+      assert event.actor_user_id == admin.id
+      assert event.metadata["organization_id"] == organization.id
+      assert event.metadata["member_user_id"] == user.id
+    end
+
+    test "promotes a member of the same Organization without emitting :member_added" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      user = user_fixture()
+      existing = organization_member_fixture(organization, user)
+      attach_telemetry(@member_added)
+
+      assert {:ok, %OrganizationMember{id: id, role: :org_admin}} =
+               Organizations.appoint_org_admin(admin, organization, user)
+
+      assert id == existing.id
+      assert role_of(user) == {organization.id, :org_admin}
+      refute_received {:telemetry_event, @member_added, _, _}
+
+      assert [event] = AuditLog.list_events(action: :org_admin_appointed)
+      assert event.metadata["member_user_id"] == user.id
+    end
+
+    test "is a no-op success for a user who is already an org-admin" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      user = user_fixture()
+      existing = organization_member_fixture(organization, user, :org_admin)
+      attach_telemetry(@member_added)
+
+      assert {:ok, %OrganizationMember{id: id, role: :org_admin}} =
+               Organizations.appoint_org_admin(admin, organization, user)
+
+      assert id == existing.id
+      refute_received {:telemetry_event, @member_added, _, _}
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+
+    test "refuses a user in another Organization and writes nothing" do
+      other = organization_fixture()
+      user = user_fixture()
+      organization_member_fixture(other, user)
+
+      assert {:error, :already_in_another_organization} =
+               Organizations.appoint_org_admin(admin_fixture(), organization_fixture(), user)
+
+      assert role_of(user) == {other.id, :member}
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+
+    test "refuses every actor but an enabled site admin, including an org-admin" do
+      organization = organization_fixture()
+      org_admin = user_fixture()
+      organization_member_fixture(organization, org_admin, :org_admin)
+      user = user_fixture()
+      attach_telemetry(@member_added)
+
+      for actor <- [user_fixture(), org_admin, disabled_admin_fixture()] do
+        assert {:error, :unauthorized} =
+                 Organizations.appoint_org_admin(actor, organization, user)
+      end
+
+      assert role_of(user) == nil
+      refute_received {:telemetry_event, @member_added, _, _}
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+
+    test "returns a changeset error for a user deleted before the write" do
+      user = user_fixture()
+      Repo.delete!(user)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Organizations.appoint_org_admin(admin_fixture(), organization_fixture(), user)
+
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+
+    test "maps a unique-index race to :already_in_another_organization" do
+      user = user_fixture()
+      other = organization_fixture()
+
+      after_first_query(&membership_lookup?/1, fn ->
+        organization_member_fixture(other, user)
+      end)
+
+      assert {:error, :already_in_another_organization} =
+               Organizations.appoint_org_admin(admin_fixture(), organization_fixture(), user)
+
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+  end
+
+  describe "remove_org_admin/3" do
+    setup do
+      organization = organization_fixture()
+      org_admin = user_fixture()
+      organization_member_fixture(organization, org_admin, :org_admin)
+      %{organization: organization, org_admin: org_admin, admin: admin_fixture()}
+    end
+
+    test "refuses to remove the last org-admin while other members remain", ctx do
+      organization_member_fixture(ctx.organization, user_fixture())
+      attach_telemetry(@member_removed)
+
+      assert {:error, :last_org_admin} =
+               Organizations.remove_org_admin(ctx.admin, ctx.organization, ctx.org_admin)
+
+      assert role_of(ctx.org_admin) == {ctx.organization.id, :org_admin}
+      refute_received {:telemetry_event, @member_removed, _, _}
+      assert AuditLog.list_events(action: :org_admin_removed) == []
+    end
+
+    test "removes the only org-admin of an Organization with no other members", ctx do
+      attach_telemetry(@member_removed)
+
+      assert {:ok, %OrganizationMember{role: :org_admin}} =
+               Organizations.remove_org_admin(ctx.admin, ctx.organization, ctx.org_admin)
+
+      assert role_of(ctx.org_admin) == nil
+
+      assert_received {:telemetry_event, @member_removed, %{count: 1}, metadata}
+
+      assert metadata == %{
+               organization_id: ctx.organization.id,
+               user_id: ctx.org_admin.id,
+               role: :org_admin,
+               actor_user_id: ctx.admin.id
+             }
+
+      assert [event] = AuditLog.list_events(action: :org_admin_removed)
+      assert event.actor_user_id == ctx.admin.id
+      assert event.metadata["organization_id"] == ctx.organization.id
+      assert event.metadata["member_user_id"] == ctx.org_admin.id
+    end
+
+    test "removes one of two org-admins while members remain", ctx do
+      second = user_fixture()
+      organization_member_fixture(ctx.organization, second, :org_admin)
+      organization_member_fixture(ctx.organization, user_fixture())
+
+      assert {:ok, _membership} =
+               Organizations.remove_org_admin(ctx.admin, ctx.organization.id, ctx.org_admin)
+
+      assert role_of(ctx.org_admin) == nil
+      assert role_of(second) == {ctx.organization.id, :org_admin}
+
+      assert {:error, :last_org_admin} =
+               Organizations.remove_org_admin(ctx.admin, ctx.organization, second)
+    end
+
+    test "returns :not_found for a member who is not an org-admin, and leaves them", ctx do
+      member = user_fixture()
+      organization_member_fixture(ctx.organization, member)
+
+      assert {:error, :not_found} =
+               Organizations.remove_org_admin(ctx.admin, ctx.organization, member)
+
+      assert role_of(member) == {ctx.organization.id, :member}
+    end
+
+    test "returns :not_found for an org-admin of another Organization", ctx do
+      assert {:error, :not_found} =
+               Organizations.remove_org_admin(ctx.admin, organization_fixture(), ctx.org_admin)
+
+      assert role_of(ctx.org_admin) == {ctx.organization.id, :org_admin}
+    end
+
+    test "returns :not_found for a user deleted before the removal", ctx do
+      Repo.delete!(ctx.org_admin)
+
+      assert {:error, :not_found} =
+               Organizations.remove_org_admin(ctx.admin, ctx.organization, ctx.org_admin)
+
+      assert AuditLog.list_events(action: :org_admin_removed) == []
+    end
+
+    test "refuses every actor but an enabled site admin, including an org-admin", ctx do
+      other_org_admin = user_fixture()
+      organization_member_fixture(ctx.organization, other_org_admin, :org_admin)
+
+      for actor <- [user_fixture(), other_org_admin, disabled_admin_fixture()] do
+        assert {:error, :unauthorized} =
+                 Organizations.remove_org_admin(actor, ctx.organization, ctx.org_admin)
+      end
+
+      assert role_of(ctx.org_admin) == {ctx.organization.id, :org_admin}
+      assert AuditLog.list_events(action: :org_admin_removed) == []
+    end
+
+    test "takes a row lock on the organization before its check", ctx do
+      test_pid = self()
+      handler_id = "organizations-lock-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :repo, :query],
+        fn _event, _measurements, metadata, _config ->
+          if self() == test_pid, do: send(test_pid, {:query, metadata.source, metadata.query})
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
+      Organizations.remove_org_admin(ctx.admin, ctx.organization, ctx.org_admin)
+
+      queries = collect_queries([])
+      lock_index = Enum.find_index(queries, &organization_lock?/1)
+
+      membership_query_index =
+        Enum.find_index(queries, &match?({"organization_members", "SELECT" <> _}, &1))
+
+      assert lock_index, "expected a FOR UPDATE query on organizations"
+      assert lock_index < membership_query_index
+    end
+  end
+
+  defp collect_queries(acc) do
+    receive do
+      {:query, source, query} -> collect_queries([{source, query} | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
+
+  defp organization_lock?({"organizations", query}), do: query =~ "FOR UPDATE"
+  defp organization_lock?(_query), do: false
 
   describe "the context's public functions" do
     test "include no delete or downgrade function" do

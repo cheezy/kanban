@@ -55,4 +55,18 @@ defmodule Kanban.Organizations.OrganizationMember do
     |> foreign_key_constraint(:user_id)
     |> check_constraint(:role, name: :organization_members_role_check)
   end
+
+  @doc """
+  Builds a changeset that sets an existing membership's role to `role`, a value
+  the calling context has decided on. Nothing is cast, and a role outside
+  `roles/0` comes back as a changeset error.
+  """
+  @spec role_changeset(t(), atom()) :: Ecto.Changeset.t()
+  def role_changeset(%__MODULE__{} = membership, role) do
+    membership
+    |> change(role: role)
+    |> validate_required([:role])
+    |> validate_inclusion(:role, @roles)
+    |> check_constraint(:role, name: :organization_members_role_check)
+  end
 end

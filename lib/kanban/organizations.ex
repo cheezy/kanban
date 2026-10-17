@@ -9,20 +9,46 @@ defmodule Kanban.Organizations do
   through, and an admin disabled mid-session is refused.
 
   A user belongs to at most one Organization, as an `:org_admin` or a
-  `:member`. This module reads memberships; writing them belongs to the
-  membership functions that build on it. There is deliberately no function to
-  delete an Organization or to downgrade it.
+  `:member`. There is deliberately no function to delete an Organization or to
+  downgrade it.
+
+  ## Membership rules
+
+    * `add_member/3` adds a user with role `:member`. It is the internal
+      function invitation acceptance calls, so it takes no actor.
+    * Only an enabled site admin appoints or removes an org-admin
+      (`appoint_org_admin/3`, `remove_org_admin/3`). No function lets an
+      org-admin grant or remove the role.
+    * A user in another Organization is refused with
+      `{:error, :already_in_another_organization}`. The unique index on
+      `organization_members.user_id` backs this, so a concurrent write that
+      wins the race produces the same error.
+    * An Organization keeps an org-admin while it has other members:
+      `remove_org_admin/3` refuses with `{:error, :last_org_admin}`. Every
+      membership write first takes a row lock on the organization, so two
+      concurrent removals cannot both pass that check.
+    * Removing an org-admin deletes the membership; it never demotes.
+
+  ## Telemetry and audit events
 
   Creating and editing an Organization emits `[:kanban, :organization,
   :created]` and `:updated` and records the `:organization_created` and
-  `:organization_updated` audit events, through
-  `Kanban.Organizations.OrganizationTelemetry`, once the write has saved.
+  `:organization_updated` audit events. A new membership emits
+  `[:kanban, :organization, :member_added]` and a removed org-admin emits
+  `:member_removed`. Appointing and removing an org-admin also record the
+  `:org_admin_appointed` and `:org_admin_removed` audit events. All of them go
+  through `Kanban.Organizations.OrganizationTelemetry`, and only after the
+  write has committed, so a refusal emits and records nothing.
+
+  The membership functions check the actor here and leave the locked
+  transaction to `Kanban.Organizations.MembershipWrites`.
   """
 
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts
   alias Kanban.Accounts.User
+  alias Kanban.Organizations.MembershipWrites
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrganizationTelemetry
@@ -223,6 +249,106 @@ defmodule Kanban.Organizations do
       preload: [user: u]
     )
     |> Repo.all()
+  end
+
+  @doc """
+  Adds `user` to `organization` with role `:member`.
+
+  This is the internal function invitation acceptance calls, so it takes no
+  actor: the caller has already decided that `user` may join. A user who is
+  already in this Organization, in either role, is left as they are and their
+  membership is returned; an existing org-admin is never downgraded. A user in
+  another Organization is refused.
+
+  Emits `[:kanban, :organization, :member_added]` only when a membership was
+  created. `actor_user_id` in it is the joining user.
+
+  ## Examples
+
+      iex> add_member(organization, user, :member)
+      {:ok, %OrganizationMember{role: :member}}
+
+      iex> add_member(organization, user_in_other_organization, :member)
+      {:error, :already_in_another_organization}
+
+  """
+  @spec add_member(Organization.t() | integer(), User.t(), :member) ::
+          {:ok, OrganizationMember.t()}
+          | {:error, :already_in_another_organization | :not_found | Ecto.Changeset.t()}
+  def add_member(organization, %User{} = user, :member) do
+    organization
+    |> organization_id()
+    |> MembershipWrites.add_member(user)
+  end
+
+  @doc """
+  Makes `user` an org-admin of `organization`.
+
+  `actor` must be an enabled site admin; anyone else, including an org-admin of
+  this Organization, gets `{:error, :unauthorized}` and nothing is written. A
+  user with no Organization gets a new `:org_admin` membership, a member of
+  this Organization is promoted, and an existing org-admin of it is left as
+  they are. A user in another Organization is refused.
+
+  Records the `:org_admin_appointed` audit event for a new or promoted
+  org-admin, and emits `[:kanban, :organization, :member_added]` when the
+  membership is new.
+
+  ## Examples
+
+      iex> appoint_org_admin(admin, organization, user)
+      {:ok, %OrganizationMember{role: :org_admin}}
+
+      iex> appoint_org_admin(org_admin, organization, user)
+      {:error, :unauthorized}
+
+  """
+  @spec appoint_org_admin(User.t(), Organization.t() | integer(), User.t()) ::
+          {:ok, OrganizationMember.t()}
+          | {:error,
+             :unauthorized | :already_in_another_organization | :not_found | Ecto.Changeset.t()}
+  def appoint_org_admin(%User{} = actor, organization, %User{} = user) do
+    if site_admin?(actor) do
+      MembershipWrites.appoint_org_admin(actor, organization_id(organization), user)
+    else
+      {:error, :unauthorized}
+    end
+  end
+
+  @doc """
+  Removes `user`'s org-admin membership of `organization`.
+
+  `actor` must be an enabled site admin; anyone else gets
+  `{:error, :unauthorized}`. The membership is deleted, never demoted. When
+  `user` is the last org-admin and the Organization has other members, the
+  removal is refused with `{:error, :last_org_admin}`; the last org-admin of an
+  Organization with no other members can be removed. A user who is not an
+  org-admin of `organization` gets `{:error, :not_found}`.
+
+  The check runs under a row lock on the organization, so two concurrent
+  removals of its last two org-admins leave one of them in place.
+
+  Emits `[:kanban, :organization, :member_removed]` and records the
+  `:org_admin_removed` audit event once the removal has committed.
+
+  ## Examples
+
+      iex> remove_org_admin(admin, organization, org_admin)
+      {:ok, %OrganizationMember{}}
+
+      iex> remove_org_admin(admin, organization, last_org_admin)
+      {:error, :last_org_admin}
+
+  """
+  @spec remove_org_admin(User.t(), Organization.t() | integer(), User.t()) ::
+          {:ok, OrganizationMember.t()}
+          | {:error, :unauthorized | :last_org_admin | :not_found}
+  def remove_org_admin(%User{} = actor, organization, %User{} = user) do
+    if site_admin?(actor) do
+      MembershipWrites.remove_org_admin(actor, organization_id(organization), user)
+    else
+      {:error, :unauthorized}
+    end
   end
 
   defp membership_query(%User{id: user_id}, organization) do

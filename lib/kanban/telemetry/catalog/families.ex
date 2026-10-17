@@ -74,7 +74,11 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:organization_created, [:user_id, :organization_id],
      "A site admin created an Organization. user_id is the site admin."},
     {:organization_updated, [:user_id, :organization_id],
-     "A site admin changed an Organization's details. user_id is the site admin."}
+     "A site admin changed an Organization's details. user_id is the site admin."},
+    {:org_admin_appointed, [:user_id, :organization_id, :member_user_id],
+     "A site admin made a user an org-admin. user_id is the site admin, member_user_id the appointee."},
+    {:org_admin_removed, [:user_id, :organization_id, :member_user_id],
+     "A site admin removed an org-admin. user_id is the site admin, member_user_id the removed user."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,
