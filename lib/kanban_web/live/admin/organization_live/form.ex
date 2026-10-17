@@ -141,15 +141,12 @@ defmodule KanbanWeb.Admin.OrganizationLive.Form do
   end
 
   @doc """
-  Returns the path of `organization`'s site-admin detail page.
-
-  Built as a plain string because that page's route
-  (`/admin/organizations/:id`, `Admin.OrganizationLive.Show`) arrives in a
-  later task; a `~p` path to a route that does not exist yet fails
-  `compile --warning-as-errors`. Switch to `~p` once the route exists.
+  Returns the path of `organization`'s site-admin detail page
+  (`Admin.OrganizationLive.Show`).
   """
   @spec detail_path(Organization.t()) :: String.t()
-  def detail_path(%Organization{id: id}) when is_integer(id), do: "/admin/organizations/#{id}"
+  def detail_path(%Organization{id: id} = organization) when is_integer(id),
+    do: ~p"/admin/organizations/#{organization}"
 
   @doc """
   Maps a refusal from `Kanban.Organizations` to the flash message shown to the

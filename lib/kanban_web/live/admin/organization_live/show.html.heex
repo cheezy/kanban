@@ -1,0 +1,165 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mb-6">
+      <.link
+        navigate={~p"/admin/organizations"}
+        id="back-to-organizations"
+        class="flex items-center gap-2 text-[var(--ink-2)] hover:text-[var(--stride-orange)]"
+      >
+        <.icon name="hero-arrow-left" class="size-4" />
+        {gettext("Back to organizations")}
+      </.link>
+    </div>
+
+    <.header>
+      <span id="organization-name" class="[overflow-wrap:anywhere]">{@organization.name}</span>
+      <:subtitle>
+        {gettext("Only site admins appoint or remove org-admins.")}
+      </:subtitle>
+      <:actions>
+        <.button
+          navigate={~p"/admin/organizations/#{@organization}/edit"}
+          id="edit-organization"
+          class="btn btn-soft btn-sm"
+        >
+          <.icon name="hero-pencil-square" class="size-4" />
+          {gettext("Edit")}
+        </.button>
+      </:actions>
+    </.header>
+
+    <section aria-labelledby="organization-details-heading" class="mt-8 max-w-3xl">
+      <h2 id="organization-details-heading" class="mb-2 text-lg font-semibold text-base-content">
+        {gettext("Details")}
+      </h2>
+      <dl id="organization-details" class="grid gap-x-8 gap-y-3 sm:grid-cols-2">
+        <div>
+          <dt class="text-sm" style="color: var(--ink-2);">{gettext("Address")}</dt>
+          <dd class="text-base-content break-words">
+            <span id="organization-address-line1" class="block">
+              {detail(@organization.address_line1)}
+            </span>
+            <span :if={@organization.address_line2} class="block">
+              {@organization.address_line2}
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm" style="color: var(--ink-2);">{gettext("City and country")}</dt>
+          <dd id="organization-location" class="text-base-content break-words">
+            {location(@organization)}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm" style="color: var(--ink-2);">{gettext("Contact name")}</dt>
+          <dd id="organization-contact-name" class="text-base-content break-words">
+            {detail(@organization.contact_name)}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm" style="color: var(--ink-2);">{gettext("Contact email")}</dt>
+          <dd
+            id="organization-contact-email"
+            class="text-base-content [overflow-wrap:anywhere]"
+          >
+            {detail(@organization.contact_email)}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm" style="color: var(--ink-2);">{gettext("Contact phone")}</dt>
+          <dd id="organization-contact-phone" class="text-base-content break-words">
+            {detail(@organization.contact_phone)}
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <section aria-labelledby="organization-members-heading" class="mt-10">
+      <h2 id="organization-members-heading" class="mb-2 text-lg font-semibold text-base-content">
+        {gettext("Org-admins and members")}
+      </h2>
+
+      <p :if={@members == []} id="members-empty" style="color: var(--ink-2);">
+        {gettext("This Organization has no members yet.")}
+      </p>
+
+      <div :if={@members != []} class="overflow-x-auto">
+        <table id="members" class="table">
+          <thead class="[&>tr>th]:border-b [&>tr>th]:border-base-300">
+            <tr>
+              <th>{gettext("Name")}</th>
+              <th>{gettext("Email")}</th>
+              <th>{gettext("Role")}</th>
+              <th class="w-0"><span class="sr-only">{gettext("Actions")}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              :for={{member, index} <- Enum.with_index(@members)}
+              id={"member-#{member.user.id}"}
+              class={[
+                "border-b border-base-300",
+                rem(index, 2) == 1 && "bg-base-200"
+              ]}
+            >
+              <td>
+                <span class="block max-w-xs text-base-content [overflow-wrap:anywhere]">
+                  {display_name(member.user)}
+                </span>
+              </td>
+              <td>
+                <span class="text-base-content [overflow-wrap:anywhere]">{member.user.email}</span>
+              </td>
+              <td>
+                <span id={"member-role-#{member.user.id}"} class="text-base-content">
+                  {role_label(member.role)}
+                </span>
+              </td>
+              <td class="w-0">
+                <div class="flex gap-2 whitespace-nowrap">
+                  <.button
+                    :if={org_admin?(member)}
+                    phx-click="remove"
+                    phx-value-user-id={member.user.id}
+                    id={"remove-org-admin-#{member.user.id}"}
+                    data-confirm={
+                      gettext("Remove %{email} as an org-admin of this Organization?",
+                        email: member.user.email
+                      )
+                    }
+                    class="btn btn-soft btn-sm"
+                  >
+                    {gettext("Remove")}
+                  </.button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="appoint-org-admin-heading" class="mt-10 max-w-xl">
+      <h2 id="appoint-org-admin-heading" class="mb-2 text-lg font-semibold text-base-content">
+        {gettext("Appoint org-admin")}
+      </h2>
+      <p class="mb-4 text-sm" style="color: var(--ink-2);">
+        {gettext(
+          "An email with no account gets a new account and instructions to confirm it and set a password."
+        )}
+      </p>
+      <.form for={@appoint_form} id="appoint-org-admin-form" phx-submit="appoint">
+        <.input
+          field={@appoint_form[:email]}
+          type="email"
+          label={gettext("Email")}
+          autocomplete="off"
+          required
+        />
+        <.button variant="primary" phx-disable-with={gettext("Appointing...")}>
+          {gettext("Appoint org-admin")}
+        </.button>
+      </.form>
+    </section>
+  </div>
+</Layouts.app>

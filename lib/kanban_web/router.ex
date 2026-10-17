@@ -216,6 +216,8 @@ defmodule KanbanWeb.Router do
       # Only site admins create Organizations and edit their details (D1).
       live "/organizations", OrganizationLive.Index, :index
       live "/organizations/new", OrganizationLive.Form, :new
+      # Only site admins appoint or remove org-admins (D2).
+      live "/organizations/:id", OrganizationLive.Show, :show
       live "/organizations/:id/edit", OrganizationLive.Form, :edit
     end
 

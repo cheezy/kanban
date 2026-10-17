@@ -13,6 +13,7 @@ msgstr ""
 
 #: lib/kanban_web/components/core_components.ex:476
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:30
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:93
 #: lib/kanban_web/live/admin/user_live/index.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Actions"
@@ -115,6 +116,8 @@ msgstr "Konto erstellen"
 msgid "Creating account..."
 msgstr "Konto wird erstellt..."
 
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:91
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:155
 #: lib/kanban_web/live/admin/user_live/index.html.heex:94
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:88
 #: lib/kanban_web/live/user_live/forgot_password.ex:40
@@ -237,6 +240,7 @@ msgstr "Beginnen Sie mit dem Erstellen von Spalten für Ihr Board."
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:65
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:25
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:90
 #: lib/kanban_web/live/admin/user_live/index.html.heex:95
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:110
@@ -656,6 +660,7 @@ msgid "Read Only"
 msgstr "Nur Lesen"
 
 #: lib/kanban_web/components/bulk_action_bar.ex:214
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:132
 #: lib/kanban_web/live/board_live/form.html.heex:335
 #: lib/kanban_web/live/board_live/members_form_component.ex:214
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:52
@@ -3184,7 +3189,7 @@ msgid "You must be a board member to comment on this task"
 msgstr "Sie müssen Board-Mitglied sein, um diese Aufgabe zu kommentieren"
 
 #: lib/kanban_web/live/admin/message_live/index.ex:85
-#: lib/kanban_web/live/admin/organization_live/form.ex:159
+#: lib/kanban_web/live/admin/organization_live/form.ex:156
 #: lib/kanban_web/live/admin/user_live/index.ex:129
 #: lib/kanban_web/live/admin/user_live/index.ex:157
 #, elixir-autogen, elixir-format
@@ -6608,6 +6613,7 @@ msgstr "Der Agent schreibt den Code, um die Aufgabe abzuschließen."
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:416
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:74
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr "Details"
@@ -8147,7 +8153,7 @@ msgstr "Bestätigung erneut senden"
 msgid "Send another confirmation email to this account?"
 msgstr "Eine weitere Bestätigungs-E-Mail an dieses Konto senden?"
 
-#: lib/kanban_web/live/admin/organization_live/form.ex:164
+#: lib/kanban_web/live/admin/organization_live/form.ex:161
 #: lib/kanban_web/live/admin/user_live/index.ex:138
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
@@ -9600,6 +9606,7 @@ msgid "Are you sure you want to delete this comment?"
 msgstr "Sind Sie sicher, dass Sie diesen Kommentar löschen möchten?"
 
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:90
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:26
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:270
 #: lib/kanban_web/live/board_live/webhook_views.ex:172
 #: lib/kanban_web/live/task_live/components/comment_row.ex:111
@@ -10574,6 +10581,7 @@ msgid "Couldn't copy it. Select the secret and copy it yourself."
 msgstr "Kopieren fehlgeschlagen. Markieren Sie das Secret und kopieren Sie es selbst."
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:73
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "Address"
 msgstr "Adresse"
@@ -10589,6 +10597,7 @@ msgid "Address line 2"
 msgstr "Adresszeile 2"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:40
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:10
 #, elixir-autogen, elixir-format
 msgid "Back to organizations"
 msgstr "Zurück zu den Organisationen"
@@ -10599,21 +10608,25 @@ msgid "City"
 msgstr "Stadt"
 
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:26
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:48
 #, elixir-autogen, elixir-format
 msgid "City and country"
 msgstr "Stadt und Land"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:94
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:60
 #, elixir-autogen, elixir-format
 msgid "Contact email"
 msgstr "Kontakt-E-Mail"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:92
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:54
 #, elixir-autogen, elixir-format
 msgid "Contact name"
 msgstr "Name des Kontakts"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:93
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Contact phone"
 msgstr "Telefon des Kontakts"
@@ -10623,17 +10636,17 @@ msgstr "Telefon des Kontakts"
 msgid "Country"
 msgstr "Land"
 
-#: lib/kanban_web/live/admin/organization_live/form.ex:222
+#: lib/kanban_web/live/admin/organization_live/form.ex:219
 #, elixir-autogen, elixir-format
 msgid "Create Organization"
 msgstr "Organisation erstellen"
 
-#: lib/kanban_web/live/admin/organization_live/form.ex:180
+#: lib/kanban_web/live/admin/organization_live/form.ex:177
 #, elixir-autogen, elixir-format
 msgid "Edit Organization"
 msgstr "Organisation bearbeiten"
 
-#: lib/kanban_web/live/admin/organization_live/form.ex:168
+#: lib/kanban_web/live/admin/organization_live/form.ex:165
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:11
 #, elixir-autogen, elixir-format
 msgid "New Organization"
@@ -10654,17 +10667,18 @@ msgstr "Nur Website-Administratoren erstellen Organisationen und bearbeiten dere
 msgid "Org-admins"
 msgstr "Org-Admins"
 
-#: lib/kanban_web/live/admin/organization_live/form.ex:219
+#: lib/kanban_web/live/admin/organization_live/form.ex:216
 #, elixir-autogen, elixir-format
 msgid "Organization created."
 msgstr "Organisation erstellt."
 
-#: lib/kanban_web/live/admin/organization_live/form.ex:186
+#: lib/kanban_web/live/admin/organization_live/form.ex:183
+#: lib/kanban_web/live/admin/organization_live/show.ex:182
 #, elixir-autogen, elixir-format
 msgid "Organization not found."
 msgstr "Organisation nicht gefunden."
 
-#: lib/kanban_web/live/admin/organization_live/form.ex:220
+#: lib/kanban_web/live/admin/organization_live/form.ex:217
 #, elixir-autogen, elixir-format
 msgid "Organization updated."
 msgstr "Organisation aktualisiert."
@@ -10690,12 +10704,12 @@ msgstr "Postleitzahl"
 msgid "Region"
 msgstr "Region"
 
-#: lib/kanban_web/live/admin/organization_live/form.ex:223
+#: lib/kanban_web/live/admin/organization_live/form.ex:220
 #, elixir-autogen, elixir-format
 msgid "Save Organization"
 msgstr "Organisation speichern"
 
-#: lib/kanban_web/live/admin/organization_live/form.ex:162
+#: lib/kanban_web/live/admin/organization_live/form.ex:159
 #, elixir-autogen, elixir-format
 msgid "The Organization could not be saved. Check the errors below."
 msgstr "Die Organisation konnte nicht gespeichert werden. Prüfen Sie die Fehler unten."
@@ -10704,3 +10718,89 @@ msgstr "Die Organisation konnte nicht gespeichert werden. Prüfen Sie die Fehler
 #, elixir-autogen, elixir-format
 msgid "View"
 msgstr "Ansehen"
+
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:147
+#, elixir-autogen, elixir-format
+msgid "An email with no account gets a new account and instructions to confirm it and set a password."
+msgstr "Eine E-Mail-Adresse ohne Konto erhält ein neues Konto sowie eine Anleitung, es zu bestätigen und ein Passwort festzulegen."
+
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:144
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:160
+#, elixir-autogen, elixir-format
+msgid "Appoint org-admin"
+msgstr "Org-Admin ernennen"
+
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:159
+#, elixir-autogen, elixir-format
+msgid "Appointing..."
+msgstr "Wird ernannt..."
+
+#: lib/kanban_web/live/admin/organization_live/show.ex:111
+#, elixir-autogen, elixir-format
+msgid "Enter a valid email address. Nothing was changed."
+msgstr "Gib eine gültige E-Mail-Adresse ein. Es wurde nichts geändert."
+
+#: lib/kanban_web/live/admin/organization_live/show.ex:241
+#, elixir-autogen, elixir-format
+msgid "Member"
+msgstr "Mitglied"
+
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "Only site admins appoint or remove org-admins."
+msgstr "Nur Site-Admins ernennen oder entfernen Org-Admins."
+
+#: lib/kanban_web/live/admin/organization_live/show.ex:240
+#, elixir-autogen, elixir-format
+msgid "Org-admin"
+msgstr "Org-Admin"
+
+#: lib/kanban_web/live/admin/organization_live/show.ex:145
+#, elixir-autogen, elixir-format
+msgid "Org-admin appointed."
+msgstr "Org-Admin ernannt."
+
+#: lib/kanban_web/live/admin/organization_live/show.ex:161
+#, elixir-autogen, elixir-format
+msgid "Org-admin removed."
+msgstr "Org-Admin entfernt."
+
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Org-admins and members"
+msgstr "Org-Admins und Mitglieder"
+
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:126
+#, elixir-autogen, elixir-format
+msgid "Remove %{email} as an org-admin of this Organization?"
+msgstr "%{email} als Org-Admin dieser Organisation entfernen?"
+
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:92
+#, elixir-autogen, elixir-format
+msgid "Role"
+msgstr "Rolle"
+
+#: lib/kanban_web/live/admin/organization_live/show.ex:98
+#, elixir-autogen, elixir-format
+msgid "That account is disabled. Enable it before appointing it as an org-admin."
+msgstr "Dieses Konto ist deaktiviert. Aktiviere es, bevor du es zum Org-Admin ernennst."
+
+#: lib/kanban_web/live/admin/organization_live/show.ex:107
+#, elixir-autogen, elixir-format
+msgid "That person is no longer an org-admin of this Organization."
+msgstr "Diese Person ist kein Org-Admin dieser Organisation mehr."
+
+#: lib/kanban_web/live/admin/organization_live/show.ex:95
+#, elixir-autogen, elixir-format
+msgid "That user already belongs to another Organization. Nothing was changed."
+msgstr "Dieser Benutzer gehört bereits zu einer anderen Organisation. Es wurde nichts geändert."
+
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:83
+#, elixir-autogen, elixir-format
+msgid "This Organization has no members yet."
+msgstr "Diese Organisation hat noch keine Mitglieder."
+
+#: lib/kanban_web/live/admin/organization_live/show.ex:102
+#, elixir-autogen, elixir-format
+msgid "You cannot remove the last org-admin while the Organization has other members. Appoint another org-admin first."
+msgstr "Du kannst den letzten Org-Admin nicht entfernen, solange die Organisation weitere Mitglieder hat. Ernenne zuerst einen anderen Org-Admin."
