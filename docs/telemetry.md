@@ -593,6 +593,28 @@ nothing. Every event measures `count: 1`.
   `goal.completed`. Recomputing a task's blocking status after its
   dependencies are edited emits no `task.unblocked`.
 
+### Organization events
+
+W2390 added these. They are declared in
+`Kanban.Telemetry.Catalog.OrganizationEvents` (`lib/kanban/telemetry/catalog/organization_events.ex`)
+and emitted by `Kanban.Organizations.OrganizationTelemetry`. Each is emitted
+only after its change has committed, so a refused, invalid or rolled-back
+change emits nothing. Every event measures `count: 1`.
+
+| Event | Metadata | Emitted by |
+|---|---|---|
+| `[:kanban, :organization, :created]` | `organization_id`, `actor_user_id` | `Kanban.Organizations.create_organization/2` |
+| `[:kanban, :organization, :updated]` | `organization_id`, `actor_user_id`, `fields` | `Kanban.Organizations.update_organization/3`, only when at least one field changed |
+
+- **Only an enabled site admin can cause them.** `actor_user_id` is that site
+  admin.
+- **No personal data.** An Organization's name, address and contact name,
+  phone and email never appear in the metadata. `fields` lists the changed
+  field names, never their values.
+- **Each also records an audit event.** `:organization_created` and
+  `:organization_updated` go through `Kanban.AuditLog.event/2` with
+  `organization_id`, and the site admin as `user_id`.
+
 ## Emitting an event
 
 ```elixir
@@ -666,9 +688,10 @@ raise.
    or digest event is an entry in
    `Kanban.Telemetry.Catalog.NotificationEvents`, a new delivery target event
    is an entry in `Kanban.Telemetry.Catalog.TargetEvents`, a new broadcast
-   message event is an entry in `Kanban.Telemetry.Catalog.MessageEvents`, and
-   a new goal, dependency or after_goal event is an entry in
-   `Kanban.Telemetry.Catalog.GoalEvents`.
+   message event is an entry in `Kanban.Telemetry.Catalog.MessageEvents`, a
+   new goal, dependency or after_goal event is an entry in
+   `Kanban.Telemetry.Catalog.GoalEvents`, and a new Organization event is an
+   entry in `Kanban.Telemetry.Catalog.OrganizationEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, declares a forbidden key, or has
@@ -943,6 +966,8 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :permission_denied]` | event, legacy | `count` | `user_id`, `gate` | A user was refused access by a permission gate. |
 | `[:kanban, :audit, :sudo_mode_entered]` | event, legacy | `count` | `user_id` | A recently authenticated user passed a sudo-mode check. |
 | `[:kanban, :audit, :audit_log_exported]` | event, legacy | `count` | `user_id`, `format` | An admin exported the audit log. |
+| `[:kanban, :audit, :organization_created]` | event, legacy | `count` | `user_id`, `organization_id` | A site admin created an Organization. user_id is the site admin. |
+| `[:kanban, :audit, :organization_updated]` | event, legacy | `count` | `user_id`, `organization_id` | A site admin changed an Organization's details. user_id is the site admin. |
 
 ### Domain `board`
 
@@ -1036,6 +1061,13 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :notification, :email_sent]` | event | `count` | `notification_id`, `user_id`, `event_type` | The mailer accepted a notification email. |
 | `[:kanban, :notification, :email_skipped]` | event | `count` | `notification_id`, `reason` | A notification email job sent nothing. reason is :not_found, :already_emailed, :user_disabled, :user_unconfirmed, :not_a_member or :unsubscribed. |
 | `[:kanban, :notification, :email_failed]` | event | `count` | `notification_id`, `user_id`, `event_type`, `error` | One notification email delivery attempt failed. error is :permanent_failure, :temporary_failure, :retries_exceeded or :delivery_failed, never the raw mailer reason. |
+
+### Domain `organization`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :organization, :created]` | event | `count` | `organization_id`, `actor_user_id` | A site admin created an Organization. actor_user_id is the site admin. |
+| `[:kanban, :organization, :updated]` | event | `count` | `organization_id`, `actor_user_id`, `fields` | A site admin changed an Organization's details. fields lists the changed field names, never their values. |
 
 ### Domain `pubsub`
 

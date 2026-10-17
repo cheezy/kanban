@@ -70,7 +70,11 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:two_factor_challenge_failed, [:user_id, :method], "A two-factor challenge failed."},
     {:permission_denied, [:user_id, :gate], "A user was refused access by a permission gate."},
     {:sudo_mode_entered, [:user_id], "A recently authenticated user passed a sudo-mode check."},
-    {:audit_log_exported, [:user_id, :format], "An admin exported the audit log."}
+    {:audit_log_exported, [:user_id, :format], "An admin exported the audit log."},
+    {:organization_created, [:user_id, :organization_id],
+     "A site admin created an Organization. user_id is the site admin."},
+    {:organization_updated, [:user_id, :organization_id],
+     "A site admin changed an Organization's details. user_id is the site admin."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,
