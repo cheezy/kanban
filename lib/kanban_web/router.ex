@@ -280,6 +280,9 @@ defmodule KanbanWeb.Router do
       # Org-admins are ordinary signed-in users, so the org console lives here;
       # OrgLive.Console re-declares the :require_org_admin on_mount gate.
       live "/org", OrgLive.Console, :index
+      # The org-admin audit log; OrgLive.AuditLog re-declares the same gate and
+      # forces the Organization filter from the membership.
+      live "/org/audit", OrgLive.AuditLog, :index
       live "/boards/:id/edit", BoardLive.Form, :edit
 
       live "/boards/:id", BoardLive.Show, :show
@@ -313,6 +316,14 @@ defmodule KanbanWeb.Router do
     get "/metrics/export", WorkspaceMetricsExportController, :export
     get "/boards/:id/archive/export", ArchiveExportController, :export
     post "/users/update-password", UserSessionController, :update_password
+  end
+
+  # Org-admin audit export. The pipeline gates on the org-admin role, and the
+  # controller re-declares the plug as defense in depth.
+  scope "/org", KanbanWeb do
+    pipe_through [:browser, :require_authenticated_user, :require_org_admin_user]
+
+    get "/audit/export", OrgAuditLogExportController, :export
   end
 
   scope "/", KanbanWeb do

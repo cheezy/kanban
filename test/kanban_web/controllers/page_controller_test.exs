@@ -56,6 +56,17 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "Contact us"
   end
 
+  test "GET /privacy discloses that org-admins can view and export audit events", %{
+    conn: conn
+  } do
+    body = conn |> get(~p"/privacy") |> html_response(200)
+
+    assert body =~
+             ~r/id="privacy-organization-administrators"[^>]*>\s*<strong>Organization administrators<\/strong>/
+
+    assert body =~ "can view and export that Organization&#39;s security audit events"
+  end
+
   test "GET /security", %{conn: conn} do
     conn = get(conn, ~p"/security")
     body = html_response(conn, 200)

@@ -108,6 +108,13 @@ defmodule Kanban.AuditLog.FiltersTest do
       assert parsed.params == %{}
     end
 
+    test "never reads organization_id from params" do
+      parsed = Filters.parse(%{"organization_id" => "7", "action" => "login_failed"})
+
+      refute Keyword.has_key?(parsed.filters, :organization_id)
+      assert parsed.params == %{"action" => "login_failed"}
+    end
+
     test "treats a non-map as no params" do
       assert Filters.parse(nil).params == %{}
     end

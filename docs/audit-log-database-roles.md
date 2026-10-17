@@ -140,6 +140,15 @@ Then run `harden_audit_log` again and check the status, because ownership of
 any object the migration created belongs to the role that created it. A
 migration that only reads `audit_events` or inserts into it is unaffected.
 
+`20261017210324_add_organization_id_to_audit_events` is such a migration. It
+adds the nullable `organization_id` column, a foreign key to `organizations`
+with no cascade, and an index on `organization_id`, `inserted_at` and `id`. It
+updates no row. On a hardened database apply it through the admin path. The
+foreign key adds only internal triggers backed by built-in functions, and the
+index calls no user function, so `status/2` reports the same state afterwards.
+Dev, test and CI migrate as a superuser, and a degraded database migrates it as
+usual.
+
 ## Rollback
 
 There is no release command that undoes hardening. The two hardening

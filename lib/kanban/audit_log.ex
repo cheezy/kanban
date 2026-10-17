@@ -17,6 +17,10 @@ defmodule Kanban.AuditLog do
       retained. A database trigger rejects every edit of a stored row (except
       the foreign-key cascade that nulls `actor_user_id` when its user is
       deleted), every `TRUNCATE`, and every delete outside the retention purge.
+      A positive integer `organization_id` in the context that names an
+      existing Organization is also stored in its own column, which scopes the
+      org-admin audit log at `/org/audit`; an out-of-range or stale id stays
+      in the metadata only.
       Where the migration could harden it (see `Kanban.AuditLog.Hardening`),
       the table belongs to a separate owner role, so the application cannot
       disable that trigger.
@@ -58,6 +62,7 @@ defmodule Kanban.AuditLog do
 
   alias Kanban.AuditLog.AuditEvent
   alias Kanban.AuditLog.Export
+  alias Kanban.AuditLog.OrganizationScope
   alias Kanban.AuditLog.Query
   alias Kanban.Repo
 
@@ -122,6 +127,9 @@ defmodule Kanban.AuditLog do
 
     * `:action` — only events with this action (atom or string).
     * `:actor_user_id` — only events whose actor is this user id.
+    * `:organization_id` — only events linked to this Organization id. Callers
+      force it from the signed-in org-admin's membership; it is never parsed
+      from request params (see `Kanban.AuditLog.Filters`).
     * `:actor_email` — only events whose actor's email, or whose recorded
       `email` metadata, equals this (case-insensitive, exact).
     * `:since` / `:until` — only events inserted at or after / before this
@@ -152,6 +160,10 @@ defmodule Kanban.AuditLog do
     * `:cursor` — a decoded cursor (see `Kanban.AuditLog.Query.decode_cursor/1`);
       `nil` starts at the newest event.
     * `:limit` — page size, clamped to 1..#{@max_page_size} (default #{@default_page_size}).
+    * `:redact_actors_outside` — an Organization id. Events whose actor is not
+      a member of that Organization lose the actor's identity and IP (see
+      `Kanban.AuditLog.OrganizationScope.redact_outside_actors/2`). The org
+      viewer passes it; the site-admin viewer does not.
 
   Returns `%{entries: events, next_cursor: encoded | nil}`; `next_cursor` is
   `nil` on the last page.
@@ -171,16 +183,20 @@ defmodule Kanban.AuditLog do
     {entries, rest} = Enum.split(rows, page_size)
     next_cursor = if rest != [], do: entries |> List.last() |> Query.encode_cursor()
 
-    %{entries: entries, next_cursor: next_cursor}
+    %{entries: redact(entries, opts), next_cursor: next_cursor}
   end
 
   @doc """
   The distinct action names stored so far, alphabetically — the choices for
   the viewer's action filter.
+
+  `filters` takes the same keys as `list_events/2`; the org viewer passes
+  `organization_id:` so its filter lists only that Organization's actions.
   """
-  @spec list_actions() :: [String.t()]
-  def list_actions do
-    from(e in AuditEvent, distinct: true, select: e.action, order_by: e.action)
+  @spec list_actions(keyword()) :: [String.t()]
+  def list_actions(filters \\ []) do
+    filters
+    |> Query.actions()
     |> Repo.all()
   end
 
@@ -194,6 +210,9 @@ defmodule Kanban.AuditLog do
   the whole table and holds no transaction or connection while the response
   is being sent. Events inserted after the export starts are newer than its
   first batch and are therefore not included.
+
+  `opts` takes `:batch_size` and `:redact_actors_outside` (see
+  `list_events_page/2`), which the org export passes.
   """
   @spec export_stream(keyword(), :csv | :json, keyword()) :: Enumerable.t()
   def export_stream(filters, format, opts \\ []) when format in [:csv, :json] do
@@ -204,6 +223,7 @@ defmodule Kanban.AuditLog do
       :done -> nil
       {:after, cursor} -> next_export_batch(filters, cursor, batch_size)
     end)
+    |> Stream.map(&redact(&1, opts))
     |> Export.encode_stream(format)
   end
 
@@ -216,6 +236,13 @@ defmodule Kanban.AuditLog do
   end
 
   defp keyset_position(%AuditEvent{inserted_at: at, id: id}), do: {at, id}
+
+  defp redact(events, opts) do
+    case Keyword.get(opts, :redact_actors_outside) do
+      nil -> events
+      organization_id -> OrganizationScope.redact_outside_actors(events, organization_id)
+    end
+  end
 
   @doc """
   Streams stored audit events matching `filters` (see `list_events/2`), for
@@ -297,7 +324,8 @@ defmodule Kanban.AuditLog do
   defp persist(action, clean) do
     attrs = %{
       action: action |> Atom.to_string() |> clean_string(),
-      actor_user_id: actor_user_id(clean),
+      actor_user_id: bounded_id(clean, :user_id),
+      organization_id: bounded_id(clean, :organization_id),
       ip: ip(clean),
       metadata: json_safe_map(clean)
     }
@@ -322,20 +350,25 @@ defmodule Kanban.AuditLog do
     attrs
     |> AuditEvent.insert_changeset()
     |> Repo.insert(statement_opts())
-    |> retry_without_actor(attrs)
+    |> retry_without_stale_link(attrs)
   end
+
+  @linked_ids [:actor_user_id, :organization_id]
 
   # A user_id with no users row (stale, or the user deleted concurrently) fails
-  # the actor foreign key. Losing the whole event for that would defeat the
-  # audit trail, so the row is stored once more without the actor link — the
-  # id itself is still kept in the metadata.
-  defp retry_without_actor({:error, %Ecto.Changeset{errors: errors}} = error, attrs) do
-    if attrs.actor_user_id != nil and Keyword.has_key?(errors, :actor_user_id),
-      do: insert_event(%{attrs | actor_user_id: nil}),
-      else: error
+  # the actor foreign key, and an organization_id with no organizations row
+  # fails the Organization one. Losing the whole event for that would defeat
+  # the audit trail, so the row is stored once more without the failing link —
+  # the id itself is still kept in the metadata. Postgres reports one failed
+  # constraint per insert, so a row with both links stale is retried twice.
+  defp retry_without_stale_link({:error, %Ecto.Changeset{errors: errors}} = error, attrs) do
+    case Enum.find(@linked_ids, &(attrs[&1] != nil and Keyword.has_key?(errors, &1))) do
+      nil -> error
+      field -> insert_event(Map.put(attrs, field, nil))
+    end
   end
 
-  defp retry_without_actor(result, _attrs), do: result
+  defp retry_without_stale_link(result, _attrs), do: result
 
   # Inside a caller's transaction a failed statement would poison it; a
   # savepoint confines the failure to the audit statement. Outside a
@@ -351,8 +384,10 @@ defmodule Kanban.AuditLog do
     Logger.error("security_audit_persist_failed action=#{action} reason=#{inspect(reason)}")
   end
 
-  defp actor_user_id(clean) do
-    case Keyword.get(clean, :user_id) do
+  # A positive integer that fits a bigint column, else nil. Used for the actor
+  # (`:user_id`) and the Organization (`:organization_id`) links.
+  defp bounded_id(clean, key) do
+    case Keyword.get(clean, key) do
       id when is_integer(id) and id > 0 and id <= @max_bigint -> id
       _ -> nil
     end

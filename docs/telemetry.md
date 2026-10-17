@@ -283,19 +283,20 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
 
 | Event | Kind | Metadata | Emitted by |
 |---|---|---|---|
-| `[:kanban, :export]` | span | `kind`, `format` | `Kanban.Archives.export_csv_for_board/1` and the metrics, workspace metrics and audit log export controllers |
+| `[:kanban, :export]` | span | `kind`, `format` | `Kanban.Archives.export_csv_for_board/1` and the metrics, workspace metrics, audit log and Organization audit log export controllers |
 | `[:kanban, :rate_limit, :denied]` | event | `surface` | `Kanban.RateLimit.check/2` and `peek/2` |
 | `[:kanban, :mcp, :request]` | span | `method`, `outcome` | `KanbanWeb.MCP.Server` |
 | `[:kanban, :github, :issue_created]` | event | `outcome`, `reason` | `Kanban.GitHub.create_issue/3` |
 | `[:kanban, :api, :auth_failed]` | event | `reason`, `path`, `method` | `KanbanWeb.Plugs.AuthenticateApiToken` |
 
 - **Exports.** `kind` is `:archive_csv` (board archive CSV), `:metrics_pdf`
-  (board metrics report), `:workspace_metrics` (workspace metrics report) or
-  `:audit_log`. `format` is `:csv`, `:pdf`, `:xlsx` or `:json`. The stop event
+  (board metrics report), `:workspace_metrics` (workspace metrics report),
+  `:audit_log` (site-admin audit log) or `:org_audit_log` (an org-admin's
+  Organization audit log). `format` is `:csv`, `:pdf`, `:xlsx` or `:json`. The stop event
   also measures `row_count` for `:archive_csv`, the number of archived tasks
   exported; the other exports have no row count to report. A board, its
   name, the metric filters and the audit-log filters never appear, nor the
-  admin's IP address. A failed metrics report that redirects with an error
+  admin's or org-admin's IP address. A failed metrics report that redirects with an error
   still ends with a stop event; only an exception produces the exception
   event.
 - **On an exception**, `:telemetry` replaces `kind` with the error class
@@ -632,6 +633,12 @@ change emits nothing. Every event measures `count: 1`.
   `:org_admin_appointed`, and removing one records `:org_admin_removed`, each
   with `organization_id`, the site admin as `user_id` and the org-admin as
   `member_user_id`. `:org_admin_appointed` also carries `account_created`.
+  An org-admin downloading their Organization's audit log records
+  `:org_audit_log_exported` with `organization_id` and the org-admin as
+  `user_id`. An audit event whose `organization_id` is a positive integer
+  naming an existing Organization also stores it in the
+  `audit_events.organization_id` column, which scopes the org-admin audit log
+  at `/org/audit`; an out-of-range or stale id stays in the metadata only.
 - **`account_created` marks a provisioned account.** It is `true` on
   `member_added` and `:org_admin_appointed` only when
   `appoint_org_admin_by_email/4` created the appointee's account in the same
@@ -991,6 +998,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :permission_denied]` | event, legacy | `count` | `user_id`, `gate` | A user was refused access by a permission gate. |
 | `[:kanban, :audit, :sudo_mode_entered]` | event, legacy | `count` | `user_id` | A recently authenticated user passed a sudo-mode check. |
 | `[:kanban, :audit, :audit_log_exported]` | event, legacy | `count` | `user_id`, `format` | An admin exported the audit log. |
+| `[:kanban, :audit, :org_audit_log_exported]` | event, legacy | `count` | `user_id`, `organization_id`, `format` | An org-admin exported their Organization's audit log. user_id is the org-admin. |
 | `[:kanban, :audit, :organization_created]` | event, legacy | `count` | `user_id`, `organization_id` | A site admin created an Organization. user_id is the site admin. |
 | `[:kanban, :audit, :organization_updated]` | event, legacy | `count` | `user_id`, `organization_id` | A site admin changed an Organization's details. user_id is the site admin. |
 | `[:kanban, :audit, :org_admin_appointed]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id`, `account_created` | A site admin made a user an org-admin. user_id is the site admin, member_user_id the appointee. account_created is true when the appointee's account was created for the appointment. |
@@ -1028,7 +1036,7 @@ the sections above explain which code emits each family and when.
 
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
-| `[:kanban, :export]` | span | `duration` on `:stop` and `:exception`; `row_count` on `:stop` | `kind`, `format` | Data left Stride as a download. kind is :archive_csv, :metrics_pdf, :workspace_metrics or :audit_log, format the file type; row_count is measured for the archive CSV only. |
+| `[:kanban, :export]` | span | `duration` on `:stop` and `:exception`; `row_count` on `:stop` | `kind`, `format` | Data left Stride as a download. kind is :archive_csv, :metrics_pdf, :workspace_metrics, :audit_log or :org_audit_log, format the file type; row_count is measured for the archive CSV only. |
 
 - `[:kanban, :export]` is a span: it emits `[:kanban, :export, :start]`, `[:kanban, :export, :stop]` and `[:kanban, :export, :exception]`.
 

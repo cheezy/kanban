@@ -45,6 +45,20 @@ defmodule Kanban.AuditLog.Query do
   end
 
   @doc """
+  The distinct action names among events matching `filters`, alphabetically.
+  Takes the same filters as `events/2`.
+  """
+  @spec actions(keyword()) :: Ecto.Query.t()
+  def actions(filters) do
+    filters
+    |> events(:desc)
+    |> exclude(:order_by)
+    |> distinct(true)
+    |> select([e], e.action)
+    |> order_by([e], e.action)
+  end
+
+  @doc """
   Preloads each event's actor user from the join `events/2` already made, so a
   page or export renders actors without N+1 queries. Not usable with
   `Repo.stream/2`, which does not support preloads.
@@ -62,6 +76,11 @@ defmodule Kanban.AuditLog.Query do
 
   defp filter({:actor_user_id, id}, query) when is_integer(id),
     do: where(query, [e], e.actor_user_id == ^id)
+
+  # Callers force this from the signed-in org-admin's membership; it is never
+  # parsed from request params.
+  defp filter({:organization_id, id}, query) when is_integer(id),
+    do: where(query, [e], e.organization_id == ^id)
 
   # Matches the actor's account email (citext, so case-insensitive) OR an
   # `email` recorded in the event metadata — login_failed and

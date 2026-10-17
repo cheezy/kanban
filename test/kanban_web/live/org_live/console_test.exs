@@ -103,6 +103,17 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
       refute has_element?(view, "#details input")
     end
 
+    test "links to the Organization audit log", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/org")
+
+      assert has_element?(view, ~s(#org-audit-log-link[href="/org/audit"]), "Audit log")
+
+      assert {:ok, _audit_view, html} =
+               view |> element("#org-audit-log-link") |> render_click() |> follow_redirect(conn)
+
+      assert html =~ "Organization audit log"
+    end
+
     test "shows only the org-admin's own Organization and ignores an id in params", %{
       conn: conn,
       organization: organization

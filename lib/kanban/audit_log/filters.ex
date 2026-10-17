@@ -1,8 +1,13 @@
 defmodule Kanban.AuditLog.Filters do
   @moduledoc """
-  Strict parsing of the untrusted query/form params the admin audit-log viewer
-  and its export accept, shared by `KanbanWeb.Admin.AuditLogLive.Index` and
-  `KanbanWeb.AuditLogExportController` so both apply identical filters.
+  Strict parsing of the untrusted query/form params the audit-log viewers and
+  their exports accept, shared by `KanbanWeb.Admin.AuditLogLive.Index`,
+  `KanbanWeb.AuditLogExportController`, `KanbanWeb.OrgLive.AuditLog` and
+  `KanbanWeb.OrgAuditLogExportController` so all apply identical filters.
+
+  `organization_id` is deliberately never parsed: the org-admin viewer and
+  export force it from the signed-in org-admin's membership, so no request
+  param can reach another Organization's events.
 
   Accepted params (all optional, all strings):
 

@@ -245,7 +245,7 @@ msgstr "通过为看板创建列来开始。"
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:110
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
-#: lib/kanban_web/live/org_live/console.html.heex:50
+#: lib/kanban_web/live/org_live/console.html.heex:54
 #: lib/kanban_web/live/target_live/form.html.heex:29
 #: lib/kanban_web/live/user_live/settings.ex:32
 #, elixir-autogen, elixir-format
@@ -2097,6 +2097,7 @@ msgstr "清除所有筛选"
 
 #: lib/kanban_web/components/board_filter_bar.ex:152
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:47
+#: lib/kanban_web/live/org_live/audit_log.html.heex:46
 #: lib/kanban_web/live/resources_live/index.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "Clear filters"
@@ -3378,7 +3379,7 @@ msgstr "以批准的速度完成评审"
 
 #: lib/kanban_web/components/marketing_closing.ex:113
 #: lib/kanban_web/components/review_report_panel.ex:449
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:162
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:168
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
 #, elixir-autogen, elixir-format
 msgid "Security"
@@ -3479,7 +3480,7 @@ msgid "Now in release →"
 msgstr "最新发布 →"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:157
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:190
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:196
 #: lib/kanban_web/controllers/page_html/terms.html.heex:161
 #, elixir-autogen, elixir-format
 msgid " and we will respond within a reasonable time."
@@ -3670,7 +3671,7 @@ msgstr "通过代理 API 泄露 API 令牌或越权访问。"
 msgid "API tokens"
 msgstr "API令牌"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:138
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:144
 #, elixir-autogen, elixir-format
 msgid "Access the personal data we hold about you."
 msgstr "访问我们持有的关于您的个人数据。"
@@ -3748,7 +3749,7 @@ msgid "Can I switch between self-hosted and hosted later?"
 msgstr "我以后可以在自托管和托管之间切换吗?"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:140
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:173
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "Changes to this policy"
 msgstr "本政策的变更"
@@ -3766,18 +3767,18 @@ msgid "Contact"
 msgstr "联系"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:151
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:184
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:190
 #: lib/kanban_web/controllers/page_html/terms.html.heex:155
 #, elixir-autogen, elixir-format
 msgid "Contact us"
 msgstr "联系我们"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:151
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "Cookies and local storage"
 msgstr "Cookie 和本地存储"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:139
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Correct inaccurate personal data."
 msgstr "更正不准确的个人数据。"
@@ -3797,7 +3798,7 @@ msgstr "自定义"
 msgid "Daily backups, encrypted at rest"
 msgstr "每日备份,静态加密"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:116
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "Data retention"
 msgstr "数据保留"
@@ -3812,7 +3813,7 @@ msgstr "数据共享"
 msgid "Dedicated success manager + custom SLA"
 msgstr "专属成功经理 + 自定义 SLA"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:140
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Delete your account and your personal data."
 msgstr "删除您的账户和个人数据。"
@@ -3827,7 +3828,7 @@ msgstr "拒绝服务攻击、流量洪水攻击,以及通过请求量绕过限�
 msgid "Dependency hygiene"
 msgstr "依赖卫生"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:135
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:141
 #, elixir-autogen, elixir-format
 msgid "Depending on where you live, you may have the right to:"
 msgstr "视您所在地而定,您可能享有以下权利:"
@@ -3986,7 +3987,7 @@ msgstr "在您思考的层面进行规划"
 msgid "Privacy Policy"
 msgstr "隐私政策"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:187
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:193
 #, elixir-autogen, elixir-format
 msgid "Questions, concerns, or requests about this policy? Email "
 msgstr "对本政策有疑问、担忧或请求?请发送邮件至 "
@@ -4101,7 +4102,7 @@ msgstr "严格的内容安全策略"
 msgid "Stride is free to self-host on day one. Pay us only if you want it managed for you."
 msgstr "Stride 首日即可免费自托管。只有当您希望由我们托管时才需要付费。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:165
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:171
 #, elixir-autogen, elixir-format
 msgid "Stride is hosted on encrypted infrastructure, passwords are hashed with bcrypt, and API tokens are hashed at rest. Despite our best efforts, no system is perfectly secure. If you discover a vulnerability, please report it to us responsibly at the contact address below."
 msgstr "Stride 部署在加密基础设施上,密码使用 bcrypt 哈希,API 令牌静态哈希。尽管我们已尽全力,但没有任何系统是绝对安全的。如果您发现漏洞,请负责任地通过下方的联系地址向我们报告。"
@@ -4132,7 +4133,7 @@ msgstr "团队"
 msgid "Telemetry"
 msgstr "遥测"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:124
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:130
 #, elixir-autogen, elixir-format
 msgid "Telemetry and audit logs are retained for up to 90 days, then aggregated or deleted."
 msgstr "遥测和审计日志最多保留 90 天,之后会被聚合或删除。"
@@ -4182,12 +4183,12 @@ msgstr "漏洞披露"
 msgid "We do not sell your data. We do not use your workspace content to train AI models. We do not run advertising on Stride."
 msgstr "我们不出售您的数据。我们不会将您工作区中的内容用于训练 AI 模型。我们也不会在 Stride 上投放广告。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:119
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:125
 #, elixir-autogen, elixir-format
 msgid "We keep your account and workspace data for as long as your account is active. When you delete your account, we delete your account record and your workspace content within 30 days, except where we are required by law to retain a record (for example, financial records for billing)."
 msgstr "在您的账户处于活跃状态期间,我们会保留您的账户和工作区数据。当您删除账户时,我们会在 30 天内删除您的账户记录及工作区内容,除非法律要求保留(例如计费所需的财务记录)。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:176
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:182
 #, elixir-autogen, elixir-format
 msgid "We may update this policy from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect."
 msgstr "我们可能会不时更新本政策。当我们进行实质性变更时,我们会在本页顶部标注新的生效日期,并在适当情况下,在变更生效前通过邮件或应用内横幅通知您。"
@@ -4197,7 +4198,7 @@ msgstr "我们可能会不时更新本政策。当我们进行实质性变更时
 msgid "We share your information only in narrowly limited circumstances:"
 msgstr "我们仅在严格受限的情况下共享您的信息:"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:154
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "We use a small number of cookies and browser-local storage entries that are strictly necessary to operate the service: a session cookie to keep you signed in, a CSRF token to protect form submissions, and a preference entry that remembers your light/dark theme choice. We do not use third-party advertising or analytics cookies."
 msgstr "我们使用少量严格运营所需的 cookie 和浏览器本地存储:用于保持您登录的会话 cookie、用于保护表单提交的 CSRF 令牌,以及记住您浅色/深色主题偏好的设置项。我们不使用第三方广告或分析 cookie。"
@@ -4232,7 +4233,7 @@ msgstr "可以。请发送邮件至 "
 msgid "Yes. The whole codebase is open source under the MIT license. Run it on your own machine, your own server, or your own Kubernetes cluster. You owe us nothing."
 msgstr "是。整个代码库以 MIT 许可证开源。可以在您自己的机器、服务器或 Kubernetes 集群上运行。您不需要付费给我们。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:132
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "Your rights"
 msgstr "您的权利"
@@ -4489,7 +4490,7 @@ msgstr "进行中的工作。钩子在前后运行;活动栏在此处亮起。"
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
 #: lib/kanban_web/live/org_live/console.ex:67
-#: lib/kanban_web/live/org_live/console.html.heex:113
+#: lib/kanban_web/live/org_live/console.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Members"
 msgstr "成员"
@@ -5417,6 +5418,7 @@ msgstr "永久删除"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:11
 #: lib/kanban_web/live/archive_live/index.html.heex:317
+#: lib/kanban_web/live/org_live/audit_log.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Export CSV"
 msgstr "导出 CSV"
@@ -5971,7 +5973,7 @@ msgstr "已达到 WIP 上限"
 msgid " runs for every release detecting any security vulnerabilities."
 msgstr " 在每次发布时运行,检测任何安全漏洞。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:143
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "As a user of this system, you have full access to your data to manage it as you see fit."
 msgstr "作为本系统的用户,您可以完全访问自己的数据并按需管理。"
@@ -6591,8 +6593,9 @@ msgstr "代理编写代码以完成任务。"
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:74
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
+#: lib/kanban_web/live/org_live/audit_log.html.heex:73
 #: lib/kanban_web/live/org_live/console.ex:66
-#: lib/kanban_web/live/org_live/console.html.heex:45
+#: lib/kanban_web/live/org_live/console.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr "详情"
@@ -9452,11 +9455,14 @@ msgstr "我们无法完成您的请求。请返回后重试。"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:30
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:63
+#: lib/kanban_web/live/org_live/audit_log.html.heex:36
+#: lib/kanban_web/live/org_live/audit_log.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Action"
 msgstr "操作"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:66
+#: lib/kanban_web/live/org_live/audit_log.html.heex:65
 #, elixir-autogen, elixir-format
 msgid "Actor"
 msgstr "执行者"
@@ -9467,6 +9473,7 @@ msgid "Actor email"
 msgstr "执行者邮箱"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:31
+#: lib/kanban_web/live/org_live/audit_log.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "All actions"
 msgstr "所有操作"
@@ -9481,31 +9488,37 @@ msgid "Audit Log"
 msgstr "审计日志"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:82
+#: lib/kanban_web/live/org_live/audit_log.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "Audit log pages"
 msgstr "审计日志分页"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:15
+#: lib/kanban_web/live/org_live/audit_log.html.heex:21
 #, elixir-autogen, elixir-format
 msgid "Export JSON"
 msgstr "导出 JSON"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:41
+#: lib/kanban_web/live/org_live/audit_log.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "From (UTC)"
 msgstr "开始日期 (UTC)"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:69
+#: lib/kanban_web/live/org_live/audit_log.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "IP"
 msgstr "IP"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:53
+#: lib/kanban_web/live/org_live/audit_log.html.heex:52
 #, elixir-autogen, elixir-format
 msgid "No audit events match these filters."
 msgstr "没有符合这些筛选条件的审计事件。"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:97
+#: lib/kanban_web/live/org_live/audit_log.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "Older events"
 msgstr "更早的事件"
@@ -9516,21 +9529,25 @@ msgid "Security events recorded on this instance, newest first. Times are in UTC
 msgstr "此实例记录的安全事件，按时间倒序排列。时间为 UTC。"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:58
+#: lib/kanban_web/live/org_live/audit_log.html.heex:57
 #, elixir-autogen, elixir-format
 msgid "Time (UTC)"
 msgstr "时间 (UTC)"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:42
+#: lib/kanban_web/live/org_live/audit_log.html.heex:41
 #, elixir-autogen, elixir-format
 msgid "To (UTC)"
 msgstr "结束日期 (UTC)"
 
 #: lib/kanban_web/controllers/audit_log_export_controller.ex:33
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:38
 #, elixir-autogen, elixir-format
 msgid "Unsupported export format."
 msgstr "不支持的导出格式。"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.ex:77
+#: lib/kanban_web/live/org_live/audit_log.ex:107
 #, elixir-autogen, elixir-format
 msgid "User #%{id} (deleted)"
 msgstr "用户 #%{id}（已删除）"
@@ -9641,12 +9658,14 @@ msgid "unclaimed"
 msgstr "已取消认领"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.ex:81
+#: lib/kanban_web/live/org_live/audit_log.ex:109
 #, elixir-autogen, elixir-format
 msgctxt "audit log actor"
 msgid "None"
 msgstr "无"
 
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:90
+#: lib/kanban_web/live/org_live/audit_log.html.heex:89
 #, elixir-autogen, elixir-format
 msgctxt "audit log pages"
 msgid "Newest"
@@ -10513,7 +10532,7 @@ msgstr "无法复制。请选中密钥并手动复制。"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:73
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:37
-#: lib/kanban_web/live/org_live/console.html.heex:59
+#: lib/kanban_web/live/org_live/console.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Address"
 msgstr "地址"
@@ -10541,28 +10560,28 @@ msgstr "城市"
 
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:26
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:48
-#: lib/kanban_web/live/org_live/console.html.heex:71
+#: lib/kanban_web/live/org_live/console.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "City and country"
 msgstr "城市和国家"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:94
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:60
-#: lib/kanban_web/live/org_live/console.html.heex:89
+#: lib/kanban_web/live/org_live/console.html.heex:93
 #, elixir-autogen, elixir-format
 msgid "Contact email"
 msgstr "联系人邮箱"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:92
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:54
-#: lib/kanban_web/live/org_live/console.html.heex:80
+#: lib/kanban_web/live/org_live/console.html.heex:84
 #, elixir-autogen, elixir-format
 msgid "Contact name"
 msgstr "联系人姓名"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:93
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:69
-#: lib/kanban_web/live/org_live/console.html.heex:98
+#: lib/kanban_web/live/org_live/console.html.heex:102
 #, elixir-autogen, elixir-format
 msgid "Contact phone"
 msgstr "联系人电话"
@@ -10743,7 +10762,7 @@ msgstr "该组织还没有成员。"
 msgid "You cannot remove the last org-admin while the Organization has other members. Appoint another org-admin first."
 msgstr "组织还有其他成员时，不能移除最后一位组织管理员。请先任命另一位组织管理员。"
 
-#: lib/kanban_web/live/org_live/console.html.heex:114
+#: lib/kanban_web/live/org_live/console.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "Everyone in your Organization, org-admins first."
 msgstr "您组织中的所有成员，组织管理员排在最前。"
@@ -10754,13 +10773,13 @@ msgstr "您组织中的所有成员，组织管理员排在最前。"
 msgid "Organization"
 msgstr "组织"
 
-#: lib/kanban_web/live/org_live/console.html.heex:21
-#: lib/kanban_web/live/org_live/console.html.heex:27
+#: lib/kanban_web/live/org_live/console.html.heex:25
+#: lib/kanban_web/live/org_live/console.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Organization sections"
 msgstr "组织分区"
 
-#: lib/kanban_web/live/org_live/console.html.heex:46
+#: lib/kanban_web/live/org_live/console.html.heex:50
 #, elixir-autogen, elixir-format
 msgid "Read-only. Ask a site admin to change them."
 msgstr "只读。如需更改，请联系站点管理员。"
@@ -10785,3 +10804,39 @@ msgstr "名称 · 地址 · 联系人"
 #, elixir-autogen, elixir-format
 msgid "names · roles"
 msgstr "姓名 · 角色"
+
+#: lib/kanban_web/live/org_live/console.html.heex:19
+#, elixir-autogen, elixir-format
+msgid "Audit log"
+msgstr "审计日志"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:4
+#, elixir-autogen, elixir-format
+msgid "Back to Organization"
+msgstr "返回组织"
+
+#: lib/kanban_web/live/org_live/audit_log.ex:42
+#: lib/kanban_web/live/org_live/audit_log.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Organization audit log"
+msgstr "组织审计日志"
+
+#: lib/kanban_web/live/org_live/audit_log.html.heex:10
+#, elixir-autogen, elixir-format
+msgid "Security events recorded for %{name}, newest first. Times are in UTC."
+msgstr "为 %{name} 记录的安全事件，按时间倒序排列。时间为 UTC。"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:113
+#, elixir-autogen, elixir-format
+msgid " — if you belong to an Organization, its org-admins can view and export that Organization's security audit events, including your email address and IP address when you are the person who acted."
+msgstr " — 如果您属于某个组织，该组织的组织管理员可以查看和导出该组织的安全审计事件，其中包括您执行操作时的电子邮件地址和 IP 地址。"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:112
+#, elixir-autogen, elixir-format
+msgid "Organization administrators"
+msgstr "组织管理员"
+
+#: lib/kanban_web/live/org_live/audit_log.ex:100
+#, elixir-autogen, elixir-format
+msgid "Outside your Organization"
+msgstr "组织外部人员"

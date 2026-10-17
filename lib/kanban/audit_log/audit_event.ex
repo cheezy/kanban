@@ -21,6 +21,11 @@ defmodule Kanban.AuditLog.AuditEvent do
   `kanban.audit_purge` flag. Where the table could not be hardened (degraded
   mode) the trigger still admits any delete made while that flag is on, and the
   purge function sets it itself.
+
+  `organization_id` links an event to the Organization it concerns, for the
+  org-admin audit log at `/org/audit`. It is nullable, never backfilled, and
+  its foreign key has no cascade, because a cascade would have to edit rows the
+  trigger protects.
   """
   use Ecto.Schema
   import Ecto.Changeset
@@ -32,7 +37,12 @@ defmodule Kanban.AuditLog.AuditEvent do
     field :ip, :string
     field :metadata, :map, default: %{}
 
+    # Set only on events read for an Organization's audit log whose actor is
+    # not a member of that Organization (see Kanban.AuditLog.OrganizationScope).
+    field :actor_redacted, :boolean, virtual: true, default: false
+
     belongs_to :actor_user, Kanban.Accounts.User
+    belongs_to :organization, Kanban.Organizations.Organization
 
     timestamps(type: :utc_datetime_usec, updated_at: false)
   end
@@ -40,10 +50,11 @@ defmodule Kanban.AuditLog.AuditEvent do
   @doc false
   def insert_changeset(attrs) do
     %__MODULE__{}
-    |> cast(attrs, [:action, :actor_user_id, :ip, :metadata])
+    |> cast(attrs, [:action, :actor_user_id, :organization_id, :ip, :metadata])
     |> validate_required([:action])
     |> validate_length(:action, max: 255, count: :codepoints)
     |> validate_length(:ip, max: 255, count: :codepoints)
     |> foreign_key_constraint(:actor_user_id)
+    |> foreign_key_constraint(:organization_id)
   end
 end

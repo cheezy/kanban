@@ -129,6 +129,21 @@ defmodule Kanban.AuditLog.HardeningTest do
       assert actor == user.id
     end
 
+    test "the organization_id foreign key and index keep the app-like role hardened, and it stores an Organization event" do
+      organization = Kanban.OrganizationsFixtures.organization_fixture()
+      role = AuditLogRoleHelper.switch_to_app_like_role()
+
+      log =
+        capture_log(fn ->
+          assert AuditLog.event(:organization_updated, organization_id: organization.id) == :ok
+        end)
+
+      refute log =~ "security_audit_persist_failed"
+      assert [%AuditEvent{organization_id: org_id}] = Repo.all(AuditEvent)
+      assert org_id == organization.id
+      assert Hardening.status(runner(), app_role: role) == :hardened
+    end
+
     test "deleting a user as the app-like role still nulls actor_user_id" do
       user = user_fixture()
       AuditLog.event(:sudo_mode_entered, user_id: user.id)
