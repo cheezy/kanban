@@ -289,6 +289,37 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
       assert [_event] = AuditLog.list_events(action: :org_workspace_created)
     end
 
+    test "gives the emptied create form a fresh input after each create, so the typed name does not stay",
+         %{conn: conn} do
+      view = open_workspaces(conn)
+      assert has_element?(view, "#create-workspace-form input#workspace-0_name")
+
+      view
+      |> form("#create-workspace-form", workspace: %{name: "Design"})
+      |> render_submit()
+
+      assert has_element?(view, "#create-workspace-form input#workspace-1_name")
+      refute has_element?(view, "#create-workspace-form input#workspace-0_name")
+      refute has_element?(view, "#create-workspace-form input[value=\"Design\"]")
+
+      view
+      |> form("#create-workspace-form", workspace: %{name: "Research"})
+      |> render_submit()
+
+      assert has_element?(view, "#create-workspace-form input#workspace-2_name")
+    end
+
+    test "keeps the create input after a rejected name, so the typed name and its error stay",
+         %{conn: conn} do
+      view = open_workspaces(conn)
+
+      view
+      |> form("#create-workspace-form", workspace: %{name: "  "})
+      |> render_submit()
+
+      assert has_element?(view, "#create-workspace-form input#workspace-0_name")
+    end
+
     test "shows a blank or overlong name's error inline and creates nothing", %{
       conn: conn,
       organization: organization

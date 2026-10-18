@@ -66,7 +66,8 @@ defmodule KanbanWeb.OrgLive.Console do
     |> assign(:organization, organization)
     |> assign(:members, Organizations.list_members(organization))
     |> assign(:workspaces, OrgWorkspaces.list_workspaces(user, organization.id))
-    |> assign(:create_form, workspace_form())
+    |> assign(:create_rev, 0)
+    |> assign(:create_form, create_form(0))
     |> reset_rename()
     |> assign(:section, :details)
   end
@@ -139,12 +140,14 @@ defmodule KanbanWeb.OrgLive.Console do
     {:noreply,
      socket
      |> replace_flash(:info, gettext("Workspace created."))
-     |> assign(:create_form, workspace_form())
+     |> reset_create_form()
      |> refresh_workspaces(actor)}
   end
 
-  defp respond_to_create({:error, %Changeset{} = changeset}, _actor, socket),
-    do: {:noreply, assign(socket, :create_form, invalid_form(changeset, :workspace))}
+  defp respond_to_create({:error, %Changeset{} = changeset}, _actor, socket) do
+    form = to_form(changeset, as: :workspace, id: create_form_id(socket.assigns.create_rev))
+    {:noreply, assign(socket, :create_form, form)}
+  end
 
   defp respond_to_create({:error, reason}, actor, socket),
     do: workspace_error(socket, reason, actor)
@@ -266,9 +269,29 @@ defmodule KanbanWeb.OrgLive.Console do
     |> assign(:rename_form, nil)
   end
 
+  # A new rev gives the emptied create form a new input id. The form has no
+  # phx-change, so the server's empty value is the same before and after a
+  # create and LiveView sends no diff for it; with the same id the typed name
+  # would stay in the field and a second click would create a duplicate.
+  defp reset_create_form(socket) do
+    rev = socket.assigns.create_rev + 1
+
+    socket
+    |> assign(:create_rev, rev)
+    |> assign(:create_form, create_form(rev))
+  end
+
+  defp create_form(rev) do
+    %Workspace{}
+    |> OrgWorkspaces.change_workspace()
+    |> to_form(as: :workspace, id: create_form_id(rev))
+  end
+
+  defp create_form_id(rev), do: "workspace-#{rev}"
+
   # The create and rename forms use different names, so their inputs never
   # share an id while a rename is open.
-  defp workspace_form(workspace \\ %Workspace{}, as \\ :workspace),
+  defp workspace_form(workspace, as),
     do: workspace |> OrgWorkspaces.change_workspace() |> to_form(as: as)
 
   # The changeset comes back from Repo.insert/1 or Repo.update/1, which set its
