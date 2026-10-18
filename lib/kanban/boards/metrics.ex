@@ -4,16 +4,18 @@ defmodule Kanban.Boards.Metrics do
   header, and the workspace-wide rollups.
 
   Every function here takes an **already-scoped** list of board ids (or a
-  list of boards a scoped read produced). Scoping is the facade's job —
-  `Kanban.Boards.list_boards/1` decides which boards a user may see, and
-  nothing in this module filters by user. Never call these with ids that
+  list of boards a scoped read produced). Scoping is
+  `Kanban.Boards.Dashboard`'s job — its scoped reads resolve the caller's
+  boards through `Kanban.Boards.list_boards/1` or `Kanban.Boards.get_board/2`
+  first, and nothing in this module filters by user. Never call these with ids that
   did not come from a scoped read.
 
   Exposed through the `Kanban.Boards` facade the same way
   `Kanban.Boards.Membership` is: call `Boards.list_boards_with_metrics/2`,
   `Boards.workspace_metrics/2`, `Boards.list_workspace_members/2` and
-  friends rather than reaching into this module directly. The facade owns
-  the public documentation for those entry points.
+  friends rather than reaching into this module directly. Those entry
+  points, and their public documentation, live in `Kanban.Boards.Dashboard`,
+  which the facade delegates to.
 
   Split out of `Kanban.Boards` because the aggregate-query surface is a
   distinct concern from board CRUD and access control, per the module

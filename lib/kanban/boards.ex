@@ -3,8 +3,12 @@ defmodule Kanban.Boards do
   The Boards context.
 
   Board membership queries live in `Kanban.Boards.Membership` and membership
-  writes (add, change access, remove) in `Kanban.Boards.MembershipChanges`;
-  both are delegated to below.
+  writes (add, change access, remove) in `Kanban.Boards.MembershipChanges`.
+  Board creation lives in `Kanban.Boards.Creation`, and the scoped metrics
+  reads behind the Boards index, the board header and the all-boards rollups
+  in `Kanban.Boards.Dashboard`. All of them are delegated to below; the access
+  functions (`list_boards/1`, `get_board/2`, `owner?/2`, `can_modify?/2`) stay
+  here.
   """
 
   use Gettext, backend: KanbanWeb.Gettext
@@ -16,11 +20,11 @@ defmodule Kanban.Boards do
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardTelemetry
   alias Kanban.Boards.BoardUser
+  alias Kanban.Boards.Creation
+  alias Kanban.Boards.Dashboard
   alias Kanban.Boards.MemberSearch
   alias Kanban.Boards.Membership
   alias Kanban.Boards.MembershipChanges
-  alias Kanban.Boards.Metrics
-  alias Kanban.Workspaces
 
   @doc """
   Returns the list of boards for a given user with their access level.
@@ -85,226 +89,14 @@ defmodule Kanban.Boards do
     end
   end
 
-  @doc """
-  Returns the same list as `list_boards/1` but with each board's virtual
-  `:metrics` field populated for the Boards index card.
+  ## Scoped metrics reads (see Kanban.Boards.Dashboard)
 
-  Each metrics map contains:
-
-    * `:open` — tasks currently in `Backlog`/`Ready` columns
-    * `:doing` — tasks currently in the `Doing` column
-    * `:review` — tasks currently in the `Review` column
-    * `:done` — tasks currently in the `Done` column
-    * `:throughput_14d` — total tasks completed in the last 14 days
-    * `:pulse_14d` — exactly 14 daily completion counts, oldest first,
-      most recent day LAST, zero-filled for days with no completions
-    * `:active_agents_14d` — distinct `completed_by_agent` values on
-      tasks completed in the last 14 days. NOTE: the task spec asked for
-      distinct `claimed_by_agent`, but no per-claim agent name is stored
-      anywhere in the schema (`Task` records only `completed_by_agent`,
-      stamped at completion time). `completed_by_agent` on completed
-      tasks within the window is the closest available proxy and matches
-      the intent of "agents who did work recently."
-    * `:last_activity_at` — most recent of `max(claimed_at)` and
-      `max(completed_at)` across the board, or `nil` if neither has ever
-      been set
-
-  Open/Doing/Review/Done are matched by column NAME (Backlog/Ready map to
-  Open; Doing/Review/Done map directly). Columns with other names — on
-  non-AI-optimized boards with custom column names — are not counted in
-  any bucket; their counts simply do not surface in the metrics map.
-
-  All time windows are anchored in UTC; the optional `:now` keyword
-  overrides `DateTime.utc_now/0` for deterministic tests.
-
-  The function issues a fixed number of aggregate queries (one per metric
-  family, all grouped by `board_id`) so cost stays constant regardless of
-  how many boards the user has access to — no N+1.
-
-  ## Examples
-
-      iex> [%Board{metrics: %{open: 3, doing: 1, ...}} | _] =
-      ...>   list_boards_with_metrics(user)
-
-  """
-  def list_boards_with_metrics(user, opts \\ []) do
-    now = Keyword.get(opts, :now, DateTime.utc_now())
-    boards = list_boards(user)
-
-    case Enum.map(boards, & &1.id) do
-      [] ->
-        []
-
-      board_ids ->
-        metrics_by_board = Metrics.build_metrics(board_ids, now)
-        members_by_board = Metrics.members_by_board(board_ids)
-
-        Enum.map(boards, fn board ->
-          %{
-            board
-            | metrics: Map.get(metrics_by_board, board.id, Metrics.empty_metrics(now)),
-              members: Map.get(members_by_board, board.id, [])
-          }
-        end)
-    end
-  end
-
-  @doc """
-  Returns the same `:metrics` map shape as `list_boards_with_metrics/2`
-  but for a single board, scope-filtered through `get_board/2` so a user
-  cannot read metrics for a board they have no access to.
-
-  Returns `{:ok, metrics_map}` when the user has access and the board
-  exists, or `{:error, :not_found}` otherwise.
-
-  ## Examples
-
-      iex> get_board_metrics(user, 42)
-      {:ok, %{open: 3, doing: 1, ...}}
-
-      iex> get_board_metrics(user, 999_999)
-      {:error, :not_found}
-
-  """
-  def get_board_metrics(user, board_id, opts \\ []) do
-    case get_board(board_id, user) do
-      {:ok, board} ->
-        now = Keyword.get(opts, :now, DateTime.utc_now())
-        metrics_by_board = Metrics.build_metrics([board.id], now)
-        {:ok, Map.get(metrics_by_board, board.id, Metrics.empty_metrics(now))}
-
-      {:error, :not_found} ->
-        {:error, :not_found}
-    end
-  end
-
-  @doc """
-  Returns the workspace-wide task counts, summed across every board the
-  user can access:
-
-      %{open: n, doing: n, review: n, done: n}
-
-  The keys and their bucketing rules are exactly those of the per-board
-  `:metrics` map from `list_boards_with_metrics/2` — `Backlog`/`Ready`
-  roll up to `:open`, archived and goal-type tasks are excluded, and
-  columns with custom names are counted in no bucket.
-
-  Scope-filtered through `list_boards/1`, so the sum covers the user's
-  owner, modify, AND read-only memberships and nothing else. A user with
-  no boards gets the zero map.
-
-  The 14-day metrics are deliberately absent. `:active_agents_14d` cannot
-  be summed — an agent working on three boards would count three times;
-  use `list_workspace_members/2` and count the `:agent` entries instead.
-  `:throughput_14d` and `:pulse_14d` are legitimately summable but no
-  caller needs them yet.
-
-  ## Examples
-
-      iex> workspace_metrics(user)
-      %{open: 12, doing: 3, review: 1, done: 40}
-
-  """
-  def workspace_metrics(user, opts \\ []) do
-    user
-    |> list_boards_with_metrics(opts)
-    |> workspace_metrics_from()
-  end
-
-  @doc """
-  The pure fold behind `workspace_metrics/2`, for callers that already
-  hold the output of `list_boards_with_metrics/2` — the Boards index
-  LiveView loads it to render the cards, so rolling it up costs no
-  additional queries.
-
-  Boards whose virtual `:metrics` field was never populated (the output of
-  `list_boards/1`, where it defaults to `nil`) contribute zeros rather
-  than raising.
-
-  This function performs NO scope filtering — it sums whatever it is
-  given. Only ever hand it boards from a scoped read, exactly as with
-  `Kanban.Agents.list_agents_from/2`.
-
-  ## Examples
-
-      iex> user |> list_boards_with_metrics() |> workspace_metrics_from()
-      %{open: 12, doing: 3, review: 1, done: 40}
-
-  """
-  def workspace_metrics_from(boards) when is_list(boards) do
-    Metrics.workspace_totals(boards)
-  end
-
-  @doc """
-  Returns every person and agent across the boards the user can access,
-  deduplicated, as a list of maps ready to pass straight to
-  `KanbanWeb.Avatar.avatar_stack/1`:
-
-      [%{kind: :human | :agent, name: String.t(), palette: String.t()}]
-
-  Human entries additionally carry `:user_id` (see `list_board_members/1`);
-  `avatar_stack/1` ignores it.
-
-  Deduplication is by identity, not by appearance: humans collapse on
-  `:user_id` so two different people who share a display name both
-  survive, and agents collapse on their exact name.
-
-  "Agent" means a distinct, non-blank `completed_by_agent` on a task
-  completed within the last 14 days — the same predicate and the same
-  window as the per-board `:active_agents_14d`
-  count, so the two can never disagree. As noted on
-  `list_boards_with_metrics/2`, no per-claim agent identity is stored
-  anywhere in the schema, so a completion stamp is the closest available
-  proxy. Matching is case-sensitive, mirroring that count's SQL
-  `DISTINCT`.
-
-  Ordered humans first, then agents, case-insensitively by name within
-  each kind (tie-broken by `:user_id`) so the avatar stack's five-visible
-  cap shows people before bots and the order is stable across calls.
-
-  Costs a fixed three queries regardless of how many boards the user has
-  — no N+1 — and queries nothing beyond `list_boards/1` when the user has
-  no boards. The optional `:now` overrides `DateTime.utc_now/0` for
-  deterministic tests. The aggregation itself lives in
-  `Kanban.Boards.Metrics.workspace_members/2`; this function owns the
-  scoping.
-
-  ## Examples
-
-      iex> list_workspace_members(user)
-      [%{kind: :human, name: "ada", palette: "human-blue", user_id: 1},
-       %{kind: :agent, name: "Claude", palette: "agent-claude"}]
-
-  """
-  def list_workspace_members(user, opts \\ []) do
-    now = Keyword.get(opts, :now, DateTime.utc_now())
-
-    case user |> list_boards() |> Enum.map(& &1.id) do
-      [] -> []
-      board_ids -> Metrics.workspace_members(board_ids, now)
-    end
-  end
-
-  @doc """
-  Returns the human members for a single board, shaped as a list of
-  `%{kind: :human, name, palette}` maps ready to pass to
-  `KanbanWeb.Avatar.avatar_stack/1`. Mirrors the per-board entry from
-  `list_boards_with_metrics/2` so the same component code works on
-  single-board pages.
-
-  Returns every member and lets the component handle its five-visible
-  truncation.
-
-  Each map also carries `:user_id`, which `avatar_stack/1` ignores. It is
-  the identity key `list_workspace_members/2` dedups on: two distinct users
-  can share a display name, and `KanbanWeb.AvatarPalette.for_human/1` is
-  `rem(id, 4)`, so neither name nor palette identifies a person on its own.
-  """
-  def list_board_members(board_id) when is_integer(board_id) do
-    [board_id]
-    |> Metrics.members_by_board()
-    |> Map.get(board_id, [])
-  end
+  defdelegate list_boards_with_metrics(user, opts \\ []), to: Dashboard
+  defdelegate get_board_metrics(user, board_id, opts \\ []), to: Dashboard
+  defdelegate workspace_metrics(user, opts \\ []), to: Dashboard
+  defdelegate workspace_metrics_from(boards), to: Dashboard
+  defdelegate list_workspace_members(user, opts \\ []), to: Dashboard
+  defdelegate list_board_members(board_id), to: Dashboard
 
   @doc """
   Gets a single board with authorization check.
@@ -403,114 +195,10 @@ defmodule Kanban.Boards do
     get_user_access(board_id, user.id) in [:owner, :modify]
   end
 
-  @doc """
-  Creates a board for the given user with owner access.
+  ## Creation (see Kanban.Boards.Creation)
 
-  The board goes into the caller's personal workspace, created first when they
-  have none yet. The workspace is always chosen here, never read from `attrs`.
-
-  ## Examples
-
-      iex> create_board(user, %{name: "My Board"})
-      {:ok, %Board{}}
-
-      iex> create_board(user, %{name: nil})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def create_board(user, attrs \\ %{}) do
-    case run_create_board_transaction(user, Board.changeset(%Board{}, attrs)) do
-      {:ok, board} ->
-        Kanban.Telemetry.emit([:kanban, :board, :creation], %{count: 1}, %{
-          board_id: board.id,
-          user_id: user.id
-        })
-
-        {:ok, board}
-
-      error ->
-        error
-    end
-  end
-
-  # The workspace is the caller's personal one, set server-side; Board
-  # changesets never cast `workspace_id`.
-  defp run_create_board_transaction(user, board_changeset) do
-    Ecto.Multi.new()
-    |> Ecto.Multi.run(:workspace, fn _repo, _changes ->
-      Workspaces.ensure_personal_workspace(user)
-    end)
-    |> Ecto.Multi.insert(:board, fn %{workspace: workspace} ->
-      Ecto.Changeset.change(board_changeset, workspace_id: workspace.id)
-    end)
-    |> Ecto.Multi.insert(:board_user, fn %{board: board} ->
-      owner_board_user_changeset(board, user)
-    end)
-    |> Repo.transaction()
-    |> handle_board_transaction_result()
-  end
-
-  defp owner_board_user_changeset(board, user) do
-    BoardUser.changeset(%BoardUser{}, %{
-      board_id: board.id,
-      user_id: user.id,
-      access: :owner
-    })
-  end
-
-  defp handle_board_transaction_result({:ok, %{board: board}}), do: {:ok, board}
-  defp handle_board_transaction_result({:error, _step, changeset, _}), do: {:error, changeset}
-
-  @doc """
-  Creates an AI-optimized board with default columns: Backlog, Ready, Doing, Review, and Done.
-  Sets ai_optimized_board to true. Like `create_board/2`, the board goes into the
-  caller's personal workspace.
-
-  ## Examples
-
-      iex> create_ai_optimized_board(user, %{name: "AI Board"})
-      {:ok, %Board{}}
-
-  """
-  def create_ai_optimized_board(user, attrs \\ %{}) do
-    board_changeset =
-      %Board{}
-      |> Board.changeset(attrs)
-      |> Ecto.Changeset.change(ai_optimized_board: true)
-
-    case run_create_board_transaction(user, board_changeset) do
-      {:ok, board} -> setup_ai_board_columns(board, user)
-      error -> error
-    end
-  end
-
-  defp setup_ai_board_columns(board, user) do
-    alias Kanban.Columns
-
-    default_columns = [
-      %{name: "Backlog", wip_limit: 0},
-      %{name: "Ready", wip_limit: 0},
-      %{name: "Doing", wip_limit: 0},
-      %{name: "Review", wip_limit: 0},
-      %{name: "Done", wip_limit: 0}
-    ]
-
-    Enum.each(default_columns, fn column_attrs ->
-      Columns.create_column(board, column_attrs, user)
-    end)
-
-    Kanban.Telemetry.emit([:kanban, :board, :creation], %{count: 1}, %{
-      board_id: board.id,
-      user_id: user.id
-    })
-
-    board =
-      Repo.preload(board, [columns: from(c in Kanban.Columns.Column, order_by: c.position)],
-        force: true
-      )
-
-    {:ok, board}
-  end
+  defdelegate create_board(user, attrs \\ %{}), to: Creation
+  defdelegate create_ai_optimized_board(user, attrs \\ %{}), to: Creation
 
   @doc """
   Updates a board.
