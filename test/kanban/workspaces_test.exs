@@ -367,6 +367,83 @@ defmodule Kanban.WorkspacesTest do
     end
   end
 
+  # A board in `user`'s personal workspace with no board_users row for them.
+  defp place_board_in_personal_workspace(user) do
+    workspace = Workspaces.get_personal_workspace(user)
+    {place_board_in_workspace(workspace), workspace}
+  end
+
+  describe "delete_personal_workspace/1" do
+    test "deletes an empty personal workspace and its owner row" do
+      user = user_fixture()
+      workspace = personal_workspace_fixture(user)
+
+      assert {:ok, %Workspace{id: id}} = Workspaces.delete_personal_workspace(user)
+      assert id == workspace.id
+      assert Repo.get(Workspace, workspace.id) == nil
+      refute WorkspaceMember |> where([m], m.workspace_id == ^workspace.id) |> Repo.exists?()
+      assert Workspaces.get_personal_workspace(user) == nil
+    end
+
+    test "returns {:ok, nil} for a user with no personal workspace" do
+      user = remove_personal_workspace(user_fixture())
+
+      assert Workspaces.delete_personal_workspace(user) == {:ok, nil}
+    end
+
+    test "refuses while a board the user owns sits in it, and deletes nothing" do
+      user = user_fixture()
+      board = board_fixture(user)
+      workspace = personal_workspace_fixture(user)
+
+      assert Workspaces.delete_personal_workspace(user) ==
+               {:error, :personal_workspace_has_boards}
+
+      assert Repo.get(Workspace, workspace.id)
+      assert Repo.get!(Board, board.id).workspace_id == workspace.id
+    end
+
+    test "refuses through the foreign key for a board the user is not a member of" do
+      user = user_fixture()
+      {board, workspace} = place_board_in_personal_workspace(user)
+
+      assert Workspaces.delete_personal_workspace(user) ==
+               {:error, :personal_workspace_has_boards}
+
+      assert Repo.get(Workspace, workspace.id)
+      assert Repo.get!(Board, board.id).workspace_id == workspace.id
+      assert Workspaces.get_member_role(workspace, user) == :owner
+    end
+
+    test "never deletes an org workspace the user is a member or guest of" do
+      {organization, _admin} = org_with_admin()
+      user = org_member(organization)
+      member_of = org_workspace_fixture(organization)
+      guest_of = org_workspace_fixture(organization)
+      workspace_member_fixture(member_of, user, :member)
+      workspace_member_fixture(guest_of, user, :guest)
+
+      assert {:ok, %Workspace{personal: true}} = Workspaces.delete_personal_workspace(user)
+      assert Repo.get(Workspace, member_of.id)
+      assert Repo.get(Workspace, guest_of.id)
+      assert Workspaces.get_member_role(member_of, user) == :member
+      assert Workspaces.get_member_role(guest_of, user) == :guest
+
+      assert Workspaces.delete_personal_workspace(user) == {:ok, nil}
+      assert Repo.get(Workspace, member_of.id)
+    end
+
+    test "never deletes another user's personal workspace" do
+      user = user_fixture()
+      other = user_fixture()
+      others = personal_workspace_fixture(other)
+
+      assert {:ok, _} = Workspaces.delete_personal_workspace(user)
+      assert Repo.get(Workspace, others.id)
+      assert Workspaces.get_member_role(others, other) == :owner
+    end
+  end
+
   describe "create_org_workspace/2" do
     test "an org-admin creates a workspace for their Organization with no owner row" do
       {organization, admin} = org_with_admin()

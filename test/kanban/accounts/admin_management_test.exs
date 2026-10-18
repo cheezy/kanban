@@ -2,12 +2,20 @@ defmodule Kanban.Accounts.AdminManagementTest do
   use Kanban.DataCase, async: true
 
   import Kanban.AccountsFixtures
+  import Ecto.Query
   import Kanban.BoardsFixtures
+  import Kanban.OrganizationsFixtures
   import Kanban.TelemetryHelpers
+  import Kanban.WorkspacesFixtures
 
   alias Kanban.Accounts
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserToken
+  alias Kanban.Boards
+  alias Kanban.Boards.Board
+  alias Kanban.Workspaces
+  alias Kanban.Workspaces.Workspace
+  alias Kanban.Workspaces.WorkspaceMember
 
   # disable_user/2 requires the actor to be a *different* enabled admin, who then
   # remains enabled — so the API can never leave the system with only one enabled
@@ -299,6 +307,114 @@ defmodule Kanban.Accounts.AdminManagementTest do
       _ = disable_directly(stale_acting_admin)
 
       assert {:error, :user_has_boards} = Accounts.delete_user(target_admin, stale_acting_admin)
+    end
+
+    test "checks the last_admin guard before the personal workspace's boards" do
+      target_admin = admin_fixture()
+      _board = place_board_in_personal_workspace(target_admin)
+      stale_acting_admin = admin_fixture()
+      _ = disable_directly(stale_acting_admin)
+
+      assert {:error, :last_admin} = Accounts.delete_user(target_admin, stale_acting_admin)
+    end
+  end
+
+  # A board in `user`'s personal workspace with no board_users row for them.
+  defp place_board_in_personal_workspace(user) do
+    user |> Workspaces.get_personal_workspace() |> place_board_in_workspace()
+  end
+
+  defp personal_workspace_count do
+    Workspace |> where([w], w.personal) |> Repo.aggregate(:count)
+  end
+
+  describe "delete_user/2 and the personal workspace" do
+    test "deletes the user's empty personal workspace and its owner row in the same transaction" do
+      user = user_fixture()
+      admin = admin_fixture()
+      workspace = personal_workspace_fixture(user)
+      before = personal_workspace_count()
+
+      assert {:ok, %User{}} = Accounts.delete_user(user, admin)
+      assert personal_workspace_count() == before - 1
+      assert Repo.get(Workspace, workspace.id) == nil
+      refute WorkspaceMember |> where([m], m.workspace_id == ^workspace.id) |> Repo.exists?()
+    end
+
+    test "returns {:error, :personal_workspace_has_boards} and deletes nothing when a board sits in the user's personal workspace without a board_users row" do
+      user = user_fixture()
+      admin = admin_fixture()
+      _ = Accounts.generate_user_session_token(user)
+      board = place_board_in_personal_workspace(user)
+      workspace = Workspaces.get_personal_workspace(user)
+
+      refute Boards.user_has_boards?(user)
+
+      assert {:error, :personal_workspace_has_boards} = Accounts.delete_user(user, admin)
+      assert Repo.get(User, user.id)
+      assert Repo.all_by(UserToken, user_id: user.id) != []
+      assert Repo.get(Workspace, workspace.id)
+      assert Workspaces.get_member_role(workspace, user) == :owner
+      assert Repo.get!(Board, board.id).workspace_id == workspace.id
+    end
+
+    test "emits no deletion telemetry when the personal workspace refuses" do
+      user = user_fixture()
+      admin = admin_fixture()
+      _board = place_board_in_personal_workspace(user)
+      attach_telemetry([[:kanban, :user, :deleted]])
+
+      assert {:error, :personal_workspace_has_boards} = Accounts.delete_user(user, admin)
+      refute_received {:telemetry_event, [:kanban, :user, :deleted], _, _}
+    end
+
+    test "still succeeds for a user who has no personal workspace at all" do
+      user = remove_personal_workspace(user_fixture())
+      admin = admin_fixture()
+
+      assert {:ok, %User{}} = Accounts.delete_user(user, admin)
+      assert Repo.get(User, user.id) == nil
+    end
+
+    test "deletes only the user's own personal workspace, never an org workspace they belong to" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      user = user_fixture()
+      organization_member_fixture(organization, user, :member)
+      org_workspace = org_workspace_fixture(organization)
+      workspace_member_fixture(org_workspace, user, :guest)
+      other = user_fixture()
+      others = personal_workspace_fixture(other)
+
+      assert {:ok, _} = Accounts.delete_user(user, admin)
+      assert Repo.get(Workspace, org_workspace.id)
+      assert Repo.get(Workspace, others.id)
+      refute WorkspaceMember |> where([m], m.user_id == ^user.id) |> Repo.exists?()
+    end
+
+    test "keeps the existing refusals, none of which touches the personal workspace" do
+      admin = admin_fixture()
+      owner = user_fixture()
+      _board = board_fixture(owner)
+      owner_workspace = Workspaces.get_personal_workspace(owner)
+
+      assert {:error, :unauthorized} = Accounts.delete_user(owner, user_fixture())
+      assert {:error, :cannot_delete_self} = Accounts.delete_user(admin, admin)
+      assert {:error, :user_has_boards} = Accounts.delete_user(owner, admin)
+
+      assert Repo.get(Workspace, owner_workspace.id)
+      assert Workspaces.get_personal_workspace(admin)
+    end
+
+    test "keeps the target's empty personal workspace when the last_admin guard refuses" do
+      target_admin = admin_fixture()
+      workspace = Workspaces.get_personal_workspace(target_admin)
+      stale_acting_admin = admin_fixture()
+      _ = disable_directly(stale_acting_admin)
+
+      assert {:error, :last_admin} = Accounts.delete_user(target_admin, stale_acting_admin)
+      assert Repo.get(Workspace, workspace.id)
+      assert Workspaces.get_member_role(workspace, target_admin) == :owner
     end
   end
 

@@ -3196,7 +3196,7 @@ msgstr "Vous devez être membre du tableau pour commenter cette tâche"
 #: lib/kanban_web/live/admin/message_live/index.ex:85
 #: lib/kanban_web/live/admin/organization_live/form.ex:156
 #: lib/kanban_web/live/admin/user_live/index.ex:129
-#: lib/kanban_web/live/admin/user_live/index.ex:157
+#: lib/kanban_web/live/admin/user_live/index.ex:161
 #, elixir-autogen, elixir-format
 msgid "You must be an admin to perform this action."
 msgstr "Vous devez être administrateur pour effectuer cette action."
@@ -4497,7 +4497,7 @@ msgstr "Travail en cours. Les hooks s'exécutent avant et après ; la barre d'ac
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
-#: lib/kanban_web/live/org_live/console.ex:301
+#: lib/kanban_web/live/org_live/console.ex:324
 #: lib/kanban_web/live/org_live/console.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Members"
@@ -6617,7 +6617,7 @@ msgstr "L'agent écrit le code pour terminer la tâche."
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #: lib/kanban_web/live/org_live/audit_log.html.heex:73
-#: lib/kanban_web/live/org_live/console.ex:300
+#: lib/kanban_web/live/org_live/console.ex:323
 #: lib/kanban_web/live/org_live/console.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Details"
@@ -6767,7 +6767,7 @@ msgstr "est requis pour une revue exécutée : le champ structuré %{field} aff
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:302
 #: lib/kanban_web/export/metrics_excel.ex:360
 #: lib/kanban_web/export/metrics_excel.ex:363
-#: lib/kanban_web/live/admin/user_live/index.ex:220
+#: lib/kanban_web/live/admin/user_live/index.ex:224
 #, elixir-autogen, elixir-format
 msgid "N/A"
 msgstr "S.O."
@@ -8040,12 +8040,12 @@ msgstr "Aucun utilisateur pour le moment."
 msgid "User Administration"
 msgstr "Administration des utilisateurs"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:223
+#: lib/kanban_web/live/admin/user_live/index.ex:227
 #, elixir-autogen, elixir-format
 msgid "Admin"
 msgstr "Administrateur"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:224
+#: lib/kanban_web/live/admin/user_live/index.ex:228
 #, elixir-autogen, elixir-format
 msgid "User"
 msgstr "Utilisateur"
@@ -8108,12 +8108,12 @@ msgid "Send another confirmation email to this account?"
 msgstr "Envoyer un autre e-mail de confirmation à ce compte ?"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:161
-#: lib/kanban_web/live/admin/user_live/index.ex:138
+#: lib/kanban_web/live/admin/user_live/index.ex:142
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
 msgstr "Une erreur s'est produite. Veuillez réessayer."
 
-#: lib/kanban_web/live/admin/user_live/index.ex:137
+#: lib/kanban_web/live/admin/user_live/index.ex:141
 #: lib/kanban_web/live/admin/user_live/index.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
@@ -10716,7 +10716,7 @@ msgid "Enter a valid email address. Nothing was changed."
 msgstr "Saisissez une adresse e-mail valide. Rien n'a été modifié."
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:252
-#: lib/kanban_web/live/org_live/console.ex:307
+#: lib/kanban_web/live/org_live/console.ex:330
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr "Membre"
@@ -10727,7 +10727,7 @@ msgid "Only site admins appoint or remove org-admins."
 msgstr "Seuls les admins du site nomment ou retirent les admins d'organisation."
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:251
-#: lib/kanban_web/live/org_live/console.ex:306
+#: lib/kanban_web/live/org_live/console.ex:329
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr "Admin d'organisation"
@@ -10805,18 +10805,18 @@ msgid "Read-only. Ask a site admin to change them."
 msgstr "Lecture seule. Demandez à un admin du site de les modifier."
 
 #: lib/kanban_web/live/org_live/console.ex:57
-#: lib/kanban_web/live/org_live/console.ex:237
+#: lib/kanban_web/live/org_live/console.ex:240
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
 #, elixir-autogen, elixir-format
 msgid "You must be an org-admin of an Organization to access this page."
 msgstr "Vous devez être admin d'une organisation pour accéder à cette page."
 
-#: lib/kanban_web/live/org_live/console.ex:300
+#: lib/kanban_web/live/org_live/console.ex:323
 #, elixir-autogen, elixir-format
 msgid "name · address · contact"
 msgstr "nom · adresse · contact"
 
-#: lib/kanban_web/live/org_live/console.ex:301
+#: lib/kanban_web/live/org_live/console.ex:324
 #, elixir-autogen, elixir-format
 msgid "names · roles"
 msgstr "noms · rôles"
@@ -10877,12 +10877,12 @@ msgstr "Nom du nouvel espace de travail"
 msgid "Rename"
 msgstr "Renommer"
 
-#: lib/kanban_web/live/org_live/console.ex:195
+#: lib/kanban_web/live/org_live/console.ex:198
 #, elixir-autogen, elixir-format
 msgid "The workspace could not be changed. Please try again."
 msgstr "L'espace de travail n'a pas pu être modifié. Veuillez réessayer."
 
-#: lib/kanban_web/live/org_live/console.ex:187
+#: lib/kanban_web/live/org_live/console.ex:190
 #, elixir-autogen, elixir-format
 msgid "This workspace still holds boards. Move them out before archiving it."
 msgstr "Cet espace de travail contient encore des tableaux. Déplacez-les avant de l'archiver."
@@ -10892,12 +10892,12 @@ msgstr "Cet espace de travail contient encore des tableaux. Déplacez-les avant 
 msgid "Where your Organization's boards live. A workspace can be archived once it holds no boards."
 msgstr "Là où se trouvent les tableaux de votre organisation. Un espace de travail peut être archivé dès qu'il ne contient plus aucun tableau."
 
-#: lib/kanban_web/live/org_live/console.ex:169
+#: lib/kanban_web/live/org_live/console.ex:172
 #, elixir-autogen, elixir-format
 msgid "Workspace archived."
 msgstr "Espace de travail archivé."
 
-#: lib/kanban_web/live/org_live/console.ex:141
+#: lib/kanban_web/live/org_live/console.ex:142
 #, elixir-autogen, elixir-format
 msgid "Workspace created."
 msgstr "Espace de travail créé."
@@ -10907,17 +10907,17 @@ msgstr "Espace de travail créé."
 msgid "Workspace name"
 msgstr "Nom de l'espace de travail"
 
-#: lib/kanban_web/live/org_live/console.ex:201
+#: lib/kanban_web/live/org_live/console.ex:204
 #, elixir-autogen, elixir-format
 msgid "Workspace not found."
 msgstr "Espace de travail introuvable."
 
-#: lib/kanban_web/live/org_live/console.ex:155
+#: lib/kanban_web/live/org_live/console.ex:158
 #, elixir-autogen, elixir-format
 msgid "Workspace renamed."
 msgstr "Espace de travail renommé."
 
-#: lib/kanban_web/live/org_live/console.ex:302
+#: lib/kanban_web/live/org_live/console.ex:325
 #: lib/kanban_web/live/org_live/console.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "Workspaces"
@@ -10933,7 +10933,12 @@ msgstr "Votre organisation n'a pas encore d'espace de travail."
 msgid "Your Organization's details, members and workspaces. Only a site admin changes the details or appoints org-admins."
 msgstr "Les informations, les membres et les espaces de travail de votre organisation. Seul un admin du site modifie les informations ou nomme des admins d'organisation."
 
-#: lib/kanban_web/live/org_live/console.ex:302
+#: lib/kanban_web/live/org_live/console.ex:325
 #, elixir-autogen, elixir-format
 msgid "create · rename · archive"
 msgstr "créer · renommer · archiver"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:139
+#, elixir-autogen, elixir-format
+msgid "A board still sits in this user's personal workspace, so they cannot be deleted."
+msgstr "Un tableau se trouve encore dans l'espace de travail personnel de cet utilisateur, il ne peut donc pas être supprimé."

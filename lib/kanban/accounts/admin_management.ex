@@ -19,6 +19,7 @@ defmodule Kanban.Accounts.AdminManagement do
   alias Kanban.Accounts.UserToken
   alias Kanban.Boards
   alias Kanban.Repo
+  alias Kanban.Workspaces
 
   @doc """
   Returns every user, ordered by email.
@@ -112,7 +113,8 @@ defmodule Kanban.Accounts.AdminManagement do
   end
 
   @doc """
-  Deletes a user along with their session and email tokens.
+  Deletes a user along with their session and email tokens and their personal
+  workspace, all in one transaction.
 
   `current_user` is the admin performing the deletion, passed last to match
   `Kanban.Boards.remove_user_from_board/3`.
@@ -123,6 +125,10 @@ defmodule Kanban.Accounts.AdminManagement do
     * `:cannot_delete_self` - the target is the acting user
     * `:user_has_boards` - the target belongs to at least one board
     * `:last_admin` - the target is the last admin
+    * `:personal_workspace_has_boards` - a board still sits in the target's
+      personal workspace, even one they are not a member of. The foreign key
+      refuses it inside the transaction, so a board placed there at the same
+      moment is refused too and the whole delete rolls back
 
   ## Examples
 
@@ -151,10 +157,15 @@ defmodule Kanban.Accounts.AdminManagement do
   defp authorized_admin?(%User{disabled_at: nil} = user), do: Accounts.admin?(user)
   defp authorized_admin?(%User{}), do: false
 
+  # The personal workspace goes before the user row: its owner row is deleted
+  # with the user, after which the workspace could no longer be found.
   defp delete_user_and_tokens(user) do
     Repo.transact(fn ->
       Repo.delete_all(UserToken.by_user_and_contexts_query(user, :all))
-      Repo.delete(user)
+
+      with {:ok, _workspace} <- Workspaces.delete_personal_workspace(user) do
+        Repo.delete(user)
+      end
     end)
   end
 

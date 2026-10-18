@@ -8,6 +8,11 @@ defmodule Kanban.WorkspacesFixtures do
   no org-admin.
   """
 
+  import Ecto.Query, only: [where: 3]
+
+  alias Kanban.AccountsFixtures
+  alias Kanban.Boards.Board
+  alias Kanban.BoardsFixtures
   alias Kanban.Repo
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Workspace
@@ -34,6 +39,21 @@ defmodule Kanban.WorkspacesFixtures do
     end
 
     user
+  end
+
+  @doc """
+  Creates a board owned by a new user and moves it into `workspace`, giving
+  the workspace's members no board_users row on it — as the W2217 backfill did
+  for memberless boards. `Kanban.Boards.user_has_boards?/1` reads only
+  board_users, so it does not see such a board. Returns the board.
+  """
+  def place_board_in_workspace(workspace) do
+    board = BoardsFixtures.board_fixture(AccountsFixtures.user_fixture())
+
+    {1, _} =
+      Board |> where([b], b.id == ^board.id) |> Repo.update_all(set: [workspace_id: workspace.id])
+
+    %{board | workspace_id: workspace.id}
   end
 
   @doc """

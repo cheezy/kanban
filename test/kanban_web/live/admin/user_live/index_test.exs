@@ -6,6 +6,7 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.WorkspacesFixtures
   import Swoosh.TestAssertions
 
   alias Kanban.Accounts
@@ -475,6 +476,24 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
       html = render_click(live, "delete", %{"id" => to_string(user.id)})
 
       assert html =~ "This user still belongs to a board and cannot be deleted."
+      assert Kanban.Repo.get(User, user.id) != nil
+    end
+
+    # D381: a board placed in the user's personal workspace without a board_users
+    # row leaves the Delete button enabled, so the refusal comes from the click.
+    test "clicking Delete on a user whose personal workspace holds a placement-only board shows the refusal and keeps the row",
+         %{conn: conn} do
+      user = user_fixture()
+      _board = user |> Kanban.Workspaces.get_personal_workspace() |> place_board_in_workspace()
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html = live |> element("#user-#{user.id} button", "Delete") |> render_click()
+
+      assert html =~
+               "A board still sits in this user&#39;s personal workspace, so they cannot be deleted."
+
+      assert has_element?(live, "#user-#{user.id}")
       assert Kanban.Repo.get(User, user.id) != nil
     end
 

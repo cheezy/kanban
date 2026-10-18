@@ -134,6 +134,10 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   defp error_message(:user_has_boards),
     do: gettext("This user still belongs to a board and cannot be deleted.")
 
+  defp error_message(:personal_workspace_has_boards),
+    do:
+      gettext("A board still sits in this user's personal workspace, so they cannot be deleted.")
+
   defp error_message(:already_confirmed), do: gettext("This account is already confirmed.")
   defp error_message(_reason), do: gettext("Something went wrong. Please try again.")
 

@@ -108,6 +108,51 @@ defmodule Kanban.Workspaces do
   end
 
   @doc """
+  Deletes `user`'s personal workspace and its owner row.
+
+  Returns `{:ok, nil}` when `user` has no personal workspace, and
+  `{:error, :personal_workspace_has_boards}` when any board still belongs to
+  it. The `boards.workspace_id` foreign key makes that refusal, so a board
+  placed after a caller's own check is refused too, never stranded.
+
+  Only the workspace `user` owns as personal is ever deleted, never an org
+  workspace they are a member or guest of.
+
+  Call it inside the transaction that deletes the user, before the user row
+  goes: the owner row is deleted with the user, after which the workspace can
+  no longer be found. A refusal leaves an enclosing transaction aborted, so
+  roll back on any error.
+
+  ## Examples
+
+      iex> delete_personal_workspace(user)
+      {:ok, %Workspace{personal: true}}
+
+      iex> delete_personal_workspace(user_whose_workspace_holds_a_board)
+      {:error, :personal_workspace_has_boards}
+
+  """
+  @spec delete_personal_workspace(User.t()) ::
+          {:ok, Workspace.t() | nil} | {:error, :personal_workspace_has_boards}
+  def delete_personal_workspace(%User{} = user) do
+    case get_personal_workspace(user) do
+      nil -> {:ok, nil}
+      %Workspace{} = workspace -> delete_boardless_workspace(workspace)
+    end
+  end
+
+  defp delete_boardless_workspace(workspace) do
+    workspace
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.no_assoc_constraint(:boards)
+    |> Repo.delete()
+    |> case do
+      {:ok, deleted} -> {:ok, deleted}
+      {:error, %Ecto.Changeset{}} -> {:error, :personal_workspace_has_boards}
+    end
+  end
+
+  @doc """
   Creates a workspace for `actor`'s Organization.
 
   Only an org-admin may do this. The Organization comes from `actor`'s own
