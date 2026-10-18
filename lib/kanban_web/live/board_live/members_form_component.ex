@@ -12,6 +12,13 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
   LiveView, which applies it with `apply_parent_message/2`. The relayed flash
   replaces the page's, so a search that succeeds after a failed one clears the
   old error exactly as `Membership`'s own `clear_flash/1` intends.
+
+  On a free board with plan enforcement on, the add section shows an
+  "N of 3 people" line from the `:member_cap` assign (loaded with the members
+  list, see `Membership.assign_member_cap/1`). At or over the cap the search
+  form and add buttons are disabled with an explanation and a link to the paid
+  plans (W2401). The disabled controls only reflect the cap: a crafted
+  `add_user` event is still refused by `Boards.add_user_to_board/4`.
   """
   use KanbanWeb, :live_component
 
@@ -27,6 +34,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
      |> assign(assigns)
      |> assign(:scope, scope)
      |> assign(:board_users, board_users)
+     |> Membership.assign_member_cap()
      |> assign_new(:searched_user, fn -> nil end)
      |> assign_new(:search_email, fn -> "" end)}
   end
@@ -81,6 +89,28 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
         <div class="ucase" style="font-size: 10.5px; color: var(--ink-3); margin-bottom: 6px;">
           {gettext("Add user by email")}
         </div>
+        <div :if={@member_cap.cap} id="member-cap-status" style="margin-bottom: 10px;">
+          <p
+            id="member-cap-line"
+            style="margin: 0; font-size: 12.5px; font-weight: 500; color: var(--ink-2);"
+          >
+            {Membership.member_cap_line(@member_cap)}
+          </p>
+          <p
+            :if={@member_cap.reached?}
+            id="member-cap-explanation"
+            style="margin: 4px 0 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.5;"
+          >
+            {Membership.member_cap_explanation(@member_cap)}
+            <.link
+              id="member-cap-pricing-link"
+              href={~p"/pricing" <> "#contact"}
+              style="color: var(--ink); font-weight: 500; text-decoration: underline; text-underline-offset: 2px;"
+            >
+              {gettext("See paid plans")}
+            </.link>
+          </p>
+        </div>
         <form
           id="member-search-form"
           phx-submit="search_user"
@@ -93,20 +123,21 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
             id={"members-search-email-#{@board.id}"}
             value={@search_email}
             placeholder={gettext("name@example.com")}
+            disabled={@member_cap.reached?}
             style={[
               "flex: 1; height: 32px; padding: 0 10px;",
               "border-radius: 5px; border: 1px solid var(--line-input);",
-              "background: var(--surface); color: var(--ink);",
+              input_fill(@member_cap.reached?),
               "font-size: 12.5px; font-family: var(--font-mono);"
             ]}
           />
           <button
             type="submit"
+            disabled={@member_cap.reached?}
             style={[
-              "height: 32px; padding: 0 12px; border-radius: 5px; border: none;",
-              "background: var(--ink); color: var(--color-base-100);",
-              "font-size: 12px; font-weight: 500; cursor: pointer;",
-              "box-shadow: 0 1px 0 rgba(0,0,0,.1) inset, 0 1px 2px rgba(0,0,0,.2);"
+              "height: 32px; padding: 0 12px; border-radius: 5px;",
+              solid_button_fill(@member_cap.reached?),
+              "font-size: 12px; font-weight: 500;"
             ]}
           >
             {gettext("Search")}
@@ -136,11 +167,11 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
             phx-click="add_user"
             phx-value-access="read_only"
             phx-target={@myself}
+            disabled={@member_cap.reached?}
             style={[
               "padding: 6px 10px; border-radius: 5px;",
-              "background: transparent; color: var(--ink-2);",
-              "border: 1px solid var(--line-strong);",
-              "font-size: 12px; font-weight: 500; cursor: pointer;"
+              outline_button_fill(@member_cap.reached?),
+              "font-size: 12px; font-weight: 500;"
             ]}
           >
             {gettext("Add as Read Only")}
@@ -150,11 +181,11 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
             phx-click="add_user"
             phx-value-access="modify"
             phx-target={@myself}
+            disabled={@member_cap.reached?}
             style={[
               "padding: 6px 10px; border-radius: 5px;",
-              "background: var(--ink); color: var(--color-base-100); border: none;",
-              "font-size: 12px; font-weight: 500; cursor: pointer;",
-              "box-shadow: 0 1px 0 rgba(0,0,0,.1) inset, 0 1px 2px rgba(0,0,0,.2);"
+              solid_button_fill(@member_cap.reached?),
+              "font-size: 12px; font-weight: 500;"
             ]}
           >
             {gettext("Add with Edit Access")}
@@ -227,6 +258,26 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
       </div>
     </div>
     """
+  end
+
+  # Disabled controls sit on the sunken well with --ink-3, the same measured
+  # pair as the read-only access chip, rather than dimming with opacity (D214).
+  @disabled_fill "background: var(--surface-sunken); color: var(--ink-3); cursor: not-allowed;"
+
+  defp input_fill(true), do: @disabled_fill
+  defp input_fill(false), do: "background: var(--surface); color: var(--ink);"
+
+  defp solid_button_fill(true), do: @disabled_fill <> " border: 1px solid var(--line);"
+
+  defp solid_button_fill(false) do
+    "background: var(--ink); color: var(--color-base-100); border: none; cursor: pointer; " <>
+      "box-shadow: 0 1px 0 rgba(0,0,0,.1) inset, 0 1px 2px rgba(0,0,0,.2);"
+  end
+
+  defp outline_button_fill(true), do: @disabled_fill <> " border: 1px solid var(--line);"
+
+  defp outline_button_fill(false) do
+    "background: transparent; color: var(--ink-2); border: 1px solid var(--line-strong); cursor: pointer;"
   end
 
   defp access_chip_bg(:owner), do: "var(--stride-violet-soft)"

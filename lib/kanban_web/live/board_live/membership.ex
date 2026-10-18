@@ -9,6 +9,11 @@ defmodule KanbanWeb.BoardLive.Membership do
   the socket assigns `:board`, `:board_users`, `:searched_user`, and
   `:search_email`. Only `assign/3`, `put_flash/3`, and `clear_flash/1` are
   used, so the functions work on both LiveView and LiveComponent sockets.
+
+  Whenever the members list is (re)loaded, `assign_member_cap/1` also stores
+  `Boards.member_cap_status/1` under `:member_cap` (W2401). The cap helpers
+  below only describe that status for the page; the cap itself is enforced by
+  `Boards.add_user_to_board/4`, so a disabled form is never the guard.
   """
   use Gettext, backend: KanbanWeb.Gettext
 
@@ -67,6 +72,50 @@ defmodule KanbanWeb.BoardLive.Membership do
     end
   end
 
+  @doc """
+  Stores the board's free-plan member cap status under `:member_cap`.
+
+  Called wherever the members list loads, so the page never computes the
+  status per render. The status comes from `Boards.member_cap_status/1`, which
+  already folds in plan enforcement and whether the board is paid.
+  """
+  def assign_member_cap(socket) do
+    assign(socket, :member_cap, Boards.member_cap_status(socket.assigns.board))
+  end
+
+  @doc """
+  The "N of M people" line for a capped board, or `nil` when the board has no
+  cap (a paid board, or plan enforcement off).
+  """
+  def member_cap_line(%{count: count, cap: cap}) when is_integer(cap) do
+    gettext("%{count} of %{cap} people", count: count, cap: cap)
+  end
+
+  def member_cap_line(_status), do: nil
+
+  @doc """
+  The explanation shown once a capped board is at or over its cap, or `nil`
+  while it still has room or has no cap. Grandfathered boards over the cap get
+  the same explanation and no removal prompt.
+  """
+  def member_cap_explanation(%{cap: cap, reached?: true}) when is_integer(cap) do
+    gettext("Free boards hold %{cap} people. To add more, move this board to a paid plan.",
+      cap: cap
+    )
+  end
+
+  def member_cap_explanation(_status), do: nil
+
+  @doc """
+  The flash shown when `Boards.add_user_to_board/4` refuses an add because the
+  board is at its cap.
+  """
+  def member_cap_flash(%{cap: cap}) when is_integer(cap) do
+    gettext("This board is full. Free boards hold %{cap} people.", cap: cap)
+  end
+
+  def member_cap_flash(_status), do: gettext("This board is full.")
+
   defp respond_user_not_found(socket, email) do
     {:noreply,
      socket
@@ -109,22 +158,33 @@ defmodule KanbanWeb.BoardLive.Membership do
     board = socket.assigns.board
     access_atom = String.to_existing_atom(access)
 
-    case Boards.add_user_to_board(board, user, access_atom, current_user) do
-      {:ok, _board_user} ->
-        board_users = Boards.list_board_users(board)
+    socket
+    |> respond_to_add(board, Boards.add_user_to_board(board, user, access_atom, current_user))
+  end
 
-        {:noreply,
-         socket
-         |> assign(:board_users, board_users)
-         |> assign(:searched_user, nil)
-         |> assign(:search_email, "")
-         |> put_flash(:info, gettext("User added successfully"))}
+  defp respond_to_add(socket, board, {:ok, _board_user}) do
+    {:noreply,
+     socket
+     |> assign(:board_users, Boards.list_board_users(board))
+     |> assign_member_cap()
+     |> assign(:searched_user, nil)
+     |> assign(:search_email, "")
+     |> put_flash(:info, gettext("User added successfully"))}
+  end
 
-      {:error, _changeset} ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("Failed to add user to board"))}
-    end
+  defp respond_to_add(socket, board, {:error, :member_cap_reached}) do
+    # Reload the list too: another owner session may have filled the board,
+    # and the count line should agree with the rows shown.
+    socket =
+      socket
+      |> assign(:board_users, Boards.list_board_users(board))
+      |> assign_member_cap()
+
+    {:noreply, put_flash(socket, :error, member_cap_flash(socket.assigns.member_cap))}
+  end
+
+  defp respond_to_add(socket, _board, {:error, _changeset}) do
+    {:noreply, put_flash(socket, :error, gettext("Failed to add user to board"))}
   end
 
   defp do_remove_user(socket, current_user, user_id) do
@@ -145,6 +205,7 @@ defmodule KanbanWeb.BoardLive.Membership do
             {:noreply,
              socket
              |> assign(:board_users, board_users)
+             |> assign_member_cap()
              |> put_flash(:info, gettext("User removed successfully"))}
 
           {:error, _} ->

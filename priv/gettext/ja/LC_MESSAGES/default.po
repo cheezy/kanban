@@ -595,7 +595,7 @@ msgid "Add User by Email"
 msgstr "メールでユーザーを追加"
 
 #: lib/kanban_web/live/board_live/form.html.heex:290
-#: lib/kanban_web/live/board_live/members_form_component.ex:146
+#: lib/kanban_web/live/board_live/members_form_component.ex:177
 #, elixir-autogen, elixir-format
 msgid "Add as Read Only"
 msgstr "読み取り専用として追加"
@@ -606,7 +606,7 @@ msgid "Assigned To"
 msgstr "担当者"
 
 #: lib/kanban_web/live/board_live/form.html.heex:323
-#: lib/kanban_web/live/board_live/members_form_component.ex:243
+#: lib/kanban_web/live/board_live/members_form_component.ex:294
 #: lib/kanban_web/notification_labels.ex:181
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
@@ -622,12 +622,12 @@ msgstr "現在のユーザー"
 msgid "Enter user email"
 msgstr "ユーザーのメールを入力"
 
-#: lib/kanban_web/live/board_live/membership.ex:126
+#: lib/kanban_web/live/board_live/membership.ex:187
 #, elixir-autogen, elixir-format
 msgid "Failed to add user to board"
 msgstr "ボードへのユーザー追加に失敗しました"
 
-#: lib/kanban_web/live/board_live/membership.ex:153
+#: lib/kanban_web/live/board_live/membership.ex:214
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "ボードからのユーザー削除に失敗しました"
@@ -648,7 +648,7 @@ msgid "Only the board owner can edit this board"
 msgstr "ボードの所有者のみがこのボードを編集できます"
 
 #: lib/kanban_web/live/board_live/form.html.heex:321
-#: lib/kanban_web/live/board_live/members_form_component.ex:242
+#: lib/kanban_web/live/board_live/members_form_component.ex:293
 #: lib/kanban_web/live/target_live/form.html.heex:34
 #: lib/kanban_web/notification_labels.ex:180
 #, elixir-autogen, elixir-format
@@ -656,7 +656,7 @@ msgid "Owner"
 msgstr "所有者"
 
 #: lib/kanban_web/live/board_live/form.html.heex:325
-#: lib/kanban_web/live/board_live/members_form_component.ex:244
+#: lib/kanban_web/live/board_live/members_form_component.ex:295
 #: lib/kanban_web/notification_labels.ex:182
 #, elixir-autogen, elixir-format
 msgid "Read Only"
@@ -665,7 +665,7 @@ msgstr "読み取り専用"
 #: lib/kanban_web/components/bulk_action_bar.ex:214
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:132
 #: lib/kanban_web/live/board_live/form.html.heex:335
-#: lib/kanban_web/live/board_live/members_form_component.ex:214
+#: lib/kanban_web/live/board_live/members_form_component.ex:245
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:52
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:103
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:193
@@ -687,7 +687,7 @@ msgid "Remove"
 msgstr "削除"
 
 #: lib/kanban_web/live/board_live/form.html.heex:270
-#: lib/kanban_web/live/board_live/members_form_component.ex:112
+#: lib/kanban_web/live/board_live/members_form_component.ex:143
 #: lib/kanban_web/live/resources_live/components.ex:133
 #, elixir-autogen, elixir-format
 msgid "Search"
@@ -707,22 +707,22 @@ msgstr "ユーザーを選択"
 msgid "Unassigned"
 msgstr "未割り当て"
 
-#: lib/kanban_web/live/board_live/membership.ex:121
+#: lib/kanban_web/live/board_live/membership.ex:172
 #, elixir-autogen, elixir-format
 msgid "User added successfully"
 msgstr "ユーザーが正常に追加されました"
 
-#: lib/kanban_web/live/board_live/membership.ex:84
+#: lib/kanban_web/live/board_live/membership.ex:133
 #, elixir-autogen, elixir-format
 msgid "User is already added to the board"
 msgstr "ユーザーは既にボードに追加されています"
 
-#: lib/kanban_web/live/board_live/membership.ex:138
+#: lib/kanban_web/live/board_live/membership.ex:198
 #, elixir-autogen, elixir-format
 msgid "User not found"
 msgstr "ユーザーが見つかりません"
 
-#: lib/kanban_web/live/board_live/membership.ex:148
+#: lib/kanban_web/live/board_live/membership.ex:209
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr "ユーザーが正常に削除されました"
@@ -732,7 +732,7 @@ msgstr "ユーザーが正常に削除されました"
 msgid "Users must be already registered in the system in order to be added to Boards"
 msgstr "ボードに追加するには、ユーザーが既にシステムに登録されている必要があります"
 
-#: lib/kanban_web/live/board_live/membership.ex:81
+#: lib/kanban_web/live/board_live/membership.ex:130
 #, elixir-autogen, elixir-format
 msgid "You cannot add yourself to the board"
 msgstr "自分自身をボードに追加することはできません"
@@ -927,7 +927,7 @@ msgid "Are you sure you want to delete this column? All tasks in this column wil
 msgstr "この列を削除してもよろしいですか？この列のすべてのタスクも削除されます。"
 
 #: lib/kanban_web/live/board_live/form.html.heex:293
-#: lib/kanban_web/live/board_live/members_form_component.ex:160
+#: lib/kanban_web/live/board_live/members_form_component.ex:191
 #, elixir-autogen, elixir-format
 msgid "Add with Edit Access"
 msgstr "編集アクセス権で追加"
@@ -2236,7 +2236,7 @@ msgstr "準備完了です!"
 msgid "You've completed all the steps in this guide."
 msgstr "このガイドのすべての手順を完了しました。"
 
-#: lib/kanban_web/live/board_live/membership.ex:75
+#: lib/kanban_web/live/board_live/membership.ex:124
 #, elixir-autogen, elixir-format
 msgid "Could not find a user with that email address"
 msgstr "そのメールアドレスのユーザーが見つかりませんでした"
@@ -3009,7 +3009,7 @@ msgid "Let's build what's next, together."
 msgstr "次なるものを、共に築きましょう。"
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:165
+#: lib/kanban_web/live/board_live/membership.ex:226
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "ボードの所有者のみがボードのメンバーを管理できます"
@@ -4749,7 +4749,7 @@ msgstr "このゴールにはまだ子要素がありません。"
 msgid "Open goal %{id}"
 msgstr "ゴール %{id} を開く"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:225
+#: lib/kanban_web/live/board_live/members_form_component.ex:256
 #, elixir-autogen, elixir-format
 msgid "Close"
 msgstr "閉じる"
@@ -4768,7 +4768,7 @@ msgstr "保存"
 msgid "Update board details and choose which task fields appear on cards."
 msgstr "ボードの詳細を更新し、カードに表示するタスクフィールドを選択します。"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:82
+#: lib/kanban_web/live/board_live/members_form_component.ex:90
 #, elixir-autogen, elixir-format
 msgid "Add user by email"
 msgstr "メールでユーザーを追加"
@@ -4784,7 +4784,7 @@ msgstr "ボード設定"
 msgid "Control which task fields are visible on the board."
 msgstr "ボード上に表示するタスクフィールドを制御"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:170
+#: lib/kanban_web/live/board_live/members_form_component.ex:201
 #, elixir-autogen, elixir-format
 msgid "Current users"
 msgstr "現在のユーザー"
@@ -4799,12 +4799,12 @@ msgstr "フィールドの表示"
 msgid "Invite registered users and control their access to this board."
 msgstr "登録済みユーザーを招待し、このボードへのアクセスを管理します。"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:74
+#: lib/kanban_web/live/board_live/members_form_component.ex:82
 #, elixir-autogen, elixir-format
 msgid "Users must be already registered in the system in order to be added to Boards."
 msgstr "ボードに追加するには、ユーザーが既にシステムに登録されている必要があります"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:95
+#: lib/kanban_web/live/board_live/members_form_component.ex:125
 #, elixir-autogen, elixir-format
 msgid "name@example.com"
 msgstr "name@example.com"
@@ -11094,3 +11094,28 @@ msgstr "二要素認証の確認失敗"
 msgctxt "audit action"
 msgid "Two-factor sign-in succeeded"
 msgstr "二要素サインイン成功"
+
+#: lib/kanban_web/live/board_live/membership.ex:91
+#, elixir-autogen, elixir-format
+msgid "%{count} of %{cap} people"
+msgstr "%{cap}人中%{count}人"
+
+#: lib/kanban_web/live/board_live/membership.ex:102
+#, elixir-autogen, elixir-format
+msgid "Free boards hold %{cap} people. To add more, move this board to a paid plan."
+msgstr "無料のボードには%{cap}人まで参加できます。さらに追加するには、このボードを有料プランに移行してください。"
+
+#: lib/kanban_web/live/board_live/members_form_component.ex:110
+#, elixir-autogen, elixir-format
+msgid "See paid plans"
+msgstr "有料プランを見る"
+
+#: lib/kanban_web/live/board_live/membership.ex:117
+#, elixir-autogen, elixir-format
+msgid "This board is full."
+msgstr "このボードは満員です。"
+
+#: lib/kanban_web/live/board_live/membership.ex:114
+#, elixir-autogen, elixir-format
+msgid "This board is full. Free boards hold %{cap} people."
+msgstr "このボードは満員です。無料のボードには%{cap}人まで参加できます。"

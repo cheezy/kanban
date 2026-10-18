@@ -5,11 +5,15 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
   form_test.exs and members_form_component_test.exs; these tests pin the
   shared functions themselves using the minimal-socket pattern those
   files established.
+
+  async: false (the ConnCase default) is required: the member-cap tests switch
+  the global :plans_enforced application env via Kanban.PlansHelpers.
   """
-  use KanbanWeb.ConnCase
+  use KanbanWeb.ConnCase, async: false
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.PlansHelpers
 
   alias Kanban.Boards
   alias KanbanWeb.BoardLive.Membership
@@ -163,6 +167,75 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
 
       assert socket.assigns.flash["error"] ==
                "Only the board owner can manage board membership"
+    end
+  end
+
+  describe "member cap helpers (W2401)" do
+    test "member_cap_line/1 shows the count under, at and over the cap" do
+      assert Membership.member_cap_line(%{count: 2, cap: 3, reached?: false}) ==
+               "2 of 3 people"
+
+      assert Membership.member_cap_line(%{count: 3, cap: 3, reached?: true}) == "3 of 3 people"
+      assert Membership.member_cap_line(%{count: 5, cap: 3, reached?: true}) == "5 of 3 people"
+    end
+
+    test "member_cap_line/1 is nil for an uncapped board" do
+      assert is_nil(Membership.member_cap_line(%{count: 7, cap: nil, reached?: false}))
+    end
+
+    test "member_cap_explanation/1 is nil under the cap and explains at or over it" do
+      assert is_nil(Membership.member_cap_explanation(%{count: 2, cap: 3, reached?: false}))
+
+      for count <- [3, 5] do
+        assert Membership.member_cap_explanation(%{count: count, cap: 3, reached?: true}) ==
+                 "Free boards hold 3 people. To add more, move this board to a paid plan."
+      end
+
+      assert is_nil(Membership.member_cap_explanation(%{count: 7, cap: nil, reached?: false}))
+    end
+
+    test "member_cap_flash/1 names the cap, and falls back when the board has none" do
+      assert Membership.member_cap_flash(%{count: 3, cap: 3, reached?: true}) ==
+               "This board is full. Free boards hold 3 people."
+
+      assert Membership.member_cap_flash(%{count: 3, cap: nil, reached?: false}) ==
+               "This board is full."
+    end
+  end
+
+  describe "member cap assigns (W2401)" do
+    setup [:setup_board]
+
+    test "assign_member_cap/1 stores the board's cap status", %{owner: owner, board: board} do
+      {:ok, _} = Boards.add_user_to_board(board, user_fixture(), :modify, owner)
+
+      socket = board |> build_socket() |> Membership.assign_member_cap()
+      assert socket.assigns.member_cap == %{count: 2, cap: nil, reached?: false}
+
+      enforce_plans()
+
+      socket = board |> build_socket() |> Membership.assign_member_cap()
+      assert socket.assigns.member_cap == %{count: 2, cap: 3, reached?: false}
+    end
+
+    test "add_user/3 at the cap flashes the cap message, not the generic failure",
+         %{owner: owner, board: board} do
+      for _ <- 1..2,
+          do: {:ok, _} = Boards.add_user_to_board(board, user_fixture(), :modify, owner)
+
+      enforce_plans()
+      candidate = user_fixture()
+
+      socket =
+        board
+        |> build_socket()
+        |> Phoenix.Component.assign(:searched_user, candidate)
+
+      {:noreply, socket} = Membership.add_user(socket, owner, "modify")
+
+      assert socket.assigns.flash["error"] == "This board is full. Free boards hold 3 people."
+      assert socket.assigns.member_cap == %{count: 3, cap: 3, reached?: true}
+      refute Enum.any?(socket.assigns.board_users, fn %{user: u} -> u.id == candidate.id end)
     end
   end
 end

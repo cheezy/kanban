@@ -595,7 +595,7 @@ msgid "Add User by Email"
 msgstr "通过电子邮件添加用户"
 
 #: lib/kanban_web/live/board_live/form.html.heex:290
-#: lib/kanban_web/live/board_live/members_form_component.ex:146
+#: lib/kanban_web/live/board_live/members_form_component.ex:177
 #, elixir-autogen, elixir-format
 msgid "Add as Read Only"
 msgstr "添加为只读"
@@ -606,7 +606,7 @@ msgid "Assigned To"
 msgstr "分配给"
 
 #: lib/kanban_web/live/board_live/form.html.heex:323
-#: lib/kanban_web/live/board_live/members_form_component.ex:243
+#: lib/kanban_web/live/board_live/members_form_component.ex:294
 #: lib/kanban_web/notification_labels.ex:181
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
@@ -622,12 +622,12 @@ msgstr "当前用户"
 msgid "Enter user email"
 msgstr "输入用户电子邮件"
 
-#: lib/kanban_web/live/board_live/membership.ex:126
+#: lib/kanban_web/live/board_live/membership.ex:187
 #, elixir-autogen, elixir-format
 msgid "Failed to add user to board"
 msgstr "添加用户到看板失败"
 
-#: lib/kanban_web/live/board_live/membership.ex:153
+#: lib/kanban_web/live/board_live/membership.ex:214
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "从看板移除用户失败"
@@ -648,7 +648,7 @@ msgid "Only the board owner can edit this board"
 msgstr "只有看板所有者可以编辑此看板"
 
 #: lib/kanban_web/live/board_live/form.html.heex:321
-#: lib/kanban_web/live/board_live/members_form_component.ex:242
+#: lib/kanban_web/live/board_live/members_form_component.ex:293
 #: lib/kanban_web/live/target_live/form.html.heex:34
 #: lib/kanban_web/notification_labels.ex:180
 #, elixir-autogen, elixir-format
@@ -656,7 +656,7 @@ msgid "Owner"
 msgstr "所有者"
 
 #: lib/kanban_web/live/board_live/form.html.heex:325
-#: lib/kanban_web/live/board_live/members_form_component.ex:244
+#: lib/kanban_web/live/board_live/members_form_component.ex:295
 #: lib/kanban_web/notification_labels.ex:182
 #, elixir-autogen, elixir-format
 msgid "Read Only"
@@ -665,7 +665,7 @@ msgstr "只读"
 #: lib/kanban_web/components/bulk_action_bar.ex:214
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:132
 #: lib/kanban_web/live/board_live/form.html.heex:335
-#: lib/kanban_web/live/board_live/members_form_component.ex:214
+#: lib/kanban_web/live/board_live/members_form_component.ex:245
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:52
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:103
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:193
@@ -687,7 +687,7 @@ msgid "Remove"
 msgstr "移除"
 
 #: lib/kanban_web/live/board_live/form.html.heex:270
-#: lib/kanban_web/live/board_live/members_form_component.ex:112
+#: lib/kanban_web/live/board_live/members_form_component.ex:143
 #: lib/kanban_web/live/resources_live/components.ex:133
 #, elixir-autogen, elixir-format
 msgid "Search"
@@ -707,22 +707,22 @@ msgstr "选择用户"
 msgid "Unassigned"
 msgstr "未分配"
 
-#: lib/kanban_web/live/board_live/membership.ex:121
+#: lib/kanban_web/live/board_live/membership.ex:172
 #, elixir-autogen, elixir-format
 msgid "User added successfully"
 msgstr "用户添加成功"
 
-#: lib/kanban_web/live/board_live/membership.ex:84
+#: lib/kanban_web/live/board_live/membership.ex:133
 #, elixir-autogen, elixir-format
 msgid "User is already added to the board"
 msgstr "用户已添加到看板"
 
-#: lib/kanban_web/live/board_live/membership.ex:138
+#: lib/kanban_web/live/board_live/membership.ex:198
 #, elixir-autogen, elixir-format
 msgid "User not found"
 msgstr "未找到用户"
 
-#: lib/kanban_web/live/board_live/membership.ex:148
+#: lib/kanban_web/live/board_live/membership.ex:209
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr "用户移除成功"
@@ -732,7 +732,7 @@ msgstr "用户移除成功"
 msgid "Users must be already registered in the system in order to be added to Boards"
 msgstr "用户必须已在系统中注册才能添加到看板"
 
-#: lib/kanban_web/live/board_live/membership.ex:81
+#: lib/kanban_web/live/board_live/membership.ex:130
 #, elixir-autogen, elixir-format
 msgid "You cannot add yourself to the board"
 msgstr "您不能将自己添加到看板"
@@ -927,7 +927,7 @@ msgid "Are you sure you want to delete this column? All tasks in this column wil
 msgstr "您确定要删除此列吗？此列中的所有任务也将被删除。"
 
 #: lib/kanban_web/live/board_live/form.html.heex:293
-#: lib/kanban_web/live/board_live/members_form_component.ex:160
+#: lib/kanban_web/live/board_live/members_form_component.ex:191
 #, elixir-autogen, elixir-format
 msgid "Add with Edit Access"
 msgstr "添加为可编辑"
@@ -2236,7 +2236,7 @@ msgstr "全部就绪!"
 msgid "You've completed all the steps in this guide."
 msgstr "您已完成此指南的所有步骤。"
 
-#: lib/kanban_web/live/board_live/membership.ex:75
+#: lib/kanban_web/live/board_live/membership.ex:124
 #, elixir-autogen, elixir-format
 msgid "Could not find a user with that email address"
 msgstr "未找到使用该邮箱的用户"
@@ -3009,7 +3009,7 @@ msgid "Let's build what's next, together."
 msgstr "让我们携手共建未来。"
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:165
+#: lib/kanban_web/live/board_live/membership.ex:226
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "只有看板所有者才能管理看板成员"
@@ -4749,7 +4749,7 @@ msgstr "此目标暂无子项。"
 msgid "Open goal %{id}"
 msgstr "打开目标 %{id}"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:225
+#: lib/kanban_web/live/board_live/members_form_component.ex:256
 #, elixir-autogen, elixir-format
 msgid "Close"
 msgstr "关闭"
@@ -4768,7 +4768,7 @@ msgstr "保存"
 msgid "Update board details and choose which task fields appear on cards."
 msgstr "更新看板详情并选择卡片上显示哪些任务字段。"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:82
+#: lib/kanban_web/live/board_live/members_form_component.ex:90
 #, elixir-autogen, elixir-format
 msgid "Add user by email"
 msgstr "通过电子邮件添加用户"
@@ -4784,7 +4784,7 @@ msgstr "看板设置"
 msgid "Control which task fields are visible on the board."
 msgstr "控制看板上显示哪些任务字段"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:170
+#: lib/kanban_web/live/board_live/members_form_component.ex:201
 #, elixir-autogen, elixir-format
 msgid "Current users"
 msgstr "当前用户"
@@ -4799,12 +4799,12 @@ msgstr "字段可见性"
 msgid "Invite registered users and control their access to this board."
 msgstr "邀请已注册的用户,并控制其对此看板的访问权限。"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:74
+#: lib/kanban_web/live/board_live/members_form_component.ex:82
 #, elixir-autogen, elixir-format
 msgid "Users must be already registered in the system in order to be added to Boards."
 msgstr "用户必须已在系统中注册才能添加到看板"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:95
+#: lib/kanban_web/live/board_live/members_form_component.ex:125
 #, elixir-autogen, elixir-format
 msgid "name@example.com"
 msgstr "name@example.com"
@@ -11094,3 +11094,28 @@ msgstr "双因素验证失败"
 msgctxt "audit action"
 msgid "Two-factor sign-in succeeded"
 msgstr "双因素登录成功"
+
+#: lib/kanban_web/live/board_live/membership.ex:91
+#, elixir-autogen, elixir-format
+msgid "%{count} of %{cap} people"
+msgstr "%{count} / %{cap} 人"
+
+#: lib/kanban_web/live/board_live/membership.ex:102
+#, elixir-autogen, elixir-format
+msgid "Free boards hold %{cap} people. To add more, move this board to a paid plan."
+msgstr "免费看板最多容纳 %{cap} 人。如需添加更多成员，请将此看板升级到付费方案。"
+
+#: lib/kanban_web/live/board_live/members_form_component.ex:110
+#, elixir-autogen, elixir-format
+msgid "See paid plans"
+msgstr "查看付费方案"
+
+#: lib/kanban_web/live/board_live/membership.ex:117
+#, elixir-autogen, elixir-format
+msgid "This board is full."
+msgstr "此看板已满。"
+
+#: lib/kanban_web/live/board_live/membership.ex:114
+#, elixir-autogen, elixir-format
+msgid "This board is full. Free boards hold %{cap} people."
+msgstr "此看板已满。免费看板最多容纳 %{cap} 人。"

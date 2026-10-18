@@ -1,13 +1,20 @@
 defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
-  use KanbanWeb.ConnCase
+  # async: false (the ConnCase default) is required: the member-cap tests
+  # switch the global :plans_enforced application env via Kanban.PlansHelpers.
+  use KanbanWeb.ConnCase, async: false
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.OrganizationsFixtures
+  import Kanban.PlansHelpers
   import Kanban.TelemetryHelpers
+  import Kanban.WorkspacesFixtures
   import Phoenix.LiveViewTest
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
+  alias Kanban.Boards.BoardUser
+  alias Kanban.Repo
   alias KanbanWeb.BoardLive.MembersFormComponent
 
   defp setup_owner(_) do
@@ -534,6 +541,149 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
     end
   end
 
+  describe "free-board member cap (W2401)" do
+    setup [:setup_owner]
+
+    test "enforcement on, 2 people: shows the count line and leaves the form enabled",
+         %{conn: conn, user: owner, board: board} do
+      add_members(board, owner, 1)
+      enforce_plans()
+
+      {:ok, lv, _html} = live(log_in_user(conn, owner), ~p"/boards/#{board}/members")
+
+      assert lv |> element("#member-cap-line") |> render() =~ "2 of 3 people"
+      refute has_element?(lv, "#member-cap-explanation")
+      refute has_element?(lv, "#members-search-email-#{board.id}[disabled]")
+      refute has_element?(lv, ~s(#member-search-form button[type="submit"][disabled]))
+    end
+
+    test "enforcement on, 3 people: disables the form with an explanation and a pricing link",
+         %{conn: conn, user: owner, board: board} do
+      add_members(board, owner, 2)
+      enforce_plans()
+
+      {:ok, lv, _html} = live(log_in_user(conn, owner), ~p"/boards/#{board}/members")
+
+      assert lv |> element("#member-cap-line") |> render() =~ "3 of 3 people"
+
+      assert lv |> element("#member-cap-explanation") |> render() =~
+               "Free boards hold 3 people."
+
+      assert has_element?(lv, ~s(#member-cap-pricing-link[href="/pricing#contact"]))
+      assert has_element?(lv, "#members-search-email-#{board.id}[disabled]")
+      assert has_element?(lv, ~s(#member-search-form button[type="submit"][disabled]))
+    end
+
+    test "adding the third person on the page disables the form straight away",
+         %{conn: conn, user: owner, board: board} do
+      add_members(board, owner, 1)
+      enforce_plans()
+      candidate = user_fixture()
+
+      {:ok, lv, _html} = live(log_in_user(conn, owner), ~p"/boards/#{board}/members")
+
+      lv |> form("#member-search-form", %{"email" => candidate.email}) |> render_submit()
+      lv |> element(~s(button[phx-value-access="read_only"])) |> render_click()
+
+      assert lv |> element("#member-cap-line") |> render() =~ "3 of 3 people"
+      assert has_element?(lv, "#members-search-email-#{board.id}[disabled]")
+    end
+
+    test "a grandfathered board shows its real count with the same explanation",
+         %{conn: conn, user: owner, board: board} do
+      add_members(board, owner, 4)
+      enforce_plans()
+
+      {:ok, lv, _html} = live(log_in_user(conn, owner), ~p"/boards/#{board}/members")
+
+      assert lv |> element("#member-cap-line") |> render() =~ "5 of 3 people"
+
+      explanation = lv |> element("#member-cap-explanation") |> render()
+      assert explanation =~ "Free boards hold 3 people."
+      refute explanation =~ "Remove"
+      assert has_element?(lv, "#members-search-email-#{board.id}[disabled]")
+    end
+
+    test "a crafted add at the cap shows the cap flash, not the generic failure",
+         %{board: board, scope: scope, user: owner} do
+      add_members(board, owner, 2)
+      enforce_plans()
+      candidate = user_fixture()
+
+      socket =
+        board
+        |> build_update_socket(scope)
+        |> Phoenix.Component.assign(:searched_user, candidate)
+        |> Phoenix.Component.assign(:search_email, candidate.email)
+
+      {:noreply, socket} =
+        MembersFormComponent.handle_event("add_user", %{"access" => "modify"}, socket)
+
+      assert_received {MembersFormComponent,
+                       {:replace_flash, [error: "This board is full. Free boards hold 3 people."]}}
+
+      refute_received {MembersFormComponent,
+                       {:replace_flash, [error: "Failed to add user to board"]}}
+
+      assert socket.assigns.member_cap == %{count: 3, cap: 3, reached?: true}
+      refute Enum.any?(socket.assigns.board_users, &(&1.user.id == candidate.id))
+    end
+
+    test "removing a member at the cap re-enables the form",
+         %{board: board, scope: scope, user: owner} do
+      [member | _] = add_members(board, owner, 2)
+      enforce_plans()
+
+      socket = build_update_socket(board, scope)
+      assert socket.assigns.member_cap.reached?
+
+      {:noreply, socket} =
+        MembersFormComponent.handle_event(
+          "remove_user",
+          %{"user_id" => to_string(member.id)},
+          socket
+        )
+
+      assert socket.assigns.member_cap == %{count: 2, cap: 3, reached?: false}
+    end
+
+    test "a paid board shows no cap UI even at 4 people", %{conn: conn} do
+      board = organization_fixture() |> org_workspace_fixture() |> place_board_in_workspace()
+
+      owner =
+        BoardUser
+        |> Repo.get_by!(board_id: board.id, access: :owner)
+        |> Repo.preload(:user)
+        |> Map.fetch!(:user)
+
+      add_members(board, owner, 3)
+      enforce_plans()
+
+      {:ok, lv, _html} = live(log_in_user(conn, owner), ~p"/boards/#{board}/members")
+
+      refute has_element?(lv, "#member-cap-status")
+      refute has_element?(lv, "#members-search-email-#{board.id}[disabled]")
+    end
+
+    test "with enforcement off a free board at 3 people shows no cap UI",
+         %{conn: conn, user: owner, board: board} do
+      add_members(board, owner, 2)
+
+      {:ok, lv, _html} = live(log_in_user(conn, owner), ~p"/boards/#{board}/members")
+
+      refute has_element?(lv, "#member-cap-status")
+      refute has_element?(lv, "#members-search-email-#{board.id}[disabled]")
+    end
+  end
+
+  defp add_members(board, owner, count) do
+    for _ <- List.duplicate(nil, count) do
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      member
+    end
+  end
+
   defp build_update_socket(board, scope) do
     base = %{%Phoenix.LiveView.Socket{} | assigns: %{flash: %{}, __changed__: %{}}}
     assigns = base_assigns(board, scope)
@@ -560,6 +710,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       scope: scope,
       patch: "/boards/#{board.id}",
       board_users: Boards.list_board_users(board),
+      member_cap: Boards.member_cap_status(board),
       searched_user: nil,
       search_email: "",
       myself: %Phoenix.LiveComponent.CID{cid: 1}

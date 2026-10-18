@@ -595,7 +595,7 @@ msgid "Add User by Email"
 msgstr "Ajouter un Utilisateur par Email"
 
 #: lib/kanban_web/live/board_live/form.html.heex:290
-#: lib/kanban_web/live/board_live/members_form_component.ex:146
+#: lib/kanban_web/live/board_live/members_form_component.ex:177
 #, elixir-autogen, elixir-format
 msgid "Add as Read Only"
 msgstr "Ajouter en Lecture Seule"
@@ -606,7 +606,7 @@ msgid "Assigned To"
 msgstr "Assigné à"
 
 #: lib/kanban_web/live/board_live/form.html.heex:323
-#: lib/kanban_web/live/board_live/members_form_component.ex:243
+#: lib/kanban_web/live/board_live/members_form_component.ex:294
 #: lib/kanban_web/notification_labels.ex:181
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
@@ -622,12 +622,12 @@ msgstr "Utilisateurs Actuels"
 msgid "Enter user email"
 msgstr "Entrez l'email de l'utilisateur"
 
-#: lib/kanban_web/live/board_live/membership.ex:126
+#: lib/kanban_web/live/board_live/membership.ex:187
 #, elixir-autogen, elixir-format
 msgid "Failed to add user to board"
 msgstr "Échec de l'ajout de l'utilisateur au tableau"
 
-#: lib/kanban_web/live/board_live/membership.ex:153
+#: lib/kanban_web/live/board_live/membership.ex:214
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "Échec de la suppression de l'utilisateur du tableau"
@@ -648,7 +648,7 @@ msgid "Only the board owner can edit this board"
 msgstr "Seul le propriétaire du tableau peut modifier ce tableau"
 
 #: lib/kanban_web/live/board_live/form.html.heex:321
-#: lib/kanban_web/live/board_live/members_form_component.ex:242
+#: lib/kanban_web/live/board_live/members_form_component.ex:293
 #: lib/kanban_web/live/target_live/form.html.heex:34
 #: lib/kanban_web/notification_labels.ex:180
 #, elixir-autogen, elixir-format
@@ -656,7 +656,7 @@ msgid "Owner"
 msgstr "Propriétaire"
 
 #: lib/kanban_web/live/board_live/form.html.heex:325
-#: lib/kanban_web/live/board_live/members_form_component.ex:244
+#: lib/kanban_web/live/board_live/members_form_component.ex:295
 #: lib/kanban_web/notification_labels.ex:182
 #, elixir-autogen, elixir-format
 msgid "Read Only"
@@ -665,7 +665,7 @@ msgstr "Lecture Seule"
 #: lib/kanban_web/components/bulk_action_bar.ex:214
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:132
 #: lib/kanban_web/live/board_live/form.html.heex:335
-#: lib/kanban_web/live/board_live/members_form_component.ex:214
+#: lib/kanban_web/live/board_live/members_form_component.ex:245
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:52
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:103
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:193
@@ -687,7 +687,7 @@ msgid "Remove"
 msgstr "Supprimer"
 
 #: lib/kanban_web/live/board_live/form.html.heex:270
-#: lib/kanban_web/live/board_live/members_form_component.ex:112
+#: lib/kanban_web/live/board_live/members_form_component.ex:143
 #: lib/kanban_web/live/resources_live/components.ex:133
 #, elixir-autogen, elixir-format
 msgid "Search"
@@ -707,22 +707,22 @@ msgstr "Sélectionner un utilisateur"
 msgid "Unassigned"
 msgstr "Non assigné"
 
-#: lib/kanban_web/live/board_live/membership.ex:121
+#: lib/kanban_web/live/board_live/membership.ex:172
 #, elixir-autogen, elixir-format
 msgid "User added successfully"
 msgstr "Utilisateur ajouté avec succès"
 
-#: lib/kanban_web/live/board_live/membership.ex:84
+#: lib/kanban_web/live/board_live/membership.ex:133
 #, elixir-autogen, elixir-format
 msgid "User is already added to the board"
 msgstr "L'utilisateur est déjà ajouté au tableau"
 
-#: lib/kanban_web/live/board_live/membership.ex:138
+#: lib/kanban_web/live/board_live/membership.ex:198
 #, elixir-autogen, elixir-format
 msgid "User not found"
 msgstr "Utilisateur introuvable"
 
-#: lib/kanban_web/live/board_live/membership.ex:148
+#: lib/kanban_web/live/board_live/membership.ex:209
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr "Utilisateur supprimé avec succès"
@@ -732,7 +732,7 @@ msgstr "Utilisateur supprimé avec succès"
 msgid "Users must be already registered in the system in order to be added to Boards"
 msgstr "Les utilisateurs doivent déjà être enregistrés dans le système pour pouvoir être ajoutés aux tableaux"
 
-#: lib/kanban_web/live/board_live/membership.ex:81
+#: lib/kanban_web/live/board_live/membership.ex:130
 #, elixir-autogen, elixir-format
 msgid "You cannot add yourself to the board"
 msgstr "Vous ne pouvez pas vous ajouter au tableau"
@@ -927,7 +927,7 @@ msgid "Are you sure you want to delete this column? All tasks in this column wil
 msgstr "Êtes-vous sûr de vouloir supprimer cette colonne ? Toutes les tâches de cette colonne seront également supprimées."
 
 #: lib/kanban_web/live/board_live/form.html.heex:293
-#: lib/kanban_web/live/board_live/members_form_component.ex:160
+#: lib/kanban_web/live/board_live/members_form_component.ex:191
 #, elixir-autogen, elixir-format
 msgid "Add with Edit Access"
 msgstr "Ajouter avec Accès en Modification"
@@ -2238,7 +2238,7 @@ msgstr "Tout est prêt !"
 msgid "You've completed all the steps in this guide."
 msgstr "Vous avez terminé toutes les étapes de ce guide."
 
-#: lib/kanban_web/live/board_live/membership.ex:75
+#: lib/kanban_web/live/board_live/membership.ex:124
 #, elixir-autogen, elixir-format
 msgid "Could not find a user with that email address"
 msgstr "Aucun utilisateur trouvé avec cette adresse e-mail"
@@ -3012,7 +3012,7 @@ msgid "Let's build what's next, together."
 msgstr "Construisons ce qui vient ensuite, ensemble."
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:165
+#: lib/kanban_web/live/board_live/membership.ex:226
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "Seul le propriétaire du tableau peut gérer les membres du tableau"
@@ -4757,7 +4757,7 @@ msgstr "Cet objectif n'a pas encore d'enfants."
 msgid "Open goal %{id}"
 msgstr "Ouvrir l'objectif %{id}"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:225
+#: lib/kanban_web/live/board_live/members_form_component.ex:256
 #, elixir-autogen, elixir-format
 msgid "Close"
 msgstr "Fermer"
@@ -4776,7 +4776,7 @@ msgstr "Enregistrer"
 msgid "Update board details and choose which task fields appear on cards."
 msgstr "Mettez à jour les détails du tableau et choisissez quels champs de tâche apparaissent sur les cartes."
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:82
+#: lib/kanban_web/live/board_live/members_form_component.ex:90
 #, elixir-autogen, elixir-format
 msgid "Add user by email"
 msgstr "Ajouter un Utilisateur par Email"
@@ -4792,7 +4792,7 @@ msgstr "Paramètres du tableau"
 msgid "Control which task fields are visible on the board."
 msgstr "Contrôler quels champs de tâches sont visibles sur le tableau"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:170
+#: lib/kanban_web/live/board_live/members_form_component.ex:201
 #, elixir-autogen, elixir-format
 msgid "Current users"
 msgstr "Utilisateurs Actuels"
@@ -4807,12 +4807,12 @@ msgstr "Visibilité des champs"
 msgid "Invite registered users and control their access to this board."
 msgstr "Invitez des utilisateurs enregistrés et contrôlez leur accès à ce tableau."
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:74
+#: lib/kanban_web/live/board_live/members_form_component.ex:82
 #, elixir-autogen, elixir-format
 msgid "Users must be already registered in the system in order to be added to Boards."
 msgstr "Les utilisateurs doivent déjà être enregistrés dans le système pour pouvoir être ajoutés aux tableaux"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:95
+#: lib/kanban_web/live/board_live/members_form_component.ex:125
 #, elixir-autogen, elixir-format
 msgid "name@example.com"
 msgstr "nom@exemple.com"
@@ -11109,3 +11109,28 @@ msgstr "Échec de la vérification à deux facteurs"
 msgctxt "audit action"
 msgid "Two-factor sign-in succeeded"
 msgstr "Connexion à deux facteurs réussie"
+
+#: lib/kanban_web/live/board_live/membership.ex:91
+#, elixir-autogen, elixir-format
+msgid "%{count} of %{cap} people"
+msgstr "%{count} personnes sur %{cap}"
+
+#: lib/kanban_web/live/board_live/membership.ex:102
+#, elixir-autogen, elixir-format
+msgid "Free boards hold %{cap} people. To add more, move this board to a paid plan."
+msgstr "Les tableaux gratuits accueillent %{cap} personnes. Pour en ajouter davantage, passez ce tableau à une offre payante."
+
+#: lib/kanban_web/live/board_live/members_form_component.ex:110
+#, elixir-autogen, elixir-format
+msgid "See paid plans"
+msgstr "Voir les offres payantes"
+
+#: lib/kanban_web/live/board_live/membership.ex:117
+#, elixir-autogen, elixir-format
+msgid "This board is full."
+msgstr "Ce tableau est complet."
+
+#: lib/kanban_web/live/board_live/membership.ex:114
+#, elixir-autogen, elixir-format
+msgid "This board is full. Free boards hold %{cap} people."
+msgstr "Ce tableau est complet. Les tableaux gratuits accueillent %{cap} personnes."
