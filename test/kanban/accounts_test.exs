@@ -9,6 +9,9 @@ defmodule Kanban.AccountsTest do
   alias Kanban.Accounts.PasswordReset
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserToken
+  alias Kanban.Workspaces
+  alias Kanban.Workspaces.Workspace
+  alias Kanban.Workspaces.WorkspaceMember
 
   describe "get_user_by_email/1" do
     test "does not return the user if the email does not exist" do
@@ -80,6 +83,42 @@ defmodule Kanban.AccountsTest do
   end
 
   describe "register_user/1" do
+    test "creates exactly one personal workspace with the user as its only owner" do
+      {:ok, user} = Accounts.register_user(valid_user_attributes())
+
+      assert [%WorkspaceMember{role: :owner, workspace_id: workspace_id}] =
+               WorkspaceMember |> where([m], m.user_id == ^user.id) |> Repo.all()
+
+      assert %Workspace{personal: true, organization_id: nil} =
+               Repo.get!(Workspace, workspace_id)
+
+      assert Workspaces.get_personal_workspace(user).id == workspace_id
+    end
+
+    test "rolls the user back when the personal workspace cannot be created" do
+      # Swap the personal/organization check for one that rejects every row.
+      # The DDL is undone with the rest of the sandbox transaction.
+      Repo.query!(
+        "ALTER TABLE workspaces DROP CONSTRAINT workspaces_personal_iff_no_organization"
+      )
+
+      Repo.query!(
+        "ALTER TABLE workspaces ADD CONSTRAINT workspaces_personal_iff_no_organization CHECK (false) NOT VALID"
+      )
+
+      email = unique_user_email()
+      workspaces = Repo.aggregate(Workspace, :count)
+      attach_telemetry([[:kanban, :user, :registration]])
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               [email: email] |> valid_user_attributes() |> Accounts.register_user()
+
+      assert %{personal: [_message]} = errors_on(changeset)
+      refute Accounts.get_user_by_email(email)
+      assert Repo.aggregate(Workspace, :count) == workspaces
+      refute_received {:telemetry_event, [:kanban, :user, :registration], _, _}
+    end
+
     test "requires email to be set" do
       {:error, changeset} = Accounts.register_user(%{})
 

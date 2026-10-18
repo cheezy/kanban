@@ -6,6 +6,7 @@ defmodule Kanban.BoardsTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
   import Kanban.TelemetryHelpers
+  import Kanban.WorkspacesFixtures, only: [remove_personal_workspace: 1]
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
@@ -14,6 +15,8 @@ defmodule Kanban.BoardsTest do
   alias Kanban.Notifications
   alias Kanban.Notifications.Notification
   alias Kanban.Tasks
+  alias Kanban.Workspaces
+  alias Kanban.Workspaces.Workspace
   alias KanbanWeb.AvatarPalette
 
   describe "user_has_boards?/1" do
@@ -245,6 +248,53 @@ defmodule Kanban.BoardsTest do
       # Owner should still be owner
       owner_board = Boards.get_board!(board.id, owner)
       assert owner_board.user_access == :owner
+    end
+  end
+
+  describe "create_board/2 workspace placement" do
+    test "puts the board in the caller's personal workspace, never one from attrs" do
+      user = user_fixture()
+      other = user_fixture()
+      other_workspace = Workspaces.get_personal_workspace(other)
+
+      for attrs <- [
+            %{name: "Placed", workspace_id: other_workspace.id},
+            %{"name" => "Placed", "workspace_id" => other_workspace.id}
+          ] do
+        assert {:ok, board} = Boards.create_board(user, attrs)
+        assert board.workspace_id == Workspaces.get_personal_workspace(user).id
+      end
+    end
+
+    test "create_ai_optimized_board/2 ignores a workspace_id in attrs too" do
+      user = user_fixture()
+      other_workspace = Workspaces.get_personal_workspace(user_fixture())
+
+      assert {:ok, board} =
+               Boards.create_ai_optimized_board(user, %{
+                 name: "AI Board",
+                 workspace_id: other_workspace.id
+               })
+
+      assert board.workspace_id == Workspaces.get_personal_workspace(user).id
+    end
+
+    test "creates the personal workspace first for a user who has none" do
+      user = remove_personal_workspace(user_fixture())
+
+      assert {:ok, board} = Boards.create_board(user, %{name: "First"})
+
+      assert %Workspace{id: workspace_id} =
+               Workspaces.get_personal_workspace(user)
+
+      assert board.workspace_id == workspace_id
+    end
+
+    test "an invalid board creates nothing, not even the workspace" do
+      user = remove_personal_workspace(user_fixture())
+
+      assert {:error, %Ecto.Changeset{}} = Boards.create_board(user, %{name: nil})
+      assert Workspaces.get_personal_workspace(user) == nil
     end
   end
 

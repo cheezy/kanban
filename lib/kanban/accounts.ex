@@ -20,6 +20,7 @@ defmodule Kanban.Accounts do
   alias Kanban.Accounts.UserTelemetry
   alias Kanban.Accounts.UserToken
   alias Kanban.Telemetry.AfterCommit
+  alias Kanban.Workspaces
 
   ## Database getters
 
@@ -108,6 +109,10 @@ defmodule Kanban.Accounts do
   `Kanban.Telemetry.AfterCommit.after_commit/1`, as
   `Kanban.Organizations.appoint_org_admin_by_email/4` does.
 
+  The user's hidden personal workspace (`Kanban.Workspaces`) is created in the
+  same transaction, so a user never exists without one: if the workspace insert
+  fails, the user is rolled back too and that step's changeset is returned.
+
   ## Examples
 
       iex> register_user(%{field: value})
@@ -118,23 +123,24 @@ defmodule Kanban.Accounts do
 
   """
   def register_user(attrs) do
-    result =
-      %User{}
-      |> User.registration_changeset(attrs)
-      |> Repo.insert()
-
-    case result do
-      {:ok, user} ->
-        AfterCommit.defer(fn ->
-          Kanban.Telemetry.emit([:kanban, :user, :registration], %{count: 1}, %{user_id: user.id})
-        end)
-
-        {:ok, user}
-
-      error ->
-        error
-    end
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(:user, User.registration_changeset(%User{}, attrs))
+    |> Ecto.Multi.run(:personal_workspace, fn _repo, %{user: user} ->
+      Workspaces.create_personal_workspace(user)
+    end)
+    |> Repo.transaction()
+    |> handle_registration_result()
   end
+
+  defp handle_registration_result({:ok, %{user: user}}) do
+    AfterCommit.defer(fn ->
+      Kanban.Telemetry.emit([:kanban, :user, :registration], %{count: 1}, %{user_id: user.id})
+    end)
+
+    {:ok, user}
+  end
+
+  defp handle_registration_result({:error, _step, changeset, _changes}), do: {:error, changeset}
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking user registration changes.

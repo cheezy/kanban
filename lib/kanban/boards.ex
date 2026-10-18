@@ -20,6 +20,7 @@ defmodule Kanban.Boards do
   alias Kanban.Boards.Membership
   alias Kanban.Boards.MembershipChanges
   alias Kanban.Boards.Metrics
+  alias Kanban.Workspaces
 
   @doc """
   Returns the list of boards for a given user with their access level.
@@ -405,6 +406,9 @@ defmodule Kanban.Boards do
   @doc """
   Creates a board for the given user with owner access.
 
+  The board goes into the caller's personal workspace, created first when they
+  have none yet. The workspace is always chosen here, never read from `attrs`.
+
   ## Examples
 
       iex> create_board(user, %{name: "My Board"})
@@ -415,7 +419,7 @@ defmodule Kanban.Boards do
 
   """
   def create_board(user, attrs \\ %{}) do
-    case run_create_board_transaction(user, attrs) do
+    case run_create_board_transaction(user, Board.changeset(%Board{}, attrs)) do
       {:ok, board} ->
         Kanban.Telemetry.emit([:kanban, :board, :creation], %{count: 1}, %{
           board_id: board.id,
@@ -429,9 +433,16 @@ defmodule Kanban.Boards do
     end
   end
 
-  defp run_create_board_transaction(user, attrs) do
+  # The workspace is the caller's personal one, set server-side; Board
+  # changesets never cast `workspace_id`.
+  defp run_create_board_transaction(user, board_changeset) do
     Ecto.Multi.new()
-    |> Ecto.Multi.insert(:board, Board.changeset(%Board{}, attrs))
+    |> Ecto.Multi.run(:workspace, fn _repo, _changes ->
+      Workspaces.ensure_personal_workspace(user)
+    end)
+    |> Ecto.Multi.insert(:board, fn %{workspace: workspace} ->
+      Ecto.Changeset.change(board_changeset, workspace_id: workspace.id)
+    end)
     |> Ecto.Multi.insert(:board_user, fn %{board: board} ->
       owner_board_user_changeset(board, user)
     end)
@@ -448,14 +459,12 @@ defmodule Kanban.Boards do
   end
 
   defp handle_board_transaction_result({:ok, %{board: board}}), do: {:ok, board}
-  defp handle_board_transaction_result({:error, :board, changeset, _}), do: {:error, changeset}
-
-  defp handle_board_transaction_result({:error, :board_user, changeset, _}),
-    do: {:error, changeset}
+  defp handle_board_transaction_result({:error, _step, changeset, _}), do: {:error, changeset}
 
   @doc """
   Creates an AI-optimized board with default columns: Backlog, Ready, Doing, Review, and Done.
-  Sets ai_optimized_board to true.
+  Sets ai_optimized_board to true. Like `create_board/2`, the board goes into the
+  caller's personal workspace.
 
   ## Examples
 
@@ -464,35 +473,15 @@ defmodule Kanban.Boards do
 
   """
   def create_ai_optimized_board(user, attrs \\ %{}) do
-    result = create_ai_board_transaction(user, attrs)
-
-    case result do
-      {:ok, %{board: board}} ->
-        setup_ai_board_columns(board, user)
-
-      {:error, :board, changeset, _} ->
-        {:error, changeset}
-
-      {:error, :board_user, changeset, _} ->
-        {:error, changeset}
-    end
-  end
-
-  defp create_ai_board_transaction(user, attrs) do
-    Ecto.Multi.new()
-    |> Ecto.Multi.insert(:board, fn _ ->
+    board_changeset =
       %Board{}
       |> Board.changeset(attrs)
       |> Ecto.Changeset.change(ai_optimized_board: true)
-    end)
-    |> Ecto.Multi.insert(:board_user, fn %{board: board} ->
-      BoardUser.changeset(%BoardUser{}, %{
-        board_id: board.id,
-        user_id: user.id,
-        access: :owner
-      })
-    end)
-    |> Repo.transaction()
+
+    case run_create_board_transaction(user, board_changeset) do
+      {:ok, board} -> setup_ai_board_columns(board, user)
+      error -> error
+    end
   end
 
   defp setup_ai_board_columns(board, user) do

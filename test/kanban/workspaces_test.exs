@@ -7,6 +7,7 @@ defmodule Kanban.WorkspacesTest do
   import Kanban.WorkspacesFixtures
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Accounts.User
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Repo
@@ -273,7 +274,7 @@ defmodule Kanban.WorkspacesTest do
 
   describe "create_personal_workspace/1" do
     test "creates the personal workspace and a single owner row" do
-      user = user_fixture()
+      user = remove_personal_workspace(user_fixture())
 
       assert {:ok, %Workspace{personal: true, organization_id: nil} = workspace} =
                Workspaces.create_personal_workspace(user)
@@ -295,6 +296,43 @@ defmodule Kanban.WorkspacesTest do
     end
   end
 
+  describe "ensure_personal_workspace/1" do
+    test "creates the workspace and owner row once, then returns the same one" do
+      user = remove_personal_workspace(user_fixture())
+      count = workspace_count()
+
+      assert {:ok, %Workspace{personal: true} = workspace} =
+               Workspaces.ensure_personal_workspace(user)
+
+      assert {:ok, again} = Workspaces.ensure_personal_workspace(user)
+      assert again.id == workspace.id
+      assert workspace_count() == count + 1
+
+      assert [%WorkspaceMember{role: :owner}] =
+               WorkspaceMember |> where([m], m.user_id == ^user.id) |> Repo.all()
+    end
+
+    test "returns the changeset and leaves nothing behind when creation fails" do
+      count = workspace_count()
+
+      # No such user, so the owner row's foreign key fails after the workspace
+      # insert; the transaction must roll the workspace back too.
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Workspaces.ensure_personal_workspace(%User{id: -1})
+
+      assert %{user_id: [_message]} = errors_on(changeset)
+      assert workspace_count() == count
+    end
+
+    test "returns the personal workspace a registered user already has" do
+      user = user_fixture()
+      existing = Workspaces.get_personal_workspace(user)
+
+      assert {:ok, %Workspace{id: id}} = Workspaces.ensure_personal_workspace(user)
+      assert id == existing.id
+    end
+  end
+
   describe "get_personal_workspace/1" do
     test "returns the user's personal workspace" do
       user = user_fixture()
@@ -305,12 +343,13 @@ defmodule Kanban.WorkspacesTest do
     end
 
     test "returns nil for a user with no workspaces yet" do
-      assert Workspaces.get_personal_workspace(user_fixture()) == nil
+      user = remove_personal_workspace(user_fixture())
+      assert Workspaces.get_personal_workspace(user) == nil
     end
 
     test "does not return an org workspace the user is a member of" do
       {organization, _admin} = org_with_admin()
-      user = org_member(organization)
+      user = organization |> org_member() |> remove_personal_workspace()
       organization |> org_workspace_fixture() |> workspace_member_fixture(user)
 
       assert Workspaces.get_personal_workspace(user) == nil
@@ -613,11 +652,11 @@ defmodule Kanban.WorkspacesTest do
   end
 
   describe "boards.workspace_id" do
-    test "is nullable, so existing board creation keeps working" do
+    test "is set to the creator's personal workspace, and listing is unchanged" do
       user = user_fixture()
       board = board_fixture(user)
 
-      assert board.workspace_id == nil
+      assert board.workspace_id == Workspaces.get_personal_workspace(user).id
       assert [%Board{id: id}] = Boards.list_boards(user)
       assert id == board.id
     end
@@ -647,7 +686,7 @@ defmodule Kanban.WorkspacesTest do
           "SELECT is_nullable FROM information_schema.columns WHERE table_name = 'boards' AND column_name = 'workspace_id'"
         )
 
-      assert nullable == "YES"
+      assert nullable == "NO"
     end
   end
 end

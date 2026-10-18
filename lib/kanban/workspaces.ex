@@ -70,6 +70,30 @@ defmodule Kanban.Workspaces do
     do: {:error, changeset}
 
   @doc """
+  Returns `user`'s personal workspace, creating it with its owner row when they
+  have none yet. Calling it again returns the same workspace and creates
+  nothing.
+
+  It does not retry when a concurrent call wins the race to create the
+  workspace: the loser gets `{:error, changeset}`, because inside an enclosing
+  transaction the failed insert has already aborted it.
+
+  ## Examples
+
+      iex> ensure_personal_workspace(user)
+      {:ok, %Workspace{personal: true}}
+
+  """
+  @spec ensure_personal_workspace(User.t()) ::
+          {:ok, Workspace.t()} | {:error, Ecto.Changeset.t()}
+  def ensure_personal_workspace(%User{} = user) do
+    case get_personal_workspace(user) do
+      %Workspace{} = workspace -> {:ok, workspace}
+      nil -> create_personal_workspace(user)
+    end
+  end
+
+  @doc """
   Returns `user`'s personal workspace, or `nil` when they have none yet.
   """
   @spec get_personal_workspace(User.t()) :: Workspace.t() | nil

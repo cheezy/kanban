@@ -14,11 +14,26 @@ defmodule Kanban.WorkspacesFixtures do
   alias Kanban.Workspaces.WorkspaceMember
 
   @doc """
-  Creates `user`'s personal workspace with its owner row.
+  Returns `user`'s personal workspace, creating it with its owner row when the
+  user has none. Users registered through `Kanban.Accounts.register_user/1`
+  (every `user_fixture/1`) already have one.
   """
   def personal_workspace_fixture(user) do
-    {:ok, workspace} = Workspaces.create_personal_workspace(user)
+    {:ok, workspace} = Workspaces.ensure_personal_workspace(user)
     workspace
+  end
+
+  @doc """
+  Deletes `user`'s personal workspace and its owner row, leaving the user as it
+  was before personal workspaces existed. Boards must not be in it yet.
+  """
+  def remove_personal_workspace(user) do
+    case Workspaces.get_personal_workspace(user) do
+      nil -> :ok
+      workspace -> Repo.delete!(workspace)
+    end
+
+    user
   end
 
   @doc """
