@@ -110,6 +110,23 @@ defmodule Mix.Tasks.DarkMode.ContrastTest do
       for row <- rows, do: assert(row =~ "[ok  ]", "below 3:1: #{row}")
     end
 
+    test "the error button label is checked at AA on its fill" do
+      assert [%{fg: "--color-error-content", bg: "--color-error-fill", threshold: 4.5}] =
+               specs_in("daisyui-button")
+    end
+
+    test "the error button label clears 4.5:1 in light and dark" do
+      output = capture_io(fn -> Contrast.run([]) end)
+
+      rows =
+        output
+        |> String.split("\n")
+        |> Enum.filter(&(&1 =~ "--color-error-content on --color-error-fill"))
+
+      assert length(rows) == 2
+      for row <- rows, do: assert(row =~ "[ok  ]", "below 4.5:1: #{row}")
+    end
+
     test "--line-strong stays a decorative border, not a form-control one (D375)" do
       refute "input-border" |> specs_in() |> Enum.any?(&(&1.fg == "--line-strong"))
       assert "border-vs-surface" |> specs_in() |> Enum.all?(&(&1.threshold == 1.5))

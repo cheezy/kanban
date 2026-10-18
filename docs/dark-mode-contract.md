@@ -291,6 +291,14 @@ replaces Tailwind's preflight default of 50% of `currentColor`, which is an
 opacity on text in all but name. Both inks are defined in the daisyUI theme
 blocks and gated by `mix dark_mode.contrast` against `--color-base-100/200/300`.
 
+Destructive buttons (`btn-error`, such as the Delete buttons in the site-admin
+screens) fill with `--color-error-fill`, not daisyUI's `--color-error`. The
+daisyUI pair puts `--color-error-content` on `--color-error` at only about
+4.1:1, under AA for a 12px label. The darker fill measures about 5.1:1 in both
+themes, and `mix dark_mode.contrast` gates that pair. The `.btn-error` rule in
+`assets/css/app.css` also points the button's focus ring at
+`--color-error-ink`, which stays visible on the dark surfaces.
+
 ### Composite gradient tokens
 
 For the two surfaces that previously hardcoded a multi-stop gradient inline
