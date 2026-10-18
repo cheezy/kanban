@@ -773,6 +773,7 @@ New tuples in `@audit_actions` in `Kanban.Telemetry.Catalog.Families`, recorded 
 | three org-workspace actions (create, rename, archive; names fixed in W2396) | W2396 |
 | `:org_audit_log_exported` | W2397 |
 | `:permission_denied` with gate `:require_org_admin` (existing action, new gate value) | W2395 |
+| `:org_member_added` (an invitation created the organization membership: `user_id`, `organization_id`, `member_user_id`, `invitation_id`, no email) | W2219 |
 | `:account_self_deleted` (user id, no email) | W2221 |
 | `:organization_policy_updated`, `:retention_purge` | W2244 |
 | `:sso_login`, `:sso_login_refused`, state/nonce mismatches | W2245 |
