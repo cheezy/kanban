@@ -14,6 +14,7 @@ defmodule KanbanWeb.JsHooksTest do
     "assets/js/hooks/comment_anchor.test.mjs",
     "assets/js/hooks/keyboard_shortcuts.test.mjs",
     "assets/js/hooks/snap_indicator.test.mjs",
+    "assets/js/hooks/auto-dismiss-flash.test.mjs",
     "assets/js/focus_after_move.test.mjs",
     "assets/js/copy_to_clipboard.test.mjs"
   ]

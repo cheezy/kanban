@@ -252,6 +252,24 @@ defmodule KanbanWeb.Admin.OrganizationLive.ShowTest do
       refute html =~ "Enter a valid email address."
     end
 
+    test "each message tells the page to restart its dismiss timer, even when the text repeats",
+         %{conn: conn} do
+      organization = organization_fixture()
+      user = user_fixture()
+      {:ok, view, _html} = live(conn, ~p"/admin/organizations/#{organization}")
+
+      appoint(view, user.email)
+      assert_push_event(view, "flash:shown", %{kind: "info"})
+
+      # Re-appointing an org-admin succeeds with the same text, so only the
+      # pushed event can restart the timer.
+      appoint(view, user.email)
+      assert_push_event(view, "flash:shown", %{kind: "info"})
+
+      appoint(view, "not-an-email")
+      assert_push_event(view, "flash:shown", %{kind: "error"})
+    end
+
     test "promotes a member of this Organization", %{conn: conn} do
       organization = organization_fixture()
       member = user_fixture()
@@ -279,13 +297,13 @@ defmodule KanbanWeb.Admin.OrganizationLive.ShowTest do
       assert has_element?(view, "#member-#{user.id}", email)
 
       assert_email_sent(fn sent ->
-        assert sent.subject == "Confirm your Stride account"
+        assert sent.subject == "Confirm your Stride account for #{organization.name}"
         assert [{_name, ^email}] = sent.to
         assert sent.html_body =~ "/users/confirm/"
       end)
 
       assert_email_sent(fn sent ->
-        assert sent.subject == "Reset your Stride password"
+        assert sent.subject == "Choose your Stride password"
         assert [{_name, ^email}] = sent.to
         assert sent.html_body =~ "/users/reset-password/"
       end)

@@ -178,9 +178,15 @@ defmodule KanbanWeb.Admin.OrganizationLive.Show do
   defp refresh(socket, organization), do: assign_organization(socket, organization)
 
   # Every message replaces the one before it, so an earlier error never stays
-  # on screen beside (or after) the success that follows it.
-  defp replace_flash(socket, kind, message),
-    do: socket |> clear_flash() |> put_flash(kind, message)
+  # on screen beside (or after) the success that follows it. "flash:shown"
+  # restarts the info message's dismiss timer (AutoDismissFlash) even when the
+  # new text is the same as the old, which no re-render would reveal.
+  defp replace_flash(socket, kind, message) do
+    socket
+    |> clear_flash()
+    |> put_flash(kind, message)
+    |> push_event("flash:shown", %{kind: Atom.to_string(kind)})
+  end
 
   defp organization_not_found(socket) do
     socket
