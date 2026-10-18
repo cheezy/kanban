@@ -161,7 +161,7 @@ msgstr "Contraseña"
 #: lib/kanban_web/live/board_live/webhook_form.ex:78
 #: lib/kanban_web/live/board_live/webhook_form.ex:182
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
-#: lib/kanban_web/live/org_live/console.html.heex:231
+#: lib/kanban_web/live/org_live/console.html.heex:232
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/components/comment_row.ex:139
 #: lib/kanban_web/live/task_live/form_component.html.heex:414
@@ -207,7 +207,7 @@ msgstr "Tablero actualizado exitosamente"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:254
 #: lib/kanban_web/live/board_live/settings_form_component.ex:172
 #: lib/kanban_web/live/board_live/webhook_form.ex:178
-#: lib/kanban_web/live/org_live/console.html.heex:241
+#: lib/kanban_web/live/org_live/console.html.heex:242
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
@@ -1676,7 +1676,7 @@ msgid "Copy"
 msgstr "Copiar"
 
 #: lib/kanban_web/live/board_live/show.html.heex:774
-#: lib/kanban_web/live/org_live/console.html.heex:184
+#: lib/kanban_web/live/org_live/console.html.heex:185
 #, elixir-autogen, elixir-format
 msgid "Creating..."
 msgstr "Creando..."
@@ -4461,7 +4461,7 @@ msgstr "Los agentes toman desde esta columna. Una tarea aquí debe estar complet
 #: lib/kanban_web/components/board_tabs.ex:128
 #: lib/kanban_web/components/bulk_action_bar.ex:235
 #: lib/kanban_web/live/archive_live/index.html.heex:9
-#: lib/kanban_web/live/org_live/console.html.heex:275
+#: lib/kanban_web/live/org_live/console.html.heex:276
 #, elixir-autogen, elixir-format
 msgid "Archive"
 msgstr "Archivar"
@@ -4497,7 +4497,7 @@ msgstr "Trabajo en curso. Los hooks se ejecutan antes y después; el panel de ac
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
-#: lib/kanban_web/live/org_live/console.ex:324
+#: lib/kanban_web/live/org_live/console.ex:334
 #: lib/kanban_web/live/org_live/console.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Members"
@@ -4765,7 +4765,7 @@ msgstr "Cerrar"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:251
 #: lib/kanban_web/live/board_live/settings_form_component.ex:184
 #: lib/kanban_web/live/board_live/webhook_form.ex:189
-#: lib/kanban_web/live/org_live/console.html.heex:233
+#: lib/kanban_web/live/org_live/console.html.heex:234
 #: lib/kanban_web/live/task_live/components/comment_row.ex:140
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -6625,7 +6625,7 @@ msgstr "El agente escribe el código para completar la tarea."
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #: lib/kanban_web/live/org_live/audit_log.html.heex:73
-#: lib/kanban_web/live/org_live/console.ex:323
+#: lib/kanban_web/live/org_live/console.ex:333
 #: lib/kanban_web/live/org_live/console.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Details"
@@ -10769,7 +10769,7 @@ msgid "Enter a valid email address. Nothing was changed."
 msgstr "Introduce una dirección de correo electrónico válida. No se ha cambiado nada."
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:252
-#: lib/kanban_web/live/org_live/console.ex:330
+#: lib/kanban_web/live/org_live/console.ex:340
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr "Miembro"
@@ -10780,7 +10780,7 @@ msgid "Only site admins appoint or remove org-admins."
 msgstr "Solo los administradores del sitio nombran o retiran administradores de la organización."
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:251
-#: lib/kanban_web/live/org_live/console.ex:329
+#: lib/kanban_web/live/org_live/console.ex:339
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr "Administrador de la organización"
@@ -10858,18 +10858,18 @@ msgid "Read-only. Ask a site admin to change them."
 msgstr "Solo lectura. Pida a un administrador del sitio que los cambie."
 
 #: lib/kanban_web/live/org_live/console.ex:57
-#: lib/kanban_web/live/org_live/console.ex:240
+#: lib/kanban_web/live/org_live/console.ex:249
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
 #, elixir-autogen, elixir-format
 msgid "You must be an org-admin of an Organization to access this page."
 msgstr "Debe ser administrador de una organización para acceder a esta página."
 
-#: lib/kanban_web/live/org_live/console.ex:323
+#: lib/kanban_web/live/org_live/console.ex:333
 #, elixir-autogen, elixir-format
 msgid "name · address · contact"
 msgstr "nombre · dirección · contacto"
 
-#: lib/kanban_web/live/org_live/console.ex:324
+#: lib/kanban_web/live/org_live/console.ex:334
 #, elixir-autogen, elixir-format
 msgid "names · roles"
 msgstr "nombres · roles"
@@ -10910,12 +10910,12 @@ msgstr "Administradores de la organización"
 msgid "Outside your Organization"
 msgstr "Fuera de su organización"
 
-#: lib/kanban_web/live/org_live/console.html.heex:272
+#: lib/kanban_web/live/org_live/console.html.heex:273
 #, elixir-autogen, elixir-format
 msgid "Archive the workspace %{name}?"
 msgstr "¿Archivar el espacio de trabajo %{name}?"
 
-#: lib/kanban_web/live/org_live/console.html.heex:186
+#: lib/kanban_web/live/org_live/console.html.heex:187
 #, elixir-autogen, elixir-format
 msgid "Create workspace"
 msgstr "Crear espacio de trabajo"
@@ -10925,17 +10925,17 @@ msgstr "Crear espacio de trabajo"
 msgid "New workspace name"
 msgstr "Nombre del nuevo espacio de trabajo"
 
-#: lib/kanban_web/live/org_live/console.html.heex:265
+#: lib/kanban_web/live/org_live/console.html.heex:266
 #, elixir-autogen, elixir-format
 msgid "Rename"
 msgstr "Renombrar"
 
-#: lib/kanban_web/live/org_live/console.ex:198
+#: lib/kanban_web/live/org_live/console.ex:207
 #, elixir-autogen, elixir-format
 msgid "The workspace could not be changed. Please try again."
 msgstr "No se pudo cambiar el espacio de trabajo. Inténtelo de nuevo."
 
-#: lib/kanban_web/live/org_live/console.ex:190
+#: lib/kanban_web/live/org_live/console.ex:199
 #, elixir-autogen, elixir-format
 msgid "This workspace still holds boards. Move them out before archiving it."
 msgstr "Este espacio de trabajo todavía contiene tableros. Muévalos antes de archivarlo."
@@ -10945,7 +10945,7 @@ msgstr "Este espacio de trabajo todavía contiene tableros. Muévalos antes de a
 msgid "Where your Organization's boards live. A workspace can be archived once it holds no boards."
 msgstr "Donde viven los tableros de su organización. Un espacio de trabajo se puede archivar cuando ya no contiene tableros."
 
-#: lib/kanban_web/live/org_live/console.ex:172
+#: lib/kanban_web/live/org_live/console.ex:181
 #, elixir-autogen, elixir-format
 msgid "Workspace archived."
 msgstr "Espacio de trabajo archivado."
@@ -10955,28 +10955,28 @@ msgstr "Espacio de trabajo archivado."
 msgid "Workspace created."
 msgstr "Espacio de trabajo creado."
 
-#: lib/kanban_web/live/org_live/console.html.heex:220
+#: lib/kanban_web/live/org_live/console.html.heex:221
 #, elixir-autogen, elixir-format
 msgid "Workspace name"
 msgstr "Nombre del espacio de trabajo"
 
-#: lib/kanban_web/live/org_live/console.ex:204
+#: lib/kanban_web/live/org_live/console.ex:213
 #, elixir-autogen, elixir-format
 msgid "Workspace not found."
 msgstr "Espacio de trabajo no encontrado."
 
-#: lib/kanban_web/live/org_live/console.ex:158
+#: lib/kanban_web/live/org_live/console.ex:176
 #, elixir-autogen, elixir-format
 msgid "Workspace renamed."
 msgstr "Espacio de trabajo renombrado."
 
-#: lib/kanban_web/live/org_live/console.ex:325
+#: lib/kanban_web/live/org_live/console.ex:335
 #: lib/kanban_web/live/org_live/console.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "Workspaces"
 msgstr "Espacios de trabajo"
 
-#: lib/kanban_web/live/org_live/console.html.heex:195
+#: lib/kanban_web/live/org_live/console.html.heex:196
 #, elixir-autogen, elixir-format
 msgid "Your Organization has no workspaces yet."
 msgstr "Su organización aún no tiene espacios de trabajo."
@@ -10986,7 +10986,7 @@ msgstr "Su organización aún no tiene espacios de trabajo."
 msgid "Your Organization's details, members and workspaces. Only a site admin changes the details or appoints org-admins."
 msgstr "Los datos, los miembros y los espacios de trabajo de su organización. Solo un administrador del sitio cambia los datos o nombra administradores de la organización."
 
-#: lib/kanban_web/live/org_live/console.ex:325
+#: lib/kanban_web/live/org_live/console.ex:335
 #, elixir-autogen, elixir-format
 msgid "create · rename · archive"
 msgstr "crear · renombrar · archivar"
@@ -10995,3 +10995,8 @@ msgstr "crear · renombrar · archivar"
 #, elixir-autogen, elixir-format
 msgid "A board still sits in this user's personal workspace, so they cannot be deleted."
 msgstr "Todavía hay un tablero en el espacio de trabajo personal de este usuario, por lo que no se puede eliminar."
+
+#: lib/kanban_web/live/org_live/console.ex:174
+#, elixir-autogen, elixir-format
+msgid "No changes to save."
+msgstr "No hay cambios que guardar."

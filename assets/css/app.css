@@ -479,6 +479,19 @@
   outline-color: var(--color-error-ink);
 }
 
+/* daisyUI's disabled fill mixes base-content at 10% with a 20% label, which
+   all but vanishes on the dark surfaces. Keep the error fill and dim the whole
+   button instead, as .btn-primary:disabled does, so a disabled Delete still
+   reads as Delete (exempt from WCAG text contrast as an inactive control). */
+.btn-error:disabled,
+.btn-error[disabled] {
+  background-color: var(--btn-color);
+  border-color: var(--btn-color);
+  color: var(--color-error-content);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .btn-outline {
   display: inline-flex;
   align-items: center;

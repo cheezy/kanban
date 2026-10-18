@@ -43,8 +43,8 @@ defmodule Kanban.Organizations.OrgWorkspaces do
   @type error :: :unauthorized | :not_found | :workspace_has_boards
 
   @doc """
-  Returns the unarchived workspaces of `organization_id`, by name, when `actor`
-  is one of its org-admins; otherwise `[]`. Personal and archived workspaces are
+  Returns the unarchived workspaces of `organization_id`, by name ignoring
+  case, when `actor` is one of its org-admins; otherwise `[]`. Personal and archived workspaces are
   never returned.
   """
   @spec list_workspaces(User.t(), integer()) :: [Workspace.t()]
@@ -54,7 +54,7 @@ defmodule Kanban.Organizations.OrgWorkspaces do
         where:
           w.organization_id == ^organization_id and w.personal == false and
             is_nil(w.archived_at),
-        order_by: [asc: w.name, asc: w.id]
+        order_by: [asc: fragment("lower(?)", w.name), asc: w.id]
       )
       |> Repo.all()
     else

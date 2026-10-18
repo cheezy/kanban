@@ -590,6 +590,14 @@ defmodule Kanban.WorkspacesTest do
       assert member |> Workspaces.list_workspaces_for_user() |> Enum.map(& &1.id) == [ctx.beta.id]
     end
 
+    test "sorts names without regard to case", ctx do
+      lower = org_workspace_fixture(ctx.organization, name: "alpha two")
+      upper = org_workspace_fixture(ctx.organization, name: "Bravo")
+
+      assert ctx.admin |> Workspaces.list_workspaces_for_user() |> Enum.map(& &1.id) ==
+               [ctx.alpha.id, lower.id, ctx.beta.id, upper.id]
+    end
+
     test "never returns a personal workspace" do
       user = user_fixture()
       personal_workspace_fixture(user)

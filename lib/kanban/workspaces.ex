@@ -229,7 +229,7 @@ defmodule Kanban.Workspaces do
   defp member_row?(workspace, actor), do: get_member_role(workspace, actor) != nil
 
   @doc """
-  Returns the org workspaces `user` can reach, unarchived, by name.
+  Returns the org workspaces `user` can reach, unarchived, by name ignoring case.
 
   An org-admin gets every unarchived workspace of their Organization; anyone
   else gets the ones they have a member or guest row on. A personal workspace is
@@ -256,7 +256,7 @@ defmodule Kanban.Workspaces do
     from(w in Workspace,
       where:
         w.organization_id == ^organization_id and w.personal == false and is_nil(w.archived_at),
-      order_by: [asc: w.name, asc: w.id]
+      order_by: [asc: fragment("lower(?)", w.name), asc: w.id]
     )
   end
 

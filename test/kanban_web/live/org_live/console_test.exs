@@ -309,6 +309,20 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
       assert has_element?(view, "#create-workspace-form input#workspace-2_name")
     end
 
+    test "moves focus back into the create input after a create, not on first render",
+         %{conn: conn} do
+      view = open_workspaces(conn)
+      refute has_element?(view, "#create-workspace-form input#workspace-0_name[phx-mounted]")
+
+      view
+      |> form("#create-workspace-form", workspace: %{name: "Design"})
+      |> render_submit()
+
+      assert view
+             |> element("#create-workspace-form input#workspace-1_name")
+             |> render() =~ ~s(phx-mounted="[[&quot;focus&quot;)
+    end
+
     test "keeps the create input after a rejected name, so the typed name and its error stay",
          %{conn: conn} do
       view = open_workspaces(conn)
@@ -358,6 +372,27 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
       assert has_element?(view, "#workspace-name-#{workspace.id}", "New name")
       refute has_element?(view, "#rename-workspace-form")
       assert render(view) =~ "Workspace renamed."
+    end
+
+    test "saving a rename with the name unchanged says nothing changed and audits nothing", %{
+      conn: conn,
+      organization: organization
+    } do
+      workspace = org_workspace_fixture(organization, %{name: "Same name"})
+      view = open_workspaces(conn)
+
+      view |> element("#rename-workspace-#{workspace.id}") |> render_click()
+
+      html =
+        view
+        |> form("#rename-workspace-form", rename: %{name: "Same name"})
+        |> render_submit()
+
+      assert html =~ "No changes to save."
+      refute html =~ "Workspace renamed."
+      refute has_element?(view, "#rename-workspace-form")
+      assert has_element?(view, "#workspace-name-#{workspace.id}", "Same name")
+      assert AuditLog.list_events(action: :org_workspace_renamed) == []
     end
 
     test "shows a rename's validation error inline and keeps the old name", %{

@@ -65,6 +65,15 @@ defmodule Kanban.Organizations.OrgWorkspacesTest do
                org_admin |> OrgWorkspaces.list_workspaces(organization.id) |> Enum.map(& &1.id)
     end
 
+    test "sorts names without regard to case", %{organization: organization, org_admin: org_admin} do
+      charlie = org_workspace_fixture(organization, %{name: "Charlie"})
+      beta = org_workspace_fixture(organization, %{name: "beta"})
+      alpha = org_workspace_fixture(organization, %{name: "Alpha"})
+
+      assert [alpha.id, beta.id, charlie.id] ==
+               org_admin |> OrgWorkspaces.list_workspaces(organization.id) |> Enum.map(& &1.id)
+    end
+
     test "never lists a personal workspace", %{organization: organization, org_admin: org_admin} do
       assert %Workspace{personal: true} = personal_workspace_fixture(org_admin)
       assert OrgWorkspaces.list_workspaces(org_admin, organization.id) == []

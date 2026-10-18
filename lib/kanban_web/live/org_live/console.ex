@@ -152,10 +152,12 @@ defmodule KanbanWeb.OrgLive.Console do
   defp respond_to_create({:error, reason}, actor, socket),
     do: workspace_error(socket, reason, actor)
 
-  defp respond_to_rename({:ok, _workspace}, actor, socket) do
+  defp respond_to_rename({:ok, workspace}, actor, socket) do
+    message = socket |> listed_workspace(workspace.id) |> rename_message(workspace)
+
     {:noreply,
      socket
-     |> replace_flash(:info, gettext("Workspace renamed."))
+     |> replace_flash(:info, message)
      |> reset_rename()
      |> refresh_workspaces(actor)}
   end
@@ -165,6 +167,13 @@ defmodule KanbanWeb.OrgLive.Console do
 
   defp respond_to_rename({:error, reason}, actor, socket),
     do: workspace_error(socket, reason, actor)
+
+  # Saving the name the row already shows changes nothing and writes no audit
+  # row, so it must not report a rename.
+  defp rename_message(%Workspace{name: name}, %Workspace{name: name}),
+    do: gettext("No changes to save.")
+
+  defp rename_message(_listed, _saved), do: gettext("Workspace renamed.")
 
   defp respond_to_archive({:ok, _workspace}, actor, socket) do
     {:noreply,
@@ -272,7 +281,8 @@ defmodule KanbanWeb.OrgLive.Console do
   # A new rev gives the emptied create form a new input id. The form has no
   # phx-change, so the server's empty value is the same before and after a
   # create and LiveView sends no diff for it; with the same id the typed name
-  # would stay in the field and a second click would create a duplicate.
+  # would stay in the field and a second click would create a duplicate. The
+  # new input is mounted afresh, which is what moves focus back into it.
   defp reset_create_form(socket) do
     rev = socket.assigns.create_rev + 1
 
