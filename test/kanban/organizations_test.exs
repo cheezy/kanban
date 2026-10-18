@@ -1127,16 +1127,21 @@ defmodule Kanban.OrganizationsTest do
       assert_received {:emails_mid_transaction, []}
 
       assert_email_sent(fn sent ->
-        assert sent.subject == "Confirm your Stride account"
+        assert sent.subject == "Confirm your Stride account for #{organization.name}"
         assert [{_name, ^email}] = sent.to
         assert sent.html_body =~ "https://stride.test/users/confirm/"
+
+        assert sent.html_body =~ "you an org-admin of <strong>#{organization.name}</strong>"
+
         assert_no_password_shaped_string(sent.html_body, "https://stride.test/users/confirm/")
       end)
 
       assert_email_sent(fn sent ->
-        assert sent.subject == "Reset your Stride password"
+        assert sent.subject == "Choose your Stride password"
         assert [{_name, ^email}] = sent.to
         assert sent.html_body =~ "https://stride.test/users/reset-password/"
+        assert sent.html_body =~ "account for <strong>#{organization.name}</strong>"
+        assert sent.html_body =~ "has no password yet"
 
         assert_no_password_shaped_string(
           sent.html_body,
@@ -1239,7 +1244,12 @@ defmodule Kanban.OrganizationsTest do
                )
 
       assert email |> users_with_email() |> Repo.aggregate(:count) == 1
-      assert email_subjects() == ["Confirm your Stride account", "Reset your Stride password"]
+
+      assert email_subjects() == [
+               "Confirm your Stride account for #{organization.name}",
+               "Choose your Stride password"
+             ]
+
       assert [_one] = AuditLog.list_events(action: :org_admin_appointed)
     end
 

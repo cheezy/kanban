@@ -39,6 +39,25 @@ defmodule Kanban.Accounts.PasswordReset do
   end
 
   @doc """
+  Delivers the link to choose a first password to an account a site admin
+  created by appointing it org-admin of `organization_name`. The token is the
+  same `"reset_password"` token `deliver_user_reset_password_instructions/2`
+  builds, with the same expiry; only the wording differs.
+  """
+  def deliver_org_admin_password_instructions(user, organization_name, reset_password_url_fun)
+      when is_binary(organization_name) and is_function(reset_password_url_fun, 1) do
+    {encoded_token, user_token} = UserToken.build_email_token(user, "reset_password")
+    Repo.insert!(user_token)
+
+    UserNotifier.deliver_org_admin_password_instructions(
+      user,
+      organization_name,
+      reset_password_url_fun.(encoded_token),
+      UserToken.reset_password_validity_in_minutes()
+    )
+  end
+
+  @doc """
   Gets the user by reset password token.
 
   ## Examples

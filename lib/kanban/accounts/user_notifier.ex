@@ -131,6 +131,87 @@ defmodule Kanban.Accounts.UserNotifier do
   end
 
   @doc """
+  Deliver confirmation instructions to an account a site admin created by
+  appointing its email as an org-admin of `organization_name`.
+
+  The generic confirmation email says the recipient asked for an account,
+  which a provisioned org-admin never did, so this one names the Organization
+  and says who created the account.
+  """
+  def deliver_org_admin_confirmation_instructions(user, organization_name, url) do
+    deliver(
+      user.email,
+      "Confirm your Stride account for #{header_text(organization_name)}",
+      """
+      <div>
+      Hi #{escape_name(user.name)},
+
+      <p>
+      A Stride site admin has created an account for this email address and made
+      you an org-admin of <strong>#{escape_name(organization_name)}</strong>. As an
+      org-admin you can see your Organization's details, members and audit log
+      in Stride.
+      </p>
+
+      <p>
+      Please click <a href="#{url}">here</a> to confirm your email address. A
+      second email lets you choose your password.
+      </p>
+
+      <p>
+      Do not forward this email to anyone.
+      </p>
+
+      <p>
+      If you weren't expecting this, you can ignore this email.
+      </p>
+
+      Thank you,<br/>
+      Team at Stride
+      </div>
+      """
+    )
+  end
+
+  @doc """
+  Deliver the link to choose a first password to an account a site admin
+  created by appointing its email as an org-admin of `organization_name`.
+
+  The generic reset email says the recipient asked to reset a password they
+  never had. This one explains that the account has no password yet and what
+  to do once the link has expired.
+  """
+  def deliver_org_admin_password_instructions(user, organization_name, url, valid_minutes) do
+    deliver(user.email, "Choose your Stride password", """
+    <div>
+    Hi #{escape_name(user.name)},
+
+    <p>
+    Your new Stride account for <strong>#{escape_name(organization_name)}</strong>
+    has no password yet. Click <a href="#{url}">here</a> to choose one.
+    </p>
+
+    <p>
+    This link expires in #{valid_minutes} minutes. If it has expired, choose
+    "Forgot your password?" on the Stride login page and enter this email
+    address to get a new link.
+    </p>
+
+    <p>
+    Do not forward this email to anyone.
+    </p>
+
+    Regards,<br/>
+    Team at Stride
+    </div>
+    """)
+  end
+
+  # An Organization name goes into a Subject header, so line breaks are folded
+  # into spaces before Swoosh encodes it.
+  defp header_text(text) when is_binary(text), do: String.replace(text, ~r/[\r\n]+/, " ")
+
+  @doc """
   Deliver instructions to reset a user password.
   """
   def deliver_reset_password_instructions(user, url) do

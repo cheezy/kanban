@@ -311,6 +311,13 @@ defmodule Kanban.Accounts do
   defdelegate deliver_user_reset_password_instructions(user, reset_password_url_fun),
     to: PasswordReset
 
+  defdelegate deliver_org_admin_password_instructions(
+                user,
+                organization_name,
+                reset_password_url_fun
+              ),
+              to: PasswordReset
+
   defdelegate get_user_by_reset_password_token(token), to: PasswordReset
   defdelegate reset_user_password(user, attrs), to: PasswordReset
 
@@ -321,6 +328,13 @@ defmodule Kanban.Accounts do
 
   defdelegate deliver_user_confirmation_instructions(user, confirmation_url_fun),
     to: EmailConfirmation
+
+  defdelegate deliver_org_admin_confirmation_instructions(
+                user,
+                organization_name,
+                confirmation_url_fun
+              ),
+              to: EmailConfirmation
 
   ## Session
 

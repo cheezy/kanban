@@ -16,9 +16,12 @@ defmodule Kanban.Organizations.OrgAdminProvisioning do
   URL-safe characters. A valid registration changeset hashes it and drops it,
   and an invalid one has it removed before the changeset is returned, so it is
   never returned, logged, emailed or stored anywhere but the password hash.
-  The account is not confirmed. Once the transaction has committed, the existing
-  confirmation email and password-reset email go out, so the appointee
-  confirms their address and chooses their own password.
+  The account is not confirmed. Once the transaction has committed, two emails
+  go out: a confirmation email and a choose-your-password email, the org-admin
+  versions of the usual confirmation and password-reset emails. They use the
+  same tokens but name the Organization and say a site admin created the
+  account, so the appointee knows why they were sent and confirms their
+  address and chooses their own password.
 
   Telemetry is held with `Kanban.Telemetry.AfterCommit.after_commit/1`, so the
   registration, `member_added` and `:org_admin_appointed` events are emitted
@@ -26,9 +29,12 @@ defmodule Kanban.Organizations.OrgAdminProvisioning do
   sends nothing.
   """
 
+  import Ecto.Query, only: [from: 2]
+
   alias Kanban.Accounts
   alias Kanban.Accounts.User
   alias Kanban.Organizations.MembershipWrites
+  alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
   alias Kanban.Telemetry.AfterCommit
@@ -98,8 +104,9 @@ defmodule Kanban.Organizations.OrgAdminProvisioning do
   end
 
   defp after_provisioning({:ok, {user, membership}}, urls) do
-    Accounts.deliver_user_confirmation_instructions(user, urls[:confirmation_url])
-    Accounts.deliver_user_reset_password_instructions(user, urls[:reset_password_url])
+    name = organization_name(membership.organization_id)
+    Accounts.deliver_org_admin_confirmation_instructions(user, name, urls[:confirmation_url])
+    Accounts.deliver_org_admin_password_instructions(user, name, urls[:reset_password_url])
     {:ok, membership}
   end
 
@@ -132,6 +139,11 @@ defmodule Kanban.Organizations.OrgAdminProvisioning do
       | changes: Map.delete(changeset.changes, :password),
         params: Map.delete(changeset.params || %{}, "password")
     }
+  end
+
+  defp organization_name(organization_id) do
+    from(o in Organization, where: o.id == ^organization_id, select: o.name)
+    |> Repo.one!()
   end
 
   defp random_password do

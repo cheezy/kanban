@@ -103,4 +103,30 @@ defmodule Kanban.Accounts.EmailConfirmation do
       UserNotifier.deliver_confirmation_instructions(user, confirmation_url_fun.(encoded_token))
     end
   end
+
+  @doc """
+  Delivers the confirmation instructions to an account a site admin created
+  by appointing it org-admin of `organization_name`. The token is the same
+  `"confirm"` token `deliver_user_confirmation_instructions/2` builds; only the
+  wording differs.
+  """
+  def deliver_org_admin_confirmation_instructions(
+        %User{} = user,
+        organization_name,
+        confirmation_url_fun
+      )
+      when is_binary(organization_name) and is_function(confirmation_url_fun, 1) do
+    if user.confirmed_at do
+      {:error, :already_confirmed}
+    else
+      {encoded_token, user_token} = UserToken.build_email_token(user, "confirm")
+      Repo.insert!(user_token)
+
+      UserNotifier.deliver_org_admin_confirmation_instructions(
+        user,
+        organization_name,
+        confirmation_url_fun.(encoded_token)
+      )
+    end
+  end
 end

@@ -64,6 +64,75 @@ defmodule Kanban.Accounts.UserNotifierTest do
     end
   end
 
+  describe "deliver_org_admin_confirmation_instructions/3" do
+    test "names the Organization and says a site admin created the account" do
+      user = %User{email: "new@example.com", name: nil}
+      url = "http://example.com/users/confirm/token123"
+
+      assert {:ok, email} =
+               UserNotifier.deliver_org_admin_confirmation_instructions(user, "Acme Widgets", url)
+
+      assert email.to == [{"", "new@example.com"}]
+      assert email.subject == "Confirm your Stride account for Acme Widgets"
+      assert email.html_body =~ "A Stride site admin has created an account"
+      assert email.html_body =~ "<strong>Acme Widgets</strong>"
+      assert email.html_body =~ url
+      assert email.html_body =~ "second email lets you choose your password."
+      refute email.html_body =~ "We received your request"
+      assert_email_sent(email)
+    end
+
+    test "escapes markup in the Organization name and folds line breaks out of the subject" do
+      user = %User{email: "new@example.com", name: nil}
+
+      {:ok, email} =
+        UserNotifier.deliver_org_admin_confirmation_instructions(
+          user,
+          "<b>Acme</b>\r\nBcc: x@example.com",
+          "http://example.com/x"
+        )
+
+      refute email.html_body =~ "<b>Acme</b>"
+      assert email.html_body =~ "&lt;b&gt;Acme&lt;/b&gt;"
+      refute email.subject =~ ~r/[\r\n]/
+      assert email.subject == "Confirm your Stride account for <b>Acme</b> Bcc: x@example.com"
+    end
+  end
+
+  describe "deliver_org_admin_password_instructions/4" do
+    test "explains the account has no password yet and how to get a new link" do
+      user = %User{email: "new@example.com", name: nil}
+      url = "http://example.com/users/reset-password/token123"
+
+      assert {:ok, email} =
+               UserNotifier.deliver_org_admin_password_instructions(user, "Acme Widgets", url, 15)
+
+      assert email.subject == "Choose your Stride password"
+      assert email.html_body =~ "account for <strong>Acme Widgets</strong>"
+      assert email.html_body =~ "has no password yet"
+      assert email.html_body =~ url
+      assert email.html_body =~ "This link expires in 15 minutes."
+      assert email.html_body =~ ~s("Forgot your password?")
+      refute email.html_body =~ "requested to reset"
+      assert_email_sent(email)
+    end
+
+    test "escapes markup in the Organization name" do
+      user = %User{email: "new@example.com", name: nil}
+
+      {:ok, email} =
+        UserNotifier.deliver_org_admin_password_instructions(
+          user,
+          "<script>alert(1)</script>",
+          "http://example.com/x",
+          15
+        )
+
+      refute email.html_body =~ "<script>alert(1)</script>"
+      assert email.html_body =~ "&lt;script&gt;alert(1)&lt;/script&gt;"
+    end
+  end
+
   describe "email formatting" do
     test "all emails use consistent from address" do
       user = %User{email: "test@example.com", confirmed_at: nil, name: "Test"}
