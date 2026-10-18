@@ -67,6 +67,14 @@ strict_completion_validation =
 
 config :kanban, :strict_completion_validation, strict_completion_validation
 
+# Paid-plan enforcement (Kanban.Plans, docs/plans/PAYING-ORGANIZATIONS-DESIGN.md
+# section 5.4). Unlike strict completion validation above, this has NO prod
+# default: it stays false in every environment, prod included, until launch day
+# sets STRIDE_PLANS_ENFORCED=true and restarts. Only the exact string "true"
+# turns it on; "TRUE", "1", an empty string or an unset variable leave it off.
+# Rollback is unsetting the variable and restarting.
+config :kanban, :plans_enforced, System.get_env("STRIDE_PLANS_ENFORCED") == "true"
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

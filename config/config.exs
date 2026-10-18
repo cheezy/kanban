@@ -31,6 +31,12 @@ config :kanban,
 # Runtime-toggleable via STRIDE_STRICT_COMPLETION_VALIDATION=true.
 config :kanban, :strict_completion_validation, false
 
+# Paid-plan enforcement (Kanban.Plans). Locked off in every environment until
+# launch day; config/runtime.exs turns it on only when STRIDE_PLANS_ENFORCED is
+# exactly "true". Read at call time by Kanban.Plans.enforced?/0, never at
+# compile time.
+config :kanban, :plans_enforced, false
+
 # Configures the endpoint
 config :kanban, KanbanWeb.Endpoint,
   url: [host: "localhost"],
