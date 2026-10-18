@@ -42,6 +42,7 @@ defmodule Kanban.Workspaces do
 
   A user who already owns a workspace gets `{:error, changeset}` with an error
   on `:user_id`, and nothing is left behind — including when two calls race.
+  Use `ensure_personal_workspace/1` when a concurrent first call is possible.
 
   ## Examples
 
@@ -76,9 +77,16 @@ defmodule Kanban.Workspaces do
   have none yet. Calling it again returns the same workspace and creates
   nothing.
 
-  It does not retry when a concurrent call wins the race to create the
-  workspace: the loser gets `{:error, changeset}`, because inside an enclosing
-  transaction the failed insert has already aborted it.
+  A user who already has one gets it from a plain read, with no lock. A user
+  who has none is serialized per user: the check and the create run in one
+  transaction that first locks the user's own `users` row, so two concurrent
+  calls cannot both create. The second waits for the first to commit, then
+  finds its workspace and returns it. When called inside an enclosing
+  transaction, such as a board create, the lock joins it and is held until
+  that transaction commits or rolls back; nothing else is locked, so other
+  users never wait. Retrying after a failed insert would not work here, since
+  that insert would already have aborted the enclosing transaction; taking
+  the lock first avoids the failure instead.
 
   ## Examples
 
@@ -91,8 +99,38 @@ defmodule Kanban.Workspaces do
   def ensure_personal_workspace(%User{} = user) do
     case get_personal_workspace(user) do
       %Workspace{} = workspace -> {:ok, workspace}
-      nil -> create_personal_workspace(user)
+      nil -> lock_and_ensure_personal_workspace(user)
     end
+  end
+
+  # Re-reads under the user's row lock, so a caller that waited sees the
+  # workspace the winner committed (each statement takes a fresh snapshot
+  # under READ COMMITTED). The lock key is the server-side user id.
+  defp lock_and_ensure_personal_workspace(%User{} = user) do
+    Repo.transaction(fn ->
+      lock_user_row(user)
+
+      case get_personal_workspace(user) do
+        %Workspace{} = workspace -> workspace
+        nil -> create_personal_workspace_or_rollback(user)
+      end
+    end)
+  end
+
+  defp create_personal_workspace_or_rollback(user) do
+    case create_personal_workspace(user) do
+      {:ok, workspace} -> workspace
+      {:error, changeset} -> Repo.rollback(changeset)
+    end
+  end
+
+  # NO KEY UPDATE conflicts with itself, so concurrent callers for one user
+  # queue up, but not with the key-share locks that foreign-key checks take,
+  # so inserts elsewhere that reference this user do not wait. A missing user
+  # locks nothing; the owner row's foreign key then fails the create.
+  defp lock_user_row(%User{id: user_id}) do
+    from(u in User, where: u.id == ^user_id, select: u.id, lock: "FOR NO KEY UPDATE")
+    |> Repo.one()
   end
 
   @doc """
