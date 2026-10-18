@@ -1,0 +1,653 @@
+defmodule Kanban.WorkspacesTest do
+  use Kanban.DataCase, async: true
+
+  import Kanban.AccountsFixtures
+  import Kanban.BoardsFixtures
+  import Kanban.OrganizationsFixtures
+  import Kanban.WorkspacesFixtures
+
+  alias Kanban.Accounts.Scope
+  alias Kanban.Boards
+  alias Kanban.Boards.Board
+  alias Kanban.Repo
+  alias Kanban.Workspaces
+  alias Kanban.Workspaces.Workspace
+  alias Kanban.Workspaces.WorkspaceMember
+
+  defp org_with_admin do
+    organization = organization_fixture()
+    admin = user_fixture()
+    organization_member_fixture(organization, admin, :org_admin)
+    {organization, admin}
+  end
+
+  defp org_member(organization) do
+    user = user_fixture()
+    organization_member_fixture(organization, user, :member)
+    user
+  end
+
+  # A personal workspace row with no owner, for exercising the owner rules.
+  defp bare_personal_workspace do
+    %{name: "Bare"}
+    |> Workspace.create_changeset(true, nil)
+    |> Repo.insert!()
+  end
+
+  defp workspace_count, do: Repo.aggregate(Workspace, :count)
+
+  describe "WorkspaceMember roles" do
+    test "roles/0 is owner, member and guest, with no admin" do
+      assert WorkspaceMember.roles() == [:owner, :member, :guest]
+      refute :admin in WorkspaceMember.roles()
+    end
+
+    test "changeset/3 rejects admin, unknown and string roles" do
+      for role <- [:admin, :bogus, "member", nil] do
+        changeset = WorkspaceMember.changeset(1, 1, role)
+        refute changeset.valid?
+        assert %{role: ["is invalid"]} = errors_on(changeset)
+      end
+    end
+
+    test "role_changeset/2 rejects a role outside roles/0" do
+      changeset = WorkspaceMember.role_changeset(%WorkspaceMember{role: :member}, :admin)
+      assert %{role: ["is invalid"]} = errors_on(changeset)
+    end
+
+    test "the database rejects a role outside owner, member and guest" do
+      {organization, _admin} = org_with_admin()
+      workspace = org_workspace_fixture(organization)
+      user = org_member(organization)
+
+      assert {:error, %Postgrex.Error{postgres: %{constraint: "workspace_members_role_check"}}} =
+               Repo.query(
+                 "INSERT INTO workspace_members (workspace_id, user_id, role, inserted_at, updated_at) " <>
+                   "VALUES ($1, $2, 'admin', now(), now())",
+                 [workspace.id, user.id]
+               )
+    end
+  end
+
+  describe "database owner rules" do
+    test "a second owner row on a workspace is a changeset error" do
+      owner = user_fixture()
+      workspace = personal_workspace_fixture(owner)
+
+      assert {:error, changeset} =
+               workspace.id
+               |> WorkspaceMember.changeset(user_fixture().id, :owner)
+               |> Repo.insert()
+
+      assert %{workspace_id: ["workspace already has an owner"]} = errors_on(changeset)
+    end
+
+    test "a second owned workspace for the same user is a changeset error" do
+      owner = user_fixture()
+      personal_workspace_fixture(owner)
+      other = bare_personal_workspace()
+
+      assert {:error, changeset} =
+               other.id |> WorkspaceMember.changeset(owner.id, :owner) |> Repo.insert()
+
+      assert %{user_id: ["already owns a workspace"]} = errors_on(changeset)
+    end
+
+    test "a second row for the same workspace and user is a changeset error" do
+      {organization, _admin} = org_with_admin()
+      workspace = org_workspace_fixture(organization)
+      user = org_member(organization)
+      workspace_member_fixture(workspace, user, :member)
+
+      assert {:error, changeset} =
+               workspace.id |> WorkspaceMember.changeset(user.id, :guest) |> Repo.insert()
+
+      assert %{user_id: ["is already a member of this workspace"]} = errors_on(changeset)
+    end
+
+    test "the trigger rejects an owner row on an org workspace" do
+      {organization, admin} = org_with_admin()
+      workspace = org_workspace_fixture(organization)
+
+      assert {:error, changeset} =
+               workspace.id |> WorkspaceMember.changeset(admin.id, :owner) |> Repo.insert()
+
+      assert %{role: ["owner is only allowed on a personal workspace"]} = errors_on(changeset)
+    end
+
+    test "the trigger rejects member and guest rows on a personal workspace" do
+      workspace = personal_workspace_fixture(user_fixture())
+
+      for role <- [:member, :guest] do
+        assert {:error, changeset} =
+                 workspace.id
+                 |> WorkspaceMember.changeset(user_fixture().id, role)
+                 |> Repo.insert()
+
+        assert %{role: ["a personal workspace has only its owner"]} = errors_on(changeset)
+      end
+    end
+
+    test "the trigger rejects demoting a personal workspace's owner row" do
+      owner = user_fixture()
+      workspace = personal_workspace_fixture(owner)
+      owner_row = Repo.get_by!(WorkspaceMember, workspace_id: workspace.id, user_id: owner.id)
+
+      assert {:error, changeset} =
+               owner_row |> WorkspaceMember.role_changeset(:member) |> Repo.update()
+
+      assert %{role: ["a personal workspace has only its owner"]} = errors_on(changeset)
+    end
+
+    test "the database refuses to flip a workspace between personal and org" do
+      {organization, _admin} = org_with_admin()
+      personal = personal_workspace_fixture(user_fixture())
+      org_workspace = org_workspace_fixture(organization)
+
+      assert {:error, %Postgrex.Error{postgres: %{constraint: "workspaces_personal_immutable"}}} =
+               Repo.query(
+                 "UPDATE workspaces SET personal = false, organization_id = $1 WHERE id = $2",
+                 [organization.id, personal.id]
+               )
+
+      assert {:error, %Postgrex.Error{postgres: %{constraint: "workspaces_personal_immutable"}}} =
+               Repo.query(
+                 "UPDATE workspaces SET personal = true, organization_id = NULL WHERE id = $1",
+                 [org_workspace.id]
+               )
+    end
+  end
+
+  describe "Workspace.create_changeset/3" do
+    test "the database rejects a personal workspace with an organization" do
+      organization = organization_fixture()
+
+      assert {:error, changeset} =
+               %{name: "Mixed"}
+               |> Workspace.create_changeset(true, organization.id)
+               |> Repo.insert()
+
+      assert %{personal: [_message]} = errors_on(changeset)
+    end
+
+    test "the database rejects a non-personal workspace without an organization" do
+      assert {:error, changeset} =
+               %{name: "Orphan"} |> Workspace.create_changeset(false, nil) |> Repo.insert()
+
+      assert %{personal: [_message]} = errors_on(changeset)
+    end
+
+    test "casts only the name, never personal, organization_id, slug or archived_at" do
+      organization = organization_fixture()
+      other_organization = organization_fixture()
+
+      changeset =
+        Workspace.create_changeset(
+          %{
+            name: "Design",
+            personal: true,
+            organization_id: other_organization.id,
+            slug: "chosen",
+            archived_at: DateTime.utc_now(:second)
+          },
+          false,
+          organization.id
+        )
+
+      assert changeset.valid?
+      assert get_field(changeset, :personal) == false
+      assert get_field(changeset, :organization_id) == organization.id
+      assert get_field(changeset, :archived_at) == nil
+      refute get_field(changeset, :slug) == "chosen"
+    end
+
+    test "requires a name and limits its length" do
+      assert %{name: ["can't be blank"]} =
+               errors_on(Workspace.create_changeset(%{name: "   "}, true, nil))
+
+      assert %{name: ["should be at most 100 character(s)"]} =
+               errors_on(
+                 Workspace.create_changeset(%{name: String.duplicate("a", 101)}, true, nil)
+               )
+    end
+
+    test "slugs fold accents, fall back for non-Latin names and never collide" do
+      latin = Workspace.create_changeset(%{name: "Café Déjà Vu!"}, true, nil)
+      assert get_field(latin, :slug) =~ ~r/\Acafe-deja-vu-[a-z2-7]{8}\z/
+
+      non_latin = Workspace.create_changeset(%{name: "日本語"}, true, nil)
+      assert get_field(non_latin, :slug) =~ ~r/\Aworkspace-[a-z2-7]{8}\z/
+
+      first = Workspace.create_changeset(%{name: "Same"}, true, nil)
+      second = Workspace.create_changeset(%{name: "Same"}, true, nil)
+      refute get_field(first, :slug) == get_field(second, :slug)
+    end
+
+    test "slug_base/1 caps the base and handles invalid unicode" do
+      long_base = "ab " |> String.duplicate(40) |> Workspace.slug_base()
+      assert String.length(long_base) <= 40
+      refute String.ends_with?(long_base, "-")
+      assert Workspace.slug_base(<<0xFF, 0xFE>>) == "workspace"
+    end
+
+    test "a duplicate slug is a changeset error" do
+      first = bare_personal_workspace()
+
+      assert {:error, changeset} =
+               %{name: "Copy"}
+               |> Workspace.create_changeset(true, nil)
+               |> put_change(:slug, first.slug)
+               |> Repo.insert()
+
+      assert %{slug: ["has already been taken"]} = errors_on(changeset)
+    end
+
+    test "renaming keeps the slug" do
+      workspace = bare_personal_workspace()
+
+      {:ok, renamed} =
+        workspace |> Workspace.changeset(%{name: "Renamed", slug: "x"}) |> Repo.update()
+
+      assert renamed.name == "Renamed"
+      assert renamed.slug == workspace.slug
+    end
+
+    test "has no plan, seat or billing field in the schema or the table" do
+      schema_fields =
+        Enum.map(
+          Workspace.__schema__(:fields) ++ Workspace.__schema__(:virtual_fields),
+          &to_string/1
+        )
+
+      %{rows: rows} =
+        Repo.query!(
+          "SELECT column_name FROM information_schema.columns WHERE table_name = 'workspaces'"
+        )
+
+      columns = List.flatten(rows)
+      assert "organization_id" in columns
+
+      refute Enum.any?(schema_fields ++ columns, &(&1 =~ ~r/plan|seat|billing/))
+    end
+  end
+
+  describe "create_personal_workspace/1" do
+    test "creates the personal workspace and a single owner row" do
+      user = user_fixture()
+
+      assert {:ok, %Workspace{personal: true, organization_id: nil} = workspace} =
+               Workspaces.create_personal_workspace(user)
+
+      assert [%WorkspaceMember{user_id: user_id, role: :owner}] =
+               WorkspaceMember |> where([m], m.workspace_id == ^workspace.id) |> Repo.all()
+
+      assert user_id == user.id
+    end
+
+    test "a second call is a changeset error and leaves no orphan workspace" do
+      user = user_fixture()
+      personal_workspace_fixture(user)
+      count = workspace_count()
+
+      assert {:error, changeset} = Workspaces.create_personal_workspace(user)
+      assert %{user_id: ["already owns a workspace"]} = errors_on(changeset)
+      assert workspace_count() == count
+    end
+  end
+
+  describe "get_personal_workspace/1" do
+    test "returns the user's personal workspace" do
+      user = user_fixture()
+      workspace = personal_workspace_fixture(user)
+
+      assert %Workspace{id: id} = Workspaces.get_personal_workspace(user)
+      assert id == workspace.id
+    end
+
+    test "returns nil for a user with no workspaces yet" do
+      assert Workspaces.get_personal_workspace(user_fixture()) == nil
+    end
+
+    test "does not return an org workspace the user is a member of" do
+      {organization, _admin} = org_with_admin()
+      user = org_member(organization)
+      organization |> org_workspace_fixture() |> workspace_member_fixture(user)
+
+      assert Workspaces.get_personal_workspace(user) == nil
+    end
+  end
+
+  describe "create_org_workspace/2" do
+    test "an org-admin creates a workspace for their Organization with no owner row" do
+      {organization, admin} = org_with_admin()
+
+      assert {:ok, %Workspace{personal: false} = workspace} =
+               Workspaces.create_org_workspace(%{name: "Design"}, admin)
+
+      assert workspace.organization_id == organization.id
+
+      refute WorkspaceMember |> where([m], m.workspace_id == ^workspace.id) |> Repo.exists?()
+    end
+
+    test "ignores organization_id and personal in attrs" do
+      {organization, admin} = org_with_admin()
+      other_organization = organization_fixture()
+
+      assert {:ok, workspace} =
+               Workspaces.create_org_workspace(
+                 %{
+                   "name" => "Design",
+                   "organization_id" => other_organization.id,
+                   "personal" => true
+                 },
+                 admin
+               )
+
+      assert workspace.organization_id == organization.id
+      assert workspace.personal == false
+    end
+
+    test "refuses a plain member, a user in no Organization and a site admin" do
+      {organization, _admin} = org_with_admin()
+
+      for actor <- [org_member(organization), user_fixture(), admin_fixture()] do
+        assert Workspaces.create_org_workspace(%{name: "Design"}, actor) ==
+                 {:error, :unauthorized}
+      end
+    end
+
+    test "a blank name is a changeset error" do
+      {_organization, admin} = org_with_admin()
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Workspaces.create_org_workspace(%{name: ""}, admin)
+
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
+    end
+  end
+
+  describe "get_workspace/2" do
+    setup do
+      {organization, admin} = org_with_admin()
+      %{organization: organization, admin: admin, workspace: org_workspace_fixture(organization)}
+    end
+
+    test "returns a personal workspace to its owner only", %{admin: admin} do
+      owner = user_fixture()
+      workspace = personal_workspace_fixture(owner)
+
+      assert %Workspace{} = Workspaces.get_workspace(workspace.id, owner)
+      assert Workspaces.get_workspace(workspace.id, user_fixture()) == nil
+      assert Workspaces.get_workspace(workspace.id, admin) == nil
+      assert Workspaces.get_workspace(workspace.id, admin_fixture()) == nil
+    end
+
+    test "returns an org workspace to an org-admin with no member row", ctx do
+      assert %Workspace{id: id} = Workspaces.get_workspace(ctx.workspace.id, ctx.admin)
+      assert id == ctx.workspace.id
+    end
+
+    test "returns an org workspace to a member or guest of it", ctx do
+      member = org_member(ctx.organization)
+      guest = org_member(ctx.organization)
+      workspace_member_fixture(ctx.workspace, member, :member)
+      workspace_member_fixture(ctx.workspace, guest, :guest)
+
+      assert %Workspace{} = Workspaces.get_workspace(ctx.workspace.id, member)
+      assert %Workspace{} = ctx.workspace.id |> to_string() |> Workspaces.get_workspace(guest)
+    end
+
+    test "returns not-found to anyone else", ctx do
+      {_other_organization, other_admin} = org_with_admin()
+
+      for actor <- [org_member(ctx.organization), user_fixture(), other_admin, admin_fixture()] do
+        assert Workspaces.get_workspace(ctx.workspace.id, actor) == nil
+      end
+    end
+
+    test "returns nil for a missing or malformed id", ctx do
+      assert Workspaces.get_workspace(-1, ctx.admin) == nil
+      assert Workspaces.get_workspace("abc", ctx.admin) == nil
+    end
+
+    test "still returns an archived workspace", ctx do
+      archived = org_workspace_fixture(ctx.organization, archived_at: DateTime.utc_now(:second))
+      assert %Workspace{} = Workspaces.get_workspace(archived.id, ctx.admin)
+    end
+  end
+
+  describe "list_workspaces_for_user/1" do
+    setup do
+      {organization, admin} = org_with_admin()
+
+      %{
+        organization: organization,
+        admin: admin,
+        alpha: org_workspace_fixture(organization, name: "Alpha"),
+        beta: org_workspace_fixture(organization, name: "Beta"),
+        archived: org_workspace_fixture(organization, archived_at: DateTime.utc_now(:second))
+      }
+    end
+
+    test "an org-admin gets every unarchived workspace of their Organization", ctx do
+      personal_workspace_fixture(ctx.admin)
+      {other_organization, _} = org_with_admin()
+      org_workspace_fixture(other_organization)
+
+      assert ctx.admin |> Workspaces.list_workspaces_for_user() |> Enum.map(& &1.id) ==
+               [ctx.alpha.id, ctx.beta.id]
+    end
+
+    test "a member gets only the unarchived workspaces they have a row on", ctx do
+      member = org_member(ctx.organization)
+      personal_workspace_fixture(member)
+      workspace_member_fixture(ctx.beta, member, :guest)
+      workspace_member_fixture(ctx.archived, member, :member)
+
+      assert member |> Workspaces.list_workspaces_for_user() |> Enum.map(& &1.id) == [ctx.beta.id]
+    end
+
+    test "never returns a personal workspace" do
+      user = user_fixture()
+      personal_workspace_fixture(user)
+
+      assert Workspaces.list_workspaces_for_user(user) == []
+    end
+  end
+
+  describe "get_member_role/2" do
+    test "returns the row's role, or nil without a row" do
+      {organization, admin} = org_with_admin()
+      workspace = org_workspace_fixture(organization)
+      guest = org_member(organization)
+      workspace_member_fixture(workspace, guest, :guest)
+      owner = user_fixture()
+      personal = personal_workspace_fixture(owner)
+
+      assert Workspaces.get_member_role(workspace, guest) == :guest
+      assert Workspaces.get_member_role(workspace.id, guest) == :guest
+      assert Workspaces.get_member_role(personal, owner) == :owner
+      assert Workspaces.get_member_role(workspace, admin) == nil
+    end
+  end
+
+  describe "add_member/4" do
+    setup do
+      {organization, admin} = org_with_admin()
+      %{organization: organization, admin: admin, workspace: org_workspace_fixture(organization)}
+    end
+
+    test "an org-admin adds a member or guest of the Organization", ctx do
+      member = org_member(ctx.organization)
+      guest = org_member(ctx.organization)
+
+      assert {:ok, %WorkspaceMember{role: :member}} =
+               Workspaces.add_member(ctx.admin, ctx.workspace, member, :member)
+
+      assert {:ok, %WorkspaceMember{role: :guest}} =
+               Workspaces.add_member(ctx.admin, ctx.workspace.id, guest, :guest)
+    end
+
+    test "refuses users outside the Organization", ctx do
+      {other_organization, _} = org_with_admin()
+
+      for user <- [user_fixture(), org_member(other_organization)] do
+        assert Workspaces.add_member(ctx.admin, ctx.workspace, user, :member) ==
+                 {:error, :not_in_organization}
+      end
+    end
+
+    test "refuses the owner role and unknown roles", ctx do
+      user = org_member(ctx.organization)
+
+      for role <- [:owner, :admin, "member"] do
+        assert Workspaces.add_member(ctx.admin, ctx.workspace, user, role) ==
+                 {:error, :invalid_role}
+      end
+    end
+
+    test "refuses an actor who is not an org-admin of the workspace's Organization", ctx do
+      user = org_member(ctx.organization)
+      {_other_organization, other_admin} = org_with_admin()
+
+      for actor <- [org_member(ctx.organization), other_admin, admin_fixture()] do
+        assert Workspaces.add_member(actor, ctx.workspace, user, :member) ==
+                 {:error, :unauthorized}
+      end
+    end
+
+    test "re-reads the workspace instead of trusting the struct", ctx do
+      {other_organization, other_admin} = org_with_admin()
+      user = org_member(other_organization)
+      forged = %{ctx.workspace | organization_id: other_organization.id}
+
+      assert Workspaces.add_member(other_admin, forged, user, :member) == {:error, :unauthorized}
+    end
+
+    test "refuses a personal workspace and a missing one", ctx do
+      user = org_member(ctx.organization)
+      personal = personal_workspace_fixture(user_fixture())
+
+      assert Workspaces.add_member(ctx.admin, personal, user, :member) == {:error, :unauthorized}
+      assert Workspaces.add_member(ctx.admin, -1, user, :member) == {:error, :unauthorized}
+    end
+
+    test "adding an existing member again is a changeset error", ctx do
+      user = org_member(ctx.organization)
+      workspace_member_fixture(ctx.workspace, user, :member)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Workspaces.add_member(ctx.admin, ctx.workspace, user, :guest)
+    end
+  end
+
+  describe "update_member_role/4" do
+    setup do
+      {organization, admin} = org_with_admin()
+      workspace = org_workspace_fixture(organization)
+      user = org_member(organization)
+      workspace_member_fixture(workspace, user, :member)
+      %{organization: organization, admin: admin, workspace: workspace, user: user}
+    end
+
+    test "an org-admin changes a member's role", ctx do
+      assert {:ok, %WorkspaceMember{role: :guest}} =
+               Workspaces.update_member_role(ctx.admin, ctx.workspace, ctx.user, :guest)
+
+      assert Workspaces.get_member_role(ctx.workspace, ctx.user) == :guest
+    end
+
+    test "refuses the owner role, a non-admin actor and a missing row", ctx do
+      assert Workspaces.update_member_role(ctx.admin, ctx.workspace, ctx.user, :owner) ==
+               {:error, :invalid_role}
+
+      assert Workspaces.update_member_role(ctx.user, ctx.workspace, ctx.user, :guest) ==
+               {:error, :unauthorized}
+
+      assert Workspaces.update_member_role(
+               ctx.admin,
+               ctx.workspace,
+               org_member(ctx.organization),
+               :guest
+             ) ==
+               {:error, :not_found}
+    end
+  end
+
+  describe "remove_member/3" do
+    setup do
+      {organization, admin} = org_with_admin()
+      workspace = org_workspace_fixture(organization)
+      user = org_member(organization)
+      workspace_member_fixture(workspace, user, :guest)
+      %{organization: organization, admin: admin, workspace: workspace, user: user}
+    end
+
+    test "an org-admin removes a member", ctx do
+      assert {:ok, %WorkspaceMember{}} =
+               Workspaces.remove_member(ctx.admin, ctx.workspace, ctx.user)
+
+      assert Workspaces.get_member_role(ctx.workspace, ctx.user) == nil
+    end
+
+    test "refuses a non-admin actor and a missing row", ctx do
+      assert Workspaces.remove_member(ctx.user, ctx.workspace, ctx.user) ==
+               {:error, :unauthorized}
+
+      assert Workspaces.remove_member(ctx.admin, ctx.workspace, user_fixture()) ==
+               {:error, :not_found}
+    end
+  end
+
+  describe "Scope.put_workspace/2" do
+    test "sets and clears the workspace, and for_user/1 is unchanged" do
+      user = user_fixture()
+      workspace = personal_workspace_fixture(user)
+      scope = Scope.for_user(user)
+
+      assert scope.workspace == nil
+      assert scope.user == user
+      assert %Scope{workspace: ^workspace} = Scope.put_workspace(scope, workspace)
+      assert scope |> Scope.put_workspace(workspace) |> Scope.put_workspace(nil) == scope
+    end
+  end
+
+  describe "boards.workspace_id" do
+    test "is nullable, so existing board creation keeps working" do
+      user = user_fixture()
+      board = board_fixture(user)
+
+      assert board.workspace_id == nil
+      assert [%Board{id: id}] = Boards.list_boards(user)
+      assert id == board.id
+    end
+
+    test "is exposed as an association but never cast from user attrs" do
+      assert :workspace in Board.__schema__(:associations)
+      assert :workspace_id in Board.__schema__(:fields)
+
+      refute Map.has_key?(Board.changeset(%Board{}, %{workspace_id: 1}).changes, :workspace_id)
+
+      refute Map.has_key?(
+               Board.owner_changeset(%Board{}, %{workspace_id: 1}).changes,
+               :workspace_id
+             )
+    end
+
+    test "is indexed and references workspaces" do
+      %{rows: rows} =
+        Repo.query!(
+          "SELECT indexname FROM pg_indexes WHERE tablename = 'boards' AND indexdef LIKE '%(workspace_id)%'"
+        )
+
+      assert rows != []
+
+      %{rows: [[nullable]]} =
+        Repo.query!(
+          "SELECT is_nullable FROM information_schema.columns WHERE table_name = 'boards' AND column_name = 'workspace_id'"
+        )
+
+      assert nullable == "YES"
+    end
+  end
+end

@@ -15,6 +15,7 @@ defmodule Kanban.Accounts.User do
 
     has_many :board_users, Kanban.Boards.BoardUser
     many_to_many :boards, Kanban.Boards.Board, join_through: Kanban.Boards.BoardUser
+    has_many :workspace_members, Kanban.Workspaces.WorkspaceMember
 
     timestamps(type: :utc_datetime)
   end

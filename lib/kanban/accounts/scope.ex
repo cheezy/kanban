@@ -29,17 +29,23 @@ defmodule Kanban.Accounts.Scope do
   user belongs to no Organization. `KanbanWeb.UserAuth` loads it for every
   controller request and LiveView mount; scopes built elsewhere (API requests,
   background jobs) leave it `nil`.
+
+  `workspace` is the `Kanban.Workspaces.Workspace` the caller is acting in, or
+  `nil`. Nothing sets it yet; `put_workspace/2` is how a caller that has resolved
+  one (through `Kanban.Workspaces.get_workspace/2`) records it.
   """
 
   alias Kanban.Accounts.User
   alias Kanban.Organizations.OrganizationMember
+  alias Kanban.Workspaces.Workspace
 
   @type t :: %__MODULE__{}
 
   defstruct user: nil,
             unread_notifications: nil,
             two_factor_reminder: false,
-            organization_membership: nil
+            organization_membership: nil,
+            workspace: nil
 
   @doc """
   Creates a scope for the given user.
@@ -67,5 +73,22 @@ defmodule Kanban.Accounts.Scope do
 
   def put_organization_membership(%__MODULE__{} = scope, nil) do
     %{scope | organization_membership: nil}
+  end
+
+  @doc """
+  Sets the workspace the scope acts in, or clears it with `nil`.
+
+  ## Examples
+
+      iex> put_workspace(scope, workspace)
+      %Scope{workspace: %Workspace{}}
+
+  """
+  def put_workspace(%__MODULE__{} = scope, %Workspace{} = workspace) do
+    %{scope | workspace: workspace}
+  end
+
+  def put_workspace(%__MODULE__{} = scope, nil) do
+    %{scope | workspace: nil}
   end
 end

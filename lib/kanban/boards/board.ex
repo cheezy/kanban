@@ -29,6 +29,10 @@ defmodule Kanban.Boards.Board do
     field :metrics, :map, virtual: true
     field :members, {:array, :map}, virtual: true, default: []
 
+    # Never cast from user attrs: which workspace a board belongs to is decided
+    # server-side (W2217 backfills it; W2218 authorizes through it).
+    belongs_to :workspace, Kanban.Workspaces.Workspace
+
     has_many :board_users, Kanban.Boards.BoardUser
     has_many :columns, Kanban.Columns.Column
     many_to_many :users, Kanban.Accounts.User, join_through: Kanban.Boards.BoardUser
