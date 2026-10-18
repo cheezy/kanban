@@ -128,6 +128,30 @@ defmodule Kanban.BoardsTest do
       assert {:error, :not_found} = Boards.get_board("#{board.id}abc", user)
     end
 
+    test "returns {:error, :not_found} for ids past the bigint range instead of raising" do
+      user = user_fixture()
+      max = 9_223_372_036_854_775_807
+
+      for id <- ["99999999999999999999", Integer.to_string(max + 1), max + 1] do
+        assert {:error, :not_found} = Boards.get_board(id, user)
+      end
+    end
+
+    test "returns {:error, :not_found} for nil, zero, negative and non-integer ids" do
+      user = user_fixture()
+
+      for id <- [nil, 0, -1, "0", "-1", "", 1.5] do
+        assert {:error, :not_found} = Boards.get_board(id, user)
+      end
+    end
+
+    test "accepts the largest bigint id and finds nothing" do
+      user = user_fixture()
+
+      assert {:error, :not_found} = Boards.get_board(9_223_372_036_854_775_807, user)
+      assert {:error, :not_found} = Boards.get_board("9223372036854775807", user)
+    end
+
     test "non-member can access read-only board" do
       owner = user_fixture()
       non_member = user_fixture()
@@ -1819,6 +1843,14 @@ defmodule Kanban.BoardsTest do
     test "returns {:error, :not_found} when the board does not exist",
          %{user: user, now: now} do
       assert {:error, :not_found} = Boards.get_board_metrics(user, 999_999, now: now)
+    end
+
+    test "returns {:error, :not_found} for an id past the bigint range instead of raising",
+         %{user: user, now: now} do
+      assert {:error, :not_found} =
+               Boards.get_board_metrics(user, "99999999999999999999", now: now)
+
+      assert {:error, :not_found} = Boards.get_board_metrics(user, nil, now: now)
     end
 
     test "returns {:error, :not_found} for boards the user has no access to",

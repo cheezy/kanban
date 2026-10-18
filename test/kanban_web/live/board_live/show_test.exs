@@ -2385,6 +2385,11 @@ defmodule KanbanWeb.BoardLive.ShowTest do
                live(conn, ~p"/boards/99999999")
     end
 
+    test "a board id past the bigint range redirects instead of raising", %{conn: conn} do
+      assert {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => "Board not found"}}}} =
+               live(conn, "/boards/99999999999999999999")
+    end
+
     test "board owned by another user redirects to /boards", %{conn: conn} do
       other_user = user_fixture()
       foreign_board = board_fixture(other_user)

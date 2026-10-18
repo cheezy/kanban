@@ -326,6 +326,14 @@ defmodule KanbanWeb.BoardLive.FormTest do
       assert error =~ "Board not found"
     end
 
+    test "redirects to /boards with a flash when the board id is past the bigint range",
+         %{conn: conn} do
+      assert {:error, {:live_redirect, %{to: "/boards", flash: %{"error" => error}}}} =
+               live(conn, "/boards/99999999999999999999/edit")
+
+      assert error =~ "Board not found"
+    end
+
     test "remove_user shows 'User not found' when the user_id does not exist", %{
       conn: conn,
       user: user

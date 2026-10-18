@@ -26,6 +26,8 @@ defmodule Kanban.Boards do
   alias Kanban.Boards.Membership
   alias Kanban.Boards.MembershipChanges
 
+  @max_bigint 9_223_372_036_854_775_807
+
   @doc """
   Returns the list of boards for a given user with their access level.
 
@@ -102,6 +104,8 @@ defmodule Kanban.Boards do
   Gets a single board with authorization check.
 
   Returns `{:ok, board}` if found and accessible, `{:error, :not_found}` otherwise.
+  An `id` that is not a positive integer that fits the column (`nil`, `"abc"`,
+  `"99999999999999999999"`) is `{:error, :not_found}`.
 
   For read-only boards (read_only: true), non-members can access the board with user_access: nil.
   For private boards (read_only: false), only members can access.
@@ -115,7 +119,9 @@ defmodule Kanban.Boards do
       {:error, :not_found}
 
   """
-  def get_board(id, user) when is_integer(id) do
+  # Postgrex raises on an integer past bigint, so a URL-supplied id is bounded
+  # here before it is queried.
+  def get_board(id, user) when is_integer(id) and id > 0 and id <= @max_bigint do
     query =
       Board
       |> join(:left, [b], bu in BoardUser, on: bu.board_id == b.id and bu.user_id == ^user.id)
@@ -140,6 +146,8 @@ defmodule Kanban.Boards do
       _ -> {:error, :not_found}
     end
   end
+
+  def get_board(_id, _user), do: {:error, :not_found}
 
   @doc """
   Same as `get_board/2` but raises `Ecto.NoResultsError` if not found.
