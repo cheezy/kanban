@@ -450,8 +450,16 @@ rolled-back change emits nothing. Every event measures `count: 1`, except
   deletes all of the user's tokens (sessions and outstanding email links) and
   then disconnects them; `count` is that number and may be 0. `user_id` is
   left out when no token names a user.
+- **Account deletions are audited.** `delete_user/2` also records the
+  `:user_deleted` audit event on success and `:user_delete_refused` on every
+  refusal, whose `reason` is `unauthorized`, `cannot_delete_self`,
+  `user_has_boards`, `last_admin` or `personal_workspace_has_boards`. Each
+  carries the acting user as `user_id` and the target account as
+  `member_user_id`, ids only. Both are written after the deletion's
+  transaction returns, so a rollback cannot erase a refusal.
+  `[:kanban, :user, :deleted]` itself still fires only on success.
 - **Not covered.** Login failures are already recorded by the audit log, and
-  no audit row is added for these administrator actions.
+  no audit row is added for disabling or enabling a user.
 
 ### Notification, email delivery, digest, delivery target and message events
 
@@ -1018,6 +1026,8 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :org_workspace_created]` | event, legacy | `count` | `user_id`, `organization_id`, `workspace_id` | An org-admin created a workspace for their Organization. user_id is the org-admin. |
 | `[:kanban, :audit, :org_workspace_renamed]` | event, legacy | `count` | `user_id`, `organization_id`, `workspace_id` | An org-admin renamed one of their Organization's workspaces. user_id is the org-admin. |
 | `[:kanban, :audit, :org_workspace_archived]` | event, legacy | `count` | `user_id`, `organization_id`, `workspace_id` | An org-admin archived one of their Organization's workspaces. user_id is the org-admin. |
+| `[:kanban, :audit, :user_deleted]` | event, legacy | `count` | `user_id`, `member_user_id` | A site admin deleted an account. user_id is the site admin, member_user_id the deleted account. |
+| `[:kanban, :audit, :user_delete_refused]` | event, legacy | `count` | `user_id`, `member_user_id`, `reason` | An account deletion was refused. user_id is the acting user, member_user_id the target account, reason why: unauthorized, cannot_delete_self, user_has_boards, last_admin or personal_workspace_has_boards. |
 
 ### Domain `board`
 

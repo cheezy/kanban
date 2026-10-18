@@ -456,6 +456,31 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
       assert Kanban.Repo.get(User, user.id) == nil
     end
 
+    test "deleting from the list records an audit event", %{conn: conn, user: admin} do
+      user = user_fixture()
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      live |> element("#user-#{user.id} button", "Delete") |> render_click()
+
+      assert [event] = Kanban.AuditLog.list_events(action: :user_deleted)
+      assert event.actor_user_id == admin.id
+      assert event.metadata["member_user_id"] == user.id
+    end
+
+    test "a refused delete from the list records the refusal", %{conn: conn, user: admin} do
+      user = user_fixture()
+      _board = board_fixture(user)
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      render_click(live, "delete", %{"id" => to_string(user.id)})
+
+      assert [event] = Kanban.AuditLog.list_events(action: :user_delete_refused)
+      assert event.actor_user_id == admin.id
+      assert event.metadata["member_user_id"] == user.id
+      assert event.metadata["reason"] == "user_has_boards"
+      assert Kanban.AuditLog.list_events(action: :user_deleted) == []
+    end
+
     test "the delete control is disabled for a user with boards", %{conn: conn} do
       with_board = user_fixture()
       _board = board_fixture(with_board)

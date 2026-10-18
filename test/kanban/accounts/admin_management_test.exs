@@ -3,6 +3,7 @@ defmodule Kanban.Accounts.AdminManagementTest do
 
   import Kanban.AccountsFixtures
   import Ecto.Query
+  import ExUnit.CaptureLog
   import Kanban.BoardsFixtures
   import Kanban.OrganizationsFixtures
   import Kanban.TelemetryHelpers
@@ -10,7 +11,9 @@ defmodule Kanban.Accounts.AdminManagementTest do
 
   alias Kanban.Accounts
   alias Kanban.Accounts.User
+  alias Kanban.Accounts.UserTelemetry
   alias Kanban.Accounts.UserToken
+  alias Kanban.AuditLog
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Workspaces
@@ -527,6 +530,157 @@ defmodule Kanban.Accounts.AdminManagementTest do
       assert {:error, :cannot_delete_self} = Accounts.delete_user(admin, admin)
       assert {:error, :unauthorized} = Accounts.delete_user(admin, user_fixture())
       refute_received {:telemetry_event, _event, _measurements, _metadata}
+    end
+  end
+
+  describe "delete_user/2 audit events" do
+    defp refusals do
+      AuditLog.list_events(action: :user_delete_refused)
+    end
+
+    defp deletions do
+      AuditLog.list_events(action: :user_deleted)
+    end
+
+    # One refusal row naming `reason`, the actor and the target, and no deletion.
+    defp assert_refusal_recorded(reason, actor, target) do
+      assert [event] = refusals()
+      assert event.actor_user_id == actor.id
+      assert event.metadata["user_id"] == actor.id
+      assert event.metadata["member_user_id"] == target.id
+      assert event.metadata["reason"] == Atom.to_string(reason)
+      assert deletions() == []
+    end
+
+    test "a successful delete records a user_deleted audit event" do
+      user = user_fixture()
+      admin = admin_fixture()
+
+      assert {:ok, _deleted} = Accounts.delete_user(user, admin)
+
+      assert [event] = deletions()
+      assert event.actor_user_id == admin.id
+      assert event.metadata["user_id"] == admin.id
+      assert event.metadata["member_user_id"] == user.id
+      assert refusals() == []
+    end
+
+    test "refusing an actor who is not an admin records user_delete_refused" do
+      user = user_fixture()
+      acting_user = user_fixture()
+
+      assert {:error, :unauthorized} = Accounts.delete_user(user, acting_user)
+      assert_refusal_recorded(:unauthorized, acting_user, user)
+    end
+
+    test "refusing a disabled admin records user_delete_refused" do
+      user = user_fixture()
+      acting_admin = disable_directly(admin_fixture())
+
+      assert {:error, :unauthorized} = Accounts.delete_user(user, acting_admin)
+      assert_refusal_recorded(:unauthorized, acting_admin, user)
+    end
+
+    test "refusing a self-delete records user_delete_refused" do
+      admin = admin_fixture()
+
+      assert {:error, :cannot_delete_self} = Accounts.delete_user(admin, admin)
+      assert_refusal_recorded(:cannot_delete_self, admin, admin)
+    end
+
+    test "refusing a user who belongs to a board records user_delete_refused" do
+      user = user_fixture()
+      admin = admin_fixture()
+      _board = board_fixture(user)
+
+      assert {:error, :user_has_boards} = Accounts.delete_user(user, admin)
+      assert_refusal_recorded(:user_has_boards, admin, user)
+    end
+
+    test "refusing the last admin records user_delete_refused" do
+      target_admin = admin_fixture()
+      stale_acting_admin = admin_fixture()
+      _ = disable_directly(stale_acting_admin)
+
+      assert {:error, :last_admin} = Accounts.delete_user(target_admin, stale_acting_admin)
+      assert_refusal_recorded(:last_admin, stale_acting_admin, target_admin)
+    end
+
+    test "a refusal inside the transaction is still audited" do
+      user = user_fixture()
+      admin = admin_fixture()
+      _board = place_board_in_personal_workspace(user)
+
+      assert {:error, :personal_workspace_has_boards} = Accounts.delete_user(user, admin)
+      assert Repo.get(User, user.id)
+      assert_refusal_recorded(:personal_workspace_has_boards, admin, user)
+    end
+
+    test "the audit metadata holds ids only" do
+      user = user_fixture(%{name: "Audit Target Person"})
+      boarded = user_fixture(%{name: "Audit Boarded Person"})
+      _board = board_fixture(boarded)
+      admin = admin_fixture()
+
+      assert {:ok, _deleted} = Accounts.delete_user(user, admin)
+      assert {:error, :user_has_boards} = Accounts.delete_user(boarded, admin)
+
+      assert [deleted] = deletions()
+      assert deleted.metadata |> Map.keys() |> Enum.sort() == ["member_user_id", "user_id"]
+
+      assert [refused] = refusals()
+
+      assert refused.metadata |> Map.keys() |> Enum.sort() ==
+               ["member_user_id", "reason", "user_id"]
+
+      for {event, target} <- [{deleted, user}, {refused, boarded}] do
+        stored = Jason.encode!(event.metadata)
+        refute stored =~ target.email
+        refute stored =~ target.name
+      end
+    end
+
+    test "an audit write failure never turns a successful delete into an error" do
+      user = user_fixture()
+      admin = admin_fixture()
+
+      Repo.transact(fn ->
+        # Poison the transaction so the audit insert cannot succeed.
+        assert {:error, _} = Repo.query("SELECT 1 / 0")
+
+        log =
+          capture_log([level: :error], fn ->
+            assert {:ok, ^user} = UserTelemetry.deleted({:ok, user}, user, admin)
+          end)
+
+        assert log =~ "security_audit_persist_failed"
+        {:error, :done}
+      end)
+
+      assert deletions() == []
+    end
+
+    test "a changeset error passes through and records nothing" do
+      user = user_fixture()
+      admin = admin_fixture()
+      result = {:error, Ecto.Changeset.change(user)}
+
+      assert UserTelemetry.deleted(result, user, admin) == result
+      assert deletions() == []
+      assert refusals() == []
+    end
+
+    test "a deleted user's own earlier audit rows survive with no actor link" do
+      user = user_fixture()
+      admin = admin_fixture()
+      :ok = AuditLog.event(:two_factor_enabled, user_id: user.id)
+
+      assert {:ok, _deleted} = Accounts.delete_user(user, admin)
+
+      assert [event] = AuditLog.list_events(action: :two_factor_enabled)
+      assert event.actor_user_id == nil
+      assert event.actor_user == nil
+      assert event.metadata["user_id"] == user.id
     end
   end
 end

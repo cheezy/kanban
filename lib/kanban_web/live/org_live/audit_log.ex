@@ -23,6 +23,7 @@ defmodule KanbanWeb.OrgLive.AuditLog do
   """
   use KanbanWeb, :live_view
 
+  import KanbanWeb.AuditLogActions, only: [action_label: 1, action_options: 1]
   import KanbanWeb.AuditLogMetadata, only: [audit_metadata: 1]
 
   # The router's live_session :require_authenticated_user lets in every

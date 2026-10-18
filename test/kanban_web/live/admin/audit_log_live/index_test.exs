@@ -257,6 +257,57 @@ defmodule KanbanWeb.Admin.AuditLogLive.IndexTest do
       assert has_element?(view, ~s(#audit-log-filters option[value="login_failed"]))
       assert has_element?(view, ~s(#audit-log-filters option[value="api_token_created"]))
     end
+
+    test "shows account deletion actions by their translated labels", %{conn: conn, user: admin} do
+      deleted =
+        insert_event!("user_deleted", ~U[2026-10-07 00:00:00.000000Z],
+          actor: admin,
+          metadata: %{"user_id" => admin.id, "member_user_id" => 42}
+        )
+
+      refused =
+        insert_event!("user_delete_refused", ~U[2026-10-07 00:01:00.000000Z],
+          actor: admin,
+          metadata: %{
+            "user_id" => admin.id,
+            "member_user_id" => 43,
+            "reason" => "user_has_boards"
+          }
+        )
+
+      {:ok, view, _html} = live(conn, ~p"/admin/audit-log")
+
+      assert has_element?(view, "#events-#{deleted.id} .badge", "Account deleted")
+      assert has_element?(view, "#events-#{refused.id} .badge", "Account deletion refused")
+      assert has_element?(view, ~s(#events-#{deleted.id} .badge[title="user_deleted"]))
+
+      assert has_element?(
+               view,
+               ~s(#audit-log-filters option[value="user_delete_refused"]),
+               "Account deletion refused"
+             )
+
+      {:ok, de_view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "de"})
+        |> live(~p"/admin/audit-log")
+
+      assert has_element?(de_view, "#events-#{deleted.id} .badge", "Konto gelöscht")
+      assert has_element?(de_view, "#events-#{refused.id} .badge", "Kontolöschung abgelehnt")
+
+      assert has_element?(
+               de_view,
+               ~s(#audit-log-filters option[value="user_deleted"]),
+               "Konto gelöscht"
+             )
+    end
+
+    test "filtering by a labelled action still uses the raw action", %{conn: conn, old: old} do
+      {:ok, view, _html} = live(conn, ~p"/admin/audit-log?action=login_failed")
+
+      assert has_element?(view, "#events-#{old.id} .badge", "Sign-in failed")
+      assert has_element?(view, ~s(#audit-log-filters option[value="login_failed"][selected]))
+    end
   end
 
   defp href(html) do

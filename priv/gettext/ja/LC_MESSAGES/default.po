@@ -6580,10 +6580,10 @@ msgstr "エージェントがタスクを完了するためのコードを書き
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:312
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:359
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:416
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:74
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:76
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
-#: lib/kanban_web/live/org_live/audit_log.html.heex:73
+#: lib/kanban_web/live/org_live/audit_log.html.heex:75
 #: lib/kanban_web/live/org_live/console.ex:333
 #: lib/kanban_web/live/org_live/console.html.heex:49
 #, elixir-autogen, elixir-format
@@ -9466,8 +9466,8 @@ msgstr "リクエストを完了できませんでした。前のページに戻
 msgid "Action"
 msgstr "アクション"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:66
-#: lib/kanban_web/live/org_live/audit_log.html.heex:65
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:68
+#: lib/kanban_web/live/org_live/audit_log.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "Actor"
 msgstr "実行者"
@@ -9486,14 +9486,14 @@ msgstr "すべてのアクション"
 #: lib/kanban_web/components/marketing_components.ex:122
 #: lib/kanban_web/components/marketing_components.ex:312
 #: lib/kanban_web/components/nav_components.ex:131
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:33
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:34
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Audit Log"
 msgstr "監査ログ"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:82
-#: lib/kanban_web/live/org_live/audit_log.html.heex:81
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:84
+#: lib/kanban_web/live/org_live/audit_log.html.heex:83
 #, elixir-autogen, elixir-format
 msgid "Audit log pages"
 msgstr "監査ログのページ"
@@ -9510,8 +9510,8 @@ msgstr "JSONをエクスポート"
 msgid "From (UTC)"
 msgstr "開始日 (UTC)"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:69
-#: lib/kanban_web/live/org_live/audit_log.html.heex:68
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:71
+#: lib/kanban_web/live/org_live/audit_log.html.heex:70
 #, elixir-autogen, elixir-format
 msgid "IP"
 msgstr "IP"
@@ -9522,8 +9522,8 @@ msgstr "IP"
 msgid "No audit events match these filters."
 msgstr "これらのフィルターに一致する監査イベントはありません。"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:97
-#: lib/kanban_web/live/org_live/audit_log.html.heex:96
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:99
+#: lib/kanban_web/live/org_live/audit_log.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Older events"
 msgstr "古いイベント"
@@ -9551,8 +9551,8 @@ msgstr "終了日 (UTC)"
 msgid "Unsupported export format."
 msgstr "サポートされていないエクスポート形式です。"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:76
-#: lib/kanban_web/live/org_live/audit_log.ex:106
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:77
+#: lib/kanban_web/live/org_live/audit_log.ex:107
 #, elixir-autogen, elixir-format
 msgid "User #%{id} (deleted)"
 msgstr "ユーザー #%{id}（削除済み）"
@@ -9662,15 +9662,15 @@ msgctxt "agent action"
 msgid "unclaimed"
 msgstr "クレーム解除"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:80
-#: lib/kanban_web/live/org_live/audit_log.ex:108
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:81
+#: lib/kanban_web/live/org_live/audit_log.ex:109
 #, elixir-autogen, elixir-format
 msgctxt "audit log actor"
 msgid "None"
 msgstr "なし"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:90
-#: lib/kanban_web/live/org_live/audit_log.html.heex:89
+#: lib/kanban_web/live/admin/audit_log_live/index.html.heex:92
+#: lib/kanban_web/live/org_live/audit_log.html.heex:91
 #, elixir-autogen, elixir-format
 msgctxt "audit log pages"
 msgid "Newest"
@@ -10816,7 +10816,7 @@ msgstr "監査ログ"
 msgid "Back to Organization"
 msgstr "組織に戻る"
 
-#: lib/kanban_web/live/org_live/audit_log.ex:44
+#: lib/kanban_web/live/org_live/audit_log.ex:45
 #: lib/kanban_web/live/org_live/audit_log.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Organization audit log"
@@ -10837,7 +10837,7 @@ msgstr " — 組織に所属している場合、その組織の組織管理者�
 msgid "Organization administrators"
 msgstr "組織の管理者"
 
-#: lib/kanban_web/live/org_live/audit_log.ex:99
+#: lib/kanban_web/live/org_live/audit_log.ex:100
 #, elixir-autogen, elixir-format
 msgid "Outside your Organization"
 msgstr "組織外のユーザー"
@@ -10932,3 +10932,165 @@ msgstr "このユーザーの個人ワークスペースにまだボードがあ
 #, elixir-autogen, elixir-format
 msgid "No changes to save."
 msgstr "保存する変更はありません。"
+
+#: lib/kanban_web/components/audit_log_actions.ex:36
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "API token created"
+msgstr "APIトークンの作成"
+
+#: lib/kanban_web/components/audit_log_actions.ex:35
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "API token rejected"
+msgstr "APIトークンの拒否"
+
+#: lib/kanban_web/components/audit_log_actions.ex:37
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "API token revoked"
+msgstr "APIトークンの取り消し"
+
+#: lib/kanban_web/components/audit_log_actions.ex:87
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Account deleted"
+msgstr "アカウントの削除"
+
+#: lib/kanban_web/components/audit_log_actions.ex:90
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Account deletion refused"
+msgstr "アカウント削除の拒否"
+
+#: lib/kanban_web/components/audit_log_actions.ex:68
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Audit log exported"
+msgstr "監査ログのエクスポート"
+
+#: lib/kanban_web/components/audit_log_actions.ex:40
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Comment deleted by board owner"
+msgstr "ボード所有者によるコメント削除"
+
+#: lib/kanban_web/components/audit_log_actions.ex:75
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Org-admin appointed"
+msgstr "組織管理者の任命"
+
+#: lib/kanban_web/components/audit_log_actions.ex:76
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Org-admin removed"
+msgstr "組織管理者の解任"
+
+#: lib/kanban_web/components/audit_log_actions.ex:71
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Organization audit log exported"
+msgstr "組織の監査ログのエクスポート"
+
+#: lib/kanban_web/components/audit_log_actions.ex:73
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Organization created"
+msgstr "組織の作成"
+
+#: lib/kanban_web/components/audit_log_actions.ex:74
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Organization updated"
+msgstr "組織の更新"
+
+#: lib/kanban_web/components/audit_log_actions.ex:85
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Organization workspace archived"
+msgstr "組織ワークスペースのアーカイブ"
+
+#: lib/kanban_web/components/audit_log_actions.ex:79
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Organization workspace created"
+msgstr "組織ワークスペースの作成"
+
+#: lib/kanban_web/components/audit_log_actions.ex:82
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Organization workspace renamed"
+msgstr "組織ワークスペースの名前変更"
+
+#: lib/kanban_web/components/audit_log_actions.ex:33
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Password reset requested"
+msgstr "パスワードリセットの要求"
+
+#: lib/kanban_web/components/audit_log_actions.ex:66
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Permission denied"
+msgstr "権限の拒否"
+
+#: lib/kanban_web/components/audit_log_actions.ex:43
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Possible credential in completion notes"
+msgstr "完了メモに認証情報の可能性"
+
+#: lib/kanban_web/components/audit_log_actions.ex:46
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Possible credential in security considerations"
+msgstr "セキュリティ上の考慮事項に認証情報の可能性"
+
+#: lib/kanban_web/components/audit_log_actions.ex:55
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Recovery codes regenerated"
+msgstr "リカバリーコードの再生成"
+
+#: lib/kanban_web/components/audit_log_actions.ex:30
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Sign-in failed"
+msgstr "サインイン失敗"
+
+#: lib/kanban_web/components/audit_log_actions.ex:58
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Signed in with a recovery code"
+msgstr "リカバリーコードでサインイン"
+
+#: lib/kanban_web/components/audit_log_actions.ex:67
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Sudo mode entered"
+msgstr "sudoモードの開始"
+
+#: lib/kanban_web/components/audit_log_actions.ex:52
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Two-factor authentication disabled"
+msgstr "二要素認証の無効化"
+
+#: lib/kanban_web/components/audit_log_actions.ex:49
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Two-factor authentication enabled"
+msgstr "二要素認証の有効化"
+
+#: lib/kanban_web/components/audit_log_actions.ex:64
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Two-factor challenge failed"
+msgstr "二要素認証の確認失敗"
+
+#: lib/kanban_web/components/audit_log_actions.ex:61
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Two-factor sign-in succeeded"
+msgstr "二要素サインイン成功"

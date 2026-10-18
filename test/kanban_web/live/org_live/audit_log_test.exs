@@ -311,6 +311,33 @@ defmodule KanbanWeb.OrgLive.AuditLogTest do
       assert has_element?(view, "#events-#{updated.id}", org_admin.email)
     end
 
+    test "shows actions by their translated labels and filters by the raw action", %{
+      conn: conn,
+      appointed: appointed
+    } do
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      assert has_element?(view, "#events-#{appointed.id} .badge", "Org-admin appointed")
+      assert has_element?(view, ~s(#events-#{appointed.id} .badge[title="org_admin_appointed"]))
+
+      assert has_element?(
+               view,
+               ~s(#audit-log-filters option[value="org_admin_appointed"]),
+               "Org-admin appointed"
+             )
+
+      {:ok, fr_view, _html} =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "fr"})
+        |> live(~p"/org/audit")
+
+      assert has_element?(
+               fr_view,
+               "#events-#{appointed.id} .badge",
+               "Administrateur d'organisation nommé"
+             )
+    end
+
     test "links back to the console", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/org/audit")
 

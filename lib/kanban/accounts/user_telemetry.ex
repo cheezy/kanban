@@ -14,10 +14,17 @@ defmodule Kanban.Accounts.UserTelemetry do
   and token values never appear in it, because telemetry handlers may forward
   events to tools outside the app. The session events `logged_out` and
   `sessions_revoked` are emitted by `KanbanWeb.UserAuth` instead.
+
+  Account deletion is the one exception to "a refused change records
+  nothing": `deleted/3` also records a `Kanban.AuditLog` event, `:user_deleted`
+  on success and `:user_delete_refused` on a refusal, because a refused
+  deletion is exactly what the site audit log exists to show. The telemetry
+  event itself is still emitted only on success.
   """
 
   alias Ecto.Changeset
   alias Kanban.Accounts.User
+  alias Kanban.AuditLog
 
   @doc """
   Emits `[:kanban, :user, :name_changed]` when `result` is a saved user and
@@ -146,9 +153,20 @@ defmodule Kanban.Accounts.UserTelemetry do
   def enabled(result, _before, _actor), do: result
 
   @doc """
-  Emits `[:kanban, :user, :deleted]` when `result` is a successful deletion of
-  `user`. The id is taken from `user`, which was loaded before the deletion.
-  `actor` is the administrator. Returns `result`.
+  Reports the outcome of deleting `user`. `actor` is whoever asked for the
+  deletion. The id is taken from `user`, which was loaded before the deletion.
+  Returns `result`.
+
+  On a successful deletion it emits `[:kanban, :user, :deleted]` and records
+  the `:user_deleted` audit event. On a refusal, `{:error, reason}` with an
+  atom `reason`, it records the `:user_delete_refused` audit event carrying
+  that reason and emits no telemetry. Both audit events name `actor` as
+  `user_id` and the target account as `member_user_id`; they carry ids only.
+  Any other result, such as a changeset error from a database fault, records
+  nothing.
+
+  Call it after the deletion's transaction has returned, so a rollback cannot
+  erase the audit row of a refusal.
   """
   @spec deleted(result, User.t(), User.t()) :: result when result: term()
   def deleted({:ok, _deleted} = result, %User{id: user_id}, %User{} = actor) do
@@ -156,6 +174,19 @@ defmodule Kanban.Accounts.UserTelemetry do
       user_id: user_id,
       actor_user_id: actor.id
     })
+
+    AuditLog.event(:user_deleted, user_id: actor.id, member_user_id: user_id)
+
+    result
+  end
+
+  def deleted({:error, reason} = result, %User{id: user_id}, %User{} = actor)
+      when is_atom(reason) do
+    AuditLog.event(:user_delete_refused,
+      user_id: actor.id,
+      member_user_id: user_id,
+      reason: reason
+    )
 
     result
   end

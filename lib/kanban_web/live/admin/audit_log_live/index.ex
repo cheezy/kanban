@@ -12,6 +12,7 @@ defmodule KanbanWeb.Admin.AuditLogLive.Index do
   """
   use KanbanWeb, :live_view
 
+  import KanbanWeb.AuditLogActions, only: [action_label: 1, action_options: 1]
   import KanbanWeb.AuditLogMetadata, only: [audit_metadata: 1]
 
   # Defense-in-depth: the router's `live_session :admin` already declares

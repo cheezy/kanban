@@ -9,6 +9,8 @@ defmodule Kanban.Accounts.AdminManagement do
   A disable, enable or delete that changes something emits
   `[:kanban, :user, :disabled]`, `:enabled` or `:deleted` through
   `Kanban.Accounts.UserTelemetry`, with the administrator as `actor_user_id`.
+  Every deletion attempt, successful or refused, is also recorded in
+  `Kanban.AuditLog` as `:user_deleted` or `:user_delete_refused`.
   """
 
   import Ecto.Query, warn: false
@@ -130,6 +132,12 @@ defmodule Kanban.Accounts.AdminManagement do
       refuses it inside the transaction, so a board placed there at the same
       moment is refused too and the whole delete rolls back
 
+  A successful deletion records a `:user_deleted` audit event and every
+  refusal above records a `:user_delete_refused` audit event naming its
+  reason, both with `current_user` as the actor. They are written after the
+  deletion's transaction has returned, so call this outside any enclosing
+  transaction: rolling that one back would erase the record of the attempt.
+
   ## Examples
 
       iex> delete_user(user, admin)
@@ -140,12 +148,18 @@ defmodule Kanban.Accounts.AdminManagement do
 
   """
   def delete_user(%User{} = user, %User{} = current_user) do
+    user
+    |> attempt_delete(current_user)
+    |> UserTelemetry.deleted(user, current_user)
+  end
+
+  defp attempt_delete(user, current_user) do
     cond do
       not authorized_admin?(current_user) -> {:error, :unauthorized}
       user.id == current_user.id -> {:error, :cannot_delete_self}
       Boards.user_has_boards?(user) -> {:error, :user_has_boards}
       last_admin?(user) -> {:error, :last_admin}
-      true -> user |> delete_user_and_tokens() |> UserTelemetry.deleted(user, current_user)
+      true -> delete_user_and_tokens(user)
     end
   end
 

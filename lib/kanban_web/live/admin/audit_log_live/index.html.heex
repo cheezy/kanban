@@ -29,7 +29,7 @@
         type="select"
         label={gettext("Action")}
         prompt={gettext("All actions")}
-        options={@actions}
+        options={action_options(@actions)}
       />
       <.input
         field={@form[:actor_email]}
@@ -61,7 +61,9 @@
             </span>
           </:col>
           <:col :let={{_id, event}} label={gettext("Action")}>
-            <span class="badge badge-ghost whitespace-nowrap">{event.action}</span>
+            <span class="badge badge-ghost whitespace-nowrap" title={event.action}>
+              {action_label(event.action)}
+            </span>
           </:col>
           <:col :let={{_id, event}} label={gettext("Actor")}>
             <span class="inline-block min-w-48 break-all text-base-content">{actor_label(event)}</span>
