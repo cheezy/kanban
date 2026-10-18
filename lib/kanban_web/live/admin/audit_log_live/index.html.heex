@@ -64,7 +64,7 @@
             <span class="badge badge-ghost whitespace-nowrap">{event.action}</span>
           </:col>
           <:col :let={{_id, event}} label={gettext("Actor")}>
-            <span class="break-all text-base-content">{actor_label(event)}</span>
+            <span class="inline-block min-w-48 break-all text-base-content">{actor_label(event)}</span>
           </:col>
           <:col :let={{_id, event}} label={gettext("IP")}>
             <span class="whitespace-nowrap tabular-nums" style="color: var(--ink-2);">
@@ -72,7 +72,7 @@
             </span>
           </:col>
           <:col :let={{_id, event}} label={gettext("Details")}>
-            <pre class="min-w-48 max-w-xl whitespace-pre-wrap break-all font-mono text-xs text-base-content">{metadata_json(event.metadata)}</pre>
+            <.audit_metadata metadata={event.metadata} />
           </:col>
         </.table>
       </div>
