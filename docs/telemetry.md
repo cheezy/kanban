@@ -597,8 +597,8 @@ nothing. Every event measures `count: 1`.
 ### Organization events
 
 W2390 added `created` and `updated`, W2391 added `member_added` and
-`member_removed`, and W2392 added `account_created` to `member_added`. They
-are declared in
+`member_removed`, W2392 added `account_created` to `member_added`, and W2396
+added the three workspace events. They are declared in
 `Kanban.Telemetry.Catalog.OrganizationEvents` (`lib/kanban/telemetry/catalog/organization_events.ex`)
 and emitted by `Kanban.Organizations.OrganizationTelemetry`. Each is emitted
 only after its change has committed, so a refused, invalid or rolled-back
@@ -610,6 +610,9 @@ change emits nothing. Every event measures `count: 1`.
 | `[:kanban, :organization, :updated]` | `organization_id`, `actor_user_id`, `fields` | `Kanban.Organizations.update_organization/3`, only when at least one field changed |
 | `[:kanban, :organization, :member_added]` | `organization_id`, `user_id`, `role`, `actor_user_id`, `account_created` | `Kanban.Organizations.add_member/3`, `appoint_org_admin/3` and `appoint_org_admin_by_email/4`, only when a membership was created |
 | `[:kanban, :organization, :member_removed]` | `organization_id`, `user_id`, `role`, `actor_user_id` | `Kanban.Organizations.remove_org_admin/3` |
+| `[:kanban, :organization, :workspace_created]` | `organization_id`, `workspace_id` | `Kanban.Organizations.OrgWorkspaces.create_workspace/3` |
+| `[:kanban, :organization, :workspace_renamed]` | `organization_id`, `workspace_id` | `Kanban.Organizations.OrgWorkspaces.rename_workspace/3`, only when the name changed |
+| `[:kanban, :organization, :workspace_archived]` | `organization_id`, `workspace_id` | `Kanban.Organizations.OrgWorkspaces.archive_workspace/2`, once the archive has committed |
 
 - **Who causes them.** Only an enabled site admin creates or edits an
   Organization, or appoints or removes an org-admin, and `actor_user_id` is
@@ -646,6 +649,15 @@ change emits nothing. Every event measures `count: 1`.
   The registration event, `member_added` and the audit row for a provisioned
   account wait for that transaction to commit; neither the event nor the
   audit row carries the password or a token.
+- **Workspace events.** An org-admin creating, renaming or archiving one of
+  their Organization's workspaces in the org console emits the matching
+  `workspace_*` event and records `:org_workspace_created`,
+  `:org_workspace_renamed` or `:org_workspace_archived` with
+  `organization_id`, `workspace_id` and the org-admin as `user_id`. The
+  telemetry events carry the two ids only; the workspace name is never in
+  either. A refused change (not an org-admin, a workspace outside the
+  Organization, a personal or archived workspace, or an archive refused while
+  the workspace holds boards) and an invalid name emit and record nothing.
 
 ## Emitting an event
 
@@ -1003,6 +1015,9 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :organization_updated]` | event, legacy | `count` | `user_id`, `organization_id` | A site admin changed an Organization's details. user_id is the site admin. |
 | `[:kanban, :audit, :org_admin_appointed]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id`, `account_created` | A site admin made a user an org-admin. user_id is the site admin, member_user_id the appointee. account_created is true when the appointee's account was created for the appointment. |
 | `[:kanban, :audit, :org_admin_removed]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id` | A site admin removed an org-admin. user_id is the site admin, member_user_id the removed user. |
+| `[:kanban, :audit, :org_workspace_created]` | event, legacy | `count` | `user_id`, `organization_id`, `workspace_id` | An org-admin created a workspace for their Organization. user_id is the org-admin. |
+| `[:kanban, :audit, :org_workspace_renamed]` | event, legacy | `count` | `user_id`, `organization_id`, `workspace_id` | An org-admin renamed one of their Organization's workspaces. user_id is the org-admin. |
+| `[:kanban, :audit, :org_workspace_archived]` | event, legacy | `count` | `user_id`, `organization_id`, `workspace_id` | An org-admin archived one of their Organization's workspaces. user_id is the org-admin. |
 
 ### Domain `board`
 
@@ -1105,6 +1120,9 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :organization, :updated]` | event | `count` | `organization_id`, `actor_user_id`, `fields` | A site admin changed an Organization's details. fields lists the changed field names, never their values. |
 | `[:kanban, :organization, :member_added]` | event | `count` | `organization_id`, `user_id`, `role`, `actor_user_id`, `account_created` | A user joined an Organization with role, as a new member or a newly appointed org-admin. actor_user_id is the site admin, or the joining user. account_created is true when the account was created for the appointment. |
 | `[:kanban, :organization, :member_removed]` | event | `count` | `organization_id`, `user_id`, `role`, `actor_user_id` | A user's Organization membership was deleted. role is the role they held. actor_user_id is the site admin. |
+| `[:kanban, :organization, :workspace_created]` | event | `count` | `organization_id`, `workspace_id` | An org-admin created a workspace for their Organization. |
+| `[:kanban, :organization, :workspace_renamed]` | event | `count` | `organization_id`, `workspace_id` | An org-admin renamed one of their Organization's workspaces. The name is never in the metadata. |
+| `[:kanban, :organization, :workspace_archived]` | event | `count` | `organization_id`, `workspace_id` | An org-admin archived one of their Organization's workspaces. |
 
 ### Domain `pubsub`
 

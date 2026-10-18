@@ -10,7 +10,7 @@
         </h1>
         <p style="margin: 6px 0 0; font-size: 13px; color: var(--ink-2); max-width: 720px; text-wrap: pretty; line-height: 1.55;">
           {gettext(
-            "Your Organization's details and members. Only a site admin changes the details or appoints org-admins."
+            "Your Organization's details, members and workspaces. Only a site admin changes the details or appoints org-admins."
           )}
         </p>
       </div>
@@ -146,6 +146,136 @@
               >
                 {role_label(member.role)}
               </span>
+            </li>
+          </ul>
+        </.settings_card>
+
+        <.settings_card
+          :if={@section == :workspaces}
+          id="workspaces"
+          tab={:workspaces}
+          title={gettext("Workspaces")}
+          hint={
+            gettext(
+              "Where your Organization's boards live. A workspace can be archived once it holds no boards."
+            )
+          }
+        >
+          <.form
+            for={@create_form}
+            id="create-workspace-form"
+            phx-submit="create_workspace"
+            class="flex flex-col gap-2 @md:flex-row @md:items-start @md:gap-3"
+          >
+            <div class="@md:flex-1 min-w-0">
+              <.input
+                field={@create_form[:name]}
+                type="text"
+                label={gettext("New workspace name")}
+                maxlength="100"
+                autocomplete="off"
+              />
+            </div>
+            <.button
+              id="create-workspace-button"
+              type="submit"
+              variant="primary"
+              class="btn btn-primary @md:mt-7"
+              phx-disable-with={gettext("Creating...")}
+            >
+              {gettext("Create workspace")}
+            </.button>
+          </.form>
+
+          <p
+            :if={@workspaces == []}
+            id="workspaces-empty"
+            style="margin: 12px 0 0; font-size: 13px; color: var(--ink-2);"
+          >
+            {gettext("Your Organization has no workspaces yet.")}
+          </p>
+
+          <ul
+            :if={@workspaces != []}
+            id="workspace-list"
+            style="list-style: none; margin: 12px 0 0; padding: 0;"
+          >
+            <li
+              :for={workspace <- @workspaces}
+              id={"workspace-#{workspace.id}"}
+              style="padding: 10px 0; border-bottom: 1px solid var(--line);"
+            >
+              <.form
+                :if={@renaming_id == workspace.id}
+                for={@rename_form}
+                id="rename-workspace-form"
+                phx-submit="rename_workspace"
+                class="flex flex-col gap-2 @md:flex-row @md:items-start @md:gap-3"
+              >
+                <input type="hidden" name="workspace_id" value={workspace.id} />
+                <div class="@md:flex-1 min-w-0">
+                  <.input
+                    field={@rename_form[:name]}
+                    type="text"
+                    label={gettext("Workspace name")}
+                    maxlength="100"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="flex gap-2 @md:mt-7">
+                  <.button
+                    id="save-workspace-name"
+                    type="submit"
+                    variant="primary"
+                    class="btn btn-primary btn-sm"
+                    phx-disable-with={gettext("Saving...")}
+                  >
+                    {gettext("Save")}
+                  </.button>
+                  <.button
+                    id="cancel-workspace-rename"
+                    type="button"
+                    phx-click="cancel_rename"
+                    class="btn btn-soft btn-sm"
+                  >
+                    {gettext("Cancel")}
+                  </.button>
+                </div>
+              </.form>
+
+              <div
+                :if={@renaming_id != workspace.id}
+                class="flex flex-col gap-2 @md:flex-row @md:items-center @md:gap-4"
+              >
+                <span
+                  id={"workspace-name-#{workspace.id}"}
+                  class="@md:flex-1 min-w-0"
+                  style="font-size: 13px; font-weight: 500; color: var(--ink); overflow-wrap: anywhere;"
+                >
+                  {workspace.name}
+                </span>
+                <div class="flex gap-2 @md:flex-shrink-0">
+                  <.button
+                    id={"rename-workspace-#{workspace.id}"}
+                    type="button"
+                    phx-click="start_rename"
+                    phx-value-id={workspace.id}
+                    class="btn btn-soft btn-sm"
+                  >
+                    {gettext("Rename")}
+                  </.button>
+                  <.button
+                    id={"archive-workspace-#{workspace.id}"}
+                    type="button"
+                    phx-click="archive_workspace"
+                    phx-value-id={workspace.id}
+                    data-confirm={gettext("Archive the workspace %{name}?", name: workspace.name)}
+                    class="btn btn-soft btn-sm"
+                  >
+                    {gettext("Archive")}
+                  </.button>
+                </div>
+              </div>
             </li>
           </ul>
         </.settings_card>

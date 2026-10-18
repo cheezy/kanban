@@ -80,7 +80,13 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:org_admin_appointed, [:user_id, :organization_id, :member_user_id, :account_created],
      "A site admin made a user an org-admin. user_id is the site admin, member_user_id the appointee. account_created is true when the appointee's account was created for the appointment."},
     {:org_admin_removed, [:user_id, :organization_id, :member_user_id],
-     "A site admin removed an org-admin. user_id is the site admin, member_user_id the removed user."}
+     "A site admin removed an org-admin. user_id is the site admin, member_user_id the removed user."},
+    {:org_workspace_created, [:user_id, :organization_id, :workspace_id],
+     "An org-admin created a workspace for their Organization. user_id is the org-admin."},
+    {:org_workspace_renamed, [:user_id, :organization_id, :workspace_id],
+     "An org-admin renamed one of their Organization's workspaces. user_id is the org-admin."},
+    {:org_workspace_archived, [:user_id, :organization_id, :workspace_id],
+     "An org-admin archived one of their Organization's workspaces. user_id is the org-admin."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,

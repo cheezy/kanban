@@ -161,6 +161,7 @@ msgstr "密码"
 #: lib/kanban_web/live/board_live/webhook_form.ex:78
 #: lib/kanban_web/live/board_live/webhook_form.ex:182
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
+#: lib/kanban_web/live/org_live/console.html.heex:231
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/components/comment_row.ex:139
 #: lib/kanban_web/live/task_live/form_component.html.heex:414
@@ -206,6 +207,7 @@ msgstr "看板更新成功"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:254
 #: lib/kanban_web/live/board_live/settings_form_component.ex:172
 #: lib/kanban_web/live/board_live/webhook_form.ex:178
+#: lib/kanban_web/live/org_live/console.html.heex:241
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
@@ -1674,6 +1676,7 @@ msgid "Copy"
 msgstr "复制"
 
 #: lib/kanban_web/live/board_live/show.html.heex:774
+#: lib/kanban_web/live/org_live/console.html.heex:184
 #, elixir-autogen, elixir-format
 msgid "Creating..."
 msgstr "创建中..."
@@ -4454,6 +4457,7 @@ msgstr "代理从此列拉取。此处的任务应当被完整描述 — 提供�
 #: lib/kanban_web/components/board_tabs.ex:128
 #: lib/kanban_web/components/bulk_action_bar.ex:235
 #: lib/kanban_web/live/archive_live/index.html.heex:9
+#: lib/kanban_web/live/org_live/console.html.heex:275
 #, elixir-autogen, elixir-format
 msgid "Archive"
 msgstr "归档"
@@ -4489,7 +4493,7 @@ msgstr "进行中的工作。钩子在前后运行;活动栏在此处亮起。"
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
-#: lib/kanban_web/live/org_live/console.ex:67
+#: lib/kanban_web/live/org_live/console.ex:301
 #: lib/kanban_web/live/org_live/console.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Members"
@@ -4753,6 +4757,7 @@ msgstr "关闭"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:251
 #: lib/kanban_web/live/board_live/settings_form_component.ex:184
 #: lib/kanban_web/live/board_live/webhook_form.ex:189
+#: lib/kanban_web/live/org_live/console.html.heex:233
 #: lib/kanban_web/live/task_live/components/comment_row.ex:140
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -6594,7 +6599,7 @@ msgstr "代理编写代码以完成任务。"
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #: lib/kanban_web/live/org_live/audit_log.html.heex:73
-#: lib/kanban_web/live/org_live/console.ex:66
+#: lib/kanban_web/live/org_live/console.ex:300
 #: lib/kanban_web/live/org_live/console.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Details"
@@ -9481,7 +9486,7 @@ msgstr "所有操作"
 #: lib/kanban_web/components/marketing_components.ex:122
 #: lib/kanban_web/components/marketing_components.ex:312
 #: lib/kanban_web/components/nav_components.ex:131
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:31
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:33
 #: lib/kanban_web/live/admin/audit_log_live/index.html.heex:4
 #, elixir-autogen, elixir-format
 msgid "Audit Log"
@@ -9546,8 +9551,8 @@ msgstr "结束日期 (UTC)"
 msgid "Unsupported export format."
 msgstr "不支持的导出格式。"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:77
-#: lib/kanban_web/live/org_live/audit_log.ex:107
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:76
+#: lib/kanban_web/live/org_live/audit_log.ex:106
 #, elixir-autogen, elixir-format
 msgid "User #%{id} (deleted)"
 msgstr "用户 #%{id}（已删除）"
@@ -9657,8 +9662,8 @@ msgctxt "agent action"
 msgid "unclaimed"
 msgstr "已取消认领"
 
-#: lib/kanban_web/live/admin/audit_log_live/index.ex:81
-#: lib/kanban_web/live/org_live/audit_log.ex:109
+#: lib/kanban_web/live/admin/audit_log_live/index.ex:80
+#: lib/kanban_web/live/org_live/audit_log.ex:108
 #, elixir-autogen, elixir-format
 msgctxt "audit log actor"
 msgid "None"
@@ -10628,7 +10633,7 @@ msgid "Organization created."
 msgstr "组织已创建。"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:183
-#: lib/kanban_web/live/admin/organization_live/show.ex:182
+#: lib/kanban_web/live/admin/organization_live/show.ex:193
 #, elixir-autogen, elixir-format
 msgid "Organization not found."
 msgstr "未找到该组织。"
@@ -10695,8 +10700,8 @@ msgstr "正在任命..."
 msgid "Enter a valid email address. Nothing was changed."
 msgstr "请输入有效的电子邮件地址。未做任何更改。"
 
-#: lib/kanban_web/live/admin/organization_live/show.ex:241
-#: lib/kanban_web/live/org_live/console.ex:72
+#: lib/kanban_web/live/admin/organization_live/show.ex:252
+#: lib/kanban_web/live/org_live/console.ex:307
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr "成员"
@@ -10706,8 +10711,8 @@ msgstr "成员"
 msgid "Only site admins appoint or remove org-admins."
 msgstr "只有站点管理员可以任命或移除组织管理员。"
 
-#: lib/kanban_web/live/admin/organization_live/show.ex:240
-#: lib/kanban_web/live/org_live/console.ex:71
+#: lib/kanban_web/live/admin/organization_live/show.ex:251
+#: lib/kanban_web/live/org_live/console.ex:306
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr "组织管理员"
@@ -10768,7 +10773,7 @@ msgid "Everyone in your Organization, org-admins first."
 msgstr "您组织中的所有成员，组织管理员排在最前。"
 
 #: lib/kanban_web/components/side_nav.ex:256
-#: lib/kanban_web/live/org_live/console.ex:38
+#: lib/kanban_web/live/org_live/console.ex:65
 #, elixir-autogen, elixir-format
 msgid "Organization"
 msgstr "组织"
@@ -10784,23 +10789,19 @@ msgstr "组织分区"
 msgid "Read-only. Ask a site admin to change them."
 msgstr "只读。如需更改，请联系站点管理员。"
 
-#: lib/kanban_web/live/org_live/console.ex:49
-#: lib/kanban_web/user_auth/org_admin_gate.ex:103
+#: lib/kanban_web/live/org_live/console.ex:57
+#: lib/kanban_web/live/org_live/console.ex:237
+#: lib/kanban_web/user_auth/org_admin_gate.ex:132
 #, elixir-autogen, elixir-format
 msgid "You must be an org-admin of an Organization to access this page."
 msgstr "您必须是某个组织的组织管理员才能访问此页面。"
 
-#: lib/kanban_web/live/org_live/console.html.heex:12
-#, elixir-autogen, elixir-format
-msgid "Your Organization's details and members. Only a site admin changes the details or appoints org-admins."
-msgstr "您组织的详细信息和成员。只有站点管理员可以更改详细信息或任命组织管理员。"
-
-#: lib/kanban_web/live/org_live/console.ex:66
+#: lib/kanban_web/live/org_live/console.ex:300
 #, elixir-autogen, elixir-format
 msgid "name · address · contact"
 msgstr "名称 · 地址 · 联系人"
 
-#: lib/kanban_web/live/org_live/console.ex:67
+#: lib/kanban_web/live/org_live/console.ex:301
 #, elixir-autogen, elixir-format
 msgid "names · roles"
 msgstr "姓名 · 角色"
@@ -10815,7 +10816,7 @@ msgstr "审计日志"
 msgid "Back to Organization"
 msgstr "返回组织"
 
-#: lib/kanban_web/live/org_live/audit_log.ex:42
+#: lib/kanban_web/live/org_live/audit_log.ex:44
 #: lib/kanban_web/live/org_live/audit_log.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "Organization audit log"
@@ -10836,7 +10837,88 @@ msgstr " — 如果您属于某个组织，该组织的组织管理员可以查�
 msgid "Organization administrators"
 msgstr "组织管理员"
 
-#: lib/kanban_web/live/org_live/audit_log.ex:100
+#: lib/kanban_web/live/org_live/audit_log.ex:99
 #, elixir-autogen, elixir-format
 msgid "Outside your Organization"
 msgstr "组织外部人员"
+
+#: lib/kanban_web/live/org_live/console.html.heex:272
+#, elixir-autogen, elixir-format
+msgid "Archive the workspace %{name}?"
+msgstr "要归档工作区“%{name}”吗？"
+
+#: lib/kanban_web/live/org_live/console.html.heex:186
+#, elixir-autogen, elixir-format
+msgid "Create workspace"
+msgstr "创建工作区"
+
+#: lib/kanban_web/live/org_live/console.html.heex:174
+#, elixir-autogen, elixir-format
+msgid "New workspace name"
+msgstr "新工作区名称"
+
+#: lib/kanban_web/live/org_live/console.html.heex:265
+#, elixir-autogen, elixir-format
+msgid "Rename"
+msgstr "重命名"
+
+#: lib/kanban_web/live/org_live/console.ex:195
+#, elixir-autogen, elixir-format
+msgid "The workspace could not be changed. Please try again."
+msgstr "无法更改工作区，请重试。"
+
+#: lib/kanban_web/live/org_live/console.ex:187
+#, elixir-autogen, elixir-format
+msgid "This workspace still holds boards. Move them out before archiving it."
+msgstr "此工作区中仍有看板。请先将它们移出，再归档。"
+
+#: lib/kanban_web/live/org_live/console.html.heex:159
+#, elixir-autogen, elixir-format
+msgid "Where your Organization's boards live. A workspace can be archived once it holds no boards."
+msgstr "组织的看板存放在这里。工作区中没有看板后即可归档。"
+
+#: lib/kanban_web/live/org_live/console.ex:169
+#, elixir-autogen, elixir-format
+msgid "Workspace archived."
+msgstr "工作区已归档。"
+
+#: lib/kanban_web/live/org_live/console.ex:141
+#, elixir-autogen, elixir-format
+msgid "Workspace created."
+msgstr "工作区已创建。"
+
+#: lib/kanban_web/live/org_live/console.html.heex:220
+#, elixir-autogen, elixir-format
+msgid "Workspace name"
+msgstr "工作区名称"
+
+#: lib/kanban_web/live/org_live/console.ex:201
+#, elixir-autogen, elixir-format
+msgid "Workspace not found."
+msgstr "未找到工作区。"
+
+#: lib/kanban_web/live/org_live/console.ex:155
+#, elixir-autogen, elixir-format
+msgid "Workspace renamed."
+msgstr "工作区已重命名。"
+
+#: lib/kanban_web/live/org_live/console.ex:302
+#: lib/kanban_web/live/org_live/console.html.heex:157
+#, elixir-autogen, elixir-format
+msgid "Workspaces"
+msgstr "工作区"
+
+#: lib/kanban_web/live/org_live/console.html.heex:195
+#, elixir-autogen, elixir-format
+msgid "Your Organization has no workspaces yet."
+msgstr "您的组织还没有工作区。"
+
+#: lib/kanban_web/live/org_live/console.html.heex:12
+#, elixir-autogen, elixir-format
+msgid "Your Organization's details, members and workspaces. Only a site admin changes the details or appoints org-admins."
+msgstr "您组织的详细信息、成员和工作区。只有站点管理员可以更改详细信息或任命组织管理员。"
+
+#: lib/kanban_web/live/org_live/console.ex:302
+#, elixir-autogen, elixir-format
+msgid "create · rename · archive"
+msgstr "创建 · 重命名 · 归档"

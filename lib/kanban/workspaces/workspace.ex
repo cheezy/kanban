@@ -109,10 +109,16 @@ defmodule Kanban.Workspaces.Workspace do
 
   defp validate_name(changeset) do
     changeset
-    |> update_change(:name, &String.trim/1)
+    |> update_change(:name, &trim_name/1)
     |> validate_required([:name])
     |> validate_length(:name, max: @name_max_length)
   end
+
+  # Casting "" clears the name to nil (a whitespace-only name is cast as-is and
+  # trimmed to "" here), which is a change on an existing workspace, so the
+  # trim must let nil through for validate_required/2 to report it.
+  defp trim_name(name) when is_binary(name), do: String.trim(name)
+  defp trim_name(name), do: name
 
   # Two workspaces with the same name still get different slugs, so creating
   # one never fails on a name someone else already used.

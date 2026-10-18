@@ -253,6 +253,17 @@ defmodule Kanban.WorkspacesTest do
       assert renamed.slug == workspace.slug
     end
 
+    test "renaming to an empty or blank name is an error, not a crash" do
+      workspace = bare_personal_workspace()
+
+      for name <- ["", "   ", nil] do
+        changeset = Workspace.changeset(workspace, %{name: name})
+
+        refute changeset.valid?
+        assert %{name: ["can't be blank"]} = errors_on(changeset)
+      end
+    end
+
     test "has no plan, seat or billing field in the schema or the table" do
       schema_fields =
         Enum.map(

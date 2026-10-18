@@ -4,7 +4,8 @@ defmodule Kanban.Telemetry.Catalog.OrganizationEvents do
 
   They are emitted by `Kanban.Organizations.OrganizationTelemetry` once the
   change has committed. Metadata carries ids, a role and changed field names
-  only, never an Organization's name, address or contact details.
+  only, never an Organization's or a workspace's name, address or contact
+  details.
   `Kanban.Telemetry.Catalog` appends these entries to its own list; nothing
   else should call this module.
   """
@@ -53,6 +54,40 @@ defmodule Kanban.Telemetry.Catalog.OrganizationEvents do
       metadata: [:organization_id, :user_id, :role, :actor_user_id],
       description:
         "A user's Organization membership was deleted. role is the role they held. actor_user_id is the site admin.",
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
+    },
+    %{
+      name: [:kanban, :organization, :workspace_created],
+      kind: :event,
+      domain: :organization,
+      measurements: [:count],
+      metadata: [:organization_id, :workspace_id],
+      description: "An org-admin created a workspace for their Organization.",
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
+    },
+    %{
+      name: [:kanban, :organization, :workspace_renamed],
+      kind: :event,
+      domain: :organization,
+      measurements: [:count],
+      metadata: [:organization_id, :workspace_id],
+      description:
+        "An org-admin renamed one of their Organization's workspaces. The name is never in the metadata.",
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
+    },
+    %{
+      name: [:kanban, :organization, :workspace_archived],
+      kind: :event,
+      domain: :organization,
+      measurements: [:count],
+      metadata: [:organization_id, :workspace_id],
+      description: "An org-admin archived one of their Organization's workspaces.",
       legacy: false,
       metrics: [counter: :count],
       persist: false

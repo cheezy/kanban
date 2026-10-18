@@ -1,14 +1,18 @@
 defmodule KanbanWeb.OrgLive.ConsoleTest do
   use KanbanWeb.ConnCase, async: true
 
+  import Ecto.Query, only: [from: 2]
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
+  import Kanban.BoardsFixtures
   import Kanban.OrganizationsFixtures
+  import Kanban.WorkspacesFixtures
 
   alias Kanban.Accounts.Scope
   alias Kanban.AuditLog
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
+  alias Kanban.Workspaces.Workspace
   alias KanbanWeb.OrgLive.Console
 
   @refusal "You must be an org-admin of an Organization to access this page."
@@ -211,6 +215,333 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
     end
   end
 
+  describe "workspaces" do
+    setup :org_admin_setup
+
+    defp org_workspaces(organization) do
+      from(w in Workspace, where: w.organization_id == ^organization.id) |> Repo.all()
+    end
+
+    defp open_workspaces(conn) do
+      {:ok, view, _html} = live(conn, ~p"/org?section=workspaces")
+      view
+    end
+
+    test "the Workspaces tab opens the section", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/org")
+
+      view |> element("#settings-tab-workspaces") |> render_click()
+
+      assert_patch(view, ~p"/org?section=workspaces")
+      assert has_element?(view, "#workspaces")
+      assert has_element?(view, "#create-workspace-form")
+    end
+
+    test "lists the Organization's active workspaces and hides archived and foreign ones", %{
+      conn: conn,
+      organization: organization,
+      org_admin: org_admin
+    } do
+      active = org_workspace_fixture(organization, %{name: "Active space"})
+
+      archived =
+        org_workspace_fixture(organization, %{
+          name: "Archived space",
+          archived_at: ~U[2026-01-01 00:00:00Z]
+        })
+
+      foreign = org_workspace_fixture(organization_fixture(), %{name: "Foreign space"})
+      personal = personal_workspace_fixture(org_admin)
+
+      view = open_workspaces(conn)
+
+      assert has_element?(view, "#workspace-name-#{active.id}", "Active space")
+      refute has_element?(view, "#workspace-#{archived.id}")
+      refute has_element?(view, "#workspace-#{foreign.id}")
+      refute has_element?(view, "#workspace-#{personal.id}")
+      refute has_element?(view, "#workspaces-empty")
+    end
+
+    test "says so when the Organization has no workspaces", %{conn: conn} do
+      view = open_workspaces(conn)
+
+      assert has_element?(view, "#workspaces-empty")
+      refute has_element?(view, "#workspace-list")
+    end
+
+    test "creates a workspace owned by the Organization", %{
+      conn: conn,
+      organization: organization
+    } do
+      view = open_workspaces(conn)
+
+      view
+      |> form("#create-workspace-form", workspace: %{name: "Design"})
+      |> render_submit()
+
+      assert [workspace] =
+               org_workspaces(organization)
+
+      assert workspace.name == "Design"
+      refute workspace.personal
+      assert has_element?(view, "#workspace-name-#{workspace.id}", "Design")
+      assert render(view) =~ "Workspace created."
+      assert [_event] = AuditLog.list_events(action: :org_workspace_created)
+    end
+
+    test "shows a blank or overlong name's error inline and creates nothing", %{
+      conn: conn,
+      organization: organization
+    } do
+      view = open_workspaces(conn)
+
+      html =
+        view
+        |> form("#create-workspace-form", workspace: %{name: "  "})
+        |> render_submit()
+
+      assert html =~ "can&#39;t be blank"
+
+      html =
+        view
+        |> form("#create-workspace-form", workspace: %{name: String.duplicate("x", 101)})
+        |> render_submit()
+
+      assert html =~ "should be at most 100 character(s)"
+      assert org_workspaces(organization) == []
+      assert AuditLog.list_events(action: :org_workspace_created) == []
+    end
+
+    test "renames a workspace", %{conn: conn, organization: organization} do
+      workspace = org_workspace_fixture(organization, %{name: "Old name"})
+      view = open_workspaces(conn)
+
+      view |> element("#rename-workspace-#{workspace.id}") |> render_click()
+      assert has_element?(view, "#rename-workspace-form")
+
+      view
+      |> form("#rename-workspace-form", rename: %{name: "New name"})
+      |> render_submit()
+
+      assert Repo.get!(Workspace, workspace.id).name == "New name"
+      assert has_element?(view, "#workspace-name-#{workspace.id}", "New name")
+      refute has_element?(view, "#rename-workspace-form")
+      assert render(view) =~ "Workspace renamed."
+    end
+
+    test "shows a rename's validation error inline and keeps the old name", %{
+      conn: conn,
+      organization: organization
+    } do
+      workspace = org_workspace_fixture(organization, %{name: "Kept"})
+      view = open_workspaces(conn)
+
+      view |> element("#rename-workspace-#{workspace.id}") |> render_click()
+
+      html =
+        view
+        |> form("#rename-workspace-form", rename: %{name: ""})
+        |> render_submit()
+
+      assert html =~ "can&#39;t be blank"
+      assert has_element?(view, "#rename-workspace-form")
+      assert Repo.get!(Workspace, workspace.id).name == "Kept"
+    end
+
+    test "cancelling a rename restores the row", %{conn: conn, organization: organization} do
+      workspace = org_workspace_fixture(organization, %{name: "Kept"})
+      view = open_workspaces(conn)
+
+      view |> element("#rename-workspace-#{workspace.id}") |> render_click()
+      view |> element("#cancel-workspace-rename") |> render_click()
+
+      refute has_element?(view, "#rename-workspace-form")
+      assert has_element?(view, "#workspace-name-#{workspace.id}", "Kept")
+    end
+
+    test "archives an empty workspace and hides it", %{conn: conn, organization: organization} do
+      workspace = org_workspace_fixture(organization, %{name: "Empty"})
+      view = open_workspaces(conn)
+
+      view |> element("#archive-workspace-#{workspace.id}") |> render_click()
+
+      assert Repo.get!(Workspace, workspace.id).archived_at
+      refute has_element?(view, "#workspace-#{workspace.id}")
+      assert render(view) =~ "Workspace archived."
+    end
+
+    test "refuses to archive a workspace that holds boards, with a message", %{
+      conn: conn,
+      organization: organization,
+      org_admin: org_admin
+    } do
+      workspace = org_workspace_fixture(organization, %{name: "Busy"})
+
+      org_admin
+      |> board_fixture()
+      |> Ecto.Changeset.change(workspace_id: workspace.id)
+      |> Repo.update!()
+
+      view = open_workspaces(conn)
+      view |> element("#archive-workspace-#{workspace.id}") |> render_click()
+
+      assert render(view) =~
+               "This workspace still holds boards. Move them out before archiving it."
+
+      assert is_nil(Repo.get!(Workspace, workspace.id).archived_at)
+      assert has_element?(view, "#workspace-#{workspace.id}")
+    end
+
+    test "crafted ids for another Organization's or a personal workspace change nothing", %{
+      conn: conn,
+      org_admin: org_admin
+    } do
+      foreign = org_workspace_fixture(organization_fixture(), %{name: "Foreign"})
+      personal = personal_workspace_fixture(org_admin)
+      view = open_workspaces(conn)
+
+      for workspace <- [foreign, personal] do
+        render_hook(view, "archive_workspace", %{"id" => to_string(workspace.id)})
+        assert render(view) =~ "Workspace not found."
+
+        render_hook(view, "rename_workspace", %{
+          "workspace_id" => to_string(workspace.id),
+          "rename" => %{"name" => "Taken"}
+        })
+
+        assert render(view) =~ "Workspace not found."
+
+        stored = Repo.get!(Workspace, workspace.id)
+        assert stored.name == workspace.name
+        assert is_nil(stored.archived_at)
+      end
+    end
+
+    test "a rename payload with no name is refused as blank, never reported as renamed", %{
+      conn: conn,
+      organization: organization
+    } do
+      workspace = org_workspace_fixture(organization, %{name: "Kept"})
+      view = open_workspaces(conn)
+
+      view |> element("#rename-workspace-#{workspace.id}") |> render_click()
+
+      for params <- [%{}, %{"rename" => "not-a-map"}, %{"rename" => %{"other" => "x"}}] do
+        html =
+          render_hook(
+            view,
+            "rename_workspace",
+            Map.put(params, "workspace_id", to_string(workspace.id))
+          )
+
+        assert html =~ "can&#39;t be blank"
+        refute html =~ "Workspace renamed."
+      end
+
+      assert Repo.get!(Workspace, workspace.id).name == "Kept"
+      assert AuditLog.list_events(action: :org_workspace_renamed) == []
+    end
+
+    test "starting a rename of a workspace that is not listed says not found", %{
+      conn: conn,
+      org_admin: org_admin
+    } do
+      foreign = org_workspace_fixture(organization_fixture(), %{name: "Foreign"})
+      personal = personal_workspace_fixture(org_admin)
+
+      for workspace <- [foreign, personal] do
+        view = open_workspaces(conn)
+        refute render(view) =~ "Workspace not found."
+
+        render_hook(view, "start_rename", %{"id" => to_string(workspace.id)})
+
+        refute has_element?(view, "#rename-workspace-form")
+        assert render(view) =~ "Workspace not found."
+      end
+    end
+
+    test "crafted payloads without an id or with a malformed one change nothing", %{
+      conn: conn,
+      organization: organization
+    } do
+      workspace = org_workspace_fixture(organization, %{name: "Kept"})
+      view = open_workspaces(conn)
+
+      render_hook(view, "archive_workspace", %{})
+      render_hook(view, "rename_workspace", %{"rename" => %{"name" => "Taken"}})
+      render_hook(view, "start_rename", %{})
+      render_hook(view, "archive_workspace", %{"id" => "not-a-number"})
+      render_hook(view, "create_workspace", %{"workspace" => "not-a-map"})
+      render_hook(view, "start_rename", %{"id" => %{"nested" => "map"}})
+      render_hook(view, "start_rename", %{"id" => ["list"]})
+
+      stored = Repo.get!(Workspace, workspace.id)
+      assert stored.name == "Kept"
+      assert is_nil(stored.archived_at)
+      assert has_element?(view, "#workspace-#{workspace.id}")
+    end
+
+    test "every workspace event re-checks the org-admin role from the database", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      workspace = org_workspace_fixture(organization, %{name: "Kept"})
+
+      events = [
+        {"create_workspace", %{"workspace" => %{"name" => "New"}}},
+        {"start_rename", %{"id" => to_string(workspace.id)}},
+        {"cancel_rename", %{}},
+        {"rename_workspace",
+         %{"workspace_id" => to_string(workspace.id), "rename" => %{"name" => "Taken"}}},
+        {"archive_workspace", %{"id" => to_string(workspace.id)}}
+      ]
+
+      for {event, params} <- events do
+        Repo.delete_all(OrganizationMember)
+        organization_member_fixture(organization, org_admin, :org_admin)
+        conn = log_in_user(build_conn(), org_admin)
+        view = open_workspaces(conn)
+
+        OrganizationMember |> Repo.get_by!(user_id: org_admin.id) |> Repo.delete!()
+
+        render_hook(view, event, params)
+
+        assert_redirect(view, ~p"/boards")
+      end
+
+      stored = Repo.get!(Workspace, workspace.id)
+      assert stored.name == "Kept"
+      assert is_nil(stored.archived_at)
+
+      assert org_workspaces(organization) == [
+               stored
+             ]
+
+      denied = AuditLog.list_events(action: :permission_denied, actor_user_id: org_admin.id)
+      assert length(denied) >= length(events)
+    end
+
+    test "a member demoted from org-admin cannot act through a crafted event", %{
+      conn: conn,
+      organization: organization,
+      org_admin: org_admin
+    } do
+      workspace = org_workspace_fixture(organization, %{name: "Kept"})
+      view = open_workspaces(conn)
+
+      OrganizationMember
+      |> Repo.get_by!(user_id: org_admin.id)
+      |> Ecto.Changeset.change(role: :member)
+      |> Repo.update!()
+
+      render_hook(view, "archive_workspace", %{"id" => to_string(workspace.id)})
+
+      assert_redirect(view, ~p"/boards")
+      assert is_nil(Repo.get!(Workspace, workspace.id).archived_at)
+      assert AuditLog.list_events(action: :org_workspace_archived) == []
+    end
+  end
+
   describe "mount/3 when the Organization lookup fails" do
     test "redirects to /boards with the refusal when the user no longer administers it" do
       user = user_fixture()
@@ -262,7 +593,7 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
     end
 
     test "an unknown or empty ?section= shows Details", %{conn: conn} do
-      for query <- ["section=workspaces", "section=__struct__", "section=", "other=1"] do
+      for query <- ["section=billing", "section=__struct__", "section=", "other=1"] do
         {:ok, view, _html} = live(conn, "/org?" <> query)
 
         assert has_element?(view, "#details"), query
@@ -282,7 +613,7 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
     test "ignores an unknown or missing section name", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/org")
 
-      render_hook(view, "select_section", %{"section" => "workspaces"})
+      render_hook(view, "select_section", %{"section" => "billing"})
       assert has_element?(view, "#details")
 
       render_hook(view, "select_section", %{"section" => "__struct__"})

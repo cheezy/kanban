@@ -25,6 +25,7 @@ defmodule Kanban.Organizations.OrganizationTelemetry do
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Telemetry.AfterCommit
+  alias Kanban.Workspaces.Workspace
 
   @doc """
   Emits `[:kanban, :organization, :created]` and records the
@@ -137,6 +138,80 @@ defmodule Kanban.Organizations.OrganizationTelemetry do
       )
     end)
   end
+
+  @doc """
+  Emits `[:kanban, :organization, :workspace_created]` and records the
+  `:org_workspace_created` audit event when `result` is a saved workspace.
+  `actor` is the org-admin. Returns `result`.
+  """
+  @spec workspace_created(result, map()) :: result when result: term()
+  def workspace_created({:ok, %Workspace{} = workspace} = result, actor) do
+    Kanban.Telemetry.emit([:kanban, :organization, :workspace_created], %{count: 1}, %{
+      organization_id: workspace.organization_id,
+      workspace_id: workspace.id
+    })
+
+    AuditLog.event(:org_workspace_created,
+      user_id: actor.id,
+      organization_id: workspace.organization_id,
+      workspace_id: workspace.id
+    )
+
+    result
+  end
+
+  def workspace_created(result, _actor), do: result
+
+  @doc """
+  Emits `[:kanban, :organization, :workspace_renamed]` and records the
+  `:org_workspace_renamed` audit event when `result` is a saved workspace whose
+  name the changeset changed. A rename to the same name reports nothing.
+  Returns `result`.
+  """
+  @spec workspace_renamed(result, Changeset.t(), map()) :: result when result: term()
+  def workspace_renamed(
+        {:ok, %Workspace{} = workspace} = result,
+        %Changeset{changes: %{name: _name}},
+        actor
+      ) do
+    Kanban.Telemetry.emit([:kanban, :organization, :workspace_renamed], %{count: 1}, %{
+      organization_id: workspace.organization_id,
+      workspace_id: workspace.id
+    })
+
+    AuditLog.event(:org_workspace_renamed,
+      user_id: actor.id,
+      organization_id: workspace.organization_id,
+      workspace_id: workspace.id
+    )
+
+    result
+  end
+
+  def workspace_renamed(result, _changeset, _actor), do: result
+
+  @doc """
+  Emits `[:kanban, :organization, :workspace_archived]` and records the
+  `:org_workspace_archived` audit event when `result` is an archived workspace.
+  It is called once the archiving transaction has committed. Returns `result`.
+  """
+  @spec workspace_archived(result, map()) :: result when result: term()
+  def workspace_archived({:ok, %Workspace{} = workspace} = result, actor) do
+    Kanban.Telemetry.emit([:kanban, :organization, :workspace_archived], %{count: 1}, %{
+      organization_id: workspace.organization_id,
+      workspace_id: workspace.id
+    })
+
+    AuditLog.event(:org_workspace_archived,
+      user_id: actor.id,
+      organization_id: workspace.organization_id,
+      workspace_id: workspace.id
+    )
+
+    result
+  end
+
+  def workspace_archived(result, _actor), do: result
 
   defp emit_member_added(%OrganizationMember{} = membership, actor_user_id, account_created) do
     Kanban.Telemetry.emit([:kanban, :organization, :member_added], %{count: 1}, %{
