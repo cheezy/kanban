@@ -12,6 +12,8 @@ defmodule KanbanWeb.Admin.AuditLogLive.Index do
   """
   use KanbanWeb, :live_view
 
+  import KanbanWeb.AuditLogMetadata, only: [audit_metadata: 1]
+
   # Defense-in-depth: the router's `live_session :admin` already declares
   # `{KanbanWeb.UserAuth, :require_admin}` for this route, but we re-declare it
   # here so the LiveView itself cannot be reached by a non-admin even if the
@@ -34,7 +36,7 @@ defmodule KanbanWeb.Admin.AuditLogLive.Index do
 
   @impl true
   def handle_params(params, _url, socket) do
-    parsed = Filters.parse(params)
+    parsed = params |> Filters.parse() |> Filters.keep_known_action(socket.assigns.actions)
     page = AuditLog.list_events_page(parsed.filters, cursor: parsed.cursor, limit: @page_size)
     filter_params = Filters.summary(parsed)
 
@@ -65,9 +67,6 @@ defmodule KanbanWeb.Admin.AuditLogLive.Index do
     do: ~p"/admin/audit-log/export?#{Map.put(params, "format", format)}"
 
   defp format_time(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d %H:%M:%S")
-
-  defp metadata_json(metadata) when metadata == %{} or is_nil(metadata), do: ""
-  defp metadata_json(metadata), do: Jason.encode!(metadata, pretty: true)
 
   # The actor's current email; for an actor whose account has since been
   # deleted (the foreign key nulled) the id kept in the metadata is shown.

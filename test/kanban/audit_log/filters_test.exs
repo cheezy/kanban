@@ -120,6 +120,38 @@ defmodule Kanban.AuditLog.FiltersTest do
     end
   end
 
+  describe "keep_known_action/2" do
+    test "keeps an action the viewer offers" do
+      parsed = Filters.parse(%{"action" => "login_failed", "from" => "2026-10-01"})
+
+      assert Filters.keep_known_action(parsed, ["api_token_created", "login_failed"]) == parsed
+    end
+
+    test "drops an unknown action from the filters and the params, keeping the rest" do
+      parsed =
+        %{"action" => "no_such_action", "from" => "2026-10-01"}
+        |> Filters.parse()
+        |> Filters.keep_known_action(["login_failed"])
+
+      assert parsed.filters[:action] == nil
+      assert parsed.filters[:since] == ~U[2026-10-01 00:00:00.000000Z]
+      assert parsed.params == %{"from" => "2026-10-01"}
+    end
+
+    test "drops every action when the viewer offers none" do
+      parsed = %{"action" => "login_failed"} |> Filters.parse() |> Filters.keep_known_action([])
+
+      assert parsed.filters[:action] == nil
+      assert parsed.params == %{}
+    end
+
+    test "leaves params with no action alone" do
+      parsed = Filters.parse(%{"to" => "2026-10-02"})
+
+      assert Filters.keep_known_action(parsed, []) == parsed
+    end
+  end
+
   describe "summary/1" do
     test "returns the applied filters without the cursor" do
       cursor = Query.encode_cursor(%AuditEvent{id: 1, inserted_at: ~U[2026-10-01 00:00:00Z]})

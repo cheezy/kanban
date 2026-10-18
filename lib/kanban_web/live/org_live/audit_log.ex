@@ -23,6 +23,8 @@ defmodule KanbanWeb.OrgLive.AuditLog do
   """
   use KanbanWeb, :live_view
 
+  import KanbanWeb.AuditLogMetadata, only: [audit_metadata: 1]
+
   # The router's live_session :require_authenticated_user lets in every
   # signed-in user. Re-declaring the org-admin gate here keeps the audit log
   # closed to members, free users and site admins even if the route is moved.
@@ -46,7 +48,7 @@ defmodule KanbanWeb.OrgLive.AuditLog do
 
   @impl true
   def handle_params(params, _url, socket) do
-    parsed = Filters.parse(params)
+    parsed = params |> Filters.parse() |> Filters.keep_known_action(socket.assigns.actions)
     organization_id = socket.assigns.organization.id
     filters = parsed |> org_filters() |> Keyword.put(:organization_id, organization_id)
 
@@ -91,9 +93,6 @@ defmodule KanbanWeb.OrgLive.AuditLog do
     do: ~p"/org/audit/export?#{Map.put(params, "format", format)}"
 
   defp format_time(%DateTime{} = at), do: Calendar.strftime(at, "%Y-%m-%d %H:%M:%S")
-
-  defp metadata_json(metadata) when metadata == %{} or is_nil(metadata), do: ""
-  defp metadata_json(metadata), do: Jason.encode!(metadata, pretty: true)
 
   # An actor who is not a member of this Organization (a site admin who
   # created it or appointed its org-admins) is never identified to the org-admin.

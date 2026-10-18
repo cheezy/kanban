@@ -141,10 +141,22 @@ defmodule KanbanWeb.Admin.AuditLogLive.IndexTest do
     end
 
     test "shows an empty state when nothing matches", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/admin/audit-log?action=nothing_matches")
+      {:ok, view, _html} = live(conn, ~p"/admin/audit-log?from=2030-01-01")
 
       assert has_element?(view, "#audit-log-empty")
       refute has_element?(view, "#audit-events")
+    end
+
+    test "an unknown but well-formed action is not applied, so the list and the select agree",
+         %{conn: conn, old: old, new: new} do
+      {:ok, view, _html} = live(conn, ~p"/admin/audit-log?action=no_such_action")
+
+      refute has_element?(view, "#audit-log-empty")
+      assert has_element?(view, "#events-#{old.id}")
+      assert has_element?(view, "#events-#{new.id}")
+      refute has_element?(view, "#audit-log-filters option[selected]")
+      refute has_element?(view, "#audit-log-clear-filters")
+      refute view |> element("#audit-log-export-csv") |> render() =~ "no_such_action"
     end
 
     test "an unknown action in the URL never becomes an atom and simply matches nothing",

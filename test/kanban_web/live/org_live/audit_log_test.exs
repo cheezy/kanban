@@ -239,9 +239,24 @@ defmodule KanbanWeb.OrgLive.AuditLogTest do
     end
 
     test "a filter matching nothing shows the empty state", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/org/audit?action=sudo_mode_entered")
+      {:ok, view, _html} = live(conn, ~p"/org/audit?from=2030-01-01")
 
       assert has_element?(view, "#audit-log-empty")
+    end
+
+    test "an action not in this Organization's events is not applied, so the list and the select agree",
+         %{conn: conn, updated: updated, appointed: appointed, other: other} do
+      for action <- ["no_such_action", "organization_created"] do
+        {:ok, view, _html} = live(conn, ~p"/org/audit?action=#{action}")
+
+        refute has_element?(view, "#audit-log-empty"), action
+        assert has_element?(view, "#events-#{updated.id}"), action
+        assert has_element?(view, "#events-#{appointed.id}"), action
+        refute has_element?(view, "#events-#{other.id}"), action
+        refute has_element?(view, "#audit-log-filters option[selected]"), action
+        refute has_element?(view, "#audit-log-clear-filters"), action
+        refute view |> element("#audit-log-export-json") |> render() =~ action
+      end
     end
 
     test "a tampered cursor falls back to the newest page", %{conn: conn, appointed: appointed} do

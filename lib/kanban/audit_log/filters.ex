@@ -65,6 +65,28 @@ defmodule Kanban.AuditLog.Filters do
   def parse(_params), do: parse(%{})
 
   @doc """
+  Drops the action filter when its action is not in `known_actions`, the
+  actions the viewer offers in its Action select.
+
+  A well-formed but unknown action (`?action=no_such_action`) would otherwise
+  show an empty list under a select reading "All actions". Dropping it makes
+  the filter not applied, like any other invalid value, so the list, the
+  select and the export links agree.
+  """
+  @spec keep_known_action(t(), [String.t()]) :: t()
+  def keep_known_action(%{params: %{"action" => action}} = parsed, known_actions) do
+    if action in known_actions,
+      do: parsed,
+      else: %{
+        parsed
+        | filters: Keyword.put(parsed.filters, :action, nil),
+          params: Map.delete(parsed.params, "action")
+      }
+  end
+
+  def keep_known_action(parsed, _known_actions), do: parsed
+
+  @doc """
   The applied filters as a plain map (no cursor), for recording in the
   `audit_log_exported` event. Keys are deliberately ones the audit-log
   sanitizer keeps.
