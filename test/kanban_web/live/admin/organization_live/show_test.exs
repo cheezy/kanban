@@ -239,6 +239,19 @@ defmodule KanbanWeb.Admin.OrganizationLive.ShowTest do
       refute has_element?(view, ~s|#appoint-org-admin-form input[value="#{user.email}"]|)
     end
 
+    test "a successful appointment replaces an earlier error message", %{conn: conn} do
+      organization = organization_fixture()
+      user = user_fixture()
+      {:ok, view, _html} = live(conn, ~p"/admin/organizations/#{organization}")
+
+      assert appoint(view, "not-an-email") =~ "Enter a valid email address."
+
+      html = appoint(view, user.email)
+
+      assert html =~ "Org-admin appointed."
+      refute html =~ "Enter a valid email address."
+    end
+
     test "promotes a member of this Organization", %{conn: conn} do
       organization = organization_fixture()
       member = user_fixture()
@@ -388,6 +401,23 @@ defmodule KanbanWeb.Admin.OrganizationLive.ShowTest do
       assert membership(first) == nil
       refute has_element?(view, "#member-#{first.id}")
       assert has_element?(view, "#member-#{second.id}")
+    end
+
+    test "a refused removal replaces an earlier success message", %{conn: conn} do
+      organization = organization_fixture()
+      first = user_fixture()
+      second = user_fixture()
+      organization_member_fixture(organization, first, :org_admin)
+      organization_member_fixture(organization, second, :org_admin)
+      organization_member_fixture(organization, user_fixture(), :member)
+      {:ok, view, _html} = live(conn, ~p"/admin/organizations/#{organization}")
+
+      assert remove(view, first) =~ "Org-admin removed."
+
+      html = remove(view, second)
+
+      assert html =~ "You cannot remove the last org-admin"
+      refute html =~ "Org-admin removed."
     end
 
     test "refuses to remove the last org-admin while members remain", %{conn: conn} do

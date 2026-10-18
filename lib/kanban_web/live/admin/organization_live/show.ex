@@ -74,7 +74,7 @@ defmodule KanbanWeb.Admin.OrganizationLive.Show do
 
         nil ->
           {:noreply,
-           socket |> put_flash(:error, error_message(:not_found)) |> refresh(organization)}
+           socket |> replace_flash(:error, error_message(:not_found)) |> refresh(organization)}
       end
     end)
   end
@@ -82,7 +82,7 @@ defmodule KanbanWeb.Admin.OrganizationLive.Show do
   # A tampered payload without a user id cannot name anyone to remove.
   @impl true
   def handle_event("remove", _params, socket),
-    do: {:noreply, put_flash(socket, :error, error_message(:not_found))}
+    do: {:noreply, replace_flash(socket, :error, error_message(:not_found))}
 
   @doc """
   Maps a refusal from `Kanban.Organizations` to the flash message shown to the
@@ -129,7 +129,7 @@ defmodule KanbanWeb.Admin.OrganizationLive.Show do
   defp with_organization(socket, fun) do
     case authorized_actor(socket) do
       nil ->
-        {:noreply, put_flash(socket, :error, error_message(:unauthorized))}
+        {:noreply, replace_flash(socket, :error, error_message(:unauthorized))}
 
       actor ->
         case Organizations.get_organization(socket.assigns.organization.id, actor) do
@@ -142,7 +142,7 @@ defmodule KanbanWeb.Admin.OrganizationLive.Show do
   defp respond_to_appoint({:ok, _member}, _email, organization, socket) do
     {:noreply,
      socket
-     |> put_flash(:info, gettext("Org-admin appointed."))
+     |> replace_flash(:info, gettext("Org-admin appointed."))
      |> assign(:appoint_form, appoint_form())
      |> refresh(organization)}
   end
@@ -150,7 +150,7 @@ defmodule KanbanWeb.Admin.OrganizationLive.Show do
   defp respond_to_appoint({:error, reason}, email, organization, socket) do
     {:noreply,
      socket
-     |> put_flash(:error, appoint_error_message(reason))
+     |> replace_flash(:error, appoint_error_message(reason))
      |> assign(:appoint_form, appoint_form(email))
      |> refresh(organization)}
   end
@@ -158,14 +158,14 @@ defmodule KanbanWeb.Admin.OrganizationLive.Show do
   defp respond_to_remove({:ok, _member}, organization, socket) do
     {:noreply,
      socket
-     |> put_flash(:info, gettext("Org-admin removed."))
+     |> replace_flash(:info, gettext("Org-admin removed."))
      |> refresh(organization)}
   end
 
   defp respond_to_remove({:error, reason}, organization, socket) do
     {:noreply,
      socket
-     |> put_flash(:error, error_message(reason))
+     |> replace_flash(:error, error_message(reason))
      |> refresh(organization)}
   end
 
@@ -177,9 +177,14 @@ defmodule KanbanWeb.Admin.OrganizationLive.Show do
 
   defp refresh(socket, organization), do: assign_organization(socket, organization)
 
+  # Every message replaces the one before it, so an earlier error never stays
+  # on screen beside (or after) the success that follows it.
+  defp replace_flash(socket, kind, message),
+    do: socket |> clear_flash() |> put_flash(kind, message)
+
   defp organization_not_found(socket) do
     socket
-    |> put_flash(:error, gettext("Organization not found."))
+    |> replace_flash(:error, gettext("Organization not found."))
     |> push_navigate(to: ~p"/admin/organizations")
   end
 

@@ -5,7 +5,8 @@ defmodule KanbanWeb.OrgLive.Console do
   It always shows the signed-in org-admin's own Organization: the id comes from
   the membership `KanbanWeb.UserAuth` loaded into `current_scope`, never from
   params. Sections follow the `KanbanWeb.UserLive.Settings` pattern, with an
-  allow-listed `select_section` event:
+  allow-listed `select_section` event. Choosing a section patches the URL to
+  `/org?section=<name>`, so a section can be linked to and survives a reload:
 
     * Details - the Organization's name, address and contact, read-only. Only a
       site admin edits them.
@@ -52,10 +53,19 @@ defmodule KanbanWeb.OrgLive.Console do
     end
   end
 
+  # ?section= opens that section; anything else, including an unknown name or
+  # no parameter, shows Details.
+  @impl true
+  def handle_params(%{"section" => section}, _uri, socket) when section in @sections do
+    {:noreply, assign(socket, :section, String.to_existing_atom(section))}
+  end
+
+  def handle_params(_params, _uri, socket), do: {:noreply, assign(socket, :section, :details)}
+
   @impl true
   def handle_event("select_section", %{"section" => section}, socket)
       when section in @sections do
-    {:noreply, assign(socket, :section, String.to_existing_atom(section))}
+    {:noreply, push_patch(socket, to: ~p"/org?#{[section: section]}")}
   end
 
   # A crafted payload naming any other section leaves the console as it is.

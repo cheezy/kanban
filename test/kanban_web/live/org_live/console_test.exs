@@ -228,11 +228,40 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
       refute has_element?(view, "#members")
 
       view |> element("#settings-tab-members") |> render_click()
+      assert_patch(view, ~p"/org?section=members")
       assert has_element?(view, "#members")
       refute has_element?(view, "#details")
 
       view |> element("#settings-tab-details") |> render_click()
+      assert_patch(view, ~p"/org?section=details")
       assert has_element?(view, "#details")
+    end
+
+    test "?section=members opens the Members section directly", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/org?section=members")
+
+      assert has_element?(view, "#members")
+      assert has_element?(view, "#member-list")
+      refute has_element?(view, "#details")
+      assert has_element?(view, ~s|#settings-tab-members[aria-selected="true"]|)
+    end
+
+    test "an unknown or empty ?section= shows Details", %{conn: conn} do
+      for query <- ["section=workspaces", "section=__struct__", "section=", "other=1"] do
+        {:ok, view, _html} = live(conn, "/org?" <> query)
+
+        assert has_element?(view, "#details"), query
+        refute has_element?(view, "#members"), query
+      end
+    end
+
+    test "patching back to /org with no section returns to Details", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/org?section=members")
+
+      render_patch(view, ~p"/org")
+
+      assert has_element?(view, "#details")
+      refute has_element?(view, "#members")
     end
 
     test "ignores an unknown or missing section name", %{conn: conn} do

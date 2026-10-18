@@ -583,7 +583,7 @@ Requests without these fields get no `warnings` key. The strip uses `Plans.strip
 
 ### 8.2 The org console (`/org`)
 
-Built by W2395 and W2396, extended by W2218, W2397 and G445. Sections follow the `UserLive.Settings` pattern (sections plus a `select_section` event).
+Built by W2395 and W2396, extended by W2218, W2397 and G445. Sections follow the `UserLive.Settings` pattern (sections plus a `select_section` event). Choosing a section patches the URL to `/org?section=<name>`, so each section can be linked to and survives a reload. An unknown or missing `section` shows Details. A task that adds a section adds its name to the console's `@sections` allow-list.
 
 | Section | Contents | Task |
 |---|---|---|
