@@ -667,6 +667,31 @@ change emits nothing. Every event measures `count: 1`.
   Organization, a personal or archived workspace, or an archive refused while
   the workspace holds boards) and an invalid name emit and record nothing.
 
+### Plan events
+
+W2399 added the paid-plan refusal event. It is declared in
+`Kanban.Telemetry.Catalog.PlanEvents` (`lib/kanban/telemetry/catalog/plan_events.ex`)
+and emitted by `Kanban.Plans`. It measures `count: 1`.
+
+| Event | Metadata | Emitted by |
+|---|---|---|
+| `[:kanban, :plan, :feature_refused]` | `feature`, `surface` | `Kanban.Plans.check_board/3` and `check_user/3`, only when they refuse |
+
+- **When it fires.** Only when plans are enforced and the board or user is
+  on the free plan, so nothing is emitted while `:plans_enforced` is off. An
+  allowed check emits nothing.
+- **What it carries.** `feature` is one of `Kanban.Plans.features/0`
+  (`:notifications`, `:audit`, `:sso`, `:workspaces`, `:bulk_actions`,
+  `:integrations`, `:telemetry` or `:mcp`) and `surface` is the entry point
+  that refused it: `:live_view`, `:controller`, `:rest`, `:mcp`, `:oban` or
+  `:context`. Both are tags. The board, the user and the request are never
+  sent.
+- **A bad label raises instead.** A feature or surface outside those sets
+  raises `ArgumentError` in `Kanban.Plans` before anything is emitted, with
+  enforcement on or off, so an unknown value never reaches a handler.
+- **Not persisted.** A free user can trigger a refusal at will, so the event
+  is charted but never stored in `metrics_events`.
+
 ## Emitting an event
 
 ```elixir
@@ -742,8 +767,9 @@ raise.
    is an entry in `Kanban.Telemetry.Catalog.TargetEvents`, a new broadcast
    message event is an entry in `Kanban.Telemetry.Catalog.MessageEvents`, a
    new goal, dependency or after_goal event is an entry in
-   `Kanban.Telemetry.Catalog.GoalEvents`, and a new Organization event is an
-   entry in `Kanban.Telemetry.Catalog.OrganizationEvents`.
+   `Kanban.Telemetry.Catalog.GoalEvents`, a new Organization event is an
+   entry in `Kanban.Telemetry.Catalog.OrganizationEvents`, and a new paid
+   plan event is an entry in `Kanban.Telemetry.Catalog.PlanEvents`.
 2. Emit it with `Kanban.Telemetry.emit/3` or `Kanban.Telemetry.span/3`.
 3. Test it with the helper below. `test/kanban/telemetry_test.exs` fails if an
    entry is missing a field, repeats a name, declares a forbidden key, or has
@@ -877,7 +903,7 @@ delivery that returns an error still ends in `:stop`; `:exception` is a raise.
 
 A tag becomes a LiveDashboard label, so it must be a metadata key with a small,
 fixed set of values that says nothing about a person: `endpoint`, `method`,
-`status`, `kind`, `format`, `outcome`, `surface` or `reason`. Never tag by
+`status`, `kind`, `format`, `outcome`, `surface`, `reason` or `feature`. Never tag by
 `user_id`, `board_id`, `task_id` or any other id.
 `test/kanban/telemetry_test.exs` fails if an entry tags any other key.
 
@@ -1133,6 +1159,12 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :organization, :workspace_created]` | event | `count` | `organization_id`, `workspace_id` | An org-admin created a workspace for their Organization. |
 | `[:kanban, :organization, :workspace_renamed]` | event | `count` | `organization_id`, `workspace_id` | An org-admin renamed one of their Organization's workspaces. The name is never in the metadata. |
 | `[:kanban, :organization, :workspace_archived]` | event | `count` | `organization_id`, `workspace_id` | An org-admin archived one of their Organization's workspaces. |
+
+### Domain `plan`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :plan, :feature_refused]` | event | `count` | `feature`, `surface` | A plan check refused a paid feature because plans are enforced and the board or user is on the free plan. feature is one of Kanban.Plans.features/0 and surface names the entry point, never a board or user. |
 
 ### Domain `pubsub`
 

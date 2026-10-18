@@ -8,6 +8,7 @@ defmodule Kanban.PlansTest do
   import Kanban.BoardsFixtures
   import Kanban.OrganizationsFixtures
   import Kanban.PlansHelpers
+  import Kanban.TelemetryHelpers
   import Kanban.WorkspacesFixtures
 
   alias Kanban.Accounts.Scope
@@ -243,6 +244,285 @@ defmodule Kanban.PlansTest do
       enforce_plans()
       refute Plans.board_unlocked?(personal_board)
       assert Plans.board_unlocked?(org_board)
+    end
+  end
+
+  @refused [:kanban, :plan, :feature_refused]
+  @features [
+    :notifications,
+    :audit,
+    :sso,
+    :workspaces,
+    :bulk_actions,
+    :integrations,
+    :telemetry,
+    :mcp
+  ]
+  @surfaces [:live_view, :controller, :rest, :mcp, :oban, :context]
+
+  describe "features/0 and surfaces/0" do
+    test "features/0 returns exactly the eight paid features in a stable order" do
+      assert Plans.features() == @features
+      assert Plans.features() == Plans.features()
+    end
+
+    test "surfaces/0 returns the six entry points a refusal can come from" do
+      assert Plans.surfaces() == @surfaces
+    end
+  end
+
+  describe "parse_feature/1" do
+    test "maps each feature's name to its atom" do
+      for feature <- @features do
+        assert feature |> Atom.to_string() |> Plans.parse_feature() == feature
+      end
+    end
+
+    test "returns :error for an unknown name" do
+      for name <- ["", "billing", "plans", "notification", "audit_log"] do
+        assert Plans.parse_feature(name) == :error, "expected #{inspect(name)} to be :error"
+      end
+    end
+
+    test "rejects a different case or surrounding whitespace" do
+      for name <- ["Notifications", "MCP", " sso", "audit ", "telemetry\n", "\tworkspaces"] do
+        assert Plans.parse_feature(name) == :error, "expected #{inspect(name)} to be :error"
+      end
+    end
+
+    test "returns :error for input that is not a string" do
+      for input <- [nil, :notifications, 1, ~c"sso", %{}] do
+        assert Plans.parse_feature(input) == :error
+      end
+    end
+
+    test "never creates an atom" do
+      name = "plans_test_feature_#{System.unique_integer([:positive])}"
+
+      assert Plans.parse_feature(name) == :error
+      assert_raise ArgumentError, fn -> String.to_existing_atom(name) end
+    end
+  end
+
+  describe "check_board/3" do
+    setup do
+      attach_telemetry(@refused)
+      free = user_fixture()
+
+      %{
+        paid_board: org_board(organization_fixture()),
+        free_board: board_fixture(free)
+      }
+    end
+
+    test "is :ok for every board, without querying or emitting, when enforcement is off", ctx do
+      Application.put_env(:kanban, :plans_enforced, false)
+
+      for board <- [ctx.paid_board, ctx.free_board, ctx.free_board.id, %Board{workspace: nil}] do
+        assert {:ok, 0} =
+                 count_queries(fn -> Plans.check_board(board, :audit, surface: :live_view) end)
+      end
+
+      refute_received {:telemetry_event, @refused, _measurements, _metadata}
+    end
+
+    test "is :ok for a paid board when enforcement is on, and emits nothing", ctx do
+      enforce_plans()
+
+      assert Plans.check_board(ctx.paid_board, :notifications, surface: :rest) == :ok
+      assert Plans.check_board(ctx.paid_board.id, :notifications, surface: :rest) == :ok
+
+      refute_received {:telemetry_event, @refused, _measurements, _metadata}
+    end
+
+    test "refuses a free board when enforcement is on and emits feature and surface only", ctx do
+      enforce_plans()
+
+      assert Plans.check_board(ctx.free_board, :bulk_actions, surface: :controller) ==
+               {:error, {:plan_required, :bulk_actions}}
+
+      assert_received {:telemetry_event, @refused, %{count: 1}, metadata}
+      assert metadata == %{feature: :bulk_actions, surface: :controller}
+
+      assert Plans.check_board(ctx.free_board.id, :mcp, surface: :mcp) ==
+               {:error, {:plan_required, :mcp}}
+
+      assert_received {:telemetry_event, @refused, %{count: 1}, %{feature: :mcp, surface: :mcp}}
+    end
+
+    test "refuses a board without a workspace when enforcement is on" do
+      enforce_plans()
+
+      assert Plans.check_board(%Board{workspace: nil}, :sso, surface: :context) ==
+               {:error, {:plan_required, :sso}}
+
+      assert_received {:telemetry_event, @refused, %{count: 1},
+                       %{feature: :sso, surface: :context}}
+    end
+
+    test "accepts every feature and every surface", ctx do
+      enforce_plans()
+
+      for feature <- @features, surface <- @surfaces do
+        assert Plans.check_board(ctx.free_board, feature, surface: surface) ==
+                 {:error, {:plan_required, feature}}
+
+        assert_received {:telemetry_event, @refused, %{count: 1}, metadata}
+        assert metadata == %{feature: feature, surface: surface}
+      end
+    end
+  end
+
+  describe "check_user/3" do
+    setup do
+      attach_telemetry(@refused)
+      organization = organization_fixture()
+      member = user_fixture()
+      organization_member_fixture(organization, member)
+
+      %{member: member, free: user_fixture()}
+    end
+
+    test "is :ok for every subject, without querying or emitting, when enforcement is off", ctx do
+      Application.put_env(:kanban, :plans_enforced, false)
+
+      for subject <- [ctx.member, ctx.free, Scope.for_user(ctx.free), %Scope{}, nil] do
+        assert {:ok, 0} =
+                 count_queries(fn -> Plans.check_user(subject, :telemetry, surface: :oban) end)
+      end
+
+      refute_received {:telemetry_event, @refused, _measurements, _metadata}
+    end
+
+    test "is :ok for an Organization member when enforcement is on, and emits nothing", ctx do
+      enforce_plans()
+
+      assert Plans.check_user(ctx.member, :integrations, surface: :live_view) == :ok
+
+      member_scope = Scope.for_user(ctx.member)
+      assert Plans.check_user(member_scope, :integrations, surface: :live_view) == :ok
+
+      refute_received {:telemetry_event, @refused, _measurements, _metadata}
+    end
+
+    test "refuses a free user, a scope without a user and nil when enforcement is on", ctx do
+      enforce_plans()
+
+      for subject <- [ctx.free, Scope.for_user(ctx.free), %Scope{}, nil] do
+        assert Plans.check_user(subject, :workspaces, surface: :rest) ==
+                 {:error, {:plan_required, :workspaces}}
+
+        assert_received {:telemetry_event, @refused, %{count: 1}, metadata}
+        assert metadata == %{feature: :workspaces, surface: :rest}
+      end
+    end
+  end
+
+  describe "check_board/3 and check_user/3 reject a bad feature or surface" do
+    setup do
+      attach_telemetry(@refused)
+      %{free_board: board_fixture(user_fixture()), free: user_fixture()}
+    end
+
+    for enforced <- [false, true] do
+      @enforced enforced
+
+      test "raise for an unknown feature, a parsed :error or a string (enforced: #{enforced})",
+           ctx do
+        Application.put_env(:kanban, :plans_enforced, @enforced)
+
+        for feature <- [:billing, :error, "audit", nil] do
+          assert_raise ArgumentError, ~r/unknown plan feature/, fn ->
+            Plans.check_board(ctx.free_board, feature, surface: :rest)
+          end
+
+          assert_raise ArgumentError, ~r/unknown plan feature/, fn ->
+            Plans.check_user(ctx.free, feature, surface: :rest)
+          end
+        end
+
+        refute_received {:telemetry_event, @refused, _measurements, _metadata}
+      end
+
+      test "raise for an unknown or missing surface (enforced: #{enforced})", ctx do
+        Application.put_env(:kanban, :plans_enforced, @enforced)
+
+        for opts <- [[surface: :api], [surface: "rest"], [surface: nil]] do
+          assert_raise ArgumentError, ~r/unknown plan surface/, fn ->
+            Plans.check_board(ctx.free_board, :audit, opts)
+          end
+
+          assert_raise ArgumentError, ~r/unknown plan surface/, fn ->
+            Plans.check_user(ctx.free, :audit, opts)
+          end
+        end
+
+        assert_raise ArgumentError, ~r/needs a :surface option/, fn ->
+          Plans.check_board(ctx.free_board, :audit, [])
+        end
+
+        assert_raise ArgumentError, ~r/needs a :surface option/, fn ->
+          Plans.check_user(ctx.free, :audit, [])
+        end
+
+        refute_received {:telemetry_event, @refused, _measurements, _metadata}
+      end
+    end
+
+    test "raise when the options are not a keyword list", ctx do
+      assert_raise ArgumentError, ~r/must be a keyword list/, fn ->
+        Plans.check_board(ctx.free_board, :audit, %{surface: :rest})
+      end
+
+      assert_raise ArgumentError, ~r/must be a keyword list/, fn ->
+        Plans.check_user(ctx.free, :audit, nil)
+      end
+    end
+
+    test "never echo a non-atom value into the error message", ctx do
+      error =
+        assert_raise ArgumentError, fn ->
+          Plans.check_board(ctx.free_board, "secret-feature-name", surface: :rest)
+        end
+
+      refute error.message =~ "secret-feature-name"
+
+      error =
+        assert_raise ArgumentError, fn ->
+          Plans.check_user(ctx.free, :audit, surface: "secret-surface-name")
+        end
+
+      refute error.message =~ "secret-surface-name"
+    end
+  end
+
+  describe "paid_board_ids_query/0" do
+    test "returns only the ids of boards in Organization workspaces" do
+      organization = organization_fixture()
+      paid_a = org_board(organization)
+      paid_b = org_board(organization_fixture())
+      _free = board_fixture(user_fixture())
+
+      assert Plans.paid_board_ids_query() |> Repo.all() |> Enum.sort() ==
+               Enum.sort([paid_a.id, paid_b.id])
+    end
+
+    test "composes into a subquery" do
+      paid = org_board(organization_fixture())
+      free = board_fixture(user_fixture())
+
+      ids =
+        Board
+        |> where([b], b.id in ^[paid.id, free.id])
+        |> where([b], b.id in subquery(Plans.paid_board_ids_query()))
+        |> select([b], b.id)
+        |> Repo.all()
+
+      assert ids == [paid.id]
+    end
+
+    test "only builds the query and never runs it" do
+      assert {%Ecto.Query{}, 0} = count_queries(fn -> Plans.paid_board_ids_query() end)
     end
   end
 
