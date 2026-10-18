@@ -457,7 +457,23 @@ defmodule Kanban.WorkspacesTest do
 
     test "returns nil for a missing or malformed id", ctx do
       assert Workspaces.get_workspace(-1, ctx.admin) == nil
+      assert Workspaces.get_workspace(0, ctx.admin) == nil
       assert Workspaces.get_workspace("abc", ctx.admin) == nil
+      assert Workspaces.get_workspace("#{ctx.workspace.id}abc", ctx.admin) == nil
+      assert Workspaces.get_workspace("", ctx.admin) == nil
+      assert Workspaces.get_workspace(1.5, ctx.admin) == nil
+    end
+
+    test "returns nil rather than raising for nil or an id past the column's range", ctx do
+      assert Workspaces.get_workspace(nil, ctx.admin) == nil
+      assert Workspaces.get_workspace("99999999999999999999", ctx.admin) == nil
+      assert Workspaces.get_workspace(99_999_999_999_999_999_999, ctx.admin) == nil
+      assert Workspaces.get_workspace("9223372036854775808", ctx.admin) == nil
+    end
+
+    test "accepts the largest id the column holds without raising", ctx do
+      assert Workspaces.get_workspace(9_223_372_036_854_775_807, ctx.admin) == nil
+      assert Workspaces.get_workspace("9223372036854775807", ctx.admin) == nil
     end
 
     test "still returns an archived workspace", ctx do

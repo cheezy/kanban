@@ -29,6 +29,8 @@ defmodule Kanban.Workspaces do
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
 
+  @max_bigint 9_223_372_036_854_775_807
+
   @personal_workspace_name "Personal"
   @assignable_roles [:member, :guest]
 
@@ -141,11 +143,12 @@ defmodule Kanban.Workspaces do
   `actor` reaches a personal workspace only as its owner, and an org workspace
   as an org-admin of its Organization or through a member or guest row. A
   workspace `actor` cannot reach looks exactly like one that does not exist.
-  Archived workspaces are returned.
+  Archived workspaces are returned, and an `id` that is not a positive integer
+  that fits the column (`nil`, `"abc"`, `"99999999999999999999"`) is `nil`.
   """
-  @spec get_workspace(integer() | String.t(), User.t()) :: Workspace.t() | nil
+  @spec get_workspace(integer() | String.t() | nil, User.t()) :: Workspace.t() | nil
   def get_workspace(id, %User{} = actor) do
-    with {:ok, id} <- Ecto.Type.cast(:id, id),
+    with id when is_integer(id) <- parse_id(id),
          %Workspace{} = workspace <- Repo.get(Workspace, id),
          true <- reachable?(workspace, actor) do
       workspace
@@ -153,6 +156,19 @@ defmodule Kanban.Workspaces do
       _ -> nil
     end
   end
+
+  # Ecto.Type.cast(:id, _) accepts nil and integers past bigint, and Repo.get/2
+  # raises on both, so a URL-supplied id is bounded here before it is queried.
+  defp parse_id(id) when is_integer(id) and id > 0 and id <= @max_bigint, do: id
+
+  defp parse_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {int_id, ""} -> parse_id(int_id)
+      _ -> nil
+    end
+  end
+
+  defp parse_id(_id), do: nil
 
   defp reachable?(%Workspace{personal: true} = workspace, actor),
     do: get_member_role(workspace, actor) == :owner
