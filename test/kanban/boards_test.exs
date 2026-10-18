@@ -5,8 +5,11 @@ defmodule Kanban.BoardsTest do
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
+  import Kanban.OrganizationsFixtures, only: [organization_fixture: 0]
   import Kanban.TelemetryHelpers
-  import Kanban.WorkspacesFixtures, only: [remove_personal_workspace: 1]
+
+  import Kanban.WorkspacesFixtures,
+    only: [org_workspace_fixture: 1, place_board_in_workspace: 1, remove_personal_workspace: 1]
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
@@ -2427,6 +2430,107 @@ defmodule Kanban.BoardsTest do
       assert {:error, :unauthorized} = Boards.update_user_access(board, member, :owner, member)
       assert {:error, :not_found} = Boards.update_user_access(board, outsider, :modify, owner)
       refute_received {:telemetry_event, _, _, _}
+    end
+  end
+
+  describe "over_cap_boards/0" do
+    # A board in its owner's personal workspace with the owner row plus `extra`
+    # added members, so it has `extra + 1` board_users rows.
+    defp personal_board_with_members(extra) do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      add_board_members(board, owner, extra)
+      %{owner: owner, board: board}
+    end
+
+    defp add_board_members(board, owner, count) do
+      for _ <- List.duplicate(nil, count) do
+        {:ok, _} = Boards.add_user_to_board(board, user_fixture(), :modify, owner)
+      end
+    end
+
+    # Counts the Repo queries this test process runs while `fun` executes.
+    defp count_repo_queries(fun) do
+      test_pid = self()
+      ref = :counters.new(1, [])
+      handler_id = "over-cap-boards-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :repo, :query],
+        fn _event, _measurements, _metadata, _config ->
+          if self() == test_pid, do: :counters.add(ref, 1, 1)
+        end,
+        nil
+      )
+
+      try do
+        {fun.(), :counters.get(ref, 1)}
+      after
+        :telemetry.detach(handler_id)
+      end
+    end
+
+    test "lists a 4-member personal board and excludes a 3-member board and an org board" do
+      %{owner: owner, board: over} = personal_board_with_members(3)
+      %{board: at_cap} = personal_board_with_members(2)
+
+      org_board = organization_fixture() |> org_workspace_fixture() |> place_board_in_workspace()
+      org_owner = Repo.get_by!(BoardUser, board_id: org_board.id, access: :owner)
+      add_board_members(org_board, Repo.preload(org_owner, :user).user, 4)
+
+      report = Boards.over_cap_boards()
+
+      assert report == [%{board_id: over.id, owner_user_id: owner.id, member_count: 4}]
+      refute Enum.any?(report, &(&1.board_id in [at_cap.id, org_board.id]))
+    end
+
+    test "counts every access level and orders boards by id" do
+      %{owner: first_owner, board: first} = personal_board_with_members(4)
+      second_owner = user_fixture()
+      second = board_fixture(second_owner)
+
+      for access <- [:read_only, :read_only, :modify] do
+        {:ok, _} = Boards.add_user_to_board(second, user_fixture(), access, second_owner)
+      end
+
+      assert Boards.over_cap_boards() == [
+               %{board_id: first.id, owner_user_id: first_owner.id, member_count: 5},
+               %{board_id: second.id, owner_user_id: second_owner.id, member_count: 4}
+             ]
+    end
+
+    test "keeps a board with no owner row and reports its owner as nil" do
+      %{board: board} = personal_board_with_members(4)
+
+      {1, _} =
+        from(bu in BoardUser, where: bu.board_id == ^board.id and bu.access == :owner)
+        |> Repo.delete_all()
+
+      assert Boards.over_cap_boards() == [
+               %{board_id: board.id, owner_user_id: nil, member_count: 4}
+             ]
+    end
+
+    test "returns ids and counts only, from one query" do
+      personal_board_with_members(3)
+      personal_board_with_members(5)
+
+      {report, queries} = count_repo_queries(&Boards.over_cap_boards/0)
+
+      assert length(report) == 2
+      assert queries == 1
+
+      assert Enum.all?(
+               report,
+               &(Enum.sort(Map.keys(&1)) == [:board_id, :member_count, :owner_user_id])
+             )
+    end
+
+    test "returns an empty list when no board is over the cap" do
+      personal_board_with_members(2)
+
+      assert Boards.over_cap_boards() == []
     end
   end
 end

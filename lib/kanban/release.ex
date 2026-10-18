@@ -18,7 +18,9 @@ defmodule Kanban.Release do
 
   It also carries `scan_credential_considerations/0`, the read-only report of
   stored `security_considerations` entries shaped like a credential (W2384),
-  described in `docs/matrix-row-refusal-contract.md`.
+  described in `docs/matrix-row-refusal-contract.md`, and
+  `report_over_cap_boards/0`, the read-only report of personal-workspace boards
+  over the free member cap (W2402).
 
   Log lines from this module carry reason atoms and exception types only,
   never the admin URL, its host or its password.
@@ -26,6 +28,8 @@ defmodule Kanban.Release do
 
   alias Kanban.AuditLog.Hardening
   alias Kanban.AuditLog.Hardening.Purge
+  alias Kanban.Boards
+  alias Kanban.Boards.Membership
   alias Kanban.Repo
   alias Kanban.Tasks.SecurityConsiderationsScan
 
@@ -152,6 +156,26 @@ defmodule Kanban.Release do
 
     {:ok, report, _} =
       Ecto.Migrator.with_repo(Repo, fn _repo -> SecurityConsiderationsScan.scan_stored() end)
+
+    report
+  end
+
+  @doc """
+  Reports every personal-workspace board with more members than
+  `Kanban.Plans.free_board_member_cap/0`, through the app Repo — the release
+  counterpart of `mix kanban.over_cap_boards`, which a release cannot run.
+
+  Runs `Kanban.Boards.over_cap_boards/0` and returns its list: one map per
+  board with `:board_id`, `:owner_user_id` (or `nil`) and `:member_count`, or
+  `[]`. Read-only — it never writes or prints, and carries no board name, user
+  name or email. Run it with `bin/kanban eval` and pipe the result to
+  `IO.inspect/1`.
+  """
+  @spec report_over_cap_boards() :: [Membership.over_cap_board()]
+  def report_over_cap_boards do
+    load_app()
+
+    {:ok, report, _} = Ecto.Migrator.with_repo(Repo, fn _repo -> Boards.over_cap_boards() end)
 
     report
   end

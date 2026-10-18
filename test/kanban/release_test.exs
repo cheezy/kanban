@@ -12,6 +12,9 @@ defmodule Kanban.ReleaseTest do
   import Kanban.TasksFixtures
 
   alias Kanban.AuditLogRoleHelper
+  alias Kanban.Boards
+  alias Kanban.Boards.Board
+  alias Kanban.Boards.BoardUser
   alias Kanban.Release
   alias Kanban.Tasks.Task
 
@@ -251,6 +254,28 @@ defmodule Kanban.ReleaseTest do
     assert report == [%{identifier: task.identifier, task_id: task.id, positions: [2]}]
     refute Enum.any?(report, &(&1.task_id == clean.id))
     refute inspect(report) =~ token
+  end
+
+  test "report_over_cap_boards/0 returns the same list as Boards.over_cap_boards/0 and writes nothing" do
+    owner = user_fixture()
+    board = board_fixture(owner)
+    under = board_fixture(user_fixture())
+
+    for _ <- 1..3 do
+      {:ok, _} = Boards.add_user_to_board(board, user_fixture(), :modify, owner)
+    end
+
+    counts = fn -> {Repo.aggregate(Board, :count), Repo.aggregate(BoardUser, :count)} end
+    before = counts.()
+
+    report = Release.report_over_cap_boards()
+
+    assert report == [%{board_id: board.id, owner_user_id: owner.id, member_count: 4}]
+    assert report == Boards.over_cap_boards()
+    refute Enum.any?(report, &(&1.board_id == under.id))
+    refute inspect(report) =~ owner.email
+    refute inspect(report) =~ board.name
+    assert counts.() == before
   end
 
   test "audit_log_boot_check logs one warning naming the reasons when degraded and nothing when hardened" do

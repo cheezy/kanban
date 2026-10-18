@@ -2,7 +2,9 @@ defmodule Kanban.Boards do
   @moduledoc """
   The Boards context.
 
-  Board membership queries live in `Kanban.Boards.Membership` and membership
+  Board membership queries, including the `over_cap_boards/0` report of
+  personal-workspace boards over the free member cap, live in
+  `Kanban.Boards.Membership` and membership
   writes (add, change access, remove), with the free-board member cap and its
   `member_cap_status/1` read, in `Kanban.Boards.MembershipChanges`.
   Board creation lives in `Kanban.Boards.Creation`, and the scoped metrics
@@ -68,6 +70,7 @@ defmodule Kanban.Boards do
   ## Membership
 
   defdelegate board_counts_by_user(), to: Membership
+  defdelegate over_cap_boards(), to: Membership
 
   # Board-scoped member lookups for comment @mentions (see Kanban.Boards.MemberSearch).
   defdelegate search_board_members(scope, board, query, limit), to: MemberSearch
