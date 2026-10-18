@@ -10,7 +10,9 @@ defmodule KanbanWeb.UserAuthTest do
   alias Kanban.AuditLog
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
+  alias Kanban.Repo
   alias KanbanWeb.UserAuth
+  alias KanbanWeb.UserAuth.OrgAdminGate
   alias Phoenix.LiveView
 
   @remember_me_cookie "_kanban_web_user_remember_me"
@@ -699,9 +701,13 @@ defmodule KanbanWeb.UserAuthTest do
 
   describe "on_mount :require_org_admin" do
     setup %{conn: conn} do
+      # A router-mounted socket: the gate attaches a handle_params hook, which
+      # LiveView only allows on a view mounted with live/3.
       socket = %LiveView.Socket{
         endpoint: KanbanWeb.Endpoint,
-        assigns: %{__changed__: %{}, flash: %{}}
+        router: KanbanWeb.Router,
+        assigns: %{__changed__: %{}, flash: %{}},
+        private: %{live_temp: %{}, lifecycle: %Phoenix.LiveView.Lifecycle{}}
       }
 
       %{conn: conn, socket: socket, organization: organization_fixture()}
@@ -724,6 +730,44 @@ defmodule KanbanWeb.UserAuthTest do
                UserAuth.on_mount(:require_org_admin, %{}, mount_session(conn, user), socket)
 
       assert socket.assigns.current_organization.id == organization.id
+    end
+
+    test "re-checks the role on every patch: an org-admin who stays one continues", %{
+      conn: conn,
+      socket: socket,
+      organization: organization,
+      user: user
+    } do
+      organization_member_fixture(organization, user, :org_admin)
+
+      {:cont, socket} =
+        UserAuth.on_mount(:require_org_admin, %{}, mount_session(conn, user), socket)
+
+      assert {:cont, _socket} = OrgAdminGate.recheck_params(%{}, "/org", socket)
+      assert AuditLog.list_events(action: :permission_denied, actor_user_id: user.id) == []
+    end
+
+    test "re-checks the role on every patch: an org-admin removed since mount is refused", %{
+      conn: conn,
+      socket: socket,
+      organization: organization,
+      user: user
+    } do
+      membership = organization_member_fixture(organization, user, :org_admin)
+
+      {:cont, socket} =
+        UserAuth.on_mount(:require_org_admin, %{}, mount_session(conn, user), socket)
+
+      Repo.delete!(membership)
+
+      assert {:halt, socket} = OrgAdminGate.recheck_params(%{}, "/org/audit", socket)
+      assert socket.redirected == {:redirect, %{status: 302, to: ~p"/boards"}}
+
+      assert Phoenix.Flash.get(socket.assigns.flash, :error) ==
+               "You must be an org-admin of an Organization to access this page."
+
+      assert [event] = AuditLog.list_events(action: :permission_denied, actor_user_id: user.id)
+      assert event.metadata["gate"] == "require_org_admin"
     end
 
     test "refuses a member with a flash, an audit event and a redirect to /boards", %{

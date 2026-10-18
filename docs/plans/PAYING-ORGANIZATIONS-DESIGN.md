@@ -595,6 +595,7 @@ Built by W2395 and W2396, extended by W2218, W2397 and G445. Sections follow the
 
 - `current_scope.organization_membership` (a new `Kanban.Accounts.Scope` field) is loaded by `KanbanWeb.UserAuth` with one indexed query for both the plug and the on_mount.
 - Nothing reads an Organization id from params; the console always shows the signed-in org-admin's own Organization.
+- The `:require_org_admin` on_mount also attaches a `handle_params` hook (`OrgAdminGate.recheck_params/3`) that re-reads the role from the database on every patch. Paging, filtering and tab changes patch the page without mounting it again, so without the hook an org-admin removed while `/org` or `/org/audit` was open could keep reading until they reloaded.
 - **Archiving a workspace only hides it.** It sets `archived_at`, removes the workspace from the switcher and lists, and deletes nothing. `OrgWorkspaces.archive_workspace/2` refuses with `{:error, :workspace_has_boards}` while the workspace still holds boards.
 
 ### 8.3 Site-admin screens

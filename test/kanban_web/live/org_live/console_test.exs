@@ -84,6 +84,21 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
       assert {:error, {:redirect, %{to: "/boards", flash: %{"error" => @refusal}}}} =
                live(conn, ~p"/org")
     end
+
+    test "an org-admin removed while the console is open is refused on the next tab change", %{
+      conn: conn
+    } do
+      %{conn: conn, org_admin: org_admin} = org_admin_setup(%{conn: conn})
+      {:ok, view, _html} = live(conn, ~p"/org")
+
+      OrganizationMember
+      |> Repo.get_by!(user_id: org_admin.id)
+      |> Repo.delete!()
+
+      view |> element("#settings-tab-members") |> render_click()
+
+      assert_redirect(view, ~p"/boards")
+    end
   end
 
   describe "details" do

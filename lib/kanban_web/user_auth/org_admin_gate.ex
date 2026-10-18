@@ -15,6 +15,12 @@ defmodule KanbanWeb.UserAuth.OrgAdminGate do
   Organization, without its contact fields. A refused caller is redirected to
   `/boards` with a translated flash, and a `:permission_denied` audit event is
   recorded with gate `:require_org_admin`.
+
+  on_mount runs once per mount, but paging, filtering and changing tabs patch
+  the same LiveView without mounting it again. `authorize_mount/1` therefore
+  attaches a `handle_params` hook that re-reads the role from the database on
+  every patch, so an org-admin removed while a page is open is refused on
+  their next click instead of only on their next reload.
   """
   use KanbanWeb, :verified_routes
   use Gettext, backend: KanbanWeb.Gettext
@@ -23,6 +29,7 @@ defmodule KanbanWeb.UserAuth.OrgAdminGate do
   import Phoenix.Controller
 
   alias Kanban.Accounts.Scope
+  alias Kanban.Organizations
   alias Kanban.Organizations.OrganizationMember
 
   @gate :require_org_admin
@@ -49,8 +56,8 @@ defmodule KanbanWeb.UserAuth.OrgAdminGate do
 
   @doc """
   Continues the LiveView mount for an org-admin, assigning
-  `current_organization`; otherwise records the refusal and halts with a
-  redirect to `/boards`.
+  `current_organization` and attaching the `recheck_params/3` hook; otherwise
+  records the refusal and halts with a redirect to `/boards`.
   """
   @spec authorize_mount(Phoenix.LiveView.Socket.t()) ::
           {:cont, Phoenix.LiveView.Socket.t()} | {:halt, Phoenix.LiveView.Socket.t()}
@@ -59,18 +66,40 @@ defmodule KanbanWeb.UserAuth.OrgAdminGate do
 
     case org_admin_membership(scope) do
       %OrganizationMember{organization: organization} ->
-        {:cont, Phoenix.Component.assign(socket, :current_organization, organization)}
-
-      nil ->
-        Kanban.AuditLog.event(:permission_denied, user_id: user_id(scope), gate: @gate)
-
         socket =
           socket
-          |> Phoenix.LiveView.put_flash(:error, refusal_message())
-          |> Phoenix.LiveView.redirect(to: ~p"/boards")
+          |> Phoenix.Component.assign(:current_organization, organization)
+          |> Phoenix.LiveView.attach_hook(:org_admin_recheck, :handle_params, &recheck_params/3)
 
-        {:halt, socket}
+        {:cont, socket}
+
+      nil ->
+        {:halt, refuse_socket(socket, scope)}
     end
+  end
+
+  @doc """
+  The `handle_params` hook `authorize_mount/1` attaches: continues while the
+  signed-in user is still an org-admin of `current_organization`, read from the
+  database rather than the scope loaded at mount; otherwise records the
+  refusal and halts with a redirect to `/boards`.
+  """
+  @spec recheck_params(map(), String.t(), Phoenix.LiveView.Socket.t()) ::
+          {:cont, Phoenix.LiveView.Socket.t()} | {:halt, Phoenix.LiveView.Socket.t()}
+  def recheck_params(_params, _uri, socket) do
+    %{current_scope: scope, current_organization: organization} = socket.assigns
+
+    if Organizations.org_admin?(scope.user, organization.id),
+      do: {:cont, socket},
+      else: {:halt, refuse_socket(socket, scope)}
+  end
+
+  defp refuse_socket(socket, scope) do
+    Kanban.AuditLog.event(:permission_denied, user_id: user_id(scope), gate: @gate)
+
+    socket
+    |> Phoenix.LiveView.put_flash(:error, refusal_message())
+    |> Phoenix.LiveView.redirect(to: ~p"/boards")
   end
 
   @doc """

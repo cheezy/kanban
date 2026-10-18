@@ -64,6 +64,69 @@ defmodule KanbanWeb.OrgLive.AuditLogTest do
     end
   end
 
+  describe "an org-admin removed while the audit log is open" do
+    setup :org_admin_setup
+
+    setup %{org_a: org_a, conn: conn, org_admin: org_admin} do
+      insert_event!("org_admin_appointed", org_a, ~U[2026-10-01 12:00:00.000000Z])
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      Kanban.Organizations.OrganizationMember
+      |> Repo.get_by!(user_id: org_admin.id)
+      |> Repo.delete!()
+
+      %{view: view}
+    end
+
+    test "is refused when paging and the refusal is audited", %{view: view, org_admin: org_admin} do
+      assert {:error, {:redirect, %{to: "/boards"}}} =
+               render_patch(view, ~p"/org/audit?cursor=anything")
+
+      assert {"/boards", %{"error" => @refusal}} = assert_redirect(view)
+
+      assert [event] =
+               AuditLog.list_events(action: :permission_denied, actor_user_id: org_admin.id)
+
+      assert event.metadata["gate"] == "require_org_admin"
+    end
+
+    test "is refused when filtering", %{view: view} do
+      view
+      |> form("#audit-log-filters", filters: %{action: "org_admin_appointed"})
+      |> render_change()
+
+      assert_redirect(view, ~p"/boards")
+    end
+  end
+
+  describe "an org-admin demoted to member while the audit log is open" do
+    setup :org_admin_setup
+
+    test "is refused on the next patch", %{conn: conn, org_admin: org_admin} do
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      Kanban.Organizations.OrganizationMember
+      |> Repo.get_by!(user_id: org_admin.id)
+      |> Ecto.Changeset.change(role: :member)
+      |> Repo.update!()
+
+      assert {:error, {:redirect, %{to: "/boards"}}} = render_patch(view, ~p"/org/audit?action=x")
+    end
+  end
+
+  describe "an org-admin who stays an org-admin" do
+    setup :org_admin_setup
+
+    test "keeps paging and filtering without being refused", %{conn: conn, org_admin: org_admin} do
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      assert render_patch(view, ~p"/org/audit?action=org_admin_appointed") =~
+               "Organization audit log"
+
+      assert AuditLog.list_events(action: :permission_denied, actor_user_id: org_admin.id) == []
+    end
+  end
+
   describe "the Organization audit log" do
     setup :org_admin_setup
 
