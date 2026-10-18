@@ -3,7 +3,8 @@ defmodule Kanban.Boards do
   The Boards context.
 
   Board membership queries live in `Kanban.Boards.Membership` and membership
-  writes (add, change access, remove) in `Kanban.Boards.MembershipChanges`.
+  writes (add, change access, remove), with the free-board member cap and its
+  `member_cap_status/1` read, in `Kanban.Boards.MembershipChanges`.
   Board creation lives in `Kanban.Boards.Creation`, and the scoped metrics
   reads behind the Boards index, the board header and the all-boards rollups
   in `Kanban.Boards.Dashboard`. All of them are delegated to below; the access
@@ -267,6 +268,7 @@ defmodule Kanban.Boards do
   defdelegate add_user_to_board(board, user, access, current_user), to: MembershipChanges
   defdelegate remove_user_from_board(board, user, current_user), to: MembershipChanges
   defdelegate update_user_access(board, user, new_access, current_user), to: MembershipChanges
+  defdelegate member_cap_status(board), to: MembershipChanges
 
   @doc """
   Lists all users associated with a board along with their access level.

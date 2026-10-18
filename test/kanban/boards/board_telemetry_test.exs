@@ -16,6 +16,7 @@ defmodule Kanban.Boards.BoardTelemetryTest do
     [:kanban, :board, :member_added],
     [:kanban, :board, :member_removed],
     [:kanban, :board, :member_access_changed],
+    [:kanban, :board, :member_cap_reached],
     [:kanban, :api, :token_bulk_revoked]
   ]
 
@@ -32,6 +33,38 @@ defmodule Kanban.Boards.BoardTelemetryTest do
     assert BoardTelemetry.deleted({:error, :unauthorized}, @actor) == {:error, :unauthorized}
     assert BoardTelemetry.field_visibility_changed(error, changeset, @actor) == error
     refute_received {:telemetry_event, _, _, _}
+  end
+
+  describe "member_cap_reached/4" do
+    test "emits board_id, actor_user_id and via for a cap refusal and returns it" do
+      for via <- [:direct_add, :invitation, :board_move] do
+        result = {:error, :member_cap_reached}
+        assert BoardTelemetry.member_cap_reached(result, @board, via, @actor) == result
+
+        assert_received {:telemetry_event, [:kanban, :board, :member_cap_reached], %{count: 1},
+                         metadata}
+
+        assert metadata == %{board_id: 4, actor_user_id: 9, via: via}
+      end
+    end
+
+    test "passes any other result through and emits nothing" do
+      for result <- [{:ok, %BoardUser{}}, {:error, :unauthorized}, {:error, :not_found}] do
+        assert BoardTelemetry.member_cap_reached(result, @board, :direct_add, @actor) == result
+      end
+
+      refute_received {:telemetry_event, _, _, _}
+    end
+
+    test "raises for a via outside the three addition paths" do
+      for via <- [:api, :direct_add_typo, nil] do
+        assert_raise FunctionClauseError, fn ->
+          BoardTelemetry.member_cap_reached({:error, :member_cap_reached}, @board, via, @actor)
+        end
+      end
+
+      refute_received {:telemetry_event, _, _, _}
+    end
   end
 
   test "updated returns the result it was given" do

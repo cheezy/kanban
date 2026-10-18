@@ -3,6 +3,12 @@ defmodule Kanban.Boards.MembershipChanges do
   Board membership writes: adding a user to a board, changing their access
   and removing them.
 
+  Adding a member is capped on free boards while plans are enforced: the add
+  locks the board row, counts its members and asks
+  `Kanban.Plans.member_cap_reached?/2`, and `member_cap_status/1` returns the
+  same count and cap for the members screen. Removals and access changes are
+  never capped.
+
   Removal and a downgrade to `:read_only` revoke the user's API tokens for
   the board in the same transaction, and removal also unassigns the user from
   the board's open tasks. Once a write commits, the affected user
@@ -27,6 +33,7 @@ defmodule Kanban.Boards.MembershipChanges do
   alias Kanban.Boards.BoardTelemetry
   alias Kanban.Boards.BoardUser
   alias Kanban.Notifications.Events
+  alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Tasks.Task
 
@@ -36,25 +43,115 @@ defmodule Kanban.Boards.MembershipChanges do
   On success the added user gets a `board_access_changed` notification,
   unless they added themselves.
 
+  The insert runs in a transaction that first locks the board row and counts
+  its `board_users` rows, so two adds at once cannot both pass the free-board
+  member cap. When `Kanban.Plans.member_cap_reached?/2` says the board is full
+  it returns `{:error, :member_cap_reached}`, inserts nothing and emits
+  `[:kanban, :board, :member_cap_reached]` with `via: :direct_add`. Adding a
+  user who is already a member is never refused by the cap; it fails on the
+  membership's uniqueness as before. A caller who does not own the board gets
+  `{:error, :unauthorized}` before anything is counted, and a board deleted
+  after it was loaded gives `{:error, :not_found}`.
+
   ## Examples
 
-      iex> add_user_to_board(board, user, :read_only)
+      iex> add_user_to_board(board, user, :read_only, owner)
       {:ok, %BoardUser{}}
+
+      iex> add_user_to_board(full_free_board, user, :read_only, owner)
+      {:error, :member_cap_reached}
 
   """
   def add_user_to_board(%Board{} = board, user, access, current_user)
       when access in [:owner, :read_only, :modify] do
     if Boards.owner?(board, current_user) do
-      %BoardUser{}
-      |> BoardUser.changeset(%{
-        board_id: board.id,
-        user_id: user.id,
-        access: access
-      })
-      |> Repo.insert()
+      board
+      |> insert_member_multi(user, access)
+      |> run_board_user_multi()
+      |> BoardTelemetry.member_cap_reached(board, :direct_add, current_user)
       |> notify_membership(board, user, :added, current_user)
     else
       {:error, :unauthorized}
+    end
+  end
+
+  @doc """
+  Returns the board's member count, its member cap and whether the cap is
+  reached, for the members screen.
+
+  `count` is the number of `board_users` rows, the owner's included. `cap` is
+  `Kanban.Plans.free_board_member_cap/0` when the board is capped, that is when
+  plans are enforced and the board is free, and `nil` otherwise. `reached?` is
+  true when a capped board's count is `cap` or more, the answer
+  `Kanban.Plans.member_cap_reached?/2` gives for that count, decided with one
+  paid-status query; it is always false for an uncapped board. A grandfathered
+  board may report a count above `cap`.
+
+  ## Examples
+
+      iex> member_cap_status(free_board)
+      %{count: 2, cap: 3, reached?: false}
+
+      iex> member_cap_status(org_board)
+      %{count: 7, cap: nil, reached?: false}
+
+  """
+  @spec member_cap_status(Board.t()) :: %{
+          count: non_neg_integer(),
+          cap: pos_integer() | nil,
+          reached?: boolean()
+        }
+  def member_cap_status(%Board{id: board_id}) do
+    count =
+      from(bu in BoardUser, where: bu.board_id == ^board_id)
+      |> Repo.aggregate(:count)
+
+    if Plans.board_unlocked?(board_id) do
+      %{count: count, cap: nil, reached?: false}
+    else
+      cap = Plans.free_board_member_cap()
+      %{count: count, cap: cap, reached?: count >= cap}
+    end
+  end
+
+  # Inserts the membership only after check_member_cap/3 passes, in one
+  # transaction.
+  defp insert_member_multi(board, user, access) do
+    changeset =
+      BoardUser.changeset(%BoardUser{}, %{board_id: board.id, user_id: user.id, access: access})
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.run(:member_cap, fn repo, _changes ->
+      check_member_cap(repo, board.id, user.id)
+    end)
+    |> Ecto.Multi.insert(:board_user, changeset)
+  end
+
+  # Locks the board row, then counts its members and decides the cap from the
+  # database, by board id, so neither a concurrent add nor a workspace loaded
+  # before the transaction can slip a member past it. A user who already holds
+  # a row is passed through so the insert reports the duplicate.
+  defp check_member_cap(repo, board_id, user_id) do
+    with {:ok, _id} <- lock_board(repo, board_id) do
+      {count, already_member} =
+        from(bu in BoardUser,
+          where: bu.board_id == ^board_id,
+          select: {count(bu.id), filter(count(bu.id), bu.user_id == ^user_id)}
+        )
+        |> repo.one()
+
+      if already_member == 0 and Plans.member_cap_reached?(board_id, count),
+        do: {:error, :member_cap_reached},
+        else: {:ok, count}
+    end
+  end
+
+  defp lock_board(repo, board_id) do
+    from(b in Board, where: b.id == ^board_id, select: b.id, lock: "FOR UPDATE")
+    |> repo.one()
+    |> case do
+      nil -> {:error, :not_found}
+      id -> {:ok, id}
     end
   end
 

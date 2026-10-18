@@ -56,6 +56,15 @@ defmodule Kanban.Plans do
   `paid_board_ids_query/0` is the list-filter form of `paid_board?/1`: a
   query of the ids of boards in Organization workspaces, for filters such as
   the notification bell. It only builds the query; the caller runs it.
+
+  ## Free-board member cap
+
+  `free_board_member_cap/0` is the number of human members a free board holds
+  while plans are enforced, and `member_cap_reached?/2` decides whether a board
+  with a given member count may take another. Members are `board_users` rows,
+  the owner's included. `Kanban.Boards.add_user_to_board/4` asks it under a row
+  lock on the board, and board invitations and board moves (G442) will ask it
+  the same way.
   """
 
   import Ecto.Query, warn: false
@@ -80,6 +89,8 @@ defmodule Kanban.Plans do
   ]
 
   @surfaces [:live_view, :controller, :rest, :mcp, :oban, :context]
+
+  @free_board_member_cap 3
 
   @type feature ::
           :notifications
@@ -161,6 +172,28 @@ defmodule Kanban.Plans do
   """
   @spec user_unlocked?(User.t() | Scope.t() | nil) :: boolean()
   def user_unlocked?(user_or_scope), do: not enforced?() or user_has_paid_access?(user_or_scope)
+
+  @doc """
+  Returns the most human members a free board holds while plans are enforced.
+  """
+  @spec free_board_member_cap() :: pos_integer()
+  def free_board_member_cap, do: @free_board_member_cap
+
+  @doc """
+  Returns true when a board with `member_count` members may not take another:
+  plans are enforced, the board is free, and `member_count` is already
+  `free_board_member_cap/0` or more.
+
+  Accepts what `paid_board?/1` accepts. It never queries when the count is
+  under the cap or enforcement is off. Pass a board id, or a board without a
+  preloaded workspace, to decide from the database rather than from a
+  workspace loaded earlier.
+  """
+  @spec member_cap_reached?(Board.t() | integer(), non_neg_integer()) :: boolean()
+  def member_cap_reached?(board, member_count)
+      when is_integer(member_count) and member_count >= 0 do
+    member_count >= @free_board_member_cap and not board_unlocked?(board)
+  end
 
   @doc """
   Returns the paid feature atoms, always in the same order.

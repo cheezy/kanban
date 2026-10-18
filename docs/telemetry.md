@@ -231,11 +231,12 @@ volume is high. W2337 leaves it unchanged.
 
 ### Board, membership and column events
 
-W2339 added these events. Each one is emitted only after its change has been
-saved, so a refused, invalid or rolled-back change emits nothing, and neither
-does an update that changes no field. Every event measures `count: 1`, except
-`token_bulk_revoked` and `column.reordered`, described in the notes below the
-table.
+W2339 added these events, and W2400 added `member_cap_reached`. Each one is
+emitted only after its change has been saved, so a refused, invalid or
+rolled-back change emits nothing, and neither does an update that changes no
+field. The exception is `member_cap_reached`, which reports a refused
+addition. Every event measures `count: 1`, except `token_bulk_revoked` and
+`column.reordered`, described in the notes below the table.
 
 | Event | Metadata | Emitted by |
 |---|---|---|
@@ -245,6 +246,7 @@ table.
 | `[:kanban, :board, :member_added]` | `board_id`, `user_id`, `access`, `actor_user_id` | `Kanban.Boards.add_user_to_board/4` |
 | `[:kanban, :board, :member_removed]` | `board_id`, `user_id`, `access`, `actor_user_id` | `Kanban.Boards.remove_user_from_board/3` |
 | `[:kanban, :board, :member_access_changed]` | `board_id`, `user_id`, `from_access`, `to_access`, `actor_user_id` | `Kanban.Boards.update_user_access/4` |
+| `[:kanban, :board, :member_cap_reached]` | `board_id`, `actor_user_id`, `via` | `Kanban.Boards.add_user_to_board/4`, only when it refuses |
 | `[:kanban, :api, :token_bulk_revoked]` | `board_id`, `user_id`, `actor_user_id`, `reason` | `Kanban.ApiTokens.report_bulk_revocation/5` |
 | `[:kanban, :column, :created]` | `board_id`, `column_id`, `actor_user_id` | `Kanban.Columns.create_column/3` |
 | `[:kanban, :column, :updated]` | `board_id`, `column_id`, `actor_user_id`, `fields` | `Kanban.Columns.update_column/3` |
@@ -261,6 +263,17 @@ table.
   notification. `user_id` is the member, `actor_user_id` the owner who made the
   change, and `access`, `from_access` and `to_access` are `:owner`, `:modify`
   or `:read_only`. For `member_removed`, `access` is the level the member held.
+- **`member_cap_reached` reports a full free board.** It fires once for each
+  addition refused with `{:error, :member_cap_reached}`: plans are enforced,
+  the board's workspace has no Organization, and the board already has 3 or
+  more `board_users` rows (see `Kanban.Plans.member_cap_reached?/2`). Nothing
+  is emitted while `:plans_enforced` is off, for a board in an Organization
+  workspace, or when a caller who does not own the board is refused first.
+  `actor_user_id` is the owner who tried to add the member, and the would-be
+  member is never sent. `via` is a tag naming the path that tried:
+  `:direct_add` for `add_user_to_board/4`, and `:invitation` or `:board_move`
+  for the board invitation and board move paths. It is stored in
+  `metrics_events`, because only a board owner can trigger it.
 - **`token_bulk_revoked` counts revoked tokens.** Its `count` is the number of
   tokens revoked, and it is 0 when the member had none. `reason` is
   `:member_removed`, or `:read_only_access` when an access save leaves the
@@ -851,7 +864,9 @@ Stored today:
   which carry no `persist: false`;
 - since W2344, export, the GitHub issue report, the metrics retention run,
   `after_goal` success and failure, failed notification email and the digest
-  fan-out.
+  fan-out;
+- since W2400, `board.member_cap_reached`, a refused addition to a full free
+  board.
 
 The API request and error counts are the exception to the rule for new
 events. `KanbanWeb.Plugs.ApiTelemetry` runs before the API token is checked,
@@ -903,8 +918,8 @@ delivery that returns an error still ends in `:stop`; `:exception` is a raise.
 
 A tag becomes a LiveDashboard label, so it must be a metadata key with a small,
 fixed set of values that says nothing about a person: `endpoint`, `method`,
-`status`, `kind`, `format`, `outcome`, `surface`, `reason` or `feature`. Never tag by
-`user_id`, `board_id`, `task_id` or any other id.
+`status`, `kind`, `format`, `outcome`, `surface`, `reason`, `feature` or
+`via`. Never tag by `user_id`, `board_id`, `task_id` or any other id.
 `test/kanban/telemetry_test.exs` fails if an entry tags any other key.
 
 ## Metrics retention
@@ -1066,6 +1081,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :board, :member_added]` | event | `count` | `board_id`, `user_id`, `access`, `actor_user_id` | A user was given access to a board. user_id is the member, actor_user_id the owner who added them. |
 | `[:kanban, :board, :member_removed]` | event | `count` | `board_id`, `user_id`, `access`, `actor_user_id` | A user was removed from a board. access is the level they held. |
 | `[:kanban, :board, :member_access_changed]` | event | `count` | `board_id`, `user_id`, `from_access`, `to_access`, `actor_user_id` | A board member's access level changed. |
+| `[:kanban, :board, :member_cap_reached]` | event | `count` | `board_id`, `actor_user_id`, `via` | Adding a member to a free board was refused because plans are enforced and the board already has 3 or more members. via is :direct_add, :invitation or :board_move. |
 
 ### Domain `column`
 

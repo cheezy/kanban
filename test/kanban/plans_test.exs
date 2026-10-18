@@ -137,6 +137,69 @@ defmodule Kanban.PlansTest do
     end
   end
 
+  describe "free_board_member_cap/0" do
+    test "is 3" do
+      assert Plans.free_board_member_cap() == 3
+    end
+  end
+
+  describe "member_cap_reached?/2" do
+    test "with enforcement on, a free board is full at 3 members and above" do
+      enforce_plans()
+      board = board_fixture(user_fixture())
+
+      refute Plans.member_cap_reached?(board, 2)
+      assert Plans.member_cap_reached?(board, 3)
+      assert Plans.member_cap_reached?(board, 5)
+      assert Plans.member_cap_reached?(board.id, 3)
+    end
+
+    test "with enforcement on, a board without a workspace is free and full at 3" do
+      enforce_plans()
+      board = %Board{id: 1, workspace_id: nil, workspace: nil}
+
+      refute Plans.member_cap_reached?(board, 2)
+      assert Plans.member_cap_reached?(board, 3)
+    end
+
+    test "with enforcement on, a paid board is never full" do
+      enforce_plans()
+      board = org_board(organization_fixture())
+
+      for count <- [2, 3, 5], do: refute(Plans.member_cap_reached?(board, count))
+      refute Plans.member_cap_reached?(board.id, 5)
+    end
+
+    test "with enforcement off, no board is full" do
+      Application.put_env(:kanban, :plans_enforced, false)
+      free = board_fixture(user_fixture())
+      paid = org_board(organization_fixture())
+
+      for board <- [free, paid], count <- [2, 3, 5] do
+        refute Plans.member_cap_reached?(board, count)
+      end
+    end
+
+    test "does not query under the cap or with enforcement off" do
+      board = board_fixture(user_fixture())
+
+      Application.put_env(:kanban, :plans_enforced, false)
+      assert {false, 0} = count_queries(fn -> Plans.member_cap_reached?(board, 5) end)
+
+      enforce_plans()
+      assert {false, 0} = count_queries(fn -> Plans.member_cap_reached?(board, 2) end)
+      assert {true, 1} = count_queries(fn -> Plans.member_cap_reached?(board.id, 3) end)
+    end
+
+    test "rejects a negative or non-integer count" do
+      board = board_fixture(user_fixture())
+
+      for count <- [-1, "3", nil, 3.0] do
+        assert_raise FunctionClauseError, fn -> Plans.member_cap_reached?(board, count) end
+      end
+    end
+  end
+
   describe "user_has_paid_access?/1" do
     setup do
       organization = organization_fixture()

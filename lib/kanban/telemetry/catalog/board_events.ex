@@ -93,6 +93,19 @@ defmodule Kanban.Telemetry.Catalog.BoardEvents do
       persist: false
     },
     %{
+      name: [:kanban, :board, :member_cap_reached],
+      kind: :event,
+      domain: :board,
+      measurements: [:count],
+      metadata: [:board_id, :actor_user_id, :via],
+      description:
+        "Adding a member to a free board was refused because plans are enforced and the board already has 3 or more members. via is :direct_add, :invitation or :board_move.",
+      legacy: false,
+      metrics: [counter: :count],
+      persist: true,
+      tags: [:via]
+    },
+    %{
       name: [:kanban, :api, :token_bulk_revoked],
       kind: :event,
       domain: :api,

@@ -4,7 +4,8 @@ defmodule Kanban.Boards.BoardTelemetry do
   `Kanban.Telemetry`.
 
   Every event is emitted only after the change it reports has been saved, so
-  a refused, invalid or rolled-back change emits nothing. The functions that
+  a refused, invalid or rolled-back change emits nothing. The exception is
+  `[:kanban, :board, :member_cap_reached]`, which reports a refusal. The functions that
   take a result return it unchanged, so they can sit at the end of a pipe
   without changing what the caller sees.
 
@@ -17,6 +18,8 @@ defmodule Kanban.Boards.BoardTelemetry do
   alias Kanban.ApiTokens
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
+
+  @cap_vias [:direct_add, :invitation, :board_move]
 
   @doc """
   Emits `[:kanban, :board, :updated]` when `result` is a saved board and the
@@ -85,6 +88,31 @@ defmodule Kanban.Boards.BoardTelemetry do
   end
 
   def field_visibility_changed(result, _changeset, _actor), do: result
+
+  @doc """
+  Emits `[:kanban, :board, :member_cap_reached]` when `result` is
+  `{:error, :member_cap_reached}`, the refusal of a member addition because
+  the free board is full. `via` names the path that tried to add the member:
+  `:direct_add`, `:invitation` or `:board_move`. Returns `result`.
+
+  This is the one membership event emitted for a change that did not happen;
+  the refused addition itself is rolled back before it is called.
+  """
+  @spec member_cap_reached(result, Board.t(), :direct_add | :invitation | :board_move, map()) ::
+          result
+        when result: term()
+  def member_cap_reached({:error, :member_cap_reached} = result, %Board{} = board, via, actor)
+      when via in @cap_vias do
+    Kanban.Telemetry.emit([:kanban, :board, :member_cap_reached], %{count: 1}, %{
+      board_id: board.id,
+      actor_user_id: actor.id,
+      via: via
+    })
+
+    result
+  end
+
+  def member_cap_reached(result, _board, via, _actor) when via in @cap_vias, do: result
 
   @doc """
   Emits the membership events for a committed membership change.
