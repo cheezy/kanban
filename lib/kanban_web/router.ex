@@ -315,6 +315,9 @@ defmodule KanbanWeb.Router do
     get "/boards/:id/metrics/:metric/export", MetricsPdfController, :export
     get "/metrics/export", WorkspaceMetricsExportController, :export
     get "/boards/:id/archive/export", ArchiveExportController, :export
+    # Counts a locked feature's Available to organizations click (signed-in
+    # users only, so anonymous traffic cannot inflate the stored metric).
+    get "/locked/:feature", LockedFeatureController, :show
     post "/users/update-password", UserSessionController, :update_password
   end
 

@@ -682,13 +682,14 @@ change emits nothing. Every event measures `count: 1`.
 
 ### Plan events
 
-W2399 added the paid-plan refusal event. It is declared in
-`Kanban.Telemetry.Catalog.PlanEvents` (`lib/kanban/telemetry/catalog/plan_events.ex`)
-and emitted by `Kanban.Plans`. It measures `count: 1`.
+W2399 added the paid-plan refusal event and W2404 added the locked-feature
+click. Both are declared in `Kanban.Telemetry.Catalog.PlanEvents`
+(`lib/kanban/telemetry/catalog/plan_events.ex`) and measure `count: 1`.
 
 | Event | Metadata | Emitted by |
 |---|---|---|
 | `[:kanban, :plan, :feature_refused]` | `feature`, `surface` | `Kanban.Plans.check_board/3` and `check_user/3`, only when they refuse |
+| `[:kanban, :plan, :locked_feature_clicked]` | `feature` | `KanbanWeb.LockedFeatureController`, when a signed-in user follows a locked feature's prompt |
 
 - **When it fires.** Only when plans are enforced and the board or user is
   on the free plan, so nothing is emitted while `:plans_enforced` is off. An
@@ -702,8 +703,35 @@ and emitted by `Kanban.Plans`. It measures `count: 1`.
 - **A bad label raises instead.** A feature or surface outside those sets
   raises `ArgumentError` in `Kanban.Plans` before anything is emitted, with
   enforcement on or off, so an unknown value never reaches a handler.
-- **Not persisted.** A free user can trigger a refusal at will, so the event
-  is charted but never stored in `metrics_events`.
+- **`feature_refused` is not persisted.** A free user can trigger a refusal
+  at will, so the event is charted but never stored in `metrics_events`.
+- **`locked_feature_clicked` counts demand.** `KanbanWeb.LockedFeature` links
+  every Available to organizations prompt to `GET /locked/:feature`. The
+  controller matches the name against `Kanban.Plans.parse_feature/1`, emits
+  the event with only `feature` (a tag), and redirects to `/pricing#contact`.
+  An unknown feature redirects to `/pricing` and emits nothing, and a
+  signed-out visitor is sent to log in first. The user is never sent.
+- **`locked_feature_clicked` is persisted, so it counts demand, not
+  requests.** Only signed-in users reach it. The `:locked_feature_click`
+  surface of `Kanban.RateLimit` counts each user at most once per feature a
+  week, and a request the browser marks as cross-site (`Sec-Fetch-Site` of
+  `cross-site` or `same-site`) is not counted, so a third-party page cannot
+  record clicks through a visitor's session. In both cases the redirect still
+  happens. A row is therefore one user wanting one feature in a week, so a
+  weekly count is close to the number of distinct users who asked for it. The
+  limiter keeps its buckets in memory on each node, so a restart or deploy can
+  let a user count again early. Read weekly clicks per feature from the stored
+  rows:
+
+  ```sql
+  SELECT date_trunc('week', recorded_at) AS week,
+         metadata->>'feature' AS feature,
+         count(*) AS clicks
+  FROM metrics_events
+  WHERE metric_name = 'kanban.plan.locked_feature_clicked.count'
+  GROUP BY 1, 2
+  ORDER BY 1, 2;
+  ```
 
 ## Emitting an event
 
@@ -866,7 +894,9 @@ Stored today:
   `after_goal` success and failure, failed notification email and the digest
   fan-out;
 - since W2400, `board.member_cap_reached`, a refused addition to a full free
-  board.
+  board;
+- since W2404, `plan.locked_feature_clicked`, a signed-in, same-origin click
+  on a locked feature's prompt, at most once per user and feature a week.
 
 The API request and error counts are the exception to the rule for new
 events. `KanbanWeb.Plugs.ApiTelemetry` runs before the API token is checked,
@@ -1181,6 +1211,7 @@ the sections above explain which code emits each family and when.
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
 | `[:kanban, :plan, :feature_refused]` | event | `count` | `feature`, `surface` | A plan check refused a paid feature because plans are enforced and the board or user is on the free plan. feature is one of Kanban.Plans.features/0 and surface names the entry point, never a board or user. |
+| `[:kanban, :plan, :locked_feature_clicked]` | event | `count` | `feature` | A signed-in user followed a locked feature's Available to organizations prompt. feature is one of Kanban.Plans.features/0; the user is never sent, each user counts at most once per feature a week, and cross-site requests are not counted. |
 
 ### Domain `pubsub`
 

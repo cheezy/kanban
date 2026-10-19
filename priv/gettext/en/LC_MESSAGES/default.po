@@ -4133,6 +4133,7 @@ msgstr ""
 msgid "Team"
 msgstr ""
 
+#: lib/kanban_web/components/locked_feature.ex:142
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:50
 #: lib/kanban_web/live/task_live/view_component.ex:315
 #, elixir-autogen, elixir-format
@@ -9105,6 +9106,7 @@ msgstr ""
 msgid "Notification not found."
 msgstr ""
 
+#: lib/kanban_web/components/locked_feature.ex:136
 #: lib/kanban_web/components/notification_bell.ex:71
 #: lib/kanban_web/live/notification_live/index.ex:33
 #: lib/kanban_web/live/notification_live/index.html.heex:5
@@ -10129,6 +10131,7 @@ msgid "Bulk action failed. Nothing was changed."
 msgstr ""
 
 #: lib/kanban_web/components/bulk_action_bar.ex:124
+#: lib/kanban_web/components/locked_feature.ex:140
 #, elixir-autogen, elixir-format
 msgid "Bulk actions"
 msgstr ""
@@ -10338,6 +10341,7 @@ msgid "Generic webhook"
 msgstr "Generic webhook"
 
 #: lib/kanban_web/components/board_tabs.ex:158
+#: lib/kanban_web/components/locked_feature.ex:141
 #: lib/kanban_web/live/board_live/board_state.ex:83
 #: lib/kanban_web/live/board_live/show.html.heex:538
 #: lib/kanban_web/live/board_live/show.html.heex:546
@@ -10871,6 +10875,7 @@ msgstr ""
 msgid "Workspace renamed."
 msgstr ""
 
+#: lib/kanban_web/components/locked_feature.ex:139
 #: lib/kanban_web/live/org_live/console.ex:335
 #: lib/kanban_web/live/org_live/console.html.heex:157
 #, elixir-autogen, elixir-format
@@ -11087,4 +11092,24 @@ msgstr ""
 #: lib/kanban_web/live/board_live/membership.ex:114
 #, elixir-autogen, elixir-format
 msgid "This board is full. Free boards hold %{cap} people."
+msgstr ""
+
+#: lib/kanban_web/components/locked_feature.ex:137
+#, elixir-autogen, elixir-format
+msgid "Audit"
+msgstr ""
+
+#: lib/kanban_web/components/locked_feature.ex:123
+#, elixir-autogen, elixir-format
+msgid "Available to organizations"
+msgstr ""
+
+#: lib/kanban_web/components/locked_feature.ex:143
+#, elixir-autogen, elixir-format
+msgid "MCP"
+msgstr ""
+
+#: lib/kanban_web/components/locked_feature.ex:138
+#, elixir-autogen, elixir-format
+msgid "SSO"
 msgstr ""

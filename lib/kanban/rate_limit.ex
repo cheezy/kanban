@@ -1,6 +1,7 @@
 defmodule Kanban.RateLimit do
   @moduledoc """
-  Rate-limiting policy for abuse-prone authentication surfaces.
+  Rate-limiting policy for abuse-prone authentication surfaces, and for the
+  locked-feature click metric.
 
   Wraps the low-level `Kanban.RateLimiter` (Hammer/ETS) with per-surface
   thresholds and a two-key strategy: every check is evaluated against both a
@@ -23,6 +24,7 @@ defmodule Kanban.RateLimit do
     * `:two_factor` — 5 min / 10 / —    (identity-only, per attempt)
     * `:two_factor_challenge` — 5 min / — / 30 (IP-only, failure-counted)
     * `:two_factor_daily` — 24 h / 30 / —    (identity-only, failure-counted)
+    * `:locked_feature_click` — 7 d / 1 / —  (identity-only, per user and feature)
 
   `:two_factor` counts every second-factor code attempt per user (`identity:
   "user:<id>"`, no IP) wherever a code is checked, with `check/2` so the
@@ -39,6 +41,14 @@ defmodule Kanban.RateLimit do
   "user:<id>"`) over a day, so someone who has the password cannot keep
   guessing at the `:two_factor` rate for weeks.
 
+  `:locked_feature_click` counts clicks on a locked feature's prompt per user
+  and feature (`identity: "user:<id>:<feature>"`, no IP), so each user counts
+  at most once per feature a week, the period the metric is read over. It
+  guards the stored demand metric rather than an account: a repeat click still
+  redirects, but emits no
+  `[:kanban, :plan, :locked_feature_clicked]` event, so one user cannot flood
+  `metrics_events` or inflate a feature's count.
+
   Thresholds are a product/ops decision — override per environment via:
 
       config :kanban, Kanban.RateLimit,
@@ -47,7 +57,7 @@ defmodule Kanban.RateLimit do
   ## Operations
 
     * `check/2`  — increment and evaluate; use for per-submission surfaces
-      (`:reset`, `:resend`, `:issue`, `:two_factor`).
+      (`:reset`, `:resend`, `:issue`, `:two_factor`, `:locked_feature_click`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
       (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`) so a flood cannot force password hashing or DB
       lookups.
@@ -68,7 +78,8 @@ defmodule Kanban.RateLimit do
     api_token: %{scale_ms: 60_000, ip_limit: 20},
     two_factor: %{scale_ms: 300_000, id_limit: 10},
     two_factor_challenge: %{scale_ms: 300_000, ip_limit: 30},
-    two_factor_daily: %{scale_ms: 86_400_000, id_limit: 30}
+    two_factor_daily: %{scale_ms: 86_400_000, id_limit: 30},
+    locked_feature_click: %{scale_ms: 604_800_000, id_limit: 1}
   }
 
   @type surface ::
@@ -80,6 +91,7 @@ defmodule Kanban.RateLimit do
           | :two_factor
           | :two_factor_challenge
           | :two_factor_daily
+          | :locked_feature_click
   @type opts :: [ip: term(), identity: String.t() | nil]
   @type result :: :ok | {:error, {:rate_limited, non_neg_integer()}}
 
@@ -220,4 +232,8 @@ defmodule Kanban.RateLimit do
   end
 
   defp format_ip(_), do: "unknown"
+
+  if Mix.env() == :test do
+    def __limits__(surface), do: limits_for(surface)
+  end
 end

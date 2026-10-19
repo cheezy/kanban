@@ -4133,6 +4133,7 @@ msgstr "Fale com a gente"
 msgid "Team"
 msgstr "Time"
 
+#: lib/kanban_web/components/locked_feature.ex:142
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:50
 #: lib/kanban_web/live/task_live/view_component.ex:315
 #, elixir-autogen, elixir-format
@@ -9181,6 +9182,7 @@ msgstr "Não há notificações não lidas."
 msgid "Notification not found."
 msgstr "Notificação não encontrada."
 
+#: lib/kanban_web/components/locked_feature.ex:136
 #: lib/kanban_web/components/notification_bell.ex:71
 #: lib/kanban_web/live/notification_live/index.ex:33
 #: lib/kanban_web/live/notification_live/index.html.heex:5
@@ -10205,6 +10207,7 @@ msgid "Bulk action failed. Nothing was changed."
 msgstr "A ação em massa falhou. Nada foi alterado."
 
 #: lib/kanban_web/components/bulk_action_bar.ex:124
+#: lib/kanban_web/components/locked_feature.ex:140
 #, elixir-autogen, elixir-format
 msgid "Bulk actions"
 msgstr "Ações em massa"
@@ -10414,6 +10417,7 @@ msgid "Generic webhook"
 msgstr "Webhook genérico"
 
 #: lib/kanban_web/components/board_tabs.ex:158
+#: lib/kanban_web/components/locked_feature.ex:141
 #: lib/kanban_web/live/board_live/board_state.ex:83
 #: lib/kanban_web/live/board_live/show.html.heex:538
 #: lib/kanban_web/live/board_live/show.html.heex:546
@@ -10947,6 +10951,7 @@ msgstr "Espaço de trabalho não encontrado."
 msgid "Workspace renamed."
 msgstr "Espaço de trabalho renomeado."
 
+#: lib/kanban_web/components/locked_feature.ex:139
 #: lib/kanban_web/live/org_live/console.ex:335
 #: lib/kanban_web/live/org_live/console.html.heex:157
 #, elixir-autogen, elixir-format
@@ -11164,3 +11169,23 @@ msgstr "Este quadro está cheio."
 #, elixir-autogen, elixir-format
 msgid "This board is full. Free boards hold %{cap} people."
 msgstr "Este quadro está cheio. Quadros gratuitos comportam %{cap} pessoas."
+
+#: lib/kanban_web/components/locked_feature.ex:137
+#, elixir-autogen, elixir-format
+msgid "Audit"
+msgstr "Auditoria"
+
+#: lib/kanban_web/components/locked_feature.ex:123
+#, elixir-autogen, elixir-format
+msgid "Available to organizations"
+msgstr "Disponível para organizações"
+
+#: lib/kanban_web/components/locked_feature.ex:143
+#, elixir-autogen, elixir-format
+msgid "MCP"
+msgstr "MCP"
+
+#: lib/kanban_web/components/locked_feature.ex:138
+#, elixir-autogen, elixir-format
+msgid "SSO"
+msgstr "SSO"

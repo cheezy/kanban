@@ -131,6 +131,25 @@ defmodule Kanban.RateLimitTest do
     end
   end
 
+  describe ":locked_feature_click surface (identity-only)" do
+    test "allows one click per identity a week, then denies that identity only" do
+      id = System.unique_integer([:positive])
+
+      assert :ok = RateLimit.check(:locked_feature_click, identity: "user:#{id}:audit")
+
+      assert {:error, {:rate_limited, retry_after_ms}} =
+               RateLimit.check(:locked_feature_click, identity: "user:#{id}:audit")
+
+      assert retry_after_ms <= 604_800_000
+      assert :ok = RateLimit.check(:locked_feature_click, identity: "user:#{id}:sso")
+      assert :ok = RateLimit.check(:locked_feature_click, identity: "user:#{id + 1}:audit")
+    end
+
+    test "counts over a week, the period the demand metric is read over" do
+      assert RateLimit.__limits__(:locked_feature_click) == %{scale_ms: 604_800_000, id_limit: 1}
+    end
+  end
+
   describe ":two_factor_challenge surface (IP-only)" do
     test "denies one IP after 30 failures spread across different users" do
       ip = unique_ip()
