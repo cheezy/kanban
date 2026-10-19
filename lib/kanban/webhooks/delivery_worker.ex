@@ -12,7 +12,12 @@ defmodule Kanban.Webhooks.DeliveryWorker do
   Each attempt:
 
     1. A deleted or disabled endpoint ends the job with `:ok`, sending
-       nothing and recording nothing.
+       nothing and recording nothing. So does an endpoint on a free board
+       while paid plans are enforced (`Kanban.Plans.check_board/3`, surface
+       `:oban`, which emits `feature_refused`): a job queued before
+       enforcement, or a retry across the switch, is dropped rather than
+       retried, and is not replayed once the board is paid. The endpoint
+       itself is not changed, so later events are delivered again.
     2. `UrlGuard.check/2` runs again, because DNS may have changed since the
        endpoint was saved. A blocked or invalid target records a failed
        delivery and cancels the job; a host that does not resolve records a
@@ -41,6 +46,7 @@ defmodule Kanban.Webhooks.DeliveryWorker do
   """
   use Oban.Worker, queue: :webhooks, max_attempts: 8
 
+  alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Webhooks
   alias Kanban.Webhooks.Delivery
@@ -100,8 +106,15 @@ defmodule Kanban.Webhooks.DeliveryWorker do
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"endpoint_id" => endpoint_id} = args, attempt: attempt}) do
     case Repo.get(Endpoint, endpoint_id) do
-      %Endpoint{enabled: true} = endpoint -> deliver(endpoint, args, attempt)
+      %Endpoint{enabled: true} = endpoint -> deliver_if_paid(endpoint, args, attempt)
       _deleted_or_disabled -> :ok
+    end
+  end
+
+  defp deliver_if_paid(endpoint, args, attempt) do
+    case Plans.check_board(endpoint.board_id, :integrations, surface: :oban) do
+      :ok -> deliver(endpoint, args, attempt)
+      {:error, {:plan_required, :integrations}} -> :ok
     end
   end
 

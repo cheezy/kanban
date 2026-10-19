@@ -782,7 +782,7 @@ msgid "No history available"
 msgstr "无可用历史"
 
 #: lib/kanban_web/components/task_metadata_grid.ex:61
-#: lib/kanban_web/live/board_live/webhook_views.ex:317
+#: lib/kanban_web/live/board_live/webhook_views.ex:334
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:16
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:48
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:141
@@ -1421,7 +1421,7 @@ msgstr "需遵循的模式"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:203
 #: lib/kanban_web/components/acceptance_checklist.ex:289
-#: lib/kanban_web/live/board_live/webhook_views.ex:382
+#: lib/kanban_web/live/board_live/webhook_views.ex:399
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:75
 #: lib/kanban_web/live/task_live/form_component.html.heex:402
 #, elixir-autogen, elixir-format
@@ -1997,7 +1997,7 @@ msgstr "看板:"
 #: lib/kanban_web/live/admin/user_live/index.html.heex:222
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
 #: lib/kanban_web/live/board_live/show.html.heex:895
-#: lib/kanban_web/live/board_live/webhook_views.ex:237
+#: lib/kanban_web/live/board_live/webhook_views.ex:254
 #: lib/kanban_web/live/task_live/components/comment_row.ex:123
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -5005,7 +5005,7 @@ msgid "Throughput · last 12 hours"
 msgstr "吞吐量 · 最近 12 小时"
 
 #: lib/kanban_web/components/goal_sidebar.ex:75
-#: lib/kanban_web/live/board_live/webhook_views.ex:321
+#: lib/kanban_web/live/board_live/webhook_views.ex:338
 #, elixir-autogen, elixir-format
 msgid "Time"
 msgstr "时间"
@@ -8007,7 +8007,7 @@ msgid "Confirmed"
 msgstr "已确认"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:99
-#: lib/kanban_web/live/board_live/webhook_views.ex:147
+#: lib/kanban_web/live/board_live/webhook_views.ex:151
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr "已停用"
@@ -8071,7 +8071,7 @@ msgid "Delete this account permanently? This cannot be undone."
 msgstr "永久删除此账户？此操作无法撤销。"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:182
-#: lib/kanban_web/live/board_live/webhook_views.ex:187
+#: lib/kanban_web/live/board_live/webhook_views.ex:203
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr "停用"
@@ -8082,7 +8082,7 @@ msgid "Disable this account? They will be signed out and unable to log in."
 msgstr "停用此账户？该用户将被登出且无法登录。"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:193
-#: lib/kanban_web/live/board_live/webhook_views.ex:187
+#: lib/kanban_web/live/board_live/webhook_views.ex:203
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr "启用"
@@ -9569,7 +9569,7 @@ msgstr "您确定要删除此评论吗？"
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:90
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:26
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:270
-#: lib/kanban_web/live/board_live/webhook_views.ex:172
+#: lib/kanban_web/live/board_live/webhook_views.ex:187
 #: lib/kanban_web/live/task_live/components/comment_row.ex:111
 #, elixir-autogen, elixir-format
 msgid "Edit"
@@ -10298,63 +10298,63 @@ msgstr "添加端点"
 msgid "Add endpoint"
 msgstr "添加端点"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:318
+#: lib/kanban_web/live/board_live/webhook_views.ex:335
 #, elixir-autogen, elixir-format
 msgid "Attempt"
 msgstr "尝试"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:258
+#: lib/kanban_web/live/board_live/integrations_component.ex:286
 #, elixir-autogen, elixir-format
 msgid "Could not update the endpoint. Reload and try again."
 msgstr "无法更新端点。请刷新后重试。"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:233
+#: lib/kanban_web/live/board_live/webhook_views.ex:250
 #, elixir-autogen, elixir-format
 msgid "Delete this endpoint and its delivery log?"
 msgstr "删除此端点及其投递日志？"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:210
+#: lib/kanban_web/live/board_live/webhook_views.ex:227
 #, elixir-autogen, elixir-format
 msgid "Deliveries"
 msgstr "投递"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:252
+#: lib/kanban_web/live/board_live/integrations_component.ex:280
 #, elixir-autogen, elixir-format
 msgid "Enable the endpoint before sending a test event"
 msgstr "发送测试事件前请先启用端点"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:177
+#: lib/kanban_web/live/board_live/integrations_component.ex:198
 #, elixir-autogen, elixir-format
 msgid "Endpoint created"
 msgstr "端点已创建"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:143
+#: lib/kanban_web/live/board_live/integrations_component.ex:162
 #, elixir-autogen, elixir-format
 msgid "Endpoint deleted"
 msgstr "端点已删除"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:264
+#: lib/kanban_web/live/board_live/integrations_component.ex:292
 #, elixir-autogen, elixir-format
 msgid "Endpoint disabled"
 msgstr "端点已停用"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:265
+#: lib/kanban_web/live/board_live/integrations_component.ex:293
 #, elixir-autogen, elixir-format
 msgid "Endpoint enabled"
 msgstr "端点已启用"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:199
-#: lib/kanban_web/live/board_live/integrations_component.ex:239
+#: lib/kanban_web/live/board_live/integrations_component.ex:221
+#: lib/kanban_web/live/board_live/integrations_component.ex:264
 #, elixir-autogen, elixir-format
 msgid "Endpoint not found"
 msgstr "未找到端点"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:320
+#: lib/kanban_web/live/board_live/webhook_views.ex:337
 #, elixir-autogen, elixir-format
 msgid "Error"
 msgstr "错误"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:316
+#: lib/kanban_web/live/board_live/webhook_views.ex:333
 #, elixir-autogen, elixir-format
 msgid "Event"
 msgstr "事件"
@@ -10364,7 +10364,7 @@ msgstr "事件"
 msgid "Events"
 msgstr "事件"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:381
+#: lib/kanban_web/live/board_live/webhook_views.ex:398
 #, elixir-autogen, elixir-format
 msgid "Failed"
 msgstr "失败"
@@ -10389,18 +10389,18 @@ msgstr "集成"
 msgid "Kind"
 msgstr "类型"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:310
+#: lib/kanban_web/live/board_live/webhook_views.ex:327
 #, elixir-autogen, elixir-format
 msgid "No deliveries yet."
 msgstr "暂无投递。"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:356
+#: lib/kanban_web/live/board_live/integrations_component.ex:418
 #, elixir-autogen, elixir-format
 msgid "No endpoints yet. Add one below to send task events to another service."
 msgstr "暂无端点。在下方添加一个，即可将任务事件发送到其他服务。"
 
 #: lib/kanban_web/live/board_live/integrations.ex:35
-#: lib/kanban_web/live/board_live/integrations_component.ex:325
+#: lib/kanban_web/live/board_live/integrations_component.ex:377
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage integrations"
 msgstr "只有看板所有者才能管理集成"
@@ -10410,37 +10410,37 @@ msgstr "只有看板所有者才能管理集成"
 msgid "Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."
 msgstr "粘贴 Slack 传入 Webhook URL（https://hooks.slack.com/…）。"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:291
+#: lib/kanban_web/live/board_live/webhook_views.ex:308
 #, elixir-autogen, elixir-format
 msgid "Recent deliveries"
 msgstr "最近的投递"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:302
+#: lib/kanban_web/live/board_live/webhook_views.ex:319
 #, elixir-autogen, elixir-format
 msgid "Refresh"
 msgstr "刷新"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:319
+#: lib/kanban_web/live/board_live/webhook_views.ex:336
 #, elixir-autogen, elixir-format
 msgid "Response"
 msgstr "响应"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:225
+#: lib/kanban_web/live/board_live/webhook_views.ex:242
 #, elixir-autogen, elixir-format
 msgid "Rotate secret"
 msgstr "轮换密钥"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:220
+#: lib/kanban_web/live/board_live/webhook_views.ex:237
 #, elixir-autogen, elixir-format
 msgid "Rotate the signing secret? The old secret stops working immediately."
 msgstr "要轮换签名密钥吗？旧密钥将立即失效。"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:129
+#: lib/kanban_web/live/board_live/integrations_component.ex:147
 #, elixir-autogen, elixir-format
 msgid "Secret rotated"
 msgstr "密钥已轮换"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:198
+#: lib/kanban_web/live/board_live/webhook_views.ex:215
 #, elixir-autogen, elixir-format
 msgid "Send test"
 msgstr "发送测试"
@@ -10460,12 +10460,12 @@ msgstr "Slack"
 msgid "Stride sends a signed JSON POST to this HTTPS address."
 msgstr "Stride 会向此 HTTPS 地址发送签名的 JSON POST。"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:380
+#: lib/kanban_web/live/board_live/webhook_views.ex:397
 #, elixir-autogen, elixir-format
 msgid "Succeeded"
 msgstr "成功"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:154
+#: lib/kanban_web/live/board_live/integrations_component.ex:174
 #, elixir-autogen, elixir-format
 msgid "Test event queued. Refresh the deliveries in a few seconds."
 msgstr "测试事件已加入队列。请几秒后刷新投递记录。"
@@ -10481,13 +10481,13 @@ msgstr "URL"
 msgid "Use it to verify the X-Stride-Signature header on each request."
 msgstr "用它来验证每个请求的 X-Stride-Signature 请求头。"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:343
+#: lib/kanban_web/live/board_live/integrations_component.ex:395
 #, elixir-autogen, elixir-format
 msgid "Webhooks"
 msgstr "Webhook"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:393
-#: lib/kanban_web/live/board_live/webhook_views.ex:397
+#: lib/kanban_web/live/board_live/webhook_views.ex:410
+#: lib/kanban_web/live/board_live/webhook_views.ex:414
 #, elixir-autogen, elixir-format
 msgid "unknown host"
 msgstr "未知主机"
@@ -10502,7 +10502,7 @@ msgstr "此任务同时被其他人移动了。请重试。"
 msgid "Edit endpoint"
 msgstr "编辑端点"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:191
+#: lib/kanban_web/live/board_live/integrations_component.ex:213
 #, elixir-autogen, elixir-format
 msgid "Endpoint updated"
 msgstr "端点已更新"
@@ -10522,7 +10522,7 @@ msgstr "签名密钥保持不变。如果新地址属于其他接收方，请使
 msgid "Discord"
 msgstr "Discord"
 
-#: lib/kanban_web/live/board_live/integrations_component.ex:346
+#: lib/kanban_web/live/board_live/integrations_component.ex:398
 #, elixir-autogen, elixir-format
 msgid "Each endpoint receives the task events you choose. Generic endpoints get a signed JSON POST; Slack and Discord endpoints get a message in a channel."
 msgstr "每个端点都会收到你选择的任务事件。通用端点接收签名的 JSON POST；Slack 和 Discord 端点会在频道中收到一条消息。"
@@ -11167,3 +11167,13 @@ msgstr "等待您处理的任务始终列在审核队列和我的工作中。"
 #, elixir-autogen, elixir-format
 msgid "Bulk actions are available to organizations. Nothing was changed."
 msgstr "批量操作仅对组织开放，未做任何更改。"
+
+#: lib/kanban_web/live/board_live/integrations_component.ex:365
+#, elixir-autogen, elixir-format
+msgid "Integrations are available to organizations. Nothing was changed."
+msgstr "集成仅对组织开放，未做任何更改。"
+
+#: lib/kanban_web/live/board_live/webhook_views.ex:161
+#, elixir-autogen, elixir-format
+msgid "Paused"
+msgstr "已暂停"

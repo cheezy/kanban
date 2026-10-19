@@ -8,6 +8,19 @@ defmodule Kanban.Webhooks do
   `{:error, :unauthorized}` from a write, `{:error, :not_found}` from
   `get_endpoint/3` and an empty list from `list_endpoints/2`.
 
+  ## Paid plans
+
+  Integrations are a paid feature. While paid plans are enforced,
+  `create_endpoint/4`, `update_endpoint/4` (which also enables and disables an
+  endpoint), `rotate_secret/2` and `send_test_event/2` return
+  `{:error, {:plan_required, :integrations}}` on a free board
+  (`Kanban.Plans.check_board/3`, surface `:context`, checked after the owner
+  check). `delete_endpoint/2`, the listings and `get_endpoint/3` stay allowed,
+  so an owner can still see and remove the configuration. Nothing here changes
+  an endpoint because of the plan: `Kanban.Webhooks.Events` and
+  `Kanban.Webhooks.DeliveryWorker` skip a free board's deliveries instead, so
+  they resume on their own when the board moves into an Organization.
+
   The signing secret is revealed exactly once, as the second element of the
   `{:ok, {endpoint, secret}}` that `create_endpoint/4` and `rotate_secret/2`
   return. It is stored only as `Kanban.Integrations.SecretBox` ciphertext, and
@@ -44,6 +57,7 @@ defmodule Kanban.Webhooks do
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Integrations.SecretBox
+  alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Webhooks.Delivery
   alias Kanban.Webhooks.DeliveryWorker
@@ -98,7 +112,8 @@ defmodule Kanban.Webhooks do
   def create_endpoint(scope, %Board{id: board_id}, attrs, opts \\ []) do
     opts = guard_opts(opts)
 
-    with :ok <- authorize_owner(scope, board_id) do
+    with :ok <- authorize_owner(scope, board_id),
+         :ok <- check_plan(board_id) do
       %Endpoint{board_id: board_id, created_by_id: scope.user.id}
       |> Endpoint.changeset(attrs, opts)
       |> check_reachable(opts)
@@ -116,7 +131,8 @@ defmodule Kanban.Webhooks do
   def update_endpoint(scope, %Endpoint{board_id: board_id} = endpoint, attrs, opts \\ []) do
     opts = guard_opts(opts)
 
-    with :ok <- authorize_owner(scope, board_id) do
+    with :ok <- authorize_owner(scope, board_id),
+         :ok <- check_plan(board_id) do
       endpoint
       |> Endpoint.changeset(attrs, opts)
       |> check_reachable(opts)
@@ -133,7 +149,8 @@ defmodule Kanban.Webhooks do
   an error on `:id`, so no caller is shown a secret that was overwritten.
   """
   def rotate_secret(scope, %Endpoint{board_id: board_id} = endpoint) do
-    with :ok <- authorize_owner(scope, board_id) do
+    with :ok <- authorize_owner(scope, board_id),
+         :ok <- check_plan(board_id) do
       endpoint
       |> Changeset.change()
       |> Changeset.optimistic_lock(:lock_version)
@@ -166,6 +183,7 @@ defmodule Kanban.Webhooks do
   """
   def send_test_event(scope, %Endpoint{board_id: board_id} = endpoint) do
     with :ok <- authorize_owner(scope, board_id),
+         :ok <- check_plan(board_id),
          :ok <- check_enabled(endpoint) do
       payload = Board |> Repo.get!(board_id) |> Payload.ping()
       DeliveryWorker.enqueue(endpoint.id, "ping", payload)
@@ -196,6 +214,9 @@ defmodule Kanban.Webhooks do
     |> select([d], struct(d, @delivery_log_fields))
     |> Repo.all()
   end
+
+  # Read by board id, so a preloaded workspace can never decide it.
+  defp check_plan(board_id), do: Plans.check_board(board_id, :integrations, surface: :context)
 
   defp check_enabled(%Endpoint{enabled: true}), do: :ok
   defp check_enabled(%Endpoint{}), do: {:error, :disabled}

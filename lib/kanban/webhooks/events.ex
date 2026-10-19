@@ -37,6 +37,13 @@ defmodule Kanban.Webhooks.Events do
   A goal moved to Done by its after_goal report, or promoted to Ready, does
   emit `task.moved`.
 
+  While paid plans are enforced, a free board's events queue nothing
+  (`Kanban.Plans.board_unlocked?/1`, read by board id once per emit, and only
+  when the board has a subscribed endpoint). The check is silent: the refusal
+  is counted when `Kanban.Webhooks.DeliveryWorker` skips a job queued before
+  enforcement. Endpoints are not changed, so deliveries resume once the board
+  is paid.
+
   Should a caller ever emit inside a transaction, the job insert joins it, so
   a rollback removes the job. It never raises into the caller; a failure is
   logged with ids only.
@@ -44,6 +51,7 @@ defmodule Kanban.Webhooks.Events do
 
   import Ecto.Query, only: [where: 3, order_by: 3, select: 3]
 
+  alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Tasks.Task
   alias Kanban.Webhooks.DeliveryWorker
@@ -83,6 +91,7 @@ defmodule Kanban.Webhooks.Events do
 
   defp deliver(name, board_id, task) do
     with [_ | _] = endpoint_ids <- subscribed_endpoint_ids(board_id, name),
+         true <- Plans.board_unlocked?(board_id),
          {:ok, payload} <- Payload.build(name, task) do
       DeliveryWorker.enqueue_all(endpoint_ids, name, payload)
     end

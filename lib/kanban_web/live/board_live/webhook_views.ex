@@ -115,12 +115,16 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
   One endpoint: kind, host, events, the enabled switch and its actions,
   plus its edit form when `edit_form` is set and its delivery log when
   `log_open?`.
+
+  When `paused?` (a free board while paid plans are enforced) the row is read
+  only: a Paused badge, and only the Deliveries and Delete actions.
   """
   attr :endpoint, Endpoint, required: true
   attr :myself, :any, required: true
   attr :log_open?, :boolean, default: false
   attr :deliveries, :list, default: []
   attr :edit_form, :any, default: nil, doc: "the open edit form, or nil"
+  attr :paused?, :boolean, default: false
 
   def endpoint_row(assigns) do
     ~H"""
@@ -146,6 +150,16 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
         >
           {gettext("Disabled")}
         </span>
+        <span
+          :if={@paused?}
+          data-endpoint-paused
+          style={[
+            "font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px;",
+            "background: var(--st-doing-soft); color: var(--st-doing);"
+          ]}
+        >
+          {gettext("Paused")}
+        </span>
       </div>
       <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
         <code
@@ -160,6 +174,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
       </div>
       <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px;">
         <button
+          :if={!@paused?}
           id={"webhook-edit-#{@endpoint.id}"}
           type="button"
           phx-click="edit"
@@ -172,6 +187,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
           {gettext("Edit")}
         </button>
         <button
+          :if={!@paused?}
           id={"webhook-toggle-#{@endpoint.id}"}
           type="button"
           data-enabled={to_string(@endpoint.enabled)}
@@ -187,6 +203,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
           {if @endpoint.enabled, do: gettext("Disable"), else: gettext("Enable")}
         </button>
         <button
+          :if={!@paused?}
           id={"webhook-test-#{@endpoint.id}"}
           type="button"
           phx-click="send_test"
@@ -210,7 +227,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
           {gettext("Deliveries")}
         </button>
         <button
-          :if={WebhookKinds.signed?(@endpoint.kind)}
+          :if={!@paused? and WebhookKinds.signed?(@endpoint.kind)}
           id={"webhook-rotate-#{@endpoint.id}"}
           type="button"
           phx-click="rotate"
@@ -238,7 +255,7 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
         </button>
       </div>
       <WebhookForm.edit_form
-        :if={@edit_form}
+        :if={@edit_form && !@paused?}
         form={@edit_form}
         endpoint={@endpoint}
         myself={@myself}

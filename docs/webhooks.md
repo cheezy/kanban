@@ -318,6 +318,15 @@ replace it. Deliveries already queued or waiting to be retried go to the new
 address. An endpoint's kind cannot be changed: to switch between a webhook,
 Slack and Discord, delete the endpoint and add a new one.
 
+Integrations are part of the paid plans. When paid plans are enforced and a
+board is not in an Organization's workspace, its endpoints are **paused**:
+the Integrations tab shows them with a Paused badge and offers only
+**Deliveries** and **Delete**, no new endpoint can be added, and no events
+are sent. Deliveries already queued or waiting to be retried are dropped, not
+held back. Pausing does not disable or delete anything, so when the board
+moves into an Organization's workspace each endpoint resumes with the next
+event, exactly as it was set up. An endpoint you disabled stays disabled.
+
 ## Retries
 
 A delivery that fails with a `5xx`, `408`, `429`, a redirect, a timeout or a

@@ -29,14 +29,24 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
 
   A component's own flash never reaches the page, so flashes are sent to the
   parent LiveView, which applies them with `apply_parent_message/2`.
+
+  Integrations are a paid feature. While paid plans are enforced, a free
+  board's view (`:locked?`, computed once when the component mounts) shows the
+  `KanbanWeb.LockedFeature` panel for `:integrations` and lists the existing
+  endpoints read only with a Paused badge, keeping only Deliveries and Delete.
+  The write events (create, save_edit, toggle, rotate, send_test) are refused
+  first here (`Kanban.Plans.check_board/3`, surface `:live_view`) with a
+  flash, and again by `Kanban.Webhooks` itself.
   """
   use KanbanWeb, :live_component
 
   alias Ecto.Changeset
+  alias Kanban.Plans
   alias Kanban.Webhooks
   alias Kanban.Webhooks.Endpoint
   alias KanbanWeb.BoardLive.WebhookForm
   alias KanbanWeb.BoardLive.WebhookViews
+  alias KanbanWeb.LockedFeature
 
   @log_size 20
 
@@ -45,14 +55,21 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
     {:ok,
      socket
      |> assign(assigns)
-     |> assign_new(:revealed, fn -> nil end)
-     |> assign_new(:log_endpoint_id, fn -> nil end)
-     |> assign_new(:editing, fn -> nil end)
-     |> assign_new(:deliveries, fn -> [] end)
-     |> assign_new(:form_rev, fn -> 0 end)
+     |> assign_defaults()
      |> assign_new(:form, fn %{form_rev: rev} -> new_form(rev) end)
+     |> assign_new(:locked?, &locked?/1)
      |> reload()}
   end
+
+  defp assign_defaults(socket) do
+    Enum.reduce(
+      [revealed: nil, log_endpoint_id: nil, editing: nil, deliveries: [], form_rev: 0],
+      socket,
+      fn {key, default}, acc -> assign_new(acc, key, fn -> default end) end
+    )
+  end
+
+  defp locked?(%{board: board}), do: not Plans.board_unlocked?(board.id)
 
   @doc "Applies a flash this component sent to its parent LiveView."
   def apply_parent_message(socket, {:flash, kind, message}) when kind in [:info, :error] do
@@ -73,9 +90,11 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   def handle_event("create", %{"endpoint" => params}, socket) do
     %{current_scope: scope, board: board} = socket.assigns
 
-    scope
-    |> Webhooks.create_endpoint(board, params)
-    |> handle_create(socket)
+    with_plan(socket, fn ->
+      scope
+      |> Webhooks.create_endpoint(board, params)
+      |> handle_create(socket)
+    end)
   end
 
   @impl true
@@ -100,10 +119,12 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
 
   @impl true
   def handle_event("save_edit", %{"id" => id} = params, socket) do
-    with_endpoint(socket, id, fn endpoint ->
-      socket.assigns.current_scope
-      |> Webhooks.update_endpoint(endpoint, edit_attrs(params))
-      |> handle_edit(endpoint, socket)
+    with_plan(socket, fn ->
+      with_endpoint(socket, id, fn endpoint ->
+        socket.assigns.current_scope
+        |> Webhooks.update_endpoint(endpoint, edit_attrs(params))
+        |> handle_edit(endpoint, socket)
+      end)
     end)
   end
 
@@ -114,24 +135,28 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
 
   @impl true
   def handle_event("toggle", %{"id" => id}, socket) do
-    with_endpoint(socket, id, fn endpoint ->
-      socket.assigns.current_scope
-      |> Webhooks.update_endpoint(endpoint, %{"enabled" => not endpoint.enabled})
-      |> handle_write(socket, toggled_message(endpoint))
+    with_plan(socket, fn ->
+      with_endpoint(socket, id, fn endpoint ->
+        socket.assigns.current_scope
+        |> Webhooks.update_endpoint(endpoint, %{"enabled" => not endpoint.enabled})
+        |> handle_write(socket, toggled_message(endpoint))
+      end)
     end)
   end
 
   @impl true
   def handle_event("rotate", %{"id" => id}, socket) do
-    with_endpoint(socket, id, fn endpoint ->
-      case Webhooks.rotate_secret(socket.assigns.current_scope, endpoint) do
-        {:ok, {rotated, secret}} ->
-          notify_parent({:flash, :info, gettext("Secret rotated")})
-          {:noreply, socket |> reveal(rotated, secret) |> reload()}
+    with_plan(socket, fn ->
+      with_endpoint(socket, id, fn endpoint ->
+        case Webhooks.rotate_secret(socket.assigns.current_scope, endpoint) do
+          {:ok, {rotated, secret}} ->
+            notify_parent({:flash, :info, gettext("Secret rotated")})
+            {:noreply, socket |> reveal(rotated, secret) |> reload()}
 
-        error ->
-          handle_write(error, socket, nil)
-      end
+          error ->
+            handle_write(error, socket, nil)
+        end
+      end)
     end)
   end
 
@@ -146,13 +171,15 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
 
   @impl true
   def handle_event("send_test", %{"id" => id}, socket) do
-    with_endpoint(socket, id, fn endpoint ->
-      socket.assigns.current_scope
-      |> Webhooks.send_test_event(endpoint)
-      |> handle_write(
-        assign(socket, :log_endpoint_id, endpoint.id),
-        gettext("Test event queued. Refresh the deliveries in a few seconds.")
-      )
+    with_plan(socket, fn ->
+      with_endpoint(socket, id, fn endpoint ->
+        socket.assigns.current_scope
+        |> Webhooks.send_test_event(endpoint)
+        |> handle_write(
+          assign(socket, :log_endpoint_id, endpoint.id),
+          gettext("Test event queued. Refresh the deliveries in a few seconds.")
+        )
+      end)
     end)
   end
 
@@ -186,6 +213,7 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   end
 
   defp handle_create({:error, :unauthorized}, socket), do: deny(socket)
+  defp handle_create({:error, {:plan_required, :integrations}}, socket), do: refuse_locked(socket)
 
   defp handle_edit({:ok, _endpoint}, _endpoint_before, socket) do
     notify_parent({:flash, :info, gettext("Endpoint updated")})
@@ -205,6 +233,9 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   end
 
   defp handle_edit({:error, :unauthorized}, _endpoint, socket), do: deny(socket)
+
+  defp handle_edit({:error, {:plan_required, :integrations}}, _endpoint, socket),
+    do: refuse_locked(socket)
 
   # Only the URL and the events can be edited. A blank URL keeps the stored
   # one, and events left out of the params (the form always sends them) keep
@@ -247,6 +278,9 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   end
 
   defp handle_write({:error, :unauthorized}, socket, _message), do: deny(socket)
+
+  defp handle_write({:error, {:plan_required, :integrations}}, socket, _message),
+    do: refuse_locked(socket)
 
   defp handle_write({:error, :disabled}, socket, _message) do
     notify_parent({:flash, :error, gettext("Enable the endpoint before sending a test event")})
@@ -321,6 +355,30 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
 
   defp form_id(rev), do: "endpoint-#{rev}"
 
+  # The write events on a free board under enforcement. Checked by board id on
+  # every event, so a page that loaded while the board was paid is refused too.
+  defp with_plan(socket, fun) do
+    case Plans.check_board(socket.assigns.board.id, :integrations, surface: :live_view) do
+      :ok -> fun.()
+      {:error, {:plan_required, :integrations}} -> refuse_locked(socket)
+    end
+  end
+
+  # Switches the view to its locked state, closing any edit form or secret.
+  defp refuse_locked(socket) do
+    notify_parent(
+      {:flash, :error,
+       gettext("Integrations are available to organizations. Nothing was changed.")}
+    )
+
+    {:noreply,
+     socket
+     |> assign(:locked?, true)
+     |> assign(:editing, nil)
+     |> assign(:revealed, nil)
+     |> reload()}
+  end
+
   defp deny(socket) do
     notify_parent({:flash, :error, gettext("Only the board owner can manage integrations")})
     {:noreply, socket}
@@ -347,9 +405,19 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
             "Each endpoint receives the task events you choose. Generic endpoints get a signed JSON POST; Slack and Discord endpoints get a message in a channel."
           )}
         </p>
-        <WebhookViews.secret_reveal :if={@revealed} secret={@revealed.secret} myself={@myself} />
+        <LockedFeature.locked_feature
+          :if={@locked?}
+          feature={:integrations}
+          variant={:panel}
+          id="integrations-locked"
+        />
+        <WebhookViews.secret_reveal
+          :if={@revealed && !@locked?}
+          secret={@revealed.secret}
+          myself={@myself}
+        />
         <p
-          :if={@endpoints == []}
+          :if={@endpoints == [] and !@locked?}
           data-webhooks-empty
           style="margin: 0 0 4px; font-size: 12px; color: var(--ink-3);"
         >
@@ -363,9 +431,10 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
             log_open?={@log_endpoint_id == endpoint.id}
             deliveries={if @log_endpoint_id == endpoint.id, do: @deliveries, else: []}
             edit_form={open_edit_form(@editing, endpoint)}
+            paused?={@locked?}
           />
         </ul>
-        <div style="border-top: 1px solid var(--line); margin-top: 12px;">
+        <div :if={!@locked?} style="border-top: 1px solid var(--line); margin-top: 12px;">
           <WebhookForm.endpoint_form form={@form} rev={@form_rev} myself={@myself} />
         </div>
       </section>
