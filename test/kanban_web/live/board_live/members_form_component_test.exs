@@ -184,6 +184,42 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       refute html =~ "Can Edit"
     end
 
+    test "labels a disabled member, who still takes a seat", %{
+      board: board,
+      scope: scope,
+      user: owner
+    } do
+      disabled = user_fixture()
+      active = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, disabled, :modify, owner)
+      {:ok, _} = Boards.add_user_to_board(board, active, :modify, owner)
+
+      {:ok, _} =
+        disabled |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second)) |> Repo.update()
+
+      html =
+        render_component(
+          &MembersFormComponent.render/1,
+          render_assigns(board, scope)
+        )
+
+      [chip] =
+        html
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query("[data-member-disabled]")
+        |> Enum.to_list()
+
+      assert LazyHTML.attribute(chip, "id") == ["member-disabled-#{disabled.id}"]
+      assert LazyHTML.text(chip) =~ "Disabled"
+
+      assert LazyHTML.attribute(chip, "title") == [
+               "This account is disabled and can't sign in. It still takes a seat."
+             ]
+
+      refute html =~ "member-disabled-#{active.id}"
+      refute html =~ "member-disabled-#{owner.id}"
+    end
+
     test "Close link points at @patch", %{board: board, scope: scope} do
       html =
         render_component(
@@ -586,6 +622,22 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       lv |> element(~s(button[phx-value-access="read_only"])) |> render_click()
 
       assert lv |> element("#member-cap-line") |> render() =~ "3 of 3 people"
+      assert has_element?(lv, "#members-search-email-#{board.id}[disabled]")
+    end
+
+    test "a disabled member still counts toward the cap and is labelled",
+         %{conn: conn, user: owner, board: board} do
+      [disabled, _other] = add_members(board, owner, 2)
+
+      {:ok, _} =
+        disabled |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second)) |> Repo.update()
+
+      enforce_plans()
+
+      {:ok, lv, _html} = live(log_in_user(conn, owner), ~p"/boards/#{board}/members")
+
+      assert lv |> element("#member-cap-line") |> render() =~ "3 of 3 people"
+      assert has_element?(lv, "#member-disabled-#{disabled.id}")
       assert has_element?(lv, "#members-search-email-#{board.id}[disabled]")
     end
 

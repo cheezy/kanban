@@ -606,7 +606,7 @@ msgid "Assigned To"
 msgstr "Atribuído a"
 
 #: lib/kanban_web/live/board_live/form.html.heex:323
-#: lib/kanban_web/live/board_live/members_form_component.ex:294
+#: lib/kanban_web/live/board_live/members_form_component.ex:307
 #: lib/kanban_web/notification_labels.ex:181
 #, elixir-autogen, elixir-format
 msgid "Can Edit"
@@ -648,7 +648,7 @@ msgid "Only the board owner can edit this board"
 msgstr "Apenas o proprietário do quadro pode editar este quadro"
 
 #: lib/kanban_web/live/board_live/form.html.heex:321
-#: lib/kanban_web/live/board_live/members_form_component.ex:293
+#: lib/kanban_web/live/board_live/members_form_component.ex:306
 #: lib/kanban_web/live/target_live/form.html.heex:34
 #: lib/kanban_web/notification_labels.ex:180
 #, elixir-autogen, elixir-format
@@ -656,7 +656,7 @@ msgid "Owner"
 msgstr "Proprietário"
 
 #: lib/kanban_web/live/board_live/form.html.heex:325
-#: lib/kanban_web/live/board_live/members_form_component.ex:295
+#: lib/kanban_web/live/board_live/members_form_component.ex:308
 #: lib/kanban_web/notification_labels.ex:182
 #, elixir-autogen, elixir-format
 msgid "Read Only"
@@ -665,7 +665,7 @@ msgstr "Somente Leitura"
 #: lib/kanban_web/components/bulk_action_bar.ex:236
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:132
 #: lib/kanban_web/live/board_live/form.html.heex:335
-#: lib/kanban_web/live/board_live/members_form_component.ex:245
+#: lib/kanban_web/live/board_live/members_form_component.ex:258
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:52
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:103
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:193
@@ -4759,7 +4759,7 @@ msgstr "Esta meta ainda não tem filhos."
 msgid "Open goal %{id}"
 msgstr "Abrir meta %{id}"
 
-#: lib/kanban_web/live/board_live/members_form_component.ex:256
+#: lib/kanban_web/live/board_live/members_form_component.ex:269
 #, elixir-autogen, elixir-format
 msgid "Close"
 msgstr "Fechar"
@@ -8044,6 +8044,7 @@ msgid "Confirmed"
 msgstr "Confirmado"
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:99
+#: lib/kanban_web/live/board_live/members_form_component.ex:231
 #: lib/kanban_web/live/board_live/webhook_views.ex:151
 #, elixir-autogen, elixir-format
 msgid "Disabled"
@@ -11234,3 +11235,8 @@ msgstr[1] "%{fields} exigem um quadro em uma organização e não foram salvos."
 #, elixir-autogen, elixir-format
 msgid "Telemetry Event and Metrics to Track need a board in an Organization, so your changes to them were not saved."
 msgstr "Evento de telemetria e Métricas a acompanhar precisam de um quadro numa organização, por isso as suas alterações a eles não foram guardadas."
+
+#: lib/kanban_web/live/board_live/members_form_component.ex:225
+#, elixir-autogen, elixir-format
+msgid "This account is disabled and can't sign in. It still takes a seat."
+msgstr "Esta conta está desativada e não pode iniciar sessão. Ainda assim ocupa um lugar."

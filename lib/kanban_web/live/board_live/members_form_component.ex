@@ -219,6 +219,19 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
             </div>
 
             <span
+              :if={user.disabled_at}
+              id={"member-disabled-#{user.id}"}
+              data-member-disabled
+              title={gettext("This account is disabled and can't sign in. It still takes a seat.")}
+              style={[
+                "font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px;",
+                "background: var(--st-blocked-soft); color: var(--st-blocked);"
+              ]}
+            >
+              {gettext("Disabled")}
+            </span>
+
+            <span
               class="ucase"
               style={[
                 "padding: 2px 8px; border-radius: 999px;",
