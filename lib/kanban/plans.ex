@@ -15,9 +15,10 @@ defmodule Kanban.Plans do
       either role. This decides only whether user-level paid UI shows unlocked;
       board-level features still resolve per board.
 
-  The decision depends only on the board or the user handed in. No function
-  here takes request parameters, so a caller cannot influence the answer
-  except through which board or user it asks about.
+  The decision depends only on the board or the user handed in. Only
+  `parse_feature/1` (a fixed allow-list) and `strip_locked_task_fields/3`
+  (which only removes fields) take request input, so a caller cannot
+  influence the answer except through which board or user it asks about.
 
   ## Enforcement
 
@@ -52,6 +53,11 @@ defmodule Kanban.Plans do
   `ArgumentError` before anything is decided or emitted, whether or not
   enforcement is on, so a mistake fails the test suite instead of reaching
   telemetry.
+
+  `strip_locked_task_fields/3` is the accept-but-do-not-store form for the
+  paid task fields (`telemetry_event` and `metrics_to_track`): on a locked
+  board it removes them from task params, child tasks included, and reports
+  which ones it removed, so the request still succeeds.
 
   `paid_board_ids_query/0` is the list-filter form of `paid_board?/1`: a
   query of the ids of boards in Organization workspaces, for filters such as
@@ -89,6 +95,10 @@ defmodule Kanban.Plans do
   ]
 
   @surfaces [:live_view, :controller, :rest, :mcp, :oban, :context]
+
+  # The task fields only a paid board stores, in the order warnings name them.
+  @locked_task_fields ["telemetry_event", "metrics_to_track"]
+  @locked_task_keys ["telemetry_event", :telemetry_event, "metrics_to_track", :metrics_to_track]
 
   @free_board_member_cap 3
 
@@ -271,6 +281,35 @@ defmodule Kanban.Plans do
   end
 
   @doc """
+  Removes the paid task fields from `params` when the board is locked.
+
+  Returns `{params, dropped}`, where `dropped` names the removed fields in the
+  order of `locked_task_fields/0`. `params` is a task map with string or atom
+  keys, or a list of them; the child tasks under `"tasks"` (or `:tasks`) are
+  stripped too. A field counts as dropped whenever its key is present, even
+  with a `nil` or empty value. Anything else passes through unchanged. On an
+  unlocked board it returns `{params, []}` without looking at them.
+
+  With `surface: surface` it also emits `[:kanban, :plan, :feature_refused]`
+  for `:telemetry` once when anything was dropped; without it, it never emits.
+  """
+  @spec strip_locked_task_fields(term(), Board.t() | integer(), [{:surface, surface()}]) ::
+          {term(), [String.t()]}
+  def strip_locked_task_fields(params, board, opts \\ []) do
+    surface = if opts == [], do: nil, else: validate!(:telemetry, opts)
+
+    if board_unlocked?(board) do
+      {params, []}
+    else
+      params |> drop_locked_task_fields() |> report_dropped(surface)
+    end
+  end
+
+  @doc "The task fields `strip_locked_task_fields/3` removes on a locked board."
+  @spec locked_task_fields() :: [String.t()]
+  def locked_task_fields, do: @locked_task_fields
+
+  @doc """
   Returns a query selecting the id of every board whose workspace belongs to an
   Organization.
 
@@ -307,6 +346,51 @@ defmodule Kanban.Plans do
     |> Repo.all()
     |> MapSet.new()
   end
+
+  defp drop_locked_task_fields(params) when is_list(params) do
+    {stripped, dropped} = Enum.map_reduce(params, [], &drop_with_acc/2)
+    {stripped, ordered_fields(dropped)}
+  end
+
+  defp drop_locked_task_fields(params) when is_map(params) do
+    present = for key <- @locked_task_keys, Map.has_key?(params, key), do: to_string(key)
+
+    {stripped, child_dropped} =
+      params |> Map.drop(@locked_task_keys) |> drop_child_task_fields()
+
+    {stripped, ordered_fields(present ++ child_dropped)}
+  end
+
+  defp drop_locked_task_fields(other), do: {other, []}
+
+  defp drop_with_acc(params, acc) do
+    {stripped, dropped} = drop_locked_task_fields(params)
+    {stripped, dropped ++ acc}
+  end
+
+  defp drop_child_task_fields(params) do
+    Enum.reduce(["tasks", :tasks], {params, []}, &drop_children_under/2)
+  end
+
+  defp drop_children_under(key, {params, dropped}) do
+    case params do
+      %{^key => children} when is_list(children) ->
+        {stripped, child_dropped} = drop_locked_task_fields(children)
+        {Map.put(params, key, stripped), child_dropped ++ dropped}
+
+      _no_children ->
+        {params, dropped}
+    end
+  end
+
+  defp ordered_fields(names), do: Enum.filter(@locked_task_fields, &(&1 in names))
+
+  defp report_dropped({_params, [_ | _]} = result, surface) when not is_nil(surface) do
+    refuse(:telemetry, surface)
+    result
+  end
+
+  defp report_dropped(result, _surface), do: result
 
   defp validate!(feature, opts) when feature in @features and is_list(opts) do
     case Keyword.fetch(opts, :surface) do

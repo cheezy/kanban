@@ -6,8 +6,12 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
   `testing_strategy` and `integration_points`.
 
   Called from `KanbanWeb.TaskLive.FormComponent` before changeset construction
-  to avoid false validation errors on empty inputs.
+  to avoid false validation errors on empty inputs. `normalize_params/2` also
+  drops the paid task fields on a locked board (W2409), so a save on a free
+  board cannot carry them.
   """
+
+  alias Kanban.Plans
 
   @array_fields ~w[dependencies required_capabilities technology_requirements pitfalls out_of_scope security_considerations]
 
@@ -28,6 +32,19 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
     params
     |> normalize_array_fields(@array_fields)
     |> normalize_map_fields()
+  end
+
+  @doc """
+  `normalize_array_params/1`, then drops the paid task fields
+  (`Kanban.Plans.strip_locked_task_fields/3`) when `board` is locked. A
+  dropped key is simply absent from the cast, so a value stored before the
+  board was locked is kept.
+  """
+  def normalize_params(params, board) do
+    {params, _dropped} =
+      params |> normalize_array_params() |> Plans.strip_locked_task_fields(board)
+
+    params
   end
 
   @doc """

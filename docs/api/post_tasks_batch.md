@@ -259,6 +259,12 @@ Returns all created goals with their child tasks:
 }
 ```
 
+When paid plans are enforced and the board is not in an Organization's
+workspace, `telemetry_event` and `metrics_to_track` on any goal or child task
+are accepted but not stored, and the 201 response adds a top-level `warnings`
+list naming them, beside `success`, `goals` and `total`. See
+[Warnings in POST /api/tasks](post_tasks.md#warnings).
+
 ### Forbidden (403)
 
 Column doesn't belong to the board:

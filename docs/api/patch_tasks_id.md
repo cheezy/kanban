@@ -63,8 +63,8 @@ All parameters are optional. Only include the fields you want to update.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `telemetry_event` | string | Telemetry event name (e.g., "[:kanban, :domain, :action]") |
-| `metrics_to_track` | string | Metrics to track |
+| `telemetry_event` | string | Telemetry event name (e.g., "[:kanban, :domain, :action]"). Stored only on a board in an Organization; see [Warnings](#warnings) |
+| `metrics_to_track` | string | Metrics to track. Stored only on a board in an Organization; see [Warnings](#warnings) |
 | `logging_requirements` | string | Logging requirements |
 
 #### Error Handling Fields
@@ -263,6 +263,25 @@ Returns the updated task with all fields:
     "updated_at": "2025-12-28T11:30:00Z",
     "completed_at": null
   }
+}
+```
+
+### Warnings
+
+When paid plans are enforced and the board is not in an Organization's
+workspace, `telemetry_event` and `metrics_to_track` are accepted but not
+stored, and the 200 response adds a top-level `warnings` list naming them.
+Values stored before are left unchanged. The other fields in the request are
+still applied, and a request without those two fields gets no `warnings` key.
+`PATCH /api/tasks/:id/complete` never stores these fields, so it ignores them
+on every board.
+
+```json
+{
+  "data": { "id": 123, "identifier": "W22", "title": "Add metrics dashboard" },
+  "warnings": [
+    "telemetry_event, metrics_to_track need a board in an Organization and were not stored."
+  ]
 }
 ```
 

@@ -582,6 +582,141 @@ defmodule Kanban.PlansTest do
     end
   end
 
+  describe "strip_locked_task_fields/3" do
+    @refused [:kanban, :plan, :feature_refused]
+
+    setup do
+      %{free: board_fixture(user_fixture()), paid: org_board(organization_fixture())}
+    end
+
+    test "drops both fields with string keys on a free board under enforcement", ctx do
+      enforce_plans()
+      params = %{"title" => "T", "telemetry_event" => "[:a]", "metrics_to_track" => "m"}
+
+      assert Plans.strip_locked_task_fields(params, ctx.free) ==
+               {%{"title" => "T"}, ["telemetry_event", "metrics_to_track"]}
+    end
+
+    test "drops atom keys, names fields in a fixed order and counts nil and empty values",
+         ctx do
+      enforce_plans()
+      params = %{title: "T", metrics_to_track: "", telemetry_event: nil}
+
+      assert Plans.strip_locked_task_fields(params, ctx.free) ==
+               {%{title: "T"}, ["telemetry_event", "metrics_to_track"]}
+    end
+
+    test "names only the field that was sent", ctx do
+      enforce_plans()
+
+      assert Plans.strip_locked_task_fields(%{"metrics_to_track" => "m"}, ctx.free) ==
+               {%{}, ["metrics_to_track"]}
+    end
+
+    test "strips child tasks even when the goal carries neither field", ctx do
+      enforce_plans()
+
+      goal = %{
+        "title" => "G",
+        "tasks" => [%{"title" => "A", "telemetry_event" => "[:a]"}, %{"title" => "B"}, "x"]
+      }
+
+      assert Plans.strip_locked_task_fields(goal, ctx.free) ==
+               {%{"title" => "G", "tasks" => [%{"title" => "A"}, %{"title" => "B"}, "x"]},
+                ["telemetry_event"]}
+
+      atom_goal = %{tasks: [%{metrics_to_track: "m"}]}
+
+      assert Plans.strip_locked_task_fields(atom_goal, ctx.free) ==
+               {%{tasks: [%{}]}, ["metrics_to_track"]}
+    end
+
+    test "strips a list of goals and merges the dropped names", ctx do
+      enforce_plans()
+
+      goals = [
+        %{"title" => "G1", "metrics_to_track" => "m"},
+        %{"title" => "G2", "tasks" => [%{"telemetry_event" => "[:a]"}]}
+      ]
+
+      assert Plans.strip_locked_task_fields(goals, ctx.free) ==
+               {[%{"title" => "G1"}, %{"title" => "G2", "tasks" => [%{}]}],
+                ["telemetry_event", "metrics_to_track"]}
+    end
+
+    test "passes a non-list tasks value and non-map params through", ctx do
+      enforce_plans()
+
+      assert Plans.strip_locked_task_fields(%{"tasks" => "nope"}, ctx.free) ==
+               {%{"tasks" => "nope"}, []}
+
+      assert Plans.strip_locked_task_fields(nil, ctx.free) == {nil, []}
+    end
+
+    test "leaves logging_requirements and other fields alone", ctx do
+      enforce_plans()
+
+      params = %{
+        "logging_requirements" => "log",
+        "integration_points" => %{"telemetry_events" => ["e"]}
+      }
+
+      assert Plans.strip_locked_task_fields(params, ctx.free) == {params, []}
+    end
+
+    test "keeps the fields on a paid board under enforcement", ctx do
+      enforce_plans()
+      params = %{"telemetry_event" => "[:a]", "tasks" => [%{"metrics_to_track" => "m"}]}
+
+      assert Plans.strip_locked_task_fields(params, ctx.paid) == {params, []}
+      assert Plans.strip_locked_task_fields(params, ctx.paid.id) == {params, []}
+    end
+
+    test "keeps the fields on a free board without enforcement, with no query", ctx do
+      params = %{"telemetry_event" => "[:a]"}
+
+      assert {{^params, []}, 0} =
+               count_queries(fn -> Plans.strip_locked_task_fields(params, ctx.free) end)
+    end
+
+    test "with a surface, emits feature_refused once when anything was dropped", ctx do
+      enforce_plans()
+      attach_telemetry(@refused)
+
+      Plans.strip_locked_task_fields(
+        [%{"telemetry_event" => "a"}, %{"metrics_to_track" => "m"}],
+        ctx.free,
+        surface: :rest
+      )
+
+      assert_received {:telemetry_event, @refused, %{count: 1},
+                       %{feature: :telemetry, surface: :rest}}
+
+      refute_received {:telemetry_event, @refused, _, _}
+    end
+
+    test "emits nothing without a surface, when nothing was dropped or on a paid board", ctx do
+      enforce_plans()
+      attach_telemetry(@refused)
+
+      Plans.strip_locked_task_fields(%{"telemetry_event" => "a"}, ctx.free)
+      Plans.strip_locked_task_fields(%{"title" => "T"}, ctx.free, surface: :rest)
+      Plans.strip_locked_task_fields(%{"telemetry_event" => "a"}, ctx.paid, surface: :rest)
+
+      refute_received {:telemetry_event, @refused, _, _}
+    end
+
+    test "raises on an unknown surface", ctx do
+      assert_raise ArgumentError, ~r/unknown plan surface/, fn ->
+        Plans.strip_locked_task_fields(%{}, ctx.free, surface: :web)
+      end
+    end
+
+    test "locked_task_fields/0 lists the two paid fields" do
+      assert Plans.locked_task_fields() == ["telemetry_event", "metrics_to_track"]
+    end
+  end
+
   describe "paid_board_ids_query/0" do
     test "returns only the ids of boards in Organization workspaces" do
       organization = organization_fixture()

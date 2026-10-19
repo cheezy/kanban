@@ -69,6 +69,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     socket
     |> LabelSelection.assign_options(assigns[:current_scope], board, task, action)
     |> assign(:field_visibility, board.field_visibility || %{})
+    |> assign(:telemetry_locked?, not Kanban.Plans.board_unlocked?(board))
   end
 
   defp prepare_task_data(task, board, action, assigns) do
@@ -239,7 +240,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   # Runs the actual create/edit once modify access has been authorized in the
   # "save" handle_event (D110).
   defp do_save_task(socket, task_params) do
-    task_params = ParamNormalizer.normalize_array_params(task_params)
+    task_params = ParamNormalizer.normalize_params(task_params, socket.assigns.board)
     raw = Map.get(task_params, "technical_details")
 
     case TechnicalDetails.decode(task_params) do

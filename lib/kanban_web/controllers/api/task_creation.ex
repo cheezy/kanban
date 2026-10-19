@@ -27,6 +27,7 @@ defmodule KanbanWeb.API.TaskCreation do
   alias Kanban.Columns
   alias Kanban.Tasks
   alias KanbanWeb.API.AgentAttribution
+  alias KanbanWeb.API.LockedTaskFields
   alias KanbanWeb.API.TaskActions
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskJSON
@@ -77,6 +78,10 @@ defmodule KanbanWeb.API.TaskCreation do
   end
 
   defp perform_api_task_create(conn, column, task_params, creator) do
+    # W2409: a free board accepts the paid telemetry fields but does not
+    # store them; the success body then carries a warning.
+    {conn, task_params} = LockedTaskFields.strip(conn, task_params)
+
     {safe_task_params, rejected_goal_fields} =
       TaskParamFilter.filter_forbidden_create_fields(task_params)
 
@@ -171,10 +176,15 @@ defmodule KanbanWeb.API.TaskCreation do
     conn
     |> put_status(:created)
     |> put_resp_header("location", ~p"/api/tasks/#{goal}")
-    |> json(%{
-      goal: render_goal_with_children(goal),
-      child_tasks: Enum.map(child_tasks, &TaskJSON.render_task_summary/1)
-    })
+    |> json(
+      LockedTaskFields.put_warnings(
+        %{
+          goal: render_goal_with_children(goal),
+          child_tasks: Enum.map(child_tasks, &TaskJSON.render_task_summary/1)
+        },
+        conn
+      )
+    )
   end
 
   defp handle_goal_creation({:error, _operation, %Ecto.Changeset{} = changeset}, conn) do

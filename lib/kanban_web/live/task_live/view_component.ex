@@ -28,6 +28,7 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
   import KanbanWeb.TaskLive.Components.TextBlock
   import KanbanWeb.TaskLive.Components.WorkflowStepsSection
 
+  alias Kanban.Plans
   alias Kanban.Tasks
   alias KanbanWeb.AcceptanceChecklist
   alias KanbanWeb.ReviewDiffPanel
@@ -70,7 +71,20 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
     |> assign(:can_modify, Map.get(assigns, :can_modify, false))
     |> assign(:field_visibility, Map.get(assigns, :field_visibility, %{}))
     |> assign(:current_scope, Map.get(assigns, :current_scope))
+    |> assign(:telemetry_locked?, telemetry_locked?(socket.assigns.task))
   end
+
+  # W2409: a locked board hides the stored paid telemetry fields; the
+  # logging requirements stay visible.
+  defp telemetry_locked?(%{column: %{board_id: board_id}}),
+    do: not Plans.board_unlocked?(board_id)
+
+  defp telemetry_locked?(_no_task), do: false
+
+  defp observability_shown?(task, true), do: !!task.logging_requirements
+
+  defp observability_shown?(task, false),
+    do: !!(task.telemetry_event || task.metrics_to_track || task.logging_requirements)
 
   # A re-render for the SAME task (a changed can_modify, field_visibility, …)
   # must not close the file the user has open, so only initialise it.
@@ -309,13 +323,21 @@ defmodule KanbanWeb.TaskLive.ViewComponent do
               </ul>
             <% end %>
 
-            <%= if (@task.telemetry_event || @task.metrics_to_track || @task.logging_requirements) && field_visible?(@field_visibility, "observability") do %>
+            <%= if observability_shown?(@task, @telemetry_locked?) && field_visible?(@field_visibility, "observability") do %>
               <SectionHead.section_head title={gettext("Observability")} />
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
-                <.block :if={@task.telemetry_event} label={gettext("Telemetry")} mono>
+                <.block
+                  :if={@task.telemetry_event && !@telemetry_locked?}
+                  label={gettext("Telemetry")}
+                  mono
+                >
                   {@task.telemetry_event}
                 </.block>
-                <.block :if={@task.metrics_to_track} label={gettext("Metrics")} mono>
+                <.block
+                  :if={@task.metrics_to_track && !@telemetry_locked?}
+                  label={gettext("Metrics")}
+                  mono
+                >
                   {@task.metrics_to_track}
                 </.block>
                 <.block :if={@task.logging_requirements} label={gettext("Logging")} mono>

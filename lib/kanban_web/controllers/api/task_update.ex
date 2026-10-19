@@ -22,6 +22,7 @@ defmodule KanbanWeb.API.TaskUpdate do
 
   alias Kanban.Tasks
   alias KanbanWeb.API.ErrorDocs
+  alias KanbanWeb.API.LockedTaskFields
   alias KanbanWeb.API.TaskActions
   alias KanbanWeb.API.TaskErrors
   alias KanbanWeb.API.TaskLabels
@@ -72,6 +73,8 @@ defmodule KanbanWeb.API.TaskUpdate do
     refusable = rejected_fields -- ["column_id"]
 
     if refusable == [] do
+      # W2409: only after the refusal passes, so a 422 never warns.
+      {conn, safe_params} = LockedTaskFields.strip(conn, safe_params)
       apply_api_task_update(conn, task, safe_params)
     else
       reject_forbidden_update(conn, refusable)

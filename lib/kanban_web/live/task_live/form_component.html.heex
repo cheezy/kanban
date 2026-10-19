@@ -264,13 +264,20 @@
         <h2 style="font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 0 0 12px;">
           {gettext("Observability")}
         </h2>
+        <%!-- W2409: a locked board shows the prompt and renders no inputs, so
+             a save never sends the two fields and stored values are kept. --%>
+        <div :if={@telemetry_locked?} id="task-telemetry-locked" style="margin: 0 0 12px;">
+          <KanbanWeb.LockedFeature.locked_feature feature={:telemetry} id="task-telemetry-lock" />
+        </div>
         <.input
+          :if={!@telemetry_locked?}
           field={f[:telemetry_event]}
           type="text"
           label={gettext("Telemetry Event")}
           placeholder={gettext("[:kanban, :domain, :action]")}
         />
         <.input
+          :if={!@telemetry_locked?}
           field={f[:metrics_to_track]}
           type="textarea"
           label={gettext("Metrics to Track")}

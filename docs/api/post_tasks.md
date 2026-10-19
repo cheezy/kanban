@@ -81,8 +81,8 @@ in the board UI.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `task.telemetry_event` | string | No | Telemetry events to emit (event names and metadata) |
-| `task.metrics_to_track` | string | No | Metrics to instrument (counters, gauges, histograms) |
+| `task.telemetry_event` | string | No | Telemetry events to emit (event names and metadata). Stored only on a board in an Organization; see [Warnings](#warnings) |
+| `task.metrics_to_track` | string | No | Metrics to instrument (counters, gauges, histograms). Stored only on a board in an Organization; see [Warnings](#warnings) |
 | `task.logging_requirements` | string | No | What to log for debugging (log levels, context data) |
 | `task.error_user_message` | string | No | User-facing error messages to display |
 | `task.error_on_failure` | string | No | How to handle failures (retry logic, fallbacks, cleanup) |
@@ -658,6 +658,26 @@ path. Reword either one.
       "complexity": "medium",
       "dependencies": ["W24"]
     }
+  ]
+}
+```
+
+### Warnings
+
+`telemetry_event` and `metrics_to_track` are paid fields. When paid plans are
+enforced and the token's board is not in an Organization's workspace, the
+request still succeeds with its normal status, but those fields are not
+stored, on the task or on any child task. The response then carries a
+top-level `warnings` list with one message naming the fields that were
+dropped. The message never repeats the values you sent. A request that sends
+neither field gets no `warnings` key. For a goal, `warnings` sits beside
+`goal` and `child_tasks`.
+
+```json
+{
+  "data": { "id": 123, "identifier": "W22", "title": "Add metrics dashboard" },
+  "warnings": [
+    "telemetry_event, metrics_to_track need a board in an Organization and were not stored."
   ]
 }
 ```

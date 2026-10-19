@@ -2484,7 +2484,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           board_id: nil,
           can_modify: false,
           current_scope: nil,
-          field_visibility: all_fields_visible()
+          field_visibility: all_fields_visible(),
+          telemetry_locked?: false
         })
 
       assert result =~ "Goal"
@@ -2507,7 +2508,8 @@ defmodule KanbanWeb.TaskLive.ViewComponentTest do
           board_id: nil,
           can_modify: false,
           current_scope: nil,
-          field_visibility: all_fields_visible()
+          field_visibility: all_fields_visible(),
+          telemetry_locked?: false
         })
 
       assert result =~ "Board"

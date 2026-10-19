@@ -35,6 +35,7 @@ defmodule KanbanWeb.API.BatchGoalCreation do
 
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias KanbanWeb.API.LockedTaskFields
   alias KanbanWeb.API.TaskActions
   alias KanbanWeb.API.TaskController
   alias KanbanWeb.API.TaskCreation
@@ -69,6 +70,10 @@ defmodule KanbanWeb.API.BatchGoalCreation do
         TaskErrors.handle_task_error(conn, {:error, :not_found})
 
       column ->
+        # W2409: the paid telemetry fields are dropped for the whole batch
+        # up front, so a free board gets one warning and one refusal event.
+        {conn, goals} = LockedTaskFields.strip(conn, goals)
+
         conn
         |> prepare_goal_labels(board, goals)
         |> create_prepared_goals(column, user, api_token, agent_name, conn)
@@ -193,11 +198,12 @@ defmodule KanbanWeb.API.BatchGoalCreation do
 
     conn
     |> put_status(:created)
-    |> json(%{
-      success: true,
-      goals: Enum.reverse(created_goals),
-      total: length(created_goals)
-    })
+    |> json(
+      LockedTaskFields.put_warnings(
+        %{success: true, goals: Enum.reverse(created_goals), total: length(created_goals)},
+        conn
+      )
+    )
   end
 
   def handle_batch_result({:error, index, changeset}, conn)

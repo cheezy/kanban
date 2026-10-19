@@ -1,6 +1,7 @@
 defmodule KanbanWeb.API.TaskJSON do
   alias Kanban.Tasks.Task
   alias KanbanWeb.API.ErrorDocs
+  alias KanbanWeb.API.LockedTaskFields
   alias KanbanWeb.API.SkillsVersion
   alias KanbanWeb.API.TaskNestedJSON
 
@@ -93,6 +94,7 @@ defmodule KanbanWeb.API.TaskJSON do
     %{data: data(task)}
     |> maybe_add_skills_version(assigns)
     |> maybe_add_comment_count(assigns)
+    |> LockedTaskFields.put_warnings(assigns)
   end
 
   defp maybe_add_comment_count(body, %{comment_count: count}) when is_integer(count),
