@@ -149,6 +149,15 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
       assert socket.assigns.flash["info"] == "User removed successfully"
     end
 
+    test "the owner removing themselves is refused with a flash", %{owner: owner, board: board} do
+      socket = build_socket(board)
+
+      {:noreply, socket} = Membership.remove_user(socket, owner, Integer.to_string(owner.id))
+
+      assert socket.assigns.flash["error"] == "The board owner can't be removed."
+      assert Boards.owner?(board, owner)
+    end
+
     test "unknown user id flashes user not found", %{owner: owner, board: board} do
       socket = build_socket(board)
 

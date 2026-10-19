@@ -699,11 +699,31 @@ defmodule Kanban.BoardsTest do
       assert {:error, %Ecto.Changeset{}} =
                Boards.add_user_to_board(ctx.board, ctx.member, :owner, ctx.owner)
 
+      assert {:error, :owner_required} =
+               Boards.remove_user_from_board(ctx.board, ctx.owner, ctx.owner)
+
+      assert {:error, :owner_required} =
+               Boards.update_user_access(ctx.board, ctx.owner, :read_only, ctx.owner)
+
       refute_receive {Boards, :members_changed, _}, 50
     end
   end
 
   describe "remove_user_from_board/2" do
+    test "refuses to remove the owner and changes nothing" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      task = board |> column_fixture() |> task_fixture(%{assigned_to_id: owner.id})
+      create_tokens(owner, board, 1)
+
+      assert {:error, :owner_required} = Boards.remove_user_from_board(board, owner, owner)
+
+      assert Boards.owner?(board, owner)
+      assert [%Board{}] = Boards.list_boards(owner)
+      assert Kanban.Repo.get!(Kanban.Tasks.Task, task.id).assigned_to_id == owner.id
+      assert [%{revoked_at: nil}] = Kanban.ApiTokens.list_api_tokens(board)
+    end
+
     test "unassigns the removed user from the board's open tasks only" do
       owner = user_fixture()
       member = user_fixture()
@@ -808,6 +828,29 @@ defmodule Kanban.BoardsTest do
   end
 
   describe "update_user_access/3" do
+    test "refuses to demote the owner and changes nothing" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      create_tokens(owner, board, 1)
+
+      for access <- [:modify, :read_only] do
+        assert {:error, :owner_required} = Boards.update_user_access(board, owner, access, owner)
+      end
+
+      assert Boards.owner?(board, owner)
+      assert [%{revoked_at: nil}] = Kanban.ApiTokens.list_api_tokens(board)
+    end
+
+    test "re-saving the owner as owner changes nothing" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      assert {:ok, %BoardUser{access: :owner}} =
+               Boards.update_user_access(board, owner, :owner, owner)
+
+      assert Boards.owner?(board, owner)
+    end
+
     test "updates a user's access from read_only to modify" do
       owner = user_fixture()
       board = board_fixture(owner)
@@ -999,14 +1042,12 @@ defmodule Kanban.BoardsTest do
       assert [%Notification{}, %Notification{}] = access_rows("access_changed")
     end
 
-    test "the owner changing their own membership notifies nobody", ctx do
-      other_board = board_fixture(ctx.owner)
-
-      assert {:ok, %BoardUser{}} =
+    test "a refused change to the owner's own row notifies nobody", ctx do
+      assert {:error, :owner_required} =
                Boards.update_user_access(ctx.board, ctx.owner, :modify, ctx.owner)
 
-      assert {:ok, %BoardUser{}} =
-               Boards.remove_user_from_board(other_board, ctx.owner, ctx.owner)
+      assert {:error, :owner_required} =
+               Boards.remove_user_from_board(ctx.board, ctx.owner, ctx.owner)
 
       assert access_rows() == []
     end

@@ -627,7 +627,7 @@ msgstr "Digite o e-mail do usuário"
 msgid "Failed to add user to board"
 msgstr "Falha ao adicionar usuário ao quadro"
 
-#: lib/kanban_web/live/board_live/membership.ex:214
+#: lib/kanban_web/live/board_live/membership.ex:218
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "Falha ao remover usuário do quadro"
@@ -722,7 +722,7 @@ msgstr "O usuário já foi adicionado ao quadro"
 msgid "User not found"
 msgstr "Usuário não encontrado"
 
-#: lib/kanban_web/live/board_live/membership.ex:209
+#: lib/kanban_web/live/board_live/membership.ex:210
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr "Usuário removido com sucesso"
@@ -3012,7 +3012,7 @@ msgid "Let's build what's next, together."
 msgstr "Vamos construir o que vem a seguir, juntos."
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:226
+#: lib/kanban_web/live/board_live/membership.ex:228
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "Apenas o proprietário do quadro pode gerir a participação no quadro"
@@ -11240,3 +11240,8 @@ msgstr "Evento de telemetria e Métricas a acompanhar precisam de um quadro numa
 #, elixir-autogen, elixir-format
 msgid "This account is disabled and can't sign in. It still takes a seat."
 msgstr "Esta conta está desativada e não pode iniciar sessão. Ainda assim ocupa um lugar."
+
+#: lib/kanban_web/live/board_live/membership.ex:214
+#, elixir-autogen, elixir-format
+msgid "The board owner can't be removed."
+msgstr "O proprietário do quadro não pode ser removido."

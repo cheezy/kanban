@@ -627,7 +627,7 @@ msgstr "输入用户电子邮件"
 msgid "Failed to add user to board"
 msgstr "添加用户到看板失败"
 
-#: lib/kanban_web/live/board_live/membership.ex:214
+#: lib/kanban_web/live/board_live/membership.ex:218
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "从看板移除用户失败"
@@ -722,7 +722,7 @@ msgstr "用户已添加到看板"
 msgid "User not found"
 msgstr "未找到用户"
 
-#: lib/kanban_web/live/board_live/membership.ex:209
+#: lib/kanban_web/live/board_live/membership.ex:210
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr "用户移除成功"
@@ -3009,7 +3009,7 @@ msgid "Let's build what's next, together."
 msgstr "让我们携手共建未来。"
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:226
+#: lib/kanban_web/live/board_live/membership.ex:228
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "只有看板所有者才能管理看板成员"
@@ -11194,3 +11194,8 @@ msgstr "遥测事件和要追踪的指标需要组织中的看板，因此你对
 #, elixir-autogen, elixir-format
 msgid "This account is disabled and can't sign in. It still takes a seat."
 msgstr "此账户已停用，无法登录，但仍占用一个名额。"
+
+#: lib/kanban_web/live/board_live/membership.ex:214
+#, elixir-autogen, elixir-format
+msgid "The board owner can't be removed."
+msgstr "无法移除看板所有者。"

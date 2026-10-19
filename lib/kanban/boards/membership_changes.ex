@@ -9,6 +9,10 @@ defmodule Kanban.Boards.MembershipChanges do
   same count and cap for the members screen. Removals and access changes are
   never capped.
 
+  The owner's own row can be neither removed nor demoted: either would leave
+  the board with no owner, invisible to everyone and stranded in the old
+  owner's personal workspace. Both return `{:error, :owner_required}`.
+
   Removal and a downgrade to `:read_only` revoke the user's API tokens for
   the board in the same transaction, and removal also unassigns the user from
   the board's open tasks. Once a write commits, the affected user
@@ -162,36 +166,53 @@ defmodule Kanban.Boards.MembershipChanges do
   On success the removed user gets a `board_access_changed` notification
   saying how many tokens were revoked, unless they removed themselves.
 
+  The owner's row is never removed: it returns `{:error, :owner_required}`
+  and changes nothing.
+
   ## Examples
 
       iex> remove_user_from_board(board, user)
       {:ok, %BoardUser{}}
 
+      iex> remove_user_from_board(board, owner, owner)
+      {:error, :owner_required}
+
   """
   def remove_user_from_board(%Board{} = board, user, current_user) do
     if Boards.owner?(board, current_user) do
-      case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
-        nil ->
-          {:error, :not_found}
-
-        board_user ->
-          # Revoke the removed user's board-scoped API tokens in the same
-          # transaction as the membership delete, so a still-valid token cannot
-          # outlive the access it depended on (W1430).
-          Ecto.Multi.new()
-          |> Ecto.Multi.delete(:board_user, board_user)
-          |> Ecto.Multi.run(:revoke_tokens, fn _repo, _changes ->
-            {:ok, ApiTokens.revoke_user_tokens_for_board(board.id, user.id)}
-          end)
-          |> Ecto.Multi.update_all(:unassign, open_assignments(board.id, user.id),
-            set: [assigned_to_id: nil, updated_at: NaiveDateTime.utc_now(:second)]
-          )
-          |> run_board_user_multi()
-          |> notify_membership(board, user, :removed, current_user)
+      with {:ok, board_user} <- fetch_changeable_member(board, user, :removed) do
+        board_user
+        |> removal_multi(board.id, user.id)
+        |> run_board_user_multi()
+        |> notify_membership(board, user, :removed, current_user)
       end
     else
       {:error, :unauthorized}
     end
+  end
+
+  # The member's row, unless the change would take the owner's row away: only
+  # re-saving it as :owner is let through.
+  defp fetch_changeable_member(board, user, new_access) do
+    case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
+      nil -> {:error, :not_found}
+      %BoardUser{access: :owner} when new_access != :owner -> {:error, :owner_required}
+      board_user -> {:ok, board_user}
+    end
+  end
+
+  # Revoke the removed user's board-scoped API tokens in the same transaction
+  # as the membership delete, so a still-valid token cannot outlive the access
+  # it depended on (W1430).
+  defp removal_multi(board_user, board_id, user_id) do
+    Ecto.Multi.new()
+    |> Ecto.Multi.delete(:board_user, board_user)
+    |> Ecto.Multi.run(:revoke_tokens, fn _repo, _changes ->
+      {:ok, ApiTokens.revoke_user_tokens_for_board(board_id, user_id)}
+    end)
+    |> Ecto.Multi.update_all(:unassign, open_assignments(board_id, user_id),
+      set: [assigned_to_id: nil, updated_at: NaiveDateTime.utc_now(:second)]
+    )
   end
 
   # The removed user's assignments on this board's open (unarchived) tasks.
@@ -272,27 +293,34 @@ defmodule Kanban.Boards.MembershipChanges do
   user gets a `board_access_changed` notification naming the new level (and, for a downgrade to `:read_only`,
   how many tokens were revoked), unless they changed it themselves.
 
+  The owner's row is never demoted: any level but `:owner` returns
+  `{:error, :owner_required}` and changes nothing. Re-saving it as `:owner`
+  changes nothing either.
+
   ## Examples
 
       iex> update_user_access(board, user, :modify)
       {:ok, %BoardUser{}}
 
+      iex> update_user_access(board, owner, :modify, owner)
+      {:error, :owner_required}
+
   """
   def update_user_access(%Board{} = board, user, new_access, current_user)
       when new_access in [:owner, :read_only, :modify] do
     if Boards.owner?(board, current_user) do
-      case Repo.get_by(BoardUser, board_id: board.id, user_id: user.id) do
-        nil ->
-          {:error, :not_found}
-
-        board_user ->
-          board_user
-          |> change_access(board.id, user.id, new_access)
-          |> notify_membership(board, user, access_change(board_user, new_access), current_user)
+      with {:ok, board_user} <- fetch_changeable_member(board, user, new_access) do
+        apply_access_change(board_user, board, user, new_access, current_user)
       end
     else
       {:error, :unauthorized}
     end
+  end
+
+  defp apply_access_change(board_user, board, user, new_access, current_user) do
+    board_user
+    |> change_access(board.id, user.id, new_access)
+    |> notify_membership(board, user, access_change(board_user, new_access), current_user)
   end
 
   # Downgrading to :read_only revokes the user's board-scoped API tokens in

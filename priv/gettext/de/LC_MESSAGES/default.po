@@ -627,7 +627,7 @@ msgstr "Benutzer-E-Mail eingeben"
 msgid "Failed to add user to board"
 msgstr "Benutzer konnte nicht zum Board hinzugefügt werden"
 
-#: lib/kanban_web/live/board_live/membership.ex:214
+#: lib/kanban_web/live/board_live/membership.ex:218
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "Benutzer konnte nicht vom Board entfernt werden"
@@ -722,7 +722,7 @@ msgstr "Benutzer wurde bereits zum Board hinzugefügt"
 msgid "User not found"
 msgstr "Benutzer nicht gefunden"
 
-#: lib/kanban_web/live/board_live/membership.ex:209
+#: lib/kanban_web/live/board_live/membership.ex:210
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr "Benutzer erfolgreich entfernt"
@@ -3012,7 +3012,7 @@ msgid "Let's build what's next, together."
 msgstr "Lassen Sie uns gemeinsam das Nächste bauen."
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:226
+#: lib/kanban_web/live/board_live/membership.ex:228
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "Nur der Board-Besitzer kann die Board-Mitgliedschaft verwalten"
@@ -11270,3 +11270,8 @@ msgstr "Telemetrie-Ereignis und Zu verfolgende Kennzahlen erfordern ein Board in
 #, elixir-autogen, elixir-format
 msgid "This account is disabled and can't sign in. It still takes a seat."
 msgstr "Dieses Konto ist deaktiviert und kann sich nicht anmelden. Es belegt trotzdem einen Platz."
+
+#: lib/kanban_web/live/board_live/membership.ex:214
+#, elixir-autogen, elixir-format
+msgid "The board owner can't be removed."
+msgstr "Der Board-Eigentümer kann nicht entfernt werden."

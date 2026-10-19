@@ -198,22 +198,24 @@ defmodule KanbanWeb.BoardLive.Membership do
          |> put_flash(:error, gettext("User not found"))}
 
       user ->
-        case Boards.remove_user_from_board(board, user, current_user) do
-          {:ok, _board_user} ->
-            board_users = Boards.list_board_users(board)
-
-            {:noreply,
-             socket
-             |> assign(:board_users, board_users)
-             |> assign_member_cap()
-             |> put_flash(:info, gettext("User removed successfully"))}
-
-          {:error, _} ->
-            {:noreply,
-             socket
-             |> put_flash(:error, gettext("Failed to remove user from board"))}
-        end
+        respond_to_remove(socket, board, Boards.remove_user_from_board(board, user, current_user))
     end
+  end
+
+  defp respond_to_remove(socket, board, {:ok, _board_user}) do
+    {:noreply,
+     socket
+     |> assign(:board_users, Boards.list_board_users(board))
+     |> assign_member_cap()
+     |> put_flash(:info, gettext("User removed successfully"))}
+  end
+
+  defp respond_to_remove(socket, _board, {:error, :owner_required}) do
+    {:noreply, put_flash(socket, :error, gettext("The board owner can't be removed."))}
+  end
+
+  defp respond_to_remove(socket, _board, {:error, _reason}) do
+    {:noreply, put_flash(socket, :error, gettext("Failed to remove user from board"))}
   end
 
   defp owner_authorized?(socket, current_user) do

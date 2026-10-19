@@ -214,13 +214,12 @@ defmodule Kanban.Boards.MemberCapTest do
       assert {:ok, %BoardUser{}} = Boards.remove_user_from_board(board, c, owner)
       assert member_count(board) == 2
 
-      # Re-fill the board, then change the owner's own row, the first half of
-      # an ownership transfer: still not capped.
-      add_members(board, owner, 1)
+      # Re-fill the board: a full board still lets the owner change a member.
+      [d] = add_members(board, owner, 1)
       assert Boards.member_cap_status(board).reached?
 
-      assert {:ok, %BoardUser{access: :modify}} =
-               Boards.update_user_access(board, owner, :modify, owner)
+      assert {:ok, %BoardUser{access: :read_only}} =
+               Boards.update_user_access(board, d, :read_only, owner)
 
       assert member_count(board) == 3
     end

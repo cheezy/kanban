@@ -627,7 +627,7 @@ msgstr "ユーザーのメールを入力"
 msgid "Failed to add user to board"
 msgstr "ボードへのユーザー追加に失敗しました"
 
-#: lib/kanban_web/live/board_live/membership.ex:214
+#: lib/kanban_web/live/board_live/membership.ex:218
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "ボードからのユーザー削除に失敗しました"
@@ -722,7 +722,7 @@ msgstr "ユーザーは既にボードに追加されています"
 msgid "User not found"
 msgstr "ユーザーが見つかりません"
 
-#: lib/kanban_web/live/board_live/membership.ex:209
+#: lib/kanban_web/live/board_live/membership.ex:210
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr "ユーザーが正常に削除されました"
@@ -3009,7 +3009,7 @@ msgid "Let's build what's next, together."
 msgstr "次なるものを、共に築きましょう。"
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:226
+#: lib/kanban_web/live/board_live/membership.ex:228
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "ボードの所有者のみがボードのメンバーを管理できます"
@@ -11194,3 +11194,8 @@ msgstr "テレメトリイベントと追跡するメトリクスには組織内
 #, elixir-autogen, elixir-format
 msgid "This account is disabled and can't sign in. It still takes a seat."
 msgstr "このアカウントは無効化されているためサインインできませんが、引き続き枠を1つ使用しています。"
+
+#: lib/kanban_web/live/board_live/membership.ex:214
+#, elixir-autogen, elixir-format
+msgid "The board owner can't be removed."
+msgstr "ボードのオーナーは削除できません。"

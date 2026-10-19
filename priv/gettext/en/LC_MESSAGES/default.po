@@ -627,7 +627,7 @@ msgstr ""
 msgid "Failed to add user to board"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/membership.ex:214
+#: lib/kanban_web/live/board_live/membership.ex:218
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr ""
@@ -722,7 +722,7 @@ msgstr ""
 msgid "User not found"
 msgstr ""
 
-#: lib/kanban_web/live/board_live/membership.ex:209
+#: lib/kanban_web/live/board_live/membership.ex:210
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr ""
@@ -3012,7 +3012,7 @@ msgid "Let's build what's next, together."
 msgstr ""
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:226
+#: lib/kanban_web/live/board_live/membership.ex:228
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "Only the board owner can manage board membership"
@@ -11163,4 +11163,9 @@ msgstr ""
 #: lib/kanban_web/live/board_live/members_form_component.ex:225
 #, elixir-autogen, elixir-format
 msgid "This account is disabled and can't sign in. It still takes a seat."
+msgstr ""
+
+#: lib/kanban_web/live/board_live/membership.ex:214
+#, elixir-autogen, elixir-format
+msgid "The board owner can't be removed."
 msgstr ""

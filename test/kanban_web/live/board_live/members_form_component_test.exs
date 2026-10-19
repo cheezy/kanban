@@ -494,6 +494,25 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       assert socket.assigns.flash == %{}
     end
 
+    test "owner: a forged event removing the owner is refused and the owner stays",
+         %{board: board, scope: scope, user: owner} do
+      socket = build_update_socket(board, scope)
+
+      {:noreply, socket} =
+        MembersFormComponent.handle_event(
+          "remove_user",
+          %{"user_id" => Integer.to_string(owner.id)},
+          socket
+        )
+
+      assert_received {MembersFormComponent,
+                       {:replace_flash, [error: "The board owner can't be removed."]}}
+
+      assert socket.assigns.flash == %{}
+      assert Boards.owner?(board, owner)
+      assert Enum.any?(socket.assigns.board_users, &(&1.user.id == owner.id))
+    end
+
     test "non-owner: refuses to remove", %{board: board, user: owner} do
       member = user_fixture()
       {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
