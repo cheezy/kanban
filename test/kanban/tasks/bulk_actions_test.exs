@@ -1,14 +1,22 @@
 defmodule Kanban.Tasks.BulkActionsTest do
-  use Kanban.DataCase, async: true
+  # async: false - the paid-plan tests switch the global :plans_enforced
+  # application env on through Kanban.PlansHelpers.
+  use Kanban.DataCase, async: false
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.LabelsFixtures
+  import Kanban.OrganizationsFixtures
+  import Kanban.PlansHelpers
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
+  import Kanban.WorkspacesFixtures
 
   alias Kanban.Boards
+  alias Kanban.Boards.Board
   alias Kanban.Labels.TaskLabel
+  alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Tasks
   alias Kanban.Tasks.BulkActions
@@ -48,6 +56,56 @@ defmodule Kanban.Tasks.BulkActionsTest do
   end
 
   defp subscribe(board), do: Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{board.id}")
+
+  @refused [:kanban, :plan, :feature_refused]
+
+  defp make_paid(%Board{id: id} = board) do
+    workspace = org_workspace_fixture(organization_fixture())
+
+    {1, _} =
+      Board |> where([b], b.id == ^id) |> Repo.update_all(set: [workspace_id: workspace.id])
+
+    board
+  end
+
+  # Counts the Repo queries this test process runs while `fun` executes.
+  defp count_queries(fun) do
+    test_pid = self()
+    ref = :counters.new(1, [])
+    handler_id = "bulk-actions-test-#{System.unique_integer([:positive])}"
+
+    :telemetry.attach(
+      handler_id,
+      [:kanban, :repo, :query],
+      fn _event, _measurements, _metadata, _config ->
+        if self() == test_pid, do: :counters.add(ref, 1, 1)
+      end,
+      nil
+    )
+
+    try do
+      fun.()
+      :counters.get(ref, 1)
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
+  # Every BulkActions function with a valid target, as {function, target args}.
+  defp all_actions(board, %{id: column_id}) do
+    %{id: label_id} = label_fixture(board)
+
+    [
+      move: [column_id],
+      assign: [nil],
+      add_label: [label_id],
+      remove_label: [label_id],
+      archive: []
+    ]
+  end
+
+  defp run_action({name, target}, scope, board, ids),
+    do: apply(BulkActions, name, [scope, board, ids | target])
 
   describe "move/4" do
     test "appends the selected tasks to the target in board order and renumbers the source",
@@ -469,6 +527,106 @@ defmodule Kanban.Tasks.BulkActionsTest do
 
       assert {:error, :unauthorized} = BulkActions.archive(reader_scope, board, [task.id])
       assert reload(task).archived_at == nil
+    end
+  end
+
+  describe "paid plans" do
+    test "every function refuses a free board under enforcement, changing nothing", ctx do
+      %{scope: scope, board: board, todo: todo, done: done} = ctx
+      t1 = task_fixture(todo)
+      t2 = task_fixture(todo)
+      enforce_plans()
+      attach_telemetry(@refused)
+
+      for {name, _} = action <- all_actions(board, done) do
+        assert {:error, {:plan_required, :bulk_actions}} =
+                 run_action(action, scope, board, [t1.id, t2.id]),
+               "#{name} was not refused"
+
+        assert_received {:telemetry_event, @refused, %{count: 1},
+                         %{feature: :bulk_actions, surface: :context}}
+
+        refute_received {:telemetry_event, @refused, _, _}
+      end
+
+      for task <- [t1, t2] do
+        reloaded = reload(task)
+        assert reloaded.column_id == todo.id
+        assert reloaded.archived_at == nil
+      end
+
+      assert Repo.aggregate(TaskLabel, :count) == 0
+    end
+
+    test "every function works on a paid board under enforcement", ctx do
+      %{scope: scope, board: board, todo: todo, done: done} = ctx
+      make_paid(board)
+      enforce_plans()
+
+      for {name, _} = action <- all_actions(board, done) do
+        task = task_fixture(todo)
+        assert {:ok, %{}} = run_action(action, scope, board, [task.id]), "#{name} was refused"
+      end
+    end
+
+    test "every function works on a free board with enforcement off", ctx do
+      %{scope: scope, board: board, todo: todo, done: done} = ctx
+
+      for {name, _} = action <- all_actions(board, done) do
+        task = task_fixture(todo)
+        assert {:ok, %{}} = run_action(action, scope, board, [task.id]), "#{name} was refused"
+      end
+    end
+
+    test "the plan costs the same queries for one task as for many", ctx do
+      %{scope: scope, board: board, todo: todo} = ctx
+      make_paid(board)
+
+      plan_cost = fn size ->
+        off = Enum.map(1..size, fn _ -> task_fixture(todo).id end)
+        on = Enum.map(1..size, fn _ -> task_fixture(todo).id end)
+        Application.put_env(:kanban, :plans_enforced, false)
+        without = count_queries(fn -> BulkActions.archive(scope, board, off) end)
+        enforce_plans()
+        with_plan = count_queries(fn -> BulkActions.archive(scope, board, on) end)
+        with_plan - without
+      end
+
+      assert plan_cost.(1) == plan_cost.(4)
+      assert plan_cost.(1) > 0
+    end
+
+    test "authorization is checked before the plan", %{board: board, owner: owner, todo: todo} do
+      {_reader, reader_scope} = member_scope(board, owner, :read_only)
+      task = task_fixture(todo)
+      enforce_plans()
+      attach_telemetry(@refused)
+
+      assert {:error, :unauthorized} = BulkActions.archive(reader_scope, board, [task.id])
+      refute_received {:telemetry_event, @refused, _, _}
+    end
+
+    test "the plan is checked before the selection", %{scope: scope, board: board} do
+      enforce_plans()
+
+      assert {:error, {:plan_required, :bulk_actions}} = BulkActions.archive(scope, board, [])
+    end
+
+    test "the board's plan is read fresh, not from a preloaded workspace", ctx do
+      %{scope: scope, board: board, todo: todo} = ctx
+      task = task_fixture(todo)
+      make_paid(board)
+      stale = Board |> Repo.get!(board.id) |> Repo.preload(:workspace)
+      assert Plans.paid_board?(stale)
+
+      Board
+      |> where([b], b.id == ^board.id)
+      |> Repo.update_all(set: [workspace_id: board.workspace_id])
+
+      enforce_plans()
+
+      assert {:error, {:plan_required, :bulk_actions}} =
+               BulkActions.archive(scope, stale, [task.id])
     end
   end
 

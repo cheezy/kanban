@@ -31,6 +31,7 @@ defmodule KanbanWeb.BoardLive.BoardState do
     |> assign(:user_access, user_access)
     |> assign(:can_modify, user_access in [:owner, :modify])
     |> assign(:is_owner, user_access == :owner)
+    |> BulkSelection.assign_lock(board)
     |> assign(:field_visibility, board.field_visibility || %{})
     |> assign(:has_columns, not Enum.empty?(columns))
     |> stream(:columns, columns, reset: true)

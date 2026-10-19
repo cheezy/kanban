@@ -485,8 +485,8 @@ Notifications means the in-app bell, notification emails and digests (W2405, W24
 
 | Entry point | Behaviour on a free board |
 |---|---|
-| `KanbanWeb.BoardLive.Show` | Computes `bulk_locked?` once at mount with `Plans.board_unlocked?/1`, preloading the board's workspace. |
-| `KanbanWeb.BulkActionBar` (UI) | Renders the lock component for `:bulk_actions` where the bar would be. |
+| `KanbanWeb.BoardLive.Show` | `BulkSelection.assign_lock/2` computes `bulk_locked?` with `Plans.board_unlocked?/1` the first time the socket loads the board (the board loads in `handle_params`, not `mount`), and keeps it on later patches and filter changes. It reads the plan by board id rather than from a preloaded workspace, so the value is fresh. With enforcement off it never queries. |
+| `KanbanWeb.BulkActionBar` (UI) | On a locked board, renders the lock component for `:bulk_actions` where the bar would be, for every viewer who can modify the board. The Select toggle is hidden, so selection mode cannot start. |
 | `KanbanWeb.BoardLive.BulkSelection.handle_bulk_event/3` (LiveView events) | Refuses every `bulk_` event with a translated flash; `surface: :live_view`. |
 | `Kanban.Tasks.BulkActions` (`move`, `assign`, `add_label`, `remove_label`, `archive`) | Returns `{:error, {:plan_required, :bulk_actions}}`; `surface: :context`. Checked once per call, not per task. |
 

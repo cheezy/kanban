@@ -15,7 +15,12 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
   re-resolves every id against the board itself.
 
   Every event is refused unless the viewer can modify the board, so a forged
-  event from a read-only member changes nothing. Cards render inside the
+  event from a read-only member changes nothing. While paid plans are
+  enforced, every event on a free board is then refused with a flash
+  (`Kanban.Plans.check_board/3`, surface `:live_view`), and
+  `Kanban.Tasks.BulkActions` refuses the actions again in the context.
+  `assign_lock/2` sets `:bulk_locked?` once per board, so the page shows the
+  locked prompt instead of the Select toggle and the bar. Cards render inside the
   `:columns` stream, so a selection change re-inserts the columns to
   re-render the checkboxes.
   """
@@ -25,14 +30,38 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
   import Phoenix.Component, only: [assign: 3, update: 3]
   import Phoenix.LiveView, only: [push_event: 3, put_flash: 3, stream: 3]
 
+  alias Kanban.Plans
   alias Kanban.Tasks
   alias KanbanWeb.BoardLive.BoardState
   alias KanbanWeb.BoardLive.ColumnActions
   alias KanbanWeb.BoardLive.FilterActions
   alias KanbanWeb.BoardLive.Show
 
-  @doc "Assigns an empty selection with selection mode off."
-  def init(socket), do: reset(socket, false)
+  @doc """
+  Assigns an empty selection with selection mode off, and bulk actions
+  unlocked until `assign_lock/2` has seen a board.
+  """
+  def init(socket) do
+    socket
+    |> reset(false)
+    |> assign(:bulk_locked?, false)
+    |> assign(:bulk_lock_board_id, nil)
+  end
+
+  @doc """
+  Assigns `:bulk_locked?` for `board`: true while paid plans are enforced and
+  the board is free. It is computed the first time this socket loads the
+  board and kept on later patches and filter changes, so the plan is not
+  re-read on every load. With enforcement off it never queries.
+  """
+  def assign_lock(%{assigns: %{bulk_lock_board_id: board_id}} = socket, %{id: board_id}),
+    do: socket
+
+  def assign_lock(socket, %{id: board_id}) do
+    socket
+    |> assign(:bulk_locked?, not Plans.board_unlocked?(board_id))
+    |> assign(:bulk_lock_board_id, board_id)
+  end
 
   @doc """
   The column each visible task is in, as `%{task_id => column_id}`. Taken
@@ -95,11 +124,26 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
 
   @doc "Handles a `bulk_*` event from the board."
   def handle_bulk_event(event, params, socket) do
-    if socket.assigns[:can_modify] == true do
+    with :ok <- check_modify(socket),
+         :ok <- Plans.check_board(socket.assigns.board.id, :bulk_actions, surface: :live_view) do
       dispatch(event, params, socket)
     else
-      {:noreply, put_flash(socket, :error, permission_denied())}
+      {:error, :unauthorized} -> {:noreply, put_flash(socket, :error, permission_denied())}
+      {:error, {:plan_required, :bulk_actions}} -> refuse_locked(socket)
     end
+  end
+
+  defp check_modify(socket),
+    do: if(socket.assigns[:can_modify] == true, do: :ok, else: {:error, :unauthorized})
+
+  # The board is free under enforcement. A page that loaded it while it was
+  # paid leaves selection mode and shows the locked prompt from now on.
+  defp refuse_locked(socket) do
+    socket
+    |> reset(false)
+    |> assign(:bulk_locked?, true)
+    |> put_flash(:error, bulk_locked_message())
+    |> restream()
   end
 
   defp dispatch("bulk_toggle_mode", _params, socket) do
@@ -235,6 +279,8 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
      |> push_event("wip_limit_violation", %{column_id: column_id})}
   end
 
+  defp handle_error(socket, {:plan_required, :bulk_actions}, _context), do: refuse_locked(socket)
+
   defp handle_error(socket, reason, _context),
     do: {:noreply, put_flash(socket, :error, error_message(reason))}
 
@@ -273,6 +319,9 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
 
   defp permission_denied,
     do: gettext("You do not have permission to modify tasks on this board")
+
+  defp bulk_locked_message,
+    do: gettext("Bulk actions are available to organizations. Nothing was changed.")
 
   defp reset(socket, selection_mode) do
     socket

@@ -10,12 +10,17 @@ defmodule Kanban.Tasks.BulkActions do
        access on the board, re-read from the database on every call so a
        hidden control or a stale socket is never the only check
        (`{:error, :unauthorized}`).
-    2. **A non-empty selection of integer ids** (`{:error, :empty_selection}`;
+    2. **A paid board.** While paid plans are enforced, bulk actions are a paid
+       feature: on a free board every function returns
+       `{:error, {:plan_required, :bulk_actions}}` (`Kanban.Plans.check_board/3`,
+       surface `:context`), checked once per call and never per task. This is
+       what refuses any caller, not just the board page.
+    3. **A non-empty selection of integer ids** (`{:error, :empty_selection}`;
        a malformed id is `{:error, :not_found}`).
-    3. **A board-scoped target**: the column (`:invalid_column`), the
+    4. **A board-scoped target**: the column (`:invalid_column`), the
        assignee — any member of the board (`:invalid_assignee`) — or the label
        (`:invalid_label`).
-    4. **Board-scoped tasks.** Inside the transaction (after a move has locked
+    5. **Board-scoped tasks.** Inside the transaction (after a move has locked
        the board's columns), every id must name a live (unarchived) task in one
        of this board's columns, and the number of tasks found must equal the
        number of distinct ids. A foreign, archived or deleted id aborts the
@@ -54,6 +59,7 @@ defmodule Kanban.Tasks.BulkActions do
   alias Kanban.Labels.Label
   alias Kanban.Labels.TaskLabel
   alias Kanban.Notifications.Events
+  alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.ColumnLocks
@@ -64,7 +70,7 @@ defmodule Kanban.Tasks.BulkActions do
 
   @type result ::
           {:ok, %{count: non_neg_integer(), skipped_goals: non_neg_integer()}}
-          | {:error, atom()}
+          | {:error, atom() | {:plan_required, :bulk_actions}}
 
   @doc """
   Moves the selected tasks to the end of `column_id`, in their current board
@@ -149,9 +155,12 @@ defmodule Kanban.Tasks.BulkActions do
 
   # ── Guards ─────────────────────────────────────────────────────────
 
-  # Guards 1 and 2: authorization, then a well-formed, non-empty selection.
+  # Guards 1 to 3: authorization, the paid plan (checked once per call, by
+  # board id so the decision is read fresh), then a well-formed, non-empty
+  # selection.
   defp prepare(scope, board, task_ids) do
     with {:ok, user} <- authorize(scope, board),
+         :ok <- Plans.check_board(board.id, :bulk_actions, surface: :context),
          {:ok, ids} <- normalize_ids(task_ids) do
       {:ok, user, ids}
     end

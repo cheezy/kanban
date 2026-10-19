@@ -8,7 +8,10 @@ defmodule KanbanWeb.BulkActionBar do
   Every control only emits a `bulk_*` event; `KanbanWeb.BoardLive.BulkSelection`
   holds the selection and `Kanban.Tasks.BulkActions` authorizes and applies
   the change. The board renders these only for viewers who can modify it, but
-  the server refuses the events from anyone else regardless.
+  the server refuses the events from anyone else regardless. On a board whose
+  bulk actions are locked (a free board while paid plans are enforced) the
+  bar renders the `KanbanWeb.LockedFeature` prompt for `:bulk_actions`
+  instead, and the board hides the toggle.
 
   Styled with theme tokens only, matching the compact controls of
   `KanbanWeb.BoardFilterBar`.
@@ -16,6 +19,7 @@ defmodule KanbanWeb.BulkActionBar do
   use KanbanWeb, :html
 
   alias KanbanWeb.BoardLive.ColumnActions
+  alias KanbanWeb.LockedFeature
 
   @doc "The header button that enters or leaves selection mode."
   attr :active, :boolean, required: true
@@ -108,11 +112,29 @@ defmodule KanbanWeb.BulkActionBar do
     * `members` — the board's members, maps with `:user_id` and `:name`.
     * `labels` — the board's labels; the label actions are omitted when
       empty.
+    * `locked` — renders the locked Bulk actions prompt in place of the
+      controls. Default `false`.
   """
   attr :count, :integer, required: true
   attr :columns, :list, default: []
   attr :members, :list, default: []
   attr :labels, :list, default: []
+  attr :locked, :boolean, default: false
+
+  def bulk_action_bar(%{locked: true} = assigns) do
+    ~H"""
+    <div
+      id="bulk-action-bar-locked"
+      data-bulk-actions-locked
+      style={[
+        "margin: 0 0 10px; padding: 8px 10px; border-radius: 8px;",
+        "background: var(--surface); border: 1px solid var(--line);"
+      ]}
+    >
+      <LockedFeature.locked_feature feature={:bulk_actions} id="bulk-actions-locked" />
+    </div>
+    """
+  end
 
   def bulk_action_bar(assigns) do
     assigns = assign(assigns, :none?, assigns.count == 0)

@@ -1,15 +1,22 @@
 defmodule KanbanWeb.BoardLive.BulkSelectionTest do
+  # Not async: the paid-plan tests switch the global :plans_enforced
+  # application env on through Kanban.PlansHelpers.
   use KanbanWeb.ConnCase
 
-  import Ecto.Query, only: [from: 2]
+  import Ecto.Query, only: [from: 2, where: 3]
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
   import Kanban.LabelsFixtures
+  import Kanban.OrganizationsFixtures
+  import Kanban.PlansHelpers
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
+  import Kanban.WorkspacesFixtures
 
   alias Kanban.Boards
+  alias Kanban.Boards.Board
   alias Kanban.Repo
   alias Kanban.Tasks
   alias Kanban.Tasks.Task
@@ -31,6 +38,29 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
   end
 
   defp select(view, task), do: view |> element("#bulk-select-#{task.id}") |> render_click()
+
+  @refused [:kanban, :plan, :feature_refused]
+  @locked_flash "Bulk actions are available to organizations. Nothing was changed."
+
+  defp set_workspace(%Board{id: id} = board, workspace_id) do
+    {1, _} =
+      Board |> where([b], b.id == ^id) |> Repo.update_all(set: [workspace_id: workspace_id])
+
+    board
+  end
+
+  defp make_paid(board) do
+    workspace = org_workspace_fixture(organization_fixture())
+    set_workspace(board, workspace.id)
+  end
+
+  defp assert_locked(view) do
+    assert has_element?(view, "#bulk-action-bar-locked [data-locked-feature=bulk_actions]")
+    assert has_element?(view, "#bulk-action-bar-locked a[data-locked-feature-prompt]")
+    refute has_element?(view, "#bulk-select-toggle")
+    refute has_element?(view, ".bulk-select")
+    refute has_element?(view, "#bulk-action-bar")
+  end
 
   describe "owner and modify members" do
     test "select two cards and move them to Done", %{
@@ -362,6 +392,176 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
     end
   end
 
+  describe "paid plans" do
+    test "a free board under enforcement shows the locked prompt instead of the toggle and bar",
+         %{conn: conn, board: board, todo: todo} do
+      task_fixture(todo)
+      enforce_plans()
+      {:ok, view, html} = live(conn, ~p"/boards/#{board}")
+
+      assert_locked(view)
+      assert html =~ "Bulk actions"
+      assert html =~ "Available to organizations"
+    end
+
+    test "every bulk event on a free board is refused with a flash and changes nothing", %{
+      conn: conn,
+      board: board,
+      todo: todo,
+      done: done
+    } do
+      task = task_fixture(todo)
+      label = label_fixture(board)
+      enforce_plans()
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      attach_telemetry(@refused)
+
+      for {event, params} <- [
+            {"bulk_toggle_mode", %{}},
+            {"bulk_toggle", %{"id" => to_string(task.id)}},
+            {"bulk_select_column", %{"id" => to_string(todo.id)}},
+            {"bulk_clear", %{}},
+            {"bulk_move", %{"column_id" => to_string(done.id)}},
+            {"bulk_assign", %{"assignee" => "unassigned"}},
+            {"bulk_add_label", %{"label_id" => to_string(label.id)}},
+            {"bulk_remove_label", %{"label_id" => to_string(label.id)}},
+            {"bulk_archive", %{}},
+            {"bulk_unknown", %{}}
+          ] do
+        assert render_hook(view, event, params) =~ @locked_flash, "#{event} was not refused"
+
+        assert_received {:telemetry_event, @refused, %{count: 1},
+                         %{feature: :bulk_actions, surface: :live_view}}
+      end
+
+      reloaded = reload(task)
+      assert reloaded.column_id == todo.id
+      assert reloaded.archived_at == nil
+      assert_locked(view)
+    end
+
+    test "an empty selection on a free board gets the lock message, not the selection one",
+         %{conn: conn, board: board} do
+      enforce_plans()
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      html = render_hook(view, "bulk_archive", %{})
+      assert html =~ @locked_flash
+      refute html =~ "Select at least one task"
+    end
+
+    test "a read-only member on a free board is refused for permission first",
+         %{board: board, todo: todo, user: owner} do
+      reader = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
+      task_fixture(todo)
+      enforce_plans()
+      {:ok, view, _html} = live(log_in_user(build_conn(), reader), ~p"/boards/#{board}")
+
+      refute has_element?(view, "#bulk-action-bar-locked")
+      html = render_hook(view, "bulk_toggle_mode", %{})
+      assert html =~ "permission to modify"
+      refute html =~ @locked_flash
+    end
+
+    test "a paid board under enforcement keeps bulk move", %{
+      conn: conn,
+      board: board,
+      todo: todo,
+      done: done
+    } do
+      task = task_fixture(todo)
+      make_paid(board)
+      enforce_plans()
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      refute has_element?(view, "#bulk-action-bar-locked")
+      enter_selection(view)
+      select(view, task)
+      html = view |> form("#bulk-move-form", %{column_id: done.id}) |> render_submit()
+
+      assert html =~ "Moved 1 task to Done"
+      assert reload(task).column_id == done.id
+    end
+
+    test "a free board with enforcement off keeps bulk actions", %{
+      conn: conn,
+      board: board,
+      todo: todo
+    } do
+      task = task_fixture(todo)
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      refute has_element?(view, "#bulk-action-bar-locked")
+      enter_selection(view)
+      select(view, task)
+      assert render_hook(view, "bulk_archive", %{}) =~ "Archived 1 task"
+    end
+
+    test "single-task moves and archiving on a free board still work", %{
+      conn: conn,
+      board: board,
+      todo: todo,
+      done: done
+    } do
+      moved = task_fixture(todo)
+      archived = task_fixture(todo)
+      enforce_plans()
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      render_hook(view, "move_task", %{
+        "task_id" => to_string(moved.id),
+        "old_column_id" => to_string(todo.id),
+        "new_column_id" => to_string(done.id),
+        "new_position" => 0
+      })
+
+      render_hook(view, "archive_task", %{"id" => to_string(archived.id)})
+
+      assert reload(moved).column_id == done.id
+      refute reload(archived).archived_at == nil
+    end
+
+    test "the lock is computed once: a later patch keeps it, a remount re-reads it", %{
+      conn: conn,
+      board: board,
+      todo: todo
+    } do
+      task_fixture(todo)
+      enforce_plans()
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      assert_locked(view)
+
+      make_paid(board)
+      render_patch(view, ~p"/boards/#{board}")
+      assert_locked(view)
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      refute has_element?(view, "#bulk-action-bar-locked")
+      assert has_element?(view, "#bulk-select-toggle")
+    end
+
+    test "a board that turns free while selecting leaves selection mode on its next event", %{
+      conn: conn,
+      board: board,
+      todo: todo
+    } do
+      task = task_fixture(todo)
+      free_workspace_id = Repo.get!(Board, board.id).workspace_id
+      make_paid(board)
+      enforce_plans()
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      enter_selection(view)
+      select(view, task)
+
+      set_workspace(board, free_workspace_id)
+
+      assert render_hook(view, "bulk_archive", %{}) =~ @locked_flash
+      assert reload(task).archived_at == nil
+      assert_locked(view)
+    end
+  end
+
   describe "prune/1" do
     defp socket(assigns) do
       %{%Phoenix.LiveView.Socket{} | assigns: Map.merge(%{__changed__: %{}}, assigns)}
@@ -427,6 +627,70 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
 
       assert pruned.assigns.selected_ids == MapSet.new([1])
       assert pruned.assigns.flash == %{}
+    end
+  end
+
+  describe "init/1 and assign_lock/2" do
+    defp lock_socket do
+      BulkSelection.init(%{%Phoenix.LiveView.Socket{} | assigns: %{__changed__: %{}}})
+    end
+
+    # Counts the Repo queries this test process runs while `fun` executes, and
+    # returns {result, count}.
+    defp count_queries(fun) do
+      test_pid = self()
+      ref = :counters.new(1, [])
+      handler_id = "bulk-lock-test-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :repo, :query],
+        fn _event, _measurements, _metadata, _config ->
+          if self() == test_pid, do: :counters.add(ref, 1, 1)
+        end,
+        nil
+      )
+
+      try do
+        result = fun.()
+        {result, :counters.get(ref, 1)}
+      after
+        :telemetry.detach(handler_id)
+      end
+    end
+
+    test "init/1 starts unlocked" do
+      assert lock_socket().assigns.bulk_locked? == false
+    end
+
+    test "is unlocked for any board, without querying, when enforcement is off",
+         %{board: board} do
+      {socket, queries} = count_queries(fn -> BulkSelection.assign_lock(lock_socket(), board) end)
+
+      assert socket.assigns.bulk_locked? == false
+      assert queries == 0
+    end
+
+    test "locks a free board and not a paid one under enforcement", %{board: board, user: user} do
+      paid = user |> board_fixture() |> make_paid()
+      enforce_plans()
+
+      assert BulkSelection.assign_lock(lock_socket(), board).assigns.bulk_locked? == true
+      assert BulkSelection.assign_lock(lock_socket(), paid).assigns.bulk_locked? == false
+    end
+
+    test "keeps the value for the same board without querying, and re-reads another board",
+         %{board: board, user: user} do
+      enforce_plans()
+      locked = BulkSelection.assign_lock(lock_socket(), board)
+      make_paid(board)
+
+      {same, queries} = count_queries(fn -> BulkSelection.assign_lock(locked, board) end)
+      assert same.assigns.bulk_locked? == true
+      assert queries == 0
+
+      other = user |> board_fixture() |> make_paid()
+      assert BulkSelection.assign_lock(locked, other).assigns.bulk_locked? == false
     end
   end
 
