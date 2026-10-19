@@ -17,6 +17,11 @@ defmodule Kanban.Release.InternalOrganization do
   first if there are several, and its details are left as they are. A listed
   user who is already an org-admin of it is reported, not written.
 
+  The whole run holds a Postgres advisory lock on one connection, so two runs
+  started together cannot both find no Organization and each create one: the
+  second waits, then finds the first one's. It is released when the run ends,
+  even if it raises.
+
   It is kept apart from `Kanban.Release` so that module stays small; it calls
   no Mix function and prints nothing.
   """
@@ -26,8 +31,11 @@ defmodule Kanban.Release.InternalOrganization do
   alias Kanban.Accounts.User
   alias Kanban.Organizations
   alias Kanban.Organizations.Organization
+  alias Kanban.Repo
 
   @default_name "Stride"
+  # Any fixed integer works; it only has to be the same for every run.
+  @lock_key :erlang.phash2("Kanban.Release.InternalOrganization")
   @organization_fields [
     :contact_name,
     :contact_email,
@@ -53,7 +61,10 @@ defmodule Kanban.Release.InternalOrganization do
             skipped_unknown: [String.t()],
             refused: [refusal()]
           }
-          | %{status: :refused, reason: :unknown_acting_user | :not_site_admin}
+          | %{
+              status: :refused,
+              reason: :unknown_acting_user | :not_site_admin | :invalid_org_admin_emails
+            }
           | %{status: :refused, reason: :invalid_organization, errors: %{atom() => [String.t()]}}
 
   @doc """
@@ -64,11 +75,13 @@ defmodule Kanban.Release.InternalOrganization do
   `opts` is a keyword list or map with:
 
     * `:acting_admin_email` — required; an enabled site admin's email.
-    * `:name` — the Organization's name, `"#{@default_name}"` by default.
+    * `:name` — the Organization's name, `"#{@default_name}"` when missing or
+      `nil`.
     * `:contact_name`, `:contact_email` — required only when the Organization
       is created; `:contact_phone` and the address fields are optional. They
       are ignored when the Organization already exists.
-    * `:org_admin_emails` — the emails to appoint, `[]` by default.
+    * `:org_admin_emails` — the emails to appoint: a list, or one string of
+      comma-separated emails. `[]` by default.
 
   Returns a summary map. With `status: :ok` it names the Organization (with
   `created: true` only on the run that created it) and sorts every listed
@@ -77,21 +90,47 @@ defmodule Kanban.Release.InternalOrganization do
   reason such as `:already_in_another_organization` or `:user_disabled`).
 
   An unknown acting email (`:unknown_acting_user`), an acting user who is not
-  an enabled site admin (`:not_site_admin`) and invalid Organization details
-  (`:invalid_organization`, with the changeset's error messages) return
-  `status: :refused` and write nothing.
+  an enabled site admin (`:not_site_admin`), `:org_admin_emails` that is
+  neither a list nor a string (`:invalid_org_admin_emails`) and invalid
+  Organization details (`:invalid_organization`, with the changeset's error
+  messages) return `status: :refused` and write nothing.
   """
   @spec ensure(keyword() | map()) :: summary()
   def ensure(opts) do
     opts = Map.new(opts)
 
-    with {:ok, actor} <- fetch_actor(opts[:acting_admin_email]),
+    # A session lock on one checked-out connection, not a transaction: each
+    # write keeps its own transaction, so one refused appointment cannot roll
+    # back the others.
+    Repo.checkout(fn ->
+      Repo.query!("SELECT pg_advisory_lock($1)", [@lock_key])
+
+      try do
+        run(opts)
+      after
+        Repo.query!("SELECT pg_advisory_unlock($1)", [@lock_key])
+      end
+    end)
+  end
+
+  defp run(opts) do
+    with {:ok, emails} <- org_admin_emails(opts),
+         {:ok, actor} <- fetch_actor(opts[:acting_admin_email]),
          {:ok, organization, created?} <- find_or_create(opts, actor) do
-      opts[:org_admin_emails]
+      emails
       |> appoint_all(organization, actor)
       |> summarize(organization, created?)
     end
   end
+
+  defp org_admin_emails(opts), do: opts |> Map.get(:org_admin_emails) |> split_emails()
+
+  # One string is split on commas, so "a@x, b@x" is two emails rather than one
+  # unknown address. Anything else but a list is refused before any write.
+  defp split_emails(nil), do: {:ok, []}
+  defp split_emails(emails) when is_list(emails), do: {:ok, emails}
+  defp split_emails(emails) when is_binary(emails), do: {:ok, String.split(emails, ",")}
+  defp split_emails(_emails), do: refused(:invalid_org_admin_emails)
 
   defp fetch_actor(email) when is_binary(email) do
     case email |> String.trim() |> Accounts.get_user_by_email() do
@@ -114,7 +153,7 @@ defmodule Kanban.Release.InternalOrganization do
   # list_organizations/1 orders by name then id, so the first exact match is
   # the lowest id.
   defp find_or_create(opts, actor) do
-    name = opts |> Map.get(:name, @default_name) |> trim()
+    name = opts |> Map.get(:name) |> name_or_default() |> trim()
 
     with {:ok, organizations} <- list_organizations(actor) do
       case Enum.find(organizations, &(&1.name == name)) do
@@ -123,6 +162,9 @@ defmodule Kanban.Release.InternalOrganization do
       end
     end
   end
+
+  defp name_or_default(nil), do: @default_name
+  defp name_or_default(name), do: name
 
   defp create(name, opts, actor) do
     attrs = opts |> Map.take(@organization_fields) |> Map.put(:name, name)
@@ -151,7 +193,6 @@ defmodule Kanban.Release.InternalOrganization do
 
   defp appoint_all(emails, organization, actor) do
     emails
-    |> List.wrap()
     |> normalize_emails()
     |> Enum.map(&appoint(&1, organization, actor))
   end

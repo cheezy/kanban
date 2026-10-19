@@ -471,6 +471,80 @@ defmodule Kanban.ReleaseTest do
       assert org_write_counts() == before
     end
 
+    test "an explicit nil name falls back to Stride" do
+      admin = admin_fixture()
+
+      result = admin |> internal_org_opts(name: nil) |> Release.ensure_internal_organization()
+
+      assert %{status: :ok, organization: %{name: "Stride", created: true}} = result
+    end
+
+    test "splits one comma-separated string of emails" do
+      admin = admin_fixture()
+      lead = user_fixture()
+      second = user_fixture()
+
+      result =
+        admin
+        |> internal_org_opts(org_admin_emails: " #{lead.email},#{second.email} , ")
+        |> Release.ensure_internal_organization()
+
+      assert result.appointed == [lead.email, second.email]
+      assert result.skipped_unknown == []
+    end
+
+    test "refuses org_admin_emails that is neither a list nor a string and writes nothing" do
+      admin = admin_fixture()
+      lead = user_fixture()
+      before = org_write_counts()
+
+      for emails <- [%{email: lead.email}, :lead, 42] do
+        result =
+          admin
+          |> internal_org_opts(org_admin_emails: emails)
+          |> Release.ensure_internal_organization()
+
+        assert result == %{status: :refused, reason: :invalid_org_admin_emails}
+      end
+
+      assert org_write_counts() == before
+    end
+
+    test "holds an advisory lock for the whole run, so concurrent runs cannot both create" do
+      admin = admin_fixture()
+      test_pid = self()
+      handler = "internal-org-lock-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler,
+        [:kanban, :repo, :query],
+        fn _event, _measurements, %{query: query}, _ -> send(test_pid, {:query, query}) end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler) end)
+
+      admin |> internal_org_opts([]) |> Release.ensure_internal_organization()
+
+      queries = collect_queries([])
+      lock_at = Enum.find_index(queries, &(&1 =~ "pg_advisory_lock"))
+      insert_at = Enum.find_index(queries, &(&1 =~ ~s(INSERT INTO "organizations")))
+      unlock_at = Enum.find_index(queries, &(&1 =~ "pg_advisory_unlock"))
+
+      assert is_integer(lock_at)
+      assert lock_at < insert_at
+      assert insert_at < unlock_at
+      assert unlock_at == length(queries) - 1
+    end
+
+    defp collect_queries(acc) do
+      receive do
+        {:query, query} -> collect_queries([query | acc])
+      after
+        0 -> Enum.reverse(acc)
+      end
+    end
+
     test "never calls Mix, so it runs in a release" do
       for path <- [
             "../../lib/kanban/release.ex",
