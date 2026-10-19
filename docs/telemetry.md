@@ -325,8 +325,10 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
   `:tools_call`, `:notification`, `:response` or `:unknown`; the method or
   tool name the client sent is never emitted. The stop event adds `outcome`:
   `:ok`, `:parse_error`, `:invalid_request`, `:invalid_params`,
-  `:unknown_method`, `:unknown_tool` or `:tool_error` (a tool that ran and
-  returned `isError`). A body rejected before any message is read, including
+  `:unknown_method`, `:unknown_tool`, `:tool_error` (a tool that ran and
+  returned `isError`) or `:plan_required` (the token's board needs an
+  Organization while paid plans are enforced; see [MCP](MCP.md)). A body
+  rejected before any message is read, including
   malformed JSON, is one span with `method: :unknown`. Requests stopped by the
   transport checks before the server sees them (a missing token, a foreign
   `Origin`, a wrong content type or protocol version) emit no MCP span; a
@@ -1167,7 +1169,7 @@ the sections above explain which code emits each family and when.
 
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
-| `[:kanban, :mcp, :request]` | span | `duration` on `:stop` and `:exception` | `method`, `outcome` | An MCP JSON-RPC message was handled. method is a fixed label, never the name the client sent, and outcome is set on stop. |
+| `[:kanban, :mcp, :request]` | span | `duration` on `:stop` and `:exception` | `method`, `outcome` | An MCP JSON-RPC message was handled. method is a fixed label, never the name the client sent, and outcome is set on stop; it is plan_required when the token's board needs an Organization. |
 
 - `[:kanban, :mcp, :request]` is a span: it emits `[:kanban, :mcp, :request, :start]`, `[:kanban, :mcp, :request, :stop]` and `[:kanban, :mcp, :request, :exception]`.
 

@@ -83,5 +83,11 @@ defmodule KanbanWeb.MCP.JsonRpcTest do
               JsonRpc.invalid_params(), JsonRpc.server_error()} ==
                {-32_700, -32_600, -32_601, -32_602, -32_000}
     end
+
+    test "plan_required is a distinct code in the implementation-defined server error range" do
+      assert JsonRpc.plan_required() == -32_001
+      assert JsonRpc.plan_required() in -32_099..-32_000//1
+      refute JsonRpc.plan_required() == JsonRpc.server_error()
+    end
   end
 end

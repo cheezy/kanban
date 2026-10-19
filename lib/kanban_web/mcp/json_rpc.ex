@@ -13,12 +13,16 @@ defmodule KanbanWeb.MCP.JsonRpc do
   @method_not_found -32_601
   @invalid_params -32_602
   @server_error -32_000
+  # Implementation-defined server error: the token's board needs an
+  # Organization while paid plans are enforced (W2410).
+  @plan_required -32_001
 
   def parse_error, do: @parse_error
   def invalid_request, do: @invalid_request
   def method_not_found, do: @method_not_found
   def invalid_params, do: @invalid_params
   def server_error, do: @server_error
+  def plan_required, do: @plan_required
 
   @doc """
   Classifies one decoded JSON-RPC message.

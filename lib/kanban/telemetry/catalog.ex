@@ -445,7 +445,7 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [],
       metadata: [:method, :outcome],
       description:
-        "An MCP JSON-RPC message was handled. method is a fixed label, never the name the client sent, and outcome is set on stop.",
+        "An MCP JSON-RPC message was handled. method is a fixed label, never the name the client sent, and outcome is set on stop; it is plan_required when the token's board needs an Organization.",
       legacy: false,
       metrics: [summary: :duration],
       persist: false,

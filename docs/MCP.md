@@ -42,6 +42,14 @@ own origin. Any other origin, including `null`, gets `403`. This stops a web pag
 from driving the endpoint through the browser (DNS rebinding). MCP clients
 outside a browser send no `Origin` header and are not affected.
 
+**Organization requirement.** MCP is part of the paid plans. When paid plans
+are enforced and the token's board is not in an Organization's workspace,
+every request (`initialize`, `ping`, `tools/list` and `tools/call`) gets the
+`-32001` error described under [Errors](#errors), and no tool runs.
+Notifications still get `202`, `GET` and `DELETE` still get `405`, and a bad
+token still gets `401` first. The same token keeps working with the REST API.
+When the board moves into an Organization, the next request works.
+
 ## Setup in Claude Code
 
 Keep the token in an environment variable. Never paste a token into a
@@ -189,6 +197,7 @@ There are two kinds of failure.
 | `-32600` | The body is not a valid JSON-RPC request, the batch is empty or holds more than 50 messages, or the `Content-Type` is not `application/json` (form and multipart bodies included) | 400 |
 | `-32601` | Unknown method | 200 |
 | `-32602` | Unknown tool, or arguments that do not match the tool's `inputSchema`. `error.data.errors` names each failing argument by path | 200 |
+| `-32001` | The token's board needs an Organization while paid plans are enforced (see [Authentication](#authentication)). The message is fixed text, and `error.data.feature` is `"mcp"`. In a batch, each request gets its own error | 200 |
 
 **Tool failures** come back as a successful JSON-RPC response whose result has
 `isError: true`. This covers every refusal the REST API would give: task not

@@ -19,11 +19,25 @@ defmodule KanbanWeb.MCP.Server do
   `@method_labels`, or `:notification`, `:response` or `:unknown`; the method
   or tool name the client sent is attacker-chosen text and is never emitted.
   The stop event adds an `outcome`: `:ok`, `:invalid_request`,
-  `:invalid_params`, `:unknown_method`, `:unknown_tool` or `:tool_error`. A
-  body rejected before any message is read is one span with `method: :unknown`
-  and outcome `:invalid_request`, or `:parse_error` (see `parse_error_reply/0`).
+  `:invalid_params`, `:unknown_method`, `:unknown_tool`, `:tool_error` or
+  `:plan_required`. A body rejected before any message is read is one span
+  with `method: :unknown` and outcome `:invalid_request`, or `:parse_error`
+  (see `parse_error_reply/0`).
+
+  ## Paid plans
+
+  MCP is a paid feature. Every request (not notifications or client
+  responses, which never get a reply) is checked with
+  `Kanban.Plans.check_board/3` for the token's board, surface `:mcp`, before
+  it is dispatched. On a locked board (a free board while paid plans are
+  enforced) the request gets a `JsonRpc.plan_required/0` error with fixed text
+  and `data.feature` `"mcp"`, no tool runs, and the span's outcome is
+  `:plan_required`. The check runs per message, so a board that moves into an
+  Organization works on its next request. Malformed messages and bodies are
+  still rejected first. The REST API is not affected.
   """
 
+  alias Kanban.Plans
   alias KanbanWeb.MCP.JsonRpc
   alias KanbanWeb.MCP.Tools
 
@@ -122,12 +136,28 @@ defmodule KanbanWeb.MCP.Server do
   defp method_label({:invalid, _id}), do: :unknown
 
   # Returns {response, outcome}; the outcome is only ever reported, never sent.
-  defp respond({:request, id, method, params}, conn), do: dispatch(id, method, params, conn)
+  defp respond({:request, id, method, params}, conn) do
+    case Plans.check_board(conn.assigns[:current_board], :mcp, surface: :mcp) do
+      :ok -> dispatch(id, method, params, conn)
+      {:error, {:plan_required, :mcp}} -> {plan_required(id), :plan_required}
+    end
+  end
+
   defp respond({:notification, _method}, _conn), do: {nil, :ok}
   defp respond(:response, _conn), do: {nil, :ok}
 
   defp respond({:invalid, id}, _conn),
     do: {JsonRpc.error(id, JsonRpc.invalid_request(), "Invalid Request"), :invalid_request}
+
+  # Fixed text: never the method or tool name the client sent.
+  defp plan_required(id) do
+    JsonRpc.error(
+      id,
+      JsonRpc.plan_required(),
+      "MCP is available to boards in an Organization. The REST API keeps working for this board.",
+      %{feature: "mcp"}
+    )
+  end
 
   defp dispatch(id, "initialize", params, _conn) do
     result =
