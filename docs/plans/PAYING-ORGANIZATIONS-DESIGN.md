@@ -78,7 +78,7 @@ Migration timestamps in the task specs (`20261001...`) are placeholders. Real on
 - There is no plan, paid or seat column. Paid status is derived from `workspaces.organization_id`.
 - There is no delete function and no downgrade function.
 - `name` is not unique by constraint. `Kanban.Release.ensure_internal_organization/1` (W2403) matches an existing Organization by exact name.
-- `Kanban.Release.ensure_internal_organization/1` keeps its logic in `Kanban.Release.InternalOrganization`. It acts as a named enabled site admin and reads the Organization list and makes every write through `Kanban.Organizations` (`list_organizations/1`, `create_organization/2`, then `appoint_org_admin/3` per listed email), so the context's authorization check, telemetry and audit events apply. The name is trimmed and compared case-sensitively, and the lowest id wins when several match. An existing Organization's details are left as they are. It provisions no accounts: unknown emails are reported as skipped, and disabled users and users in another Organization are reported as refused. A re-run writes nothing and reports the existing Organization and org-admins. It returns a summary map and never calls Mix.
+- `Kanban.Release.ensure_internal_organization/1` keeps its logic in `Kanban.Release.InternalOrganization`. It acts as a named enabled site admin and reads the Organization list and makes every write through `Kanban.Organizations` (`list_organizations/1`, `create_organization/2`, then `appoint_org_admin/3` per listed email), so the context's authorization check, telemetry and audit events apply. The name is trimmed and compared case-sensitively, and the lowest id wins when several match. An existing Organization's details are left as they are. It provisions no accounts: unknown emails are reported as skipped, and disabled users and users in another Organization are reported as refused. A re-run writes nothing and reports the existing Organization and org-admins. A missing or `nil` name means "Stride"; `org_admin_emails` is a list or one comma-separated string, and anything else is refused before any write. Each run holds a Postgres advisory lock, so two concurrent runs cannot both create the Organization. It returns a summary map and never calls Mix.
 
 #### `organization_members` (new, W2390)
 
@@ -414,11 +414,12 @@ There is no grandfathered flag. An addition is refused whenever the count is **a
 | `Kanban.Boards.MembershipChanges.add_user_to_board/4` | W2400 | In a transaction: row-lock the board, count `board_users`, refuse with `{:error, :member_cap_reached}` when `Plans.member_cap_reached?/2`. Two concurrent adds cannot pass 3. |
 | Invitation acceptance (`Invitations.accept/2`) for a board grant on a personal-workspace board | W2219 | Refused with a clear cap message while the board is full. Board grants go through the cap-checked add path, never a direct insert. An invitation whose board has since moved into an Organization is not capped. |
 | Registration from an invitation link | W2219 | Joins after email confirmation, subject to the same cap check. |
-| Board move | W2218 | D6 lists the move as a cap path. The only move v1 allows is personal to org, which lifts the cap, so this check never refuses. The `via: :board_move` telemetry value stays reserved. |
+| Board move | W2218 | D6 lists the move as a cap path. The only move v1 allows is personal to org, which lifts the cap, so this check never refuses. The `via: :board_move` telemetry value stays reserved. **The move must broadcast `{Kanban.Boards, :members_changed, board_id}` on `"board:<id>"`** (the message `MembershipChanges` already sends for membership writes), so an open `/boards/:id/members` screen recomputes `member_cap_status/1` and drops the cap line without a reload. |
 
 ### User messaging
 
 - `/boards/:id/members` (W2401) shows an "N of 3 people" line for a free board while enforcement is on, computed when the member list loads with `Boards.member_cap_status/1`.
+- A disabled account still takes a seat: the cap counts every `board_users` row. The member list labels it **Disabled** (with a tooltip saying it can't sign in and still takes a seat), so the owner can see which seat to free.
 - At or over the cap the add form is disabled with a translated explanation that free boards hold 3 people, and a link to `/pricing#contact`.
 - A forced add at the cap gets a specific translated flash, not the generic changeset failure.
 - A grandfathered board shows its real count (for example "5 of 3") with the same explanation and no removal prompt.
@@ -428,7 +429,7 @@ There is no grandfathered flag. An addition is refused whenever the count is **a
 
 - Each refusal emits `[:kanban, :board, :member_cap_reached]` once, through `Kanban.Boards.BoardTelemetry`, with `board_id`, `actor_user_id` and `via` (`:direct_add`, `:invitation`, `:board_move`). It is declared in `BoardEvents` with tag `via` and `persist: true`.
 - W2219 does not emit a second cap event; the shared check already emits it.
-- **Over-cap report (W2402):** `Kanban.Boards.over_cap_boards/0` lists personal-workspace boards with more than 3 `board_users` rows (board id, owner user id, member count) from one aggregate query. It is exposed as `mix kanban.over_cap_boards` in development and `Kanban.Release.report_over_cap_boards/0` in releases (`bin/kanban eval`). Both are read-only and print no names or emails.
+- **Over-cap report (W2402):** `Kanban.Boards.over_cap_boards/0` lists personal-workspace boards with more than 3 `board_users` rows (board id, owner user id, member count) from one aggregate query. It is exposed as `mix kanban.over_cap_boards` in development and `Kanban.Release.report_over_cap_boards/0` in releases (`bin/kanban eval`). Both are read-only and print no names or emails. The mix task takes no arguments (it refuses any) and starts only the database connection, not the app, so Oban never runs during a report.
 
 ---
 
