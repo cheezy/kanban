@@ -338,6 +338,40 @@ defmodule Kanban.Plans do
     if enforced?(), do: paid_ids_among(board_ids), else: MapSet.new(board_ids)
   end
 
+  @doc """
+  Returns a query selecting the id of every user who belongs to an
+  Organization, so has paid access.
+
+  Like `paid_board_ids_query/0` it builds the query and never runs it, and it
+  ignores `:plans_enforced`; a caller that filters by it checks `enforced?/0`
+  first. A user belongs to at most one Organization, so appears at most once.
+  """
+  @spec paid_user_ids_query() :: Ecto.Query.t()
+  def paid_user_ids_query do
+    from(m in OrganizationMember, select: m.user_id)
+  end
+
+  @doc """
+  Returns the ids among `user_ids` whose users are unlocked, as a set.
+
+  When enforcement is off every id is unlocked and it never queries. When it
+  is on, one query keeps only the users with paid access; an empty list costs
+  nothing.
+  """
+  @spec unlocked_user_ids([integer()]) :: MapSet.t(integer())
+  def unlocked_user_ids(user_ids) when is_list(user_ids) do
+    if enforced?(), do: paid_user_ids_among(user_ids), else: MapSet.new(user_ids)
+  end
+
+  defp paid_user_ids_among([]), do: MapSet.new()
+
+  defp paid_user_ids_among(user_ids) do
+    paid_user_ids_query()
+    |> where([m], m.user_id in ^user_ids)
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
   defp paid_ids_among([]), do: MapSet.new()
 
   defp paid_ids_among(board_ids) do

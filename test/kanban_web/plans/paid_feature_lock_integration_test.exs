@@ -119,13 +119,16 @@ defmodule KanbanWeb.Plans.PaidFeatureLockIntegrationTest do
   end
 
   # The owner of a paid board belongs to its Organization as an org-admin,
-  # which also gives them paid access and the audit export.
+  # which also gives them paid access and the audit export. The member joins
+  # as a plain member: a free member of a paid board gets no notification
+  # email, which PlanEnforcementTest covers.
   defp apply_mode(:free, _ctx), do: enforce_plans()
 
-  defp apply_mode(:paid, %{board: board, user: user}) do
+  defp apply_mode(:paid, %{board: board, user: user, member: member}) do
     organization = organization_fixture()
     paid = move_board_to_organization(board, organization)
     organization_member_fixture(organization, user, :org_admin)
+    organization_member_fixture(organization, member)
     true = Plans.paid_board?(paid)
     enforce_plans()
   end
@@ -241,7 +244,9 @@ defmodule KanbanWeb.Plans.PaidFeatureLockIntegrationTest do
 
     test "leaves out a free board for a user who also has a paid board", %{user: user} = ctx do
       paid = ai_optimized_board_fixture(user, %{name: "Paid digest board"})
-      move_board_to_organization(paid, organization_fixture())
+      organization = organization_fixture()
+      move_board_to_organization(paid, organization)
+      organization_member_fixture(organization, user)
       paid |> Columns.list_columns() |> Enum.find(&(&1.name == "Done")) |> completed_last_week()
       flush_emails()
 
@@ -267,7 +272,9 @@ defmodule KanbanWeb.Plans.PaidFeatureLockIntegrationTest do
         assert outcomes == expected(outcomes, :free), "#{probe} was not locked"
       end
 
-      move_board_to_organization(ctx.board, organization_fixture())
+      organization = organization_fixture()
+      move_board_to_organization(ctx.board, organization)
+      organization_member_fixture(organization, ctx.member)
 
       for probe <- [:rest_telemetry, :delivery_worker, :mcp, :notification_email] do
         outcomes = probe(probe, ctx)

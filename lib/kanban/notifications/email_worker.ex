@@ -15,10 +15,12 @@ defmodule Kanban.Notifications.EmailWorker do
   event type since the job was enqueued (an unsubscribe link, for example).
 
   While paid plans are enforced it also skips, with reason `:plan_locked`, a
-  notification on a board that is not paid, or a board-less one whose user
-  has no paid access. The check runs at send time, so a job queued before
-  enforcement was switched on, or before a board left its Organization,
-  delivers nothing; the notification row itself is kept.
+  notification whose recipient has no paid access, and one on a board that
+  is not paid. A free user gets no notification email even from a paid
+  board, where their bell and preferences are locked too. The check runs at
+  send time, so a job queued before enforcement was switched on, before a
+  board left its Organization or before the user left theirs, delivers
+  nothing; the notification row itself is kept.
 
   Delivery is at-least-once: the email is sent before `emailed_at` is
   stamped, so a crash between the two can resend on retry (the stable
@@ -119,12 +121,13 @@ defmodule Kanban.Notifications.EmailWorker do
     end
   end
 
-  # The board id, not the preloaded board, so its workspace is read fresh.
+  # The recipient first, then the board. The board id, not the preloaded
+  # board, so its workspace is read fresh.
   defp check_plan(%Notification{board_id: nil, user: user}),
     do: plan_verdict(Plans.user_unlocked?(user))
 
-  defp check_plan(%Notification{board_id: board_id}),
-    do: plan_verdict(Plans.board_unlocked?(board_id))
+  defp check_plan(%Notification{board_id: board_id, user: user}),
+    do: plan_verdict(Plans.user_unlocked?(user) and Plans.board_unlocked?(board_id))
 
   defp plan_verdict(true), do: :ok
   defp plan_verdict(false), do: {:skip, :plan_locked}

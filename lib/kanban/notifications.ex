@@ -28,8 +28,9 @@ defmodule Kanban.Notifications do
   While paid plans are enforced, `notify/3` drops every event on a board that
   is not paid (`Kanban.Plans.board_unlocked?/1`): nothing is inserted,
   broadcast or emailed, and it returns `{:ok, []}`. Board-less events are
-  gated by their producers, and `Kanban.Notifications.EmailWorker` checks the
-  plan again before it sends. The inbox and the unread count show only
+  gated by their producers. A recipient without paid access gets no email
+  job, even on a paid board, and `Kanban.Notifications.EmailWorker` checks
+  both the recipient and the board again before it sends. The inbox and the unread count show only
   paid boards' rows and board-less rows, and `update_preference/3` refuses
   users without paid access.
 
@@ -397,8 +398,10 @@ defmodule Kanban.Notifications do
     end)
   end
 
+  # Only recipients who want email and have paid access get a job.
   defp enqueue_emails!(inserted, deliveries) do
-    email_user_ids = for %{email: true, user_id: id} <- deliveries, into: MapSet.new(), do: id
+    email_user_ids =
+      for(%{email: true, user_id: id} <- deliveries, do: id) |> Plans.unlocked_user_ids()
 
     inserted
     |> Enum.filter(&MapSet.member?(email_user_ids, &1.user_id))

@@ -774,6 +774,52 @@ defmodule Kanban.PlansTest do
     end
   end
 
+  describe "paid_user_ids_query/0" do
+    test "returns the ids of Organization members in either role" do
+      member = user_fixture()
+      admin = user_fixture()
+      _free = user_fixture()
+      organization_member_fixture(organization_fixture(), member)
+      organization_member_fixture(organization_fixture(), admin, :org_admin)
+
+      assert Plans.paid_user_ids_query() |> Repo.all() |> Enum.sort() ==
+               Enum.sort([member.id, admin.id])
+    end
+
+    test "only builds the query and never runs it" do
+      assert {%Ecto.Query{}, 0} = count_queries(fn -> Plans.paid_user_ids_query() end)
+    end
+  end
+
+  describe "unlocked_user_ids/1" do
+    test "returns every id without a query while enforcement is off" do
+      Application.put_env(:kanban, :plans_enforced, false)
+      paid = user_fixture()
+      organization_member_fixture(organization_fixture(), paid)
+      free = user_fixture()
+
+      assert {ids, 0} = count_queries(fn -> Plans.unlocked_user_ids([paid.id, free.id, -1]) end)
+      assert ids == MapSet.new([paid.id, free.id, -1])
+    end
+
+    test "keeps only users with paid access in one query while enforcement is on" do
+      enforce_plans()
+      paid = user_fixture()
+      organization_member_fixture(organization_fixture(), paid)
+      free = user_fixture()
+
+      assert {ids, 1} = count_queries(fn -> Plans.unlocked_user_ids([paid.id, free.id, -1]) end)
+      assert ids == MapSet.new([paid.id])
+    end
+
+    test "an empty list costs no query" do
+      enforce_plans()
+
+      assert {ids, 0} = count_queries(fn -> Plans.unlocked_user_ids([]) end)
+      assert ids == MapSet.new()
+    end
+  end
+
   describe "Kanban.PlansHelpers" do
     test "enforce_plans/0 switches enforcement on" do
       Application.put_env(:kanban, :plans_enforced, false)

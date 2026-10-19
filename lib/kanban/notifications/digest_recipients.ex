@@ -6,8 +6,9 @@ defmodule Kanban.Notifications.DigestRecipients do
   and whose `:weekly_digest` email preference is on — their saved row, else
   the in-code default from `Kanban.Notifications.default_preference/1`.
   While paid plans are enforced, only membership of a paid board counts
-  (`Kanban.Plans.paid_board_ids_query/0`), so a user with no paid board gets
-  no digest job at all.
+  (`Kanban.Plans.paid_board_ids_query/0`), and the user must have paid access
+  themselves (`Kanban.Plans.paid_user_ids_query/0`), so a user with no paid
+  board, or a free member of a paid board, gets no digest job at all.
 
   `list_digest_recipients/0` feeds the weekly fan-out and returns ids only;
   `get_digest_recipient/1` re-applies the same rules when each per-user job
@@ -57,6 +58,14 @@ defmodule Kanban.Notifications.DigestRecipients do
       where: p.email == true or (is_nil(p.id) and ^default_email),
       where: exists(subquery(member_boards_query()))
     )
+    |> paid_users_only()
+  end
+
+  # Unchanged SQL while enforcement is off.
+  defp paid_users_only(query) do
+    if Plans.enforced?(),
+      do: where(query, [user: u], u.id in subquery(Plans.paid_user_ids_query())),
+      else: query
   end
 
   # Unchanged SQL while enforcement is off.

@@ -52,12 +52,16 @@ defmodule Kanban.Notifications.PlanEnforcementTest do
     %{owner: owner, member: member, board: board}
   end
 
-  defp make_paid(%Board{id: id} = board) do
-    workspace = org_workspace_fixture(organization_fixture())
+  # Moves the board into a new Organization's workspace and adds `members` to
+  # that Organization, which gives them paid access.
+  defp make_paid(%Board{id: id} = board, members \\ []) do
+    organization = organization_fixture()
+    workspace = org_workspace_fixture(organization)
 
     {1, _} =
       Board |> where([b], b.id == ^id) |> Repo.update_all(set: [workspace_id: workspace.id])
 
+    Enum.each(members, &organization_member_fixture(organization, &1))
     board
   end
 
@@ -120,9 +124,9 @@ defmodule Kanban.Notifications.PlanEnforcementTest do
       assert rows() == []
     end
 
-    test "a paid board's event is delivered as before" do
+    test "a paid board's event is delivered as before to a member with paid access" do
       %{member: member, board: board} = board_with_member()
-      make_paid(board)
+      make_paid(board, [member])
 
       assert {:ok, [%Notification{user_id: user_id, board_id: board_id} = row]} =
                review_requested(board, [member])
@@ -130,6 +134,18 @@ defmodule Kanban.Notifications.PlanEnforcementTest do
       assert user_id == member.id
       assert board_id == board.id
       assert_enqueued(worker: EmailWorker, args: %{notification_id: row.id})
+    end
+
+    test "a free member of a paid board gets the row but no email job" do
+      %{owner: owner, member: free_member, board: board} = board_with_member()
+      make_paid(board, [owner])
+
+      assert {:ok, rows} = review_requested(board, [owner, free_member])
+      by_user = Map.new(rows, &{&1.user_id, &1})
+
+      assert Map.keys(by_user) |> Enum.sort() == Enum.sort([owner.id, free_member.id])
+      assert_enqueued(worker: EmailWorker, args: %{notification_id: by_user[owner.id].id})
+      refute_enqueued(worker: EmailWorker, args: %{notification_id: by_user[free_member.id].id})
     end
 
     test "an invalid event type is still refused before the plan is checked" do
@@ -257,10 +273,29 @@ defmodule Kanban.Notifications.PlanEnforcementTest do
       {:ok, [notification]} = review_requested(board, [member])
 
       enforce_plans()
-      make_paid(board)
+      make_paid(board, [member])
 
       assert :ok = run_email_job(notification)
       assert Repo.get!(Notification, notification.id).emailed_at
+    end
+
+    test "skips a paid board's notification for a free member with :plan_locked" do
+      %{member: member, board: board} = board_with_member()
+      {:ok, [notification]} = review_requested(board, [member])
+
+      enforce_plans()
+      make_paid(board)
+      attach_telemetry(@skipped)
+
+      assert :ok = run_email_job(notification)
+
+      refute_email_sent()
+      id = notification.id
+
+      assert_receive {:telemetry_event, @skipped, %{count: 1},
+                      %{notification_id: ^id, reason: :plan_locked}}
+
+      assert Repo.get!(Notification, id).emailed_at == nil
     end
 
     test "a deleted board's job finds nothing to send" do
@@ -345,11 +380,14 @@ defmodule Kanban.Notifications.PlanEnforcementTest do
       assert Digest.build(user, now: @now) == :empty
     end
 
-    test "the fan-out enqueues only users who belong to a paid board" do
+    test "the fan-out enqueues only users with paid access who belong to a paid board" do
       free_user = user_fixture()
       board_fixture(free_user)
       paid_user = user_fixture()
-      paid_user |> board_fixture() |> make_paid()
+      paid_board = paid_user |> board_fixture() |> make_paid([paid_user])
+      # A free member of a paid board gets no digest either.
+      free_member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(paid_board, free_member, :modify, paid_user)
 
       assert :ok = perform_job(DigestFanoutWorker, %{now: DateTime.to_iso8601(@now)})
 
@@ -377,10 +415,27 @@ defmodule Kanban.Notifications.PlanEnforcementTest do
       assert Notification |> where(event_type: :weekly_digest) |> Repo.all() == []
     end
 
-    test "a digest job for a user with paid activity sends the digest" do
+    test "a digest job for a free member of a paid board sends nothing" do
       user = user_fixture()
       %{board: board, cols: cols} = board_with_columns(user)
       make_paid(board)
+      completed(cols["Done"])
+      flush_emails()
+
+      assert :ok =
+               perform_job(DigestWorker, %{
+                 user_id: user.id,
+                 week: "2026-W45",
+                 now: DateTime.to_iso8601(@now)
+               })
+
+      refute_email_sent()
+    end
+
+    test "a digest job for a user with paid activity sends the digest" do
+      user = user_fixture()
+      %{board: board, cols: cols} = board_with_columns(user)
+      make_paid(board, [user])
       completed(cols["Done"])
       flush_emails()
 
