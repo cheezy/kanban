@@ -78,7 +78,7 @@ Migration timestamps in the task specs (`20261001...`) are placeholders. Real on
 - There is no plan, paid or seat column. Paid status is derived from `workspaces.organization_id`.
 - There is no delete function and no downgrade function.
 - `name` is not unique by constraint. `Kanban.Release.ensure_internal_organization/1` (W2403) matches an existing Organization by exact name.
-- `Kanban.Release.ensure_internal_organization/1` keeps its logic in `Kanban.Release.InternalOrganization`. It acts as a named enabled site admin and reads the Organization list and makes every write through `Kanban.Organizations` (`list_organizations/1`, `create_organization/2`, then `appoint_org_admin/3` per listed email), so the context's authorization check, telemetry and audit events apply. The name is trimmed and compared case-sensitively, and the lowest id wins when several match. An existing Organization's details are left as they are. It provisions no accounts: unknown emails are reported as skipped, and disabled users and users in another Organization are reported as refused. A re-run writes nothing and reports the existing Organization and org-admins. A missing or `nil` name means "Stride"; `org_admin_emails` is a list or one comma-separated string, and anything else is refused before any write. Each run holds a Postgres advisory lock, so two concurrent runs cannot both create the Organization. It returns a summary map and never calls Mix.
+- `Kanban.Release.ensure_internal_organization/1` keeps its logic in `Kanban.Release.InternalOrganization`. It acts as a named enabled site admin and reads the Organization list and makes every write through `Kanban.Organizations` (`list_organizations/1`, `create_organization/2`, then `appoint_org_admin/3` per listed email), so the context's authorization check, telemetry and audit events apply. The name is trimmed and compared case-sensitively, and the lowest id wins when several match. An existing Organization's details are left as they are. The name is not reserved, so an existing match is reused only when Stride staff run it: it has no members, or it has org-admins and every one is a site admin or one of the listed `org_admin_emails`. Otherwise the run is refused with `:name_taken` and writes nothing, so a customer's Organization that happens to be called "Stride" never gets Stride staff appointed into it; a repeat run lists at least the same org-admin emails as the first. It provisions no accounts: unknown emails are reported as skipped, and disabled users and users in another Organization are reported as refused. A re-run writes nothing and reports the existing Organization and org-admins. A missing or `nil` name means "Stride"; `org_admin_emails` is a list or one comma-separated string, and anything else is refused before any write. Each run holds a Postgres advisory lock, so two concurrent runs cannot both create the Organization. It returns a summary map and never calls Mix.
 
 #### `organization_members` (new, W2390)
 
@@ -177,6 +177,13 @@ Migration timestamps in the task specs (`20261001...`) are placeholders. Real on
 - In a hardened database only the audit owner role can alter `audit_events`, so the migration runs as that role or a superuser there. See [audit log hardening](../audit-log-hardening.md).
 - `Kanban.AuditLog.persist/2` copies an integer `organization_id` from the sanitized metadata into the column, and retries without it on a foreign-key failure, so a stale id never loses an event.
 
+#### `audit_events.actor_in_organization` (new column, G470 exploratory fix)
+
+- Nullable boolean: whether the event's actor was a member of its Organization **when the event was written**. `Kanban.AuditLog.persist/2` sets it, with one indexed query in the insert's savepoint, whenever an event has both an actor and an Organization, and leaves it `nil` otherwise.
+- The Organization audit log redacts outside actors from this column (see [7.2 Audit](#72-audit)), not from who is a member now.
+- **No backfill**, for the same reason as `organization_id`: the trigger refuses row edits. Rows written before it fall back to current membership; all of them predate launch.
+- Like every `audit_events` change, the migration runs as the audit owner role or a superuser in a hardened database.
+
 #### `organization_security_policies` (new, W2244)
 
 | Column | Type | Constraints |
@@ -252,6 +259,7 @@ Key invariants the diagram cannot show:
 | 1 | create `organizations`, `organization_members` | W2390 | first in the program |
 | 2 | create `workspaces` (with `organization_id`, `archived_at`), `workspace_members`, nullable `boards.workspace_id`, owner trigger | W2216 | references `organizations` |
 | 3 | add `audit_events.organization_id` | W2397 | needs only migration 1; run as the audit owner role in hardened databases |
+| 3b | add `audit_events.actor_in_organization` | G470 exploratory fix | no backfill; run as the audit owner role in hardened databases |
 | 4 | backfill personal workspaces | W2217 | set-based `execute` SQL; `down` is a documented no-op |
 | 5 | set `boards.workspace_id` NOT NULL | W2217 | separate migration so a partial backfill fails loudly |
 | 6 | create `workspace_invitations` | W2219 | |
@@ -465,6 +473,7 @@ Notifications means the in-app bell, notification emails and digests (W2405, W24
 
 - The Organization audit log, `/org/audit` and `GET /org/audit/export` (W2397), is reachable only by org-admins, so it is closed to free users by the org-admin gate (`:require_org_admin` on_mount and `require_org_admin_user/2` plug). Non-org-admins are redirected to `/boards` with an audited `:permission_denied` event (gate `:require_org_admin`).
 - The Organization filter is always forced from the signed-in org-admin's membership. `Kanban.AuditLog.Filters` never reads `organization_id` from params.
+- **Outside actors are redacted.** An event caused by someone outside the Organization, such as a site admin creating it or appointing its org-admins, is shown and exported without that person's id, email or IP, so customers never see Stride staff accounts (`Kanban.AuditLog.OrganizationScope`). Whether the actor was outside is decided from `audit_events.actor_in_organization`, recorded when the event was written: an org-admin who later leaves still shows on their own past actions, and a site admin appointed org-admin later does not uncover what staff did before.
 - The site-admin viewer at `/admin/audit-log` and its export are unchanged.
 - **Gap:** no task places a locked "Audit" prompt on a surface free users visit, so the Audit click count will read zero. See [Risks and open questions](#15-risks-and-open-questions).
 
@@ -604,6 +613,8 @@ Built by W2395 and W2396, extended by W2218, W2397 and G445. Sections follow the
 - `current_scope.organization_membership` (a new `Kanban.Accounts.Scope` field) is loaded by `KanbanWeb.UserAuth` with one indexed query for both the plug and the on_mount.
 - Nothing reads an Organization id from params; the console always shows the signed-in org-admin's own Organization.
 - The `:require_org_admin` on_mount also attaches a `handle_params` hook (`OrgAdminGate.recheck_params/3`) that re-reads the role from the database on every patch. Paging, filtering and tab changes patch the page without mounting it again, so without the hook an org-admin removed while `/org` or `/org/audit` was open could keep reading until they reloaded.
+- **Only an enabled account is an org-admin.** `Organizations.org_admin?/2`, which the gate, the plug and the re-check all use, is false for a disabled user, so a disabled org-admin is refused on the next mount, patch or request. Disabling an account at `/admin/users` also broadcasts a disconnect to that user's open LiveView pages; the reconnect finds no session for a disabled user and signs them out.
+- The Members list, here and on `/admin/organizations/:id`, labels a **Disabled** account and an enabled account that is **Unconfirmed**, each with a tooltip (`KanbanWeb.Components.AccountStatus`), so nobody relies on an account that cannot run the Organization.
 - **Archiving a workspace only hides it.** It sets `archived_at`, removes the workspace from the switcher and lists, and deletes nothing. `OrgWorkspaces.archive_workspace/2` refuses with `{:error, :workspace_has_boards}` while the workspace still holds boards.
 - An archived workspace takes no new members: `Workspaces.add_member/4` returns `{:error, :archived}`. Role changes and removals still work, so its members can be tidied up.
 
@@ -613,6 +624,7 @@ Built by W2395 and W2396, extended by W2218, W2397 and G445. Sections follow the
 - The form edits name, the six address fields and the three contact fields. There is no delete button.
 - `/admin/organizations/:id` shows details, members and roles, an **Appoint org-admin** email form (always appoints `org_admin`), and a **Remove** button per org-admin with a confirmation.
 - Errors map to translated flashes: `:already_in_another_organization`, `:last_org_admin`, `:user_disabled`, `:unauthorized`, changeset errors.
+- `/admin/users` refuses to disable or delete the last enabled org-admin of an Organization that has other members, flashing that another org-admin must be appointed first. See [Removing org-admins](#9-organizations-lifecycle).
 - Every event re-reads the actor and the Organization from the database. There is no new admin sidebar section; admin pages are reached by URL.
 
 ### 8.4 Workspace settings (`/workspace/settings`)
@@ -650,11 +662,13 @@ Personal workspaces never appear here.
 **Appointing org-admins.** On the Organization's admin page the site admin enters an email (`appoint_org_admin_by_email/4`):
 
 - an existing enabled account is appointed, or promoted if it is already a member of this Organization;
-- a disabled account is refused with `:user_disabled`;
+- a disabled account is refused with `:user_disabled`. `appoint_org_admin/3` reads that from the database under the Organization lock, so a stale enabled struct is refused too;
 - an account in another Organization is refused with `:already_in_another_organization`;
 - an unknown email gets a new account with a random, never-shown password, created in one transaction with the membership. After commit, the existing confirmation and password-reset emails go out so the appointee sets their own password. The account is not pre-confirmed.
 
 **Removing org-admins.** `remove_org_admin/3` deletes the membership (it never demotes), and refuses with `:last_org_admin` when other members would be left without one. The check runs under a row lock on the organization. Removing the only org-admin of an Organization with no other members succeeds.
+
+**Only enabled org-admins count.** A disabled org-admin cannot sign in to run the Organization, so the last-org-admin check counts only enabled ones. The same rule guards the account itself: `AdminManagement.disable_user/2` and `delete_user/2` refuse with `:last_org_admin` when the target is the only enabled org-admin of an Organization with other members (`Organizations.ensure_not_last_working_org_admin/1`, inside the write's transaction and under the same organization row lock). An account that is already disabled can still be deleted, and a refused delete is audited as `:user_delete_refused` with that reason. The membership helpers behind these writes take integer ids from their callers; they are internal and do not parse strings.
 
 **Inviting members.** Org-admins invite by email into an org workspace with role member or guest, and an optional board grant (W2219). Acceptance:
 
@@ -684,7 +698,7 @@ An org-admin cannot move a teammate's board; the teammate transfers ownership fi
 - being the last org-admin of an Organization with other members (a site admin must appoint another);
 - being the last enabled site admin.
 
-Deletion runs in one transaction that re-checks the blockers. It deletes the user's personal workspace and the boards in it that only they use, re-homes any remaining board in it that others use to its earliest remaining member's personal workspace, removes the organization membership, workspace rows, board memberships, API tokens (including workspace tokens) and session tokens, revokes invitations they sent, nilifies task attribution, and records `:account_self_deleted` with the user id and no email. `AdminManagement.delete_user/2` keeps its existing guards.
+Deletion runs in one transaction that re-checks the blockers. It deletes the user's personal workspace and the boards in it that only they use, re-homes any remaining board in it that others use to its earliest remaining member's personal workspace, removes the organization membership, workspace rows, board memberships, API tokens (including workspace tokens) and session tokens, revokes invitations they sent, nilifies task attribution, and records `:account_self_deleted` with the user id and no email. `AdminManagement.delete_user/2` keeps its existing guards and adds the last-enabled-org-admin guard (see Removing org-admins above).
 
 **What does not exist in v1:**
 
@@ -990,7 +1004,8 @@ The Stride batch API cannot express dependencies across goals, so the cross-goal
 | Free users' MCP agents break mid-session at the flip. | Premortem blind spot | A clear JSON-RPC error naming the REST API as the free path; announced in advance. |
 | Existing webhooks on free boards stop sending. | Premortem blind spot | Paused, not deleted; resume automatically on a board move; Paused badge in the UI. |
 | Stride's own boards lose features at launch. | Premortem blind spot | Internal Organization and board move are launch-day steps, before the flag flip. |
-| A site admin deletes the last org-admin's account through `/admin/users`, leaving members without an org-admin. `AdminManagement.delete_user/2` keeps its existing guards and has no last-org-admin check. | This design | The site admin can appoint another org-admin immediately; consider adding the guard when W2221 touches the shared code. |
+| A site admin disables or deletes the last working org-admin's account through `/admin/users`, leaving members without an org-admin. | This design, G470 exploratory session | Guarded: both refuse with `:last_org_admin`, counting only enabled org-admins, under the organization row lock. |
+| An org-admin exports the whole Organization audit log at once. `GET /org/audit/export` streams every matching row with no row cap or rate limit, so a large Organization's export is a long-running request. | G470 exploratory session | Streamed in batches, so memory stays flat. Add a row cap or a rate limit if Organizations' logs grow large enough to matter. |
 | `feature_refused` volume from free agents. | W2399 | Not persisted; tags are low-cardinality. |
 
 ### 15.2 Open questions
