@@ -19,6 +19,10 @@ defmodule Kanban.Notifications.TargetStatusWorker do
   overlapping sweeps notify about a change once. A notification that fails
   after its change was recorded is logged and not retried.
 
+  While paid plans are enforced, an owner without paid access is skipped
+  before any status work, and their watermark is left alone, so joining an
+  Organization later notifies on the first sweep after.
+
   Status is derived against UTC: no user timezone is stored, while the boards
   strip uses the viewer's browser timezone. When the owner's local day differs
   from the UTC day, a notification can arrive some hours before or after the
@@ -30,6 +34,7 @@ defmodule Kanban.Notifications.TargetStatusWorker do
 
   alias Kanban.Accounts.Scope
   alias Kanban.Notifications.Events
+  alias Kanban.Plans
   alias Kanban.Targets
   alias Kanban.Targets.StatusWatermark
 
@@ -52,11 +57,15 @@ defmodule Kanban.Notifications.TargetStatusWorker do
   # targets this owner owns: the scoped list also holds other owners' targets
   # the owner can see. Returns how many notifications were sent.
   defp sweep_owner(owner, now) do
-    owner
-    |> Scope.for_user()
-    |> Targets.list_targets_with_status(now)
-    |> Enum.filter(&(&1.target.owner_id == owner.id))
-    |> Enum.count(&(observe(&1, now) == :notified))
+    if Plans.user_unlocked?(owner) do
+      owner
+      |> Scope.for_user()
+      |> Targets.list_targets_with_status(now)
+      |> Enum.filter(&(&1.target.owner_id == owner.id))
+      |> Enum.count(&(observe(&1, now) == :notified))
+    else
+      0
+    end
   rescue
     exception ->
       Logger.warning(

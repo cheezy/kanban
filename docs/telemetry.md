@@ -520,10 +520,14 @@ notifications marked read or digest recipients, and may be 0.
 - **Email delivery has three outcomes.** `email_sent` fires once the mailer
   has accepted the email. `email_skipped` fires when the job sends nothing,
   with `reason` `:not_found`, `:already_emailed`, `:user_disabled`,
-  `:user_unconfirmed`, `:not_a_member` or `:unsubscribed`. The job reads the
-  recipient's email preference again before sending, so turning email off
-  after a job was queued skips it with `:unsubscribed`. `email_failed` fires
-  once per failed attempt, so a job Oban retries can emit it more than once;
+  `:user_unconfirmed`, `:not_a_member`, `:unsubscribed` or `:plan_locked`. The
+  job reads the recipient's email preference again before sending, so turning
+  email off after a job was queued skips it with `:unsubscribed`. While paid
+  plans are enforced it also checks the plan again: a notification on a free
+  board, or a board-less one whose user has no paid access, is skipped with
+  `:plan_locked`, which covers jobs queued before enforcement was switched on.
+  `email_failed` fires once per failed attempt, so a job Oban retries can emit
+  it more than once;
   `error` is the bounded failure kind from `EmailWorker.failure_kind/1`,
   because SMTP replies often echo the recipient address.
 - **A save that changes nothing emits nothing.** `read` needs an unread
@@ -1191,7 +1195,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :notification, :preference_updated]` | event | `count` | `user_id`, `event_type`, `in_app`, `mail` | A user's delivery preference for one event type changed. in_app and mail are the saved flags; saving the same flags again emits nothing. |
 | `[:kanban, :notification, :unsubscribed]` | event | `count` | `user_id`, `event_type` | Email for one event type was turned off from an unsubscribe link. user_id comes from the verified link. |
 | `[:kanban, :notification, :email_sent]` | event | `count` | `notification_id`, `user_id`, `event_type` | The mailer accepted a notification email. |
-| `[:kanban, :notification, :email_skipped]` | event | `count` | `notification_id`, `reason` | A notification email job sent nothing. reason is :not_found, :already_emailed, :user_disabled, :user_unconfirmed, :not_a_member or :unsubscribed. |
+| `[:kanban, :notification, :email_skipped]` | event | `count` | `notification_id`, `reason` | A notification email job sent nothing. reason is :not_found, :already_emailed, :user_disabled, :user_unconfirmed, :not_a_member, :unsubscribed or :plan_locked (a free board, or a board-less notification whose user has no paid access, while plans are enforced). |
 | `[:kanban, :notification, :email_failed]` | event | `count` | `notification_id`, `user_id`, `event_type`, `error` | One notification email delivery attempt failed. error is :permanent_failure, :temporary_failure, :retries_exceeded or :delivery_failed, never the raw mailer reason. |
 
 ### Domain `organization`

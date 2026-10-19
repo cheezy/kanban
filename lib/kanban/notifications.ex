@@ -23,6 +23,14 @@ defmodule Kanban.Notifications do
   with a nil `board_id` (an account-level event such as being removed from a
   board) is always visible to its user.
 
+  ## Paid plans
+
+  While paid plans are enforced, `notify/3` drops every event on a board that
+  is not paid (`Kanban.Plans.board_unlocked?/1`): nothing is inserted,
+  broadcast or emailed, and it returns `{:ok, []}`. Board-less events are
+  gated by their producers, and `Kanban.Notifications.EmailWorker` checks the
+  plan again before it sends.
+
   ## Default preferences
 
   Preferences are stored only when a user changes them; `default_preference/1`
@@ -65,6 +73,7 @@ defmodule Kanban.Notifications do
   alias Kanban.Notifications.NotificationTelemetry
   alias Kanban.Notifications.Preference
   alias Kanban.Notifications.Recipients
+  alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Tasks.Task
 
@@ -167,6 +176,7 @@ defmodule Kanban.Notifications do
   def notify(event_type, recipients, attrs) do
     with {:ok, type} <- event_type |> normalize_event_type() |> invalid_event_type_error(),
          :ok <- validate_task_board(type, attrs),
+         :ok <- check_board_plan(attrs),
          {:ok, inserted} <- insert_for_recipients(type, recipients, attrs) do
       inserted
       |> broadcast_created()
@@ -409,6 +419,15 @@ defmodule Kanban.Notifications do
         |> Ecto.Changeset.add_error(:task_id, "does not belong to the board")
 
       {:error, %{changeset | action: :insert}}
+    end
+  end
+
+  # A free board's events are dropped while plans are enforced. Returning
+  # {:ok, []} ends notify/3's with chain before any lock, insert or job.
+  defp check_board_plan(attrs) do
+    case attrs |> fetch_attr(:board_id) |> cast_optional_id() do
+      nil -> :ok
+      board_id -> if Plans.board_unlocked?(board_id), do: :ok, else: {:ok, []}
     end
   end
 

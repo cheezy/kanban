@@ -275,6 +275,27 @@ defmodule Kanban.Plans do
     )
   end
 
+  @doc """
+  Returns the ids among `board_ids` whose boards are unlocked, as a set.
+
+  When enforcement is off every id is unlocked and it never queries. When it
+  is on, one query keeps only the paid boards; an empty list costs nothing,
+  and an id that matches no board is left out.
+  """
+  @spec unlocked_board_ids([integer()]) :: MapSet.t(integer())
+  def unlocked_board_ids(board_ids) when is_list(board_ids) do
+    if enforced?(), do: paid_ids_among(board_ids), else: MapSet.new(board_ids)
+  end
+
+  defp paid_ids_among([]), do: MapSet.new()
+
+  defp paid_ids_among(board_ids) do
+    paid_board_ids_query()
+    |> where([b], b.id in ^board_ids)
+    |> Repo.all()
+    |> MapSet.new()
+  end
+
   defp validate!(feature, opts) when feature in @features and is_list(opts) do
     case Keyword.fetch(opts, :surface) do
       {:ok, surface} when surface in @surfaces ->

@@ -589,6 +589,33 @@ defmodule Kanban.PlansTest do
     end
   end
 
+  describe "unlocked_board_ids/1" do
+    test "returns every id without a query while enforcement is off" do
+      Application.put_env(:kanban, :plans_enforced, false)
+      paid = org_board(organization_fixture())
+      free = board_fixture(user_fixture())
+
+      assert {ids, 0} = count_queries(fn -> Plans.unlocked_board_ids([paid.id, free.id, -1]) end)
+      assert ids == MapSet.new([paid.id, free.id, -1])
+    end
+
+    test "keeps only the paid ids in one query while enforcement is on" do
+      enforce_plans()
+      paid = org_board(organization_fixture())
+      free = board_fixture(user_fixture())
+
+      assert {ids, 1} = count_queries(fn -> Plans.unlocked_board_ids([paid.id, free.id, -1]) end)
+      assert ids == MapSet.new([paid.id])
+    end
+
+    test "an empty list costs no query" do
+      enforce_plans()
+
+      assert {ids, 0} = count_queries(fn -> Plans.unlocked_board_ids([]) end)
+      assert ids == MapSet.new()
+    end
+  end
+
   describe "Kanban.PlansHelpers" do
     test "enforce_plans/0 switches enforcement on" do
       Application.put_env(:kanban, :plans_enforced, false)

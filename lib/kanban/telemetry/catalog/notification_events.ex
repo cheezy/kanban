@@ -96,7 +96,7 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       measurements: [:count],
       metadata: [:notification_id, :reason],
       description:
-        "A notification email job sent nothing. reason is :not_found, :already_emailed, :user_disabled, :user_unconfirmed, :not_a_member or :unsubscribed.",
+        "A notification email job sent nothing. reason is :not_found, :already_emailed, :user_disabled, :user_unconfirmed, :not_a_member, :unsubscribed or :plan_locked (a free board, or a board-less notification whose user has no paid access, while plans are enforced).",
       legacy: false,
       metrics: [counter: :count],
       persist: false

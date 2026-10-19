@@ -16,6 +16,9 @@ defmodule Kanban.Notifications.Digest do
   reviews are a snapshot at `now`, each aged from
   `Kanban.Reviews.waiting_since/1` as on the /review page.
 
+  While paid plans are enforced, only paid boards count: boards and pending
+  reviews on free boards are left out (`Kanban.Plans.unlocked_board_ids/1`).
+
   `build/2` returns `:empty` when the user has no boards, or nothing was
   done and nothing is waiting for review, so quiet weeks send no email.
   """
@@ -26,6 +29,7 @@ defmodule Kanban.Notifications.Digest do
   alias Kanban.Accounts.User
   alias Kanban.Boards
   alias Kanban.Columns.Column
+  alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Reviews
   alias Kanban.Tasks.Task
@@ -80,7 +84,7 @@ defmodule Kanban.Notifications.Digest do
   def build(%User{} = user, opts \\ []) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
 
-    case Boards.list_boards_with_metrics(user, now: now) do
+    case user |> Boards.list_boards_with_metrics(now: now) |> unlocked(& &1.id) do
       [] -> :empty
       boards -> boards |> summarize(user, now) |> empty_if_quiet()
     end
@@ -205,7 +209,11 @@ defmodule Kanban.Notifications.Digest do
   end
 
   defp pending_reviews(user, now) do
-    tasks = Reviews.list_pending_reviews(scope: Scope.for_user(user))
+    tasks =
+      [scope: Scope.for_user(user)]
+      |> Reviews.list_pending_reviews()
+      |> unlocked(& &1.column.board.id)
+
     oldest = tasks |> Enum.take(@max_reviews) |> Enum.map(&review_row(&1, now))
 
     %{count: length(tasks), oldest_age_hours: oldest_age(oldest), oldest: oldest}
@@ -219,6 +227,12 @@ defmodule Kanban.Notifications.Digest do
       board_name: task.column.board.name,
       age_hours: task |> Reviews.waiting_since() |> hours_since(now)
     }
+  end
+
+  # Keeps the items whose board is unlocked; one query, and only when enforced.
+  defp unlocked(items, board_id) do
+    ids = items |> Enum.map(board_id) |> Plans.unlocked_board_ids()
+    Enum.filter(items, &MapSet.member?(ids, board_id.(&1)))
   end
 
   defp hours_since(since, now), do: now |> DateTime.diff(since, :hour) |> max(0)

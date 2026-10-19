@@ -14,6 +14,12 @@ defmodule Kanban.Notifications.EmailWorker do
   to the notification's board, or the user has turned email off for the
   event type since the job was enqueued (an unsubscribe link, for example).
 
+  While paid plans are enforced it also skips, with reason `:plan_locked`, a
+  notification on a board that is not paid, or a board-less one whose user
+  has no paid access. The check runs at send time, so a job queued before
+  enforcement was switched on, or before a board left its Organization,
+  delivers nothing; the notification row itself is kept.
+
   Delivery is at-least-once: the email is sent before `emailed_at` is
   stamped, so a crash between the two can resend on retry (the stable
   `Message-ID` lets mail clients collapse the duplicate). Stamping first
@@ -39,6 +45,7 @@ defmodule Kanban.Notifications.EmailWorker do
   alias Kanban.Notifications.Notification
   alias Kanban.Notifications.NotificationTelemetry
   alias Kanban.Notifications.Preference
+  alias Kanban.Plans
   alias Kanban.Repo
   alias KanbanWeb.Emails.NotificationEmail
 
@@ -81,6 +88,7 @@ defmodule Kanban.Notifications.EmailWorker do
     with {:ok, notification} <- fetch_pending(id),
          :ok <- check_recipient(notification.user),
          :ok <- check_membership(notification, notification.user),
+         :ok <- check_plan(notification),
          :ok <- check_preference(notification) do
       {:ok, notification}
     end
@@ -110,6 +118,16 @@ defmodule Kanban.Notifications.EmailWorker do
       {:skip, :not_a_member}
     end
   end
+
+  # The board id, not the preloaded board, so its workspace is read fresh.
+  defp check_plan(%Notification{board_id: nil, user: user}),
+    do: plan_verdict(Plans.user_unlocked?(user))
+
+  defp check_plan(%Notification{board_id: board_id}),
+    do: plan_verdict(Plans.board_unlocked?(board_id))
+
+  defp plan_verdict(true), do: :ok
+  defp plan_verdict(false), do: {:skip, :plan_locked}
 
   # notify/3 enqueues only for recipients who want email, but the preference
   # can change before the job runs, so the current one is read again.

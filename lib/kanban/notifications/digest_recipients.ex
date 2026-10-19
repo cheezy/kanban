@@ -5,6 +5,9 @@ defmodule Kanban.Notifications.DigestRecipients do
   A recipient is a confirmed, enabled user who belongs to at least one board
   and whose `:weekly_digest` email preference is on — their saved row, else
   the in-code default from `Kanban.Notifications.default_preference/1`.
+  While paid plans are enforced, only membership of a paid board counts
+  (`Kanban.Plans.paid_board_ids_query/0`), so a user with no paid board gets
+  no digest job at all.
 
   `list_digest_recipients/0` feeds the weekly fan-out and returns ids only;
   `get_digest_recipient/1` re-applies the same rules when each per-user job
@@ -17,6 +20,7 @@ defmodule Kanban.Notifications.DigestRecipients do
   alias Kanban.Boards.BoardUser
   alias Kanban.Notifications
   alias Kanban.Notifications.Preference
+  alias Kanban.Plans
   alias Kanban.Repo
 
   @doc """
@@ -51,7 +55,16 @@ defmodule Kanban.Notifications.DigestRecipients do
       on: p.user_id == u.id and p.event_type == :weekly_digest,
       where: not is_nil(u.confirmed_at) and is_nil(u.disabled_at),
       where: p.email == true or (is_nil(p.id) and ^default_email),
-      where: exists(from(bu in BoardUser, where: bu.user_id == parent_as(:user).id))
+      where: exists(subquery(member_boards_query()))
     )
+  end
+
+  # Unchanged SQL while enforcement is off.
+  defp member_boards_query do
+    query = from(bu in BoardUser, where: bu.user_id == parent_as(:user).id)
+
+    if Plans.enforced?(),
+      do: where(query, [bu], bu.board_id in subquery(Plans.paid_board_ids_query())),
+      else: query
   end
 end

@@ -50,6 +50,7 @@ defmodule Kanban.Notifications.Events do
   alias Kanban.Columns.Column
   alias Kanban.Notifications
   alias Kanban.Notifications.GoalCompletedWorker
+  alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Targets.DeliveryTarget
   alias Kanban.Tasks.Task
@@ -127,7 +128,9 @@ defmodule Kanban.Notifications.Events do
   `:added`, their access changed (`:access_changed`), or they were
   `:removed`.
 
-  Nothing is sent when the `:actor` option is the affected user. Options:
+  Nothing is sent when the `:actor` option is the affected user, or while
+  paid plans are enforced and `board` is not paid (a removal notice carries
+  no `board_id`, so `notify/3` cannot check it). Options:
 
     * `:actor` — the user who made the change (`nil` for a system change);
     * `:access` — the access level after an add or an access change;
@@ -330,10 +333,16 @@ defmodule Kanban.Notifications.Events do
   defp actor_name(%{name: name}) when is_binary(name) and name != "", do: name
   defp actor_name(_user), do: nil
 
+  # The board id is passed so a stale preloaded workspace cannot unlock it.
   defp emit_board_access_changed(board, %{id: user_id}, change, opts) do
     case Keyword.get(opts, :actor) do
-      %{id: ^user_id} -> :ok
-      actor -> notify_board_access_changed(board, user_id, change, actor, opts)
+      %{id: ^user_id} ->
+        :ok
+
+      actor ->
+        if Plans.board_unlocked?(board.id),
+          do: notify_board_access_changed(board, user_id, change, actor, opts),
+          else: :ok
     end
   end
 
