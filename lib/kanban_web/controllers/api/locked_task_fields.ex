@@ -12,8 +12,9 @@ defmodule KanbanWeb.API.LockedTaskFields do
   list through `put_warnings/2` (and `KanbanWeb.API.TaskJSON.show/1`). A
   request that sent neither field gets no `warnings` key.
 
-  The warning is fixed, translated text that names only the dropped field
-  names, never the submitted values. These fields are not on
+  The warning is fixed gettext text that names only the dropped field names,
+  never the submitted values. API requests carry no locale, so like the rest
+  of the API it is sent in English. These fields are not on
   `KanbanWeb.API.TaskParamFilter`'s forbidden lists: that path refuses or logs
   mass assignment, while these are accepted and not stored.
   """

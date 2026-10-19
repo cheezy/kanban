@@ -445,16 +445,16 @@ Notifications means the in-app bell, notification emails and digests (W2405, W24
 | `Kanban.Notifications.notify/3` (context) | For a board-scoped event on a free board, inserts nothing, enqueues no email, returns `{:ok, []}`. Producers that call it (task comments, claim expiry and the rest) are covered here. |
 | `Kanban.Notifications.Events.board_access_changed` | Checks the board it concerns; free board produces nothing. |
 | `Kanban.Notifications.TargetStatusWorker` (Oban) | Skips owners without paid access. |
-| `DigestFanoutWorker`, `DigestWorker`, `Digest.build` (Oban) | Include only paid-board activity; users with none receive no digest. |
-| `Kanban.Notifications.EmailWorker` (Oban) | Re-checks at send time. A job queued before the flag flipped is skipped with `email_skipped` reason `:plan_locked`. **Undelivered notifications are dropped.** |
+| `DigestFanoutWorker`, `DigestWorker`, `Digest.build` (Oban) | Include only paid-board activity, and only for users with paid access; users with neither receive no digest. |
+| `Kanban.Notifications.EmailWorker` (Oban) | Sends only when the recipient has paid access **and** the board is paid, so a free member of a paid board gets no notification email. `notify/3` enqueues no job for such a recipient, and the worker re-checks both at send time. A job queued before the flag flipped, or before the board or the user left their Organization, is skipped with `email_skipped` reason `:plan_locked`. **Undelivered notifications are dropped.** |
 | `KanbanWeb.NotificationsOnMount` and `KanbanWeb.NotificationBell` (UI) | A `notifications_locked` flag on the scope renders the bell with a lock and no badge. `KanbanWeb.UserAuth` computes it once per scope, from the Organization membership it already loads, so the lock costs no extra query and also covers controller-rendered pages. `NotificationsOnMount` skips the unread count and the PubSub subscription for a locked scope. |
-| `/notifications` (`NotificationLive.Index`) and `/users/notifications` (`UserLive.NotificationPreferences`) | Render the locked panel for `:notifications`, plus links to the Review queue (`/review`) and My Work (`/my-work`) as the way to see waiting tasks. |
+| `/notifications` (`NotificationLive.Index`) and `/users/notifications` (`UserLive.NotificationPreferences`) | Render the locked panel for `:notifications`, plus links to the Review queue (`/review`) and My Work (`/my-work`) as the way to see waiting tasks. A preferences page opened before the lock applied switches to the panel on its first refused save. |
 | `Kanban.Notifications.update_preference/3` (context, LiveView events) | Refused with `{:error, {:plan_required, :notifications}}`; crafted events get a flash. |
 | Inbox query (`visible_query/1`) for paid users | Filtered to paid boards plus board-less rows. Hidden rows are not deleted; they reappear if the board becomes paid. |
 | `Kanban.Notifications.unsubscribe/2` and the one-click unsubscribe route | **Never gated.** Turning email off is not a paid action. |
 | `Kanban.Accounts.UserNotifier` (account emails) | **Untouched.** |
 
-**What a free user sees:** a locked bell, a locked notifications page that points to `/review` and `/my-work`, and no notification emails. The launch announcement tells free reviewers the same.
+**What a free user sees:** a locked bell, a locked notifications page that points to `/review` and `/my-work`, and no notification emails or digests, including from paid boards they are a member of. The launch announcement tells free reviewers the same. A paid board still stores its notifications for a free member, and they appear if that user joins an Organization.
 
 ### 7.2 Audit
 
@@ -490,7 +490,7 @@ Notifications means the in-app bell, notification emails and digests (W2405, W24
 | `KanbanWeb.BoardLive.BulkSelection.handle_bulk_event/3` (LiveView events) | Refuses every `bulk_` event; `surface: :live_view`. `bulk_toggle_mode` opens or closes the lock component; every other event gets a translated flash and opens it. An event the plan check allows clears the lock, so a board moved into an Organization unlocks on its next event without a reload. |
 | `Kanban.Tasks.BulkActions` (`move`, `assign`, `add_label`, `remove_label`, `archive`) | Returns `{:error, {:plan_required, :bulk_actions}}`; `surface: :context`. Checked once per call, not per task. |
 
-Single-task moves, edits and archiving stay free.
+Single-task moves, edits and archiving stay free. So does the Archive page's "Archive old (30d+)" action (`ArchiveLive.Index`, `Tasks.bulk_archive_completed_tasks_older_than/1`): it is housekeeping on completed tasks, not the selection-based Bulk actions feature, and is deliberately left unlocked.
 
 ### 7.6 Integrations
 
@@ -498,7 +498,7 @@ Integrations means board webhooks (W2408). Delivery targets (`Kanban.Targets`) a
 
 | Entry point | Behaviour on a free board |
 |---|---|
-| `/boards/:id/integrations` (`BoardLive.Show :integrations`, `KanbanWeb.BoardLive.IntegrationsComponent`) | Locked panel for `:integrations`; existing endpoints listed read-only with a **Paused** badge. |
+| `/boards/:id/integrations` (`BoardLive.Show :integrations`, `KanbanWeb.BoardLive.IntegrationsComponent`) | Locked panel for `:integrations`; existing endpoints listed read-only with a **Paused** badge. Every event except Deliveries and Delete is plan-checked, opening the edit form included; the first refusal switches a panel opened before the lock applied to the locked view. An event the component does not define is ignored. |
 | `Kanban.Webhooks.create_endpoint/4`, `update_endpoint/4`, `rotate_secret/2`, `send_test_event/2` | Refused with `{:error, {:plan_required, :integrations}}`; crafted LiveView events get a flash. |
 | `Kanban.Webhooks.delete_endpoint/2`, listing | **Allowed**, so owners can remove their configuration. |
 | `Kanban.Webhooks.Events.emit/3` | Queues no delivery. Never raises into the task write path. |
@@ -512,13 +512,14 @@ Telemetry means the task fields `telemetry_event` and `metrics_to_track` (W2409)
 
 | Entry point | Behaviour on a free board |
 |---|---|
-| `POST /api/tasks` (`KanbanWeb.API.TaskCreation.create/3`, single task and goal with children) | Succeeds with its normal status. The fields are not stored on the task or any child. The body gains a top-level `warnings` list with one translated message saying the fields need an Organization. `feature_refused` with `surface: :rest`. |
+| `POST /api/tasks` (`KanbanWeb.API.TaskCreation.create/3`, single task and goal with children) | Succeeds with its normal status. The fields are not stored on the task or any child. The body gains a top-level `warnings` list with one message saying the fields need an Organization. It is a gettext string, but API requests carry no locale, so like the rest of the API it is in English. `feature_refused` with `surface: :rest`. |
 | `POST /api/tasks/batch` (`KanbanWeb.API.BatchGoalCreation`) | Same. |
 | `PATCH /api/tasks/:id` (`KanbanWeb.API.TaskUpdate.update/3`) | Same. |
 | `PATCH /api/tasks/:id/complete` | Unaffected; completion does not cast these fields. |
 | MCP create or update | Locked earlier: MCP refuses free-board requests entirely (7.8). |
-| Task form (`KanbanWeb.TaskLive.FormComponent`) | The two inputs are replaced by the inline lock; the save path strips them, and hidden inputs never submit empty strings that would wipe stored values. |
+| Task form (`KanbanWeb.TaskLive.FormComponent`) | The two inputs are replaced by the inline lock; the save path strips them, and hidden inputs never submit empty strings that would wipe stored values. A form opened before the lock applied still shows the inputs: a save that changes them stores everything else, flashes that the telemetry changes were not saved (`KanbanWeb.TaskLive.Form.TelemetryLock`) and emits `feature_refused` with `surface: :live_view`. |
 | Task view (`KanbanWeb.TaskLive.ViewComponent`) | Hides stored values. |
+| REST reads (`GET /api/tasks/:id`, `/tree`, `GET /api/tasks`, `next`) | **Deliberately unchanged:** they still return values stored before the lock. Writes are what the lock refuses; reading old values uses no paid feature, and agents keep the context they were given. |
 
 Requests without these fields get no `warnings` key. The strip uses `Plans.strip_locked_task_fields/2`, not `TaskParamFilter`'s forbidden lists, which log mass-assignment attempts. [POST /api/tasks](../api/post_tasks.md) and [PATCH /api/tasks/:id](../api/patch_tasks_id.md) document the warning.
 
@@ -529,6 +530,7 @@ Requests without these fields get no `warnings` key. The strip uses `Plans.strip
 - Batches return one error per request, with ids. Notifications and client responses still get 202 with no body. GET and DELETE still return 405. Unauthenticated requests still get 401 from the pipeline before any plan check.
 - Each refused message is one `[:kanban, :mcp, :request]` span with outcome `:plan_required`.
 - `:current_board` is the single seam: board tokens set it from the token, workspace tokens from the per-request selector (W2220), so the MCP lock needs no token-type logic. See [MCP](../MCP.md).
+- **Requirement for workspace tokens (W2220):** the MCP lock and the REST telemetry strip (`KanbanWeb.API.LockedTaskFields.strip/2`) both read `conn.assigns.current_board`, and today a board token always sets it. A workspace-token request that selects no board must be refused before either runs, never treated as unlocked and never allowed to reach them with a `nil` board.
 
 **What a free agent sees:** its MCP client receives an Organization-required error on every call; its REST calls keep working.
 
@@ -542,7 +544,7 @@ Requests without these fields get no `warnings` key. The strip uses `Plans.strip
   1. `Kanban.Plans.parse_feature/1` validates the feature without creating atoms.
   2. A valid feature emits `[:kanban, :plan, :locked_feature_clicked]` with only `feature`, then redirects to `/pricing#contact`.
   3. An unknown feature redirects to `/pricing` with no event.
-  4. A new `:locked_feature_click` surface in `Kanban.RateLimit`, keyed per user, caps events per minute. Over the limit the redirect still happens, without an event.
+  4. `Kanban.Plans.LockedFeatureClicks` counts each user at most once per feature in any 7 days, the period the metric is read over. Over the limit the redirect still happens, without an event. The last counted click is stored per user and feature in the `locked_feature_clicks` table and checked with one atomic upsert, so the limit survives restarts and deploys and holds across machines; an in-memory limiter would let every user count again after each deploy. A user's rows are deleted with the user.
 - **The metric:** `locked_feature_clicked` is declared in `PlanEvents` with a counter metric, tag `feature` and `persist: true`, so weekly clicks per feature can be read from `metrics_events`. The user id is not in the event; the metric is per feature.
 
 ---
@@ -762,7 +764,7 @@ Changed existing events:
 
 W2218's member removal should reuse `[:kanban, :organization, :member_removed]` with role `member` rather than add a new event.
 
-Metric tags stay low-cardinality (`feature`, `surface`, `via`), never ids. `feature_refused` is not persisted because free agents can trigger it at will; `locked_feature_clicked` is persisted and rate limited per user so it can drive the leading metric (see [which metrics are stored](../telemetry.md#which-metrics-are-stored)).
+Metric tags stay low-cardinality (`feature`, `surface`, `via`), never ids. `feature_refused` is not persisted because free agents can trigger it at will; `locked_feature_clicked` is persisted and counted once per user and feature a week so it can drive the leading metric (see [which metrics are stored](../telemetry.md#which-metrics-are-stored)).
 
 ### Audit actions
 
@@ -1006,7 +1008,7 @@ Raised while writing this design, or carried from the G442 briefing:
 9. **Leaving an Organization.** A member cannot leave on their own except by deleting their account.
 10. **Switcher form and settings entry point.** The visual form of the switcher, the mobile drawer, and how users reach `/workspace/settings` are not fixed (briefing §9.1).
 11. **What follows the current workspace.** Only `/boards` follows the switcher. My Work, Agents, Review queue, Metrics and targets stay cross-workspace; the "Workspace" label on the nav landmark, the `/boards` breadcrumb and `MetricsLive.Workspace` may confuse people (briefing §9.1).
-12. **Invitation rate limits.** Thresholds for the `:invite` and `:locked_feature_click` surfaces are not specified.
+12. **Invitation rate limits.** Thresholds for the `:invite` surface are not specified. (Locked-feature clicks are counted once per user and feature a week; see 7.9.)
 13. **The launch date.** The changelog entry keeps the date sentence easy to edit until the team agrees one.
 
 ### 15.3 Decisions that supersede earlier sources

@@ -216,25 +216,29 @@ LiveViews compute their lock flags when they mount, so **reload every open page*
 
 ## Section A: The lock component and its click metric (W2404)
 
-**A.0 Pick a feature whose click has not been counted this week.** Each user's click on a feature's prompt is counted once per 7 days, so a feature clicked in an earlier run this week records no new event in A.2. This block reads the limit without counting a click:
+**A.0 Pick a feature whose click has not been counted this week.** Each user's click on a feature's prompt is counted once per 7 days, so a feature clicked in an earlier run this week records no new event in A.2. The last counted click per user and feature is in the `locked_feature_clicks` table; this block reads it without counting a click:
 
 ```elixir
 # project_eval
+import Ecto.Query
 g = :persistent_term.get(:g472)
+cutoff = DateTime.add(DateTime.utc_now(), -7, :day)
 
-clickable =
-  for f <- ~w(integrations telemetry mcp notifications bulk_actions)a,
-      Kanban.RateLimit.peek(:locked_feature_click, identity: "user:#{g.user_id}:#{f}") == :ok,
-      do: f
+counted =
+  Kanban.Repo.all(
+    from c in Kanban.Plans.LockedFeatureClick,
+      where: c.user_id == ^g.user_id and c.counted_at > ^cutoff,
+      select: c.feature
+  )
 
+clickable = ~w(integrations telemetry mcp notifications bulk_actions)a -- counted
 :persistent_term.put(:g472, Map.put(g, :click_feature, List.first(clickable)))
 clickable
 ```
 
 - **Expect:** a list of features whose clicks this week have not been counted yet. Use the first one as `FEATURE` in A.1 to A.3 (it is also saved as `click_feature`).
-- Each feature already clicked also emits a `[:kanban, :rate_limit, :denied]` event; that is expected.
 - If the list is empty, every feature was clicked this week. Run A.1, A.3 and A.4 anyway, mark A.2 as skipped for that reason, and do not report it as a FAIL.
-- The limit lives in memory, so a dev server restart clears it.
+- The record is in the database, so a dev server restart does **not** clear it.
 
 **A.1 The prompt link.** In the browser, open `/locked/FEATURE`.
 
@@ -251,13 +255,18 @@ Process.sleep(500)
   |> Enum.filter(fn {name, _} -> name == [:kanban, :plan, :locked_feature_clicked] end),
   Kanban.Repo.query!(
     "select metric_name, metadata, recorded_at from metrics_events where metric_name like 'kanban.plan.locked_feature_clicked%' order by recorded_at desc limit 3"
+  ).rows,
+  Kanban.Repo.query!(
+    "select feature, counted_at from locked_feature_clicks where user_id = $1 order by counted_at desc limit 3",
+    [:persistent_term.get(:g472).user_id]
   ).rows
 }
 ```
 
 - **Expect:** one recorded event whose metadata is exactly `%{feature: :FEATURE}`, with no user id. The newest `metrics_events` row has metadata `{"feature": "FEATURE"}` and a `recorded_at` from just now.
 - These rows stay in `metrics_events` by design; the teardown leaves them.
-- If the event fires but no row appears, the dev server has not been restarted since W2404. Report this as an environment problem, not a FAIL.
+- The user's `locked_feature_clicks` rows include `FEATURE` with a `counted_at` from just now.
+- If the event fires but no `metrics_events` row appears, the dev server has not been restarted since W2404. Report this as an environment problem, not a FAIL.
 
 **A.3 The rate limit.** Open `/locked/FEATURE` again.
 
@@ -334,24 +343,33 @@ unless Map.has_key?(g, :saved_review_pref),
   - `unsubscribe` succeeds (an `:ok` result, not a plan error), because turning email off is never gated.
   - A `feature_refused` event with `%{feature: :notifications, surface: :context}` is recorded.
 
-**B.4 Generation follows the board, not the recipient.**
+**B.4 Rows follow the board; emails also need the recipient's paid access.**
 
 ```elixir
 # project_eval
+import Ecto.Query
 alias Kanban.Notifications
 g = :persistent_term.get(:g472)
 user = Kanban.Repo.get!(Kanban.Accounts.User, g.user_id)
 attrs = fn board_id -> %{title: "G472 notify check", url_path: "/review", board_id: board_id} end
+{:ok, paid_rows} = Notifications.notify(:review_requested, [user], attrs.(g.paid.board_id))
+ids = Enum.map(paid_rows, & &1.id)
 
 {
   Notifications.notify(:review_requested, [user], attrs.(g.free.board_id)),
-  Notifications.notify(:review_requested, [user], attrs.(g.paid.board_id)) |> then(fn {:ok, rows} -> length(rows) end)
+  length(paid_rows),
+  Kanban.Repo.aggregate(
+    from(j in Oban.Job,
+      where: j.worker == "Kanban.Notifications.EmailWorker" and fragment("(?->>'notification_id')::int", j.args) in ^ids),
+    :count
+  )
 }
 ```
 
 - **Expect:**
   - The free board returns `{:ok, []}`: no row and no email job.
-  - The paid board inserts one row, even though the recipient has no paid access.
+  - The paid board inserts one row, even though the recipient has no paid access, so it appears if they join an Organization (B.8).
+  - That row has **no** email job (`0`): a free member of a paid board gets no notification email.
   - No `feature_refused` event is recorded, because silent drops do not emit one.
 
 **B.5 A queued email is skipped at send time.** This simulates a notification queued before launch: insert the row and its job directly, then let the dev Oban queue run it.
@@ -403,6 +421,15 @@ end
 
 - **Expect:** `["G472 Paid"]`, which includes the paid board but not `G472 Free`.
 
+Then check who gets the weekly digest at all:
+
+```elixir
+# project_eval
+:persistent_term.get(:g472).user_id in Kanban.Notifications.list_digest_recipients()
+```
+
+- **Expect:** `false`. The user is a member of a paid board but has no paid access, so gets no digest. B.8 checks the opposite.
+
 **B.7 Account emails still send.**
 
 ```elixir
@@ -428,8 +455,9 @@ Reload the browser, then check:
 - `/notifications` shows the inbox. "G472 notify check" from the paid board is listed.
 - No row for `G472 Free` is listed. Rows hidden this way are not deleted.
 - `/users/notifications` shows the preference form, and saving it works.
+- `:persistent_term.get(:g472).user_id in Kanban.Notifications.list_digest_recipients()` is `true` (if the user's weekly digest email is on).
 
-**Then remove the membership** so the remaining sections run as a free user:
+Leave `/users/notifications` open. **Then remove the membership** so the remaining sections run as a free user:
 
 ```elixir
 # project_eval
@@ -437,6 +465,10 @@ import Ecto.Query
 g = :persistent_term.get(:g472)
 Kanban.Repo.delete_all(from(m in Kanban.Organizations.OrganizationMember, where: m.user_id == ^g.user_id))
 ```
+
+**B.9 A stale preferences page switches to the lock.** Without reloading `/users/notifications`, click the email checkbox of "Task assigned".
+
+- **Expect:** the flash "Notification settings are available to organizations.", the locked panel replacing the form, and no change to the user's saved preference.
 
 Reload, and confirm the bell is locked again.
 
@@ -626,6 +658,20 @@ Move the board back (the second block in C.8).
 
 **D.7 Dark mode.** Run A.6 on `#integrations-locked` and on the Paused badge.
 
+**D.8 Crafted panel events.** On `/boards/FREE/integrations`, push events at the panel component (its root is `#board-integrations-FREE`), the way C.4 pushes a page event:
+
+```js
+// browser_eval
+const el = document.querySelector('[id^="board-integrations-"]');
+const cid = parseInt(el.getAttribute('data-phx-component'), 10);
+window.liveSocket.main.pushEvent('click', el, cid, 'edit', {id: String(ENDPOINT_ID)});
+window.liveSocket.main.pushEvent('click', el, cid, 'no_such_event', {});
+```
+
+Replace `ENDPOINT_ID` with `:persistent_term.get(:g472).free.endpoint_id`.
+
+- **Expect:** the flash "Integrations are available to organizations. Nothing was changed." for `edit`, with no edit form. The unknown event changes nothing, and the page does not reconnect (no error in `get_logs`). If the component id cannot be read from the page, skip this check; the automated suite covers both.
+
 ## Section E: Telemetry task fields (W2409)
 
 **E.1 Task form.** Open `/boards/FREE/tasks/<free.stored_id>/edit`.
@@ -641,6 +687,14 @@ Kanban.Repo.get!(Kanban.Tasks.Task, g.free.stored_id) |> Map.take([:title, :tele
 ```
 
 - **Expect:** the title has changed, and both stored values are kept: saving did not wipe them.
+
+**E.1b A form opened before the lock warns instead of dropping changes silently.** Move `G472 Free` into the Organization workspace (the first block in C.8), open `/boards/FREE/tasks/<free.stored_id>/edit`, and check that the Telemetry Event and Metrics to Track inputs show. Then, without reloading, move the board back (the second block in C.8), change both inputs and save.
+
+- **Expect:**
+  - The flash "Telemetry Event and Metrics to Track need a board in an Organization, so your changes to them were not saved." alongside "Task updated successfully".
+  - Rerunning the E.1 query shows both stored values unchanged.
+  - The recorder holds a `feature_refused` event with `%{feature: :telemetry, surface: :live_view}`.
+- Save again without changing the two inputs: no telemetry flash.
 
 **E.2 Task view.** Open the same task's view (click its card).
 
