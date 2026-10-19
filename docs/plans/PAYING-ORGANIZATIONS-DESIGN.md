@@ -78,6 +78,7 @@ Migration timestamps in the task specs (`20261001...`) are placeholders. Real on
 - There is no plan, paid or seat column. Paid status is derived from `workspaces.organization_id`.
 - There is no delete function and no downgrade function.
 - `name` is not unique by constraint. `Kanban.Release.ensure_internal_organization/1` (W2403) matches an existing Organization by exact name.
+- `Kanban.Release.ensure_internal_organization/1` keeps its logic in `Kanban.Release.InternalOrganization`. It acts as a named enabled site admin and reads the Organization list and makes every write through `Kanban.Organizations` (`list_organizations/1`, `create_organization/2`, then `appoint_org_admin/3` per listed email), so the context's authorization check, telemetry and audit events apply. The name is trimmed and compared case-sensitively, and the lowest id wins when several match. An existing Organization's details are left as they are. It provisions no accounts: unknown emails are reported as skipped, and disabled users and users in another Organization are reported as refused. A re-run writes nothing and reports the existing Organization and org-admins. It returns a summary map and never calls Mix.
 
 #### `organization_members` (new, W2390)
 

@@ -9,12 +9,19 @@ defmodule Kanban.ReleaseTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.OrganizationsFixtures
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
 
+  alias Kanban.Accounts.User
+  alias Kanban.AuditLog
   alias Kanban.AuditLogRoleHelper
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
+  alias Kanban.Organizations
+  alias Kanban.Organizations.Organization
+  alias Kanban.Organizations.OrganizationMember
   alias Kanban.Release
   alias Kanban.Tasks.Task
 
@@ -276,6 +283,203 @@ defmodule Kanban.ReleaseTest do
     refute inspect(report) =~ owner.email
     refute inspect(report) =~ board.name
     assert counts.() == before
+  end
+
+  describe "ensure_internal_organization/1" do
+    defp internal_org_opts(admin, extra) do
+      Keyword.merge(
+        [
+          acting_admin_email: admin.email,
+          contact_name: "Stride Ops",
+          contact_email: "ops@stride.example"
+        ],
+        extra
+      )
+    end
+
+    defp org_write_counts do
+      {Repo.aggregate(Organization, :count), Repo.aggregate(OrganizationMember, :count),
+       Repo.aggregate(User, :count), length(AuditLog.list_events())}
+    end
+
+    defp disabled(user) do
+      user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+    end
+
+    test "creates the Organization once, appoints the listed users and is a no-op on the second run" do
+      admin = admin_fixture()
+      lead = user_fixture()
+      second = user_fixture()
+      attach_telemetry([:kanban, :organization, :created])
+      opts = internal_org_opts(admin, org_admin_emails: [lead.email, second.email])
+
+      first = Release.ensure_internal_organization(opts)
+
+      assert %{status: :ok, organization: %{name: "Stride", created: true, id: org_id}} = first
+      assert first.appointed == [lead.email, second.email]
+      assert first.already_org_admin == []
+      assert first.skipped_unknown == []
+      assert first.refused == []
+      assert Organizations.org_admin?(lead, org_id)
+      assert Organizations.org_admin?(second, org_id)
+
+      assert_received {:telemetry_event, [:kanban, :organization, :created], %{count: 1},
+                       %{organization_id: ^org_id, actor_user_id: actor_id}}
+
+      assert actor_id == admin.id
+
+      assert [created] = AuditLog.list_events(action: :organization_created)
+      assert created.actor_user_id == admin.id
+      assert created.metadata["organization_id"] == org_id
+
+      appointed = AuditLog.list_events(action: :org_admin_appointed)
+      assert length(appointed) == 2
+      assert Enum.all?(appointed, &(&1.actor_user_id == admin.id))
+
+      member_ids = appointed |> Enum.map(& &1.metadata["member_user_id"]) |> Enum.sort()
+      assert member_ids == Enum.sort([lead.id, second.id])
+
+      before = org_write_counts()
+
+      again =
+        opts
+        |> Keyword.put(:contact_name, "Someone Else")
+        |> Release.ensure_internal_organization()
+
+      assert again.status == :ok
+      assert again.organization == %{id: org_id, name: "Stride", created: false}
+      assert again.appointed == []
+      assert again.already_org_admin == [lead.email, second.email]
+      assert org_write_counts() == before
+      assert Repo.get!(Organization, org_id).contact_name == "Stride Ops"
+    end
+
+    test "refuses an unknown, non-admin, disabled or missing acting email and writes nothing" do
+      user = user_fixture()
+      admin = admin_fixture()
+      disabled_admin = disabled(admin_fixture())
+      appointee = user_fixture()
+      before = org_write_counts()
+
+      for {acting, reason} <- [
+            {"nobody-#{System.unique_integer([:positive])}@example.com", :unknown_acting_user},
+            {nil, :unknown_acting_user},
+            {user.email, :not_site_admin},
+            {disabled_admin.email, :not_site_admin}
+          ] do
+        result =
+          admin
+          |> internal_org_opts(acting_admin_email: acting, org_admin_emails: [appointee.email])
+          |> Release.ensure_internal_organization()
+
+        assert result == %{status: :refused, reason: reason}
+      end
+
+      assert org_write_counts() == before
+      assert AuditLog.list_events(action: :organization_created) == []
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+
+    test "reports unknown, disabled, invalid and other-Organization emails without creating accounts" do
+      admin = admin_fixture()
+      lead = user_fixture()
+      member = user_fixture()
+      disabled_user = disabled(user_fixture())
+      elsewhere = user_fixture()
+      organization_member_fixture(organization_fixture(), elsewhere, :org_admin)
+      existing = organization_fixture(%{name: "Stride"})
+      organization_member_fixture(existing, member, :member)
+      unknown = "unknown-#{System.unique_integer([:positive])}@example.com"
+      users_before = Repo.aggregate(User, :count)
+
+      emails = [
+        "  #{lead.email}  ",
+        String.upcase(lead.email),
+        "",
+        member.email,
+        unknown,
+        disabled_user.email,
+        elsewhere.email,
+        42
+      ]
+
+      result =
+        admin
+        |> internal_org_opts(org_admin_emails: emails)
+        |> Release.ensure_internal_organization()
+
+      assert result.organization == %{id: existing.id, name: "Stride", created: false}
+      assert result.appointed == [lead.email, member.email]
+      assert result.skipped_unknown == [unknown]
+
+      assert result.refused == [
+               %{email: disabled_user.email, reason: :user_disabled},
+               %{email: elsewhere.email, reason: :already_in_another_organization},
+               %{email: "42", reason: :invalid_email}
+             ]
+
+      assert Repo.aggregate(User, :count) == users_before
+      refute Kanban.Accounts.get_user_by_email(unknown)
+      assert Organizations.org_admin?(member, existing)
+      refute Organizations.member?(disabled_user, existing)
+    end
+
+    test "matches the name exactly, reusing the lowest id and never a similar name" do
+      admin = admin_fixture()
+      organization_fixture(%{name: "Stride Labs"})
+      organization_fixture(%{name: "stride"})
+
+      created = admin |> internal_org_opts([]) |> Release.ensure_internal_organization()
+
+      assert %{status: :ok, organization: %{name: "Stride", created: true}} = created
+      assert created.appointed == []
+      assert created.already_org_admin == []
+      assert created.skipped_unknown == []
+      assert created.refused == []
+      assert Repo.aggregate(Organization, :count) == 3
+
+      organization_fixture(%{name: "Stride"})
+
+      reused =
+        admin
+        |> internal_org_opts(name: "  Stride  ", org_admin_emails: [])
+        |> Release.ensure_internal_organization()
+
+      assert reused.organization == %{id: created.organization.id, name: "Stride", created: false}
+      assert Repo.aggregate(Organization, :count) == 4
+    end
+
+    test "returns the changeset's messages and writes nothing when the details are invalid" do
+      admin = admin_fixture()
+      lead = user_fixture()
+      before = org_write_counts()
+
+      result =
+        Release.ensure_internal_organization(
+          acting_admin_email: admin.email,
+          name: "Internal",
+          contact_name: "Ops",
+          org_admin_emails: [lead.email]
+        )
+
+      assert result == %{
+               status: :refused,
+               reason: :invalid_organization,
+               errors: %{contact_email: ["can't be blank"]}
+             }
+
+      assert org_write_counts() == before
+    end
+
+    test "never calls Mix, so it runs in a release" do
+      for path <- [
+            "../../lib/kanban/release.ex",
+            "../../lib/kanban/release/internal_organization.ex"
+          ] do
+        source = path |> Path.expand(__DIR__) |> File.read!()
+        refute source =~ ~r/\bMix\./, "#{path} calls Mix"
+      end
+    end
   end
 
   test "audit_log_boot_check logs one warning naming the reasons when degraded and nothing when hardened" do

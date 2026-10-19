@@ -20,7 +20,8 @@ defmodule Kanban.Release do
   stored `security_considerations` entries shaped like a credential (W2384),
   described in `docs/matrix-row-refusal-contract.md`, and
   `report_over_cap_boards/0`, the read-only report of personal-workspace boards
-  over the free member cap (W2402).
+  over the free member cap (W2402), and `ensure_internal_organization/1`, which
+  creates Stride's own Organization and appoints its org-admins (W2403).
 
   Log lines from this module carry reason atoms and exception types only,
   never the admin URL, its host or its password.
@@ -30,6 +31,7 @@ defmodule Kanban.Release do
   alias Kanban.AuditLog.Hardening.Purge
   alias Kanban.Boards
   alias Kanban.Boards.Membership
+  alias Kanban.Release.InternalOrganization
   alias Kanban.Repo
   alias Kanban.Tasks.SecurityConsiderationsScan
 
@@ -178,6 +180,40 @@ defmodule Kanban.Release do
     {:ok, report, _} = Ecto.Migrator.with_repo(Repo, fn _repo -> Boards.over_cap_boards() end)
 
     report
+  end
+
+  @doc """
+  Creates Stride's internal Organization once and appoints the listed existing
+  users as its org-admins, acting as the named site admin, through the app
+  Repo.
+
+  Runs `Kanban.Release.InternalOrganization.ensure/1` and returns its summary
+  map; that function documents the options and every result. All writes go
+  through `Kanban.Organizations`, so its authorization check, telemetry and
+  audit events apply. It provisions no accounts, and running it again creates
+  nothing and reports what already exists. Run it with `bin/kanban eval`, for
+  example:
+
+      Kanban.Release.ensure_internal_organization(
+        acting_admin_email: "admin@example.com",
+        contact_name: "Ops",
+        contact_email: "ops@example.com",
+        org_admin_emails: ["lead@example.com"]
+      )
+      |> IO.inspect()
+
+  Moving Stride's boards into the Organization's workspace is a separate step
+  (the board move, G442 W2218), to be described in the launch runbook that
+  W2417 adds.
+  """
+  @spec ensure_internal_organization(keyword() | map()) :: InternalOrganization.summary()
+  def ensure_internal_organization(opts) do
+    load_app()
+
+    {:ok, summary, _} =
+      Ecto.Migrator.with_repo(Repo, fn _repo -> InternalOrganization.ensure(opts) end)
+
+    summary
   end
 
   @doc """
