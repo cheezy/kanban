@@ -20,7 +20,10 @@ defmodule Kanban.AuditLog do
       A positive integer `organization_id` in the context that names an
       existing Organization is also stored in its own column, which scopes the
       org-admin audit log at `/org/audit`; an out-of-range or stale id stays
-      in the metadata only.
+      in the metadata only. When the event also has an actor, whether that
+      actor was a member of the Organization at that moment is stored too,
+      and the org-admin log redacts from it (see
+      `Kanban.AuditLog.OrganizationScope`).
       Where the migration could harden it (see `Kanban.AuditLog.Hardening`),
       the table belongs to a separate owner role, so the application cannot
       disable that trigger.
@@ -322,10 +325,19 @@ defmodule Kanban.AuditLog do
   # checkout timeout — is logged (by exception type only, never the values) and
   # swallowed, so auditing can never crash or roll back the caller.
   defp persist(action, clean) do
+    actor_user_id = bounded_id(clean, :user_id)
+    organization_id = bounded_id(clean, :organization_id)
+
     attrs = %{
       action: action |> Atom.to_string() |> clean_string(),
-      actor_user_id: bounded_id(clean, :user_id),
-      organization_id: bounded_id(clean, :organization_id),
+      actor_user_id: actor_user_id,
+      organization_id: organization_id,
+      actor_in_organization:
+        OrganizationScope.actor_member?(
+          actor_user_id,
+          organization_id,
+          statement_opts()
+        ),
       ip: ip(clean),
       metadata: json_safe_map(clean)
     }

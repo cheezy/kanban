@@ -7,6 +7,7 @@ defmodule Kanban.AuditLog.OrganizationScopeTest do
   alias Kanban.AuditLog
   alias Kanban.AuditLog.AuditEvent
   alias Kanban.AuditLog.OrganizationScope
+  alias Kanban.Organizations.OrganizationMember
 
   setup do
     organization = organization_fixture()
@@ -103,6 +104,81 @@ defmodule Kanban.AuditLog.OrganizationScopeTest do
 
     test "an empty batch needs no query", %{organization: organization} do
       assert OrganizationScope.redact_outside_actors([], organization.id) == []
+    end
+  end
+
+  describe "membership judged when the event is written" do
+    defp record!(actor, organization) do
+      :ok =
+        AuditLog.event(:organization_updated,
+          user_id: actor && actor.id,
+          organization_id: organization && organization.id
+        )
+
+      AuditEvent |> order_by(desc: :id) |> limit(1) |> Repo.one!()
+    end
+
+    test "AuditLog.event/2 stores whether the actor was a member at that moment", %{
+      organization: organization,
+      member: member,
+      site_admin: site_admin
+    } do
+      assert record!(member, organization).actor_in_organization == true
+      assert record!(site_admin, organization).actor_in_organization == false
+      assert record!(nil, organization).actor_in_organization == nil
+      assert record!(member, nil).actor_in_organization == nil
+    end
+
+    test "a departed org-admin's past actions stay visible", %{
+      organization: organization,
+      member: member
+    } do
+      event = record!(member, organization)
+      OrganizationMember |> where(user_id: ^member.id) |> Repo.delete_all()
+
+      assert [%{actor_redacted: false, actor_user_id: actor_id}] =
+               OrganizationScope.redact_outside_actors([event], organization.id)
+
+      assert actor_id == member.id
+    end
+
+    test "staff who join later do not uncover what staff did before", %{
+      organization: organization,
+      site_admin: site_admin
+    } do
+      event = record!(site_admin, organization)
+      organization_member_fixture(organization, site_admin, :org_admin)
+
+      assert [%{actor_redacted: true, ip: nil, actor_user_id: nil}] =
+               OrganizationScope.redact_outside_actors([event], organization.id)
+
+      assert record!(site_admin, organization).actor_in_organization == true
+    end
+
+    test "a row written before the record falls back to current membership", %{
+      organization: organization,
+      member: member,
+      site_admin: site_admin
+    } do
+      legacy_member = insert_event!(organization, member, ~U[2026-10-01 00:00:00.000000Z], [])
+      legacy_admin = insert_event!(organization, site_admin, ~U[2026-10-02 00:00:00.000000Z], [])
+      assert legacy_member.actor_in_organization == nil
+
+      assert [%{actor_redacted: false}, %{actor_redacted: true}] =
+               OrganizationScope.redact_outside_actors(
+                 [legacy_member, legacy_admin],
+                 organization.id
+               )
+    end
+
+    test "actor_member?/3 is nil without an actor or an Organization", %{
+      organization: organization,
+      member: member
+    } do
+      assert OrganizationScope.actor_member?(nil, organization.id) == nil
+      assert OrganizationScope.actor_member?(member.id, nil) == nil
+      assert OrganizationScope.actor_member?(member.id, organization.id) == true
+      assert OrganizationScope.actor_member?(member.id, organization_fixture().id) == false
     end
   end
 

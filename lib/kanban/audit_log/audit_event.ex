@@ -26,6 +26,11 @@ defmodule Kanban.AuditLog.AuditEvent do
   org-admin audit log at `/org/audit`. It is nullable, never backfilled, and
   its foreign key has no cascade, because a cascade would have to edit rows the
   trigger protects.
+
+  `actor_in_organization` records whether the actor was a member of that
+  Organization when the event was written. It is set only on events with both
+  an actor and an Organization, and `nil` on rows recorded before the column
+  existed. `Kanban.AuditLog.OrganizationScope` redacts from it.
   """
   use Ecto.Schema
   import Ecto.Changeset
@@ -36,6 +41,7 @@ defmodule Kanban.AuditLog.AuditEvent do
     field :action, :string
     field :ip, :string
     field :metadata, :map, default: %{}
+    field :actor_in_organization, :boolean
 
     # Set only on events read for an Organization's audit log whose actor is
     # not a member of that Organization (see Kanban.AuditLog.OrganizationScope).
@@ -50,7 +56,14 @@ defmodule Kanban.AuditLog.AuditEvent do
   @doc false
   def insert_changeset(attrs) do
     %__MODULE__{}
-    |> cast(attrs, [:action, :actor_user_id, :organization_id, :ip, :metadata])
+    |> cast(attrs, [
+      :action,
+      :actor_user_id,
+      :organization_id,
+      :ip,
+      :metadata,
+      :actor_in_organization
+    ])
     |> validate_required([:action])
     |> validate_length(:action, max: 255, count: :codepoints)
     |> validate_length(:ip, max: 255, count: :codepoints)
