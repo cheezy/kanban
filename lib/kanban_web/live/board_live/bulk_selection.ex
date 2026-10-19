@@ -16,11 +16,15 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
 
   Every event is refused unless the viewer can modify the board, so a forged
   event from a read-only member changes nothing. While paid plans are
-  enforced, every event on a free board is then refused with a flash
+  enforced, every event on a free board is then refused
   (`Kanban.Plans.check_board/3`, surface `:live_view`), and
   `Kanban.Tasks.BulkActions` refuses the actions again in the context.
-  `assign_lock/2` sets `:bulk_locked?` once per board, so the page shows the
-  locked prompt instead of the Select toggle and the bar. Cards render inside the
+  `assign_lock/2` sets `:bulk_locked?` once per board. On a locked board the
+  Select toggle stays, but it opens and closes the locked prompt
+  (`:bulk_prompt_open?`) in place of the bar, without a flash and without
+  entering selection mode; every other event is refused with a flash and
+  opens the prompt. An event the plan check allows clears the lock, so a
+  board moved into an Organization unlocks on its next event. Cards render inside the
   `:columns` stream, so a selection change re-inserts the columns to
   re-render the checkboxes.
   """
@@ -38,12 +42,13 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
   alias KanbanWeb.BoardLive.Show
 
   @doc """
-  Assigns an empty selection with selection mode off, and bulk actions
-  unlocked until `assign_lock/2` has seen a board.
+  Assigns an empty selection with selection mode off and the locked prompt
+  closed, and bulk actions unlocked until `assign_lock/2` has seen a board.
   """
   def init(socket) do
     socket
     |> reset(false)
+    |> assign(:bulk_prompt_open?, false)
     |> assign(:bulk_locked?, false)
     |> assign(:bulk_lock_board_id, nil)
   end
@@ -126,33 +131,64 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
   def handle_bulk_event(event, params, socket) do
     with :ok <- check_modify(socket),
          :ok <- Plans.check_board(socket.assigns.board.id, :bulk_actions, surface: :live_view) do
-      dispatch(event, params, socket)
+      allowed(event, params, socket)
     else
       {:error, :unauthorized} -> {:noreply, put_flash(socket, :error, permission_denied())}
-      {:error, {:plan_required, :bulk_actions}} -> refuse_locked(socket)
+      {:error, {:plan_required, :bulk_actions}} -> refuse_locked(event, socket)
     end
   end
 
   defp check_modify(socket),
     do: if(socket.assigns[:can_modify] == true, do: :ok, else: {:error, :unauthorized})
 
-  # The board is free under enforcement. A page that loaded it while it was
-  # paid leaves selection mode and shows the locked prompt from now on.
-  defp refuse_locked(socket) do
+  # The board is free under enforcement. The Select toggle opens or closes
+  # the locked prompt; the prompt says why, so it needs no flash. Any other
+  # event is refused with a flash and opens the prompt. Either way a page
+  # that loaded the board while it was paid leaves selection mode.
+  defp refuse_locked("bulk_toggle_mode", socket),
+    do: lock(socket, not toggle_active?(socket))
+
+  defp refuse_locked(_event, socket) do
+    socket
+    |> put_flash(:error, bulk_locked_message())
+    |> lock(true)
+  end
+
+  defp lock(socket, prompt_open?) do
     socket
     |> reset(false)
     |> assign(:bulk_locked?, true)
-    |> put_flash(:error, bulk_locked_message())
+    |> assign(:bulk_prompt_open?, prompt_open?)
     |> restream()
   end
 
-  defp dispatch("bulk_toggle_mode", _params, socket) do
-    entering? = socket.assigns[:selection_mode] != true
+  # Whether the toggle shows as pressed: in selection mode, or with the
+  # locked prompt open.
+  defp toggle_active?(%{assigns: assigns}) do
+    assigns[:selection_mode] == true or
+      (assigns[:bulk_locked?] == true and assigns[:bulk_prompt_open?] == true)
+  end
+
+  # The plan check reads the board fresh, so a board moved into an
+  # Organization since this page loaded unlocks on its next event. The
+  # toggle acts on what it showed, so a click that closes an open prompt
+  # does not start selection mode.
+  defp allowed("bulk_toggle_mode", _params, socket) do
+    entering? = not toggle_active?(socket)
 
     socket
+    |> unlock()
     |> reset(entering?)
     |> maybe_load_options(entering?)
     |> restream()
+  end
+
+  defp allowed(event, params, socket), do: dispatch(event, params, unlock(socket))
+
+  defp unlock(socket) do
+    socket
+    |> assign(:bulk_locked?, false)
+    |> assign(:bulk_prompt_open?, false)
   end
 
   defp dispatch(event, params, %{assigns: %{selection_mode: true}} = socket),
@@ -279,7 +315,8 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
      |> push_event("wip_limit_violation", %{column_id: column_id})}
   end
 
-  defp handle_error(socket, {:plan_required, :bulk_actions}, _context), do: refuse_locked(socket)
+  defp handle_error(socket, {:plan_required, :bulk_actions}, _context),
+    do: refuse_locked(:action, socket)
 
   defp handle_error(socket, reason, _context),
     do: {:noreply, put_flash(socket, :error, error_message(reason))}

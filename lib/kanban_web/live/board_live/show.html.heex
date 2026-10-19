@@ -17,8 +17,8 @@
 
   <:actions>
     <KanbanWeb.BulkActionBar.selection_toggle
-      :if={@can_modify and not @bulk_locked?}
-      active={@selection_mode}
+      :if={@can_modify}
+      active={@selection_mode or (@bulk_locked? and @bulk_prompt_open?)}
     />
     <.link
       :if={@can_modify}
@@ -181,7 +181,7 @@
           drag_hint={@filters_active and @can_modify}
         />
         <KanbanWeb.BulkActionBar.bulk_action_bar
-          :if={@can_modify and (@selection_mode or @bulk_locked?)}
+          :if={@can_modify and (@selection_mode or (@bulk_locked? and @bulk_prompt_open?))}
           locked={@bulk_locked?}
           count={MapSet.size(@selected_ids)}
           columns={@board_columns}

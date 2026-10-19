@@ -486,8 +486,8 @@ Notifications means the in-app bell, notification emails and digests (W2405, W24
 | Entry point | Behaviour on a free board |
 |---|---|
 | `KanbanWeb.BoardLive.Show` | `BulkSelection.assign_lock/2` computes `bulk_locked?` with `Plans.board_unlocked?/1` the first time the socket loads the board (the board loads in `handle_params`, not `mount`), and keeps it on later patches and filter changes. It reads the plan by board id rather than from a preloaded workspace, so the value is fresh. With enforcement off it never queries. |
-| `KanbanWeb.BulkActionBar` (UI) | On a locked board, renders the lock component for `:bulk_actions` where the bar would be, for every viewer who can modify the board. The Select toggle is hidden, so selection mode cannot start. |
-| `KanbanWeb.BoardLive.BulkSelection.handle_bulk_event/3` (LiveView events) | Refuses every `bulk_` event with a translated flash; `surface: :live_view`. |
+| `KanbanWeb.BulkActionBar` (UI) | On a locked board the Select toggle stays for every viewer who can modify the board. Clicking it opens the lock component for `:bulk_actions` where the bar would be, and clicking it again closes it; there is no flash and selection mode never starts. Nothing is shown until the toggle is used. |
+| `KanbanWeb.BoardLive.BulkSelection.handle_bulk_event/3` (LiveView events) | Refuses every `bulk_` event; `surface: :live_view`. `bulk_toggle_mode` opens or closes the lock component; every other event gets a translated flash and opens it. An event the plan check allows clears the lock, so a board moved into an Organization unlocks on its next event without a reload. |
 | `Kanban.Tasks.BulkActions` (`move`, `assign`, `add_label`, `remove_label`, `archive`) | Returns `{:error, {:plan_required, :bulk_actions}}`; `surface: :context`. Checked once per call, not per task. |
 
 Single-task moves, edits and archiving stay free.

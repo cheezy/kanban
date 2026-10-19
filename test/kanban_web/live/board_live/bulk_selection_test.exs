@@ -54,10 +54,20 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
     set_workspace(board, workspace.id)
   end
 
+  # The locked prompt is open: it stands where the bar would be, the toggle
+  # shows as pressed, and selection mode never started.
   defp assert_locked(view) do
     assert has_element?(view, "#bulk-action-bar-locked [data-locked-feature=bulk_actions]")
     assert has_element?(view, "#bulk-action-bar-locked a[data-locked-feature-prompt]")
-    refute has_element?(view, "#bulk-select-toggle")
+    assert has_element?(view, "#bulk-select-toggle[aria-pressed=true]")
+    refute has_element?(view, ".bulk-select")
+    refute has_element?(view, "#bulk-action-bar")
+  end
+
+  # Nothing bulk is open: just the Select toggle, as on any board.
+  defp assert_closed(view) do
+    assert has_element?(view, "#bulk-select-toggle[aria-pressed=false]")
+    refute has_element?(view, "#bulk-action-bar-locked")
     refute has_element?(view, ".bulk-select")
     refute has_element?(view, "#bulk-action-bar")
   end
@@ -393,15 +403,35 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
   end
 
   describe "paid plans" do
-    test "a free board under enforcement shows the locked prompt instead of the toggle and bar",
+    test "a free board under enforcement keeps the toggle and shows no prompt until it is used",
          %{conn: conn, board: board, todo: todo} do
       task_fixture(todo)
       enforce_plans()
       {:ok, view, html} = live(conn, ~p"/boards/#{board}")
 
+      assert_closed(view)
+      refute html =~ "Available to organizations"
+    end
+
+    test "the toggle on a free board opens and closes the locked prompt without a flash",
+         %{conn: conn, board: board, todo: todo} do
+      task_fixture(todo)
+      enforce_plans()
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      attach_telemetry(@refused)
+
+      html = enter_selection(view)
+
       assert_locked(view)
       assert html =~ "Bulk actions"
       assert html =~ "Available to organizations"
+      refute html =~ @locked_flash
+
+      assert_received {:telemetry_event, @refused, %{count: 1},
+                       %{feature: :bulk_actions, surface: :live_view}}
+
+      refute enter_selection(view) =~ @locked_flash
+      assert_closed(view)
     end
 
     test "every bulk event on a free board is refused with a flash and changes nothing", %{
@@ -417,7 +447,6 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
       attach_telemetry(@refused)
 
       for {event, params} <- [
-            {"bulk_toggle_mode", %{}},
             {"bulk_toggle", %{"id" => to_string(task.id)}},
             {"bulk_select_column", %{"id" => to_string(todo.id)}},
             {"bulk_clear", %{}},
@@ -522,23 +551,25 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
       refute reload(archived).archived_at == nil
     end
 
-    test "the lock is computed once: a later patch keeps it, a remount re-reads it", %{
+    test "a board moved into an Organization unlocks on the next click, with no reload", %{
       conn: conn,
       board: board,
       todo: todo
     } do
-      task_fixture(todo)
+      task = task_fixture(todo)
       enforce_plans()
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      enter_selection(view)
       assert_locked(view)
 
       make_paid(board)
-      render_patch(view, ~p"/boards/#{board}")
-      assert_locked(view)
+      enter_selection(view)
+      assert_closed(view)
 
-      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+      enter_selection(view)
       refute has_element?(view, "#bulk-action-bar-locked")
-      assert has_element?(view, "#bulk-select-toggle")
+      assert has_element?(view, "#bulk-action-bar")
+      assert has_element?(view, "#bulk-select-#{task.id}")
     end
 
     test "a board that turns free while selecting leaves selection mode on its next event", %{
@@ -559,6 +590,9 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
       assert render_hook(view, "bulk_archive", %{}) =~ @locked_flash
       assert reload(task).archived_at == nil
       assert_locked(view)
+
+      enter_selection(view)
+      assert_closed(view)
     end
   end
 

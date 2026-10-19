@@ -11,7 +11,7 @@ defmodule KanbanWeb.BulkActionBar do
   the server refuses the events from anyone else regardless. On a board whose
   bulk actions are locked (a free board while paid plans are enforced) the
   bar renders the `KanbanWeb.LockedFeature` prompt for `:bulk_actions`
-  instead, and the board hides the toggle.
+  instead, and the toggle opens and closes that prompt.
 
   Styled with theme tokens only, matching the compact controls of
   `KanbanWeb.BoardFilterBar`.
