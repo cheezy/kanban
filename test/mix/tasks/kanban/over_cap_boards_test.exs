@@ -64,6 +64,21 @@ defmodule Mix.Tasks.Kanban.OverCapBoardsTest do
     assert snapshot() == before
   end
 
+  test "refuses any argument without reporting" do
+    personal_board_with_members(4)
+
+    for args <- [["--help"], ["--format", "json"], ["board", "20"]] do
+      output =
+        capture_io(fn ->
+          assert_raise Mix.Error, ~r/takes no arguments.*mix help kanban.over_cap_boards/, fn ->
+            OverCapBoards.run(args)
+          end
+        end)
+
+      assert output == ""
+    end
+  end
+
   test "prints none for a board with no owner row" do
     %{board: board} = personal_board_with_members(4)
 

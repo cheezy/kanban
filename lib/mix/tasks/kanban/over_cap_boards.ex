@@ -15,7 +15,9 @@ defmodule Mix.Tasks.Kanban.OverCapBoards do
 
       mix kanban.over_cap_boards
 
-  Reads the database, so the app is started first. Read-only — it never
+  It takes no arguments and refuses any it is given. It starts only the
+  database connection (`Ecto.Migrator.with_repo/2`), not the application, so
+  Oban and the other workers never run while it reports. Read-only: it never
   changes a board or a membership. In a production release, where Mix is not
   available, run `Kanban.Release.report_over_cap_boards/0` with
   `bin/kanban eval` instead.
@@ -24,13 +26,20 @@ defmodule Mix.Tasks.Kanban.OverCapBoards do
 
   alias Kanban.Boards
   alias Kanban.Plans
+  alias Kanban.Repo
 
   @impl Mix.Task
-  def run(_args) do
-    Mix.Task.run("app.start")
+  def run([]) do
+    Mix.Task.run("app.config")
+    {:ok, boards, _apps} = Ecto.Migrator.with_repo(Repo, fn _repo -> Boards.over_cap_boards() end)
+    report(boards)
+  end
 
-    Boards.over_cap_boards()
-    |> report()
+  def run(args) do
+    Mix.raise(
+      "mix kanban.over_cap_boards takes no arguments, got: #{Enum.join(args, " ")}. " <>
+        "See mix help kanban.over_cap_boards."
+    )
   end
 
   defp report([]) do
