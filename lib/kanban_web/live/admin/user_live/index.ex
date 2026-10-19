@@ -29,6 +29,7 @@ defmodule KanbanWeb.Admin.UserLive.Index do
     with_user(socket, id, fn user, actor ->
       user
       |> Accounts.disable_user(actor)
+      |> disconnect_disabled_user()
       |> respond(socket, gettext("Account disabled."))
     end)
   end
@@ -95,6 +96,15 @@ defmodule KanbanWeb.Admin.UserLive.Index do
     end
   end
 
+  # A disabled user's session tokens stop working at once, but pages they
+  # already have open keep their socket until it reconnects, so close them now.
+  defp disconnect_disabled_user({:ok, %User{} = user} = result) do
+    user |> Accounts.list_session_tokens() |> KanbanWeb.UserAuth.disconnect_live_sessions()
+    result
+  end
+
+  defp disconnect_disabled_user(result), do: result
+
   defp respond({:ok, _result}, socket, message) do
     {:noreply,
      socket
@@ -130,6 +140,12 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   defp error_message(:cannot_disable_self), do: gettext("You cannot disable your own account.")
   defp error_message(:cannot_delete_self), do: gettext("You cannot delete your own account.")
   defp error_message(:last_admin), do: gettext("You cannot remove the last admin.")
+
+  defp error_message(:last_org_admin),
+    do:
+      gettext(
+        "This user is the only enabled org-admin of an Organization that still has members. Appoint another org-admin first."
+      )
 
   defp error_message(:user_has_boards),
     do: gettext("This user still belongs to a board and cannot be deleted.")

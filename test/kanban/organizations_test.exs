@@ -695,6 +695,13 @@ defmodule Kanban.OrganizationsTest do
       refute Organizations.org_admin?(user_fixture(), ctx.first)
     end
 
+    test "org_admin?/2 is false for a disabled org-admin, while member?/2 stays true", ctx do
+      ctx.org_admin |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+
+      refute Organizations.org_admin?(ctx.org_admin, ctx.first)
+      assert Organizations.member?(ctx.org_admin, ctx.first)
+    end
+
     test "member?/2 is true for either role in that Organization only", ctx do
       assert Organizations.member?(ctx.org_admin, ctx.first)
       assert Organizations.member?(ctx.member, ctx.first.id)
@@ -947,6 +954,37 @@ defmodule Kanban.OrganizationsTest do
                Organizations.appoint_org_admin(admin_fixture(), organization_fixture(), user)
 
       assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+  end
+
+  describe "appoint_org_admin/3 and disabled accounts" do
+    test "refuses a disabled user, read from the database, and writes nothing" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      user = user_fixture()
+      user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+      attach_telemetry(@member_added)
+
+      # `user` is the struct loaded before the disable, so only a database read catches it.
+      assert {:error, :user_disabled} = Organizations.appoint_org_admin(admin, organization, user)
+
+      assert role_of(user) == nil
+      refute_received {:telemetry_event, @member_added, _, _}
+      assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+
+    test "refuses to promote a disabled member of the same Organization" do
+      admin = admin_fixture()
+      organization = organization_fixture()
+      user = user_fixture()
+      organization_member_fixture(organization, user)
+
+      disabled = user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert {:error, :user_disabled} =
+               Organizations.appoint_org_admin(admin, organization, disabled)
+
+      assert role_of(user) == {organization.id, :member}
     end
   end
 
@@ -1368,6 +1406,21 @@ defmodule Kanban.OrganizationsTest do
       assert AuditLog.list_events(action: :org_admin_removed) == []
     end
 
+    test "a disabled second org-admin does not count as remaining", ctx do
+      second = user_fixture()
+      organization_member_fixture(ctx.organization, second, :org_admin)
+      organization_member_fixture(ctx.organization, user_fixture())
+      second |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert {:error, :last_org_admin} =
+               Organizations.remove_org_admin(ctx.admin, ctx.organization, ctx.org_admin)
+
+      assert role_of(ctx.org_admin) == {ctx.organization.id, :org_admin}
+
+      assert {:ok, _membership} =
+               Organizations.remove_org_admin(ctx.admin, ctx.organization, second)
+    end
+
     test "removes the only org-admin of an Organization with no other members", ctx do
       attach_telemetry(@member_removed)
 
@@ -1483,6 +1536,89 @@ defmodule Kanban.OrganizationsTest do
 
   defp organization_lock?({"organizations", query}), do: query =~ "FOR UPDATE"
   defp organization_lock?(_query), do: false
+
+  describe "ensure_not_last_working_org_admin/1" do
+    setup do
+      organization = organization_fixture()
+      org_admin = user_fixture()
+      organization_member_fixture(organization, org_admin, :org_admin)
+      %{organization: organization, org_admin: org_admin}
+    end
+
+    test "refuses the only enabled org-admin of an Organization with other members", ctx do
+      organization_member_fixture(ctx.organization, user_fixture())
+
+      assert Organizations.ensure_not_last_working_org_admin(ctx.org_admin) ==
+               {:error, :last_org_admin}
+    end
+
+    test "passes the only member of an Organization", ctx do
+      assert Organizations.ensure_not_last_working_org_admin(ctx.org_admin) == :ok
+    end
+
+    test "passes when another enabled org-admin remains", ctx do
+      organization_member_fixture(ctx.organization, user_fixture())
+      organization_member_fixture(ctx.organization, user_fixture(), :org_admin)
+
+      assert Organizations.ensure_not_last_working_org_admin(ctx.org_admin) == :ok
+    end
+
+    test "passes a disabled sole org-admin, since the working count does not change" do
+      organization = organization_fixture()
+      disabled = user_fixture()
+      organization_member_fixture(organization, disabled, :org_admin)
+      organization_member_fixture(organization, user_fixture())
+      disabled |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert Organizations.ensure_not_last_working_org_admin(disabled) == :ok
+    end
+
+    test "passes a user who is already disabled, a plain member, or in no Organization", ctx do
+      member = user_fixture()
+      organization_member_fixture(ctx.organization, member)
+      disabled = user_fixture()
+      organization_member_fixture(ctx.organization, disabled, :org_admin)
+      disabled |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert Organizations.ensure_not_last_working_org_admin(disabled) == :ok
+      assert Organizations.ensure_not_last_working_org_admin(member) == :ok
+      assert Organizations.ensure_not_last_working_org_admin(user_fixture()) == :ok
+    end
+
+    test "locks the Organization row before it counts", ctx do
+      organization_member_fixture(ctx.organization, user_fixture())
+      test_pid = self()
+      handler_id = "last-working-org-admin-#{System.unique_integer([:positive])}"
+
+      :telemetry.attach(
+        handler_id,
+        [:kanban, :repo, :query],
+        fn _event, _measurements, metadata, _config ->
+          if self() == test_pid, do: send(test_pid, {:query, metadata.source, metadata.query})
+        end,
+        nil
+      )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
+      Organizations.ensure_not_last_working_org_admin(ctx.org_admin)
+
+      queries = collect_queries([])
+      lock_index = Enum.find_index(queries, &organization_lock?/1)
+
+      # The first members query only finds the user's Organization; the count of
+      # its other org-admins is the last one, and must run under the lock.
+      count_index =
+        queries
+        |> Enum.with_index()
+        |> Enum.filter(&match?({{"organization_members", _}, _}, &1))
+        |> List.last()
+        |> elem(1)
+
+      assert lock_index, "expected a FOR UPDATE query on organizations"
+      assert lock_index < count_index
+    end
+  end
 
   describe "the context's public functions" do
     test "include no delete or downgrade function" do

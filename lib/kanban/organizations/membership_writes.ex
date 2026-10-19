@@ -12,6 +12,11 @@ defmodule Kanban.Organizations.MembershipWrites do
   keeps the last-org-admin check in `remove_org_admin/3` true when two
   removals race.
 
+  The check counts only **enabled** org-admins: a disabled account cannot sign
+  in, so it cannot run the Organization. `ensure_not_last_working_org_admin/1`
+  applies the same check, under the same lock, when a site admin disables or
+  deletes a user.
+
   Telemetry and audit events go through
   `Kanban.Organizations.OrganizationTelemetry` only once the transaction has
   returned `{:ok, _}`. A refusal, an unchanged membership or a rolled-back
@@ -60,7 +65,9 @@ defmodule Kanban.Organizations.MembershipWrites do
   Makes `user` an org-admin of the Organization with `organization_id`:
   creates the membership, promotes a member of that Organization, or leaves an
   existing org-admin unchanged. A user in another Organization is refused with
-  `:already_in_another_organization`. `actor` has already been checked.
+  `:already_in_another_organization`, and a disabled account with
+  `:user_disabled`, read from the database under the lock. `actor` has already
+  been checked.
 
   ## Options
 
@@ -70,12 +77,14 @@ defmodule Kanban.Organizations.MembershipWrites do
   """
   @spec appoint_org_admin(User.t(), integer(), User.t(), [{:account_created, boolean()}]) ::
           {:ok, OrganizationMember.t()}
-          | {:error, :already_in_another_organization | :not_found | Ecto.Changeset.t()}
+          | {:error,
+             :already_in_another_organization | :user_disabled | :not_found | Ecto.Changeset.t()}
   def appoint_org_admin(%User{} = actor, organization_id, %User{} = user, opts \\ []) do
     account_created = Keyword.get(opts, :account_created, false)
 
     Repo.transact(fn ->
-      with :ok <- lock_organization(organization_id) do
+      with :ok <- lock_organization(organization_id),
+           :ok <- ensure_enabled(user) do
         appoint_in_locked_organization(organization_id, user)
       end
     end)
@@ -104,6 +113,58 @@ defmodule Kanban.Organizations.MembershipWrites do
       OrganizationTelemetry.org_admin_removed(membership, actor)
     end)
   end
+
+  @doc """
+  Returns `{:error, :last_org_admin}` when `user` is an enabled org-admin whose
+  Organization has other members and no other enabled org-admin, else `:ok`.
+
+  Call it inside the transaction that disables or deletes `user`. It locks the
+  Organization row, as every membership write does, and the lock is held until
+  that transaction ends, so a concurrent removal, disable or delete of the
+  Organization's other org-admin waits and then sees this one's result. A user
+  who is already disabled, or no org-admin, passes: disabling or deleting them
+  leaves the number of working org-admins as it was.
+  """
+  @spec ensure_not_last_working_org_admin(User.t()) :: :ok | {:error, :last_org_admin}
+  def ensure_not_last_working_org_admin(%User{} = user) do
+    case enabled_org_admin_organization_id(user) do
+      nil -> :ok
+      organization_id -> check_locked_organization(organization_id, user)
+    end
+  end
+
+  defp enabled_org_admin_organization_id(%User{id: user_id}) do
+    from(m in OrganizationMember,
+      where:
+        m.user_id == ^user_id and m.role == ^:org_admin and
+          m.user_id in subquery(enabled_user_ids()),
+      select: m.organization_id
+    )
+    |> Repo.one()
+  end
+
+  # The membership is read again under the lock, since it may have been
+  # removed while this transaction waited for it.
+  defp check_locked_organization(organization_id, user) do
+    with :ok <- lock_organization(organization_id),
+         {:ok, membership} <- fetch_org_admin_membership(organization_id, user) do
+      ensure_not_last_org_admin(membership)
+    else
+      {:error, :not_found} -> :ok
+    end
+  end
+
+  # A user whose row is gone passes here; the insert's foreign key refuses it.
+  defp ensure_enabled(%User{id: user_id}) do
+    disabled_query = from(u in User, where: u.id == ^user_id, select: not is_nil(u.disabled_at))
+
+    case Repo.one(disabled_query) do
+      true -> {:error, :user_disabled}
+      _enabled_or_gone -> :ok
+    end
+  end
+
+  defp enabled_user_ids, do: from(u in User, where: is_nil(u.disabled_at), select: u.id)
 
   defp appoint_in_locked_organization(organization_id, user) do
     case user_membership(user) do
@@ -184,9 +245,9 @@ defmodule Kanban.Organizations.MembershipWrites do
   # Runs while the organization row is locked, so no other membership write can
   # change the answer before the delete. The other org-admins' rows are locked
   # too, rather than counted: deleting a user removes their membership through
-  # the database cascade without taking the organization lock, and a locking
-  # read waits for that delete and then skips the row, where a count would
-  # still see it.
+  # the database cascade, and a locking read waits for that delete and then
+  # skips the row, where a count would still see it. Only enabled org-admins
+  # count as remaining; disabled members still count as members left behind.
   defp ensure_not_last_org_admin(%OrganizationMember{} = membership) do
     others =
       from(m in OrganizationMember,
@@ -195,7 +256,7 @@ defmodule Kanban.Organizations.MembershipWrites do
 
     other_org_admins =
       others
-      |> where([m], m.role == ^:org_admin)
+      |> where([m], m.role == ^:org_admin and m.user_id in subquery(enabled_user_ids()))
       |> select([m], m.id)
       |> lock("FOR UPDATE")
       |> Repo.all()

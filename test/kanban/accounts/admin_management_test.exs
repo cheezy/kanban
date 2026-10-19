@@ -421,6 +421,84 @@ defmodule Kanban.Accounts.AdminManagementTest do
     end
   end
 
+  describe "the last enabled org-admin of an Organization" do
+    setup do
+      organization = organization_fixture()
+      org_admin = user_fixture()
+      organization_member_fixture(organization, org_admin, :org_admin)
+      organization_member_fixture(organization, user_fixture(), :member)
+
+      %{organization: organization, org_admin: org_admin, admin: admin_fixture()}
+    end
+
+    test "can be neither disabled nor deleted while the Organization has members", %{
+      org_admin: org_admin,
+      admin: admin
+    } do
+      assert {:error, :last_org_admin} = Accounts.disable_user(org_admin, admin)
+      assert Repo.get!(User, org_admin.id).disabled_at == nil
+
+      assert {:error, :last_org_admin} = Accounts.delete_user(org_admin, admin)
+      assert Repo.get(User, org_admin.id)
+    end
+
+    test "a disabled second org-admin does not count", %{
+      organization: organization,
+      org_admin: org_admin,
+      admin: admin
+    } do
+      second = user_fixture()
+      organization_member_fixture(organization, second, :org_admin)
+      assert {:ok, _} = Accounts.disable_user(second, admin)
+
+      assert {:error, :last_org_admin} = Accounts.disable_user(org_admin, admin)
+      assert {:error, :last_org_admin} = Accounts.delete_user(org_admin, admin)
+    end
+
+    test "can go once another enabled org-admin remains", %{
+      organization: organization,
+      org_admin: org_admin,
+      admin: admin
+    } do
+      organization_member_fixture(organization, user_fixture(), :org_admin)
+
+      assert {:ok, %User{disabled_at: %DateTime{}}} = Accounts.disable_user(org_admin, admin)
+      assert {:ok, _deleted} = Accounts.delete_user(org_admin, admin)
+    end
+
+    test "can go when they are the Organization's only member" do
+      organization = organization_fixture()
+      lone = user_fixture()
+      organization_member_fixture(organization, lone, :org_admin)
+
+      assert {:ok, _} = Accounts.disable_user(lone, admin_fixture())
+    end
+
+    test "an already-disabled org-admin can still be deleted", %{
+      organization: organization,
+      org_admin: org_admin,
+      admin: admin
+    } do
+      disabled = user_fixture()
+      organization_member_fixture(organization, disabled, :org_admin)
+      disable_directly(disabled)
+
+      assert {:ok, _deleted} = Accounts.delete_user(disabled, admin)
+      assert Repo.get(User, org_admin.id)
+    end
+
+    test "a refused delete records user_delete_refused with last_org_admin", %{
+      org_admin: org_admin,
+      admin: admin
+    } do
+      assert {:error, :last_org_admin} = Accounts.delete_user(org_admin, admin)
+
+      assert [event] = AuditLog.list_events(action: :user_delete_refused)
+      assert event.metadata["reason"] == "last_org_admin"
+      assert event.metadata["member_user_id"] == org_admin.id
+    end
+  end
+
   describe "disabled_at is not settable through user-facing changesets" do
     test "registration_changeset ignores disabled_at" do
       attrs = valid_user_attributes(%{disabled_at: DateTime.utc_now(:second)})

@@ -647,6 +647,27 @@ defmodule KanbanWeb.UserAuthTest do
     end
   end
 
+  describe "disconnect_live_sessions/1" do
+    test "broadcasts a disconnect per token without revoking them or emitting telemetry", %{
+      user: user
+    } do
+      token = Accounts.generate_user_session_token(user)
+      KanbanWeb.Endpoint.subscribe("users_sessions:#{Base.url_encode64(token)}")
+      attach_telemetry([:kanban, :user, :sessions_revoked])
+
+      assert :ok = user |> Accounts.list_session_tokens() |> UserAuth.disconnect_live_sessions()
+
+      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}
+      refute_received {:telemetry_event, [:kanban, :user, :sessions_revoked], _, _}
+      assert {%{id: id}, _} = Accounts.get_user_by_session_token(token)
+      assert id == user.id
+    end
+
+    test "does nothing for no tokens" do
+      assert :ok = UserAuth.disconnect_live_sessions([])
+    end
+  end
+
   describe "organization membership in current_scope" do
     test "fetch_current_scope_for_user/2 loads the membership with its Organization", %{
       conn: conn,

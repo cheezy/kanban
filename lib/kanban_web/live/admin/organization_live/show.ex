@@ -14,6 +14,8 @@ defmodule KanbanWeb.Admin.OrganizationLive.Show do
   """
   use KanbanWeb, :live_view
 
+  import KanbanWeb.Components.AccountStatus
+
   # Defense-in-depth: the router's `live_session :admin` already declares this
   # hook, but re-declaring it here keeps the LiveView admin-only even if the
   # route is ever moved out of that live_session.

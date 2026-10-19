@@ -23,10 +23,14 @@ defmodule Kanban.Organizations do
       `{:error, :already_in_another_organization}`. The unique index on
       `organization_members.user_id` backs this, so a concurrent write that
       wins the race produces the same error.
-    * An Organization keeps an org-admin while it has other members:
-      `remove_org_admin/3` refuses with `{:error, :last_org_admin}`. Every
-      membership write first takes a row lock on the organization, so two
-      concurrent removals cannot both pass that check.
+    * An Organization keeps an enabled org-admin while it has other members:
+      `remove_org_admin/3` refuses with `{:error, :last_org_admin}`, and so do
+      disabling and deleting that user from `/admin/users`, through
+      `ensure_not_last_working_org_admin/1`. A disabled org-admin does not
+      count. Every membership write first takes a row lock on the
+      organization, so two concurrent changes cannot both pass that check.
+    * A disabled account is never appointed: `appoint_org_admin/3` refuses it
+      with `{:error, :user_disabled}`, and `org_admin?/2` is false for it.
     * Removing an org-admin deletes the membership; it never demotes.
     * `appoint_org_admin_by_email/4` appoints by email. An unknown email gets
       a new account in the same transaction as the membership, and the
@@ -225,7 +229,8 @@ defmodule Kanban.Organizations do
     do: %{membership | organization: organization}
 
   @doc """
-  Returns true when `user` is an org-admin of `organization`.
+  Returns true when `user` is an org-admin of `organization` and their
+  account is enabled, both read from the database.
 
   `organization` is an `%Organization{}` or its id.
   """
@@ -233,9 +238,19 @@ defmodule Kanban.Organizations do
   def org_admin?(%User{} = user, organization) do
     user
     |> membership_query(organization)
+    |> join(:inner, [m], u in assoc(m, :user), on: is_nil(u.disabled_at))
     |> where([m], m.role == ^:org_admin)
     |> Repo.exists?()
   end
+
+  @doc """
+  Returns `{:error, :last_org_admin}` when `user` is the last enabled org-admin
+  of an Organization that has other members, else `:ok`. Call it inside the
+  transaction that disables or deletes `user`; see
+  `Kanban.Organizations.MembershipWrites.ensure_not_last_working_org_admin/1`.
+  """
+  @spec ensure_not_last_working_org_admin(User.t()) :: :ok | {:error, :last_org_admin}
+  defdelegate ensure_not_last_working_org_admin(user), to: MembershipWrites
 
   @doc """
   Returns true when `user` belongs to `organization` in either role.
@@ -311,7 +326,8 @@ defmodule Kanban.Organizations do
   this Organization, gets `{:error, :unauthorized}` and nothing is written. A
   user with no Organization gets a new `:org_admin` membership, a member of
   this Organization is promoted, and an existing org-admin of it is left as
-  they are. A user in another Organization is refused.
+  they are. A user in another Organization is refused, and so is a disabled
+  account, with `{:error, :user_disabled}`.
 
   Records the `:org_admin_appointed` audit event for a new or promoted
   org-admin, and emits `[:kanban, :organization, :member_added]` when the
@@ -329,7 +345,11 @@ defmodule Kanban.Organizations do
   @spec appoint_org_admin(User.t(), Organization.t() | integer(), User.t()) ::
           {:ok, OrganizationMember.t()}
           | {:error,
-             :unauthorized | :already_in_another_organization | :not_found | Ecto.Changeset.t()}
+             :unauthorized
+             | :already_in_another_organization
+             | :user_disabled
+             | :not_found
+             | Ecto.Changeset.t()}
   def appoint_org_admin(%User{} = actor, organization, %User{} = user) do
     if site_admin?(actor) do
       MembershipWrites.appoint_org_admin(actor, organization_id(organization), user)

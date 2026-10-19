@@ -11,6 +11,16 @@ defmodule Kanban.Accounts.AdminManagement do
   `Kanban.Accounts.UserTelemetry`, with the administrator as `actor_user_id`.
   Every deletion attempt, successful or refused, is also recorded in
   `Kanban.AuditLog` as `:user_deleted` or `:user_delete_refused`.
+
+  Disabling or deleting the last enabled org-admin of an Organization that has
+  other members is refused with `:last_org_admin`, so no Organization is left
+  without someone who can run it. The check
+  (`Kanban.Organizations.ensure_not_last_working_org_admin/1`) runs in the
+  same transaction as the write, under the Organization's row lock.
+
+  Disabling a user does not close their open pages by itself: the caller
+  disconnects them with `KanbanWeb.UserAuth.disconnect_live_sessions/1` and
+  `Kanban.Accounts.list_session_tokens/1`.
   """
 
   import Ecto.Query, warn: false
@@ -20,6 +30,7 @@ defmodule Kanban.Accounts.AdminManagement do
   alias Kanban.Accounts.UserTelemetry
   alias Kanban.Accounts.UserToken
   alias Kanban.Boards
+  alias Kanban.Organizations
   alias Kanban.Repo
   alias Kanban.Workspaces
 
@@ -55,6 +66,8 @@ defmodule Kanban.Accounts.AdminManagement do
     * `:cannot_disable_self` - the target is the acting user, which is the way
       a lone admin would lock everyone out
     * `:last_admin` - the target is the last admin
+    * `:last_org_admin` - the target is the last enabled org-admin of an
+      Organization that has other members
 
   ## Examples
 
@@ -75,9 +88,13 @@ defmodule Kanban.Accounts.AdminManagement do
   end
 
   defp do_disable(user) do
-    user
-    |> User.disabled_changeset(DateTime.utc_now(:second))
-    |> Repo.update()
+    Repo.transact(fn ->
+      with :ok <- Organizations.ensure_not_last_working_org_admin(user) do
+        user
+        |> User.disabled_changeset(DateTime.utc_now(:second))
+        |> Repo.update()
+      end
+    end)
   end
 
   @doc """
@@ -127,6 +144,8 @@ defmodule Kanban.Accounts.AdminManagement do
     * `:cannot_delete_self` - the target is the acting user
     * `:user_has_boards` - the target belongs to at least one board
     * `:last_admin` - the target is the last admin
+    * `:last_org_admin` - the target is the last enabled org-admin of an
+      Organization that has other members
     * `:personal_workspace_has_boards` - a board still sits in the target's
       personal workspace, even one they are not a member of. The foreign key
       refuses it inside the transaction, so a board placed there at the same
@@ -175,9 +194,9 @@ defmodule Kanban.Accounts.AdminManagement do
   # with the user, after which the workspace could no longer be found.
   defp delete_user_and_tokens(user) do
     Repo.transact(fn ->
-      Repo.delete_all(UserToken.by_user_and_contexts_query(user, :all))
-
-      with {:ok, _workspace} <- Workspaces.delete_personal_workspace(user) do
+      with :ok <- Organizations.ensure_not_last_working_org_admin(user),
+           {_count, _} <- Repo.delete_all(UserToken.by_user_and_contexts_query(user, :all)),
+           {:ok, _workspace} <- Workspaces.delete_personal_workspace(user) do
         Repo.delete(user)
       end
     end)

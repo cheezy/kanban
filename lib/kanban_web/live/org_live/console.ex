@@ -22,6 +22,8 @@ defmodule KanbanWeb.OrgLive.Console do
   """
   use KanbanWeb, :live_view
 
+  import KanbanWeb.Components.AccountStatus
+
   import KanbanWeb.UserLive.SettingsComponents, only: [section_tab: 1, settings_card: 1]
 
   alias Ecto.Changeset

@@ -105,6 +105,21 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
     end
   end
 
+  describe "an org-admin disabled while the console is open" do
+    test "is refused on the next tab change", %{conn: conn} do
+      %{conn: conn, org_admin: org_admin} = org_admin_setup(%{conn: conn})
+      {:ok, view, _html} = live(conn, ~p"/org")
+
+      org_admin
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Repo.update!()
+
+      view |> element("#settings-tab-members") |> render_click()
+
+      assert_redirect(view, ~p"/boards")
+    end
+  end
+
   describe "details" do
     setup :org_admin_setup
 
@@ -173,6 +188,42 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
 
       [first_admin, _member] = Regex.scan(~r/id="member-(\d+)"/, html, capture: :all_but_first)
       assert first_admin == [Integer.to_string(org_admin.id)]
+    end
+
+    test "labels disabled and unconfirmed accounts, and nothing else", %{
+      conn: conn,
+      organization: organization,
+      org_admin: org_admin
+    } do
+      disabled = user_fixture()
+      organization_member_fixture(organization, disabled, :member)
+
+      disabled
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Repo.update!()
+
+      unconfirmed = unconfirmed_user_fixture()
+      organization_member_fixture(organization, unconfirmed, :member)
+
+      {:ok, view, _html} = live(conn, ~p"/org")
+      view |> element("#settings-tab-members") |> render_click()
+
+      assert has_element?(
+               view,
+               "#member-disabled-#{disabled.id}[data-account-disabled]",
+               "Disabled"
+             )
+
+      refute has_element?(view, "#member-unconfirmed-#{disabled.id}")
+
+      assert has_element?(
+               view,
+               "#member-unconfirmed-#{unconfirmed.id}[data-account-unconfirmed]",
+               "Unconfirmed"
+             )
+
+      refute has_element?(view, "#member-disabled-#{org_admin.id}")
+      refute has_element?(view, "#member-unconfirmed-#{org_admin.id}")
     end
 
     test "an Organization whose only member is the org-admin lists just them", %{

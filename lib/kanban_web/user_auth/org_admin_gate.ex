@@ -19,8 +19,8 @@ defmodule KanbanWeb.UserAuth.OrgAdminGate do
   on_mount runs once per mount, but paging, filtering and changing tabs patch
   the same LiveView without mounting it again. `authorize_mount/1` therefore
   attaches a `handle_params` hook that re-reads the role from the database on
-  every patch, so an org-admin removed while a page is open is refused on
-  their next click instead of only on their next reload.
+  every patch, so an org-admin removed or disabled while a page is open is
+  refused on their next click instead of only on their next reload.
   """
   use KanbanWeb, :verified_routes
   use Gettext, backend: KanbanWeb.Gettext
@@ -80,8 +80,8 @@ defmodule KanbanWeb.UserAuth.OrgAdminGate do
 
   @doc """
   The `handle_params` hook `authorize_mount/1` attaches: continues while the
-  signed-in user is still an org-admin of `current_organization`, read from the
-  database rather than the scope loaded at mount; otherwise records the
+  signed-in user is still an enabled org-admin of `current_organization`, read
+  from the database rather than the scope loaded at mount; otherwise records the
   refusal and halts with a redirect to `/boards`.
   """
   @spec recheck_params(map(), String.t(), Phoenix.LiveView.Socket.t()) ::

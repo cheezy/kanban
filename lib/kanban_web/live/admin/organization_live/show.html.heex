@@ -111,9 +111,12 @@
                 <span class="text-base-content [overflow-wrap:anywhere]">{member.user.email}</span>
               </td>
               <td>
-                <span id={"member-role-#{member.user.id}"} class="text-base-content">
-                  {role_label(member.role)}
-                </span>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span id={"member-role-#{member.user.id}"} class="text-base-content">
+                    {role_label(member.role)}
+                  </span>
+                  <.account_status user={member.user} />
+                </div>
               </td>
               <td class="w-0">
                 <div class="flex gap-2 whitespace-nowrap">

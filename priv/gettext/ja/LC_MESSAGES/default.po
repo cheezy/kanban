@@ -117,7 +117,7 @@ msgid "Creating account..."
 msgstr "アカウントを作成中..."
 
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:91
-#: lib/kanban_web/live/admin/organization_live/show.html.heex:155
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:158
 #: lib/kanban_web/live/admin/user_live/index.html.heex:94
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:88
 #: lib/kanban_web/live/user_live/forgot_password.ex:40
@@ -161,7 +161,7 @@ msgstr "パスワード"
 #: lib/kanban_web/live/board_live/webhook_form.ex:78
 #: lib/kanban_web/live/board_live/webhook_form.ex:182
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
-#: lib/kanban_web/live/org_live/console.html.heex:232
+#: lib/kanban_web/live/org_live/console.html.heex:235
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/components/comment_row.ex:139
 #: lib/kanban_web/live/task_live/form_component.html.heex:421
@@ -207,7 +207,7 @@ msgstr "ボードが正常に更新されました"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:254
 #: lib/kanban_web/live/board_live/settings_form_component.ex:172
 #: lib/kanban_web/live/board_live/webhook_form.ex:178
-#: lib/kanban_web/live/org_live/console.html.heex:242
+#: lib/kanban_web/live/org_live/console.html.heex:245
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
@@ -663,7 +663,7 @@ msgid "Read Only"
 msgstr "読み取り専用"
 
 #: lib/kanban_web/components/bulk_action_bar.ex:236
-#: lib/kanban_web/live/admin/organization_live/show.html.heex:132
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:135
 #: lib/kanban_web/live/board_live/form.html.heex:335
 #: lib/kanban_web/live/board_live/members_form_component.ex:258
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:52
@@ -1676,7 +1676,7 @@ msgid "Copy"
 msgstr "コピー"
 
 #: lib/kanban_web/live/board_live/show.html.heex:778
-#: lib/kanban_web/live/org_live/console.html.heex:185
+#: lib/kanban_web/live/org_live/console.html.heex:188
 #, elixir-autogen, elixir-format
 msgid "Creating..."
 msgstr "作成中..."
@@ -3192,8 +3192,8 @@ msgstr "このタスクにコメントするにはボードメンバーである
 
 #: lib/kanban_web/live/admin/message_live/index.ex:85
 #: lib/kanban_web/live/admin/organization_live/form.ex:156
-#: lib/kanban_web/live/admin/user_live/index.ex:129
-#: lib/kanban_web/live/admin/user_live/index.ex:161
+#: lib/kanban_web/live/admin/user_live/index.ex:139
+#: lib/kanban_web/live/admin/user_live/index.ex:177
 #, elixir-autogen, elixir-format
 msgid "You must be an admin to perform this action."
 msgstr "この操作を実行するには管理者である必要があります。"
@@ -4459,7 +4459,7 @@ msgstr "エージェントはこの列からプルします。ここのタスク
 #: lib/kanban_web/components/board_tabs.ex:128
 #: lib/kanban_web/components/bulk_action_bar.ex:257
 #: lib/kanban_web/live/archive_live/index.html.heex:9
-#: lib/kanban_web/live/org_live/console.html.heex:276
+#: lib/kanban_web/live/org_live/console.html.heex:279
 #, elixir-autogen, elixir-format
 msgid "Archive"
 msgstr "アーカイブ"
@@ -4495,7 +4495,7 @@ msgstr "進行中の作業。フックは前後に実行され、アクティビ
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
-#: lib/kanban_web/live/org_live/console.ex:334
+#: lib/kanban_web/live/org_live/console.ex:336
 #: lib/kanban_web/live/org_live/console.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Members"
@@ -4759,7 +4759,7 @@ msgstr "閉じる"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:251
 #: lib/kanban_web/live/board_live/settings_form_component.ex:184
 #: lib/kanban_web/live/board_live/webhook_form.ex:189
-#: lib/kanban_web/live/org_live/console.html.heex:234
+#: lib/kanban_web/live/org_live/console.html.heex:237
 #: lib/kanban_web/live/task_live/components/comment_row.ex:140
 #, elixir-autogen, elixir-format
 msgid "Save"
@@ -6586,7 +6586,7 @@ msgstr "エージェントがタスクを完了するためのコードを書き
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #: lib/kanban_web/live/org_live/audit_log.html.heex:75
-#: lib/kanban_web/live/org_live/console.ex:333
+#: lib/kanban_web/live/org_live/console.ex:335
 #: lib/kanban_web/live/org_live/console.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Details"
@@ -6769,7 +6769,7 @@ msgstr "ディスパッチされたレビューでは必須です: レビュー�
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:302
 #: lib/kanban_web/export/metrics_excel.ex:360
 #: lib/kanban_web/export/metrics_excel.ex:363
-#: lib/kanban_web/live/admin/user_live/index.ex:224
+#: lib/kanban_web/live/admin/user_live/index.ex:240
 #, elixir-autogen, elixir-format
 msgid "N/A"
 msgstr "該当なし"
@@ -7094,11 +7094,11 @@ msgstr "本サービスの利用には、当社の"
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "サインインする前にアカウントを確認する必要があります。確認リンクが記載されたメールをご確認ください。"
 
-#: lib/kanban_web/user_auth.ex:295
-#: lib/kanban_web/user_auth.ex:384
-#: lib/kanban_web/user_auth.ex:420
-#: lib/kanban_web/user_auth.ex:451
-#: lib/kanban_web/user_auth.ex:482
+#: lib/kanban_web/user_auth.ex:304
+#: lib/kanban_web/user_auth.ex:393
+#: lib/kanban_web/user_auth.ex:429
+#: lib/kanban_web/user_auth.ex:460
+#: lib/kanban_web/user_auth.ex:491
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "このページにアクセスするには、アカウントを確認する必要があります。"
@@ -8006,6 +8006,7 @@ msgstr "リクエストが多すぎます。数分待ってからもう一度お
 msgid "Confirmed"
 msgstr "確認済み"
 
+#: lib/kanban_web/components/account_status.ex:34
 #: lib/kanban_web/live/admin/user_live/index.html.heex:99
 #: lib/kanban_web/live/board_live/members_form_component.ex:231
 #: lib/kanban_web/live/board_live/webhook_views.ex:151
@@ -8036,32 +8037,32 @@ msgstr "ユーザーはまだいません。"
 msgid "User Administration"
 msgstr "ユーザー管理"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:227
+#: lib/kanban_web/live/admin/user_live/index.ex:243
 #, elixir-autogen, elixir-format
 msgid "Admin"
 msgstr "管理者"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:228
+#: lib/kanban_web/live/admin/user_live/index.ex:244
 #, elixir-autogen, elixir-format
 msgid "User"
 msgstr "ユーザー"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:59
+#: lib/kanban_web/live/admin/user_live/index.ex:60
 #, elixir-autogen, elixir-format
 msgid "Account deleted."
 msgstr "アカウントを削除しました。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:32
+#: lib/kanban_web/live/admin/user_live/index.ex:33
 #, elixir-autogen, elixir-format
 msgid "Account disabled."
 msgstr "アカウントを無効にしました。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:41
+#: lib/kanban_web/live/admin/user_live/index.ex:42
 #, elixir-autogen, elixir-format
 msgid "Account enabled."
 msgstr "アカウントを有効にしました。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:50
+#: lib/kanban_web/live/admin/user_live/index.ex:51
 #, elixir-autogen, elixir-format
 msgid "Confirmation email sent."
 msgstr "確認メールを送信しました。"
@@ -8104,39 +8105,39 @@ msgid "Send another confirmation email to this account?"
 msgstr "このアカウントに確認メールをもう一度送信しますか？"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:161
-#: lib/kanban_web/live/admin/user_live/index.ex:142
+#: lib/kanban_web/live/admin/user_live/index.ex:158
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
 msgstr "問題が発生しました。もう一度お試しください。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:141
+#: lib/kanban_web/live/admin/user_live/index.ex:157
 #: lib/kanban_web/live/admin/user_live/index.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
 msgstr "このアカウントはすでに確認済みです。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:135
+#: lib/kanban_web/live/admin/user_live/index.ex:151
 #: lib/kanban_web/live/admin/user_live/index.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "This user still belongs to a board and cannot be deleted."
 msgstr "このユーザーはまだボードに所属しているため削除できません。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:92
+#: lib/kanban_web/live/admin/user_live/index.ex:93
 #, elixir-autogen, elixir-format
 msgid "User not found."
 msgstr "ユーザーが見つかりません。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:131
+#: lib/kanban_web/live/admin/user_live/index.ex:141
 #, elixir-autogen, elixir-format
 msgid "You cannot delete your own account."
 msgstr "自分のアカウントは削除できません。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:130
+#: lib/kanban_web/live/admin/user_live/index.ex:140
 #, elixir-autogen, elixir-format
 msgid "You cannot disable your own account."
 msgstr "自分のアカウントは無効にできません。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:132
+#: lib/kanban_web/live/admin/user_live/index.ex:142
 #, elixir-autogen, elixir-format
 msgid "You cannot remove the last admin."
 msgstr "最後の管理者は削除できません。"
@@ -10641,7 +10642,7 @@ msgid "Organization created."
 msgstr "組織を作成しました。"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:183
-#: lib/kanban_web/live/admin/organization_live/show.ex:193
+#: lib/kanban_web/live/admin/organization_live/show.ex:195
 #, elixir-autogen, elixir-format
 msgid "Organization not found."
 msgstr "組織が見つかりません。"
@@ -10687,29 +10688,29 @@ msgstr "組織を保存できませんでした。以下のエラーを確認し
 msgid "View"
 msgstr "表示"
 
-#: lib/kanban_web/live/admin/organization_live/show.html.heex:147
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:150
 #, elixir-autogen, elixir-format
 msgid "An email with no account gets a new account and instructions to confirm it and set a password."
 msgstr "アカウントのないメールアドレスには新しいアカウントが作成され、確認とパスワード設定の手順が送信されます。"
 
-#: lib/kanban_web/live/admin/organization_live/show.html.heex:144
-#: lib/kanban_web/live/admin/organization_live/show.html.heex:160
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:147
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "Appoint org-admin"
 msgstr "組織管理者を任命"
 
-#: lib/kanban_web/live/admin/organization_live/show.html.heex:159
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Appointing..."
 msgstr "任命中..."
 
-#: lib/kanban_web/live/admin/organization_live/show.ex:111
+#: lib/kanban_web/live/admin/organization_live/show.ex:113
 #, elixir-autogen, elixir-format
 msgid "Enter a valid email address. Nothing was changed."
 msgstr "有効なメールアドレスを入力してください。変更は行われませんでした。"
 
-#: lib/kanban_web/live/admin/organization_live/show.ex:252
-#: lib/kanban_web/live/org_live/console.ex:340
+#: lib/kanban_web/live/admin/organization_live/show.ex:254
+#: lib/kanban_web/live/org_live/console.ex:342
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr "メンバー"
@@ -10719,18 +10720,18 @@ msgstr "メンバー"
 msgid "Only site admins appoint or remove org-admins."
 msgstr "組織管理者の任命と解任はサイト管理者のみが行えます。"
 
-#: lib/kanban_web/live/admin/organization_live/show.ex:251
-#: lib/kanban_web/live/org_live/console.ex:339
+#: lib/kanban_web/live/admin/organization_live/show.ex:253
+#: lib/kanban_web/live/org_live/console.ex:341
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr "組織管理者"
 
-#: lib/kanban_web/live/admin/organization_live/show.ex:145
+#: lib/kanban_web/live/admin/organization_live/show.ex:147
 #, elixir-autogen, elixir-format
 msgid "Org-admin appointed."
 msgstr "組織管理者を任命しました。"
 
-#: lib/kanban_web/live/admin/organization_live/show.ex:161
+#: lib/kanban_web/live/admin/organization_live/show.ex:163
 #, elixir-autogen, elixir-format
 msgid "Org-admin removed."
 msgstr "組織管理者を解任しました。"
@@ -10740,7 +10741,7 @@ msgstr "組織管理者を解任しました。"
 msgid "Org-admins and members"
 msgstr "組織管理者とメンバー"
 
-#: lib/kanban_web/live/admin/organization_live/show.html.heex:126
+#: lib/kanban_web/live/admin/organization_live/show.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Remove %{email} as an org-admin of this Organization?"
 msgstr "%{email} をこの組織の組織管理者から解任しますか？"
@@ -10750,17 +10751,17 @@ msgstr "%{email} をこの組織の組織管理者から解任しますか？"
 msgid "Role"
 msgstr "役割"
 
-#: lib/kanban_web/live/admin/organization_live/show.ex:98
+#: lib/kanban_web/live/admin/organization_live/show.ex:100
 #, elixir-autogen, elixir-format
 msgid "That account is disabled. Enable it before appointing it as an org-admin."
 msgstr "そのアカウントは無効になっています。組織管理者に任命する前に有効にしてください。"
 
-#: lib/kanban_web/live/admin/organization_live/show.ex:107
+#: lib/kanban_web/live/admin/organization_live/show.ex:109
 #, elixir-autogen, elixir-format
 msgid "That person is no longer an org-admin of this Organization."
 msgstr "その人はもうこの組織の組織管理者ではありません。"
 
-#: lib/kanban_web/live/admin/organization_live/show.ex:95
+#: lib/kanban_web/live/admin/organization_live/show.ex:97
 #, elixir-autogen, elixir-format
 msgid "That user already belongs to another Organization. Nothing was changed."
 msgstr "そのユーザーはすでに別の組織に所属しています。変更は行われませんでした。"
@@ -10770,7 +10771,7 @@ msgstr "そのユーザーはすでに別の組織に所属しています。変
 msgid "This Organization has no members yet."
 msgstr "この組織にはまだメンバーがいません。"
 
-#: lib/kanban_web/live/admin/organization_live/show.ex:102
+#: lib/kanban_web/live/admin/organization_live/show.ex:104
 #, elixir-autogen, elixir-format
 msgid "You cannot remove the last org-admin while the Organization has other members. Appoint another org-admin first."
 msgstr "組織にほかのメンバーがいる間は、最後の組織管理者を解任できません。先に別の組織管理者を任命してください。"
@@ -10781,7 +10782,7 @@ msgid "Everyone in your Organization, org-admins first."
 msgstr "組織のすべてのメンバー（組織管理者が先頭）。"
 
 #: lib/kanban_web/components/side_nav.ex:256
-#: lib/kanban_web/live/org_live/console.ex:65
+#: lib/kanban_web/live/org_live/console.ex:67
 #, elixir-autogen, elixir-format
 msgid "Organization"
 msgstr "組織"
@@ -10797,19 +10798,19 @@ msgstr "組織のセクション"
 msgid "Read-only. Ask a site admin to change them."
 msgstr "読み取り専用です。変更はサイト管理者に依頼してください。"
 
-#: lib/kanban_web/live/org_live/console.ex:57
-#: lib/kanban_web/live/org_live/console.ex:249
+#: lib/kanban_web/live/org_live/console.ex:59
+#: lib/kanban_web/live/org_live/console.ex:251
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
 #, elixir-autogen, elixir-format
 msgid "You must be an org-admin of an Organization to access this page."
 msgstr "このページにアクセスするには、組織の組織管理者である必要があります。"
 
-#: lib/kanban_web/live/org_live/console.ex:333
+#: lib/kanban_web/live/org_live/console.ex:335
 #, elixir-autogen, elixir-format
 msgid "name · address · contact"
 msgstr "名前 · 住所 · 連絡先"
 
-#: lib/kanban_web/live/org_live/console.ex:334
+#: lib/kanban_web/live/org_live/console.ex:336
 #, elixir-autogen, elixir-format
 msgid "names · roles"
 msgstr "名前 · 役割"
@@ -10850,74 +10851,74 @@ msgstr "組織の管理者"
 msgid "Outside your Organization"
 msgstr "組織外のユーザー"
 
-#: lib/kanban_web/live/org_live/console.html.heex:273
+#: lib/kanban_web/live/org_live/console.html.heex:276
 #, elixir-autogen, elixir-format
 msgid "Archive the workspace %{name}?"
 msgstr "ワークスペース「%{name}」をアーカイブしますか？"
 
-#: lib/kanban_web/live/org_live/console.html.heex:187
+#: lib/kanban_web/live/org_live/console.html.heex:190
 #, elixir-autogen, elixir-format
 msgid "Create workspace"
 msgstr "ワークスペースを作成"
 
-#: lib/kanban_web/live/org_live/console.html.heex:174
+#: lib/kanban_web/live/org_live/console.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "New workspace name"
 msgstr "新しいワークスペース名"
 
-#: lib/kanban_web/live/org_live/console.html.heex:266
+#: lib/kanban_web/live/org_live/console.html.heex:269
 #, elixir-autogen, elixir-format
 msgid "Rename"
 msgstr "名前を変更"
 
-#: lib/kanban_web/live/org_live/console.ex:207
+#: lib/kanban_web/live/org_live/console.ex:209
 #, elixir-autogen, elixir-format
 msgid "The workspace could not be changed. Please try again."
 msgstr "ワークスペースを変更できませんでした。もう一度お試しください。"
 
-#: lib/kanban_web/live/org_live/console.ex:199
+#: lib/kanban_web/live/org_live/console.ex:201
 #, elixir-autogen, elixir-format
 msgid "This workspace still holds boards. Move them out before archiving it."
 msgstr "このワークスペースにはまだボードがあります。アーカイブする前にボードを移動してください。"
 
-#: lib/kanban_web/live/org_live/console.html.heex:159
+#: lib/kanban_web/live/org_live/console.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "Where your Organization's boards live. A workspace can be archived once it holds no boards."
 msgstr "組織のボードを置く場所です。ボードがなくなったワークスペースはアーカイブできます。"
 
-#: lib/kanban_web/live/org_live/console.ex:181
+#: lib/kanban_web/live/org_live/console.ex:183
 #, elixir-autogen, elixir-format
 msgid "Workspace archived."
 msgstr "ワークスペースをアーカイブしました。"
 
-#: lib/kanban_web/live/org_live/console.ex:142
+#: lib/kanban_web/live/org_live/console.ex:144
 #, elixir-autogen, elixir-format
 msgid "Workspace created."
 msgstr "ワークスペースを作成しました。"
 
-#: lib/kanban_web/live/org_live/console.html.heex:221
+#: lib/kanban_web/live/org_live/console.html.heex:224
 #, elixir-autogen, elixir-format
 msgid "Workspace name"
 msgstr "ワークスペース名"
 
-#: lib/kanban_web/live/org_live/console.ex:213
+#: lib/kanban_web/live/org_live/console.ex:215
 #, elixir-autogen, elixir-format
 msgid "Workspace not found."
 msgstr "ワークスペースが見つかりません。"
 
-#: lib/kanban_web/live/org_live/console.ex:176
+#: lib/kanban_web/live/org_live/console.ex:178
 #, elixir-autogen, elixir-format
 msgid "Workspace renamed."
 msgstr "ワークスペースの名前を変更しました。"
 
 #: lib/kanban_web/components/locked_feature.ex:139
-#: lib/kanban_web/live/org_live/console.ex:335
-#: lib/kanban_web/live/org_live/console.html.heex:157
+#: lib/kanban_web/live/org_live/console.ex:337
+#: lib/kanban_web/live/org_live/console.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Workspaces"
 msgstr "ワークスペース"
 
-#: lib/kanban_web/live/org_live/console.html.heex:196
+#: lib/kanban_web/live/org_live/console.html.heex:199
 #, elixir-autogen, elixir-format
 msgid "Your Organization has no workspaces yet."
 msgstr "組織にはまだワークスペースがありません。"
@@ -10927,17 +10928,17 @@ msgstr "組織にはまだワークスペースがありません。"
 msgid "Your Organization's details, members and workspaces. Only a site admin changes the details or appoints org-admins."
 msgstr "組織の詳細、メンバー、ワークスペースです。詳細の変更や組織管理者の任命はサイト管理者のみが行えます。"
 
-#: lib/kanban_web/live/org_live/console.ex:335
+#: lib/kanban_web/live/org_live/console.ex:337
 #, elixir-autogen, elixir-format
 msgid "create · rename · archive"
 msgstr "作成 · 名前変更 · アーカイブ"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:139
+#: lib/kanban_web/live/admin/user_live/index.ex:155
 #, elixir-autogen, elixir-format
 msgid "A board still sits in this user's personal workspace, so they cannot be deleted."
 msgstr "このユーザーの個人ワークスペースにまだボードがあるため、削除できません。"
 
-#: lib/kanban_web/live/org_live/console.ex:174
+#: lib/kanban_web/live/org_live/console.ex:176
 #, elixir-autogen, elixir-format
 msgid "No changes to save."
 msgstr "保存する変更はありません。"
@@ -11199,3 +11200,23 @@ msgstr "このアカウントは無効化されているためサインインで
 #, elixir-autogen, elixir-format
 msgid "The board owner can't be removed."
 msgstr "ボードのオーナーは削除できません。"
+
+#: lib/kanban_web/components/account_status.ex:40
+#, elixir-autogen, elixir-format
+msgid "This account has not confirmed its email address yet."
+msgstr "このアカウントはまだメールアドレスを確認していません。"
+
+#: lib/kanban_web/components/account_status.ex:31
+#, elixir-autogen, elixir-format
+msgid "This account is disabled and can't sign in."
+msgstr "このアカウントは無効化されており、サインインできません。"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:146
+#, elixir-autogen, elixir-format
+msgid "This user is the only enabled org-admin of an Organization that still has members. Appoint another org-admin first."
+msgstr "このユーザーは、まだメンバーがいる組織で唯一の有効な組織管理者です。先に別の組織管理者を任命してください。"
+
+#: lib/kanban_web/components/account_status.ex:43
+#, elixir-autogen, elixir-format
+msgid "Unconfirmed"
+msgstr "未確認"

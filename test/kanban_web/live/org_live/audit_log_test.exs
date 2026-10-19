@@ -99,6 +99,21 @@ defmodule KanbanWeb.OrgLive.AuditLogTest do
     end
   end
 
+  describe "an org-admin disabled while the audit log is open" do
+    setup :org_admin_setup
+
+    test "is refused on the next patch", %{conn: conn, org_admin: org_admin} do
+      {:ok, view, _html} = live(conn, ~p"/org/audit")
+
+      org_admin
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Repo.update!()
+
+      assert {:error, {:redirect, %{to: "/boards"}}} =
+               render_patch(view, ~p"/org/audit?cursor=anything")
+    end
+  end
+
   describe "an org-admin demoted to member while the audit log is open" do
     setup :org_admin_setup
 

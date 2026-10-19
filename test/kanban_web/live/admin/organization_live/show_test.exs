@@ -166,6 +166,24 @@ defmodule KanbanWeb.Admin.OrganizationLive.ShowTest do
       assert has_element?(view, "#member-role-#{member.id}", "Member")
     end
 
+    test "labels disabled and unconfirmed members", %{conn: conn} do
+      organization = organization_fixture()
+      org_admin = user_fixture()
+      disabled = user_fixture()
+      unconfirmed = unconfirmed_user_fixture()
+      organization_member_fixture(organization, org_admin, :org_admin)
+      organization_member_fixture(organization, disabled, :org_admin)
+      organization_member_fixture(organization, unconfirmed, :member)
+      disable_in_db(disabled)
+
+      {:ok, view, _html} = live(conn, ~p"/admin/organizations/#{organization}")
+
+      assert has_element?(view, "#member-disabled-#{disabled.id}", "Disabled")
+      assert has_element?(view, "#member-unconfirmed-#{unconfirmed.id}", "Unconfirmed")
+      refute has_element?(view, "#member-disabled-#{org_admin.id}")
+      refute has_element?(view, "#member-unconfirmed-#{org_admin.id}")
+    end
+
     test "the details are read-only and link to the edit form", %{conn: conn} do
       organization = organization_fixture()
       {:ok, view, _html} = live(conn, ~p"/admin/organizations/#{organization}")

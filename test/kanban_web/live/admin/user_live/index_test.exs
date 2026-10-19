@@ -5,6 +5,7 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
   import Kanban.ColumnsFixtures
+  import Kanban.OrganizationsFixtures
   import Kanban.TasksFixtures
   import Kanban.WorkspacesFixtures
   import Swoosh.TestAssertions
@@ -324,6 +325,47 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
       assert html =~ "Account disabled."
       assert has_element?(live, "#user-#{user.id} .badge-error", "Yes")
       assert Accounts.get_user!(user.id).disabled_at != nil
+    end
+
+    test "disable disconnects the user's open LiveView pages", %{conn: conn} do
+      user = user_fixture()
+      token = Accounts.generate_user_session_token(user)
+      KanbanWeb.Endpoint.subscribe("users_sessions:#{Base.url_encode64(token)}")
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      live |> element("#user-#{user.id} button", "Disable") |> render_click()
+
+      assert_receive %Phoenix.Socket.Broadcast{event: "disconnect"}
+      assert Accounts.get_user_by_session_token(token) == nil
+    end
+
+    test "a refused disable disconnects nobody", %{conn: conn, user: admin} do
+      token = Accounts.generate_user_session_token(admin)
+      KanbanWeb.Endpoint.subscribe("users_sessions:#{Base.url_encode64(token)}")
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      live |> element("#user-#{admin.id} button", "Disable") |> render_click()
+
+      refute_received %Phoenix.Socket.Broadcast{event: "disconnect"}
+    end
+
+    test "refuses to disable or delete an Organization's last enabled org-admin, flashing why",
+         %{conn: conn} do
+      organization = organization_fixture()
+      org_admin = user_fixture()
+      organization_member_fixture(organization, org_admin, :org_admin)
+      organization_member_fixture(organization, user_fixture(), :member)
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html = live |> element("#user-#{org_admin.id} button", "Disable") |> render_click()
+
+      assert html =~ "the only enabled org-admin of an Organization"
+      assert Accounts.get_user!(org_admin.id).disabled_at == nil
+
+      html = render_click(live, "delete", %{"id" => to_string(org_admin.id)})
+
+      assert html =~ "the only enabled org-admin of an Organization"
+      assert Kanban.Repo.get(User, org_admin.id)
     end
 
     test "enable clears disabled_at and flips the row's badge", %{conn: conn} do

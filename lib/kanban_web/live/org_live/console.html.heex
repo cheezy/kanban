@@ -146,6 +146,9 @@
               >
                 {role_label(member.role)}
               </span>
+              <span class="flex items-center gap-1 @md:w-28 @md:flex-shrink-0">
+                <.account_status user={member.user} />
+              </span>
             </li>
           </ul>
         </.settings_card>

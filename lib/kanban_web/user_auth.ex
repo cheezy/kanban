@@ -215,11 +215,20 @@ defmodule KanbanWeb.UserAuth do
   tokens, which may be 0, and the `user_id` of the first token that has one.
   """
   def disconnect_sessions(tokens) do
+    disconnect_live_sessions(tokens)
+    emit_sessions_revoked(length(tokens), Enum.find_value(tokens, &Map.get(&1, :user_id)))
+  end
+
+  @doc """
+  Disconnects the open LiveView sockets of the given session tokens without
+  revoking them and without telemetry. Each reconnect re-checks its session, so
+  a user disabled in the meantime is signed out and a still-valid session
+  reconnects as before.
+  """
+  def disconnect_live_sessions(tokens) do
     Enum.each(tokens, fn %{token: token} ->
       KanbanWeb.Endpoint.broadcast(user_session_topic(token), "disconnect", %{})
     end)
-
-    emit_sessions_revoked(length(tokens), Enum.find_value(tokens, &Map.get(&1, :user_id)))
   end
 
   defp emit_logged_out(%Scope{user: %{id: user_id}}) do

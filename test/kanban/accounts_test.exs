@@ -471,6 +471,26 @@ defmodule Kanban.AccountsTest do
     end
   end
 
+  describe "list_session_tokens/1" do
+    test "returns the user's session tokens only, and keeps them" do
+      user = user_fixture()
+      other = user_fixture()
+      first = Accounts.generate_user_session_token(user)
+      second = Accounts.generate_user_session_token(user)
+      _other = Accounts.generate_user_session_token(other)
+
+      tokens = Accounts.list_session_tokens(user)
+
+      assert tokens |> Enum.map(& &1.token) |> Enum.sort() == Enum.sort([first, second])
+      assert Enum.all?(tokens, &(&1.context == "session" and &1.user_id == user.id))
+      assert length(Accounts.list_session_tokens(user)) == 2
+    end
+
+    test "is empty for a user with no session" do
+      assert Accounts.list_session_tokens(user_fixture()) == []
+    end
+  end
+
   describe "get_user_by_session_token/1" do
     setup do
       user = user_fixture()

@@ -354,6 +354,18 @@ defmodule Kanban.Accounts do
   end
 
   @doc """
+  Returns every session token row `user` has, for disconnecting their open
+  LiveView pages when an administrator disables them. The rows are kept, so
+  re-enabling the account restores those sessions.
+  """
+  @spec list_session_tokens(User.t()) :: [UserToken.t()]
+  def list_session_tokens(%User{} = user) do
+    user
+    |> UserToken.by_user_and_contexts_query(["session"])
+    |> Repo.all()
+  end
+
+  @doc """
   Gets the user with the given signed token.
 
   If the token is valid `{user, token_inserted_at}` is returned, otherwise `nil` is returned.
