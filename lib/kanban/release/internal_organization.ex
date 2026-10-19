@@ -17,6 +17,14 @@ defmodule Kanban.Release.InternalOrganization do
   first if there are several, and its details are left as they are. A listed
   user who is already an org-admin of it is reported, not written.
 
+  The name is not reserved, so a customer may already have an Organization
+  called "Stride". An existing match is reused only when Stride staff run it:
+  it has no members at all, or it has org-admins and every one of them is a
+  site admin or one of the listed `org_admin_emails`. Otherwise the run is
+  refused with `:name_taken` and writes nothing, rather than appointing Stride
+  staff into a customer's Organization; pass a different `name` then. So a
+  repeat run lists the same org-admin emails as the first, or more.
+
   The whole run holds a Postgres advisory lock on one connection, so two runs
   started together cannot both find no Organization and each create one: the
   second waits, then finds the first one's. It is released when the run ends,
@@ -63,7 +71,11 @@ defmodule Kanban.Release.InternalOrganization do
           }
           | %{
               status: :refused,
-              reason: :unknown_acting_user | :not_site_admin | :invalid_org_admin_emails
+              reason:
+                :unknown_acting_user
+                | :not_site_admin
+                | :invalid_org_admin_emails
+                | :name_taken
             }
           | %{status: :refused, reason: :invalid_organization, errors: %{atom() => [String.t()]}}
 
@@ -91,9 +103,11 @@ defmodule Kanban.Release.InternalOrganization do
 
   An unknown acting email (`:unknown_acting_user`), an acting user who is not
   an enabled site admin (`:not_site_admin`), `:org_admin_emails` that is
-  neither a list nor a string (`:invalid_org_admin_emails`) and invalid
-  Organization details (`:invalid_organization`, with the changeset's error
-  messages) return `status: :refused` and write nothing.
+  neither a list nor a string (`:invalid_org_admin_emails`), an existing
+  Organization of that name that staff do not run
+  (`:name_taken`, see the module docs) and invalid Organization details (`:invalid_organization`,
+  with the changeset's error messages) return `status: :refused` and write
+  nothing.
   """
   @spec ensure(keyword() | map()) :: summary()
   def ensure(opts) do
@@ -116,11 +130,15 @@ defmodule Kanban.Release.InternalOrganization do
   defp run(opts) do
     with {:ok, emails} <- org_admin_emails(opts),
          {:ok, actor} <- fetch_actor(opts[:acting_admin_email]),
-         {:ok, organization, created?} <- find_or_create(opts, actor) do
-      emails
-      |> appoint_all(organization, actor)
-      |> summarize(organization, created?)
+         {:ok, organization, created?} <- find_or_create(opts, actor, emails) do
+      appoint_and_summarize(emails, organization, actor, created?)
     end
+  end
+
+  defp appoint_and_summarize(emails, organization, actor, created?) do
+    emails
+    |> appoint_all(organization, actor)
+    |> summarize(organization, created?)
   end
 
   defp org_admin_emails(opts), do: opts |> Map.get(:org_admin_emails) |> split_emails()
@@ -152,16 +170,42 @@ defmodule Kanban.Release.InternalOrganization do
 
   # list_organizations/1 orders by name then id, so the first exact match is
   # the lowest id.
-  defp find_or_create(opts, actor) do
+  defp find_or_create(opts, actor, emails) do
     name = opts |> Map.get(:name) |> name_or_default() |> trim()
 
     with {:ok, organizations} <- list_organizations(actor) do
       case Enum.find(organizations, &(&1.name == name)) do
-        %Organization{} = organization -> {:ok, organization, false}
+        %Organization{} = organization -> reuse(organization, emails)
         nil -> create(name, opts, actor)
       end
     end
   end
+
+  # Only an Organization staff already run is Stride's own; one run by anyone
+  # else is a customer's that happens to share the name.
+  defp reuse(organization, emails) do
+    if staff_run?(Organizations.list_members(organization), emails) do
+      {:ok, organization, false}
+    else
+      refused(:name_taken)
+    end
+  end
+
+  defp staff_run?([], _emails), do: true
+
+  defp staff_run?(members, emails) do
+    listed = for email <- emails, is_binary(email), into: MapSet.new(), do: normalize(email)
+
+    case Enum.filter(members, &(&1.role == :org_admin)) do
+      [] -> false
+      org_admins -> Enum.all?(org_admins, &staff?(&1.user, listed))
+    end
+  end
+
+  defp staff?(%User{type: :admin}, _listed), do: true
+  defp staff?(%User{email: email}, listed), do: MapSet.member?(listed, normalize(email))
+
+  defp normalize(email), do: email |> String.trim() |> String.downcase()
 
   defp name_or_default(nil), do: @default_name
   defp name_or_default(name), do: name

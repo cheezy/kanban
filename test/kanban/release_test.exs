@@ -388,6 +388,7 @@ defmodule Kanban.ReleaseTest do
       elsewhere = user_fixture()
       organization_member_fixture(organization_fixture(), elsewhere, :org_admin)
       existing = organization_fixture(%{name: "Stride"})
+      organization_member_fixture(existing, admin_fixture(), :org_admin)
       organization_member_fixture(existing, member, :member)
       unknown = "unknown-#{System.unique_integer([:positive])}@example.com"
       users_before = Repo.aggregate(User, :count)
@@ -447,6 +448,69 @@ defmodule Kanban.ReleaseTest do
 
       assert reused.organization == %{id: created.organization.id, name: "Stride", created: false}
       assert Repo.aggregate(Organization, :count) == 4
+    end
+
+    test "refuses a same-named Organization with an unlisted customer org-admin and writes nothing" do
+      admin = admin_fixture()
+      lead = user_fixture()
+      customer = organization_fixture(%{name: "Stride"})
+      organization_member_fixture(customer, admin_fixture(), :org_admin)
+      organization_member_fixture(customer, user_fixture(), :org_admin)
+      before = org_write_counts()
+
+      result =
+        admin
+        |> internal_org_opts(org_admin_emails: [lead.email])
+        |> Release.ensure_internal_organization()
+
+      assert result == %{status: :refused, reason: :name_taken}
+      assert org_write_counts() == before
+      refute Organizations.member?(lead, customer)
+    end
+
+    test "refuses a same-named Organization with members but no org-admin" do
+      admin = admin_fixture()
+      customer = organization_fixture(%{name: "Stride"})
+      organization_member_fixture(customer, admin_fixture(), :member)
+
+      result = admin |> internal_org_opts([]) |> Release.ensure_internal_organization()
+
+      assert result == %{status: :refused, reason: :name_taken}
+    end
+
+    test "reuses a same-named Organization run by site admins and listed staff, or with no members" do
+      admin = admin_fixture()
+      lead = user_fixture()
+      staff_lead = user_fixture()
+      staff_only = organization_fixture(%{name: "Stride"})
+      organization_member_fixture(staff_only, admin_fixture(), :org_admin)
+      organization_member_fixture(staff_only, staff_lead, :org_admin)
+      organization_member_fixture(staff_only, user_fixture(), :member)
+
+      result =
+        admin
+        |> internal_org_opts(
+          org_admin_emails: [lead.email, " #{String.upcase(staff_lead.email)} "]
+        )
+        |> Release.ensure_internal_organization()
+
+      assert result.organization == %{id: staff_only.id, name: "Stride", created: false}
+      assert result.appointed == [lead.email]
+      assert result.already_org_admin == [String.upcase(staff_lead.email)]
+
+      assert %{status: :refused, reason: :name_taken} =
+               admin
+               |> internal_org_opts(org_admin_emails: [lead.email])
+               |> Release.ensure_internal_organization()
+
+      empty = organization_fixture(%{name: "Internal"})
+
+      result =
+        admin
+        |> internal_org_opts(name: "Internal")
+        |> Release.ensure_internal_organization()
+
+      assert result.organization == %{id: empty.id, name: "Internal", created: false}
     end
 
     test "returns the changeset's messages and writes nothing when the details are invalid" do
