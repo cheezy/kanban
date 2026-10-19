@@ -26,7 +26,13 @@ defmodule Kanban.Workspaces.Workspace do
     * Archiving a workspace frees its name, because archived rows are outside
       the index.
     * Personal workspaces are outside the rule; every one is named "Personal".
-    * Names are trimmed before they are compared.
+    * Names are normalized before they are compared: converted to Unicode NFC,
+      so "École" typed precomposed or decomposed is one name, stripped of
+      invisible zero-width characters (U+200B, U+2060, U+FEFF), and trimmed.
+      A name left empty is blank. The joiners U+200C and U+200D are kept,
+      because scripts such as Persian and emoji sequences need them.
+    * A name with a NUL byte or invalid UTF-8 is refused on `:name`, rather
+      than failing in the database.
     * Case folding is the database's `lower()`, which follows the database's
       character type. Under the C character type only ASCII letters fold, so
       "ÉCOLE" and "école" count as different names there.
@@ -60,6 +66,7 @@ defmodule Kanban.Workspaces.Workspace do
   @name_max_length 100
   @slug_base_max_length 40
   @name_index :workspaces_organization_id_lower_name_index
+  @zero_width ["\u200B", "\u2060", "\uFEFF"]
 
   schema "workspaces" do
     field :name, :string
@@ -89,7 +96,6 @@ defmodule Kanban.Workspaces.Workspace do
     |> change(personal: personal, organization_id: organization_id)
     |> validate_name()
     |> put_slug()
-    |> validate_required([:slug])
     |> unique_constraint(:slug)
     |> unique_constraint(:name, name: @name_index)
     |> foreign_key_constraint(:organization_id)
@@ -141,18 +147,40 @@ defmodule Kanban.Workspaces.Workspace do
     end
   end
 
+  # The slug is only generated for a valid name, so an invalid name reports
+  # the name's error alone, never a blank slug as well.
   defp validate_name(changeset) do
     changeset
-    |> update_change(:name, &trim_name/1)
+    |> validate_change(:name, &check_storable/2)
+    |> update_change(:name, &normalize_name/1)
     |> validate_required([:name])
     |> validate_length(:name, max: @name_max_length)
   end
 
+  # Postgres text cannot hold a NUL byte or invalid UTF-8; refusing them here
+  # turns a database error into a form error.
+  defp check_storable(:name, name) do
+    if String.valid?(name) and not String.contains?(name, <<0>>),
+      do: [],
+      else: [name: "contains characters that are not allowed"]
+  end
+
   # Casting "" clears the name to nil (a whitespace-only name is cast as-is and
   # trimmed to "" here), which is a change on an existing workspace, so the
-  # trim must let nil through for validate_required/2 to report it.
-  defp trim_name(name) when is_binary(name), do: String.trim(name)
-  defp trim_name(name), do: name
+  # normalization must let nil through for validate_required/2 to report it.
+  # A name check_storable/2 refused is left as it is.
+  defp normalize_name(name) when is_binary(name) do
+    if String.valid?(name) do
+      name
+      |> :unicode.characters_to_nfc_binary()
+      |> String.replace(@zero_width, "")
+      |> String.trim()
+    else
+      name
+    end
+  end
+
+  defp normalize_name(name), do: name
 
   # The random suffix keeps slugs unique across every workspace, including the
   # ones that may share a name: those in different Organizations, archived

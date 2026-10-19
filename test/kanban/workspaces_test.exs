@@ -212,6 +212,59 @@ defmodule Kanban.WorkspacesTest do
                )
     end
 
+    test "an invalid name reports the name alone, never a blank slug" do
+      for name <- ["   ", String.duplicate("a", 101), <<"De", 0, "sign">>] do
+        errors = errors_on(Workspace.create_changeset(%{name: name}, true, nil))
+        assert Map.keys(errors) == [:name]
+      end
+    end
+
+    test "normalizes names to NFC and strips zero-width characters" do
+      decomposed = "E\u0301cole"
+      precomposed = "\u00C9cole"
+
+      assert get_field(Workspace.create_changeset(%{name: decomposed}, true, nil), :name) ==
+               precomposed
+
+      for hidden <- ["Des\u200Bign", "\uFEFFDesign\u2060", " \u200B Design \u200B "] do
+        assert get_field(Workspace.create_changeset(%{name: hidden}, true, nil), :name) ==
+                 "Design"
+      end
+
+      workspace = bare_personal_workspace()
+      renamed = Workspace.changeset(workspace, %{name: "Re\u200Bnamed"})
+      assert get_change(renamed, :name) == "Renamed"
+    end
+
+    test "keeps the joiners that scripts and emoji need" do
+      persian = "\u0645\u06CC\u200C\u062E\u0648\u0627\u0647\u0645"
+      family = "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}"
+
+      for name <- [persian, family] do
+        assert get_field(Workspace.create_changeset(%{name: name}, true, nil), :name) == name
+      end
+    end
+
+    test "a name of only zero-width characters is blank" do
+      assert %{name: ["can't be blank"]} =
+               errors_on(Workspace.create_changeset(%{name: "\u200B\uFEFF"}, true, nil))
+    end
+
+    test "a NUL byte or invalid UTF-8 is a name error, not a database error" do
+      for name <- [<<"De", 0, "sign">>, <<"Design", 0xFF>>, <<0xC3>>] do
+        changeset = Workspace.create_changeset(%{name: name}, true, nil)
+        refute changeset.valid?
+        assert %{name: ["contains characters that are not allowed"]} = errors_on(changeset)
+      end
+
+      workspace = bare_personal_workspace()
+
+      assert {:error, changeset} =
+               workspace |> Workspace.changeset(%{name: <<"Bad", 0>>}) |> Repo.update()
+
+      assert %{name: ["contains characters that are not allowed"]} = errors_on(changeset)
+    end
+
     test "slugs fold accents, fall back for non-Latin names and never collide" do
       latin = Workspace.create_changeset(%{name: "Café Déjà Vu!"}, true, nil)
       assert get_field(latin, :slug) =~ ~r/\Acafe-deja-vu-[a-z2-7]{8}\z/
@@ -519,6 +572,17 @@ defmodule Kanban.WorkspacesTest do
 
       assert errors_on(changeset) == %{name: ["has already been taken"]}
     end
+
+    test "names that only differ in normalization or hidden characters are one name" do
+      {_organization, admin} = org_with_admin()
+
+      assert {:ok, %Workspace{}} = Workspaces.create_org_workspace(%{name: "\u00C9cole"}, admin)
+
+      for twin <- ["E\u0301cole", "\u00C9co\u200Ble"] do
+        assert {:error, changeset} = Workspaces.create_org_workspace(%{name: twin}, admin)
+        assert errors_on(changeset) == %{name: ["has already been taken"]}
+      end
+    end
   end
 
   describe "get_workspace/2" do
@@ -648,6 +712,19 @@ defmodule Kanban.WorkspacesTest do
       assert Workspaces.get_member_role(personal, owner) == :owner
       assert Workspaces.get_member_role(workspace, admin) == nil
     end
+
+    test "takes a string id, and gives nil rather than raising for one that names no row" do
+      {organization, _admin} = org_with_admin()
+      workspace = org_workspace_fixture(organization)
+      guest = org_member(organization)
+      workspace_member_fixture(workspace, guest, :guest)
+
+      assert workspace.id |> Integer.to_string() |> Workspaces.get_member_role(guest) == :guest
+
+      for id <- [nil, "abc", "99999999999999999999", 99_999_999_999_999_999_999, 0, "1.5"] do
+        assert Workspaces.get_member_role(id, guest) == nil
+      end
+    end
   end
 
   describe "add_member/4" do
@@ -711,6 +788,38 @@ defmodule Kanban.WorkspacesTest do
       assert Workspaces.add_member(ctx.admin, -1, user, :member) == {:error, :unauthorized}
     end
 
+    test "refuses a new member on an archived workspace", ctx do
+      user = org_member(ctx.organization)
+
+      archived =
+        org_workspace_fixture(ctx.organization, %{archived_at: DateTime.utc_now(:second)})
+
+      assert Workspaces.add_member(ctx.admin, archived, user, :member) == {:error, :archived}
+      assert Workspaces.get_member_role(archived, user) == nil
+    end
+
+    test "the archived refusal comes after the admin check", ctx do
+      user = org_member(ctx.organization)
+
+      archived =
+        org_workspace_fixture(ctx.organization, %{archived_at: DateTime.utc_now(:second)})
+
+      member = org_member(ctx.organization)
+
+      assert Workspaces.add_member(member, archived, user, :member) == {:error, :unauthorized}
+    end
+
+    test "takes a string id, and refuses one that cannot name a row without raising", ctx do
+      user = org_member(ctx.organization)
+
+      assert {:ok, %WorkspaceMember{}} =
+               Workspaces.add_member(ctx.admin, Integer.to_string(ctx.workspace.id), user, :guest)
+
+      for id <- [nil, "abc", "99999999999999999999", 99_999_999_999_999_999_999, "-3"] do
+        assert Workspaces.add_member(ctx.admin, id, user, :member) == {:error, :unauthorized}
+      end
+    end
+
     test "adding an existing member again is a changeset error", ctx do
       user = org_member(ctx.organization)
       workspace_member_fixture(ctx.workspace, user, :member)
@@ -751,6 +860,20 @@ defmodule Kanban.WorkspacesTest do
              ) ==
                {:error, :not_found}
     end
+
+    test "still changes a role on an archived workspace", ctx do
+      ctx.workspace |> change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert {:ok, %WorkspaceMember{role: :guest}} =
+               Workspaces.update_member_role(ctx.admin, ctx.workspace, ctx.user, :guest)
+    end
+
+    test "refuses an id that cannot name a row without raising", ctx do
+      for id <- ["abc", "99999999999999999999", nil] do
+        assert Workspaces.update_member_role(ctx.admin, id, ctx.user, :guest) ==
+                 {:error, :unauthorized}
+      end
+    end
   end
 
   describe "remove_member/3" do
@@ -775,6 +898,20 @@ defmodule Kanban.WorkspacesTest do
 
       assert Workspaces.remove_member(ctx.admin, ctx.workspace, user_fixture()) ==
                {:error, :not_found}
+    end
+
+    test "still removes a member from an archived workspace", ctx do
+      ctx.workspace |> change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert {:ok, %WorkspaceMember{}} =
+               Workspaces.remove_member(ctx.admin, ctx.workspace, ctx.user)
+    end
+
+    test "takes a string id, and refuses one that cannot name a row without raising", ctx do
+      assert Workspaces.remove_member(ctx.admin, "abc", ctx.user) == {:error, :unauthorized}
+
+      assert {:ok, %WorkspaceMember{}} =
+               Workspaces.remove_member(ctx.admin, Integer.to_string(ctx.workspace.id), ctx.user)
     end
   end
 
