@@ -174,6 +174,18 @@ defmodule Kanban.Plans do
   def user_unlocked?(user_or_scope), do: not enforced?() or user_has_paid_access?(user_or_scope)
 
   @doc """
+  Returns true when enforcement is off or `membership` is an Organization
+  membership.
+
+  For callers that have already looked the membership up, where `nil` means the
+  user belongs to no Organization (as `KanbanWeb.UserAuth` does when it builds a
+  scope), so it never queries.
+  """
+  @spec membership_unlocked?(OrganizationMember.t() | nil) :: boolean()
+  def membership_unlocked?(membership),
+    do: not enforced?() or match?(%OrganizationMember{}, membership)
+
+  @doc """
   Returns the most human members a free board holds while plans are enforced.
   """
   @spec free_board_member_cap() :: pos_integer()

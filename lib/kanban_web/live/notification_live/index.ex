@@ -10,12 +10,17 @@ defmodule KanbanWeb.NotificationLive.Index do
   `notification_inbox?: true` so that hook passes the messages on after
   updating the bell. Every read and write goes through
   `Kanban.Notifications`, which scopes it to the signed-in user.
+
+  A locked scope (`current_scope.notifications_locked`) gets
+  `KanbanWeb.NotificationsLocked.panel/1` instead: nothing is listed and
+  every event is ignored.
   """
   use KanbanWeb, :live_view
 
   alias Kanban.Notifications
   alias Kanban.Notifications.Notification
   alias KanbanWeb.NotificationLabels
+  alias KanbanWeb.NotificationsLocked
   alias KanbanWeb.TimeAgo
 
   @page_size 25
@@ -32,11 +37,16 @@ defmodule KanbanWeb.NotificationLive.Index do
       socket
       |> assign(:page_title, gettext("Notifications"))
       |> assign(:notification_inbox?, true)
+      |> assign(:locked, socket.assigns.current_scope.notifications_locked)
 
     {:ok, socket}
   end
 
   @impl true
+  def handle_params(_params, _uri, %{assigns: %{locked: true}} = socket) do
+    {:noreply, socket}
+  end
+
   def handle_params(params, _uri, socket) do
     filter = filter_from_params(params)
 
@@ -49,6 +59,10 @@ defmodule KanbanWeb.NotificationLive.Index do
   end
 
   @impl true
+  def handle_event(_event, _params, %{assigns: %{locked: true}} = socket) do
+    {:noreply, socket}
+  end
+
   def handle_event("load_more", _params, %{assigns: %{cursor: nil}} = socket) do
     {:noreply, socket}
   end

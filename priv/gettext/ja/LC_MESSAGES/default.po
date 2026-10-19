@@ -89,7 +89,7 @@ msgstr "ログアウト"
 #: lib/kanban_web/components/nav_components.ex:135
 #: lib/kanban_web/components/side_nav.ex:110
 #: lib/kanban_web/components/side_nav.ex:111
-#: lib/kanban_web/live/user_live/notification_preferences.ex:124
+#: lib/kanban_web/live/user_live/notification_preferences.ex:142
 #: lib/kanban_web/live/user_live/settings_components.ex:32
 #, elixir-autogen, elixir-format
 msgid "Settings"
@@ -123,7 +123,7 @@ msgstr "アカウントを作成中..."
 #: lib/kanban_web/live/user_live/forgot_password.ex:40
 #: lib/kanban_web/live/user_live/forgot_password.ex:47
 #: lib/kanban_web/live/user_live/login.ex:42
-#: lib/kanban_web/live/user_live/notification_preferences.ex:187
+#: lib/kanban_web/live/user_live/notification_preferences.ex:208
 #: lib/kanban_web/live/user_live/registration.ex:57
 #: lib/kanban_web/live/user_live/settings.ex:44
 #, elixir-autogen, elixir-format
@@ -4399,6 +4399,7 @@ msgstr "プライマリナビゲーション"
 msgid "Promote children to Ready"
 msgstr "子要素を「Ready」にプロモート"
 
+#: lib/kanban_web/components/notifications_locked.ex:32
 #: lib/kanban_web/components/side_nav.ex:227
 #: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
@@ -5150,7 +5151,7 @@ msgstr "%{m}分"
 
 #: lib/kanban_web/components/agent_activity_feed.ex:419
 #: lib/kanban_web/components/archive_filter_chips.ex:88
-#: lib/kanban_web/live/notification_live/index.html.heex:32
+#: lib/kanban_web/live/notification_live/index.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "All"
 msgstr "すべて"
@@ -7093,11 +7094,11 @@ msgstr "本サービスの利用には、当社の"
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "サインインする前にアカウントを確認する必要があります。確認リンクが記載されたメールをご確認ください。"
 
-#: lib/kanban_web/user_auth.ex:288
-#: lib/kanban_web/user_auth.ex:377
-#: lib/kanban_web/user_auth.ex:413
-#: lib/kanban_web/user_auth.ex:444
-#: lib/kanban_web/user_auth.ex:475
+#: lib/kanban_web/user_auth.ex:295
+#: lib/kanban_web/user_auth.ex:384
+#: lib/kanban_web/user_auth.ex:420
+#: lib/kanban_web/user_auth.ex:451
+#: lib/kanban_web/user_auth.ex:482
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "このページにアクセスするには、アカウントを確認する必要があります。"
@@ -8904,7 +8905,7 @@ msgid "Board: %{board}"
 msgstr "ボード: %{board}"
 
 #: lib/kanban_web/emails/notification_email.ex:90
-#: lib/kanban_web/live/notification_live/index.html.heex:139
+#: lib/kanban_web/live/notification_live/index.html.heex:156
 #, elixir-autogen, elixir-format
 msgid "By %{actor}"
 msgstr "%{actor} より"
@@ -9066,7 +9067,7 @@ msgstr "配信停止"
 msgid "Unsubscribe from these emails?"
 msgstr "これらのメールの配信を停止しますか？"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:193
+#: lib/kanban_web/live/user_live/notification_preferences.ex:217
 #: lib/kanban_web/notification_labels.ex:33
 #, elixir-autogen, elixir-format
 msgid "Weekly digest"
@@ -9097,65 +9098,66 @@ msgstr "終了コード %{code}"
 msgid "Exit code %{code} after %{ms} ms"
 msgstr "終了コード %{code}（%{ms} ms 後）"
 
-#: lib/kanban_web/components/notification_bell.ex:68
+#: lib/kanban_web/components/notification_bell.ex:90
 #, elixir-autogen, elixir-format
 msgid "%{count} unread notification"
 msgid_plural "%{count} unread notifications"
 msgstr[0] "未読の通知 %{count} 件"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:22
+#: lib/kanban_web/live/notification_live/index.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Filter notifications"
 msgstr "通知を絞り込む"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:184
+#: lib/kanban_web/live/notification_live/index.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "Load more"
 msgstr "さらに読み込む"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:56
+#: lib/kanban_web/live/notification_live/index.html.heex:73
 #, elixir-autogen, elixir-format
 msgid "Mark all read"
 msgstr "すべて既読にする"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:172
+#: lib/kanban_web/live/notification_live/index.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Mark as read"
 msgstr "既読にする"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:168
+#: lib/kanban_web/live/notification_live/index.html.heex:185
 #, elixir-autogen, elixir-format
 msgid "Mark as read: %{title}"
 msgstr "既読にする: %{title}"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:74
+#: lib/kanban_web/live/notification_live/index.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "No notifications yet."
 msgstr "通知はまだありません。"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:73
+#: lib/kanban_web/live/notification_live/index.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "No unread notifications."
 msgstr "未読の通知はありません。"
 
-#: lib/kanban_web/live/notification_live/index.ex:146
+#: lib/kanban_web/live/notification_live/index.ex:160
 #, elixir-autogen, elixir-format
 msgid "Notification not found."
 msgstr "通知が見つかりません。"
 
 #: lib/kanban_web/components/locked_feature.ex:136
-#: lib/kanban_web/components/notification_bell.ex:71
-#: lib/kanban_web/live/notification_live/index.ex:33
+#: lib/kanban_web/components/notification_bell.ex:93
+#: lib/kanban_web/live/notification_live/index.ex:38
 #: lib/kanban_web/live/notification_live/index.html.heex:5
-#: lib/kanban_web/live/notification_live/index.html.heex:18
-#: lib/kanban_web/live/user_live/notification_preferences.ex:127
+#: lib/kanban_web/live/notification_live/index.html.heex:16
+#: lib/kanban_web/live/notification_live/index.html.heex:35
+#: lib/kanban_web/live/user_live/notification_preferences.ex:145
 #: lib/kanban_web/live/user_live/settings_components.ex:78
 #, elixir-autogen, elixir-format
 msgid "Notifications"
 msgstr "通知"
 
-#: lib/kanban_web/live/notification_live/index.html.heex:41
-#: lib/kanban_web/live/notification_live/index.html.heex:122
+#: lib/kanban_web/live/notification_live/index.html.heex:58
+#: lib/kanban_web/live/notification_live/index.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Unread"
 msgstr "未読"
@@ -9195,43 +9197,43 @@ msgstr "エージェントがあなたのために引き受けていたタスク
 msgid "An agent's claim on your task expires before it is finished."
 msgstr "エージェントによるタスクの引き受けが、完了前に期限切れになったとき。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:136
+#: lib/kanban_web/live/user_live/notification_preferences.ex:154
 #, elixir-autogen, elixir-format
 msgid "Choose which events reach you and how. Changes save as soon as you toggle them."
 msgstr "どのイベントをどの方法で受け取るかを選びます。切り替えるとすぐに保存されます。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:84
+#: lib/kanban_web/live/user_live/notification_preferences.ex:99
 #, elixir-autogen, elixir-format
 msgid "Could not save that preference."
 msgstr "その設定を保存できませんでした。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:205
+#: lib/kanban_web/live/user_live/notification_preferences.ex:232
 #, elixir-autogen, elixir-format
 msgid "Email me a weekly summary of activity on my boards"
 msgstr "ボードのアクティビティの週次サマリーをメールで受け取る"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:109
+#: lib/kanban_web/live/user_live/notification_preferences.ex:127
 #, elixir-autogen, elixir-format
 msgid "Goals and targets"
 msgstr "ゴールとターゲット"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:179
+#: lib/kanban_web/live/user_live/notification_preferences.ex:200
 #, elixir-autogen, elixir-format
 msgid "In-app"
 msgstr "アプリ内"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:46
-#: lib/kanban_web/live/user_live/notification_preferences.ex:133
+#: lib/kanban_web/live/user_live/notification_preferences.ex:52
+#: lib/kanban_web/live/user_live/notification_preferences.ex:151
 #, elixir-autogen, elixir-format
 msgid "Notification preferences"
 msgstr "通知設定"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:76
+#: lib/kanban_web/live/user_live/notification_preferences.ex:83
 #, elixir-autogen, elixir-format
 msgid "Notification preferences saved."
 msgstr "通知設定を保存しました。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:107
+#: lib/kanban_web/live/user_live/notification_preferences.ex:125
 #, elixir-autogen, elixir-format
 msgid "Reviews"
 msgstr "レビュー"
@@ -9251,13 +9253,13 @@ msgstr "誰かがあなたのタスクにコメントしたとき。"
 msgid "Someone mentions you in a comment."
 msgstr "誰かがコメントであなたをメンションしたとき。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:108
+#: lib/kanban_web/live/user_live/notification_preferences.ex:126
 #, elixir-autogen, elixir-format
 msgid "Tasks and agents"
 msgstr "タスクとエージェント"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:55
-#: lib/kanban_web/live/user_live/notification_preferences.ex:67
+#: lib/kanban_web/live/user_live/notification_preferences.ex:62
+#: lib/kanban_web/live/user_live/notification_preferences.ex:74
 #, elixir-autogen, elixir-format
 msgid "Unknown notification type."
 msgstr "不明な通知の種類です。"
@@ -9395,12 +9397,12 @@ msgstr "目標日（%{date}）を過ぎました。"
 msgid "Missed its target date."
 msgstr "目標日を過ぎました。"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:110
+#: lib/kanban_web/live/user_live/notification_preferences.ex:128
 #, elixir-autogen, elixir-format
 msgid "Board access"
 msgstr "ボードへのアクセス"
 
-#: lib/kanban_web/live/user_live/notification_preferences.ex:111
+#: lib/kanban_web/live/user_live/notification_preferences.ex:129
 #, elixir-autogen, elixir-format
 msgid "Comments and mentions"
 msgstr "コメントとメンション"
@@ -10113,6 +10115,7 @@ msgid "%{count} task assigned to you"
 msgid_plural "%{count} tasks assigned to you"
 msgstr[0] "あなたに割り当てられたタスク %{count} 件"
 
+#: lib/kanban_web/components/notifications_locked.ex:41
 #: lib/kanban_web/components/side_nav.ex:213
 #: lib/kanban_web/live/my_work_live.ex:27
 #: lib/kanban_web/live/my_work_live.ex:39
@@ -11144,3 +11147,18 @@ msgstr "MCP"
 #, elixir-autogen, elixir-format
 msgid "SSO"
 msgstr "SSO"
+
+#: lib/kanban_web/live/user_live/notification_preferences.ex:92
+#, elixir-autogen, elixir-format
+msgid "Notification settings are available to organizations."
+msgstr "通知設定は組織で利用できます。"
+
+#: lib/kanban_web/components/notification_bell.ex:87
+#, elixir-autogen, elixir-format
+msgid "Notifications (available to organizations)"
+msgstr "通知(組織で利用可能)"
+
+#: lib/kanban_web/components/notifications_locked.ex:22
+#, elixir-autogen, elixir-format
+msgid "Tasks waiting for you are always listed in the Review queue and My Work."
+msgstr "あなたを待っているタスクは、レビューキューとマイワークにいつでも表示されます。"

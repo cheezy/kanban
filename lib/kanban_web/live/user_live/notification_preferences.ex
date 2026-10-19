@@ -8,6 +8,11 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   `Kanban.Notifications.update_preference/3` for the signed-in user only;
   event types arriving from the client are matched against the known list and
   never converted to atoms.
+
+  A locked scope (`current_scope.notifications_locked`) sees
+  `KanbanWeb.NotificationsLocked.panel/1` instead of the toggles. A crafted
+  save is still refused by the context, which answers
+  `{:error, {:plan_required, :notifications}}`, and the page shows a flash.
   """
   use KanbanWeb, :live_view
 
@@ -15,6 +20,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
 
   alias Kanban.Notifications
   alias KanbanWeb.NotificationLabels
+  alias KanbanWeb.NotificationsLocked
 
   # Reviews first (reviewing agents' work is the main thing a person does
   # here), then the task and goal lifecycles, board access, and the comment
@@ -44,6 +50,7 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
     socket =
       socket
       |> assign(:page_title, gettext("Notification preferences"))
+      |> assign(:locked, socket.assigns.current_scope.notifications_locked)
       |> load_preferences()
 
     {:ok, socket}
@@ -77,6 +84,14 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
 
         {:noreply, socket}
 
+      {:error, {:plan_required, :notifications}} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("Notification settings are available to organizations.")
+         )}
+
       {:error, _reason} ->
         socket =
           socket
@@ -92,6 +107,9 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   end
 
   defp find_row_type(_type), do: nil
+
+  defp load_preferences(%{assigns: %{locked: true}} = socket),
+    do: assign(socket, :preferences, %{})
 
   defp load_preferences(socket) do
     preferences =
@@ -139,8 +157,11 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
           </p>
         </div>
 
+        <NotificationsLocked.panel :if={@locked} id="notification-preferences-locked" />
+
         <.settings_card
           :for={{group, types} <- @groups}
+          :if={!@locked}
           id={"group-#{group}"}
           title={group_title(group)}
           level={3}
@@ -190,7 +211,13 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
           </div>
         </.settings_card>
 
-        <.settings_card id="group-digest" title={gettext("Weekly digest")} level={3} compact>
+        <.settings_card
+          :if={!@locked}
+          id="group-digest"
+          title={gettext("Weekly digest")}
+          level={3}
+          compact
+        >
           <form
             id="pref-weekly_digest"
             phx-change="save_digest"

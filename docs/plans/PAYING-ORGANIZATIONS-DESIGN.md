@@ -447,7 +447,7 @@ Notifications means the in-app bell, notification emails and digests (W2405, W24
 | `Kanban.Notifications.TargetStatusWorker` (Oban) | Skips owners without paid access. |
 | `DigestFanoutWorker`, `DigestWorker`, `Digest.build` (Oban) | Include only paid-board activity; users with none receive no digest. |
 | `Kanban.Notifications.EmailWorker` (Oban) | Re-checks at send time. A job queued before the flag flipped is skipped with `email_skipped` reason `:plan_locked`. **Undelivered notifications are dropped.** |
-| `KanbanWeb.NotificationsOnMount` and `KanbanWeb.NotificationBell` (UI) | A `notifications_locked` flag on the scope, computed once per mount, renders the bell with a lock and no badge. |
+| `KanbanWeb.NotificationsOnMount` and `KanbanWeb.NotificationBell` (UI) | A `notifications_locked` flag on the scope renders the bell with a lock and no badge. `KanbanWeb.UserAuth` computes it once per scope, from the Organization membership it already loads, so the lock costs no extra query and also covers controller-rendered pages. `NotificationsOnMount` skips the unread count and the PubSub subscription for a locked scope. |
 | `/notifications` (`NotificationLive.Index`) and `/users/notifications` (`UserLive.NotificationPreferences`) | Render the locked panel for `:notifications`, plus links to the Review queue (`/review`) and My Work (`/my-work`) as the way to see waiting tasks. |
 | `Kanban.Notifications.update_preference/3` (context, LiveView events) | Refused with `{:error, {:plan_required, :notifications}}`; crafted events get a flash. |
 | Inbox query (`visible_query/1`) for paid users | Filtered to paid boards plus board-less rows. Hidden rows are not deleted; they reappear if the board becomes paid. |

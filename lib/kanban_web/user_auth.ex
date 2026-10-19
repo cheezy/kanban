@@ -8,6 +8,7 @@ defmodule KanbanWeb.UserAuth do
   alias Kanban.Accounts
   alias Kanban.Accounts.Scope
   alias Kanban.Organizations
+  alias Kanban.Plans
   alias KanbanWeb.UserAuth.OrgAdminGate
 
   # Make the remember me cookie valid for 14 days. This should match
@@ -90,13 +91,19 @@ defmodule KanbanWeb.UserAuth do
   end
 
   # The plug and every on_mount build the scope here, so both carry the user's
-  # Organization membership, loaded with one indexed query.
+  # Organization membership, loaded with one indexed query, and the
+  # notifications lock derived from it without another.
   defp build_scope(nil), do: Scope.for_user(nil)
 
   defp build_scope(user) do
-    user
-    |> Scope.for_user()
-    |> Scope.put_organization_membership(Organizations.get_membership(user))
+    membership = Organizations.get_membership(user)
+
+    scope =
+      user
+      |> Scope.for_user()
+      |> Scope.put_organization_membership(membership)
+
+    %{scope | notifications_locked: not Plans.membership_unlocked?(membership)}
   end
 
   defp ensure_user_token(conn) do

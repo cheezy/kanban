@@ -11,6 +11,10 @@ defmodule KanbanWeb.NotificationsOnMount do
   user's own notification topic once connected, and attaches a `handle_info`
   hook that updates the count as messages arrive.
 
+  A locked scope (`current_scope.notifications_locked`, set by
+  `KanbanWeb.UserAuth` once per mount) gets no count, no subscription and no
+  hook: the bell shows a lock instead of a badge, so neither is needed.
+
   The topic always comes from the server-side `current_scope`, never from
   params. The hook halts the two notification messages so LiveViews without
   matching `handle_info` clauses never see them; a LiveView that wants them
@@ -26,6 +30,9 @@ defmodule KanbanWeb.NotificationsOnMount do
 
   def on_mount(:default, _params, _session, socket) do
     case socket.assigns[:current_scope] do
+      %Scope{user: %User{}, notifications_locked: true} ->
+        {:cont, socket}
+
       %Scope{user: %User{}} = scope ->
         count = Notifications.unread_count(scope)
         socket = put_count(socket, count)

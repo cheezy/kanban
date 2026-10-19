@@ -292,6 +292,29 @@ defmodule Kanban.PlansTest do
     end
   end
 
+  describe "membership_unlocked?/1" do
+    setup do
+      organization = organization_fixture()
+      user = user_fixture()
+      %{membership: organization_member_fixture(organization, user)}
+    end
+
+    test "is true for any membership, without querying, when enforcement is off", ctx do
+      Application.put_env(:kanban, :plans_enforced, false)
+
+      assert {true, 0} = count_queries(fn -> Plans.membership_unlocked?(ctx.membership) end)
+      assert {true, 0} = count_queries(fn -> Plans.membership_unlocked?(nil) end)
+    end
+
+    test "is true only for a membership, without querying, when enforcement is on", ctx do
+      enforce_plans()
+
+      assert {true, 0} = count_queries(fn -> Plans.membership_unlocked?(ctx.membership) end)
+      assert {false, 0} = count_queries(fn -> Plans.membership_unlocked?(nil) end)
+      refute Plans.membership_unlocked?(%{})
+    end
+  end
+
   describe "paid status follows the board, not the user" do
     test "an Organization member's personal board stays free while their org board is paid" do
       organization = organization_fixture()

@@ -29,7 +29,9 @@ defmodule Kanban.Notifications do
   is not paid (`Kanban.Plans.board_unlocked?/1`): nothing is inserted,
   broadcast or emailed, and it returns `{:ok, []}`. Board-less events are
   gated by their producers, and `Kanban.Notifications.EmailWorker` checks the
-  plan again before it sends.
+  plan again before it sends. The inbox and the unread count show only
+  paid boards' rows and board-less rows, and `update_preference/3` refuses
+  users without paid access.
 
   ## Default preferences
 
@@ -282,10 +284,22 @@ defmodule Kanban.Notifications do
   `attrs` may set `:in_app` and/or `:email`; an omitted flag keeps its
   current (or default) value. Returns `{:error, :invalid_event_type}` for an
   unknown event type.
+
+  While paid plans are enforced, a user without paid access is refused with
+  `{:error, {:plan_required, :notifications}}` (`Kanban.Plans.check_user/3`),
+  so a crafted event cannot change a locked setting. `unsubscribe/2` skips
+  this check: turning email off is never a paid action.
   """
   @spec update_preference(Scope.t(), event_type() | String.t(), map()) ::
-          {:ok, Preference.t()} | {:error, :invalid_event_type | Ecto.Changeset.t()}
-  def update_preference(%Scope{user: %User{id: user_id}}, event_type, attrs) do
+          {:ok, Preference.t()}
+          | {:error, :invalid_event_type | {:plan_required, :notifications} | Ecto.Changeset.t()}
+  def update_preference(%Scope{} = scope, event_type, attrs) do
+    with :ok <- Plans.check_user(scope, :notifications, surface: :context) do
+      write_preference(scope, event_type, attrs)
+    end
+  end
+
+  defp write_preference(%Scope{user: %User{id: user_id}}, event_type, attrs) do
     case normalize_event_type(event_type) do
       {:ok, type} ->
         current = current_preference(user_id, type)
@@ -327,7 +341,7 @@ defmodule Kanban.Notifications do
       user ->
         user
         |> Scope.for_user()
-        |> update_preference(event_type, %{email: false})
+        |> write_preference(event_type, %{email: false})
         |> NotificationTelemetry.unsubscribed()
         |> ok_or_error()
     end
@@ -456,6 +470,20 @@ defmodule Kanban.Notifications do
       where: n.user_id == ^user_id and n.in_app == true,
       where: is_nil(n.board_id) or n.board_id in subquery(member_board_ids)
     )
+    |> paid_boards_only()
+  end
+
+  # While plans are enforced only paid boards' rows and board-less rows show.
+  # Hidden rows are kept, so they reappear if the board becomes paid.
+  defp paid_boards_only(query) do
+    if Plans.enforced?(),
+      do:
+        where(
+          query,
+          [n],
+          is_nil(n.board_id) or n.board_id in subquery(Plans.paid_board_ids_query())
+        ),
+      else: query
   end
 
   defp get_visible(scope, id) do

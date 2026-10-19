@@ -441,6 +441,35 @@ defmodule KanbanWeb.LayoutsTest do
       end
     end
 
+    test "a locked scope shows a lock and no badge, whatever the count" do
+      for count <- [nil, 0, 3, 100] do
+        html = win_top_html(%{scope_with_count(count) | notifications_locked: true})
+
+        assert html =~ ~s(id="notification-bell")
+        assert html =~ ~s(href="/notifications")
+        assert html =~ "data-notification-bell-locked"
+        assert html =~ ~s(id="notification-bell-lock")
+        assert html =~ "hero-lock-closed"
+        assert html =~ ~s[aria-label="Notifications (available to organizations)"]
+        refute html =~ "notification-bell-badge"
+      end
+    end
+
+    test "an unlocked scope shows no lock" do
+      html = win_top_html(scope_with_count(3))
+
+      refute html =~ "data-notification-bell-locked"
+      refute html =~ "notification-bell-lock"
+    end
+
+    test "translates the locked label" do
+      Gettext.with_locale(KanbanWeb.Gettext, "de", fn ->
+        html = win_top_html(%{scope_with_count(nil) | notifications_locked: true})
+
+        assert html =~ ~s[aria-label="Benachrichtigungen (für Organisationen verfügbar)"]
+      end)
+    end
+
     test "caps the badge at 99+" do
       assert win_top_html(scope_with_count(100)) =~ ~r/>\s*99\+\s*</
       assert win_top_html(scope_with_count(99)) =~ ~r/>\s*99\s*</

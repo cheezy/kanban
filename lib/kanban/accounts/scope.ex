@@ -30,6 +30,12 @@ defmodule Kanban.Accounts.Scope do
   controller request and LiveView mount; scopes built elsewhere (API requests,
   background jobs) leave it `nil`.
 
+  `notifications_locked` is true while paid plans are enforced and the user
+  belongs to no Organization (`Kanban.Plans.membership_unlocked?/1`).
+  `KanbanWeb.UserAuth` sets it once per controller request and LiveView mount,
+  from the membership it has just loaded, so the bell and the notification
+  pages read it without a query. Scopes built elsewhere leave it `false`.
+
   `workspace` is the `Kanban.Workspaces.Workspace` the caller is acting in, or
   `nil`. Nothing sets it yet; `put_workspace/2` is how a caller that has resolved
   one (through `Kanban.Workspaces.get_workspace/2`) records it.
@@ -45,6 +51,7 @@ defmodule Kanban.Accounts.Scope do
             unread_notifications: nil,
             two_factor_reminder: false,
             organization_membership: nil,
+            notifications_locked: false,
             workspace: nil
 
   @doc """
