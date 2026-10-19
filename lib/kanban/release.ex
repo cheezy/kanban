@@ -190,9 +190,11 @@ defmodule Kanban.Release do
   Runs `Kanban.Release.InternalOrganization.ensure/1` and returns its summary
   map; that function documents the options and every result. All writes go
   through `Kanban.Organizations`, so its authorization check, telemetry and
-  audit events apply. It provisions no accounts, and running it again creates
-  nothing and reports what already exists. Run it with `bin/kanban eval`, for
-  example:
+  audit events apply. It provisions no accounts, and running it again with the
+  same org-admin emails, or more, creates nothing and reports what already
+  exists. An existing Organization of that name whose org-admins are not all
+  site admins or listed emails is refused with `:name_taken`. Run it with
+  `bin/kanban eval`, for example:
 
       Kanban.Release.ensure_internal_organization(
         acting_admin_email: "admin@example.com",

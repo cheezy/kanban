@@ -826,7 +826,7 @@ Every goal merges before launch with `:plans_enforced` false, so nothing locks e
 ### Launch day
 
 1. Deploy the rewritten pages.
-2. Run `Kanban.Release.ensure_internal_organization/1` with an acting site admin's email, the name (default "Stride"), contact fields and the org-admin emails. It is idempotent and provisions no accounts.
+2. Run `Kanban.Release.ensure_internal_organization/1` with an acting site admin's email, the name (default "Stride"), contact fields and the org-admin emails. It is idempotent and provisions no accounts. A repeat run must list at least the same org-admin emails as the first: an existing "Stride" whose org-admins are not all site admins or listed emails is refused with `:name_taken`, so a customer's Organization of that name is never taken over.
 3. Create the internal Organization's workspace in `/org` and move Stride's own boards into it with the W2218 board move.
 4. Set `STRIDE_PLANS_ENFORCED=true` and restart.
 5. Verify:
