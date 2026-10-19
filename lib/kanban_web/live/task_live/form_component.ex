@@ -17,6 +17,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   alias KanbanWeb.TaskLive.Form.RelationalScopes
   alias KanbanWeb.TaskLive.Form.TaskParams
   alias KanbanWeb.TaskLive.Form.TechnicalDetails
+  alias KanbanWeb.TaskLive.Form.TelemetryLock
 
   @field_events FieldEvents.events()
 
@@ -240,7 +241,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   # Runs the actual create/edit once modify access has been authorized in the
   # "save" handle_event (D110).
   defp do_save_task(socket, task_params) do
-    task_params = ParamNormalizer.normalize_params(task_params, socket.assigns.board)
+    {task_params, socket} = TelemetryLock.normalize_params(socket, task_params)
     raw = Map.get(task_params, "technical_details")
 
     case TechnicalDetails.decode(task_params) do

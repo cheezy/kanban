@@ -99,21 +99,25 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
 
   @impl true
   def handle_event("edit", %{"id" => id}, socket) do
-    with_endpoint(socket, id, fn endpoint ->
-      form = endpoint |> Webhooks.change_endpoint() |> to_form(as: "endpoint_edit")
-      {:noreply, assign(socket, :editing, %{endpoint_id: endpoint.id, form: form})}
+    with_plan(socket, fn ->
+      with_endpoint(socket, id, fn endpoint ->
+        form = endpoint |> Webhooks.change_endpoint() |> to_form(as: "endpoint_edit")
+        {:noreply, assign(socket, :editing, %{endpoint_id: endpoint.id, form: form})}
+      end)
     end)
   end
 
   @impl true
   def handle_event("validate_edit", %{"id" => id} = params, socket) do
-    with_endpoint(socket, id, fn endpoint ->
-      form =
-        endpoint
-        |> Webhooks.change_endpoint(edit_attrs(params))
-        |> to_form(action: :validate, as: "endpoint_edit")
+    with_plan(socket, fn ->
+      with_endpoint(socket, id, fn endpoint ->
+        form =
+          endpoint
+          |> Webhooks.change_endpoint(edit_attrs(params))
+          |> to_form(action: :validate, as: "endpoint_edit")
 
-      {:noreply, assign(socket, :editing, %{endpoint_id: endpoint.id, form: form})}
+        {:noreply, assign(socket, :editing, %{endpoint_id: endpoint.id, form: form})}
+      end)
     end)
   end
 
@@ -199,6 +203,11 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
   def handle_event("dismiss_secret", _params, socket) do
     {:noreply, assign(socket, :revealed, nil)}
   end
+
+  # An event this panel does not define, or one without the params its clause
+  # needs, can only be crafted. Ignore it rather than crash the board page.
+  @impl true
+  def handle_event(_event, _params, socket), do: {:noreply, socket}
 
   defp handle_create({:ok, {endpoint, secret}}, socket) do
     notify_parent({:flash, :info, gettext("Endpoint created")})

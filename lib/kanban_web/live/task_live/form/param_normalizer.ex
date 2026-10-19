@@ -6,9 +6,9 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
   `testing_strategy` and `integration_points`.
 
   Called from `KanbanWeb.TaskLive.FormComponent` before changeset construction
-  to avoid false validation errors on empty inputs. `normalize_params/2` also
+  to avoid false validation errors on empty inputs. `normalize_params/3` also
   drops the paid task fields on a locked board (W2409), so a save on a free
-  board cannot carry them.
+  board cannot carry them, and reports which dropped values were changes.
   """
 
   alias Kanban.Plans
@@ -39,12 +39,27 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
   (`Kanban.Plans.strip_locked_task_fields/3`) when `board` is locked. A
   dropped key is simply absent from the cast, so a value stored before the
   board was locked is kept.
-  """
-  def normalize_params(params, board) do
-    {params, _dropped} =
-      params |> normalize_array_params() |> Plans.strip_locked_task_fields(board)
 
-    params
+  Returns `{params, lost}`, where `lost` names the dropped fields whose
+  submitted value was a change: not blank, and not the value `task` already
+  stores. Only a form rendered before the board was locked, or a crafted
+  event, can submit one, and the caller tells the user it was not saved.
+  """
+  def normalize_params(params, board, task \\ %Kanban.Tasks.Task{}) do
+    params = normalize_array_params(params)
+    {stripped, dropped} = Plans.strip_locked_task_fields(params, board)
+
+    {stripped, Enum.filter(dropped, &changed?(params, task, &1))}
+  end
+
+  defp changed?(params, task, field) do
+    case Map.get(params, field) do
+      value when is_binary(value) ->
+        String.trim(value) != "" and value != Map.get(task, String.to_existing_atom(field))
+
+      _ ->
+        false
+    end
   end
 
   @doc """

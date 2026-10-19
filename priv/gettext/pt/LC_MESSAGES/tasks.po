@@ -18,14 +18,14 @@ msgid_plural "Moved %{count} tasks to Ready"
 msgstr[0] "1 tarefa movida para Pronto"
 msgstr[1] "%{count} tarefas movidas para Pronto"
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:309
+#: lib/kanban_web/live/board_live/bulk_selection.ex:346
 #, elixir-autogen, elixir-format
 msgid "%{count} goal was skipped: goals cannot be moved, assigned or archived in bulk."
 msgid_plural "%{count} goals were skipped: goals cannot be moved, assigned or archived in bulk."
 msgstr[0] "%{count} meta foi ignorada: metas não podem ser movidas, atribuídas ou arquivadas em massa."
 msgstr[1] "%{count} metas foram ignoradas: metas não podem ser movidas, atribuídas ou arquivadas em massa."
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:214
+#: lib/kanban_web/live/board_live/bulk_selection.ex:250
 #, elixir-autogen, elixir-format
 msgid "Added the label to %{count} task"
 msgid_plural "Added the label to %{count} tasks"
@@ -39,28 +39,28 @@ msgid_plural "Archive %{count} selected tasks? Goals are skipped."
 msgstr[0] "Arquivar %{count} tarefa selecionada? As metas são ignoradas."
 msgstr[1] "Arquivar %{count} tarefas selecionadas? As metas são ignoradas."
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:238
+#: lib/kanban_web/live/board_live/bulk_selection.ex:274
 #, elixir-autogen, elixir-format
 msgid "Archived %{count} task"
 msgid_plural "Archived %{count} tasks"
 msgstr[0] "%{count} tarefa arquivada"
 msgstr[1] "%{count} tarefas arquivadas"
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:206
+#: lib/kanban_web/live/board_live/bulk_selection.ex:242
 #, elixir-autogen, elixir-format
 msgid "Assigned %{count} task"
 msgid_plural "Assigned %{count} tasks"
 msgstr[0] "%{count} tarefa atribuída"
 msgstr[1] "%{count} tarefas atribuídas"
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:297
+#: lib/kanban_web/live/board_live/bulk_selection.ex:334
 #, elixir-autogen, elixir-format
 msgid "Moved %{count} task to %{column}"
 msgid_plural "Moved %{count} tasks to %{column}"
 msgstr[0] "%{count} tarefa movida para %{column}"
 msgstr[1] "%{count} tarefas movidas para %{column}"
 
-#: lib/kanban_web/live/board_live/bulk_selection.ex:227
+#: lib/kanban_web/live/board_live/bulk_selection.ex:263
 #, elixir-autogen, elixir-format
 msgid "Removed the label from %{count} task"
 msgid_plural "Removed the label from %{count} tasks"

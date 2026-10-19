@@ -147,14 +147,39 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentLockTest do
       assert Repo.get!(Endpoint, ctx.endpoint.id).event_types == ctx.endpoint.event_types
     end
 
-    test "a crafted edit opens no edit form", %{conn: conn} = ctx do
+    test "refuses crafted edit and validate_edit events, opening no edit form",
+         %{conn: conn} = ctx do
       view = open(conn, ctx.owner, ctx.board)
+      attach_telemetry(@refused)
 
       view
       |> with_target(target(ctx.board))
       |> render_click("edit", %{"id" => "#{ctx.endpoint.id}"})
 
+      assert render(view) =~ @locked_flash
+
+      view
+      |> with_target(target(ctx.board))
+      |> render_change("validate_edit", %{
+        "id" => "#{ctx.endpoint.id}",
+        "endpoint_edit" => %{"event_types" => ["task.moved"]}
+      })
+
+      assert_received {:telemetry_event, @refused, _, %{feature: :integrations}}
+      assert_received {:telemetry_event, @refused, _, %{feature: :integrations}}
       refute has_element?(view, "#webhook-edit-form-#{ctx.endpoint.id}")
+    end
+
+    test "ignores a crafted event the panel does not define", %{conn: conn} = ctx do
+      view = open(conn, ctx.owner, ctx.board)
+
+      for {event, params} <- [{"new", %{}}, {"edit", %{}}, {"toggle", %{"other" => "1"}}] do
+        view |> with_target(target(ctx.board)) |> render_click(event, params)
+      end
+
+      assert Process.alive?(view.pid)
+      assert has_element?(view, "#integrations-locked")
+      assert Repo.get!(Endpoint, ctx.endpoint.id).enabled
     end
 
     test "translates the Paused badge", %{conn: conn} = ctx do

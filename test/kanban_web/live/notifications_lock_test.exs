@@ -254,6 +254,22 @@ defmodule KanbanWeb.NotificationsLockTest do
                |> Scope.for_user()
                |> Notifications.update_preference(:review_requested, %{email: false})
     end
+
+    test "a settings page opened before enforcement switches to the lock on its next save",
+         %{conn: conn, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/users/notifications")
+      assert has_element?(view, "#pref-task_assigned")
+      enforce_plans()
+
+      view
+      |> element("#pref-task_assigned")
+      |> render_change(%{"event_type" => "task_assigned", "email" => "false"})
+
+      assert render(view) =~ "Notification settings are available to organizations."
+      assert has_element?(view, "#notification-preferences-locked [data-locked-feature]")
+      refute has_element?(view, "#pref-task_assigned")
+      refute Repo.get_by(Preference, user_id: user.id, event_type: :task_assigned)
+    end
   end
 
   describe "update_preference/3" do

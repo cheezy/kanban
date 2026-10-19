@@ -13,6 +13,9 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
   `KanbanWeb.NotificationsLocked.panel/1` instead of the toggles. A crafted
   save is still refused by the context, which answers
   `{:error, {:plan_required, :notifications}}`, and the page shows a flash.
+  The same refusal on a page opened before enforcement was switched on, or
+  before the user left their Organization, switches the page to the locked
+  panel, so its toggles do not stay on screen doing nothing.
   """
   use KanbanWeb, :live_view
 
@@ -85,12 +88,13 @@ defmodule KanbanWeb.UserLive.NotificationPreferences do
         {:noreply, socket}
 
       {:error, {:plan_required, :notifications}} ->
-        {:noreply,
-         put_flash(
-           socket,
-           :error,
-           gettext("Notification settings are available to organizations.")
-         )}
+        socket =
+          socket
+          |> assign(:locked, true)
+          |> load_preferences()
+          |> put_flash(:error, gettext("Notification settings are available to organizations."))
+
+        {:noreply, socket}
 
       {:error, _reason} ->
         socket =

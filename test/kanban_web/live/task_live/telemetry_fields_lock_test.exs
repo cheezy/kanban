@@ -15,6 +15,7 @@ defmodule KanbanWeb.TaskLive.TelemetryFieldsLockTest do
   import Kanban.OrganizationsFixtures
   import Kanban.PlansHelpers
   import Kanban.TasksFixtures
+  import Kanban.TelemetryHelpers
   import Kanban.WorkspacesFixtures
   import Phoenix.LiveViewTest
 
@@ -131,6 +132,45 @@ defmodule KanbanWeb.TaskLive.TelemetryFieldsLockTest do
       })
 
       assert %Task{telemetry_event: nil} = Repo.get_by!(Task, title: "Fresh task")
+    end
+  end
+
+  describe "a task form opened before enforcement was switched on" do
+    setup ctx do
+      view = edit(ctx.conn, ctx.board, ctx.task)
+      assert has_element?(view, ~s(#task-form [name="task[telemetry_event]"]))
+      enforce_plans()
+      %{view: view}
+    end
+
+    test "a save that changes the paid fields stores neither and says so", ctx do
+      attach_telemetry([:kanban, :plan, :feature_refused])
+
+      ctx.view
+      |> form("#task-form",
+        task: %{title: "Stale", telemetry_event: "[:changed]", metrics_to_track: "Changed"}
+      )
+      |> render_submit()
+
+      assert Repo.get!(Task, ctx.task.id).title == "Stale"
+      assert stored(ctx.task) == @stored
+
+      assert render(ctx.view) =~
+               "Telemetry Event and Metrics to Track need a board in an Organization"
+
+      assert_received {:telemetry_event, [:kanban, :plan, :feature_refused], %{count: 1},
+                       %{feature: :telemetry, surface: :live_view}}
+    end
+
+    test "a save that leaves the stored values as they were gives no warning", ctx do
+      attach_telemetry([:kanban, :plan, :feature_refused])
+
+      ctx.view |> form("#task-form", task: %{title: "Unchanged"}) |> render_submit()
+
+      assert Repo.get!(Task, ctx.task.id).title == "Unchanged"
+      assert stored(ctx.task) == @stored
+      refute render(ctx.view) =~ "need a board in an Organization"
+      refute_received {:telemetry_event, [:kanban, :plan, :feature_refused], _, _}
     end
   end
 
