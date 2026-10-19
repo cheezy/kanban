@@ -109,6 +109,8 @@ Migration timestamps in the task specs (`20261001...`) are placeholders. Real on
 - Index on `organization_id` (suggested).
 - `organization_id` is never cast from user attrs. `create_org_workspace/2` takes it from the caller's organization membership.
 - `archived_at` belongs to W2216. W2396 adds no migration for it.
+- **Names** are normalized before they are saved or compared: Unicode NFC, invisible zero-width characters (U+200B, U+2060, U+FEFF) stripped, then trimmed. So "École" typed precomposed or decomposed, or "Design" with a hidden zero-width space, is one name, and a name of only zero-width characters is blank. The joiners U+200C and U+200D are kept, because scripts such as Persian and emoji sequences need them. A name with a NUL byte or invalid UTF-8 is a form error on `name`, never a database error.
+- `Workspaces.add_member/4`, `update_member_role/4`, `remove_member/3` and `get_member_role/2` take a workspace struct or its id as an integer or a string, parsed like `get_workspace/2`: an id that cannot name a row (`"abc"`, past the column's range, `nil`) is refused like a missing workspace, never a crash.
 
 #### `workspace_members` (new, W2216; role set changed from the G442 briefing)
 
@@ -332,7 +334,7 @@ Org-admin access is computed on every check from `workspaces.organization_id` an
 | Invite by email to a free board | the board's owner | `invite_to_board/4`; acceptance counts toward the cap |
 | Change a workspace member's role (member or guest) | org-admin | `Workspaces.update_member_role/4` |
 | Remove a member from a workspace | org-admin | `Workspaces.remove_member/3` |
-| Remove an ordinary member from the Organization | org-admin, in the `/org` console | W2218 removal, cascading board memberships and tokens in every workspace of the Organization |
+| Remove an ordinary member from the Organization | org-admin, in the `/org` console | W2218 removal, cascading board memberships and tokens in every workspace of the Organization, and **deleting the user's `workspace_members` rows in every workspace of the Organization**, so rejoining later never brings old access back. Any later path that ends an Organization membership must delete them too. |
 | Move a personal board into an org workspace | an org-admin who owns the board | `Workspaces.move_board_to_workspace/3` |
 | Create, list, revoke workspace tokens | org-admin | `ApiTokens.create_workspace_api_token/3` and friends |
 | Request and download a workspace export | org-admin | `Kanban.Workspaces.Export` |
@@ -341,6 +343,8 @@ Org-admin access is computed on every check from `workspaces.organization_id` an
 | Edit security policy, SSO, SCIM tokens | org-admin | G445 contexts |
 
 Every management event re-checks the caller's role from the database. Hidden buttons are not authorization.
+
+**A board always keeps its owner.** `remove_user_from_board/3` and `update_user_access/4` refuse the owner's own row with `{:error, :owner_required}`; the members screen flashes "The board owner can't be removed." Either write would leave a board nobody can see, stranded in the old owner's personal workspace and blocking that user's deletion. Ownership changes hands only through `transfer_board_ownership/3` (W2221), which changes both rows in one transaction itself rather than demoting the owner through `update_user_access/4`.
 
 ---
 
@@ -601,6 +605,7 @@ Built by W2395 and W2396, extended by W2218, W2397 and G445. Sections follow the
 - Nothing reads an Organization id from params; the console always shows the signed-in org-admin's own Organization.
 - The `:require_org_admin` on_mount also attaches a `handle_params` hook (`OrgAdminGate.recheck_params/3`) that re-reads the role from the database on every patch. Paging, filtering and tab changes patch the page without mounting it again, so without the hook an org-admin removed while `/org` or `/org/audit` was open could keep reading until they reloaded.
 - **Archiving a workspace only hides it.** It sets `archived_at`, removes the workspace from the switcher and lists, and deletes nothing. `OrgWorkspaces.archive_workspace/2` refuses with `{:error, :workspace_has_boards}` while the workspace still holds boards.
+- An archived workspace takes no new members: `Workspaces.add_member/4` returns `{:error, :archived}`. Role changes and removals still work, so its members can be tidied up.
 
 ### 8.3 Site-admin screens
 
@@ -625,6 +630,7 @@ Personal workspaces never appear here.
 ### 8.5 Side nav and the workspace switcher
 
 - **Organization members:** a switcher lists their reachable, unarchived org workspaces (all of them for org-admins, those with a member or guest row for others), never a personal workspace. Choosing one POSTs `/workspace/switch`, which stores `current_workspace_id` in the session and redirects. `UserAuth` re-verifies it with `Workspaces.get_workspace/2` on every request and mount; a stale or foreign id falls back to the first reachable org workspace, or none, and never crashes or grants access.
+- **Requirement for the switch and the re-check (W2218):** `get_workspace/2` returns archived workspaces and the caller's own hidden personal workspace, because other callers need them. The switch endpoint and the per-request re-check must refuse both, falling back exactly as for a stale id: a session must not keep working in, or create boards in, a workspace archived after it was chosen, and a forged switch request must never make the personal workspace current.
 - **Users without an Organization:** the switcher slot shows the lock component for `:workspaces` while plans are enforced, and nothing while they are not.
 - **Org-admins** also get an **Organization** link to `/org`.
 - The visual form of the switcher and the entry point to workspace settings are not fixed by the tasks (briefing §9.1 questions 3 and 4).
