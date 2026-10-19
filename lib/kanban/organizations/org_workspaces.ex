@@ -18,8 +18,12 @@ defmodule Kanban.Organizations.OrgWorkspaces do
   change nothing, so ids cannot be probed. A caller who is not an org-admin at
   all gets `{:error, :unauthorized}`.
 
-  Two workspaces in one Organization may share a name: the schema gives each a
-  distinct slug, and no unique index on the name exists.
+  Within one Organization no two unarchived workspaces share a name, compared
+  ignoring case; a database index decides (see `Kanban.Workspaces.Workspace`).
+  A clash on `create_workspace/3` or `rename_workspace/3` returns
+  `{:error, changeset}` with "has already been taken" on `:name`, and emits and
+  records nothing. Archiving a workspace frees its name, and a rename changes
+  the name only, never the slug.
 
   Every successful change emits a `[:kanban, :organization, :workspace_*]`
   telemetry event and records the matching audit event through

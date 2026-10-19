@@ -51,6 +51,13 @@ defmodule Kanban.Organizations.OrgWorkspacesTest do
     assert AuditLog.list_events(action: action, actor_user_id: actor.id) == []
   end
 
+  defp assert_name_taken({:error, %Ecto.Changeset{} = changeset}),
+    do: assert(errors_on(changeset) == %{name: ["has already been taken"]})
+
+  defp live_names(organization) do
+    organization |> org_workspaces() |> Enum.reject(& &1.archived_at) |> Enum.map(& &1.name)
+  end
+
   describe "list_workspaces/2" do
     test "lists the Organization's unarchived workspaces by name", %{
       organization: organization,
@@ -136,20 +143,6 @@ defmodule Kanban.Organizations.OrgWorkspacesTest do
       assert workspace.organization_id == organization.id
       refute workspace.personal
       refute workspace.slug == "chosen"
-    end
-
-    test "allows two workspaces with the same name, with different slugs", %{
-      organization: organization,
-      org_admin: org_admin
-    } do
-      assert {:ok, first} =
-               OrgWorkspaces.create_workspace(org_admin, organization.id, %{name: "Ops"})
-
-      assert {:ok, second} =
-               OrgWorkspaces.create_workspace(org_admin, organization.id, %{name: "Ops"})
-
-      assert first.name == second.name
-      refute first.slug == second.slug
     end
 
     test "rejects a blank or overlong name and reports nothing", %{
@@ -387,6 +380,158 @@ defmodule Kanban.Organizations.OrgWorkspacesTest do
 
       assert %Ecto.Changeset{valid?: true} =
                OrgWorkspaces.change_workspace(%Workspace{}, %{"name" => "Fine"})
+    end
+  end
+
+  describe "workspace name uniqueness" do
+    test "creates and renames with a unique name", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      assert {:ok, design} =
+               OrgWorkspaces.create_workspace(org_admin, organization.id, %{"name" => "Design"})
+
+      assert {:ok, ops} =
+               OrgWorkspaces.create_workspace(org_admin, organization.id, %{"name" => "Ops"})
+
+      assert {:ok, %Workspace{name: "Platform"}} =
+               OrgWorkspaces.rename_workspace(org_admin, ops.id, %{"name" => "Platform"})
+
+      assert organization |> live_names() |> Enum.sort() == ["Design", "Platform"]
+      assert design.name == "Design"
+    end
+
+    test "refuses a case variant of a live name", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      design = org_workspace_fixture(organization, %{name: "Design"})
+      other = org_workspace_fixture(organization, %{name: "Other"})
+
+      for name <- ["design", " DESIGN ", "dEsIgN"] do
+        assert_name_taken(
+          OrgWorkspaces.create_workspace(org_admin, organization.id, %{"name" => name})
+        )
+
+        assert_name_taken(OrgWorkspaces.rename_workspace(org_admin, other.id, %{"name" => name}))
+      end
+
+      assert {:ok, %Workspace{name: "DESIGN"}} =
+               OrgWorkspaces.rename_workspace(org_admin, design.id, %{"name" => "DESIGN"})
+
+      assert organization |> live_names() |> Enum.sort() == ["DESIGN", "Other"]
+    end
+
+    test "a duplicate rename writes no audit event", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      org_workspace_fixture(organization, %{name: "Design"})
+      other = org_workspace_fixture(organization, %{name: "Other"})
+      attach_telemetry(@created)
+      attach_telemetry(@renamed)
+
+      assert_name_taken(
+        OrgWorkspaces.create_workspace(org_admin, organization.id, %{"name" => "Design"})
+      )
+
+      assert_name_taken(
+        OrgWorkspaces.rename_workspace(org_admin, other.id, %{"name" => "design"})
+      )
+
+      assert length(org_workspaces(organization)) == 2
+      assert Repo.get!(Workspace, other.id).name == "Other"
+      refute_reported(@created, :org_workspace_created, org_admin)
+      refute_reported(@renamed, :org_workspace_renamed, org_admin)
+    end
+
+    test "the same name is allowed in another Organization and after the original is archived",
+         %{organization: organization, org_admin: org_admin} do
+      other_organization = organization_fixture()
+      other_admin = user_fixture()
+      organization_member_fixture(other_organization, other_admin, :org_admin)
+      original = org_workspace_fixture(organization, %{name: "Design"})
+
+      assert {:ok, elsewhere} =
+               OrgWorkspaces.create_workspace(other_admin, other_organization.id, %{
+                 "name" => "Design"
+               })
+
+      assert elsewhere.organization_id == other_organization.id
+      assert {:ok, _archived} = OrgWorkspaces.archive_workspace(org_admin, original.id)
+
+      assert {:ok, %Workspace{name: "design"}} =
+               OrgWorkspaces.create_workspace(org_admin, organization.id, %{"name" => "design"})
+    end
+
+    test "the error names no workspace of another Organization", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      other_organization = organization_fixture()
+      org_workspace_fixture(other_organization, %{name: "Secret Project"})
+      org_workspace_fixture(organization, %{name: "Design"})
+
+      assert {:error, changeset} =
+               OrgWorkspaces.create_workspace(org_admin, organization.id, %{"name" => "Design"})
+
+      refute inspect(errors_on(changeset)) =~ "Secret Project"
+      assert errors_on(changeset) == %{name: ["has already been taken"]}
+    end
+
+    test "the unique index refuses a racing duplicate", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      results =
+        fn -> OrgWorkspaces.create_workspace(org_admin, organization.id, %{"name" => "Race"}) end
+        |> List.duplicate(2)
+        |> Enum.map(&Task.async/1)
+        |> Task.await_many()
+
+      assert [{:ok, %Workspace{name: "Race"}}] = Enum.filter(results, &match?({:ok, _}, &1))
+      assert [refused] = Enum.reject(results, &match?({:ok, _}, &1))
+      assert_name_taken(refused)
+      assert live_names(organization) == ["Race"]
+    end
+
+    # The Workspace moduledoc documents that case folding is the database's
+    # lower(), so accented capitals fold only where its character type folds
+    # them (not under C). This pins that contract on whichever database runs
+    # the suite.
+    test "accented capitals collide exactly when the database folds them", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      %{rows: [[folds?]]} = Repo.query!("SELECT lower('ÉCOLE') = 'école'")
+
+      assert {:ok, _} =
+               OrgWorkspaces.create_workspace(org_admin, organization.id, %{"name" => "ÉCOLE"})
+
+      result = OrgWorkspaces.create_workspace(org_admin, organization.id, %{"name" => "école"})
+
+      if folds? do
+        assert_name_taken(result)
+        assert live_names(organization) == ["ÉCOLE"]
+      else
+        assert {:ok, %Workspace{name: "école"}} = result
+        assert organization |> live_names() |> Enum.sort() == Enum.sort(["école", "ÉCOLE"])
+      end
+    end
+
+    test "the slug after a rename follows the decision", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      workspace = org_workspace_fixture(organization, %{name: "Design"})
+
+      assert {:ok, renamed} =
+               OrgWorkspaces.rename_workspace(org_admin, workspace.id, %{"name" => "Research"})
+
+      assert renamed.name == "Research"
+      assert renamed.slug == workspace.slug
+      assert String.starts_with?(renamed.slug, "design-")
+      assert Repo.get!(Workspace, workspace.id).slug == workspace.slug
     end
   end
 end

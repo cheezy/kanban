@@ -414,6 +414,34 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
       assert Repo.get!(Workspace, workspace.id).name == "Kept"
     end
 
+    test "shows a duplicate name error inline", %{conn: conn, organization: organization} do
+      org_workspace_fixture(organization, %{name: "Design"})
+      other = org_workspace_fixture(organization, %{name: "Other"})
+      view = open_workspaces(conn)
+
+      html =
+        view
+        |> form("#create-workspace-form", workspace: %{name: "design"})
+        |> render_submit()
+
+      assert html =~ "has already been taken"
+      assert has_element?(view, "#create-workspace-form")
+      assert length(org_workspaces(organization)) == 2
+
+      view |> element("#rename-workspace-#{other.id}") |> render_click()
+
+      html =
+        view
+        |> form("#rename-workspace-form", rename: %{name: "DESIGN"})
+        |> render_submit()
+
+      assert html =~ "has already been taken"
+      assert has_element?(view, "#rename-workspace-form")
+      assert Repo.get!(Workspace, other.id).name == "Other"
+      assert AuditLog.list_events(action: :org_workspace_created) == []
+      assert AuditLog.list_events(action: :org_workspace_renamed) == []
+    end
+
     test "cancelling a rename restores the row", %{conn: conn, organization: organization} do
       workspace = org_workspace_fixture(organization, %{name: "Kept"})
       view = open_workspaces(conn)

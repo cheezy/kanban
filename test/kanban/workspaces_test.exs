@@ -493,6 +493,34 @@ defmodule Kanban.WorkspacesTest do
     end
   end
 
+  describe "the workspace name rule" do
+    test "personal workspaces are outside the name rule" do
+      owners = for _ <- 1..3, do: user_fixture()
+      personal = Enum.map(owners, &Workspaces.get_personal_workspace/1)
+
+      assert Enum.map(personal, & &1.name) == ["Personal", "Personal", "Personal"]
+      assert personal |> Enum.map(& &1.id) |> Enum.uniq() |> length() == 3
+
+      {organization, admin} = org_with_admin()
+
+      assert {:ok, %Workspace{name: "Personal"}} =
+               Workspaces.create_org_workspace(%{name: "Personal"}, admin)
+
+      org_workspace_fixture(organization, %{
+        name: "Design",
+        archived_at: DateTime.utc_now(:second)
+      })
+
+      assert {:ok, %Workspace{name: "design"}} =
+               Workspaces.create_org_workspace(%{name: "design"}, admin)
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Workspaces.create_org_workspace(%{name: "DESIGN"}, admin)
+
+      assert errors_on(changeset) == %{name: ["has already been taken"]}
+    end
+  end
+
   describe "get_workspace/2" do
     setup do
       {organization, admin} = org_with_admin()

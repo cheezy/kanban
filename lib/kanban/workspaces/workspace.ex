@@ -13,8 +13,37 @@ defmodule Kanban.Workspaces.Workspace do
   database checks the combination (`workspaces_personal_iff_no_organization`)
   and refuses to flip `personal` later (`workspaces_personal_immutable`).
 
-  The slug is generated on the server from the name plus a random suffix, and
-  never changes after creation.
+  ## Names
+
+  Within one Organization no two unarchived, non-personal workspaces share a
+  name, compared ignoring case (a product-owner decision, W2420). The partial
+  unique index `workspaces_organization_id_lower_name_index` decides, so two
+  org-admins creating the same name at the same moment cannot both succeed.
+  `create_changeset/3` and `changeset/2` map it to "has already been taken" on
+  `:name`. There is no earlier check in the changeset: the index is the only
+  judge.
+
+    * Archiving a workspace frees its name, because archived rows are outside
+      the index.
+    * Personal workspaces are outside the rule; every one is named "Personal".
+    * Names are trimmed before they are compared.
+    * Case folding is the database's `lower()`, which follows the database's
+      character type. Under the C character type only ASCII letters fold, so
+      "ÉCOLE" and "école" count as different names there.
+    * No path unarchives a workspace today. One added later must save through a
+      changeset carrying the same `unique_constraint`, because the index will
+      refuse a name a live workspace already has.
+
+  The migration that added the index renamed any duplicates already present:
+  the oldest workspace kept its name and later ones got " (2)", " (3)" and so on.
+
+  ## Slug
+
+  The slug is generated on the server from the name plus a random suffix when
+  the workspace is created, and is never regenerated, not even on a rename (a
+  product-owner decision, W2420). This is intended: once a slug appears in a
+  link it must stay a stable identifier, so after a rename it can stop
+  resembling the name.
 
   There is no plan, seat or billing field. Whether a workspace is paid will be
   derived from its `organization_id` (by `Kanban.Plans`, planned in W2398), never
@@ -30,6 +59,7 @@ defmodule Kanban.Workspaces.Workspace do
 
   @name_max_length 100
   @slug_base_max_length 40
+  @name_index :workspaces_organization_id_lower_name_index
 
   schema "workspaces" do
     field :name, :string
@@ -61,6 +91,7 @@ defmodule Kanban.Workspaces.Workspace do
     |> put_slug()
     |> validate_required([:slug])
     |> unique_constraint(:slug)
+    |> unique_constraint(:name, name: @name_index)
     |> foreign_key_constraint(:organization_id)
     |> check_constraint(:personal,
       name: :workspaces_personal_iff_no_organization,
@@ -70,13 +101,16 @@ defmodule Kanban.Workspaces.Workspace do
 
   @doc """
   Builds a changeset that renames a workspace. Only `:name` is cast; the slug,
-  `personal` and `organization_id` never change here.
+  `personal` and `organization_id` never change here. A name another live
+  workspace in the same Organization already has, ignoring case, comes back as
+  "has already been taken" on `:name` when the update is saved.
   """
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(%__MODULE__{} = workspace, attrs) do
     workspace
     |> cast(attrs, [:name])
     |> validate_name()
+    |> unique_constraint(:name, name: @name_index)
   end
 
   @doc """
@@ -120,8 +154,9 @@ defmodule Kanban.Workspaces.Workspace do
   defp trim_name(name) when is_binary(name), do: String.trim(name)
   defp trim_name(name), do: name
 
-  # Two workspaces with the same name still get different slugs, so creating
-  # one never fails on a name someone else already used.
+  # The random suffix keeps slugs unique across every workspace, including the
+  # ones that may share a name: those in different Organizations, archived
+  # ones and personal ones.
   defp put_slug(%Ecto.Changeset{valid?: true} = changeset) do
     name = get_field(changeset, :name)
     suffix = 5 |> :crypto.strong_rand_bytes() |> Base.encode32(case: :lower, padding: false)
