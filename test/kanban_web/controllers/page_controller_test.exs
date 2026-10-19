@@ -87,6 +87,16 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "Frequently asked questions"
   end
 
+  test "GET /pricing has the #contact target the lock prompts and member cap link to",
+       %{conn: conn} do
+    contact = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
+    contact = LazyHTML.query(contact, "#contact")
+
+    assert Enum.count(contact) == 1
+    assert LazyHTML.text(contact) =~ "Enterprise"
+    assert contact |> LazyHTML.query("a[href^='mailto:']") |> LazyHTML.text() =~ "Talk to us"
+  end
+
   test "GET /product", %{conn: conn} do
     conn = get(conn, ~p"/product")
     body = html_response(conn, 200)
