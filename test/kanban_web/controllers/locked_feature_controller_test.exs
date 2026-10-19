@@ -1,7 +1,5 @@
 defmodule KanbanWeb.LockedFeatureControllerTest do
-  # async: false because the rate-limit cases turn the limiter on globally; the
-  # broad suite runs with it disabled (config/test.exs).
-  use KanbanWeb.ConnCase, async: false
+  use KanbanWeb.ConnCase, async: true
 
   import Kanban.TelemetryHelpers
 
@@ -59,15 +57,10 @@ defmodule KanbanWeb.LockedFeatureControllerTest do
     end
   end
 
-  describe "GET /locked/:feature rate limit" do
+  # The once-a-week record is in the database (Kanban.Plans.LockedFeatureClicks),
+  # so it applies in every environment, with or without Kanban.RateLimit.
+  describe "GET /locked/:feature once per user and feature a week" do
     setup :register_and_log_in_user
-
-    setup do
-      original = Application.get_env(:kanban, Kanban.RateLimit)
-      Application.put_env(:kanban, Kanban.RateLimit, enabled: true)
-      on_exit(fn -> Application.put_env(:kanban, Kanban.RateLimit, original) end)
-      :ok
-    end
 
     test "a repeat click on the same feature is not counted but still redirects", %{conn: conn} do
       attach_telemetry(@event)
@@ -92,6 +85,16 @@ defmodule KanbanWeb.LockedFeatureControllerTest do
       assert_receive {:telemetry_event, @event, %{count: 1}, %{feature: :sso}}
       assert_receive {:telemetry_event, @event, %{count: 1}, %{feature: :mcp}}
       refute_received {:telemetry_event, @event, _measurements, _metadata}
+    end
+
+    test "a click counted more than a week ago counts again", %{conn: conn, user: user} do
+      attach_telemetry(@event)
+      week_ago = DateTime.add(DateTime.utc_now(), -8, :day)
+      assert :counted = Kanban.Plans.LockedFeatureClicks.count_click(user, :sso, week_ago)
+
+      get(conn, ~p"/locked/sso")
+
+      assert_receive {:telemetry_event, @event, %{count: 1}, %{feature: :sso}}
     end
 
     test "the limit is per user, so another user's click still counts", %{conn: conn} do

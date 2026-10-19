@@ -17,13 +17,14 @@ defmodule KanbanWeb.LockedFeatureController do
     * the browser marks the request as same-origin or user-initiated
       (`Sec-Fetch-Site` of `same-origin` or `none`, or no header at all), so a
       third-party page cannot record clicks through a visitor's session, and
-    * the `:locked_feature_click` rate limit allows it, which counts each user
-      at most once per feature a week.
+    * `Kanban.Plans.LockedFeatureClicks` has not already counted this user's
+      click on this feature in the last 7 days. That record is in the
+      database, so it holds across restarts and machines.
   """
   use KanbanWeb, :controller
 
   alias Kanban.Plans
-  alias Kanban.RateLimit
+  alias Kanban.Plans.LockedFeatureClicks
 
   def show(conn, %{"feature" => name}) do
     case Plans.parse_feature(name) do
@@ -44,13 +45,13 @@ defmodule KanbanWeb.LockedFeatureController do
   end
 
   defp record_click(user, feature) do
-    case RateLimit.check(:locked_feature_click, identity: "user:#{user.id}:#{feature}") do
-      :ok ->
+    case LockedFeatureClicks.count_click(user, feature) do
+      :counted ->
         Kanban.Telemetry.emit([:kanban, :plan, :locked_feature_clicked], %{count: 1}, %{
           feature: feature
         })
 
-      {:error, {:rate_limited, _retry_after_ms}} ->
+      :already_counted ->
         :ok
     end
   end

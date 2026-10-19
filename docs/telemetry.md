@@ -718,16 +718,16 @@ click. Both are declared in `Kanban.Telemetry.Catalog.PlanEvents`
   An unknown feature redirects to `/pricing` and emits nothing, and a
   signed-out visitor is sent to log in first. The user is never sent.
 - **`locked_feature_clicked` is persisted, so it counts demand, not
-  requests.** Only signed-in users reach it. The `:locked_feature_click`
-  surface of `Kanban.RateLimit` counts each user at most once per feature a
-  week, and a request the browser marks as cross-site (`Sec-Fetch-Site` of
-  `cross-site` or `same-site`) is not counted, so a third-party page cannot
-  record clicks through a visitor's session. In both cases the redirect still
-  happens. A row is therefore one user wanting one feature in a week, so a
-  weekly count is close to the number of distinct users who asked for it. The
-  limiter keeps its buckets in memory on each node, so a restart or deploy can
-  let a user count again early. Read weekly clicks per feature from the stored
-  rows:
+  requests.** Only signed-in users reach it. `Kanban.Plans.LockedFeatureClicks`
+  counts each user at most once per feature in any 7 days, and a request the
+  browser marks as cross-site (`Sec-Fetch-Site` of `cross-site` or
+  `same-site`) is not counted, so a third-party page cannot record clicks
+  through a visitor's session. In both cases the redirect still happens. A row
+  is therefore one user wanting one feature in a week, so a weekly count is
+  close to the number of distinct users who asked for it. The last counted
+  click per user and feature is kept in the `locked_feature_clicks` table, so
+  the limit holds across restarts, deploys and machines. Read weekly clicks
+  per feature from the stored rows:
 
   ```sql
   SELECT date_trunc('week', recorded_at) AS week,
