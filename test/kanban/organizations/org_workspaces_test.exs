@@ -374,6 +374,48 @@ defmodule Kanban.Organizations.OrgWorkspacesTest do
     end
   end
 
+  describe "a disabled org-admin" do
+    # Disabled in the database; the struct passed in is the stale, enabled one.
+    setup %{org_admin: org_admin} do
+      org_admin
+      |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
+      |> Repo.update!()
+
+      :ok
+    end
+
+    test "cannot rename a workspace", %{organization: organization, org_admin: org_admin} do
+      workspace = org_workspace_fixture(organization, %{name: "Old name"})
+      attach_telemetry(@renamed)
+
+      assert OrgWorkspaces.rename_workspace(org_admin, workspace.id, %{"name" => "New name"}) ==
+               {:error, :unauthorized}
+
+      assert Repo.get!(Workspace, workspace.id).name == "Old name"
+      refute_reported(@renamed, :org_workspace_renamed, org_admin)
+    end
+
+    test "cannot archive a workspace", %{organization: organization, org_admin: org_admin} do
+      workspace = org_workspace_fixture(organization)
+      attach_telemetry(@archived)
+
+      assert OrgWorkspaces.archive_workspace(org_admin, workspace.id) == {:error, :unauthorized}
+
+      assert Repo.get!(Workspace, workspace.id).archived_at == nil
+      refute_reported(@archived, :org_workspace_archived, org_admin)
+    end
+
+    test "cannot create or list workspaces", %{organization: organization, org_admin: org_admin} do
+      workspace = org_workspace_fixture(organization)
+
+      assert OrgWorkspaces.create_workspace(org_admin, organization.id, %{"name" => "New"}) ==
+               {:error, :unauthorized}
+
+      assert OrgWorkspaces.list_workspaces(org_admin, organization.id) == []
+      assert org_workspaces(organization) |> Enum.map(& &1.id) == [workspace.id]
+    end
+  end
+
   describe "change_workspace/2" do
     test "returns an unsaved changeset" do
       assert %Ecto.Changeset{valid?: false} = OrgWorkspaces.change_workspace()

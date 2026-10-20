@@ -8,15 +8,16 @@ defmodule Kanban.Organizations.OrgWorkspaces do
   `Kanban.Workspaces.Workspace`; this module only decides who may create,
   rename and archive one, and reports each change.
 
-  Every function reads the actor's org-admin role from the database on each
-  call, never from a scope loaded earlier, so an org-admin removed while the
-  console is open is refused on their next action.
+  Every function reads the actor's org-admin role and enabled account from the
+  database on each call, never from a scope loaded earlier, so an org-admin
+  removed or disabled while the console is open is refused on their next
+  action.
 
   A workspace id is always looked up inside the actor's own Organization. An id
   that does not exist, belongs to another Organization, names a personal
   workspace or names an archived one all return `{:error, :not_found}` and
-  change nothing, so ids cannot be probed. A caller who is not an org-admin at
-  all gets `{:error, :unauthorized}`.
+  change nothing, so ids cannot be probed. A caller who is not an enabled
+  org-admin at all gets `{:error, :unauthorized}`.
 
   Within one Organization no two unarchived workspaces share a name, compared
   ignoring case; a database index decides (see `Kanban.Workspaces.Workspace`).
@@ -185,15 +186,16 @@ defmodule Kanban.Organizations.OrgWorkspaces do
       else: :ok
   end
 
-  # The actor's Organization comes from their own membership, read from the
+  # The actor's Organization comes from their own membership, and their
+  # org-admin role and enabled account from org_admin?/2, all read from the
   # database on every call.
   defp org_admin_organization_id(actor) do
-    case Organizations.get_membership(actor) do
-      %OrganizationMember{role: :org_admin, organization_id: organization_id} ->
-        {:ok, organization_id}
-
-      _not_an_org_admin ->
-        {:error, :unauthorized}
+    with %OrganizationMember{role: :org_admin, organization_id: organization_id} <-
+           Organizations.get_membership(actor),
+         true <- Organizations.org_admin?(actor, organization_id) do
+      {:ok, organization_id}
+    else
+      _not_an_enabled_org_admin -> {:error, :unauthorized}
     end
   end
 

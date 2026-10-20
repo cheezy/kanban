@@ -204,9 +204,10 @@ defmodule Kanban.Workspaces do
   @doc """
   Creates a workspace for `actor`'s Organization.
 
-  Only an org-admin may do this. The Organization comes from `actor`'s own
-  membership; only `:name` is read from `attrs`, so an `organization_id`,
-  `personal` or slug in them is ignored. No owner row is created.
+  Only an enabled org-admin may do this, read from the database. The
+  Organization comes from `actor`'s own membership; only `:name` is read from
+  `attrs`, so an `organization_id`, `personal` or slug in them is ignored. No
+  owner row is created.
 
   ## Examples
 
@@ -220,14 +221,14 @@ defmodule Kanban.Workspaces do
   @spec create_org_workspace(map(), User.t()) ::
           {:ok, Workspace.t()} | {:error, :unauthorized | Ecto.Changeset.t()}
   def create_org_workspace(attrs, %User{} = actor) do
-    case Organizations.get_membership(actor) do
-      %OrganizationMember{role: :org_admin, organization_id: organization_id} ->
-        attrs
-        |> Workspace.create_changeset(false, organization_id)
-        |> Repo.insert()
-
-      _not_an_org_admin ->
-        {:error, :unauthorized}
+    with %OrganizationMember{role: :org_admin, organization_id: organization_id} <-
+           Organizations.get_membership(actor),
+         true <- Organizations.org_admin?(actor, organization_id) do
+      attrs
+      |> Workspace.create_changeset(false, organization_id)
+      |> Repo.insert()
+    else
+      _not_an_enabled_org_admin -> {:error, :unauthorized}
     end
   end
 
@@ -236,14 +237,15 @@ defmodule Kanban.Workspaces do
 
   `actor` reaches a personal workspace only as its owner, and an org workspace
   as an org-admin of its Organization or through a member or guest row. A
-  workspace `actor` cannot reach looks exactly like one that does not exist.
+  disabled account, read from the database, reaches none. A workspace `actor`
+  cannot reach looks exactly like one that does not exist.
   Archived workspaces are returned, and an `id` that is not a positive integer
   that fits the column (`nil`, `"abc"`, `"99999999999999999999"`) is `nil`.
   """
   @spec get_workspace(integer() | String.t() | nil, User.t()) :: Workspace.t() | nil
   def get_workspace(id, %User{} = actor) do
     with id when is_integer(id) <- parse_id(id),
-         %Workspace{} = workspace <- Repo.get(Workspace, id),
+         %Workspace{} = workspace <- id |> enabled_actor_query(actor) |> Repo.one(),
          true <- reachable?(workspace, actor) do
       workspace
     else
@@ -277,45 +279,24 @@ defmodule Kanban.Workspaces do
 
   defp member_row?(workspace, actor), do: get_member_role(workspace, actor) != nil
 
-  @doc """
-  Returns the org workspaces `user` can reach, unarchived, by name ignoring case.
+  # The workspace with `id`, only for an enabled `actor`: disabled_at is read
+  # in the same query, as Organizations.org_admin?/2 reads it.
+  defp enabled_actor_query(id, %User{id: actor_id}) do
+    from(w in Workspace,
+      join: u in User,
+      on: u.id == ^actor_id and is_nil(u.disabled_at),
+      where: w.id == ^id
+    )
+  end
 
-  An org-admin gets every unarchived workspace of their Organization; anyone
-  else gets the ones they have a member or guest row on. A personal workspace is
-  never returned, not even the user's own.
-  """
-  @spec list_workspaces_for_user(User.t()) :: [Workspace.t()]
-  def list_workspaces_for_user(%User{} = user),
-    do: list_workspaces_for_membership(user, Organizations.get_membership(user))
+  @doc "Lists the org workspaces `user` can reach. See `Kanban.Workspaces.Listing`."
+  defdelegate list_workspaces_for_user(user), to: Listing
 
   @doc """
   `list_workspaces_for_user/1` for a caller that has already loaded `user`'s
-  Organization membership (or `nil`), saving that query.
+  Organization membership. See `Kanban.Workspaces.Listing`.
   """
-  @spec list_workspaces_for_membership(User.t(), OrganizationMember.t() | nil) :: [Workspace.t()]
-  def list_workspaces_for_membership(%User{} = user, membership) do
-    case membership do
-      %OrganizationMember{role: :org_admin, organization_id: organization_id} ->
-        organization_id |> org_workspaces_query() |> Repo.all()
-
-      %OrganizationMember{organization_id: organization_id} ->
-        organization_id
-        |> org_workspaces_query()
-        |> join(:inner, [w], m in assoc(w, :members), on: m.user_id == ^user.id)
-        |> Repo.all()
-
-      nil ->
-        []
-    end
-  end
-
-  defp org_workspaces_query(organization_id) do
-    from(w in Workspace,
-      where:
-        w.organization_id == ^organization_id and w.personal == false and is_nil(w.archived_at),
-      order_by: [asc: fragment("lower(?)", w.name), asc: w.id]
-    )
-  end
+  defdelegate list_workspaces_for_membership(user, membership), to: Listing
 
   @doc """
   Returns `user`'s role on `workspace` from their member row — `:owner`,

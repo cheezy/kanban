@@ -37,6 +37,16 @@ defmodule Kanban.WorkspacesTest do
 
   defp workspace_count, do: Repo.aggregate(Workspace, :count)
 
+  defp org_workspaces_of(organization),
+    do: Workspace |> where([w], w.organization_id == ^organization.id) |> Repo.all()
+
+  # Disables `user` in the database and returns the stale struct, still
+  # enabled, so a check that trusts the struct would let them through.
+  defp disable(user) do
+    user |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second)) |> Repo.update!()
+    user
+  end
+
   describe "WorkspaceMember roles" do
     test "roles/0 is owner, member and guest, with no admin" do
       assert WorkspaceMember.roles() == [:owner, :member, :guest]
@@ -593,6 +603,17 @@ defmodule Kanban.WorkspacesTest do
       end
     end
 
+    test "refuses a disabled org-admin, read from the database" do
+      {organization, admin} = org_with_admin()
+      count = workspace_count()
+
+      assert Workspaces.create_org_workspace(%{name: "Design"}, disable(admin)) ==
+               {:error, :unauthorized}
+
+      assert workspace_count() == count
+      assert org_workspaces_of(organization) == []
+    end
+
     test "a blank name is a changeset error" do
       {_organization, admin} = org_with_admin()
 
@@ -711,6 +732,17 @@ defmodule Kanban.WorkspacesTest do
       archived = org_workspace_fixture(ctx.organization, archived_at: DateTime.utc_now(:second))
       assert %Workspace{} = Workspaces.get_workspace(archived.id, ctx.admin)
     end
+
+    test "returns nil to a disabled account, read from the database", ctx do
+      member = org_member(ctx.organization)
+      workspace_member_fixture(ctx.workspace, member, :member)
+      owner = user_fixture()
+      personal = personal_workspace_fixture(owner)
+
+      assert Workspaces.get_workspace(ctx.workspace.id, disable(ctx.admin)) == nil
+      assert Workspaces.get_workspace(ctx.workspace.id, disable(member)) == nil
+      assert Workspaces.get_workspace(personal.id, disable(owner)) == nil
+    end
   end
 
   describe "list_workspaces_for_user/1" do
@@ -757,6 +789,20 @@ defmodule Kanban.WorkspacesTest do
       personal_workspace_fixture(user)
 
       assert Workspaces.list_workspaces_for_user(user) == []
+    end
+
+    test "returns nothing to a disabled org-admin or member, read from the database", ctx do
+      member = org_member(ctx.organization)
+      workspace_member_fixture(ctx.beta, member, :member)
+      admin_membership = Kanban.Organizations.get_membership(ctx.admin)
+      member_membership = Kanban.Organizations.get_membership(member)
+
+      assert ctx.admin |> disable() |> Workspaces.list_workspaces_for_user() == []
+      assert member |> disable() |> Workspaces.list_workspaces_for_user() == []
+
+      # A membership loaded before the account was disabled does not help.
+      assert Workspaces.list_workspaces_for_membership(ctx.admin, admin_membership) == []
+      assert Workspaces.list_workspaces_for_membership(member, member_membership) == []
     end
   end
 
