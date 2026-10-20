@@ -40,6 +40,7 @@ defmodule Kanban.Organizations.MemberRemoval do
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrganizationTelemetry
   alias Kanban.Repo
+  alias Kanban.Workspaces.InvitationRevocation
   alias Kanban.Workspaces.MembershipCascade
 
   @max_bigint 9_223_372_036_854_775_807
@@ -86,19 +87,25 @@ defmodule Kanban.Organizations.MemberRemoval do
     end
   end
 
+  # The invitations are locked before the Organization row: acceptance's lock
+  # order (InvitationRevocation).
   defp remove_locked(actor, organization_id, user_id) do
-    with :ok <- MembershipWrites.lock_organization(organization_id),
+    invitations = [InvitationRevocation.addressed_to(user_id, {:organization, organization_id})]
+
+    with :ok <- InvitationRevocation.lock(invitations),
+         :ok <- MembershipWrites.lock_organization(organization_id),
          :ok <- check_org_admin(actor, organization_id),
          {:ok, membership} <- lock_membership(organization_id, user_id),
          :ok <- check_ordinary_member(membership) do
-      remove_from_organization(membership, organization_id, user_id)
+      remove_from_organization(membership, organization_id, user_id, invitations)
     else
       {:error, reason} -> Repo.rollback(reason)
     end
   end
 
-  defp remove_from_organization(membership, organization_id, user_id) do
+  defp remove_from_organization(membership, organization_id, user_id, invitations) do
     removed = MembershipCascade.remove_from_organization(user_id, organization_id)
+    InvitationRevocation.revoke(invitations)
 
     case Repo.delete(membership) do
       {:ok, deleted} -> {deleted, removed}

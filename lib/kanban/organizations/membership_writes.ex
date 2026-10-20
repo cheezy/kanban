@@ -30,6 +30,7 @@ defmodule Kanban.Organizations.MembershipWrites do
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrganizationTelemetry
   alias Kanban.Repo
+  alias Kanban.Workspaces.InvitationRevocation
   alias Kanban.Workspaces.MembershipCascade
 
   @typep change :: :created | :promoted | :unchanged
@@ -141,16 +142,29 @@ defmodule Kanban.Organizations.MembershipWrites do
 
   defp report_org_admin_removed({:error, _reason} = error, _actor, _user), do: error
 
+  # The invitations addressed to the org-admin and the ones they sent are
+  # locked before the Organization row, acceptance's lock order.
   defp remove_org_admin_locked(organization_id, user) do
-    with :ok <- lock_organization(organization_id),
+    invitations = [
+      InvitationRevocation.addressed_to(user.id, {:organization, organization_id}),
+      InvitationRevocation.sent_by(user.id, organization_id)
+    ]
+
+    with :ok <- InvitationRevocation.lock(invitations),
+         :ok <- lock_organization(organization_id),
          {:ok, membership} <- fetch_org_admin_membership(organization_id, user),
          :ok <- ensure_not_last_org_admin(membership) do
-      removed = MembershipCascade.remove_from_organization(user.id, organization_id)
+      cascade_org_admin_removal(membership, organization_id, user, invitations)
+    end
+  end
 
-      case delete_membership(membership) do
-        {:ok, {:removed, deleted}} -> {:ok, {deleted, removed}}
-        {:error, _reason} = error -> error
-      end
+  defp cascade_org_admin_removal(membership, organization_id, user, invitations) do
+    removed = MembershipCascade.remove_from_organization(user.id, organization_id)
+    InvitationRevocation.revoke(invitations)
+
+    case delete_membership(membership) do
+      {:ok, {:removed, deleted}} -> {:ok, {deleted, removed}}
+      {:error, _reason} = error -> error
     end
   end
 

@@ -17,8 +17,9 @@ defmodule Kanban.Workspaces do
 
   Board authorization through workspaces lives in `Kanban.Workspaces.Policy`:
   an org-admin derives owner-equivalent access to the boards in their
-  Organization's workspaces. Removing a workspace member cascades to their
-  board memberships there (`Kanban.Workspaces.MembershipCascade`), and
+  Organization's workspaces. Adding, re-roling and removing workspace members
+  is in `Kanban.Workspaces.Members`; a removal cascades to their board
+  memberships there (`Kanban.Workspaces.MembershipCascade`), and
   `Kanban.Workspaces.BoardMoves` moves a personal board into an org workspace.
   """
 
@@ -31,7 +32,7 @@ defmodule Kanban.Workspaces do
   alias Kanban.Repo
   alias Kanban.Workspaces.BoardMoves
   alias Kanban.Workspaces.Listing
-  alias Kanban.Workspaces.MembershipCascade
+  alias Kanban.Workspaces.Members
   alias Kanban.Workspaces.PersonalCleanup
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
@@ -39,13 +40,11 @@ defmodule Kanban.Workspaces do
   @max_bigint 9_223_372_036_854_775_807
 
   @personal_workspace_name "Personal"
-  @assignable_roles [:member, :guest]
 
   @typedoc "A workspace, or its id as an integer or a string from a URL or form."
   @type workspace_ref :: Workspace.t() | integer() | String.t()
 
-  @type member_error ::
-          :unauthorized | :invalid_role | :not_in_organization | :not_found | :archived
+  @type member_error :: Members.member_error()
 
   @doc """
   Creates `user`'s personal workspace and its single owner row in one
@@ -322,101 +321,14 @@ defmodule Kanban.Workspaces do
     end
   end
 
-  @doc """
-  Adds `user` to the org workspace `workspace` as a `:member` or `:guest`.
+  @doc "Adds a member to an org workspace. See `Kanban.Workspaces.Members.add_member/4`."
+  defdelegate add_member(actor, workspace, user, role), to: Members
 
-  `actor` must be an org-admin of the workspace's Organization, and `user` must
-  belong to that Organization. The owner role is refused: org workspaces have
-  no owner row. A personal workspace takes no members, and looks the same as
-  one `actor` may not manage. An archived workspace takes no new members and
-  returns `{:error, :archived}`.
+  @doc "Changes a workspace member's role. See `Kanban.Workspaces.Members.update_member_role/4`."
+  defdelegate update_member_role(actor, workspace, user, role), to: Members
 
-  `workspace` is a `%Workspace{}` or its id; it is re-read from the database.
-  An id that is not a positive integer that fits the column is refused like a
-  missing workspace.
-
-  ## Examples
-
-      iex> add_member(org_admin, workspace, colleague, :member)
-      {:ok, %WorkspaceMember{role: :member}}
-
-      iex> add_member(org_admin, workspace, outsider, :guest)
-      {:error, :not_in_organization}
-
-  """
-  @spec add_member(User.t(), workspace_ref(), User.t(), atom()) ::
-          {:ok, WorkspaceMember.t()} | {:error, member_error() | Ecto.Changeset.t()}
-  def add_member(%User{} = actor, workspace, %User{} = user, role) do
-    with :ok <- check_assignable_role(role),
-         {:ok, workspace} <- fetch_managed_workspace(actor, workspace),
-         :ok <- check_not_archived(workspace),
-         :ok <- check_in_organization(user, workspace) do
-      workspace.id
-      |> WorkspaceMember.changeset(user.id, role)
-      |> Repo.insert()
-    end
-  end
-
-  @doc """
-  Changes `user`'s role on the org workspace `workspace` to `:member` or
-  `:guest`. `actor` must be an org-admin of its Organization.
-
-  `workspace` is a `%Workspace{}` or its id; it is re-read from the database,
-  and an id that cannot name a row is refused like a missing workspace.
-  """
-  @spec update_member_role(User.t(), workspace_ref(), User.t(), atom()) ::
-          {:ok, WorkspaceMember.t()} | {:error, member_error() | Ecto.Changeset.t()}
-  def update_member_role(%User{} = actor, workspace, %User{} = user, role) do
-    with :ok <- check_assignable_role(role),
-         {:ok, workspace} <- fetch_managed_workspace(actor, workspace),
-         {:ok, membership} <- fetch_membership(workspace, user) do
-      membership
-      |> WorkspaceMember.role_changeset(role)
-      |> Repo.update()
-    end
-  end
-
-  @doc """
-  Removes `user` from the org workspace `workspace`. `actor` must be an
-  org-admin of its Organization. A user who has since left the Organization can
-  still be removed.
-
-  In the same transaction it deletes `user`'s board memberships on this
-  workspace's boards — an owner row included — revokes their API tokens for
-  those boards and unassigns their open tasks there
-  (`Kanban.Workspaces.MembershipCascade`). Boards in other workspaces are left
-  alone. Each removed board membership is reported after commit as
-  `Kanban.Boards.remove_user_from_board/3` reports one.
-
-  `workspace` is a `%Workspace{}` or its id; it is re-read from the database,
-  and an id that cannot name a row is refused like a missing workspace.
-  """
-  @spec remove_member(User.t(), workspace_ref(), User.t()) ::
-          {:ok, WorkspaceMember.t()} | {:error, member_error() | Ecto.Changeset.t()}
-  def remove_member(%User{} = actor, workspace, %User{} = user) do
-    with {:ok, workspace} <- fetch_managed_workspace(actor, workspace),
-         {:ok, membership} <- fetch_membership(workspace, user) do
-      fn -> remove_membership(membership, workspace, user) end
-      |> Repo.transaction()
-      |> notify_removed(user, actor)
-    end
-  end
-
-  defp remove_membership(membership, workspace, user) do
-    removed = MembershipCascade.remove(user.id, [workspace.id])
-
-    case Repo.delete(membership) do
-      {:ok, deleted} -> {deleted, removed}
-      {:error, changeset} -> Repo.rollback(changeset)
-    end
-  end
-
-  defp notify_removed({:ok, {deleted, removed}}, user, actor) do
-    MembershipCascade.notify(removed, user, actor)
-    {:ok, deleted}
-  end
-
-  defp notify_removed({:error, _reason} = error, _user, _actor), do: error
+  @doc "Removes a workspace member. See `Kanban.Workspaces.Members.remove_member/3`."
+  defdelegate remove_member(actor, workspace, user), to: Members
 
   @doc """
   Moves a board the actor owns from their personal workspace into one of their
@@ -435,46 +347,6 @@ defmodule Kanban.Workspaces do
 
   @doc "Lists the boards the actor may move into a workspace. See `Kanban.Workspaces.Listing`."
   defdelegate list_movable_boards(actor), to: Listing
-
-  defp check_assignable_role(role) when role in @assignable_roles, do: :ok
-  defp check_assignable_role(_role), do: {:error, :invalid_role}
-
-  # Role changes and removals stay allowed on an archived workspace, so its
-  # members can still be tidied up; only new members are refused.
-  defp check_not_archived(%Workspace{archived_at: nil}), do: :ok
-  defp check_not_archived(%Workspace{}), do: {:error, :archived}
-
-  # The workspace is re-read so a stale or hand-built struct cannot point the
-  # check at another Organization. A missing workspace, a personal one, and one
-  # whose Organization `actor` is not an org-admin of all give the same error,
-  # and so does an id that cannot name a row.
-  defp fetch_managed_workspace(actor, workspace) do
-    case get_by_id(workspace_id(workspace)) do
-      %Workspace{personal: false, organization_id: organization_id} = workspace ->
-        if Organizations.org_admin?(actor, organization_id),
-          do: {:ok, workspace},
-          else: {:error, :unauthorized}
-
-      _missing_or_personal ->
-        {:error, :unauthorized}
-    end
-  end
-
-  defp check_in_organization(user, %Workspace{organization_id: organization_id}) do
-    if Organizations.member?(user, organization_id),
-      do: :ok,
-      else: {:error, :not_in_organization}
-  end
-
-  defp fetch_membership(%Workspace{id: workspace_id}, %User{id: user_id}) do
-    case Repo.get_by(WorkspaceMember, workspace_id: workspace_id, user_id: user_id) do
-      %WorkspaceMember{} = membership -> {:ok, membership}
-      nil -> {:error, :not_found}
-    end
-  end
-
-  defp get_by_id(nil), do: nil
-  defp get_by_id(id), do: Repo.get(Workspace, id)
 
   defp workspace_id(%Workspace{id: id}), do: id
   defp workspace_id(id), do: parse_id(id)
