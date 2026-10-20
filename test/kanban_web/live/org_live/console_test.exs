@@ -1,7 +1,7 @@
 defmodule KanbanWeb.OrgLive.ConsoleTest do
   use KanbanWeb.ConnCase, async: true
 
-  import Ecto.Query, only: [from: 2]
+  import Ecto.Query, only: [from: 2, where: 3]
   import Phoenix.LiveViewTest
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
@@ -785,6 +785,92 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
 
       render_hook(view, "select_section", %{})
       assert has_element?(view, "#details")
+    end
+  end
+
+  describe "removing a member (W2218)" do
+    setup :org_admin_setup
+
+    test "removes a member from the Organization and its workspaces, and audits it", %{
+      conn: conn,
+      organization: organization
+    } do
+      member = named_user("Mel Member")
+      organization_member_fixture(organization, member, :member)
+      workspace = org_workspace_fixture(organization)
+      workspace_member_fixture(workspace, member, :member)
+
+      {:ok, view, _html} = live(conn, ~p"/org?section=members")
+      assert has_element?(view, "#remove-member-#{member.id}[data-confirm]")
+
+      view |> element("#remove-member-#{member.id}") |> render_click()
+
+      assert render(view) =~ "Member removed."
+      refute has_element?(view, "#member-#{member.id}")
+      refute OrganizationMember |> where([m], m.user_id == ^member.id) |> Repo.exists?()
+      assert [_event] = AuditLog.list_events(action: :org_member_removed)
+    end
+
+    test "shows no Remove button on org-admin rows and refuses a crafted removal of one", %{
+      conn: conn,
+      organization: organization,
+      org_admin: org_admin
+    } do
+      other_admin = user_fixture()
+      organization_member_fixture(organization, other_admin, :org_admin)
+
+      {:ok, view, _html} = live(conn, ~p"/org?section=members")
+
+      refute has_element?(view, "#remove-member-#{org_admin.id}")
+      refute has_element?(view, "#remove-member-#{other_admin.id}")
+
+      html = render_hook(view, "remove_member", %{"user_id" => Integer.to_string(other_admin.id)})
+
+      assert html =~ "Org-admins can&#39;t be removed here."
+      assert OrganizationMember |> where([m], m.user_id == ^other_admin.id) |> Repo.exists?()
+    end
+
+    test "a crafted id outside the Organization, garbage or a missing id changes nothing", %{
+      conn: conn,
+      organization: organization
+    } do
+      outsider = user_fixture()
+      organization_member_fixture(organization_fixture(), outsider, :member)
+      member = user_fixture()
+      organization_member_fixture(organization, member, :member)
+
+      {:ok, view, _html} = live(conn, ~p"/org?section=members")
+
+      for id <- [Integer.to_string(outsider.id), "abc"] do
+        assert render_hook(view, "remove_member", %{"user_id" => id}) =~ "Member not found."
+      end
+
+      render_hook(view, "remove_member", %{})
+      render_hook(view, "remove_member", %{"user_id" => %{"a" => 1}})
+
+      assert OrganizationMember |> where([m], m.user_id == ^outsider.id) |> Repo.exists?()
+      assert OrganizationMember |> where([m], m.user_id == ^member.id) |> Repo.exists?()
+    end
+
+    test "an org-admin demoted while the page is open is refused and nothing changes", %{
+      conn: conn,
+      organization: organization,
+      org_admin: org_admin
+    } do
+      member = user_fixture()
+      organization_member_fixture(organization, member, :member)
+
+      {:ok, view, _html} = live(conn, ~p"/org?section=members")
+
+      from(m in OrganizationMember, where: m.user_id == ^org_admin.id)
+      |> Repo.update_all(set: [role: :member])
+
+      render_hook(view, "remove_member", %{"user_id" => Integer.to_string(member.id)})
+
+      assert OrganizationMember |> where([m], m.user_id == ^member.id) |> Repo.exists?()
+
+      assert [_ | _] =
+               AuditLog.list_events(action: :permission_denied, actor_user_id: org_admin.id)
     end
   end
 end

@@ -37,8 +37,12 @@ defmodule Kanban.Accounts.Scope do
   pages read it without a query. Scopes built elsewhere leave it `false`.
 
   `workspace` is the `Kanban.Workspaces.Workspace` the caller is acting in, or
-  `nil`. Nothing sets it yet; `put_workspace/2` is how a caller that has resolved
-  one (through `Kanban.Workspaces.get_workspace/2`) records it.
+  `nil`, and `workspaces` the org workspaces their switcher lists (`[]` without
+  an Organization). `KanbanWeb.UserAuth` sets both for every controller request
+  and LiveView mount through `Kanban.Workspaces.Current.put_current/2`, which
+  verifies the session's `current_workspace_id` against that list; scopes built
+  elsewhere leave `nil` and `[]`. `put_workspace/2` records a resolved
+  workspace.
   """
 
   alias Kanban.Accounts.User
@@ -52,7 +56,8 @@ defmodule Kanban.Accounts.Scope do
             two_factor_reminder: false,
             organization_membership: nil,
             notifications_locked: false,
-            workspace: nil
+            workspace: nil,
+            workspaces: []
 
   @doc """
   Creates a scope for the given user.

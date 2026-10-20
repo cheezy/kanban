@@ -10,13 +10,16 @@ defmodule KanbanWeb.SideNav do
 
   alias KanbanWeb.Avatar
   alias KanbanWeb.UserAuth.OrgAdminGate
+  alias KanbanWeb.WorkspaceSwitcher
 
   @doc """
   The authenticated-app SideNav. Renders the Stride logo header, primary nav
   items (Boards/My Work/Agents/Review queue/Metrics) styled to the design source, plus
   a small secondary section for Resources/Settings, and a footer with the
   current user's identity + log-out. An org-admin also gets an Organization
-  link to the org console (`organization_nav_items/1`).
+  link to the org console (`organization_nav_items/1`). Below the logo sits the
+  workspace switcher (`KanbanWeb.WorkspaceSwitcher`), which renders the
+  locked slot or nothing for users without an Organization.
   """
   attr :current_scope, :map, required: true
   attr :active, :atom, default: nil
@@ -63,6 +66,8 @@ defmodule KanbanWeb.SideNav do
           {gettext("Stride")}
         </span>
       </.link>
+
+      <WorkspaceSwitcher.workspace_switcher current_scope={@current_scope} />
 
       <%!-- Two navs in one sidebar: each needs its own name, or assistive tech
             lists two identical "navigation" landmarks. --%>

@@ -384,11 +384,7 @@ defmodule Kanban.Tasks.Queries do
   defp user_has_access?(nil, _board_id), do: false
 
   defp user_has_access?(%{id: user_id}, board_id) do
-    from(bu in Kanban.Boards.BoardUser,
-      where: bu.user_id == ^user_id and bu.board_id == ^board_id,
-      limit: 1
-    )
-    |> Repo.exists?()
+    Kanban.Workspaces.Policy.effective_board_access(board_id, user_id) != nil
   end
 
   defp maybe_filter_archived(query, false) do

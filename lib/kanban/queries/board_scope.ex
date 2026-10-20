@@ -16,11 +16,18 @@ defmodule Kanban.Queries.BoardScope do
 
   Both return the query unchanged for a `nil` scope or a scope without a
   user, mirroring the original guard clauses.
+
+  "Belongs to" is effective board access (W2218): a `board_users` row, or
+  derived org-admin access to a board in their Organization's workspaces, read
+  through `Kanban.Workspaces.Policy.accessible_board_ids/1`. Each variant adds
+  exactly one binding after the column binding — a subquery of
+  `%{board_id: id}` rows, one per board — so a caller's positional bindings
+  are unchanged and a task never appears twice.
   """
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts.Scope
-  alias Kanban.Boards.BoardUser
+  alias Kanban.Workspaces.Policy
 
   @doc """
   Restricts the query to tasks on boards the scoped user belongs to.
@@ -30,9 +37,9 @@ defmodule Kanban.Queries.BoardScope do
   def apply_board_scope(query, %Scope{user: nil}), do: query
 
   def apply_board_scope(query, %Scope{user: user}) do
-    query
-    |> join(:inner, [t, column: c], bu in BoardUser, on: bu.board_id == c.board_id)
-    |> where([_t, _c, bu], bu.user_id == ^user.id)
+    join(query, :inner, [t, column: c], a in subquery(Policy.accessible_board_ids(user.id)),
+      on: a.board_id == c.board_id
+    )
   end
 
   @doc """
@@ -45,7 +52,8 @@ defmodule Kanban.Queries.BoardScope do
   def apply_board_scope_with_column_join(query, %Scope{user: user}) do
     query
     |> join(:inner, [t], c in assoc(t, :column))
-    |> join(:inner, [t, c], bu in BoardUser, on: bu.board_id == c.board_id)
-    |> where([_t, _c, bu], bu.user_id == ^user.id)
+    |> join(:inner, [t, c], a in subquery(Policy.accessible_board_ids(user.id)),
+      on: a.board_id == c.board_id
+    )
   end
 end

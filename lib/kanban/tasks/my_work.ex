@@ -21,17 +21,19 @@ defmodule Kanban.Tasks.MyWork do
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias Kanban.Workspaces.Policy
 
   @doc """
   Returns the non-archived, not-completed tasks assigned to the scoped user on
   boards the user is a member of. A task sitting in a Done column is finished
   whatever its status says, so it is left out too.
 
-  One query: tasks are ordered by board name (then board id, so two boards with
+  Tasks are ordered by board name (then board id, so two boards with
   the same name never interleave), then by priority from `:critical` down to
   `:low`, then by id. `column.board` and `labels` are preloaded, and each
-  `column.board.user_access` is set to the user's membership access on that
-  board (`:owner`, `:modify` or `:read_only`).
+  `column.board.user_access` is set to the user's effective access on that
+  board (`:owner`, `:modify` or `:read_only`; derived org-admin access reads as
+  `:owner`), from a second query over the distinct boards.
 
   Returns `[]` for a `nil` scope or a scope without a user.
 
@@ -45,19 +47,25 @@ defmodule Kanban.Tasks.MyWork do
   def list_assigned_tasks(nil, _opts), do: []
   def list_assigned_tasks(%Scope{user: nil}, _opts), do: []
 
-  def list_assigned_tasks(%Scope{user: %{id: user_id}} = scope, opts) do
+  def list_assigned_tasks(%Scope{user: %{id: user_id} = user} = scope, opts) do
     user_id
     |> open_assigned_tasks()
     |> BoardScope.apply_board_scope_with_column_join(scope)
     |> exclude_done_columns()
     |> join(:inner, [_t, c], b in assoc(c, :board))
     |> order_by_board_then_priority()
-    |> preload([_t, c, _bu, b], column: {c, board: b})
+    |> preload([_t, c, _scoped, b], column: {c, board: b})
     |> preload(:labels)
-    |> select([t, _c, bu, _b], {t, bu.access})
     |> maybe_limit(Keyword.get(opts, :limit))
     |> Repo.all()
-    |> Enum.map(&put_user_access/1)
+    |> put_user_access(user)
+  end
+
+  defp put_user_access(tasks, user) do
+    accesses =
+      tasks |> Enum.map(& &1.column.board_id) |> Policy.effective_board_accesses(user)
+
+    Enum.map(tasks, &put_in(&1.column.board.user_access, Map.get(accesses, &1.column.board_id)))
   end
 
   defp open_assigned_tasks(user_id) do
@@ -74,10 +82,10 @@ defmodule Kanban.Tasks.MyWork do
     where(query, [_t, c], fragment("lower(btrim(?, E' \\t\\n\\r\\f'))", c.name) != "done")
   end
 
-  # Bindings: task, column, board_user (from BoardScope), board. Priority is a
+  # Bindings: task, column, accessible board id (from BoardScope), board. Priority is a
   # string column, so it is ranked explicitly rather than sorted alphabetically.
   defp order_by_board_then_priority(query) do
-    order_by(query, [t, _c, _bu, b],
+    order_by(query, [t, _c, _scoped, b],
       asc: b.name,
       asc: b.id,
       asc:
@@ -88,11 +96,6 @@ defmodule Kanban.Tasks.MyWork do
       asc: t.id
     )
   end
-
-  # The membership row the scope join already matched carries the user's access
-  # level on that board; record it on the board's virtual `user_access` field so
-  # callers can tell a read-only membership apart without another query.
-  defp put_user_access({task, access}), do: put_in(task.column.board.user_access, access)
 
   @doc """
   Groups tasks returned by `list_assigned_tasks/2` into `{board, tasks}`

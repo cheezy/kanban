@@ -6,7 +6,11 @@ defmodule Kanban.ApiTokens do
   import Ecto.Query, warn: false
 
   alias Kanban.ApiTokens.ApiToken
+  alias Kanban.Boards.Board
+  alias Kanban.Boards.BoardUser
+  alias Kanban.Organizations.Organization
   alias Kanban.Repo
+  alias Kanban.Workspaces.Policy
 
   @doc """
   Returns the list of api_tokens for a board.
@@ -142,6 +146,60 @@ defmodule Kanban.ApiTokens do
       {:error, changeset} ->
         {:error, changeset}
     end
+  end
+
+  @doc """
+  Creates an api_token like `create_api_token/3`, but only while `user` may
+  modify `board`, for the board page's own token form (W2218).
+
+  The check and the insert share one transaction, which first takes share
+  locks on what every removal locks or deletes: the user's `board_users` row
+  for the board, and the Organization row of the board's workspace. So a
+  removal that commits first is seen by the re-read of effective access
+  (`Kanban.Workspaces.Policy.effective_board_access/2`) and the token is
+  refused, and a removal that starts later waits for this insert to commit and
+  then revokes the new token with the others. Without the locks a token minted
+  between a removal's revocation and its commit would survive it.
+
+  Returns `{:error, :unauthorized}` when the user can no longer modify the board,
+  and `{:error, changeset}` for invalid attributes.
+  """
+  def create_api_token_for_member(user, %Board{} = board, attrs \\ %{}) do
+    Repo.transaction(fn ->
+      lock_board_access(user.id, board.id)
+
+      if Policy.effective_board_access(board.id, user.id) in [:owner, :modify] do
+        case create_api_token(user, board, attrs) do
+          {:ok, created} -> created
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      else
+        Repo.rollback(:unauthorized)
+      end
+    end)
+  end
+
+  defp lock_board_access(user_id, board_id) do
+    from(bu in BoardUser,
+      where: bu.user_id == ^user_id and bu.board_id == ^board_id,
+      lock: "FOR SHARE",
+      select: bu.id
+    )
+    |> Repo.all()
+
+    organization_ids =
+      from(b in Board,
+        join: w in assoc(b, :workspace),
+        where: b.id == ^board_id and not is_nil(w.organization_id),
+        select: w.organization_id
+      )
+
+    from(o in Organization,
+      where: o.id in subquery(organization_ids),
+      lock: "FOR SHARE",
+      select: o.id
+    )
+    |> Repo.all()
   end
 
   defp normalize_api_token_attrs(attrs, user, board) do

@@ -3,8 +3,9 @@ defmodule KanbanWeb.BoardLive.Index do
 
   alias Kanban.Boards
   alias Kanban.Targets
+  alias Kanban.Workspaces.Current
   alias KanbanWeb.BoardAccent
-  alias KanbanWeb.BoardPulseCard
+  alias KanbanWeb.BoardLive.BoardGroups
   alias KanbanWeb.BoardsHeader
   alias KanbanWeb.TargetsStrip
 
@@ -171,13 +172,10 @@ defmodule KanbanWeb.BoardLive.Index do
 
     {:ok,
      socket
-     |> assign(:has_boards, not Enum.empty?(boards))
-     |> assign(:active_count, length(boards))
      |> assign(:nav_active, :boards)
      |> assign(:timezone, timezone)
      |> assign(:targets, targets)
-     |> assign_workspace_header(scope.user, boards)
-     |> stream(:boards, boards)}
+     |> assign_boards(boards)}
   end
 
   defp schedule_refresh do
@@ -203,11 +201,39 @@ defmodule KanbanWeb.BoardLive.Index do
 
     {:noreply,
      socket
-     |> assign(:has_boards, not Enum.empty?(boards))
-     |> assign(:active_count, length(boards))
      |> assign(:targets, targets)
-     |> assign_workspace_header(scope.user, boards)
-     |> stream(:boards, boards, reset: true)}
+     |> assign_boards(boards)}
+  end
+
+  # The one place the board list reaches the page, so mount/3, the
+  # :refresh_metrics poll and the post-delete reload cannot drift apart. A user
+  # with a current workspace gets three groups; everyone else the flat list
+  # (Kanban.Workspaces.Current.group_boards/2 returns nil for them).
+  defp assign_boards(socket, boards) do
+    scope = socket.assigns.current_scope
+    groups = Current.group_boards(boards, scope)
+
+    socket
+    |> assign(:has_boards, not Enum.empty?(boards))
+    |> assign(:active_count, length(boards))
+    |> assign_workspace_header(scope.user, boards)
+    |> assign(:current_workspace, scope.workspace)
+    |> stream_boards(boards, groups)
+  end
+
+  defp stream_boards(socket, boards, nil) do
+    socket
+    |> assign(:grouped, false)
+    |> stream(:boards, boards, reset: true)
+  end
+
+  defp stream_boards(socket, _boards, groups) do
+    socket
+    |> assign(:grouped, true)
+    |> assign(:group_counts, Map.new(groups, fn {group, list} -> {group, length(list)} end))
+    |> stream(:workspace_boards, groups.workspace, reset: true)
+    |> stream(:personal_boards, groups.personal, reset: true)
+    |> stream(:shared_boards, groups.shared, reset: true)
   end
 
   defp load_boards(user) do
@@ -265,14 +291,7 @@ defmodule KanbanWeb.BoardLive.Index do
   defp attempt_board_deletion(socket, board, user) do
     case Boards.delete_board(board, user) do
       {:ok, _} ->
-        boards = Boards.list_boards_with_metrics(user)
-
-        {:noreply,
-         socket
-         |> assign(:has_boards, not Enum.empty?(boards))
-         |> assign(:active_count, length(boards))
-         |> assign_workspace_header(user, boards)
-         |> stream_delete(:boards, board)}
+        {:noreply, assign_boards(socket, load_boards(user))}
 
       {:error, :unauthorized} ->
         {:noreply,

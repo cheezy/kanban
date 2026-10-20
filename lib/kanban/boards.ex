@@ -11,7 +11,9 @@ defmodule Kanban.Boards do
   reads behind the Boards index, the board header and the all-boards rollups
   in `Kanban.Boards.Dashboard`. All of them are delegated to below; the access
   functions (`list_boards/1`, `get_board/2`, `owner?/2`, `can_modify?/2`) stay
-  here.
+  here and route through `Kanban.Workspaces.Policy`, so an org-admin gets
+  owner-equivalent access to every board in their Organization's workspaces
+  without a `board_users` row.
   """
 
   use Gettext, backend: KanbanWeb.Gettext
@@ -28,13 +30,17 @@ defmodule Kanban.Boards do
   alias Kanban.Boards.MemberSearch
   alias Kanban.Boards.Membership
   alias Kanban.Boards.MembershipChanges
+  alias Kanban.Workspaces.Policy
 
   @max_bigint 9_223_372_036_854_775_807
 
   @doc """
   Returns the list of boards for a given user with their access level.
 
-  Each board will have a virtual `:user_access` field containing the user's access level.
+  Each board will have a virtual `:user_access` field containing the user's
+  effective access level (`Kanban.Workspaces.Policy`): their `board_users`
+  access, or `:owner` for an org-admin of the Organization that owns the
+  board's workspace. Every board is listed once, from one query.
   Boards are sorted by access level (owner first, modify second, read_only last),
   then by creation date (most recent first) within each access level.
 
@@ -45,11 +51,8 @@ defmodule Kanban.Boards do
 
   """
   def list_boards(user) do
-    Board
-    |> join(:inner, [b], bu in BoardUser, on: bu.board_id == b.id)
-    |> where([b, bu], bu.user_id == ^user.id)
-    |> select([b, bu], %{b | user_access: bu.access})
-    |> Repo.all()
+    user
+    |> Policy.list_accessible_boards()
     |> Enum.sort_by(&board_sort_key/1, &board_sort_compare/2)
   end
 
@@ -111,8 +114,10 @@ defmodule Kanban.Boards do
   An `id` that is not a positive integer that fits the column (`nil`, `"abc"`,
   `"99999999999999999999"`) is `{:error, :not_found}`.
 
-  For read-only boards (read_only: true), non-members can access the board with user_access: nil.
-  For private boards (read_only: false), only members can access.
+  `user_access` is the user's effective access (`Kanban.Workspaces.Policy`).
+  For read-only boards (read_only: true), users without access can see the
+  board with user_access: nil. For private boards (read_only: false), only
+  users with effective access can.
 
   ## Examples
 
@@ -126,21 +131,15 @@ defmodule Kanban.Boards do
   # Postgrex raises on an integer past bigint, so a URL-supplied id is bounded
   # here before it is queried.
   def get_board(id, user) when is_integer(id) and id > 0 and id <= @max_bigint do
-    query =
-      Board
-      |> join(:left, [b], bu in BoardUser, on: bu.board_id == b.id and bu.user_id == ^user.id)
-      |> where([b], b.id == ^id)
-      |> select([b, bu], %{b | user_access: bu.access})
-
-    case Repo.one(query) do
+    case Policy.fetch_board(id, user) do
       nil ->
         {:error, :not_found}
 
-      %Board{user_access: nil} = board ->
-        if board.read_only, do: {:ok, board}, else: {:error, :not_found}
+      {%Board{} = board, nil} ->
+        if board.read_only, do: {:ok, %{board | user_access: nil}}, else: {:error, :not_found}
 
-      board ->
-        {:ok, board}
+      {%Board{} = board, access} ->
+        {:ok, %{board | user_access: access}}
     end
   end
 
@@ -166,7 +165,10 @@ defmodule Kanban.Boards do
   @doc """
   Gets the access level for a user on a board.
 
-  Returns the access level atom (:owner, :read_only, :modify) or nil if user has no access.
+  Returns the user's effective access level (:owner, :read_only, :modify) or
+  nil if they have no access: the stronger of their `board_users` row and the
+  owner-equivalent access an org-admin derives for boards in their
+  Organization's workspaces (`Kanban.Workspaces.Policy.effective_board_access/2`).
 
   ## Examples
 
@@ -175,10 +177,7 @@ defmodule Kanban.Boards do
 
   """
   def get_user_access(board_id, user_id) do
-    case Repo.get_by(BoardUser, board_id: board_id, user_id: user_id) do
-      nil -> nil
-      board_user -> board_user.access
-    end
+    Policy.effective_board_access(board_id, user_id)
   end
 
   @doc """
@@ -209,8 +208,8 @@ defmodule Kanban.Boards do
 
   ## Creation (see Kanban.Boards.Creation)
 
-  defdelegate create_board(user, attrs \\ %{}), to: Creation
-  defdelegate create_ai_optimized_board(user, attrs \\ %{}), to: Creation
+  defdelegate create_board(user, attrs \\ %{}, opts \\ []), to: Creation
+  defdelegate create_ai_optimized_board(user, attrs \\ %{}, opts \\ []), to: Creation
 
   @doc """
   Updates a board.

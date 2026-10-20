@@ -9,6 +9,7 @@ defmodule KanbanWeb.UserAuth do
   alias Kanban.Accounts.Scope
   alias Kanban.Organizations
   alias Kanban.Plans
+  alias Kanban.Workspaces.Current
   alias KanbanWeb.UserAuth.OrgAdminGate
 
   # Make the remember me cookie valid for 14 days. This should match
@@ -83,7 +84,7 @@ defmodule KanbanWeb.UserAuth do
     with {token, conn} <- ensure_user_token(conn),
          {user, token_inserted_at} <- Accounts.get_user_by_session_token(token) do
       conn
-      |> assign(:current_scope, build_scope(user))
+      |> assign(:current_scope, build_scope(user, get_session(conn, :current_workspace_id)))
       |> maybe_reissue_user_session_token(user, token_inserted_at)
     else
       nil -> assign(conn, :current_scope, Scope.for_user(nil))
@@ -91,11 +92,11 @@ defmodule KanbanWeb.UserAuth do
   end
 
   # The plug and every on_mount build the scope here, so both carry the user's
-  # Organization membership, loaded with one indexed query, and the
-  # notifications lock derived from it without another.
-  defp build_scope(nil), do: Scope.for_user(nil)
+  # Organization membership, loaded with one indexed query, the notifications
+  # lock derived from it without another, and the verified current workspace.
+  defp build_scope(nil, _workspace_id), do: Scope.for_user(nil)
 
-  defp build_scope(user) do
+  defp build_scope(user, workspace_id) do
     membership = Organizations.get_membership(user)
 
     scope =
@@ -104,6 +105,7 @@ defmodule KanbanWeb.UserAuth do
       |> Scope.put_organization_membership(membership)
 
     %{scope | notifications_locked: not Plans.membership_unlocked?(membership)}
+    |> Current.put_current(workspace_id)
   end
 
   defp ensure_user_token(conn) do
@@ -404,7 +406,7 @@ defmodule KanbanWeb.UserAuth do
           Accounts.get_user_by_session_token(user_token)
         end || {nil, nil}
 
-      build_scope(user)
+      build_scope(user, session["current_workspace_id"])
     end)
   end
 

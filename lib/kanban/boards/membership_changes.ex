@@ -207,6 +207,24 @@ defmodule Kanban.Boards.MembershipChanges do
     end
   end
 
+  @doc """
+  Reports a membership row that another context already deleted in its own
+  committed transaction, exactly as `remove_user_from_board/3` reports one:
+  telemetry and the token revocation report, the
+  `{Kanban.Boards, :members_changed, board_id}` broadcast on `"board:<id>"`,
+  and the removed user's `board_access_changed` notification.
+
+  Call it only after that transaction has committed. `revoked` is the number of
+  the user's API tokens for the board it revoked. Returns `:ok`.
+  """
+  @spec notify_removed(Board.t(), User.t(), BoardUser.t(), non_neg_integer(), User.t()) :: :ok
+  def notify_removed(%Board{} = board, %User{} = user, %BoardUser{} = board_user, revoked, actor) do
+    {:ok, _board_user} =
+      notify_membership({:ok, board_user, revoked}, board, user, :removed, actor)
+
+    :ok
+  end
+
   # The member's row, unless the change would take the owner's row away: only
   # re-saving it as :owner is let through.
   defp fetch_changeable_member(board, user, new_access) do

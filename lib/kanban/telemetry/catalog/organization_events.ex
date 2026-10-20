@@ -53,7 +53,7 @@ defmodule Kanban.Telemetry.Catalog.OrganizationEvents do
       measurements: [:count],
       metadata: [:organization_id, :user_id, :role, :actor_user_id],
       description:
-        "A user's Organization membership was deleted. role is the role they held. actor_user_id is the site admin.",
+        "A user's Organization membership was deleted. role is the role they held. actor_user_id is the site admin who removed an org-admin, or the org-admin who removed a member.",
       legacy: false,
       metrics: [counter: :count],
       persist: false

@@ -1259,9 +1259,11 @@ defmodule Kanban.Metrics.WorkspaceTest do
 
       task_queries = Enum.filter(queries, fn {source, _sql} -> source == "tasks" end)
 
+      # Only tasks queries: the boards listing also joins users, to derive an
+      # enabled org-admin's access (W2218), but carries no completed-task data.
       completed_data_queries =
-        Enum.filter(queries, fn {_source, sql} ->
-          is_binary(sql) and String.contains?(sql, ~s(JOIN "users"))
+        Enum.filter(queries, fn {source, sql} ->
+          source == "tasks" and is_binary(sql) and String.contains?(sql, ~s(JOIN "users"))
         end)
 
       board_queries = Enum.filter(queries, fn {source, _sql} -> source == "boards" end)

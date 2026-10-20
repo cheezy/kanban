@@ -36,6 +36,7 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
 
   alias Kanban.Plans
   alias Kanban.Tasks
+  alias KanbanWeb.BoardLive.Authorization
   alias KanbanWeb.BoardLive.BoardState
   alias KanbanWeb.BoardLive.ColumnActions
   alias KanbanWeb.BoardLive.FilterActions
@@ -138,8 +139,10 @@ defmodule KanbanWeb.BoardLive.BulkSelection do
     end
   end
 
+  # The mount-time assign alone would let a member removed while the page is
+  # open keep bulk-editing, so the access is re-read too (W2218).
   defp check_modify(socket),
-    do: if(socket.assigns[:can_modify] == true, do: :ok, else: {:error, :unauthorized})
+    do: if(Authorization.fresh_can_modify?(socket), do: :ok, else: {:error, :unauthorized})
 
   # The board is free under enforcement. The Select toggle opens or closes
   # the locked prompt; the prompt says why, so it needs no flash. Any other

@@ -30,6 +30,7 @@ defmodule Kanban.Organizations.MembershipWrites do
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrganizationTelemetry
   alias Kanban.Repo
+  alias Kanban.Workspaces.MembershipCascade
 
   @typep change :: :created | :promoted | :unchanged | :removed
 
@@ -108,20 +109,33 @@ defmodule Kanban.Organizations.MembershipWrites do
   `organization_id`, refusing with `:last_org_admin` when it would leave other
   members with no org-admin and with `:not_found` when `user` is not an
   org-admin there. `actor` has already been checked.
+
+  Their derived org-admin access to the Organization's boards ends with the
+  membership, so their API tokens on boards they reached only through it are
+  revoked in the same transaction, and once it commits those boards' open pages
+  are told to re-read the viewer's access (W2218,
+  `Kanban.Workspaces.MembershipCascade.revoke_derived_tokens/2` and
+  `notify_derived_access_ended/2`).
   """
   @spec remove_org_admin(User.t(), integer(), User.t()) ::
           {:ok, OrganizationMember.t()} | {:error, :last_org_admin | :not_found}
   def remove_org_admin(%User{} = actor, organization_id, %User{} = user) do
-    Repo.transact(fn ->
-      with :ok <- lock_organization(organization_id),
-           {:ok, membership} <- fetch_org_admin_membership(organization_id, user),
-           :ok <- ensure_not_last_org_admin(membership) do
-        delete_membership(membership)
-      end
-    end)
+    fn -> remove_org_admin_locked(organization_id, user) end
+    |> Repo.transact()
     |> notify(fn :removed, membership ->
       OrganizationTelemetry.org_admin_removed(membership, actor)
+      MembershipCascade.notify_derived_access_ended(user.id, organization_id)
     end)
+  end
+
+  defp remove_org_admin_locked(organization_id, user) do
+    with :ok <- lock_organization(organization_id),
+         {:ok, membership} <- fetch_org_admin_membership(organization_id, user),
+         :ok <- ensure_not_last_org_admin(membership),
+         {:ok, change} <- delete_membership(membership) do
+      MembershipCascade.revoke_derived_tokens(user.id, organization_id)
+      {:ok, change}
+    end
   end
 
   @doc """
@@ -192,7 +206,11 @@ defmodule Kanban.Organizations.MembershipWrites do
     end
   end
 
-  defp lock_organization(organization_id) do
+  @doc false
+  # Also taken by Kanban.Organizations.MemberRemoval, so removing a member
+  # serializes with every other membership write to the Organization.
+  @spec lock_organization(integer()) :: :ok | {:error, :not_found}
+  def lock_organization(organization_id) do
     from(o in Organization, where: o.id == ^organization_id, select: o.id, lock: "FOR UPDATE")
     |> Repo.one()
     |> case do

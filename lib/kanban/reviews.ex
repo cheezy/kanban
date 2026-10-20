@@ -21,9 +21,10 @@ defmodule Kanban.Reviews do
   digest all use it, so one task shows one age everywhere.
 
   All public functions are scope-aware: when a `Kanban.Accounts.Scope` is
-  passed, results are filtered to tasks on boards the scoped user can
-  access via `Kanban.Boards.BoardUser` membership. When `nil`, the
-  full set is returned.
+  passed, results are filtered to tasks on boards the scoped user has
+  effective access to — a `Kanban.Boards.BoardUser` row, or derived org-admin
+  access through `Kanban.Workspaces.Policy`. When `nil`, the full set is
+  returned.
 
   The two mutation functions (`approve_review/3`, `request_changes_review/3`)
   wrap the two-step contract required by `Kanban.Tasks.AgentWorkflow.mark_reviewed/2`:

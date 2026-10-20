@@ -10,9 +10,10 @@ defmodule Kanban.Archives do
   `effective_reason/1`, which the stats, filters, rows and CSV export share.
 
   All public functions are scope-aware: when a `Kanban.Accounts.Scope`
-  is passed, results are filtered to tasks on boards the scoped user can
-  access via `Kanban.Boards.BoardUser` membership. When `nil`, the full
-  set is returned.
+  is passed, results are filtered to tasks on boards the scoped user has
+  effective access to — a `Kanban.Boards.BoardUser` row, or derived org-admin
+  access through `Kanban.Workspaces.Policy`. When `nil`, the full set is
+  returned.
 
   This module is read-only by design — writes (archive, unarchive) live
   on `Kanban.Tasks.Archiving` and `Kanban.Tasks.BulkActions`. Mirrors

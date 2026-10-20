@@ -7,8 +7,9 @@ defmodule Kanban.Targets do
   *only* through the goal-type tasks that reference it via `tasks.target_id`.
   Visibility therefore flows through those member goals, NOT through target
   ownership: a target is visible to a caller when it has at least one member
-  goal on a board the caller can access via `Kanban.Boards.BoardUser`
-  membership. A target whose goals all live on inaccessible boards — or which
+  goal on a board the caller has effective access to (a
+  `Kanban.Boards.BoardUser` row, or derived org-admin access through
+  `Kanban.Workspaces.Policy`). A target whose goals all live on inaccessible boards — or which
   has no member goals at all — is never returned by `list_targets/1` or
   `get_target/2`.
 

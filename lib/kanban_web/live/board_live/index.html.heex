@@ -122,38 +122,47 @@
       <TargetsStrip.targets_strip targets={@targets} />
     </div>
 
-    <%= if !@has_boards do %>
-      <.empty_state />
-    <% else %>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div id="boards" phx-update="stream" class="contents">
-          <div :for={{id, board} <- @streams.boards} id={id} class="relative group h-full">
-            <BoardPulseCard.board_pulse_card board={board} />
-
-            <div class="absolute top-2 right-2 flex items-center gap-1">
-              <.link
-                :if={Map.get(board, :user_access) == :owner}
-                navigate={~p"/boards/#{board}/edit"}
-                class="inline-flex items-center justify-center min-h-11 min-w-11 md:min-h-0 md:min-w-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity p-1 rounded hover:bg-base-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                aria-label={gettext("Edit board")}
-              >
-                <.icon name="hero-pencil-square" class="h-4 w-4" />
-              </.link>
-              <.link
-                :if={Map.get(board, :user_access) == :owner}
-                phx-click={JS.push("delete", value: %{id: board.id}) |> hide("##{id}")}
-                data-confirm={gettext("Are you sure you want to delete this board?")}
-                class="inline-flex items-center justify-center min-h-11 min-w-11 md:min-h-0 md:min-w-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity p-1 rounded hover:bg-[var(--st-blocked-soft)] text-[var(--st-blocked)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                aria-label={gettext("Delete board")}
-              >
-                <.icon name="hero-trash" class="h-4 w-4" />
-              </.link>
-            </div>
+    <%= cond do %>
+      <% @grouped -> %>
+        <%!-- A user with a current workspace: that workspace's boards, their
+        Personal boards, and every other board shared with them. --%>
+        <BoardGroups.board_section
+          id="workspace-boards"
+          title={@current_workspace.name}
+          count={@group_counts.workspace}
+          stream={@streams.workspace_boards}
+          empty={gettext("No boards in this workspace yet.")}
+        >
+          <.new_board_affordance />
+        </BoardGroups.board_section>
+        <BoardGroups.board_section
+          id="personal-boards"
+          title={gettext("Personal boards")}
+          count={@group_counts.personal}
+          stream={@streams.personal_boards}
+          empty={gettext("You have no personal boards.")}
+        />
+        <BoardGroups.board_section
+          id="shared-boards"
+          title={gettext("Other shared boards")}
+          count={@group_counts.shared}
+          stream={@streams.shared_boards}
+          empty={gettext("No other boards are shared with you.")}
+        />
+      <% !@has_boards -> %>
+        <.empty_state />
+      <% true -> %>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div id="boards" phx-update="stream" class="contents">
+            <BoardGroups.board_card
+              :for={{id, board} <- @streams.boards}
+              id={id}
+              board={board}
+            />
           </div>
-        </div>
 
-        <.new_board_affordance />
-      </div>
+          <.new_board_affordance />
+        </div>
     <% end %>
   </div>
 </Layouts.app>

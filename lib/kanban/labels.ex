@@ -33,12 +33,12 @@ defmodule Kanban.Labels do
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
   alias Kanban.Boards.Board
-  alias Kanban.Boards.BoardUser
   alias Kanban.Labels.Label
   alias Kanban.Labels.TaskLabel
   alias Kanban.Repo
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.Task
+  alias Kanban.Workspaces.Policy
 
   @doc """
   Lists a board's labels, ordered by name ignoring case.
@@ -59,8 +59,8 @@ defmodule Kanban.Labels do
 
       %{id: user_id} ->
         Label
-        |> join(:inner, [l], bu in BoardUser,
-          on: bu.board_id == l.board_id and bu.user_id == ^user_id
+        |> join(:inner, [l], a in subquery(Policy.accessible_board_ids(user_id)),
+          on: a.board_id == l.board_id
         )
         |> where([l], l.board_id == ^board_id)
         |> order_by([l], asc: fragment("lower(?)", l.name), asc: l.id)
@@ -91,7 +91,8 @@ defmodule Kanban.Labels do
         []
 
       %{id: user_id} ->
-        members = from(bu in BoardUser, where: bu.user_id == ^user_id, select: bu.board_id)
+        members =
+          from(a in subquery(Policy.accessible_board_ids(user_id)), select: a.board_id)
 
         Label
         |> join(:inner, [l], b in Board, on: b.id == l.board_id)
@@ -121,8 +122,8 @@ defmodule Kanban.Labels do
       %{id: user_id} ->
         TaskLabel
         |> join(:inner, [tl], l in Label, on: l.id == tl.label_id)
-        |> join(:inner, [tl, l], bu in BoardUser,
-          on: bu.board_id == l.board_id and bu.user_id == ^user_id
+        |> join(:inner, [tl, l], a in subquery(Policy.accessible_board_ids(user_id)),
+          on: a.board_id == l.board_id
         )
         |> where([tl], tl.task_id == ^task_id)
         |> order_by([tl, l], asc: l.id)

@@ -342,7 +342,7 @@ Org-admin access is computed on every check from `workspaces.organization_id` an
 | Invite by email to a free board | the board's owner | `invite_to_board/4`; acceptance counts toward the cap |
 | Change a workspace member's role (member or guest) | org-admin | `Workspaces.update_member_role/4` |
 | Remove a member from a workspace | org-admin | `Workspaces.remove_member/3` |
-| Remove an ordinary member from the Organization | org-admin, in the `/org` console | W2218 removal, cascading board memberships and tokens in every workspace of the Organization, and **deleting the user's `workspace_members` rows in every workspace of the Organization**, so rejoining later never brings old access back. Any later path that ends an Organization membership must delete them too. |
+| Remove an ordinary member from the Organization | org-admin, in the `/org` console | `Kanban.Organizations.MemberRemoval.remove_member/3` (W2218), cascading board memberships and tokens in every workspace of the Organization, and **deleting the user's `workspace_members` rows in every workspace of the Organization**, so rejoining later never brings old access back. Any later path that ends an Organization membership must delete them too. |
 | Move a personal board into an org workspace | an org-admin who owns the board | `Workspaces.move_board_to_workspace/3` |
 | Create, list, revoke workspace tokens | org-admin | `ApiTokens.create_workspace_api_token/3` and friends |
 | Request and download a workspace export | org-admin | `Kanban.Workspaces.Export` |
@@ -351,6 +351,8 @@ Org-admin access is computed on every check from `workspaces.organization_id` an
 | Edit security policy, SSO, SCIM tokens | org-admin | G445 contexts |
 
 Every management event re-checks the caller's role from the database. Hidden buttons are not authorization.
+
+**Removal deletes owner rows too (W2218).** Removing a member from a workspace, or from the Organization, deletes every `board_users` row they hold on that workspace's boards, including an explicit owner row. This is the one path that may leave an org board with no explicit owner, and it does not strand the board: an org board is always reachable by the Organization's org-admins through derived access (§4.3), who can still manage its members. `Kanban.Workspaces.MembershipCascade` holds the cascade for both removals.
 
 **A board always keeps its owner.** `remove_user_from_board/3` and `update_user_access/4` refuse the owner's own row with `{:error, :owner_required}`; the members screen flashes "The board owner can't be removed." Either write would leave a board nobody can see, stranded in the old owner's personal workspace and blocking that user's deletion. Ownership changes hands only through `transfer_board_ownership/3` (W2221), which changes both rows in one transaction itself rather than demoting the owner through `update_user_access/4`.
 
@@ -645,6 +647,7 @@ Personal workspaces never appear here.
 
 - **Organization members:** a switcher lists their reachable, unarchived org workspaces (all of them for org-admins, those with a member or guest row for others), never a personal workspace. Choosing one POSTs `/workspace/switch`, which stores `current_workspace_id` in the session and redirects. `UserAuth` re-verifies it with `Workspaces.get_workspace/2` on every request and mount; a stale or foreign id falls back to the first reachable org workspace, or none, and never crashes or grants access.
 - **Requirement for the switch and the re-check (W2218):** `get_workspace/2` returns archived workspaces and the caller's own hidden personal workspace, because other callers need them. The switch endpoint and the per-request re-check must refuse both, falling back exactly as for a stale id: a session must not keep working in, or create boards in, a workspace archived after it was chosen, and a forged switch request must never make the personal workspace current.
+- **How W2218 meets it:** `Kanban.Workspaces.Current` resolves the session id against the same list the switcher shows (`Workspaces.list_workspaces_for_membership/2`, which leaves out archived and personal workspaces), so the per-request re-check and the switcher can never disagree. The switch POST uses `Current.switchable/2`, which also requires paid access from `Kanban.Plans` and refuses an archived or personal workspace that `get_workspace/2` returned.
 - **Users without an Organization:** the switcher slot shows the lock component for `:workspaces` while plans are enforced, and nothing while they are not.
 - **Org-admins** also get an **Organization** link to `/org`.
 - The visual form of the switcher and the entry point to workspace settings are not fixed by the tasks (briefing §9.1 questions 3 and 4).
@@ -801,6 +804,7 @@ New tuples in `@audit_actions` in `Kanban.Telemetry.Catalog.Families`, recorded 
 | `:org_audit_log_exported` | W2397 |
 | `:permission_denied` with gate `:require_org_admin` (existing action, new gate value) | W2395 |
 | `:org_member_added` (an invitation created the organization membership: `user_id`, `organization_id`, `member_user_id`, `invitation_id`, no email) | W2219 |
+| `:org_member_removed` (an org-admin removed an ordinary member: `user_id`, `organization_id`, `member_user_id`) and `:permission_denied` with gate `:workspace_settings` | W2218 |
 | `:account_self_deleted` (user id, no email) | W2221 |
 | `:organization_policy_updated`, `:retention_purge` | W2244 |
 | `:sso_login`, `:sso_login_refused`, state/nonce mismatches | W2245 |

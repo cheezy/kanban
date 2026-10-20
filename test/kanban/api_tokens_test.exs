@@ -8,6 +8,8 @@ defmodule Kanban.ApiTokensTest do
   alias Kanban.ApiTokens
   alias Kanban.ApiTokens.ApiToken
 
+  require Ecto.Query
+
   describe "api_tokens" do
     @valid_attrs %{
       name: "Test Token",
@@ -336,6 +338,87 @@ defmodule Kanban.ApiTokensTest do
 
       assert {1, nil} = ApiTokens.revoke_user_tokens_for_board(board.id, user.id)
       refute_received {:telemetry_event, @bulk_revoked, _, _}
+    end
+  end
+
+  describe "create_api_token_for_member/3" do
+    @member_attrs %{name: "Board Token"}
+
+    defp grant(board, user, access) do
+      %Kanban.Boards.BoardUser{}
+      |> Kanban.Boards.BoardUser.changeset(%{
+        board_id: board.id,
+        user_id: user.id,
+        access: access
+      })
+      |> Kanban.Repo.insert!()
+    end
+
+    test "creates a token for an owner or a modify member" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      member = user_fixture()
+      grant(board, member, :modify)
+
+      assert {:ok, {%ApiToken{}, _plain}} =
+               ApiTokens.create_api_token_for_member(owner, board, @member_attrs)
+
+      assert {:ok, {%ApiToken{user_id: member_id}, _plain}} =
+               ApiTokens.create_api_token_for_member(member, board, @member_attrs)
+
+      assert member_id == member.id
+    end
+
+    test "refuses a read-only member and a user without access, creating nothing" do
+      board = board_fixture(user_fixture())
+      reader = user_fixture()
+      grant(board, reader, :read_only)
+
+      assert ApiTokens.create_api_token_for_member(reader, board, @member_attrs) ==
+               {:error, :unauthorized}
+
+      assert ApiTokens.create_api_token_for_member(user_fixture(), board, @member_attrs) ==
+               {:error, :unauthorized}
+
+      assert ApiTokens.list_api_tokens(board) == []
+    end
+
+    test "creates a token for an org-admin through derived access, and not once removed" do
+      organization = Kanban.OrganizationsFixtures.organization_fixture()
+      workspace = Kanban.WorkspacesFixtures.org_workspace_fixture(organization)
+      org_admin = user_fixture()
+
+      Kanban.OrganizationsFixtures.organization_member_fixture(
+        organization,
+        org_admin,
+        :org_admin
+      )
+
+      board = board_fixture(user_fixture())
+
+      Kanban.Boards.Board
+      |> Ecto.Query.where([b], b.id == ^board.id)
+      |> Kanban.Repo.update_all(set: [workspace_id: workspace.id])
+
+      assert {:ok, _created} =
+               ApiTokens.create_api_token_for_member(org_admin, board, @member_attrs)
+
+      Kanban.Organizations.OrganizationMember
+      |> Ecto.Query.where([m], m.user_id == ^org_admin.id)
+      |> Kanban.Repo.delete_all()
+
+      assert ApiTokens.create_api_token_for_member(org_admin, board, @member_attrs) ==
+               {:error, :unauthorized}
+    end
+
+    test "returns the changeset for invalid attributes" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+
+      assert {:error, %Ecto.Changeset{}} =
+               ApiTokens.create_api_token_for_member(owner, board, @invalid_attrs)
+
+      assert ApiTokens.list_api_tokens(board) == []
     end
   end
 end

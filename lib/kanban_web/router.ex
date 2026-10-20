@@ -283,6 +283,10 @@ defmodule KanbanWeb.Router do
       # The org-admin audit log; OrgLive.AuditLog re-declares the same gate and
       # forces the Organization filter from the membership.
       live "/org/audit", OrgLive.AuditLog, :index
+      # Workspace settings for the current workspace; the LiveView checks paid
+      # access and reach on mount and re-checks the org-admin role on every
+      # event.
+      live "/workspace/settings", WorkspaceLive.Settings, :index
       live "/boards/:id/edit", BoardLive.Form, :edit
 
       live "/boards/:id", BoardLive.Show, :show
@@ -319,6 +323,9 @@ defmodule KanbanWeb.Router do
     # users only, so anonymous traffic cannot inflate the stored metric).
     get "/locked/:feature", LockedFeatureController, :show
     post "/users/update-password", UserSessionController, :update_password
+    # The workspace switcher. Signed-in users only; the controller checks paid
+    # access and reach before it changes the session.
+    post "/workspace/switch", WorkspaceSessionController, :switch
   end
 
   # Org-admin audit export. The pipeline gates on the org-admin role, and the

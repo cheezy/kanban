@@ -10,9 +10,12 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   change reloads the cards too, since they render the label chips, refreshes
   the filter bar's options, and rebuilds an open task form's label picker; a
   membership change, which can unassign a removed member's tasks, reloads the
-  cards and the filter bar too. Either one drops a filter naming a label or
+  cards and the filter bar too, after re-reading the viewer's own access; a
+  viewer it removed is sent back to `/boards`. Either one drops a filter naming a label or
   member that is gone, re-rendering the cards and correcting the URL, so the
-  board never shows a filtered view its controls no longer describe. A column
+  board never shows a filtered view its controls no longer describe. A
+  membership change also refreshes an open members screen, whose free-board cap
+  line depends on the board's plan (a board move changes it). A column
   change re-renders every column. Comment changes go straight to the open
   comment thread.
 
@@ -24,6 +27,8 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
 
   alias KanbanWeb.BoardLive.BoardState
   alias KanbanWeb.BoardLive.FilterActions
+  alias KanbanWeb.BoardLive.MembersFormComponent
+  alias KanbanWeb.BoardLive.Params
   alias KanbanWeb.TaskLive.CommentThreadComponent
   alias KanbanWeb.TaskLive.FormComponent
 
@@ -38,11 +43,21 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
   end
 
   # Removing a member also unassigns them from the board's open tasks, so the
-  # cards' assignees can change too.
+  # cards' assignees can change too. The viewer's own access is re-read first:
+  # a viewer the change removed leaves the board, exactly as if they had opened
+  # it without access, unless it is a public read-only board they may still
+  # read (W2218).
   def handle({Kanban.Boards, :members_changed, _board_id}, socket) do
-    {socket, filters_changed?} = FilterActions.refresh_options(socket, socket.assigns.board)
-    {:noreply, socket} = BoardState.reload_board_data(socket)
-    {:noreply, maybe_sync_url(socket, filters_changed?)}
+    socket = BoardState.refresh_access(socket)
+
+    if lost_access?(socket.assigns) do
+      Params.handle_board_not_found(socket)
+    else
+      refresh_members_screen(socket.assigns)
+      {socket, filters_changed?} = FilterActions.refresh_options(socket, socket.assigns.board)
+      {:noreply, socket} = BoardState.reload_board_data(socket)
+      {:noreply, maybe_sync_url(socket, filters_changed?)}
+    end
   end
 
   def handle({Kanban.Columns, :columns_changed, _board_id}, socket),
@@ -87,6 +102,9 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
 
   defp refresh_open_task_form(_assigns), do: :ok
 
+  defp lost_access?(%{user_access: nil, board: %{read_only: read_only}}), do: read_only != true
+  defp lost_access?(_assigns), do: false
+
   defp maybe_sync_url(socket, true), do: FilterActions.sync_url(socket)
   defp maybe_sync_url(socket, false), do: socket
 
@@ -95,4 +113,23 @@ defmodule KanbanWeb.BoardLive.BoardEvents do
       do: {:noreply, socket},
       else: BoardState.reload_board_data(socket)
   end
+
+  # An open members screen re-reads the board and its members, so a change made
+  # elsewhere shows without a reload: moving the board into an Organization
+  # workspace (W2218) makes it a paid board, and the free-board cap line goes.
+  defp refresh_members_screen(%{live_action: :manage_members, board: board, current_scope: scope}) do
+    case Kanban.Boards.get_board(board.id, scope.user) do
+      {:ok, fresh} ->
+        send_update(MembersFormComponent,
+          id: "board-members-#{board.id}",
+          board: fresh,
+          current_scope: scope
+        )
+
+      {:error, :not_found} ->
+        :ok
+    end
+  end
+
+  defp refresh_members_screen(_assigns), do: :ok
 end

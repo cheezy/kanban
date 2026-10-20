@@ -28,14 +28,34 @@ defmodule KanbanWeb.BoardLive.BoardState do
     socket
     |> assign(:page_title, page_title(socket.assigns.live_action))
     |> assign(:board, board_with_metrics)
-    |> assign(:user_access, user_access)
-    |> assign(:can_modify, user_access in [:owner, :modify])
-    |> assign(:is_owner, user_access == :owner)
+    |> assign_access(user_access)
     |> BulkSelection.assign_lock(board)
     |> assign(:field_visibility, board.field_visibility || %{})
     |> assign(:has_columns, not Enum.empty?(columns))
     |> stream(:columns, columns, reset: true)
     |> load_tasks_for_columns(columns)
+  end
+
+  @doc """
+  Re-reads the user's effective access to the open board from the database
+  (`Kanban.Boards.get_user_access/2`, derived org-admin access included) and
+  re-assigns `:user_access`, `:can_modify` and `:is_owner`.
+
+  Mount-time access goes stale while the page stays open: a removed member or a
+  demoted org-admin keeps it. Events that manage the board or its API tokens
+  call this before checking, and a membership change calls it to notice that
+  access is gone (W2218).
+  """
+  def refresh_access(socket) do
+    %{board: board, current_scope: %{user: user}} = socket.assigns
+    assign_access(socket, Boards.get_user_access(board.id, user.id))
+  end
+
+  defp assign_access(socket, user_access) do
+    socket
+    |> assign(:user_access, user_access)
+    |> assign(:can_modify, user_access in [:owner, :modify])
+    |> assign(:is_owner, user_access == :owner)
   end
 
   # Attach the per-board metrics map AND the members list to the board

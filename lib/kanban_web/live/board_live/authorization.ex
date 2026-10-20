@@ -85,14 +85,35 @@ defmodule KanbanWeb.BoardLive.Authorization do
     end
   end
 
-  @doc "Authorizes a modify action on a task; requires :can_modify assign."
+  @doc """
+  Authorizes a modify action on a task; requires the `:can_modify` assign and,
+  because that assign is read at mount, the user's effective access re-read
+  now (`fresh_can_modify?/1`).
+  """
   def authorize_modify_for_task(socket, raw_id) do
-    if socket.assigns.can_modify do
+    if fresh_can_modify?(socket) do
       lookup_task_for_board(socket, raw_id)
     else
       {:error, :not_authorized}
     end
   end
+
+  @doc """
+  Returns true when the mount-time `:can_modify` assign is true and the user
+  still has `:owner` or `:modify` access to the board, re-read from the
+  database (`Kanban.Boards.get_user_access/2`, derived org-admin access
+  included). A member removed, or an org-admin removed or demoted, while the
+  page is open is refused at once rather than at the next remount (W2218).
+  A false assign costs no query.
+  """
+  def fresh_can_modify?(%{assigns: %{can_modify: true} = assigns}) do
+    Kanban.Boards.get_user_access(assigns.board.id, assigns.current_scope.user.id) in [
+      :owner,
+      :modify
+    ]
+  end
+
+  def fresh_can_modify?(_socket), do: false
 
   defp lookup_task_for_board(socket, raw_id) do
     with {:ok, id} <- Show.parse_task_id(raw_id),
@@ -124,7 +145,7 @@ defmodule KanbanWeb.BoardLive.Authorization do
   """
   def authorize_move_task(socket, raw_task_id, raw_old_col_id, raw_new_col_id) do
     cond do
-      not socket.assigns.can_modify ->
+      not fresh_can_modify?(socket) ->
         {:error, :not_authorized}
 
       BoardFilters.active?(socket.assigns[:board_filters]) ->

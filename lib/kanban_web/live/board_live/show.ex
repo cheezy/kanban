@@ -119,6 +119,8 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   def handle_event("delete_column", %{"id" => id}, socket) do
+    socket = BoardState.refresh_access(socket)
+
     cond do
       socket.assigns.user_access != :owner ->
         {:noreply,
@@ -249,6 +251,8 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("move_column", %{"column_id" => column_id, "column_ids" => column_ids}, socket) do
+    socket = BoardState.refresh_access(socket)
+
     cond do
       socket.assigns.user_access != :owner ->
         {:noreply,
@@ -267,6 +271,8 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("toggle_field", %{"field" => field_name}, socket) do
+    socket = BoardState.refresh_access(socket)
+
     cond do
       not socket.assigns.is_owner ->
         {:noreply,
@@ -284,6 +290,8 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("create_token", params, socket) do
+    socket = BoardState.refresh_access(socket)
+
     if socket.assigns.can_modify do
       ApiTokens.do_create_token(socket, params)
     else
@@ -299,6 +307,8 @@ defmodule KanbanWeb.BoardLive.Show do
 
   @impl true
   def handle_event("revoke_token", %{"id" => id}, socket) do
+    socket = BoardState.refresh_access(socket)
+
     if socket.assigns.can_modify do
       ApiTokens.do_revoke_token(socket, id)
     else
@@ -308,6 +318,8 @@ defmodule KanbanWeb.BoardLive.Show do
   end
 
   def handle_event("delete_token", %{"id" => id}, socket) do
+    socket = BoardState.refresh_access(socket)
+
     if socket.assigns.can_modify do
       ApiTokens.do_delete_token(socket, id)
     else

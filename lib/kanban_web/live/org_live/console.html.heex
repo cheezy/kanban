@@ -115,7 +115,11 @@
           id="members"
           tab={:members}
           title={gettext("Members")}
-          hint={gettext("Everyone in your Organization, org-admins first.")}
+          hint={
+            gettext(
+              "Everyone in your Organization, org-admins first. Removing a member also removes them from every workspace and its boards."
+            )
+          }
           compact
         >
           <ul id="member-list" style="list-style: none; margin: 0; padding: 0;">
@@ -148,6 +152,23 @@
               </span>
               <span class="flex items-center gap-1 @md:w-28 @md:flex-shrink-0">
                 <.account_status user={member.user} />
+              </span>
+              <span class="flex @md:w-24 @md:flex-shrink-0 @md:justify-end">
+                <.button
+                  :if={member.role == :member}
+                  id={"remove-member-#{member.user.id}"}
+                  type="button"
+                  phx-click="remove_member"
+                  phx-value-user_id={member.user.id}
+                  data-confirm={
+                    gettext(
+                      "Remove this member from the Organization? They lose their board memberships and API tokens in every workspace of the Organization."
+                    )
+                  }
+                  class="btn btn-soft btn-sm"
+                >
+                  {gettext("Remove")}
+                </.button>
               </span>
             </li>
           </ul>

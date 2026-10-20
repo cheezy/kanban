@@ -140,6 +140,30 @@ defmodule Kanban.Organizations.OrganizationTelemetry do
   end
 
   @doc """
+  Emits `[:kanban, :organization, :member_removed]` and records the
+  `:org_member_removed` audit event for an ordinary member an org-admin removed
+  from their Organization. The org-admin is the audit event's `user_id` and
+  the removed member its `member_user_id`. Returns `:ok`.
+  """
+  @spec org_member_removed(OrganizationMember.t(), map()) :: :ok
+  def org_member_removed(%OrganizationMember{} = membership, actor) do
+    AfterCommit.defer(fn ->
+      Kanban.Telemetry.emit([:kanban, :organization, :member_removed], %{count: 1}, %{
+        organization_id: membership.organization_id,
+        user_id: membership.user_id,
+        role: membership.role,
+        actor_user_id: actor.id
+      })
+
+      AuditLog.event(:org_member_removed,
+        user_id: actor.id,
+        organization_id: membership.organization_id,
+        member_user_id: membership.user_id
+      )
+    end)
+  end
+
+  @doc """
   Emits `[:kanban, :organization, :workspace_created]` and records the
   `:org_workspace_created` audit event when `result` is a saved workspace.
   `actor` is the org-admin. Returns `result`.

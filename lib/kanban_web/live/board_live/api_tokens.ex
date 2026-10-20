@@ -49,9 +49,13 @@ defmodule KanbanWeb.BoardLive.ApiTokens do
     board = socket.assigns.board
     token_params = build_token_params(params)
 
-    case ApiTokens.create_api_token(user, board, token_params) do
+    case ApiTokens.create_api_token_for_member(user, board, token_params) do
       {:ok, {_api_token, plain_text_token}} ->
         assign_created_token(socket, board, plain_text_token)
+
+      {:error, :unauthorized} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("You do not have permission to manage API tokens"))}
 
       {:error, changeset} ->
         {:noreply, assign(socket, :token_form, to_form(changeset, action: :insert))}

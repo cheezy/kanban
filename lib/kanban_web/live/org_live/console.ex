@@ -10,16 +10,20 @@ defmodule KanbanWeb.OrgLive.Console do
 
     * Details - the Organization's name, address and contact, read-only. Only a
       site admin edits them.
-    * Members - every member with name, email and role, read-only, with
-      Disabled and Unconfirmed accounts labelled. The list reloads each time
-      the section opens.
+    * Members - every member with name, email and role, with Disabled and
+      Unconfirmed accounts labelled. The list reloads each time the section
+      opens. Each ordinary member has a Remove action
+      (`Kanban.Organizations.MemberRemoval`), which also removes them from
+      every workspace of the Organization and its boards and revokes their API
+      tokens there. Org-admins have none: appointing and removing org-admins
+      stays with site admins.
     * Workspaces - the Organization's unarchived workspaces, which the
       org-admin creates, renames and archives through
       `Kanban.Organizations.OrgWorkspaces`. Archived workspaces are hidden.
 
   The org-admin gate re-reads the role from the database on every patch, but
-  events do not patch, so every Workspaces event re-reads the actor and their
-  org-admin role itself before it does anything. A refused actor is redirected
+  events do not patch, so every Members and Workspaces event re-reads the actor
+  and their org-admin role itself before it does anything. A refused actor is redirected
   to `/boards` exactly as the gate would.
   """
   use KanbanWeb, :live_view
@@ -32,6 +36,7 @@ defmodule KanbanWeb.OrgLive.Console do
   alias Kanban.Accounts
   alias Kanban.Accounts.User
   alias Kanban.Organizations
+  alias Kanban.Organizations.MemberRemoval
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrgWorkspaces
   alias Kanban.Workspaces.Workspace
@@ -142,11 +147,51 @@ defmodule KanbanWeb.OrgLive.Console do
     end)
   end
 
+  # The user id from the event is only a hint: MemberRemoval re-reads the
+  # membership under the Organization's lock and refuses org-admins and users
+  # outside this Organization.
+  def handle_event("remove_member", %{"user_id" => user_id}, socket)
+      when is_binary(user_id) or is_integer(user_id) do
+    with_org_admin(socket, fn actor ->
+      actor
+      |> MemberRemoval.remove_member(socket.assigns.organization.id, user_id)
+      |> respond_to_member_removal(socket)
+    end)
+  end
+
+  def handle_event("remove_member", _params, socket), do: {:noreply, socket}
+
   # A crafted workspace event with no id, or an id that is not a string or an
   # integer, changes nothing.
   def handle_event(event, _params, socket)
       when event in ["start_rename", "rename_workspace", "archive_workspace"],
       do: {:noreply, socket}
+
+  defp respond_to_member_removal({:ok, _membership}, socket) do
+    {:noreply,
+     socket
+     |> replace_flash(:info, gettext("Member removed."))
+     |> refresh_members()}
+  end
+
+  defp respond_to_member_removal({:error, :unauthorized}, socket), do: {:noreply, refuse(socket)}
+
+  defp respond_to_member_removal({:error, :org_admin}, socket) do
+    {:noreply,
+     socket
+     |> replace_flash(:error, gettext("Org-admins can't be removed here."))
+     |> refresh_members()}
+  end
+
+  defp respond_to_member_removal({:error, _not_found}, socket) do
+    {:noreply,
+     socket
+     |> replace_flash(:error, gettext("Member not found."))
+     |> refresh_members()}
+  end
+
+  defp refresh_members(socket),
+    do: assign(socket, :members, Organizations.list_members(socket.assigns.organization))
 
   defp respond_to_create({:ok, _workspace}, actor, socket) do
     {:noreply,

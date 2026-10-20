@@ -16,6 +16,7 @@ defmodule Kanban.Boards.MemberSearch do
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Repo
+  alias Kanban.Workspaces.Policy
 
   @max_limit 20
   @max_query_length 100
@@ -84,9 +85,7 @@ defmodule Kanban.Boards.MemberSearch do
   defp maybe_active_only(query, _), do: query
 
   defp member?(%{user: %{id: user_id}}, board_id) when is_integer(user_id) do
-    BoardUser
-    |> where([bu], bu.board_id == ^board_id and bu.user_id == ^user_id)
-    |> Repo.exists?()
+    Policy.effective_board_access(board_id, user_id) != nil
   end
 
   defp member?(_scope, _board_id), do: false

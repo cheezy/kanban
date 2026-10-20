@@ -720,6 +720,88 @@ defmodule KanbanWeb.UserAuthTest do
     end
   end
 
+  describe "current workspace in current_scope" do
+    setup %{user: user} do
+      organization = organization_fixture()
+      organization_member_fixture(organization, user, :member)
+      first = Kanban.WorkspacesFixtures.org_workspace_fixture(organization, name: "Alpha")
+      second = Kanban.WorkspacesFixtures.org_workspace_fixture(organization, name: "Beta")
+      Kanban.WorkspacesFixtures.workspace_member_fixture(first, user, :member)
+      Kanban.WorkspacesFixtures.workspace_member_fixture(second, user, :member)
+
+      %{organization: organization, first: first, second: second}
+    end
+
+    test "the plug puts the session's workspace and the switcher list into the scope", %{
+      conn: conn,
+      user: user,
+      first: first,
+      second: second
+    } do
+      token = Accounts.generate_user_session_token(user)
+
+      conn =
+        conn
+        |> put_session(:user_token, token)
+        |> put_session(:current_workspace_id, second.id)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      assert conn.assigns.current_scope.workspace.id == second.id
+      assert Enum.map(conn.assigns.current_scope.workspaces, & &1.id) == [first.id, second.id]
+    end
+
+    test "the plug falls back from a stale or archived id without changing the session", %{
+      conn: conn,
+      user: user,
+      first: first,
+      second: second
+    } do
+      second |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
+      token = Accounts.generate_user_session_token(user)
+
+      conn =
+        conn
+        |> put_session(:user_token, token)
+        |> put_session(:current_workspace_id, second.id)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      assert conn.assigns.current_scope.workspace.id == first.id
+      assert get_session(conn, :current_workspace_id) == second.id
+    end
+
+    test "on_mount resolves the workspace from the LiveView session", %{
+      conn: conn,
+      user: user,
+      second: second
+    } do
+      token = Accounts.generate_user_session_token(user)
+
+      session =
+        conn
+        |> put_session(:user_token, token)
+        |> put_session(:current_workspace_id, second.id)
+        |> get_session()
+
+      {:cont, socket} = UserAuth.on_mount(:mount_current_scope, %{}, session, %LiveView.Socket{})
+
+      assert socket.assigns.current_scope.workspace.id == second.id
+    end
+
+    test "a user without an Organization has no workspace", %{conn: conn, second: second} do
+      free = user_fixture()
+      token = Accounts.generate_user_session_token(free)
+
+      conn =
+        conn
+        |> put_session(:user_token, token)
+        |> put_session(:current_workspace_id, second.id)
+        |> UserAuth.fetch_current_scope_for_user([])
+
+      assert conn.assigns.current_scope.workspace == nil
+      assert conn.assigns.current_scope.workspaces == []
+    end
+  end
+
   describe "on_mount :require_org_admin" do
     setup %{conn: conn} do
       # A router-mounted socket: the gate attaches a handle_params hook, which

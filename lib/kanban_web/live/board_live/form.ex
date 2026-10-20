@@ -80,14 +80,17 @@ defmodule KanbanWeb.BoardLive.Form do
   end
 
   defp save_board(socket, :new, board_params) do
-    user = socket.assigns.current_scope.user
+    %{user: user, workspace: workspace} = socket.assigns.current_scope
     ai_optimized = Map.get(socket.assigns, :ai_optimized, false)
+    # The current workspace is a hint: creation re-reads it and falls back to
+    # the user's personal workspace unless they may create boards in it.
+    opts = [workspace: workspace]
 
     result =
       if ai_optimized do
-        Boards.create_ai_optimized_board(user, board_params)
+        Boards.create_ai_optimized_board(user, board_params, opts)
       else
-        Boards.create_board(user, board_params)
+        Boards.create_board(user, board_params, opts)
       end
 
     case result do

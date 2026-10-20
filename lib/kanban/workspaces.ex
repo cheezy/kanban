@@ -15,8 +15,11 @@ defmodule Kanban.Workspaces do
   admin, a different thing). The role is checked on every call, not only in
   the UI.
 
-  This module changes no board authorization; `Kanban.Boards.get_user_access/2`
-  is untouched.
+  Board authorization through workspaces lives in `Kanban.Workspaces.Policy`:
+  an org-admin derives owner-equivalent access to the boards in their
+  Organization's workspaces. Removing a workspace member cascades to their
+  board memberships there (`Kanban.Workspaces.MembershipCascade`), and
+  `Kanban.Workspaces.BoardMoves` moves a personal board into an org workspace.
   """
 
   import Ecto.Query, warn: false
@@ -26,6 +29,9 @@ defmodule Kanban.Workspaces do
   alias Kanban.Organizations
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
+  alias Kanban.Workspaces.BoardMoves
+  alias Kanban.Workspaces.Listing
+  alias Kanban.Workspaces.MembershipCascade
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
 
@@ -278,8 +284,16 @@ defmodule Kanban.Workspaces do
   never returned, not even the user's own.
   """
   @spec list_workspaces_for_user(User.t()) :: [Workspace.t()]
-  def list_workspaces_for_user(%User{} = user) do
-    case Organizations.get_membership(user) do
+  def list_workspaces_for_user(%User{} = user),
+    do: list_workspaces_for_membership(user, Organizations.get_membership(user))
+
+  @doc """
+  `list_workspaces_for_user/1` for a caller that has already loaded `user`'s
+  Organization membership (or `nil`), saving that query.
+  """
+  @spec list_workspaces_for_membership(User.t(), OrganizationMember.t() | nil) :: [Workspace.t()]
+  def list_workspaces_for_membership(%User{} = user, membership) do
+    case membership do
       %OrganizationMember{role: :org_admin, organization_id: organization_id} ->
         organization_id |> org_workspaces_query() |> Repo.all()
 
@@ -385,6 +399,13 @@ defmodule Kanban.Workspaces do
   org-admin of its Organization. A user who has since left the Organization can
   still be removed.
 
+  In the same transaction it deletes `user`'s board memberships on this
+  workspace's boards — an owner row included — revokes their API tokens for
+  those boards and unassigns their open tasks there
+  (`Kanban.Workspaces.MembershipCascade`). Boards in other workspaces are left
+  alone. Each removed board membership is reported after commit as
+  `Kanban.Boards.remove_user_from_board/3` reports one.
+
   `workspace` is a `%Workspace{}` or its id; it is re-read from the database,
   and an id that cannot name a row is refused like a missing workspace.
   """
@@ -393,9 +414,42 @@ defmodule Kanban.Workspaces do
   def remove_member(%User{} = actor, workspace, %User{} = user) do
     with {:ok, workspace} <- fetch_managed_workspace(actor, workspace),
          {:ok, membership} <- fetch_membership(workspace, user) do
-      Repo.delete(membership)
+      fn -> remove_membership(membership, workspace, user) end
+      |> Repo.transaction()
+      |> notify_removed(user, actor)
     end
   end
+
+  defp remove_membership(membership, workspace, user) do
+    removed = MembershipCascade.remove(user.id, [workspace.id])
+
+    case Repo.delete(membership) do
+      {:ok, deleted} -> {deleted, removed}
+      {:error, changeset} -> Repo.rollback(changeset)
+    end
+  end
+
+  defp notify_removed({:ok, {deleted, removed}}, user, actor) do
+    MembershipCascade.notify(removed, user, actor)
+    {:ok, deleted}
+  end
+
+  defp notify_removed({:error, _reason} = error, _user, _actor), do: error
+
+  @doc """
+  Moves a board the actor owns from their personal workspace into one of their
+  Organization's workspaces. See `Kanban.Workspaces.BoardMoves`.
+  """
+  defdelegate move_board_to_workspace(actor, board, workspace), to: BoardMoves
+
+  @doc "Lists a workspace's members. See `Kanban.Workspaces.Listing`."
+  defdelegate list_members(actor, workspace), to: Listing
+
+  @doc "Lists a workspace's boards the actor can see. See `Kanban.Workspaces.Listing`."
+  defdelegate list_boards(actor, workspace), to: Listing
+
+  @doc "Lists the boards the actor may move into a workspace. See `Kanban.Workspaces.Listing`."
+  defdelegate list_movable_boards(actor), to: Listing
 
   defp check_assignable_role(role) when role in @assignable_roles, do: :ok
   defp check_assignable_role(_role), do: {:error, :invalid_role}

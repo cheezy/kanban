@@ -30,8 +30,9 @@ defmodule Kanban.Agents do
   All public functions accept a keyword list of opts:
 
     * `:scope` — a `Kanban.Accounts.Scope.t/0`. When provided, results
-      are filtered to tasks on boards the scoped user can access via
-      `Kanban.Boards.BoardUser` membership. When `nil` (the default), all
+      are filtered to tasks on boards the scoped user has effective access
+      to — a `Kanban.Boards.BoardUser` row, or derived org-admin access
+      through `Kanban.Workspaces.Policy`. When `nil` (the default), all
       tasks are considered.
     * `:limit` — for `recent_activity/1`, maximum number of events to
       return. Defaults to `50`. Ignored by the other functions.

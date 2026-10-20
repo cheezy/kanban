@@ -407,10 +407,12 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
          %{conn: conn, board: board, todo: todo} do
       task_fixture(todo)
       enforce_plans()
-      {:ok, view, html} = live(conn, ~p"/boards/#{board}")
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
 
       assert_closed(view)
-      refute html =~ "Available to organizations"
+      # Scoped to the bulk prompt: the side nav's locked workspace switcher
+      # (W2218) also reads "Available to organizations" for a free user.
+      refute has_element?(view, "[data-locked-feature=bulk_actions]")
     end
 
     test "the toggle on a free board opens and closes the locked prompt without a flash",
