@@ -493,6 +493,29 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
       refute has_element?(view, "#workspace-token-reveal")
     end
 
+    test "the name input is capped and an oversized name or capability is a form error", ctx do
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
+
+      assert has_element?(
+               view,
+               "#workspace-token-form input[name='token[name]'][maxlength='255']"
+             )
+
+      assert create_token(view, String.duplicate("a", 256)) =~
+               "should be at most 255 character(s)"
+
+      html =
+        view
+        |> form("#workspace-token-form",
+          token: %{name: "Fleet", agent_capabilities: "testing, " <> String.duplicate("b", 256)}
+        )
+        |> render_submit()
+
+      assert html =~ "each capability must be at most 255 characters"
+      assert workspace_tokens(ctx.workspace) == []
+      refute has_element?(view, "#workspace-token-reveal")
+    end
+
     test "an org-admin revokes a token, and a foreign token id is not found", ctx do
       {:ok, {api_token, _}} =
         Kanban.ApiTokens.create_workspace_api_token(ctx.org_admin, ctx.workspace, %{name: "A"})

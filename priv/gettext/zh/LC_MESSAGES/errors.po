@@ -148,3 +148,7 @@ msgstr "已有一个待处理的邀请"
 ## From Kanban.Tasks.Assignees (D385: a disabled account as a new task assignee)
 msgid "does not have access to this board"
 msgstr "无法访问此看板"
+
+## From Kanban.ApiTokens.ApiToken (an agent capability longer than its varchar(255) column)
+msgid "each capability must be at most 255 characters"
+msgstr "每项能力最多 255 个字符"

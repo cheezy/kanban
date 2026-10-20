@@ -1668,7 +1668,7 @@ msgstr "Telemetrie-Ereignis hinzufügen"
 msgid "Add Unit Test"
 msgstr "Unit-Test hinzufügen"
 
-#: lib/kanban_web/live/board_live/show.html.heex:872
+#: lib/kanban_web/live/board_live/show.html.heex:888
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to revoke this token?"
 msgstr "Möchten Sie dieses Token wirklich widerrufen?"
@@ -1680,14 +1680,14 @@ msgstr "Möchten Sie dieses Token wirklich widerrufen?"
 #: lib/kanban_web/live/user_live/confirmation.ex:89
 #: lib/kanban_web/live/user_live/confirmation.ex:367
 #: lib/kanban_web/live/user_live/confirmation.ex:393
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:181
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:187
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "Kopieren"
 
-#: lib/kanban_web/live/board_live/show.html.heex:778
+#: lib/kanban_web/live/board_live/show.html.heex:794
 #: lib/kanban_web/live/org_live/console.html.heex:209
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:58
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:64
 #, elixir-autogen, elixir-format
 msgid "Creating..."
 msgstr "Wird erstellt..."
@@ -1733,12 +1733,12 @@ msgstr "Manuelle Tests"
 msgid "Manual test description"
 msgstr "Beschreibung des manuellen Tests"
 
-#: lib/kanban_web/live/board_live/show.html.heex:717
+#: lib/kanban_web/live/board_live/show.html.heex:718
 #, elixir-autogen, elixir-format
 msgid "My AI Agent"
 msgstr "Mein KI-Agent"
 
-#: lib/kanban_web/live/board_live/show.html.heex:803
+#: lib/kanban_web/live/board_live/show.html.heex:819
 #, elixir-autogen, elixir-format
 msgid "No API tokens yet. Generate one above to get started."
 msgstr "Noch keine API-Tokens. Generieren Sie oben einen, um loszulegen."
@@ -1755,9 +1755,9 @@ msgstr "Phoenix-Channels"
 msgid "PubSub Broadcasts"
 msgstr "PubSub-Broadcasts"
 
-#: lib/kanban_web/live/board_live/show.html.heex:880
+#: lib/kanban_web/live/board_live/show.html.heex:896
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:129
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:119
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:125
 #, elixir-autogen, elixir-format
 msgid "Revoke"
 msgstr "Widerrufen"
@@ -1828,7 +1828,7 @@ msgstr "topic:event"
 
 #: lib/kanban_web/live/board_live/show.html.heex:681
 #: lib/kanban_web/live/board_live/webhook_views.ex:105
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:203
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:209
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "Schließen"
@@ -1837,7 +1837,7 @@ msgstr "Schließen"
 #: lib/kanban_web/live/board_live/webhook_views.ex:89
 #: lib/kanban_web/live/user_live/confirmation.ex:64
 #: lib/kanban_web/live/user_live/confirmation.ex:368
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:188
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:194
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "Kopiert!"
@@ -1948,12 +1948,12 @@ msgstr "Hinweis zu dieser Datei"
 msgid "Please fix the errors below"
 msgstr "Bitte beheben Sie die untenstehenden Fehler"
 
-#: lib/kanban_web/live/board_live/show.html.heex:750
+#: lib/kanban_web/live/board_live/show.html.heex:758
 #, elixir-autogen, elixir-format
 msgid "Task automation"
 msgstr "Aufgabenautomatisierung"
 
-#: lib/kanban_web/live/board_live/show.html.heex:737
+#: lib/kanban_web/live/board_live/show.html.heex:739
 #, elixir-autogen, elixir-format
 msgid "claude-4.5-opus"
 msgstr "claude-4.5-opus"
@@ -2011,7 +2011,7 @@ msgstr "Board:"
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
 #: lib/kanban_web/live/admin/user_live/index.html.heex:222
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
-#: lib/kanban_web/live/board_live/show.html.heex:895
+#: lib/kanban_web/live/board_live/show.html.heex:911
 #: lib/kanban_web/live/board_live/webhook_views.ex:254
 #: lib/kanban_web/live/task_live/components/comment_row.ex:123
 #, elixir-autogen, elixir-format
@@ -2056,7 +2056,7 @@ msgstr "Sicherheitsfehler: Ungültige Spalte"
 msgid "Select capability to add..."
 msgstr "Hinzuzufügende Fähigkeit auswählen..."
 
-#: lib/kanban_web/live/board_live/show.html.heex:764
+#: lib/kanban_web/live/board_live/show.html.heex:772
 #, elixir-autogen, elixir-format
 msgid "code_generation, testing, documentation"
 msgstr "code_generation, testing, documentation"
@@ -2066,7 +2066,7 @@ msgstr "code_generation, testing, documentation"
 msgid "API token deleted successfully"
 msgstr "API-Token erfolgreich gelöscht"
 
-#: lib/kanban_web/live/board_live/show.html.heex:887
+#: lib/kanban_web/live/board_live/show.html.heex:903
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this token?"
 msgstr "Sind Sie sicher, dass Sie dieses Token löschen möchten?"
@@ -4839,17 +4839,17 @@ msgstr "name@beispiel.com"
 msgid "Manage members"
 msgstr "Mitglieder verwalten"
 
-#: lib/kanban_web/live/board_live/show.html.heex:794
+#: lib/kanban_web/live/board_live/show.html.heex:810
 #, elixir-autogen, elixir-format
 msgid "Active tokens"
 msgstr "Aktive Tokens"
 
-#: lib/kanban_web/live/board_live/show.html.heex:758
+#: lib/kanban_web/live/board_live/show.html.heex:766
 #, elixir-autogen, elixir-format
 msgid "Agent capabilities"
 msgstr "Agenten-Fähigkeiten"
 
-#: lib/kanban_web/live/board_live/show.html.heex:731
+#: lib/kanban_web/live/board_live/show.html.heex:732
 #, elixir-autogen, elixir-format
 msgid "Agent model (optional)"
 msgstr "Agentenmodell (Optional)"
@@ -4859,14 +4859,14 @@ msgstr "Agentenmodell (Optional)"
 msgid "Bearer tokens that authenticate agents on %{board_name}. Rotating a token does not release in-flight claims — the old token remains valid for a 60-second grace window."
 msgstr "Bearer-Tokens, die Agenten auf %{board_name} authentifizieren. Das Rotieren eines Tokens gibt laufende Claims nicht frei — das alte Token bleibt für ein 60-Sekunden-Übergangsfenster gültig."
 
-#: lib/kanban_web/live/board_live/show.html.heex:769
+#: lib/kanban_web/live/board_live/show.html.heex:785
 #, elixir-autogen, elixir-format
 msgid "Comma-separated. Valid: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
 msgstr "Kommagetrennte Liste. Gültige Fähigkeiten: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leer lassen, um alle Aufgaben zuzulassen."
 
 #: lib/kanban_web/live/board_live/show.html.heex:627
 #: lib/kanban_web/live/board_live/webhook_views.ex:54
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:151
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:157
 #, elixir-autogen, elixir-format
 msgid "Copy it now — you won't be able to see it again."
 msgstr "Kopieren Sie es jetzt — Sie werden es nicht erneut sehen können."
@@ -4876,17 +4876,17 @@ msgstr "Kopieren Sie es jetzt — Sie werden es nicht erneut sehen können."
 msgid "Create new token"
 msgstr "Neues Token erstellen"
 
-#: lib/kanban_web/live/board_live/show.html.heex:786
+#: lib/kanban_web/live/board_live/show.html.heex:802
 #, elixir-autogen, elixir-format
 msgid "Generate token"
 msgstr "Token generieren"
 
-#: lib/kanban_web/live/board_live/show.html.heex:863
+#: lib/kanban_web/live/board_live/show.html.heex:879
 #, elixir-autogen, elixir-format
 msgid "Never used"
 msgstr "Nie verwendet"
 
-#: lib/kanban_web/live/board_live/show.html.heex:744
+#: lib/kanban_web/live/board_live/show.html.heex:752
 #, elixir-autogen, elixir-format
 msgid "Purpose (optional)"
 msgstr "Zweck (Optional)"
@@ -4897,12 +4897,12 @@ msgid "Token created"
 msgstr "Token erstellt"
 
 #: lib/kanban_web/live/board_live/show.html.heex:709
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:43
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:46
 #, elixir-autogen, elixir-format
 msgid "Token name"
 msgstr "Token-Name"
 
-#: lib/kanban_web/live/board_live/show.html.heex:849
+#: lib/kanban_web/live/board_live/show.html.heex:865
 #, elixir-autogen, elixir-format
 msgid "revoked"
 msgstr "widerrufen"
@@ -11573,7 +11573,7 @@ msgstr "Erstelle ein Konto mit der E-Mail-Adresse, an die diese Einladung gesend
 
 #: lib/kanban_web/live/workspace_live/exports.ex:60
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:160
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:234
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:240
 #, elixir-autogen, elixir-format
 msgid "Expired"
 msgstr "Abgelaufen"
@@ -11781,7 +11781,7 @@ msgctxt "audit action"
 msgid "Organization member added"
 msgstr "Organisationsmitglied hinzugefügt"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:70
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:76
 #, elixir-autogen, elixir-format
 msgid "A token stops working when it is revoked, when it expires, or when the org-admin it acts as leaves this workspace or the Organization."
 msgstr "Ein Token funktioniert nicht mehr, wenn es widerrufen wird, abläuft oder wenn der Org-Admin, als der es handelt, diesen Workspace oder die Organisation verlässt."
@@ -11791,22 +11791,22 @@ msgstr "Ein Token funktioniert nicht mehr, wenn es widerrufen wird, abläuft ode
 msgid "API tokens · create · revoke"
 msgstr "API-Token · erstellen · widerrufen"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:232
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:238
 #, elixir-autogen, elixir-format
 msgid "Active"
 msgstr "Aktiv"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:49
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:55
 #, elixir-autogen, elixir-format
 msgid "Agent capabilities (comma-separated, optional)"
 msgstr "Agentenfähigkeiten (durch Kommas getrennt, optional)"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:217
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:223
 #, elixir-autogen, elixir-format
 msgid "By %{creator} · created %{created} · last used %{used} · expires %{expires}"
 msgstr "Von %{creator} · erstellt %{created} · zuletzt verwendet %{used} · läuft ab %{expires}"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:195
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:201
 #, elixir-autogen, elixir-format
 msgid "Couldn't copy it. Select the token and copy it yourself."
 msgstr "Kopieren fehlgeschlagen. Markieren Sie das Token und kopieren Sie es selbst."
@@ -11816,12 +11816,12 @@ msgstr "Kopieren fehlgeschlagen. Markieren Sie das Token und kopieren Sie es sel
 msgid "Create a workspace token"
 msgstr "Workspace-Token erstellen"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:60
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:66
 #, elixir-autogen, elixir-format
 msgid "Create token"
 msgstr "Token erstellen"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:81
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:87
 #, elixir-autogen, elixir-format
 msgid "No workspace tokens yet."
 msgstr "Noch keine Workspace-Token."
@@ -11831,12 +11831,12 @@ msgstr "Noch keine Workspace-Token."
 msgid "One token for every board in this workspace. It acts as you, reaches the AI Optimized boards you can modify, and names its board on each request with the X-Stride-Board header. It expires in 90 days."
 msgstr "Ein Token für jedes Board in diesem Workspace. Es handelt in Ihrem Namen, erreicht die KI-optimierten Boards, die Sie bearbeiten können, und nennt sein Board bei jeder Anfrage im Header X-Stride-Board. Es läuft nach 90 Tagen ab."
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:116
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:122
 #, elixir-autogen, elixir-format
 msgid "Revoke this token? Agents using it lose access immediately."
 msgstr "Dieses Token widerrufen? Agenten, die es verwenden, verlieren sofort den Zugriff."
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:233
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:239
 #, elixir-autogen, elixir-format
 msgid "Revoked"
 msgstr "Widerrufen"
@@ -11866,17 +11866,17 @@ msgstr "Workspace-Token erstellt. Kopieren Sie es jetzt; es wird nicht noch einm
 msgid "Workspace token revoked."
 msgstr "Workspace-Token widerrufen."
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:68
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:74
 #, elixir-autogen, elixir-format
 msgid "Workspace tokens"
 msgstr "Workspace-Token"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:148
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:154
 #, elixir-autogen, elixir-format
 msgid "Your new workspace token"
 msgstr "Ihr neues Workspace-Token"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:229
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:235
 #, elixir-autogen, elixir-format
 msgid "never"
 msgstr "nie"

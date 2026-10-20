@@ -40,7 +40,13 @@ defmodule KanbanWeb.WorkspaceLive.TokensCard do
         class="flex flex-col gap-1"
       >
         <div class="grid grid-cols-1 gap-x-4 @md:grid-cols-2">
-          <.input field={@form[:name]} type="text" label={gettext("Token name")} required />
+          <.input
+            field={@form[:name]}
+            type="text"
+            label={gettext("Token name")}
+            maxlength={ApiToken.max_text_length()}
+            required
+          />
           <.input
             field={@form[:agent_capabilities]}
             name="token[agent_capabilities]"

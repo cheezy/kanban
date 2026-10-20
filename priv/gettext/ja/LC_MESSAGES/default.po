@@ -1668,7 +1668,7 @@ msgstr "テレメトリイベントを追加"
 msgid "Add Unit Test"
 msgstr "ユニットテストを追加"
 
-#: lib/kanban_web/live/board_live/show.html.heex:872
+#: lib/kanban_web/live/board_live/show.html.heex:888
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to revoke this token?"
 msgstr "このトークンを取り消してもよろしいですか?"
@@ -1680,14 +1680,14 @@ msgstr "このトークンを取り消してもよろしいですか?"
 #: lib/kanban_web/live/user_live/confirmation.ex:89
 #: lib/kanban_web/live/user_live/confirmation.ex:367
 #: lib/kanban_web/live/user_live/confirmation.ex:393
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:181
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:187
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "コピー"
 
-#: lib/kanban_web/live/board_live/show.html.heex:778
+#: lib/kanban_web/live/board_live/show.html.heex:794
 #: lib/kanban_web/live/org_live/console.html.heex:209
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:58
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:64
 #, elixir-autogen, elixir-format
 msgid "Creating..."
 msgstr "作成中..."
@@ -1733,12 +1733,12 @@ msgstr "手動テスト"
 msgid "Manual test description"
 msgstr "手動テストの説明"
 
-#: lib/kanban_web/live/board_live/show.html.heex:717
+#: lib/kanban_web/live/board_live/show.html.heex:718
 #, elixir-autogen, elixir-format
 msgid "My AI Agent"
 msgstr "マイAIエージェント"
 
-#: lib/kanban_web/live/board_live/show.html.heex:803
+#: lib/kanban_web/live/board_live/show.html.heex:819
 #, elixir-autogen, elixir-format
 msgid "No API tokens yet. Generate one above to get started."
 msgstr "まだAPIトークンがありません。上記で生成して開始してください。"
@@ -1755,9 +1755,9 @@ msgstr "Phoenixチャネル"
 msgid "PubSub Broadcasts"
 msgstr "PubSubブロードキャスト"
 
-#: lib/kanban_web/live/board_live/show.html.heex:880
+#: lib/kanban_web/live/board_live/show.html.heex:896
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:129
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:119
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:125
 #, elixir-autogen, elixir-format
 msgid "Revoke"
 msgstr "取り消し"
@@ -1828,7 +1828,7 @@ msgstr "topic:event"
 
 #: lib/kanban_web/live/board_live/show.html.heex:681
 #: lib/kanban_web/live/board_live/webhook_views.ex:105
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:203
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:209
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "閉じる"
@@ -1837,7 +1837,7 @@ msgstr "閉じる"
 #: lib/kanban_web/live/board_live/webhook_views.ex:89
 #: lib/kanban_web/live/user_live/confirmation.ex:64
 #: lib/kanban_web/live/user_live/confirmation.ex:368
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:188
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:194
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "コピーしました！"
@@ -1948,12 +1948,12 @@ msgstr "このファイルに関するメモ"
 msgid "Please fix the errors below"
 msgstr "下記のエラーを修正してください"
 
-#: lib/kanban_web/live/board_live/show.html.heex:750
+#: lib/kanban_web/live/board_live/show.html.heex:758
 #, elixir-autogen, elixir-format
 msgid "Task automation"
 msgstr "タスク自動化"
 
-#: lib/kanban_web/live/board_live/show.html.heex:737
+#: lib/kanban_web/live/board_live/show.html.heex:739
 #, elixir-autogen, elixir-format
 msgid "claude-4.5-opus"
 msgstr "claude-4.5-opus"
@@ -2011,7 +2011,7 @@ msgstr "ボード:"
 #: lib/kanban_web/live/admin/message_live/index.html.heex:57
 #: lib/kanban_web/live/admin/user_live/index.html.heex:222
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
-#: lib/kanban_web/live/board_live/show.html.heex:895
+#: lib/kanban_web/live/board_live/show.html.heex:911
 #: lib/kanban_web/live/board_live/webhook_views.ex:254
 #: lib/kanban_web/live/task_live/components/comment_row.ex:123
 #, elixir-autogen, elixir-format
@@ -2056,7 +2056,7 @@ msgstr "セキュリティエラー: 無効な列"
 msgid "Select capability to add..."
 msgstr "追加する能力を選択..."
 
-#: lib/kanban_web/live/board_live/show.html.heex:764
+#: lib/kanban_web/live/board_live/show.html.heex:772
 #, elixir-autogen, elixir-format
 msgid "code_generation, testing, documentation"
 msgstr "code_generation, testing, documentation"
@@ -2066,7 +2066,7 @@ msgstr "code_generation, testing, documentation"
 msgid "API token deleted successfully"
 msgstr "APIトークンが正常に削除されました"
 
-#: lib/kanban_web/live/board_live/show.html.heex:887
+#: lib/kanban_web/live/board_live/show.html.heex:903
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to delete this token?"
 msgstr "このトークンを削除してもよろしいですか？"
@@ -4831,17 +4831,17 @@ msgstr "name@example.com"
 msgid "Manage members"
 msgstr "メンバーを管理"
 
-#: lib/kanban_web/live/board_live/show.html.heex:794
+#: lib/kanban_web/live/board_live/show.html.heex:810
 #, elixir-autogen, elixir-format
 msgid "Active tokens"
 msgstr "アクティブなトークン"
 
-#: lib/kanban_web/live/board_live/show.html.heex:758
+#: lib/kanban_web/live/board_live/show.html.heex:766
 #, elixir-autogen, elixir-format
 msgid "Agent capabilities"
 msgstr "エージェント機能"
 
-#: lib/kanban_web/live/board_live/show.html.heex:731
+#: lib/kanban_web/live/board_live/show.html.heex:732
 #, elixir-autogen, elixir-format
 msgid "Agent model (optional)"
 msgstr "エージェントモデル（オプション）"
@@ -4851,14 +4851,14 @@ msgstr "エージェントモデル（オプション）"
 msgid "Bearer tokens that authenticate agents on %{board_name}. Rotating a token does not release in-flight claims — the old token remains valid for a 60-second grace window."
 msgstr "%{board_name} 上のエージェントを認証するBearerトークンです。トークンをローテーションしても進行中のクレームは解放されません — 古いトークンは60秒の猶予期間中は有効のままです。"
 
-#: lib/kanban_web/live/board_live/show.html.heex:769
+#: lib/kanban_web/live/board_live/show.html.heex:785
 #, elixir-autogen, elixir-format
 msgid "Comma-separated. Valid: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Leave empty to allow all tasks."
 msgstr "カンマ区切り。有効な値: api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing。空にするとすべてのタスクを許可します。"
 
 #: lib/kanban_web/live/board_live/show.html.heex:627
 #: lib/kanban_web/live/board_live/webhook_views.ex:54
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:151
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:157
 #, elixir-autogen, elixir-format
 msgid "Copy it now — you won't be able to see it again."
 msgstr "今すぐコピーしてください — 二度と見ることはできません。"
@@ -4868,17 +4868,17 @@ msgstr "今すぐコピーしてください — 二度と見ることはでき�
 msgid "Create new token"
 msgstr "新しいトークンを作成"
 
-#: lib/kanban_web/live/board_live/show.html.heex:786
+#: lib/kanban_web/live/board_live/show.html.heex:802
 #, elixir-autogen, elixir-format
 msgid "Generate token"
 msgstr "トークンを生成"
 
-#: lib/kanban_web/live/board_live/show.html.heex:863
+#: lib/kanban_web/live/board_live/show.html.heex:879
 #, elixir-autogen, elixir-format
 msgid "Never used"
 msgstr "未使用"
 
-#: lib/kanban_web/live/board_live/show.html.heex:744
+#: lib/kanban_web/live/board_live/show.html.heex:752
 #, elixir-autogen, elixir-format
 msgid "Purpose (optional)"
 msgstr "目的（オプション）"
@@ -4889,12 +4889,12 @@ msgid "Token created"
 msgstr "トークンを作成しました"
 
 #: lib/kanban_web/live/board_live/show.html.heex:709
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:43
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:46
 #, elixir-autogen, elixir-format
 msgid "Token name"
 msgstr "トークン名"
 
-#: lib/kanban_web/live/board_live/show.html.heex:849
+#: lib/kanban_web/live/board_live/show.html.heex:865
 #, elixir-autogen, elixir-format
 msgid "revoked"
 msgstr "取り消し済み"
@@ -11497,7 +11497,7 @@ msgstr "この招待が送信されたメールアドレスでアカウントを
 
 #: lib/kanban_web/live/workspace_live/exports.ex:60
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:160
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:234
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:240
 #, elixir-autogen, elixir-format
 msgid "Expired"
 msgstr "期限切れ"
@@ -11705,7 +11705,7 @@ msgctxt "audit action"
 msgid "Organization member added"
 msgstr "組織メンバーを追加しました"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:70
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:76
 #, elixir-autogen, elixir-format
 msgid "A token stops working when it is revoked, when it expires, or when the org-admin it acts as leaves this workspace or the Organization."
 msgstr "トークンは、取り消されたとき、有効期限が切れたとき、またはトークンが代理する組織管理者がこのワークスペースまたは組織から外れたときに使えなくなります。"
@@ -11715,22 +11715,22 @@ msgstr "トークンは、取り消されたとき、有効期限が切れたと
 msgid "API tokens · create · revoke"
 msgstr "APIトークン · 作成 · 取り消し"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:232
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:238
 #, elixir-autogen, elixir-format
 msgid "Active"
 msgstr "有効"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:49
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:55
 #, elixir-autogen, elixir-format
 msgid "Agent capabilities (comma-separated, optional)"
 msgstr "エージェントの機能(カンマ区切り、任意)"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:217
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:223
 #, elixir-autogen, elixir-format
 msgid "By %{creator} · created %{created} · last used %{used} · expires %{expires}"
 msgstr "作成者 %{creator} · 作成日 %{created} · 最終使用 %{used} · 有効期限 %{expires}"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:195
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:201
 #, elixir-autogen, elixir-format
 msgid "Couldn't copy it. Select the token and copy it yourself."
 msgstr "コピーできませんでした。トークンを選択して手動でコピーしてください。"
@@ -11740,12 +11740,12 @@ msgstr "コピーできませんでした。トークンを選択して手動で
 msgid "Create a workspace token"
 msgstr "ワークスペーストークンを作成"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:60
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:66
 #, elixir-autogen, elixir-format
 msgid "Create token"
 msgstr "トークンを作成"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:81
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:87
 #, elixir-autogen, elixir-format
 msgid "No workspace tokens yet."
 msgstr "ワークスペーストークンはまだありません。"
@@ -11755,12 +11755,12 @@ msgstr "ワークスペーストークンはまだありません。"
 msgid "One token for every board in this workspace. It acts as you, reaches the AI Optimized boards you can modify, and names its board on each request with the X-Stride-Board header. It expires in 90 days."
 msgstr "このワークスペースのすべてのボードで使える1つのトークンです。あなたとして動作し、あなたが編集できるAI最適化ボードにアクセスし、リクエストごとにX-Stride-Boardヘッダーで対象のボードを指定します。有効期限は90日です。"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:116
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:122
 #, elixir-autogen, elixir-format
 msgid "Revoke this token? Agents using it lose access immediately."
 msgstr "このトークンを取り消しますか?使用中のエージェントはすぐにアクセスできなくなります。"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:233
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:239
 #, elixir-autogen, elixir-format
 msgid "Revoked"
 msgstr "取り消し済み"
@@ -11790,17 +11790,17 @@ msgstr "ワークスペーストークンを作成しました。今すぐコピ
 msgid "Workspace token revoked."
 msgstr "ワークスペーストークンを取り消しました。"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:68
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:74
 #, elixir-autogen, elixir-format
 msgid "Workspace tokens"
 msgstr "ワークスペーストークン"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:148
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:154
 #, elixir-autogen, elixir-format
 msgid "Your new workspace token"
 msgstr "新しいワークスペーストークン"
 
-#: lib/kanban_web/live/workspace_live/tokens_card.ex:229
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:235
 #, elixir-autogen, elixir-format
 msgid "never"
 msgstr "なし"

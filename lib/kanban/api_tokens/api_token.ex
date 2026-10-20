@@ -8,6 +8,12 @@ defmodule Kanban.ApiTokens.ApiToken do
 
   @token_prefix "stride"
 
+  # varchar(255) columns (agent_purpose is text). Postgres counts code points,
+  # so the checks do too: a longer value is a form error, never a 22001.
+  @varchar_max 255
+  @varchar_fields [:name, :agent_model, :agent_version]
+  @capability_too_long "each capability must be at most 255 characters"
+
   schema "api_tokens" do
     field :name, :string
     field :token_hash, :string
@@ -42,6 +48,7 @@ defmodule Kanban.ApiTokens.ApiToken do
     ])
     |> ChangesetText.validate_storable(@text_fields)
     |> validate_required([:name, :user_id, :board_id])
+    |> validate_column_lengths()
     |> finish_new_token()
   end
 
@@ -65,8 +72,35 @@ defmodule Kanban.ApiTokens.ApiToken do
     ])
     |> ChangesetText.validate_storable(@text_fields)
     |> validate_required([:name, :user_id, :workspace_id])
+    |> validate_column_lengths()
     |> finish_new_token()
   end
+
+  @doc """
+  The longest `name`, `agent_model`, `agent_version` or single capability a
+  token can hold, in characters (the forms' `maxlength`).
+  """
+  def max_text_length, do: @varchar_max
+
+  @doc """
+  Caps `name`, `agent_model` and `agent_version`, and each entry of
+  `agent_capabilities`, at the 255 code points their varchar(255) columns
+  hold, so an oversized value is a changeset error instead of a database error.
+  """
+  def validate_column_lengths(changeset) do
+    @varchar_fields
+    |> Enum.reduce(changeset, &validate_length(&2, &1, max: @varchar_max, count: :codepoints))
+    |> validate_change(:agent_capabilities, fn :agent_capabilities, capabilities ->
+      if Enum.any?(capabilities, &too_long?/1),
+        do: [agent_capabilities: {@capability_too_long, [validation: :length, kind: :max]}],
+        else: []
+    end)
+  end
+
+  defp too_long?(value) when is_binary(value),
+    do: value |> String.codepoints() |> length() > @varchar_max
+
+  defp too_long?(_value), do: false
 
   defp finish_new_token(changeset) do
     changeset

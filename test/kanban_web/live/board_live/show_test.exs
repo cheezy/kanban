@@ -1009,6 +1009,35 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       assert html =~ "can&#39;t be blank" or html =~ "can't be blank"
     end
 
+    test "caps the text inputs and shows length errors instead of failing", %{
+      conn: conn,
+      user: user
+    } do
+      board = ai_optimized_board_fixture(user)
+      long = String.duplicate("a", 256)
+
+      {:ok, show_live, _html} = live(conn, ~p"/boards/#{board}/api_tokens")
+
+      for field <- ["name", "agent_model"] do
+        assert has_element?(
+                 show_live,
+                 "#create-token-form input[name='api_token[#{field}]'][maxlength='255']"
+               )
+      end
+
+      for {attrs, message} <- [
+            {%{name: long}, "should be at most 255 character(s)"},
+            {%{name: "Agent", agent_model: long}, "should be at most 255 character(s)"},
+            {%{name: "Agent", agent_capabilities: "testing, " <> long},
+             "each capability must be at most 255 characters"}
+          ] do
+        show_live |> form("#create-token-form", api_token: attrs) |> render_submit()
+        assert render(show_live) =~ message
+      end
+
+      assert Kanban.ApiTokens.list_api_tokens(board) == []
+    end
+
     test "revokes API token", %{conn: conn, user: user} do
       board = ai_optimized_board_fixture(user)
 

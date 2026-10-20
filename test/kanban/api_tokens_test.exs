@@ -157,6 +157,24 @@ defmodule Kanban.ApiTokensTest do
       assert {:error, %Ecto.Changeset{}} = ApiTokens.create_api_token(user, board, @invalid_attrs)
     end
 
+    test "create_api_token/3 returns a changeset, never a database error, for oversized text" do
+      user = user_fixture()
+      board = board_fixture(user)
+      long = String.duplicate("a", 256)
+
+      for attrs <- [
+            %{name: long},
+            %{name: "Agent", agent_model: long},
+            %{name: "Agent", agent_version: long},
+            %{name: "Agent", agent_capabilities: ["testing", long]}
+          ] do
+        assert {:error, %Ecto.Changeset{valid?: false}} =
+                 ApiTokens.create_api_token(user, board, attrs)
+      end
+
+      assert ApiTokens.list_api_tokens(board) == []
+    end
+
     test "create_api_token/2 defaults attrs to an empty map and fails name validation" do
       user = user_fixture()
       board = board_fixture(user)
@@ -534,6 +552,28 @@ defmodule Kanban.ApiTokensTest do
                ApiTokens.create_workspace_api_token(admin, workspace, %{name: ""})
 
       assert "can't be blank" in errors_on(changeset).name
+    end
+
+    test "create_workspace_api_token/3 returns a changeset for oversized text",
+         %{admin: admin, workspace: workspace} do
+      long = String.duplicate("a", 256)
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               ApiTokens.create_workspace_api_token(admin, workspace, %{name: long})
+
+      assert "should be at most 255 character(s)" in errors_on(changeset).name
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               ApiTokens.create_workspace_api_token(admin, workspace, %{
+                 name: "Fleet",
+                 agent_capabilities: [long]
+               })
+
+      assert errors_on(changeset).agent_capabilities == [
+               "each capability must be at most 255 characters"
+             ]
+
+      assert ApiTokens.list_workspace_api_tokens(admin, workspace) == []
     end
 
     test "create_workspace_api_token/3 emits token_created and audits it",
