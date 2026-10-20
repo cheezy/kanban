@@ -601,17 +601,23 @@ defmodule Kanban.Workspaces.InvitationsTest do
       assert board_count(board) == 4
     end
 
-    test "is not capped once the board has moved into an Organization" do
+    test "is refused and revoked once the board has moved into an Organization" do
       invitee = user_fixture()
-      %{owner: owner, board: board, token: token} = free_board_invitation(2, invitee.email)
-      enforce_plans()
+
+      %{owner: owner, board: board, invitation: invitation, token: token} =
+        free_board_invitation(0, invitee.email)
+
       organization = organization_fixture()
-      # Only an org-admin who owns a board can move it into their Organization.
       organization_member_fixture(organization, owner, :org_admin)
+      # Moved without BoardMoves, so the invitation is still open, as an
+      # earlier move left some.
       move_board_to_organization(board, organization)
 
-      assert {:ok, _} = Invitations.accept(token, invitee)
-      assert board_count(board) == 4
+      assert {:error, :invalid} = Invitations.preview(token, invitee)
+      assert {:error, :invalid} = Invitations.accept(token, invitee)
+      refute Repo.get_by(BoardUser, board_id: board.id, user_id: invitee.id)
+      assert Repo.get!(Invitation, invitation.id).revoked_at
+      refute Organizations.get_membership(invitee)
     end
 
     test "is refused once its board was deleted" do

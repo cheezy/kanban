@@ -166,7 +166,7 @@ defmodule Kanban.Workspaces.InvitationAuthorizationTest do
       refute may_send?(owner, nil, workspace, board)
     end
 
-    test "a board-only invitation on a board moved into an Organization needs an org-admin",
+    test "a board-only invitation on a board moved into an Organization is never sendable",
          ctx do
       owner = user_fixture()
       organization_member_fixture(ctx.organization, owner, :member)
@@ -174,10 +174,11 @@ defmodule Kanban.Workspaces.InvitationAuthorizationTest do
       moved = move_board_to_organization(board, ctx.organization)
       workspace = Repo.get!(Workspace, moved.workspace_id)
 
-      # Still the board's owner, but no longer allowed under the free-board rule.
+      # Neither the board's owner nor an org-admin: on an org board only a
+      # workspace invitation may be sent.
       assert Boards.owner?(moved, owner)
       refute may_send?(owner, nil, workspace, moved)
-      assert may_send?(ctx.admin, nil, workspace, moved)
+      refute may_send?(ctx.admin, nil, workspace, moved)
     end
   end
 end

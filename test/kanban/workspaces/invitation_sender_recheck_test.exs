@@ -1,8 +1,8 @@
 defmodule Kanban.Workspaces.InvitationSenderRecheckTest do
   @moduledoc """
   Accepting an invitation re-checks that its sender may still send it, and a
-  board that moves into an Organization keeps its open board-only invitations
-  under the org-board rule.
+  board that moves into an Organization loses its open board-only
+  invitations: the move revokes them, and acceptance refuses any left open.
 
   async: false - one test switches the global `:plans_enforced` application
   env.
@@ -16,8 +16,8 @@ defmodule Kanban.Workspaces.InvitationSenderRecheckTest do
   import Kanban.PlansHelpers
   import Kanban.WorkspacesFixtures
 
-  alias Kanban.Accounts.User
   alias Kanban.Boards
+  alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Organizations
   alias Kanban.Organizations.OrganizationMember
@@ -203,10 +203,9 @@ defmodule Kanban.Workspaces.InvitationSenderRecheckTest do
           board_access: :modify
         )
 
-      {:ok, _moved} = Workspaces.move_board_to_workspace(owner, board, workspace)
-
       %{
         organization: organization,
+        workspace: workspace,
         owner: owner,
         board: board,
         invitee: invitee,
@@ -215,32 +214,46 @@ defmodule Kanban.Workspaces.InvitationSenderRecheckTest do
       }
     end
 
-    test "keeps the board's open invitations, accepted uncapped while the sender is an org-admin",
-         ctx do
-      refute revoked?(ctx.invitation)
-      enforce_plans()
-      for _ <- 1..3, do: grant!(ctx.board, user_fixture())
+    test "revokes the board's open board-only invitations", ctx do
+      {:ok, _moved} = Workspaces.move_board_to_workspace(ctx.owner, ctx.board, ctx.workspace)
 
-      assert {:ok, %{board: board}} = Invitations.accept(ctx.token, ctx.invitee)
-      assert board.id == ctx.board.id
-      assert Boards.get_user_access(ctx.board.id, ctx.invitee.id) == :modify
-      refute Organizations.member?(ctx.invitee, ctx.organization)
-    end
-
-    test "refuses the invitation once its sender, still the board's owner, is no org-admin",
-         ctx do
-      set_org_role!(ctx.organization, ctx.owner, :member)
-      assert Boards.owner?(ctx.board, %User{id: ctx.owner.id})
-
-      assert {:error, :invalid} = Invitations.accept(ctx.token, ctx.invitee)
       assert revoked?(ctx.invitation)
+      assert {:error, :invalid} = Invitations.preview(ctx.token, ctx.invitee)
+      assert {:error, :invalid} = Invitations.accept(ctx.token, ctx.invitee)
       refute Repo.get_by(BoardUser, board_id: ctx.board.id, user_id: ctx.invitee.id)
     end
 
-    defp grant!(board, user) do
-      %BoardUser{}
-      |> BoardUser.changeset(%{board_id: board.id, user_id: user.id, access: :read_only})
-      |> Repo.insert!()
+    test "refuses and revokes one an earlier move left open, even from an org-admin sender",
+         ctx do
+      # Moves the board without BoardMoves, as moves did before they revoked.
+      {1, _} =
+        from(b in Board, where: b.id == ^ctx.board.id)
+        |> Repo.update_all(set: [workspace_id: ctx.workspace.id])
+
+      in_other_org = user_fixture()
+      other_org = organization_fixture()
+      organization_member_fixture(other_org, in_other_org, :member)
+
+      {other_invitation, other_token} =
+        invitation!(ctx.owner,
+          workspace_id: Workspaces.get_personal_workspace(ctx.owner).id,
+          email: in_other_org.email,
+          board_id: ctx.board.id,
+          board_access: :modify
+        )
+
+      for {invitation, token, invitee} <- [
+            {ctx.invitation, ctx.token, ctx.invitee},
+            {other_invitation, other_token, in_other_org}
+          ] do
+        assert {:error, :invalid} = Invitations.preview(token, invitee)
+        assert {:error, :invalid} = Invitations.accept(token, invitee)
+        assert revoked?(invitation)
+        refute Repo.get_by(BoardUser, board_id: ctx.board.id, user_id: invitee.id)
+      end
+
+      refute Organizations.member?(ctx.invitee, ctx.organization)
+      assert Organizations.member?(in_other_org, other_org)
     end
   end
 end

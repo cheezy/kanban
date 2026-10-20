@@ -101,12 +101,13 @@ defmodule Kanban.Workspaces.InvitationAuthorization do
   @doc """
   True when the user who sent `invitation` may still send it, read from the
   database: an enabled account that, for a workspace invitation, is an
-  org-admin of `workspace`'s Organization and, for a board-only invitation, may
-  still invite to `board` in `workspace`, the workspace the board is in now.
-  On a free board that is the board's owner; on a board that has since moved
-  into an Organization workspace it is an org-admin of that Organization, as
-  for any other org board. An invitation whose sender was deleted is never
-  sendable.
+  org-admin of `workspace`'s Organization and, for a board-only invitation, is
+  still the owner of `board`, which must still be in a personal workspace
+  (`workspace`, the one the board is in now). A board-only invitation on a
+  board that has moved into an Organization workspace is never sendable: it
+  would grant access to an org board without Organization membership, and on
+  org boards only workspace invitations are sent. An invitation whose sender
+  was deleted is never sendable either.
 
   The caller passes the workspace and board it has locked, so the answer holds
   for the rest of its transaction.
@@ -119,8 +120,13 @@ defmodule Kanban.Workspaces.InvitationAuthorization do
     end
   end
 
-  defp may_send?(inviter, %Invitation{role: nil}, %Workspace{} = workspace, %Board{} = board),
-    do: may_invite_to_board?(inviter, board, workspace)
+  defp may_send?(
+         inviter,
+         %Invitation{role: nil},
+         %Workspace{personal: true} = workspace,
+         %Board{} = board
+       ),
+       do: may_invite_to_board?(inviter, board, workspace)
 
   defp may_send?(_inviter, %Invitation{role: nil}, _workspace, _board), do: false
 

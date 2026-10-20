@@ -21,17 +21,17 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
        `:member` row is never lowered. An optional board grant follows when
        the board still exists in that workspace; otherwise it is dropped.
     4. A **board-only invitation** grants board access only, and needs its
-       board to still exist. The board row is locked (after its
-       Organization's row, when the board has moved into an Organization
-       workspace) and the sender must still be allowed to invite to it:
-       the board's owner, through `Kanban.Workspaces.Policy`, on a free
-       board, or an org-admin of the board's Organization once it has moved
-       into one. A board that moves keeps its open board-only invitations,
-       which from then on follow the org-board rule.
+       board to still exist in a personal workspace. The board row is locked
+       and the sender must still be the board's owner, through
+       `Kanban.Workspaces.Policy`. Moving a board into an Organization
+       workspace revokes its open board-only invitations
+       (`Kanban.Workspaces.BoardMoves`); one an earlier move left open is
+       refused here, because accepting it would grant access to an org board
+       with no Organization membership, no one-Organization check and no
+       `:org_member_added` audit.
     5. Board access goes through `Kanban.Boards.add_invited_user/4`, the same
        insert path and member cap as an owner's add, so a free board at its
-       cap while plans are enforced refuses with `:member_cap_reached`. A
-       board that has moved into an Organization workspace is not capped. An
+       cap while plans are enforced refuses with `:member_cap_reached`. An
        existing board membership is left as it is, never lowered.
     6. The invitation is marked accepted.
 
@@ -52,9 +52,9 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
 
   The lock order is invitation, Organization, the user's Organization
   membership, workspace member row, board. The sender is checked under the
-  Organization lock for a workspace invitation, and under the board lock (and
-  the Organization lock for a moved board) for a board-only one, the locks an
-  org-admin's removal and an ownership transfer take.
+  Organization lock for a workspace invitation, and under the board lock for a
+  board-only one, the locks an org-admin's removal, an ownership transfer and
+  a board move take.
   """
 
   import Ecto.Query, warn: false
@@ -101,13 +101,28 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
 
   @doc """
   True when `user` could accept `invitation` as things stand: their email
-  matches, and for a workspace invitation they are in no other Organization.
-  A read-only check for the accept page; acceptance checks everything again.
+  matches, a board-only invitation's board is still in a personal workspace,
+  and for a workspace invitation they are in no other Organization. A
+  read-only check for the accept page; acceptance checks everything again.
   """
   @spec acceptable_by?(Invitation.t(), User.t()) :: boolean()
   def acceptable_by?(%Invitation{} = invitation, %User{} = user) do
     Invitation.email_matches?(invitation, user.email) and
+      target_open?(invitation) and
       not in_other_organization?(invitation, user)
+  end
+
+  defp target_open?(%Invitation{role: nil, board_id: board_id}), do: personal_board?(board_id)
+  defp target_open?(%Invitation{}), do: true
+
+  defp personal_board?(nil), do: false
+
+  defp personal_board?(board_id) do
+    from(b in Board,
+      join: w in assoc(b, :workspace),
+      where: b.id == ^board_id and w.personal == true
+    )
+    |> Repo.exists?()
   end
 
   defp in_other_organization?(%Invitation{role: nil}, _user), do: false
@@ -233,35 +248,20 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
     end
   end
 
-  # The Organization row, when there is one, is locked before the board, in
-  # the module's lock order. A board that moved between the read and the lock
-  # is refused, and the invitation stays open for another try.
+  # The board's workspace is read after the board lock, which a move also
+  # takes, so it is the board's current one. A board no longer in a personal
+  # workspace makes the sender check fail, which revokes the invitation.
   defp lock_invited_board(nil), do: {:error, :invalid}
 
   defp lock_invited_board(board_id) do
-    with %Board{workspace: %Workspace{} = workspace} <- board_with_workspace(board_id),
-         :ok <- lock_board_organization(workspace),
-         {:ok, board} <- lock_board_in(board_id, workspace) do
-      {:ok, board, workspace}
-    else
-      _gone_or_moved -> {:error, :invalid}
+    from(b in Board, where: b.id == ^board_id, lock: "FOR UPDATE")
+    |> Repo.one()
+    |> Repo.preload(:workspace)
+    |> case do
+      %Board{workspace: %Workspace{} = workspace} = board -> {:ok, board, workspace}
+      _gone -> {:error, :invalid}
     end
   end
-
-  defp board_with_workspace(board_id),
-    do: Board |> Repo.get(board_id) |> Repo.preload(:workspace)
-
-  defp lock_board_in(board_id, %Workspace{id: workspace_id}) do
-    case from(b in Board, where: b.id == ^board_id, lock: "FOR UPDATE") |> Repo.one() do
-      %Board{workspace_id: ^workspace_id} = board -> {:ok, board}
-      _gone_or_moved -> {:error, :invalid}
-    end
-  end
-
-  defp lock_board_organization(%Workspace{organization_id: org_id}) when is_integer(org_id),
-    do: lock_organization(org_id)
-
-  defp lock_board_organization(%Workspace{}), do: :ok
 
   defp lock_organization(organization_id) do
     case MembershipWrites.lock_organization(organization_id) do

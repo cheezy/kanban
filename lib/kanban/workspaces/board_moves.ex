@@ -7,19 +7,26 @@ defmodule Kanban.Workspaces.BoardMoves do
   member cap and unlocks paid features on the board, because whether a board
   is paid is derived from its workspace's Organization (`Kanban.Plans`).
 
-  The move only changes `boards.workspace_id`:
+  The move changes `boards.workspace_id` and revokes the board's open
+  board-only invitations:
 
     * `board_users` rows are kept as they are, so everyone keeps their access.
     * Nobody is added to the Organization.
-    * Open board-only invitations for the board are kept, as the design doc
-      requires. From then on, accepting one needs its sender to be an
-      org-admin of the board's Organization, as for any org board, not only
-      the board's owner (`Kanban.Workspaces.InvitationAcceptance`).
+    * Every open board-only invitation for the board is revoked in the same
+      transaction. Such an invitation grants board access without
+      Organization membership, so accepting it on an org board would skip the
+      one-Organization check and the `:org_member_added` audit. An org-admin
+      re-invites through the workspace instead, which sends a workspace
+      invitation. Acceptance also refuses a board-only invitation whose board
+      is no longer in a personal workspace, for invitations an earlier move
+      left open (`Kanban.Workspaces.InvitationAcceptance`).
     * There is no move back to a personal workspace, and none between org
       workspaces (no downgrade).
 
   Every check runs inside one transaction, against rows re-read and locked
-  there:
+  there. The board's open board-only invitations are locked first, before the
+  board, in the lock order acceptance uses (invitation, then board), so an
+  acceptance of one of them and the move take their locks in the same order:
 
     * The actor needs their own `board_users` **owner** row on the board.
       Owning the personal workspace the board sits in is not enough: the W2217
@@ -43,6 +50,7 @@ defmodule Kanban.Workspaces.BoardMoves do
   alias Kanban.Organizations
   alias Kanban.Repo
   alias Kanban.Workspaces
+  alias Kanban.Workspaces.Invitation
   alias Kanban.Workspaces.Workspace
 
   @max_bigint 9_223_372_036_854_775_807
@@ -62,7 +70,8 @@ defmodule Kanban.Workspaces.BoardMoves do
     * `{:error, :not_in_personal_workspace}` — the board is not in the actor's
       personal workspace (for example it is already in an org workspace).
 
-  A refusal changes nothing.
+  A successful move revokes the board's open board-only invitations. A refusal
+  changes nothing.
 
   ## Examples
 
@@ -82,8 +91,8 @@ defmodule Kanban.Workspaces.BoardMoves do
   end
 
   defp move_locked(actor, board_id, workspace_id) do
-    with {:ok, board} <- lock_board(board_id),
-         :ok <- check_movable(board, actor),
+    with :ok <- lock_board_invitations(board_id),
+         {:ok, board} <- lock_movable_board(board_id, actor),
          {:ok, target} <- lock_target(workspace_id, actor),
          {:ok, moved} <- place_board(board, target) do
       moved
@@ -92,10 +101,41 @@ defmodule Kanban.Workspaces.BoardMoves do
     end
   end
 
+  defp open_board_invitations(board_id) do
+    from(i in Invitation.open_query(), where: i.board_id == ^board_id and is_nil(i.role))
+  end
+
+  defp lock_board_invitations(nil), do: :ok
+
+  defp lock_board_invitations(board_id) do
+    board_id
+    |> open_board_invitations()
+    |> lock("FOR UPDATE")
+    |> select([i], i.id)
+    |> Repo.all()
+
+    :ok
+  end
+
+  defp revoke_board_invitations(%Board{id: board_id}) do
+    now = DateTime.utc_now(:second)
+
+    board_id
+    |> open_board_invitations()
+    |> Repo.update_all(set: [revoked_at: now, updated_at: now])
+  end
+
   defp place_board(board, target) do
-    board
-    |> Ecto.Changeset.change(workspace_id: target.id)
-    |> Repo.update()
+    with {:ok, moved} <- board |> Ecto.Changeset.change(workspace_id: target.id) |> Repo.update() do
+      revoke_board_invitations(moved)
+      {:ok, moved}
+    end
+  end
+
+  defp lock_movable_board(board_id, actor) do
+    with {:ok, board} <- lock_board(board_id),
+         :ok <- check_movable(board, actor),
+         do: {:ok, board}
   end
 
   defp lock_board(nil), do: {:error, :not_found}

@@ -429,7 +429,7 @@ There is no grandfathered flag. An addition is refused whenever the count is **a
 | Path | Task | Behaviour |
 |---|---|---|
 | `Kanban.Boards.MembershipChanges.add_user_to_board/4` | W2400 | In a transaction: row-lock the board, count `board_users`, refuse with `{:error, :member_cap_reached}` when `Plans.member_cap_reached?/2`. Two concurrent adds cannot pass 3. |
-| Invitation acceptance (`Invitations.accept/2`) for a board grant on a personal-workspace board | W2219 | Refused with a clear cap message while the board is full. Board grants go through the cap-checked add path, never a direct insert. An invitation whose board has since moved into an Organization is not capped. |
+| Invitation acceptance (`Invitations.accept/2`) for a board grant on a personal-workspace board | W2219 | Refused with a clear cap message while the board is full. Board grants go through the cap-checked add path, never a direct insert. An invitation whose board has since moved into an Organization is refused and revoked, never accepted uncapped: the move revokes it, and acceptance refuses any a move left open. |
 | Registration from an invitation link | W2219 | Joins after email confirmation, subject to the same cap check. |
 | Board move | W2218 | D6 lists the move as a cap path. The only move v1 allows is personal to org, which lifts the cap, so this check never refuses. The `via: :board_move` telemetry value stays reserved. **The move must broadcast `{Kanban.Boards, :members_changed, board_id}` on `"board:<id>"`** (the message `MembershipChanges` already sends for membership writes), so an open `/boards/:id/members` screen recomputes `member_cap_status/1` and drops the cap line without a reload. |
 
@@ -683,7 +683,7 @@ Personal workspaces never appear here.
 - requires a logged-in user whose email matches, ignoring case and surrounding whitespace;
 - creates the organization membership with role `member` when the invitee has none, and never changes an existing org-admin role;
 - is refused with the generic invalid-invitation message when the invitee belongs to another Organization;
-- is refused with the same message, and the invitation revoked, when its sender may no longer send it: an enabled org-admin of the Organization for a workspace invitation, the board's enabled owner for a free-board invitation, or an enabled org-admin of the board's Organization once that board has moved into one. The check runs in the acceptance transaction, under the Organization or board lock;
+- is refused with the same message, and the invitation revoked, when its sender may no longer send it: an enabled org-admin of the Organization for a workspace invitation, or the board's enabled owner for a free-board invitation. A free-board invitation whose board has moved into an Organization is never sendable, so it is refused and revoked whoever sent it. The check runs in the acceptance transaction, under the Organization or board lock;
 - creates the workspace member row, never downgrading an existing role, plus the optional board grant;
 - for a new user, happens after email confirmation.
 
@@ -693,7 +693,7 @@ On org boards, only org-admins invite by email. A free board's owner can still i
 
 - lifts the cap, unlocks paid features and resumes paused webhooks;
 - keeps every `board_users` row; members outside the Organization keep their board access and are not added to the Organization;
-- keeps the board's open board-only invitations. They stay uncapped, and from then on accepting one needs its sender to be an org-admin of the board's Organization, as for any other org board, rather than only the board's owner;
+- revokes the board's open board-only invitations, in the same transaction. Accepting one on an org board would grant access with no Organization membership, no one-Organization check and no `:org_member_added` audit. The org-admin re-invites through the workspace, which sends a workspace invitation. Acceptance also refuses, and revokes, a board-only invitation whose board is no longer in a personal workspace;
 - is refused for boards the caller does not own, boards outside their personal workspace, and workspaces of another Organization.
 
 An org-admin cannot move a teammate's board; the teammate transfers ownership first, or the board stays free. There is no move back to a personal workspace.

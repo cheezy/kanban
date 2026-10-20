@@ -16,6 +16,7 @@ defmodule Kanban.Workspaces.BoardMovesTest do
   alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Workspaces
+  alias Kanban.Workspaces.Invitation
 
   setup do
     organization = organization_fixture()
@@ -35,6 +36,26 @@ defmodule Kanban.Workspaces.BoardMovesTest do
 
   defp workspace_id(board), do: Repo.get!(Board, board.id).workspace_id
 
+  # An open board-only invitation from the board's owner, as the members form
+  # sends one on a free board.
+  defp board_invitation!(board, owner, attrs \\ []) do
+    {_token, hash} = Invitation.build_token()
+
+    %Invitation{
+      workspace_id: Workspaces.get_personal_workspace(owner).id,
+      board_id: board.id,
+      board_access: :read_only,
+      email: "invitee#{System.unique_integer([:positive])}@example.com",
+      invited_by_id: owner.id,
+      token_hash: hash,
+      expires_at: Invitation.expires_at_from(DateTime.utc_now())
+    }
+    |> struct(attrs)
+    |> Repo.insert!()
+  end
+
+  defp reload(invitation), do: Repo.get!(Invitation, invitation.id)
+
   test "moves an owned personal board, keeps its rows and adds nobody to the Organization", ctx do
     reader = user_fixture()
     grant(ctx.board, reader, :read_only)
@@ -51,6 +72,30 @@ defmodule Kanban.Workspaces.BoardMovesTest do
 
     board_id = ctx.board.id
     assert_receive {Kanban.Boards, :members_changed, ^board_id}
+  end
+
+  test "revokes the board's open board-only invitations and no others", ctx do
+    open = board_invitation!(ctx.board, ctx.org_admin)
+    accepted_at = DateTime.utc_now(:second) |> DateTime.add(-60)
+    accepted = board_invitation!(ctx.board, ctx.org_admin, accepted_at: accepted_at)
+    other_board = board_fixture(ctx.org_admin)
+    elsewhere = board_invitation!(other_board, ctx.org_admin)
+
+    assert {:ok, _} = Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace)
+
+    assert %Invitation{revoked_at: %DateTime{}} = reload(open)
+    assert %Invitation{revoked_at: nil, accepted_at: ^accepted_at} = reload(accepted)
+    assert %Invitation{revoked_at: nil} = reload(elsewhere)
+  end
+
+  test "a refused move revokes nothing", ctx do
+    invitation = board_invitation!(ctx.board, ctx.org_admin)
+    foreign = org_workspace_fixture(organization_fixture())
+
+    assert {:error, :not_found} =
+             Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, foreign)
+
+    assert %Invitation{revoked_at: nil} = reload(invitation)
   end
 
   test "lifts the free-board cap: a fourth member can be added", ctx do
