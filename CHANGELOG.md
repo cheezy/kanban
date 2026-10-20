@@ -1255,7 +1255,7 @@ Stride's Claude Code skills have been extracted from the project's `.claude/skil
 
 - **Public Board Sharing** - Board owners can now share boards publicly for read-only access:
   - **Read-Only Checkbox** - Added "Make board publicly readable" checkbox to board edit form
-  - **Public Access** - Anyone with the direct link can view boards marked as read-only
+  - **Public Access** - Any signed-in user can view boards marked as read-only
 
 ## [1.20.0] - 2026-01-19
 

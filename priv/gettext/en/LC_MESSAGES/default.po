@@ -2232,12 +2232,6 @@ msgstr ""
 msgid "Try adjusting your search or filters to find what you're looking for."
 msgstr ""
 
-#: lib/kanban_web/live/board_live/form.html.heex:42
-#: lib/kanban_web/live/board_live/settings_form_component.ex:136
-#, elixir-autogen, elixir-format
-msgid "When enabled, anyone with the direct link can view this board (read-only access). Members retain their assigned permissions."
-msgstr ""
-
 #: lib/kanban_web/live/board_live/show.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "You are viewing this board in read-only mode"
@@ -12033,4 +12027,10 @@ msgstr ""
 #: lib/kanban_web/live/workspace_live/exports.ex:58
 #, elixir-autogen, elixir-format
 msgid "Ready to download"
+msgstr ""
+
+#: lib/kanban_web/live/board_live/form.html.heex:42
+#: lib/kanban_web/live/board_live/settings_form_component.ex:136
+#, elixir-autogen, elixir-format
+msgid "When enabled, any signed-in user can view this board (read-only access). Members keep their assigned permissions."
 msgstr ""

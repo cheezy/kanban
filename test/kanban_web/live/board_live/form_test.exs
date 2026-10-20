@@ -312,7 +312,7 @@ defmodule KanbanWeb.BoardLive.FormTest do
       {:ok, _view, html} = live(conn, ~p"/boards/new")
 
       refute html =~ "Make board publicly readable"
-      refute html =~ "anyone with the direct link can view this board"
+      refute html =~ "any signed-in user can view this board"
     end
   end
 
@@ -531,7 +531,10 @@ defmodule KanbanWeb.BoardLive.FormTest do
       {:ok, _view, html} = live(conn, ~p"/boards/#{board}/edit")
 
       assert html =~ "Make board publicly readable"
-      assert html =~ "anyone with the direct link can view this board"
+      # /boards/:id requires sign-in, so the help text must not promise
+      # access to "anyone with the link".
+      assert html =~ "any signed-in user can view this board (read-only access)"
+      refute html =~ "anyone with the direct link"
     end
 
     test "read-only checkbox is unchecked by default", %{conn: conn, board: board} do

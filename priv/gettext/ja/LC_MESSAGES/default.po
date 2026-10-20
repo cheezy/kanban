@@ -2230,12 +2230,6 @@ msgstr "このタスクは削除されたか、表示する権限がない可能
 msgid "Try adjusting your search or filters to find what you're looking for."
 msgstr "検索やフィルターを調整して、お探しのものを見つけてください。"
 
-#: lib/kanban_web/live/board_live/form.html.heex:42
-#: lib/kanban_web/live/board_live/settings_form_component.ex:136
-#, elixir-autogen, elixir-format
-msgid "When enabled, anyone with the direct link can view this board (read-only access). Members retain their assigned permissions."
-msgstr "有効にすると、直接リンクを持つ誰でもこのボードを閲覧できます (読み取り専用)。メンバーは付与された権限を保持します。"
-
 #: lib/kanban_web/live/board_live/show.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "You are viewing this board in read-only mode"
@@ -12064,3 +12058,9 @@ msgstr "バックアップ · ダウンロード"
 #, elixir-autogen, elixir-format
 msgid "Ready to download"
 msgstr "ダウンロード可能"
+
+#: lib/kanban_web/live/board_live/form.html.heex:42
+#: lib/kanban_web/live/board_live/settings_form_component.ex:136
+#, elixir-autogen, elixir-format
+msgid "When enabled, any signed-in user can view this board (read-only access). Members keep their assigned permissions."
+msgstr "有効にすると、サインインしているすべてのユーザーがこのボードを閲覧できます (読み取り専用)。メンバーは付与された権限を保持します。"

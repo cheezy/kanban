@@ -134,7 +134,7 @@ defmodule KanbanWeb.BoardLive.SettingsFormComponent do
               </div>
               <p style="margin: 4px 0 0; font-size: 11.5px; color: var(--ink-3); line-height: 1.5;">
                 {gettext(
-                  "When enabled, anyone with the direct link can view this board (read-only access). Members retain their assigned permissions."
+                  "When enabled, any signed-in user can view this board (read-only access). Members keep their assigned permissions."
                 )}
               </p>
             </div>
