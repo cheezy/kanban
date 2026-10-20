@@ -7,10 +7,15 @@ defmodule KanbanWeb.API.BoardController do
   in `X-Stride-Board` or `board_id`. The route is marked board-optional, so a
   workspace token needs no selector here, and this action never reads
   `:current_board`.
+
+  A board token's user must still have access to its board
+  (`KanbanWeb.API.BoardReadAccess`), or the request is refused with `403`.
   """
   use KanbanWeb, :controller
 
   alias Kanban.ApiTokens
+
+  plug KanbanWeb.API.BoardReadAccess
 
   def index(conn, _params) do
     api_token = conn.assigns.api_token

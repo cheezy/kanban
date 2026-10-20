@@ -16,6 +16,11 @@ defmodule KanbanWeb.API.TaskCommentController do
   alias KanbanWeb.API.TaskActions
   alias KanbanWeb.API.TaskErrors
 
+  # Reading the thread re-checks the token user's live board access
+  # (`KanbanWeb.API.BoardReadAccess`); adding a comment is checked by
+  # `Kanban.Tasks.CommentPolicy`.
+  plug KanbanWeb.API.BoardReadAccess when action == :index
+
   def index(conn, %{"id" => id_or_identifier} = params) do
     case TaskActions.list_comments(conn, id_or_identifier, params) do
       {:ok, template, assigns} -> render(conn, template, assigns)

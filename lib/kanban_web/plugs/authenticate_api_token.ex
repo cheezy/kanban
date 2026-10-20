@@ -25,7 +25,10 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   ## Board tokens and workspace tokens
 
   A board token is scoped to a user and one board, and `:current_board` is
-  that board, whatever the request says.
+  that board, whatever the request says. This plug does not check that the
+  token's user can still use that board: reads re-check it in
+  `KanbanWeb.API.BoardReadAccess` and writes in their own actions, so each
+  answers with its documented `403` rather than a `401`.
 
   A workspace token (W2220) is scoped to a user and an Organization workspace,
   so each request names its board with the `X-Stride-Board` header or the

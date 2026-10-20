@@ -20,6 +20,20 @@ defmodule KanbanWeb.API.TaskController do
 
   action_fallback KanbanWeb.API.FallbackController
 
+  # Every read re-checks the token user's live access to the board, so a board
+  # token whose user lost access reads nothing. Writes keep their own live
+  # checks and documented error bodies.
+  plug KanbanWeb.API.BoardReadAccess
+       when action in [
+              :index,
+              :show,
+              :next,
+              :dependencies,
+              :dependents,
+              :tree,
+              :after_goal_status
+            ]
+
   # W2057: the view is resolved from the request once, here, and applied at
   # render only — the board scoping and the query underneath are identical in
   # both views, so the slim view can only narrow a row, never widen it or

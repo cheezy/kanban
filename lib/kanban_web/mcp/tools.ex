@@ -24,8 +24,15 @@ defmodule KanbanWeb.MCP.Tools do
   `true` and `next_cursor` points after the last returned task, so following it
   (with the same filters) reaches every task. The slim view and the REST
   endpoint are never cut and their bodies are unchanged.
+
+  The read tools (`stride_next_task`, `stride_get_task`, `stride_list_tasks`)
+  first re-check the token user's live access to the board through
+  `KanbanWeb.API.BoardReadAccess.authorize/1`, the check the REST read actions
+  run, so a board token whose user lost access gets the REST `403` as an
+  `isError` result. The write tools keep the checks their shared path applies.
   """
 
+  alias KanbanWeb.API.BoardReadAccess
   alias KanbanWeb.API.TaskActions
   alias KanbanWeb.API.TaskCommentJSON
   alias KanbanWeb.API.TaskErrors
@@ -36,6 +43,9 @@ defmodule KanbanWeb.MCP.Tools do
 
   # Integer arguments the shared REST parsing reads as query-string text.
   @stringified_args ["id", "limit", "assigned_to_id", "column_id"]
+
+  # Tools that only read the board; each re-checks live board-read access.
+  @read_tools ["stride_next_task", "stride_get_task", "stride_list_tasks"]
 
   # The most encoded task JSON (bytes) one full-view stride_list_tasks page
   # returns. ToolSchemas and docs/MCP.md state the same figure.
@@ -56,7 +66,7 @@ defmodule KanbanWeb.MCP.Tools do
   def call(name, args, conn) do
     with {:ok, tool} <- fetch_tool(name),
          :ok <- validate_args(args, tool) do
-      result = run(name, normalize(args), conn)
+      result = run_tool(name, normalize(args), conn)
 
       TaskActions.emit_telemetry(conn, :mcp_tool_called, %{
         tool: name,
@@ -101,6 +111,15 @@ defmodule KanbanWeb.MCP.Tools do
       end
     end)
   end
+
+  defp run_tool(name, args, conn) when name in @read_tools do
+    case BoardReadAccess.authorize(conn) do
+      :ok -> run(name, args, conn)
+      {:error, reason} -> failure(reason)
+    end
+  end
+
+  defp run_tool(name, args, conn), do: run(name, args, conn)
 
   defp run("stride_next_task", args, conn),
     do: conn |> TaskActions.next_task(args) |> render()

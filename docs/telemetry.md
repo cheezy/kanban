@@ -362,6 +362,11 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
   valid, so none of the three writes an `api_token_auth_failed` audit row or
   counts toward the failed-authentication rate limit; `board_not_found` writes
   a `permission_denied` audit row with `gate: :api_board_selector` instead.
+- **Board-token reads.** A read made with a board token whose user no longer
+  has any access to the token's board (`KanbanWeb.API.BoardReadAccess`, on the
+  REST reads and the MCP read tools) is refused with `403` and writes a
+  `permission_denied` audit row with `gate: :api_board_read`. It emits no
+  `[:kanban, :api, :auth_failed]` event, because the token itself is valid.
 
 ### Task activity events
 

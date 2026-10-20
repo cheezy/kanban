@@ -83,6 +83,12 @@ Store your token securely in `.stride_auth.md`:
 
 See [Configuration Files](#configuration-files) for the complete template.
 
+A token acts as the user who created it, and every request checks that user's
+access to the board again. A board token whose user has lost all access to its
+board gets `403` with `"Not authorized — board membership required"` on every
+read; writes keep their own `403` bodies. A disabled user's token gets `401`.
+See [Token Scope](../AUTHENTICATION.md#token-scope).
+
 ## Workflow Overview
 
 Stride is built on a fixed five-column kanban flow. Both humans and agents speak the same five-state vocabulary.

@@ -213,6 +213,24 @@ Your token grants access to:
 - ✗ **Other boards** - Your token cannot access other boards
 - ✗ **User authentication** - Your token doesn't grant UI access
 
+A token acts as the human who created it, and only while that human can still
+use the board. Every request checks their access to the board again:
+
+- **Reads** (every `GET` endpoint that takes a token: `GET /api/tasks`,
+  `GET /api/tasks/:id`, `GET /api/tasks/next`, the dependency, tree,
+  after_goal status and comment endpoints and `GET /api/boards`, plus the MCP
+  read tools `stride_next_task`, `stride_get_task` and `stride_list_tasks`) need any access to the board,
+  read-only included. Without it they get `403` with the body
+  `{"error": "Not authorized — board membership required", ...}` (`error_code`
+  `not_authorized` over MCP).
+- **Writes** (create, update, claim, complete and the rest) need owner or
+  modify access and keep their own `403` bodies, documented on each endpoint.
+
+The human loses access when they are removed from the board, or, when their
+access came from being an org-admin of the Organization that owns the board,
+when they stop being an org-admin or leave the Organization. A token whose
+human was disabled gets `401` instead.
+
 ### Workspace tokens
 
 An org-admin of an Organization can create a **workspace token** in the Tokens
@@ -291,12 +309,18 @@ This metadata:
 
 ### 403 Forbidden
 
-**Possible cause:**
+**Possible causes:**
 - You're trying to access a board your token doesn't have access to
+- The human who created your token no longer has access to its board
+  (`"Not authorized — board membership required"`), or no longer has write
+  access to it (`"Not authorized — board write access (owner or modify) required"`).
+  See [Token Scope](#token-scope).
 
-**Solution:**
+**Solutions:**
 - Verify `STRIDE_BOARD_ID` matches the board in your API calls
 - Each token is scoped to one board only
+- Ask the human whether they still have access to the board; if not, someone
+  with access must create a new token
 
 ### 404 Not Found
 

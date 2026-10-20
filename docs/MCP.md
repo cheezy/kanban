@@ -133,6 +133,13 @@ Notes:
   carries the same attribution over MCP and REST. `agent_name` is at most 255
   characters and is display attribution only. The tool returns the comment in
   the REST response shape.
+- **The read tools** (`stride_next_task`, `stride_get_task` and
+  `stride_list_tasks`) check on every call that a board token's user still has
+  access to its board, as the REST reads do. A user who lost it, for example by
+  being removed from the board or no longer being an org-admin of the
+  Organization their access came from, is refused with `error_code`
+  `not_authorized` (HTTP status 403). See
+  [Token Scope](AUTHENTICATION.md#token-scope).
   `stride_claim_task` and `stride_complete_task` still need `owner` or
   `modify` access, as they do over REST.
 

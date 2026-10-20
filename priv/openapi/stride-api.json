@@ -101,7 +101,7 @@
       "get": {
         "operationId": "listBoards",
         "summary": "List the boards this token can use",
-        "description": "A board token sees its one board. A workspace token sees the boards of its workspace that its user can currently modify: the ids it may send in `X-Stride-Board` or `board_id`. This operation needs no board selector. Human-readable reference: docs/api/get_boards.md.",
+        "description": "A board token sees its one board, and gets 403 once its user no longer has access to that board. A workspace token sees the boards of its workspace that its user can currently modify: the ids it may send in `X-Stride-Board` or `board_id`. This operation needs no board selector. Human-readable reference: docs/api/get_boards.md.",
         "tags": [
           "Discovery"
         ],
@@ -121,6 +121,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "406": {
             "$ref": "#/components/responses/NotAcceptable"
@@ -352,6 +355,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "description": "No task available matching your capabilities.",
@@ -1875,7 +1881,7 @@
         }
       },
       "Forbidden": {
-        "description": "The token lacks access to this task, column or action.",
+        "description": "The token lacks access to this task, column or action, or the user who created a board token no longer has access to its board. Reads need any access to the board; writes need owner or modify access.",
         "content": {
           "application/json": {
             "schema": {

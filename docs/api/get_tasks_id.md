@@ -76,6 +76,20 @@ Task doesn't belong to the current board:
 }
 ```
 
+Your token is a board token, and the user who created it no longer has access
+to the token's board. Every read checks this again on every request, so a board
+token stops reading once its user is removed from the board, or stops being an
+org-admin of (or leaves) the Organization their access came from. Any access is
+enough to read, read-only included. See [Token Scope](../AUTHENTICATION.md#token-scope).
+
+```json
+{
+  "error": "Not authorized — board membership required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
 ### Not Found (404)
 
 Task not found:
