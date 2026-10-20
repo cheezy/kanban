@@ -216,6 +216,31 @@ defmodule Kanban.Workspaces.ExportTest do
       assert Export.get_export_for_download(ctx.org_admin, export.id) == {:error, :not_found}
     end
 
+    test "a symlink inside the export directory is never served", ctx do
+      outside = outside_file(ctx)
+      link = Path.join([ctx.export_dir, "#{ctx.workspace.id}", "link.zip"])
+      link |> Path.dirname() |> File.mkdir_p!()
+      :ok = File.ln_s(outside, link)
+      assert File.regular?(link)
+
+      export = succeeded_export(ctx, file_path: link)
+
+      assert Export.get_export_for_download(ctx.org_admin, export.id) == {:error, :not_found}
+    end
+
+    test "a file under a symlinked directory inside the export directory is never served",
+         ctx do
+      outside = outside_file(ctx)
+      linked_dir = Path.join(ctx.export_dir, "linked-#{ctx.workspace.id}")
+      :ok = outside |> Path.dirname() |> File.ln_s(linked_dir)
+      path = Path.join(linked_dir, Path.basename(outside))
+      assert {:ok, %File.Stat{type: :regular}} = File.lstat(path)
+
+      export = succeeded_export(ctx, file_path: path)
+
+      assert Export.get_export_for_download(ctx.org_admin, export.id) == {:error, :not_found}
+    end
+
     test "malformed ids are not found", ctx do
       for id <- ["abc", "99999999999999999999", nil, -1, "1; drop"] do
         assert Export.get_export_for_download(ctx.org_admin, id) == {:error, :not_found}
@@ -444,6 +469,87 @@ defmodule Kanban.Workspaces.ExportTest do
 
       assert Serializer.decode_rows(:users, ~s({"not": "a list"})) ==
                {:error, {:invalid_file, :users}}
+    end
+  end
+
+  # A real file next to the export directory, removed after the test.
+  defp outside_file(ctx) do
+    dir =
+      ctx.export_dir
+      |> Path.dirname()
+      |> Path.join("outside-#{System.unique_integer([:positive])}")
+
+    File.mkdir_p!(dir)
+    File.mkdir_p!(ctx.export_dir)
+    on_exit(fn -> File.rm_rf(dir) end)
+    path = Path.join(dir, "secret.zip")
+    File.write!(path, "secret")
+    path
+  end
+
+  describe "servable_file?/1" do
+    test "accepts a regular file inside the export directory", ctx do
+      %{file_path: path} = succeeded_export(ctx)
+
+      assert Export.servable_file?(path)
+    end
+
+    test "refuses a symlink, a missing file, a directory and a path outside", ctx do
+      outside = outside_file(ctx)
+      inside_target = Path.join(ctx.export_dir, "real.zip")
+      File.write!(inside_target, "zip")
+      link_inside = Path.join(ctx.export_dir, "link-inside.zip")
+      :ok = File.ln_s(inside_target, link_inside)
+      link_outside = Path.join(ctx.export_dir, "link-outside.zip")
+      :ok = File.ln_s(outside, link_outside)
+
+      for path <- [
+            link_inside,
+            link_outside,
+            Path.join(ctx.export_dir, "missing.zip"),
+            ctx.export_dir,
+            outside,
+            nil
+          ] do
+        refute Export.servable_file?(path), inspect(path)
+      end
+    end
+  end
+
+  describe "real_path/1" do
+    test "resolves symlinks, relative targets and .. against the real parent", ctx do
+      outside = outside_file(ctx)
+      outside_dir = Path.dirname(outside)
+      {:ok, real_outside_dir} = Export.real_path(outside_dir)
+
+      link_dir = Path.join(ctx.export_dir, "to-outside")
+      :ok = File.ln_s(outside_dir, link_dir)
+      relative = Path.join(ctx.export_dir, "relative.zip")
+      :ok = File.ln_s("to-outside/secret.zip", relative)
+
+      real_secret = Path.join(real_outside_dir, "secret.zip")
+      {:ok, real_export_dir} = Export.real_path(ctx.export_dir)
+
+      assert link_dir |> Path.join("secret.zip") |> Export.real_path() == {:ok, real_secret}
+      assert Export.real_path(relative) == {:ok, real_secret}
+
+      # ".." after a symlinked directory climbs from the link's target.
+      assert [link_dir, "..", "x"] |> Path.join() |> Export.real_path() ==
+               {:ok, real_outside_dir |> Path.dirname() |> Path.join("x")}
+
+      assert ctx.export_dir |> Path.join("./missing/./a.zip") |> Export.real_path() ==
+               {:ok, Path.join([real_export_dir, "missing", "a.zip"])}
+    end
+
+    test "stops at a symlink loop", ctx do
+      File.mkdir_p!(ctx.export_dir)
+      a = Path.join(ctx.export_dir, "loop-a")
+      b = Path.join(ctx.export_dir, "loop-b")
+      :ok = File.ln_s(b, a)
+      :ok = File.ln_s(a, b)
+
+      assert Export.real_path(a) == {:error, :too_many_links}
+      refute Export.servable_file?(a)
     end
   end
 

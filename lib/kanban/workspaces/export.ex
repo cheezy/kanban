@@ -150,8 +150,7 @@ defmodule Kanban.Workspaces.Export do
   @doc """
   Returns the export with `id` when `actor` may download it now: `actor` is an
   enabled org-admin of the export's workspace's Organization, the export
-  succeeded, has not expired, and its file is a regular file inside
-  `export_dir/0`. Everything else — another workspace's export, a member, a
+  succeeded, has not expired, and its file passes `servable_file?/1`. Everything else — another workspace's export, a member, a
   former org-admin, a pending, failed or expired export, a missing file or a
   malformed id — is `{:error, :not_found}`.
   """
@@ -178,8 +177,7 @@ defmodule Kanban.Workspaces.Export do
   defp downloadable?(
          %WorkspaceExport{status: "succeeded", expires_at: %DateTime{} = expires_at} = export
        ) do
-    DateTime.after?(expires_at, DateTime.utc_now()) and safe_path?(export.file_path) and
-      File.regular?(export.file_path)
+    DateTime.after?(expires_at, DateTime.utc_now()) and servable_file?(export.file_path)
   end
 
   defp downloadable?(_export), do: false
@@ -196,6 +194,61 @@ defmodule Kanban.Workspaces.Export do
   end
 
   def safe_path?(_path), do: false
+
+  @max_link_hops 40
+
+  @doc """
+  True when `path` may be served as a download: it passes `safe_path?/1`, it
+  is itself a regular file and not a symlink, and its real path — every
+  symlink along the way resolved — is still inside the real `export_dir/0`.
+  A symlink planted inside the export directory, or a symlinked directory
+  under it, therefore never serves a file from elsewhere.
+  """
+  @spec servable_file?(term()) :: boolean()
+  def servable_file?(path) do
+    with true <- safe_path?(path),
+         {:ok, %File.Stat{type: :regular}} <- File.lstat(path),
+         {:ok, real_file} <- real_path(path),
+         {:ok, real_dir} <- real_path(export_dir()) do
+      String.starts_with?(real_file, real_dir <> "/")
+    else
+      _ -> false
+    end
+  end
+
+  @doc """
+  Returns the absolute path `path` names with every symlink resolved, or
+  `{:error, :too_many_links}` for a symlink loop. A component that does not
+  exist is kept as it is.
+  """
+  @spec real_path(String.t()) :: {:ok, String.t()} | {:error, :too_many_links}
+  def real_path(path) when is_binary(path) do
+    [root | parts] = path |> Path.absname() |> Path.split()
+    resolve(parts, root, 0)
+  end
+
+  defp resolve(_parts, _resolved, hops) when hops > @max_link_hops,
+    do: {:error, :too_many_links}
+
+  defp resolve([], resolved, _hops), do: {:ok, resolved}
+  defp resolve(["." | rest], resolved, hops), do: resolve(rest, resolved, hops)
+
+  # `resolved` holds no symlink, so its parent is the real parent.
+  defp resolve([".." | rest], resolved, hops),
+    do: resolve(rest, Path.dirname(resolved), hops)
+
+  defp resolve([part | rest], resolved, hops) do
+    candidate = Path.join(resolved, part)
+
+    case :file.read_link_all(candidate) do
+      {:ok, target} ->
+        [root | target_parts] = target |> to_string() |> Path.absname(resolved) |> Path.split()
+        resolve(target_parts ++ rest, root, hops + 1)
+
+      {:error, _not_a_link} ->
+        resolve(rest, candidate, hops)
+    end
+  end
 
   # Re-reads the actor and the workspace, so a role change, a disabled
   # account or another Organization's workspace is seen at once.
