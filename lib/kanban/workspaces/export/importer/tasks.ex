@@ -13,6 +13,11 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   `Kanban.Workspaces.Export.Importer.Users.attributed/2`, so it names only
   members of the importing Organization and is otherwise left empty.
 
+  Before any task is inserted, `Kanban.Workspaces.Export.Importer.TaskChecks`
+  checks the rows as a whole — identifiers, a parent or duplicate on another
+  board, a task that is its own parent, parent cycles — and refuses the whole
+  import, naming the row, when one fails.
+
   A reference the archive cannot resolve — a parent or duplicate outside the
   workspace, a comment on a task that is not in it — is skipped and reported,
   never guessed. A task, label link, comment or history row that fails its
@@ -25,6 +30,7 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   alias Kanban.Tasks.TaskComment
   alias Kanban.Tasks.TaskHistory
   alias Kanban.Workspaces.Export.Importer
+  alias Kanban.Workspaces.Export.Importer.TaskChecks
   alias Kanban.Workspaces.Export.Importer.Users
 
   @user_fields [
@@ -47,11 +53,26 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   @spec import_all(map()) :: map()
   def import_all(ctx) do
     ctx
+    |> check_rows()
     |> insert_tasks()
     |> link_tasks()
     |> insert_task_labels()
     |> insert_comments()
     |> insert_history()
+  end
+
+  defp check_rows(ctx) do
+    case TaskChecks.check(ctx.rows.tasks, boards_by_column(ctx)) do
+      :ok -> ctx
+      {:error, ref, reason} -> Importer.fail(:tasks, ref, reason)
+    end
+  end
+
+  # Source column id => source board id, for the columns this import created.
+  defp boards_by_column(ctx) do
+    for row <- ctx.rows.columns, Map.has_key?(ctx.columns, row["id"]), into: %{} do
+      {row["id"], row["board_id"]}
+    end
   end
 
   defp insert_tasks(ctx) do

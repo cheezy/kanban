@@ -257,6 +257,10 @@ defmodule Kanban.Tasks.Queries do
     * the user has no access to the goal's board
     * the goal has no non-archived children
 
+  Only children on the goal's own board are returned, so a parent link that
+  crosses boards never shows another board's task to someone with access to
+  the goal's board alone.
+
   This keeps the function safe for unauthenticated read-only board paths
   (which pass through `user_access: nil`) — they get an empty list
   rather than an authorization error.
@@ -265,7 +269,7 @@ defmodule Kanban.Tasks.Queries do
     case goal_with_board(goal_id) do
       {:ok, board_id} ->
         if user_has_access?(user, board_id) do
-          children_query(goal_id) |> Repo.all()
+          goal_id |> children_query(board_id) |> Repo.all()
         else
           []
         end
@@ -373,12 +377,17 @@ defmodule Kanban.Tasks.Queries do
     end
   end
 
-  defp children_query(goal_id) do
+  # Only children on the goal's own board: a parent link that crosses boards
+  # (from data written before the importer refused one) must not show a task
+  # of a board the viewer may not see.
+  defp children_query(goal_id, board_id) do
     from t in Task,
+      join: c in assoc(t, :column),
       where: t.parent_id == ^goal_id,
+      where: c.board_id == ^board_id,
       where: is_nil(t.archived_at),
       order_by: [asc: t.position],
-      preload: [:assigned_to, :parent, :column]
+      preload: [:assigned_to, :parent, column: c]
   end
 
   defp user_has_access?(nil, _board_id), do: false

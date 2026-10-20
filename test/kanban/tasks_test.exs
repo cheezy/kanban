@@ -9924,6 +9924,27 @@ defmodule Kanban.TasksTest do
       refute Enum.any?(result, &(&1.id == second.id))
     end
 
+    test "leaves out a child on another board, even for a user who can see both", %{
+      owner: owner,
+      goal: goal,
+      first: first,
+      second: second,
+      third: third
+    } do
+      other_column = owner |> board_fixture() |> column_fixture()
+      stray = task_fixture(other_column, %{title: "Other board's task"})
+
+      # Written directly: no changeset path sets a cross-board parent, but
+      # data imported before the importer refused one can hold it.
+      {1, _} =
+        from(t in Task, where: t.id == ^stray.id)
+        |> Repo.update_all(set: [parent_id: goal.id])
+
+      result = Tasks.list_children_for_goal(owner, goal.id)
+
+      assert Enum.map(result, & &1.id) == [first.id, second.id, third.id]
+    end
+
     test "returns [] for a non-existent goal id", %{owner: owner} do
       assert Tasks.list_children_for_goal(owner, -1) == []
     end
