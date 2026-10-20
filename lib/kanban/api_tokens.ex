@@ -154,8 +154,10 @@ defmodule Kanban.ApiTokens do
   modify `board`, for the board page's own token form (W2218).
 
   The check and the insert share one transaction, which first takes share
-  locks on what every removal locks or deletes: the user's `board_users` row
-  for the board, and the Organization row of the board's workspace. So a
+  locks on what every removal locks or deletes: the Organization row of the
+  board's workspace, then the user's `board_users` row for the board, in the
+  order an Organization membership removal locks them, so the two never
+  deadlock. So a
   removal that commits first is seen by the re-read of effective access
   (`Kanban.Workspaces.Policy.effective_board_access/2`) and the token is
   refused, and a removal that starts later waits for this insert to commit and
@@ -180,14 +182,12 @@ defmodule Kanban.ApiTokens do
     end)
   end
 
+  # The Organization row first, then the board_users row: the order every
+  # Organization membership removal takes them in (MembershipWrites'
+  # lock_organization/1, then MembershipCascade's board_users rows). Taking
+  # them the other way round deadlocks against a removal that is waiting for
+  # the Organization lock.
   defp lock_board_access(user_id, board_id) do
-    from(bu in BoardUser,
-      where: bu.user_id == ^user_id and bu.board_id == ^board_id,
-      lock: "FOR SHARE",
-      select: bu.id
-    )
-    |> Repo.all()
-
     organization_ids =
       from(b in Board,
         join: w in assoc(b, :workspace),
@@ -199,6 +199,13 @@ defmodule Kanban.ApiTokens do
       where: o.id in subquery(organization_ids),
       lock: "FOR SHARE",
       select: o.id
+    )
+    |> Repo.all()
+
+    from(bu in BoardUser,
+      where: bu.user_id == ^user_id and bu.board_id == ^board_id,
+      lock: "FOR SHARE",
+      select: bu.id
     )
     |> Repo.all()
   end
