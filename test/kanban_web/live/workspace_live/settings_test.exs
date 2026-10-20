@@ -586,7 +586,10 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
           {"move_board", %{}}
         ]
 
+        # Clear the flash first, so each event must deny on its own rather
+        # than pass on the denial the previous one left on the page.
         for {event, params} <- events do
+          refute render_click(view, "lv:clear-flash", %{"key" => "error"}) =~ @denied
           assert render_click(view, event, params) =~ @denied
         end
 
