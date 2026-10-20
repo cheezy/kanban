@@ -687,11 +687,23 @@ defmodule Kanban.ApiTokensTest do
 
       {:ok, {board_token, _}} = ApiTokens.create_api_token(admin, board, %{name: "D"})
 
+      # A user belongs to one Organization, so create_workspace_api_token/3
+      # cannot mint this one; insert it directly to pin the Organization scope.
+      foreign_org_token =
+        %ApiToken{}
+        |> ApiToken.workspace_changeset(%{
+          name: "E",
+          user_id: admin.id,
+          workspace_id: org_workspace_fixture(organization_fixture()).id
+        })
+        |> Repo.insert!()
+
       assert ApiTokens.revoke_user_workspace_tokens(admin.id, organization.id) == 2
       assert Repo.reload!(mine).revoked_at
       assert Repo.reload!(in_other).revoked_at
       refute Repo.reload!(theirs).revoked_at
       refute Repo.reload!(board_token).revoked_at
+      refute Repo.reload!(foreign_org_token).revoked_at
     end
 
     test "get_api_token_by_token/1 preloads the workspace",
