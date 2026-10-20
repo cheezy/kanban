@@ -66,12 +66,11 @@ To explicitly clear the snapshot:
 
 ## Authorization
 
-The caller must satisfy **one** of these conditions:
-
-- The task is currently assigned to the calling agent (`assigned_to_id == current_user.id`), or
-- The task is currently in the **Review** column (so re-uploads after a `changes_requested` review work without re-claiming).
-
-Otherwise the endpoint returns 403.
+The token's user must have owner or modify access to the board. This is checked
+before the task is looked up, so a caller without it gets the same 403 whether
+the task exists and whatever state it is in. A user with that access is either
+the task's assignee or a reviewer who may upload the snapshot, including after
+a `changes_requested` review, without re-claiming.
 
 ## Selecting the response view
 
@@ -169,22 +168,18 @@ Missing or invalid Bearer token.
 
 ### Forbidden (403)
 
-Two distinct cases produce 403:
-
-- The task belongs to a different board:
-
-```json
-{ "error": "Task does not belong to this board" }
-```
-
-- The caller is neither the task assignee nor is the task in the Review column:
+The token's user no longer has owner or modify access to the board:
 
 ```json
 {
-  "error": "You can only update changed_files on tasks you are assigned to or that are in Review",
-  "documentation": "..."
+  "error": "Not authorized — board write access (owner or modify) required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
 }
 ```
+
+This is checked before the task is looked up, so the response is the same
+whether the task exists and whatever state it is in. A task on another board is a 404, never a 403.
 
 ### Not Found (404)
 

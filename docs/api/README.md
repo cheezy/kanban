@@ -86,7 +86,12 @@ See [Configuration Files](#configuration-files) for the complete template.
 A token acts as the user who created it, and every request checks that user's
 access to the board again. A board token whose user has lost all access to its
 board gets `403` with `"Not authorized — board membership required"` on every
-read; writes keep their own `403` bodies. A disabled user's token gets `401`.
+read and comment. A write needs owner or modify access, and a token whose user
+lacks it gets `403` with `"Not authorized — board write access (owner or
+modify) required"` (the `after_goal` report and `claim` keep their own `403`
+bodies). A write checks this before it looks up the task, so the refusal is the
+same whether the task exists and whatever state it is in. A disabled user's
+token gets `401`.
 See [Token Scope](../AUTHENTICATION.md#token-scope).
 
 ## Workflow Overview

@@ -70,7 +70,7 @@ defmodule KanbanWeb.API.TaskTransitions do
 
   @doc """
   Records `user`'s review of `task` and renders the task (with any hooks), or
-  the 422.
+  the 403/422.
   """
   def proceed_with_mark_reviewed(conn, task, user) do
     task
@@ -90,6 +90,11 @@ defmodule KanbanWeb.API.TaskTransitions do
     |> put_status(:unprocessable_entity)
     |> render(:error, changeset: changeset)
   end
+
+  # The context re-checks write access; a refusal there is the same 403 the
+  # BoardWriteAccess plug answers, never the 422 below.
+  defp render_mark_reviewed_result({:error, :not_authorized}, conn),
+    do: TaskErrors.render_error(conn, :not_authorized_write)
 
   defp render_mark_reviewed_result({:error, reason}, conn) do
     {message, code} = TaskErrors.mark_reviewed_error(reason)
@@ -117,13 +122,18 @@ defmodule KanbanWeb.API.TaskTransitions do
   end
 
   @doc """
-  Moves `task` from Review to Done for `user` and renders it, or the 422.
+  Moves `task` from Review to Done for `user` and renders it, or the 403/422.
   """
   def proceed_with_mark_done(conn, task, user) do
     case Tasks.mark_done(task, user) do
       {:ok, task} ->
         TaskActions.emit_telemetry(conn, :task_marked_done, %{task_id: task.id})
         render(conn, :show, task: task)
+
+      # The context re-checks write access. This reason used to fall through to
+      # the changeset clause and answer 500.
+      {:error, :not_authorized} ->
+        TaskErrors.render_error(conn, :not_authorized_write)
 
       {:error, :invalid_column} ->
         TaskErrors.error_response(
@@ -133,7 +143,7 @@ defmodule KanbanWeb.API.TaskTransitions do
           :invalid_column_for_mark_done
         )
 
-      {:error, changeset} ->
+      {:error, %Ecto.Changeset{} = changeset} ->
         conn
         |> put_status(:unprocessable_entity)
         |> render(:error, changeset: changeset)

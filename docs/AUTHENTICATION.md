@@ -314,6 +314,8 @@ This metadata:
 - The human who created your token no longer has access to its board
   (`"Not authorized — board membership required"`), or no longer has write
   access to it (`"Not authorized — board write access (owner or modify) required"`).
+  Every write checks this before it looks up the task, so the same `403`
+  comes back whether the task exists and whatever state it is in.
   See [Token Scope](#token-scope).
 
 **Solutions:**

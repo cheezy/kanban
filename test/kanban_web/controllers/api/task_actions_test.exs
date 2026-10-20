@@ -288,17 +288,19 @@ defmodule KanbanWeb.API.TaskActionsTest do
     end
   end
 
-  describe "authorize_board_write/2" do
+  describe "BoardWriteAccess.authorize/2, which create, update and batch use" do
     test "allows owner and modify, refuses read_only", %{board: board, user: owner} do
-      assert TaskActions.authorize_board_write(board, owner) == :ok
+      assert KanbanWeb.API.BoardWriteAccess.authorize(board, owner) == :ok
 
       writer = user_fixture()
       {:ok, _} = Kanban.Boards.add_user_to_board(board, writer, :modify, owner)
-      assert TaskActions.authorize_board_write(board, writer) == :ok
+      assert KanbanWeb.API.BoardWriteAccess.authorize(board, writer) == :ok
 
       reader = user_fixture()
       {:ok, _} = Kanban.Boards.add_user_to_board(board, reader, :read_only, owner)
-      assert TaskActions.authorize_board_write(board, reader) == {:error, :not_authorized_write}
+
+      assert KanbanWeb.API.BoardWriteAccess.authorize(board, reader) ==
+               {:error, :not_authorized_write}
     end
   end
 

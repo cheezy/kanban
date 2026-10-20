@@ -215,8 +215,9 @@ found, no write access, a failed hook result, or a completion rejected by the
 completion gate. The text is the REST error body, plus two fields:
 
 - `error_code`: the API error code, for example `task_not_claimable`,
-  `not_authorized_to_complete`, `hook_validation_failed` or
-  `completion_validation_failed`.
+  `not_authorized_write` (the token's user has no write access to the board,
+  checked before the task is looked up), `not_authorized_to_complete`,
+  `hook_validation_failed` or `completion_validation_failed`.
 - `http_status`: the status the REST endpoint would have returned.
 
 ```json

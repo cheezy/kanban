@@ -151,7 +151,9 @@ itself is still valid:
 }
 ```
 
-Membership is checked live on every comment, not only when the token was made.
+Membership is checked live on every comment, not only when the token was made,
+and before the task is looked up, so the response is the same whether the task
+exists.
 You will rarely see this response: removing a user from a board also revokes
 their API tokens for that board, so a removed member gets the
 [401 `Invalid API token`](#unauthorized-401) response instead. Read-only

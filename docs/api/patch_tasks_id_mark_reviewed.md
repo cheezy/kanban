@@ -117,6 +117,22 @@ The behavior depends on the review status:
 }
 ```
 
+### Forbidden (403)
+
+The token's user no longer has owner or modify access to the board, for example
+after being made a read-only member:
+
+```json
+{
+  "error": "Not authorized — board write access (owner or modify) required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
+This is checked before the task is looked up, so the response is the same
+whether the task exists and whatever state it is in.
+
 ### Unprocessable Entity (422)
 
 Hook validation failed (missing or invalid `after_review_result`):

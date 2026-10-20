@@ -4957,6 +4957,13 @@ defmodule KanbanWeb.API.TaskControllerTest do
     } do
       other_user = user_fixture()
 
+      # A board member with write access: only the claim/assignee rule refuses.
+      Kanban.Repo.insert!(%Kanban.Boards.BoardUser{
+        board_id: board.id,
+        user_id: other_user.id,
+        access: :modify
+      })
+
       {:ok, {_token_struct, plain_token}} =
         Kanban.ApiTokens.create_api_token(other_user, board, %{
           "name" => "Other Token",
@@ -5197,6 +5204,13 @@ defmodule KanbanWeb.API.TaskControllerTest do
 
     test "returns 403 when completing someone else's task", %{task: task, board: board} do
       other_user = user_fixture(%{email: "other@example.com"})
+
+      # A board member with write access: only the claim/assignee rule refuses.
+      Kanban.Repo.insert!(%Kanban.Boards.BoardUser{
+        board_id: board.id,
+        user_id: other_user.id,
+        access: :modify
+      })
 
       {:ok, {_token_struct, plain_token}} =
         ApiTokens.create_api_token(other_user, board, %{
@@ -6550,8 +6564,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
           "changed_files" => [%{"path" => "lib/a.ex"}]
         })
 
+      # Not a board member: the write-access check refuses before the task is
+      # looked up (G442 finding 4).
       response = json_response(conn, 403)
-      assert response["error"] =~ "you are assigned to"
+      assert response["error"] =~ "board write access (owner or modify) required"
     end
 
     test "allows a board reviewer (:modify) to upload to another user's Review task (W1433)",
@@ -6831,8 +6847,10 @@ defmodule KanbanWeb.API.TaskControllerTest do
         })
 
       # The view is chosen after authorization, so slim rejects exactly as full does.
+      # Not a board member: the write-access check refuses before the task is
+      # looked up (G442 finding 4).
       response = json_response(conn, 403)
-      assert response["error"] =~ "you are assigned to"
+      assert response["error"] =~ "board write access (owner or modify) required"
       assert Tasks.get_task!(task.id).changed_files in [nil, []]
     end
 

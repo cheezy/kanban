@@ -51,7 +51,7 @@ defmodule KanbanWeb.API.BatchGoalCreation do
   # after_goal enforce (D108/D109): a token whose user has only view/read-only
   # access — or whose owner/modify access was downgraded after the token was
   # issued — must not bulk-create goals via this endpoint. Called only after
-  # authorize_board_write/1 passes, so no side effect runs for an unauthorized
+  # BoardWriteAccess.authorize/2 passes, so no side effect runs for an unauthorized
   # caller.
   def create_batch(conn, goals, params) do
     board = conn.assigns.current_board

@@ -22,9 +22,9 @@ defmodule KanbanWeb.API.BoardReadAccess do
   already re-derives their board access on every request. A disabled user never
   gets this far, because the token plug refuses their tokens with `401`.
 
-  Write endpoints keep their own live checks and error bodies
-  (`KanbanWeb.API.TaskActions.authorize_board_write/2` and friends), so this
-  is only applied to reads: as a plug on the REST read actions, and through
+  Write endpoints make their own live check, before they look up the task,
+  with their own error bodies (`KanbanWeb.API.BoardWriteAccess`), so this is
+  only applied to reads: as a plug on the REST read actions, and through
   `authorize/1` by the read tools in `KanbanWeb.MCP.Tools`.
   """
 

@@ -380,7 +380,20 @@ Returns the completed task and hook metadata. The number of hooks depends on the
 
 ### Forbidden (403)
 
-Trying to complete a task assigned to someone else:
+The token's user no longer has owner or modify access to the board:
+
+```json
+{
+  "error": "Not authorized — board write access (owner or modify) required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
+This is checked before the task is looked up, so the response is the same
+whether the task exists and whatever state it is in.
+
+Trying to complete a task assigned to someone else, with write access:
 
 ```json
 {

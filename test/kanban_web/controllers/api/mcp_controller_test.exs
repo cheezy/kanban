@@ -758,7 +758,8 @@ defmodule KanbanWeb.API.McpControllerTest do
 
       {true, complete} = call_tool(conn, "stride_complete_task", completion_args(claimed.id))
       assert complete["http_status"] == 403
-      assert complete["error_code"] == "not_authorized_to_complete"
+      # Write access is checked before the task is looked up (G442 finding 4).
+      assert complete["error_code"] == "not_authorized_write"
 
       {false, comment} =
         call_tool(conn, "stride_add_comment", %{"id" => ready.id, "content" => "hi"})

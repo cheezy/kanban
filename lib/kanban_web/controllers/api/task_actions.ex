@@ -22,11 +22,11 @@ defmodule KanbanWeb.API.TaskActions do
 
   alias Kanban.Accounts.Scope
   alias Kanban.ApiTokens
-  alias Kanban.Boards
   alias Kanban.Columns
   alias Kanban.Hooks.Validator
   alias Kanban.Tasks
   alias KanbanWeb.API.AgentAttribution
+  alias KanbanWeb.API.BoardWriteAccess
   alias KanbanWeb.API.CompletionResultGate
   alias KanbanWeb.API.TaskLabels
   alias KanbanWeb.API.TaskListParams
@@ -132,13 +132,17 @@ defmodule KanbanWeb.API.TaskActions do
   end
 
   @doc """
-  Completes a task (`PATCH /api/tasks/:id/complete`): board-scoped fetch, hook
-  result validation, `CompletionResultGate`, then `Tasks.complete_task/4`.
+  Completes a task (`PATCH /api/tasks/:id/complete`): board-write check,
+  board-scoped fetch, hook result validation, `CompletionResultGate`, then
+  `Tasks.complete_task/4`.
   """
   def complete(conn, id_or_identifier, params) do
+    %{current_board: board, current_user: user} = conn.assigns
     stamp_agent_identity(conn, params)
 
-    with {:ok, task} <- fetch_task(id_or_identifier, conn.assigns.current_board),
+    # Write access first, so a refused caller learns nothing about the task.
+    with :ok <- BoardWriteAccess.authorize(board, user),
+         {:ok, task} <- fetch_task(id_or_identifier, board),
          :ok <- validate_complete_preconditions(task, params) do
       proceed_with_complete(conn, task, params)
     end
@@ -303,12 +307,13 @@ defmodule KanbanWeb.API.TaskActions do
   This one function backs both `POST /api/tasks/:id/comments` and the MCP
   `stride_add_comment` tool, so their validation and attribution cannot drift.
 
-  The task is fetched with the same board-scoped lookup as every other action,
-  so a cross-board identifier is a plain not-found. Authorization is
-  `Kanban.Tasks.CommentPolicy`, applied inside `Tasks.create_comment/4`: any
-  board member may comment, read-only included, and a user with no membership
-  on the board gets `{:error, :not_authorized}`. Claim and complete still need
-  `authorize_board_write/2`.
+  Any board member may comment, read-only included. A user with no access to
+  the board gets `{:error, :not_authorized}` before the task is looked up
+  (`KanbanWeb.API.BoardWriteAccess.authorize_member/2`), so the refusal is the
+  same whether the task exists. The task is then fetched with the same
+  board-scoped lookup as every other action, so a cross-board identifier is a
+  plain not-found, and `Kanban.Tasks.CommentPolicy` re-checks inside
+  `Tasks.create_comment/4`. Claim and complete need write access.
 
   `agent_name` is display attribution only, resolved through
   `KanbanWeb.API.AgentAttribution` (token `agent_model`, then `agent_name`,
@@ -316,15 +321,21 @@ defmodule KanbanWeb.API.TaskActions do
   `last_agent_name` is stamped from `agent_name`, as claim and complete do.
   """
   def add_comment(conn, id_or_identifier, content, agent_name \\ nil) do
-    %{current_board: board, current_user: user, api_token: api_token} = conn.assigns
+    %{current_user: user, api_token: api_token} = conn.assigns
     author_agent_name = AgentAttribution.resolve(api_token, agent_name)
 
-    with {:ok, task} <- fetch_task(id_or_identifier, board, lean: true),
+    with {:ok, task} <- fetch_task_as_member(conn.assigns, id_or_identifier),
          {:ok, comment} <- comment_as(user, task, content, author_agent_name) do
       stamp_agent_identity(conn, %{"agent_name" => agent_name})
       emit_telemetry(conn, :comment_created, %{task_id: task.id})
       {:ok, %{comment | author: user}}
     end
+  end
+
+  # Membership first, so a non-member gets the same refusal for any id.
+  defp fetch_task_as_member(%{current_board: board, current_user: user}, id_or_identifier) do
+    with :ok <- BoardWriteAccess.authorize_member(board, user),
+         do: fetch_task(id_or_identifier, board, lean: true)
   end
 
   defp comment_as(user, task, content, author_agent_name) do
@@ -334,19 +345,6 @@ defmodule KanbanWeb.API.TaskActions do
     case Tasks.create_comment(scope, task, %{"content" => content}, opts) do
       {:error, :unauthorized} -> {:error, :not_authorized}
       other -> other
-    end
-  end
-
-  @doc """
-  `:ok` when `user` holds `:owner` or `:modify` access to `board`, else
-  `{:error, :not_authorized_write}`. A live check, so a token whose user lost
-  write access is refused even though the token itself still authenticates.
-  """
-  def authorize_board_write(board, %{id: user_id}) do
-    if Boards.get_user_access(board.id, user_id) in [:owner, :modify] do
-      :ok
-    else
-      {:error, :not_authorized_write}
     end
   end
 

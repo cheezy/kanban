@@ -1881,7 +1881,7 @@
         }
       },
       "Forbidden": {
-        "description": "The token lacks access to this task, column or action, or the user who created a board token no longer has access to its board. Reads need any access to the board; writes need owner or modify access.",
+        "description": "The token lacks access to this task, column or action, or the user who created a board token no longer has access to its board. Reads and comments need any access to the board; every other write needs owner or modify access. A write checks that access before it looks up the task, so a refused write gets the same 403 whether the task exists and whatever state it is in.",
         "content": {
           "application/json": {
             "schema": {

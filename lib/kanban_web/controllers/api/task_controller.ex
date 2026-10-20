@@ -6,6 +6,7 @@ defmodule KanbanWeb.API.TaskController do
   alias Kanban.Tasks
   alias Kanban.Tasks.BoardFilters
   alias KanbanWeb.API.BatchGoalCreation
+  alias KanbanWeb.API.BoardWriteAccess
   alias KanbanWeb.API.ChangedFilesTransport
   alias KanbanWeb.API.TaskActions
   alias KanbanWeb.API.TaskCreation
@@ -21,8 +22,7 @@ defmodule KanbanWeb.API.TaskController do
   action_fallback KanbanWeb.API.FallbackController
 
   # Every read re-checks the token user's live access to the board, so a board
-  # token whose user lost access reads nothing. Writes keep their own live
-  # checks and documented error bodies.
+  # token whose user lost access reads nothing.
   plug KanbanWeb.API.BoardReadAccess
        when action in [
               :index,
@@ -33,6 +33,17 @@ defmodule KanbanWeb.API.TaskController do
               :tree,
               :after_goal_status
             ]
+
+  # Every task write re-checks live write access BEFORE the task is fetched, so
+  # a refused caller gets one 403 whether the task exists or what state it is
+  # in. complete checks in TaskActions (shared with MCP); create, update, batch
+  # and claim check before they touch a task too.
+  plug BoardWriteAccess
+       when action in [:unclaim, :put_changed_files, :mark_reviewed, :mark_done]
+
+  plug BoardWriteAccess,
+       [reason: :not_authorized_after_goal]
+       when action == :after_goal
 
   # W2057: the view is resolved from the request once, here, and applied at
   # render only — the board scoping and the query underneath are identical in
@@ -176,7 +187,7 @@ defmodule KanbanWeb.API.TaskController do
   # mass-assignment filtering already apply; this rejects a token whose user lost
   # :owner/:modify access but that escaped revocation.
   defp authorize_board_write(conn) do
-    TaskActions.authorize_board_write(conn.assigns.current_board, conn.assigns.current_user)
+    BoardWriteAccess.authorize(conn.assigns.current_board, conn.assigns.current_user)
   end
 
   def batch_create(conn, %{"tasks" => _tasks}),
