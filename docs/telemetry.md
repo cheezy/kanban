@@ -1137,6 +1137,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :org_workspace_archived]` | event, legacy | `count` | `user_id`, `organization_id`, `workspace_id` | An org-admin archived one of their Organization's workspaces. user_id is the org-admin. |
 | `[:kanban, :audit, :user_deleted]` | event, legacy | `count` | `user_id`, `member_user_id` | A site admin deleted an account. user_id is the site admin, member_user_id the deleted account. |
 | `[:kanban, :audit, :user_delete_refused]` | event, legacy | `count` | `user_id`, `member_user_id`, `reason` | An account deletion was refused. user_id is the acting user, member_user_id the target account, reason why: unauthorized, cannot_delete_self, user_has_boards, last_admin, last_org_admin or personal_workspace_has_boards. |
+| `[:kanban, :audit, :account_self_deleted]` | event, legacy | `count` | `user_id` | A user deleted their own account from the account settings. user_id is the deleted account; no email is recorded. |
 
 ### Domain `board`
 

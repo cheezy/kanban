@@ -26,6 +26,7 @@ defmodule Kanban.RateLimit do
     * `:two_factor_daily` — 24 h / 30 / —    (identity-only, failure-counted)
     * `:org_audit_export` — 1 h / 10 / —     (identity-only, per export)
     * `:invite`    — 1 h / 20 / —           (identity-only, per invitation email)
+    * `:account_delete` — 5 min / 5 / —     (identity-only, failure-counted)
 
   `:two_factor` counts every second-factor code attempt per user (`identity:
   "user:<id>"`, no IP) wherever a code is checked, with `check/2` so the
@@ -55,6 +56,12 @@ defmodule Kanban.RateLimit do
   app cannot be used to flood addresses with invitation email. A refused
   request writes and sends nothing.
 
+  `:account_delete` counts wrong passwords on the self-service account
+  deletion form (`Kanban.Accounts.AccountDeletion`) per user (`identity:
+  "user:<id>"`, no IP), with `peek/2` before the password is hashed and
+  `record_failure/2` after a wrong one, so a session left open in sudo mode
+  cannot be used to guess the password.
+
   Thresholds are a product/ops decision — override per environment via:
 
       config :kanban, Kanban.RateLimit,
@@ -66,7 +73,8 @@ defmodule Kanban.RateLimit do
       (`:reset`, `:resend`, `:issue`, `:two_factor`, `:org_audit_export`,
       `:invite`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
-      (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`) so a flood cannot force password hashing or DB
+      (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`,
+      `:account_delete`) so a flood cannot force password hashing or DB
       lookups.
     * `record_failure/2` — increment the failure counter after an authentication
       attempt fails; pair with `peek/2`.
@@ -87,7 +95,8 @@ defmodule Kanban.RateLimit do
     two_factor_challenge: %{scale_ms: 300_000, ip_limit: 30},
     two_factor_daily: %{scale_ms: 86_400_000, id_limit: 30},
     org_audit_export: %{scale_ms: 3_600_000, id_limit: 10},
-    invite: %{scale_ms: 3_600_000, id_limit: 20}
+    invite: %{scale_ms: 3_600_000, id_limit: 20},
+    account_delete: %{scale_ms: 300_000, id_limit: 5}
   }
 
   @type surface ::
@@ -101,6 +110,7 @@ defmodule Kanban.RateLimit do
           | :two_factor_daily
           | :org_audit_export
           | :invite
+          | :account_delete
   @type opts :: [ip: term(), identity: String.t() | nil]
   @type result :: :ok | {:error, {:rate_limited, non_neg_integer()}}
 

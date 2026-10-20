@@ -5,6 +5,7 @@ defmodule KanbanWeb.UserLive.Settings do
   import KanbanWeb.UserLive.SettingsComponents
 
   alias Kanban.Accounts
+  alias KanbanWeb.UserAuth
 
   @impl true
   def render(assigns) do
@@ -164,6 +165,24 @@ defmodule KanbanWeb.UserLive.Settings do
             user={@current_scope.user}
           />
         </.settings_card>
+
+        <.settings_card
+          :if={@section == :danger_zone}
+          id="danger_zone"
+          tab={:danger_zone}
+          title={gettext("Delete account")}
+          hint={
+            gettext(
+              "Permanently delete your account. Available to everyone, with or without an Organization."
+            )
+          }
+        >
+          <.live_component
+            module={KanbanWeb.UserLive.DangerZoneComponent}
+            id="danger-zone"
+            current_scope={@current_scope}
+          />
+        </.settings_card>
       </.settings_shell>
     </Layouts.app>
     """
@@ -229,11 +248,11 @@ defmodule KanbanWeb.UserLive.Settings do
     {:ok, socket}
   end
 
-  # The other settings pages link here with ?section=password (or two_factor)
-  # to open that tab.
+  # The other settings pages link here with ?section=password (or two_factor,
+  # danger_zone) to open that tab.
   @impl true
   def handle_params(%{"section" => section}, _uri, socket)
-      when section in ["profile", "password", "two_factor"] do
+      when section in ["profile", "password", "two_factor", "danger_zone"] do
     {:noreply, assign(socket, :section, String.to_existing_atom(section))}
   end
 
@@ -241,7 +260,7 @@ defmodule KanbanWeb.UserLive.Settings do
 
   @impl true
   def handle_event("select_section", %{"section" => section}, socket)
-      when section in ["profile", "password", "two_factor"] do
+      when section in ["profile", "password", "two_factor", "danger_zone"] do
     {:noreply, assign(socket, :section, String.to_existing_atom(section))}
   end
 
@@ -289,6 +308,15 @@ defmodule KanbanWeb.UserLive.Settings do
       changeset ->
         {:noreply, assign(socket, password_form: to_form(changeset, action: :insert))}
     end
+  end
+
+  # Sent by DangerZoneComponent once the account is deleted: close the user's
+  # other open LiveViews. This page's own session is cleared by the log-out
+  # form the component triggers.
+  @impl true
+  def handle_info({:account_deleted, session_tokens}, socket) do
+    UserAuth.disconnect_sessions(session_tokens)
+    {:noreply, socket}
   end
 
   defp email_changed?(user_params, user) do

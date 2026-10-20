@@ -10,6 +10,7 @@ defmodule Kanban.Accounts.AdminManagementTest do
   import Kanban.WorkspacesFixtures
 
   alias Kanban.Accounts
+  alias Kanban.Accounts.AdminManagement
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserTelemetry
   alias Kanban.Accounts.UserToken
@@ -28,6 +29,24 @@ defmodule Kanban.Accounts.AdminManagementTest do
     user
     |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
     |> Repo.update!()
+  end
+
+  describe "last_admin?/1" do
+    test "is true for the only enabled admin, and false once another exists" do
+      admin = admin_fixture()
+
+      from(u in User, where: u.type == :admin and u.id != ^admin.id)
+      |> Repo.update_all(set: [disabled_at: DateTime.utc_now(:second)])
+
+      assert AdminManagement.last_admin?(admin)
+
+      admin_fixture()
+      refute AdminManagement.last_admin?(admin)
+    end
+
+    test "is false for a user who is not an admin" do
+      refute AdminManagement.last_admin?(user_fixture())
+    end
   end
 
   describe "list_users/0" do

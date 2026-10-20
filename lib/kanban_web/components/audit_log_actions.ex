@@ -95,5 +95,8 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("user_delete_refused"),
     do: pgettext("audit action", "Account deletion refused")
 
+  def action_label("account_self_deleted"),
+    do: pgettext("audit action", "Account deleted by its owner")
+
   def action_label(action) when is_binary(action), do: action
 end

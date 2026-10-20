@@ -91,18 +91,18 @@ msgstr ""
 #: lib/kanban_web/components/side_nav.ex:115
 #: lib/kanban_web/components/side_nav.ex:116
 #: lib/kanban_web/live/user_live/notification_preferences.ex:146
-#: lib/kanban_web/live/user_live/settings_components.ex:32
+#: lib/kanban_web/live/user_live/settings_components.ex:33
 #, elixir-autogen, elixir-format
 msgid "Settings"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:312
+#: lib/kanban_web/live/user_live/settings.ex:340
 #, elixir-autogen, elixir-format
 msgid "A link to confirm your email change has been sent to the new address."
 msgstr ""
 
 #: lib/kanban_web/live/user_live/reset_password.ex:68
-#: lib/kanban_web/live/user_live/settings.ex:121
+#: lib/kanban_web/live/user_live/settings.ex:122
 #, elixir-autogen, elixir-format
 msgid "Confirm new password"
 msgstr ""
@@ -126,32 +126,33 @@ msgstr ""
 #: lib/kanban_web/live/user_live/login.ex:42
 #: lib/kanban_web/live/user_live/notification_preferences.ex:212
 #: lib/kanban_web/live/user_live/registration.ex:66
-#: lib/kanban_web/live/user_live/settings.ex:44
+#: lib/kanban_web/live/user_live/settings.ex:45
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:41
 #, elixir-autogen, elixir-format
 msgid "Email"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:210
+#: lib/kanban_web/live/user_live/settings.ex:229
 #, elixir-autogen, elixir-format
 msgid "Email change link is invalid or it has expired."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:207
+#: lib/kanban_web/live/user_live/settings.ex:226
 #, elixir-autogen, elixir-format
 msgid "Email changed successfully."
 msgstr ""
 
 #: lib/kanban_web/live/user_live/reset_password.ex:42
-#: lib/kanban_web/live/user_live/settings.ex:98
+#: lib/kanban_web/live/user_live/settings.ex:99
 #, elixir-autogen, elixir-format
 msgid "New password"
 msgstr ""
 
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:155
 #: lib/kanban_web/live/user_live/login.ex:59
 #: lib/kanban_web/live/user_live/registration.ex:82
-#: lib/kanban_web/live/user_live/settings.ex:73
-#: lib/kanban_web/live/user_live/settings_components.ex:106
+#: lib/kanban_web/live/user_live/settings.ex:74
+#: lib/kanban_web/live/user_live/settings_components.ex:109
 #, elixir-autogen, elixir-format
 msgid "Password"
 msgstr ""
@@ -167,8 +168,8 @@ msgstr ""
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/components/comment_row.ex:139
 #: lib/kanban_web/live/task_live/form_component.html.heex:421
-#: lib/kanban_web/live/user_live/settings.ex:60
-#: lib/kanban_web/live/user_live/settings.ex:141
+#: lib/kanban_web/live/user_live/settings.ex:61
+#: lib/kanban_web/live/user_live/settings.ex:142
 #, elixir-autogen, elixir-format
 msgid "Saving..."
 msgstr ""
@@ -213,6 +214,7 @@ msgstr ""
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:214
 #: lib/kanban_web/live/user_live/two_factor_component.ex:137
 #, elixir-autogen, elixir-format
 msgid "Cancel"
@@ -251,7 +253,7 @@ msgstr ""
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
 #: lib/kanban_web/live/org_live/console.html.heex:54
 #: lib/kanban_web/live/target_live/form.html.heex:29
-#: lib/kanban_web/live/user_live/settings.ex:32
+#: lib/kanban_web/live/user_live/settings.ex:33
 #, elixir-autogen, elixir-format
 msgid "Name"
 msgstr ""
@@ -4204,11 +4206,6 @@ msgstr ""
 msgid "We do not sell your data. We do not use your workspace content to train AI models. We do not run advertising on Stride."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:125
-#, elixir-autogen, elixir-format
-msgid "We keep your account and workspace data for as long as your account is active. When you delete your account, we delete your account record and your workspace content within 30 days, except where we are required by law to retain a record (for example, financial records for billing)."
-msgstr ""
-
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:182
 #, elixir-autogen, elixir-format
 msgid "We may update this policy from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect."
@@ -5583,7 +5580,7 @@ msgstr ""
 msgid "Back to review queue"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:331
+#: lib/kanban_web/live/user_live/settings.ex:359
 #, elixir-autogen, elixir-format
 msgid "Profile updated."
 msgstr ""
@@ -5637,7 +5634,7 @@ msgstr ""
 
 #: lib/kanban_web/live/user_live/registration.ex:94
 #: lib/kanban_web/live/user_live/reset_password.ex:61
-#: lib/kanban_web/live/user_live/settings.ex:98
+#: lib/kanban_web/live/user_live/settings.ex:99
 #, elixir-autogen, elixir-format
 msgid "At least 12 characters"
 msgstr ""
@@ -5670,7 +5667,7 @@ msgstr ""
 msgid "Choose a new password for your account."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:75
+#: lib/kanban_web/live/user_live/settings.ex:76
 #, elixir-autogen, elixir-format
 msgid "Choose a strong password and confirm it. You will stay signed in on this device after a successful change."
 msgstr ""
@@ -5731,8 +5728,8 @@ msgstr ""
 msgid "Not found"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:18
-#: lib/kanban_web/live/user_live/settings_components.ex:105
+#: lib/kanban_web/live/user_live/settings.ex:19
+#: lib/kanban_web/live/user_live/settings_components.ex:108
 #, elixir-autogen, elixir-format
 msgid "Profile"
 msgstr ""
@@ -5752,7 +5749,7 @@ msgstr ""
 msgid "Reset your password"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:144
+#: lib/kanban_web/live/user_live/settings.ex:145
 #, elixir-autogen, elixir-format
 msgid "Save password"
 msgstr ""
@@ -5783,7 +5780,7 @@ msgstr ""
 msgid "The people and the AI collaborator behind Stride."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:63
+#: lib/kanban_web/live/user_live/settings.ex:64
 #, elixir-autogen, elixir-format
 msgid "Update profile"
 msgstr ""
@@ -5813,12 +5810,12 @@ msgstr ""
 msgid "Your name"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:20
+#: lib/kanban_web/live/user_live/settings.ex:21
 #, elixir-autogen, elixir-format
 msgid "Your name and email address. Email changes require confirmation by clicking a link sent to the new address."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings_components.ex:106
+#: lib/kanban_web/live/user_live/settings_components.ex:109
 #, elixir-autogen, elixir-format
 msgid "change credentials"
 msgstr ""
@@ -5828,7 +5825,7 @@ msgstr ""
 msgid "if you suspect a key is compromised."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings_components.ex:105
+#: lib/kanban_web/live/user_live/settings_components.ex:108
 #, elixir-autogen, elixir-format
 msgid "name · email"
 msgstr ""
@@ -6717,8 +6714,8 @@ msgstr ""
 msgid "Code review"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings_components.ex:44
-#: lib/kanban_web/live/user_live/settings_components.ex:52
+#: lib/kanban_web/live/user_live/settings_components.ex:45
+#: lib/kanban_web/live/user_live/settings_components.ex:54
 #, elixir-autogen, elixir-format
 msgid "Settings sections"
 msgstr ""
@@ -9141,7 +9138,7 @@ msgstr ""
 #: lib/kanban_web/live/notification_live/index.html.heex:16
 #: lib/kanban_web/live/notification_live/index.html.heex:35
 #: lib/kanban_web/live/user_live/notification_preferences.ex:149
-#: lib/kanban_web/live/user_live/settings_components.ex:78
+#: lib/kanban_web/live/user_live/settings_components.ex:80
 #, elixir-autogen, elixir-format
 msgid "Notifications"
 msgstr ""
@@ -9259,7 +9256,7 @@ msgstr ""
 msgid "You are added to or removed from a board, or your access changes."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings_components.ex:79
+#: lib/kanban_web/live/user_live/settings_components.ex:81
 #, elixir-autogen, elixir-format
 msgid "in-app · email"
 msgstr ""
@@ -9400,7 +9397,7 @@ msgstr ""
 msgid "Comments and mentions"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings_components.ex:35
+#: lib/kanban_web/live/user_live/settings_components.ex:36
 #, elixir-autogen, elixir-format
 msgid "Manage your profile, password and notifications. Changes apply to your account immediately."
 msgstr ""
@@ -9736,7 +9733,7 @@ msgstr ""
 msgid "New recovery codes"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:156
+#: lib/kanban_web/live/user_live/settings.ex:157
 #, elixir-autogen, elixir-format
 msgid "Protect your account with a code from an authenticator app in addition to your password."
 msgstr ""
@@ -9779,12 +9776,12 @@ msgstr ""
 msgid "Turn off two-factor"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings_components.ex:107
+#: lib/kanban_web/live/user_live/settings_components.ex:110
 #, elixir-autogen, elixir-format
 msgid "Two-factor"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings.ex:154
+#: lib/kanban_web/live/user_live/settings.ex:155
 #: lib/kanban_web/live/user_live/two_factor.ex:38
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication"
@@ -9807,7 +9804,7 @@ msgstr ""
 msgid "Verify and turn on"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/settings_components.ex:107
+#: lib/kanban_web/live/user_live/settings_components.ex:110
 #, elixir-autogen, elixir-format
 msgid "authenticator app"
 msgstr ""
@@ -11740,17 +11737,17 @@ msgstr ""
 msgid "Revoked"
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/tokens.ex:66
+#: lib/kanban_web/live/workspace_live/tokens.ex:68
 #, elixir-autogen, elixir-format
 msgid "The token could not be revoked. Please try again."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/tokens.ex:45
+#: lib/kanban_web/live/workspace_live/tokens.ex:47
 #, elixir-autogen, elixir-format
 msgid "This workspace is archived."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/tokens.ex:63
+#: lib/kanban_web/live/workspace_live/tokens.ex:65
 #, elixir-autogen, elixir-format
 msgid "Token not found."
 msgstr ""
@@ -11778,4 +11775,158 @@ msgstr ""
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:229
 #, elixir-autogen, elixir-format
 msgid "never"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:259
+#, elixir-autogen, elixir-format
+msgid "A Stride admin must appoint another org-admin before you can delete your account."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:97
+#, elixir-autogen, elixir-format
+msgid "Before you can delete your account"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/settings.ex:173
+#: lib/kanban_web/live/user_live/settings_components.ex:111
+#, elixir-autogen, elixir-format
+msgid "Delete account"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:124
+#, elixir-autogen, elixir-format
+msgid "Delete my account"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:131
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:145
+#, elixir-autogen, elixir-format
+msgid "Delete your account"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:203
+#, elixir-autogen, elixir-format
+msgid "Deleting..."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:306
+#, elixir-autogen, elixir-format
+msgid "None of its other members can take it over because their accounts are disabled. Remove them from the board, then come back."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:275
+#, elixir-autogen, elixir-format
+msgid "Open its members"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:403
+#, elixir-autogen, elixir-format
+msgid "Ownership of %{board} could not be transferred."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:395
+#, elixir-autogen, elixir-format
+msgid "Ownership of %{board} transferred."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:206
+#, elixir-autogen, elixir-format
+msgid "Permanently delete my account"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/settings.ex:175
+#, elixir-autogen, elixir-format
+msgid "Permanently delete your account. Available to everyone, with or without an Organization."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:375
+#, elixir-autogen, elixir-format
+msgid "Something now stops your account being deleted."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:350
+#, elixir-autogen, elixir-format
+msgid "That board is not waiting for a new owner."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:383
+#, elixir-autogen, elixir-format
+msgid "That password is not correct."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:148
+#, elixir-autogen, elixir-format
+msgid "This permanently deletes your account. Enter your password and type the phrase below to confirm."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:386
+#, elixir-autogen, elixir-format
+msgid "Too many wrong passwords. Try again in a few minutes."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:299
+#, elixir-autogen, elixir-format
+msgid "Transfer ownership"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:287
+#, elixir-autogen, elixir-format
+msgid "Transfer ownership to"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:176
+#, elixir-autogen, elixir-format
+msgid "Type %{phrase} to confirm"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:389
+#, elixir-autogen, elixir-format
+msgid "Type the phrase exactly as shown."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:254
+#, elixir-autogen, elixir-format
+msgid "You are the last org-admin of %{organization}, which has other members."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:242
+#, elixir-autogen, elixir-format
+msgid "You are the last site admin. Make another user a site admin before you delete your account."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:270
+#, elixir-autogen, elixir-format
+msgid "You own %{board}, which other people use."
+msgstr ""
+
+#: lib/kanban_web/controllers/user_session_controller.ex:325
+#, elixir-autogen, elixir-format
+msgid "Your account has been deleted."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/settings_components.ex:111
+#, elixir-autogen, elixir-format
+msgid "danger zone"
+msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:99
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Account deleted by its owner"
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:86
+#, elixir-autogen, elixir-format
+msgid "Deleting your account signs you out everywhere and removes your API tokens, your memberships and the boards in your personal workspace that only you use. Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and the tasks and comments you added there are kept without your name. This cannot be undone."
+msgstr ""
+
+#: lib/kanban_web/controllers/user_session_controller.ex:324
+#: lib/kanban_web/controllers/user_session_controller.ex:334
+#, elixir-autogen, elixir-format
+msgid "Logged out successfully."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:125
+#, elixir-autogen, elixir-format
+msgid "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, financial records for billing). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
 msgstr ""

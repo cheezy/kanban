@@ -32,6 +32,7 @@ defmodule Kanban.Workspaces do
   alias Kanban.Workspaces.BoardMoves
   alias Kanban.Workspaces.Listing
   alias Kanban.Workspaces.MembershipCascade
+  alias Kanban.Workspaces.PersonalCleanup
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
 
@@ -441,6 +442,9 @@ defmodule Kanban.Workspaces do
   Organization's workspaces. See `Kanban.Workspaces.BoardMoves`.
   """
   defdelegate move_board_to_workspace(actor, board, workspace), to: BoardMoves
+
+  @doc "Empties a user's personal workspace before deletion. See `Kanban.Workspaces.PersonalCleanup`."
+  defdelegate clear_personal_boards(user), to: PersonalCleanup
 
   @doc "Lists a workspace's members. See `Kanban.Workspaces.Listing`."
   defdelegate list_members(actor, workspace), to: Listing

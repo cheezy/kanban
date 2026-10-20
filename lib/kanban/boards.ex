@@ -30,6 +30,7 @@ defmodule Kanban.Boards do
   alias Kanban.Boards.MemberSearch
   alias Kanban.Boards.Membership
   alias Kanban.Boards.MembershipChanges
+  alias Kanban.Boards.OwnershipTransfer
   alias Kanban.Workspaces.Policy
 
   @max_bigint 9_223_372_036_854_775_807
@@ -272,6 +273,19 @@ defmodule Kanban.Boards do
   defdelegate remove_user_from_board(board, user, current_user), to: MembershipChanges
   defdelegate update_user_access(board, user, new_access, current_user), to: MembershipChanges
   defdelegate member_cap_status(board), to: MembershipChanges
+
+  @doc """
+  Makes `new_owner`, an existing member, the explicit owner of `board`. See
+  `Kanban.Boards.OwnershipTransfer.transfer_board_ownership/3`.
+  """
+  defdelegate transfer_board_ownership(board, new_owner, actor), to: OwnershipTransfer
+
+  @doc """
+  Lists the members `board`'s ownership may be transferred to, or `[]` when
+  `actor` may not transfer it. See
+  `Kanban.Boards.OwnershipTransfer.list_ownership_candidates/2`.
+  """
+  defdelegate list_ownership_candidates(board, actor), to: OwnershipTransfer
 
   @doc """
   Lists all users associated with a board along with their access level.

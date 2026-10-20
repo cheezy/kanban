@@ -1,6 +1,7 @@
 defmodule KanbanWeb.UserLive.SettingsTest do
   use KanbanWeb.ConnCase, async: true
 
+  import Ecto.Query
   import Kanban.AccountsFixtures
   import Phoenix.LiveViewTest
 
@@ -503,6 +504,272 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       assert html =~ "That code is not valid."
       refute has_element?(lv, "#two-factor-recovery-codes")
       assert Accounts.consume_recovery_code(user, old) == :ok
+    end
+  end
+
+  describe "danger zone section" do
+    setup %{conn: conn} do
+      user = user_fixture()
+      %{conn: log_in_user(conn, user), user: user}
+    end
+
+    defp open_danger_zone(conn) do
+      {:ok, lv, _html} = live(conn, ~p"/users/settings?section=danger_zone")
+      lv
+    end
+
+    defp add_board_member(board, user, access \\ :modify) do
+      Kanban.Repo.insert!(%Kanban.Boards.BoardUser{
+        board_id: board.id,
+        user_id: user.id,
+        access: access
+      })
+    end
+
+    defp submit_delete(lv, password, confirmation) do
+      lv
+      |> form("#delete-account-form", %{
+        "delete_account" => %{"password" => password, "confirmation" => confirmation}
+      })
+      |> render_submit()
+    end
+
+    test "is a tab on the settings page", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/users/settings")
+
+      assert has_element?(lv, ~s([role="tablist"] button[phx-value-section="danger_zone"]))
+
+      html = render_click(lv, "select_section", %{"section" => "danger_zone"})
+
+      assert html =~ "Delete account"
+      assert has_element?(lv, "#danger_zone[role=tabpanel]")
+      assert has_element?(lv, "#open-delete-account")
+    end
+
+    test "deletes the account after the password and phrase, then logs out", %{
+      conn: conn,
+      user: user
+    } do
+      lv = open_danger_zone(conn)
+
+      lv |> element("#open-delete-account") |> render_click()
+      assert has_element?(lv, "#delete-account-form")
+      assert has_element?(lv, "#confirm-delete-account[disabled]")
+
+      lv
+      |> form("#delete-account-form", %{
+        "delete_account" => %{"password" => "", "confirmation" => "delete my account"}
+      })
+      |> render_change()
+
+      refute has_element?(lv, "#confirm-delete-account[disabled]")
+
+      submit_delete(lv, valid_user_password(), "delete my account")
+
+      refute Kanban.Repo.get(Kanban.Accounts.User, user.id)
+
+      conn = follow_trigger_action(form(lv, "#account-deleted-logout"), conn)
+
+      assert redirected_to(conn) == ~p"/"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) == "Your account has been deleted."
+
+      conn = get(recycle(conn), ~p"/users/settings")
+      assert redirected_to(conn) == ~p"/users/log-in"
+    end
+
+    test "a wrong password keeps the account and shows an error", %{conn: conn, user: user} do
+      lv = open_danger_zone(conn)
+      lv |> element("#open-delete-account") |> render_click()
+
+      html = submit_delete(lv, "not my password", "delete my account")
+
+      assert html =~ "That password is not correct."
+      assert Kanban.Repo.get(Kanban.Accounts.User, user.id)
+    end
+
+    test "a wrong phrase keeps the account and shows an error", %{conn: conn, user: user} do
+      lv = open_danger_zone(conn)
+      lv |> element("#open-delete-account") |> render_click()
+
+      html =
+        lv
+        |> element("#delete-account-form")
+        |> render_submit(%{
+          "delete_account" => %{
+            "password" => valid_user_password(),
+            "confirmation" => "delete it"
+          }
+        })
+
+      assert html =~ "Type the phrase exactly as shown."
+      assert Kanban.Repo.get(Kanban.Accounts.User, user.id)
+    end
+
+    test "cancel closes the dialog", %{conn: conn} do
+      lv = open_danger_zone(conn)
+      lv |> element("#open-delete-account") |> render_click()
+
+      lv |> element("#delete-account-form button", "Cancel") |> render_click()
+
+      refute has_element?(lv, "#delete-account-form")
+    end
+
+    test "a shared board is a blocker until its ownership is transferred", %{
+      conn: conn,
+      user: user
+    } do
+      board = Kanban.BoardsFixtures.board_fixture(user, %{name: "Shared board"})
+      member = user_fixture(%{name: "Mia Member"})
+      add_board_member(board, member)
+
+      lv = open_danger_zone(conn)
+
+      assert has_element?(lv, "#blocker-board-#{board.id}", "Shared board")
+
+      assert has_element?(
+               lv,
+               ~s(#blocker-board-#{board.id} a[href="/boards/#{board.id}/members"])
+             )
+
+      assert has_element?(lv, "#transfer-board-#{board.id} option", "Mia Member")
+      refute has_element?(lv, "#open-delete-account")
+
+      lv
+      |> form("#transfer-board-#{board.id}", %{"new_owner_id" => member.id})
+      |> render_submit()
+
+      assert has_element?(lv, "#danger-zone-notice", "Ownership of Shared board transferred.")
+      refute has_element?(lv, "#blocker-board-#{board.id}")
+      assert has_element?(lv, "#open-delete-account")
+      assert Kanban.Boards.owner?(board, member)
+    end
+
+    test "a transfer for a board that is not a blocker is refused", %{conn: conn, user: user} do
+      shared = Kanban.BoardsFixtures.board_fixture(user)
+      member = user_fixture()
+      add_board_member(shared, member)
+
+      other = Kanban.BoardsFixtures.board_fixture(user_fixture())
+      add_board_member(other, member)
+
+      organization = Kanban.OrganizationsFixtures.organization_fixture()
+      Kanban.OrganizationsFixtures.organization_member_fixture(organization, user, :org_admin)
+      Kanban.OrganizationsFixtures.organization_member_fixture(organization, user_fixture())
+
+      lv = open_danger_zone(conn)
+
+      lv
+      |> form("#transfer-board-#{shared.id}")
+      |> render_submit(%{"board_id" => to_string(other.id), "new_owner_id" => member.id})
+
+      assert has_element?(lv, "#danger-zone-notice", "That board is not waiting for a new owner.")
+      refute Kanban.Boards.owner?(other, member)
+      assert has_element?(lv, "#blocker-board-#{shared.id}")
+    end
+
+    test "a refused transfer says so and keeps the blocker", %{conn: conn, user: user} do
+      board = Kanban.BoardsFixtures.board_fixture(user, %{name: "Kept board"})
+      member = user_fixture()
+      add_board_member(board, member)
+
+      lv = open_danger_zone(conn)
+
+      member
+      |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
+      |> Kanban.Repo.update!()
+
+      lv
+      |> form("#transfer-board-#{board.id}", %{"new_owner_id" => member.id})
+      |> render_submit()
+
+      assert has_element?(
+               lv,
+               "#danger-zone-notice",
+               "Ownership of Kept board could not be transferred."
+             )
+
+      assert has_element?(lv, "#blocker-board-#{board.id}")
+    end
+
+    test "a board whose other members are all disabled says to remove them", %{
+      conn: conn,
+      user: user
+    } do
+      board = Kanban.BoardsFixtures.board_fixture(user)
+      disabled = user_fixture()
+      add_board_member(board, disabled)
+
+      disabled
+      |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
+      |> Kanban.Repo.update!()
+
+      lv = open_danger_zone(conn)
+
+      assert has_element?(lv, "#blocker-board-#{board.id}", "Remove them from the board")
+      refute has_element?(lv, "#transfer-board-#{board.id}")
+    end
+
+    test "the last org-admin sees that a Stride admin must appoint another", %{
+      conn: conn,
+      user: user
+    } do
+      organization = Kanban.OrganizationsFixtures.organization_fixture(%{name: "Acme Org"})
+      Kanban.OrganizationsFixtures.organization_member_fixture(organization, user, :org_admin)
+      Kanban.OrganizationsFixtures.organization_member_fixture(organization, user_fixture())
+
+      lv = open_danger_zone(conn)
+
+      assert has_element?(lv, "#blocker-last-org-admin", "Acme Org")
+      assert has_element?(lv, "#blocker-last-org-admin", "A Stride admin must appoint")
+      refute has_element?(lv, "#open-delete-account")
+    end
+
+    test "the last site admin cannot delete their account", %{conn: conn} do
+      admin = admin_fixture()
+
+      from(u in Kanban.Accounts.User, where: u.type == :admin and u.id != ^admin.id)
+      |> Kanban.Repo.update_all(set: [disabled_at: DateTime.utc_now(:second)])
+
+      {:ok, lv, _html} =
+        conn
+        |> log_in_user(admin)
+        |> live(~p"/users/settings?section=danger_zone")
+
+      assert has_element?(lv, "#blocker-last-site-admin")
+      refute has_element?(lv, "#open-delete-account")
+    end
+
+    test "an account deleted elsewhere is sent to the log-in page", %{conn: conn, user: user} do
+      lv = open_danger_zone(conn)
+      lv |> element("#open-delete-account") |> render_click()
+
+      scope = Kanban.Accounts.Scope.for_user(user)
+
+      assert {:ok, _} =
+               Accounts.delete_own_account(scope, valid_user_password(), "delete my account")
+
+      assert {:error, {:redirect, %{to: "/users/log-in"}}} =
+               submit_delete(lv, valid_user_password(), "delete my account")
+    end
+
+    test "a blocker that appears after the dialog opened closes it", %{conn: conn, user: user} do
+      lv = open_danger_zone(conn)
+      lv |> element("#open-delete-account") |> render_click()
+
+      board = Kanban.BoardsFixtures.board_fixture(user, %{name: "Late board"})
+      add_board_member(board, user_fixture())
+
+      submit_delete(lv, valid_user_password(), "delete my account")
+
+      assert has_element?(
+               lv,
+               "#danger-zone-notice",
+               "Something now stops your account being deleted."
+             )
+
+      refute has_element?(lv, "#delete-account-form")
+      assert has_element?(lv, "#blocker-board-#{board.id}")
+      assert Kanban.Repo.get(Kanban.Accounts.User, user.id)
     end
   end
 

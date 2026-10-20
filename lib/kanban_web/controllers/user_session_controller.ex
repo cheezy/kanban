@@ -314,10 +314,29 @@ defmodule KanbanWeb.UserSessionController do
     |> UserAuth.log_in_user(user, user_params)
   end
 
+  # The account settings page posts here with account_deleted=true right after
+  # a self-service deletion (W2221). The flash is only shown when the session no
+  # longer resolves to a user, so the parameter cannot be used to show it on a
+  # live account.
+  def delete(conn, %{"account_deleted" => "true"}) do
+    message =
+      if signed_in?(conn),
+        do: gettext("Logged out successfully."),
+        else: gettext("Your account has been deleted.")
+
+    conn
+    |> put_flash(:info, message)
+    |> UserAuth.log_out_user()
+  end
+
   def delete(conn, _params) do
     conn
-    |> put_flash(:info, "Logged out successfully.")
+    |> put_flash(:info, gettext("Logged out successfully."))
     |> UserAuth.log_out_user()
+  end
+
+  defp signed_in?(conn) do
+    match?(%{user: %User{}}, conn.assigns[:current_scope])
   end
 
   # Mirrors the `:require_sudo_mode` LiveView on_mount (user_auth.ex): a

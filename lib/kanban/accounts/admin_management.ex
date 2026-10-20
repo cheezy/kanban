@@ -202,18 +202,26 @@ defmodule Kanban.Accounts.AdminManagement do
     end)
   end
 
-  # Only enabled admins count as "remaining". A disabled admin cannot log in to
-  # re-enable anyone, so treating one as a remaining admin would allow deleting
-  # the last admin who can actually sign in and lock the system out permanently.
-  #
-  # The head matches any admin, enabled or not: a disabled admin still needs the
-  # guard, since deleting the only admin row leaves nobody to promote.
-  defp last_admin?(%User{type: :admin} = user) do
+  @doc """
+  Returns true when `user` is a site admin and no other enabled site admin
+  exists, read from the database. Disabling or deleting such a user would
+  leave nobody who can sign in and administer the system.
+
+  Only enabled admins count as "remaining": a disabled admin cannot log in to
+  re-enable anyone. Any admin `user`, enabled or not, is checked, since
+  deleting the only admin row leaves nobody to promote. A non-admin is never
+  the last admin.
+
+  Takes no lock; a caller that acts on the answer inside a transaction locks
+  the admin rows first (see `Kanban.Accounts.AccountDeletion`).
+  """
+  @spec last_admin?(User.t()) :: boolean()
+  def last_admin?(%User{type: :admin} = user) do
     User
     |> where([u], u.type == :admin and is_nil(u.disabled_at) and u.id != ^user.id)
     |> Repo.exists?()
     |> Kernel.not()
   end
 
-  defp last_admin?(_user), do: false
+  def last_admin?(_user), do: false
 end

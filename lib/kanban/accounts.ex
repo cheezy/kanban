@@ -11,6 +11,7 @@ defmodule Kanban.Accounts do
   import Ecto.Query, warn: false
   alias Kanban.Repo
 
+  alias Kanban.Accounts.AccountDeletion
   alias Kanban.Accounts.AdminManagement
   alias Kanban.Accounts.EmailConfirmation
   alias Kanban.Accounts.PasswordReset
@@ -298,6 +299,12 @@ defmodule Kanban.Accounts do
   defdelegate disable_user(user, current_user), to: AdminManagement
   defdelegate enable_user(user, current_user), to: AdminManagement
   defdelegate delete_user(user, current_user), to: AdminManagement
+
+  ## Self-service account deletion (see `Kanban.Accounts.AccountDeletion`)
+
+  defdelegate deletion_blockers(user), to: AccountDeletion
+  defdelegate delete_own_account(scope, password, confirmation), to: AccountDeletion
+  defdelegate account_deletion_phrase(), to: AccountDeletion, as: :confirmation_phrase
 
   ## Two-factor authentication
 

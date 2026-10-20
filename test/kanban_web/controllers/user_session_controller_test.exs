@@ -399,5 +399,23 @@ defmodule KanbanWeb.UserSessionControllerTest do
       refute get_session(conn, :user_token)
       assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Logged out successfully"
     end
+
+    test "after a self-deletion it says the account was deleted", %{conn: conn} do
+      conn = delete(conn, ~p"/users/log-out", %{"account_deleted" => "true"})
+
+      assert redirected_to(conn) == ~p"/"
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) == "Your account has been deleted."
+    end
+
+    test "a signed-in user cannot be shown the account-deleted message", %{
+      conn: conn,
+      user: user
+    } do
+      conn =
+        conn |> log_in_user(user) |> delete(~p"/users/log-out", %{"account_deleted" => "true"})
+
+      refute get_session(conn, :user_token)
+      assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "Logged out successfully"
+    end
   end
 end
