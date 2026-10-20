@@ -479,14 +479,24 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
       Application.put_env(:kanban, Kanban.RateLimit, enabled: true)
       on_exit(fn -> Application.put_env(:kanban, Kanban.RateLimit, original) end)
 
-      ip = {10, :rand.uniform(255), :rand.uniform(255), :rand.uniform(255)}
+      # Each kind of selector failure, from its own address, more often than
+      # the limit of 20 failures a minute allows.
+      failures = [
+        {[param: "999999999"], 404},
+        {[], 400},
+        {[header: "1", param: "2"], 400}
+      ]
 
-      for _ <- 1..25 do
-        conn = call_with(%{build_conn() | remote_ip: ip}, ctx.ws_plain, param: "999999999")
-        assert conn.status == 404
+      for {opts, status} <- failures do
+        ip = {10, :rand.uniform(255), :rand.uniform(255), :rand.uniform(255)}
+
+        for _ <- 1..25 do
+          conn = call_with(%{build_conn() | remote_ip: ip}, ctx.ws_plain, opts)
+          assert conn.status == status
+        end
+
+        assert :ok = Kanban.RateLimit.peek(:api_token, ip: ip)
       end
-
-      assert :ok = Kanban.RateLimit.peek(:api_token, ip: ip)
     end
   end
 
