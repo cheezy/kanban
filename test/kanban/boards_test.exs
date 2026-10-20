@@ -614,6 +614,20 @@ defmodule Kanban.BoardsTest do
       assert "board already has an owner" in errors_on(changeset).board_id
     end
 
+    test "refuses a disabled account, read from the database, and adds nothing" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      user = user_fixture()
+
+      user
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Repo.update!()
+
+      # `user` is the struct loaded before the disable.
+      assert {:error, :user_disabled} = Boards.add_user_to_board(board, user, :modify, owner)
+      refute board |> Boards.list_board_users() |> Enum.any?(&(&1.user.id == user.id))
+    end
+
     test "adds a user with read_only access" do
       owner = user_fixture()
       board = board_fixture(owner)

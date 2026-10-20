@@ -23,10 +23,13 @@ defmodule KanbanWeb.BoardLive.Membership do
   alias Kanban.Accounts
   alias Kanban.Boards
 
+  @addable_access %{"read_only" => :read_only, "modify" => :modify}
+
   @doc """
   Looks up a registered user by email and stages them as `:searched_user`,
   rejecting self-adds and existing members with the same flash messages as
-  before extraction.
+  before extraction, and disabled accounts, which cannot sign in and would
+  only take a seat.
   """
   def search_user(socket, current_user, email) do
     if owner_authorized?(socket, current_user) do
@@ -132,6 +135,9 @@ defmodule KanbanWeb.BoardLive.Membership do
       user_already_in_board?(socket, user) ->
         reject_searched_user(socket, email, gettext("User is already added to the board"))
 
+      user.disabled_at ->
+        reject_searched_user(socket, email, disabled_user_flash())
+
       true ->
         {:noreply,
          socket
@@ -153,13 +159,17 @@ defmodule KanbanWeb.BoardLive.Membership do
      |> put_flash(:error, message)}
   end
 
+  # The form offers read-only and modify only; anything else, "owner"
+  # included, is a crafted event. So is an add with nobody searched for.
   defp do_add_user(socket, current_user, access) do
-    user = socket.assigns.searched_user
-    board = socket.assigns.board
-    access_atom = String.to_existing_atom(access)
+    case {socket.assigns.searched_user, Map.fetch(@addable_access, access)} do
+      {%{} = user, {:ok, access}} ->
+        board = socket.assigns.board
+        respond_to_add(socket, board, Boards.add_user_to_board(board, user, access, current_user))
 
-    socket
-    |> respond_to_add(board, Boards.add_user_to_board(board, user, access_atom, current_user))
+      _invalid ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to add user to board"))}
+    end
   end
 
   defp respond_to_add(socket, board, {:ok, _board_user}) do
@@ -183,22 +193,22 @@ defmodule KanbanWeb.BoardLive.Membership do
     {:noreply, put_flash(socket, :error, member_cap_flash(socket.assigns.member_cap))}
   end
 
+  defp respond_to_add(socket, _board, {:error, :user_disabled}) do
+    {:noreply, socket |> assign(:searched_user, nil) |> put_flash(:error, disabled_user_flash())}
+  end
+
   defp respond_to_add(socket, _board, {:error, _changeset}) do
     {:noreply, put_flash(socket, :error, gettext("Failed to add user to board"))}
   end
 
   defp do_remove_user(socket, current_user, user_id) do
     board = socket.assigns.board
-    user_id = String.to_integer(user_id)
 
-    case Accounts.get_user(user_id) do
-      nil ->
-        {:noreply,
-         socket
-         |> put_flash(:error, gettext("User not found"))}
-
-      user ->
-        respond_to_remove(socket, board, Boards.remove_user_from_board(board, user, current_user))
+    with {:ok, user_id} <- KanbanWeb.IdParams.parse(user_id),
+         %{} = user <- Accounts.get_user(user_id) do
+      respond_to_remove(socket, board, Boards.remove_user_from_board(board, user, current_user))
+    else
+      _not_found -> {:noreply, put_flash(socket, :error, gettext("User not found"))}
     end
   end
 
@@ -222,6 +232,10 @@ defmodule KanbanWeb.BoardLive.Membership do
     board = socket.assigns.board
 
     not is_nil(board.id) and Boards.owner?(board, current_user)
+  end
+
+  defp disabled_user_flash do
+    gettext("This account is disabled, so it can't be added to the board.")
   end
 
   defp membership_denied_flash do

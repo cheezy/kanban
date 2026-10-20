@@ -24,6 +24,12 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
     %{owner: owner, board: board}
   end
 
+  defp disable!(user) do
+    user
+    |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+    |> Kanban.Repo.update!()
+  end
+
   defp build_socket(board) do
     base = %{%Phoenix.LiveView.Socket{} | assigns: %{flash: %{}, __changed__: %{}}}
 
@@ -45,6 +51,18 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
 
       assert socket.assigns.searched_user.id == other.id
       assert socket.assigns.search_email == other.email
+    end
+
+    test "refuses to stage a disabled account", %{owner: owner, board: board} do
+      disabled = disable!(user_fixture())
+
+      {:noreply, socket} =
+        board |> build_socket() |> Membership.search_user(owner, disabled.email)
+
+      assert is_nil(socket.assigns.searched_user)
+
+      assert socket.assigns.flash["error"] ==
+               "This account is disabled, so it can't be added to the board."
     end
 
     test "non-owner is denied and cannot enumerate accounts (W1434)", %{board: board} do
@@ -120,6 +138,51 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
       assert socket.assigns.flash["info"] == "User added successfully"
     end
 
+    test "a crafted access level, owner included, adds nobody", %{owner: owner, board: board} do
+      other = user_fixture()
+
+      for access <- ["owner", "admin", "", nil] do
+        socket =
+          board
+          |> build_socket()
+          |> Phoenix.Component.assign(:searched_user, other)
+
+        {:noreply, socket} = Membership.add_user(socket, owner, access)
+
+        assert socket.assigns.flash["error"] == "Failed to add user to board"
+      end
+
+      refute board
+             |> Boards.list_board_users()
+             |> Enum.any?(fn %{user: u} -> u.id == other.id end)
+    end
+
+    test "an account disabled after it was staged is refused at add time", %{
+      owner: owner,
+      board: board
+    } do
+      staged = user_fixture()
+      socket = board |> build_socket() |> Phoenix.Component.assign(:searched_user, staged)
+      disable!(staged)
+
+      {:noreply, socket} = Membership.add_user(socket, owner, "modify")
+
+      assert is_nil(socket.assigns.searched_user)
+
+      assert socket.assigns.flash["error"] ==
+               "This account is disabled, so it can't be added to the board."
+
+      refute board
+             |> Boards.list_board_users()
+             |> Enum.any?(fn %{user: u} -> u.id == staged.id end)
+    end
+
+    test "an add with nobody searched for is refused", %{owner: owner, board: board} do
+      {:noreply, socket} = board |> build_socket() |> Membership.add_user(owner, "read_only")
+
+      assert socket.assigns.flash["error"] == "Failed to add user to board"
+    end
+
     test "non-owner is denied", %{board: board} do
       stranger = user_fixture()
 
@@ -156,6 +219,14 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
 
       assert socket.assigns.flash["error"] == "The board owner can't be removed."
       assert Boards.owner?(board, owner)
+    end
+
+    test "a malformed or oversized user id flashes user not found", %{owner: owner, board: board} do
+      for user_id <- ["abc", "1.5", "-1", "99999999999999999999", "", nil] do
+        {:noreply, socket} = board |> build_socket() |> Membership.remove_user(owner, user_id)
+
+        assert socket.assigns.flash["error"] == "User not found"
+      end
     end
 
     test "unknown user id flashes user not found", %{owner: owner, board: board} do

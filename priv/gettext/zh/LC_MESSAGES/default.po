@@ -345,7 +345,7 @@ msgstr "创建新任务"
 
 #: lib/kanban_web/live/archive_live/index.ex:474
 #: lib/kanban_web/live/archive_live/index.ex:499
-#: lib/kanban_web/live/board_live/show.ex:205
+#: lib/kanban_web/live/board_live/show.ex:194
 #: lib/kanban_web/live/board_live/task_actions.ex:323
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
@@ -442,8 +442,8 @@ msgstr "紧急"
 msgid "Defect"
 msgstr "缺陷"
 
-#: lib/kanban_web/live/board_live/show.ex:241
-#: lib/kanban_web/live/board_live/show.ex:442
+#: lib/kanban_web/live/board_live/show.ex:230
+#: lib/kanban_web/live/board_live/show.ex:437
 #: lib/kanban_web/live/board_live/task_actions.ex:95
 #: lib/kanban_web/live/board_live/task_actions.ex:161
 #, elixir-autogen, elixir-format
@@ -622,12 +622,13 @@ msgstr "当前用户"
 msgid "Enter user email"
 msgstr "输入用户电子邮件"
 
-#: lib/kanban_web/live/board_live/membership.ex:187
+#: lib/kanban_web/live/board_live/membership.ex:171
+#: lib/kanban_web/live/board_live/membership.ex:201
 #, elixir-autogen, elixir-format
 msgid "Failed to add user to board"
 msgstr "添加用户到看板失败"
 
-#: lib/kanban_web/live/board_live/membership.ex:218
+#: lib/kanban_web/live/board_live/membership.ex:228
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "从看板移除用户失败"
@@ -707,22 +708,22 @@ msgstr "选择用户"
 msgid "Unassigned"
 msgstr "未分配"
 
-#: lib/kanban_web/live/board_live/membership.ex:172
+#: lib/kanban_web/live/board_live/membership.ex:182
 #, elixir-autogen, elixir-format
 msgid "User added successfully"
 msgstr "用户添加成功"
 
-#: lib/kanban_web/live/board_live/membership.ex:133
+#: lib/kanban_web/live/board_live/membership.ex:136
 #, elixir-autogen, elixir-format
 msgid "User is already added to the board"
 msgstr "用户已添加到看板"
 
-#: lib/kanban_web/live/board_live/membership.ex:198
+#: lib/kanban_web/live/board_live/membership.ex:211
 #, elixir-autogen, elixir-format
 msgid "User not found"
 msgstr "未找到用户"
 
-#: lib/kanban_web/live/board_live/membership.ex:210
+#: lib/kanban_web/live/board_live/membership.ex:220
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr "用户移除成功"
@@ -732,12 +733,12 @@ msgstr "用户移除成功"
 msgid "Users must be already registered in the system in order to be added to Boards"
 msgstr "用户必须已在系统中注册才能添加到看板"
 
-#: lib/kanban_web/live/board_live/membership.ex:130
+#: lib/kanban_web/live/board_live/membership.ex:133
 #, elixir-autogen, elixir-format
 msgid "You cannot add yourself to the board"
 msgstr "您不能将自己添加到看板"
 
-#: lib/kanban_web/live/board_live/show.ex:137
+#: lib/kanban_web/live/board_live/show.ex:126
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete columns"
 msgstr "只有看板所有者可以删除列"
@@ -753,7 +754,7 @@ msgstr "只有看板所有者可以管理列"
 msgid "Only the board owner can create columns"
 msgstr "只有看板所有者可以创建列"
 
-#: lib/kanban_web/live/board_live/show.ex:267
+#: lib/kanban_web/live/board_live/show.ex:256
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can reorder columns"
 msgstr "只有看板所有者可以重新排序列"
@@ -1071,7 +1072,7 @@ msgstr "密码重置成功。"
 msgid "Reset password"
 msgstr "重置密码"
 
-#: lib/kanban_web/live/user_live/reset_password.ex:143
+#: lib/kanban_web/live/user_live/reset_password.ex:151
 #, elixir-autogen, elixir-format
 msgid "Reset password link is invalid or it has expired."
 msgstr "重置密码链接无效或已过期。"
@@ -1163,7 +1164,7 @@ msgstr "已阻塞"
 msgid "Cannot add columns to AI optimized boards"
 msgstr "无法向 AI 优化看板添加列"
 
-#: lib/kanban_web/live/board_live/show.ex:142
+#: lib/kanban_web/live/board_live/show.ex:131
 #, elixir-autogen, elixir-format
 msgid "Cannot delete columns on AI optimized boards"
 msgstr "无法删除 AI 优化看板上的列"
@@ -1173,7 +1174,7 @@ msgstr "无法删除 AI 优化看板上的列"
 msgid "Cannot edit columns on AI optimized boards"
 msgstr "无法编辑 AI 优化看板上的列"
 
-#: lib/kanban_web/live/board_live/show.ex:272
+#: lib/kanban_web/live/board_live/show.ex:261
 #, elixir-autogen, elixir-format
 msgid "Cannot reorder columns on AI optimized boards"
 msgstr "无法重新排序 AI 优化看板上的列"
@@ -1389,7 +1390,7 @@ msgstr "失败时(将发生什么)"
 
 #: lib/kanban_web/live/board_live/column_actions.ex:66
 #: lib/kanban_web/live/board_live/field_visibility.ex:45
-#: lib/kanban_web/live/board_live/show.ex:284
+#: lib/kanban_web/live/board_live/show.ex:273
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr "只有看板所有者可以更改字段可见性"
@@ -2003,7 +2004,7 @@ msgstr "看板:"
 msgid "Delete"
 msgstr "删除"
 
-#: lib/kanban_web/live/board_live/show.ex:187
+#: lib/kanban_web/live/board_live/show.ex:176
 #: lib/kanban_web/live/board_live/task_actions.ex:296
 #, elixir-autogen, elixir-format
 msgid "Failed to archive task"
@@ -2236,7 +2237,7 @@ msgstr "全部就绪!"
 msgid "You've completed all the steps in this guide."
 msgstr "您已完成此指南的所有步骤。"
 
-#: lib/kanban_web/live/board_live/membership.ex:124
+#: lib/kanban_web/live/board_live/membership.ex:127
 #, elixir-autogen, elixir-format
 msgid "Could not find a user with that email address"
 msgstr "未找到使用该邮箱的用户"
@@ -2737,7 +2738,7 @@ msgstr "未找到看板"
 msgid "Check this box if this task is for human workers only and should not be claimed by AI agents"
 msgstr "如果此任务仅由人工执行,不应被 AI 代理认领,请勾选此复选框"
 
-#: lib/kanban_web/live/board_live/show.ex:223
+#: lib/kanban_web/live/board_live/show.ex:212
 #: lib/kanban_web/live/board_live/task_actions.ex:255
 #, elixir-autogen, elixir-format
 msgid "Failed to move goal to Ready"
@@ -2946,7 +2947,7 @@ msgstr "未找到消息。"
 msgid "No messages yet."
 msgstr "暂无消息。"
 
-#: lib/kanban_web/live/board_live/show.ex:128
+#: lib/kanban_web/live/board_live/show.ex:390
 #, elixir-autogen, elixir-format
 msgid "Could not dismiss message."
 msgstr "无法关闭消息。"
@@ -3009,7 +3010,7 @@ msgid "Let's build what's next, together."
 msgstr "让我们携手共建未来。"
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:228
+#: lib/kanban_web/live/board_live/membership.ex:242
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "只有看板所有者才能管理看板成员"
@@ -3051,31 +3052,31 @@ msgid "While many large organizations attempt to improve outcomes by measuring p
 msgstr "尽管许多大型组织试图通过衡量生产力来改进成果,但我们的经验显示,真正的收益来自:"
 
 #: lib/kanban_web/live/archive_live/index.ex:164
-#: lib/kanban_web/live/board_live/show.ex:183
+#: lib/kanban_web/live/board_live/show.ex:172
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to archive tasks on this board"
 msgstr "您没有权限在此看板归档任务"
 
 #: lib/kanban_web/live/archive_live/index.ex:490
-#: lib/kanban_web/live/board_live/show.ex:201
+#: lib/kanban_web/live/board_live/show.ex:190
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
 msgstr "您没有权限在此看板删除任务"
 
-#: lib/kanban_web/live/board_live/show.ex:302
-#: lib/kanban_web/live/board_live/show.ex:317
-#: lib/kanban_web/live/board_live/show.ex:326
+#: lib/kanban_web/live/board_live/show.ex:291
+#: lib/kanban_web/live/board_live/show.ex:306
+#: lib/kanban_web/live/board_live/show.ex:315
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to manage API tokens"
 msgstr "您没有权限管理API令牌"
 
-#: lib/kanban_web/live/board_live/show.ex:237
-#: lib/kanban_web/live/board_live/show.ex:438
+#: lib/kanban_web/live/board_live/show.ex:226
+#: lib/kanban_web/live/board_live/show.ex:433
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to move tasks on this board"
 msgstr "您没有权限在此看板移动任务"
 
-#: lib/kanban_web/live/board_live/show.ex:219
+#: lib/kanban_web/live/board_live/show.ex:208
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to promote goals on this board"
 msgstr "您没有权限在此看板提升目标"
@@ -3145,7 +3146,7 @@ msgid "Failed to submit the issue. Please try again later."
 msgstr "提交问题失败。请稍后再试。"
 
 #: lib/kanban_web/live/board_live/field_visibility.ex:30
-#: lib/kanban_web/live/board_live/show.ex:289
+#: lib/kanban_web/live/board_live/show.ex:278
 #, elixir-autogen, elixir-format
 msgid "Invalid field name"
 msgstr "无效的字段名"
@@ -4495,7 +4496,7 @@ msgstr "进行中的工作。钩子在前后运行;活动栏在此处亮起。"
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
-#: lib/kanban_web/live/org_live/console.ex:336
+#: lib/kanban_web/live/org_live/console.ex:346
 #: lib/kanban_web/live/org_live/console.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Members"
@@ -6601,7 +6602,7 @@ msgstr "代理编写代码以完成任务。"
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #: lib/kanban_web/live/org_live/audit_log.html.heex:75
-#: lib/kanban_web/live/org_live/console.ex:335
+#: lib/kanban_web/live/org_live/console.ex:345
 #: lib/kanban_web/live/org_live/console.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Details"
@@ -7612,12 +7613,12 @@ msgstr "已分配的目标"
 msgid "Available Goals"
 msgstr "可用的目标"
 
-#: lib/kanban_web/live/target_live/form.ex:57
+#: lib/kanban_web/live/target_live/form.ex:59
 #, elixir-autogen, elixir-format
 msgid "Could not assign goal"
 msgstr "无法分配目标"
 
-#: lib/kanban_web/live/target_live/form.ex:71
+#: lib/kanban_web/live/target_live/form.ex:72
 #, elixir-autogen, elixir-format
 msgid "Could not unassign goal"
 msgstr "无法取消分配目标"
@@ -7658,7 +7659,7 @@ msgstr "尚未为此交付目标分配目标。"
 msgid "No goals are available to assign."
 msgstr "没有可分配的目标。"
 
-#: lib/kanban_web/live/target_live/form.ex:141
+#: lib/kanban_web/live/target_live/form.ex:142
 #, elixir-autogen, elixir-format
 msgid "Only the target owner can edit this target"
 msgstr "只有所有者可以编辑此交付目标"
@@ -7673,12 +7674,12 @@ msgstr "保存交付目标"
 msgid "Target Date"
 msgstr "目标日期"
 
-#: lib/kanban_web/live/target_live/form.ex:106
+#: lib/kanban_web/live/target_live/form.ex:107
 #, elixir-autogen, elixir-format
 msgid "Target created successfully"
 msgstr "交付目标创建成功"
 
-#: lib/kanban_web/live/target_live/form.ex:90
+#: lib/kanban_web/live/target_live/form.ex:91
 #, elixir-autogen, elixir-format
 msgid "Target updated successfully"
 msgstr "交付目标更新成功"
@@ -10710,7 +10711,7 @@ msgid "Enter a valid email address. Nothing was changed."
 msgstr "请输入有效的电子邮件地址。未做任何更改。"
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:254
-#: lib/kanban_web/live/org_live/console.ex:342
+#: lib/kanban_web/live/org_live/console.ex:352
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr "成员"
@@ -10721,7 +10722,7 @@ msgid "Only site admins appoint or remove org-admins."
 msgstr "只有站点管理员可以任命或移除组织管理员。"
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:253
-#: lib/kanban_web/live/org_live/console.ex:341
+#: lib/kanban_web/live/org_live/console.ex:351
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr "组织管理员"
@@ -10782,7 +10783,7 @@ msgid "Everyone in your Organization, org-admins first."
 msgstr "您组织中的所有成员，组织管理员排在最前。"
 
 #: lib/kanban_web/components/side_nav.ex:256
-#: lib/kanban_web/live/org_live/console.ex:67
+#: lib/kanban_web/live/org_live/console.ex:69
 #, elixir-autogen, elixir-format
 msgid "Organization"
 msgstr "组织"
@@ -10798,19 +10799,19 @@ msgstr "组织分区"
 msgid "Read-only. Ask a site admin to change them."
 msgstr "只读。如需更改，请联系站点管理员。"
 
-#: lib/kanban_web/live/org_live/console.ex:59
-#: lib/kanban_web/live/org_live/console.ex:251
+#: lib/kanban_web/live/org_live/console.ex:61
+#: lib/kanban_web/live/org_live/console.ex:261
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
 #, elixir-autogen, elixir-format
 msgid "You must be an org-admin of an Organization to access this page."
 msgstr "您必须是某个组织的组织管理员才能访问此页面。"
 
-#: lib/kanban_web/live/org_live/console.ex:335
+#: lib/kanban_web/live/org_live/console.ex:345
 #, elixir-autogen, elixir-format
 msgid "name · address · contact"
 msgstr "名称 · 地址 · 联系人"
 
-#: lib/kanban_web/live/org_live/console.ex:336
+#: lib/kanban_web/live/org_live/console.ex:346
 #, elixir-autogen, elixir-format
 msgid "names · roles"
 msgstr "姓名 · 角色"
@@ -10871,12 +10872,12 @@ msgstr "新工作区名称"
 msgid "Rename"
 msgstr "重命名"
 
-#: lib/kanban_web/live/org_live/console.ex:209
+#: lib/kanban_web/live/org_live/console.ex:219
 #, elixir-autogen, elixir-format
 msgid "The workspace could not be changed. Please try again."
 msgstr "无法更改工作区，请重试。"
 
-#: lib/kanban_web/live/org_live/console.ex:201
+#: lib/kanban_web/live/org_live/console.ex:211
 #, elixir-autogen, elixir-format
 msgid "This workspace still holds boards. Move them out before archiving it."
 msgstr "此工作区中仍有看板。请先将它们移出，再归档。"
@@ -10886,12 +10887,12 @@ msgstr "此工作区中仍有看板。请先将它们移出，再归档。"
 msgid "Where your Organization's boards live. A workspace can be archived once it holds no boards."
 msgstr "组织的看板存放在这里。工作区中没有看板后即可归档。"
 
-#: lib/kanban_web/live/org_live/console.ex:183
+#: lib/kanban_web/live/org_live/console.ex:193
 #, elixir-autogen, elixir-format
 msgid "Workspace archived."
 msgstr "工作区已归档。"
 
-#: lib/kanban_web/live/org_live/console.ex:144
+#: lib/kanban_web/live/org_live/console.ex:154
 #, elixir-autogen, elixir-format
 msgid "Workspace created."
 msgstr "工作区已创建。"
@@ -10901,18 +10902,18 @@ msgstr "工作区已创建。"
 msgid "Workspace name"
 msgstr "工作区名称"
 
-#: lib/kanban_web/live/org_live/console.ex:215
+#: lib/kanban_web/live/org_live/console.ex:225
 #, elixir-autogen, elixir-format
 msgid "Workspace not found."
 msgstr "未找到工作区。"
 
-#: lib/kanban_web/live/org_live/console.ex:178
+#: lib/kanban_web/live/org_live/console.ex:188
 #, elixir-autogen, elixir-format
 msgid "Workspace renamed."
 msgstr "工作区已重命名。"
 
 #: lib/kanban_web/components/locked_feature.ex:139
-#: lib/kanban_web/live/org_live/console.ex:337
+#: lib/kanban_web/live/org_live/console.ex:347
 #: lib/kanban_web/live/org_live/console.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Workspaces"
@@ -10928,7 +10929,7 @@ msgstr "您的组织还没有工作区。"
 msgid "Your Organization's details, members and workspaces. Only a site admin changes the details or appoints org-admins."
 msgstr "您组织的详细信息、成员和工作区。只有站点管理员可以更改详细信息或任命组织管理员。"
 
-#: lib/kanban_web/live/org_live/console.ex:337
+#: lib/kanban_web/live/org_live/console.ex:347
 #, elixir-autogen, elixir-format
 msgid "create · rename · archive"
 msgstr "创建 · 重命名 · 归档"
@@ -10938,7 +10939,7 @@ msgstr "创建 · 重命名 · 归档"
 msgid "A board still sits in this user's personal workspace, so they cannot be deleted."
 msgstr "该用户的个人工作区中仍有看板，因此无法删除。"
 
-#: lib/kanban_web/live/org_live/console.ex:176
+#: lib/kanban_web/live/org_live/console.ex:186
 #, elixir-autogen, elixir-format
 msgid "No changes to save."
 msgstr "没有需要保存的更改。"
@@ -11105,12 +11106,12 @@ msgctxt "audit action"
 msgid "Two-factor sign-in succeeded"
 msgstr "双因素登录成功"
 
-#: lib/kanban_web/live/board_live/membership.ex:91
+#: lib/kanban_web/live/board_live/membership.ex:94
 #, elixir-autogen, elixir-format
 msgid "%{count} of %{cap} people"
 msgstr "%{count} / %{cap} 人"
 
-#: lib/kanban_web/live/board_live/membership.ex:102
+#: lib/kanban_web/live/board_live/membership.ex:105
 #, elixir-autogen, elixir-format
 msgid "Free boards hold %{cap} people. To add more, move this board to a paid plan."
 msgstr "免费看板最多容纳 %{cap} 人。如需添加更多成员，请将此看板升级到付费方案。"
@@ -11120,12 +11121,12 @@ msgstr "免费看板最多容纳 %{cap} 人。如需添加更多成员，请将�
 msgid "See paid plans"
 msgstr "查看付费方案"
 
-#: lib/kanban_web/live/board_live/membership.ex:117
+#: lib/kanban_web/live/board_live/membership.ex:120
 #, elixir-autogen, elixir-format
 msgid "This board is full."
 msgstr "此看板已满。"
 
-#: lib/kanban_web/live/board_live/membership.ex:114
+#: lib/kanban_web/live/board_live/membership.ex:117
 #, elixir-autogen, elixir-format
 msgid "This board is full. Free boards hold %{cap} people."
 msgstr "此看板已满。免费看板最多容纳 %{cap} 人。"
@@ -11196,7 +11197,7 @@ msgstr "遥测事件和要追踪的指标需要组织中的看板，因此你对
 msgid "This account is disabled and can't sign in. It still takes a seat."
 msgstr "此账户已停用，无法登录，但仍占用一个名额。"
 
-#: lib/kanban_web/live/board_live/membership.ex:214
+#: lib/kanban_web/live/board_live/membership.ex:224
 #, elixir-autogen, elixir-format
 msgid "The board owner can't be removed."
 msgstr "无法移除看板所有者。"
@@ -11220,3 +11221,8 @@ msgstr "此用户是一个仍有成员的组织中唯一启用的组织管理员
 #, elixir-autogen, elixir-format
 msgid "Unconfirmed"
 msgstr "未确认"
+
+#: lib/kanban_web/live/board_live/membership.ex:238
+#, elixir-autogen, elixir-format
+msgid "This account is disabled, so it can't be added to the board."
+msgstr "此账户已停用，因此无法添加到看板。"

@@ -345,7 +345,7 @@ msgstr "Crear una nueva tarea"
 
 #: lib/kanban_web/live/archive_live/index.ex:474
 #: lib/kanban_web/live/archive_live/index.ex:499
-#: lib/kanban_web/live/board_live/show.ex:205
+#: lib/kanban_web/live/board_live/show.ex:194
 #: lib/kanban_web/live/board_live/task_actions.ex:323
 #, elixir-autogen, elixir-format
 msgid "Failed to delete task"
@@ -442,8 +442,8 @@ msgstr "Crítico"
 msgid "Defect"
 msgstr "Defecto"
 
-#: lib/kanban_web/live/board_live/show.ex:241
-#: lib/kanban_web/live/board_live/show.ex:442
+#: lib/kanban_web/live/board_live/show.ex:230
+#: lib/kanban_web/live/board_live/show.ex:437
 #: lib/kanban_web/live/board_live/task_actions.ex:95
 #: lib/kanban_web/live/board_live/task_actions.ex:161
 #, elixir-autogen, elixir-format
@@ -622,12 +622,13 @@ msgstr "Usuarios Actuales"
 msgid "Enter user email"
 msgstr "Ingresa correo del usuario"
 
-#: lib/kanban_web/live/board_live/membership.ex:187
+#: lib/kanban_web/live/board_live/membership.ex:171
+#: lib/kanban_web/live/board_live/membership.ex:201
 #, elixir-autogen, elixir-format
 msgid "Failed to add user to board"
 msgstr "Error al agregar usuario al tablero"
 
-#: lib/kanban_web/live/board_live/membership.ex:218
+#: lib/kanban_web/live/board_live/membership.ex:228
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "Error al eliminar usuario del tablero"
@@ -707,22 +708,22 @@ msgstr "Selecciona un usuario"
 msgid "Unassigned"
 msgstr "Sin asignar"
 
-#: lib/kanban_web/live/board_live/membership.ex:172
+#: lib/kanban_web/live/board_live/membership.ex:182
 #, elixir-autogen, elixir-format
 msgid "User added successfully"
 msgstr "Usuario agregado exitosamente"
 
-#: lib/kanban_web/live/board_live/membership.ex:133
+#: lib/kanban_web/live/board_live/membership.ex:136
 #, elixir-autogen, elixir-format
 msgid "User is already added to the board"
 msgstr "El usuario ya está agregado al tablero"
 
-#: lib/kanban_web/live/board_live/membership.ex:198
+#: lib/kanban_web/live/board_live/membership.ex:211
 #, elixir-autogen, elixir-format
 msgid "User not found"
 msgstr "Usuario no encontrado"
 
-#: lib/kanban_web/live/board_live/membership.ex:210
+#: lib/kanban_web/live/board_live/membership.ex:220
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr "Usuario eliminado exitosamente"
@@ -732,12 +733,12 @@ msgstr "Usuario eliminado exitosamente"
 msgid "Users must be already registered in the system in order to be added to Boards"
 msgstr "Los usuarios deben estar ya registrados en el sistema para ser agregados a los tableros"
 
-#: lib/kanban_web/live/board_live/membership.ex:130
+#: lib/kanban_web/live/board_live/membership.ex:133
 #, elixir-autogen, elixir-format
 msgid "You cannot add yourself to the board"
 msgstr "No puedes agregarte a ti mismo al tablero"
 
-#: lib/kanban_web/live/board_live/show.ex:137
+#: lib/kanban_web/live/board_live/show.ex:126
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can delete columns"
 msgstr "Solo el propietario del tablero puede eliminar columnas"
@@ -753,7 +754,7 @@ msgstr "Solo el propietario del tablero puede gestionar columnas"
 msgid "Only the board owner can create columns"
 msgstr "Solo el propietario del tablero puede crear columnas"
 
-#: lib/kanban_web/live/board_live/show.ex:267
+#: lib/kanban_web/live/board_live/show.ex:256
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can reorder columns"
 msgstr "Solo el propietario del tablero puede reordenar columnas"
@@ -1071,7 +1072,7 @@ msgstr "Contraseña restablecida exitosamente."
 msgid "Reset password"
 msgstr "Restablecer contraseña"
 
-#: lib/kanban_web/live/user_live/reset_password.ex:143
+#: lib/kanban_web/live/user_live/reset_password.ex:151
 #, elixir-autogen, elixir-format
 msgid "Reset password link is invalid or it has expired."
 msgstr "El enlace de restablecimiento de contraseña es inválido o ha expirado."
@@ -1163,7 +1164,7 @@ msgstr "Bloqueado"
 msgid "Cannot add columns to AI optimized boards"
 msgstr "No se pueden agregar columnas a los tableros optimizados para IA"
 
-#: lib/kanban_web/live/board_live/show.ex:142
+#: lib/kanban_web/live/board_live/show.ex:131
 #, elixir-autogen, elixir-format
 msgid "Cannot delete columns on AI optimized boards"
 msgstr "No se pueden eliminar columnas en los tableros optimizados para IA"
@@ -1173,7 +1174,7 @@ msgstr "No se pueden eliminar columnas en los tableros optimizados para IA"
 msgid "Cannot edit columns on AI optimized boards"
 msgstr "No se pueden editar columnas en los tableros optimizados para IA"
 
-#: lib/kanban_web/live/board_live/show.ex:272
+#: lib/kanban_web/live/board_live/show.ex:261
 #, elixir-autogen, elixir-format
 msgid "Cannot reorder columns on AI optimized boards"
 msgstr "No se pueden reordenar columnas en los tableros optimizados para IA"
@@ -1389,7 +1390,7 @@ msgstr "Al fallar (qué sucede)"
 
 #: lib/kanban_web/live/board_live/column_actions.ex:66
 #: lib/kanban_web/live/board_live/field_visibility.ex:45
-#: lib/kanban_web/live/board_live/show.ex:284
+#: lib/kanban_web/live/board_live/show.ex:273
 #, elixir-autogen, elixir-format
 msgid "Only board owners can change field visibility"
 msgstr "Solo los propietarios del tablero pueden cambiar la visibilidad de los campos"
@@ -2003,7 +2004,7 @@ msgstr "Tablero:"
 msgid "Delete"
 msgstr "Eliminar"
 
-#: lib/kanban_web/live/board_live/show.ex:187
+#: lib/kanban_web/live/board_live/show.ex:176
 #: lib/kanban_web/live/board_live/task_actions.ex:296
 #, elixir-autogen, elixir-format
 msgid "Failed to archive task"
@@ -2238,7 +2239,7 @@ msgstr "¡Todo listo!"
 msgid "You've completed all the steps in this guide."
 msgstr "Has completado todos los pasos de esta guía."
 
-#: lib/kanban_web/live/board_live/membership.ex:124
+#: lib/kanban_web/live/board_live/membership.ex:127
 #, elixir-autogen, elixir-format
 msgid "Could not find a user with that email address"
 msgstr "No se encontró ningún usuario con esa dirección de correo"
@@ -2739,7 +2740,7 @@ msgstr "Tablero no encontrado"
 msgid "Check this box if this task is for human workers only and should not be claimed by AI agents"
 msgstr "Marca esta casilla si esta tarea es solo para trabajadores humanos y no debe ser reclamada por agentes de IA"
 
-#: lib/kanban_web/live/board_live/show.ex:223
+#: lib/kanban_web/live/board_live/show.ex:212
 #: lib/kanban_web/live/board_live/task_actions.ex:255
 #, elixir-autogen, elixir-format
 msgid "Failed to move goal to Ready"
@@ -2948,7 +2949,7 @@ msgstr "Mensaje no encontrado."
 msgid "No messages yet."
 msgstr "Aún no hay mensajes."
 
-#: lib/kanban_web/live/board_live/show.ex:128
+#: lib/kanban_web/live/board_live/show.ex:390
 #, elixir-autogen, elixir-format
 msgid "Could not dismiss message."
 msgstr "No se pudo descartar el mensaje."
@@ -3012,7 +3013,7 @@ msgid "Let's build what's next, together."
 msgstr "Construyamos lo que sigue, juntos."
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:228
+#: lib/kanban_web/live/board_live/membership.ex:242
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "Solo el propietario del tablero puede gestionar la membresía del tablero"
@@ -3054,31 +3055,31 @@ msgid "While many large organizations attempt to improve outcomes by measuring p
 msgstr "Si bien muchas organizaciones grandes intentan mejorar los resultados midiendo la productividad, nuestra experiencia muestra que las verdaderas ganancias vienen de"
 
 #: lib/kanban_web/live/archive_live/index.ex:164
-#: lib/kanban_web/live/board_live/show.ex:183
+#: lib/kanban_web/live/board_live/show.ex:172
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to archive tasks on this board"
 msgstr "No tienes permiso para archivar tareas en este tablero"
 
 #: lib/kanban_web/live/archive_live/index.ex:490
-#: lib/kanban_web/live/board_live/show.ex:201
+#: lib/kanban_web/live/board_live/show.ex:190
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to delete tasks on this board"
 msgstr "No tienes permiso para eliminar tareas en este tablero"
 
-#: lib/kanban_web/live/board_live/show.ex:302
-#: lib/kanban_web/live/board_live/show.ex:317
-#: lib/kanban_web/live/board_live/show.ex:326
+#: lib/kanban_web/live/board_live/show.ex:291
+#: lib/kanban_web/live/board_live/show.ex:306
+#: lib/kanban_web/live/board_live/show.ex:315
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to manage API tokens"
 msgstr "No tiene permiso para administrar tokens de API"
 
-#: lib/kanban_web/live/board_live/show.ex:237
-#: lib/kanban_web/live/board_live/show.ex:438
+#: lib/kanban_web/live/board_live/show.ex:226
+#: lib/kanban_web/live/board_live/show.ex:433
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to move tasks on this board"
 msgstr "No tienes permiso para mover tareas en este tablero"
 
-#: lib/kanban_web/live/board_live/show.ex:219
+#: lib/kanban_web/live/board_live/show.ex:208
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to promote goals on this board"
 msgstr "No tienes permiso para promover objetivos en este tablero"
@@ -3148,7 +3149,7 @@ msgid "Failed to submit the issue. Please try again later."
 msgstr "Error al enviar el problema. Inténtalo de nuevo más tarde."
 
 #: lib/kanban_web/live/board_live/field_visibility.ex:30
-#: lib/kanban_web/live/board_live/show.ex:289
+#: lib/kanban_web/live/board_live/show.ex:278
 #, elixir-autogen, elixir-format
 msgid "Invalid field name"
 msgstr "Nombre de campo inválido"
@@ -4499,7 +4500,7 @@ msgstr "Trabajo en curso. Los hooks se ejecutan antes y después; el panel de ac
 
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
-#: lib/kanban_web/live/org_live/console.ex:336
+#: lib/kanban_web/live/org_live/console.ex:346
 #: lib/kanban_web/live/org_live/console.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Members"
@@ -6627,7 +6628,7 @@ msgstr "El agente escribe el código para completar la tarea."
 #: lib/kanban_web/live/admin/organization_live/form.ex:63
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #: lib/kanban_web/live/org_live/audit_log.html.heex:75
-#: lib/kanban_web/live/org_live/console.ex:335
+#: lib/kanban_web/live/org_live/console.ex:345
 #: lib/kanban_web/live/org_live/console.html.heex:49
 #, elixir-autogen, elixir-format
 msgid "Details"
@@ -7665,12 +7666,12 @@ msgstr "Objetivos asignados"
 msgid "Available Goals"
 msgstr "Objetivos disponibles"
 
-#: lib/kanban_web/live/target_live/form.ex:57
+#: lib/kanban_web/live/target_live/form.ex:59
 #, elixir-autogen, elixir-format
 msgid "Could not assign goal"
 msgstr "No se pudo asignar el objetivo"
 
-#: lib/kanban_web/live/target_live/form.ex:71
+#: lib/kanban_web/live/target_live/form.ex:72
 #, elixir-autogen, elixir-format
 msgid "Could not unassign goal"
 msgstr "No se pudo desasignar el objetivo"
@@ -7711,7 +7712,7 @@ msgstr "Aún no hay objetivos asignados a esta meta."
 msgid "No goals are available to assign."
 msgstr "No hay objetivos disponibles para asignar."
 
-#: lib/kanban_web/live/target_live/form.ex:141
+#: lib/kanban_web/live/target_live/form.ex:142
 #, elixir-autogen, elixir-format
 msgid "Only the target owner can edit this target"
 msgstr "Solo el propietario puede editar esta meta"
@@ -7726,12 +7727,12 @@ msgstr "Guardar meta"
 msgid "Target Date"
 msgstr "Fecha objetivo"
 
-#: lib/kanban_web/live/target_live/form.ex:106
+#: lib/kanban_web/live/target_live/form.ex:107
 #, elixir-autogen, elixir-format
 msgid "Target created successfully"
 msgstr "Meta creada correctamente"
 
-#: lib/kanban_web/live/target_live/form.ex:90
+#: lib/kanban_web/live/target_live/form.ex:91
 #, elixir-autogen, elixir-format
 msgid "Target updated successfully"
 msgstr "Meta actualizada correctamente"
@@ -10778,7 +10779,7 @@ msgid "Enter a valid email address. Nothing was changed."
 msgstr "Introduce una dirección de correo electrónico válida. No se ha cambiado nada."
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:254
-#: lib/kanban_web/live/org_live/console.ex:342
+#: lib/kanban_web/live/org_live/console.ex:352
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr "Miembro"
@@ -10789,7 +10790,7 @@ msgid "Only site admins appoint or remove org-admins."
 msgstr "Solo los administradores del sitio nombran o retiran administradores de la organización."
 
 #: lib/kanban_web/live/admin/organization_live/show.ex:253
-#: lib/kanban_web/live/org_live/console.ex:341
+#: lib/kanban_web/live/org_live/console.ex:351
 #, elixir-autogen, elixir-format
 msgid "Org-admin"
 msgstr "Administrador de la organización"
@@ -10850,7 +10851,7 @@ msgid "Everyone in your Organization, org-admins first."
 msgstr "Todas las personas de su organización, con los administradores de la organización primero."
 
 #: lib/kanban_web/components/side_nav.ex:256
-#: lib/kanban_web/live/org_live/console.ex:67
+#: lib/kanban_web/live/org_live/console.ex:69
 #, elixir-autogen, elixir-format
 msgid "Organization"
 msgstr "Organización"
@@ -10866,19 +10867,19 @@ msgstr "Secciones de la organización"
 msgid "Read-only. Ask a site admin to change them."
 msgstr "Solo lectura. Pida a un administrador del sitio que los cambie."
 
-#: lib/kanban_web/live/org_live/console.ex:59
-#: lib/kanban_web/live/org_live/console.ex:251
+#: lib/kanban_web/live/org_live/console.ex:61
+#: lib/kanban_web/live/org_live/console.ex:261
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
 #, elixir-autogen, elixir-format
 msgid "You must be an org-admin of an Organization to access this page."
 msgstr "Debe ser administrador de una organización para acceder a esta página."
 
-#: lib/kanban_web/live/org_live/console.ex:335
+#: lib/kanban_web/live/org_live/console.ex:345
 #, elixir-autogen, elixir-format
 msgid "name · address · contact"
 msgstr "nombre · dirección · contacto"
 
-#: lib/kanban_web/live/org_live/console.ex:336
+#: lib/kanban_web/live/org_live/console.ex:346
 #, elixir-autogen, elixir-format
 msgid "names · roles"
 msgstr "nombres · roles"
@@ -10939,12 +10940,12 @@ msgstr "Nombre del nuevo espacio de trabajo"
 msgid "Rename"
 msgstr "Renombrar"
 
-#: lib/kanban_web/live/org_live/console.ex:209
+#: lib/kanban_web/live/org_live/console.ex:219
 #, elixir-autogen, elixir-format
 msgid "The workspace could not be changed. Please try again."
 msgstr "No se pudo cambiar el espacio de trabajo. Inténtelo de nuevo."
 
-#: lib/kanban_web/live/org_live/console.ex:201
+#: lib/kanban_web/live/org_live/console.ex:211
 #, elixir-autogen, elixir-format
 msgid "This workspace still holds boards. Move them out before archiving it."
 msgstr "Este espacio de trabajo todavía contiene tableros. Muévalos antes de archivarlo."
@@ -10954,12 +10955,12 @@ msgstr "Este espacio de trabajo todavía contiene tableros. Muévalos antes de a
 msgid "Where your Organization's boards live. A workspace can be archived once it holds no boards."
 msgstr "Donde viven los tableros de su organización. Un espacio de trabajo se puede archivar cuando ya no contiene tableros."
 
-#: lib/kanban_web/live/org_live/console.ex:183
+#: lib/kanban_web/live/org_live/console.ex:193
 #, elixir-autogen, elixir-format
 msgid "Workspace archived."
 msgstr "Espacio de trabajo archivado."
 
-#: lib/kanban_web/live/org_live/console.ex:144
+#: lib/kanban_web/live/org_live/console.ex:154
 #, elixir-autogen, elixir-format
 msgid "Workspace created."
 msgstr "Espacio de trabajo creado."
@@ -10969,18 +10970,18 @@ msgstr "Espacio de trabajo creado."
 msgid "Workspace name"
 msgstr "Nombre del espacio de trabajo"
 
-#: lib/kanban_web/live/org_live/console.ex:215
+#: lib/kanban_web/live/org_live/console.ex:225
 #, elixir-autogen, elixir-format
 msgid "Workspace not found."
 msgstr "Espacio de trabajo no encontrado."
 
-#: lib/kanban_web/live/org_live/console.ex:178
+#: lib/kanban_web/live/org_live/console.ex:188
 #, elixir-autogen, elixir-format
 msgid "Workspace renamed."
 msgstr "Espacio de trabajo renombrado."
 
 #: lib/kanban_web/components/locked_feature.ex:139
-#: lib/kanban_web/live/org_live/console.ex:337
+#: lib/kanban_web/live/org_live/console.ex:347
 #: lib/kanban_web/live/org_live/console.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Workspaces"
@@ -10996,7 +10997,7 @@ msgstr "Su organización aún no tiene espacios de trabajo."
 msgid "Your Organization's details, members and workspaces. Only a site admin changes the details or appoints org-admins."
 msgstr "Los datos, los miembros y los espacios de trabajo de su organización. Solo un administrador del sitio cambia los datos o nombra administradores de la organización."
 
-#: lib/kanban_web/live/org_live/console.ex:337
+#: lib/kanban_web/live/org_live/console.ex:347
 #, elixir-autogen, elixir-format
 msgid "create · rename · archive"
 msgstr "crear · renombrar · archivar"
@@ -11006,7 +11007,7 @@ msgstr "crear · renombrar · archivar"
 msgid "A board still sits in this user's personal workspace, so they cannot be deleted."
 msgstr "Todavía hay un tablero en el espacio de trabajo personal de este usuario, por lo que no se puede eliminar."
 
-#: lib/kanban_web/live/org_live/console.ex:176
+#: lib/kanban_web/live/org_live/console.ex:186
 #, elixir-autogen, elixir-format
 msgid "No changes to save."
 msgstr "No hay cambios que guardar."
@@ -11173,12 +11174,12 @@ msgctxt "audit action"
 msgid "Two-factor sign-in succeeded"
 msgstr "Inicio de sesión de dos factores correcto"
 
-#: lib/kanban_web/live/board_live/membership.ex:91
+#: lib/kanban_web/live/board_live/membership.ex:94
 #, elixir-autogen, elixir-format
 msgid "%{count} of %{cap} people"
 msgstr "%{count} de %{cap} personas"
 
-#: lib/kanban_web/live/board_live/membership.ex:102
+#: lib/kanban_web/live/board_live/membership.ex:105
 #, elixir-autogen, elixir-format
 msgid "Free boards hold %{cap} people. To add more, move this board to a paid plan."
 msgstr "Los tableros gratuitos admiten %{cap} personas. Para agregar más, pasa este tablero a un plan de pago."
@@ -11188,12 +11189,12 @@ msgstr "Los tableros gratuitos admiten %{cap} personas. Para agregar más, pasa 
 msgid "See paid plans"
 msgstr "Ver planes de pago"
 
-#: lib/kanban_web/live/board_live/membership.ex:117
+#: lib/kanban_web/live/board_live/membership.ex:120
 #, elixir-autogen, elixir-format
 msgid "This board is full."
 msgstr "Este tablero está lleno."
 
-#: lib/kanban_web/live/board_live/membership.ex:114
+#: lib/kanban_web/live/board_live/membership.ex:117
 #, elixir-autogen, elixir-format
 msgid "This board is full. Free boards hold %{cap} people."
 msgstr "Este tablero está lleno. Los tableros gratuitos admiten %{cap} personas."
@@ -11265,7 +11266,7 @@ msgstr "Evento de telemetría y Métricas a seguir requieren un tablero en una o
 msgid "This account is disabled and can't sign in. It still takes a seat."
 msgstr "Esta cuenta está deshabilitada y no puede iniciar sesión. Aun así ocupa una plaza."
 
-#: lib/kanban_web/live/board_live/membership.ex:214
+#: lib/kanban_web/live/board_live/membership.ex:224
 #, elixir-autogen, elixir-format
 msgid "The board owner can't be removed."
 msgstr "No se puede quitar al propietario del tablero."
@@ -11289,3 +11290,8 @@ msgstr "Este usuario es el único administrador de la organización activo de un
 #, elixir-autogen, elixir-format
 msgid "Unconfirmed"
 msgstr "Sin confirmar"
+
+#: lib/kanban_web/live/board_live/membership.ex:238
+#, elixir-autogen, elixir-format
+msgid "This account is disabled, so it can't be added to the board."
+msgstr "Esta cuenta está desactivada, por lo que no se puede agregar al tablero."

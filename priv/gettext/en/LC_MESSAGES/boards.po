@@ -4,27 +4,27 @@ msgstr ""
 "Language: en\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/kanban_web/live/board_live/column_actions.ex:102
+#: lib/kanban_web/live/board_live/column_actions.ex:107
 #, elixir-autogen, elixir-format
 msgid "Backlog"
 msgstr "Backlog"
 
-#: lib/kanban_web/live/board_live/column_actions.ex:104
+#: lib/kanban_web/live/board_live/column_actions.ex:109
 #, elixir-autogen, elixir-format
 msgid "Doing"
 msgstr "Doing"
 
-#: lib/kanban_web/live/board_live/column_actions.ex:106
+#: lib/kanban_web/live/board_live/column_actions.ex:111
 #, elixir-autogen, elixir-format
 msgid "Done"
 msgstr "Done"
 
-#: lib/kanban_web/live/board_live/column_actions.ex:103
+#: lib/kanban_web/live/board_live/column_actions.ex:108
 #, elixir-autogen, elixir-format
 msgid "Ready"
 msgstr "Ready"
 
-#: lib/kanban_web/live/board_live/column_actions.ex:105
+#: lib/kanban_web/live/board_live/column_actions.ex:110
 #, elixir-autogen, elixir-format
 msgid "Review"
 msgstr "Review"

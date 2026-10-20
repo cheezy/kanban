@@ -7,7 +7,8 @@ defmodule Kanban.Boards.MembershipChanges do
   locks the board row, counts its members and asks
   `Kanban.Plans.member_cap_reached?/2`, and `member_cap_status/1` returns the
   same count and cap for the members screen. Removals and access changes are
-  never capped.
+  never capped. A disabled account is never added, since it cannot sign in
+  and would only take a seat.
 
   The owner's own row can be neither removed nor demoted: either would leave
   the board with no owner, invisible to everyone and stranded in the old
@@ -31,6 +32,7 @@ defmodule Kanban.Boards.MembershipChanges do
 
   import Ecto.Query, only: [from: 2]
 
+  alias Kanban.Accounts.User
   alias Kanban.ApiTokens
   alias Kanban.Boards
   alias Kanban.Boards.Board
@@ -55,7 +57,9 @@ defmodule Kanban.Boards.MembershipChanges do
   user who is already a member is never refused by the cap; it fails on the
   membership's uniqueness as before. A caller who does not own the board gets
   `{:error, :unauthorized}` before anything is counted, and a board deleted
-  after it was loaded gives `{:error, :not_found}`.
+  after it was loaded gives `{:error, :not_found}`. A disabled account, read
+  from the database, gives `{:error, :user_disabled}` and nothing is
+  written: it cannot sign in, and on a free board it would take a seat.
 
   ## Examples
 
@@ -125,6 +129,7 @@ defmodule Kanban.Boards.MembershipChanges do
       BoardUser.changeset(%BoardUser{}, %{board_id: board.id, user_id: user.id, access: access})
 
     Ecto.Multi.new()
+    |> Ecto.Multi.run(:enabled, fn repo, _changes -> check_enabled(repo, user.id) end)
     |> Ecto.Multi.run(:member_cap, fn repo, _changes ->
       check_member_cap(repo, board.id, user.id)
     end)
@@ -147,6 +152,17 @@ defmodule Kanban.Boards.MembershipChanges do
       if already_member == 0 and Plans.member_cap_reached?(board_id, count),
         do: {:error, :member_cap_reached},
         else: {:ok, count}
+    end
+  end
+
+  # Read from the database, so a struct loaded before the account was disabled
+  # is refused too. A user whose row is gone is left to the insert's foreign key.
+  defp check_enabled(repo, user_id) do
+    disabled_query = from(u in User, where: u.id == ^user_id, select: not is_nil(u.disabled_at))
+
+    case repo.one(disabled_query) do
+      true -> {:error, :user_disabled}
+      _enabled_or_gone -> {:ok, user_id}
     end
   end
 
