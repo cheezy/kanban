@@ -36,6 +36,7 @@ defmodule Kanban.Organizations.OrgWorkspaces do
 
   alias Ecto.Changeset
   alias Kanban.Accounts.User
+  alias Kanban.ApiTokens
   alias Kanban.Boards.Board
   alias Kanban.Organizations
   alias Kanban.Organizations.OrganizationMember
@@ -141,6 +142,10 @@ defmodule Kanban.Organizations.OrgWorkspaces do
   counted, so a board cannot be moved into it between the check and the
   archive.
 
+  Archiving revokes the workspace's API tokens in the same transaction: an
+  archived workspace holds no boards and cannot be unarchived, so its tokens
+  could never be used again.
+
   ## Examples
 
       iex> archive_workspace(org_admin, empty_workspace.id)
@@ -170,6 +175,7 @@ defmodule Kanban.Organizations.OrgWorkspaces do
     with {:ok, workspace} <- fetch_workspace(workspace_id, organization_id, lock: true),
          :ok <- check_no_boards(workspace),
          {:ok, archived} <- workspace |> archive_changeset() |> Repo.update() do
+      ApiTokens.revoke_workspace_tokens(archived.id)
       archived
     else
       {:error, reason} -> Repo.rollback(reason)

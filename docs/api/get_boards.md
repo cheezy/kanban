@@ -24,8 +24,9 @@ A token is one of two kinds:
 
 ### Naming the board with a workspace token
 
-With a workspace token, every request except `GET /api/boards` must name the
-board it acts on by id. Use either of these:
+With a workspace token, every request except `GET /api/boards` and the
+[MCP endpoint's](../MCP.md#authentication) discovery calls must name the board
+it acts on by id. Use either of these:
 
 - the `X-Stride-Board` header, for example `X-Stride-Board: 42`
 - the `board_id` parameter, in the query string or the JSON body
@@ -47,8 +48,8 @@ The `404` body is the same in every case, so a response never tells you
 whether a board you cannot use exists.
 
 A workspace token is revoked when its user stops being an org-admin of the
-Organization, or is removed from the workspace. It expires after 90 days, like a
-board token.
+Organization, when they are removed from the workspace, or when the workspace
+is archived. It expires after 90 days, like a board token.
 
 ## Request
 

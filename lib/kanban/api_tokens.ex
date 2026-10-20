@@ -350,6 +350,7 @@ defmodule Kanban.ApiTokens do
   defdelegate list_workspace_api_tokens(actor, workspace), to: WorkspaceTokens
   defdelegate revoke_workspace_api_token(actor, workspace, token_id), to: WorkspaceTokens
   defdelegate revoke_user_workspace_tokens(user_id, organization_id), to: WorkspaceTokens
+  defdelegate revoke_workspace_tokens(workspace_id), to: WorkspaceTokens
   defdelegate fetch_workspace_board(api_token, selector), to: WorkspaceTokens
   defdelegate list_token_boards(api_token), to: WorkspaceTokens
   defdelegate token_scope(api_token), to: WorkspaceTokens

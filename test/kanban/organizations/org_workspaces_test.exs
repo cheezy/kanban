@@ -7,6 +7,8 @@ defmodule Kanban.Organizations.OrgWorkspacesTest do
   import Kanban.TelemetryHelpers
   import Kanban.WorkspacesFixtures
 
+  alias Kanban.ApiTokens
+  alias Kanban.ApiTokens.ApiToken
   alias Kanban.AuditLog
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrgWorkspaces
@@ -319,18 +321,63 @@ defmodule Kanban.Organizations.OrgWorkspacesTest do
       refute_name_in(event)
     end
 
+    test "revokes the workspace's tokens and no others", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      workspace = org_workspace_fixture(organization)
+      other = org_workspace_fixture(organization)
+
+      {:ok, {first, plain}} =
+        ApiTokens.create_workspace_api_token(org_admin, workspace, %{name: "Fleet"})
+
+      {:ok, {second, _}} =
+        ApiTokens.create_workspace_api_token(org_admin, workspace, %{name: "Fleet"})
+
+      {:ok, {elsewhere, _}} =
+        ApiTokens.create_workspace_api_token(org_admin, other, %{name: "Fleet"})
+
+      assert {:ok, _} = OrgWorkspaces.archive_workspace(org_admin, workspace.id)
+
+      assert %ApiToken{revoked_at: %DateTime{}} = Repo.get!(ApiToken, first.id)
+      assert %ApiToken{revoked_at: %DateTime{}} = Repo.get!(ApiToken, second.id)
+      assert %ApiToken{revoked_at: nil} = Repo.get!(ApiToken, elsewhere.id)
+      assert ApiTokens.get_api_token_by_token(plain) == {:error, :revoked}
+    end
+
+    test "keeps the revocation time of a token revoked earlier", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      workspace = org_workspace_fixture(organization)
+
+      {:ok, {token, _}} =
+        ApiTokens.create_workspace_api_token(org_admin, workspace, %{name: "Fleet"})
+
+      revoked_at = ~U[2026-01-01 00:00:00Z]
+      token |> Ecto.Changeset.change(revoked_at: revoked_at) |> Repo.update!()
+
+      assert {:ok, _} = OrgWorkspaces.archive_workspace(org_admin, workspace.id)
+      assert Repo.get!(ApiToken, token.id).revoked_at == revoked_at
+    end
+
     test "is refused while the workspace holds boards", %{
       organization: organization,
       org_admin: org_admin
     } do
       workspace = org_workspace_fixture(organization)
       put_board_in(workspace, org_admin)
+
+      {:ok, {token, _}} =
+        ApiTokens.create_workspace_api_token(org_admin, workspace, %{name: "Fleet"})
+
       attach_telemetry(@archived)
 
       assert {:error, :workspace_has_boards} =
                OrgWorkspaces.archive_workspace(org_admin, workspace.id)
 
       assert is_nil(Repo.get!(Workspace, workspace.id).archived_at)
+      assert %ApiToken{revoked_at: nil} = Repo.get!(ApiToken, token.id)
       refute_reported(@archived, :org_workspace_archived, org_admin)
     end
 

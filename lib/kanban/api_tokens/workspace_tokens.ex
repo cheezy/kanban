@@ -5,7 +5,8 @@ defmodule Kanban.ApiTokens.WorkspaceTokens do
   A workspace token belongs to an Organization workspace instead of a board,
   so one credential reaches every board of that workspace its user can work on.
   Only an enabled org-admin of the workspace's Organization creates or revokes
-  one, and the token acts as that user.
+  one, and the token acts as that user. Archiving the workspace revokes all of
+  its tokens (`revoke_workspace_tokens/1`).
 
   The token stores no board and no access grant. Every request names its board
   (`KanbanWeb.Plugs.AuthenticateApiToken`), and `fetch_workspace_board/2`
@@ -47,7 +48,10 @@ defmodule Kanban.ApiTokens.WorkspaceTokens do
   The org-admin check and the insert share one transaction that first takes a
   share lock on the Organization row, so a removal of the org-admin that
   commits first is seen and the token refused, and one that starts later waits
-  for the insert and then revokes the new token with the others.
+  for the insert and then revokes the new token with the others. The workspace
+  row is read under a share lock too, so an archive that commits first is seen
+  (`{:error, :archived}`), and one that starts later waits for the insert and
+  then revokes the new token.
 
   `attrs` takes the same fields as a board token (`name`, `agent_capabilities`,
   ...). Any `user_id` or `workspace_id` in it is overwritten.
@@ -80,7 +84,7 @@ defmodule Kanban.ApiTokens.WorkspaceTokens do
   end
 
   defp manageable_workspace(user, workspace_id) do
-    case workspace_id && Repo.get(Workspace, workspace_id) do
+    case workspace_id && lock_workspace(workspace_id) do
       %Workspace{personal: false, organization_id: org_id} = workspace
       when is_integer(org_id) ->
         authorize_manager(user, workspace)
@@ -96,6 +100,11 @@ defmodule Kanban.ApiTokens.WorkspaceTokens do
       not is_nil(workspace.archived_at) -> {:error, :archived}
       true -> {:ok, workspace}
     end
+  end
+
+  defp lock_workspace(workspace_id) do
+    from(w in Workspace, where: w.id == ^workspace_id, lock: "FOR SHARE")
+    |> Repo.one()
   end
 
   defp insert_token(user, workspace, attrs) do
@@ -229,6 +238,29 @@ defmodule Kanban.ApiTokens.WorkspaceTokens do
           t.user_id == ^user_id and is_nil(t.revoked_at) and
             t.workspace_id in subquery(workspace_ids)
       )
+      |> Repo.update_all(set: [revoked_at: DateTime.utc_now(:second)])
+
+    count
+  end
+
+  @doc """
+  Revokes every active token of the workspace with `workspace_id`, with one
+  `update_all`. Call it inside the transaction that archives the workspace,
+  after locking the workspace row; it emits no telemetry, because that
+  transaction may still roll back.
+
+  Returns the number of tokens revoked.
+
+  ## Examples
+
+      iex> revoke_workspace_tokens(workspace.id)
+      2
+
+  """
+  @spec revoke_workspace_tokens(integer()) :: non_neg_integer()
+  def revoke_workspace_tokens(workspace_id) when is_integer(workspace_id) do
+    {count, _} =
+      from(t in ApiToken, where: t.workspace_id == ^workspace_id and is_nil(t.revoked_at))
       |> Repo.update_all(set: [revoked_at: DateTime.utc_now(:second)])
 
     count
