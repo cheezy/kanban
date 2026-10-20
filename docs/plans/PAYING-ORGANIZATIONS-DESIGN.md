@@ -317,6 +317,7 @@ Rules this table encodes:
 - **Personal workspace boards:** `board_users` only, exactly as today, even for the workspace's owner.
 - **Legacy rows** are always honoured. A user who is on a board through `board_users` but outside the Organization keeps that access after the board moves into it.
 - A guessed board or workspace id from another Organization behaves like a nonexistent one.
+- **Public boards** are the one exception to "none". A board with `read_only: true` is readable, and only readable, by every signed-in user who would otherwise have none (no `board_users` row and no derived org-admin access), in any workspace and from any Organization (`Boards.get_board/2` returns it with `user_access: nil`). This is intended; see [open question 14](#152-open-questions).
 
 Owner-equivalent access opens every action that gates on `owner?/2`: edit, settings, members, API tokens, archive and delete. Whether delete is too strong for a derived role is an open question carried from the briefing (see [Risks and open questions](#15-risks-and-open-questions)).
 
@@ -416,6 +417,7 @@ The flag is read at call time, never with `compile_env`, because launch flips it
 - Boards in org workspaces have no cap.
 - The cap applies only while plans are enforced.
 - Removals and access changes (`remove_user_from_board/3`, `update_user_access/4`, including ownership transfer) are never capped.
+- Readers of a public board are never counted. A board with `read_only: true` is readable by every signed-in user, not only its members (`Boards.get_board/2`). Those readers have no `board_users` row, so `member_cap_status/1` never counts them, and adding rows for them would change who has access. This is intended: public boards stay free with any number of readers (decided 2026-10-20; see [open question 14](#152-open-questions)). The cap limits who can work on a free board, not who can read a board its owner made public. Making a board public shows everything on it to every signed-in user.
 
 ### Grandfathering by count
 
@@ -1038,7 +1040,7 @@ Raised while writing this design, or carried from the G442 briefing:
 11. **What follows the current workspace.** Only `/boards` follows the switcher. My Work, Agents, Review queue, Metrics and targets stay cross-workspace; the "Workspace" label on the nav landmark, the `/boards` breadcrumb and `MetricsLive.Workspace` may confuse people (briefing §9.1).
 12. **Invitation rate limits.** Thresholds for the `:invite` surface are not specified. (Locked-feature clicks are counted once per user and feature a week; see 7.9.)
 13. **The launch date.** The changelog entry keeps the date sentence easy to edit until the team agrees one.
-14. **Public read-only boards and the cap.** A board with `read_only: true` is readable by every signed-in user (`Boards.get_board/2`), and the free-board cap counts only `board_users` rows. So a free team can share a board with any number of readers. Decide whether that is intended, or whether public boards should be paid, capped or limited to Organizations. (Raised by the follow-up exploratory session.)
+14. **Public read-only boards and the cap.** *Settled (2026-10-20, Jeffrey S. Morgan, product owner):* intended. Public boards stay free, with any number of readers, in personal and Organization workspaces alike; they are not paid, capped or limited to Organizations (option A in W2422). Why: the cap limits who can work on a free board, and a reader of a public board can only read it. Readers have no `board_users` row, and adding rows for them would change who has access, so the cap never counts them (see [The free-board cap](#6-the-free-board-cap)). No code changes: `Boards.get_board/2` already gives every signed-in user without other access a read-only view of a board with `read_only: true`, and only a caller with owner access (including derived org-admin access) can set that flag. Public boards expose their content to every signed-in user, not only to members; anonymous visitors cannot see them. Owners should make a board public only when everything on it may be seen by anyone with an account. (Raised by the follow-up exploratory session.)
 
 ### 15.3 Decisions that supersede earlier sources
 
