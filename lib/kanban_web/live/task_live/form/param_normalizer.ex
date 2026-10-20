@@ -12,6 +12,7 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
   """
 
   alias Kanban.Plans
+  alias KanbanWeb.IdParams
 
   @array_fields ~w[dependencies required_capabilities technology_requirements pitfalls out_of_scope security_considerations]
 
@@ -168,11 +169,24 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizer do
     end
   end
 
+  # The keys and rows come from the client, so an entry whose key is not a
+  # list position or whose row is not a map is dropped rather than raising
+  # (D384); valid rows keep their numeric order.
   defp indexed_map_to_list(value) do
     value
-    |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
-    |> Enum.map(fn {_k, v} -> Map.delete(v, "_persistent_id") end)
+    |> Enum.flat_map(&indexed_row/1)
+    |> Enum.sort_by(fn {index, _row} -> index end)
+    |> Enum.map(fn {_index, row} -> Map.delete(row, "_persistent_id") end)
   end
+
+  defp indexed_row({key, row}) when is_map(row) do
+    case IdParams.parse_index(key) do
+      {:ok, index} -> [{index, row}]
+      :error -> []
+    end
+  end
+
+  defp indexed_row(_entry), do: []
 
   defp normalize_testing_strategy(params) do
     normalize_map_with_arrays(params, "testing_strategy", [

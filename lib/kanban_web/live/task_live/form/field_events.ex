@@ -22,6 +22,8 @@ defmodule KanbanWeb.TaskLive.Form.FieldEvents do
 
   import Phoenix.Component, only: [assign: 3, to_form: 1]
 
+  alias KanbanWeb.IdParams
+
   # event name => array column
   @array_events %{
     "add-technology" => :technology_requirements,
@@ -68,13 +70,20 @@ defmodule KanbanWeb.TaskLive.Form.FieldEvents do
   Applies a mapped add/remove event, returning the usual `{:noreply, socket}`.
 
   Raises `KeyError` for an unmapped event — callers guard on `events/0` first.
+  A remove event whose `index` is not a valid list position (non-numeric,
+  negative or oversized — the client sends it) changes nothing (D384).
   """
   def handle("add-" <> _ = event, _params, socket) do
     add_row(socket, Map.fetch!(@events, event))
   end
 
   def handle("remove-" <> _ = event, params, socket) do
-    remove_row(socket, Map.fetch!(@events, event), params["index"])
+    field = Map.fetch!(@events, event)
+
+    case IdParams.parse_index(params["index"]) do
+      {:ok, index} -> remove_row(socket, field, index)
+      :error -> {:noreply, socket}
+    end
   end
 
   defp add_row(socket, field) when is_atom(field), do: add_to_array(socket, field)
@@ -95,7 +104,7 @@ defmodule KanbanWeb.TaskLive.Form.FieldEvents do
   defp remove_from_array(socket, field, index) do
     list = current_value(socket, field) || []
 
-    put_change(socket, field, List.delete_at(list, parse_index(index)))
+    put_change(socket, field, List.delete_at(list, index))
   end
 
   defp add_to_map_array(socket, field, key) do
@@ -108,7 +117,7 @@ defmodule KanbanWeb.TaskLive.Form.FieldEvents do
   defp remove_from_map_array(socket, field, key, index) do
     existing_map = current_value(socket, field) || %{}
     existing_list = Map.get(existing_map, key, [])
-    new_list = List.delete_at(existing_list, parse_index(index))
+    new_list = List.delete_at(existing_list, index)
 
     put_change(socket, field, Map.put(existing_map, key, new_list))
   end
@@ -125,11 +134,4 @@ defmodule KanbanWeb.TaskLive.Form.FieldEvents do
 
     {:noreply, assign(socket, :form, to_form(changeset))}
   end
-
-  defp parse_index(index) when is_binary(index) do
-    {parsed, _rest} = Integer.parse(index)
-    parsed
-  end
-
-  defp parse_index(index) when is_integer(index), do: index
 end

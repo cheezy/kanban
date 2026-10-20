@@ -92,4 +92,53 @@ defmodule KanbanWeb.TaskLive.Form.ParamNormalizerTest do
              }
     end
   end
+
+  describe "normalize_array_params/1 with indexed embed maps (D384)" do
+    test "orders numeric keys and drops _persistent_id" do
+      params = %{
+        "key_files" => %{
+          "10" => %{"file_path" => "lib/c.ex", "_persistent_id" => "10"},
+          "2" => %{"file_path" => "lib/b.ex", "_persistent_id" => "2"},
+          "0" => %{"file_path" => "lib/a.ex", "_persistent_id" => "0"}
+        }
+      }
+
+      assert ParamNormalizer.normalize_array_params(params)["key_files"] == [
+               %{"file_path" => "lib/a.ex"},
+               %{"file_path" => "lib/b.ex"},
+               %{"file_path" => "lib/c.ex"}
+             ]
+    end
+
+    test "non-numeric indexed keys do not raise" do
+      for field <- ~w[key_files verification_steps behaviour_test_matrix] do
+        params = %{
+          field => %{
+            "x" => %{"note" => "crafted key"},
+            "1abc" => %{"note" => "trailing junk"},
+            "-1" => %{"note" => "negative"},
+            "1" => %{"note" => "second"},
+            "0" => %{"note" => "first"}
+          }
+        }
+
+        assert ParamNormalizer.normalize_array_params(params)[field] == [
+                 %{"note" => "first"},
+                 %{"note" => "second"}
+               ]
+      end
+    end
+
+    test "a row that is not a map is dropped rather than raising" do
+      params = %{"key_files" => %{"0" => "not a row", "1" => %{"file_path" => "lib/a.ex"}}}
+
+      assert ParamNormalizer.normalize_array_params(params)["key_files"] == [
+               %{"file_path" => "lib/a.ex"}
+             ]
+
+      assert ParamNormalizer.normalize_array_params(%{"key_files" => %{"x" => %{}}})[
+               "key_files"
+             ] == []
+    end
+  end
 end

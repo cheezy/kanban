@@ -9,6 +9,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
 
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias KanbanWeb.IdParams
   alias KanbanWeb.ReviewReportPanel
   alias KanbanWeb.TaskLive.Form.FieldEvents
   alias KanbanWeb.TaskLive.Form.LabelSelection
@@ -151,15 +152,8 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     put_embed_rows(socket, :key_files, key_files)
   end
 
-  def handle_event("remove-key-file", %{"index" => index}, socket) do
-    {index, _} = Integer.parse(index)
-
-    key_files =
-      (Ecto.Changeset.get_field(socket.assigns.form.source, :key_files) || [])
-      |> List.delete_at(index)
-
-    put_embed_rows(socket, :key_files, key_files)
-  end
+  def handle_event("remove-key-file", params, socket),
+    do: remove_embed_row(socket, :key_files, params["index"])
 
   def handle_event("add-verification-step", _params, socket) do
     existing = Ecto.Changeset.get_field(socket.assigns.form.source, :verification_steps) || []
@@ -168,15 +162,8 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     put_embed_rows(socket, :verification_steps, steps)
   end
 
-  def handle_event("remove-verification-step", %{"index" => index}, socket) do
-    {index, _} = Integer.parse(index)
-
-    steps =
-      (Ecto.Changeset.get_field(socket.assigns.form.source, :verification_steps) || [])
-      |> List.delete_at(index)
-
-    put_embed_rows(socket, :verification_steps, steps)
-  end
+  def handle_event("remove-verification-step", params, socket),
+    do: remove_embed_row(socket, :verification_steps, params["index"])
 
   def handle_event("add-behaviour-test-row", _params, socket) do
     existing = Ecto.Changeset.get_field(socket.assigns.form.source, :behaviour_test_matrix) || []
@@ -185,15 +172,8 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     put_embed_rows(socket, :behaviour_test_matrix, rows)
   end
 
-  def handle_event("remove-behaviour-test-row", %{"index" => index}, socket) do
-    {index, _} = Integer.parse(index)
-
-    rows =
-      (Ecto.Changeset.get_field(socket.assigns.form.source, :behaviour_test_matrix) || [])
-      |> List.delete_at(index)
-
-    put_embed_rows(socket, :behaviour_test_matrix, rows)
-  end
+  def handle_event("remove-behaviour-test-row", params, socket),
+    do: remove_embed_row(socket, :behaviour_test_matrix, params["index"])
 
   def handle_event("add-capability-from-select", %{"new_capability" => capability}, socket)
       when capability != "" do
@@ -228,6 +208,19 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   defp put_embed_rows(socket, field, rows) do
     changeset = Ecto.Changeset.put_embed(socket.assigns.form.source, field, rows)
     {:noreply, assign_form(socket, changeset)}
+  end
+
+  # The index comes from the client, so a crafted one (non-numeric, negative
+  # or oversized) changes nothing rather than crashing the form (D384).
+  defp remove_embed_row(socket, field, index) do
+    case IdParams.parse_index(index) do
+      {:ok, index} ->
+        rows = Ecto.Changeset.get_field(socket.assigns.form.source, field) || []
+        put_embed_rows(socket, field, List.delete_at(rows, index))
+
+      :error ->
+        {:noreply, socket}
+    end
   end
 
   # Only refresh the raw assign when the textarea actually posted (field visible);

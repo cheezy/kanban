@@ -41,6 +41,31 @@ defmodule KanbanWeb.IdParamsTest do
     end
   end
 
+  describe "parse_index/1" do
+    test "parse_index accepts 0 and refuses negative and oversized values" do
+      assert IdParams.parse_index("0") == {:ok, 0}
+      assert IdParams.parse_index(0) == {:ok, 0}
+      assert IdParams.parse_index("3") == {:ok, 3}
+      assert IdParams.parse_index(10_000) == {:ok, 10_000}
+      assert IdParams.parse_index("10000") == {:ok, 10_000}
+
+      for index <- ["-1", -1, 10_001, "10001", "99999999999999999999"] do
+        assert IdParams.parse_index(index) == :error, "expected #{inspect(index)} to be refused"
+      end
+    end
+
+    test "parse_index refuses empty and nil" do
+      assert IdParams.parse_index("") == :error
+      assert IdParams.parse_index(nil) == :error
+    end
+
+    test "refuses anything that is not exactly a list position" do
+      for index <- ["abc", "1x", "1abc", " 1", "1 ", "1.5", 1.0, %{}, ["0"], :zero] do
+        assert IdParams.parse_index(index) == :error, "expected #{inspect(index)} to be refused"
+      end
+    end
+  end
+
   describe "parse_list/1" do
     test "parses every element in order" do
       assert IdParams.parse_list(["3", 1, "2"]) == {:ok, [3, 1, 2]}

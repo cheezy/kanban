@@ -4572,4 +4572,144 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert label_ids(ctx, task) == []
     end
   end
+
+  describe "crafted row indexes (D384)" do
+    setup do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Stored title",
+          pitfalls: ["First pitfall", "Second pitfall"],
+          testing_strategy: %{"unit_tests" => ["First unit test", "Second unit test"]},
+          key_files: [
+            %{file_path: "lib/first.ex", note: "First", position: 0},
+            %{file_path: "lib/second.ex", note: "Second", position: 1}
+          ],
+          verification_steps: [
+            %{step_type: "command", step_text: "mix test", expected_result: "Pass", position: 0},
+            %{step_type: "manual", step_text: "Check UI", expected_result: "Fine", position: 1}
+          ],
+          behaviour_test_matrix: matrix_rows()
+        })
+
+      socket = form_socket(user, board, column, task, :edit_task)
+
+      # Unsaved edit typed into the form (phx-change="validate").
+      {:noreply, socket} =
+        FormComponent.handle_event("validate", %{"task" => %{"title" => "Typed title"}}, socket)
+
+      %{socket: socket}
+    end
+
+    @crafted_indexes ["abc", "1abc", "1.5", "-1", "10001", "99999999999999999999", "", nil, -1]
+
+    defp rows(socket, field), do: Ecto.Changeset.get_field(socket.assigns.form.source, field)
+
+    test "crafted remove-* indexes change nothing and do not crash", %{socket: socket} do
+      for event <- ~w[remove-key-file remove-verification-step remove-behaviour-test-row],
+          params <- [%{} | Enum.map(@crafted_indexes, &%{"index" => &1})] do
+        assert {:noreply, ^socket} = FormComponent.handle_event(event, params, socket),
+               "#{event} with #{inspect(params)} changed the form"
+      end
+
+      assert rows(socket, :title) == "Typed title"
+      assert length(rows(socket, :key_files)) == 2
+      assert length(rows(socket, :verification_steps)) == 2
+      assert length(rows(socket, :behaviour_test_matrix)) == 7
+    end
+
+    test "a valid index still removes exactly that row", %{socket: socket} do
+      {:noreply, updated} =
+        FormComponent.handle_event("remove-key-file", %{"index" => "1"}, socket)
+
+      assert updated |> rows(:key_files) |> Enum.map(& &1.file_path) == ["lib/first.ex"]
+      assert rows(updated, :title) == "Typed title"
+
+      {:noreply, updated} =
+        FormComponent.handle_event("remove-verification-step", %{"index" => "0"}, socket)
+
+      assert updated |> rows(:verification_steps) |> Enum.map(& &1.step_text) == ["Check UI"]
+
+      {:noreply, updated} =
+        FormComponent.handle_event("remove-behaviour-test-row", %{"index" => "6"}, socket)
+
+      assert updated |> rows(:behaviour_test_matrix) |> Enum.map(& &1.category) ==
+               Enum.take(BehaviourTestRow.categories(), 6)
+
+      # Past the end of the list is a valid index that names no row.
+      {:noreply, updated} =
+        FormComponent.handle_event("remove-key-file", %{"index" => "5"}, socket)
+
+      assert length(rows(updated, :key_files)) == 2
+    end
+
+    test "field_events remove-* ignore a non-numeric index", %{socket: socket} do
+      for event <- ~w[remove-pitfall remove-unit-test],
+          params <- [%{} | Enum.map(@crafted_indexes, &%{"index" => &1})] do
+        assert {:noreply, ^socket} = FormComponent.handle_event(event, params, socket),
+               "#{event} with #{inspect(params)} changed the form"
+      end
+
+      {:noreply, updated} =
+        FormComponent.handle_event("remove-pitfall", %{"index" => "0"}, socket)
+
+      assert rows(updated, :pitfalls) == ["Second pitfall"]
+
+      {:noreply, updated} =
+        FormComponent.handle_event("remove-unit-test", %{"index" => "1"}, socket)
+
+      assert rows(updated, :testing_strategy)["unit_tests"] == ["First unit test"]
+    end
+  end
+
+  describe "crafted row indexes in the live edit form (D384)" do
+    setup :register_and_log_in_user
+
+    test "a crafted remove event or indexed map leaves the form alive with its rows",
+         %{conn: conn, user: user} do
+      board =
+        user
+        |> board_fixture()
+        |> Ecto.Changeset.change(field_visibility: %{"key_files" => true})
+        |> Kanban.Repo.update!()
+
+      column = column_fixture(board, %{name: "To Do"})
+
+      task =
+        task_fixture(column, %{
+          title: "Stored title",
+          key_files: [
+            %{file_path: "lib/first.ex", note: "First", position: 0},
+            %{file_path: "lib/second.ex", note: "Second", position: 1}
+          ]
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}/tasks/#{task}/edit")
+      remove_first = ~s(#task-form button[phx-click="remove-key-file"][phx-value-index="0"])
+
+      for index <- ["abc", "-1"] do
+        view |> element(remove_first) |> render_click(%{"index" => index})
+      end
+
+      assert Process.alive?(view.pid)
+      html = render(view)
+      assert html =~ "lib/first.ex"
+      assert html =~ "lib/second.ex"
+
+      view
+      |> element("#task-form")
+      |> render_change(%{
+        "task" => %{
+          "title" => "Typed title",
+          "key_files" => %{"x" => %{"file_path" => "lib/x.ex"}, "0" => "not a row"}
+        }
+      })
+
+      assert Process.alive?(view.pid)
+      assert render(view) =~ "Typed title"
+    end
+  end
 end
