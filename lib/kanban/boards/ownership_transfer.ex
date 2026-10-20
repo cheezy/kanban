@@ -9,9 +9,11 @@ defmodule Kanban.Boards.OwnershipTransfer do
   `Kanban.Boards.update_user_access/4`, which refuses to demote the owner's own
   row with `{:error, :owner_required}`.
 
-  Who may transfer:
+  Who may transfer (the actor's `disabled_at` is read from the database on
+  both paths, so a disabled account is refused even with a stale struct):
 
-    * the board's explicit owner (their own `board_users` owner row), or
+    * the board's explicit owner (their own `board_users` owner row) while
+      their account is enabled, or
     * an enabled org-admin of the Organization whose workspace holds the
       board. Derived org-admin access does not reach a board in a personal
       workspace.
@@ -55,8 +57,8 @@ defmodule Kanban.Boards.OwnershipTransfer do
   or changes nothing and returns:
 
     * `{:error, :not_found}` — no such board or user
-    * `{:error, :unauthorized}` — `actor` is neither the board's explicit owner
-      nor an enabled org-admin of the Organization holding it
+    * `{:error, :unauthorized}` — `actor` is neither the board's enabled
+      explicit owner nor an enabled org-admin of the Organization holding it
     * `{:error, :user_disabled}` — the new owner's account is disabled
     * `{:error, :not_a_member}` — the new owner has no row on the board
     * `{:error, :already_owner}` — the new owner already owns it
@@ -125,8 +127,12 @@ defmodule Kanban.Boards.OwnershipTransfer do
   defp authorized?(board, workspace, actor),
     do: owner_row?(board, actor) or org_admin_of_workspace?(workspace, actor)
 
+  # Joins the actor's user row so a disabled owner is refused, like the
+  # org-admin path (Organizations.org_admin?/2).
   defp owner_row?(%Board{id: board_id}, %User{id: user_id}) do
     from(bu in BoardUser,
+      join: u in assoc(bu, :user),
+      on: is_nil(u.disabled_at),
       where: bu.board_id == ^board_id and bu.user_id == ^user_id and bu.access == ^:owner
     )
     |> Repo.exists?()
@@ -235,8 +241,8 @@ defmodule Kanban.Boards.OwnershipTransfer do
   email. Each entry is a map with `:id`, `:name` and `:email`.
 
   Only someone allowed to transfer the board sees its members here: an
-  `actor` who is neither its explicit owner nor an enabled org-admin of the
-  Organization holding it gets `[]`.
+  `actor` who is neither its enabled explicit owner nor an enabled org-admin
+  of the Organization holding it gets `[]`.
   """
   @spec list_ownership_candidates(Board.t(), User.t()) :: [
           %{id: integer(), name: String.t() | nil, email: String.t()}

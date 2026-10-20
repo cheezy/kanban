@@ -211,6 +211,33 @@ defmodule Kanban.Boards.OwnershipTransferTest do
       assert {:error, :unauthorized} = Boards.transfer_board_ownership(board, member, org_admin)
     end
 
+    test "refuses a disabled explicit owner, read from the database, and changes nothing" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      member = user_fixture()
+      add_member(board, member)
+      workspace_id = board.workspace_id
+      # `owner` stays the stale, enabled struct: the check must read the row.
+      disable_directly(owner)
+
+      assert {:error, :unauthorized} = Boards.transfer_board_ownership(board, member, owner)
+
+      assert access_of(board, owner) == :owner
+      assert access_of(board, member) == :modify
+      assert Repo.get!(Board, board.id).workspace_id == workspace_id
+    end
+
+    test "refuses a disabled explicit owner of an org board" do
+      owner = user_fixture()
+      %{board: board} = org_board(owner)
+      member = user_fixture()
+      add_member(board, member)
+      disable_directly(owner)
+
+      assert {:error, :unauthorized} = Boards.transfer_board_ownership(board, member, owner)
+      assert access_of(board, owner) == :owner
+    end
+
     test "refuses an org-admin acting on a board in someone's personal workspace" do
       owner = user_fixture()
       board = board_fixture(owner)
@@ -258,6 +285,26 @@ defmodule Kanban.Boards.OwnershipTransferTest do
 
       assert Boards.list_ownership_candidates(board, member) == []
       assert Boards.list_ownership_candidates(board, outsider) == []
+    end
+
+    test "is empty for a disabled explicit owner" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      add_member(board, user_fixture())
+      disable_directly(owner)
+
+      assert Boards.list_ownership_candidates(board, owner) == []
+    end
+
+    test "is empty for a disabled org-admin of the board's Organization" do
+      owner = user_fixture()
+      %{organization: organization, board: board} = org_board(owner)
+      add_member(board, user_fixture())
+      org_admin = user_fixture()
+      organization_member_fixture(organization, org_admin, :org_admin)
+      disable_directly(org_admin)
+
+      assert Boards.list_ownership_candidates(board, org_admin) == []
     end
 
     test "lists the members for an org-admin of the board's Organization" do
