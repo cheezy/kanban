@@ -141,3 +141,11 @@ msgstr "debe ser una URL de webhook de Discord, por ejemplo https://discord.com/
 ## From Kanban.Tasks.Task.MapFieldValidations (W2382)
 msgid "entry %{position} looks like it contains a credential; remove the secret value and describe the risk in words"
 msgstr "la entrada %{position} parece contener una credencial; elimine el valor secreto y describa el riesgo con palabras"
+
+## From Kanban.Accounts.User and Kanban.Organizations.Organization (email format)
+msgid "must have the @ sign and no spaces"
+msgstr "debe contener el signo @ y no tener espacios"
+
+## From Kanban.Workspaces.Workspace (a NUL byte or invalid UTF-8 in a name)
+msgid "contains characters that are not allowed"
+msgstr "contiene caracteres no permitidos"

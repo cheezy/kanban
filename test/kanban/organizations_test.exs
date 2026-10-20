@@ -222,6 +222,19 @@ defmodule Kanban.OrganizationsTest do
     end
   end
 
+  describe "the contact email format error" do
+    test "the error is translated in every locale" do
+      for locale <- ~w(de es fr ja pt zh) do
+        translated =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            KanbanWeb.CoreComponents.translate_error({"must have the @ sign and no spaces", []})
+          end)
+
+        assert translated != "must have the @ sign and no spaces", "no #{locale} translation"
+      end
+    end
+  end
+
   describe "OrganizationMember.changeset/3" do
     test "sets the organization, user and role from its arguments" do
       organization = organization_fixture()

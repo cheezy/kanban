@@ -132,3 +132,11 @@ msgstr "必须是 Discord Webhook URL，例如 https://discord.com/api/webhooks/
 ## From Kanban.Tasks.Task.MapFieldValidations (W2382)
 msgid "entry %{position} looks like it contains a credential; remove the secret value and describe the risk in words"
 msgstr "第 %{position} 项似乎包含凭据；请删除秘密值，并用文字描述风险"
+
+## From Kanban.Accounts.User and Kanban.Organizations.Organization (email format)
+msgid "must have the @ sign and no spaces"
+msgstr "必须包含 @ 符号且不能有空格"
+
+## From Kanban.Workspaces.Workspace (a NUL byte or invalid UTF-8 in a name)
+msgid "contains characters that are not allowed"
+msgstr "包含不允许的字符"
