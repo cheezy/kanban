@@ -19,6 +19,8 @@ defmodule Kanban.Schemas.Task.BehaviourTestRow do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
+
   # The seven fixed categories. Single source of truth: matrix-level validations
   # and any UI must call `categories/0` rather than redefine this list.
   @categories [
@@ -64,6 +66,14 @@ defmodule Kanban.Schemas.Task.BehaviourTestRow do
   def changeset(row, attrs) do
     row
     |> cast(attrs, [:category, :behaviour, :test_name, :type, :status, :na_reason, :position])
+    |> ChangesetText.validate_storable([
+      :category,
+      :behaviour,
+      :test_name,
+      :type,
+      :status,
+      :na_reason
+    ])
     |> validate_required([:category, :behaviour, :status])
     |> validate_inclusion(:category, @categories)
     |> validate_inclusion(:status, @statuses)

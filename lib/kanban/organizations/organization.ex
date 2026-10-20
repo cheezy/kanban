@@ -13,6 +13,7 @@ defmodule Kanban.Organizations.Organization do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
   alias Kanban.Organizations.OrganizationMember
 
   @type t :: %__MODULE__{}
@@ -67,6 +68,7 @@ defmodule Kanban.Organizations.Organization do
   def changeset(%__MODULE__{} = organization, attrs) do
     organization
     |> cast(attrs, @fields)
+    |> ChangesetText.validate_storable(@fields)
     |> trim_fields()
     |> validate_required(@required_fields)
     |> validate_format(:contact_email, ~r/^[^@,;\s]+@[^@,;\s]+$/,

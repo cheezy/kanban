@@ -40,7 +40,7 @@ defmodule Kanban.Workspaces.Workspace do
       England's, which is built from tag characters, becomes a plain black
       flag.
     * A name with a NUL byte or invalid UTF-8 is refused on `:name`, rather
-      than failing in the database.
+      than failing in the database (`Kanban.ChangesetText.validate_storable/2`).
     * Case folding is the database's `lower()`, which follows the database's
       character type. Under the C character type only ASCII letters fold, so
       "ÉCOLE" and "école" count as different names there.
@@ -66,6 +66,7 @@ defmodule Kanban.Workspaces.Workspace do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
   alias Kanban.Organizations.Organization
   alias Kanban.Workspaces.WorkspaceMember
 
@@ -161,24 +162,16 @@ defmodule Kanban.Workspaces.Workspace do
   # the name's error alone, never a blank slug as well.
   defp validate_name(changeset) do
     changeset
-    |> validate_change(:name, &check_storable/2)
+    |> ChangesetText.validate_storable([:name])
     |> update_change(:name, &normalize_name/1)
     |> validate_required([:name])
     |> validate_length(:name, max: @name_max_length)
   end
 
-  # Postgres text cannot hold a NUL byte or invalid UTF-8; refusing them here
-  # turns a database error into a form error.
-  defp check_storable(:name, name) do
-    if String.valid?(name) and not String.contains?(name, <<0>>),
-      do: [],
-      else: [name: "contains characters that are not allowed"]
-  end
-
   # Casting "" clears the name to nil (a whitespace-only name is cast as-is and
   # trimmed to "" here), which is a change on an existing workspace, so the
   # normalization must let nil through for validate_required/2 to report it.
-  # A name check_storable/2 refused is left as it is.
+  # A name `Kanban.ChangesetText.validate_storable/2` refused is left as it is.
   defp normalize_name(name) when is_binary(name) do
     if String.valid?(name) do
       name

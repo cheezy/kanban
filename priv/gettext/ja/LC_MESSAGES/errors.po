@@ -137,7 +137,7 @@ msgstr "項目 %{position} に認証情報が含まれているようです。�
 msgid "must have the @ sign and no spaces"
 msgstr "@ 記号を含み、スペースを含まないようにしてください"
 
-## From Kanban.Workspaces.Workspace (a NUL byte or invalid UTF-8 in a name)
+## From Kanban.ChangesetText (a NUL byte or invalid UTF-8 in user-entered text)
 msgid "contains characters that are not allowed"
 msgstr "使用できない文字が含まれています"
 

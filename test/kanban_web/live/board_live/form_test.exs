@@ -276,6 +276,38 @@ defmodule KanbanWeb.BoardLive.FormTest do
       assert render(lv) =~ "should be at least 5 character(s)"
     end
 
+    # D383: a NUL byte or invalid UTF-8 used to reach Postgres and crash the
+    # LiveView, losing the form. It is now a form error and the view lives on.
+    test "a NUL byte in a new board's name is a form error and the view stays alive",
+         %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/boards/new")
+
+      lv |> form("#board-form", board: %{name: <<"Bad", 0, "board">>}) |> render_change()
+      assert render(lv) =~ "contains characters that are not allowed"
+
+      lv |> form("#board-form", board: %{name: <<"Bad", 0, "board">>}) |> render_submit()
+
+      assert Process.alive?(lv.pid)
+      assert render(lv) =~ "contains characters that are not allowed"
+    end
+
+    # Invalid UTF-8 cannot be tested here: LiveView decodes form events as
+    # urlencoded params and Plug refuses invalid UTF-8 before the LiveView sees
+    # it. The changeset-level refusal is covered in storable_text_fields_test.exs.
+    test "a NUL byte when editing a board is a form error and the view stays alive",
+         %{conn: conn, board: board} do
+      {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
+
+      for attrs <- [%{name: <<"Bad", 0, "board">>}, %{description: <<"bad", 0, "text">>}] do
+        lv |> form("#board-form", board: attrs) |> render_submit()
+
+        assert Process.alive?(lv.pid)
+        assert render(lv) =~ "contains characters that are not allowed"
+      end
+
+      assert Kanban.Repo.reload!(board).name == board.name
+    end
+
     test "new board form does not display read-only checkbox", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/boards/new")
 

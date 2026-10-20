@@ -20,6 +20,8 @@ defmodule Kanban.Targets.DeliveryTarget do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
+
   @statuses ~w(on_track at_risk missed complete)
 
   schema "delivery_targets" do
@@ -45,6 +47,7 @@ defmodule Kanban.Targets.DeliveryTarget do
     # DB-level integrity.
     delivery_target
     |> cast(attrs, [:name, :target_date, :description])
+    |> ChangesetText.validate_storable([:name, :description])
     |> validate_required([:name, :target_date])
     |> foreign_key_constraint(:owner_id)
   end

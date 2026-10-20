@@ -11,6 +11,8 @@ defmodule Kanban.Schemas.Task.VerificationStep do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
+
   @primary_key false
   embedded_schema do
     field :step_type, :string
@@ -23,6 +25,7 @@ defmodule Kanban.Schemas.Task.VerificationStep do
   def changeset(step, attrs) do
     step
     |> cast(attrs, [:step_type, :step_text, :expected_result, :position])
+    |> ChangesetText.validate_storable([:step_type, :step_text, :expected_result])
     |> validate_required([:step_type, :step_text, :position])
     |> validate_inclusion(:step_type, ["command", "manual"])
     |> validate_number(:position, greater_than_or_equal_to: 0)

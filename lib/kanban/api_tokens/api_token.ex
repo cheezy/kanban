@@ -2,6 +2,10 @@ defmodule Kanban.ApiTokens.ApiToken do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
+
+  @text_fields [:name, :agent_capabilities, :agent_model, :agent_version, :agent_purpose]
+
   @token_prefix "stride"
 
   schema "api_tokens" do
@@ -36,6 +40,7 @@ defmodule Kanban.ApiTokens.ApiToken do
       :user_id,
       :board_id
     ])
+    |> ChangesetText.validate_storable(@text_fields)
     |> validate_required([:name, :user_id, :board_id])
     |> finish_new_token()
   end
@@ -58,6 +63,7 @@ defmodule Kanban.ApiTokens.ApiToken do
       :user_id,
       :workspace_id
     ])
+    |> ChangesetText.validate_storable(@text_fields)
     |> validate_required([:name, :user_id, :workspace_id])
     |> finish_new_token()
   end

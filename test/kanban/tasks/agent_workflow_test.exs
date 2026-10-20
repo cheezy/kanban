@@ -379,6 +379,44 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert :completion_notes in Keyword.keys(cs.errors)
     end
 
+    # D383: Postgres cannot store a NUL byte or invalid UTF-8, so the agent's
+    # completion text gets a changeset error instead of a database error.
+    test "refuses a NUL byte or invalid UTF-8 in the completion text fields", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      # Every text-bearing field completion_changeset/5 checks, each with a NUL
+      # byte and with invalid UTF-8; list and map fields carry it nested.
+      wrap = %{
+        "workflow_steps" => &[%{"name" => "explorer", "reason" => &1}],
+        "explorer_result" => &%{"summary" => &1},
+        "reviewer_result" =>
+          &%{
+            "dispatched" => true,
+            "summary" => &1,
+            "issues" => [%{"description" => &1}],
+            "testing_strategy" => %{"status" => "failed", "note" => &1}
+          }
+      }
+
+      for field <- ~w(completion_summary completion_notes actual_files_changed
+                      completed_by_agent review_report workflow_steps explorer_result
+                      reviewer_result),
+          bad <- [<<"bad", 0, "text">>, <<"bad", 0xFF, "text">>] do
+        value = Map.get(wrap, field, & &1).(bad)
+        params = Map.put(valid_complete_params(), field, value)
+
+        assert {:error, %Ecto.Changeset{valid?: false} = cs} =
+                 AgentWorkflow.complete_task(claimed, ctx.user, params, "Claude")
+
+        assert {"contains characters that are not allowed", []} in Keyword.get_values(
+                 cs.errors,
+                 String.to_existing_atom(field)
+               ),
+               "#{field}: #{inspect(cs.errors)}"
+      end
+    end
+
     test "emits a security audit event when completion_notes looks credential-bearing", ctx do
       ref = make_ref()
       test_pid = self()

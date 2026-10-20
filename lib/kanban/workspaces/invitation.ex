@@ -24,6 +24,7 @@ defmodule Kanban.Workspaces.Invitation do
 
   alias Kanban.Accounts.User
   alias Kanban.Boards.Board
+  alias Kanban.ChangesetText
   alias Kanban.Workspaces.Workspace
 
   @validity_days 7
@@ -186,6 +187,7 @@ defmodule Kanban.Workspaces.Invitation do
 
   defp validate_email(changeset) do
     changeset
+    |> ChangesetText.validate_storable([:email])
     |> update_change(:email, &normalize_email/1)
     |> validate_required([:email])
     |> validate_format(:email, @email_format, message: "must have the @ sign and no spaces")

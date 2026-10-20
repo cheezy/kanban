@@ -14,6 +14,7 @@ defmodule Kanban.Tasks.Task.Changesets do
 
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
   alias Kanban.Tasks.Task.ArchiveChangeset
   alias Kanban.Tasks.Task.Capabilities
   alias Kanban.Tasks.Task.EmbedValidations
@@ -21,6 +22,51 @@ defmodule Kanban.Tasks.Task.Changesets do
   alias Kanban.Tasks.Task.HierarchyValidations
   alias Kanban.Tasks.Task.LengthValidations
   alias Kanban.Tasks.Task.MapFieldValidations
+
+  # Every text-bearing field the three pipelines may cast: strings, string
+  # arrays and maps. A NUL byte or invalid UTF-8 in any of them is a changeset
+  # error rather than a database error (D383). The embeds check their own
+  # fields in their own changesets. Fields a pipeline does not cast are never
+  # changed there, so the check skips them.
+  @storable_fields [
+    :title,
+    :description,
+    :acceptance_criteria,
+    :identifier,
+    :estimated_files,
+    :why,
+    :what,
+    :where_context,
+    :patterns_to_follow,
+    :database_changes,
+    :validation_rules,
+    :telemetry_event,
+    :metrics_to_track,
+    :logging_requirements,
+    :error_user_message,
+    :error_on_failure,
+    :technology_requirements,
+    :pitfalls,
+    :out_of_scope,
+    :security_considerations,
+    :testing_strategy,
+    :integration_points,
+    :technical_details,
+    :created_by_agent,
+    :completed_by_agent,
+    :completion_summary,
+    :completion_notes,
+    :dependencies,
+    :required_capabilities,
+    :actual_files_changed,
+    :review_notes,
+    :review_report,
+    :workflow_steps,
+    :explorer_result,
+    :reviewer_result,
+    :changed_files,
+    :archive_note
+  ]
 
   @doc false
   # credo:disable-for-next-line Credo.Check.Refactor.ABCSize
@@ -107,6 +153,7 @@ defmodule Kanban.Tasks.Task.Changesets do
       :archived_by_id,
       :duplicate_of_id
     ])
+    |> ChangesetText.validate_storable(@storable_fields)
     |> EmbedValidations.validate_embed_type(:key_files, attrs)
     |> EmbedValidations.validate_embed_type(:verification_steps, attrs)
     |> EmbedValidations.validate_embed_type(:behaviour_test_matrix, attrs)
@@ -256,6 +303,7 @@ defmodule Kanban.Tasks.Task.Changesets do
   def api_create_changeset(task, attrs) do
     task
     |> cast(attrs, @api_create_fields)
+    |> ChangesetText.validate_storable(@storable_fields)
     |> EmbedValidations.validate_embed_type(:key_files, attrs)
     |> EmbedValidations.validate_embed_type(:verification_steps, attrs)
     |> EmbedValidations.validate_embed_type(:behaviour_test_matrix, attrs)
@@ -303,6 +351,7 @@ defmodule Kanban.Tasks.Task.Changesets do
   def api_update_changeset(task, attrs) do
     task
     |> cast(attrs, @api_update_fields)
+    |> ChangesetText.validate_storable(@storable_fields)
     |> EmbedValidations.validate_embed_type(:key_files, attrs)
     |> EmbedValidations.validate_embed_type(:verification_steps, attrs)
     |> EmbedValidations.validate_embed_type(:behaviour_test_matrix, attrs)

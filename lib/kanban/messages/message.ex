@@ -2,6 +2,8 @@ defmodule Kanban.Messages.Message do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
+
   schema "messages" do
     field :title, :string
     field :body, :string
@@ -21,6 +23,7 @@ defmodule Kanban.Messages.Message do
     # below still guards DB-level integrity.
     message
     |> cast(attrs, [:title, :body])
+    |> ChangesetText.validate_storable([:title, :body])
     |> validate_required([:title, :body])
     |> foreign_key_constraint(:sender_id)
   end

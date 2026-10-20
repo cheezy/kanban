@@ -10,6 +10,7 @@ defmodule Kanban.Tasks.AgentWorkflow do
 
   alias Kanban.AfterGoal
   alias Kanban.Boards
+  alias Kanban.ChangesetText
   alias Kanban.Columns.Column
   alias Kanban.Hooks
   alias Kanban.Hooks.Metadata
@@ -636,6 +637,16 @@ defmodule Kanban.Tasks.AgentWorkflow do
       :actual_complexity,
       :actual_files_changed,
       :time_spent_minutes,
+      :completed_by_agent,
+      :review_report,
+      :workflow_steps,
+      :explorer_result,
+      :reviewer_result
+    ])
+    |> ChangesetText.validate_storable([
+      :completion_summary,
+      :completion_notes,
+      :actual_files_changed,
       :completed_by_agent,
       :review_report,
       :workflow_steps,

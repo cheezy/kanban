@@ -949,6 +949,44 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert "each entry should be at most 255 character(s)" in errors["dependencies"]
     end
 
+    # D383: JSON "\u0000" decodes to a NUL byte, which Postgres cannot store.
+    # The body is sent as raw JSON so the escape goes through the real parser.
+    test "POST /api/tasks with a JSON \\u0000 in the title returns 422 naming the field, not 500",
+         %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post(
+          ~p"/api/tasks",
+          ~s({"task": {"title": "Bad\\u0000title", "type": "work", "priority": "medium",
+                       "pitfalls": ["fine", "also\\u0000bad"],
+                       "testing_strategy": {"unit_tests": ["nul\\u0000here"]}}})
+        )
+
+      errors = json_response(conn, 422)["errors"]
+      assert errors["title"] == ["contains characters that are not allowed"]
+      assert "contains characters that are not allowed" in errors["pitfalls"]
+      assert "contains characters that are not allowed" in errors["testing_strategy"]
+      refute inspect(errors) =~ <<0>>
+    end
+
+    test "PATCH /api/tasks/:id with a JSON \\u0000 in the description returns 422, not 500",
+         %{conn: conn, column: column, user: user} do
+      {:ok, task} =
+        Tasks.create_task(column, %{"title" => "NUL PATCH base D383", "created_by_id" => user.id})
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch(~p"/api/tasks/#{task.id}", ~s({"task": {"description": "a\\u0000b"}}))
+
+      assert json_response(conn, 422)["errors"]["description"] == [
+               "contains characters that are not allowed"
+             ]
+
+      assert Tasks.get_task!(task.id).description == nil
+    end
+
     test "POST /api/tasks with an over-255 required_capabilities element returns 422 naming the field",
          %{conn: conn} do
       conn =
@@ -6200,6 +6238,24 @@ defmodule KanbanWeb.API.TaskControllerTest do
       reloaded = Tasks.get_task!(task.id)
       assert length(reloaded.changed_files) == 2
       assert reloaded.status == :in_progress
+    end
+
+    # D383: a NUL anywhere in an entry cannot be stored in the jsonb column, so
+    # it is a 422 naming the field rather than a database error.
+    test "a JSON \\u0000 in a diff returns 422 naming changed_files, not 500",
+         %{conn: conn, task: task} do
+      body = ~s([{"path": "lib/nul.ex", "diff": "@@ -1 +1 @@\\n-old\\u0000\\n+new"}])
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put(~p"/api/tasks/#{task.id}/changed_files", body)
+
+      assert json_response(conn, 422)["errors"]["changed_files"] == [
+               "contains characters that are not allowed"
+             ]
+
+      assert Tasks.get_task!(task.id).changed_files in [nil, []]
     end
 
     test "accepts a bare top-level JSON array body (params['_json'] fallback)",

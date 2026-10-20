@@ -7,6 +7,7 @@ defmodule Kanban.Tasks.Lifecycle do
   import Ecto.Query, warn: false
 
   alias Ecto.Multi
+  alias Kanban.ChangesetText
   alias Kanban.Notifications.Events
   alias Kanban.Repo
   alias Kanban.Tasks.Assignees
@@ -111,7 +112,9 @@ defmodule Kanban.Tasks.Lifecycle do
   Callers must pre-validate the list with
   `Kanban.Tasks.CompletionValidation.validate_changed_files/1`. Accepts a
   list only; `[]` is a legitimate explicit-clear value. `nil` is rejected
-  at the function-clause level to prevent silent NULL writes.
+  at the function-clause level to prevent silent NULL writes. A NUL byte or
+  invalid UTF-8 anywhere in an entry, which the `jsonb` column cannot hold, is
+  refused as a changeset error on `:changed_files` (D383).
   """
   @spec update_changed_files(Task.t(), list()) ::
           {:ok, Task.t()} | {:error, Ecto.Changeset.t()}
@@ -119,6 +122,7 @@ defmodule Kanban.Tasks.Lifecycle do
       when is_list(changed_files) do
     task
     |> Ecto.Changeset.change(changed_files: changed_files)
+    |> ChangesetText.validate_storable([:changed_files])
     |> Repo.update()
   end
 

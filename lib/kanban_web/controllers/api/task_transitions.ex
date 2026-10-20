@@ -173,7 +173,10 @@ defmodule KanbanWeb.API.TaskTransitions do
 
   @doc """
   Validates the `{exit_code, output, duration_ms}` report and stamps it with
-  `reported_at`, or returns `{:error, :invalid_after_goal_result}`.
+  `reported_at`, or returns `{:error, :invalid_after_goal_result}`. An output
+  holding a NUL byte or invalid UTF-8, which the `jsonb` columns cannot store,
+  returns `{:error, :unstorable_after_goal_output}` (D383); it is refused, never
+  stripped.
   """
   def validate_after_goal_result(%{
         "exit_code" => exit_code,
@@ -182,16 +185,21 @@ defmodule KanbanWeb.API.TaskTransitions do
       })
       when is_integer(exit_code) and is_binary(output) and is_integer(duration_ms) and
              duration_ms >= 0 do
-    {:ok,
-     %{
-       "exit_code" => exit_code,
-       "output" => output,
-       "duration_ms" => duration_ms,
-       "reported_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-     }}
+    if Kanban.ChangesetText.storable?(output),
+      do: {:ok, stamp_after_goal_result(exit_code, output, duration_ms)},
+      else: {:error, :unstorable_after_goal_output}
   end
 
   def validate_after_goal_result(_), do: {:error, :invalid_after_goal_result}
+
+  defp stamp_after_goal_result(exit_code, output, duration_ms) do
+    %{
+      "exit_code" => exit_code,
+      "output" => output,
+      "duration_ms" => duration_ms,
+      "reported_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+  end
 
   @doc """
   Writes the after_goal `attempt` onto the goal and renders it, or the 422.

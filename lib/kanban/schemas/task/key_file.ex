@@ -10,6 +10,7 @@ defmodule Kanban.Schemas.Task.KeyFile do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
   alias Kanban.Tasks.PathSafety
 
   @primary_key false
@@ -23,6 +24,7 @@ defmodule Kanban.Schemas.Task.KeyFile do
   def changeset(key_file, attrs) do
     key_file
     |> cast(attrs, [:file_path, :note, :position])
+    |> ChangesetText.validate_storable([:note])
     |> validate_required([:file_path, :position])
     |> validate_number(:position, greater_than_or_equal_to: 0)
     |> validate_file_path()
@@ -38,7 +40,11 @@ defmodule Kanban.Schemas.Task.KeyFile do
     end
   end
 
-  defp apply_path_safety(changeset, :ok), do: changeset
+  # A NUL byte keeps its own path-safety message (the :null_byte clause
+  # below); invalid UTF-8 in an otherwise safe path is refused by the shared
+  # storable check.
+  defp apply_path_safety(changeset, :ok),
+    do: ChangesetText.validate_storable(changeset, [:file_path])
 
   defp apply_path_safety(changeset, {:error, :absolute}),
     do: add_error(changeset, :file_path, "must be a relative path, not absolute")

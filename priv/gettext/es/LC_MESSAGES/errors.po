@@ -146,7 +146,7 @@ msgstr "la entrada %{position} parece contener una credencial; elimine el valor 
 msgid "must have the @ sign and no spaces"
 msgstr "debe contener el signo @ y no tener espacios"
 
-## From Kanban.Workspaces.Workspace (a NUL byte or invalid UTF-8 in a name)
+## From Kanban.ChangesetText (a NUL byte or invalid UTF-8 in user-entered text)
 msgid "contains characters that are not allowed"
 msgstr "contiene caracteres no permitidos"
 

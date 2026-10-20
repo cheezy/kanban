@@ -2,6 +2,8 @@ defmodule Kanban.Tasks.TaskComment do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
+
   @type t :: %__MODULE__{}
 
   @content_max_length 10_000
@@ -44,15 +46,17 @@ defmodule Kanban.Tasks.TaskComment do
   cannot post a comment impersonating another user or agent, or mention
   someone the server did not resolve. `:content` is capped at `content_max_length/0`
   codepoints (so a run of combining marks cannot store megabytes), may not
-  contain a NUL character, and is blank when it holds only whitespace and
-  invisible format characters.
+  contain a NUL character or invalid UTF-8 (`Kanban.ChangesetText`, keeping
+  this endpoint's "is invalid" message), and is blank when it holds only
+  whitespace and invisible format characters.
   """
   def changeset(task_comment, attrs) do
     task_comment
     |> cast(attrs, [:content])
+    |> ChangesetText.validate_storable([:content], message: "is invalid")
     |> validate_required([:content, :task_id])
     |> validate_length(:content, max: @content_max_length, count: :codepoints)
-    |> validate_change(:content, &validate_storable_text/2)
+    |> validate_change(:content, &validate_visible_text/2)
     |> foreign_key_constraint(:task_id)
     |> foreign_key_constraint(:author_user_id)
   end
@@ -66,22 +70,24 @@ defmodule Kanban.Tasks.TaskComment do
   def put_author_agent_name(changeset, agent_name) do
     changeset
     |> put_change(:author_agent_name, agent_name)
+    |> ChangesetText.validate_storable([:author_agent_name], message: "is invalid")
     |> validate_length(:author_agent_name, max: @agent_name_max_length, count: :codepoints)
-    |> validate_change(:author_agent_name, &validate_storable_text/2)
+    |> validate_change(:author_agent_name, &validate_visible_text/2)
   end
 
-  # PostgreSQL text cannot hold a NUL character, so one is a changeset error
-  # rather than a database error. Text made only of whitespace and invisible
-  # format characters (zero-width spaces, bidi marks) is blank. Whitespace-only
-  # text is left to validate_required, which already reports it.
-  defp validate_storable_text(field, value) when is_binary(value) do
+  # Text made only of whitespace and invisible format characters (zero-width
+  # spaces, bidi marks) is blank. Whitespace-only text is left to
+  # validate_required, which already reports it. Text that cannot be stored
+  # (a NUL byte or invalid UTF-8) already carries the storable error, and a
+  # regex with the `u` flag raises on invalid UTF-8, so it is skipped here.
+  defp validate_visible_text(field, value) when is_binary(value) do
     cond do
-      String.contains?(value, <<0>>) -> [{field, "is invalid"}]
+      not ChangesetText.storable?(value) -> []
       String.trim(value) == "" -> []
       String.replace(value, ~r/[\s\p{Cf}]/u, "") == "" -> [{field, "can't be blank"}]
       true -> []
     end
   end
 
-  defp validate_storable_text(_field, _value), do: []
+  defp validate_visible_text(_field, _value), do: []
 end

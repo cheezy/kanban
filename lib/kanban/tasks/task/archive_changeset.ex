@@ -35,6 +35,7 @@ defmodule Kanban.Tasks.Task.ArchiveChangeset do
       :archived_by_id,
       :duplicate_of_id
     ])
+    |> Kanban.ChangesetText.validate_storable([:archive_note])
     |> validate_archive_fields()
     |> foreign_key_constraint(:archived_by_id)
     |> foreign_key_constraint(:duplicate_of_id)

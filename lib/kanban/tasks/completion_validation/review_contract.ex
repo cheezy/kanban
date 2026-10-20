@@ -300,10 +300,12 @@ defmodule Kanban.Tasks.CompletionValidation.ReviewContract do
       Enum.all?(words, &(&1 in @placeholder_note_words or &1 in @status_restatement_words))
   end
 
+  # A regex with the `u` flag raises on invalid UTF-8. Such text is already
+  # refused by Kanban.ChangesetText, so it counts as empty here (D383).
   defp non_whitespace_length(string) do
-    string
-    |> String.replace(~r/\s/u, "")
-    |> String.length()
+    if String.valid?(string),
+      do: string |> String.replace(~r/\s/u, "") |> String.length(),
+      else: 0
   end
 
   defp missing_note_message(key) do

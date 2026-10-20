@@ -2,6 +2,8 @@ defmodule Kanban.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
+
   schema "users" do
     field :email, :string
     field :name, :string
@@ -80,6 +82,7 @@ defmodule Kanban.Accounts.User do
   # path described in CWE-79.
   defp validate_name(changeset) do
     changeset
+    |> ChangesetText.validate_storable([:name])
     |> validate_length(:name, max: 160)
     |> validate_format(:name, ~r/^[^<>&\x00-\x1f\x7f]*$/,
       message: "cannot contain HTML metacharacters or control characters"
@@ -89,6 +92,7 @@ defmodule Kanban.Accounts.User do
   defp validate_email(changeset, opts) do
     changeset =
       changeset
+      |> ChangesetText.validate_storable([:email])
       |> validate_required([:email])
       |> validate_format(:email, ~r/^[^@,;\s]+@[^@,;\s]+$/,
         message: "must have the @ sign and no spaces"

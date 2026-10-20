@@ -399,6 +399,27 @@ defmodule KanbanWeb.API.AfterGoalControllerTest do
       assert Tasks.get_task!(goal.id).after_goal_attempts in [nil, []]
     end
 
+    # D383: JSON "\u0000" decodes to a NUL byte, which the jsonb columns cannot
+    # store. The body is sent as raw JSON so the escape goes through the parser.
+    test "returns 422 for an output holding a NUL byte and records nothing", ctx do
+      %{conn: conn} = ctx
+      %{goal: goal, child: child} = create_goal_with_single_child(ctx)
+      patch(conn, ~p"/api/tasks/#{child.id}/complete", valid_completion_params())
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> patch(
+          ~p"/api/tasks/#{goal.id}/after_goal",
+          ~s({"exit_code": 0, "output": "pushed\\u0000done", "duration_ms": 5})
+        )
+
+      error = json_response(conn, 422)["error"]
+      assert error =~ "after_goal output contains characters that are not allowed"
+      refute error =~ "pushed"
+      assert Tasks.get_task!(goal.id).after_goal_attempts in [nil, []]
+    end
+
     test "returns 422 when target task is not a goal", ctx do
       %{conn: conn, user: user, doing_column: doing_column} = ctx
 

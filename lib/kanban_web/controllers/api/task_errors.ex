@@ -113,6 +113,15 @@ defmodule KanbanWeb.API.TaskErrors do
     )
   end
 
+  # D383: names the field only, never the offending bytes.
+  def error_body(:unstorable_after_goal_output) do
+    documented(
+      :unprocessable_entity,
+      "after_goal output contains characters that are not allowed (a NUL byte or invalid UTF-8)",
+      :invalid_after_goal_result
+    )
+  end
+
   def error_body(:not_authorized_changed_files) do
     documented(
       :forbidden,

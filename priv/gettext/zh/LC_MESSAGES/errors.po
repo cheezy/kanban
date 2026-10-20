@@ -137,7 +137,7 @@ msgstr "第 %{position} 项似乎包含凭据；请删除秘密值，并用文�
 msgid "must have the @ sign and no spaces"
 msgstr "必须包含 @ 符号且不能有空格"
 
-## From Kanban.Workspaces.Workspace (a NUL byte or invalid UTF-8 in a name)
+## From Kanban.ChangesetText (a NUL byte or invalid UTF-8 in user-entered text)
 msgid "contains characters that are not allowed"
 msgstr "包含不允许的字符"
 

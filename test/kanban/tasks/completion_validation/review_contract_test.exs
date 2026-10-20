@@ -121,4 +121,19 @@ defmodule Kanban.Tasks.CompletionValidation.ReviewContractTest do
       assert List.first(fields) == List.first(ReviewContract.sections())
     end
   end
+
+  # D383: Kanban.ChangesetText refuses invalid UTF-8 on the completion path, but
+  # the note checks still run on it; a regex with the `u` flag would raise there.
+  describe "a failed section note holding invalid UTF-8" do
+    test "is reported as too short instead of raising" do
+      result = %{
+        "dispatched" => true,
+        "testing_strategy" => %{"status" => "failed", "note" => <<"bad", 0xFF, "note">>}
+      }
+
+      failures = ReviewContract.failures(result)
+      assert {:testing_strategy, message} = List.keyfind(failures, :testing_strategy, 0)
+      assert message =~ "testing_strategy"
+    end
+  end
 end

@@ -2,6 +2,8 @@ defmodule Kanban.Boards.Board do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
+
   schema "boards" do
     field :name, :string
     field :description, :string
@@ -49,6 +51,7 @@ defmodule Kanban.Boards.Board do
   def changeset(board, attrs) do
     board
     |> cast(attrs, [:name, :description, :field_visibility])
+    |> ChangesetText.validate_storable([:name, :description])
     |> validate_required([:name])
     |> validate_length(:name, min: 5, max: 50)
     |> validate_length(:description, max: 255)
@@ -62,6 +65,7 @@ defmodule Kanban.Boards.Board do
   def owner_changeset(board, attrs) do
     board
     |> cast(attrs, [:name, :description, :field_visibility, :read_only])
+    |> ChangesetText.validate_storable([:name, :description])
     |> validate_required([:name])
     |> validate_length(:name, min: 5, max: 50)
     |> validate_length(:description, max: 255)

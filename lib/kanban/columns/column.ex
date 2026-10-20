@@ -2,6 +2,8 @@ defmodule Kanban.Columns.Column do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
+
   schema "columns" do
     field :name, :string
     field :position, :integer
@@ -22,6 +24,7 @@ defmodule Kanban.Columns.Column do
     # (column[board_id]=<other board>) via the LiveView save handler. The
     # foreign_key_constraint below still guards DB-level integrity.
     |> cast(attrs, [:name, :position, :wip_limit])
+    |> ChangesetText.validate_storable([:name])
     |> validate_required([:name, :position])
     |> validate_number(:wip_limit, greater_than_or_equal_to: 0)
     |> foreign_key_constraint(:board_id)

@@ -11,6 +11,8 @@ defmodule Kanban.Labels.Label do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
+
   @colors [:gray, :red, :orange, :yellow, :green, :teal, :blue, :purple, :pink]
   @max_name_length 40
 
@@ -35,6 +37,7 @@ defmodule Kanban.Labels.Label do
   def changeset(label, attrs) do
     label
     |> cast(attrs, [:name, :color])
+    |> ChangesetText.validate_storable([:name])
     |> update_change(:name, &trim/1)
     |> validate_required([:name, :color])
     |> validate_length(:name, max: @max_name_length, count: :codepoints)
