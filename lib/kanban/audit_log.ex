@@ -155,6 +155,18 @@ defmodule Kanban.AuditLog do
   end
 
   @doc """
+  Whether `export_stream/3` capped at `max_rows` would omit a matching event
+  (reads at most `max_rows + 1` rows). `pending`, a row about to be written,
+  takes a place if `filters` admit it (`Kanban.AuditLog.Query.matches?/2`).
+  """
+  @spec export_truncated?(keyword(), pos_integer(), map()) :: boolean()
+  def export_truncated?(filters, max_rows, pending) when is_integer(max_rows) and max_rows > 0 do
+    filters = Keyword.delete(filters, :cursor)
+    existing = filters |> Query.bounded_count(max_rows + 1) |> Repo.one()
+    existing + if(Query.matches?(filters, pending), do: 1, else: 0) > max_rows
+  end
+
+  @doc """
   One newest-first page of events for the admin viewer, paginated by keyset
   (never by offset).
 
@@ -214,29 +226,35 @@ defmodule Kanban.AuditLog do
   is being sent. Events inserted after the export starts are newer than its
   first batch and are therefore not included.
 
-  `opts` takes `:batch_size` and `:redact_actors_outside` (see
-  `list_events_page/2`), which the org export passes.
+  `opts` takes `:batch_size`, `:redact_actors_outside` (see `list_events_page/2`)
+  and `:max_rows`, a row cap applied before encoding, so it stays well-formed.
   """
   @spec export_stream(keyword(), :csv | :json, keyword()) :: Enumerable.t()
   def export_stream(filters, format, opts \\ []) when format in [:csv, :json] do
     batch_size = Keyword.get(opts, :batch_size, @export_batch_size)
 
-    {:after, nil}
-    |> Stream.unfold(fn
-      :done -> nil
-      {:after, cursor} -> next_export_batch(filters, cursor, batch_size)
-    end)
+    {nil, Keyword.get(opts, :max_rows, :infinity)}
+    |> Stream.unfold(&next_export_batch(filters, &1, batch_size))
     |> Stream.map(&redact(&1, opts))
     |> Export.encode_stream(format)
   end
 
-  defp next_export_batch(filters, cursor, batch_size) do
-    case list_events(Keyword.put(filters, :cursor, cursor), limit: batch_size) do
+  # A counted keyset loop: no batch asks for more rows than the cap has left.
+  defp next_export_batch(_filters, :done, _batch_size), do: nil
+  defp next_export_batch(_filters, {_cursor, 0}, _batch_size), do: nil
+
+  defp next_export_batch(filters, {cursor, remaining}, batch_size) do
+    limit = min(batch_size, remaining)
+
+    case list_events(Keyword.put(filters, :cursor, cursor), limit: limit) do
       [] -> nil
-      batch when length(batch) < batch_size -> {batch, :done}
-      batch -> {batch, {:after, batch |> List.last() |> keyset_position()}}
+      batch when length(batch) < limit -> {batch, :done}
+      batch -> {batch, {batch |> List.last() |> keyset_position(), spend(remaining, limit)}}
     end
   end
+
+  defp spend(:infinity, _rows), do: :infinity
+  defp spend(remaining, rows), do: remaining - rows
 
   defp keyset_position(%AuditEvent{inserted_at: at, id: id}), do: {at, id}
 

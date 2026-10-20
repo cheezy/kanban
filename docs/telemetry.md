@@ -665,9 +665,12 @@ change emits nothing. Every event measures `count: 1`.
   with `organization_id`, the site admin as `user_id` and the org-admin as
   `member_user_id`. `:org_admin_appointed` also carries `account_created`.
   An org-admin downloading their Organization's audit log records
-  `:org_audit_log_exported` with `organization_id` and the org-admin as
-  `user_id`. An audit event whose `organization_id` is a positive integer
-  naming an existing Organization also stores it in the
+  `:org_audit_log_exported` with `organization_id`, the org-admin as
+  `user_id`, and `truncated`, a boolean that is `true` when the export's row
+  cap cut the file. A download refused by the per-org-admin export limit
+  records nothing here; it emits `[:kanban, :rate_limit, :denied]` with
+  `surface: :org_audit_export`. An audit event whose `organization_id` is a
+  positive integer naming an existing Organization also stores it in the
   `audit_events.organization_id` column, which scopes the org-admin audit log
   at `/org/audit`; an out-of-range or stale id stays in the metadata only.
 - **`account_created` marks a provisioned account.** It is `true` on
@@ -1096,7 +1099,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :permission_denied]` | event, legacy | `count` | `user_id`, `gate` | A user was refused access by a permission gate. |
 | `[:kanban, :audit, :sudo_mode_entered]` | event, legacy | `count` | `user_id` | A recently authenticated user passed a sudo-mode check. |
 | `[:kanban, :audit, :audit_log_exported]` | event, legacy | `count` | `user_id`, `format` | An admin exported the audit log. |
-| `[:kanban, :audit, :org_audit_log_exported]` | event, legacy | `count` | `user_id`, `organization_id`, `format` | An org-admin exported their Organization's audit log. user_id is the org-admin. |
+| `[:kanban, :audit, :org_audit_log_exported]` | event, legacy | `count` | `user_id`, `organization_id`, `format`, `truncated` | An org-admin exported their Organization's audit log. user_id is the org-admin; truncated is true when the row cap cut the file. |
 | `[:kanban, :audit, :organization_created]` | event, legacy | `count` | `user_id`, `organization_id` | A site admin created an Organization. user_id is the site admin. |
 | `[:kanban, :audit, :organization_updated]` | event, legacy | `count` | `user_id`, `organization_id` | A site admin changed an Organization's details. user_id is the site admin. |
 | `[:kanban, :audit, :org_admin_appointed]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id`, `account_created` | A site admin made a user an org-admin. user_id is the site admin, member_user_id the appointee. account_created is true when the appointee's account was created for the appointment. |

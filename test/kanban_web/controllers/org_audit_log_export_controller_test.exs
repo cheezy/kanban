@@ -1,5 +1,7 @@
 defmodule KanbanWeb.OrgAuditLogExportControllerTest do
-  use KanbanWeb.ConnCase, async: true
+  # async: false — the row-cap and rate-limit tests change application env
+  # (Kanban.RateLimit and this controller's max_rows).
+  use KanbanWeb.ConnCase, async: false
 
   import Kanban.AccountsFixtures
   import Kanban.OrganizationsFixtures
@@ -233,6 +235,204 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
       conn = get(build_conn(), ~p"/org/audit/export")
 
       assert redirected_to(conn) == ~p"/users/log-in"
+    end
+  end
+
+  @rate_limit 2
+  @max_rows 3
+
+  # Turns Kanban.RateLimit on (the suite runs with it off) and lowers the row
+  # cap; each test uses fresh users, so the shared bucket store cannot bleed
+  # state between tests.
+  defp limits_setup(%{conn: conn}) do
+    original_rate_limit = Application.get_env(:kanban, Kanban.RateLimit)
+    original_export = Application.get_env(:kanban, KanbanWeb.OrgAuditLogExportController)
+
+    Application.put_env(:kanban, Kanban.RateLimit,
+      enabled: true,
+      org_audit_export: %{scale_ms: 60_000, id_limit: @rate_limit}
+    )
+
+    Application.put_env(:kanban, KanbanWeb.OrgAuditLogExportController, max_rows: @max_rows)
+
+    on_exit(fn ->
+      Application.put_env(:kanban, Kanban.RateLimit, original_rate_limit)
+      restore(KanbanWeb.OrgAuditLogExportController, original_export)
+    end)
+
+    organization = organization_fixture()
+    org_admin = user_fixture()
+    organization_member_fixture(organization, org_admin, :org_admin)
+
+    %{conn: log_in_user(conn, org_admin), organization: organization, org_admin: org_admin}
+  end
+
+  defp restore(key, nil), do: Application.delete_env(:kanban, key)
+  defp restore(key, value), do: Application.put_env(:kanban, key, value)
+
+  defp insert_cap_events!(organization, count) do
+    for i <- 1..count//1 do
+      Repo.insert!(%AuditEvent{
+        action: "organization_updated",
+        organization_id: organization.id,
+        inserted_at: DateTime.add(~U[2026-10-01 00:00:00.000000Z], i),
+        metadata: %{}
+      })
+    end
+  end
+
+  defp export_events, do: AuditLog.list_events(action: :org_audit_log_exported)
+
+  describe "row cap" do
+    setup :limits_setup
+
+    test "export under the cap is not truncated", %{conn: conn, organization: organization} do
+      # One existing row plus the export's own row: two of three places.
+      insert_cap_events!(organization, 1)
+
+      conn = get(conn, ~p"/org/audit/export?format=json")
+
+      assert get_resp_header(conn, "x-export-truncated") == []
+
+      assert conn |> response(200) |> Jason.decode!() |> Enum.map(& &1["action"]) ==
+               ["org_audit_log_exported", "organization_updated"]
+
+      assert [event] = export_events()
+      assert event.metadata["truncated"] == false
+    end
+
+    test "exactly max_rows rows, counting the export's own row, is not truncated",
+         %{conn: conn, organization: organization} do
+      insert_cap_events!(organization, @max_rows - 1)
+
+      conn = get(conn, ~p"/org/audit/export?format=json")
+
+      assert get_resp_header(conn, "x-export-truncated") == []
+      assert conn |> response(200) |> Jason.decode!() |> length() == @max_rows
+      assert [%{metadata: %{"truncated" => false}}] = export_events()
+    end
+
+    test "exactly max_rows matching rows the export's own row does not match is not truncated",
+         %{conn: conn, organization: organization} do
+      insert_cap_events!(organization, @max_rows)
+
+      conn = get(conn, ~p"/org/audit/export?format=json&action=organization_updated")
+
+      assert get_resp_header(conn, "x-export-truncated") == []
+      assert conn |> response(200) |> Jason.decode!() |> length() == @max_rows
+      assert [%{metadata: %{"truncated" => false}}] = export_events()
+    end
+
+    test "export over the cap is marked truncated", %{conn: conn, organization: organization} do
+      insert_cap_events!(organization, @max_rows)
+
+      for format <- ["csv", "json"] do
+        conn = get(conn, ~p"/org/audit/export?format=#{format}")
+
+        assert get_resp_header(conn, "x-export-truncated") == ["true"]
+        body = response(conn, 200)
+
+        case format do
+          "csv" ->
+            assert [_header | rows] = String.split(body, "\r\n", trim: true)
+            assert length(rows) == @max_rows
+
+          "json" ->
+            # Still one valid array, newest first, led by the export's own row.
+            assert [%{"action" => "org_audit_log_exported"} | _] = rows = Jason.decode!(body)
+            assert length(rows) == @max_rows
+        end
+      end
+
+      assert [_, _] = events = export_events()
+      assert Enum.all?(events, &(&1.metadata["truncated"] == true))
+    end
+
+    test "a date range that ends before today does not count the export's own row",
+         %{conn: conn, organization: organization} do
+      insert_cap_events!(organization, @max_rows)
+
+      conn = get(conn, ~p"/org/audit/export?format=json&from=2026-10-01&to=2026-10-01")
+
+      assert get_resp_header(conn, "x-export-truncated") == []
+      assert conn |> response(200) |> Jason.decode!() |> length() == @max_rows
+    end
+
+    test "the truncation telemetry carries only the boolean", %{conn: conn, organization: org} do
+      attach_telemetry([[:kanban, :audit, :org_audit_log_exported]])
+      insert_cap_events!(org, @max_rows)
+
+      get(conn, ~p"/org/audit/export?format=json&action=organization_updated")
+
+      assert_receive {:telemetry_event, [:kanban, :audit, :org_audit_log_exported], _, metadata}
+      assert metadata.truncated == false
+      refute Map.has_key?(metadata, :filters)
+      refute Map.has_key?(metadata, :ip)
+    end
+  end
+
+  describe "rate limit" do
+    setup :limits_setup
+
+    test "rate-limited export writes nothing", %{conn: conn} do
+      attach_telemetry([[:kanban, :export, :start], [:kanban, :rate_limit, :denied]])
+
+      for _ <- 1..@rate_limit do
+        assert conn |> get(~p"/org/audit/export?format=json") |> response(200)
+      end
+
+      assert_receive {:telemetry_event, [:kanban, :export, :start], _, _}
+      assert_receive {:telemetry_event, [:kanban, :export, :start], _, _}
+      assert length(export_events()) == @rate_limit
+
+      refused = get(conn, ~p"/org/audit/export?format=json")
+
+      assert redirected_to(refused) == ~p"/org/audit"
+
+      assert Phoenix.Flash.get(refused.assigns.flash, :error) ==
+               "Too many exports. Try again later."
+
+      # No audit row, and no export span: the stream was never opened.
+      assert length(export_events()) == @rate_limit
+
+      assert_receive {:telemetry_event, [:kanban, :rate_limit, :denied], _,
+                      %{surface: :org_audit_export}}
+
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+    end
+
+    test "limit is per org-admin", %{conn: conn, organization: organization} do
+      for _ <- 1..@rate_limit, do: get(conn, ~p"/org/audit/export")
+      assert conn |> get(~p"/org/audit/export") |> redirected_to() == ~p"/org/audit"
+
+      colleague = user_fixture()
+      organization_member_fixture(organization, colleague, :org_admin)
+
+      other =
+        build_conn()
+        |> log_in_user(colleague)
+        |> get(~p"/org/audit/export")
+
+      assert response(other, 200)
+    end
+
+    test "varying the params does not reset the limit", %{conn: conn} do
+      get(conn, ~p"/org/audit/export?format=csv")
+      get(conn, ~p"/org/audit/export?format=json&action=organization_updated")
+
+      refused = get(conn, ~p"/org/audit/export?format=csv&from=2026-01-01&user_id=999")
+
+      assert redirected_to(refused) == ~p"/org/audit"
+    end
+
+    test "an unsupported format is refused without charging the limit", %{conn: conn} do
+      for _ <- 1..5 do
+        refused = get(conn, ~p"/org/audit/export?format=xml")
+        assert Phoenix.Flash.get(refused.assigns.flash, :error) == "Unsupported export format."
+      end
+
+      assert conn |> get(~p"/org/audit/export?format=json") |> response(200)
+      assert export_events() |> length() == 1
     end
   end
 end

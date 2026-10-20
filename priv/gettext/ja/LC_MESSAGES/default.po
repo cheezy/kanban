@@ -356,7 +356,7 @@ msgstr "タスクの削除に失敗しました"
 msgid "Save Task"
 msgstr "タスクを保存"
 
-#: lib/kanban_web/live/task_live/form_component.ex:409
+#: lib/kanban_web/live/task_live/form_component.ex:402
 #, elixir-autogen, elixir-format
 msgid "Task created successfully"
 msgstr "タスクが正常に作成されました"
@@ -387,7 +387,7 @@ msgstr "タイトル"
 msgid "Update task details"
 msgstr "タスクの詳細を更新"
 
-#: lib/kanban_web/live/task_live/form_component.ex:427
+#: lib/kanban_web/live/task_live/form_component.ex:420
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached for this column"
 msgstr "この列のWIP制限に達しました"
@@ -1558,7 +1558,7 @@ msgstr "経過時間 (分)"
 #: lib/kanban_web/live/task_live/components/comment_row.ex:213
 #: lib/kanban_web/live/task_live/components/history_section.ex:92
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:79
-#: lib/kanban_web/live/task_live/form_component.ex:500
+#: lib/kanban_web/live/task_live/form_component.ex:493
 #, elixir-autogen, elixir-format
 msgid "Unknown"
 msgstr "不明"
@@ -1907,7 +1907,7 @@ msgstr "Strideは単なるカンバンボード以上のものです。人間と
 msgid "This collaborative approach allows teams to delegate repetitive coding tasks to AI agents while humans focus on high-level decisions, architecture, and reviewing AI-generated code before it's merged."
 msgstr "この協働アプローチにより、チームは繰り返しのコーディング作業をAIエージェントに委任しつつ、人間は高レベルな意思決定、アーキテクチャ、マージ前のAI生成コードのレビューに集中できます。"
 
-#: lib/kanban_web/live/task_live/form_component.ex:431
+#: lib/kanban_web/live/task_live/form_component.ex:424
 #, elixir-autogen, elixir-format
 msgid "Cannot add task: WIP limit reached for this column"
 msgstr "タスクを追加できません: この列のWIP上限に達しています"
@@ -1927,9 +1927,9 @@ msgstr "期待される結果"
 msgid "Note about this file"
 msgstr "このファイルに関するメモ"
 
-#: lib/kanban_web/live/task_live/form_component.ex:260
-#: lib/kanban_web/live/task_live/form_component.ex:358
-#: lib/kanban_web/live/task_live/form_component.ex:418
+#: lib/kanban_web/live/task_live/form_component.ex:253
+#: lib/kanban_web/live/task_live/form_component.ex:351
+#: lib/kanban_web/live/task_live/form_component.ex:411
 #, elixir-autogen, elixir-format
 msgid "Please fix the errors below"
 msgstr "下記のエラーを修正してください"
@@ -2027,7 +2027,7 @@ msgid "Task unarchived successfully"
 msgstr "タスクのアーカイブを解除しました"
 
 #: lib/kanban_web/live/task_live/form/relational_scopes.ex:44
-#: lib/kanban_web/live/task_live/form_component.ex:307
+#: lib/kanban_web/live/task_live/form_component.ex:300
 #, elixir-autogen, elixir-format
 msgid "Column does not belong to this board"
 msgstr "列はこのボードに属していません"
@@ -7929,7 +7929,7 @@ msgstr "エージェントデータを現在更新できませんでした。最
 
 #: lib/kanban_web/live/board_live/authorization.ex:84
 #: lib/kanban_web/live/board_live/bulk_selection.ex:358
-#: lib/kanban_web/live/task_live/form_component.ex:142
+#: lib/kanban_web/live/task_live/form_component.ex:143
 #, elixir-autogen, elixir-format
 msgid "You do not have permission to modify tasks on this board"
 msgstr "このボードでタスクを変更する権限がありません"
@@ -9553,7 +9553,7 @@ msgid "To (UTC)"
 msgstr "終了日 (UTC)"
 
 #: lib/kanban_web/controllers/audit_log_export_controller.ex:33
-#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:38
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:60
 #, elixir-autogen, elixir-format
 msgid "Unsupported export format."
 msgstr "サポートされていないエクスポート形式です。"
@@ -11226,3 +11226,8 @@ msgstr "未確認"
 #, elixir-autogen, elixir-format
 msgid "This account is disabled, so it can't be added to the board."
 msgstr "このアカウントは無効化されているため、ボードに追加できません。"
+
+#: lib/kanban_web/controllers/org_audit_log_export_controller.ex:63
+#, elixir-autogen, elixir-format
+msgid "Too many exports. Try again later."
+msgstr "エクスポートの回数が多すぎます。しばらくしてからもう一度お試しください。"

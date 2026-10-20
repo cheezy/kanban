@@ -758,6 +758,111 @@ defmodule Kanban.AuditLogTest do
       assert length(Jason.decode!(json)) == 2
     end
 
+    test "export_stream stops at max_rows" do
+      base = ~U[2026-10-03 00:00:00.000000Z]
+      for i <- 1..5, do: insert_event!("cap_test", DateTime.add(base, i))
+
+      csv =
+        [action: "cap_test"]
+        |> AuditLog.export_stream(:csv, max_rows: 3, batch_size: 2)
+        |> Enum.join()
+
+      assert [header | rows] = String.split(csv, "\r\n", trim: true)
+      assert header == "id,inserted_at,action,actor_user_id,actor_email,ip,metadata"
+      assert length(rows) == 3
+
+      json =
+        [action: "cap_test"]
+        |> AuditLog.export_stream(:json, max_rows: 3, batch_size: 2)
+        |> Enum.join()
+
+      # The newest three, in order, inside a valid array.
+      assert [newest, _, oldest_kept] = Jason.decode!(json)
+      assert newest["inserted_at"] =~ "2026-10-03T00:00:05"
+      assert oldest_kept["inserted_at"] =~ "2026-10-03T00:00:03"
+    end
+
+    test "export_stream with max_rows equal to or above the result set yields every row" do
+      base = ~U[2026-10-03 00:00:00.000000Z]
+      for i <- 1..4, do: insert_event!("cap_test", DateTime.add(base, i))
+
+      for max_rows <- [4, 5, 100], batch_size <- [2, 3, 500] do
+        json =
+          [action: "cap_test"]
+          |> AuditLog.export_stream(:json, max_rows: max_rows, batch_size: batch_size)
+          |> Enum.join()
+
+        assert length(Jason.decode!(json)) == 4
+      end
+    end
+
+    test "export_stream with no events is well-formed" do
+      assert [action: "nope"] |> AuditLog.export_stream(:json, max_rows: 3) |> Enum.join() ==
+               "[]"
+
+      assert [action: "nope"] |> AuditLog.export_stream(:csv, max_rows: 3) |> Enum.join() ==
+               "id,inserted_at,action,actor_user_id,actor_email,ip,metadata\r\n"
+    end
+
+    test "export_truncated? counts the pending row only when the filters admit it" do
+      base = ~U[2026-10-03 00:00:00.000000Z]
+      for i <- 1..3, do: insert_event!("cap_test", DateTime.add(base, i))
+
+      pending = %{
+        action: "org_audit_log_exported",
+        organization_id: nil,
+        actor_user_id: nil,
+        inserted_at: DateTime.utc_now()
+      }
+
+      # Three matching rows; the pending row's action is filtered out.
+      refute AuditLog.export_truncated?([action: "cap_test"], 3, pending)
+      assert AuditLog.export_truncated?([action: "cap_test"], 2, pending)
+
+      # Three matching rows plus the admitted pending row is four.
+      admitted = %{pending | action: "cap_test"}
+      assert AuditLog.export_truncated?([action: "cap_test"], 3, admitted)
+      refute AuditLog.export_truncated?([action: "cap_test"], 4, admitted)
+
+      # A cursor never narrows the count, as the export ignores it.
+      refute AuditLog.export_truncated?(
+               [action: "cap_test", cursor: {DateTime.add(base, 2), 1}],
+               3,
+               pending
+             )
+
+      assert AuditLog.export_truncated?(
+               [action: "cap_test", cursor: {DateTime.add(base, 2), 1}],
+               2,
+               pending
+             )
+    end
+
+    test "Query.matches?/2 agrees with the SQL filters, including at the boundaries" do
+      at = ~U[2026-10-04 06:00:00.000000Z]
+      event = insert_event!("parity_test", at)
+
+      row = %{
+        action: event.action,
+        organization_id: event.organization_id,
+        actor_user_id: event.actor_user_id,
+        inserted_at: event.inserted_at
+      }
+
+      for filters <- [
+            [action: "parity_test"],
+            [action: "other"],
+            [since: at],
+            [since: DateTime.add(at, 1, :microsecond)],
+            [until: at],
+            [until: DateTime.add(at, 1, :microsecond)],
+            [since: DateTime.add(at, -1), until: DateTime.add(at, 1)]
+          ] do
+        in_sql? = AuditLog.list_events(filters) |> Enum.any?(&(&1.id == event.id))
+        assert Query.matches?(filters, row) == in_sql?, "disagreed on #{inspect(filters)}"
+      end
+    end
+
     test "a deleted actor keeps its id from the metadata and has no email", %{user: user} do
       Repo.delete!(user)
 

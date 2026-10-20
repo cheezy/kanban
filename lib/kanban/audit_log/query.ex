@@ -59,6 +59,22 @@ defmodule Kanban.AuditLog.Query do
   end
 
   @doc """
+  Counts the events matching `filters`, reading at most `bound` of them, so a
+  caller can learn whether more than N rows match without counting the whole
+  result set. Takes the same filters as `events/2`.
+  """
+  @spec bounded_count(keyword(), pos_integer()) :: Ecto.Query.t()
+  def bounded_count(filters, bound) when is_integer(bound) and bound > 0 do
+    capped =
+      filters
+      |> events(:desc)
+      |> select([e], e.id)
+      |> limit(^bound)
+
+    from(c in subquery(capped), select: count())
+  end
+
+  @doc """
   Preloads each event's actor user from the join `events/2` already made, so a
   page or export renders actors without N+1 queries. Not usable with
   `Repo.stream/2`, which does not support preloads.
@@ -105,6 +121,36 @@ defmodule Kanban.AuditLog.Query do
   defp filter({:cursor, {%DateTime{} = at, id}}, query) when is_integer(id) do
     where(query, [e], e.inserted_at < ^at or (e.inserted_at == ^at and e.id < ^id))
   end
+
+  @doc """
+  Whether a row not yet written would match `filters` under the same rules as
+  `events/2`. `row` is a map with `:action`, `:organization_id`,
+  `:actor_user_id` and `:inserted_at`. A cursor is ignored, as exports ignore
+  it. `:actor_email` needs the actor's account, so it raises, and so does any
+  filter key this function does not know.
+  """
+  @spec matches?(keyword(), map()) :: boolean()
+  def matches?(filters, row), do: Enum.all?(filters, &matches_filter?(&1, row))
+
+  defp matches_filter?({_key, nil}, _row), do: true
+  defp matches_filter?({:cursor, _cursor}, _row), do: true
+
+  defp matches_filter?({:action, action}, row) when is_atom(action),
+    do: matches_filter?({:action, Atom.to_string(action)}, row)
+
+  defp matches_filter?({:action, action}, row) when is_binary(action), do: row.action == action
+
+  defp matches_filter?({key, id}, row) when key in [:actor_user_id, :organization_id],
+    do: Map.fetch!(row, key) == id
+
+  defp matches_filter?({:since, %DateTime{} = since}, row),
+    do: DateTime.compare(row.inserted_at, since) != :lt
+
+  defp matches_filter?({:until, %DateTime{} = until}, row),
+    do: DateTime.compare(row.inserted_at, until) == :lt
+
+  defp matches_filter?({:actor_email, _email}, _row),
+    do: raise(ArgumentError, "matches?/2 cannot evaluate :actor_email without the database")
 
   @doc """
   Encodes the position of `event` as an opaque, URL-safe cursor.

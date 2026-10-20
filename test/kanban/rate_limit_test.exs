@@ -131,6 +131,35 @@ defmodule Kanban.RateLimitTest do
     end
   end
 
+  describe ":org_audit_export surface (identity-only)" do
+    test "allows 10 exports per user per hour, then refuses; another user is unaffected" do
+      user = "user:#{System.unique_integer([:positive])}"
+      other = "user:#{System.unique_integer([:positive])}"
+
+      for _ <- 1..10, do: assert(:ok = RateLimit.check(:org_audit_export, identity: user))
+
+      assert {:error, {:rate_limited, _}} = RateLimit.check(:org_audit_export, identity: user)
+      assert :ok = RateLimit.check(:org_audit_export, identity: other)
+      assert %{scale_ms: 3_600_000, id_limit: 10} = RateLimit.__limits__(:org_audit_export)
+    end
+
+    test "org_audit_export limit holds per user" do
+      user = "user:#{System.unique_integer([:positive])}"
+
+      # 25 parallel checks against a limit of 10: the count is taken atomically,
+      # so exactly 10 are allowed however the calls interleave.
+      results =
+        1..25
+        |> Task.async_stream(fn _ -> RateLimit.check(:org_audit_export, identity: user) end,
+          max_concurrency: 25
+        )
+        |> Enum.map(fn {:ok, result} -> result end)
+
+      assert Enum.count(results, &(&1 == :ok)) == 10
+      assert Enum.count(results, &match?({:error, {:rate_limited, _}}, &1)) == 15
+    end
+  end
+
   describe ":two_factor_challenge surface (IP-only)" do
     test "denies one IP after 30 failures spread across different users" do
       ip = unique_ip()

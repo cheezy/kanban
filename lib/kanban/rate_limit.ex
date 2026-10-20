@@ -1,7 +1,7 @@
 defmodule Kanban.RateLimit do
   @moduledoc """
-  Rate-limiting policy for abuse-prone authentication surfaces, and for the
-  locked-feature click metric.
+  Rate-limiting policy for abuse-prone authentication surfaces, the org-admin
+  audit log export, and the locked-feature click metric.
 
   Wraps the low-level `Kanban.RateLimiter` (Hammer/ETS) with per-surface
   thresholds and a two-key strategy: every check is evaluated against both a
@@ -24,6 +24,7 @@ defmodule Kanban.RateLimit do
     * `:two_factor` — 5 min / 10 / —    (identity-only, per attempt)
     * `:two_factor_challenge` — 5 min / — / 30 (IP-only, failure-counted)
     * `:two_factor_daily` — 24 h / 30 / —    (identity-only, failure-counted)
+    * `:org_audit_export` — 1 h / 10 / —     (identity-only, per export)
 
   `:two_factor` counts every second-factor code attempt per user (`identity:
   "user:<id>"`, no IP) wherever a code is checked, with `check/2` so the
@@ -40,6 +41,13 @@ defmodule Kanban.RateLimit do
   "user:<id>"`) over a day, so someone who has the password cannot keep
   guessing at the `:two_factor` rate for weeks.
 
+  `:org_audit_export` counts Organization audit log downloads
+  (`GET /org/audit/export`) per org-admin (`identity: "user:<id>"`, the id from
+  `current_scope`, never a request param, and no IP), with `check/2` before the
+  export is audited or streamed. A refused request therefore opens no stream
+  and writes no audit row. Like `:two_factor` it has no IP ceiling, so
+  org-admins behind one office NAT do not block each other.
+
   Thresholds are a product/ops decision — override per environment via:
 
       config :kanban, Kanban.RateLimit,
@@ -48,7 +56,7 @@ defmodule Kanban.RateLimit do
   ## Operations
 
     * `check/2`  — increment and evaluate; use for per-submission surfaces
-      (`:reset`, `:resend`, `:issue`, `:two_factor`).
+      (`:reset`, `:resend`, `:issue`, `:two_factor`, `:org_audit_export`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
       (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`) so a flood cannot force password hashing or DB
       lookups.
@@ -69,7 +77,8 @@ defmodule Kanban.RateLimit do
     api_token: %{scale_ms: 60_000, ip_limit: 20},
     two_factor: %{scale_ms: 300_000, id_limit: 10},
     two_factor_challenge: %{scale_ms: 300_000, ip_limit: 30},
-    two_factor_daily: %{scale_ms: 86_400_000, id_limit: 30}
+    two_factor_daily: %{scale_ms: 86_400_000, id_limit: 30},
+    org_audit_export: %{scale_ms: 3_600_000, id_limit: 10}
   }
 
   @type surface ::
@@ -81,6 +90,7 @@ defmodule Kanban.RateLimit do
           | :two_factor
           | :two_factor_challenge
           | :two_factor_daily
+          | :org_audit_export
   @type opts :: [ip: term(), identity: String.t() | nil]
   @type result :: :ok | {:error, {:rate_limited, non_neg_integer()}}
 
