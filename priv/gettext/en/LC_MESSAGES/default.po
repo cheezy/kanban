@@ -668,7 +668,7 @@ msgstr ""
 msgid "Read Only"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:236
+#: lib/kanban_web/components/bulk_action_bar.ex:238
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:135
 #: lib/kanban_web/live/board_live/form.html.heex:353
 #: lib/kanban_web/live/board_live/members_form_component.ex:308
@@ -680,14 +680,14 @@ msgstr ""
 #: lib/kanban_web/live/task_live/form/guidance_sections.ex:82
 #: lib/kanban_web/live/task_live/form/guidance_sections.ex:121
 #: lib/kanban_web/live/task_live/form/guidance_sections.ex:162
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:50
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:85
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:120
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:168
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:203
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:238
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:273
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:312
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:56
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:91
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:126
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:175
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:210
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:245
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:280
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:319
 #: lib/kanban_web/live/task_live/form_component.html.heex:345
 #: lib/kanban_web/live/workspace_live/settings.html.heex:134
 #, elixir-autogen, elixir-format
@@ -709,7 +709,7 @@ msgstr ""
 #: lib/kanban_web/components/archive_filter_chips.ex:336
 #: lib/kanban_web/components/archive_filter_chips.ex:424
 #: lib/kanban_web/components/board_filter_bar.ex:182
-#: lib/kanban_web/components/bulk_action_bar.ex:185
+#: lib/kanban_web/components/bulk_action_bar.ex:187
 #: lib/kanban_web/live/task_live/form/option_builders.ex:112
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
@@ -1106,7 +1106,7 @@ msgstr ""
 msgid "Actual vs Estimated"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:322
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:329
 #, elixir-autogen, elixir-format
 msgid "Add Dependency"
 msgstr ""
@@ -1231,7 +1231,7 @@ msgstr ""
 msgid "Completed"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:333
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:340
 #, elixir-autogen, elixir-format
 msgid "Completed By Agent"
 msgstr ""
@@ -1252,7 +1252,7 @@ msgstr ""
 msgid "Completion"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:337
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:344
 #, elixir-autogen, elixir-format
 msgid "Completion Summary"
 msgstr ""
@@ -1291,7 +1291,7 @@ msgstr ""
 msgid "Control which task fields are visible on the board"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:332
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:339
 #, elixir-autogen, elixir-format
 msgid "Created By Agent"
 msgstr "Created By Agent"
@@ -1302,7 +1302,7 @@ msgid "Database/Schema Changes"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/components/dependencies_section.ex:14
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:292
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:299
 #: lib/kanban_web/live/task_live/view_component.ex:362
 #, elixir-autogen, elixir-format
 msgid "Dependencies"
@@ -1518,7 +1518,7 @@ msgstr ""
 msgid "Summary"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:302
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:309
 #, elixir-autogen, elixir-format
 msgid "Task identifier (e.g., W01A)"
 msgstr ""
@@ -1618,7 +1618,7 @@ msgstr ""
 msgid "minutes"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:263
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:270
 #, elixir-autogen, elixir-format
 msgid "API endpoint or service"
 msgstr ""
@@ -1628,27 +1628,27 @@ msgstr ""
 msgid "API token revoked successfully"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:283
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:290
 #, elixir-autogen, elixir-format
 msgid "Add External API"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:95
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:101
 #, elixir-autogen, elixir-format
 msgid "Add Integration Test"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:130
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:136
 #, elixir-autogen, elixir-format
 msgid "Add Manual Test"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:248
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:255
 #, elixir-autogen, elixir-format
 msgid "Add Phoenix Channel"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:213
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:220
 #, elixir-autogen, elixir-format
 msgid "Add PubSub Broadcast"
 msgstr ""
@@ -1658,12 +1658,12 @@ msgstr ""
 msgid "Add Security Consideration"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:178
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:185
 #, elixir-autogen, elixir-format
 msgid "Add Telemetry Event"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:60
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:66
 #, elixir-autogen, elixir-format
 msgid "Add Unit Test"
 msgstr ""
@@ -1693,7 +1693,7 @@ msgid "Creating..."
 msgstr "Creating..."
 
 #: lib/kanban_web/live/task_live/components/integration_points_section.ex:57
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:254
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:261
 #, elixir-autogen, elixir-format
 msgid "External APIs"
 msgstr ""
@@ -1706,29 +1706,29 @@ msgstr "Failed to revoke token"
 #: lib/kanban_web/live/board_live/form.html.heex:228
 #: lib/kanban_web/live/board_live/settings_form_component.ex:306
 #: lib/kanban_web/live/task_live/components/integration_points_section.ex:15
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:140
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:146
 #, elixir-autogen, elixir-format
 msgid "Integration Points"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/components/checklist_section.ex:30
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:66
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:72
 #, elixir-autogen, elixir-format
 msgid "Integration Tests"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:75
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:81
 #, elixir-autogen, elixir-format
 msgid "Integration test description"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/components/checklist_section.ex:42
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:101
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:107
 #, elixir-autogen, elixir-format
 msgid "Manual Tests"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:110
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:116
 #, elixir-autogen, elixir-format
 msgid "Manual test description"
 msgstr ""
@@ -1744,13 +1744,13 @@ msgid "No API tokens yet. Generate one above to get started."
 msgstr ""
 
 #: lib/kanban_web/live/task_live/components/integration_points_section.ex:45
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:219
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:226
 #, elixir-autogen, elixir-format
 msgid "Phoenix Channels"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/components/integration_points_section.ex:33
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:184
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:191
 #, elixir-autogen, elixir-format
 msgid "PubSub Broadcasts"
 msgstr ""
@@ -1775,7 +1775,7 @@ msgid "Security consideration or requirement"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/components/integration_points_section.ex:21
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:149
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:156
 #, elixir-autogen, elixir-format
 msgid "Telemetry Events"
 msgstr ""
@@ -1783,7 +1783,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:218
 #: lib/kanban_web/live/board_live/settings_form_component.ex:305
 #: lib/kanban_web/live/task_live/components/checklist_section.ex:13
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:22
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:27
 #, elixir-autogen, elixir-format
 msgid "Testing Strategy"
 msgstr ""
@@ -1795,12 +1795,12 @@ msgid "Unauthorized"
 msgstr ""
 
 #: lib/kanban_web/live/task_live/components/checklist_section.ex:18
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:31
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:37
 #, elixir-autogen, elixir-format
 msgid "Unit Tests"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:40
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:46
 #, elixir-autogen, elixir-format
 msgid "Unit test description"
 msgstr ""
@@ -1810,18 +1810,18 @@ msgstr ""
 msgid "You don't have permission to manage API tokens"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:158
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:165
 #: lib/kanban_web/live/task_live/form_component.html.heex:277
 #, elixir-autogen, elixir-format
 msgid "[:kanban, :domain, :action]"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:228
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:235
 #, elixir-autogen, elixir-format
 msgid "channel:event"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:193
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:200
 #, elixir-autogen, elixir-format
 msgid "topic:event"
 msgstr ""
@@ -1980,7 +1980,7 @@ msgstr ""
 msgid "Failed to copy"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/planning_sections.ex:330
+#: lib/kanban_web/live/task_live/form/planning_sections.ex:337
 #, elixir-autogen, elixir-format
 msgid "Agent Tracking"
 msgstr ""
@@ -4470,7 +4470,7 @@ msgid "Agents pull from this column. A task here should be fully specified — g
 msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:128
-#: lib/kanban_web/components/bulk_action_bar.ex:257
+#: lib/kanban_web/components/bulk_action_bar.ex:259
 #: lib/kanban_web/live/archive_live/index.html.heex:9
 #: lib/kanban_web/live/org_live/console.html.heex:300
 #, elixir-autogen, elixir-format
@@ -6721,12 +6721,12 @@ msgstr ""
 msgid "Review data unavailable"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:343
+#: lib/kanban/tasks/completion_validation/review_contract.ex:345
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: include either status or issue_counts so the review queue can render the verdict"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:336
+#: lib/kanban/tasks/completion_validation/review_contract.ex:338
 #, elixir-autogen, elixir-format
 msgid "is required on a dispatched review: the structured %{field} field the review queue renders is missing"
 msgstr ""
@@ -7568,7 +7568,7 @@ msgstr ""
 msgid "Targets"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:192
+#: lib/kanban_web/components/bulk_action_bar.ex:194
 #: lib/kanban_web/live/target_live/form.html.heex:119
 #, elixir-autogen, elixir-format
 msgid "Assign"
@@ -8766,7 +8766,7 @@ msgstr "Slipped"
 msgid "Completion notes"
 msgstr "Completion notes"
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:349
+#: lib/kanban/tasks/completion_validation/review_contract.ex:351
 #, elixir-autogen, elixir-format
 msgid "must be a list on a dispatched review: one entry per project checklist bullet, or an empty list when the project has no CODE-REVIEW.md"
 msgstr ""
@@ -8821,22 +8821,22 @@ msgstr ""
 msgid "Explorer result"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:310
+#: lib/kanban/tasks/completion_validation/review_contract.ex:312
 #, elixir-autogen, elixir-format
 msgid "%{field}.note is required when the section verdict is \"failed\": it must name the specific violation or gap"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:317
+#: lib/kanban/tasks/completion_validation/review_contract.ex:319
 #, elixir-autogen, elixir-format
 msgid "%{field}.note must be a string"
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:321
+#: lib/kanban/tasks/completion_validation/review_contract.ex:323
 #, elixir-autogen, elixir-format
 msgid "%{field}.note must name the specific violation in at least %{min} non-whitespace characters when the section verdict is \"failed\""
 msgstr ""
 
-#: lib/kanban/tasks/completion_validation/review_contract.ex:329
+#: lib/kanban/tasks/completion_validation/review_contract.ex:331
 #, elixir-autogen, elixir-format
 msgid "%{field}.note reads as a placeholder rather than naming the violation. If there is nothing substantive to write, the verdict is wrong rather than the note — re-check whether the section should be \"passed\" or \"not_assessed\" instead."
 msgstr ""
@@ -10122,29 +10122,29 @@ msgstr ""
 msgid "Tasks assigned to you on your boards will appear here."
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:157
+#: lib/kanban_web/components/bulk_action_bar.ex:159
 #, elixir-autogen, elixir-format
 msgid "%{count} selected"
 msgid_plural "%{count} selected"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:214
+#: lib/kanban_web/components/bulk_action_bar.ex:216
 #, elixir-autogen, elixir-format
 msgid "Add"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:207
+#: lib/kanban_web/components/bulk_action_bar.ex:209
 #, elixir-autogen, elixir-format
 msgid "Add label…"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:187
+#: lib/kanban_web/components/bulk_action_bar.ex:189
 #, elixir-autogen, elixir-format
 msgid "Assign to member"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:183
+#: lib/kanban_web/components/bulk_action_bar.ex:185
 #, elixir-autogen, elixir-format
 msgid "Assign to…"
 msgstr ""
@@ -10154,7 +10154,7 @@ msgstr ""
 msgid "Bulk action failed. Nothing was changed."
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:146
+#: lib/kanban_web/components/bulk_action_bar.ex:148
 #: lib/kanban_web/components/locked_feature.ex:140
 #, elixir-autogen, elixir-format
 msgid "Bulk actions"
@@ -10175,7 +10175,7 @@ msgstr ""
 msgid "Clear all"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:268
+#: lib/kanban_web/components/bulk_action_bar.ex:270
 #, elixir-autogen, elixir-format
 msgid "Clear selection"
 msgstr ""
@@ -10190,32 +10190,32 @@ msgstr ""
 msgid "Label not found on this board"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:209
+#: lib/kanban_web/components/bulk_action_bar.ex:211
 #, elixir-autogen, elixir-format
 msgid "Label to add"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:231
+#: lib/kanban_web/components/bulk_action_bar.ex:233
 #, elixir-autogen, elixir-format
 msgid "Label to remove"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:173
+#: lib/kanban_web/components/bulk_action_bar.ex:175
 #, elixir-autogen, elixir-format
 msgid "Move"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:168
+#: lib/kanban_web/components/bulk_action_bar.ex:170
 #, elixir-autogen, elixir-format
 msgid "Move to column"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:166
+#: lib/kanban_web/components/bulk_action_bar.ex:168
 #, elixir-autogen, elixir-format
 msgid "Move to…"
 msgstr ""
 
-#: lib/kanban_web/components/bulk_action_bar.ex:229
+#: lib/kanban_web/components/bulk_action_bar.ex:231
 #, elixir-autogen, elixir-format
 msgid "Remove label…"
 msgstr ""

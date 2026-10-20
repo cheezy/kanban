@@ -32,7 +32,7 @@ msgid_plural "Added the label to %{count} tasks"
 msgstr[0] "Étiquette ajoutée à %{count} tâche"
 msgstr[1] "Étiquette ajoutée à %{count} tâches"
 
-#: lib/kanban_web/components/bulk_action_bar.ex:246
+#: lib/kanban_web/components/bulk_action_bar.ex:248
 #, elixir-autogen, elixir-format
 msgid "Archive %{count} selected task? Goals are skipped."
 msgid_plural "Archive %{count} selected tasks? Goals are skipped."
