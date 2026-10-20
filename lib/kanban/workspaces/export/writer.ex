@@ -12,7 +12,10 @@ defmodule Kanban.Workspaces.Export.Writer do
   directory, zipped there, and the zip is renamed into
   `<export_dir>/<workspace_id>/<export_id>.zip` — a rename on one filesystem,
   so a half-written archive is never visible at the final path. The scratch
-  directory is always removed.
+  directory has an unpredictable name (`create_tmp_dir/1`, 128 random bits)
+  and is created exclusively and owner-only, so nothing can be planted at its
+  path beforehand: an existing directory or symlink there fails the export
+  instead of being written through. It is always removed.
 
   Errors come back as one of two codes and never as a message or a path:
   `:storage_unavailable` when the disk refused a write, `:export_failed` for
@@ -66,43 +69,62 @@ defmodule Kanban.Workspaces.Export.Writer do
           {:ok, result()} | {:error, :storage_unavailable | :export_failed}
   def write_archive(%Workspace{} = workspace, export_id, export_dir)
       when is_integer(export_id) and is_binary(export_dir) do
-    tmp_dir = tmp_dir_path(export_dir, export_id)
     final = archive_path(export_dir, workspace.id, export_id)
 
-    try do
-      build_archive(workspace, export_dir, tmp_dir, final)
-    rescue
-      error ->
-        Logger.warning("workspace export #{export_id} failed: #{inspect(error.__struct__)}")
-
-        {:error, error_code(error)}
-    catch
-      {:storage, reason} -> {:error, error_code(reason)}
-    after
-      File.rm_rf(tmp_dir)
-    end
-  end
-
-  defp tmp_dir_path(export_dir, export_id),
-    do: Path.join(export_dir, ".tmp-#{export_id}-#{System.unique_integer([:positive])}")
-
-  defp archive_path(export_dir, workspace_id, export_id),
-    do: Path.join([export_dir, Integer.to_string(workspace_id), "#{export_id}.zip"])
-
-  defp build_archive(workspace, export_dir, tmp_dir, final) do
-    with :ok <- make_dirs(export_dir, tmp_dir, final),
-         {:ok, counts} <- write_files(workspace, tmp_dir),
-         {:ok, size} <- finish_archive(tmp_dir, final) do
-      {:ok, %{path: final, byte_size: size, counts: counts}}
+    with :ok <- mkdir(export_dir),
+         {:ok, tmp_dir} <- create_tmp_dir(export_dir) do
+      build_in(workspace, export_id, tmp_dir, final)
     else
       {:error, reason} -> {:error, error_code(reason)}
     end
   end
 
-  defp make_dirs(export_dir, tmp_dir, final) do
-    with :ok <- mkdir(export_dir),
-         :ok <- mkdir(tmp_dir) do
-      final |> Path.dirname() |> mkdir()
+  @doc """
+  Creates a new owner-only scratch directory in `export_dir` with a random
+  name, `.tmp-` and 22 URL-safe characters (128 bits from
+  `:crypto.strong_rand_bytes/1`), so its path cannot be guessed. It is created
+  exclusively: `{:error, :eexist}` when anything, a symlink included, already
+  has that name. The name carries no export or workspace id.
+  """
+  @spec create_tmp_dir(String.t()) :: {:ok, String.t()} | {:error, File.posix()}
+  def create_tmp_dir(export_dir) when is_binary(export_dir) do
+    name = ".tmp-" <> (16 |> :crypto.strong_rand_bytes() |> Base.url_encode64(padding: false))
+    path = Path.join(export_dir, name)
+
+    with :ok <- mkdir_exclusive(path), do: {:ok, path}
+  end
+
+  @doc false
+  # File.mkdir/1, unlike mkdir_p, fails on an existing path instead of
+  # reusing it, and never follows a symlink planted there.
+  @spec mkdir_exclusive(String.t()) :: :ok | {:error, File.posix()}
+  def mkdir_exclusive(path) do
+    with :ok <- File.mkdir(path), do: restrict(path, 0o700)
+  end
+
+  defp build_in(workspace, export_id, tmp_dir, final) do
+    build_archive(workspace, tmp_dir, final)
+  rescue
+    error ->
+      Logger.warning("workspace export #{export_id} failed: #{inspect(error.__struct__)}")
+
+      {:error, error_code(error)}
+  catch
+    {:storage, reason} -> {:error, error_code(reason)}
+  after
+    File.rm_rf(tmp_dir)
+  end
+
+  defp archive_path(export_dir, workspace_id, export_id),
+    do: Path.join([export_dir, Integer.to_string(workspace_id), "#{export_id}.zip"])
+
+  defp build_archive(workspace, tmp_dir, final) do
+    with :ok <- final |> Path.dirname() |> mkdir(),
+         {:ok, counts} <- write_files(workspace, tmp_dir),
+         {:ok, size} <- finish_archive(tmp_dir, final) do
+      {:ok, %{path: final, byte_size: size, counts: counts}}
+    else
+      {:error, reason} -> {:error, error_code(reason)}
     end
   end
 
