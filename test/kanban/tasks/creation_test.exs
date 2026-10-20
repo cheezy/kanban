@@ -69,6 +69,29 @@ defmodule Kanban.Tasks.CreationTest do
   # string with no existing atom, and handed an existing-atom string like "task"
   # to the WIP-limit decision. Every unrecognised type must now return a type
   # changeset error and persist nothing.
+  describe "goal creation ignores a column_id in the attrs" do
+    for create_fun <- [:create_goal_with_tasks, :api_create_goal_with_tasks] do
+      test "#{create_fun} puts the goal and its children in the given column", %{column: column} do
+        other_column = column_fixture(board_fixture(user_fixture()))
+
+        assert {:ok, %{goal: goal, child_tasks: [string_child, atom_child]}} =
+                 apply(Tasks, unquote(create_fun), [
+                   column,
+                   %{"title" => "Goal", "column_id" => other_column.id},
+                   [
+                     %{"title" => "String key", "type" => "work", "column_id" => other_column.id},
+                     %{title: "Atom key", type: "work", column_id: other_column.id}
+                   ]
+                 ])
+
+        assert Enum.map([goal, string_child, atom_child], & &1.column_id) ==
+                 List.duplicate(column.id, 3)
+
+        refute from(t in Task, where: t.column_id == ^other_column.id) |> Repo.exists?()
+      end
+    end
+  end
+
   describe "unrecognised task type (D352)" do
     defp unique_type, do: "no_such_type_d352_#{System.unique_integer([:positive])}"
 

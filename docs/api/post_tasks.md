@@ -855,6 +855,9 @@ returns the same 422.
   nesting in [`POST /api/tasks/batch`](post_tasks_batch.md), is the only way a
   task gets a parent through the API (see the note under
   [Task Scheduling & Dependencies](#task-scheduling--dependencies))
+- Child tasks are always created in the goal's column, on the goal's board. A
+  `column_id` on a child task is ignored, so a child can never be placed in
+  another column or on another board
 - Child tasks can have dependencies on each other using index-based references
 - The goal gets a `G` identifier, work children get `W` identifiers and defect
   children get `D` identifiers; each identifier is unique on the board

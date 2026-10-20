@@ -699,6 +699,56 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert is_nil(reloaded.assigned_to_id)
     end
 
+    test "places a goal's child in the goal's column, never in a client-named column on another board",
+         %{conn: conn, column: column} do
+      other_board = ai_optimized_board_fixture(user_fixture())
+      other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Goal with a foreign child",
+            "type" => "goal",
+            "tasks" => [
+              %{"title" => "Planted child", "type" => "work", "column_id" => other_column.id}
+            ]
+          }
+        )
+
+      [child] = json_response(conn, 201)["child_tasks"]
+      child = Tasks.get_task!(child["id"])
+
+      assert child.column_id == column.id
+      assert Tasks.list_tasks(other_column) == []
+    end
+
+    test "keeps a goal create whose child names an occupied foreign column from failing with 422",
+         %{conn: conn, column: column} do
+      other_user = user_fixture()
+      other_board = ai_optimized_board_fixture(other_user)
+      other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      for title <- ["Existing 0", "Existing 1"] do
+        {:ok, _} =
+          Tasks.create_task(other_column, %{"title" => title, "created_by_id" => other_user.id})
+      end
+
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Goal probing a foreign column",
+            "type" => "goal",
+            "tasks" => [
+              %{"title" => "Child", "type" => "work", "column_id" => other_column.id}
+            ]
+          }
+        )
+
+      [child] = json_response(conn, 201)["child_tasks"]
+      assert Tasks.get_task!(child["id"]).column_id == column.id
+      assert length(Tasks.list_tasks(other_column)) == 2
+    end
+
     # D365: the docs once advertised a task.parent_goal create parameter that
     # the server never implemented. Neither parent_goal nor parent_id can attach
     # a single create to an existing goal; both are ignored with a 201.
@@ -1658,6 +1708,32 @@ defmodule KanbanWeb.API.TaskControllerTest do
       # No goal was created for the unauthorized caller.
       goals = Kanban.Tasks.Queries.list_goals_for_board(board.id)
       assert Enum.all?(goals, &(&1.title != "Sneaky Goal"))
+    end
+
+    test "places batch children in the goal's column, never in a client-named column on another board",
+         %{conn: conn, board: board} do
+      other_board = ai_optimized_board_fixture(user_fixture())
+      other_column = Columns.list_columns(other_board) |> Enum.find(&(&1.name == "Backlog"))
+
+      goals_params = [
+        %{
+          "title" => "Batch goal with a foreign child",
+          "type" => "goal",
+          "column_id" => other_column.id,
+          "tasks" => [
+            %{"title" => "Planted child", "type" => "work", "column_id" => other_column.id}
+          ]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+
+      [%{"goal" => goal, "child_tasks" => [child]}] = json_response(conn, 201)["goals"]
+      goal_column_id = Tasks.get_task!(goal["id"]).column_id
+
+      assert Tasks.get_task!(child["id"]).column_id == goal_column_id
+      assert Columns.get_column!(goal_column_id).board_id == board.id
+      assert Tasks.list_tasks(other_column) == []
     end
 
     test "creates multiple goals with child tasks", %{conn: conn} do

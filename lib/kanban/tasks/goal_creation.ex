@@ -6,6 +6,11 @@ defmodule Kanban.Tasks.GoalCreation do
   index-based `dependencies` between children are
   rewritten to the identifiers generated for them.
 
+  The goal and every child go into the `column` passed in, on its board. A
+  `column_id` in the goal's or a child's attrs is dropped, never cast: the
+  positions are taken in `column`, and an API caller authorized for one board
+  must not be able to place a child on another board by naming its column.
+
   Single-task creation lives in `Kanban.Tasks.Creation`; the helpers both
   share are in `Kanban.Tasks.CreationSupport`.
   """
@@ -123,7 +128,7 @@ defmodule Kanban.Tasks.GoalCreation do
   end
 
   defp prepare_goal_attrs(attrs, identifier, position) do
-    prepared_attrs = CreationSupport.put_position(attrs, position)
+    prepared_attrs = attrs |> drop_column_id() |> CreationSupport.put_position(position)
 
     identifier_key =
       if is_map_key(prepared_attrs, "position"), do: "identifier", else: :identifier
@@ -175,7 +180,10 @@ defmodule Kanban.Tasks.GoalCreation do
     identifier = Enum.at(task_identifiers, index)
 
     prepared_attrs =
-      attrs |> TaskType.blank_to_nil() |> CreationSupport.put_position(next_position)
+      attrs
+      |> drop_column_id()
+      |> TaskType.blank_to_nil()
+      |> CreationSupport.put_position(next_position)
 
     prepared_attrs = convert_index_based_dependencies(prepared_attrs, task_identifiers)
 
@@ -191,6 +199,10 @@ defmodule Kanban.Tasks.GoalCreation do
     |> Map.put(identifier_key, identifier)
     |> Map.put(parent_id_key, goal.id)
   end
+
+  # The column comes from the `column` argument alone (CreationSupport.new_task/1),
+  # so an attrs column_id, string or atom key, would only override it.
+  defp drop_column_id(attrs), do: Map.drop(attrs, ["column_id", :column_id])
 
   defp inherit_creator_info(attrs, goal) do
     has_string_keys? = Map.keys(attrs) |> Enum.any?(&is_binary/1)

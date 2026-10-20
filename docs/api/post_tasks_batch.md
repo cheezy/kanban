@@ -462,6 +462,8 @@ its compact goal and child shapes; read a task's labels with
 
 - All goals are created in the default column (typically "Backlog" or "Ready")
 - **Note:** Any `column_id` specified in goal objects is ignored - all goals use the default column
+- A `column_id` on a child task is ignored too: every child is created in its
+  goal's column, on the token's board
 - A goal's own `type` is ignored: every entry in `goals` is created as a goal,
   even if it sends `"type": "work"` or an unrecognised value such as `"bug"`
 - A child task's `type` defaults to `work` when omitted, and otherwise must be
