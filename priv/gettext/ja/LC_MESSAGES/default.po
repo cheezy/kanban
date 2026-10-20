@@ -710,7 +710,7 @@ msgstr "ユーザーを選択"
 #: lib/kanban_web/components/archive_filter_chips.ex:424
 #: lib/kanban_web/components/board_filter_bar.ex:182
 #: lib/kanban_web/components/bulk_action_bar.ex:187
-#: lib/kanban_web/live/task_live/form/option_builders.ex:123
+#: lib/kanban_web/live/task_live/form/option_builders.ex:125
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
 msgstr "未割り当て"
@@ -1901,7 +1901,7 @@ msgstr "人間によるレビューワークフロー"
 msgid "ID"
 msgstr "ID"
 
-#: lib/kanban_web/live/task_live/form/option_builders.ex:148
+#: lib/kanban_web/live/task_live/form/option_builders.ex:161
 #, elixir-autogen, elixir-format
 msgid "No parent goal"
 msgstr "親ゴールなし"
@@ -5987,7 +5987,7 @@ msgstr "実行前"
 msgid "Before Review"
 msgstr "レビュー前"
 
-#: lib/kanban_web/live/task_live/form/option_builders.ex:90
+#: lib/kanban_web/live/task_live/form/option_builders.ex:91
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached"
 msgstr "WIP上限に到達"

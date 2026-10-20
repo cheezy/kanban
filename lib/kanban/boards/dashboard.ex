@@ -248,10 +248,11 @@ defmodule Kanban.Boards.Dashboard do
 
   @doc """
   Returns the members of a single board who may be newly assigned a task:
-  `list_board_members/1` without the members whose account is disabled,
-  followed by the enabled org-admins of the board's Organization who hold no
-  row on it (`Kanban.Boards.Assignable`), since they reach the board through
-  derived access and can claim its tasks.
+  `list_board_members/1` without read-only members and without the members
+  whose account is disabled, followed by the enabled org-admins of the board's
+  Organization who hold no owner or modify row on it
+  (`Kanban.Boards.Assignable`), since they reach the board through derived
+  access and can claim its tasks.
 
   A disabled account keeps its `board_users` row (so it still shows on the
   board's avatar stack and in the assignee filter, where it may still own
@@ -263,7 +264,7 @@ defmodule Kanban.Boards.Dashboard do
   def list_assignable_board_members(board_id) when is_integer(board_id) do
     members =
       [board_id]
-      |> Metrics.members_by_board(enabled_only: true)
+      |> Metrics.members_by_board(enabled_only: true, writers_only: true)
       |> Map.get(board_id, [])
 
     members ++ (board_id |> Assignable.list_derived_assignees() |> Metrics.members_from_users())

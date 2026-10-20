@@ -1,9 +1,9 @@
 defmodule Kanban.Boards.AssignableTest do
   @moduledoc """
   Who a board's tasks may be newly assigned to (`Kanban.Boards.Assignable`):
-  enabled members with a row, and enabled org-admins of the board's
-  Organization, who reach it through derived access and can already claim its
-  tasks.
+  enabled members with an owner or modify row, and enabled org-admins of the
+  board's Organization, who reach it through derived access and can already
+  claim its tasks. Read-only members are not assignable.
   """
   use Kanban.DataCase, async: true
 
@@ -75,14 +75,82 @@ defmodule Kanban.Boards.AssignableTest do
     end
   end
 
+  describe "read-only members" do
+    setup ctx do
+      reader = user_fixture()
+      organization_member_fixture(ctx.organization, reader)
+      {:ok, _} = Boards.add_user_to_board(ctx.board, reader, :read_only, ctx.owner)
+      %{reader: reader}
+    end
+
+    test "member?/3 refuses a read-only member", ctx do
+      refute Assignable.member?(ctx.board.id, ctx.reader.id)
+    end
+
+    test "member?/3 accepts an org-admin whose own row is read-only", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.org_admin, :read_only, ctx.owner)
+
+      assert Assignable.member?(ctx.board.id, ctx.org_admin.id)
+    end
+
+    test "list_assignable_board_members/1 leaves them out", ctx do
+      user_ids = ctx.board.id |> Boards.list_assignable_board_members() |> Enum.map(& &1.user_id)
+
+      refute ctx.reader.id in user_ids
+    end
+
+    test "the task form leaves them out unless they hold the task", ctx do
+      board_users = OptionBuilders.assignable_board_users(ctx.board)
+
+      offered_ids = fn task ->
+        board_users
+        |> OptionBuilders.build_assignable_users_options(task)
+        |> Enum.map(fn {_label, id} -> id end)
+      end
+
+      refute ctx.reader.id in offered_ids.(%{assigned_to_id: nil})
+      assert ctx.reader.id in offered_ids.(%{assigned_to_id: ctx.reader.id})
+    end
+
+    test "the task form lists an org-admin with a read-only row once", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.org_admin, :read_only, ctx.owner)
+
+      ids =
+        ctx.board
+        |> OptionBuilders.assignable_board_users()
+        |> OptionBuilders.build_assignable_users_options(%{assigned_to_id: ctx.org_admin.id})
+        |> Enum.map(fn {_label, id} -> id end)
+
+      assert Enum.count(ids, &(&1 == ctx.org_admin.id)) == 1
+    end
+
+    test "BulkActions.assign/4 refuses them", ctx do
+      task = task_fixture(column_fixture(ctx.board))
+
+      scope = Scope.for_user(ctx.owner)
+
+      assert {:error, :invalid_assignee} =
+               BulkActions.assign(scope, ctx.board, [task.id], ctx.reader.id)
+
+      assert Repo.get!(Task, task.id).assigned_to_id == nil
+    end
+  end
+
   describe "list_derived_assignees/1" do
     test "lists the enabled org-admins who hold no row", ctx do
       assert [%{id: id}] = Assignable.list_derived_assignees(ctx.board.id)
       assert id == ctx.org_admin.id
     end
 
-    test "leaves out an org-admin who already holds a row, and disabled ones", ctx do
+    test "lists an org-admin whose own row is read-only", ctx do
       {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.org_admin, :read_only, ctx.owner)
+
+      assert [%{id: id}] = Assignable.list_derived_assignees(ctx.board.id)
+      assert id == ctx.org_admin.id
+    end
+
+    test "leaves out an org-admin who already holds a modify row, and disabled ones", ctx do
+      {:ok, _} = Boards.add_user_to_board(ctx.board, ctx.org_admin, :modify, ctx.owner)
       second_admin = user_fixture()
       organization_member_fixture(ctx.organization, second_admin, :org_admin)
       disable!(second_admin)

@@ -93,12 +93,15 @@ defmodule Kanban.Boards.Metrics do
       disabled (`users.disabled_at` set). A disabled account keeps its
       `board_users` row, so it is otherwise still listed. See
       `Kanban.Boards.list_assignable_board_members/1`.
+    * `:writers_only` - when `true`, leaves out `:read_only` members, who
+      cannot be assigned work (`Kanban.Boards.Assignable`).
   """
   def members_by_board(board_ids, opts \\ []) do
     BoardUser
     |> join(:inner, [bu], u in User, on: u.id == bu.user_id)
     |> where([bu], bu.board_id in ^board_ids)
     |> maybe_enabled_only(Keyword.get(opts, :enabled_only, false))
+    |> maybe_writers_only(Keyword.get(opts, :writers_only, false))
     |> select([bu, u], {bu.board_id, u.id, u.name, u.email})
     |> Repo.all()
     |> Enum.reduce(%{}, fn row, acc ->
@@ -133,6 +136,9 @@ defmodule Kanban.Boards.Metrics do
 
   defp maybe_enabled_only(query, true), do: where(query, [_bu, u], is_nil(u.disabled_at))
   defp maybe_enabled_only(query, false), do: query
+
+  defp maybe_writers_only(query, true), do: where(query, [bu], bu.access in [:owner, :modify])
+  defp maybe_writers_only(query, false), do: query
 
   @doc """
   Folds a list of boards carrying `:metrics` into workspace-wide

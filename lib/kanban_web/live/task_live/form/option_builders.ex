@@ -8,6 +8,7 @@ defmodule KanbanWeb.TaskLive.Form.OptionBuilders do
   use KanbanWeb, :verified_routes
   use Gettext, backend: KanbanWeb.Gettext
 
+  alias Kanban.Boards.Assignable
   alias Kanban.Tasks
   alias KanbanWeb.BehaviourTestLabels
 
@@ -92,8 +93,9 @@ defmodule KanbanWeb.TaskLive.Form.OptionBuilders do
   @doc """
   The people the assignee select is built from, in the `board_users` shape
   (`%{user: %User{}}`): the board's members, then the org-admins of its
-  Organization who reach it through derived access with no row
-  (`Kanban.Boards.Assignable`).
+  Organization who reach it through derived access with no owner or modify row
+  (`Kanban.Boards.Assignable`). Read-only members are still in the list, so
+  `build_assignable_users_options/2` can keep a task's current assignee.
   """
   def assignable_board_users(board) do
     derived = board.id |> Kanban.Boards.list_derived_assignees() |> Enum.map(&%{user: &1})
@@ -104,24 +106,35 @@ defmodule KanbanWeb.TaskLive.Form.OptionBuilders do
   Build the `{display_name, id}` list for the assignee dropdown, prefixed
   with an Unassigned option.
 
-  Disabled accounts are left out (D385), except the task's current assignee:
-  dropping that option would make the select post "Unassigned" and silently
-  clear an assignment the user never touched. The save path still refuses a
-  disabled user as a *new* assignee.
+  Disabled accounts (D385) and read-only members, who cannot be assigned work
+  (`Kanban.Boards.Assignable`), are left out, except the task's current
+  assignee: dropping that option would make the select post "Unassigned" and
+  silently clear an assignment the user never touched. The save path still
+  refuses a disabled user as a *new* assignee. A person listed twice (an
+  org-admin with a read-only row, also listed through their role) appears once.
   """
   def build_assignable_users_options(board_users, task \\ %{assigned_to_id: nil}) do
+    current = task.assigned_to_id
+
     users_list =
       board_users
-      |> Enum.filter(fn %{user: user} ->
-        is_nil(user.disabled_at) or user.id == task.assigned_to_id
-      end)
-      |> Enum.map(fn %{user: user} ->
-        display_name = if user.name && user.name != "", do: user.name, else: user.email
-        {display_name, user.id}
-      end)
+      |> Enum.filter(&(offered_assignee?(&1) or &1.user.id == current))
+      |> Enum.uniq_by(& &1.user.id)
+      |> Enum.map(&assignee_option/1)
 
     [{gettext("Unassigned"), nil} | users_list]
   end
+
+  defp assignee_option(%{user: user}) do
+    display_name = if user.name && user.name != "", do: user.name, else: user.email
+    {display_name, user.id}
+  end
+
+  # A derived entry (%{user: _}, no :access) is an org-admin, always offered.
+  defp offered_assignee?(%{user: user} = entry),
+    do:
+      is_nil(user.disabled_at) and
+        (not Map.has_key?(entry, :access) or Assignable.assignable_row?(entry))
 
   @doc """
   Build the label picker's options from a board's labels: one

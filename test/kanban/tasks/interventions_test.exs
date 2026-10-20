@@ -564,6 +564,19 @@ defmodule Kanban.Tasks.InterventionsTest do
       assert child_ids == Enum.sort([backlog.id, ready.id])
     end
 
+    test "leaves read-only members out of the candidates", %{
+      owner: owner,
+      board: board,
+      goal: goal,
+      scope: scope
+    } do
+      reader = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      assert {:ok, %{members: members}} = Interventions.reassign_preview(scope, goal)
+      refute reader.id in Enum.map(members, & &1.user.id)
+    end
+
     test "preloads the goal's board and lists its members", %{
       owner: owner,
       member: member,

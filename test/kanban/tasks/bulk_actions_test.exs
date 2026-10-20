@@ -313,7 +313,7 @@ defmodule Kanban.Tasks.BulkActionsTest do
       assert reload(t1).assigned_to_id == nil
     end
 
-    test "allows read-only members as assignees", %{
+    test "refuses read-only members as assignees", %{
       owner: owner,
       scope: scope,
       board: board,
@@ -322,7 +322,8 @@ defmodule Kanban.Tasks.BulkActionsTest do
       {reader, _} = member_scope(board, owner, :read_only)
       task = task_fixture(todo)
 
-      assert {:ok, %{count: 1}} = BulkActions.assign(scope, board, [task.id], reader.id)
+      assert {:error, :invalid_assignee} = BulkActions.assign(scope, board, [task.id], reader.id)
+      assert reload(task).assigned_to_id == nil
     end
 
     test "rejects a non-member and malformed assignees", %{

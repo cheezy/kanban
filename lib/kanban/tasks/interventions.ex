@@ -36,6 +36,7 @@ defmodule Kanban.Tasks.Interventions do
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
+  alias Kanban.Boards.Assignable
   alias Kanban.Notifications.Events
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
@@ -161,12 +162,17 @@ defmodule Kanban.Tasks.Interventions do
     end
   end
 
-  # The board's members, then the org-admins of its Organization who reach it
-  # without a row (Kanban.Boards.Assignable), in the board_users shape the
-  # dialog reads.
+  # The board's owner and modify members, then the org-admins of its
+  # Organization who reach it without such a row (Kanban.Boards.Assignable),
+  # in the board_users shape the dialog reads. Read-only members are left out:
+  # the reassign refuses them.
   defp candidate_assignees(board) do
     derived = board.id |> Boards.list_derived_assignees() |> Enum.map(&%{user: &1})
-    Boards.list_board_users(board) ++ derived
+
+    board
+    |> Boards.list_board_users()
+    |> Enum.filter(&Assignable.assignable_row?/1)
+    |> Kernel.++(derived)
   end
 
   @doc """

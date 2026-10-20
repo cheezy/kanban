@@ -710,7 +710,7 @@ msgstr ""
 #: lib/kanban_web/components/archive_filter_chips.ex:424
 #: lib/kanban_web/components/board_filter_bar.ex:182
 #: lib/kanban_web/components/bulk_action_bar.ex:187
-#: lib/kanban_web/live/task_live/form/option_builders.ex:123
+#: lib/kanban_web/live/task_live/form/option_builders.ex:125
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
 msgstr ""
@@ -1901,7 +1901,7 @@ msgstr ""
 msgid "ID"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/option_builders.ex:148
+#: lib/kanban_web/live/task_live/form/option_builders.ex:161
 #, elixir-autogen, elixir-format
 msgid "No parent goal"
 msgstr ""
@@ -5999,7 +5999,7 @@ msgstr ""
 msgid "Before Review"
 msgstr ""
 
-#: lib/kanban_web/live/task_live/form/option_builders.ex:90
+#: lib/kanban_web/live/task_live/form/option_builders.ex:91
 #, elixir-autogen, elixir-format
 msgid "WIP limit reached"
 msgstr ""
