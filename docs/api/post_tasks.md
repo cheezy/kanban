@@ -35,7 +35,7 @@ Authorization: Bearer <your_api_token>
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `task.key_files` | array | **CRITICAL** | Files that will be modified - prevents conflicts (see format below) |
-| `task.dependencies` | array | **Strongly Recommended** | Array of task identifiers that must complete first (e.g., `["W1", "W2"]`), or use 0-based indices for tasks within the same goal (e.g., `[0, 1]` - see Dependency Handling below) |
+| `task.dependencies` | array | **Strongly Recommended** | Array of task identifiers that must complete first (e.g., `["W1", "W2"]`), or use 0-based indices for tasks within the same goal (e.g., `[0, 1]` - see Dependency Handling below). Each identifier must name a task on this board (or a child of the same goal); otherwise the request is refused with 422 `dependencies: ["lists tasks that are not on this board: W900"]` and nothing is created |
 
 **A single create cannot attach a task to an existing goal.** There is no
 `parent_goal` parameter, and `parent_id` is read-only:
@@ -874,6 +874,8 @@ When creating a goal with child tasks, you cannot use task identifiers like `"W1
 - Index 0 = first task, index 1 = second task, etc.
 - The system automatically converts indices to actual task identifiers during creation
 - Result stored in database has human-readable identifiers
+- A string identifier must name a task already on the board or one of the goal's
+  own children; an identifier with no task there refuses the whole goal with 422
 
 **Example:**
 

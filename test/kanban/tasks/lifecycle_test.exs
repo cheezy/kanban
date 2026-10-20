@@ -1,7 +1,8 @@
 defmodule Kanban.Tasks.LifecycleTest do
   @moduledoc """
   Tests for `Kanban.Tasks.Lifecycle`: `update_changed_files/2` (D36 nil
-  rejection) and the `update_task/3` task_assigned notifications (W2203).
+  rejection), the `update_task/3` task_assigned notifications (W2203), and the
+  refusal of dependencies that name no task on the board.
   The archive tests moved to `Kanban.Tasks.ArchivingTest` in W2350.
   """
   use Kanban.DataCase
@@ -49,6 +50,37 @@ defmodule Kanban.Tasks.LifecycleTest do
       task = task_fixture(column)
       entry = %{"path" => "lib/foo.ex", "diff" => "@@ -1 +1 @@\n-old\n+new"}
       assert {:ok, %Task{changed_files: [^entry]}} = Lifecycle.update_changed_files(task, [entry])
+    end
+  end
+
+  describe "update_task/3 and api_update_task/2 — dependencies on the board" do
+    test "refuse an identifier with no task on the board and save nothing", %{column: column} do
+      task = task_fixture(column)
+
+      for update <- [
+            &Tasks.update_task(&1, %{dependencies: ["W900"]}),
+            &Lifecycle.api_update_task(&1, %{"dependencies" => ["W900"]})
+          ] do
+        assert {:error, changeset} = update.(task)
+
+        assert errors_on(changeset).dependencies == [
+                 "lists tasks that are not on this board: W900"
+               ]
+      end
+
+      assert Repo.get!(Task, task.id).dependencies == []
+    end
+
+    test "still save other edits to a task that already holds a dangling dependency", %{
+      column: column
+    } do
+      task =
+        column
+        |> task_fixture()
+        |> Ecto.Changeset.change(dependencies: ["W900"])
+        |> Repo.update!()
+
+      assert {:ok, %Task{title: "Renamed"}} = Tasks.update_task(task, %{title: "Renamed"})
     end
   end
 

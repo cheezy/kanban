@@ -3,7 +3,8 @@ defmodule Kanban.Tasks.DependenciesTest do
   Direct unit tests for the dependency logic module (W1448): multi-hop circular
   detection, blocking-status recomputation, and the dependency/dependent trees.
   Dependency *format* and *self-reference* validation live in Kanban.Tasks.Task's
-  changeset, not here, and are covered by the task-schema tests.
+  changeset, not here, and are covered by the task-schema tests; the check that
+  each dependency names a task on the same board is here.
   """
   use Kanban.DataCase, async: true
 
@@ -92,6 +93,94 @@ defmodule Kanban.Tasks.DependenciesTest do
 
       errors = errors_on(changeset)
       refute Map.has_key?(errors, :dependencies)
+    end
+  end
+
+  describe "validate_dependencies_exist/2" do
+    defp deps_errors(changeset), do: changeset |> errors_on() |> Map.get(:dependencies, [])
+
+    test "accepts identifiers of tasks on the same board, archived ones included", %{
+      column: column
+    } do
+      open = task_fixture(column)
+      archived = task_fixture(column, %{archived_at: DateTime.utc_now(:second)})
+
+      changeset =
+        column
+        |> task_fixture()
+        |> Task.changeset(%{dependencies: [open.identifier, archived.identifier]})
+        |> Dependencies.validate_dependencies_exist()
+
+      assert deps_errors(changeset) == []
+    end
+
+    test "names every identifier with no task on the board, once each", %{column: column} do
+      changeset =
+        column
+        |> task_fixture()
+        |> Task.changeset(%{dependencies: ["W900", "W901", "W900"]})
+        |> Dependencies.validate_dependencies_exist()
+
+      assert deps_errors(changeset) == ["lists tasks that are not on this board: W900, W901"]
+    end
+
+    test "refuses an identifier that exists only on another board", %{column: column} do
+      other_column = column_fixture(board_fixture(user_fixture()))
+      task_fixture(other_column)
+      only_elsewhere = task_fixture(other_column)
+      task = task_fixture(column)
+      refute only_elsewhere.identifier == task.identifier
+
+      changeset =
+        task
+        |> Task.changeset(%{dependencies: [only_elsewhere.identifier]})
+        |> Dependencies.validate_dependencies_exist()
+
+      assert deps_errors(changeset) == [
+               "lists tasks that are not on this board: #{only_elsewhere.identifier}"
+             ]
+    end
+
+    test "counts `known` identifiers as present", %{column: column} do
+      changeset =
+        column
+        |> task_fixture()
+        |> Task.changeset(%{dependencies: ["W900"]})
+        |> Dependencies.validate_dependencies_exist(["W900"])
+
+      assert deps_errors(changeset) == []
+    end
+
+    test "skips the check when :dependencies is not among the changes", %{column: column} do
+      task = column |> task_fixture() |> set_deps(["W900"])
+
+      changeset =
+        task
+        |> Task.changeset(%{title: "Renamed with a dangling dependency"})
+        |> Dependencies.validate_dependencies_exist()
+
+      assert deps_errors(changeset) == []
+    end
+
+    test "adds nothing to a self-dependency or a list that failed its format check", %{
+      column: column
+    } do
+      task = task_fixture(column)
+
+      self_dep =
+        task
+        |> Task.changeset(%{dependencies: [task.identifier]})
+        |> Dependencies.validate_dependencies_exist()
+
+      assert deps_errors(self_dep) == ["cannot depend on itself"]
+
+      bad_format =
+        task
+        |> Ecto.Changeset.change(%{dependencies: ["W900"]})
+        |> Ecto.Changeset.add_error(:dependencies, "must be a list of task identifiers (strings)")
+        |> Dependencies.validate_dependencies_exist()
+
+      assert deps_errors(bad_format) == ["must be a list of task identifiers (strings)"]
     end
   end
 

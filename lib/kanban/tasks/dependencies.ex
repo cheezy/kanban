@@ -2,12 +2,14 @@ defmodule Kanban.Tasks.Dependencies do
   @moduledoc """
   Dependency management for tasks.
 
-  Handles blocking status updates, circular dependency validation,
-  dependency tree traversal, and dependent task queries.
+  Handles blocking status updates, circular dependency validation, the check
+  that every dependency names a task on the task's own board, dependency tree
+  traversal, and dependent task queries.
   """
 
   import Ecto.Query, warn: false
 
+  alias Kanban.Columns.Column
   alias Kanban.Repo
   alias Kanban.Tasks.GoalTelemetry
   alias Kanban.Tasks.Task
@@ -84,6 +86,65 @@ defmodule Kanban.Tasks.Dependencies do
     end)
 
     :ok
+  end
+
+  @doc """
+  Validates that every identifier in a changed `dependencies` list names a
+  task on the board of the changeset's `column_id`.
+
+  Dependencies resolve only on the task's own board, so an identifier with no
+  task there would leave the task blocked until some unrelated task later
+  receives that identifier and completes. Such a change gets an error on
+  `:dependencies` naming the missing identifiers, the same way an unknown
+  label is refused.
+
+  `known` lists identifiers that count as present although their rows are not
+  inserted yet: the sibling identifiers of a goal's children, generated before
+  any child is. The task's own identifier is skipped, since
+  `Kanban.Tasks.Task.FieldValidations` already refuses a self-dependency. The
+  check runs only when `dependencies` is among the changes, so a task that
+  already holds a dangling dependency can still be edited otherwise, and it
+  never adds a second error to a list that failed its format check.
+  """
+  def validate_dependencies_exist(changeset, known \\ []) do
+    deps = Ecto.Changeset.get_change(changeset, :dependencies)
+
+    if is_list(deps) and deps != [] and changeset.errors[:dependencies] == nil do
+      own = Ecto.Changeset.get_field(changeset, :identifier)
+      column_id = Ecto.Changeset.get_field(changeset, :column_id)
+      wanted = deps |> Enum.filter(&is_binary/1) |> Enum.uniq() |> Kernel.--([own | known])
+
+      changeset |> add_missing_dependencies_error(missing_on_board(wanted, column_id))
+    else
+      changeset
+    end
+  end
+
+  defp add_missing_dependencies_error(changeset, []), do: changeset
+
+  defp add_missing_dependencies_error(changeset, missing) do
+    Ecto.Changeset.add_error(
+      changeset,
+      :dependencies,
+      "lists tasks that are not on this board: %{identifiers}",
+      identifiers: Enum.join(missing, ", ")
+    )
+  end
+
+  defp missing_on_board([], _column_id), do: []
+
+  defp missing_on_board(identifiers, column_id) do
+    found =
+      from(t in Task,
+        join: c in assoc(t, :column),
+        join: own in Column,
+        on: own.board_id == c.board_id,
+        where: own.id == ^column_id and t.identifier in ^identifiers,
+        select: t.identifier
+      )
+      |> Repo.all()
+
+    identifiers -- found
   end
 
   @doc """

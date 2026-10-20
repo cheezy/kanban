@@ -53,7 +53,7 @@ defmodule Kanban.Tasks.Lifecycle do
   """
   def update_task(%Task{} = task, attrs, opts \\ []) do
     changeset = task |> Task.changeset(attrs) |> Assignees.validate_enabled_assignee()
-    changeset = Dependencies.validate_circular_dependencies(changeset)
+    changeset = validate_dependencies(changeset)
     assignment_changed? = Map.has_key?(changeset.changes, :assigned_to_id)
 
     result =
@@ -66,6 +66,12 @@ defmodule Kanban.Tasks.Lifecycle do
     result
     |> notify_assignment(assignment_changed?, opts)
     |> emit_updated(changeset, opts)
+  end
+
+  defp validate_dependencies(changeset) do
+    changeset
+    |> Dependencies.validate_dependencies_exist()
+    |> Dependencies.validate_circular_dependencies()
   end
 
   defp emit_updated(result, changeset, opts) do
@@ -95,8 +101,7 @@ defmodule Kanban.Tasks.Lifecycle do
   goal-to-children assignment cascade.
   """
   def api_update_task(%Task{} = task, attrs) do
-    changeset = Task.api_update_changeset(task, attrs)
-    changeset = Dependencies.validate_circular_dependencies(changeset)
+    changeset = task |> Task.api_update_changeset(attrs) |> validate_dependencies()
 
     task
     |> update_without_cascade(changeset)

@@ -152,3 +152,7 @@ msgstr "无法访问此看板"
 ## From Kanban.ApiTokens.ApiToken (an agent capability longer than its varchar(255) column)
 msgid "each capability must be at most 255 characters"
 msgstr "每项能力最多 255 个字符"
+
+## From Kanban.Tasks.Dependencies (a dependency identifier with no task on the board)
+msgid "lists tasks that are not on this board: %{identifiers}"
+msgstr "包含不在此看板上的任务：%{identifiers}"

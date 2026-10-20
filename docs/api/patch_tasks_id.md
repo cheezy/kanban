@@ -401,6 +401,10 @@ When `dependencies` array is updated:
 - The task's blocking status is automatically recalculated
 - If all dependencies are completed, task status changes from `blocked` to `open`
 - If task has incomplete dependencies, status changes to `blocked`
+- Every identifier must name a task on the task's board. An identifier with no
+  task there (including one that exists only on another board) is refused with
+  422 `dependencies: ["lists tasks that are not on this board: W900"]`, and the
+  task is left unchanged
 - Dependent tasks cannot be deleted while they are listed as dependencies
 
 ### Labels

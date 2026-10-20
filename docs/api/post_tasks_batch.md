@@ -406,6 +406,9 @@ its compact goal and child shapes; read a task's labels with
 - Index 0 = first task, index 1 = second task, etc.
 - The system automatically converts indices to actual task identifiers (W47, W48, etc.) during creation
 - Result stored in database has human-readable identifiers
+- A string identifier must name a task already on the board (including the
+  children of goals created earlier in the same batch) or a child of the same
+  goal; an identifier with no task there refuses that goal with 422
 
 **Example - Index-based dependencies:**
 
@@ -574,6 +577,7 @@ To continue after an error:
 | `priority: ["is invalid"]` | Invalid priority | Use `low`, `medium`, `high`, or `critical` |
 | `complexity: ["is invalid"]` | Invalid complexity | Use `small`, `medium`, or `large` |
 | `dependencies: ["must be an array"]` | Wrong type | Use array of strings |
+| `dependencies: ["lists tasks that are not on this board: ..."]` | A goal or child names an identifier with no task on this board | Use the identifier of a task on this board, or an index for a sibling in the same goal |
 | `security_considerations: ["entry N looks like it contains a credential; ..."]` | Entry N of a goal's or child's `security_considerations` carries a real-looking token or key | Remove the secret value and describe the risk in words |
 | `labels: ["unknown labels: ..."]` | A goal or child names a label this board does not have (nothing in the batch is created) | Use an existing label name, or create the label in the board settings first |
 

@@ -1330,23 +1330,8 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       user = user_fixture()
       board = board_fixture(user)
       column = column_fixture(board, %{name: "To Do"})
-      task = %Tasks.Task{column_id: column.id}
-
-      {:ok, socket} =
-        FormComponent.update(
-          %{
-            current_scope: %{user: user},
-            task: task,
-            board: board,
-            action: :new_task,
-            column_id: column.id,
-            patch: "/boards/#{board.id}"
-          },
-          %Phoenix.LiveView.Socket{}
-        )
-
-      # Initialize flash and add test process to receive messages
-      socket = Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+      prerequisite = task_fixture(column, %{title: "Prerequisite"})
+      socket = new_task_socket(user, board, column)
 
       task_params = %{
         "title" => "Rich Task",
@@ -1358,7 +1343,7 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
         "technology_requirements" => ["Phoenix", "LiveView"],
         "pitfalls" => ["Don't forget validation"],
         "out_of_scope" => ["No UI styling"],
-        "dependencies" => ["W01A"]
+        "dependencies" => [prerequisite.identifier]
       }
 
       {:noreply, _updated_socket} =
@@ -1370,7 +1355,43 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       assert created_task.complexity == :medium
       assert created_task.why == "To test all fields"
       assert created_task.technology_requirements == ["Phoenix", "LiveView"]
+      assert created_task.dependencies == [prerequisite.identifier]
     end
+
+    test "refuses a dependency that names no task on the board and creates nothing" do
+      user = user_fixture()
+      board = board_fixture(user)
+      column = column_fixture(board, %{name: "To Do"})
+      socket = new_task_socket(user, board, column)
+
+      task_params = %{"title" => "Dangling dependency", "dependencies" => ["W900"]}
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      refute Kanban.Repo.get_by(Tasks.Task, title: "Dangling dependency")
+
+      assert {"lists tasks that are not on this board: %{identifiers}", _} =
+               updated_socket.assigns.form.source.errors[:dependencies]
+    end
+  end
+
+  defp new_task_socket(user, board, column) do
+    {:ok, socket} =
+      FormComponent.update(
+        %{
+          current_scope: %{user: user},
+          task: %Tasks.Task{column_id: column.id},
+          board: board,
+          action: :new_task,
+          column_id: column.id,
+          patch: "/boards/#{board.id}"
+        },
+        %Phoenix.LiveView.Socket{}
+      )
+
+    # Initialize flash so the save path can put one
+    Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
   end
 
   describe "handle_event save for edit task" do

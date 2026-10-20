@@ -10,6 +10,8 @@ defmodule Kanban.Tasks.GoalCreation do
   `column_id` in the goal's or a child's attrs is dropped, never cast: the
   positions are taken in `column`, and an API caller authorized for one board
   must not be able to place a child on another board by naming its column.
+  Every dependency must name a task on that board or one of the goal's own
+  children (`Kanban.Tasks.Dependencies.validate_dependencies_exist/2`).
 
   Single-task creation lives in `Kanban.Tasks.Creation`; the helpers both
   share are in `Kanban.Tasks.CreationSupport`.
@@ -81,13 +83,21 @@ defmodule Kanban.Tasks.GoalCreation do
     |> Ecto.Multi.run(:child_hierarchy, child_hierarchy_fun(column, child_tasks_attrs))
     |> Ecto.Multi.run(:lock_and_prepare, goal_lock_and_prepare_fun(column, child_tasks_attrs))
     |> Ecto.Multi.insert(:goal, fn %{lock_and_prepare: prep} ->
-      attrs = prepare_goal_attrs(goal_attrs, prep.goal_id, prep.position)
-      column |> CreationSupport.new_task() |> changeset_fn.(attrs)
+      goal_changeset(column, goal_attrs, prep, changeset_fn)
     end)
     |> Ecto.Multi.insert(:goal_history, fn %{goal: goal} ->
       TaskHistory.changeset(%TaskHistory{}, %{task_id: goal.id, type: :creation})
     end)
     |> insert_child_tasks(column, child_tasks_attrs, changeset_fn)
+  end
+
+  defp goal_changeset(column, goal_attrs, prep, changeset_fn) do
+    attrs = prepare_goal_attrs(goal_attrs, prep.goal_id, prep.position)
+
+    column
+    |> CreationSupport.new_task()
+    |> changeset_fn.(attrs)
+    |> Dependencies.validate_dependencies_exist()
   end
 
   # A goal holds only work and defect tasks, one level deep (D354). A child of
@@ -163,7 +173,10 @@ defmodule Kanban.Tasks.GoalCreation do
           prep.position
         )
 
-      column |> CreationSupport.new_task() |> changeset_fn.(child_attrs_with_parent)
+      column
+      |> CreationSupport.new_task()
+      |> changeset_fn.(child_attrs_with_parent)
+      |> Dependencies.validate_dependencies_exist(prep.child_ids)
     end)
     |> Ecto.Multi.insert(history_key, fn changes ->
       child_task = Map.get(changes, task_key)

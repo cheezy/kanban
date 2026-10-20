@@ -749,6 +749,80 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert length(Tasks.list_tasks(other_column)) == 2
     end
 
+    test "refuses a dependency that names no task on this board, even one on another board",
+         %{conn: conn, column: column} do
+      other_column =
+        ai_optimized_board_fixture(user_fixture())
+        |> Columns.list_columns()
+        |> Enum.find(&(&1.name == "Backlog"))
+
+      {:ok, _} = Tasks.create_task(other_column, %{"title" => "Elsewhere W1"})
+      {:ok, elsewhere} = Tasks.create_task(other_column, %{"title" => "Elsewhere W2"})
+
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Depends on a task elsewhere",
+            "type" => "work",
+            "dependencies" => [elsewhere.identifier, "W900"]
+          }
+        )
+
+      assert json_response(conn, 422)["errors"]["dependencies"] == [
+               "lists tasks that are not on this board: #{elsewhere.identifier}, W900"
+             ]
+
+      assert Tasks.list_tasks(column) == []
+    end
+
+    test "accepts a dependency on a task on this board and blocks on it", %{
+      conn: conn,
+      column: column
+    } do
+      {:ok, first} = Tasks.create_task(column, %{"title" => "Prerequisite"})
+
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{"title" => "Follows", "type" => "work", "dependencies" => [first.identifier]}
+        )
+
+      task = Tasks.get_task!(json_response(conn, 201)["data"]["id"])
+      assert task.dependencies == [first.identifier]
+      assert task.status == :blocked
+    end
+
+    test "accepts a goal child depending on a later sibling by index", %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Goal with a forward sibling dependency",
+            "type" => "goal",
+            "tasks" => [
+              %{"title" => "Second in order", "type" => "work", "dependencies" => [1]},
+              %{"title" => "First in order", "type" => "work"}
+            ]
+          }
+        )
+
+      [second, first] = json_response(conn, 201)["child_tasks"]
+      assert Tasks.get_task!(second["id"]).dependencies == [first["identifier"]]
+    end
+
+    test "refuses a goal whose child names a missing dependency, and creates nothing",
+         %{conn: conn, column: column} do
+      conn =
+        post(conn, ~p"/api/tasks",
+          task: %{
+            "title" => "Goal with a dangling child dependency",
+            "type" => "goal",
+            "tasks" => [%{"title" => "Child", "type" => "work", "dependencies" => ["W900"]}]
+          }
+        )
+
+      assert json_response(conn, 422)
+      assert Tasks.list_tasks(column) == []
+    end
+
     # D365: the docs once advertised a task.parent_goal create parameter that
     # the server never implemented. Neither parent_goal nor parent_id can attach
     # a single create to an existing goal; both are ignored with a 201.
@@ -1734,6 +1808,24 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert Tasks.get_task!(child["id"]).column_id == goal_column_id
       assert Columns.get_column!(goal_column_id).board_id == board.id
       assert Tasks.list_tasks(other_column) == []
+    end
+
+    test "refuses a batch whose child names a dependency that is not on this board", %{
+      conn: conn,
+      board: board
+    } do
+      goals_params = [
+        %{
+          "title" => "Batch goal with a dangling dependency",
+          "type" => "goal",
+          "tasks" => [%{"title" => "Child", "type" => "work", "dependencies" => ["W900"]}]
+        }
+      ]
+
+      conn = post(conn, ~p"/api/tasks/batch", goals: goals_params)
+
+      assert %{"index" => 0} = json_response(conn, 422)
+      assert Kanban.Tasks.Queries.list_goals_for_board(board.id) == []
     end
 
     test "creates multiple goals with child tasks", %{conn: conn} do
@@ -2921,6 +3013,17 @@ defmodule KanbanWeb.API.TaskControllerTest do
         })
 
       %{task: task}
+    end
+
+    test "refuses a dependency that names no task on this board and leaves the task unchanged",
+         %{conn: conn, task: task} do
+      conn = patch(conn, ~p"/api/tasks/#{task.id}", task: %{"dependencies" => ["W900"]})
+
+      assert json_response(conn, 422)["errors"]["dependencies"] == [
+               "lists tasks that are not on this board: W900"
+             ]
+
+      assert Tasks.get_task!(task.id).dependencies == []
     end
 
     test "returns 403 for a read-only board member (D109)", %{
@@ -4785,7 +4888,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         Tasks.create_task(ready_column, %{
           "title" => "Blocked Task",
           "status" => "open",
-          "dependencies" => [to_string(dependency_task.id)],
+          "dependencies" => [dependency_task.identifier],
           "created_by_id" => user.id
         })
 
@@ -7005,7 +7108,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         Tasks.create_task(ready_column, %{
           "title" => "Blocked Task",
           "status" => "open",
-          "dependencies" => [to_string(incomplete_task.id)],
+          "dependencies" => [incomplete_task.identifier],
           "created_by_id" => user.id
         })
 
@@ -7053,7 +7156,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         Tasks.create_task(ready_column, %{
           "title" => "Blocked Task",
           "status" => "open",
-          "dependencies" => [to_string(incomplete_task.id)],
+          "dependencies" => [incomplete_task.identifier],
           "created_by_id" => user.id
         })
 
@@ -7679,12 +7782,14 @@ defmodule KanbanWeb.API.TaskControllerTest do
     end
 
     test "the delegate returns exactly what TaskJSON returns", %{column: column} do
+      {:ok, dependency} = Tasks.create_task(column, %{"title" => "Delegation dependency"})
+
       {:ok, task} =
         Tasks.create_task(column, %{
           "title" => "Delegation parity task",
           "priority" => "high",
           "complexity" => "medium",
-          "dependencies" => ["W900"],
+          "dependencies" => [dependency.identifier],
           "created_by_agent" => "Claude Opus 5"
         })
 

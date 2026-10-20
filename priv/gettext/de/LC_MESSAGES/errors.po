@@ -161,3 +161,7 @@ msgstr "hat keinen Zugriff auf dieses Board"
 ## From Kanban.ApiTokens.ApiToken (an agent capability longer than its varchar(255) column)
 msgid "each capability must be at most 255 characters"
 msgstr "jede Fähigkeit darf höchstens 255 Zeichen lang sein"
+
+## From Kanban.Tasks.Dependencies (a dependency identifier with no task on the board)
+msgid "lists tasks that are not on this board: %{identifiers}"
+msgstr "enthält Aufgaben, die nicht auf diesem Board sind: %{identifiers}"

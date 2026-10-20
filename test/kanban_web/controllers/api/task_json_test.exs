@@ -147,12 +147,16 @@ defmodule KanbanWeb.API.TaskJSONTest do
     end
 
     test "passes every field through verbatim", %{column: column} do
+      {:ok, first} = Tasks.create_task(column, %{"title" => "First dependency"})
+      {:ok, second} = Tasks.create_task(column, %{"title" => "Second dependency"})
+      dependencies = [first.identifier, second.identifier]
+
       {:ok, task} =
         Tasks.create_task(column, %{
           "title" => "Verbatim passthrough task",
           "priority" => "critical",
           "complexity" => "large",
-          "dependencies" => ["W900", "W901"],
+          "dependencies" => dependencies,
           "created_by_agent" => "Claude Opus 5"
         })
 
@@ -164,7 +168,7 @@ defmodule KanbanWeb.API.TaskJSONTest do
       assert summary.status == task.status
       assert summary.priority == :critical
       assert summary.complexity == :large
-      assert summary.dependencies == ["W900", "W901"]
+      assert summary.dependencies == dependencies
       assert summary.created_by_agent == "Claude Opus 5"
     end
 

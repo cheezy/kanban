@@ -1,7 +1,8 @@
 defmodule Kanban.Tasks.Creation do
   @moduledoc """
   Single-task creation with automatic positioning, identifier generation,
-  WIP-limit checks and dependency handling. A task created under an assigned
+  WIP-limit checks and dependency handling: every dependency must name a task
+  on the column's board. A task created under an assigned
   goal inherits the goal's assignee, unless that assignee is a disabled
   account (D385): the task then starts unassigned.
 
@@ -212,6 +213,7 @@ defmodule Kanban.Tasks.Creation do
 
       CreationSupport.new_task(column)
       |> changeset_fn.(task_attrs)
+      |> Dependencies.validate_dependencies_exist()
       |> Dependencies.validate_circular_dependencies()
     end
   end
