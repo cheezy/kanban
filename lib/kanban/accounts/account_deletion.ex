@@ -22,7 +22,8 @@ defmodule Kanban.Accounts.AccountDeletion do
     1. revokes the open invitations the user sent;
     2. empties their personal workspace (`Kanban.Workspaces.clear_personal_boards/1`):
        boards only they use are deleted, any board others still use is
-       re-homed to the earliest remaining member's personal workspace;
+       re-homed to the personal workspace of an enabled user, never a
+       disabled one (`Kanban.Workspaces.PersonalCleanup` has the rule);
     3. deletes every one of their `users_tokens` rows (sessions, email
        tokens);
     4. deletes the personal workspace, then the user row.

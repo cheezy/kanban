@@ -4,17 +4,23 @@ defmodule Kanban.Workspaces.PersonalCleanup do
   (W2221), so `Kanban.Workspaces.delete_personal_workspace/1` can remove it.
 
   Each board in the workspace is either deleted or re-homed into another
-  user's personal workspace, using the placement rule of the W2217 backfill
-  (`priv/repo/migrations/20261018134655_backfill_personal_workspaces.exs`):
+  user's personal workspace, following the placement rule of the W2217
+  backfill (`priv/repo/migrations/20261018134655_backfill_personal_workspaces.exs`)
+  with every disabled account skipped at every step:
 
-    1. another user's `board_users` owner row: the board goes to its owner;
-    2. otherwise the earliest other member, by `board_users.inserted_at` then
-       id;
-    3. a board with no `board_users` rows at all goes to the earliest enabled
-       site admin other than the user, by `users.inserted_at` then id.
+    1. another enabled user's `board_users` owner row: the board goes to its
+       owner;
+    2. otherwise the earliest other enabled member, by
+       `board_users.inserted_at` then id;
+    3. otherwise the earliest enabled site admin other than the user, by
+       `users.inserted_at` then id;
+    4. otherwise the board is deleted, with its columns and tasks (they
+       cascade).
 
-  A board nobody else uses — only the user's own row, or no rows and no other
-  enabled site admin — is deleted, with its columns and tasks (they cascade).
+  A board only the user uses — no `board_users` row but their own — is
+  deleted outright. Rule 3 is for a board with no rows at all, and for one
+  whose other members are all disabled: it never lands in a disabled
+  account's workspace, where nobody could reach it.
 
   The caller must already have refused the deletion while the user owns a
   board other people use, which is why rule 1 only ever finds another user's
@@ -85,15 +91,19 @@ defmodule Kanban.Workspaces.PersonalCleanup do
       )
       |> Repo.all()
 
-    others = Enum.reject(rows, &(&1.user_id == user_id))
-
-    cond do
-      owner = Enum.find(others, &(&1.access == :owner)) -> owner.user
-      others != [] -> hd(others).user
-      rows == [] -> earliest_other_admin(user)
-      true -> nil
+    case Enum.reject(rows, &(&1.user_id == user_id)) do
+      [] when rows != [] -> nil
+      others -> enabled_owner(others) || earliest_enabled(others) || earliest_other_admin(user)
     end
   end
+
+  defp enabled_owner(rows),
+    do: Enum.find_value(rows, &(&1.access == :owner and enabled_user(&1)))
+
+  defp earliest_enabled(rows), do: Enum.find_value(rows, &enabled_user/1)
+
+  defp enabled_user(%BoardUser{user: %User{disabled_at: nil} = user}), do: user
+  defp enabled_user(%BoardUser{}), do: nil
 
   defp earliest_other_admin(%User{id: user_id}) do
     from(u in User,

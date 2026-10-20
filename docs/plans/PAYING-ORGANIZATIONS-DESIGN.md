@@ -708,7 +708,7 @@ An org-admin cannot move a teammate's board; the teammate transfers ownership fi
 - being the last org-admin of an Organization with other members (a site admin must appoint another);
 - being the last enabled site admin.
 
-Deletion runs in one transaction that re-checks the blockers. It deletes the user's personal workspace and the boards in it that only they use, re-homes any remaining board in it that others use to its earliest remaining member's personal workspace, removes the organization membership, workspace rows, board memberships, API tokens (including workspace tokens) and session tokens, revokes invitations they sent, nilifies task attribution, and records `:account_self_deleted` with the user id and no email. `AdminManagement.delete_user/2` keeps its existing guards and adds the last-enabled-org-admin guard (see Removing org-admins above).
+Deletion runs in one transaction that re-checks the blockers. It deletes the user's personal workspace and the boards in it that only they use, re-homes any remaining board in it that others use (to its other enabled owner's personal workspace, else its earliest remaining enabled member's, else the earliest enabled site admin's; a disabled account never receives one, and a board none of them can take is deleted), removes the organization membership, workspace rows, board memberships, API tokens (including workspace tokens) and session tokens, revokes invitations they sent, nilifies task attribution, and records `:account_self_deleted` with the user id and no email. `AdminManagement.delete_user/2` keeps its existing guards and adds the last-enabled-org-admin guard (see Removing org-admins above).
 
 **What does not exist in v1:**
 
