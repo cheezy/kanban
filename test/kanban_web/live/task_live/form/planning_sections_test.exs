@@ -5,7 +5,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSectionsTest do
   component but are gated differently: Dependencies (never gated) and Agent
   Tracking (gated on data, not on the visibility map).
 
-  The load-bearing behaviour here is `ensure_list/1`: these map columns hold
+  The load-bearing behaviour here is `FieldEvents.rows/1`: these map columns hold
   free-form JSON, so a key can legitimately arrive holding a bare string (a
   legacy shape) or a value that is neither string nor list. The component must
   render those without crashing rather than passing them to `Enum.with_index/1`.
@@ -151,7 +151,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSectionsTest do
     end
   end
 
-  describe "ensure_list/1 tolerance for legacy map shapes" do
+  describe "FieldEvents.rows/1 tolerance for legacy map shapes" do
     test "renders one input per entry for the normal list shape" do
       html =
         render_sections(

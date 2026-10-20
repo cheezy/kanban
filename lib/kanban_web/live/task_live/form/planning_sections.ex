@@ -5,9 +5,14 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
   well over the module-size guidance in `AGENTS.md`).
 
   Both edit a map column as several named string lists, with add/remove buttons
-  per list targeting the parent LiveComponent.
+  per list targeting the parent LiveComponent. Rows are read through
+  `KanbanWeb.TaskLive.Form.FieldEvents.rows/1`, the same function the add/remove
+  events use, so a bare string (a valid stored shape) renders as one row whose
+  Remove button works, and any other non-list value renders no rows.
   """
   use KanbanWeb, :html
+
+  alias KanbanWeb.TaskLive.Form.FieldEvents
 
   attr :f, Phoenix.HTML.Form, required: true
   attr :field_visibility, :map, required: true
@@ -24,14 +29,15 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
         <.error :for={msg <- Enum.map(@f[:testing_strategy].errors, &translate_error/1)}>
           {msg}
         </.error>
-        <% testing_strategy = Ecto.Changeset.get_field(@f.source, :testing_strategy) || %{} %>
+        <% testing_strategy =
+          FieldEvents.map_or_empty(Ecto.Changeset.get_field(@f.source, :testing_strategy)) %>
 
         <div class="mb-4">
           <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-2); margin: 0 0 6px;">
             <span>{gettext("Unit Tests")}</span>
           </label>
           <input type="hidden" name="task[testing_strategy][unit_tests][]" value="" />
-          <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "unit_tests", []))) do %>
+          <%= for {test, index} <- Enum.with_index(FieldEvents.rows(Map.get(testing_strategy, "unit_tests"))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -66,7 +72,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
             <span>{gettext("Integration Tests")}</span>
           </label>
           <input type="hidden" name="task[testing_strategy][integration_tests][]" value="" />
-          <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "integration_tests", []))) do %>
+          <%= for {test, index} <- Enum.with_index(FieldEvents.rows(Map.get(testing_strategy, "integration_tests"))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -101,7 +107,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
             <span>{gettext("Manual Tests")}</span>
           </label>
           <input type="hidden" name="task[testing_strategy][manual_tests][]" value="" />
-          <%= for {test, index} <- Enum.with_index(ensure_list(Map.get(testing_strategy, "manual_tests", []))) do %>
+          <%= for {test, index} <- Enum.with_index(FieldEvents.rows(Map.get(testing_strategy, "manual_tests"))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -142,14 +148,15 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
         <.error :for={msg <- Enum.map(@f[:integration_points].errors, &translate_error/1)}>
           {msg}
         </.error>
-        <% integration_points = Ecto.Changeset.get_field(@f.source, :integration_points) || %{} %>
+        <% integration_points =
+          FieldEvents.map_or_empty(Ecto.Changeset.get_field(@f.source, :integration_points)) %>
 
         <div class="mb-4">
           <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-2); margin: 0 0 6px;">
             <span>{gettext("Telemetry Events")}</span>
           </label>
           <input type="hidden" name="task[integration_points][telemetry_events][]" value="" />
-          <%= for {event, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "telemetry_events", []))) do %>
+          <%= for {event, index} <- Enum.with_index(FieldEvents.rows(Map.get(integration_points, "telemetry_events"))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -184,7 +191,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
             <span>{gettext("PubSub Broadcasts")}</span>
           </label>
           <input type="hidden" name="task[integration_points][pubsub_broadcasts][]" value="" />
-          <%= for {broadcast, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "pubsub_broadcasts", []))) do %>
+          <%= for {broadcast, index} <- Enum.with_index(FieldEvents.rows(Map.get(integration_points, "pubsub_broadcasts"))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -219,7 +226,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
             <span>{gettext("Phoenix Channels")}</span>
           </label>
           <input type="hidden" name="task[integration_points][phoenix_channels][]" value="" />
-          <%= for {channel, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "phoenix_channels", []))) do %>
+          <%= for {channel, index} <- Enum.with_index(FieldEvents.rows(Map.get(integration_points, "phoenix_channels"))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -254,7 +261,7 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
             <span>{gettext("External APIs")}</span>
           </label>
           <input type="hidden" name="task[integration_points][external_apis][]" value="" />
-          <%= for {api, index} <- Enum.with_index(ensure_list(Map.get(integration_points, "external_apis", []))) do %>
+          <%= for {api, index} <- Enum.with_index(FieldEvents.rows(Map.get(integration_points, "external_apis"))) do %>
             <div class="flex gap-2 mb-2">
               <input
                 type="text"
@@ -345,11 +352,4 @@ defmodule KanbanWeb.TaskLive.Form.PlanningSections do
   defp field_visible?(field_visibility, field_name) do
     Map.get(field_visibility, field_name, false)
   end
-
-  # Tolerates the legacy shape where a map key held a bare string instead of a
-  # list (mirrors the same guard the form component applies elsewhere).
-  defp ensure_list(nil), do: []
-  defp ensure_list(value) when is_list(value), do: value
-  defp ensure_list(value) when is_binary(value), do: [value]
-  defp ensure_list(_value), do: []
 end
