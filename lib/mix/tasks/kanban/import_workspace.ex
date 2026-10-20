@@ -29,9 +29,13 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   whose account is not in the Organization is never attributed either: their
   attributions are left empty and they are named under "Skipped". Board
   access goes only to matched members of the Organization: a board owner who
-  is not one is replaced by the importing org-admin, and any other board
-  member who is not one is skipped and named, to be re-invited. Every board
-  access the import gave is listed. The workspace keeps the archive's name, or
+  is not one is replaced by the importing org-admin, who also owns a board
+  the archive names no owner for, and any other board member who is not one
+  is skipped and named, to be re-invited. Every board access the import gave
+  is listed. An archive whose tasks name a parent or duplicate on another
+  board, form a parent cycle, repeat an identifier on one board or carry a
+  malformed identifier is refused, as is any row holding a value no column
+  can store. The workspace keeps the archive's name, or
   gets an "(imported)" suffix when that name is taken in the Organization.
 
   It starts only the database connection (`Ecto.Migrator.with_repo/2`), not

@@ -8,7 +8,9 @@ defmodule KanbanWeb.WorkspaceExportController do
   `Kanban.Workspaces.Export.get_export_for_download/2`, which re-reads the
   user and requires an enabled org-admin of the export's own workspace's
   Organization. The file served is the path the export worker stored, inside
-  the export directory; no part of it comes from the request, and the
+  the export directory and never a symlink or reached through one
+  (`Kanban.Workspaces.Export.servable_file?/1`); no part of it comes from the
+  request, and the
   download filename is built from a literal and the integer export id.
 
   Every refusal — a member, a guest, an outsider, a former org-admin, another
