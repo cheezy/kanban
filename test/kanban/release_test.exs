@@ -440,6 +440,7 @@ defmodule Kanban.ReleaseTest do
       assert Repo.aggregate(Organization, :count) == 3
 
       organization_fixture(%{name: "Stride"})
+      organization_member_fixture(%{id: created.organization.id}, admin_fixture(), :org_admin)
 
       reused =
         admin
@@ -478,7 +479,7 @@ defmodule Kanban.ReleaseTest do
       assert result == %{status: :refused, reason: :name_taken}
     end
 
-    test "reuses a same-named Organization run by site admins and listed staff, or with no members" do
+    test "reuses a same-named Organization run by site admins and listed staff" do
       admin = admin_fixture()
       lead = user_fixture()
       staff_lead = user_fixture()
@@ -502,15 +503,22 @@ defmodule Kanban.ReleaseTest do
                admin
                |> internal_org_opts(org_admin_emails: [lead.email])
                |> Release.ensure_internal_organization()
+    end
 
-      empty = organization_fixture(%{name: "Internal"})
+    test "refuses a same-named Organization with no members, so an unstaffed customer's is safe" do
+      admin = admin_fixture()
+      lead = user_fixture()
+      customer = organization_fixture(%{name: "Stride"})
+      before = org_write_counts()
 
       result =
         admin
-        |> internal_org_opts(name: "Internal")
+        |> internal_org_opts(org_admin_emails: [lead.email])
         |> Release.ensure_internal_organization()
 
-      assert result.organization == %{id: empty.id, name: "Internal", created: false}
+      assert result == %{status: :refused, reason: :name_taken}
+      assert org_write_counts() == before
+      refute Organizations.member?(lead, customer)
     end
 
     test "returns the changeset's messages and writes nothing when the details are invalid" do

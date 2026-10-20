@@ -19,11 +19,15 @@ defmodule Kanban.Release.InternalOrganization do
 
   The name is not reserved, so a customer may already have an Organization
   called "Stride". An existing match is reused only when Stride staff run it:
-  it has no members at all, or it has org-admins and every one of them is a
-  site admin or one of the listed `org_admin_emails`. Otherwise the run is
-  refused with `:name_taken` and writes nothing, rather than appointing Stride
-  staff into a customer's Organization; pass a different `name` then. So a
-  repeat run lists the same org-admin emails as the first, or more.
+  it has org-admins and every one of them is a site admin or one of the listed
+  `org_admin_emails`. Otherwise the run is refused with `:name_taken` and
+  writes nothing, rather than appointing Stride staff into a customer's
+  Organization; pass a different `name` then. That includes an Organization
+  with no org-admin yet, such as a customer's created but not yet staffed, or
+  one whose members have all left. So a repeat run lists the same org-admin
+  emails as the first, or more, and a first run that appointed nobody is
+  followed by an appointment in `/admin/organizations/:id` before it is run
+  again.
 
   The whole run holds a Postgres advisory lock on one connection, so two runs
   started together cannot both find no Organization and each create one: the
@@ -190,8 +194,6 @@ defmodule Kanban.Release.InternalOrganization do
       refused(:name_taken)
     end
   end
-
-  defp staff_run?([], _emails), do: true
 
   defp staff_run?(members, emails) do
     listed = for email <- emails, is_binary(email), into: MapSet.new(), do: normalize(email)

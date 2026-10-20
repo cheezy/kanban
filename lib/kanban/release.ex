@@ -192,8 +192,9 @@ defmodule Kanban.Release do
   through `Kanban.Organizations`, so its authorization check, telemetry and
   audit events apply. It provisions no accounts, and running it again with the
   same org-admin emails, or more, creates nothing and reports what already
-  exists. An existing Organization of that name whose org-admins are not all
-  site admins or listed emails is refused with `:name_taken`. Run it with
+  exists. An existing Organization of that name with no org-admin, or whose
+  org-admins are not all site admins or listed emails, is refused with
+  `:name_taken`. Run it with
   `bin/kanban eval`, for example:
 
       Kanban.Release.ensure_internal_organization(
