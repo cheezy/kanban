@@ -540,7 +540,7 @@ defmodule Kanban.AuditLogTest do
         Repo.transact(fn ->
           emails =
             [action: :login_failed]
-            |> AuditLog.stream_events(max_rows: 1)
+            |> AuditLog.stream_events(batch_size: 1)
             |> Enum.map(& &1.metadata["email"])
 
           {:ok, emails}
@@ -549,6 +549,22 @@ defmodule Kanban.AuditLogTest do
       assert emails == ["first@example.com", "third@example.com"]
 
       assert {:ok, 3} = Repo.transact(fn -> {:ok, Enum.count(AuditLog.stream_events())} end)
+    end
+
+    test "stream_events/2 honours :order and a small :batch_size" do
+      {:ok, actions} =
+        Repo.transact(fn ->
+          {:ok,
+           [] |> AuditLog.stream_events(order: :desc, batch_size: 2) |> Enum.map(& &1.action)}
+        end)
+
+      assert actions == ["login_failed", "api_token_created", "login_failed"]
+    end
+
+    test "stream_events/2 rejects :max_rows, which means a TOTAL cap in export_stream/3" do
+      assert_raise ArgumentError, ~r/unknown keys \[:max_rows\]/, fn ->
+        AuditLog.stream_events([], max_rows: 1)
+      end
     end
   end
 
@@ -793,6 +809,12 @@ defmodule Kanban.AuditLogTest do
           |> Enum.join()
 
         assert length(Jason.decode!(json)) == 4
+      end
+    end
+
+    test "export_stream rejects an unknown option instead of ignoring it" do
+      assert_raise ArgumentError, ~r/unknown keys \[:order\]/, fn ->
+        AuditLog.export_stream([], :csv, order: :asc)
       end
     end
 

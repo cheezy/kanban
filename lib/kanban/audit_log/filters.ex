@@ -40,7 +40,7 @@ defmodule Kanban.AuditLog.Filters do
   Parses raw params into `%{filters: keyword, cursor: cursor | nil, params: map}`.
 
   `filters` is ready for `Kanban.AuditLog.list_events_page/2` and
-  `Kanban.AuditLog.export_stream/2`; `params` holds only the accepted values,
+  `Kanban.AuditLog.export_stream/3`; `params` holds only the accepted values,
   normalized, for rebuilding the form, patch URLs and export links.
   """
   @spec parse(term()) :: t()

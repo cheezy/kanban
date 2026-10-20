@@ -56,6 +56,16 @@ defmodule Kanban.AuditLog do
   returns `:ok`. Inside an open transaction the insert runs under a savepoint,
   so a failed audit insert cannot abort the caller's transaction.
 
+  ## Related modules
+
+  This module writes, lists and purges events. Building blocks live beside it:
+  `Kanban.AuditLog.Query` (query builders and keyset cursors),
+  `Kanban.AuditLog.Filters` (request-param parsing),
+  `Kanban.AuditLog.OrganizationScope` (org-admin redaction) and
+  `Kanban.AuditLog.Export` (keyset-batched CSV/JSON exports, with the total
+  row cap). `export_stream/3` and `export_truncated?/3` are delegated to
+  `Kanban.AuditLog.Export`, so callers use this module's API only.
+
   ## Example
 
       Kanban.AuditLog.event(:login_failed, email: email, ip: conn.remote_ip)
@@ -96,7 +106,7 @@ defmodule Kanban.AuditLog do
   @default_limit 100
   @default_page_size 50
   @max_page_size 200
-  @export_batch_size 500
+  @default_stream_batch_size 500
 
   @doc """
   Emit a security audit event. `action` is a stable atom (e.g. `:login_failed`);
@@ -154,17 +164,8 @@ defmodule Kanban.AuditLog do
     |> Repo.all()
   end
 
-  @doc """
-  Whether `export_stream/3` capped at `max_rows` would omit a matching event
-  (reads at most `max_rows + 1` rows). `pending`, a row about to be written,
-  takes a place if `filters` admit it (`Kanban.AuditLog.Query.matches?/2`).
-  """
-  @spec export_truncated?(keyword(), pos_integer(), map()) :: boolean()
-  def export_truncated?(filters, max_rows, pending) when is_integer(max_rows) and max_rows > 0 do
-    filters = Keyword.delete(filters, :cursor)
-    existing = filters |> Query.bounded_count(max_rows + 1) |> Repo.one()
-    existing + if(Query.matches?(filters, pending), do: 1, else: 0) > max_rows
-  end
+  @doc "See `Kanban.AuditLog.Export.export_truncated?/3`."
+  defdelegate export_truncated?(filters, max_rows, pending), to: Export
 
   @doc """
   One newest-first page of events for the admin viewer, paginated by keyset
@@ -216,47 +217,11 @@ defmodule Kanban.AuditLog do
   end
 
   @doc """
-  A lazy stream of export chunks (iodata) for every event matching `filters`,
-  newest first, as `:csv` (header line then rows) or `:json` (one array of
-  objects).
-
-  Events are fetched in keyset batches of `:batch_size` (default
-  #{@export_batch_size}) as the stream is consumed, so an export never loads
-  the whole table and holds no transaction or connection while the response
-  is being sent. Events inserted after the export starts are newer than its
-  first batch and are therefore not included.
-
-  `opts` takes `:batch_size`, `:redact_actors_outside` (see `list_events_page/2`)
-  and `:max_rows`, a row cap applied before encoding, so it stays well-formed.
+  A lazy stream of CSV or JSON export chunks for every event matching
+  `filters`, capped at the TOTAL `:max_rows`. See
+  `Kanban.AuditLog.Export.export_stream/3` for the options.
   """
-  @spec export_stream(keyword(), :csv | :json, keyword()) :: Enumerable.t()
-  def export_stream(filters, format, opts \\ []) when format in [:csv, :json] do
-    batch_size = Keyword.get(opts, :batch_size, @export_batch_size)
-
-    {nil, Keyword.get(opts, :max_rows, :infinity)}
-    |> Stream.unfold(&next_export_batch(filters, &1, batch_size))
-    |> Stream.map(&redact(&1, opts))
-    |> Export.encode_stream(format)
-  end
-
-  # A counted keyset loop: no batch asks for more rows than the cap has left.
-  defp next_export_batch(_filters, :done, _batch_size), do: nil
-  defp next_export_batch(_filters, {_cursor, 0}, _batch_size), do: nil
-
-  defp next_export_batch(filters, {cursor, remaining}, batch_size) do
-    limit = min(batch_size, remaining)
-
-    case list_events(Keyword.put(filters, :cursor, cursor), limit: limit) do
-      [] -> nil
-      batch when length(batch) < limit -> {batch, :done}
-      batch -> {batch, {batch |> List.last() |> keyset_position(), spend(remaining, limit)}}
-    end
-  end
-
-  defp spend(:infinity, _rows), do: :infinity
-  defp spend(remaining, rows), do: remaining - rows
-
-  defp keyset_position(%AuditEvent{inserted_at: at, id: id}), do: {at, id}
+  defdelegate export_stream(filters, format, opts \\ []), to: Export
 
   defp redact(events, opts) do
     case Keyword.get(opts, :redact_actors_outside) do
@@ -271,14 +236,22 @@ defmodule Kanban.AuditLog do
   support preloads).
 
   Like every `Repo.stream/2`, the stream must be enumerated inside a
-  `Repo.transaction/2`. `opts` accepts `:order` (default `:asc`, oldest first)
-  and `:max_rows` (rows fetched per round trip, default 500).
+  `Repo.transaction/2`. `opts` (any other key raises `ArgumentError`):
+
+    * `:order` — `:asc` (default, oldest first) or `:desc`.
+    * `:batch_size` — rows fetched per round trip (default
+      #{@default_stream_batch_size}). It is deliberately not called
+      `:max_rows`: `export_stream/3` uses that name for a TOTAL row cap, and
+      the strict option check makes a `:max_rows` copied from there fail
+      loudly here instead of being ignored.
   """
   @spec stream_events(keyword(), keyword()) :: Enum.t()
   def stream_events(filters \\ [], opts \\ []) do
+    opts = Keyword.validate!(opts, order: :asc, batch_size: @default_stream_batch_size)
+
     filters
-    |> Query.events(Keyword.get(opts, :order, :asc))
-    |> Repo.stream(max_rows: Keyword.get(opts, :max_rows, 500))
+    |> Query.events(opts[:order])
+    |> Repo.stream(max_rows: opts[:batch_size])
   end
 
   defp clamp_page_size(size) when is_integer(size), do: size |> max(1) |> min(@max_page_size)

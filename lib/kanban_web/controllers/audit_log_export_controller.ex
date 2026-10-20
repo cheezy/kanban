@@ -9,7 +9,7 @@ defmodule KanbanWeb.AuditLogExportController do
 
   Filter params are parsed strictly by `Kanban.AuditLog.Filters`; all querying
   and encoding live in the `Kanban.AuditLog` context. The body is sent chunked
-  from `Kanban.AuditLog.export_stream/2`, which reads the table in keyset
+  from `Kanban.AuditLog.export_stream/3`, which reads the table in keyset
   batches, so a large export is never loaded into memory at once. Every export
   is itself audited (`:audit_log_exported`) before the first byte is sent, so
   even an aborted download leaves a record.
