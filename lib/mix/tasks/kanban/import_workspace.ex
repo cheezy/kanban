@@ -25,7 +25,9 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
 
   Users are matched by email and never created; a disabled account is never
   matched. Attributions of a user with no account here are left empty and
-  their memberships are skipped; their emails are listed at the end. Board
+  their memberships are skipped; their emails are listed at the end. A user
+  whose account is not in the Organization is never attributed either: their
+  attributions are left empty and they are named under "Skipped". Board
   access goes only to matched members of the Organization: a board owner who
   is not one is replaced by the importing org-admin, and any other board
   member who is not one is skipped and named, to be re-invited. Every board

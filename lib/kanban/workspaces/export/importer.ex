@@ -20,10 +20,14 @@ defmodule Kanban.Workspaces.Export.Importer do
   than acting on a board. Source ids are never reused: every reference is
   remapped to the rows this import creates. Task identifiers and
   `dependencies` are kept verbatim, because identifiers are unique per board
-  and each board is new. Users are matched by email and never created: an
-  unmatched user's attributions become empty and their memberships are
-  skipped, and the report lists their emails. A disabled account is never
-  matched. A board whose owner is unmatched or not a member of the
+  and each board is new. Users are matched by email and never created
+  (`Kanban.Workspaces.Export.Importer.Users`): an unmatched user's
+  attributions become empty and their memberships are skipped, and the report
+  lists their emails. A disabled account is never matched. A matched user
+  outside the Organization is never attributed either: their task, comment and
+  history attributions are left empty and the report names them, so an
+  archive cannot make imported rows name an account outside the
+  Organization. A board whose owner is unmatched or not a member of the
   Organization is owned by the importing org-admin, as is a review whose
   reviewer is unmatched; both are counted as reattributed. Board access is
   given only to matched users who belong to the Organization — anyone else
@@ -48,6 +52,7 @@ defmodule Kanban.Workspaces.Export.Importer do
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Export.Importer.Archive
   alias Kanban.Workspaces.Export.Importer.Tasks
+  alias Kanban.Workspaces.Export.Importer.Users
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
 
@@ -114,7 +119,7 @@ defmodule Kanban.Workspaces.Export.Importer do
         reattributed: 0,
         granted: []
       }
-      |> match_users()
+      |> Users.match()
       |> create_workspace(manifest["workspace"]["name"])
       |> insert_members()
       |> insert_boards()
@@ -136,51 +141,9 @@ defmodule Kanban.Workspaces.Export.Importer do
     if dry_run?, do: Repo.rollback({:dry_run, report}), else: report
   end
 
-  defp match_users(ctx) do
-    users = ctx.rows.users
-    local = local_user_ids(users)
-    {user_map, unmatched} = Enum.reduce(users, {%{}, []}, &match_user(&1, &2, local))
-
-    ctx
-    |> Map.put(:users, user_map)
-    |> Map.put(:emails, source_emails(users))
-    |> Map.put(:unmatched_users, sorted_emails(unmatched))
-    |> Map.put(:counts, %{users: map_size(local)})
-  end
-
-  # Enabled local accounts whose email appears in the archive, keyed by the
-  # downcased email.
-  defp local_user_ids(users) do
-    users
-    |> archive_emails()
-    |> enabled_users_query()
-    |> Repo.all()
-    |> Map.new(fn {email, id} -> {String.downcase(email), id} end)
-  end
-
-  defp archive_emails(users), do: for(%{"email" => email} <- users, is_binary(email), do: email)
-
-  defp enabled_users_query(emails) do
-    from(u in User,
-      where: u.email in ^emails and is_nil(u.disabled_at),
-      select: {u.email, u.id}
-    )
-  end
-
-  defp match_user(row, {map, unmatched}, local) do
-    email = if is_binary(row["email"]), do: String.downcase(row["email"])
-    local_id = Map.get(local, email)
-    unmatched = if local_id, do: unmatched, else: [row["email"] | unmatched]
-    {Map.put(map, row["id"], local_id), unmatched}
-  end
-
-  defp source_emails(users), do: Map.new(users, &{&1["id"], &1["email"]})
-
-  defp sorted_emails(emails), do: emails |> Enum.reject(&is_nil/1) |> Enum.sort()
-
   @doc false
   # Maps a source user id to the local user id, or nil when unmatched.
-  def user(ctx, source_id), do: Map.get(ctx.users, source_id)
+  def user(ctx, source_id), do: Users.user(ctx, source_id)
 
   defp create_workspace(ctx, name) do
     name = free_name(ctx.organization_id, name)

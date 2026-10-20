@@ -179,6 +179,13 @@ defmodule Mix.Tasks.Kanban.ImportWorkspaceTest do
     Workspace |> Repo.get!(ctx.workspace.id) |> Repo.delete!()
   end
 
+  defp clear_author(rows, email) do
+    Enum.map(rows, fn
+      {content, ^email, mentions, at} -> {content, nil, mentions, at}
+      row -> row
+    end)
+  end
+
   defp imported_workspace(name), do: from(w in Workspace, where: w.name == ^name) |> Repo.one!()
 
   test "an export round-trips with identical rows, remapped ids and preserved links", ctx do
@@ -195,17 +202,25 @@ defmodule Mix.Tasks.Kanban.ImportWorkspaceTest do
     assert workspace.organization_id == ctx.organization.id
     refute workspace.personal
 
-    # Board access is only ever given to members of the Organization: the
-    # outsider's modify access on Alpha is skipped and named, not restored.
+    # Board access and attributions only ever name members of the
+    # Organization: the outsider's modify access on Alpha is skipped and named,
+    # not restored, and their comment loses its author.
     expected =
-      Map.update!(before, :board_users, fn rows ->
+      before
+      |> Map.update!(:board_users, fn rows ->
         List.delete(rows, {"Alpha board", ctx.outsider.email, :modify})
       end)
+      |> Map.update!(:comments, &clear_author(&1, ctx.outsider.email))
 
     assert length(expected.board_users) == length(before.board_users) - 1
     after_import = snapshot(workspace.id)
     assert after_import == expected
     assert output =~ "board member #{ctx.outsider.email} is not in the Organization"
+
+    assert output =~
+             "users: #{ctx.outsider.email} is not in the Organization; " <>
+               "their attributions were left empty"
+
     assert output =~ "Board access given:"
     assert output =~ ~s(#{ctx.member.email}: owner on "Alpha board")
     refute output =~ ~s(#{ctx.outsider.email}: modify)
@@ -283,6 +298,71 @@ defmodule Mix.Tasks.Kanban.ImportWorkspaceTest do
     assert output =~ "Reattributed to the importing org-admin: 1"
     board = from(b in Board, where: b.name == "Alpha board") |> Repo.one!()
     assert Repo.get_by!(BoardUser, board_id: board.id, access: :owner).user_id == ctx.org_admin.id
+  end
+
+  test "attributions to an account outside the Organization are left empty", ctx do
+    ctx = seed_workspace(ctx)
+    outsider = ctx.outsider
+
+    {1, _} =
+      from(t in Task, where: t.id == ^ctx.first.id)
+      |> Repo.update_all(
+        set: [
+          assigned_to_id: outsider.id,
+          created_by_id: outsider.id,
+          completed_by_id: outsider.id
+        ]
+      )
+
+    from(c in TaskComment, where: c.author_user_id == ^outsider.id)
+    |> Repo.update_all(set: [mentioned_user_ids: [ctx.org_admin.id, outsider.id]])
+
+    Repo.insert!(%TaskHistory{
+      task_id: ctx.first.id,
+      type: :assignment,
+      from_user_id: outsider.id,
+      to_user_id: ctx.member.id
+    })
+
+    path = export_archive(ctx)
+    delete_source(ctx)
+
+    output = import!(["--file", path, "--org-admin-email", ctx.org_admin.email])
+
+    assert output =~ "#{outsider.email} is not in the Organization; their attributions"
+    workspace = imported_workspace(ctx.workspace.name)
+    task_ids = workspace.id |> workspace_boards() |> ids() |> board_tasks() |> ids()
+
+    first = Repo.get_by!(Task, title: "Write the serializer 日本語 ✓")
+    assert first.id in task_ids
+    assert {first.assigned_to_id, first.created_by_id, first.completed_by_id} == {nil, nil, nil}
+
+    # A member of the Organization keeps their attribution.
+    goal = Repo.get_by!(Task, title: "Ship the export")
+    assert goal.id in task_ids
+    assert goal.created_by_id == ctx.member.id
+
+    [comment] = from(c in TaskComment, where: c.task_id in ^task_ids) |> Repo.all()
+    assert comment.author_user_id == nil
+    assert comment.mentioned_user_ids == [ctx.org_admin.id]
+
+    assert [{nil, member_id}] =
+             from(h in TaskHistory,
+               where: h.task_id in ^task_ids and h.type == :assignment,
+               select: {h.from_user_id, h.to_user_id}
+             )
+             |> Repo.all()
+
+    assert member_id == ctx.member.id
+
+    refute from(t in Task,
+             where:
+               t.id in ^task_ids and
+                 (t.assigned_to_id == ^outsider.id or t.created_by_id == ^outsider.id or
+                    t.completed_by_id == ^outsider.id or t.reviewed_by_id == ^outsider.id or
+                    t.archived_by_id == ^outsider.id)
+           )
+           |> Repo.exists?()
   end
 
   test "a board owner outside the Organization is replaced by the importing org-admin", ctx do

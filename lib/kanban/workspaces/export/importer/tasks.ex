@@ -9,6 +9,10 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   task changeset, now that every task has its new id. Identifiers,
   `dependencies`, statuses and positions are kept verbatim.
 
+  Every user attribution goes through
+  `Kanban.Workspaces.Export.Importer.Users.attributed/2`, so it names only
+  members of the importing Organization and is otherwise left empty.
+
   A reference the archive cannot resolve — a parent or duplicate outside the
   workspace, a comment on a task that is not in it — is skipped and reported,
   never guessed. A task, label link, comment or history row that fails its
@@ -21,6 +25,7 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   alias Kanban.Tasks.TaskComment
   alias Kanban.Tasks.TaskHistory
   alias Kanban.Workspaces.Export.Importer
+  alias Kanban.Workspaces.Export.Importer.Users
 
   @user_fields [
     "assigned_to_id",
@@ -94,7 +99,7 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
 
   defp remap_users(attrs, ctx) do
     Enum.reduce(@user_fields, attrs, fn field, attrs ->
-      Map.put(attrs, field, Importer.user(ctx, attrs[field]))
+      Map.put(attrs, field, Users.attributed(ctx, attrs[field]))
     end)
   end
 
@@ -205,7 +210,7 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
     insert_task_children(ctx, :comments, fn row, task ->
       %TaskComment{
         task_id: task.id,
-        author_user_id: Importer.user(ctx, row["author_user_id"]),
+        author_user_id: Users.attributed(ctx, row["author_user_id"]),
         mentioned_user_ids: mentioned(ctx, row["mentioned_user_ids"])
       }
       |> TaskComment.changeset(%{"content" => row["content"]})
@@ -228,8 +233,8 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
         |> Map.take(["type", "from_column", "to_column", "from_priority", "to_priority"])
         |> Map.merge(%{
           "task_id" => task.id,
-          "from_user_id" => Importer.user(ctx, row["from_user_id"]),
-          "to_user_id" => Importer.user(ctx, row["to_user_id"])
+          "from_user_id" => Users.attributed(ctx, row["from_user_id"]),
+          "to_user_id" => Users.attributed(ctx, row["to_user_id"])
         })
 
       %TaskHistory{}
@@ -259,7 +264,7 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   end
 
   defp mentioned(ctx, ids) when is_list(ids) do
-    ids |> Enum.map(&Importer.user(ctx, &1)) |> Enum.reject(&is_nil/1) |> Enum.uniq()
+    ids |> Enum.map(&Users.attributed(ctx, &1)) |> Enum.reject(&is_nil/1) |> Enum.uniq()
   end
 
   defp mentioned(_ctx, _ids), do: []
