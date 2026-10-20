@@ -2249,10 +2249,10 @@ defmodule Kanban.BoardsTest do
 
       ids = fn members -> members |> Enum.map(& &1.user_id) |> Enum.sort() end
 
-      assert ids.(Boards.list_assignable_board_members(board.id)) ==
+      assert board.id |> Boards.list_assignable_board_members() |> ids.() ==
                Enum.sort([owner.id, enabled.id])
 
-      assert ids.(Boards.list_board_members(board.id)) ==
+      assert board.id |> Boards.list_board_members() |> ids.() ==
                Enum.sort([owner.id, enabled.id, disabled.id])
 
       [assignable | _] = Boards.list_assignable_board_members(board.id)

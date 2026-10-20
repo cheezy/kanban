@@ -132,7 +132,7 @@ defmodule KanbanWeb.TaskLive.Form.FieldEvents do
   # An index past the end names no row, so nothing changes. That includes a
   # value that was not a list at all (read as `[]` by `list_or_empty/1`).
   defp remove_at(socket, list, index, _put) when index >= length(list), do: {:noreply, socket}
-  defp remove_at(_socket, list, index, put), do: put.(List.delete_at(list, index))
+  defp remove_at(_socket, list, index, put), do: list |> List.delete_at(index) |> put.()
 
   @doc """
   Returns `value` when it is a list, else `[]`.
