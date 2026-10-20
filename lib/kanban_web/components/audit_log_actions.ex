@@ -78,6 +78,9 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("org_member_removed"),
     do: pgettext("audit action", "Organization member removed")
 
+  def action_label("org_member_added"),
+    do: pgettext("audit action", "Organization member added")
+
   def action_label("org_workspace_created"),
     do: pgettext("audit action", "Organization workspace created")
 

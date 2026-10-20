@@ -296,6 +296,24 @@
             </div>
           <% end %>
 
+          <div
+            :if={@invite_email}
+            id="board-invite-card"
+            class="mb-6 p-4 bg-[var(--surface)] border border-[var(--line)] rounded-lg"
+          >
+            <p class="text-sm text-base-content mb-3">
+              {gettext("Invite %{email} to this board by email.", email: @invite_email)}
+            </p>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <.button type="button" phx-click="invite_user" phx-value-access="read_only">
+                {gettext("Invite as Read Only")}
+              </.button>
+              <.button type="button" phx-click="invite_user" phx-value-access="modify">
+                {gettext("Invite with Edit Access")}
+              </.button>
+            </div>
+          </div>
+
           <%= if @board_users != [] do %>
             <div class="mt-6">
               <h3 class="text-sm font-medium text-base-content opacity-80 mb-3">

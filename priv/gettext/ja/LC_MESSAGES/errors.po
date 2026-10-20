@@ -141,6 +141,10 @@ msgstr "@ 記号を含み、スペースを含まないようにしてくださ�
 msgid "contains characters that are not allowed"
 msgstr "使用できない文字が含まれています"
 
+## From Kanban.Workspaces.Invitation (W2219: a second pending invitation for the same email)
+msgid "already has a pending invitation"
+msgstr "保留中の招待がすでにあります"
+
 ## From Kanban.Tasks.Assignees (D385: a disabled account as a new task assignee)
 msgid "does not have access to this board"
 msgstr "このボードへのアクセス権がありません"

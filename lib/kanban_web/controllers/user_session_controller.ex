@@ -6,6 +6,7 @@ defmodule KanbanWeb.UserSessionController do
   alias Kanban.Accounts.User
   alias Kanban.AuditLog
   alias Kanban.RateLimit
+  alias Kanban.Workspaces.Invitations
   alias KanbanWeb.TwoFactorPending
   alias KanbanWeb.UserAuth
 
@@ -14,9 +15,13 @@ defmodule KanbanWeb.UserSessionController do
   # bypasses the LiveView also requires recent re-authentication (D155).
   plug :require_sudo_mode when action in [:update_password]
 
-  def register(conn, %{"user" => user_params}) do
+  def register(conn, %{"user" => user_params} = params) do
     case Accounts.register_user(user_params) do
       {:ok, user} ->
+        # Registered from an invitation link: link the invitation to the new
+        # account, so it is accepted once the email is confirmed (W2219). It
+        # always returns :ok, so the response is the same either way.
+        :ok = Invitations.bind_registration(params["invitation_token"], user)
         deliver_confirmation_and_redirect(conn, user)
 
       {:error, %Ecto.Changeset{} = _changeset} ->

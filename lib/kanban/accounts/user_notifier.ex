@@ -212,6 +212,51 @@ defmodule Kanban.Accounts.UserNotifier do
   defp header_text(text) when is_binary(text), do: String.replace(text, ~r/[\r\n]+/, " ")
 
   @doc """
+  Deliver an invitation to join a workspace or a board (W2219).
+
+  `email` is the invited address. `details` names the inviter
+  (`:inviter_name`, which may be `nil`) and what they invite to
+  (`:target_name`, a workspace or board name, with `:target` `:workspace` or
+  `:board`). Both names are user-controlled, so they are HTML-escaped in the
+  body and folded onto one line in the subject. `url` is the single-use accept
+  link; it is the only place the invitation's plaintext token ever appears.
+  """
+  def deliver_workspace_invitation(email, details, url) when is_binary(email) do
+    target_name = Map.get(details, :target_name) || ""
+    inviter = escape_name(Map.get(details, :inviter_name))
+    target_noun = if Map.get(details, :target) == :board, do: "board", else: "workspace"
+    invited_by = if inviter == "", do: "Someone", else: inviter
+
+    deliver(email, "You're invited to #{header_text(target_name)} on Stride", """
+    <div>
+    Hi,
+
+    <p>
+    #{invited_by} has invited you to the #{target_noun}
+    <strong>#{escape_name(target_name)}</strong> on Stride.
+    </p>
+
+    <p>
+    Click <a href="#{url}">here</a> to accept the invitation. If you don't have a
+    Stride account yet, you can create one from that page with this email
+    address. The link works once and expires in #{Kanban.Workspaces.Invitation.validity_days()} days.
+    </p>
+
+    <p>
+    Do not forward this email to anyone.
+    </p>
+
+    <p>
+    If you weren't expecting this invitation, you can ignore this email.
+    </p>
+
+    Thank you,<br/>
+    Team at Stride
+    </div>
+    """)
+  end
+
+  @doc """
   Deliver instructions to reset a user password.
   """
   def deliver_reset_password_instructions(user, url) do

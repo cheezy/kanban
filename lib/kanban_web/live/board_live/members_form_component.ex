@@ -36,7 +36,8 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
      |> assign(:board_users, board_users)
      |> Membership.assign_member_cap()
      |> assign_new(:searched_user, fn -> nil end)
-     |> assign_new(:search_email, fn -> "" end)}
+     |> assign_new(:search_email, fn -> "" end)
+     |> assign_new(:invite_email, fn -> nil end)}
   end
 
   @impl true
@@ -46,6 +47,10 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
 
   def handle_event("add_user", %{"access" => access}, socket) do
     socket |> Membership.add_user(socket.assigns.scope.user, access) |> relay_flash()
+  end
+
+  def handle_event("invite_user", %{"access" => access}, socket) do
+    socket |> Membership.invite_user(socket.assigns.scope.user, access) |> relay_flash()
   end
 
   def handle_event("remove_user", %{"user_id" => user_id}, socket) do
@@ -189,6 +194,51 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
             ]}
           >
             {gettext("Add with Edit Access")}
+          </button>
+        </div>
+      </section>
+
+      <section
+        :if={@invite_email}
+        id="board-invite-card"
+        style={[
+          "background: var(--surface); border: 1px solid var(--line);",
+          "border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;"
+        ]}
+      >
+        <p style="margin: 0 0 10px; font-size: 12.5px; color: var(--ink-2); line-height: 1.5; overflow-wrap: anywhere;">
+          {gettext("Invite %{email} to this board by email.", email: @invite_email)}
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <button
+            type="button"
+            id="invite-read-only"
+            phx-click="invite_user"
+            phx-value-access="read_only"
+            phx-target={@myself}
+            disabled={@member_cap.reached?}
+            style={[
+              "padding: 6px 10px; border-radius: 5px;",
+              outline_button_fill(@member_cap.reached?),
+              "font-size: 12px; font-weight: 500;"
+            ]}
+          >
+            {gettext("Invite as Read Only")}
+          </button>
+          <button
+            type="button"
+            id="invite-modify"
+            phx-click="invite_user"
+            phx-value-access="modify"
+            phx-target={@myself}
+            disabled={@member_cap.reached?}
+            style={[
+              "padding: 6px 10px; border-radius: 5px;",
+              solid_button_fill(@member_cap.reached?),
+              "font-size: 12px; font-weight: 500;"
+            ]}
+          >
+            {gettext("Invite with Edit Access")}
           </button>
         </div>
       </section>

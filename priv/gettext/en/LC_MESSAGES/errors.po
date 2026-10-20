@@ -160,6 +160,10 @@ msgstr ""
 msgid "contains characters that are not allowed"
 msgstr ""
 
+## From Kanban.Workspaces.Invitation (W2219: a second pending invitation for the same email)
+msgid "already has a pending invitation"
+msgstr ""
+
 ## From Kanban.Tasks.Assignees (D385: a disabled account as a new task assignee)
 msgid "does not have access to this board"
 msgstr ""

@@ -150,7 +150,34 @@ defmodule KanbanWeb.BoardLive.FormTest do
       |> form("form[phx-submit='search_user']", %{email: "nonexistent@example.com"})
       |> render_submit()
 
-      assert render(lv) =~ "Could not find a user with that email address"
+      assert render(lv) =~ "No account uses that email address. You can invite them by email."
+    end
+
+    test "invites a searched address that has no account by email",
+         %{conn: conn, board: board} do
+      # Swoosh's test adapter also mails the sending process, the LiveView;
+      # route test emails to this test process only.
+      Application.put_env(:swoosh, :shared_test_process, self())
+      on_exit(fn -> Application.delete_env(:swoosh, :shared_test_process) end)
+
+      {:ok, lv, _html} = live(conn, ~p"/boards/#{board}/edit")
+
+      lv
+      |> form("form[phx-submit='search_user']", %{email: "edit-invitee@example.com"})
+      |> render_submit()
+
+      assert has_element?(lv, "#board-invite-card", "edit-invitee@example.com")
+
+      lv
+      |> element(~s(#board-invite-card button[phx-value-access="read_only"]))
+      |> render_click()
+
+      assert render(lv) =~ "Invitation sent to edit-invitee@example.com."
+      refute has_element?(lv, "#board-invite-card")
+
+      assert [invitation] = Kanban.Repo.all(Kanban.Workspaces.Invitation)
+      assert invitation.board_id == board.id
+      assert invitation.board_access == :read_only
     end
 
     test "prevents adding yourself to board", %{conn: conn, board: board, user: user} do
@@ -366,13 +393,13 @@ defmodule KanbanWeb.BoardLive.FormTest do
       |> form("form[phx-submit='search_user']", %{email: "nope@example.com"})
       |> render_submit()
 
-      assert render(lv) =~ "Could not find a user with that email address"
+      assert render(lv) =~ "No account uses that email address. You can invite them by email."
 
       lv
       |> form("form[phx-submit='search_user']", %{email: other_user.email})
       |> render_submit()
 
-      refute render(lv) =~ "Could not find a user with that email address"
+      refute render(lv) =~ "No account uses that email address. You can invite them by email."
     end
 
     test "add_user is rejected on the :new path (board not yet saved)", %{conn: conn} do

@@ -17,6 +17,8 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
   alias Kanban.Workspaces
+  alias Kanban.Workspaces.Invitation
+  alias Kanban.Workspaces.Invitations
 
   @refusal "Workspace settings are not available."
   @denied "Only an org-admin can manage this workspace."
@@ -256,6 +258,162 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
 
       refute Repo.get!(Board, foreign.id).workspace_id == ctx.workspace.id
     end
+  end
+
+  describe "invitations (W2219)" do
+    defp invitation_emails(acc \\ []) do
+      receive do
+        {:email, %{subject: "You're invited to" <> _} = email} -> invitation_emails([email | acc])
+        {:email, _other} -> invitation_emails(acc)
+      after
+        200 -> Enum.reverse(acc)
+      end
+    end
+
+    defp pending_invitation(ctx, email) do
+      {:ok, invitation} =
+        Invitations.invite_to_workspace(
+          ctx.org_admin,
+          ctx.workspace,
+          %{"email" => email, "role" => "guest"},
+          &"https://example.test/invitations/#{&1}"
+        )
+
+      invitation_emails()
+      invitation
+    end
+
+    test "the section is listed for an org-admin and hidden from a member", ctx do
+      {view, _html} = admin_view(ctx)
+      assert has_element?(view, "#settings-tab-invitations")
+
+      conn = ctx.conn |> log_in_user(ctx.member) |> switch(ctx.workspace)
+      {:ok, member_view, _html} = live(conn, ~p"/workspace/settings?section=invitations")
+
+      refute has_element?(member_view, "#settings-tab-invitations")
+      refute has_element?(member_view, "#invite-form")
+      assert has_element?(member_view, "#members")
+    end
+
+    test "an org-admin sends an invitation that is listed and emailed", ctx do
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=invitations")
+      assert has_element?(view, "#no-invitations")
+
+      html =
+        view
+        |> form("#invite-form", %{"invite" => %{"email" => "New.Person@Example.test"}})
+        |> render_submit()
+
+      assert html =~ "Invitation sent to new.person@example.test."
+      assert [invitation] = Invitations.list_pending(ctx.org_admin, ctx.workspace)
+      assert invitation.role == :member
+      assert has_element?(view, "#invitation-#{invitation.id}", "new.person@example.test")
+
+      assert [email] = invitation_emails()
+      assert email.to == [{"", "new.person@example.test"}]
+      assert email.html_body =~ "/invitations/"
+    end
+
+    test "an invalid email shows the form error and sends nothing", ctx do
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=invitations")
+
+      view
+      |> form("#invite-form", %{"invite" => %{"email" => "not-an-email"}})
+      |> render_submit()
+
+      assert render(view) =~ "must have the @ sign and no spaces"
+      assert Invitations.list_pending(ctx.org_admin, ctx.workspace) == []
+      assert invitation_emails() == []
+    end
+
+    test "typing an invalid email shows the error before submitting", ctx do
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=invitations")
+
+      html =
+        view
+        |> form("#invite-form", %{"invite" => %{"email" => "still typing"}})
+        |> render_change()
+
+      assert html =~ "must have the @ sign and no spaces"
+      assert Invitations.list_pending(ctx.org_admin, ctx.workspace) == []
+      assert invitation_emails() == []
+
+      refute view
+             |> form("#invite-form", %{"invite" => %{"email" => "fine@example.test"}})
+             |> render_change() =~ "must have the @ sign and no spaces"
+    end
+
+    test "resend replaces the token and revoke removes the invitation", ctx do
+      invitation = pending_invitation(ctx, "guest.to.be@example.test")
+      old_hash = invitation.token_hash
+
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=invitations")
+
+      assert view |> element("#resend-invitation-#{invitation.id}") |> render_click() =~
+               "Invitation sent again."
+
+      assert Repo.get!(Invitation, invitation.id).token_hash != old_hash
+      assert [_resent] = invitation_emails()
+
+      assert view |> element("#revoke-invitation-#{invitation.id}") |> render_click() =~
+               "Invitation revoked."
+
+      refute has_element?(view, "#invitation-#{invitation.id}")
+      assert Repo.get!(Invitation, invitation.id).revoked_at
+    end
+
+    test "a member or guest crafting invitation events is denied and nothing changes", ctx do
+      invitation = pending_invitation(ctx, "someone@example.test")
+
+      for viewer <- [ctx.member, ctx.guest] do
+        conn = ctx.conn |> log_in_user(viewer) |> switch(ctx.workspace)
+        {:ok, view, _html} = live(conn, ~p"/workspace/settings")
+
+        events = [
+          {"invite", %{"invite" => %{"email" => "crafted@example.test", "role" => "member"}}},
+          {"resend_invitation", %{"id" => Integer.to_string(invitation.id)}},
+          {"revoke_invitation", %{"id" => Integer.to_string(invitation.id)}},
+          {"invite", %{}},
+          {"resend_invitation", %{}},
+          {"revoke_invitation", %{}}
+        ]
+
+        for {event, params} <- events do
+          assert render_click(view, event, params) =~ @denied
+        end
+      end
+
+      assert [%{id: id, revoked_at: nil}] = Invitations.list_pending(ctx.org_admin, ctx.workspace)
+      assert id == invitation.id
+      assert Repo.get!(Invitation, invitation.id).token_hash == invitation.token_hash
+      assert invitation_emails() == []
+    end
+
+    test "an invitation id from another workspace is not found", ctx do
+      other = org_with_admin_workspace()
+
+      {:ok, foreign} =
+        Invitations.invite_to_workspace(
+          other.admin,
+          other.workspace,
+          %{"email" => "foreign@example.test", "role" => "member"},
+          &"https://example.test/invitations/#{&1}"
+        )
+
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=invitations")
+
+      assert render_click(view, "revoke_invitation", %{"id" => Integer.to_string(foreign.id)}) =~
+               "Invitation not found."
+
+      refute Repo.get!(Invitation, foreign.id).revoked_at
+    end
+  end
+
+  defp org_with_admin_workspace do
+    organization = organization_fixture()
+    admin = user_fixture()
+    organization_member_fixture(organization, admin, :org_admin)
+    %{admin: admin, workspace: org_workspace_fixture(organization)}
   end
 
   describe "denial" do

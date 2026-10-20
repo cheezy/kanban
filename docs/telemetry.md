@@ -243,10 +243,10 @@ addition. Every event measures `count: 1`, except `token_bulk_revoked` and
 | `[:kanban, :board, :updated]` | `board_id`, `actor_user_id`, `fields` | `Kanban.Boards.update_board/3` |
 | `[:kanban, :board, :deleted]` | `board_id`, `actor_user_id` | `Kanban.Boards.delete_board/2` |
 | `[:kanban, :board, :field_visibility_changed]` | `board_id`, `actor_user_id`, `fields` | `Kanban.Boards.update_field_visibility/3` |
-| `[:kanban, :board, :member_added]` | `board_id`, `user_id`, `access`, `actor_user_id` | `Kanban.Boards.add_user_to_board/4` |
+| `[:kanban, :board, :member_added]` | `board_id`, `user_id`, `access`, `actor_user_id` | `Kanban.Boards.add_user_to_board/4` and `add_invited_user/4` |
 | `[:kanban, :board, :member_removed]` | `board_id`, `user_id`, `access`, `actor_user_id` | `Kanban.Boards.remove_user_from_board/3` |
 | `[:kanban, :board, :member_access_changed]` | `board_id`, `user_id`, `from_access`, `to_access`, `actor_user_id` | `Kanban.Boards.update_user_access/4` |
-| `[:kanban, :board, :member_cap_reached]` | `board_id`, `actor_user_id`, `via` | `Kanban.Boards.add_user_to_board/4`, only when it refuses |
+| `[:kanban, :board, :member_cap_reached]` | `board_id`, `actor_user_id`, `via` | `Kanban.Boards.add_user_to_board/4` and `add_invited_user/4`, only when they refuse |
 | `[:kanban, :api, :token_bulk_revoked]` | `board_id`, `user_id`, `actor_user_id`, `reason` | `Kanban.ApiTokens.report_bulk_revocation/5` |
 | `[:kanban, :column, :created]` | `board_id`, `column_id`, `actor_user_id` | `Kanban.Columns.create_column/3` |
 | `[:kanban, :column, :updated]` | `board_id`, `column_id`, `actor_user_id`, `fields` | `Kanban.Columns.update_column/3` |
@@ -260,7 +260,9 @@ addition. Every event measures `count: 1`, except `token_bulk_revoked` and
 - **Membership events** come from `Kanban.Boards.BoardTelemetry`, called by
   `Kanban.Boards.MembershipChanges` once the membership change has committed.
   They fire even when an owner changes their own membership, which sends no
-  notification. `user_id` is the member, `actor_user_id` the owner who made the
+  notification. A member added by accepting an invitation
+  (`add_invited_user/4`) is reported only once the acceptance has committed,
+  with the inviter as `actor_user_id`. `user_id` is the member, `actor_user_id` the owner who made the
   change, and `access`, `from_access` and `to_access` are `:owner`, `:modify`
   or `:read_only`. For `member_removed`, `access` is the level the member held.
 - **`member_cap_reached` reports a full free board.** It fires once for each
@@ -271,8 +273,9 @@ addition. Every event measures `count: 1`, except `token_bulk_revoked` and
   workspace, or when a caller who does not own the board is refused first.
   `actor_user_id` is the owner who tried to add the member, and the would-be
   member is never sent. `via` is a tag naming the path that tried:
-  `:direct_add` for `add_user_to_board/4`, and `:invitation` or `:board_move`
-  for the board invitation and board move paths. It is stored in
+  `:direct_add` for `add_user_to_board/4`, `:invitation` for
+  `add_invited_user/4` (accepting a board invitation, where `actor_user_id`
+  is the inviter), and `:board_move` for the board move path. It is stored in
   `metrics_events`, because only a board owner can trigger it.
 - **`token_bulk_revoked` counts revoked tokens.** Its `count` is the number of
   tokens revoked, and it is 0 when the member had none. `reason` is
@@ -673,6 +676,13 @@ change emits nothing. Every event measures `count: 1`.
   with `organization_id`, the org-admin as `user_id` and the removed user as
   `member_user_id`. A refused removal (not an org-admin, an org-admin as the
   target, or a user outside the Organization) emits and records nothing.
+  Accepting a workspace invitation (`Kanban.Workspaces.Invitations.accept/2`)
+  that creates the invitee's Organization membership records
+  `:org_member_added` with `organization_id`, the joining user as both
+  `user_id` and `member_user_id`, and `invitation_id`; it never carries the
+  invited email address or the token. It is recorded only once the acceptance
+  has committed, and not at all when the invitee already belonged to the
+  Organization or the acceptance was refused.
   An org-admin downloading their Organization's audit log records
   `:org_audit_log_exported` with `organization_id`, the org-admin as
   `user_id`, and `truncated`, a boolean that is `true` when the export's row
@@ -1114,6 +1124,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :org_admin_appointed]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id`, `account_created` | A site admin made a user an org-admin. user_id is the site admin, member_user_id the appointee. account_created is true when the appointee's account was created for the appointment. |
 | `[:kanban, :audit, :org_admin_removed]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id` | A site admin removed an org-admin. user_id is the site admin, member_user_id the removed user. |
 | `[:kanban, :audit, :org_member_removed]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id` | An org-admin removed an ordinary member from their Organization. user_id is the org-admin, member_user_id the removed user. |
+| `[:kanban, :audit, :org_member_added]` | event, legacy | `count` | `user_id`, `organization_id`, `member_user_id`, `invitation_id` | A user joined an Organization by accepting an invitation. user_id and member_user_id are the joining user, invitation_id the accepted invitation. Recorded only when the acceptance created the membership. |
 | `[:kanban, :audit, :org_workspace_created]` | event, legacy | `count` | `user_id`, `organization_id`, `workspace_id` | An org-admin created a workspace for their Organization. user_id is the org-admin. |
 | `[:kanban, :audit, :org_workspace_renamed]` | event, legacy | `count` | `user_id`, `organization_id`, `workspace_id` | An org-admin renamed one of their Organization's workspaces. user_id is the org-admin. |
 | `[:kanban, :audit, :org_workspace_archived]` | event, legacy | `count` | `user_id`, `organization_id`, `workspace_id` | An org-admin archived one of their Organization's workspaces. user_id is the org-admin. |

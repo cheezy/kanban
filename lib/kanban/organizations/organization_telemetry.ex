@@ -116,6 +116,32 @@ defmodule Kanban.Organizations.OrganizationTelemetry do
   end
 
   @doc """
+  Records the `:org_member_added` audit event for an Organization membership
+  that accepting invitation `invitation_id` created (W2219). The joining user
+  is both the event's `user_id` and its `member_user_id`; `organization_id`
+  scopes it to that Organization's `/org/audit`. It carries no email address
+  and no token.
+
+  Call it only when the acceptance created the membership, never when the
+  invitee already belonged to the Organization. The record is passed to
+  `Kanban.Telemetry.AfterCommit.defer/2`, so inside the acceptance's
+  `AfterCommit.after_commit/1` it is written only once that transaction has
+  committed, and a rolled-back acceptance leaves no row. Returns `:ok`.
+  """
+  @spec org_member_added(OrganizationMember.t(), integer()) :: :ok
+  def org_member_added(%OrganizationMember{} = membership, invitation_id)
+      when is_integer(invitation_id) do
+    AfterCommit.defer(fn ->
+      AuditLog.event(:org_member_added,
+        user_id: membership.user_id,
+        organization_id: membership.organization_id,
+        member_user_id: membership.user_id,
+        invitation_id: invitation_id
+      )
+    end)
+  end
+
+  @doc """
   Emits `[:kanban, :organization, :member_removed]` and records the
   `:org_admin_removed` audit event for a deleted org-admin membership. The site
   admin is the audit event's `user_id` and the removed org-admin its

@@ -6,9 +6,17 @@ defmodule KanbanWeb.BoardLive.Membership do
 
   Functions take the socket plus the current user as an explicit argument
   (the two callers store the user under different assign keys) and require
-  the socket assigns `:board`, `:board_users`, `:searched_user`, and
-  `:search_email`. Only `assign/3`, `put_flash/3`, and `clear_flash/1` are
-  used, so the functions work on both LiveView and LiveComponent sockets.
+  the socket assigns `:board`, `:board_users`, `:searched_user`,
+  `:search_email` and `:invite_email`. Only `assign/3`, `put_flash/3`, and
+  `clear_flash/1` are used, so the functions work on both LiveView and
+  LiveComponent sockets.
+
+  When a search finds no account, a user who may invite people to the board
+  by email (`Kanban.Workspaces.Invitations.can_invite_to_board?/2`: the owner
+  of a board in a personal workspace, or an org-admin for a board in an org
+  workspace) gets the searched address staged as `:invite_email` and can send
+  an invitation with `invite_user/3` (W2219). Everyone else sees the old
+  not-found message.
 
   Whenever the members list is (re)loaded, `assign_member_cap/1` also stores
   `Boards.member_cap_status/1` under `:member_cap` (W2401). The cap helpers
@@ -16,12 +24,14 @@ defmodule KanbanWeb.BoardLive.Membership do
   `Boards.add_user_to_board/4`, so a disabled form is never the guard.
   """
   use Gettext, backend: KanbanWeb.Gettext
+  use KanbanWeb, :verified_routes
 
   import Phoenix.Component, only: [assign: 3]
   import Phoenix.LiveView, only: [put_flash: 3, clear_flash: 1]
 
   alias Kanban.Accounts
   alias Kanban.Boards
+  alias Kanban.Workspaces.Invitations
 
   @addable_access %{"read_only" => :read_only, "modify" => :modify}
 
@@ -46,8 +56,11 @@ defmodule KanbanWeb.BoardLive.Membership do
     email = String.trim(email)
 
     case Accounts.get_user_by_email(email) do
-      nil -> respond_user_not_found(socket, email)
-      user -> evaluate_searched_user(socket, current_user, user, email)
+      nil ->
+        respond_user_not_found(socket, current_user, email)
+
+      user ->
+        evaluate_searched_user(assign(socket, :invite_email, nil), current_user, user, email)
     end
   end
 
@@ -58,6 +71,20 @@ defmodule KanbanWeb.BoardLive.Membership do
   def add_user(socket, current_user, access) do
     if owner_authorized?(socket, current_user) do
       do_add_user(socket, current_user, access)
+    else
+      {:noreply, put_flash(socket, :error, membership_denied_flash())}
+    end
+  end
+
+  @doc """
+  Sends an email invitation to the staged `:invite_email` with the given
+  access level (`"read_only"` or `"modify"`). Denied with a flash unless
+  `current_user` may invite people to the board; the invitations context
+  checks that again.
+  """
+  def invite_user(socket, current_user, access) do
+    if owner_authorized?(socket, current_user) do
+      do_invite_user(socket, current_user, access)
     else
       {:noreply, put_flash(socket, :error, membership_denied_flash())}
     end
@@ -119,12 +146,77 @@ defmodule KanbanWeb.BoardLive.Membership do
 
   def member_cap_flash(_status), do: gettext("This board is full.")
 
-  defp respond_user_not_found(socket, email) do
+  defp respond_user_not_found(socket, current_user, email) do
+    socket =
+      socket
+      |> assign(:searched_user, nil)
+      |> assign(:search_email, email)
+
+    if Invitations.can_invite_to_board?(current_user, socket.assigns.board) do
+      {:noreply,
+       socket
+       |> assign(:invite_email, email)
+       |> put_flash(
+         :info,
+         gettext("No account uses that email address. You can invite them by email.")
+       )}
+    else
+      {:noreply,
+       socket
+       |> assign(:invite_email, nil)
+       |> put_flash(:error, gettext("Could not find a user with that email address"))}
+    end
+  end
+
+  # The form offers read-only and modify only; anything else, "owner"
+  # included, is refused by the invitations context as an invalid form.
+  defp do_invite_user(socket, current_user, access) do
+    case Map.get(socket.assigns, :invite_email) do
+      email when is_binary(email) ->
+        board = socket.assigns.board
+
+        current_user
+        |> Invitations.invite_to_board(
+          board,
+          %{"email" => email, "access" => access},
+          &url(~p"/invitations/#{&1}")
+        )
+        |> respond_to_invite(socket, email)
+
+      _nobody_staged ->
+        {:noreply, put_flash(socket, :error, gettext("Search for an email address first."))}
+    end
+  end
+
+  defp respond_to_invite({:ok, _invitation}, socket, email) do
     {:noreply,
      socket
-     |> assign(:searched_user, nil)
-     |> assign(:search_email, email)
-     |> put_flash(:error, gettext("Could not find a user with that email address"))}
+     |> assign(:invite_email, nil)
+     |> assign(:search_email, "")
+     |> put_flash(:info, gettext("Invitation sent to %{email}.", email: email))}
+  end
+
+  defp respond_to_invite({:error, :member_cap_reached}, socket, _email) do
+    socket = assign_member_cap(socket)
+    {:noreply, put_flash(socket, :error, member_cap_flash(socket.assigns.member_cap))}
+  end
+
+  defp respond_to_invite({:error, :rate_limited}, socket, _email) do
+    {:noreply,
+     put_flash(
+       socket,
+       :error,
+       gettext("You've sent a lot of invitations. Please try again later.")
+     )}
+  end
+
+  defp respond_to_invite({:error, :unauthorized}, socket, _email) do
+    {:noreply,
+     socket |> assign(:invite_email, nil) |> put_flash(:error, membership_denied_flash())}
+  end
+
+  defp respond_to_invite({:error, _changeset}, socket, _email) do
+    {:noreply, put_flash(socket, :error, gettext("That email address can't be invited."))}
   end
 
   defp evaluate_searched_user(socket, current_user, user, email) do

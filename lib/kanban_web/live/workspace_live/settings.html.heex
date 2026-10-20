@@ -30,7 +30,7 @@
           class="flex flex-row md:flex-col gap-1 basis-full md:basis-auto md:flex-initial"
         >
           <.section_tab
-            :for={{section, label, hint} <- sections()}
+            :for={{section, label, hint} <- sections(@can_manage?)}
             section={section}
             active={@section == section}
             label={label}
@@ -216,6 +216,13 @@
             </.button>
           </.form>
         </.settings_card>
+
+        <.invitations_card
+          :if={@section == :invitations and @can_manage?}
+          form={@invite_form}
+          boards={@boards}
+          invitations={@invitations}
+        />
       </div>
     </div>
   </div>

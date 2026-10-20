@@ -13,6 +13,7 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Ecto.Query, only: [from: 2]
   import Kanban.PlansHelpers
 
   alias Kanban.Boards
@@ -38,6 +39,7 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
     |> Phoenix.Component.assign(:board_users, Boards.list_board_users(board))
     |> Phoenix.Component.assign(:searched_user, nil)
     |> Phoenix.Component.assign(:search_email, "")
+    |> Phoenix.Component.assign(:invite_email, nil)
   end
 
   describe "search_user/3" do
@@ -88,13 +90,17 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
       assert socket.assigns.flash["error"] == "Only the board owner can manage board membership"
     end
 
-    test "flashes an error when no user matches", %{owner: owner, board: board} do
+    test "offers an email invitation to the owner when no user matches",
+         %{owner: owner, board: board} do
       socket = build_socket(board)
 
-      {:noreply, socket} = Membership.search_user(socket, owner, "nobody@example.com")
+      {:noreply, socket} = Membership.search_user(socket, owner, " nobody@example.com ")
 
       assert is_nil(socket.assigns.searched_user)
-      assert socket.assigns.flash["error"] == "Could not find a user with that email address"
+      assert socket.assigns.invite_email == "nobody@example.com"
+
+      assert socket.assigns.flash["info"] ==
+               "No account uses that email address. You can invite them by email."
     end
 
     test "rejects adding yourself", %{owner: owner, board: board} do
@@ -316,6 +322,114 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
       assert socket.assigns.flash["error"] == "This board is full. Free boards hold 3 people."
       assert socket.assigns.member_cap == %{count: 3, cap: 3, reached?: true}
       refute Enum.any?(socket.assigns.board_users, fn %{user: u} -> u.id == candidate.id end)
+    end
+  end
+
+  describe "invite by email (W2219)" do
+    setup [:setup_board]
+
+    defp invitation_count, do: Kanban.Repo.aggregate(Kanban.Workspaces.Invitation, :count)
+
+    test "invite_user/3 sends an invitation to the staged email", %{owner: owner, board: board} do
+      {:noreply, socket} =
+        board |> build_socket() |> Membership.search_user(owner, "pal@example.com")
+
+      {:noreply, socket} = Membership.invite_user(socket, owner, "modify")
+
+      assert socket.assigns.flash["info"] == "Invitation sent to pal@example.com."
+      assert socket.assigns.invite_email == nil
+
+      assert [%{email: "pal@example.com", board_access: :modify, role: nil}] =
+               Kanban.Repo.all(Kanban.Workspaces.Invitation)
+    end
+
+    test "invite_user/3 refuses a crafted access level", %{owner: owner, board: board} do
+      {:noreply, socket} =
+        board |> build_socket() |> Membership.search_user(owner, "pal@example.com")
+
+      {:noreply, socket} = Membership.invite_user(socket, owner, "owner")
+
+      assert socket.assigns.flash["error"] == "That email address can't be invited."
+      assert invitation_count() == 0
+    end
+
+    test "invite_user/3 with nobody staged sends nothing", %{owner: owner, board: board} do
+      {:noreply, socket} = board |> build_socket() |> Membership.invite_user(owner, "read_only")
+
+      assert socket.assigns.flash["error"] == "Search for an email address first."
+      assert invitation_count() == 0
+    end
+
+    test "invite_user/3 is denied to a non-owner", %{owner: owner, board: board} do
+      reader = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, reader, :read_only, owner)
+
+      socket =
+        board |> build_socket() |> Phoenix.Component.assign(:invite_email, "pal@example.com")
+
+      {:noreply, socket} = Membership.invite_user(socket, reader, "read_only")
+
+      assert socket.assigns.flash["error"] == "Only the board owner can manage board membership"
+      assert invitation_count() == 0
+    end
+
+    test "invite_user/3 refuses a full free board while plans are enforced",
+         %{owner: owner, board: board} do
+      previous = Application.fetch_env(:kanban, :plans_enforced)
+      on_exit(fn -> restore_plans_enforced(previous) end)
+
+      for _ <- 1..2,
+          do: {:ok, _} = Boards.add_user_to_board(board, user_fixture(), :read_only, owner)
+
+      enforce_plans()
+
+      socket =
+        board |> build_socket() |> Phoenix.Component.assign(:invite_email, "pal@example.com")
+
+      {:noreply, socket} = Membership.invite_user(socket, owner, "read_only")
+
+      assert socket.assigns.flash["error"] == "This board is full. Free boards hold 3 people."
+      assert invitation_count() == 0
+    end
+
+    test "an explicit owner of an org board who is no org-admin gets no invite option" do
+      organization = Kanban.OrganizationsFixtures.organization_fixture()
+      workspace = Kanban.WorkspacesFixtures.org_workspace_fixture(organization)
+      owner = user_fixture()
+      Kanban.OrganizationsFixtures.organization_member_fixture(organization, owner)
+      board = board_fixture(owner)
+
+      from(b in Kanban.Boards.Board, where: b.id == ^board.id)
+      |> Kanban.Repo.update_all(set: [workspace_id: workspace.id])
+
+      board = Kanban.Repo.get!(Kanban.Boards.Board, board.id)
+
+      {:noreply, socket} =
+        board |> build_socket() |> Membership.search_user(owner, "pal@example.com")
+
+      assert socket.assigns.invite_email == nil
+      assert socket.assigns.flash["error"] == "Could not find a user with that email address"
+    end
+
+    test "an org-admin on an org board gets the invite option" do
+      organization = Kanban.OrganizationsFixtures.organization_fixture()
+      workspace = Kanban.WorkspacesFixtures.org_workspace_fixture(organization)
+      admin = user_fixture()
+      Kanban.OrganizationsFixtures.organization_member_fixture(organization, admin, :org_admin)
+      board = Kanban.WorkspacesFixtures.place_board_in_workspace(workspace)
+
+      {:noreply, socket} =
+        board |> build_socket() |> Membership.search_user(admin, "pal@example.com")
+
+      assert socket.assigns.invite_email == "pal@example.com"
+
+      {:noreply, socket} = Membership.invite_user(socket, admin, "read_only")
+      assert socket.assigns.flash["info"] == "Invitation sent to pal@example.com."
+
+      assert [%{role: :guest, workspace_id: workspace_id}] =
+               Kanban.Repo.all(Kanban.Workspaces.Invitation)
+
+      assert workspace_id == workspace.id
     end
   end
 end

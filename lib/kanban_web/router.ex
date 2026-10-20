@@ -352,6 +352,9 @@ defmodule KanbanWeb.Router do
       live "/users/forgot-password", UserLive.ForgotPassword, :new
       live "/users/reset-password/:token", UserLive.ResetPassword, :edit
       live "/users/confirmation-pending", UserLive.ConfirmationPending, :new
+      # Works with or without a signed-in user: an invitee may not have an
+      # account yet (W2219).
+      live "/invitations/:token", WorkspaceLive.InvitationAccept, :show
     end
 
     live_session :public,

@@ -8,7 +8,9 @@ defmodule KanbanWeb.BoardLive.Form do
 
   @impl true
   def mount(params, _session, socket) do
-    socket = assign(socket, search_email: "", searched_user: nil, board_users: [])
+    socket =
+      assign(socket, search_email: "", searched_user: nil, invite_email: nil, board_users: [])
+
     {:ok, apply_action(socket, socket.assigns.live_action, params)}
   end
 
@@ -52,6 +54,10 @@ defmodule KanbanWeb.BoardLive.Form do
 
   def handle_event("add_user", %{"access" => access}, socket) do
     Membership.add_user(socket, socket.assigns.current_scope.user, access)
+  end
+
+  def handle_event("invite_user", %{"access" => access}, socket) do
+    Membership.invite_user(socket, socket.assigns.current_scope.user, access)
   end
 
   def handle_event("remove_user", %{"user_id" => user_id}, socket) do

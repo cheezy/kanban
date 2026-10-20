@@ -42,6 +42,7 @@ defmodule Kanban.Boards.MembershipChanges do
   alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias Kanban.Telemetry.AfterCommit
 
   @doc """
   Adds a user to a board with the specified access level.
@@ -82,6 +83,45 @@ defmodule Kanban.Boards.MembershipChanges do
       {:error, :unauthorized}
     end
   end
+
+  @doc """
+  Adds `user` to the board for an accepted invitation (W2219). Not gated on
+  the caller: the invitation was authorized when it was sent, and
+  `Kanban.Workspaces.Invitations` has already checked it. `access` is
+  `:read_only` or `:modify`, never `:owner`.
+
+  It goes through the same insert path as `add_user_to_board/4` — the
+  disabled-account check, the board lock and the free-board member cap — so a
+  full free board returns `{:error, :member_cap_reached}` and emits
+  `[:kanban, :board, :member_cap_reached]` once, with `via: :invitation` and
+  `actor` (the inviter) as `actor_user_id`.
+
+  Meant to run inside the caller's transaction. The member-added telemetry,
+  the `members_changed` broadcast and the user's `board_access_changed`
+  notification are passed to `Kanban.Telemetry.AfterCommit.defer/2`, so when
+  the caller wraps its transaction in `AfterCommit.after_commit/1` they wait
+  for that commit and a rolled-back acceptance reports nothing.
+  """
+  @spec add_invited_user(Board.t(), User.t(), :read_only | :modify, User.t()) ::
+          {:ok, BoardUser.t()} | {:error, term()}
+  def add_invited_user(%Board{} = board, %User{} = user, access, %User{} = actor)
+      when access in [:read_only, :modify] do
+    board
+    |> insert_member_multi(user, access)
+    |> run_board_user_multi()
+    |> BoardTelemetry.member_cap_reached(board, :invitation, actor)
+    |> defer_added_notice(board, user, actor)
+  end
+
+  defp defer_added_notice({:ok, board_user, revoked}, board, user, actor) do
+    AfterCommit.defer(fn ->
+      notify_membership({:ok, board_user, revoked}, board, user, :added, actor)
+    end)
+
+    {:ok, board_user}
+  end
+
+  defp defer_added_notice({:error, _reason} = error, _board, _user, _actor), do: error
 
   @doc """
   Returns the board's member count, its member cap and whether the cap is

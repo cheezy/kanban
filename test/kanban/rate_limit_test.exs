@@ -131,6 +131,31 @@ defmodule Kanban.RateLimitTest do
     end
   end
 
+  describe ":invite surface (identity-only, W2219)" do
+    test "allows 20 invitations per inviter per hour, then refuses; another inviter is unaffected" do
+      inviter = "user:#{System.unique_integer([:positive])}"
+      other = "user:#{System.unique_integer([:positive])}"
+
+      for _ <- 1..20, do: assert(:ok = RateLimit.check(:invite, identity: inviter))
+
+      assert {:error, {:rate_limited, _}} = RateLimit.check(:invite, identity: inviter)
+      assert :ok = RateLimit.check(:invite, identity: other)
+      assert %{scale_ms: 3_600_000, id_limit: 20} = RateLimit.__limits__(:invite)
+    end
+
+    test "has no IP ceiling: inviters behind one IP do not block each other" do
+      ip = unique_ip()
+
+      for _ <- 1..25 do
+        assert :ok =
+                 RateLimit.check(:invite,
+                   ip: ip,
+                   identity: "user:#{System.unique_integer([:positive])}"
+                 )
+      end
+    end
+  end
+
   describe ":org_audit_export surface (identity-only)" do
     test "allows 10 exports per user per hour, then refuses; another user is unaffected" do
       user = "user:#{System.unique_integer([:positive])}"

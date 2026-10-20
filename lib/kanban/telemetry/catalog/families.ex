@@ -83,6 +83,8 @@ defmodule Kanban.Telemetry.Catalog.Families do
      "A site admin removed an org-admin. user_id is the site admin, member_user_id the removed user."},
     {:org_member_removed, [:user_id, :organization_id, :member_user_id],
      "An org-admin removed an ordinary member from their Organization. user_id is the org-admin, member_user_id the removed user."},
+    {:org_member_added, [:user_id, :organization_id, :member_user_id, :invitation_id],
+     "A user joined an Organization by accepting an invitation. user_id and member_user_id are the joining user, invitation_id the accepted invitation. Recorded only when the acceptance created the membership."},
     {:org_workspace_created, [:user_id, :organization_id, :workspace_id],
      "An org-admin created a workspace for their Organization. user_id is the org-admin."},
     {:org_workspace_renamed, [:user_id, :organization_id, :workspace_id],

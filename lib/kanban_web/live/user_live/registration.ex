@@ -36,6 +36,15 @@ defmodule KanbanWeb.UserLive.Registration do
         phx-trigger-action={@trigger_submit}
         style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px;"
       >
+        <%!-- Carries an invitation link's token to the register action, which
+              links the invitation to the new account (W2219). The name holds
+              "token", so the logged params filter it out. --%>
+        <input
+          :if={@invitation_token}
+          type="hidden"
+          name="invitation_token"
+          value={@invitation_token}
+        />
         <label style="display: flex; flex-direction: column; gap: 5px;">
           <span style="font-size: 12px; font-weight: 500; color: var(--ink-2);">
             {gettext("Your name")}
@@ -132,13 +141,14 @@ defmodule KanbanWeb.UserLive.Registration do
     {:ok, redirect(socket, to: KanbanWeb.UserAuth.signed_in_path(socket))}
   end
 
-  def mount(_params, _session, socket) do
+  def mount(params, _session, socket) do
     changeset = Accounts.change_user_registration(%User{}, %{}, validate_unique: false)
 
     socket =
       socket
       |> assign_form(changeset)
       |> assign(:trigger_submit, false)
+      |> assign(:invitation_token, invitation_token(params))
 
     {:ok, socket, temporary_assigns: [form: nil]}
   end
@@ -165,6 +175,14 @@ defmodule KanbanWeb.UserLive.Registration do
     changeset = Accounts.change_user_registration(%User{}, user_params, validate_unique: false)
     {:noreply, assign_form(socket, Map.put(changeset, :action, :validate))}
   end
+
+  # Only a value shaped like an invitation token is carried; anything else is
+  # dropped rather than echoed into the page.
+  defp invitation_token(%{"invitation_token" => token}) when is_binary(token) do
+    if Regex.match?(~r/\A[A-Za-z0-9_-]{1,64}\z/, token), do: token
+  end
+
+  defp invitation_token(_params), do: nil
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
     form = to_form(changeset, as: "user")

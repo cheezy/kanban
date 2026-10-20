@@ -141,6 +141,10 @@ msgstr "必须包含 @ 符号且不能有空格"
 msgid "contains characters that are not allowed"
 msgstr "包含不允许的字符"
 
+## From Kanban.Workspaces.Invitation (W2219: a second pending invitation for the same email)
+msgid "already has a pending invitation"
+msgstr "已有一个待处理的邀请"
+
 ## From Kanban.Tasks.Assignees (D385: a disabled account as a new task assignee)
 msgid "does not have access to this board"
 msgstr "无法访问此看板"

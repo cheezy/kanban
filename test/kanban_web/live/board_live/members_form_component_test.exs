@@ -277,7 +277,11 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       assert is_nil(socket.assigns.searched_user)
 
       assert_received {MembersFormComponent,
-                       {:replace_flash, [error: "Could not find a user with that email address"]}}
+                       {:replace_flash,
+                        [
+                          info:
+                            "No account uses that email address. You can invite them by email."
+                        ]}}
 
       assert socket.assigns.flash == %{}
     end
@@ -566,10 +570,10 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       |> form("#member-search-form", %{"email" => "nobody-here@example.com"})
       |> render_submit()
 
-      assert render(lv) =~ "Could not find a user with that email address"
+      assert render(lv) =~ "No account uses that email address. You can invite them by email."
 
       lv |> form("#member-search-form", %{"email" => candidate.email}) |> render_submit()
-      refute render(lv) =~ "Could not find a user with that email address"
+      refute render(lv) =~ "No account uses that email address. You can invite them by email."
     end
 
     test "a search error is shown on the page", %{conn: conn, user: user, board: board} do
@@ -579,7 +583,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       |> form("#member-search-form", %{"email" => "nobody-here@example.com"})
       |> render_submit()
 
-      assert render(lv) =~ "Could not find a user with that email address"
+      assert render(lv) =~ "No account uses that email address. You can invite them by email."
     end
 
     test "adding a member shows the success flash on the page",
@@ -593,6 +597,33 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
 
       assert html =~ "User added successfully"
       assert html =~ candidate.email
+    end
+  end
+
+  describe "inviting by email on the members page (W2219)" do
+    setup [:setup_owner, :mail_to_test_process]
+
+    test "the owner invites a searched address that has no account",
+         %{conn: conn, user: user, board: board} do
+      {:ok, lv, _html} = live(log_in_user(conn, user), ~p"/boards/#{board}/members")
+
+      lv
+      |> form("#member-search-form", %{"email" => "invitee-w2219@example.com"})
+      |> render_submit()
+
+      assert has_element?(lv, "#board-invite-card", "invitee-w2219@example.com")
+
+      lv |> element(~s(#board-invite-card button[phx-value-access="modify"])) |> render_click()
+
+      assert render(lv) =~ "Invitation sent to invitee-w2219@example.com."
+      refute has_element?(lv, "#board-invite-card")
+
+      assert [invitation] = Repo.all(Kanban.Workspaces.Invitation)
+      assert invitation.email == "invitee-w2219@example.com"
+      assert invitation.board_id == board.id
+      assert invitation.board_access == :modify
+      assert invitation.role == nil
+      assert_received {:email, %{subject: "You're invited to" <> _}}
     end
   end
 
@@ -747,6 +778,15 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
     end
   end
 
+  # Swoosh's test adapter also mails the sending process, here the board
+  # LiveView, which deliberately has no catch-all handle_info. Route test
+  # emails to this test process only, for the length of the test.
+  defp mail_to_test_process(_context) do
+    Application.put_env(:swoosh, :shared_test_process, self())
+    on_exit(fn -> Application.delete_env(:swoosh, :shared_test_process) end)
+    :ok
+  end
+
   defp add_members(board, owner, count) do
     for _ <- List.duplicate(nil, count) do
       member = user_fixture()
@@ -784,6 +824,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       member_cap: Boards.member_cap_status(board),
       searched_user: nil,
       search_email: "",
+      invite_email: nil,
       myself: %Phoenix.LiveComponent.CID{cid: 1}
     }
 

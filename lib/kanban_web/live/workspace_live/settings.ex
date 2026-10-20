@@ -21,6 +21,10 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
     * Boards — the workspace's boards the viewer can see. An org-admin can also
       move a board they own from their personal workspace here
       (`Kanban.Workspaces.move_board_to_workspace/3`).
+    * Invitations — org-admins only (W2219). Invite an email address as a
+      member or guest, optionally with access to one of the workspace's
+      boards, and resend or revoke open invitations
+      (`Kanban.Workspaces.Invitations`, `KanbanWeb.WorkspaceLive.InvitationsCard`).
 
   Hidden controls are not authorization. Every management event re-reads the
   actor, the workspace and the org-admin role from the database first; a
@@ -30,16 +34,19 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
   use KanbanWeb, :live_view
 
   import KanbanWeb.UserLive.SettingsComponents, only: [section_tab: 1, settings_card: 1]
+  import KanbanWeb.WorkspaceLive.InvitationsCard, only: [invitations_card: 1]
 
   alias Ecto.Changeset
   alias Kanban.Accounts
   alias Kanban.Accounts.User
   alias Kanban.Plans
   alias Kanban.Workspaces
+  alias Kanban.Workspaces.Invitations
   alias Kanban.Workspaces.Policy
   alias Kanban.Workspaces.Workspace
 
-  @sections ["members", "boards"]
+  @sections ["members", "boards", "invitations"]
+  @invitation_events ["invite", "resend_invitation", "revoke_invitation"]
   @roles %{"member" => :member, "guest" => :guest}
 
   @impl true
@@ -71,6 +78,7 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
     |> assign(:workspace, workspace)
     |> assign(:can_manage?, can_manage?)
     |> assign(:section, :members)
+    |> assign(:invite_form, invite_form())
     |> load_lists(user)
   end
 
@@ -81,12 +89,20 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
     |> assign(:members, Workspaces.list_members(user, workspace))
     |> assign(:boards, Workspaces.list_boards(user, workspace))
     |> assign(:movable_boards, movable_boards(socket.assigns.can_manage?, user))
+    |> assign(:invitations, Invitations.list_pending(user, workspace))
   end
 
   defp movable_boards(true, user), do: Workspaces.list_movable_boards(user)
   defp movable_boards(false, _user), do: []
 
   @impl true
+  def handle_params(
+        %{"section" => "invitations"},
+        _uri,
+        %{assigns: %{can_manage?: false}} = socket
+      ),
+      do: {:noreply, assign(socket, :section, :members)}
+
   def handle_params(%{"section" => section}, _uri, socket) when section in @sections do
     {:noreply, assign(socket, :section, String.to_existing_atom(section))}
   end
@@ -129,10 +145,43 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
     end)
   end
 
+  def handle_event("validate_invite", %{"invite" => params}, socket) when is_map(params) do
+    {:noreply, assign(socket, :invite_form, invite_form(params, :validate))}
+  end
+
+  def handle_event("invite", %{"invite" => params}, socket) when is_map(params) do
+    with_manager(socket, fn actor, workspace ->
+      actor
+      |> Invitations.invite_to_workspace(workspace, params, &url(~p"/invitations/#{&1}"))
+      |> respond_to_invite(socket, actor, params)
+    end)
+  end
+
+  def handle_event("resend_invitation", %{"id" => id}, socket)
+      when is_binary(id) or is_integer(id) do
+    with_manager(socket, fn actor, workspace ->
+      actor
+      |> listed_invitation(workspace, id, fn invitation_id ->
+        Invitations.resend(actor, invitation_id, &url(~p"/invitations/#{&1}"))
+      end)
+      |> respond_to_invitation_change(socket, actor, gettext("Invitation sent again."))
+    end)
+  end
+
+  def handle_event("revoke_invitation", %{"id" => id}, socket)
+      when is_binary(id) or is_integer(id) do
+    with_manager(socket, fn actor, workspace ->
+      actor
+      |> listed_invitation(workspace, id, &Invitations.revoke(actor, &1))
+      |> respond_to_invitation_change(socket, actor, gettext("Invitation revoked."))
+    end)
+  end
+
   # A crafted management event without its parameters changes nothing, but is
   # still refused for a viewer who may not manage the workspace.
   def handle_event(event, _params, socket)
-      when event in ["update_role", "remove_member", "move_board"] do
+      when event in ["update_role", "remove_member", "move_board"] or
+             event in @invitation_events do
     with_manager(socket, fn _actor, _workspace -> {:noreply, socket} end)
   end
 
@@ -168,6 +217,59 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
        gettext("That board can't be moved here. Choose a board you own in your personal boards.")
      )
      |> load_lists(actor)}
+  end
+
+  defp respond_to_invite({:ok, invitation}, socket, actor, _params) do
+    {:noreply,
+     socket
+     |> replace_flash(:info, gettext("Invitation sent to %{email}.", email: invitation.email))
+     |> assign(:invite_form, invite_form())
+     |> load_lists(actor)}
+  end
+
+  defp respond_to_invite({:error, %Changeset{} = changeset}, socket, _actor, _params) do
+    {:noreply, assign(socket, :invite_form, to_form(changeset, as: :invite))}
+  end
+
+  defp respond_to_invite({:error, :invalid_board}, socket, actor, params) do
+    {:noreply,
+     socket
+     |> replace_flash(:error, gettext("Choose a board in this workspace."))
+     |> assign(:invite_form, invite_form(params, nil))
+     |> load_lists(actor)}
+  end
+
+  defp respond_to_invite({:error, reason}, socket, actor, _params),
+    do: respond_to_invitation_change({:error, reason}, socket, actor, nil)
+
+  defp respond_to_invitation_change({:ok, _invitation}, socket, actor, message) do
+    {:noreply, socket |> replace_flash(:info, message) |> load_lists(actor)}
+  end
+
+  defp respond_to_invitation_change({:error, :unauthorized}, socket, _actor, _message),
+    do: {:noreply, deny(socket)}
+
+  defp respond_to_invitation_change({:error, :rate_limited}, socket, _actor, _message) do
+    {:noreply,
+     replace_flash(
+       socket,
+       :error,
+       gettext("You've sent a lot of invitations. Please try again later.")
+     )}
+  end
+
+  defp respond_to_invitation_change({:error, _not_found}, socket, actor, _message) do
+    {:noreply,
+     socket
+     |> replace_flash(:error, gettext("Invitation not found."))
+     |> load_lists(actor)}
+  end
+
+  defp invite_form(params \\ %{}, action \\ nil) do
+    params
+    |> Invitations.change_workspace_invitation()
+    |> Map.put(:action, action)
+    |> to_form(as: :invite)
   end
 
   defp update_role(actor, workspace, user_id, role, socket) do
@@ -228,6 +330,21 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
     end)
   end
 
+  # Like listed_member/3: the invitation id from the event is matched against
+  # this workspace's pending invitations, re-read now, so an id from another
+  # workspace is "not found" here whoever manages it.
+  defp listed_invitation(actor, workspace, id, fun) do
+    id = to_string(id)
+
+    actor
+    |> Invitations.list_pending(workspace)
+    |> Enum.find(&(Integer.to_string(&1.id) == id))
+    |> case do
+      %{id: invitation_id} -> fun.(invitation_id)
+      nil -> {:error, :not_found}
+    end
+  end
+
   defp parse_role(role) do
     case Map.fetch(@roles, role) do
       {:ok, role} -> {:ok, role}
@@ -242,11 +359,14 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
     |> push_event("flash:shown", %{kind: Atom.to_string(kind)})
   end
 
-  defp sections do
+  defp sections(can_manage?) do
     [
       {:members, gettext("Members"), gettext("roles · removal")},
       {:boards, gettext("Boards"), gettext("list · move a board here")}
-    ]
+    ] ++
+      if can_manage?,
+        do: [{:invitations, gettext("Invitations"), gettext("invite · resend · revoke")}],
+        else: []
   end
 
   defp role_label(:member), do: gettext("Member")

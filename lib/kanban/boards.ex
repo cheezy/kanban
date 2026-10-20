@@ -268,6 +268,7 @@ defmodule Kanban.Boards do
   end
 
   defdelegate add_user_to_board(board, user, access, current_user), to: MembershipChanges
+  defdelegate add_invited_user(board, user, access, actor), to: MembershipChanges
   defdelegate remove_user_from_board(board, user, current_user), to: MembershipChanges
   defdelegate update_user_access(board, user, new_access, current_user), to: MembershipChanges
   defdelegate member_cap_status(board), to: MembershipChanges

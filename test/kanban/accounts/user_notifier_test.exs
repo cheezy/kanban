@@ -64,6 +64,56 @@ defmodule Kanban.Accounts.UserNotifierTest do
     end
   end
 
+  describe "deliver_workspace_invitation/3 (W2219)" do
+    test "names the inviter and the workspace and carries the link" do
+      url = "https://example.test/invitations/abc_DEF-123"
+
+      assert {:ok, email} =
+               UserNotifier.deliver_workspace_invitation(
+                 "invitee@example.com",
+                 %{target: :workspace, target_name: "Platform", inviter_name: "Ada"},
+                 url
+               )
+
+      assert email.to == [{"", "invitee@example.com"}]
+      assert email.subject == "You're invited to Platform on Stride"
+      assert email.html_body =~ "Ada has invited you to the workspace"
+      assert email.html_body =~ "<strong>Platform</strong>"
+      assert email.html_body =~ ~s|href="#{url}"|
+      assert email.html_body =~ "expires in 7 days"
+      assert_email_sent(email)
+    end
+
+    test "says board for a board invitation and falls back when the inviter has no name" do
+      {:ok, email} =
+        UserNotifier.deliver_workspace_invitation(
+          "invitee@example.com",
+          %{target: :board, target_name: "Roadmap", inviter_name: nil},
+          "https://example.test/invitations/x"
+        )
+
+      assert email.html_body =~ "Someone has invited you to the board"
+    end
+
+    test "escapes markup in names and folds line breaks out of the subject" do
+      {:ok, email} =
+        UserNotifier.deliver_workspace_invitation(
+          "invitee@example.com",
+          %{
+            target: :workspace,
+            target_name: "<b>Plat</b>\r\nBcc: x@example.com",
+            inviter_name: "<img src=x>"
+          },
+          "https://example.test/invitations/x"
+        )
+
+      refute email.html_body =~ "<b>Plat</b>"
+      refute email.html_body =~ "<img src=x>"
+      assert email.html_body =~ "&lt;b&gt;Plat&lt;/b&gt;"
+      refute email.subject =~ ~r/[\r\n]/
+    end
+  end
+
   describe "deliver_org_admin_confirmation_instructions/3" do
     test "names the Organization and says a site admin created the account" do
       user = %User{email: "new@example.com", name: nil}

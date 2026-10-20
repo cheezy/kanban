@@ -4,7 +4,9 @@ defmodule KanbanWeb.UserLive.Confirmation do
   import KanbanWeb.AuthFrame
 
   alias Kanban.Accounts
+  alias Kanban.Workspaces.Invitations
   alias KanbanWeb.OnboardingPlugins
+  alias KanbanWeb.WorkspaceLive.InvitationMessages
 
   @impl true
   def render(assigns) do
@@ -411,11 +413,24 @@ defmodule KanbanWeb.UserLive.Confirmation do
     end
   end
 
+  # An account registered from an invitation link joins once its email is
+  # confirmed (W2219); the outcome is shown as a flash on this page.
+  defp accept_registered_invitation(socket, user) do
+    case Invitations.accept_registered(user) do
+      :none ->
+        socket
+
+      result ->
+        {kind, message} = InvitationMessages.flash(result)
+        put_flash(socket, kind, message)
+    end
+  end
+
   @impl true
   def handle_info(:confirm, socket) do
     case Accounts.confirm_user(socket.assigns.token) do
-      {:ok, _user} ->
-        {:noreply, assign(socket, confirmed: true)}
+      {:ok, user} ->
+        {:noreply, socket |> assign(confirmed: true) |> accept_registered_invitation(user)}
 
       {:error, :already_confirmed} ->
         {:noreply,
