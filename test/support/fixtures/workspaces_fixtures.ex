@@ -8,11 +8,13 @@ defmodule Kanban.WorkspacesFixtures do
   no org-admin.
   """
 
-  import Ecto.Query, only: [where: 3]
+  import Ecto.Query, only: [from: 2, where: 3]
 
   alias Kanban.AccountsFixtures
   alias Kanban.Boards.Board
   alias Kanban.BoardsFixtures
+  alias Kanban.Organizations
+  alias Kanban.OrganizationsFixtures
   alias Kanban.Repo
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Workspace
@@ -67,6 +69,29 @@ defmodule Kanban.WorkspacesFixtures do
     |> Workspace.create_changeset(false, organization.id)
     |> Ecto.Changeset.change(archived_at: attrs[:archived_at])
     |> Repo.insert!()
+  end
+
+  @doc """
+  Makes `user` a `:member` of the Organization whose workspace holds `board`,
+  read from the database, so `Kanban.Boards.add_user_to_board/4` accepts them
+  there. Does nothing for a board in a personal workspace or for a user who
+  already belongs to that Organization. Returns `user`.
+  """
+  def join_board_organization(board, user) do
+    organization_id =
+      from(b in Board,
+        join: w in Workspace,
+        on: w.id == b.workspace_id,
+        where: b.id == ^board.id,
+        select: w.organization_id
+      )
+      |> Repo.one()
+
+    if organization_id && !Organizations.member?(user, organization_id) do
+      OrganizationsFixtures.organization_member_fixture(%{id: organization_id}, user)
+    end
+
+    user
   end
 
   @doc """

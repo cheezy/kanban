@@ -9,7 +9,12 @@ defmodule Kanban.BoardsTest do
   import Kanban.TelemetryHelpers
 
   import Kanban.WorkspacesFixtures,
-    only: [org_workspace_fixture: 1, place_board_in_workspace: 1, remove_personal_workspace: 1]
+    only: [
+      join_board_organization: 2,
+      org_workspace_fixture: 1,
+      place_board_in_workspace: 1,
+      remove_personal_workspace: 1
+    ]
 
   alias Kanban.Accounts.Scope
   alias Kanban.Boards
@@ -2531,7 +2536,8 @@ defmodule Kanban.BoardsTest do
 
     defp add_board_members(board, owner, count) do
       for _ <- List.duplicate(nil, count) do
-        {:ok, _} = Boards.add_user_to_board(board, user_fixture(), :modify, owner)
+        member = join_board_organization(board, user_fixture())
+        {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
       end
     end
 

@@ -627,12 +627,12 @@ msgid "Enter user email"
 msgstr "Entrez l'email de l'utilisateur"
 
 #: lib/kanban_web/live/board_live/membership.ex:263
-#: lib/kanban_web/live/board_live/membership.ex:293
+#: lib/kanban_web/live/board_live/membership.ex:305
 #, elixir-autogen, elixir-format
 msgid "Failed to add user to board"
 msgstr "Échec de l'ajout de l'utilisateur au tableau"
 
-#: lib/kanban_web/live/board_live/membership.ex:320
+#: lib/kanban_web/live/board_live/membership.ex:332
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "Échec de la suppression de l'utilisateur du tableau"
@@ -710,7 +710,7 @@ msgstr "Sélectionner un utilisateur"
 #: lib/kanban_web/components/archive_filter_chips.ex:424
 #: lib/kanban_web/components/board_filter_bar.ex:182
 #: lib/kanban_web/components/bulk_action_bar.ex:187
-#: lib/kanban_web/live/task_live/form/option_builders.ex:112
+#: lib/kanban_web/live/task_live/form/option_builders.ex:123
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
 msgstr "Non assigné"
@@ -725,12 +725,12 @@ msgstr "Utilisateur ajouté avec succès"
 msgid "User is already added to the board"
 msgstr "L'utilisateur est déjà ajouté au tableau"
 
-#: lib/kanban_web/live/board_live/membership.ex:303
+#: lib/kanban_web/live/board_live/membership.ex:315
 #, elixir-autogen, elixir-format
 msgid "User not found"
 msgstr "Utilisateur introuvable"
 
-#: lib/kanban_web/live/board_live/membership.ex:312
+#: lib/kanban_web/live/board_live/membership.ex:324
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr "Utilisateur supprimé avec succès"
@@ -1901,7 +1901,7 @@ msgstr "Flux de Travail de Révision Humaine"
 msgid "ID"
 msgstr "ID"
 
-#: lib/kanban_web/live/task_live/form/option_builders.ex:137
+#: lib/kanban_web/live/task_live/form/option_builders.ex:148
 #, elixir-autogen, elixir-format
 msgid "No parent goal"
 msgstr "Aucun objectif parent"
@@ -3022,7 +3022,7 @@ msgid "Let's build what's next, together."
 msgstr "Construisons ce qui vient ensuite, ensemble."
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:334
+#: lib/kanban_web/live/board_live/membership.ex:346
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "Seul le propriétaire du tableau peut gérer les membres du tableau"
@@ -11233,7 +11233,7 @@ msgstr "Événement de télémétrie et Mesures à suivre nécessitent un tablea
 msgid "This account is disabled and can't sign in. It still takes a seat."
 msgstr "Ce compte est désactivé et ne peut pas se connecter. Il occupe tout de même une place."
 
-#: lib/kanban_web/live/board_live/membership.ex:316
+#: lib/kanban_web/live/board_live/membership.ex:328
 #, elixir-autogen, elixir-format
 msgid "The board owner can't be removed."
 msgstr "Le propriétaire du tableau ne peut pas être retiré."
@@ -11258,7 +11258,7 @@ msgstr "Cet utilisateur est le seul admin d'organisation actif d'une organisatio
 msgid "Unconfirmed"
 msgstr "Non confirmé"
 
-#: lib/kanban_web/live/board_live/membership.ex:330
+#: lib/kanban_web/live/board_live/membership.ex:342
 #, elixir-autogen, elixir-format
 msgid "This account is disabled, so it can't be added to the board."
 msgstr "Ce compte est désactivé, il ne peut donc pas être ajouté au tableau."
@@ -12080,3 +12080,8 @@ msgstr "Prête à télécharger"
 #, elixir-autogen, elixir-format
 msgid "When enabled, any signed-in user can view this board (read-only access). Members keep their assigned permissions."
 msgstr "Lorsque cette option est activée, tout utilisateur connecté peut consulter ce tableau (accès en lecture seule). Les membres conservent les autorisations qui leur sont attribuées."
+
+#: lib/kanban_web/live/board_live/membership.ex:298
+#, elixir-autogen, elixir-format
+msgid "Only members of this board's Organization can be added. Ask an org-admin to invite them to the workspace."
+msgstr "Seuls les membres de l'organisation de ce tableau peuvent être ajoutés. Demandez à un administrateur de l'organisation de l'inviter dans l'espace de travail."

@@ -627,12 +627,12 @@ msgid "Enter user email"
 msgstr "Benutzer-E-Mail eingeben"
 
 #: lib/kanban_web/live/board_live/membership.ex:263
-#: lib/kanban_web/live/board_live/membership.ex:293
+#: lib/kanban_web/live/board_live/membership.ex:305
 #, elixir-autogen, elixir-format
 msgid "Failed to add user to board"
 msgstr "Benutzer konnte nicht zum Board hinzugefügt werden"
 
-#: lib/kanban_web/live/board_live/membership.ex:320
+#: lib/kanban_web/live/board_live/membership.ex:332
 #, elixir-autogen, elixir-format
 msgid "Failed to remove user from board"
 msgstr "Benutzer konnte nicht vom Board entfernt werden"
@@ -710,7 +710,7 @@ msgstr "Benutzer auswählen"
 #: lib/kanban_web/components/archive_filter_chips.ex:424
 #: lib/kanban_web/components/board_filter_bar.ex:182
 #: lib/kanban_web/components/bulk_action_bar.ex:187
-#: lib/kanban_web/live/task_live/form/option_builders.ex:112
+#: lib/kanban_web/live/task_live/form/option_builders.ex:123
 #, elixir-autogen, elixir-format
 msgid "Unassigned"
 msgstr "Nicht zugewiesen"
@@ -725,12 +725,12 @@ msgstr "Benutzer erfolgreich hinzugefügt"
 msgid "User is already added to the board"
 msgstr "Benutzer wurde bereits zum Board hinzugefügt"
 
-#: lib/kanban_web/live/board_live/membership.ex:303
+#: lib/kanban_web/live/board_live/membership.ex:315
 #, elixir-autogen, elixir-format
 msgid "User not found"
 msgstr "Benutzer nicht gefunden"
 
-#: lib/kanban_web/live/board_live/membership.ex:312
+#: lib/kanban_web/live/board_live/membership.ex:324
 #, elixir-autogen, elixir-format
 msgid "User removed successfully"
 msgstr "Benutzer erfolgreich entfernt"
@@ -1901,7 +1901,7 @@ msgstr "Menschlicher Überprüfungs-Workflow"
 msgid "ID"
 msgstr "ID"
 
-#: lib/kanban_web/live/task_live/form/option_builders.ex:137
+#: lib/kanban_web/live/task_live/form/option_builders.ex:148
 #, elixir-autogen, elixir-format
 msgid "No parent goal"
 msgstr "Kein übergeordnetes Ziel"
@@ -3022,7 +3022,7 @@ msgid "Let's build what's next, together."
 msgstr "Lassen Sie uns gemeinsam das Nächste bauen."
 
 #: lib/kanban_web/live/board_live/authorization.ex:68
-#: lib/kanban_web/live/board_live/membership.ex:334
+#: lib/kanban_web/live/board_live/membership.ex:346
 #, elixir-autogen, elixir-format
 msgid "Only the board owner can manage board membership"
 msgstr "Nur der Board-Besitzer kann die Board-Mitgliedschaft verwalten"
@@ -11293,7 +11293,7 @@ msgstr "Telemetrie-Ereignis und Zu verfolgende Kennzahlen erfordern ein Board in
 msgid "This account is disabled and can't sign in. It still takes a seat."
 msgstr "Dieses Konto ist deaktiviert und kann sich nicht anmelden. Es belegt trotzdem einen Platz."
 
-#: lib/kanban_web/live/board_live/membership.ex:316
+#: lib/kanban_web/live/board_live/membership.ex:328
 #, elixir-autogen, elixir-format
 msgid "The board owner can't be removed."
 msgstr "Der Board-Eigentümer kann nicht entfernt werden."
@@ -11318,7 +11318,7 @@ msgstr "Dieser Benutzer ist der einzige aktive Org-Admin einer Organisation, die
 msgid "Unconfirmed"
 msgstr "Unbestätigt"
 
-#: lib/kanban_web/live/board_live/membership.ex:330
+#: lib/kanban_web/live/board_live/membership.ex:342
 #, elixir-autogen, elixir-format
 msgid "This account is disabled, so it can't be added to the board."
 msgstr "Dieses Konto ist deaktiviert und kann daher nicht zum Board hinzugefügt werden."
@@ -12140,3 +12140,8 @@ msgstr "Bereit zum Herunterladen"
 #, elixir-autogen, elixir-format
 msgid "When enabled, any signed-in user can view this board (read-only access). Members keep their assigned permissions."
 msgstr "Wenn aktiviert, kann jeder angemeldete Benutzer dieses Board einsehen (nur Lesezugriff). Mitglieder behalten ihre zugewiesenen Berechtigungen."
+
+#: lib/kanban_web/live/board_live/membership.ex:298
+#, elixir-autogen, elixir-format
+msgid "Only members of this board's Organization can be added. Ask an org-admin to invite them to the workspace."
+msgstr "Nur Mitglieder der Organisation dieses Boards können hinzugefügt werden. Bitten Sie einen Org-Admin, die Person in den Workspace einzuladen."

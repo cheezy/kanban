@@ -289,6 +289,18 @@ defmodule KanbanWeb.BoardLive.Membership do
     {:noreply, socket |> assign(:searched_user, nil) |> put_flash(:error, disabled_user_flash())}
   end
 
+  defp respond_to_add(socket, _board, {:error, :not_org_member}) do
+    {:noreply,
+     socket
+     |> assign(:searched_user, nil)
+     |> put_flash(
+       :error,
+       gettext(
+         "Only members of this board's Organization can be added. Ask an org-admin to invite them to the workspace."
+       )
+     )}
+  end
+
   defp respond_to_add(socket, _board, {:error, _changeset}) do
     {:noreply, put_flash(socket, :error, gettext("Failed to add user to board"))}
   end

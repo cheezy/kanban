@@ -108,7 +108,8 @@ defmodule Kanban.Workspaces.BoardMovesTest do
 
     board = Repo.get!(Board, ctx.board.id)
     assert %{cap: nil, reached?: false} = Boards.member_cap_status(board)
-    assert {:ok, _} = Boards.add_user_to_board(board, user_fixture(), :read_only, ctx.org_admin)
+    newcomer = join_board_organization(board, user_fixture())
+    assert {:ok, _} = Boards.add_user_to_board(board, newcomer, :read_only, ctx.org_admin)
   end
 
   test "refuses a caller with only a modify row", ctx do

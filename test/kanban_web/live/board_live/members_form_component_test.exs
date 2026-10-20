@@ -387,6 +387,34 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
       assert socket.assigns.flash == %{}
     end
 
+    test "org board: refuses someone outside the Organization and says how to invite them",
+         %{board: board, scope: scope} do
+      workspace = org_workspace_fixture(organization_fixture())
+
+      board = board |> Ecto.Changeset.change(workspace_id: workspace.id) |> Repo.update!()
+
+      outsider = user_fixture()
+
+      socket =
+        board
+        |> build_update_socket(scope)
+        |> Phoenix.Component.assign(:searched_user, outsider)
+        |> Phoenix.Component.assign(:search_email, outsider.email)
+
+      {:noreply, socket} =
+        MembersFormComponent.handle_event("add_user", %{"access" => "modify"}, socket)
+
+      assert_received {MembersFormComponent,
+                       {:replace_flash,
+                        [
+                          error:
+                            "Only members of this board's Organization can be added. Ask an org-admin to invite them to the workspace."
+                        ]}}
+
+      assert is_nil(socket.assigns.searched_user)
+      refute Enum.any?(socket.assigns.board_users, &(&1.user.id == outsider.id))
+    end
+
     test "non-owner: refuses to add", %{board: board} do
       stranger = user_fixture()
       stranger_scope = Scope.for_user(stranger)
@@ -789,7 +817,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponentTest do
 
   defp add_members(board, owner, count) do
     for _ <- List.duplicate(nil, count) do
-      member = user_fixture()
+      member = join_board_organization(board, user_fixture())
       {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
       member
     end

@@ -24,6 +24,7 @@ defmodule Kanban.Notifications.PlanEnforcementTest do
   alias Kanban.Accounts.UserNotifier
   alias Kanban.Boards
   alias Kanban.Boards.Board
+  alias Kanban.Boards.BoardUser
   alias Kanban.Columns
   alias Kanban.Notifications
   alias Kanban.Notifications.Digest
@@ -385,9 +386,16 @@ defmodule Kanban.Notifications.PlanEnforcementTest do
       board_fixture(free_user)
       paid_user = user_fixture()
       paid_board = paid_user |> board_fixture() |> make_paid([paid_user])
-      # A free member of a paid board gets no digest either.
+      # A free member of a paid board gets no digest either. Boards no longer
+      # take members from outside their Organization, but a row from an older
+      # add or a board move can still be there, so it is inserted directly.
       free_member = user_fixture()
-      {:ok, _} = Boards.add_user_to_board(paid_board, free_member, :modify, paid_user)
+
+      Repo.insert!(%BoardUser{
+        board_id: paid_board.id,
+        user_id: free_member.id,
+        access: :modify
+      })
 
       assert :ok = perform_job(DigestFanoutWorker, %{now: DateTime.to_iso8601(@now)})
 

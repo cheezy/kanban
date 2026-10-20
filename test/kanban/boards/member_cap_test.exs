@@ -43,7 +43,7 @@ defmodule Kanban.Boards.MemberCapTest do
 
   defp add_members(board, owner, count) do
     for _ <- List.duplicate(nil, count) do
-      member = user_fixture()
+      member = join_board_organization(board, user_fixture())
       {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
       member
     end
@@ -138,7 +138,8 @@ defmodule Kanban.Boards.MemberCapTest do
         |> where([b], b.id == ^board.id)
         |> Repo.update_all(set: [workspace_id: org_workspace.id])
 
-      assert {:ok, _} = Boards.add_user_to_board(stale, user_fixture(), :modify, owner)
+      newcomer = join_board_organization(board, user_fixture())
+      assert {:ok, _} = Boards.add_user_to_board(stale, newcomer, :modify, owner)
     end
 
     test "a user already on a full board gets the duplicate error, not the cap refusal" do
