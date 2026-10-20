@@ -2,7 +2,8 @@ defmodule Kanban.Tasks.Creation do
   @moduledoc """
   Single-task creation with automatic positioning, identifier generation,
   WIP-limit checks and dependency handling. A task created under an assigned
-  goal inherits the goal's assignee.
+  goal inherits the goal's assignee, unless that assignee is a disabled
+  account (D385): the task then starts unassigned.
 
   Goals created together with their child tasks go through
   `Kanban.Tasks.GoalCreation`; the helpers both share are in
@@ -38,6 +39,11 @@ defmodule Kanban.Tasks.Creation do
   `assigned_to_id` at creation time. Explicit `assigned_to_id` values in
   `attrs` (including explicit `nil`) are always preserved — the inheritance
   only fills the gap when the caller did not specify an assignee.
+
+  The one exception is a goal assignee whose account is disabled (D385): the
+  new task then starts unassigned instead. The disabled state is read from the
+  database through `Kanban.Tasks.Assignees.disabled?/1`, never from a struct
+  the caller holds. The goal's own assignment is left untouched.
   """
   def create_task(column, attrs \\ %{}) do
     do_create_task(column, attrs, &Task.changeset/2)

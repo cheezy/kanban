@@ -16,8 +16,9 @@ defmodule Kanban.Tasks.Assignees do
     * `Kanban.Tasks.BulkActions` and `Kanban.Tasks.InterventionTransactions`
       count only enabled board members as assignable, and the goal-reassign
       dialog (`KanbanWeb.AgentsLive.Interventions`) does not offer the others.
-    * `Kanban.Tasks.Creation` does not let a new child inherit a goal's
-      assignee who has since been disabled; the child starts unassigned.
+    * `Kanban.Tasks.Creation` and `Kanban.Tasks.GoalCreation` do not let a
+      new child inherit a goal's assignee who is disabled; the child starts
+      unassigned.
 
   The check reads `disabled_at` from the database, never from a `%User{}`
   struct a caller holds, so a struct loaded before the disable cannot slip

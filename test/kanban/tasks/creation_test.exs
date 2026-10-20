@@ -607,4 +607,57 @@ defmodule Kanban.Tasks.CreationTest do
       500 -> :no_message
     end
   end
+
+  describe "goal creation and a disabled goal assignee (D385)" do
+    defp disable!(user) do
+      user
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Repo.update!()
+    end
+
+    defp goal_children(column, assignee_id) do
+      goal_attrs = %{"title" => "D385 goal", "type" => "goal", "assigned_to_id" => assignee_id}
+
+      children = [
+        %{"title" => "Inherits", "type" => "work"},
+        %{"title" => "Explicitly nil", "type" => "work", "assigned_to_id" => nil}
+      ]
+
+      assert {:ok, %{goal: goal, child_tasks: kids}} =
+               Tasks.create_goal_with_tasks(column, goal_attrs, children)
+
+      {goal, Enum.sort_by(kids, & &1.position)}
+    end
+
+    # Only create_goal_with_tasks/3 can carry a goal assignee:
+    # Task.api_create_changeset/2 does not cast assigned_to_id.
+    test "create_goal_with_tasks/3: an enabled goal assignee is inherited", %{column: column} do
+      member = user_fixture()
+
+      {goal, [inherits, explicit_nil]} =
+        goal_children(column, member.id)
+
+      assert goal.assigned_to_id == member.id
+      assert inherits.assigned_to_id == member.id
+      assert is_nil(explicit_nil.assigned_to_id)
+    end
+
+    test "create_goal_with_tasks/3: a disabled goal assignee is not inherited, read from the database",
+         %{column: column} do
+      member = user_fixture()
+      disable!(member)
+
+      # `member` is the struct loaded before the disable: disabled_at is nil
+      # in hand, but the database row is disabled.
+      assert is_nil(member.disabled_at)
+
+      {goal, [inherits, explicit_nil]} =
+        goal_children(column, member.id)
+
+      assert goal.assigned_to_id == member.id
+      assert is_nil(inherits.assigned_to_id)
+      assert is_nil(explicit_nil.assigned_to_id)
+      assert is_nil(Repo.get!(Task, inherits.id).assigned_to_id)
+    end
+  end
 end

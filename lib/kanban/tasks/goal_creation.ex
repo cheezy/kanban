@@ -2,7 +2,8 @@ defmodule Kanban.Tasks.GoalCreation do
   @moduledoc """
   Creates a goal and its child tasks in one transaction: the board lock and
   identifiers are taken once for the whole set, children inherit the goal's
-  creator and assignee, and index-based `dependencies` between children are
+  creator and assignee (unless that assignee is a disabled account, D385), and
+  index-based `dependencies` between children are
   rewritten to the identifiers generated for them.
 
   Single-task creation lives in `Kanban.Tasks.Creation`; the helpers both
@@ -10,6 +11,7 @@ defmodule Kanban.Tasks.GoalCreation do
   """
 
   alias Kanban.Repo
+  alias Kanban.Tasks.Assignees
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.CreationSupport
   alias Kanban.Tasks.DbErrors
@@ -203,11 +205,15 @@ defmodule Kanban.Tasks.GoalCreation do
 
   # The goal struct is already in hand (just inserted by the Multi), so no
   # lookup is needed. The rule matches Kanban.Tasks.Creation.create_task/2: child attrs
-  # without an explicit assigned_to_id inherit the goal's assignment, when set.
+  # without an explicit assigned_to_id inherit the goal's assignment, when set,
+  # unless that assignee is a disabled account (D385). The disabled state is
+  # read from the database, never from a struct the caller holds, so a user
+  # loaded before the disable cannot slip through; the child then starts
+  # unassigned.
   defp inherit_assignment_from_goal_struct(attrs, %Task{assigned_to_id: nil}), do: attrs
 
   defp inherit_assignment_from_goal_struct(attrs, %Task{assigned_to_id: assigned_id}) do
-    if CreationSupport.assigned_to_id_explicit?(attrs) do
+    if CreationSupport.assigned_to_id_explicit?(attrs) or Assignees.disabled?(assigned_id) do
       attrs
     else
       CreationSupport.put_assigned_to_id(attrs, assigned_id)
