@@ -285,6 +285,41 @@ defmodule KanbanWeb.BoardLive.BulkSelectionTest do
       assert reload(task).assigned_to_id == nil
     end
 
+    test "a disabled member is not offered as an assignee and is still refused (D385)", %{
+      conn: conn,
+      user: user,
+      board: board,
+      todo: todo
+    } do
+      enabled = user_fixture(%{name: "Enabled Member"})
+      disabled = user_fixture(%{name: "Disabled Member"})
+      {:ok, _} = Boards.add_user_to_board(board, enabled, :modify, user)
+      {:ok, _} = Boards.add_user_to_board(board, disabled, :modify, user)
+
+      disabled
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Repo.update!()
+
+      task = task_fixture(todo)
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      enter_selection(view)
+      select(view, task)
+
+      assert has_element?(view, ~s(#bulk-assign-member option[value="#{enabled.id}"]))
+      assert has_element?(view, ~s(#bulk-assign-member option[value="#{user.id}"]))
+      refute has_element?(view, ~s(#bulk-assign-member option[value="#{disabled.id}"]))
+
+      # The assignee filter still lists the disabled member, who may own tasks.
+      assert render(view) =~ "Disabled Member"
+
+      # A crafted event naming the disabled member is still refused server-side.
+      assert render_hook(view, "bulk_assign", %{"assignee" => to_string(disabled.id)}) =~
+               "Choose a board member"
+
+      assert reload(task).assigned_to_id == nil
+    end
+
     test "invalid targets are reported", %{conn: conn, board: board, todo: todo} do
       task = task_fixture(todo)
       {:ok, view, _html} = live(conn, ~p"/boards/#{board}")

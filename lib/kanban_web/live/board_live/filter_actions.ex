@@ -29,7 +29,7 @@ defmodule KanbanWeb.BoardLive.FilterActions do
   alias KanbanWeb.BoardLive.FilterParams
 
   @doc "The `:filter_options` assign before any board is loaded."
-  def empty_options, do: %{board_id: nil, labels: [], members: []}
+  def empty_options, do: %{board_id: nil, labels: [], members: [], assignable_members: []}
 
   @doc """
   Parses the board URL's query params into `:board_filters`, restricted to
@@ -105,12 +105,17 @@ defmodule KanbanWeb.BoardLive.FilterActions do
   Reloads the cached selector options for `board`. Called when the board's
   labels change (W2233), so the filter bar never offers a deleted label or
   misses a new or renamed one.
+
+  `:members` feeds the assignee filter and keeps disabled members, who may
+  still own tasks; `:assignable_members` feeds the bulk-action bar's assignee
+  select and leaves them out, since the server refuses them as assignees.
   """
   def reload_options(socket, board) do
     assign(socket, :filter_options, %{
       board_id: board.id,
       labels: Labels.list_viewable_labels(socket.assigns.current_scope, board),
-      members: Boards.list_board_members(board.id)
+      members: Boards.list_board_members(board.id),
+      assignable_members: Boards.list_assignable_board_members(board.id)
     })
   end
 

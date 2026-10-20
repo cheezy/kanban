@@ -109,7 +109,9 @@ defmodule KanbanWeb.BulkActionBar do
 
     * `count` — the number of selected cards. Required.
     * `columns` — the board's columns, for the move target. Default `[]`.
-    * `members` — the board's members, maps with `:user_id` and `:name`.
+    * `members` — the board members who may be assigned, maps with `:user_id`
+      and `:name` (`Kanban.Boards.list_assignable_board_members/1`, which
+      leaves out disabled accounts; the server refuses those regardless).
     * `labels` — the board's labels; the label actions are omitted when
       empty.
     * `locked` — renders the locked Bulk actions prompt in place of the

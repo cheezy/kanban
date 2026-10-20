@@ -244,4 +244,21 @@ defmodule Kanban.Boards.Dashboard do
     |> Metrics.members_by_board()
     |> Map.get(board_id, [])
   end
+
+  @doc """
+  Returns the members of a single board who may be newly assigned a task:
+  `list_board_members/1` without the members whose account is disabled.
+
+  A disabled account keeps its `board_users` row (so it still shows on the
+  board's avatar stack and in the assignee filter, where it may still own
+  tasks), but `Kanban.Tasks.Assignees` refuses it as a new assignee. Selects
+  that offer assignees, such as the board's bulk-action bar, use this list so
+  they never offer a choice the server refuses (D385). The disabled state is
+  read from the database on every call.
+  """
+  def list_assignable_board_members(board_id) when is_integer(board_id) do
+    [board_id]
+    |> Metrics.members_by_board(enabled_only: true)
+    |> Map.get(board_id, [])
+  end
 end

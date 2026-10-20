@@ -86,11 +86,19 @@ defmodule Kanban.Boards.Metrics do
 
   Returns all members and lets `KanbanWeb.Avatar.avatar_stack/1` handle
   the five-visible truncation.
+
+  ## Options
+
+    * `:enabled_only` - when `true`, leaves out members whose account is
+      disabled (`users.disabled_at` set). A disabled account keeps its
+      `board_users` row, so it is otherwise still listed. See
+      `Kanban.Boards.list_assignable_board_members/1`.
   """
-  def members_by_board(board_ids) do
+  def members_by_board(board_ids, opts \\ []) do
     BoardUser
     |> join(:inner, [bu], u in User, on: u.id == bu.user_id)
     |> where([bu], bu.board_id in ^board_ids)
+    |> maybe_enabled_only(Keyword.get(opts, :enabled_only, false))
     |> select([bu, u], {bu.board_id, u.id, u.name, u.email})
     |> Repo.all()
     |> Enum.reduce(%{}, fn row, acc ->
@@ -106,6 +114,9 @@ defmodule Kanban.Boards.Metrics do
       Map.update(acc, board_id, [member], &(&1 ++ [member]))
     end)
   end
+
+  defp maybe_enabled_only(query, true), do: where(query, [_bu, u], is_nil(u.disabled_at))
+  defp maybe_enabled_only(query, false), do: query
 
   @doc """
   Folds a list of boards carrying `:metrics` into workspace-wide

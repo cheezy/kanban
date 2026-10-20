@@ -107,6 +107,7 @@ defmodule Kanban.Boards do
   defdelegate workspace_metrics_from(boards), to: Dashboard
   defdelegate list_workspace_members(user, opts \\ []), to: Dashboard
   defdelegate list_board_members(board_id), to: Dashboard
+  defdelegate list_assignable_board_members(board_id), to: Dashboard
 
   @doc """
   Gets a single board with authorization check.

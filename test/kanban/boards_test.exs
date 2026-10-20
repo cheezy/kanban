@@ -2233,6 +2233,37 @@ defmodule Kanban.BoardsTest do
     |> Kanban.Repo.update!()
   end
 
+  describe "list_assignable_board_members/1 (D385)" do
+    test "lists enabled members only, while list_board_members/1 keeps a disabled one" do
+      owner = user_fixture(%{name: "Owner"})
+      enabled = user_fixture(%{name: "Enabled"})
+      disabled = user_fixture(%{name: "Disabled"})
+      board = board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, enabled, :modify, owner)
+      {:ok, _} = Boards.add_user_to_board(board, disabled, :modify, owner)
+
+      # `disabled` is the struct loaded before the disable; the database row decides.
+      disabled
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Kanban.Repo.update!()
+
+      ids = fn members -> members |> Enum.map(& &1.user_id) |> Enum.sort() end
+
+      assert ids.(Boards.list_assignable_board_members(board.id)) ==
+               Enum.sort([owner.id, enabled.id])
+
+      assert ids.(Boards.list_board_members(board.id)) ==
+               Enum.sort([owner.id, enabled.id, disabled.id])
+
+      [assignable | _] = Boards.list_assignable_board_members(board.id)
+      assert Map.keys(assignable) |> Enum.sort() == [:kind, :name, :palette, :user_id]
+    end
+
+    test "returns an empty list for a board with no rows" do
+      assert Boards.list_assignable_board_members(-1) == []
+    end
+  end
+
   describe "board and membership telemetry" do
     @board_updated [:kanban, :board, :updated]
     @board_deleted [:kanban, :board, :deleted]
