@@ -259,6 +259,29 @@ defmodule Kanban.Tasks.AgentWorkflowTest do
       assert Repo.get!(Task, task.id).status == :in_progress
     end
 
+    # D383: the reason goes to the notification body, which cannot store a
+    # NUL byte or invalid UTF-8; the unclaim is refused, not half-done.
+    test "refuses a reason with a NUL byte or invalid UTF-8 and keeps the claim", ctx do
+      task = create_open_task(ctx.ready, ctx.user)
+      claimed = claim_for(task, ctx.user, ctx.board)
+
+      for bad <- [<<"bad", 0, "reason">>, <<"bad", 0xFF, "reason">>] do
+        assert {:error, %Ecto.Changeset{valid?: false} = cs} =
+                 AgentWorkflow.unclaim_task(claimed, ctx.user, bad)
+
+        assert cs.errors == [reason: {"contains characters that are not allowed", []}]
+
+        reloaded = Repo.get!(Task, task.id)
+        assert reloaded.status == :in_progress
+        assert reloaded.assigned_to_id == ctx.user.id
+      end
+
+      refute Repo.get_by(Notification, task_id: task.id)
+
+      assert {:ok, %Task{status: :open}} =
+               AgentWorkflow.unclaim_task(claimed, ctx.user, "line one\n\ttabbed, fine")
+    end
+
     test "broadcasts task_updated", ctx do
       task = create_open_task(ctx.ready, ctx.user)
       claimed = claim_for(task, ctx.user, ctx.board)

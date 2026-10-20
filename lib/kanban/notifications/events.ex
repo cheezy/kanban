@@ -47,6 +47,7 @@ defmodule Kanban.Notifications.Events do
 
   alias Kanban.Boards
   alias Kanban.Boards.Board
+  alias Kanban.ChangesetText
   alias Kanban.Columns.Column
   alias Kanban.Notifications
   alias Kanban.Notifications.GoalCompletedWorker
@@ -313,14 +314,21 @@ defmodule Kanban.Notifications.Events do
   # trimmed and truncated; blank or non-string text stores no body. The cut
   # counts code points, not graphemes: one grapheme can carry any number of
   # combining marks, so a grapheme count would not bound the stored size.
+  # Text with a NUL byte or invalid UTF-8 (which the body column cannot hold)
+  # also stores no body, so the notification is still sent (D383). The
+  # unclaim entry points refuse such a reason before it gets here.
   defp body_text(text) when is_binary(text) do
+    if ChangesetText.storable?(text), do: trimmed_body(text), else: nil
+  end
+
+  defp body_text(_text), do: nil
+
+  defp trimmed_body(text) do
     case String.trim(text) do
       "" -> nil
       trimmed -> truncate_codepoints(trimmed, @body_max)
     end
   end
-
-  defp body_text(_text), do: nil
 
   defp truncate_codepoints(text, max) do
     text

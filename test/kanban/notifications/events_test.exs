@@ -485,6 +485,17 @@ defmodule Kanban.Notifications.EventsTest do
       assert Enum.all?(notifications, &is_nil(&1.body))
     end
 
+    test "a reason with a NUL byte or invalid UTF-8 stores no body but still notifies", ctx do
+      for {reason, index} <- Enum.with_index([<<"a", 0, "b">>, <<"a", 0xFF>>]) do
+        task = released(ctx, %{created_by_id: nil, claimed_at: DateTime.from_unix!(index)})
+        assert :ok = Events.task_unclaimed(task, ctx.owner, reason)
+      end
+
+      notifications = rows(:task_unclaimed)
+      assert length(notifications) == 2
+      assert Enum.all?(notifications, &is_nil(&1.body))
+    end
+
     test "truncates the reason to 500 characters", ctx do
       task = released(ctx, %{created_by_id: nil})
 

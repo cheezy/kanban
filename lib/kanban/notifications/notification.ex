@@ -26,6 +26,7 @@ defmodule Kanban.Notifications.Notification do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Kanban.ChangesetText
   alias Kanban.Notifications.Preference
 
   @cast_fields [
@@ -83,6 +84,7 @@ defmodule Kanban.Notifications.Notification do
   def changeset(notification, attrs) do
     notification
     |> cast(attrs, @cast_fields)
+    |> ChangesetText.validate_storable([:title, :body, :url_path, :actor_name, :metadata])
     |> put_default_metadata()
     |> validate_required([:user_id, :event_type, :title])
     |> validate_length(:title, max: 255)

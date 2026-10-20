@@ -121,6 +121,17 @@ defmodule Kanban.ChangesetTextTest do
     refute ChangesetText.storable?(%URI{path: <<"a", 0>>})
   end
 
+  test "unstorable_changeset/2 is an invalid changeset naming the field only" do
+    changeset = ChangesetText.unstorable_changeset(:reason)
+
+    refute changeset.valid?
+    assert errors(changeset) == %{reason: [@message]}
+    assert changeset.changes == %{}
+
+    assert ChangesetText.unstorable_changeset(:reason, message: "is invalid")
+           |> errors() == %{reason: ["is invalid"]}
+  end
+
   test "message/0 is the default message" do
     assert ChangesetText.message() == @message
   end

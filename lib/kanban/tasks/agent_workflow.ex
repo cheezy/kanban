@@ -109,11 +109,26 @@ defmodule Kanban.Tasks.AgentWorkflow do
   Clears claimed_at, claim_expires_at, and assigned_to fields.
   Optionally accepts a reason for analytics.
 
-  Returns {:ok, task} if successful, {:error, reason} otherwise.
+  Returns {:ok, task} if successful, {:error, reason} otherwise. A `reason`
+  holding a NUL byte or invalid UTF-8, which the unclaim notification's body
+  could not store, is refused with `{:error, changeset}` carrying an error on
+  `:reason`, and the task stays claimed (D383); it is never stripped.
   """
   def unclaim_task(task, user, reason \\ nil) do
     task = Repo.preload(task, [:column, :assigned_to])
 
+    case unclaim_refusal(task, user, reason) do
+      nil ->
+        ready_column = get_column_by_name(task.column.board_id, "Ready")
+        result = perform_unclaim_transaction(task, ready_column)
+        handle_unclaim_result(result, task, user, reason)
+
+      refusal ->
+        refusal
+    end
+  end
+
+  defp unclaim_refusal(task, user, reason) do
     cond do
       task.status != :in_progress ->
         {:error, :not_claimed}
@@ -127,10 +142,11 @@ defmodule Kanban.Tasks.AgentWorkflow do
       not board_write_access?(task.column.board_id, user) ->
         {:error, :not_authorized}
 
+      not ChangesetText.storable?(reason) ->
+        {:error, ChangesetText.unstorable_changeset(:reason)}
+
       true ->
-        ready_column = get_column_by_name(task.column.board_id, "Ready")
-        result = perform_unclaim_transaction(task, ready_column)
-        handle_unclaim_result(result, task, user, reason)
+        nil
     end
   end
 

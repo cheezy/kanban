@@ -26,7 +26,7 @@ Authorization: Bearer <your_api_token>
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `reason` | string | No | Reason for unclaiming the task (e.g., "Missing required dependencies", "Not enough time") |
+| `reason` | string | No | Reason for unclaiming the task (e.g., "Missing required dependencies", "Not enough time"). A reason holding a NUL byte (JSON `\u0000`) or invalid UTF-8 is refused with a 422, and the task stays claimed. |
 
 ### Request Body Example
 
@@ -100,6 +100,17 @@ Task is not currently claimed:
 ```json
 {
   "error": "Task is not currently claimed"
+}
+```
+
+The `reason` holds a NUL byte or invalid UTF-8, which cannot be stored. The
+task stays claimed, and the error names the field without echoing the text:
+
+```json
+{
+  "errors": {
+    "reason": ["contains characters that are not allowed"]
+  }
 }
 ```
 

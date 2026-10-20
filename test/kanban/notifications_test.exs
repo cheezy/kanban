@@ -146,6 +146,26 @@ defmodule Kanban.NotificationsTest do
       assert Enum.map(inserted, & &1.user_id) == [u1.id, u2.id]
     end
 
+    test "refuses a NUL byte or invalid UTF-8 as a changeset error, not a database error" do
+      user = user_fixture()
+
+      for {field, bad} <- [
+            {:title, <<"a", 0>>},
+            {:body, <<"a", 0xFF>>},
+            {:actor_name, <<"a", 0>>},
+            {:metadata, %{"note" => <<"a", 0>>}}
+          ] do
+        attrs = Map.put(%{title: "Hello"}, field, bad)
+
+        assert {:error, %Ecto.Changeset{} = changeset} =
+                 Notifications.notify(:board_access_changed, [user], attrs)
+
+        assert "contains characters that are not allowed" in errors_on(changeset)[field]
+      end
+
+      refute Kanban.Repo.exists?(Notification)
+    end
+
     test "returns {:ok, []} for an empty recipient list" do
       assert {:ok, []} = Notifications.notify(:board_access_changed, [], %{title: "Nobody"})
     end

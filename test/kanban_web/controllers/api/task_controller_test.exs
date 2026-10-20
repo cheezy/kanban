@@ -4910,6 +4910,46 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert is_nil(notification.body)
     end
 
+    # D383: JSON "\u0000" decodes to a NUL byte, which the notification body
+    # cannot store. The body is sent as raw JSON so the escape goes through
+    # the real parser.
+    test "a JSON \\u0000 in the reason returns 422 naming the field and keeps the claim", %{
+      conn: conn,
+      claimed_task: task,
+      user: user
+    } do
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> post(~p"/api/tasks/#{task.id}/unclaim", ~s({"reason": "nul\\u0000here"}))
+
+      assert_unstorable_reason_refused(conn, task, user)
+    end
+
+    test "an invalid UTF-8 reason returns 422 naming the field and keeps the claim", %{
+      conn: conn,
+      claimed_task: task,
+      user: user
+    } do
+      conn = post(conn, ~p"/api/tasks/#{task.id}/unclaim", %{"reason" => <<"bad", 0xFF>>})
+
+      assert_unstorable_reason_refused(conn, task, user)
+    end
+
+    defp assert_unstorable_reason_refused(conn, task, user) do
+      errors = json_response(conn, 422)["errors"]
+      assert errors == %{"reason" => ["contains characters that are not allowed"]}
+
+      reloaded = Tasks.get_task!(task.id)
+      assert reloaded.status == :in_progress
+      assert reloaded.assigned_to_id == user.id
+
+      refute Kanban.Repo.get_by(Kanban.Notifications.Notification,
+               task_id: task.id,
+               event_type: :task_unclaimed
+             )
+    end
+
     test "returns 403 when unclaiming someone else's task", %{
       conn: _conn,
       claimed_task: task,

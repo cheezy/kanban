@@ -77,6 +77,24 @@ defmodule Kanban.ChangesetText do
   def storable?(_value), do: true
 
   @doc """
+  Returns an invalid changeset carrying only the "contains characters that
+  are not allowed" error on `field`, for a value that is not part of any
+  schema (such as the free-text unclaim reason) and that `storable?/1`
+  refused. The value itself is never put in the changeset, so rendering the
+  errors cannot echo the offending bytes.
+
+  ## Options
+
+    * `:message` - the error message to add instead of the default
+  """
+  @spec unstorable_changeset(atom(), keyword()) :: Ecto.Changeset.t()
+  def unstorable_changeset(field, opts \\ []) when is_atom(field) and is_list(opts) do
+    {%{}, %{field => :string}}
+    |> change()
+    |> add_error(field, Keyword.get(opts, :message, @message))
+  end
+
+  @doc """
   Returns the error message the check adds.
   """
   @spec message() :: String.t()
