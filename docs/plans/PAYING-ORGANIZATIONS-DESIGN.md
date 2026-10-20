@@ -910,6 +910,7 @@ It asserts each feature works on the paid board, and that turning enforcement of
 
 - Enumeration safety: workspace tokens naming foreign boards get the same body as nonexistent boards; invitation states share one message; another-Organization refusals are generic.
 - Hashed-only token storage for invitations and SCIM tokens.
+- The plaintext invitation token never reaches the request log or ErrorTracker: the `/invitations/:token` request line is logged with the token replaced (`KanbanWeb.RequestLog`), and `KanbanWeb.ErrorTrackerFilter` redacts it from the stored path, params, LiveView URI and Referer.
 - SSO state, nonce and PKCE replay; SAML signature wrapping, XXE and assertion replay.
 - SCIM tokens confined to their Organization.
 - The require-2FA redirect-loop escape paths.

@@ -56,7 +56,12 @@ defmodule KanbanWeb.Endpoint do
   end
 
   plug Plug.RequestId
-  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+  # A route with a secret token in its path (/invitations/:token, password
+  # reset, confirmation) is not logged by Phoenix; KanbanWeb.RequestLog logs
+  # its request lines with the token redacted instead.
+  plug Plug.Telemetry,
+    event_prefix: [:phoenix, :endpoint],
+    log: {KanbanWeb.RequestLog, :level, []}
 
   # Plug.Parsers, wrapped so a parse failure on an /api path (a malformed
   # query string or body, an oversized body) renders as JSON rather than

@@ -10,6 +10,9 @@ defmodule KanbanWeb.Telemetry do
 
   @impl true
   def init(_arg) do
+    # Logs token routes' request lines with the token redacted.
+    :ok = KanbanWeb.RequestLog.attach()
+
     children =
       [
         # Telemetry poller will execute the given period measurements
