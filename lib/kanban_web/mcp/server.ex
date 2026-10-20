@@ -35,6 +35,17 @@ defmodule KanbanWeb.MCP.Server do
   `:plan_required`. The check runs per message, so a board that moves into an
   Organization works on its next request. Malformed messages and bodies are
   still rejected first. The REST API is not affected.
+
+  ## Discovery without a board
+
+  A workspace token reaches several boards, so its requests name one with the
+  `X-Stride-Board` header. A body made only of discovery messages
+  (`discovery_payload?/1`) may leave it out: it then reaches this server with
+  no `:current_board`. Such a request is not plan-checked, because a workspace
+  token belongs to an Organization workspace, whose boards are all paid. A
+  valid `tools/call` without a board is refused with `-32600` before any tool
+  runs, though the router never lets one through; everything else is answered
+  as usual.
   """
 
   alias Kanban.Plans
@@ -55,6 +66,10 @@ defmodule KanbanWeb.MCP.Server do
     "tools/call" => :tools_call
   }
 
+  # The requests that act on no board. Notifications and client responses
+  # never act on one either.
+  @discovery_methods ["initialize", "ping", "tools/list"]
+
   @instructions "Stride task API. Typical loop: stride_next_task, stride_claim_task " <>
                   "(with the before_doing hook result), do the work, then " <>
                   "stride_complete_task with the hook, explorer and reviewer results. " <>
@@ -62,6 +77,33 @@ defmodule KanbanWeb.MCP.Server do
 
   @doc "The protocol versions this server can speak, newest first."
   def supported_versions, do: @supported_versions
+
+  @doc """
+  Returns true when the parsed request body holds only discovery messages:
+  `initialize`, `ping` and `tools/list` requests, notifications and client
+  responses, alone or as a batch of at most #{@max_batch}. Anything else,
+  including an invalid message, an empty batch or a body that is not a
+  message, returns false.
+  """
+  @spec discovery_payload?(term()) :: boolean()
+  def discovery_payload?(%{"_json" => [_ | _] = messages}) when length(messages) <= @max_batch,
+    do: Enum.all?(messages, &discovery_message?/1)
+
+  def discovery_payload?(%{"_json" => _not_a_batch}), do: false
+
+  def discovery_payload?(%{} = message) when map_size(message) > 0,
+    do: discovery_message?(message)
+
+  def discovery_payload?(_body), do: false
+
+  defp discovery_message?(message) do
+    case JsonRpc.classify(message) do
+      {:request, _id, method, _params} -> method in @discovery_methods
+      {:notification, _method} -> true
+      :response -> true
+      {:invalid, _id} -> false
+    end
+  end
 
   @doc """
   Handles a parsed request body.
@@ -137,9 +179,9 @@ defmodule KanbanWeb.MCP.Server do
 
   # Returns {response, outcome}; the outcome is only ever reported, never sent.
   defp respond({:request, id, method, params}, conn) do
-    case Plans.check_board(conn.assigns[:current_board], :mcp, surface: :mcp) do
-      :ok -> dispatch(id, method, params, conn)
-      {:error, {:plan_required, :mcp}} -> {plan_required(id), :plan_required}
+    case conn.assigns[:current_board] do
+      nil -> respond_without_board(id, method, params, conn)
+      board -> respond_on_board(board, id, method, params, conn)
     end
   end
 
@@ -148,6 +190,18 @@ defmodule KanbanWeb.MCP.Server do
 
   defp respond({:invalid, id}, _conn),
     do: {JsonRpc.error(id, JsonRpc.invalid_request(), "Invalid Request"), :invalid_request}
+
+  defp respond_on_board(board, id, method, params, conn) do
+    case Plans.check_board(board, :mcp, surface: :mcp) do
+      :ok -> dispatch(id, method, params, conn)
+      {:error, {:plan_required, :mcp}} -> {plan_required(id), :plan_required}
+    end
+  end
+
+  # Only a workspace token's discovery request arrives without a board (see
+  # the moduledoc), and its Organization workspace is paid. A tool call that
+  # gets through anyway is refused by Tools.call/3 before any tool runs.
+  defp respond_without_board(id, method, params, conn), do: dispatch(id, method, params, conn)
 
   # Fixed text: never the method or tool name the client sent.
   defp plan_required(id) do
@@ -200,6 +254,10 @@ defmodule KanbanWeb.MCP.Server do
 
       {:error, :unknown_tool} ->
         {invalid_params(id, "Unknown tool"), :unknown_tool}
+
+      {:error, :board_required} ->
+        message = "Name a board with the X-Stride-Board header to call a tool."
+        {JsonRpc.error(id, JsonRpc.invalid_request(), message), :invalid_request}
 
       {:error, {:invalid_params, messages}} ->
         {invalid_params(id, "Invalid arguments", messages), :invalid_params}

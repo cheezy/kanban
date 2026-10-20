@@ -90,14 +90,60 @@ defmodule KanbanWeb.API.WorkspaceTokenFlowTest do
     assert %{"error" => "Board selector required"} =
              ctx.conn |> get(~p"/api/tasks/next") |> json_response(400)
 
-    assert %{"error" => "Board selector required"} =
-             ctx.conn
-             |> put_req_header("content-type", "application/json")
-             |> post(
-               ~p"/api/mcp",
-               Jason.encode!(%{"jsonrpc" => "2.0", "id" => 1, "method" => "ping"})
-             )
-             |> json_response(400)
+    for body <- [tool_call(1), [mcp_request("tools/list", 1), tool_call(2)]] do
+      assert %{"error" => "Board selector required"} =
+               ctx.conn |> post_mcp(body) |> json_response(400)
+    end
+  end
+
+  describe "MCP discovery without a selector" do
+    test "initialize, ping and tools/list answer without naming a board", ctx do
+      assert %{"result" => %{"serverInfo" => %{"name" => "stride"}}} =
+               ctx.conn |> post_mcp(mcp_request("initialize", 1)) |> json_response(200)
+
+      assert %{"result" => %{}} =
+               ctx.conn |> post_mcp(mcp_request("ping", 2)) |> json_response(200)
+
+      assert %{"result" => %{"tools" => [_ | _]}} =
+               ctx.conn |> post_mcp(mcp_request("tools/list", 3)) |> json_response(200)
+    end
+
+    test "a notification and a batch of discovery messages need no board", ctx do
+      initialized = %{"jsonrpc" => "2.0", "method" => "notifications/initialized"}
+      assert ctx.conn |> post_mcp(initialized) |> response(202)
+
+      assert [%{"id" => 1}, %{"id" => 2}] =
+               ctx.conn
+               |> post_mcp([
+                 mcp_request("initialize", 1),
+                 initialized,
+                 mcp_request("tools/list", 2)
+               ])
+               |> json_response(200)
+    end
+
+    test "a selector that is sent is still checked", ctx do
+      stranger_board = ai_optimized_board_fixture(user_fixture())
+
+      assert ctx.conn
+             |> put_req_header("x-stride-board", Integer.to_string(stranger_board.id))
+             |> post_mcp(mcp_request("tools/list", 1))
+             |> json_response(404) == %{"error" => "Board not found"}
+
+      assert %{"result" => %{"tools" => [_ | _]}} =
+               ctx.conn
+               |> put_req_header("x-stride-board", Integer.to_string(ctx.board_a.id))
+               |> post_mcp(mcp_request("tools/list", 1))
+               |> json_response(200)
+    end
+
+    test "a tool call with a selector works", ctx do
+      assert %{"result" => %{"content" => [_ | _]}} =
+               ctx.conn
+               |> put_req_header("x-stride-board", Integer.to_string(ctx.board_a.id))
+               |> post_mcp(tool_call(1))
+               |> json_response(200)
+    end
   end
 
   test "GET and DELETE /api/mcp answer 405 without a selector", ctx do
@@ -188,6 +234,23 @@ defmodule KanbanWeb.API.WorkspaceTokenFlowTest do
       })
 
     task
+  end
+
+  defp mcp_request(method, id), do: %{"jsonrpc" => "2.0", "id" => id, "method" => method}
+
+  defp tool_call(id) do
+    %{
+      "jsonrpc" => "2.0",
+      "id" => id,
+      "method" => "tools/call",
+      "params" => %{"name" => "stride_list_tasks", "arguments" => %{}}
+    }
+  end
+
+  defp post_mcp(conn, body) do
+    conn
+    |> put_req_header("content-type", "application/json")
+    |> post(~p"/api/mcp", Jason.encode!(body))
   end
 
   defp hook_result, do: %{"exit_code" => 0, "output" => "ok", "duration_ms" => 10}

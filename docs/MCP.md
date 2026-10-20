@@ -34,9 +34,14 @@ and the completion gate all work exactly as described in the
 The endpoint uses the API token you already use for the REST API, sent in an
 `Authorization: Bearer` header. Every tool acts as the token's user, on the
 token's board. With a workspace token, which reaches several boards, add an
-`X-Stride-Board` header naming the board's id to every `POST`; without it the
-request gets `400` (see [GET /api/boards](api/get_boards.md)). A board token
-needs no header, and one naming a different board gets `400`. A request with a
+`X-Stride-Board` header naming the board's id to every `POST` that calls a
+tool; without it the request gets `400` (see
+[GET /api/boards](api/get_boards.md)). A request made only of `initialize`,
+`ping`, `tools/list`, notifications and responses may leave the header out, so
+a client can connect and list the tools before it knows a board; if it sends
+the header anyway, the board is still checked. A batch that holds any
+`tools/call` needs the header. A board token needs no header, and one naming a
+different board gets `400`. A request with a
 missing, invalid or revoked token gets the
 REST API's `401` before the server reads any JSON-RPC. Failed attempts count
 toward the same failed-authentication rate limit as the REST API.
@@ -46,7 +51,9 @@ own origin. Any other origin, including `null`, gets `403`. This stops a web pag
 from driving the endpoint through the browser (DNS rebinding). MCP clients
 outside a browser send no `Origin` header and are not affected.
 
-**Organization requirement.** MCP is part of the paid plans. When paid plans
+**Organization requirement.** MCP is part of the paid plans. A workspace token
+always belongs to an Organization, so its requests, with or without a board,
+are never refused for this reason. When paid plans
 are enforced and the token's board is not in an Organization's workspace,
 every request (`initialize`, `ping`, `tools/list` and `tools/call`) gets the
 `-32001` error described under [Errors](#errors), and no tool runs.

@@ -240,8 +240,10 @@ and that the org-admin can modify, so an agent fleet working across many boards
 needs one token instead of one per board. The token acts as the org-admin who
 created it.
 
-With a workspace token, every request except `GET /api/boards` names the board
-it acts on, by id, in the `X-Stride-Board` header or the `board_id` parameter:
+With a workspace token, every request except `GET /api/boards` and the
+[MCP endpoint's](MCP.md#authentication) discovery calls (`initialize`, `ping`,
+`tools/list`) names the board it acts on, by id, in the `X-Stride-Board` header
+or the `board_id` parameter:
 
 ```bash
 curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
@@ -256,7 +258,8 @@ curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   gets `404` with the same body as a board that does not exist.
 - [GET /api/boards](api/get_boards.md) lists the board ids the token can use.
 - The token is revoked when its user stops being an org-admin of the
-  Organization or is removed from the workspace, and it expires after 90 days.
+  Organization, when they are removed from the workspace, or when the
+  workspace is archived. It expires after 90 days.
 
 A board token needs no selector. If a request sends one anyway, it must name
 the token's own board: a header or `board_id` naming another board gets `400`

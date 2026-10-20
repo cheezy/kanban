@@ -60,12 +60,15 @@ defmodule KanbanWeb.MCP.Tools do
   @doc """
   Runs tool `name` with `args` for the token on `conn`.
 
-  Returns `{:ok, tool_result}`, `{:error, :unknown_tool}` or
-  `{:error, {:invalid_params, messages}}`.
+  Returns `{:ok, tool_result}`, `{:error, :unknown_tool}`,
+  `{:error, {:invalid_params, messages}}`, or `{:error, :board_required}` when
+  `conn` has no `:current_board` (a workspace token that named no board), in
+  which case no tool runs.
   """
   def call(name, args, conn) do
     with {:ok, tool} <- fetch_tool(name),
-         :ok <- validate_args(args, tool) do
+         :ok <- validate_args(args, tool),
+         :ok <- require_board(conn) do
       result = run_tool(name, normalize(args), conn)
 
       TaskActions.emit_telemetry(conn, :mcp_tool_called, %{
@@ -76,6 +79,9 @@ defmodule KanbanWeb.MCP.Tools do
       {:ok, result}
     end
   end
+
+  defp require_board(%Plug.Conn{assigns: %{current_board: %{}}}), do: :ok
+  defp require_board(_conn), do: {:error, :board_required}
 
   defp fetch_tool(name) do
     case ToolSchemas.fetch(name) do

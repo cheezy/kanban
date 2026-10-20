@@ -55,7 +55,10 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   These are not authentication failures: the token is valid, so they are not
   counted by the failed-authentication rate limit. Routes marked with
   `KanbanWeb.Plugs.BoardSelectorOptional` (`GET /api/boards`) take a workspace
-  token without a selector and get no `:current_board`.
+  token without a selector and get no `:current_board`. A request marked by
+  `KanbanWeb.Plugs.McpDiscoverySelector` (an MCP body of discovery messages
+  only) takes a workspace token without a selector too, and gets no
+  `:current_board`; a selector it does send is checked as on any other route.
   """
 
   import Plug.Conn
@@ -117,11 +120,16 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
          {:ok, board} <- ApiTokens.fetch_workspace_board(api_token, selector) do
       assign(conn, :current_board, board)
     else
-      :none -> halt_board_error(conn, :board_selector_missing)
+      :none -> without_selector(conn)
       :conflict -> halt_board_error(conn, :board_selector_conflict)
       :error -> halt_board_error(conn, :board_not_found)
     end
   end
+
+  defp without_selector(%Plug.Conn{private: %{stride_board_selector: :when_named}} = conn),
+    do: conn
+
+  defp without_selector(conn), do: halt_board_error(conn, :board_selector_missing)
 
   defp halt_board_error(conn, :board_selector_missing) do
     emit_auth_failed_telemetry(conn, "board_selector_missing")

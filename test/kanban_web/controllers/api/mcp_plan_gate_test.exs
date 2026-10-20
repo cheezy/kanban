@@ -255,4 +255,45 @@ defmodule KanbanWeb.API.McpPlanGateTest do
       refute_received {:telemetry_event, @refused, _, _}
     end
   end
+
+  describe "discovery without a board" do
+    setup :enforce_plans
+
+    test "a workspace token's initialize and tools/list work under enforcement" do
+      organization = organization_fixture()
+      admin = user_fixture()
+      organization_member_fixture(organization, admin, :org_admin)
+      workspace = org_workspace_fixture(organization)
+      {:ok, {_, plain}} = ApiTokens.create_workspace_api_token(admin, workspace, %{name: "Fleet"})
+      attach_telemetry(@refused)
+
+      conn =
+        build_conn()
+        |> put_req_header("accept", "application/json")
+        |> put_req_header("authorization", "Bearer #{plain}")
+
+      assert %{"result" => %{"serverInfo" => _}} =
+               conn |> post_mcp(request("initialize", 1)) |> json_response(200)
+
+      assert %{"result" => %{"tools" => [_ | _]}} =
+               conn |> post_mcp(request("tools/list", 2)) |> json_response(200)
+
+      refute_received {:telemetry_event, @refused, _, _}
+    end
+
+    test "a free board's token still gets plan_required, and a foreign selector still 400s",
+         %{conn: conn, board: board} do
+      conn |> post_mcp(request("tools/list", 1)) |> json_response(200) |> assert_plan_required(1)
+
+      other = ai_optimized_board_fixture(user_fixture())
+
+      assert %{"error" => "Board selector does not match token"} =
+               conn
+               |> put_req_header("x-stride-board", Integer.to_string(other.id))
+               |> post_mcp(request("tools/list", 1))
+               |> json_response(400)
+
+      refute other.id == board.id
+    end
+  end
 end

@@ -142,9 +142,20 @@ defmodule KanbanWeb.Router do
     get "/tasks/:id/comments", TaskCommentController, :index
     post "/tasks/:id/comments", TaskCommentController, :create
     resources "/tasks", TaskController, only: [:index, :show, :create, :update]
+  end
 
-    # Model Context Protocol over Streamable HTTP (W2231), behind the same
-    # Bearer-token pipeline as the task API.
+  # Lets a workspace token's MCP discovery request (initialize, ping,
+  # tools/list, notifications) through without naming a board. It reads the
+  # parsed body, so the :api pipeline must come after it.
+  pipeline :mcp_discovery do
+    plug KanbanWeb.Plugs.McpDiscoverySelector
+  end
+
+  # Model Context Protocol over Streamable HTTP (W2231), behind the same
+  # Bearer-token pipeline as the task API.
+  scope "/api", KanbanWeb.API, as: :api do
+    pipe_through [:api_json, :mcp_discovery, :api]
+
     post "/mcp", McpController, :handle
   end
 
