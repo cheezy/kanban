@@ -224,7 +224,9 @@ defmodule Kanban.Organizations.MembershipWrites do
 
   @doc false
   # Also taken by Kanban.Organizations.MemberRemoval, so removing a member
-  # serializes with every other membership write to the Organization.
+  # serializes with every other membership write to the Organization, and by
+  # Kanban.Accounts.AccountDeletion before it locks the user row, so every
+  # path that takes both locks takes the Organization's first.
   @spec lock_organization(integer()) :: :ok | {:error, :not_found}
   def lock_organization(organization_id) do
     from(o in Organization, where: o.id == ^organization_id, select: o.id, lock: "FOR UPDATE")

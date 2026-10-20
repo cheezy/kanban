@@ -17,7 +17,10 @@ defmodule Kanban.Accounts.AccountDeletion do
   `delete_own_account/3` checks the confirmation phrase and the password
   before taking any lock, then re-checks every blocker inside the deleting
   transaction, under row locks, so a change made at the same moment cannot
-  slip past them. In that one transaction it:
+  slip past them. It locks the user's Organization row before their user row,
+  the order every other path that takes both locks follows, so a token being
+  minted for them at the same moment waits or is refused instead of
+  deadlocking. In that one transaction it:
 
     1. revokes the open invitations the user sent;
     2. empties their personal workspace (`Kanban.Workspaces.clear_personal_boards/1`):
@@ -52,6 +55,7 @@ defmodule Kanban.Accounts.AccountDeletion do
   alias Kanban.Boards.BoardTelemetry
   alias Kanban.Boards.BoardUser
   alias Kanban.Organizations
+  alias Kanban.Organizations.MembershipWrites
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.RateLimit
@@ -165,11 +169,33 @@ defmodule Kanban.Accounts.AccountDeletion do
 
   defp delete_locked(user) do
     Repo.transact(fn ->
-      with {:ok, user} <- lock_user(user),
+      with :ok <- lock_organization(user),
+           {:ok, user} <- lock_user(user),
            :ok <- ensure_no_blockers(user) do
         delete_rows(user)
       end
     end)
+  end
+
+  # The user's Organization row is locked before their user row, the order
+  # every other path that takes both follows: the org-admin checks of
+  # AdminManagement's disable and delete, and the token mints, which lock the
+  # Organization and then take FOR KEY SHARE on the user row through the
+  # token's foreign key. The other way round, a mint waiting for this user row
+  # while holding the Organization lock deadlocks against this transaction's
+  # last-org-admin check. The membership is re-read under the lock by
+  # ensure_no_blockers/1.
+  defp lock_organization(%User{id: user_id}) do
+    from(m in OrganizationMember, where: m.user_id == ^user_id, select: m.organization_id)
+    |> Repo.one()
+    |> case do
+      nil ->
+        :ok
+
+      organization_id ->
+        # Organizations are never deleted, so the row is there to lock.
+        :ok = MembershipWrites.lock_organization(organization_id)
+    end
   end
 
   # The board ids are read first, for the broadcasts: the memberships go with
