@@ -21,7 +21,9 @@ defmodule Kanban.Release do
   described in `docs/matrix-row-refusal-contract.md`, and
   `report_over_cap_boards/0`, the read-only report of personal-workspace boards
   over the free member cap (W2402), and `ensure_internal_organization/1`, which
-  creates Stride's own Organization and appoints its org-admins (W2403).
+  creates Stride's own Organization and appoints its org-admins (W2403), and
+  `import_workspace/3`, the release counterpart of `mix kanban.import_workspace`
+  (W2222).
 
   Log lines from this module carry reason atoms and exception types only,
   never the admin URL, its host or its password.
@@ -34,6 +36,7 @@ defmodule Kanban.Release do
   alias Kanban.Release.InternalOrganization
   alias Kanban.Repo
   alias Kanban.Tasks.SecurityConsiderationsScan
+  alias Kanban.Workspaces.Export.Importer
 
   require Logger
 
@@ -217,6 +220,34 @@ defmodule Kanban.Release do
       Ecto.Migrator.with_repo(Repo, fn _repo -> InternalOrganization.ensure(opts) end)
 
     summary
+  end
+
+  @doc """
+  Restores a workspace export archive into a new workspace of the
+  Organization of the org-admin with `org_admin_email`, through the app Repo —
+  the release counterpart of `mix kanban.import_workspace`, which a release
+  cannot run.
+
+  Runs `Kanban.Workspaces.Export.Importer.import_archive/3` and returns its
+  result: `{:ok, report}` or `{:error, reason}`. Pass `dry_run: true` to check
+  and count without writing. Only the database connection is started, so no
+  job, broadcast or notification runs. Run it with `bin/kanban eval`, for
+  example:
+
+      Kanban.Release.import_workspace("/data/export.zip", "admin@example.com", dry_run: true)
+      |> IO.inspect()
+  """
+  @spec import_workspace(String.t(), String.t(), keyword()) ::
+          {:ok, Importer.report()} | {:error, term()}
+  def import_workspace(path, org_admin_email, opts \\ []) do
+    load_app()
+
+    {:ok, result, _} =
+      Ecto.Migrator.with_repo(Repo, fn _repo ->
+        Importer.import_archive(path, org_admin_email, opts)
+      end)
+
+    result
   end
 
   @doc """

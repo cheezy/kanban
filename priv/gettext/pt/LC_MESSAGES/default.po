@@ -655,7 +655,7 @@ msgstr "Apenas o proprietário do quadro pode editar este quadro"
 #: lib/kanban_web/live/board_live/form.html.heex:339
 #: lib/kanban_web/live/board_live/members_form_component.ex:356
 #: lib/kanban_web/live/target_live/form.html.heex:34
-#: lib/kanban_web/live/workspace_live/settings.ex:437
+#: lib/kanban_web/live/workspace_live/settings.ex:471
 #: lib/kanban_web/notification_labels.ex:180
 #, elixir-autogen, elixir-format
 msgid "Owner"
@@ -1432,6 +1432,7 @@ msgstr "Padrões a seguir"
 #: lib/kanban_web/live/board_live/webhook_views.ex:399
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:75
 #: lib/kanban_web/live/task_live/form_component.html.heex:409
+#: lib/kanban_web/live/workspace_live/exports.ex:56
 #, elixir-autogen, elixir-format
 msgid "Pending"
 msgstr "Pendente"
@@ -2417,6 +2418,7 @@ msgstr "Excluir fins de semana"
 
 #: lib/kanban_web/export/metrics_excel.ex:77
 #: lib/kanban_web/live/metrics_live/components/export_dropdown.ex:105
+#: lib/kanban_web/live/workspace_live/settings.ex:464
 #, elixir-autogen, elixir-format
 msgid "Export"
 msgstr "Exportar"
@@ -4284,7 +4286,7 @@ msgstr[1] "%{count} ativas"
 #: lib/kanban_web/live/board_live/index.html.heex:100
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
-#: lib/kanban_web/live/workspace_live/settings.ex:425
+#: lib/kanban_web/live/workspace_live/settings.ex:458
 #: lib/kanban_web/live/workspace_live/settings.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Boards"
@@ -4515,7 +4517,7 @@ msgstr "Trabalho em andamento. Hooks rodam antes e depois; a trilha de atividade
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
 #: lib/kanban_web/live/org_live/console.ex:391
 #: lib/kanban_web/live/org_live/console.html.heex:117
-#: lib/kanban_web/live/workspace_live/settings.ex:424
+#: lib/kanban_web/live/workspace_live/settings.ex:457
 #: lib/kanban_web/live/workspace_live/settings.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Members"
@@ -4527,7 +4529,7 @@ msgid "Shipped. Cycle time is recorded so the next estimate gets sharper."
 msgstr "Entregue. O tempo de ciclo é registrado para que a próxima estimativa seja mais precisa."
 
 #: lib/kanban_web/components/board_tabs.ex:140
-#: lib/kanban_web/live/workspace_live/settings.ex:430
+#: lib/kanban_web/live/workspace_live/settings.ex:463
 #, elixir-autogen, elixir-format
 msgid "Tokens"
 msgstr "Tokens de API"
@@ -10435,6 +10437,7 @@ msgid "Events"
 msgstr "Eventos"
 
 #: lib/kanban_web/live/board_live/webhook_views.ex:398
+#: lib/kanban_web/live/workspace_live/exports.ex:59
 #, elixir-autogen, elixir-format
 msgid "Failed"
 msgstr "Falhou"
@@ -10781,8 +10784,8 @@ msgstr "Digite um endereço de e-mail válido. Nada foi alterado."
 #: lib/kanban_web/live/org_live/console.ex:397
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:138
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:152
-#: lib/kanban_web/live/workspace_live/settings.ex:435
-#: lib/kanban_web/live/workspace_live/settings.ex:440
+#: lib/kanban_web/live/workspace_live/settings.ex:469
+#: lib/kanban_web/live/workspace_live/settings.ex:474
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr "Membro"
@@ -11301,7 +11304,7 @@ msgstr "Esta conta está desativada, por isso não pode ser adicionada ao quadro
 msgid "Too many exports. Try again later."
 msgstr "Exportações demais. Tente novamente mais tarde."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:247
+#: lib/kanban_web/live/workspace_live/settings.ex:280
 #, elixir-autogen, elixir-format
 msgid "Board moved into this workspace."
 msgstr "Quadro movido para este espaço de trabalho."
@@ -11323,8 +11326,8 @@ msgstr "Todos os membros da sua organização, administradores da organização 
 
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:138
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:153
-#: lib/kanban_web/live/workspace_live/settings.ex:436
-#: lib/kanban_web/live/workspace_live/settings.ex:440
+#: lib/kanban_web/live/workspace_live/settings.ex:470
+#: lib/kanban_web/live/workspace_live/settings.ex:474
 #, elixir-autogen, elixir-format
 msgid "Guest"
 msgstr "Convidado"
@@ -11335,12 +11338,12 @@ msgid "Manage who is in this workspace and which boards it holds."
 msgstr "Gerencie quem está neste espaço de trabalho e quais quadros ele contém."
 
 #: lib/kanban_web/live/org_live/console.ex:189
-#: lib/kanban_web/live/workspace_live/settings.ex:377
+#: lib/kanban_web/live/workspace_live/settings.ex:410
 #, elixir-autogen, elixir-format
 msgid "Member not found."
 msgstr "Membro não encontrado."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:145
+#: lib/kanban_web/live/workspace_live/settings.ex:154
 #, elixir-autogen, elixir-format
 msgid "Member removed from the workspace."
 msgstr "Membro removido do espaço de trabalho."
@@ -11391,7 +11394,7 @@ msgstr "Ainda não há espaços de trabalho"
 msgid "Nobody has been added to this workspace yet."
 msgstr "Ninguém foi adicionado a este espaço de trabalho ainda."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:372
+#: lib/kanban_web/live/workspace_live/settings.ex:405
 #, elixir-autogen, elixir-format
 msgid "Only an org-admin can manage this workspace."
 msgstr "Somente um administrador da organização pode gerenciar este espaço de trabalho."
@@ -11431,7 +11434,7 @@ msgstr "Remover este membro do espaço de trabalho? Ele perde aqui as associaç�
 msgid "Removing a member also removes their board memberships in this workspace and revokes their API tokens here."
 msgstr "Remover um membro também exclui as associações dele a quadros neste espaço de trabalho e revoga aqui os tokens de API dele."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:340
+#: lib/kanban_web/live/workspace_live/settings.ex:373
 #, elixir-autogen, elixir-format
 msgid "Role updated."
 msgstr "Função atualizada."
@@ -11441,7 +11444,7 @@ msgstr "Função atualizada."
 msgid "Switch workspace"
 msgstr "Trocar de espaço de trabalho"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:256
+#: lib/kanban_web/live/workspace_live/settings.ex:289
 #, elixir-autogen, elixir-format
 msgid "That board can't be moved here. Choose a board you own in your personal boards."
 msgstr "Esse quadro não pode ser movido para cá. Escolha um quadro que pertence a você entre os seus quadros pessoais."
@@ -11456,7 +11459,7 @@ msgstr "Esse espaço de trabalho não está disponível."
 msgid "The boards in this workspace you have access to."
 msgstr "Os quadros deste espaço de trabalho aos quais você tem acesso."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:240
+#: lib/kanban_web/live/workspace_live/settings.ex:273
 #, elixir-autogen, elixir-format
 msgid "The change could not be saved. Please try again."
 msgstr "Não foi possível salvar a alteração. Tente novamente."
@@ -11473,12 +11476,12 @@ msgid "Workspace sections"
 msgstr "Seções do espaço de trabalho"
 
 #: lib/kanban_web/components/workspace_switcher.ex:141
-#: lib/kanban_web/live/workspace_live/settings.ex:85
+#: lib/kanban_web/live/workspace_live/settings.ex:93
 #, elixir-autogen, elixir-format
 msgid "Workspace settings"
 msgstr "Configurações do espaço de trabalho"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:69
+#: lib/kanban_web/live/workspace_live/settings.ex:76
 #, elixir-autogen, elixir-format
 msgid "Workspace settings are not available."
 msgstr "As configurações do espaço de trabalho não estão disponíveis."
@@ -11493,12 +11496,12 @@ msgstr "Você não tem quadros pessoais próprios para mover."
 msgid "You have no personal boards."
 msgstr "Você não tem quadros pessoais."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:425
+#: lib/kanban_web/live/workspace_live/settings.ex:458
 #, elixir-autogen, elixir-format
 msgid "list · move a board here"
 msgstr "lista · mover um quadro para cá"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:424
+#: lib/kanban_web/live/workspace_live/settings.ex:457
 #, elixir-autogen, elixir-format
 msgid "roles · removal"
 msgstr "funções · remoção"
@@ -11534,7 +11537,7 @@ msgstr "Somente quadro"
 msgid "Can edit"
 msgstr "Pode editar"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:276
+#: lib/kanban_web/live/workspace_live/settings.ex:309
 #, elixir-autogen, elixir-format
 msgid "Choose a board in this workspace."
 msgstr "Escolha um quadro deste espaço de trabalho."
@@ -11544,6 +11547,7 @@ msgstr "Escolha um quadro deste espaço de trabalho."
 msgid "Create an account with the email address this invitation was sent to, or sign in if you already have one and then open this link again."
 msgstr "Crie uma conta com o endereço de e-mail para o qual este convite foi enviado, ou entre se já tiver uma e abra este link novamente."
 
+#: lib/kanban_web/live/workspace_live/exports.ex:60
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:160
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:234
 #, elixir-autogen, elixir-format
@@ -11565,23 +11569,23 @@ msgstr "Convite"
 msgid "Invitation accepted."
 msgstr "Convite aceito."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:303
+#: lib/kanban_web/live/workspace_live/settings.ex:336
 #, elixir-autogen, elixir-format
 msgid "Invitation not found."
 msgstr "Convite não encontrado."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:189
+#: lib/kanban_web/live/workspace_live/settings.ex:198
 #, elixir-autogen, elixir-format
 msgid "Invitation revoked."
 msgstr "Convite revogado."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:180
+#: lib/kanban_web/live/workspace_live/settings.ex:189
 #, elixir-autogen, elixir-format
 msgid "Invitation sent again."
 msgstr "Convite enviado novamente."
 
 #: lib/kanban_web/live/board_live/membership.ex:196
-#: lib/kanban_web/live/workspace_live/settings.ex:264
+#: lib/kanban_web/live/workspace_live/settings.ex:297
 #, elixir-autogen, elixir-format
 msgid "Invitation sent to %{email}."
 msgstr "Convite enviado para %{email}."
@@ -11591,7 +11595,7 @@ msgstr "Convite enviado para %{email}."
 msgid "Invitation unavailable"
 msgstr "Convite indisponível"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:429
+#: lib/kanban_web/live/workspace_live/settings.ex:462
 #, elixir-autogen, elixir-format
 msgid "Invitations"
 msgstr "Convites"
@@ -11737,12 +11741,12 @@ msgid "You're signed in as %{email}."
 msgstr "Você está conectado como %{email}."
 
 #: lib/kanban_web/live/board_live/membership.ex:209
-#: lib/kanban_web/live/workspace_live/settings.ex:296
+#: lib/kanban_web/live/workspace_live/settings.ex:329
 #, elixir-autogen, elixir-format
 msgid "You've sent a lot of invitations. Please try again later."
 msgstr "Você enviou muitos convites. Tente novamente mais tarde."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:429
+#: lib/kanban_web/live/workspace_live/settings.ex:462
 #, elixir-autogen, elixir-format
 msgid "invite · resend · revoke"
 msgstr "convidar · reenviar · revogar"
@@ -11758,7 +11762,7 @@ msgstr "Membro da organização adicionado"
 msgid "A token stops working when it is revoked, when it expires, or when the org-admin it acts as leaves this workspace or the Organization."
 msgstr "Um token deixa de funcionar quando é revogado, quando expira ou quando o administrador da organização em nome de quem ele atua sai deste espaço de trabalho ou da organização."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:430
+#: lib/kanban_web/live/workspace_live/settings.ex:463
 #, elixir-autogen, elixir-format
 msgid "API tokens · create · revoke"
 msgstr "Tokens de API · criar · revogar"
@@ -11828,12 +11832,12 @@ msgstr "Este espaço de trabalho está arquivado."
 msgid "Token not found."
 msgstr "Token não encontrado."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:312
+#: lib/kanban_web/live/workspace_live/settings.ex:345
 #, elixir-autogen, elixir-format
 msgid "Workspace token created. Copy it now; it won't be shown again."
 msgstr "Token de espaço de trabalho criado. Copie-o agora; ele não será exibido novamente."
 
-#: lib/kanban_web/live/workspace_live/settings.ex:205
+#: lib/kanban_web/live/workspace_live/settings.ex:214
 #, elixir-autogen, elixir-format
 msgid "Workspace token revoked."
 msgstr "Token de espaço de trabalho revogado."
@@ -12006,3 +12010,103 @@ msgstr "Sessão encerrada com sucesso."
 #, elixir-autogen, elixir-format
 msgid "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, financial records for billing). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
 msgstr "Mantemos os dados da sua conta e do seu espaço de trabalho enquanto sua conta estiver ativa. Você mesmo pode excluir sua conta nas configurações da conta. Quando você faz isso, excluímos o registro da sua conta e os quadros do seu espaço de trabalho pessoal que só você usa em até 30 dias, exceto quando a lei nos obriga a manter um registro (por exemplo, registros financeiros de cobrança). Os quadros que outras pessoas ainda usam ficam com elas, os quadros do espaço de trabalho de uma Organização ficam com a Organização, e o que você adicionou neles é mantido sem o seu nome."
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:31
+#, elixir-autogen, elixir-format
+msgid "A zip archive of this workspace's boards, columns, labels, tasks, comments, history and memberships, for a backup or to move the workspace to another Stride instance. It is prepared in the background; its status and download link appear below. Archives are kept for %{days} days."
+msgstr "Um arquivo zip com os quadros, colunas, etiquetas, tarefas, comentários, histórico e associações deste espaço de trabalho, como backup ou para movê-lo para outra instância do Stride. Ele é preparado em segundo plano; o status e o link de download aparecem abaixo. Os arquivos são mantidos por %{days} dias."
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:55
+#, elixir-autogen, elixir-format
+msgid "An export is being prepared. You can leave this page; it keeps going."
+msgstr "Uma exportação está sendo preparada. Você pode sair desta página; ela continua."
+
+#: lib/kanban_web/live/workspace_live/exports.ex:39
+#, elixir-autogen, elixir-format
+msgid "An export of this workspace is already in progress."
+msgstr "Já há uma exportação deste espaço de trabalho em andamento."
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:117
+#, elixir-autogen, elixir-format
+msgid "By %{requester} · requested %{requested} · %{size} · expires %{expires}"
+msgstr "Por %{requester} · solicitada em %{requested} · %{size} · expira em %{expires}"
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:107
+#, elixir-autogen, elixir-format
+msgid "Download"
+msgstr "Baixar"
+
+#: lib/kanban_web/live/workspace_live/exports.ex:33
+#, elixir-autogen, elixir-format
+msgid "Export requested. Its status and download link appear here when it is ready."
+msgstr "Exportação solicitada. O status e o link de download aparecem aqui quando ela estiver pronta."
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:29
+#, elixir-autogen, elixir-format
+msgid "Export this workspace"
+msgstr "Exportar este espaço de trabalho"
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:71
+#, elixir-autogen, elixir-format
+msgid "No exports yet."
+msgstr "Nenhuma exportação ainda."
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:63
+#, elixir-autogen, elixir-format
+msgid "Only org-admins of this workspace's Organization can download an archive."
+msgstr "Somente administradores da organização deste espaço de trabalho podem baixar um arquivo."
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:62
+#, elixir-autogen, elixir-format
+msgid "Recent exports"
+msgstr "Exportações recentes"
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:47
+#, elixir-autogen, elixir-format
+msgid "Request export"
+msgstr "Solicitar exportação"
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:44
+#, elixir-autogen, elixir-format
+msgid "Requesting..."
+msgstr "Solicitando..."
+
+#: lib/kanban_web/live/workspace_live/exports.ex:57
+#, elixir-autogen, elixir-format
+msgid "Running"
+msgstr "Em execução"
+
+#: lib/kanban_web/live/workspace_live/exports.ex:65
+#, elixir-autogen, elixir-format
+msgid "The archive could not be written to storage."
+msgstr "Não foi possível gravar o arquivo no armazenamento."
+
+#: lib/kanban_web/live/workspace_live/exports.ex:42
+#, elixir-autogen, elixir-format
+msgid "The export could not be requested. Please try again."
+msgstr "Não foi possível solicitar a exportação. Tente novamente."
+
+#: lib/kanban_web/live/workspace_live/exports.ex:69
+#, elixir-autogen, elixir-format
+msgid "The export failed. Please try again."
+msgstr "A exportação falhou. Tente novamente."
+
+#: lib/kanban_web/live/workspace_live/exports.ex:68
+#, elixir-autogen, elixir-format
+msgid "The export took too long and was stopped."
+msgstr "A exportação demorou demais e foi interrompida."
+
+#: lib/kanban_web/live/workspace_live/exports.ex:67
+#, elixir-autogen, elixir-format
+msgid "The workspace is no longer available."
+msgstr "O espaço de trabalho não está mais disponível."
+
+#: lib/kanban_web/live/workspace_live/settings.ex:464
+#, elixir-autogen, elixir-format
+msgid "backup · download"
+msgstr "backup · download"
+
+#: lib/kanban_web/live/workspace_live/exports.ex:58
+#, elixir-autogen, elixir-format
+msgid "Ready to download"
+msgstr "Pronta para baixar"

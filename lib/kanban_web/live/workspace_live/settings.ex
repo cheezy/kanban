@@ -29,6 +29,11 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
       whose plain text is shown once (`:new_token`, cleared on dismiss and on
       every section change), and revoke the workspace's tokens
       (`KanbanWeb.WorkspaceLive.Tokens`, `KanbanWeb.WorkspaceLive.TokensCard`).
+    * Export — org-admins only (W2222). Request a JSON archive of the
+      workspace, built in the background, and download it once ready; status
+      changes arrive over PubSub, so the LiveView never waits on the job
+      (`Kanban.Workspaces.Export`, `KanbanWeb.WorkspaceLive.Exports`,
+      `KanbanWeb.WorkspaceLive.ExportCard`).
 
   Hidden controls are not authorization. Every management event re-reads the
   actor, the workspace and the org-admin role from the database first; a
@@ -38,6 +43,7 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
   use KanbanWeb, :live_view
 
   import KanbanWeb.UserLive.SettingsComponents, only: [section_tab: 1, settings_card: 1]
+  import KanbanWeb.WorkspaceLive.ExportCard, only: [export_card: 1]
   import KanbanWeb.WorkspaceLive.InvitationsCard, only: [invitations_card: 1]
   import KanbanWeb.WorkspaceLive.TokensCard, only: [tokens_card: 1]
 
@@ -49,10 +55,11 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
   alias Kanban.Workspaces.Invitations
   alias Kanban.Workspaces.Policy
   alias Kanban.Workspaces.Workspace
+  alias KanbanWeb.WorkspaceLive.Exports
   alias KanbanWeb.WorkspaceLive.Tokens
 
-  @sections ["members", "boards", "invitations", "tokens"]
-  @manager_sections ["invitations", "tokens"]
+  @sections ["members", "boards", "invitations", "tokens", "export"]
+  @manager_sections ["invitations", "tokens", "export"]
   @invitation_events ["invite", "resend_invitation", "revoke_invitation"]
   @token_events ["create_token", "revoke_token"]
   @roles %{"member" => :member, "guest" => :guest}
@@ -80,6 +87,7 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
 
   defp assign_settings(socket, user, workspace) do
     can_manage? = Policy.can_manage_workspace?(user, workspace)
+    if can_manage? and connected?(socket), do: Exports.subscribe(workspace)
 
     socket
     |> assign(:page_title, gettext("Workspace settings"))
@@ -101,6 +109,7 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
     |> assign(:movable_boards, movable_boards(socket.assigns.can_manage?, user))
     |> assign(:invitations, Invitations.list_pending(user, workspace))
     |> assign(:tokens, Tokens.list(user, workspace))
+    |> assign(:exports, Exports.list(user, workspace))
   end
 
   defp movable_boards(true, user), do: Workspaces.list_movable_boards(user)
@@ -216,6 +225,21 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
   def handle_event("dismiss_token", _params, socket),
     do: {:noreply, assign(socket, :new_token, nil)}
 
+  def handle_event("request_export", _params, socket) do
+    with_manager(socket, fn actor, workspace ->
+      case Exports.request(actor, workspace) do
+        {:ok, message} ->
+          respond({:ok, nil}, socket, actor, message)
+
+        {:error, :unauthorized} ->
+          {:noreply, deny(socket)}
+
+        {:error, message} ->
+          {:noreply, socket |> replace_flash(:error, message) |> load_lists(actor)}
+      end
+    end)
+  end
+
   # A crafted management event without its parameters changes nothing, but is
   # still refused for a viewer who may not manage the workspace.
   def handle_event(event, _params, socket)
@@ -223,6 +247,15 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
              event in @invitation_events or event in @token_events do
     with_manager(socket, fn _actor, _workspace -> {:noreply, socket} end)
   end
+
+  # Export progress from the worker: re-read the list, re-authorized.
+  @impl true
+  def handle_info({Kanban.Workspaces.Export, :export_updated, _workspace_id}, socket) do
+    user = socket.assigns.current_scope.user
+    {:noreply, assign(socket, :exports, Exports.list(user, socket.assigns.workspace))}
+  end
+
+  def handle_info(_message, socket), do: {:noreply, socket}
 
   defp respond({:ok, _result}, socket, actor, message) do
     {:noreply, socket |> replace_flash(:info, message) |> load_lists(actor)}
@@ -427,7 +460,8 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
       if can_manage?,
         do: [
           {:invitations, gettext("Invitations"), gettext("invite · resend · revoke")},
-          {:tokens, gettext("Tokens"), gettext("API tokens · create · revoke")}
+          {:tokens, gettext("Tokens"), gettext("API tokens · create · revoke")},
+          {:export, gettext("Export"), gettext("backup · download")}
         ],
         else: []
   end

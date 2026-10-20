@@ -230,6 +230,8 @@
           tokens={@tokens}
           new_token={@new_token}
         />
+
+        <.export_card :if={@section == :export and @can_manage?} exports={@exports} />
       </div>
     </div>
   </div>

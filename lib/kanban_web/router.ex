@@ -333,6 +333,10 @@ defmodule KanbanWeb.Router do
     get "/boards/:id/metrics/:metric/export", MetricsPdfController, :export
     get "/metrics/export", WorkspaceMetricsExportController, :export
     get "/boards/:id/archive/export", ArchiveExportController, :export
+    # A finished workspace export archive (W2222). Signed-in users only; the
+    # controller re-checks org-admin of the export's own workspace on every
+    # request, which the org-wide /org gate below could not express.
+    get "/workspace/exports/:id/download", WorkspaceExportController, :download
     # Counts a locked feature's Available to organizations click (signed-in
     # users only, so anonymous traffic cannot inflate the stored metric).
     get "/locked/:feature", LockedFeatureController, :show

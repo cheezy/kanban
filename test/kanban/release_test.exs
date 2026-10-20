@@ -285,6 +285,32 @@ defmodule Kanban.ReleaseTest do
     assert counts.() == before
   end
 
+  describe "import_workspace/3" do
+    setup do
+      ctx = Kanban.WorkspaceExportFixtures.export_org_fixture()
+      _dir = Kanban.WorkspaceExportFixtures.tmp_export_dir()
+      {:ok, export} = Kanban.Workspaces.Export.request_export(ctx.org_admin, ctx.workspace)
+      %{success: 1} = Oban.drain_queue(queue: :workspace_exports)
+      path = Repo.get!(Kanban.Workspaces.Export.WorkspaceExport, export.id).file_path
+      Map.put(ctx, :path, path)
+    end
+
+    test "a dry run of an exported archive reports the import and writes nothing", ctx do
+      count = fn -> Repo.aggregate(Kanban.Workspaces.Workspace, :count) end
+      before = count.()
+
+      assert {:ok, %{dry_run: true, workspace_name: name}} =
+               Release.import_workspace(ctx.path, ctx.org_admin.email, dry_run: true)
+
+      assert name == "#{ctx.workspace.name} (imported)"
+      assert count.() == before
+    end
+
+    test "an email that is not an org-admin is refused", ctx do
+      assert Release.import_workspace(ctx.path, ctx.member.email) == {:error, :not_org_admin}
+    end
+  end
+
   describe "ensure_internal_organization/1" do
     defp internal_org_opts(admin, extra) do
       Keyword.merge(

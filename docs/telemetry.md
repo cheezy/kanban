@@ -299,7 +299,7 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
 
 | Event | Kind | Metadata | Emitted by |
 |---|---|---|---|
-| `[:kanban, :export]` | span | `kind`, `format` | `Kanban.Archives.export_csv_for_board/1` and the metrics, workspace metrics, audit log and Organization audit log export controllers |
+| `[:kanban, :export]` | span | `kind`, `format` | `Kanban.Archives.export_csv_for_board/1` and the metrics, workspace metrics, audit log, Organization audit log and workspace export download controllers |
 | `[:kanban, :rate_limit, :denied]` | event | `surface` | `Kanban.RateLimit.check/2` and `peek/2` |
 | `[:kanban, :mcp, :request]` | span | `method`, `outcome` | `KanbanWeb.MCP.Server` |
 | `[:kanban, :github, :issue_created]` | event | `outcome`, `reason` | `Kanban.GitHub.create_issue/3` |
@@ -307,8 +307,10 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
 
 - **Exports.** `kind` is `:archive_csv` (board archive CSV), `:metrics_pdf`
   (board metrics report), `:workspace_metrics` (workspace metrics report),
-  `:audit_log` (site-admin audit log) or `:org_audit_log` (an org-admin's
-  Organization audit log). `format` is `:csv`, `:pdf`, `:xlsx` or `:json`. The stop event
+  `:audit_log` (site-admin audit log), `:org_audit_log` (an org-admin's
+  Organization audit log) or `:workspace_export` (an org-admin downloading a
+  workspace export archive). `format` is `:csv`, `:pdf`, `:xlsx`, `:json` or
+  `:zip`. The export id, the workspace and the archive's path never appear. The stop event
   also measures `row_count` for `:archive_csv`, the number of archived tasks
   exported; the other exports have no row count to report. A board, its
   name, the metric filters and the audit-log filters never appear, nor the
@@ -1172,7 +1174,7 @@ the sections above explain which code emits each family and when.
 
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
-| `[:kanban, :export]` | span | `duration` on `:stop` and `:exception`; `row_count` on `:stop` | `kind`, `format` | Data left Stride as a download. kind is :archive_csv, :metrics_pdf, :workspace_metrics, :audit_log or :org_audit_log, format the file type; row_count is measured for the archive CSV only. |
+| `[:kanban, :export]` | span | `duration` on `:stop` and `:exception`; `row_count` on `:stop` | `kind`, `format` | Data left Stride as a download. kind is :archive_csv, :metrics_pdf, :workspace_metrics, :audit_log, :org_audit_log or :workspace_export, format the file type; row_count is measured for the archive CSV only. |
 
 - `[:kanban, :export]` is a span: it emits `[:kanban, :export, :start]`, `[:kanban, :export, :stop]` and `[:kanban, :export, :exception]`.
 

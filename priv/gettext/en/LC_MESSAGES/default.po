@@ -655,7 +655,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/form.html.heex:339
 #: lib/kanban_web/live/board_live/members_form_component.ex:356
 #: lib/kanban_web/live/target_live/form.html.heex:34
-#: lib/kanban_web/live/workspace_live/settings.ex:437
+#: lib/kanban_web/live/workspace_live/settings.ex:471
 #: lib/kanban_web/notification_labels.ex:180
 #, elixir-autogen, elixir-format
 msgid "Owner"
@@ -1432,6 +1432,7 @@ msgstr ""
 #: lib/kanban_web/live/board_live/webhook_views.ex:399
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:75
 #: lib/kanban_web/live/task_live/form_component.html.heex:409
+#: lib/kanban_web/live/workspace_live/exports.ex:56
 #, elixir-autogen, elixir-format
 msgid "Pending"
 msgstr ""
@@ -2417,6 +2418,7 @@ msgstr ""
 
 #: lib/kanban_web/export/metrics_excel.ex:77
 #: lib/kanban_web/live/metrics_live/components/export_dropdown.ex:105
+#: lib/kanban_web/live/workspace_live/settings.ex:464
 #, elixir-autogen, elixir-format
 msgid "Export"
 msgstr ""
@@ -4284,7 +4286,7 @@ msgstr[1] ""
 #: lib/kanban_web/live/board_live/index.html.heex:100
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
-#: lib/kanban_web/live/workspace_live/settings.ex:425
+#: lib/kanban_web/live/workspace_live/settings.ex:458
 #: lib/kanban_web/live/workspace_live/settings.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Boards"
@@ -4515,7 +4517,7 @@ msgstr ""
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
 #: lib/kanban_web/live/org_live/console.ex:391
 #: lib/kanban_web/live/org_live/console.html.heex:117
-#: lib/kanban_web/live/workspace_live/settings.ex:424
+#: lib/kanban_web/live/workspace_live/settings.ex:457
 #: lib/kanban_web/live/workspace_live/settings.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Members"
@@ -4527,7 +4529,7 @@ msgid "Shipped. Cycle time is recorded so the next estimate gets sharper."
 msgstr ""
 
 #: lib/kanban_web/components/board_tabs.ex:140
-#: lib/kanban_web/live/workspace_live/settings.ex:430
+#: lib/kanban_web/live/workspace_live/settings.ex:463
 #, elixir-autogen, elixir-format
 msgid "Tokens"
 msgstr ""
@@ -10359,6 +10361,7 @@ msgid "Events"
 msgstr "Events"
 
 #: lib/kanban_web/live/board_live/webhook_views.ex:398
+#: lib/kanban_web/live/workspace_live/exports.ex:59
 #, elixir-autogen, elixir-format
 msgid "Failed"
 msgstr "Failed"
@@ -10705,8 +10708,8 @@ msgstr ""
 #: lib/kanban_web/live/org_live/console.ex:397
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:138
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:152
-#: lib/kanban_web/live/workspace_live/settings.ex:435
-#: lib/kanban_web/live/workspace_live/settings.ex:440
+#: lib/kanban_web/live/workspace_live/settings.ex:469
+#: lib/kanban_web/live/workspace_live/settings.ex:474
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr ""
@@ -11225,7 +11228,7 @@ msgstr ""
 msgid "Too many exports. Try again later."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:247
+#: lib/kanban_web/live/workspace_live/settings.ex:280
 #, elixir-autogen, elixir-format
 msgid "Board moved into this workspace."
 msgstr ""
@@ -11247,8 +11250,8 @@ msgstr ""
 
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:138
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:153
-#: lib/kanban_web/live/workspace_live/settings.ex:436
-#: lib/kanban_web/live/workspace_live/settings.ex:440
+#: lib/kanban_web/live/workspace_live/settings.ex:470
+#: lib/kanban_web/live/workspace_live/settings.ex:474
 #, elixir-autogen, elixir-format
 msgid "Guest"
 msgstr ""
@@ -11259,12 +11262,12 @@ msgid "Manage who is in this workspace and which boards it holds."
 msgstr ""
 
 #: lib/kanban_web/live/org_live/console.ex:189
-#: lib/kanban_web/live/workspace_live/settings.ex:377
+#: lib/kanban_web/live/workspace_live/settings.ex:410
 #, elixir-autogen, elixir-format
 msgid "Member not found."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:145
+#: lib/kanban_web/live/workspace_live/settings.ex:154
 #, elixir-autogen, elixir-format
 msgid "Member removed from the workspace."
 msgstr ""
@@ -11315,7 +11318,7 @@ msgstr ""
 msgid "Nobody has been added to this workspace yet."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:372
+#: lib/kanban_web/live/workspace_live/settings.ex:405
 #, elixir-autogen, elixir-format
 msgid "Only an org-admin can manage this workspace."
 msgstr ""
@@ -11355,7 +11358,7 @@ msgstr ""
 msgid "Removing a member also removes their board memberships in this workspace and revokes their API tokens here."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:340
+#: lib/kanban_web/live/workspace_live/settings.ex:373
 #, elixir-autogen, elixir-format
 msgid "Role updated."
 msgstr ""
@@ -11365,7 +11368,7 @@ msgstr ""
 msgid "Switch workspace"
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:256
+#: lib/kanban_web/live/workspace_live/settings.ex:289
 #, elixir-autogen, elixir-format
 msgid "That board can't be moved here. Choose a board you own in your personal boards."
 msgstr ""
@@ -11380,7 +11383,7 @@ msgstr ""
 msgid "The boards in this workspace you have access to."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:240
+#: lib/kanban_web/live/workspace_live/settings.ex:273
 #, elixir-autogen, elixir-format
 msgid "The change could not be saved. Please try again."
 msgstr ""
@@ -11397,12 +11400,12 @@ msgid "Workspace sections"
 msgstr ""
 
 #: lib/kanban_web/components/workspace_switcher.ex:141
-#: lib/kanban_web/live/workspace_live/settings.ex:85
+#: lib/kanban_web/live/workspace_live/settings.ex:93
 #, elixir-autogen, elixir-format
 msgid "Workspace settings"
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:69
+#: lib/kanban_web/live/workspace_live/settings.ex:76
 #, elixir-autogen, elixir-format
 msgid "Workspace settings are not available."
 msgstr ""
@@ -11417,12 +11420,12 @@ msgstr ""
 msgid "You have no personal boards."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:425
+#: lib/kanban_web/live/workspace_live/settings.ex:458
 #, elixir-autogen, elixir-format
 msgid "list · move a board here"
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:424
+#: lib/kanban_web/live/workspace_live/settings.ex:457
 #, elixir-autogen, elixir-format
 msgid "roles · removal"
 msgstr ""
@@ -11458,7 +11461,7 @@ msgstr ""
 msgid "Can edit"
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:276
+#: lib/kanban_web/live/workspace_live/settings.ex:309
 #, elixir-autogen, elixir-format
 msgid "Choose a board in this workspace."
 msgstr ""
@@ -11468,6 +11471,7 @@ msgstr ""
 msgid "Create an account with the email address this invitation was sent to, or sign in if you already have one and then open this link again."
 msgstr ""
 
+#: lib/kanban_web/live/workspace_live/exports.ex:60
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:160
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:234
 #, elixir-autogen, elixir-format
@@ -11489,23 +11493,23 @@ msgstr ""
 msgid "Invitation accepted."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:303
+#: lib/kanban_web/live/workspace_live/settings.ex:336
 #, elixir-autogen, elixir-format
 msgid "Invitation not found."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:189
+#: lib/kanban_web/live/workspace_live/settings.ex:198
 #, elixir-autogen, elixir-format
 msgid "Invitation revoked."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:180
+#: lib/kanban_web/live/workspace_live/settings.ex:189
 #, elixir-autogen, elixir-format
 msgid "Invitation sent again."
 msgstr ""
 
 #: lib/kanban_web/live/board_live/membership.ex:196
-#: lib/kanban_web/live/workspace_live/settings.ex:264
+#: lib/kanban_web/live/workspace_live/settings.ex:297
 #, elixir-autogen, elixir-format
 msgid "Invitation sent to %{email}."
 msgstr ""
@@ -11515,7 +11519,7 @@ msgstr ""
 msgid "Invitation unavailable"
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:429
+#: lib/kanban_web/live/workspace_live/settings.ex:462
 #, elixir-autogen, elixir-format
 msgid "Invitations"
 msgstr ""
@@ -11661,12 +11665,12 @@ msgid "You're signed in as %{email}."
 msgstr ""
 
 #: lib/kanban_web/live/board_live/membership.ex:209
-#: lib/kanban_web/live/workspace_live/settings.ex:296
+#: lib/kanban_web/live/workspace_live/settings.ex:329
 #, elixir-autogen, elixir-format
 msgid "You've sent a lot of invitations. Please try again later."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:429
+#: lib/kanban_web/live/workspace_live/settings.ex:462
 #, elixir-autogen, elixir-format
 msgid "invite · resend · revoke"
 msgstr ""
@@ -11682,7 +11686,7 @@ msgstr ""
 msgid "A token stops working when it is revoked, when it expires, or when the org-admin it acts as leaves this workspace or the Organization."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:430
+#: lib/kanban_web/live/workspace_live/settings.ex:463
 #, elixir-autogen, elixir-format
 msgid "API tokens · create · revoke"
 msgstr ""
@@ -11752,12 +11756,12 @@ msgstr ""
 msgid "Token not found."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:312
+#: lib/kanban_web/live/workspace_live/settings.ex:345
 #, elixir-autogen, elixir-format
 msgid "Workspace token created. Copy it now; it won't be shown again."
 msgstr ""
 
-#: lib/kanban_web/live/workspace_live/settings.ex:205
+#: lib/kanban_web/live/workspace_live/settings.ex:214
 #, elixir-autogen, elixir-format
 msgid "Workspace token revoked."
 msgstr ""
@@ -11929,4 +11933,104 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:125
 #, elixir-autogen, elixir-format
 msgid "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, financial records for billing). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:31
+#, elixir-autogen, elixir-format
+msgid "A zip archive of this workspace's boards, columns, labels, tasks, comments, history and memberships, for a backup or to move the workspace to another Stride instance. It is prepared in the background; its status and download link appear below. Archives are kept for %{days} days."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:55
+#, elixir-autogen, elixir-format
+msgid "An export is being prepared. You can leave this page; it keeps going."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/exports.ex:39
+#, elixir-autogen, elixir-format
+msgid "An export of this workspace is already in progress."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:117
+#, elixir-autogen, elixir-format
+msgid "By %{requester} · requested %{requested} · %{size} · expires %{expires}"
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:107
+#, elixir-autogen, elixir-format
+msgid "Download"
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/exports.ex:33
+#, elixir-autogen, elixir-format
+msgid "Export requested. Its status and download link appear here when it is ready."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:29
+#, elixir-autogen, elixir-format
+msgid "Export this workspace"
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:71
+#, elixir-autogen, elixir-format
+msgid "No exports yet."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:63
+#, elixir-autogen, elixir-format
+msgid "Only org-admins of this workspace's Organization can download an archive."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:62
+#, elixir-autogen, elixir-format
+msgid "Recent exports"
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:47
+#, elixir-autogen, elixir-format
+msgid "Request export"
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/export_card.ex:44
+#, elixir-autogen, elixir-format
+msgid "Requesting..."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/exports.ex:57
+#, elixir-autogen, elixir-format
+msgid "Running"
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/exports.ex:65
+#, elixir-autogen, elixir-format
+msgid "The archive could not be written to storage."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/exports.ex:42
+#, elixir-autogen, elixir-format
+msgid "The export could not be requested. Please try again."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/exports.ex:69
+#, elixir-autogen, elixir-format
+msgid "The export failed. Please try again."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/exports.ex:68
+#, elixir-autogen, elixir-format
+msgid "The export took too long and was stopped."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/exports.ex:67
+#, elixir-autogen, elixir-format
+msgid "The workspace is no longer available."
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/settings.ex:464
+#, elixir-autogen, elixir-format
+msgid "backup · download"
+msgstr ""
+
+#: lib/kanban_web/live/workspace_live/exports.ex:58
+#, elixir-autogen, elixir-format
+msgid "Ready to download"
 msgstr ""

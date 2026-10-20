@@ -75,6 +75,22 @@ config :kanban, :strict_completion_validation, strict_completion_validation
 # Rollback is unsetting the variable and restarting.
 config :kanban, :plans_enforced, System.get_env("STRIDE_PLANS_ENFORCED") == "true"
 
+# Where workspace export archives are written (W2222). Set only when
+# EXPORT_DIR is, so config/test.exs keeps its own directory. Without it,
+# Kanban.Workspaces.Export.export_dir/0 uses the system temp directory.
+# Archives live on the disk of the machine that wrote them: with more than one
+# app machine, point EXPORT_DIR at storage they all share. On a host with no
+# persistent volume the archives disappear on redeploy; their download then
+# answers 404 until the export expires.
+# EXPORT_DIR must belong to this deployment alone: the hourly cleanup deletes
+# every archive directory whose workspace this database does not know, so a
+# directory shared with another deployment (staging and production, say)
+# would lose the other deployment's archives.
+case System.get_env("EXPORT_DIR") do
+  dir when is_binary(dir) and dir != "" -> config :kanban, :export_dir, dir
+  _unset -> :ok
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

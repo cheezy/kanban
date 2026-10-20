@@ -1,6 +1,7 @@
 defmodule KanbanWeb.WorkspaceLive.SettingsTest do
   # Not async: some tests switch plan enforcement on for the VM.
   use KanbanWeb.ConnCase, async: false
+  use Oban.Testing, repo: Kanban.Repo
 
   import Ecto.Query, only: [from: 2]
   import Phoenix.LiveViewTest
@@ -611,6 +612,79 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
                "user_id" => Integer.to_string(ctx.member.id),
                "role" => "guest"
              }) =~ @denied
+    end
+  end
+
+  describe "export (W2222)" do
+    setup do
+      dir =
+        Path.join([
+          System.tmp_dir!(),
+          "stride_settings_export",
+          "#{System.unique_integer([:positive])}"
+        ])
+
+      previous = Application.get_env(:kanban, :export_dir)
+      Application.put_env(:kanban, :export_dir, dir)
+
+      on_exit(fn ->
+        Application.put_env(:kanban, :export_dir, previous)
+        File.rm_rf(dir)
+      end)
+
+      :ok
+    end
+
+    test "an org-admin requests an export and sees it become ready without waiting", ctx do
+      {view, _html} = admin_view(ctx)
+      assert has_element?(view, "#settings-tab-export")
+
+      render_click(view, "select_section", %{"section" => "export"})
+      assert_patch(view, ~p"/workspace/settings?section=export")
+      assert has_element?(view, "#no-workspace-exports")
+
+      assert view |> element("#request-workspace-export") |> render_click() =~ "Export requested."
+
+      assert [export] = Repo.all(Kanban.Workspaces.Export.WorkspaceExport)
+      assert export.workspace_id == ctx.workspace.id
+      assert_enqueued(worker: Kanban.Workspaces.Export.Worker, args: %{"export_id" => export.id})
+      assert has_element?(view, "#workspace-export-status-#{export.id}", "Pending")
+      assert has_element?(view, "#request-workspace-export[disabled]")
+      refute has_element?(view, "#download-workspace-export-#{export.id}")
+
+      assert %{success: 1} = Oban.drain_queue(queue: :workspace_exports)
+
+      assert render(view) =~ "Ready to download"
+      assert has_element?(view, "#workspace-export-status-#{export.id}", "Ready to download")
+
+      assert has_element?(
+               view,
+               ~s(#download-workspace-export-#{export.id}[href="/workspace/exports/#{export.id}/download"])
+             )
+
+      refute has_element?(view, "#request-workspace-export[disabled]")
+    end
+
+    test "a second request while one is pending says so", ctx do
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=export")
+      render_click(view, "request_export", %{})
+      assert render_click(view, "request_export", %{}) =~ "already in progress"
+      assert Repo.aggregate(Kanban.Workspaces.Export.WorkspaceExport, :count) == 1
+    end
+
+    test "a member or guest has no Export section and a crafted request is denied", ctx do
+      for viewer <- [ctx.member, ctx.guest] do
+        conn = ctx.conn |> log_in_user(viewer) |> switch(ctx.workspace)
+        {:ok, view, _html} = live(conn, ~p"/workspace/settings?section=export")
+
+        refute has_element?(view, "#settings-tab-export")
+        refute has_element?(view, "#request-workspace-export")
+        assert has_element?(view, "#members")
+        assert render_click(view, "request_export", %{}) =~ @denied
+      end
+
+      assert Repo.aggregate(Kanban.Workspaces.Export.WorkspaceExport, :count) == 0
+      refute_enqueued(worker: Kanban.Workspaces.Export.Worker)
     end
   end
 end

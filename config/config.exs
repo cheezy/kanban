@@ -111,15 +111,24 @@ config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 # depth of 10 bounds concurrent SMTP sessions. `:webhooks` makes one HTTP
 # POST per job, so its depth of 10 bounds concurrent outbound connections.
 # `:maintenance` runs housekeeping jobs one at a time, so a long cleanup
-# never competes with itself for table locks.
+# never competes with itself for table locks. `:workspace_exports` writes one
+# workspace export archive at a time (W2222), bounding the disk and database
+# load a burst of export requests can cause.
 # The Cron plugin runs the claim-expiry sweeper every five minutes (W2204),
 # the weekly digest fan-out on Mondays at 13:00 UTC (W2207), the
-# delivery-target status sweeper hourly at minute 17 (W2291) and the
-# metrics retention cleanup daily at 03:23 UTC (W2345).
+# delivery-target status sweeper hourly at minute 17 (W2291), the
+# metrics retention cleanup daily at 03:23 UTC (W2345) and the workspace
+# export cleanup hourly at minute 41 (W2222).
 config :kanban, Oban,
   repo: Kanban.Repo,
   engine: Oban.Engines.Basic,
-  queues: [after_goal_grace: 5, notifications: 10, webhooks: 10, maintenance: 1],
+  queues: [
+    after_goal_grace: 5,
+    notifications: 10,
+    webhooks: 10,
+    maintenance: 1,
+    workspace_exports: 1
+  ],
   plugins: [
     {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
     {Oban.Plugins.Cron,
@@ -127,9 +136,18 @@ config :kanban, Oban,
        {"*/5 * * * *", Kanban.Notifications.ClaimExpiryWorker},
        {"0 13 * * 1", Kanban.Notifications.DigestFanoutWorker},
        {"17 * * * *", Kanban.Notifications.TargetStatusWorker},
-       {"23 3 * * *", Kanban.Metrics.RetentionWorker}
+       {"23 3 * * *", Kanban.Metrics.RetentionWorker},
+       {"41 * * * *", Kanban.Workspaces.Export.CleanupWorker}
      ]}
   ]
+
+# Workspace exports (W2222). Archives are written under `:export_dir`, which
+# defaults at runtime to a `stride_exports` directory in the system temp
+# directory (Kanban.Workspaces.Export.export_dir/0) and is set from the
+# EXPORT_DIR environment variable in config/runtime.exs. The hourly cleanup
+# fails exports left pending or running for `stale_after_hours` and deletes
+# failed and expired export rows after `keep_days`.
+config :kanban, Kanban.Workspaces.Export.CleanupWorker, stale_after_hours: 6, keep_days: 30
 
 # How far back the claim-expiry sweeper looks for expired claims, so the
 # first run after a deploy does not notify about historical claims.

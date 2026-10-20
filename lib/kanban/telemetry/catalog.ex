@@ -419,7 +419,7 @@ defmodule Kanban.Telemetry.Catalog do
       measurements: [:row_count],
       metadata: [:kind, :format],
       description:
-        "Data left Stride as a download. kind is :archive_csv, :metrics_pdf, :workspace_metrics, :audit_log or :org_audit_log, format the file type; row_count is measured for the archive CSV only.",
+        "Data left Stride as a download. kind is :archive_csv, :metrics_pdf, :workspace_metrics, :audit_log, :org_audit_log or :workspace_export, format the file type; row_count is measured for the archive CSV only.",
       legacy: false,
       metrics: [summary: :duration],
       persist: true,

@@ -110,6 +110,12 @@ config :phoenix_live_view,
 # until tests drain them explicitly via Oban.Testing helpers.
 config :kanban, Oban, testing: :manual
 
+# Workspace exports (W2222) write under tmp/ in tests, which is gitignored.
+# The sandbox nests every transaction inside its own, where the export's
+# REPEATABLE READ snapshot can no longer be requested, so it is off here.
+config :kanban, :export_dir, Path.expand("../tmp/test_exports", __DIR__)
+config :kanban, Kanban.Workspaces.Export.Writer, snapshot_isolation: false
+
 # Webhook deliveries (W2227): route every request to a Req.Test stub and
 # resolve webhook hosts from a fixed table, so no test touches the network
 # or DNS. Both are static, so tests stay async.
