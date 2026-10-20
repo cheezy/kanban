@@ -364,7 +364,10 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
   a `permission_denied` audit row with `gate: :api_board_selector` instead.
   A selector that names the board twice in the query string, or names
   different boards in the query string and the body, is a
-  `board_selector_conflict` too.
+  `board_selector_conflict` too. A board token's request whose selector names
+  a board other than the token's own emits `board_selector_mismatch` (an
+  ambiguous one emits `board_selector_conflict`); like the others it writes no
+  audit row and is not counted by the rate limit.
 - **Board-token reads.** A read made with a board token whose user no longer
   has any access to the token's board (`KanbanWeb.API.BoardReadAccess`, on the
   REST reads and the MCP read tools) is refused with `403` and writes a

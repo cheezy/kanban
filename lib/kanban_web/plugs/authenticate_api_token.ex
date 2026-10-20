@@ -25,7 +25,13 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   ## Board tokens and workspace tokens
 
   A board token is scoped to a user and one board, and `:current_board` is
-  that board, whatever the request says. This plug does not check that the
+  that board. It needs no selector, but a request that sends one anyway must
+  name the token's own board: an `X-Stride-Board` header or `board_id`
+  parameter naming another board is refused with 400, as is an ambiguous
+  selector, so an agent configured for one board while holding another
+  board's token finds out instead of writing to the token's board. On a
+  board-optional route the selector is ignored, as it is for a workspace
+  token. This plug does not check that the
   token's user can still use that board: reads re-check it in
   `KanbanWeb.API.BoardReadAccess` and writes in
   `KanbanWeb.API.BoardWriteAccess`, so each answers with its documented
@@ -88,8 +94,20 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     end
   end
 
-  defp assign_board(conn, %ApiToken{workspace_id: nil} = api_token),
-    do: assign(conn, :current_board, api_token.board)
+  defp assign_board(
+         %Plug.Conn{private: %{stride_board_selector: :optional}} = conn,
+         %ApiToken{workspace_id: nil} = api_token
+       ),
+       do: assign(conn, :current_board, api_token.board)
+
+  defp assign_board(conn, %ApiToken{workspace_id: nil, board_id: board_id} = api_token) do
+    case BoardSelector.read(conn) do
+      :none -> assign(conn, :current_board, api_token.board)
+      {:ok, ^board_id} -> assign(conn, :current_board, api_token.board)
+      {:ok, _other} -> halt_board_error(conn, :board_selector_mismatch)
+      :conflict -> halt_board_error(conn, :board_selector_conflict)
+    end
+  end
 
   defp assign_board(%Plug.Conn{private: %{stride_board_selector: :optional}} = conn, _api_token),
     do: conn
@@ -127,6 +145,22 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
       error: "Conflicting board selectors",
       message:
         "The X-Stride-Board header, the query-string board_id and the body board_id must name the same board, and the header and the query-string board_id may each be sent once."
+    })
+    |> halt()
+  end
+
+  # The token holder already knows their token's board, so naming it, or
+  # saying the selector named another one, discloses nothing; the other board
+  # is never looked up.
+  defp halt_board_error(conn, :board_selector_mismatch) do
+    emit_auth_failed_telemetry(conn, "board_selector_mismatch")
+
+    conn
+    |> put_status(:bad_request)
+    |> json(%{
+      error: "Board selector does not match token",
+      message:
+        "A board token acts only on the board it was created for. Remove the X-Stride-Board header and board_id parameter, or make them name that board."
     })
     |> halt()
   end

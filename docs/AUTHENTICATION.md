@@ -258,7 +258,12 @@ curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
 - The token is revoked when its user stops being an org-admin of the
   Organization or is removed from the workspace, and it expires after 90 days.
 
-Board tokens are unchanged and ignore both selectors.
+A board token needs no selector. If a request sends one anyway, it must name
+the token's own board: a header or `board_id` naming another board gets `400`
+(`Board selector does not match token`), and so does an ambiguous selector, so
+an agent configured for one board while holding another board's token notices
+instead of writing to the token's board. `GET /api/boards` ignores the
+selector for both kinds of token.
 
 ### Token Revocation
 

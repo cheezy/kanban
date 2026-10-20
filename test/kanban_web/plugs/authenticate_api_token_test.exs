@@ -432,8 +432,49 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
       assert conn.assigns.current_board.id == later.id
     end
 
-    test "a board token ignores board selectors", %{conn: conn, board: board} = ctx do
-      conn = call_with(conn, ctx.plain_text_token, header: "#{ctx.board_a.id}", param: "nope")
+    test "a board token takes a selector naming its own board",
+         %{conn: conn, board: board} = ctx do
+      for opts <- [
+            [header: "#{board.id}"],
+            [param: board.id],
+            [header: " #{board.id} ", param: "#{board.id}"]
+          ] do
+        conn = call_with(conn, ctx.plain_text_token, opts)
+
+        refute conn.halted
+        assert conn.assigns.current_board.id == board.id
+      end
+    end
+
+    test "a board token refuses a selector naming another board with 400", ctx do
+      attach_telemetry([:kanban, :api, :auth_failed])
+
+      for opts <- [[header: "#{ctx.board_a.id}"], [param: ctx.board_a.id], [param: "nope"]] do
+        conn = call_with(build_conn(), ctx.plain_text_token, opts)
+
+        assert conn.halted
+        assert json_response(conn, 400)["error"] == "Board selector does not match token"
+
+        assert_receive {:telemetry_event, [:kanban, :api, :auth_failed], _,
+                        %{reason: "board_selector_mismatch"}}
+      end
+    end
+
+    test "a board token refuses conflicting selectors with 400", %{board: board} = ctx do
+      conn =
+        call_with(build_conn(), ctx.plain_text_token,
+          header: "#{board.id}",
+          param: ctx.board_a.id
+        )
+
+      assert json_response(conn, 400)["error"] == "Conflicting board selectors"
+    end
+
+    test "a board token on a board-optional route ignores the selector", %{board: board} = ctx do
+      conn =
+        build_conn()
+        |> put_private(:stride_board_selector, :optional)
+        |> call_with(ctx.plain_text_token, header: "#{ctx.board_a.id}")
 
       refute conn.halted
       assert conn.assigns.current_board.id == board.id
