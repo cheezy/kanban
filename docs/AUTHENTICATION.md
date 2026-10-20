@@ -249,7 +249,9 @@ curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
      https://www.stridelikeaboss.com/api/tasks/next
 ```
 
-- A request that names no board, or names two different ones, gets `400`.
+- A request that names no board, names two different ones (in the header, the
+  query string or the body), or repeats the header or the query-string
+  `board_id`, gets `400`.
 - A board outside the workspace, or one the token's user can no longer modify,
   gets `404` with the same body as a board that does not exist.
 - [GET /api/boards](api/get_boards.md) lists the board ids the token can use.

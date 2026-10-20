@@ -30,7 +30,9 @@ board it acts on by id. Use either of these:
 - the `X-Stride-Board` header, for example `X-Stride-Board: 42`
 - the `board_id` parameter, in the query string or the JSON body
 
-You can send both if they name the same board. The board is checked on every
+You can send more than one if they all name the same board. Send the header
+and the query-string `board_id` at most once each: a repeat is refused even when
+the values agree. The board is checked on every
 request: it must be in the token's workspace, and the token's user must still
 be able to modify it. A token whose user is no longer an org-admin keeps only
 the board access that user was given directly.
@@ -38,7 +40,7 @@ the board access that user was given directly.
 | Situation | Status | Body |
 |-----------|--------|------|
 | No board named | `400` | `{"error": "Board selector required", "message": "..."}` |
-| Header and parameter name different boards, or the header is sent twice | `400` | `{"error": "Conflicting board selectors", "message": "..."}` |
+| The header, the query-string `board_id` and the body `board_id` do not all name the same board, or the header or the query-string `board_id` is sent twice | `400` | `{"error": "Conflicting board selectors", "message": "..."}` |
 | The board does not exist, is outside the token's workspace, or its user cannot modify it | `404` | `{"error": "Board not found"}` |
 
 The `404` body is the same in every case, so a response never tells you

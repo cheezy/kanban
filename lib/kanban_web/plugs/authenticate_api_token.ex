@@ -40,7 +40,8 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   `:current_board` is assigned exactly as for a board token, so controllers
   and the MCP server need nothing new. The request is refused with:
 
-    * 400 when it names no board, or names two different ones, and
+    * 400 when it names no board, names two different ones, or repeats the
+      header or the query-string `board_id`, and
     * 404 with one fixed body for every board it may not use — a board that
       does not exist, one in another workspace or Organization, one its user
       cannot modify — so the response never tells them apart.
@@ -124,7 +125,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
     |> json(%{
       error: "Conflicting board selectors",
       message:
-        "The X-Stride-Board header and the board_id parameter must name the same board, and the header may be sent once."
+        "The X-Stride-Board header, the query-string board_id and the body board_id must name the same board, and the header and the query-string board_id may each be sent once."
     })
     |> halt()
   end

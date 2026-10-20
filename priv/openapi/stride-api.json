@@ -1857,7 +1857,7 @@
     },
     "responses": {
       "BadRequest": {
-        "description": "The request is malformed. Any operation returns this for a query string or request body that cannot be parsed, such as an invalid percent-encoding (`?a=%FF`) or malformed JSON; that 400 is decided before routing and authentication, always has a JSON body whatever the Accept header says, and never echoes the request. Some operations also return it for a malformed query parameter or a request-body column_id that is not an integer, with an `error` naming the field. With a workspace token, any board-bound operation also returns it when the request names no board, or names two different ones in the `X-Stride-Board` header and the `board_id` parameter.",
+        "description": "The request is malformed. Any operation returns this for a query string or request body that cannot be parsed, such as an invalid percent-encoding (`?a=%FF`) or malformed JSON; that 400 is decided before routing and authentication, always has a JSON body whatever the Accept header says, and never echoes the request. Some operations also return it for a malformed query parameter or a request-body column_id that is not an integer, with an `error` naming the field. With a workspace token, any board-bound operation also returns it when the request names no board, names two different ones (across the `X-Stride-Board` header, the query-string `board_id` and the body `board_id`), or repeats the header or the query-string `board_id`, even with the same value.",
         "content": {
           "application/json": {
             "schema": {

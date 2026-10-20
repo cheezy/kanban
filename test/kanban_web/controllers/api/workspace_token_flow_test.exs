@@ -122,6 +122,60 @@ defmodule KanbanWeb.API.WorkspaceTokenFlowTest do
     end
   end
 
+  describe "ambiguous board selectors (G442 finding 5)" do
+    test "a repeated query-string board_id gets 400, even when the values agree", ctx do
+      a = ctx.board_a.id
+      b = ctx.board_b.id
+
+      for query <- [
+            "board_id=#{a}&board_id=#{b}",
+            "board_id=#{a}&board_id=#{a}",
+            "board_id=#{a}&board_id[]=#{b}",
+            "board%5Fid=#{a}&board_id=#{b}"
+          ] do
+        assert %{"error" => "Conflicting board selectors", "message" => message} =
+                 ctx.conn |> get("/api/tasks?" <> query) |> json_response(400),
+               query
+
+        assert message =~ "query-string board_id"
+      end
+    end
+
+    test "a query-string board_id and a different body board_id get 400", ctx do
+      task = ready_task(ctx.board_a, ctx.admin, "Task A")
+
+      assert %{"error" => "Conflicting board selectors"} =
+               ctx.conn
+               |> post(~p"/api/tasks/claim?board_id=#{ctx.board_a.id}", %{
+                 "board_id" => ctx.board_b.id,
+                 "identifier" => task.identifier,
+                 "before_doing_result" => hook_result()
+               })
+               |> json_response(400)
+
+      assert Tasks.get_task!(task.id).status == :open
+    end
+
+    test "a query-string and a body board_id that agree are accepted", ctx do
+      # The same board in both places, and a blank query value, which counts
+      # as absent.
+      for query <- ["board_id=#{ctx.board_a.id}", "board_id="] do
+        task = ready_task(ctx.board_a, ctx.admin, "Task #{query}")
+
+        claimed =
+          ctx.conn
+          |> post("/api/tasks/claim?" <> query, %{
+            "board_id" => " #{ctx.board_a.id} ",
+            "identifier" => task.identifier,
+            "before_doing_result" => hook_result()
+          })
+          |> json_response(200)
+
+        assert claimed["data"]["id"] == task.id
+      end
+    end
+  end
+
   defp ready_task(board, user, title) do
     ready = board |> Columns.list_columns() |> Enum.find(&(&1.name == "Ready"))
 
