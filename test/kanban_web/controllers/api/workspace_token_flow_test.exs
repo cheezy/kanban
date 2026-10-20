@@ -38,7 +38,7 @@ defmodule KanbanWeb.API.WorkspaceTokenFlowTest do
       |> put_req_header("accept", "application/json")
       |> put_req_header("authorization", "Bearer #{plain}")
 
-    %{conn: conn, admin: admin, board_a: board_a, board_b: board_b}
+    %{conn: conn, admin: admin, organization: organization, board_a: board_a, board_b: board_b}
   end
 
   test "claims and completes a task on board A, then on board B", ctx do
@@ -78,12 +78,12 @@ defmodule KanbanWeb.API.WorkspaceTokenFlowTest do
   test "a task on board B is not reachable while board A is selected", ctx do
     task_b = ready_task(ctx.board_b, ctx.admin, "Task B")
 
-    conn =
-      ctx.conn
-      |> put_req_header("x-stride-board", Integer.to_string(ctx.board_a.id))
-      |> get(~p"/api/tasks/#{task_b.id}")
+    on_board_a = put_req_header(ctx.conn, "x-stride-board", Integer.to_string(ctx.board_a.id))
 
-    assert conn.status in [403, 404]
+    # The same 404 as a task that does not exist, so the response never tells
+    # a task on another board apart from a missing one (D160).
+    missing = on_board_a |> get(~p"/api/tasks/999999999") |> json_response(404)
+    assert on_board_a |> get(~p"/api/tasks/#{task_b.id}") |> json_response(404) == missing
   end
 
   test "a board-bound route without a selector gets 400", ctx do
@@ -106,12 +106,20 @@ defmodule KanbanWeb.API.WorkspaceTokenFlowTest do
   end
 
   test "a selected board outside the workspace gets 404", ctx do
-    outside = ai_optimized_board_fixture(user_fixture())
+    stranger_board = ai_optimized_board_fixture(user_fixture())
 
-    assert ctx.conn
-           |> put_req_header("x-stride-board", Integer.to_string(outside.id))
-           |> get(~p"/api/tasks/next")
-           |> json_response(404) == %{"error" => "Board not found"}
+    # Boards the token's user can modify, but outside the token's workspace:
+    # one in another workspace of the same Organization (derived org-admin
+    # access) and one of their own.
+    sibling_board = ctx.organization |> org_workspace_fixture() |> workspace_board()
+    own_board = ai_optimized_board_fixture(ctx.admin)
+
+    for outside <- [stranger_board, sibling_board, own_board] do
+      assert ctx.conn
+             |> put_req_header("x-stride-board", Integer.to_string(outside.id))
+             |> get(~p"/api/tasks/next")
+             |> json_response(404) == %{"error" => "Board not found"}
+    end
   end
 
   defp ready_task(board, user, title) do
