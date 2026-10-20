@@ -1,9 +1,10 @@
 defmodule Kanban.Boards.AccessDowngradeTest do
   @moduledoc """
-  `Boards.update_user_access/4` to `:read_only`: when the downgrade ends the
-  user's write access it revokes their board tokens and unassigns their open
-  tasks, as removal does; an org-admin keeps owner access through their role,
-  so their tokens and tasks stay.
+  `Boards.update_user_access/4` to `:read_only` and
+  `Boards.remove_user_from_board/3`: when the change ends the user's write
+  access it revokes their board tokens and unassigns their open tasks; an
+  org-admin keeps owner access through their role, so their tokens and tasks
+  stay.
   """
   use Kanban.DataCase, async: true
 
@@ -78,6 +79,16 @@ defmodule Kanban.Boards.AccessDowngradeTest do
       assert assignee(owners_task) == ctx.owner.id
     end
 
+    test "removal from the board revokes their token and unassigns their open tasks", ctx do
+      token = token_for(ctx.member, ctx.board)
+      open = task_fixture(ctx.column, %{assigned_to_id: ctx.member.id})
+
+      assert {:ok, _} = Boards.remove_user_from_board(ctx.board, ctx.member, ctx.owner)
+
+      assert revoked?(token)
+      assert assignee(open) == nil
+    end
+
     test "an upgrade back to modify changes neither tokens nor tasks", ctx do
       {:ok, _} = Boards.update_user_access(ctx.board, ctx.member, :read_only, ctx.owner)
       token = token_for(ctx.member, ctx.board)
@@ -107,6 +118,18 @@ defmodule Kanban.Boards.AccessDowngradeTest do
       {:ok, _} = Boards.add_user_to_board(board, org_admin, :modify, owner)
 
       %{board: board, org_admin: org_admin}
+    end
+
+    test "removing their row keeps their token and their tasks, since their role still gives owner access",
+         ctx do
+      token = token_for(ctx.org_admin, ctx.board)
+      task = task_fixture(ctx.column, %{assigned_to_id: ctx.org_admin.id})
+
+      assert {:ok, _} = Boards.remove_user_from_board(ctx.board, ctx.org_admin, ctx.owner)
+
+      refute revoked?(token)
+      assert assignee(task) == ctx.org_admin.id
+      assert Boards.get_user_access(ctx.board.id, ctx.org_admin.id) == :owner
     end
 
     test "keeps their token and their tasks, since their role still gives owner access", ctx do

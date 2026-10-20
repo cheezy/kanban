@@ -230,7 +230,10 @@ defmodule Kanban.Boards.MembershipChanges do
 
   @doc """
   Removes a user from a board, revoking their API tokens for it and
-  unassigning them from the board's open tasks, in one transaction.
+  unassigning them from the board's open tasks, in one transaction. An
+  org-admin of the board's Organization keeps owner access through their role
+  after losing the row, so their removal does neither, exactly as their
+  downgrade to `:read_only` does not.
 
   On success the removed user gets a `board_access_changed` notification
   saying how many tokens were revoked, unless they removed themselves.
@@ -290,16 +293,11 @@ defmodule Kanban.Boards.MembershipChanges do
 
   # Revoke the removed user's board-scoped API tokens in the same transaction
   # as the membership delete, so a still-valid token cannot outlive the access
-  # it depended on (W1430).
+  # it depended on (W1430) — unless they keep write access without the row.
   defp removal_multi(board_user, board_id, user_id) do
     Ecto.Multi.new()
     |> Ecto.Multi.delete(:board_user, board_user)
-    |> Ecto.Multi.run(:revoke_tokens, fn _repo, _changes ->
-      {:ok, ApiTokens.revoke_user_tokens_for_board(board_id, user_id)}
-    end)
-    |> Ecto.Multi.update_all(:unassign, open_assignments(board_id, user_id),
-      set: [assigned_to_id: nil, updated_at: NaiveDateTime.utc_now(:second)]
-    )
+    |> end_write_access_if_lost(board_id, user_id)
   end
 
   # The user's assignments on this board's open (unarchived) tasks, cleared on
@@ -415,10 +413,8 @@ defmodule Kanban.Boards.MembershipChanges do
 
   # Downgrading to :read_only revokes the user's board-scoped API tokens (W1430)
   # and unassigns them from the board's open tasks, which they could no longer
-  # complete or unclaim, in the same transaction, as removal does. Both happen
-  # only when the downgrade leaves them without write access: an org-admin
-  # keeps owner access through their role (Kanban.Workspaces.Policy), so their
-  # tokens and tasks stay. Upgrades/lateral changes leave both intact.
+  # complete or unclaim, in the same transaction, as removal does.
+  # Upgrades/lateral changes leave both intact.
   defp change_access(board_user, board_id, user_id, new_access) do
     Ecto.Multi.new()
     |> Ecto.Multi.update(:board_user, BoardUser.changeset(board_user, %{access: new_access}))
@@ -426,7 +422,18 @@ defmodule Kanban.Boards.MembershipChanges do
     |> run_board_user_multi()
   end
 
-  defp maybe_end_write_access(multi, board_id, user_id, :read_only) do
+  defp maybe_end_write_access(multi, board_id, user_id, :read_only),
+    do: end_write_access_if_lost(multi, board_id, user_id)
+
+  defp maybe_end_write_access(multi, _board_id, _user_id, _access), do: multi
+
+  # Revokes the user's tokens for the board and unassigns their open tasks
+  # there, after a removal or downgrade earlier in `multi`, only when that
+  # change left them without write access. An org-admin of the board's
+  # Organization keeps owner access through their role
+  # (Kanban.Workspaces.Policy, read inside the transaction, after the change),
+  # so their tokens and tasks stay.
+  defp end_write_access_if_lost(multi, board_id, user_id) do
     multi
     |> Ecto.Multi.run(:write_access_ended, fn _repo, _changes ->
       {:ok, Policy.effective_board_access(board_id, user_id) not in [:owner, :modify]}
@@ -453,8 +460,6 @@ defmodule Kanban.Boards.MembershipChanges do
         {:ok, {0, nil}}
     end)
   end
-
-  defp maybe_end_write_access(multi, _board_id, _user_id, _access), do: multi
 
   defp access_change(%BoardUser{access: access}, access), do: :unchanged
   defp access_change(%BoardUser{access: from}, _new_access), do: {:access_changed, from}
