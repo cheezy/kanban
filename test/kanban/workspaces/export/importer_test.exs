@@ -207,6 +207,43 @@ defmodule Kanban.Workspaces.Export.ImporterTest do
     end
   end
 
+  describe "board owners" do
+    test "a board with no access rows at all is owned by the importing org-admin", ctx do
+      files =
+        Map.update!(ctx.files, "board_users.json", fn rows ->
+          Enum.reject(rows, &(&1["board_id"] == ctx.beta.id))
+        end)
+
+      assert {:ok, report} = import_files(ctx, files)
+      assert report.reattributed == 1
+      assert {ctx.org_admin.email, "Beta board", "owner"} in report.board_access
+
+      board = imported_board("Beta board", report.workspace_name)
+
+      assert [%BoardUser{access: :owner, user_id: user_id}] =
+               from(bu in BoardUser, where: bu.board_id == ^board.id) |> Repo.all()
+
+      assert user_id == ctx.org_admin.id
+    end
+
+    test "a board whose access rows name no owner is owned by the importing org-admin", ctx do
+      files =
+        Map.update!(ctx.files, "board_users.json", fn rows ->
+          Enum.reject(rows, &(&1["board_id"] == ctx.alpha.id and &1["access"] == "owner"))
+        end)
+
+      assert {:ok, report} = import_files(ctx, files)
+      assert report.reattributed == 1
+
+      board = imported_board("Alpha board", report.workspace_name)
+      owner = Repo.get_by!(BoardUser, board_id: board.id, access: :owner)
+      assert owner.user_id == ctx.org_admin.id
+      # The other members keep their access.
+      assert Repo.get_by!(BoardUser, board_id: board.id, user_id: ctx.guest.id).access ==
+               :read_only
+    end
+  end
+
   test "a clean archive still imports, history included", ctx do
     assert {:ok, report} = import_files(ctx, ctx.files)
     assert report.counts.tasks == 6
@@ -214,5 +251,14 @@ defmodule Kanban.Workspaces.Export.ImporterTest do
     assert report.counts.task_history == length(ctx.files["task_history.json"])
     assert Repo.aggregate(TaskHistory, :count) >= report.counts.task_history
     assert row(ctx.files, :tasks, ctx.second.id)["identifier"] == ctx.second.identifier
+  end
+
+  defp imported_board(name, workspace_name) do
+    from(b in Board,
+      join: w in Workspace,
+      on: w.id == b.workspace_id,
+      where: b.name == ^name and w.name == ^workspace_name
+    )
+    |> Repo.one!()
   end
 end

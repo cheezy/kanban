@@ -28,8 +28,9 @@ defmodule Kanban.Workspaces.Export.Importer do
   history attributions are left empty and the report names them, so an
   archive cannot make imported rows name an account outside the
   Organization. A board whose owner is unmatched or not a member of the
-  Organization is owned by the importing org-admin, as is a review whose
-  reviewer is unmatched; both are counted as reattributed. Board access is
+  Organization is owned by the importing org-admin, as is a board the
+  archive gives no owner row at all (or no board access rows), and a review
+  whose reviewer is unmatched; all are counted as reattributed. Board access is
   given only to matched users who belong to the Organization — anyone else
   in the archive's board members is skipped and named in the report, to be
   re-invited — and the report lists every board access it gave. Workspace
@@ -268,10 +269,15 @@ defmodule Kanban.Workspaces.Export.Importer do
     {row["id"], board}
   end
 
+  # Every imported board is in a group, even one with no access rows, so each
+  # gets an owner.
   defp insert_board_users(ctx) do
+    groups = Enum.group_by(ctx.rows.board_users, & &1["board_id"])
+
     {count, ctx} =
-      ctx.rows.board_users
-      |> Enum.group_by(& &1["board_id"])
+      ctx.boards
+      |> Map.keys()
+      |> Enum.reduce(groups, &Map.put_new(&2, &1, []))
       |> Enum.reduce({0, ctx}, &insert_board_group/2)
 
     put_count(ctx, :board_users, count)
@@ -289,8 +295,8 @@ defmodule Kanban.Workspaces.Export.Importer do
   end
 
   # The owner first — the source owner when matched and in the Organization,
-  # else the importing org-admin — then every other matched Organization
-  # member, once each.
+  # else the importing org-admin, also when the archive names no owner — then
+  # every other matched Organization member, once each.
   defp insert_board_members(ctx, board_id, rows) do
     {owners, others} = Enum.split_with(rows, &(&1["access"] == "owner"))
     acc = insert_first_owner(ctx, board_id, owners)
@@ -299,7 +305,7 @@ defmodule Kanban.Workspaces.Export.Importer do
   end
 
   defp insert_first_owner(ctx, board_id, [owner | _]), do: insert_owner(ctx, board_id, owner)
-  defp insert_first_owner(ctx, _board_id, []), do: {MapSet.new(), 0, ctx}
+  defp insert_first_owner(ctx, board_id, []), do: insert_owner(ctx, board_id, %{})
 
   defp insert_other_member(row, {seen, count, ctx} = acc, board_id) do
     user_id = user(ctx, row["user_id"])
