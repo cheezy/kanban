@@ -119,6 +119,34 @@ defmodule KanbanWeb.UserLive.ResetPasswordTest do
   end
 
   describe "Reset password" do
+    test "a disabled account's link is invalid", %{conn: conn, token: token, user: user} do
+      user |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert {:error, {:redirect, %{to: "/", flash: flash}}} =
+               live(conn, ~p"/users/reset-password/#{token}")
+
+      assert flash["error"] =~ "invalid or it has expired"
+    end
+
+    test "an account disabled while the page is open is not reset", %{
+      conn: conn,
+      token: token,
+      user: user
+    } do
+      {:ok, lv, _html} = live(conn, ~p"/users/reset-password/#{token}")
+      user |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+
+      lv
+      |> form("#reset_password_form",
+        user: %{password: "new valid password", password_confirmation: "new valid password"}
+      )
+      |> render_submit()
+
+      assert {"/", %{"error" => message}} = assert_redirect(lv)
+      assert message =~ "invalid or it has expired"
+      refute Accounts.get_user_by_email_and_password(user.email, "new valid password")
+    end
+
     test "resets password once", %{conn: conn, token: token, user: user} do
       {:ok, lv, _html} = live(conn, ~p"/users/reset-password/#{token}")
 

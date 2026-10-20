@@ -8,9 +8,29 @@ defmodule Kanban.Accounts.PasswordResetTest do
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserToken
 
+  defp disable!(user) do
+    user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+  end
+
   describe "deliver_user_reset_password_instructions/2" do
     setup do
       %{user: user_fixture()}
+    end
+
+    test "sends nothing and creates no token for a disabled account", %{user: user} do
+      disabled = disable!(user)
+      # The fixture's own confirmation email.
+      receive do
+        {:email, _email} -> :ok
+      after
+        0 -> :ok
+      end
+
+      assert {:error, :user_disabled} =
+               Accounts.deliver_user_reset_password_instructions(disabled, &"[TOKEN]#{&1}[TOKEN]")
+
+      assert Repo.get_by(UserToken, user_id: user.id, context: "reset_password") == nil
+      Swoosh.TestAssertions.assert_no_email_sent()
     end
 
     test "sends token through notification", %{user: user} do
@@ -42,6 +62,12 @@ defmodule Kanban.Accounts.PasswordResetTest do
     test "returns the user with valid token", %{user: %{id: id}, token: token} do
       assert %User{id: ^id} = Accounts.get_user_by_reset_password_token(token)
       assert Repo.get_by(UserToken, user_id: id)
+    end
+
+    test "does not return a user disabled after the link was sent", %{user: user, token: token} do
+      disable!(user)
+
+      refute Accounts.get_user_by_reset_password_token(token)
     end
 
     test "does not return the user with invalid token", %{user: user} do
@@ -116,6 +142,21 @@ defmodule Kanban.Accounts.PasswordResetTest do
                password: ["should be at least 12 character(s)"],
                password_confirmation: ["does not match password"]
              } = errors_on(changeset)
+    end
+
+    test "changes nothing for an account disabled after its reset page opened", %{user: user} do
+      disable!(user)
+      attach_telemetry([:kanban, :user, :password_reset_completed])
+
+      # `user` is the struct the page loaded before the disable.
+      assert {:error, :user_disabled} =
+               Accounts.reset_user_password(user, %{
+                 password: "new valid password",
+                 password_confirmation: "new valid password"
+               })
+
+      assert Repo.get!(User, user.id).hashed_password == user.hashed_password
+      refute_received {:telemetry_event, [:kanban, :user, :password_reset_completed], _, _}
     end
 
     test "validates maximum values for password for security", %{user: user} do

@@ -130,6 +130,9 @@ defmodule KanbanWeb.UserLive.ResetPassword do
          |> put_flash(:info, gettext("Password reset successfully."))
          |> redirect(to: ~p"/users/log-in")}
 
+      {:error, :user_disabled} ->
+        {:noreply, invalid_link(socket)}
+
       {:error, changeset} ->
         {:noreply, assign_form(socket, Map.put(changeset, :action, :insert))}
     end
@@ -139,10 +142,14 @@ defmodule KanbanWeb.UserLive.ResetPassword do
     if user = Accounts.get_user_by_reset_password_token(token) do
       assign(socket, user: user, token: token)
     else
-      socket
-      |> put_flash(:error, gettext("Reset password link is invalid or it has expired."))
-      |> redirect(to: ~p"/")
+      invalid_link(socket)
     end
+  end
+
+  defp invalid_link(socket) do
+    socket
+    |> put_flash(:error, gettext("Reset password link is invalid or it has expired."))
+    |> redirect(to: ~p"/")
   end
 
   defp assign_form(socket, %{} = source) do
