@@ -54,6 +54,11 @@ defmodule Kanban.OrganizationsTest do
 
   defp membership_lookup?(_metadata), do: false
 
+  defp organization_row_lock?(%{source: "organizations", query: query}),
+    do: String.starts_with?(query, "SELECT") and query =~ "FOR UPDATE"
+
+  defp organization_row_lock?(_metadata), do: false
+
   defp urls do
     [
       confirmation_url: &"https://stride.test/users/confirm/#{&1}",
@@ -967,6 +972,72 @@ defmodule Kanban.OrganizationsTest do
                Organizations.appoint_org_admin(admin_fixture(), organization_fixture(), user)
 
       assert AuditLog.list_events(action: :org_admin_appointed) == []
+    end
+  end
+
+  describe "add_member/3 and disabled accounts" do
+    test "add_member refuses a disabled user" do
+      organization = organization_fixture()
+      user = disabled_user_fixture()
+      attach_telemetry(@member_added)
+
+      assert {:error, :user_disabled} = Organizations.add_member(organization, user, :member)
+
+      assert role_of(user) == nil
+      assert Repo.aggregate(OrganizationMember, :count) == 0
+      refute_received {:telemetry_event, @member_added, _, _}
+      assert AuditLog.list_events() == []
+    end
+
+    test "add_member refuses a stale struct of a disabled user" do
+      organization = organization_fixture()
+      user = user_fixture()
+      user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+      attach_telemetry(@member_added)
+
+      # `user` is the struct loaded before the disable, so only a database read catches it.
+      assert user.disabled_at == nil
+      assert {:error, :user_disabled} = Organizations.add_member(organization.id, user, :member)
+
+      assert role_of(user) == nil
+      refute_received {:telemetry_event, @member_added, _, _}
+    end
+
+    test "reads disabled_at under the organization lock" do
+      organization = organization_fixture()
+      user = user_fixture()
+      test_pid = self()
+
+      after_first_query(
+        &organization_row_lock?/1,
+        fn ->
+          send(test_pid, :locked)
+          user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+        end
+      )
+
+      assert {:error, :user_disabled} = Organizations.add_member(organization, user, :member)
+      assert_received :locked
+      assert role_of(user) == nil
+    end
+
+    test "refuses a member of the same Organization who was disabled later, leaving the membership" do
+      organization = organization_fixture()
+      user = user_fixture()
+      existing = organization_member_fixture(organization, user)
+      disabled = user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert {:error, :user_disabled} = Organizations.add_member(organization, disabled, :member)
+
+      assert Repo.get!(OrganizationMember, existing.id).role == :member
+    end
+
+    test "still adds an enabled user" do
+      organization = organization_fixture()
+      user = user_fixture()
+
+      assert {:ok, %OrganizationMember{role: :member}} =
+               Organizations.add_member(organization, user, :member)
     end
   end
 

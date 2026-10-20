@@ -9,6 +9,7 @@ defmodule Kanban.Tasks.Lifecycle do
   alias Ecto.Multi
   alias Kanban.Notifications.Events
   alias Kanban.Repo
+  alias Kanban.Tasks.Assignees
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.DbErrors
   alias Kanban.Tasks.Dependencies
@@ -44,9 +45,13 @@ defmodule Kanban.Tasks.Lifecycle do
 
   A saved change emits `[:kanban, :task, :updated]` with `source: :ui` once
   the write has committed (once for a goal, never per cascaded child).
+
+  Changing the assignee to a disabled account returns an error changeset on
+  `:assigned_to_id` and writes nothing (`Kanban.Tasks.Assignees`). Keeping an
+  assignee who was disabled later, or clearing the assignee, still saves.
   """
   def update_task(%Task{} = task, attrs, opts \\ []) do
-    changeset = Task.changeset(task, attrs)
+    changeset = task |> Task.changeset(attrs) |> Assignees.validate_enabled_assignee()
     changeset = Dependencies.validate_circular_dependencies(changeset)
     assignment_changed? = Map.has_key?(changeset.changes, :assigned_to_id)
 

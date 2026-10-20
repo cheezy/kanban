@@ -10,6 +10,7 @@ defmodule Kanban.Tasks.Creation do
   """
 
   alias Kanban.Repo
+  alias Kanban.Tasks.Assignees
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.ColumnLocks
   alias Kanban.Tasks.CreationSupport
@@ -80,7 +81,9 @@ defmodule Kanban.Tasks.Creation do
   # when the parent is a goal with a non-nil assigned_to_id AND attrs does not
   # already carry an explicit assigned_to_id key, returns attrs with the
   # parent's assigned_to_id injected, so a new task added under an existing
-  # assigned goal inherits that goal's assignee.
+  # assigned goal inherits that goal's assignee. A goal assignee who has since
+  # been disabled is not inherited (D385, `Kanban.Tasks.Assignees`): the new
+  # task starts unassigned rather than handed to an account that cannot sign in.
   defp maybe_inherit_assignment_from_parent(attrs, board_id) when is_map(attrs) do
     if CreationSupport.assigned_to_id_explicit?(attrs) do
       attrs
@@ -103,11 +106,17 @@ defmodule Kanban.Tasks.Creation do
   defp apply_inheritance_from_parent_id(attrs, parent_id, board_id) do
     case Queries.get_task_for_board(parent_id, board_id) do
       %Task{type: :goal, assigned_to_id: assigned_id} when not is_nil(assigned_id) ->
-        CreationSupport.put_assigned_to_id(attrs, assigned_id)
+        inherit_enabled_assignee(attrs, assigned_id)
 
       _ ->
         attrs
     end
+  end
+
+  defp inherit_enabled_assignee(attrs, assigned_id) do
+    if Assignees.disabled?(assigned_id),
+      do: attrs,
+      else: CreationSupport.put_assigned_to_id(attrs, assigned_id)
   end
 
   defp fetch_parent_id(attrs) do

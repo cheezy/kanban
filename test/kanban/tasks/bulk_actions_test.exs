@@ -340,6 +340,23 @@ defmodule Kanban.Tasks.BulkActionsTest do
       assert reload(task).assigned_to_id == nil
     end
 
+    test "rejects a disabled board member as an assignee (D385)", %{
+      owner: owner,
+      scope: scope,
+      board: board,
+      todo: todo
+    } do
+      {member, _} = member_scope(board, owner, :modify)
+      task = task_fixture(todo)
+
+      member
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Repo.update!()
+
+      assert {:error, :invalid_assignee} = BulkActions.assign(scope, board, [task.id], member.id)
+      assert reload(task).assigned_to_id == nil
+    end
+
     test "skips goals and aborts on a foreign id", %{
       owner: owner,
       scope: scope,

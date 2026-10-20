@@ -193,6 +193,22 @@ defmodule Kanban.Tasks.InterventionTransactionsTest do
       assert assignment_to(child.id) == []
     end
 
+    test "refuses a disabled board member as {:error, :assignee_not_on_board} and rolls back (D385)",
+         %{cols: cols, goal: goal, member: member} do
+      child = task_fixture(cols["Backlog"], %{parent_id: goal.id})
+
+      member
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Kanban.Repo.update!()
+
+      assert {:error, :assignee_not_on_board} =
+               InterventionTransactions.reassign(goal, member.id)
+
+      assert reload(goal).assigned_to_id == nil
+      assert reload(child).assigned_to_id == nil
+      assert assignment_to(goal.id) == []
+    end
+
     test "nil unassigns the goal and its children without a membership check", %{
       cols: cols,
       goal: goal,

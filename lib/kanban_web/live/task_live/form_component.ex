@@ -81,7 +81,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     column_options = OptionBuilders.build_column_options(columns, task)
 
     board_users = Kanban.Boards.list_board_users(board)
-    assignable_users = OptionBuilders.build_assignable_users_options(board_users)
+    assignable_users = OptionBuilders.build_assignable_users_options(board_users, task)
 
     goal_options = OptionBuilders.build_goal_options(board, task)
 
@@ -279,7 +279,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     # column_id check is preserved; parent_id and assigned_to_id are now
     # validated the same way. Each check is independent — a single bad
     # field rejects the whole save with a targeted changeset error.
-    case RelationalScopes.validate(task_params, socket.assigns.board) do
+    case RelationalScopes.validate(task_params, socket.assigns.board, socket.assigns.task) do
       :ok ->
         perform_task_update(socket, task_params)
 
@@ -319,7 +319,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
   # The same relational checks as an edit: a crafted save must not parent the
   # new task under another board's goal or assign a non-member.
   defp create_scoped_task(socket, column, task_params) do
-    case RelationalScopes.validate(task_params, socket.assigns.board) do
+    case RelationalScopes.validate(task_params, socket.assigns.board, socket.assigns.task) do
       :ok -> create_task_in_column(socket, column, task_params)
       {:error, field, message} -> reject_with_scope_error(socket, task_params, field, message)
     end

@@ -31,6 +31,7 @@ defmodule Kanban.Tasks.InterventionTransactions do
   alias Kanban.Columns.Column
   alias Kanban.Columns.Stage
   alias Kanban.Repo
+  alias Kanban.Tasks.Assignees
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
@@ -42,9 +43,10 @@ defmodule Kanban.Tasks.InterventionTransactions do
   `new_assigned_to_id` in one transaction, recording assignment history for each
   moved task.
 
-  A non-`nil` assignee must be a member of the goal's board; the check runs
-  inside the transaction, so an off-board assignee returns
-  `{:error, :assignee_not_on_board}` and nothing changes. `nil` unassigns and
+  A non-`nil` assignee must be an enabled member of the goal's board; the
+  check runs inside the transaction, so an off-board or disabled assignee
+  returns `{:error, :assignee_not_on_board}` and nothing changes (a disabled
+  account keeps its membership but cannot sign in, D385). `nil` unassigns and
   skips the check. A failed write returns `{:error, changeset}`.
   """
   @spec reassign(Task.t(), integer() | nil) ::
@@ -190,7 +192,9 @@ defmodule Kanban.Tasks.InterventionTransactions do
       )
       |> repo.exists?()
 
-    if member?, do: {:ok, new_assigned_to_id}, else: {:error, :assignee_not_on_board}
+    if member? and not Assignees.disabled?(new_assigned_to_id),
+      do: {:ok, new_assigned_to_id},
+      else: {:error, :assignee_not_on_board}
   end
 
   # Re-read inside the transaction under FOR UPDATE so a concurrent claim that

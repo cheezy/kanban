@@ -11,6 +11,9 @@ defmodule KanbanWeb.TaskLive.Form.RelationalScopesTest do
   import Kanban.ColumnsFixtures
   import Kanban.TasksFixtures
 
+  alias Kanban.Accounts.User
+  alias Kanban.Repo
+  alias Kanban.Tasks.Task
   alias KanbanWeb.TaskLive.Form.RelationalScopes
 
   setup do
@@ -89,5 +92,44 @@ defmodule KanbanWeb.TaskLive.Form.RelationalScopesTest do
                %{"assigned_to_id" => to_string(ctx.other_user.id)},
                ctx.board
              )
+  end
+
+  describe "disabled assignees (D385)" do
+    setup ctx do
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(ctx.board, member, :modify, ctx.user)
+      # The struct is kept from before the disable, so only a database read catches it.
+      member |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+      %{disabled_member: member}
+    end
+
+    test "refuses a disabled assignee with the generic no-access message", ctx do
+      params = %{"assigned_to_id" => to_string(ctx.disabled_member.id)}
+
+      assert {:error, :assigned_to_id, message} = RelationalScopes.validate(params, ctx.board)
+      assert message == "Assignee does not have access to this board"
+
+      assert {:error, :assigned_to_id, ^message} =
+               RelationalScopes.validate(params, ctx.board, %Task{assigned_to_id: ctx.user.id})
+    end
+
+    test "keeps a task's existing assignee who was disabled later", ctx do
+      params = %{"assigned_to_id" => to_string(ctx.disabled_member.id)}
+      task = %Task{assigned_to_id: ctx.disabled_member.id}
+
+      assert RelationalScopes.validate(params, ctx.board, task) == :ok
+    end
+
+    test "clearing a disabled assignee passes", ctx do
+      task = %Task{assigned_to_id: ctx.disabled_member.id}
+
+      assert RelationalScopes.validate(%{"assigned_to_id" => ""}, ctx.board, task) == :ok
+    end
+
+    test "an enabled board member still passes", ctx do
+      params = %{"assigned_to_id" => to_string(ctx.user.id)}
+
+      assert RelationalScopes.validate(params, ctx.board, %Task{}) == :ok
+    end
   end
 end

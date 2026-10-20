@@ -18,7 +18,8 @@ defmodule Kanban.Tasks.BulkActions do
     3. **A non-empty selection of integer ids** (`{:error, :empty_selection}`;
        a malformed id is `{:error, :not_found}`).
     4. **A board-scoped target**: the column (`:invalid_column`), the
-       assignee — any member of the board (`:invalid_assignee`) — or the label
+       assignee — any enabled member of the board (`:invalid_assignee`; a
+       disabled account keeps its membership but is refused, D385) — or the label
        (`:invalid_label`).
     5. **Board-scoped tasks.** Inside the transaction (after a move has locked
        the board's columns), every id must name a live (unarchived) task in one
@@ -61,6 +62,7 @@ defmodule Kanban.Tasks.BulkActions do
   alias Kanban.Notifications.Events
   alias Kanban.Plans
   alias Kanban.Repo
+  alias Kanban.Tasks.Assignees
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.ColumnLocks
   alias Kanban.Tasks.Positioning
@@ -204,11 +206,14 @@ defmodule Kanban.Tasks.BulkActions do
 
   defp validate_assignee(_board, nil), do: :ok
 
+  # A disabled account keeps its board_users row, so it is refused here too.
   defp validate_assignee(%Board{id: board_id}, user_id) when is_integer(user_id) do
     member_query =
       from(bu in BoardUser, where: bu.board_id == ^board_id and bu.user_id == ^user_id)
 
-    if Repo.exists?(member_query), do: :ok, else: {:error, :invalid_assignee}
+    if Repo.exists?(member_query) and not Assignees.disabled?(user_id),
+      do: :ok,
+      else: {:error, :invalid_assignee}
   end
 
   defp validate_assignee(_board, _user_id), do: {:error, :invalid_assignee}

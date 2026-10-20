@@ -149,3 +149,7 @@ msgstr "deve conter o sinal @ e não ter espaços"
 ## From Kanban.Workspaces.Workspace (a NUL byte or invalid UTF-8 in a name)
 msgid "contains characters that are not allowed"
 msgstr "contém caracteres não permitidos"
+
+## From Kanban.Tasks.Assignees (D385: a disabled account as a new task assignee)
+msgid "does not have access to this board"
+msgstr "não tem acesso a este quadro"

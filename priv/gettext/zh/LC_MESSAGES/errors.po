@@ -140,3 +140,7 @@ msgstr "必须包含 @ 符号且不能有空格"
 ## From Kanban.Workspaces.Workspace (a NUL byte or invalid UTF-8 in a name)
 msgid "contains characters that are not allowed"
 msgstr "包含不允许的字符"
+
+## From Kanban.Tasks.Assignees (D385: a disabled account as a new task assignee)
+msgid "does not have access to this board"
+msgstr "无法访问此看板"

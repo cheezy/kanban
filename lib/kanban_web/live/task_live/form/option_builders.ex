@@ -92,10 +92,18 @@ defmodule KanbanWeb.TaskLive.Form.OptionBuilders do
   @doc """
   Build the `{display_name, id}` list for the assignee dropdown, prefixed
   with an Unassigned option.
+
+  Disabled accounts are left out (D385), except the task's current assignee:
+  dropping that option would make the select post "Unassigned" and silently
+  clear an assignment the user never touched. The save path still refuses a
+  disabled user as a *new* assignee.
   """
-  def build_assignable_users_options(board_users) do
+  def build_assignable_users_options(board_users, task \\ %{assigned_to_id: nil}) do
     users_list =
       board_users
+      |> Enum.filter(fn %{user: user} ->
+        is_nil(user.disabled_at) or user.id == task.assigned_to_id
+      end)
       |> Enum.map(fn %{user: user} ->
         display_name = if user.name && user.name != "", do: user.name, else: user.email
         {display_name, user.id}

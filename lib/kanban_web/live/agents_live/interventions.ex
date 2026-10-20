@@ -90,8 +90,10 @@ defmodule KanbanWeb.AgentsLive.Interventions do
     %{goal: goal, children: children, member_options: member_options(members)}
   end
 
+  # A disabled account keeps its board membership but cannot be assigned work
+  # (D385), so it is not offered as the goal's new owner.
   defp member_options(members) do
-    Enum.map(members, fn %{user: user} -> {user_label(user), user.id} end)
+    for %{user: user} <- members, is_nil(user.disabled_at), do: {user_label(user), user.id}
   end
 
   defp user_label(%{name: name}) when is_binary(name) and name != "", do: name

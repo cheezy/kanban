@@ -29,8 +29,9 @@ defmodule Kanban.Organizations do
       `ensure_not_last_working_org_admin/1`. A disabled org-admin does not
       count. Every membership write first takes a row lock on the
       organization, so two concurrent changes cannot both pass that check.
-    * A disabled account is never appointed: `appoint_org_admin/3` refuses it
-      with `{:error, :user_disabled}`, and `org_admin?/2` is false for it.
+    * A disabled account is never appointed or added: `appoint_org_admin/3`
+      and `add_member/3` refuse it with `{:error, :user_disabled}`, and
+      `org_admin?/2` is false for it.
     * Removing an org-admin deletes the membership; it never demotes.
     * `appoint_org_admin_by_email/4` appoints by email. An unknown email gets
       a new account in the same transaction as the membership, and the
@@ -296,10 +297,15 @@ defmodule Kanban.Organizations do
   actor: the caller has already decided that `user` may join. A user who is
   already in this Organization, in either role, is left as they are and their
   membership is returned; an existing org-admin is never downgraded. A user in
-  another Organization is refused.
+  another Organization is refused, and so is a disabled account, with
+  `{:error, :user_disabled}` — read from the database under the
+  Organization's lock, so a stale `%User{}` cannot slip through. A member who
+  was disabled after joining gets `{:error, :user_disabled}` too, and their
+  membership is left as it is.
 
   Emits `[:kanban, :organization, :member_added]` only when a membership was
-  created. `actor_user_id` in it is the joining user.
+  created; a refusal writes and emits nothing. `actor_user_id` in it is the
+  joining user.
 
   ## Examples
 
@@ -309,10 +315,14 @@ defmodule Kanban.Organizations do
       iex> add_member(organization, user_in_other_organization, :member)
       {:error, :already_in_another_organization}
 
+      iex> add_member(organization, disabled_user, :member)
+      {:error, :user_disabled}
+
   """
   @spec add_member(Organization.t() | integer(), User.t(), :member) ::
           {:ok, OrganizationMember.t()}
-          | {:error, :already_in_another_organization | :not_found | Ecto.Changeset.t()}
+          | {:error,
+             :already_in_another_organization | :user_disabled | :not_found | Ecto.Changeset.t()}
   def add_member(organization, %User{} = user, :member) do
     organization
     |> organization_id()

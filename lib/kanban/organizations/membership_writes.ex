@@ -36,29 +36,39 @@ defmodule Kanban.Organizations.MembershipWrites do
   @doc """
   Adds `user` to the Organization with `organization_id` as a `:member`. A
   user already in that Organization is returned unchanged; a user in another
-  Organization is refused with `:already_in_another_organization`.
+  Organization is refused with `:already_in_another_organization`, and a
+  disabled account with `:user_disabled`, read from the database under the
+  lock. The disabled check comes first, as in `appoint_org_admin/4`, so a
+  member who was disabled later is refused too rather than returned
+  unchanged.
   """
   @spec add_member(integer(), User.t()) ::
           {:ok, OrganizationMember.t()}
-          | {:error, :already_in_another_organization | :not_found | Ecto.Changeset.t()}
+          | {:error,
+             :already_in_another_organization | :user_disabled | :not_found | Ecto.Changeset.t()}
   def add_member(organization_id, %User{} = user) do
     Repo.transact(fn ->
-      with :ok <- lock_organization(organization_id) do
-        case user_membership(user) do
-          nil ->
-            insert_membership(organization_id, user, :member)
-
-          %OrganizationMember{organization_id: ^organization_id} = membership ->
-            {:ok, {:unchanged, membership}}
-
-          %OrganizationMember{} ->
-            {:error, :already_in_another_organization}
-        end
+      with :ok <- lock_organization(organization_id),
+           :ok <- ensure_enabled(user) do
+        add_in_locked_organization(organization_id, user)
       end
     end)
     |> notify(fn change, membership ->
       OrganizationTelemetry.member_added(membership, change, user.id)
     end)
+  end
+
+  defp add_in_locked_organization(organization_id, user) do
+    case user_membership(user) do
+      nil ->
+        insert_membership(organization_id, user, :member)
+
+      %OrganizationMember{organization_id: ^organization_id} = membership ->
+        {:ok, {:unchanged, membership}}
+
+      %OrganizationMember{} ->
+        {:error, :already_in_another_organization}
+    end
   end
 
   @doc """

@@ -1917,6 +1917,78 @@ defmodule KanbanWeb.TaskLive.FormComponentTest do
       refute updated_socket.assigns[:error_message] == "Security error: Invalid assignee"
     end
 
+    test "a crafted save naming a disabled board member is refused and keeps the assignee (D385)" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      task = task_fixture(column, %{title: "Editable Task", assigned_to_id: owner.id})
+
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, member, :modify, owner)
+
+      member
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Kanban.Repo.update!()
+
+      socket = edit_form_socket(owner, board, task)
+
+      task_params = %{"title" => "Editable Task", "assigned_to_id" => to_string(member.id)}
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      assert Kanban.Repo.get!(Tasks.Task, task.id).assigned_to_id == owner.id
+      assert updated_socket.assigns.error_message == "Security error: Invalid assignee"
+
+      assert {"Assignee does not have access to this board", _} =
+               updated_socket.assigns.form.source.errors[:assigned_to_id]
+    end
+
+    test "re-saving a task whose assignee was disabled later, without changing the assignee, succeeds (D385)" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, member, :modify, owner)
+      task = task_fixture(column, %{title: "Editable Task", assigned_to_id: member.id})
+
+      member
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Kanban.Repo.update!()
+
+      socket = edit_form_socket(owner, board, task)
+
+      # The select still offers the current (disabled) assignee, so a re-save posts it back.
+      assert member.id in Enum.map(socket.assigns.assignable_users, &elem(&1, 1))
+
+      task_params = %{"title" => "Renamed Task", "assigned_to_id" => to_string(member.id)}
+
+      {:noreply, updated_socket} =
+        FormComponent.handle_event("save", %{"task" => task_params}, socket)
+
+      refute updated_socket.assigns[:error_message] == "Security error: Invalid assignee"
+      reloaded = Kanban.Repo.get!(Tasks.Task, task.id)
+      assert reloaded.title == "Renamed Task"
+      assert reloaded.assigned_to_id == member.id
+    end
+
+    defp edit_form_socket(owner, board, task) do
+      {:ok, socket} =
+        FormComponent.update(
+          %{
+            current_scope: %{user: owner},
+            task: task,
+            board: board,
+            action: :edit_task,
+            patch: "/boards/#{board.id}"
+          },
+          %Phoenix.LiveView.Socket{}
+        )
+
+      Map.update!(socket, :assigns, &Map.put(&1, :flash, %{}))
+    end
+
     defp new_task_socket do
       user = user_fixture()
       board = board_fixture(user)

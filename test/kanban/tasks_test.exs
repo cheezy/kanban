@@ -831,6 +831,22 @@ defmodule Kanban.TasksTest do
       assert is_nil(child.assigned_to_id)
     end
 
+    test "no inheritance of a goal assignee who was disabled later (D385)" do
+      alice = user_fixture()
+      bob = user_fixture()
+      board = board_fixture(alice)
+      column = column_fixture(board)
+      goal = task_fixture(column, %{title: "Goal", type: :goal, assigned_to_id: bob.id})
+
+      bob
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Kanban.Repo.update!()
+
+      assert {:ok, child} = Tasks.create_task(column, %{title: "New Child", parent_id: goal.id})
+      assert is_nil(child.assigned_to_id)
+      assert Tasks.get_task!(goal.id).assigned_to_id == bob.id
+    end
+
     test "no inheritance when the parent is not a goal (defensive)" do
       alice = user_fixture()
       board = board_fixture(alice)
@@ -1179,6 +1195,74 @@ defmodule Kanban.TasksTest do
       changeset.errors
       |> Keyword.get_values(String.to_existing_atom(field))
       |> Enum.any?(&match?({"is not a valid id", _}, &1))
+    end
+  end
+
+  describe "update_task/2 and disabled assignees (D385)" do
+    setup do
+      owner = user_fixture()
+      member = user_fixture()
+      board = board_fixture(owner)
+      column = column_fixture(board)
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, member, :modify, owner)
+
+      %{owner: owner, member: member, column: column, task: task_fixture(column)}
+    end
+
+    defp disable!(user) do
+      user
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Kanban.Repo.update!()
+    end
+
+    test "update_task assigns an enabled board member", %{member: member, task: task} do
+      assert {:ok, updated} = Tasks.update_task(task, %{assigned_to_id: member.id})
+      assert updated.assigned_to_id == member.id
+    end
+
+    test "refuses a newly assigned disabled user, read from the database", %{
+      member: member,
+      task: task
+    } do
+      disable!(member)
+
+      # `member` is the struct loaded before the disable; only its id reaches update_task.
+      assert {:error, changeset} = Tasks.update_task(task, %{assigned_to_id: member.id})
+      assert "does not have access to this board" in errors_on(changeset).assigned_to_id
+      assert Tasks.get_task!(task.id).assigned_to_id == nil
+    end
+
+    test "unchanged disabled assignee does not block a save", %{member: member, task: task} do
+      {:ok, task} = Tasks.update_task(task, %{assigned_to_id: member.id})
+      disable!(member)
+
+      assert {:ok, updated} =
+               Tasks.update_task(task, %{assigned_to_id: member.id, title: "Renamed"})
+
+      assert updated.title == "Renamed"
+      assert updated.assigned_to_id == member.id
+    end
+
+    test "clearing a disabled assignee works", %{member: member, task: task} do
+      {:ok, task} = Tasks.update_task(task, %{assigned_to_id: member.id})
+      disable!(member)
+
+      assert {:ok, updated} = Tasks.update_task(task, %{assigned_to_id: nil})
+      assert updated.assigned_to_id == nil
+    end
+
+    test "assigning a goal to a disabled user is refused and cascades to no child", %{
+      member: member,
+      column: column
+    } do
+      goal = task_fixture(column, %{type: :goal})
+      child = task_fixture(column, %{parent_id: goal.id})
+      disable!(member)
+
+      assert {:error, changeset} = Tasks.update_task(goal, %{assigned_to_id: member.id})
+      assert errors_on(changeset).assigned_to_id != []
+      assert Tasks.get_task!(goal.id).assigned_to_id == nil
+      assert Tasks.get_task!(child.id).assigned_to_id == nil
     end
   end
 

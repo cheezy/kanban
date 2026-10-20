@@ -94,16 +94,17 @@ defmodule Kanban.Tasks.Interventions do
   Children in Doing, Review, or Done are never considered. Assignment history
   is recorded for the goal and each moved child.
 
-  `new_assigned_to_id` must reference a user who is a member of the goal's
-  board (or be `nil` to unassign); assigning work to an off-board or
-  nonexistent user is rejected. The scoped user must pass `can_intervene?/2`.
+  `new_assigned_to_id` must reference an enabled user who is a member of the
+  goal's board (or be `nil` to unassign); assigning work to an off-board,
+  disabled (D385) or nonexistent user is rejected. The scoped user must pass `can_intervene?/2`.
   Returns:
 
     * `{:ok, %{moved: [tasks], skipped: [tasks]}}` — `moved` is the goal plus
       every reassigned child; `skipped` is the Backlog/Ready children that were
       already claimed.
     * `{:error, :unauthorized}` — the scope may not intervene on this goal.
-    * `{:error, :assignee_not_on_board}` — the assignee is not a board member.
+    * `{:error, :assignee_not_on_board}` — the assignee is not a board member,
+      or is a board member whose account is disabled.
     * `{:error, changeset}` — a write failed; the whole transaction rolled back.
   """
   @spec reassign_goal_unstarted(Scope.t() | nil, Task.t(), integer() | nil) ::

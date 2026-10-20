@@ -9,22 +9,32 @@ defmodule KanbanWeb.TaskLive.Form.RelationalScopes do
   independent; the first failure rejects the save with a targeted changeset
   error. Label ids are resolved separately by
   `KanbanWeb.TaskLive.Form.LabelSelection`.
+
+  A new assignee must also be an enabled account (D385): a disabled user keeps
+  their board membership but cannot sign in. The check only applies when the
+  submitted assignee differs from the task's current one, so a task whose
+  assignee was disabled later can still be saved unchanged. The refusal uses
+  the same "no access" message as a non-member, revealing nothing about the
+  account's state.
   """
   use Gettext, backend: KanbanWeb.Gettext
 
   alias Kanban.Columns
   alias Kanban.Tasks
+  alias Kanban.Tasks.Assignees
   alias KanbanWeb.TaskLive.Form.TaskParams
 
   @doc """
   Returns `:ok` when every submitted relational field belongs to `board`, or
   `{:error, field, message}` for the first one that does not. Blank and
-  absent fields pass.
+  absent fields pass. `task` is the task being saved, as it was before this
+  save (a blank `%Task{}` for a new one); keeping its current assignee is
+  never refused for the account being disabled.
   """
-  def validate(task_params, board) do
+  def validate(task_params, board, task \\ %{assigned_to_id: nil}) do
     with :ok <- validate_column_scope(task_params, board),
          :ok <- validate_parent_scope(task_params, board) do
-      validate_assigned_to_scope(task_params, board)
+      validate_assigned_to_scope(task_params, board, task.assigned_to_id)
     end
   end
 
@@ -64,7 +74,7 @@ defmodule KanbanWeb.TaskLive.Form.RelationalScopes do
     end
   end
 
-  defp validate_assigned_to_scope(task_params, board) do
+  defp validate_assigned_to_scope(task_params, board, current_assigned_to_id) do
     case Map.get(task_params, "assigned_to_id") do
       nil ->
         :ok
@@ -74,7 +84,8 @@ defmodule KanbanWeb.TaskLive.Form.RelationalScopes do
 
       assigned_input ->
         with {:ok, user_id} <- TaskParams.coerce_id(assigned_input),
-             true <- board_member?(board, user_id) do
+             true <- board_member?(board, user_id),
+             true <- user_id == current_assigned_to_id or not Assignees.disabled?(user_id) do
           :ok
         else
           _ -> {:error, :assigned_to_id, gettext("Assignee does not have access to this board")}
