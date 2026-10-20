@@ -29,6 +29,12 @@ defmodule Kanban.Tasks.TaskHistory do
       :to_user_id,
       :task_id
     ])
+    |> Kanban.ChangesetText.validate_storable([
+      :from_column,
+      :to_column,
+      :from_priority,
+      :to_priority
+    ])
     |> validate_required([:type, :task_id])
     |> validate_inclusion(:type, [:creation, :move, :priority_change, :assignment])
     |> validate_history_fields()

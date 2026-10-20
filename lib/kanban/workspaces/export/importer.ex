@@ -36,6 +36,11 @@ defmodule Kanban.Workspaces.Export.Importer do
   member and guest rows are kept only for matched users who belong to the
   Organization and are not its org-admins. In-progress tasks keep their claim
   timestamps.
+
+  A value no column can hold — text with a NUL byte or invalid UTF-8, or an
+  integer outside PostgreSQL's 32-bit `integer` range — is refused like any
+  other bad row: the import is rolled back with
+  `{:error, {:invalid_row, entity, ref, errors}}`, never raised.
   """
 
   import Ecto.Query, warn: false
@@ -44,6 +49,7 @@ defmodule Kanban.Workspaces.Export.Importer do
   alias Kanban.Accounts.User
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
+  alias Kanban.ChangesetText
   alias Kanban.Columns.Column
   alias Kanban.Labels.Label
   alias Kanban.Organizations
@@ -61,6 +67,8 @@ defmodule Kanban.Workspaces.Export.Importer do
   @timestamps ["inserted_at", "updated_at"]
   @name_max_length 100
   @max_name_attempts 50
+  @min_int4 -2_147_483_648
+  @max_int4 2_147_483_647
 
   @type report :: %{
           dry_run: boolean(),
@@ -145,7 +153,12 @@ defmodule Kanban.Workspaces.Export.Importer do
   # Maps a source user id to the local user id, or nil when unmatched.
   def user(ctx, source_id), do: Users.user(ctx, source_id)
 
+  # The name is checked before free_name/2 queries with it: a NUL byte would
+  # raise in PostgreSQL rather than fail the changeset.
   defp create_workspace(ctx, name) do
+    if not ChangesetText.storable?(name),
+      do: fail(:workspace, "manifest", ChangesetText.unstorable_changeset(:name))
+
     name = free_name(ctx.organization_id, name)
 
     case Workspaces.create_org_workspace(%{name: name}, ctx.admin) do
@@ -391,10 +404,30 @@ defmodule Kanban.Workspaces.Export.Importer do
   @doc false
   # Inserts or rolls the whole import back, naming the row that failed.
   def insert!(changeset, entity, ref) do
-    case Repo.insert(changeset) do
+    case changeset |> validate_int4() |> Repo.insert() do
       {:ok, record} -> record
       {:error, reason} -> fail(entity, ref, reason)
     end
+  end
+
+  @doc """
+  Adds "must be between -2147483648 and 2147483647" to each changed
+  `:integer` field of `changeset`'s schema whose value PostgreSQL's
+  `integer` column cannot hold, so it fails the changeset instead of raising
+  when it is encoded.
+  """
+  @spec validate_int4(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  def validate_int4(%Ecto.Changeset{data: %schema{}} = changeset) do
+    Enum.reduce(changeset.changes, changeset, fn {field, value}, acc ->
+      if schema.__schema__(:type, field) == :integer and is_integer(value) and
+           (value < @min_int4 or value > @max_int4),
+         do:
+           Ecto.Changeset.add_error(acc, field, "must be between %{min} and %{max}",
+             min: @min_int4,
+             max: @max_int4
+           ),
+         else: acc
+    end)
   end
 
   @doc false

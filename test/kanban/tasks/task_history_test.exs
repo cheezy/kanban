@@ -47,6 +47,21 @@ defmodule Kanban.Tasks.TaskHistoryTest do
       assert get_change(changeset, :to_column) == "In Progress"
     end
 
+    test "refuses a NUL byte or invalid UTF-8 in a column or priority name" do
+      for {field, value} <- [
+            from_column: "To\u0000Do",
+            to_column: <<0xFF>>,
+            from_priority: "lo\u0000w",
+            to_priority: "hi\u0000gh"
+          ] do
+        attrs = Map.put(%{task_id: 1, type: :move}, field, value)
+        changeset = TaskHistory.changeset(%TaskHistory{}, attrs)
+
+        refute changeset.valid?
+        assert "contains characters that are not allowed" in errors_on(changeset)[field]
+      end
+    end
+
     test "invalid when task_id is missing" do
       changeset =
         TaskHistory.changeset(%TaskHistory{}, %{

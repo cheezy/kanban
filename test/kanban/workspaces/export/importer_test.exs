@@ -15,6 +15,8 @@ defmodule Kanban.Workspaces.Export.ImporterTest do
   alias Kanban.Workspaces.Export.WorkspaceExport
   alias Kanban.Workspaces.Workspace
 
+  @not_storable ["contains characters that are not allowed"]
+
   setup do
     ctx = seed_workspace(export_org_fixture())
     dir = tmp_export_dir()
@@ -137,6 +139,71 @@ defmodule Kanban.Workspaces.Export.ImporterTest do
           error == {:invalid_row, :tasks, "row #{row_number}", :invalid_identifier}
         end)
       end
+    end
+  end
+
+  describe "values no column can hold" do
+    test "a NUL byte in a history column name is a row error", ctx do
+      files =
+        update_rows(ctx.files, :task_history, fn
+          %{"type" => "move"} = row -> Map.put(row, "from_column", "To\u0000do")
+          row -> row
+        end)
+
+      assert_refused(ctx, files, fn {:invalid_row, :task_history, _ref, errors} ->
+        errors == %{from_column: @not_storable}
+      end)
+    end
+
+    test "a NUL byte in the workspace name is a row error", ctx do
+      files = put_in(ctx.files, ["manifest.json", "workspace", "name"], "Plat\u0000form")
+
+      assert_refused(ctx, files, fn error ->
+        error == {:invalid_row, :workspace, "manifest", %{name: @not_storable}}
+      end)
+    end
+
+    test "a position outside the 32-bit integer range is a row error", ctx do
+      for position <- [1_000_000_000_000_000_000_000_000_000_000, -2_147_483_649, 2_147_483_648] do
+        files = change_task(ctx.files, ctx.second, %{"position" => position})
+
+        assert_refused(ctx, files, fn error ->
+          error ==
+            {:invalid_row, :tasks, ctx.second.identifier,
+             %{position: ["must be between -2147483648 and 2147483647"]}}
+        end)
+      end
+    end
+
+    test "validate_int4/1 refuses only changed integer fields outside the 32-bit range" do
+      in_range = Ecto.Changeset.change(%Task{}, position: 2_147_483_647, title: "x")
+      assert Importer.validate_int4(in_range).valid?
+
+      too_low = Ecto.Changeset.change(%Task{}, position: -2_147_483_649)
+
+      assert errors_on(Importer.validate_int4(too_low)) == %{
+               position: ["must be between -2147483648 and 2147483647"]
+             }
+
+      # An id is a bigint column, so it is left to its own type.
+      assert %Task{}
+             |> Ecto.Changeset.change(parent_id: 10 ** 12)
+             |> Importer.validate_int4()
+             |> Map.fetch!(:valid?)
+    end
+
+    test "a column position outside the range is a row error too", ctx do
+      [%{"id" => column_id} | _] = ctx.files["columns.json"]
+
+      files =
+        update_rows(ctx.files, :columns, fn
+          %{"id" => ^column_id} = row -> Map.put(row, "position", 10 ** 30)
+          row -> row
+        end)
+
+      assert_refused(ctx, files, fn {:invalid_row, :columns, _ref, errors} ->
+        errors == %{position: ["must be between -2147483648 and 2147483647"]}
+      end)
     end
   end
 
