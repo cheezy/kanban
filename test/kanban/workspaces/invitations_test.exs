@@ -603,9 +603,12 @@ defmodule Kanban.Workspaces.InvitationsTest do
 
     test "is not capped once the board has moved into an Organization" do
       invitee = user_fixture()
-      %{board: board, token: token} = free_board_invitation(2, invitee.email)
+      %{owner: owner, board: board, token: token} = free_board_invitation(2, invitee.email)
       enforce_plans()
-      move_board_to_organization(board, organization_fixture())
+      organization = organization_fixture()
+      # Only an org-admin who owns a board can move it into their Organization.
+      organization_member_fixture(organization, owner, :org_admin)
+      move_board_to_organization(board, organization)
 
       assert {:ok, _} = Invitations.accept(token, invitee)
       assert board_count(board) == 4

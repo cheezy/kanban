@@ -11,6 +11,10 @@ defmodule Kanban.Workspaces.BoardMoves do
 
     * `board_users` rows are kept as they are, so everyone keeps their access.
     * Nobody is added to the Organization.
+    * Open board-only invitations for the board are kept, as the design doc
+      requires. From then on, accepting one needs its sender to be an
+      org-admin of the board's Organization, as for any org board, not only
+      the board's owner (`Kanban.Workspaces.InvitationAcceptance`).
     * There is no move back to a personal workspace, and none between org
       workspaces (no downgrade).
 

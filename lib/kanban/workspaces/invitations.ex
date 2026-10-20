@@ -16,7 +16,8 @@ defmodule Kanban.Workspaces.Invitations do
       board grant. Neither ever grants `:owner` access.
 
   The inviter's authority is re-read from the database on every invite,
-  resend and revoke. Sends and resends are rate-limited per inviter
+  resend, revoke and acceptance; an invitation whose sender has lost it is
+  revoked when someone tries to accept it. Sends and resends are rate-limited per inviter
   (`Kanban.RateLimit`, surface `:invite`). Only a hash of each token is
   stored; the plaintext goes into the email and nowhere else. Inviting an
   address that already has a pending invitation to the same workspace and

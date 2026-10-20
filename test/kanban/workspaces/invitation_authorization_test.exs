@@ -8,8 +8,11 @@ defmodule Kanban.Workspaces.InvitationAuthorizationTest do
 
   alias Kanban.Boards
   alias Kanban.Repo
+  alias Kanban.Workspaces
+  alias Kanban.Workspaces.Invitation
   alias Kanban.Workspaces.InvitationAuthorization
   alias Kanban.Workspaces.Invitations
+  alias Kanban.Workspaces.Workspace
 
   setup do
     organization = organization_fixture()
@@ -124,6 +127,57 @@ defmodule Kanban.Workspaces.InvitationAuthorizationTest do
 
       assert {:error, :not_found} =
                InvitationAuthorization.managed_invitation(ctx.admin, invitation.id)
+    end
+  end
+
+  describe "inviter_may_send?/3" do
+    # Builds an invitation sent by `sender` (nil: a deleted account) with
+    # `role` and asks whether it may still be sent to `workspace` and `board`.
+    defp may_send?(sender, role, workspace, board) do
+      %Invitation{invited_by_id: sender && sender.id, role: role}
+      |> InvitationAuthorization.inviter_may_send?(workspace, board)
+    end
+
+    defp disable(user),
+      do: user |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second)) |> Repo.update!()
+
+    test "a workspace invitation needs an enabled org-admin of the workspace's Organization",
+         ctx do
+      assert may_send?(ctx.admin, :member, ctx.workspace, nil)
+      refute may_send?(ctx.member, :member, ctx.workspace, nil)
+      refute may_send?(nil, :member, ctx.workspace, nil)
+
+      admin = disable(ctx.admin)
+      refute may_send?(admin, :guest, ctx.workspace, nil)
+    end
+
+    test "a board-only invitation on a free board needs the board's enabled owner" do
+      owner = user_fixture()
+      editor = user_fixture()
+      board = board_fixture(owner)
+      {:ok, _} = Boards.add_user_to_board(board, editor, :modify, owner)
+      workspace = Workspaces.get_personal_workspace(owner)
+
+      assert may_send?(owner, nil, workspace, board)
+      refute may_send?(editor, nil, workspace, board)
+      refute may_send?(owner, nil, workspace, nil)
+
+      owner = disable(owner)
+      refute may_send?(owner, nil, workspace, board)
+    end
+
+    test "a board-only invitation on a board moved into an Organization needs an org-admin",
+         ctx do
+      owner = user_fixture()
+      organization_member_fixture(ctx.organization, owner, :member)
+      board = board_fixture(owner)
+      moved = move_board_to_organization(board, ctx.organization)
+      workspace = Repo.get!(Workspace, moved.workspace_id)
+
+      # Still the board's owner, but no longer allowed under the free-board rule.
+      assert Boards.owner?(moved, owner)
+      refute may_send?(owner, nil, workspace, moved)
+      assert may_send?(ctx.admin, nil, workspace, moved)
     end
   end
 end

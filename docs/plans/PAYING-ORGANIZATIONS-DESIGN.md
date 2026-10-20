@@ -683,6 +683,7 @@ Personal workspaces never appear here.
 - requires a logged-in user whose email matches, ignoring case and surrounding whitespace;
 - creates the organization membership with role `member` when the invitee has none, and never changes an existing org-admin role;
 - is refused with the generic invalid-invitation message when the invitee belongs to another Organization;
+- is refused with the same message, and the invitation revoked, when its sender may no longer send it: an enabled org-admin of the Organization for a workspace invitation, the board's enabled owner for a free-board invitation, or an enabled org-admin of the board's Organization once that board has moved into one. The check runs in the acceptance transaction, under the Organization or board lock;
 - creates the workspace member row, never downgrading an existing role, plus the optional board grant;
 - for a new user, happens after email confirmation.
 
@@ -692,6 +693,7 @@ On org boards, only org-admins invite by email. A free board's owner can still i
 
 - lifts the cap, unlocks paid features and resumes paused webhooks;
 - keeps every `board_users` row; members outside the Organization keep their board access and are not added to the Organization;
+- keeps the board's open board-only invitations. They stay uncapped, and from then on accepting one needs its sender to be an org-admin of the board's Organization, as for any other org board, rather than only the board's owner;
 - is refused for boards the caller does not own, boards outside their personal workspace, and workspaces of another Organization.
 
 An org-admin cannot move a teammate's board; the teammate transfers ownership first, or the board stays free. There is no move back to a personal workspace.

@@ -14,10 +14,13 @@ defmodule Kanban.Workspaces.InvitationAuthorization do
 
   Refusals are `{:error, :unauthorized}`; an invitation that is not open, or
   an id that is not one, is `{:error, :not_found}`.
+
+  `inviter_may_send?/3` applies the same rules to an invitation's sender when
+  it is accepted, so an invitation stops working once its sender loses the
+  right to send it.
   """
 
   alias Kanban.Accounts.User
-  alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Repo
   alias Kanban.Workspaces.Invitation
@@ -95,6 +98,35 @@ defmodule Kanban.Workspaces.InvitationAuthorization do
     end
   end
 
+  @doc """
+  True when the user who sent `invitation` may still send it, read from the
+  database: an enabled account that, for a workspace invitation, is an
+  org-admin of `workspace`'s Organization and, for a board-only invitation, may
+  still invite to `board` in `workspace`, the workspace the board is in now.
+  On a free board that is the board's owner; on a board that has since moved
+  into an Organization workspace it is an org-admin of that Organization, as
+  for any other org board. An invitation whose sender was deleted is never
+  sendable.
+
+  The caller passes the workspace and board it has locked, so the answer holds
+  for the rest of its transaction.
+  """
+  @spec inviter_may_send?(Invitation.t(), Workspace.t(), Board.t() | nil) :: boolean()
+  def inviter_may_send?(%Invitation{invited_by_id: inviter_id} = invitation, workspace, board) do
+    case fresh_actor(inviter_id) do
+      {:ok, inviter} -> may_send?(inviter, invitation, workspace, board)
+      :error -> false
+    end
+  end
+
+  defp may_send?(inviter, %Invitation{role: nil}, %Workspace{} = workspace, %Board{} = board),
+    do: may_invite_to_board?(inviter, board, workspace)
+
+  defp may_send?(_inviter, %Invitation{role: nil}, _workspace, _board), do: false
+
+  defp may_send?(inviter, %Invitation{}, %Workspace{} = workspace, _board),
+    do: Policy.can_manage_workspace?(inviter, workspace)
+
   defp authorize_invitation(actor, %Invitation{role: nil, board: %Board{} = board} = invitation) do
     case invitable_board(actor, board) do
       {:ok, actor, board, %Workspace{personal: true} = workspace} ->
@@ -113,6 +145,8 @@ defmodule Kanban.Workspaces.InvitationAuthorization do
       {:error, reason} -> {:error, reason}
     end
   end
+
+  defp fresh_actor(nil), do: :error
 
   defp fresh_actor(actor_id) do
     case Repo.get(User, actor_id) do
@@ -134,7 +168,7 @@ defmodule Kanban.Workspaces.InvitationAuthorization do
   # On a personal workspace's board, effective access is the board_users row
   # alone (Policy derives nothing there), so :owner means the explicit owner.
   defp may_invite_to_board?(actor, board, %Workspace{personal: true}),
-    do: Boards.owner?(board, actor)
+    do: Policy.effective_board_access(board, actor) == :owner
 
   defp may_invite_to_board?(actor, _board, %Workspace{} = workspace),
     do: Policy.can_manage_workspace?(actor, workspace)

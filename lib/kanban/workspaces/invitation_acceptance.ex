@@ -12,7 +12,8 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
        surrounding space, and `user` must be confirmed and enabled, read from
        the database.
     3. A **workspace invitation** (it has a `role`) needs a live org
-       workspace. The Organization row is locked, then `user` joins it as a
+       workspace. The Organization row is locked and the invitation's sender
+       must still be an enabled org-admin of it. Then `user` joins it as a
        `:member` through `Kanban.Organizations.add_member/3` — or is refused
        when they belong to another Organization. An existing membership of
        this Organization, org-admin included, is left as it is. Then the
@@ -20,7 +21,13 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
        `:member` row is never lowered. An optional board grant follows when
        the board still exists in that workspace; otherwise it is dropped.
     4. A **board-only invitation** grants board access only, and needs its
-       board to still exist.
+       board to still exist. The board row is locked (after its
+       Organization's row, when the board has moved into an Organization
+       workspace) and the sender must still be allowed to invite to it:
+       the board's owner, through `Kanban.Workspaces.Policy`, on a free
+       board, or an org-admin of the board's Organization once it has moved
+       into one. A board that moves keeps its open board-only invitations,
+       which from then on follow the org-board rule.
     5. Board access goes through `Kanban.Boards.add_invited_user/4`, the same
        insert path and member cap as an owner's add, so a free board at its
        cap while plans are enforced refuses with `:member_cap_reached`. A
@@ -29,8 +36,11 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
     6. The invitation is marked accepted.
 
   Every refusal rolls the whole transaction back, so a refused acceptance
-  writes nothing. Each step that could fail on a database constraint is
-  checked first, because a failed statement aborts the transaction.
+  writes nothing, with one exception: when the sender may no longer send the
+  invitation, it is revoked, so it cannot be used later either, and the
+  refusal is the same `{:error, :invalid}` as any other. Each step that could
+  fail on a database constraint is checked first, because a failed statement
+  aborts the transaction.
 
   When the acceptance created the Organization membership, the
   `:org_member_added` audit event is recorded
@@ -41,7 +51,10 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
   refusal and is emitted once, by the board path, with `via: :invitation`.
 
   The lock order is invitation, Organization, the user's Organization
-  membership, workspace member row, board.
+  membership, workspace member row, board. The sender is checked under the
+  Organization lock for a workspace invitation, and under the board lock (and
+  the Organization lock for a moved board) for a board-only one, the locks an
+  org-admin's removal and an ownership transfer take.
   """
 
   import Ecto.Query, warn: false
@@ -57,6 +70,7 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
   alias Kanban.Repo
   alias Kanban.Telemetry.AfterCommit
   alias Kanban.Workspaces.Invitation
+  alias Kanban.Workspaces.InvitationAuthorization
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
 
@@ -76,10 +90,14 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
   @spec run(User.t(), [token_hash: binary()] | [id: integer()]) ::
           {:ok, result()} | {:error, :invalid | :member_cap_reached}
   def run(%User{} = user, [{key, _value}] = finder) when key in [:token_hash, :id] do
-    AfterCommit.after_commit(fn ->
-      Repo.transact(fn -> accept_locked(user, finder) end)
-    end)
+    fn -> Repo.transact(fn -> accept_locked(user, finder) end) end
+    |> AfterCommit.after_commit()
+    |> sender_refusal()
   end
+
+  # A revoked invitation commits, but is refused like every other state.
+  defp sender_refusal({:ok, :sender_refused}), do: {:error, :invalid}
+  defp sender_refusal(result), do: result
 
   @doc """
   True when `user` could accept `invitation` as things stand: their email
@@ -123,7 +141,24 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
   end
 
   defp refused({:error, :member_cap_reached}), do: {:error, :member_cap_reached}
+  defp refused({:error, {:sender_refused, invitation}}), do: revoke(invitation)
   defp refused(_refusal), do: {:error, :invalid}
+
+  # Nothing was written before the sender check, so committing the revocation
+  # commits nothing else.
+  defp revoke(invitation) do
+    case invitation |> Invitation.revoke_changeset(DateTime.utc_now()) |> Repo.update() do
+      {:ok, _revoked} -> {:ok, :sender_refused}
+      {:error, _changeset} -> {:error, :invalid}
+    end
+  end
+
+  # Called with the workspace or board, and the Organization, already locked.
+  defp check_sender(invitation, workspace, board) do
+    if InvitationAuthorization.inviter_may_send?(invitation, workspace, board),
+      do: :ok,
+      else: {:error, {:sender_refused, invitation}}
+  end
 
   defp check_acceptable(invitation, user, now) do
     if Invitation.pending?(invitation, now) and Invitation.email_matches?(invitation, user.email),
@@ -162,11 +197,24 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
 
   defp apply_workspace_invitation(invitation, user) do
     with {:ok, workspace} <- fetch_org_workspace(invitation.workspace_id),
-         {:ok, membership, created?} <- join_workspace(workspace, user, invitation.role),
+         :ok <- lock_and_check_sender(invitation, workspace) do
+      join_and_grant(invitation, workspace, user)
+    end
+  end
+
+  defp join_and_grant(invitation, workspace, user) do
+    with {:ok, membership, created?} <- join_workspace(workspace, user, invitation.role),
          {:ok, board} <- grant_workspace_board(invitation, workspace, user) do
       audit_joined(created?, membership, invitation)
       {:ok, %{workspace: workspace, board: board}}
     end
+  end
+
+  # Under the Organization lock, so the sender's org-admin role cannot be
+  # removed between the check and the join.
+  defp lock_and_check_sender(invitation, workspace) do
+    with :ok <- lock_organization(workspace.organization_id),
+         do: check_sender(invitation, workspace, nil)
   end
 
   defp join_workspace(workspace, user, role) do
@@ -179,9 +227,46 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
   # -- board-only invitations -------------------------------------------------
 
   defp apply_board_invitation(invitation, user) do
-    case Repo.get(Board, invitation.board_id || 0) do
-      %Board{} = board -> board |> grant_board(user, invitation) |> board_result()
-      nil -> {:error, :invalid}
+    with {:ok, board, workspace} <- lock_invited_board(invitation.board_id),
+         :ok <- check_sender(invitation, workspace, board) do
+      board |> grant_board(user, invitation) |> board_result()
+    end
+  end
+
+  # The Organization row, when there is one, is locked before the board, in
+  # the module's lock order. A board that moved between the read and the lock
+  # is refused, and the invitation stays open for another try.
+  defp lock_invited_board(nil), do: {:error, :invalid}
+
+  defp lock_invited_board(board_id) do
+    with %Board{workspace: %Workspace{} = workspace} <- board_with_workspace(board_id),
+         :ok <- lock_board_organization(workspace),
+         {:ok, board} <- lock_board_in(board_id, workspace) do
+      {:ok, board, workspace}
+    else
+      _gone_or_moved -> {:error, :invalid}
+    end
+  end
+
+  defp board_with_workspace(board_id),
+    do: Board |> Repo.get(board_id) |> Repo.preload(:workspace)
+
+  defp lock_board_in(board_id, %Workspace{id: workspace_id}) do
+    case from(b in Board, where: b.id == ^board_id, lock: "FOR UPDATE") |> Repo.one() do
+      %Board{workspace_id: ^workspace_id} = board -> {:ok, board}
+      _gone_or_moved -> {:error, :invalid}
+    end
+  end
+
+  defp lock_board_organization(%Workspace{organization_id: org_id}) when is_integer(org_id),
+    do: lock_organization(org_id)
+
+  defp lock_board_organization(%Workspace{}), do: :ok
+
+  defp lock_organization(organization_id) do
+    case MembershipWrites.lock_organization(organization_id) do
+      :ok -> :ok
+      {:error, :not_found} -> {:error, :invalid}
     end
   end
 
@@ -204,22 +289,20 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
     end
   end
 
-  # The Organization row is locked first, so no other membership write to it
-  # can land between the read below and the add: `created?` is exact. A
+  # The caller has locked the Organization row, so no other membership write
+  # to it can land between the read below and the add: `created?` is exact. A
   # membership of another Organization is refused here, before the add could
   # fail on the one-Organization unique index.
   defp join_organization(organization_id, user) do
-    with :ok <- MembershipWrites.lock_organization(organization_id) do
-      case Organizations.get_membership(user) do
-        %OrganizationMember{organization_id: ^organization_id} = membership ->
-          {:ok, membership, false}
+    case Organizations.get_membership(user) do
+      %OrganizationMember{organization_id: ^organization_id} = membership ->
+        {:ok, membership, false}
 
-        %OrganizationMember{} ->
-          {:error, :invalid}
+      %OrganizationMember{} ->
+        {:error, :invalid}
 
-        nil ->
-          add_membership(organization_id, user)
-      end
+      nil ->
+        add_membership(organization_id, user)
     end
   end
 
