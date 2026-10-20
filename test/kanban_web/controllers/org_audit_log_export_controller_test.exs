@@ -401,6 +401,69 @@ defmodule KanbanWeb.OrgAuditLogExportControllerTest do
       refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
     end
 
+    # Concurrent requests from one org-admin: separate conns (each its own
+    # session token) sharing the user, released together by a barrier. The
+    # sandbox is in shared mode (async: false), so every request process
+    # reaches the same database connection. Kanban.RateLimit counts with an
+    # atomic ETS update, so exactly @rate_limit requests win however they
+    # interleave.
+    @concurrent_exports 8
+
+    test "concurrent exports from one org-admin never exceed the limit and refused ones write nothing",
+         %{organization: organization, org_admin: org_admin} do
+      attach_telemetry([[:kanban, :export, :start], [:kanban, :rate_limit, :denied]])
+      insert_cap_events!(organization, 1)
+
+      conns = for _ <- 1..@concurrent_exports, do: log_in_user(build_conn(), org_admin)
+
+      tasks =
+        for conn <- conns do
+          Task.async(fn ->
+            receive do
+              :go -> get(conn, ~p"/org/audit/export?format=json")
+            end
+          end)
+        end
+
+      Enum.each(tasks, &send(&1.pid, :go))
+      results = Task.await_many(tasks, 30_000)
+
+      {served, refused} = Enum.split_with(results, &(&1.status == 200))
+
+      assert length(served) == @rate_limit
+      assert length(refused) == @concurrent_exports - @rate_limit
+
+      for conn <- served do
+        assert [%{"action" => "org_audit_log_exported"} | _] =
+                 conn |> response(200) |> Jason.decode!()
+      end
+
+      for conn <- refused do
+        assert redirected_to(conn) == ~p"/org/audit"
+
+        assert Phoenix.Flash.get(conn.assigns.flash, :error) ==
+                 "Too many exports. Try again later."
+      end
+
+      # One audit row per served export and none for a refused one.
+      assert [_, _] = events = export_events()
+      assert Enum.all?(events, &(&1.actor_user_id == org_admin.id))
+
+      for _ <- 1..@rate_limit,
+          do: assert_receive({:telemetry_event, [:kanban, :export, :start], _, _})
+
+      refute_received {:telemetry_event, [:kanban, :export, :start], _, _}
+
+      for _ <- 1..(@concurrent_exports - @rate_limit) do
+        assert_receive {:telemetry_event, [:kanban, :rate_limit, :denied], _,
+                        %{surface: :org_audit_export}}
+      end
+
+      # A later, sequential request is still refused: the window is spent.
+      assert conns |> hd() |> get(~p"/org/audit/export") |> redirected_to() == ~p"/org/audit"
+      assert length(export_events()) == @rate_limit
+    end
+
     test "limit is per org-admin", %{conn: conn, organization: organization} do
       for _ <- 1..@rate_limit, do: get(conn, ~p"/org/audit/export")
       assert conn |> get(~p"/org/audit/export") |> redirected_to() == ~p"/org/audit"
