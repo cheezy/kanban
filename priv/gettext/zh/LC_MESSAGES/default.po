@@ -655,7 +655,7 @@ msgstr "只有看板所有者可以编辑此看板"
 #: lib/kanban_web/live/board_live/form.html.heex:339
 #: lib/kanban_web/live/board_live/members_form_component.ex:356
 #: lib/kanban_web/live/target_live/form.html.heex:34
-#: lib/kanban_web/live/workspace_live/settings.ex:471
+#: lib/kanban_web/live/workspace_live/settings.ex:485
 #: lib/kanban_web/notification_labels.ex:180
 #, elixir-autogen, elixir-format
 msgid "Owner"
@@ -2410,7 +2410,7 @@ msgstr "排除周末"
 
 #: lib/kanban_web/export/metrics_excel.ex:77
 #: lib/kanban_web/live/metrics_live/components/export_dropdown.ex:105
-#: lib/kanban_web/live/workspace_live/settings.ex:464
+#: lib/kanban_web/live/workspace_live/settings.ex:478
 #, elixir-autogen, elixir-format
 msgid "Export"
 msgstr "导出"
@@ -4276,7 +4276,7 @@ msgstr[0] "%{count} 个活跃"
 #: lib/kanban_web/live/board_live/index.html.heex:100
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
-#: lib/kanban_web/live/workspace_live/settings.ex:458
+#: lib/kanban_web/live/workspace_live/settings.ex:472
 #: lib/kanban_web/live/workspace_live/settings.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Boards"
@@ -4507,7 +4507,7 @@ msgstr "进行中的工作。钩子在前后运行;活动栏在此处亮起。"
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
 #: lib/kanban_web/live/org_live/console.ex:391
 #: lib/kanban_web/live/org_live/console.html.heex:117
-#: lib/kanban_web/live/workspace_live/settings.ex:457
+#: lib/kanban_web/live/workspace_live/settings.ex:471
 #: lib/kanban_web/live/workspace_live/settings.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Members"
@@ -4519,7 +4519,7 @@ msgid "Shipped. Cycle time is recorded so the next estimate gets sharper."
 msgstr "已发布。周期时间被记录下来,以便下一次估算更准确。"
 
 #: lib/kanban_web/components/board_tabs.ex:140
-#: lib/kanban_web/live/workspace_live/settings.ex:463
+#: lib/kanban_web/live/workspace_live/settings.ex:477
 #, elixir-autogen, elixir-format
 msgid "Tokens"
 msgstr "API令牌"
@@ -10733,8 +10733,8 @@ msgstr "请输入有效的电子邮件地址。未做任何更改。"
 #: lib/kanban_web/live/org_live/console.ex:397
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:138
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:152
-#: lib/kanban_web/live/workspace_live/settings.ex:469
-#: lib/kanban_web/live/workspace_live/settings.ex:474
+#: lib/kanban_web/live/workspace_live/settings.ex:483
+#: lib/kanban_web/live/workspace_live/settings.ex:488
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr "成员"
@@ -11252,7 +11252,7 @@ msgstr "此账户已停用，因此无法添加到看板。"
 msgid "Too many exports. Try again later."
 msgstr "导出次数过多，请稍后再试。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:280
+#: lib/kanban_web/live/workspace_live/settings.ex:281
 #, elixir-autogen, elixir-format
 msgid "Board moved into this workspace."
 msgstr "看板已移入此工作区。"
@@ -11274,8 +11274,8 @@ msgstr "您组织中的所有人，组织管理员排在前面。移除成员也
 
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:138
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:153
-#: lib/kanban_web/live/workspace_live/settings.ex:470
-#: lib/kanban_web/live/workspace_live/settings.ex:474
+#: lib/kanban_web/live/workspace_live/settings.ex:484
+#: lib/kanban_web/live/workspace_live/settings.ex:488
 #, elixir-autogen, elixir-format
 msgid "Guest"
 msgstr "访客"
@@ -11286,12 +11286,12 @@ msgid "Manage who is in this workspace and which boards it holds."
 msgstr "管理此工作区的成员及其包含的看板。"
 
 #: lib/kanban_web/live/org_live/console.ex:189
-#: lib/kanban_web/live/workspace_live/settings.ex:410
+#: lib/kanban_web/live/workspace_live/settings.ex:424
 #, elixir-autogen, elixir-format
 msgid "Member not found."
 msgstr "未找到成员。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:154
+#: lib/kanban_web/live/workspace_live/settings.ex:155
 #, elixir-autogen, elixir-format
 msgid "Member removed from the workspace."
 msgstr "已将成员从工作区移除。"
@@ -11305,11 +11305,6 @@ msgstr "已移除成员。"
 #, elixir-autogen, elixir-format
 msgid "Move a board here"
 msgstr "将看板移到这里"
-
-#: lib/kanban_web/live/workspace_live/settings.html.heex:181
-#, elixir-autogen, elixir-format
-msgid "Move a board you own from your personal boards into this workspace. Its members keep their access, nobody is added to the Organization, and the board becomes a paid board. Boards can't be moved back."
-msgstr "将您拥有的个人看板移入此工作区。其成员保留访问权限，不会有人被加入组织，该看板将成为付费看板。看板无法移回。"
 
 #: lib/kanban_web/live/workspace_live/settings.html.heex:215
 #, elixir-autogen, elixir-format
@@ -11342,7 +11337,7 @@ msgstr "还没有工作区"
 msgid "Nobody has been added to this workspace yet."
 msgstr "此工作区还没有添加任何人。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:405
+#: lib/kanban_web/live/workspace_live/settings.ex:419
 #, elixir-autogen, elixir-format
 msgid "Only an org-admin can manage this workspace."
 msgstr "只有组织管理员可以管理此工作区。"
@@ -11382,7 +11377,7 @@ msgstr "要将此成员从工作区中移除吗？其将失去此处的看板成
 msgid "Removing a member also removes their board memberships in this workspace and revokes their API tokens here."
 msgstr "移除成员也会删除其在此工作区中的看板成员资格，并撤销其在此处的 API 令牌。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:373
+#: lib/kanban_web/live/workspace_live/settings.ex:387
 #, elixir-autogen, elixir-format
 msgid "Role updated."
 msgstr "角色已更新。"
@@ -11392,7 +11387,7 @@ msgstr "角色已更新。"
 msgid "Switch workspace"
 msgstr "切换工作区"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:289
+#: lib/kanban_web/live/workspace_live/settings.ex:303
 #, elixir-autogen, elixir-format
 msgid "That board can't be moved here. Choose a board you own in your personal boards."
 msgstr "该看板无法移到这里。请从您的个人看板中选择一个您拥有的看板。"
@@ -11407,7 +11402,7 @@ msgstr "该工作区不可用。"
 msgid "The boards in this workspace you have access to."
 msgstr "此工作区中您有权访问的看板。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:273
+#: lib/kanban_web/live/workspace_live/settings.ex:274
 #, elixir-autogen, elixir-format
 msgid "The change could not be saved. Please try again."
 msgstr "无法保存更改。请重试。"
@@ -11424,12 +11419,12 @@ msgid "Workspace sections"
 msgstr "工作区分区"
 
 #: lib/kanban_web/components/workspace_switcher.ex:141
-#: lib/kanban_web/live/workspace_live/settings.ex:93
+#: lib/kanban_web/live/workspace_live/settings.ex:94
 #, elixir-autogen, elixir-format
 msgid "Workspace settings"
 msgstr "工作区设置"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:76
+#: lib/kanban_web/live/workspace_live/settings.ex:77
 #, elixir-autogen, elixir-format
 msgid "Workspace settings are not available."
 msgstr "工作区设置不可用。"
@@ -11444,12 +11439,12 @@ msgstr "您没有可移动的自有个人看板。"
 msgid "You have no personal boards."
 msgstr "您没有个人看板。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:458
+#: lib/kanban_web/live/workspace_live/settings.ex:472
 #, elixir-autogen, elixir-format
 msgid "list · move a board here"
 msgstr "列表 · 将看板移到这里"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:457
+#: lib/kanban_web/live/workspace_live/settings.ex:471
 #, elixir-autogen, elixir-format
 msgid "roles · removal"
 msgstr "角色 · 移除"
@@ -11485,7 +11480,7 @@ msgstr "仅看板"
 msgid "Can edit"
 msgstr "可编辑"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:309
+#: lib/kanban_web/live/workspace_live/settings.ex:323
 #, elixir-autogen, elixir-format
 msgid "Choose a board in this workspace."
 msgstr "请选择此工作区中的看板。"
@@ -11517,23 +11512,23 @@ msgstr "邀请"
 msgid "Invitation accepted."
 msgstr "已接受邀请。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:336
+#: lib/kanban_web/live/workspace_live/settings.ex:350
 #, elixir-autogen, elixir-format
 msgid "Invitation not found."
 msgstr "未找到邀请。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:198
+#: lib/kanban_web/live/workspace_live/settings.ex:199
 #, elixir-autogen, elixir-format
 msgid "Invitation revoked."
 msgstr "已撤销邀请。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:189
+#: lib/kanban_web/live/workspace_live/settings.ex:190
 #, elixir-autogen, elixir-format
 msgid "Invitation sent again."
 msgstr "已重新发送邀请。"
 
 #: lib/kanban_web/live/board_live/membership.ex:196
-#: lib/kanban_web/live/workspace_live/settings.ex:297
+#: lib/kanban_web/live/workspace_live/settings.ex:311
 #, elixir-autogen, elixir-format
 msgid "Invitation sent to %{email}."
 msgstr "已向 %{email} 发送邀请。"
@@ -11543,7 +11538,7 @@ msgstr "已向 %{email} 发送邀请。"
 msgid "Invitation unavailable"
 msgstr "邀请不可用"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:462
+#: lib/kanban_web/live/workspace_live/settings.ex:476
 #, elixir-autogen, elixir-format
 msgid "Invitations"
 msgstr "邀请"
@@ -11689,12 +11684,12 @@ msgid "You're signed in as %{email}."
 msgstr "你当前以 %{email} 登录。"
 
 #: lib/kanban_web/live/board_live/membership.ex:209
-#: lib/kanban_web/live/workspace_live/settings.ex:329
+#: lib/kanban_web/live/workspace_live/settings.ex:343
 #, elixir-autogen, elixir-format
 msgid "You've sent a lot of invitations. Please try again later."
 msgstr "你发送的邀请过多，请稍后再试。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:462
+#: lib/kanban_web/live/workspace_live/settings.ex:476
 #, elixir-autogen, elixir-format
 msgid "invite · resend · revoke"
 msgstr "邀请 · 重新发送 · 撤销"
@@ -11710,7 +11705,7 @@ msgstr "已添加组织成员"
 msgid "A token stops working when it is revoked, when it expires, or when the org-admin it acts as leaves this workspace or the Organization."
 msgstr "令牌在被撤销、过期,或其代表的组织管理员离开此工作区或组织时将停止工作。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:463
+#: lib/kanban_web/live/workspace_live/settings.ex:477
 #, elixir-autogen, elixir-format
 msgid "API tokens · create · revoke"
 msgstr "API 令牌 · 创建 · 撤销"
@@ -11780,12 +11775,12 @@ msgstr "此工作区已归档。"
 msgid "Token not found."
 msgstr "未找到令牌。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:345
+#: lib/kanban_web/live/workspace_live/settings.ex:359
 #, elixir-autogen, elixir-format
 msgid "Workspace token created. Copy it now; it won't be shown again."
 msgstr "工作区令牌已创建。请立即复制;它不会再次显示。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:214
+#: lib/kanban_web/live/workspace_live/settings.ex:215
 #, elixir-autogen, elixir-format
 msgid "Workspace token revoked."
 msgstr "工作区令牌已撤销。"
@@ -12049,7 +12044,7 @@ msgstr "导出耗时过长，已停止。"
 msgid "The workspace is no longer available."
 msgstr "该工作区已不可用。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:464
+#: lib/kanban_web/live/workspace_live/settings.ex:478
 #, elixir-autogen, elixir-format
 msgid "backup · download"
 msgstr "备份 · 下载"
@@ -12069,3 +12064,13 @@ msgstr "启用后,任何已登录的用户都可以查看此看板(只读访问)
 #, elixir-autogen, elixir-format
 msgid "Only members of this board's Organization can be added. Ask an org-admin to invite them to the workspace."
 msgstr "只能添加此看板所属组织的成员。请让组织管理员邀请对方加入工作区。"
+
+#: lib/kanban_web/live/workspace_live/settings.html.heex:181
+#, elixir-autogen, elixir-format
+msgid "Move a board you own from your personal boards into this workspace. Every member of the board must already belong to this Organization; they keep their access, and the board becomes a paid board. Boards can't be moved back."
+msgstr "将您拥有的个人看板移入此工作区。看板的每位成员都必须已属于此组织；他们保留访问权限，该看板将成为付费看板。看板无法移回。"
+
+#: lib/kanban_web/live/workspace_live/settings.ex:290
+#, elixir-autogen, elixir-format
+msgid "That board can't be moved here: %{names} aren't members of this Organization. Remove them from the board, or invite them to this workspace, then move it."
+msgstr "该看板无法移到这里：%{names} 不是此组织的成员。请将他们从看板中移除，或邀请他们加入此工作区，然后再移动。"

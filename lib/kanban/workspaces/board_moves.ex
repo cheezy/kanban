@@ -10,8 +10,14 @@ defmodule Kanban.Workspaces.BoardMoves do
   The move changes `boards.workspace_id` and revokes the board's open
   board-only invitations:
 
-    * `board_users` rows are kept as they are, so everyone keeps their access.
-    * Nobody is added to the Organization.
+    * Every user with a `board_users` row on the board must already be a
+      member of the target Organization, or the move is refused with
+      `{:error, {:non_members, users}}` naming them. Only Organization members
+      may be added to an org board (`Kanban.Boards.OrgBoardMembers`), so a move
+      may not bring anyone else in (decided 2026-10-20). The owner removes them
+      from the board, or invites them to the workspace, first.
+    * `board_users` rows are kept as they are, so every member keeps their
+      access, and nobody is added to the Organization.
     * Every open board-only invitation for the board is revoked in the same
       transaction. Such an invitation grants board access without
       Organization membership, so accepting it on an org board would skip the
@@ -24,9 +30,16 @@ defmodule Kanban.Workspaces.BoardMoves do
       workspaces (no downgrade).
 
   Every check runs inside one transaction, against rows re-read and locked
-  there. The board's open board-only invitations are locked first, before the
-  board, in the lock order acceptance uses (invitation, then board), so an
-  acceptance of one of them and the move take their locks in the same order:
+  there. The board's open board-only invitations are locked first, then the
+  target Organization's row (FOR SHARE), then the board: the order acceptance
+  uses (invitation, Organization, board), so an acceptance of one of the
+  invitations and the move take their locks in the same order. The
+  Organization lock serializes the members check with an Organization
+  membership removal, which locks that row FOR UPDATE: a removal that commits
+  first is seen by the check, and one that starts later waits for the move and
+  then removes the moved board's row with the others. An owner's add to the
+  board waits on the board lock, so it is seen by the check or refused as
+  `:board_moved`.
 
     * The actor needs their own `board_users` **owner** row on the board.
       Owning the personal workspace the board sits in is not enough: the W2217
@@ -48,6 +61,8 @@ defmodule Kanban.Workspaces.BoardMoves do
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Organizations
+  alias Kanban.Organizations.Organization
+  alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Invitation
@@ -55,7 +70,8 @@ defmodule Kanban.Workspaces.BoardMoves do
 
   @max_bigint 9_223_372_036_854_775_807
 
-  @type error :: :not_found | :not_owner | :not_in_personal_workspace
+  @type error ::
+          :not_found | :not_owner | :not_in_personal_workspace | {:non_members, [User.t()]}
 
   @doc """
   Moves `board` into the org workspace `workspace`. Both are structs or ids and
@@ -69,6 +85,8 @@ defmodule Kanban.Workspaces.BoardMoves do
     * `{:error, :not_owner}` — the actor has no `board_users` owner row on it.
     * `{:error, :not_in_personal_workspace}` — the board is not in the actor's
       personal workspace (for example it is already in an org workspace).
+    * `{:error, {:non_members, users}}` — these users, ordered by id, hold a
+      row on the board but are not members of the target Organization.
 
   A successful move revokes the board's open board-only invitations. A refusal
   changes nothing.
@@ -91,13 +109,23 @@ defmodule Kanban.Workspaces.BoardMoves do
   end
 
   defp move_locked(actor, board_id, workspace_id) do
-    with :ok <- lock_board_invitations(board_id),
-         {:ok, board} <- lock_movable_board(board_id, actor),
-         {:ok, target} <- lock_target(workspace_id, actor),
+    with {:ok, board, target} <- lock_move(actor, board_id, workspace_id),
+         :ok <- check_members_in_organization(board, target),
          {:ok, moved} <- place_board(board, target) do
       moved
     else
       {:error, reason} -> Repo.rollback(reason)
+    end
+  end
+
+  # Invitations, Organization, board, target workspace: the lock order the
+  # moduledoc describes.
+  defp lock_move(actor, board_id, workspace_id) do
+    with :ok <- lock_board_invitations(board_id),
+         :ok <- lock_target_organization(workspace_id),
+         {:ok, board} <- lock_movable_board(board_id, actor),
+         {:ok, target} <- lock_target(workspace_id, actor) do
+      {:ok, board, target}
     end
   end
 
@@ -115,6 +143,44 @@ defmodule Kanban.Workspaces.BoardMoves do
     |> Repo.all()
 
     :ok
+  end
+
+  # FOR SHARE: membership removals lock the row FOR UPDATE. A workspace's
+  # Organization never changes, so reading it before the lock is safe.
+  defp lock_target_organization(nil), do: :ok
+
+  defp lock_target_organization(workspace_id) do
+    organization_ids =
+      from(w in Workspace,
+        where: w.id == ^workspace_id and not is_nil(w.organization_id),
+        select: w.organization_id
+      )
+
+    from(o in Organization,
+      where: o.id in subquery(organization_ids),
+      lock: "FOR SHARE",
+      select: o.id
+    )
+    |> Repo.all()
+
+    :ok
+  end
+
+  defp check_members_in_organization(%Board{id: board_id}, %Workspace{organization_id: org_id}) do
+    org_members =
+      from(m in OrganizationMember, where: m.organization_id == ^org_id, select: m.user_id)
+
+    from(u in User,
+      join: bu in BoardUser,
+      on: bu.user_id == u.id,
+      where: bu.board_id == ^board_id and u.id not in subquery(org_members),
+      order_by: u.id
+    )
+    |> Repo.all()
+    |> case do
+      [] -> :ok
+      non_members -> {:error, {:non_members, non_members}}
+    end
   end
 
   defp revoke_board_invitations(%Board{id: board_id}) do

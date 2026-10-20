@@ -132,7 +132,9 @@ defmodule KanbanWeb.BoardLive.WorkspaceBoardsTest do
       org_admin = user_fixture()
       organization_member_fixture(ctx.organization, org_admin, :org_admin)
       board = board_fixture(org_admin, %{name: "Capped board"})
-      grant(board, user_fixture(), :read_only)
+      reader = user_fixture()
+      organization_member_fixture(ctx.organization, reader)
+      grant(board, reader, :read_only)
       enforce_plans()
 
       {:ok, lv, _html} = live(log_in_user(build_conn(), org_admin), ~p"/boards/#{board}/members")

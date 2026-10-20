@@ -20,7 +20,8 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
       guests see a read-only list.
     * Boards — the workspace's boards the viewer can see. An org-admin can also
       move a board they own from their personal workspace here
-      (`Kanban.Workspaces.move_board_to_workspace/3`).
+      (`Kanban.Workspaces.move_board_to_workspace/3`) when every member of the
+      board already belongs to the Organization; a refusal names the others.
     * Invitations — org-admins only (W2219). Invite an email address as a
       member or guest, optionally with access to one of the workspace's
       boards, and resend or revoke open invitations
@@ -281,6 +282,19 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
      |> load_lists(actor)}
   end
 
+  defp respond_to_move({:error, {:non_members, users}}, socket, actor) do
+    {:noreply,
+     socket
+     |> replace_flash(
+       :error,
+       gettext(
+         "That board can't be moved here: %{names} aren't members of this Organization. Remove them from the board, or invite them to this workspace, then move it.",
+         names: Enum.map_join(users, ", ", &name_or_email/1)
+       )
+     )
+     |> load_lists(actor)}
+  end
+
   defp respond_to_move({:error, _reason}, socket, actor) do
     {:noreply,
      socket
@@ -473,6 +487,9 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
   defp role_options do
     [{gettext("Member"), "member"}, {gettext("Guest"), "guest"}]
   end
+
+  defp name_or_email(%User{name: name}) when is_binary(name) and name != "", do: name
+  defp name_or_email(%User{email: email}), do: email
 
   defp display_name(%User{name: name}) when is_binary(name) and name != "", do: name
   defp display_name(_user), do: "—"

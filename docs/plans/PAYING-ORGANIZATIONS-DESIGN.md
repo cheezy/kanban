@@ -329,7 +329,7 @@ Org-admin access is computed on every check from `workspaces.organization_id` an
 - **Revocation is instant and complete.** When a site admin removes an org-admin, or SCIM deprovisions one, the next request loses access. There are no rows to find and delete, and no window where stale rows grant access.
 - **Workspace tokens follow it.** `AuthenticateApiToken` re-derives the token user's effective access on every request, so a demoted org-admin's workspace token immediately falls back to that user's explicit board access (W2220).
 - **Board tokens follow it too.** Not every access-loss path revokes a board token, so the API re-checks it per request. Writes already required live `:owner`/`:modify` access (`Boards.get_user_access/2`). Reads now require any effective access through the same function (`KanbanWeb.API.BoardReadAccess`, on every REST read and the MCP read tools). A refused read gets the documented `403` "board membership required" body, never a `401`, and records `permission_denied` with `gate: :api_board_read`. A public read-only board grants a token no read access of its own: the token's user must still have access.
-- **Moving a board needs no row edits.** A board that moves into an org workspace (D8) becomes reachable by the Organization's org-admins with no `board_users` writes, and existing rows stay as they were.
+- **Moving a board needs no row edits.** A board that moves into an org workspace (D8) becomes reachable by the Organization's org-admins with no `board_users` writes, and existing rows stay as they were. The move is refused while any of those rows belongs to someone outside the Organization.
 - **The record stays honest.** `board_users` keeps meaning "explicitly shared", which exports, the members screen and the cap count rely on. Derived access never counts toward the free-board cap.
 
 ### 4.4 Who can do what
@@ -701,7 +701,8 @@ On org boards, only org-admins invite by email. A free board's owner can still i
 **Moving boards in (D8).** An org-admin who owns a board in their personal workspace moves it into one of their Organization's workspaces from the workspace settings Boards section (`Workspaces.move_board_to_workspace/3`, one transaction). The move:
 
 - lifts the cap, unlocks paid features and resumes paused webhooks;
-- keeps every `board_users` row; members outside the Organization keep their board access and are not added to the Organization;
+- is refused while anyone with a `board_users` row on the board is outside the target Organization, naming them (`{:error, {:non_members, users}}`): only Organization members may be added to an org board, so a move may not bring anyone else in either (decided 2026-10-20 after the concurrency exploratory session). The owner removes them from the board, or invites them to the workspace, first. The check runs under a share lock on the Organization row, so a concurrent Organization removal is either seen by it or removes the moved board's row after the move commits;
+- keeps every `board_users` row, all of them now Organization members', and adds nobody to the Organization;
 - revokes the board's open board-only invitations, in the same transaction. Accepting one on an org board would grant access with no Organization membership, no one-Organization check and no `:org_member_added` audit. The org-admin re-invites through the workspace, which sends a workspace invitation. Acceptance also refuses, and revokes, a board-only invitation whose board is no longer in a personal workspace;
 - is refused for boards the caller does not own, boards outside their personal workspace, and workspaces of another Organization.
 

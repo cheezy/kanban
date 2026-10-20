@@ -56,8 +56,10 @@ defmodule Kanban.Workspaces.BoardMovesTest do
 
   defp reload(invitation), do: Repo.get!(Invitation, invitation.id)
 
-  test "moves an owned personal board, keeps its rows and adds nobody to the Organization", ctx do
+  test "moves an owned personal board, keeps its members' rows and adds nobody to the Organization",
+       ctx do
     reader = user_fixture()
+    organization_member_fixture(ctx.organization, reader)
     grant(ctx.board, reader, :read_only)
     Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{ctx.board.id}")
 
@@ -67,11 +69,43 @@ defmodule Kanban.Workspaces.BoardMovesTest do
     assert workspace_id == ctx.workspace.id
     assert Boards.get_user_access(ctx.board.id, reader.id) == :read_only
     assert Boards.get_user_access(ctx.board.id, ctx.org_admin.id) == :owner
-    refute Organizations.member?(reader, ctx.organization)
+    assert Organizations.member?(reader, ctx.organization)
+    assert Organizations.list_members(ctx.organization) |> length() == 2
     assert Plans.paid_board?(ctx.board.id)
 
     board_id = ctx.board.id
     assert_receive {Kanban.Boards, :members_changed, ^board_id}
+  end
+
+  test "refuses a board with members outside the target Organization, naming them, and changes nothing",
+       ctx do
+    outsider = user_fixture()
+    grant(ctx.board, outsider, :modify)
+    other_org_member = user_fixture()
+    organization_member_fixture(organization_fixture(), other_org_member)
+    grant(ctx.board, other_org_member, :read_only)
+    invitation = board_invitation!(ctx.board, ctx.org_admin)
+    personal_workspace_id = workspace_id(ctx.board)
+
+    assert {:error, {:non_members, users}} =
+             Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace)
+
+    assert Enum.map(users, & &1.id) == Enum.sort([outsider.id, other_org_member.id])
+    assert workspace_id(ctx.board) == personal_workspace_id
+    assert Boards.get_user_access(ctx.board.id, outsider.id) == :modify
+    assert %Invitation{revoked_at: nil} = reload(invitation)
+  end
+
+  test "moves the board once its non-members are removed", ctx do
+    outsider = user_fixture()
+    grant(ctx.board, outsider, :modify)
+
+    assert {:error, {:non_members, _}} =
+             Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace)
+
+    {:ok, _} = Boards.remove_user_from_board(ctx.board, outsider, ctx.org_admin)
+
+    assert {:ok, _} = Workspaces.move_board_to_workspace(ctx.org_admin, ctx.board, ctx.workspace)
   end
 
   test "revokes the board's open board-only invitations and no others", ctx do
@@ -100,7 +134,13 @@ defmodule Kanban.Workspaces.BoardMovesTest do
 
   test "lifts the free-board cap: a fourth member can be added", ctx do
     enforce_plans()
-    for _ <- 1..2, do: grant(ctx.board, user_fixture(), :read_only)
+
+    for _ <- 1..2 do
+      reader = user_fixture()
+      organization_member_fixture(ctx.organization, reader)
+      grant(ctx.board, reader, :read_only)
+    end
+
     assert %{count: 3, reached?: true} = Boards.member_cap_status(ctx.board)
 
     assert {:ok, _} =

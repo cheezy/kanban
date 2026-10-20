@@ -259,6 +259,22 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
 
       refute Repo.get!(Board, foreign.id).workspace_id == ctx.workspace.id
     end
+
+    test "a board with members outside the Organization is refused, naming them", ctx do
+      board = board_fixture(ctx.org_admin, %{name: "Shared roadmap"})
+      outsider = user_fixture(%{name: "Olive Outsider"})
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, outsider, :modify, ctx.org_admin)
+
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=boards")
+
+      html =
+        view
+        |> form("#move-board-form", %{"move" => %{"board_id" => Integer.to_string(board.id)}})
+        |> render_submit()
+
+      assert html =~ "That board can&#39;t be moved here: Olive Outsider aren&#39;t members"
+      refute Repo.get!(Board, board.id).workspace_id == ctx.workspace.id
+    end
   end
 
   describe "invitations (W2219)" do
