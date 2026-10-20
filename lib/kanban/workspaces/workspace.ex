@@ -28,9 +28,17 @@ defmodule Kanban.Workspaces.Workspace do
     * Personal workspaces are outside the rule; every one is named "Personal".
     * Names are normalized before they are compared: converted to Unicode NFC,
       so "École" typed precomposed or decomposed is one name, stripped of
-      invisible zero-width characters (U+200B, U+2060, U+FEFF), and trimmed.
-      A name left empty is blank. The joiners U+200C and U+200D are kept,
-      because scripts such as Persian and emoji sequences need them.
+      invisible characters, and trimmed. A name left empty is blank. The
+      invisible characters are every Unicode format character (category Cf:
+      zero-width spaces, direction marks and overrides such as U+202E, which
+      can display "ngiseD" as "Design", the soft hyphen, tag characters) plus
+      the combining grapheme joiner U+034F, the Khmer inherent vowels U+17B4
+      and U+17B5, and the Hangul fillers U+115F, U+1160, U+3164 and U+FFA0,
+      which render as nothing. The joiners U+200C and U+200D are kept,
+      because scripts such as Persian and emoji sequences need them, and so
+      are variation selectors such as U+FE0F. A subdivision flag such as
+      England's, which is built from tag characters, becomes a plain black
+      flag.
     * A name with a NUL byte or invalid UTF-8 is refused on `:name`, rather
       than failing in the database.
     * Case folding is the database's `lower()`, which follows the database's
@@ -66,7 +74,9 @@ defmodule Kanban.Workspaces.Workspace do
   @name_max_length 100
   @slug_base_max_length 40
   @name_index :workspaces_organization_id_lower_name_index
-  @zero_width ["\u200B", "\u2060", "\uFEFF"]
+  # Every format character except the two joiners, plus the default-ignorable
+  # letters and marks that render as nothing.
+  @invisible ~r/(?![\x{200C}\x{200D}])[\p{Cf}\x{034F}\x{115F}\x{1160}\x{17B4}\x{17B5}\x{3164}\x{FFA0}]/u
 
   schema "workspaces" do
     field :name, :string
@@ -173,7 +183,7 @@ defmodule Kanban.Workspaces.Workspace do
     if String.valid?(name) do
       name
       |> :unicode.characters_to_nfc_binary()
-      |> String.replace(@zero_width, "")
+      |> String.replace(@invisible, "")
       |> String.trim()
     else
       name

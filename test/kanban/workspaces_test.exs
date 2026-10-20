@@ -236,6 +236,49 @@ defmodule Kanban.WorkspacesTest do
       assert get_change(renamed, :name) == "Renamed"
     end
 
+    # Built from code points: the source must not hold bidirectional controls.
+    defp chars(codepoints), do: List.to_string(codepoints)
+
+    test "strips direction marks, overrides and every other invisible character" do
+      for hidden <- [
+            chars(~c"Design" ++ [0x200E]),
+            chars([0x200F] ++ ~c"Design"),
+            chars([0x202E] ++ ~c"Design" ++ [0x202C]),
+            chars([0x2066] ++ ~c"Design" ++ [0x2069]),
+            chars(~c"De" ++ [0x00AD] ++ ~c"sign"),
+            chars(~c"Des" ++ [0x034F] ++ ~c"ign"),
+            chars(~c"Design" ++ [0xE0067, 0xE007F]),
+            chars(~c"Design" ++ [0x3164]),
+            chars([0x115F, 0x1160] ++ ~c"Design" ++ [0xFFA0]),
+            chars(~c"Design" ++ [0x17B4, 0x17B5]),
+            chars(~c"Design" ++ [0x180E, 0x061C, 0x2061])
+          ] do
+        assert get_field(Workspace.create_changeset(%{name: hidden}, true, nil), :name) ==
+                 "Design",
+               "expected #{inspect(String.to_charlist(hidden))} to normalize to Design"
+      end
+    end
+
+    test "an override can no longer disguise reversed letters" do
+      spoof = chars(~c"RT " ++ [0x202E] ++ ~c"ngiseD")
+
+      assert get_field(Workspace.create_changeset(%{name: spoof}, true, nil), :name) ==
+               "RT ngiseD"
+    end
+
+    test "a name of only invisible characters is blank" do
+      for blank <- [[0x200E], [0x034F], [0x3164], [0x202E, 0x200F], [0x00AD]] do
+        assert %{name: ["can't be blank"]} =
+                 errors_on(Workspace.create_changeset(%{name: chars(blank)}, true, nil))
+      end
+    end
+
+    test "keeps variation selectors, so emoji keep their presentation" do
+      heart = chars([0x2764, 0xFE0F])
+
+      assert get_field(Workspace.create_changeset(%{name: heart}, true, nil), :name) == heart
+    end
+
     test "keeps the joiners that scripts and emoji need" do
       persian = "\u0645\u06CC\u200C\u062E\u0648\u0627\u0647\u0645"
       family = "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}"
@@ -248,6 +291,20 @@ defmodule Kanban.WorkspacesTest do
     test "a name of only zero-width characters is blank" do
       assert %{name: ["can't be blank"]} =
                errors_on(Workspace.create_changeset(%{name: "\u200B\uFEFF"}, true, nil))
+    end
+
+    test "the not-allowed-characters error is translated in every locale" do
+      for locale <- ~w(de es fr ja pt zh) do
+        translated =
+          Gettext.with_locale(KanbanWeb.Gettext, locale, fn ->
+            KanbanWeb.CoreComponents.translate_error(
+              {"contains characters that are not allowed", []}
+            )
+          end)
+
+        assert translated != "contains characters that are not allowed",
+               "no #{locale} translation"
+      end
     end
 
     test "a NUL byte or invalid UTF-8 is a name error, not a database error" do
@@ -578,7 +635,12 @@ defmodule Kanban.WorkspacesTest do
 
       assert {:ok, %Workspace{}} = Workspaces.create_org_workspace(%{name: "\u00C9cole"}, admin)
 
-      for twin <- ["E\u0301cole", "\u00C9co\u200Ble"] do
+      for twin <- [
+            "E\u0301cole",
+            "\u00C9co\u200Ble",
+            List.to_string([0x00C9] ++ ~c"cole" ++ [0x200E]),
+            List.to_string(~c"\u00C9c" ++ [0x00AD] ++ ~c"ole")
+          ] do
         assert {:error, changeset} = Workspaces.create_org_workspace(%{name: twin}, admin)
         assert errors_on(changeset) == %{name: ["has already been taken"]}
       end
