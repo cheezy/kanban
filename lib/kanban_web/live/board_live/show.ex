@@ -112,20 +112,9 @@ defmodule KanbanWeb.BoardLive.Show do
     do: {:noreply, assign(socket, :show_shortcuts_help, false)}
 
   def handle_event("dismiss_message", %{"id" => id}, socket) do
-    user = socket.assigns.current_scope.user
-    message_id = String.to_integer(id)
-
-    case Messages.dismiss_message(user, message_id) do
-      {:ok, _} ->
-        {:noreply,
-         stream_delete_by_dom_id(
-           socket,
-           :undismissed_messages,
-           "undismissed_messages-#{message_id}"
-         )}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, gettext("Could not dismiss message."))}
+    case KanbanWeb.IdParams.parse(id) do
+      {:ok, message_id} -> dismiss_message(socket, message_id)
+      :error -> {:noreply, socket}
     end
   end
 
@@ -387,22 +376,28 @@ defmodule KanbanWeb.BoardLive.Show do
   # Everything broadcast on the board's "board:<id>" topic.
   def handle_info(message, socket), do: BoardEvents.handle(message, socket)
 
-  # Shared board-scoped id parser. Public because the extracted
-  # KanbanWeb.BoardLive.Authorization module calls it (Show.parse_task_id/1)
-  # and several stayers in this LiveView use it directly.
-  @doc false
-  def parse_task_id(id) when is_integer(id), do: {:ok, id}
+  defp dismiss_message(socket, message_id) do
+    case Messages.dismiss_message(socket.assigns.current_scope.user, message_id) do
+      {:ok, _} ->
+        {:noreply,
+         stream_delete_by_dom_id(
+           socket,
+           :undismissed_messages,
+           "undismissed_messages-#{message_id}"
+         )}
 
-  @doc false
-  def parse_task_id(id) when is_binary(id) do
-    case Integer.parse(id) do
-      {n, ""} -> {:ok, n}
-      _ -> :error
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Could not dismiss message."))}
     end
   end
 
+  # Shared board-scoped id parser. Public because the extracted
+  # KanbanWeb.BoardLive.Authorization module calls it (Show.parse_task_id/1)
+  # and several stayers in this LiveView use it directly. Bounded to the
+  # bigint range by KanbanWeb.IdParams, so an oversized id is refused here
+  # rather than raising in the query.
   @doc false
-  def parse_task_id(_), do: :error
+  defdelegate parse_task_id(id), to: KanbanWeb.IdParams, as: :parse
 
   # Public helpers that moved out of this LiveView. Other modules, the board
   # template and the tests still call them here, so each one delegates.

@@ -120,4 +120,31 @@ defmodule KanbanWeb.BoardLive.ColumnDragDropTest do
       assert reloaded_column1.position == 2
     end
   end
+
+  describe "a crafted move_column event" do
+    test "with malformed or oversized ids changes nothing and keeps the page alive", %{
+      conn: conn
+    } do
+      user = user_fixture()
+      board = board_fixture(user)
+      column1 = column_fixture(board, %{name: "Column 1"})
+      column2 = column_fixture(board, %{name: "Column 2"})
+      {:ok, view, _html} = live(log_in_user(conn, user), ~p"/boards/#{board}")
+
+      for column_ids <- [
+            [to_string(column2.id), "abc"],
+            [to_string(column2.id), "99999999999999999999"],
+            "#{column2.id},#{column1.id}"
+          ] do
+        render_hook(view, "move_column", %{
+          "column_id" => to_string(column2.id),
+          "column_ids" => column_ids
+        })
+      end
+
+      assert render(view) =~ "Column 1"
+      assert Kanban.Columns.get_column!(column1.id).position == 0
+      assert Kanban.Columns.get_column!(column2.id).position == 1
+    end
+  end
 end

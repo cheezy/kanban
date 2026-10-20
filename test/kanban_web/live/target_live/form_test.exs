@@ -181,6 +181,20 @@ defmodule KanbanWeb.TargetLive.FormTest do
       assert html =~ "Could not unassign goal"
     end
 
+    test "a malformed or oversized goal id flashes an error instead of crashing",
+         %{conn: conn, user: user} do
+      target = delivery_target_fixture(user)
+      {:ok, form_live, _html} = live(conn, ~p"/targets/#{target}/edit")
+
+      for goal_id <- ["abc", "99999999999999999999", "-1"] do
+        assert render_hook(form_live, "assign_goal", %{"goal_id" => goal_id}) =~
+                 "Could not assign goal"
+
+        assert render_hook(form_live, "unassign_goal", %{"goal_id" => goal_id}) =~
+                 "Could not unassign goal"
+      end
+    end
+
     test "a non-owner is redirected to /boards with an error flash", %{conn: conn} do
       other = user_fixture()
       target = delivery_target_fixture(other)

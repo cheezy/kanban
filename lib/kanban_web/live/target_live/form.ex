@@ -52,9 +52,11 @@ defmodule KanbanWeb.TargetLive.Form do
     scope = socket.assigns.current_scope
     target = socket.assigns.target
 
-    case Targets.assign_goal(scope, %Task{id: String.to_integer(goal_id)}, target) do
-      {:ok, _goal} -> {:noreply, assign_goal_lists(socket, target)}
-      {:error, _reason} -> {:noreply, put_flash(socket, :error, gettext("Could not assign goal"))}
+    with {:ok, goal_id} <- KanbanWeb.IdParams.parse(goal_id),
+         {:ok, _goal} <- Targets.assign_goal(scope, %Task{id: goal_id}, target) do
+      {:noreply, assign_goal_lists(socket, target)}
+    else
+      _refused -> {:noreply, put_flash(socket, :error, gettext("Could not assign goal"))}
     end
   end
 
@@ -63,12 +65,11 @@ defmodule KanbanWeb.TargetLive.Form do
     scope = socket.assigns.current_scope
     target = socket.assigns.target
 
-    case Targets.unassign_goal(scope, %Task{id: String.to_integer(goal_id)}) do
-      {:ok, _goal} ->
-        {:noreply, assign_goal_lists(socket, target)}
-
-      {:error, _reason} ->
-        {:noreply, put_flash(socket, :error, gettext("Could not unassign goal"))}
+    with {:ok, goal_id} <- KanbanWeb.IdParams.parse(goal_id),
+         {:ok, _goal} <- Targets.unassign_goal(scope, %Task{id: goal_id}) do
+      {:noreply, assign_goal_lists(socket, target)}
+    else
+      _refused -> {:noreply, put_flash(socket, :error, gettext("Could not unassign goal"))}
     end
   end
 

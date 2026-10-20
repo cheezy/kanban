@@ -71,9 +71,14 @@ defmodule KanbanWeb.BoardLive.ColumnActions do
   end
 
   def do_move_column(socket, column_id, column_ids) do
-    require Logger
+    case KanbanWeb.IdParams.parse_list(column_ids) do
+      {:ok, column_ids} -> reorder_columns(socket, column_id, column_ids)
+      :error -> {:noreply, socket}
+    end
+  end
 
-    column_ids = Enum.map(column_ids, &String.to_integer/1)
+  defp reorder_columns(socket, column_id, column_ids) do
+    require Logger
 
     Logger.info("Move column event: column_id=#{column_id}, new_order=#{inspect(column_ids)}")
 

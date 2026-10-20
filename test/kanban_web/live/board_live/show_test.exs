@@ -2273,6 +2273,30 @@ defmodule KanbanWeb.BoardLive.ShowTest do
       refute html2 =~ ~s(id="undismissed_messages-#{message.id}")
     end
 
+    test "a malformed or oversized message id is ignored, not a crash", %{
+      conn: conn,
+      user: user
+    } do
+      board = board_fixture(user)
+      admin = admin_user_fixture()
+      message = message_fixture(admin, %{title: "Still here", body: "body"})
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      for id <- ["abc", "99999999999999999999", "-1"] do
+        render_click(view, "dismiss_message", %{"id" => id})
+      end
+
+      assert render(view) =~ ~s(id="undismissed_messages-#{message.id}")
+    end
+
+    test "an oversized column id is refused as not found, not a crash", %{conn: conn, user: user} do
+      board = board_fixture(user)
+      {:ok, view, _html} = live(conn, ~p"/boards/#{board}")
+
+      assert render_click(view, "delete_column", %{"id" => "99999999999999999999"}) =~
+               "Column not found on this board"
+    end
+
     test "user A dismissing does not affect user B's banner", %{conn: conn_a, user: user_a} do
       board_a = board_fixture(user_a)
       admin = admin_user_fixture()
