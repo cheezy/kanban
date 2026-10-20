@@ -536,7 +536,10 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
           {"revoke_token", %{}}
         ]
 
+        # Clear the flash first, so each event must deny on its own rather
+        # than pass on the denial the previous one left on the page.
         for {event, params} <- events do
+          refute render_click(view, "lv:clear-flash", %{"key" => "error"}) =~ @denied
           assert render_click(view, event, params) =~ @denied
         end
 
@@ -554,6 +557,12 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
 
       from(m in OrganizationMember, where: m.user_id == ^ctx.org_admin.id)
       |> Repo.update_all(set: [role: :member])
+
+      # The context re-checks the role too, so a parameterless event, which
+      # never reaches it, is what shows the page re-reads the role rather
+      # than trusting the role it mounted with.
+      assert render_click(view, "create_token", %{}) =~ @denied
+      refute render_click(view, "lv:clear-flash", %{"key" => "error"}) =~ @denied
 
       assert create_token(view) =~ @denied
       assert workspace_tokens(ctx.workspace) == []
