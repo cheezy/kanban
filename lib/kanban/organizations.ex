@@ -32,7 +32,8 @@ defmodule Kanban.Organizations do
     * A disabled account is never appointed or added: `appoint_org_admin/3`
       and `add_member/3` refuse it with `{:error, :user_disabled}`, and
       `org_admin?/2` is false for it.
-    * Removing an org-admin deletes the membership; it never demotes.
+    * Removing an org-admin deletes the membership, cascading as removing a
+      member does; it never demotes.
     * `appoint_org_admin_by_email/4` appoints by email. An unknown email gets
       a new account in the same transaction as the membership, and the
       confirmation and password-reset emails after it commits; a disabled
@@ -439,7 +440,10 @@ defmodule Kanban.Organizations do
   `user` is the last org-admin and the Organization has other members, the
   removal is refused with `{:error, :last_org_admin}`; the last org-admin of an
   Organization with no other members can be removed. A user who is not an
-  org-admin of `organization` gets `{:error, :not_found}`.
+  org-admin of `organization` gets `{:error, :not_found}`. Their board and
+  workspace rows, API tokens and open-task assignments in the Organization's
+  workspaces go with the membership, in the same transaction
+  (`Kanban.Organizations.MembershipWrites.remove_org_admin/3`).
 
   The check runs under a row lock on the organization, so two concurrent
   removals of its last two org-admins leave one of them in place.

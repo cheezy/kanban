@@ -2,10 +2,12 @@ defmodule Kanban.Workspaces.MembershipCascade do
   @moduledoc """
   What ending someone's place in a workspace does to their boards there.
 
-  Used by `Kanban.Workspaces.remove_member/3` (one workspace) and by
-  `Kanban.Organizations.MemberRemoval` (every workspace of an Organization).
-  `remove/2` runs inside the caller's transaction and, for every board in the
-  given workspaces:
+  Used by `Kanban.Workspaces.remove_member/3` (one workspace) and, through
+  `remove_from_organization/2`, by every path that ends an Organization
+  membership: `Kanban.Organizations.MemberRemoval` (an ordinary member) and
+  `Kanban.Organizations.remove_org_admin/3` (an org-admin). `remove/2` runs
+  inside the caller's transaction and, for every board in the given
+  workspaces:
 
     * deletes the user's `board_users` row,
     * revokes the user's API tokens for the board, and their workspace tokens
@@ -25,11 +27,10 @@ defmodule Kanban.Workspaces.MembershipCascade do
   `notify/3` reports each removed row once the transaction has committed, in
   the same way `remove_user_from_board/3` does.
 
-  `revoke_derived_tokens/2` is the narrower cascade for losing org-admin
-  access alone (`Kanban.Organizations.remove_org_admin/3`): it revokes only the
-  tokens on boards whose write access came through that access, plus every
-  workspace token the user holds in the Organization, which only an org-admin
-  may hold (W2220), and
+  `remove_from_organization/2` also deletes the user's `workspace_members`
+  rows in every workspace of the Organization, so rejoining it later never
+  brings old access back (design doc §4.4). A removed org-admin also loses
+  derived access to boards they held no row on, so
   `notify_derived_access_ended/2` tells those boards' open pages after commit.
   """
 
@@ -43,6 +44,8 @@ defmodule Kanban.Workspaces.MembershipCascade do
   alias Kanban.Boards.MembershipChanges
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+  alias Kanban.Workspaces.Workspace
+  alias Kanban.Workspaces.WorkspaceMember
 
   @type removed :: [{Board.t(), BoardUser.t(), non_neg_integer()}]
 
@@ -66,6 +69,32 @@ defmodule Kanban.Workspaces.MembershipCascade do
   end
 
   @doc """
+  Ends `user_id`'s place in every workspace of `organization_id`, archived
+  ones included: runs `remove/2` on all of them and deletes the user's
+  `workspace_members` rows there. Call it inside the transaction that ends the
+  user's Organization membership, after taking the Organization's row lock.
+  Boards in personal workspaces and in other Organizations are left alone.
+
+  Returns what `remove/2` returns, to pass to `notify/3` after commit.
+  """
+  @spec remove_from_organization(integer(), integer()) :: removed()
+  def remove_from_organization(user_id, organization_id)
+      when is_integer(user_id) and is_integer(organization_id) do
+    workspace_ids =
+      from(w in Workspace, where: w.organization_id == ^organization_id, select: w.id)
+      |> Repo.all()
+
+    removed = remove(user_id, workspace_ids)
+
+    from(m in WorkspaceMember,
+      where: m.user_id == ^user_id and m.workspace_id in ^workspace_ids
+    )
+    |> Repo.delete_all()
+
+    removed
+  end
+
+  @doc """
   Reports each membership `remove/2` deleted, through
   `Kanban.Boards.MembershipChanges.notify_removed/5`. Call it only after the
   transaction has committed. Returns `:ok`.
@@ -75,31 +104,6 @@ defmodule Kanban.Workspaces.MembershipCascade do
     Enum.each(removed, fn {board, board_user, revoked} ->
       MembershipChanges.notify_removed(board, user, board_user, revoked, actor)
     end)
-  end
-
-  @doc """
-  Revokes `user_id`'s API tokens on the boards of `organization_id`'s
-  workspaces that they hold no `:owner` or `:modify` `board_users` row on: the
-  boards whose write access came only through derived org-admin access
-  (`Kanban.Workspaces.Policy`). A `:read_only` row cannot mint a token, so a
-  token on such a board was minted through derived access and goes too. Call
-  it inside the transaction that ends that access, so an agent acting through
-  such a token loses access with it. Tokens on boards they can still modify
-  are kept. Their workspace tokens in the Organization's workspaces are revoked
-  as well (W2220). Returns the number revoked.
-  """
-  @spec revoke_derived_tokens(integer(), integer()) :: non_neg_integer()
-  def revoke_derived_tokens(user_id, organization_id)
-      when is_integer(user_id) and is_integer(organization_id) do
-    {revoked, _} =
-      from(t in ApiToken,
-        where:
-          t.user_id == ^user_id and is_nil(t.revoked_at) and
-            t.board_id in subquery(derived_board_ids_query(user_id, organization_id))
-      )
-      |> Repo.update_all(set: [revoked_at: DateTime.utc_now(:second)])
-
-    revoked + ApiTokens.revoke_user_workspace_tokens(user_id, organization_id)
   end
 
   @doc """

@@ -11,9 +11,11 @@ defmodule Kanban.Organizations.MemberRemoval do
   every workspace of the Organization — archived ones included — it:
 
     * deletes the member's board memberships, revokes their API tokens and
-      unassigns their open tasks (`Kanban.Workspaces.MembershipCascade`),
+      unassigns their open tasks, and
     * deletes their `workspace_members` rows, so rejoining later never brings
-      old access back,
+      old access back
+      (`Kanban.Workspaces.MembershipCascade.remove_from_organization/2`, the
+      cascade `Kanban.Organizations.remove_org_admin/3` runs too),
 
   and then deletes their Organization membership. Boards in personal
   workspaces are left alone: a member keeps access to boards shared with them
@@ -39,8 +41,6 @@ defmodule Kanban.Organizations.MemberRemoval do
   alias Kanban.Organizations.OrganizationTelemetry
   alias Kanban.Repo
   alias Kanban.Workspaces.MembershipCascade
-  alias Kanban.Workspaces.Workspace
-  alias Kanban.Workspaces.WorkspaceMember
 
   @max_bigint 9_223_372_036_854_775_807
 
@@ -98,13 +98,7 @@ defmodule Kanban.Organizations.MemberRemoval do
   end
 
   defp remove_from_organization(membership, organization_id, user_id) do
-    workspace_ids = organization_workspace_ids(organization_id)
-    removed = MembershipCascade.remove(user_id, workspace_ids)
-
-    from(m in WorkspaceMember,
-      where: m.user_id == ^user_id and m.workspace_id in ^workspace_ids
-    )
-    |> Repo.delete_all()
+    removed = MembershipCascade.remove_from_organization(user_id, organization_id)
 
     case Repo.delete(membership) do
       {:ok, deleted} -> {deleted, removed}
@@ -130,11 +124,6 @@ defmodule Kanban.Organizations.MemberRemoval do
 
   defp check_ordinary_member(%OrganizationMember{role: :member}), do: :ok
   defp check_ordinary_member(%OrganizationMember{}), do: {:error, :org_admin}
-
-  defp organization_workspace_ids(organization_id) do
-    from(w in Workspace, where: w.organization_id == ^organization_id, select: w.id)
-    |> Repo.all()
-  end
 
   defp report({:ok, {membership, removed}}, actor) do
     case Accounts.get_user(membership.user_id) do

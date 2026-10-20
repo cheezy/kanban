@@ -13,9 +13,7 @@ defmodule Kanban.ApiTokens.WorkspaceTokens do
   user stopped being an org-admin keeps only that user's explicit `board_users`
   access, with nothing cached in the token. Losing org-admin status, which
   also ends the Organization membership, revokes the user's workspace tokens
-  outright through `revoke_user_workspace_tokens/2`, called from
-  `Kanban.Workspaces.MembershipCascade.revoke_derived_tokens/2`. Leaving a
-  workspace revokes the user's tokens for it through
+  outright, and so does leaving a workspace: both run
   `Kanban.Workspaces.MembershipCascade.remove/2`.
 
   A board is usable through a workspace token when all of these hold:

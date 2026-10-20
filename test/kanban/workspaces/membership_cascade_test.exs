@@ -1,7 +1,7 @@
 defmodule Kanban.Workspaces.MembershipCascadeTest do
   @moduledoc """
-  `Kanban.Workspaces.remove_member/3`'s board cascade, the derived-token
-  revocation when an org-admin is removed, and the workspace settings reads in
+  `Kanban.Workspaces.remove_member/3`'s board cascade, the Organization-wide
+  cascade when an org-admin is removed, and the workspace settings reads in
   `Kanban.Workspaces.Listing` (W2218).
   """
   use Kanban.DataCase, async: true
@@ -199,58 +199,143 @@ defmodule Kanban.Workspaces.MembershipCascadeTest do
     end
   end
 
-  describe "MembershipCascade.revoke_derived_tokens/2" do
-    test "revokes only the tokens on boards whose write access was derived", ctx do
-      derived = user_fixture() |> board_fixture() |> put_in_workspace(ctx.workspace)
-      explicit = user_fixture() |> board_fixture() |> put_in_workspace(ctx.workspace)
-      grant(explicit, ctx.admin, :modify)
-      read_only = user_fixture() |> board_fixture() |> put_in_workspace(ctx.workspace)
-      other_org = user_fixture() |> board_fixture()
-      grant(other_org, ctx.admin, :read_only)
-      other_org = put_in_workspace(other_org, org_workspace_fixture(organization_fixture()))
+  describe "MembershipCascade.remove_from_organization/2" do
+    test "ends the user's place in every workspace of the Organization only", ctx do
+      archived = org_workspace_fixture(ctx.organization, archived_at: DateTime.utc_now(:second))
+      workspace_member_fixture(archived, ctx.member, :member)
+      shared = board_fixture(user_fixture()) |> put_in_workspace(archived)
+      grant(shared, ctx.member, :modify)
+      shared_token = token(ctx.member, shared)
+      personal = board_fixture(user_fixture())
+      grant(personal, ctx.member, :modify)
+      personal_token = token(ctx.member, personal)
+      other_org = organization_fixture() |> org_workspace_fixture()
+      other_org_board = board_fixture(user_fixture()) |> put_in_workspace(other_org)
+      grant(other_org_board, ctx.member, :modify)
+      other_org_token = token(ctx.member, other_org_board)
+      workspace_member_fixture(other_org, ctx.member, :guest)
 
-      derived_token = token(ctx.admin, derived)
-      explicit_token = token(ctx.admin, explicit)
-      # Minted through derived owner access before the :read_only row was added.
-      read_only_token = token(ctx.admin, read_only)
-      grant(read_only, ctx.admin, :read_only)
-      other_org_token = token(ctx.admin, other_org)
-      member_token = token(ctx.member, derived)
+      assert [{%Board{id: shared_id}, %BoardUser{access: :modify}, 1}] =
+               MembershipCascade.remove_from_organization(ctx.member.id, ctx.organization.id)
 
-      assert MembershipCascade.revoke_derived_tokens(ctx.admin.id, ctx.organization.id) == 2
+      assert shared_id == shared.id
+      assert row(shared, ctx.member) == nil
+      assert revoked?(shared_token)
 
-      assert revoked?(derived_token)
-      assert revoked?(read_only_token)
-      refute revoked?(explicit_token)
+      # Only the other Organization's row is left, beside the personal owner row.
+      assert [other_org.id] ==
+               WorkspaceMember
+               |> where([m], m.user_id == ^ctx.member.id and m.role != :owner)
+               |> Repo.all()
+               |> Enum.map(& &1.workspace_id)
+
+      assert row(personal, ctx.member)
+      refute revoked?(personal_token)
+      assert row(other_org_board, ctx.member)
       refute revoked?(other_org_token)
-      refute revoked?(member_token)
+    end
+
+    test "returns nothing for an Organization without workspaces", ctx do
+      assert MembershipCascade.remove_from_organization(ctx.member.id, organization_fixture().id) ==
+               []
+
+      assert Workspaces.get_member_role(ctx.workspace, ctx.member) == :member
     end
   end
 
   describe "Organizations.remove_org_admin/3" do
-    test "revokes the removed org-admin's derived-access tokens in the same change", ctx do
+    setup ctx do
       organization_member_fixture(ctx.organization, user_fixture(), :org_admin)
+      archived = org_workspace_fixture(ctx.organization, archived_at: DateTime.utc_now(:second))
+      workspace_member_fixture(ctx.workspace, ctx.admin, :member)
+      workspace_member_fixture(archived, ctx.admin, :guest)
+      %{archived: archived}
+    end
+
+    test "cascades through every workspace of the Organization, as removing a member does",
+         ctx do
       derived = user_fixture() |> board_fixture() |> put_in_workspace(ctx.workspace)
       explicit = user_fixture() |> board_fixture() |> put_in_workspace(ctx.workspace)
       grant(explicit, ctx.admin, :modify)
+      owned = ctx.admin |> board_fixture() |> put_in_workspace(ctx.archived)
+      personal = board_fixture(ctx.admin)
+      shared_personal = board_fixture(user_fixture())
+      grant(shared_personal, ctx.admin, :modify)
+
       derived_token = token(ctx.admin, derived)
       explicit_token = token(ctx.admin, explicit)
+      owned_token = token(ctx.admin, owned)
+      personal_token = token(ctx.admin, personal)
+      shared_personal_token = token(ctx.admin, shared_personal)
+
+      {:ok, {workspace_token, _plain}} =
+        ApiTokens.create_workspace_api_token(ctx.admin, ctx.workspace, %{name: "Workspace"})
+
+      column = column_fixture(explicit)
+      open_task = task_fixture(column, %{assigned_to_id: ctx.admin.id})
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{explicit.id}")
+      Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{derived.id}")
 
       assert {:ok, _membership} =
                Kanban.Organizations.remove_org_admin(admin_fixture(), ctx.organization, ctx.admin)
 
-      assert revoked?(derived_token)
-      refute revoked?(explicit_token)
+      assert row(explicit, ctx.admin) == nil
+      assert row(owned, ctx.admin) == nil
+
+      for org_token <- [derived_token, explicit_token, owned_token, workspace_token],
+          do: assert(revoked?(org_token))
+
+      assert Repo.get!(Task, open_task.id).assigned_to_id == nil
+      assert Workspaces.get_member_role(ctx.workspace, ctx.admin) == nil
+      assert Workspaces.get_member_role(ctx.archived, ctx.admin) == nil
+      assert Workspaces.list_workspaces_for_user(ctx.admin) == []
+
+      for board <- [derived, explicit, owned],
+          do: assert(Boards.get_user_access(board.id, ctx.admin.id) == nil)
+
+      assert row(personal, ctx.admin).access == :owner
+      assert row(shared_personal, ctx.admin).access == :modify
+      refute revoked?(personal_token)
+      refute revoked?(shared_personal_token)
+
+      explicit_id = explicit.id
+      derived_id = derived.id
+      assert_receive {Kanban.Boards, :members_changed, ^explicit_id}
+      assert_receive {Kanban.Boards, :members_changed, ^derived_id}
     end
 
-    test "revokes nothing when the removal is refused", ctx do
-      derived = user_fixture() |> board_fixture() |> put_in_workspace(ctx.workspace)
-      derived_token = token(ctx.admin, derived)
+    test "adding them back restores none of the old access", ctx do
+      board = user_fixture() |> board_fixture() |> put_in_workspace(ctx.workspace)
+      grant(board, ctx.admin, :modify)
 
-      assert {:error, :last_org_admin} =
+      assert {:ok, _membership} =
                Kanban.Organizations.remove_org_admin(admin_fixture(), ctx.organization, ctx.admin)
 
-      refute revoked?(derived_token)
+      assert {:ok, _membership} =
+               Kanban.Organizations.add_member(ctx.organization, ctx.admin, :member)
+
+      assert Workspaces.get_member_role(ctx.workspace, ctx.admin) == nil
+      assert Workspaces.list_workspaces_for_user(ctx.admin) == []
+      assert Boards.get_user_access(board.id, ctx.admin.id) == nil
+    end
+
+    test "changes nothing when the removal is refused", _ctx do
+      organization = organization_fixture()
+      last_admin = user_fixture()
+      organization_member_fixture(organization, last_admin, :org_admin)
+      organization_member_fixture(organization, user_fixture(), :member)
+      workspace = org_workspace_fixture(organization)
+      workspace_member_fixture(workspace, last_admin, :member)
+      board = user_fixture() |> board_fixture() |> put_in_workspace(workspace)
+      grant(board, last_admin, :modify)
+      board_token = token(last_admin, board)
+
+      assert {:error, :last_org_admin} =
+               Kanban.Organizations.remove_org_admin(admin_fixture(), organization, last_admin)
+
+      assert row(board, last_admin)
+      refute revoked?(board_token)
+      assert Workspaces.get_member_role(workspace, last_admin) == :member
     end
   end
 

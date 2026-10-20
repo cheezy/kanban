@@ -32,7 +32,7 @@ defmodule Kanban.Organizations.MembershipWrites do
   alias Kanban.Repo
   alias Kanban.Workspaces.MembershipCascade
 
-  @typep change :: :created | :promoted | :unchanged | :removed
+  @typep change :: :created | :promoted | :unchanged
 
   @doc """
   Adds `user` to the Organization with `organization_id` as a `:member`. A
@@ -110,31 +110,47 @@ defmodule Kanban.Organizations.MembershipWrites do
   members with no org-admin and with `:not_found` when `user` is not an
   org-admin there. `actor` has already been checked.
 
-  Their derived org-admin access to the Organization's boards ends with the
-  membership, so their API tokens on boards they reached only through it are
-  revoked in the same transaction, and once it commits those boards' open pages
-  are told to re-read the viewer's access (W2218,
-  `Kanban.Workspaces.MembershipCascade.revoke_derived_tokens/2` and
-  `notify_derived_access_ended/2`).
+  Ending the membership cascades as removing an ordinary member does
+  (`Kanban.Workspaces.MembershipCascade.remove_from_organization/2`), in the
+  same transaction and before the membership is deleted: in every workspace of
+  the Organization, archived ones included, the user's `board_users` rows are
+  deleted, their board and workspace API tokens revoked, their open tasks
+  unassigned and their `workspace_members` rows deleted, so being added again
+  later never brings old access back. Their personal boards and boards
+  shared with them outside the Organization are kept. Once it commits, each
+  removed board membership is reported as
+  `Kanban.Boards.remove_user_from_board/3` reports one, and the Organization's
+  boards' open pages are told to re-read the viewer's access
+  (`Kanban.Workspaces.MembershipCascade.notify_derived_access_ended/2`).
   """
   @spec remove_org_admin(User.t(), integer(), User.t()) ::
           {:ok, OrganizationMember.t()} | {:error, :last_org_admin | :not_found}
   def remove_org_admin(%User{} = actor, organization_id, %User{} = user) do
     fn -> remove_org_admin_locked(organization_id, user) end
     |> Repo.transact()
-    |> notify(fn :removed, membership ->
-      OrganizationTelemetry.org_admin_removed(membership, actor)
-      MembershipCascade.notify_derived_access_ended(user.id, organization_id)
-    end)
+    |> report_org_admin_removed(actor, user)
   end
+
+  # Runs only once the removal has committed.
+  defp report_org_admin_removed({:ok, {membership, removed}}, actor, user) do
+    OrganizationTelemetry.org_admin_removed(membership, actor)
+    MembershipCascade.notify(removed, user, actor)
+    MembershipCascade.notify_derived_access_ended(user.id, membership.organization_id)
+    {:ok, membership}
+  end
+
+  defp report_org_admin_removed({:error, _reason} = error, _actor, _user), do: error
 
   defp remove_org_admin_locked(organization_id, user) do
     with :ok <- lock_organization(organization_id),
          {:ok, membership} <- fetch_org_admin_membership(organization_id, user),
-         :ok <- ensure_not_last_org_admin(membership),
-         {:ok, change} <- delete_membership(membership) do
-      MembershipCascade.revoke_derived_tokens(user.id, organization_id)
-      {:ok, change}
+         :ok <- ensure_not_last_org_admin(membership) do
+      removed = MembershipCascade.remove_from_organization(user.id, organization_id)
+
+      case delete_membership(membership) do
+        {:ok, {:removed, deleted}} -> {:ok, {deleted, removed}}
+        {:error, _reason} = error -> error
+      end
     end
   end
 
