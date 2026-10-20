@@ -99,7 +99,8 @@ defmodule Kanban.Accounts.AccountDeletion do
   should disconnect. Changes nothing and returns:
 
     * `{:error, :invalid_confirmation}` — the phrase does not match
-    * `{:error, :rate_limited}` — too many wrong passwords lately
+    * `{:error, :rate_limited}` — too many attempts lately (every attempt
+      with the right phrase counts, atomically, before the password is hashed)
     * `{:error, :not_found}` — the account is already gone or disabled
     * `{:error, :invalid_password}` — the password is wrong
     * `{:error, {:blocked, blockers}}` — see `deletion_blockers/1`
@@ -135,14 +136,16 @@ defmodule Kanban.Accounts.AccountDeletion do
 
   defp check_confirmation(_confirmation), do: {:error, :invalid_confirmation}
 
+  # Every attempt that gets past the confirmation phrase is counted here, with
+  # one atomic increment-and-compare, before the password is hashed. Peeking
+  # first and recording the failure after bcrypt would let parallel requests
+  # all read the same count and all reach bcrypt.
   defp check_rate_limit(user_id) do
-    case RateLimit.peek(:account_delete, identity: rate_identity(user_id)) do
+    case RateLimit.check(:account_delete, identity: "user:#{user_id}") do
       :ok -> :ok
       {:error, {:rate_limited, _retry_after_ms}} -> {:error, :rate_limited}
     end
   end
-
-  defp rate_identity(user_id), do: "user:#{user_id}"
 
   defp fetch_enabled_user(user_id) do
     case Repo.get(User, user_id) do
@@ -151,14 +154,12 @@ defmodule Kanban.Accounts.AccountDeletion do
     end
   end
 
-  # Bcrypt is slow on purpose, so the password is checked before any lock.
+  # Bcrypt is slow on purpose, so the password is checked before any lock. The
+  # attempt was already counted by check_rate_limit/1.
   defp check_password(user, password) do
-    if is_binary(password) and User.valid_password?(user, password) do
-      :ok
-    else
-      RateLimit.record_failure(:account_delete, identity: rate_identity(user.id))
-      {:error, :invalid_password}
-    end
+    if is_binary(password) and User.valid_password?(user, password),
+      do: :ok,
+      else: {:error, :invalid_password}
   end
 
   defp delete_locked(user) do

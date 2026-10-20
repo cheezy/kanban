@@ -26,7 +26,7 @@ defmodule Kanban.RateLimit do
     * `:two_factor_daily` — 24 h / 30 / —    (identity-only, failure-counted)
     * `:org_audit_export` — 1 h / 10 / —     (identity-only, per export)
     * `:invite`    — 1 h / 20 / —           (identity-only, per invitation email)
-    * `:account_delete` — 5 min / 5 / —     (identity-only, failure-counted)
+    * `:account_delete` — 5 min / 5 / —     (identity-only, per attempt)
 
   `:two_factor` counts every second-factor code attempt per user (`identity:
   "user:<id>"`, no IP) wherever a code is checked, with `check/2` so the
@@ -56,11 +56,13 @@ defmodule Kanban.RateLimit do
   app cannot be used to flood addresses with invitation email. A refused
   request writes and sends nothing.
 
-  `:account_delete` counts wrong passwords on the self-service account
+  `:account_delete` counts password attempts on the self-service account
   deletion form (`Kanban.Accounts.AccountDeletion`) per user (`identity:
-  "user:<id>"`, no IP), with `peek/2` before the password is hashed and
-  `record_failure/2` after a wrong one, so a session left open in sudo mode
-  cannot be used to guess the password.
+  "user:<id>"`, no IP), with `check/2` so the count is taken atomically before
+  the password is hashed. A session left open in sudo mode therefore cannot be
+  used to guess the password, in sequence or in parallel: at most the limit of
+  attempts per window ever reach bcrypt. A correct password within the limit
+  succeeds (and deletes the account).
 
   Thresholds are a product/ops decision — override per environment via:
 
@@ -71,11 +73,10 @@ defmodule Kanban.RateLimit do
 
     * `check/2`  — increment and evaluate; use for per-submission surfaces
       (`:reset`, `:resend`, `:issue`, `:two_factor`, `:org_audit_export`,
-      `:invite`).
+      `:invite`, `:account_delete`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
-      (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`,
-      `:account_delete`) so a flood cannot force password hashing or DB
-      lookups.
+      (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`)
+      so a flood cannot force password hashing or DB lookups.
     * `record_failure/2` — increment the failure counter after an authentication
       attempt fails; pair with `peek/2`.
 

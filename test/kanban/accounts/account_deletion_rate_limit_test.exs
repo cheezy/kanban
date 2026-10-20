@@ -38,6 +38,50 @@ defmodule Kanban.Accounts.AccountDeletionRateLimitTest do
     assert Repo.get(User, user.id)
   end
 
+  test "wrong passwords sent at once cannot get past the limit" do
+    user = user_fixture()
+    scope = Scope.for_user(user)
+
+    results =
+      1..20
+      |> Task.async_stream(
+        fn n -> Accounts.delete_own_account(scope, "wrong #{n}", "delete my account") end,
+        max_concurrency: 20
+      )
+      |> Enum.map(fn {:ok, result} -> result end)
+
+    # Only the attempts that got past the counter reached bcrypt.
+    assert Enum.count(results, &(&1 == {:error, :invalid_password})) <= 2
+    assert Enum.count(results, &(&1 == {:error, :rate_limited})) >= 18
+    assert Repo.get(User, user.id)
+  end
+
+  test "a correct password within the limit deletes the account" do
+    user = user_fixture()
+    scope = Scope.for_user(user)
+
+    assert {:error, :invalid_password} =
+             Accounts.delete_own_account(scope, "wrong one", "delete my account")
+
+    assert {:ok, %{user: %User{}}} =
+             Accounts.delete_own_account(scope, valid_user_password(), "delete my account")
+
+    refute Repo.get(User, user.id)
+  end
+
+  test "a wrong confirmation phrase does not use up an attempt" do
+    user = user_fixture()
+    scope = Scope.for_user(user)
+
+    for _ <- 1..5 do
+      assert {:error, :invalid_confirmation} =
+               Accounts.delete_own_account(scope, "wrong", "not the phrase")
+    end
+
+    assert {:ok, _deleted} =
+             Accounts.delete_own_account(scope, valid_user_password(), "delete my account")
+  end
+
   test "the settings page says to wait after too many wrong passwords", %{conn: conn} do
     user = user_fixture()
     {:ok, lv, _html} = conn |> log_in_user(user) |> live(~p"/users/settings?section=danger_zone")
