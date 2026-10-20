@@ -57,6 +57,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
 
   alias Kanban.ApiTokens
   alias Kanban.ApiTokens.ApiToken
+  alias Kanban.ApiTokens.DeniedAudit
   alias Kanban.RateLimit
   alias KanbanWeb.Plugs.AuthenticateApiToken.BoardSelector
 
@@ -136,10 +137,7 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   defp halt_board_error(conn, :board_not_found) do
     emit_auth_failed_telemetry(conn, "board_not_found")
 
-    Kanban.AuditLog.event(:permission_denied,
-      user_id: conn.assigns.current_user.id,
-      gate: :api_board_selector
-    )
+    DeniedAudit.record(conn.assigns.api_token, conn.assigns.current_user.id, :api_board_selector)
 
     conn
     |> put_status(:not_found)

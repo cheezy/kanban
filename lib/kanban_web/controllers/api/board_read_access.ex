@@ -16,7 +16,9 @@ defmodule KanbanWeb.API.BoardReadAccess do
   A refused read is the API's documented board-membership refusal,
   `403` with the `KanbanWeb.API.TaskErrors.error_body/1` body for
   `:not_authorized`, and a `permission_denied` audit event with
-  `gate: :api_board_read`. It is not a `401`: the token itself is still valid.
+  `gate: :api_board_read`, written through `Kanban.ApiTokens.DeniedAudit`
+  (the token's Organization, at most one row per token in each throttle
+  window). It is not a `401`: the token itself is still valid.
 
   Workspace tokens pass here untouched: `KanbanWeb.Plugs.AuthenticateApiToken`
   already re-derives their board access on every request. A disabled user never
@@ -33,6 +35,7 @@ defmodule KanbanWeb.API.BoardReadAccess do
   import Plug.Conn, only: [halt: 1]
 
   alias Kanban.ApiTokens.ApiToken
+  alias Kanban.ApiTokens.DeniedAudit
   alias Kanban.Boards
   alias KanbanWeb.API.TaskErrors
 
@@ -61,22 +64,22 @@ defmodule KanbanWeb.API.BoardReadAccess do
   @spec authorize(Plug.Conn.t()) :: :ok | {:error, :not_authorized}
   def authorize(%Plug.Conn{
         assigns: %{
-          api_token: %ApiToken{workspace_id: nil},
+          api_token: %ApiToken{workspace_id: nil} = api_token,
           current_board: %{id: board_id},
           current_user: %{id: user_id}
         }
       }) do
-    if Boards.get_user_access(board_id, user_id), do: :ok, else: refuse(user_id)
+    if Boards.get_user_access(board_id, user_id), do: :ok, else: refuse(api_token, user_id)
   end
 
   def authorize(%Plug.Conn{assigns: %{api_token: %ApiToken{workspace_id: workspace_id}}})
       when not is_nil(workspace_id),
       do: :ok
 
-  def authorize(%Plug.Conn{assigns: assigns}), do: refuse(user_id(assigns))
+  def authorize(%Plug.Conn{assigns: assigns}), do: refuse(assigns[:api_token], user_id(assigns))
 
-  defp refuse(user_id) do
-    Kanban.AuditLog.event(:permission_denied, user_id: user_id, gate: @gate)
+  defp refuse(api_token, user_id) do
+    DeniedAudit.record(api_token, user_id, @gate)
     {:error, :not_authorized}
   end
 

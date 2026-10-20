@@ -113,7 +113,12 @@ defmodule KanbanWeb.API.BoardReadAccessTest do
       board = workspace_board(org_workspace_fixture(organization))
       task = ready_task(board, admin)
 
-      %{conn: authed(conn, board_token(admin, board)), admin: admin, task: task}
+      %{
+        conn: authed(conn, board_token(admin, board)),
+        admin: admin,
+        task: task,
+        organization: organization
+      }
     end
 
     test "reads while the user is org-admin", %{conn: conn, task: task} do
@@ -136,6 +141,29 @@ defmodule KanbanWeb.API.BoardReadAccessTest do
       end
 
       assert {true, %{"http_status" => 403}} = call_tool(conn, "stride_list_tasks", %{})
+    end
+
+    test "the refusal's audit row is in the Organization's log, once per window", %{
+      conn: conn,
+      admin: admin,
+      organization: organization
+    } do
+      original = Application.get_env(:kanban, Kanban.RateLimit)
+      Application.put_env(:kanban, Kanban.RateLimit, enabled: true)
+      on_exit(fn -> Application.put_env(:kanban, Kanban.RateLimit, original) end)
+
+      {1, _} =
+        from(m in OrganizationMember, where: m.user_id == ^admin.id)
+        |> Repo.update_all(set: [role: :member])
+
+      for _ <- 1..3, do: conn |> get(~p"/api/tasks") |> json_response(403)
+
+      assert [event] = AuditLog.list_events(action: :permission_denied, actor_user_id: admin.id)
+      assert event.organization_id == organization.id
+      assert event.metadata["gate"] == "api_board_read"
+
+      assert [_] =
+               AuditLog.list_events(organization_id: organization.id, action: :permission_denied)
     end
 
     test "is refused once the user left the Organization", %{conn: conn, admin: admin} do

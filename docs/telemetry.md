@@ -362,11 +362,21 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
   valid, so none of the three writes an `api_token_auth_failed` audit row or
   counts toward the failed-authentication rate limit; `board_not_found` writes
   a `permission_denied` audit row with `gate: :api_board_selector` instead.
+  A selector that names the board twice in the query string, or names
+  different boards in the query string and the body, is a
+  `board_selector_conflict` too.
 - **Board-token reads.** A read made with a board token whose user no longer
   has any access to the token's board (`KanbanWeb.API.BoardReadAccess`, on the
   REST reads and the MCP read tools) is refused with `403` and writes a
   `permission_denied` audit row with `gate: :api_board_read`. It emits no
   `[:kanban, :api, :auth_failed]` event, because the token itself is valid.
+- **Refused-gate audit rows** (`Kanban.ApiTokens.DeniedAudit`). The
+  `:api_board_selector` and `:api_board_read` rows carry the token's
+  `organization_id` when its workspace, or its board's workspace, belongs to an
+  Organization, so they appear in that Organization's audit log and export.
+  At most one such row is written per token and gate in each 5-minute window;
+  every suppressed row emits `[:kanban, :rate_limit, :denied]` with
+  `surface: :api_denied_audit`, and the request is refused either way.
 
 ### Task activity events
 
@@ -1129,7 +1139,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :two_factor_recovery_code_used]` | event, legacy | `count` | `user_id` | A user signed in with a recovery code. |
 | `[:kanban, :audit, :login_succeeded_two_factor]` | event, legacy | `count` | `user_id`, `method` | A user completed a two-factor sign-in. |
 | `[:kanban, :audit, :two_factor_challenge_failed]` | event, legacy | `count` | `user_id`, `method` | A two-factor challenge failed. |
-| `[:kanban, :audit, :permission_denied]` | event, legacy | `count` | `user_id`, `gate` | A user was refused access by a permission gate. |
+| `[:kanban, :audit, :permission_denied]` | event, legacy | `count` | `user_id`, `gate`, `organization_id` | A user was refused access by a permission gate. organization_id is set when the gate knows the Organization, such as a refused API token's. |
 | `[:kanban, :audit, :sudo_mode_entered]` | event, legacy | `count` | `user_id` | A recently authenticated user passed a sudo-mode check. |
 | `[:kanban, :audit, :audit_log_exported]` | event, legacy | `count` | `user_id`, `format` | An admin exported the audit log. |
 | `[:kanban, :audit, :org_audit_log_exported]` | event, legacy | `count` | `user_id`, `organization_id`, `format`, `truncated` | An org-admin exported their Organization's audit log. user_id is the org-admin; truncated is true when the row cap cut the file. |

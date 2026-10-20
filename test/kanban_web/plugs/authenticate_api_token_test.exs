@@ -474,6 +474,34 @@ defmodule KanbanWeb.Plugs.AuthenticateApiTokenTest do
              |> Repo.exists?()
     end
 
+    test "a 404 selector audit row is in the Organization's log, once per window", ctx do
+      original = Application.get_env(:kanban, Kanban.RateLimit)
+      Application.put_env(:kanban, Kanban.RateLimit, enabled: true)
+      on_exit(fn -> Application.put_env(:kanban, Kanban.RateLimit, original) end)
+
+      for _ <- 1..4 do
+        conn = call_with(build_conn(), ctx.ws_plain, param: "999999999")
+        assert json_response(conn, 404) == %{"error" => "Board not found"}
+      end
+
+      assert [event] =
+               from(e in Kanban.AuditLog.AuditEvent,
+                 where: e.action == "permission_denied" and e.actor_user_id == ^ctx.admin.id
+               )
+               |> Repo.all()
+
+      assert event.organization_id == ctx.organization.id
+      assert event.metadata["gate"] == "api_board_selector"
+
+      assert [%{id: id}] =
+               Kanban.AuditLog.list_events(
+                 organization_id: ctx.organization.id,
+                 action: :permission_denied
+               )
+
+      assert id == event.id
+    end
+
     test "selector failures do not count toward the failed-authentication rate limit", ctx do
       original = Application.get_env(:kanban, Kanban.RateLimit)
       Application.put_env(:kanban, Kanban.RateLimit, enabled: true)

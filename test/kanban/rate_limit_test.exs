@@ -156,6 +156,18 @@ defmodule Kanban.RateLimitTest do
     end
   end
 
+  describe ":api_denied_audit surface (identity-only)" do
+    test "allows one audit row per token and gate per 5 minutes; another key is unaffected" do
+      key = "token:#{System.unique_integer([:positive])}:api_board_read"
+      other = "token:#{System.unique_integer([:positive])}:api_board_read"
+
+      assert :ok = RateLimit.check(:api_denied_audit, identity: key)
+      assert {:error, {:rate_limited, _}} = RateLimit.check(:api_denied_audit, identity: key)
+      assert :ok = RateLimit.check(:api_denied_audit, identity: other)
+      assert RateLimit.__limits__(:api_denied_audit) == %{scale_ms: 300_000, id_limit: 1}
+    end
+  end
+
   describe ":org_audit_export surface (identity-only)" do
     test "allows 10 exports per user per hour, then refuses; another user is unaffected" do
       user = "user:#{System.unique_integer([:positive])}"
