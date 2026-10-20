@@ -80,7 +80,7 @@ defmodule KanbanWeb.TaskLive.FormComponent do
     changeset = OptionBuilders.build_changeset(task, column_id, action)
     column_options = OptionBuilders.build_column_options(columns, task)
 
-    board_users = Kanban.Boards.list_board_users(board)
+    board_users = OptionBuilders.assignable_board_users(board)
     assignable_users = OptionBuilders.build_assignable_users_options(board_users, task)
 
     goal_options = OptionBuilders.build_goal_options(board, task)

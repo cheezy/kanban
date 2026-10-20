@@ -14,7 +14,8 @@ defmodule Kanban.Tasks.Assignees do
       the save reaches the context, so the form shows its usual targeted
       error.
     * `Kanban.Tasks.BulkActions` and `Kanban.Tasks.InterventionTransactions`
-      count only enabled board members as assignable, and the goal-reassign
+      count only enabled board members and org-admins as assignable
+      (`Kanban.Boards.Assignable`), and the goal-reassign
       dialog (`KanbanWeb.AgentsLive.Interventions`) does not offer the others.
     * `Kanban.Tasks.Creation` and `Kanban.Tasks.GoalCreation` do not let a
       new child inherit a goal's assignee who is disabled; the child starts

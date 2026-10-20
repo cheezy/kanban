@@ -115,6 +115,22 @@ defmodule Kanban.Boards.Metrics do
     end)
   end
 
+  @doc """
+  Builds the member maps `members_by_board/2` returns for a list of users, in
+  the given order: for people who reach a board without a `board_users` row,
+  such as `Kanban.Boards.Assignable.list_derived_assignees/1`.
+  """
+  def members_from_users(users) when is_list(users) do
+    Enum.map(users, fn %User{id: user_id, name: name, email: email} ->
+      %{
+        kind: :human,
+        name: member_display_name(name, email),
+        palette: AvatarPalette.for_human(user_id),
+        user_id: user_id
+      }
+    end)
+  end
+
   defp maybe_enabled_only(query, true), do: where(query, [_bu, u], is_nil(u.disabled_at))
   defp maybe_enabled_only(query, false), do: query
 

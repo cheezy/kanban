@@ -27,11 +27,10 @@ defmodule Kanban.Tasks.InterventionTransactions do
   import Ecto.Query, warn: false
 
   alias Ecto.Multi
-  alias Kanban.Boards.BoardUser
+  alias Kanban.Boards.Assignable
   alias Kanban.Columns.Column
   alias Kanban.Columns.Stage
   alias Kanban.Repo
-  alias Kanban.Tasks.Assignees
   alias Kanban.Tasks.Broadcaster
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskHistory
@@ -43,7 +42,8 @@ defmodule Kanban.Tasks.InterventionTransactions do
   `new_assigned_to_id` in one transaction, recording assignment history for each
   moved task.
 
-  A non-`nil` assignee must be an enabled member of the goal's board; the
+  A non-`nil` assignee must be an enabled member of the goal's board or an
+  org-admin of its Organization (`Kanban.Boards.Assignable`); the
   check runs inside the transaction, so an off-board or disabled assignee
   returns `{:error, :assignee_not_on_board}` and nothing changes (a disabled
   account keeps its membership but cannot sign in, D385). `nil` unassigns and
@@ -186,13 +186,7 @@ defmodule Kanban.Tasks.InterventionTransactions do
   defp check_assignee_on_board(repo, goal, new_assigned_to_id) do
     %{column: %{board_id: board_id}} = repo.preload(goal, :column)
 
-    member? =
-      from(bu in BoardUser,
-        where: bu.board_id == ^board_id and bu.user_id == ^new_assigned_to_id
-      )
-      |> repo.exists?()
-
-    if member? and not Assignees.disabled?(new_assigned_to_id),
+    if Assignable.member?(repo, board_id, new_assigned_to_id),
       do: {:ok, new_assigned_to_id},
       else: {:error, :assignee_not_on_board}
   end

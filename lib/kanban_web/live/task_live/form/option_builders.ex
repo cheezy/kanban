@@ -90,6 +90,17 @@ defmodule KanbanWeb.TaskLive.Form.OptionBuilders do
   defp wip_limit_suffix, do: gettext("WIP limit reached")
 
   @doc """
+  The people the assignee select is built from, in the `board_users` shape
+  (`%{user: %User{}}`): the board's members, then the org-admins of its
+  Organization who reach it through derived access with no row
+  (`Kanban.Boards.Assignable`).
+  """
+  def assignable_board_users(board) do
+    derived = board.id |> Kanban.Boards.list_derived_assignees() |> Enum.map(&%{user: &1})
+    Kanban.Boards.list_board_users(board) ++ derived
+  end
+
+  @doc """
   Build the `{display_name, id}` list for the assignee dropdown, prefixed
   with an Unassigned option.
 

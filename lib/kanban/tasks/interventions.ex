@@ -146,7 +146,7 @@ defmodule Kanban.Tasks.Interventions do
 
   On success returns `{:ok, %{goal, children, members}}`: the goal (with its
   `:target` and `column: :board` preloaded), the not-started, unclaimed children
-  that would be reassigned, and the goal's board members (candidate assignees for
+  that would be reassigned, and the goal's board members and org-admins (candidate assignees for
   the owner selector). Performs no row locking — the `FOR UPDATE` guard applies
   only inside the write transaction, so the previewed children are a best-effort
   snapshot; the authoritative moved and skipped sets come from
@@ -157,9 +157,16 @@ defmodule Kanban.Tasks.Interventions do
           | {:error, :unauthorized}
   def reassign_preview(scope, %Task{} = goal) do
     with {:ok, goal, children} <- intervention_preview(scope, goal) do
-      {:ok,
-       %{goal: goal, children: children, members: Boards.list_board_users(goal.column.board)}}
+      {:ok, %{goal: goal, children: children, members: candidate_assignees(goal.column.board)}}
     end
+  end
+
+  # The board's members, then the org-admins of its Organization who reach it
+  # without a row (Kanban.Boards.Assignable), in the board_users shape the
+  # dialog reads.
+  defp candidate_assignees(board) do
+    derived = board.id |> Boards.list_derived_assignees() |> Enum.map(&%{user: &1})
+    Boards.list_board_users(board) ++ derived
   end
 
   @doc """
