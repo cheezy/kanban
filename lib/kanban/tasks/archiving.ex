@@ -18,6 +18,7 @@ defmodule Kanban.Tasks.Archiving do
   alias Kanban.Tasks.Positioning
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskTelemetry
+  alias Kanban.Workspaces.Policy
 
   @doc """
   Archives a task by stamping `archived_at` and persisting optional
@@ -153,6 +154,10 @@ defmodule Kanban.Tasks.Archiving do
   would surface it on the Archive view's per-reason filter — not what
   the user expects after pressing "Restore".
 
+  An assignee who no longer has write access to the board (removed from it,
+  or lowered to read-only, since the task was archived) is cleared, so the
+  restored task is open to be claimed or reassigned.
+
   Broadcasts the PubSub `:task_updated` event so open archive pages
   drop the row from their list.
   """
@@ -193,12 +198,28 @@ defmodule Kanban.Tasks.Archiving do
         task
         |> Task.archive_changeset(clear_attrs)
         |> Ecto.Changeset.put_change(:position, next_position)
+        |> drop_assignee_without_write_access(task, column)
 
       case Repo.update(changeset) do
         {:ok, updated_task} -> updated_task
         {:error, changeset} -> Repo.rollback(changeset)
       end
     end)
+  end
+
+  # Removing someone from a board, or lowering them to read-only, unassigns
+  # them from its open tasks but leaves archived ones alone. A task restored
+  # after that would come back assigned to someone who can no longer work it,
+  # and Tasks.get_next_task would never offer it to anyone else, so an
+  # assignee without write access to the board, read from the database, is
+  # cleared here.
+  defp drop_assignee_without_write_access(changeset, %Task{assigned_to_id: nil}, _column),
+    do: changeset
+
+  defp drop_assignee_without_write_access(changeset, %Task{assigned_to_id: user_id}, column) do
+    if Policy.effective_board_access(column.board_id, user_id) in [:owner, :modify],
+      do: changeset,
+      else: Ecto.Changeset.put_change(changeset, :assigned_to_id, nil)
   end
 
   @doc """

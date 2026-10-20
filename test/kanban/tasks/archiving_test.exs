@@ -54,6 +54,50 @@ defmodule Kanban.Tasks.ArchivingTest do
       assert_receive {Kanban.Tasks, :task_updated, %Task{id: tid}}
       assert tid == task.id
     end
+
+    test "keeps an assignee who still has write access", %{column: column, user: owner} do
+      archived = archived_task_assigned_to(column, owner)
+
+      assert {:ok, %Task{assigned_to_id: owner_id}} = Archiving.unarchive_task(archived)
+      assert owner_id == owner.id
+    end
+
+    test "clears an assignee who was removed from the board while the task was archived",
+         %{column: column, board: board, user: owner} do
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, member, :modify, owner)
+      archived = archived_task_assigned_to(column, member)
+      {:ok, _} = Kanban.Boards.remove_user_from_board(board, member, owner)
+
+      assert {:ok, restored} = Archiving.unarchive_task(archived)
+      assert restored.assigned_to_id == nil
+      assert Repo.get!(Task, restored.id).assigned_to_id == nil
+    end
+
+    test "clears an assignee lowered to read-only while the task was archived",
+         %{column: column, board: board, user: owner} do
+      member = user_fixture()
+      {:ok, _} = Kanban.Boards.add_user_to_board(board, member, :modify, owner)
+      archived = archived_task_assigned_to(column, member)
+      {:ok, _} = Kanban.Boards.update_user_access(board, member, :read_only, owner)
+
+      assert {:ok, %Task{assigned_to_id: nil}} = Archiving.unarchive_task(archived)
+    end
+
+    test "leaves an unassigned task unassigned", %{column: column} do
+      {:ok, archived} = column |> task_fixture() |> Archiving.archive_task()
+
+      assert {:ok, %Task{assigned_to_id: nil}} = Archiving.unarchive_task(archived)
+    end
+  end
+
+  defp archived_task_assigned_to(column, user) do
+    {:ok, archived} =
+      column
+      |> task_fixture(%{assigned_to_id: user.id})
+      |> Archiving.archive_task()
+
+    archived
   end
 
   describe "archive_task/2 — with metadata" do
