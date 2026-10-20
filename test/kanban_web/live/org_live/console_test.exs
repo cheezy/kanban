@@ -226,6 +226,25 @@ defmodule KanbanWeb.OrgLive.ConsoleTest do
       refute has_element?(view, "#member-unconfirmed-#{org_admin.id}")
     end
 
+    test "reopening the section shows a member disabled since the page loaded", %{
+      conn: conn,
+      organization: organization
+    } do
+      member = user_fixture()
+      organization_member_fixture(organization, member, :member)
+      {:ok, view, _html} = live(conn, ~p"/org?section=members")
+      refute has_element?(view, "#member-disabled-#{member.id}")
+
+      member
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Repo.update!()
+
+      view |> element("#settings-tab-details") |> render_click()
+      view |> element("#settings-tab-members") |> render_click()
+
+      assert has_element?(view, "#member-disabled-#{member.id}", "Disabled")
+    end
+
     test "an Organization whose only member is the org-admin lists just them", %{
       conn: conn,
       org_admin: org_admin

@@ -10,7 +10,9 @@ defmodule KanbanWeb.OrgLive.Console do
 
     * Details - the Organization's name, address and contact, read-only. Only a
       site admin edits them.
-    * Members - every member with name, email and role, read-only.
+    * Members - every member with name, email and role, read-only, with
+      Disabled and Unconfirmed accounts labelled. The list reloads each time
+      the section opens.
     * Workspaces - the Organization's unarchived workspaces, which the
       org-admin creates, renames and archives through
       `Kanban.Organizations.OrgWorkspaces`. Archived workspaces are hidden.
@@ -75,8 +77,16 @@ defmodule KanbanWeb.OrgLive.Console do
   end
 
   # ?section= opens that section; anything else, including an unknown name or
-  # no parameter, shows Details.
+  # no parameter, shows Details. Opening Members reloads the list, so a member
+  # disabled, confirmed or removed since the page loaded shows as they are now.
   @impl true
+  def handle_params(%{"section" => "members"}, _uri, socket) do
+    {:noreply,
+     socket
+     |> assign(:members, Organizations.list_members(socket.assigns.organization))
+     |> assign(:section, :members)}
+  end
+
   def handle_params(%{"section" => section}, _uri, socket) when section in @sections do
     {:noreply, assign(socket, :section, String.to_existing_atom(section))}
   end
