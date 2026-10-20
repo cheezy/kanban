@@ -628,10 +628,19 @@ defmodule Kanban.ApiTokensTest do
       assert revoked.revoked_at
       assert {:error, :revoked} = ApiTokens.get_api_token_by_token(plain)
 
+      # Backdate the revocation, so revoking again in the same second could not
+      # pass by writing an equal timestamp: a revoked token is returned as is.
+      revoked_at = DateTime.add(revoked.revoked_at, -3600, :second)
+
+      ApiToken
+      |> Ecto.Query.where([t], t.id == ^api_token.id)
+      |> Repo.update_all(set: [revoked_at: revoked_at])
+
       assert {:ok, again} =
                ApiTokens.revoke_workspace_api_token(admin, workspace, "#{api_token.id}")
 
-      assert again.revoked_at == revoked.revoked_at
+      assert again.revoked_at == revoked_at
+      assert Repo.reload!(api_token).revoked_at == revoked_at
     end
 
     test "revoke_workspace_api_token/3 cannot reach another workspace's or a board token",
