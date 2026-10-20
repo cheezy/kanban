@@ -6,6 +6,7 @@ defmodule Kanban.ApiTokens do
   import Ecto.Query, warn: false
 
   alias Kanban.ApiTokens.ApiToken
+  alias Kanban.ApiTokens.WorkspaceTokens
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Organizations.Organization
@@ -72,7 +73,7 @@ defmodule Kanban.ApiTokens do
     query =
       from t in ApiToken,
         where: t.token_hash == ^token_hash,
-        preload: [:user, :board]
+        preload: [:user, :board, :workspace]
 
     # Dummy query used to normalize timing across all code paths,
     # preventing side-channel attacks that distinguish token states.
@@ -211,7 +212,8 @@ defmodule Kanban.ApiTokens do
   end
 
   @doc """
-  Revokes an api_token.
+  Revokes an api_token. `audit_metadata` adds keys to the `:api_token_revoked`
+  audit event, such as the `organization_id` of a workspace token.
 
   ## Examples
 
@@ -222,7 +224,7 @@ defmodule Kanban.ApiTokens do
       {:error, %Ecto.Changeset{}}
 
   """
-  def revoke_api_token(%ApiToken{} = api_token) do
+  def revoke_api_token(%ApiToken{} = api_token, audit_metadata \\ []) do
     api_token
     |> ApiToken.revoke_changeset()
     |> Repo.update()
@@ -234,9 +236,9 @@ defmodule Kanban.ApiTokens do
           %{user_id: api_token.user_id, token_id: api_token.id}
         )
 
-        Kanban.AuditLog.event(:api_token_revoked,
-          user_id: api_token.user_id,
-          token_id: api_token.id
+        Kanban.AuditLog.event(
+          :api_token_revoked,
+          [user_id: api_token.user_id, token_id: api_token.id] ++ audit_metadata
         )
 
         result
@@ -335,6 +337,15 @@ defmodule Kanban.ApiTokens do
       reason: reason
     })
   end
+
+  # Workspace-scoped tokens (W2220) live in their own module.
+  defdelegate create_workspace_api_token(user, workspace, attrs \\ %{}), to: WorkspaceTokens
+  defdelegate list_workspace_api_tokens(actor, workspace), to: WorkspaceTokens
+  defdelegate revoke_workspace_api_token(actor, workspace, token_id), to: WorkspaceTokens
+  defdelegate revoke_user_workspace_tokens(user_id, organization_id), to: WorkspaceTokens
+  defdelegate fetch_workspace_board(api_token, selector), to: WorkspaceTokens
+  defdelegate list_token_boards(api_token), to: WorkspaceTokens
+  defdelegate token_scope(api_token), to: WorkspaceTokens
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking api_token changes.

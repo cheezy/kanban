@@ -19,6 +19,7 @@ defmodule Kanban.ApiTokens.ApiToken do
 
     belongs_to :user, Kanban.Accounts.User
     belongs_to :board, Kanban.Boards.Board
+    belongs_to :workspace, Kanban.Workspaces.Workspace
 
     timestamps(type: :utc_datetime)
   end
@@ -36,10 +37,46 @@ defmodule Kanban.ApiTokens.ApiToken do
       :board_id
     ])
     |> validate_required([:name, :user_id, :board_id])
+    |> finish_new_token()
+  end
+
+  @doc """
+  A changeset for a workspace-scoped token (W2220): like `changeset/2`, but the
+  token belongs to a workspace instead of a board. `Kanban.ApiTokens.WorkspaceTokens`
+  overwrites `user_id` and `workspace_id` in `attrs` with the values it has
+  authorized before calling this, so a crafted form field cannot point the
+  token at another workspace or user.
+  """
+  def workspace_changeset(api_token, attrs) do
+    api_token
+    |> cast(attrs, [
+      :name,
+      :agent_capabilities,
+      :agent_model,
+      :agent_version,
+      :agent_purpose,
+      :user_id,
+      :workspace_id
+    ])
+    |> validate_required([:name, :user_id, :workspace_id])
+    |> finish_new_token()
+  end
+
+  defp finish_new_token(changeset) do
+    changeset
     |> generate_token()
     |> hash_token()
     |> put_default_expiry()
+    |> check_constraint(:board_id,
+      name: :api_tokens_board_xor_workspace,
+      message: "a token belongs to exactly one board or workspace"
+    )
   end
+
+  @doc """
+  Returns true when the token is scoped to a workspace rather than a board.
+  """
+  def workspace_token?(%__MODULE__{workspace_id: workspace_id}), do: is_integer(workspace_id)
 
   # D107: default new tokens to a bounded lifetime so a leaked token cannot live
   # forever. expires_at is server-controlled (not cast from attrs). Existing tokens

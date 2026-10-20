@@ -148,6 +148,19 @@ defmodule KanbanWeb.Router do
     post "/mcp", McpController, :handle
   end
 
+  # Marks a route that does not act on one board, so a workspace token reaches
+  # it without naming a board (W2220). Authentication is the same :api
+  # pipeline, which must come after it.
+  pipeline :api_board_optional do
+    plug KanbanWeb.Plugs.BoardSelectorOptional
+  end
+
+  scope "/api", KanbanWeb.API, as: :api do
+    pipe_through [:api_json, :api_board_optional, :api]
+
+    get "/boards", BoardController, :index
+  end
+
   pipeline :mcp_event_stream_accept do
     plug KanbanWeb.Plugs.McpEventStreamAccept
   end
@@ -156,9 +169,10 @@ defmodule KanbanWeb.Router do
   # keeps no session. A client probing for the stream sends
   # Accept: text/event-stream, which :api's accepts plug would refuse with 406
   # before the 405, so this scope lets that one Accept value through first
-  # (W2231). Authentication is the same :api pipeline.
+  # (W2231). Authentication is the same :api pipeline. Neither verb acts on a
+  # board, so a workspace token gets the 405 without naming one (W2220).
   scope "/api", KanbanWeb.API, as: :api do
-    pipe_through [:api_json, :mcp_event_stream_accept, :api]
+    pipe_through [:api_json, :mcp_event_stream_accept, :api_board_optional, :api]
 
     get "/mcp", McpController, :get_not_allowed
     delete "/mcp", McpController, :delete_not_allowed

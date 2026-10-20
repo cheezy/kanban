@@ -81,7 +81,7 @@ msgstr "ログイン"
 
 #: lib/kanban_web/components/nav_components.ex:140
 #: lib/kanban_web/components/side_nav.ex:140
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:141
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:140
 #, elixir-autogen, elixir-format
 msgid "Log out"
 msgstr "ログアウト"
@@ -653,7 +653,7 @@ msgstr "ボードの所有者のみがこのボードを編集できます"
 #: lib/kanban_web/live/board_live/form.html.heex:339
 #: lib/kanban_web/live/board_live/members_form_component.ex:356
 #: lib/kanban_web/live/target_live/form.html.heex:34
-#: lib/kanban_web/live/workspace_live/settings.ex:357
+#: lib/kanban_web/live/workspace_live/settings.ex:437
 #: lib/kanban_web/notification_labels.ex:180
 #, elixir-autogen, elixir-format
 msgid "Owner"
@@ -1677,12 +1677,14 @@ msgstr "このトークンを取り消してもよろしいですか?"
 #: lib/kanban_web/live/user_live/confirmation.ex:89
 #: lib/kanban_web/live/user_live/confirmation.ex:367
 #: lib/kanban_web/live/user_live/confirmation.ex:393
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:181
 #, elixir-autogen, elixir-format
 msgid "Copy"
 msgstr "コピー"
 
 #: lib/kanban_web/live/board_live/show.html.heex:778
 #: lib/kanban_web/live/org_live/console.html.heex:209
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:58
 #, elixir-autogen, elixir-format
 msgid "Creating..."
 msgstr "作成中..."
@@ -1752,6 +1754,7 @@ msgstr "PubSubブロードキャスト"
 
 #: lib/kanban_web/live/board_live/show.html.heex:880
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:129
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:119
 #, elixir-autogen, elixir-format
 msgid "Revoke"
 msgstr "取り消し"
@@ -1822,6 +1825,7 @@ msgstr "topic:event"
 
 #: lib/kanban_web/live/board_live/show.html.heex:681
 #: lib/kanban_web/live/board_live/webhook_views.ex:105
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:203
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
 msgstr "閉じる"
@@ -1830,6 +1834,7 @@ msgstr "閉じる"
 #: lib/kanban_web/live/board_live/webhook_views.ex:89
 #: lib/kanban_web/live/user_live/confirmation.ex:64
 #: lib/kanban_web/live/user_live/confirmation.ex:368
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:188
 #, elixir-autogen, elixir-format
 msgid "Copied!"
 msgstr "コピーしました！"
@@ -3402,7 +3407,7 @@ msgstr "セキュリティ"
 #: lib/kanban_web/live/user_live/login.ex:22
 #: lib/kanban_web/live/user_live/login.ex:91
 #: lib/kanban_web/live/user_live/registration.ex:20
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:113
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:112
 #, elixir-autogen, elixir-format
 msgid "Sign in"
 msgstr "サインイン"
@@ -4278,7 +4283,7 @@ msgstr[0] "%{count}件アクティブ"
 #: lib/kanban_web/live/board_live/index.html.heex:100
 #: lib/kanban_web/live/board_live/show.html.heex:8
 #: lib/kanban_web/live/goal_live/show.ex:91
-#: lib/kanban_web/live/workspace_live/settings.ex:348
+#: lib/kanban_web/live/workspace_live/settings.ex:425
 #: lib/kanban_web/live/workspace_live/settings.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Boards"
@@ -4509,7 +4514,7 @@ msgstr "進行中の作業。フックは前後に実行され、アクティビ
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
 #: lib/kanban_web/live/org_live/console.ex:391
 #: lib/kanban_web/live/org_live/console.html.heex:117
-#: lib/kanban_web/live/workspace_live/settings.ex:347
+#: lib/kanban_web/live/workspace_live/settings.ex:424
 #: lib/kanban_web/live/workspace_live/settings.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Members"
@@ -4521,6 +4526,7 @@ msgid "Shipped. Cycle time is recorded so the next estimate gets sharper."
 msgstr "出荷済み。サイクルタイムが記録され、次回の見積もりがより正確になります。"
 
 #: lib/kanban_web/components/board_tabs.ex:140
+#: lib/kanban_web/live/workspace_live/settings.ex:430
 #, elixir-autogen, elixir-format
 msgid "Tokens"
 msgstr "APIトークン"
@@ -4859,6 +4865,7 @@ msgstr "カンマ区切り。有効な値: api_design, code_generation, code_rev
 
 #: lib/kanban_web/live/board_live/show.html.heex:627
 #: lib/kanban_web/live/board_live/webhook_views.ex:54
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:151
 #, elixir-autogen, elixir-format
 msgid "Copy it now — you won't be able to see it again."
 msgstr "今すぐコピーしてください — 二度と見ることはできません。"
@@ -4889,6 +4896,7 @@ msgid "Token created"
 msgstr "トークンを作成しました"
 
 #: lib/kanban_web/live/board_live/show.html.heex:709
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:43
 #, elixir-autogen, elixir-format
 msgid "Token name"
 msgstr "トークン名"
@@ -5661,7 +5669,7 @@ msgid "Confirming your account…"
 msgstr "アカウントを確認中…"
 
 #: lib/kanban_web/live/user_live/registration.ex:130
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:106
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:105
 #, elixir-autogen, elixir-format
 msgid "Create account"
 msgstr "アカウントを作成"
@@ -7183,7 +7191,7 @@ msgid "you can sign in as soon as it's verified"
 msgstr "確認が完了するとすぐにサインインできます"
 
 #: lib/kanban_web/live/user_live/confirmation_pending.ex:18
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:82
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:81
 #, elixir-autogen, elixir-format
 msgid "Return to Stride"
 msgstr "Strideに戻る"
@@ -10731,8 +10739,8 @@ msgstr "有効なメールアドレスを入力してください。変更は行
 #: lib/kanban_web/live/org_live/console.ex:397
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:138
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:152
-#: lib/kanban_web/live/workspace_live/settings.ex:355
-#: lib/kanban_web/live/workspace_live/settings.ex:360
+#: lib/kanban_web/live/workspace_live/settings.ex:435
+#: lib/kanban_web/live/workspace_live/settings.ex:440
 #, elixir-autogen, elixir-format
 msgid "Member"
 msgstr "メンバー"
@@ -11250,7 +11258,7 @@ msgstr "このアカウントは無効化されているため、ボードに追
 msgid "Too many exports. Try again later."
 msgstr "エクスポートの回数が多すぎます。しばらくしてからもう一度お試しください。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:206
+#: lib/kanban_web/live/workspace_live/settings.ex:247
 #, elixir-autogen, elixir-format
 msgid "Board moved into this workspace."
 msgstr "ボードをこのワークスペースに移動しました。"
@@ -11272,8 +11280,8 @@ msgstr "組織のメンバー全員（組織管理者が先頭）。メンバー
 
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:138
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:153
-#: lib/kanban_web/live/workspace_live/settings.ex:356
-#: lib/kanban_web/live/workspace_live/settings.ex:360
+#: lib/kanban_web/live/workspace_live/settings.ex:436
+#: lib/kanban_web/live/workspace_live/settings.ex:440
 #, elixir-autogen, elixir-format
 msgid "Guest"
 msgstr "ゲスト"
@@ -11284,12 +11292,12 @@ msgid "Manage who is in this workspace and which boards it holds."
 msgstr "このワークスペースに参加するユーザーと、含まれるボードを管理します。"
 
 #: lib/kanban_web/live/org_live/console.ex:189
-#: lib/kanban_web/live/workspace_live/settings.ex:315
+#: lib/kanban_web/live/workspace_live/settings.ex:377
 #, elixir-autogen, elixir-format
 msgid "Member not found."
 msgstr "メンバーが見つかりません。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:132
+#: lib/kanban_web/live/workspace_live/settings.ex:145
 #, elixir-autogen, elixir-format
 msgid "Member removed from the workspace."
 msgstr "メンバーをワークスペースから削除しました。"
@@ -11340,7 +11348,7 @@ msgstr "ワークスペースはまだありません"
 msgid "Nobody has been added to this workspace yet."
 msgstr "このワークスペースにはまだ誰も追加されていません。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:310
+#: lib/kanban_web/live/workspace_live/settings.ex:372
 #, elixir-autogen, elixir-format
 msgid "Only an org-admin can manage this workspace."
 msgstr "このワークスペースを管理できるのは組織管理者だけです。"
@@ -11380,7 +11388,7 @@ msgstr "このメンバーをワークスペースから削除しますか？こ
 msgid "Removing a member also removes their board memberships in this workspace and revokes their API tokens here."
 msgstr "メンバーを削除すると、このワークスペースでのボードのメンバーシップも削除され、ここでの API トークンも取り消されます。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:278
+#: lib/kanban_web/live/workspace_live/settings.ex:340
 #, elixir-autogen, elixir-format
 msgid "Role updated."
 msgstr "ロールを更新しました。"
@@ -11390,7 +11398,7 @@ msgstr "ロールを更新しました。"
 msgid "Switch workspace"
 msgstr "ワークスペースを切り替え"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:215
+#: lib/kanban_web/live/workspace_live/settings.ex:256
 #, elixir-autogen, elixir-format
 msgid "That board can't be moved here. Choose a board you own in your personal boards."
 msgstr "このボードはここに移動できません。個人ボードのうち自分が所有するボードを選択してください。"
@@ -11405,7 +11413,7 @@ msgstr "このワークスペースは利用できません。"
 msgid "The boards in this workspace you have access to."
 msgstr "このワークスペースのボードのうち、アクセスできるもの。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:199
+#: lib/kanban_web/live/workspace_live/settings.ex:240
 #, elixir-autogen, elixir-format
 msgid "The change could not be saved. Please try again."
 msgstr "変更を保存できませんでした。もう一度お試しください。"
@@ -11422,12 +11430,12 @@ msgid "Workspace sections"
 msgstr "ワークスペースのセクション"
 
 #: lib/kanban_web/components/workspace_switcher.ex:141
-#: lib/kanban_web/live/workspace_live/settings.ex:77
+#: lib/kanban_web/live/workspace_live/settings.ex:85
 #, elixir-autogen, elixir-format
 msgid "Workspace settings"
 msgstr "ワークスペースの設定"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:61
+#: lib/kanban_web/live/workspace_live/settings.ex:69
 #, elixir-autogen, elixir-format
 msgid "Workspace settings are not available."
 msgstr "ワークスペースの設定は利用できません。"
@@ -11442,12 +11450,12 @@ msgstr "移動できる自分所有の個人ボードはありません。"
 msgid "You have no personal boards."
 msgstr "個人ボードはありません。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:348
+#: lib/kanban_web/live/workspace_live/settings.ex:425
 #, elixir-autogen, elixir-format
 msgid "list · move a board here"
 msgstr "一覧 · ボードをここに移動"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:347
+#: lib/kanban_web/live/workspace_live/settings.ex:424
 #, elixir-autogen, elixir-format
 msgid "roles · removal"
 msgstr "ロール · 削除"
@@ -11463,7 +11471,7 @@ msgstr "組織メンバーを削除しました"
 msgid "%{role} · %{board}"
 msgstr "%{role} · %{board}"
 
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:127
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:126
 #, elixir-autogen, elixir-format
 msgid "Accept invitation"
 msgstr "招待を承諾"
@@ -11483,17 +11491,18 @@ msgstr "ボードのみ"
 msgid "Can edit"
 msgstr "編集可能"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:235
+#: lib/kanban_web/live/workspace_live/settings.ex:276
 #, elixir-autogen, elixir-format
 msgid "Choose a board in this workspace."
 msgstr "このワークスペースのボードを選択してください。"
 
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:94
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:93
 #, elixir-autogen, elixir-format
 msgid "Create an account with the email address this invitation was sent to, or sign in if you already have one and then open this link again."
 msgstr "この招待が送信されたメールアドレスでアカウントを作成するか、すでにアカウントをお持ちの場合はサインインしてから、このリンクをもう一度開いてください。"
 
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:160
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:234
 #, elixir-autogen, elixir-format
 msgid "Expired"
 msgstr "期限切れ"
@@ -11513,33 +11522,33 @@ msgstr "招待"
 msgid "Invitation accepted."
 msgstr "招待を承諾しました。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:262
+#: lib/kanban_web/live/workspace_live/settings.ex:303
 #, elixir-autogen, elixir-format
 msgid "Invitation not found."
 msgstr "招待が見つかりません。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:174
+#: lib/kanban_web/live/workspace_live/settings.ex:189
 #, elixir-autogen, elixir-format
 msgid "Invitation revoked."
 msgstr "招待を取り消しました。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:165
+#: lib/kanban_web/live/workspace_live/settings.ex:180
 #, elixir-autogen, elixir-format
 msgid "Invitation sent again."
 msgstr "招待を再送信しました。"
 
 #: lib/kanban_web/live/board_live/membership.ex:196
-#: lib/kanban_web/live/workspace_live/settings.ex:223
+#: lib/kanban_web/live/workspace_live/settings.ex:264
 #, elixir-autogen, elixir-format
 msgid "Invitation sent to %{email}."
 msgstr "%{email} に招待を送信しました。"
 
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:156
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:155
 #, elixir-autogen, elixir-format
 msgid "Invitation unavailable"
 msgstr "招待を利用できません"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:351
+#: lib/kanban_web/live/workspace_live/settings.ex:429
 #, elixir-autogen, elixir-format
 msgid "Invitations"
 msgstr "招待"
@@ -11572,22 +11581,22 @@ msgstr "メールで招待して、このワークスペースと組織に参加
 msgid "Invite with Edit Access"
 msgstr "編集権限で招待"
 
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:159
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:158
 #, elixir-autogen, elixir-format
 msgid "Join the board %{board}."
 msgstr "ボード %{board} に参加します。"
 
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:164
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:163
 #, elixir-autogen, elixir-format
 msgid "Join the workspace %{workspace} in %{organization}, with access to %{board}."
 msgstr "%{organization} のワークスペース %{workspace} に参加し、%{board} にアクセスできるようになります。"
 
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:172
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:171
 #, elixir-autogen, elixir-format
 msgid "Join the workspace %{workspace} in %{organization}."
 msgstr "%{organization} のワークスペース %{workspace} に参加します。"
 
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:125
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:124
 #, elixir-autogen, elixir-format
 msgid "Joining..."
 msgstr "参加中..."
@@ -11652,7 +11661,7 @@ msgstr "送信中..."
 msgid "That email address can't be invited."
 msgstr "そのメールアドレスは招待できません。"
 
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:155
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:154
 #, elixir-autogen, elixir-format
 msgid "This board is full"
 msgstr "このボードは満員です"
@@ -11673,24 +11682,24 @@ msgstr "この招待リンクは無効か、期限切れです。"
 msgid "You joined %{name}."
 msgstr "%{name} に参加しました。"
 
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:152
 #: lib/kanban_web/live/workspace_live/invitation_accept.ex:153
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:154
 #, elixir-autogen, elixir-format
 msgid "You're invited"
 msgstr "招待が届いています"
 
-#: lib/kanban_web/live/workspace_live/invitation_accept.ex:135
+#: lib/kanban_web/live/workspace_live/invitation_accept.ex:134
 #, elixir-autogen, elixir-format
 msgid "You're signed in as %{email}."
 msgstr "%{email} としてサインインしています。"
 
 #: lib/kanban_web/live/board_live/membership.ex:209
-#: lib/kanban_web/live/workspace_live/settings.ex:255
+#: lib/kanban_web/live/workspace_live/settings.ex:296
 #, elixir-autogen, elixir-format
 msgid "You've sent a lot of invitations. Please try again later."
 msgstr "招待を多数送信しました。しばらくしてからもう一度お試しください。"
 
-#: lib/kanban_web/live/workspace_live/settings.ex:351
+#: lib/kanban_web/live/workspace_live/settings.ex:429
 #, elixir-autogen, elixir-format
 msgid "invite · resend · revoke"
 msgstr "招待 · 再送信 · 取り消し"
@@ -11700,3 +11709,103 @@ msgstr "招待 · 再送信 · 取り消し"
 msgctxt "audit action"
 msgid "Organization member added"
 msgstr "組織メンバーを追加しました"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:70
+#, elixir-autogen, elixir-format
+msgid "A token stops working when it is revoked, when it expires, or when the org-admin it acts as leaves this workspace or the Organization."
+msgstr "トークンは、取り消されたとき、有効期限が切れたとき、またはトークンが代理する組織管理者がこのワークスペースまたは組織から外れたときに使えなくなります。"
+
+#: lib/kanban_web/live/workspace_live/settings.ex:430
+#, elixir-autogen, elixir-format
+msgid "API tokens · create · revoke"
+msgstr "APIトークン · 作成 · 取り消し"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:232
+#, elixir-autogen, elixir-format
+msgid "Active"
+msgstr "有効"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:49
+#, elixir-autogen, elixir-format
+msgid "Agent capabilities (comma-separated, optional)"
+msgstr "エージェントの機能(カンマ区切り、任意)"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:217
+#, elixir-autogen, elixir-format
+msgid "By %{creator} · created %{created} · last used %{used} · expires %{expires}"
+msgstr "作成者 %{creator} · 作成日 %{created} · 最終使用 %{used} · 有効期限 %{expires}"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:195
+#, elixir-autogen, elixir-format
+msgid "Couldn't copy it. Select the token and copy it yourself."
+msgstr "コピーできませんでした。トークンを選択して手動でコピーしてください。"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:29
+#, elixir-autogen, elixir-format
+msgid "Create a workspace token"
+msgstr "ワークスペーストークンを作成"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:60
+#, elixir-autogen, elixir-format
+msgid "Create token"
+msgstr "トークンを作成"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:81
+#, elixir-autogen, elixir-format
+msgid "No workspace tokens yet."
+msgstr "ワークスペーストークンはまだありません。"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:31
+#, elixir-autogen, elixir-format
+msgid "One token for every board in this workspace. It acts as you, reaches the AI Optimized boards you can modify, and names its board on each request with the X-Stride-Board header. It expires in 90 days."
+msgstr "このワークスペースのすべてのボードで使える1つのトークンです。あなたとして動作し、あなたが編集できるAI最適化ボードにアクセスし、リクエストごとにX-Stride-Boardヘッダーで対象のボードを指定します。有効期限は90日です。"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:116
+#, elixir-autogen, elixir-format
+msgid "Revoke this token? Agents using it lose access immediately."
+msgstr "このトークンを取り消しますか?使用中のエージェントはすぐにアクセスできなくなります。"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:233
+#, elixir-autogen, elixir-format
+msgid "Revoked"
+msgstr "取り消し済み"
+
+#: lib/kanban_web/live/workspace_live/tokens.ex:66
+#, elixir-autogen, elixir-format
+msgid "The token could not be revoked. Please try again."
+msgstr "トークンを取り消せませんでした。もう一度お試しください。"
+
+#: lib/kanban_web/live/workspace_live/tokens.ex:45
+#, elixir-autogen, elixir-format
+msgid "This workspace is archived."
+msgstr "このワークスペースはアーカイブされています。"
+
+#: lib/kanban_web/live/workspace_live/tokens.ex:63
+#, elixir-autogen, elixir-format
+msgid "Token not found."
+msgstr "トークンが見つかりません。"
+
+#: lib/kanban_web/live/workspace_live/settings.ex:312
+#, elixir-autogen, elixir-format
+msgid "Workspace token created. Copy it now; it won't be shown again."
+msgstr "ワークスペーストークンを作成しました。今すぐコピーしてください。再表示されません。"
+
+#: lib/kanban_web/live/workspace_live/settings.ex:205
+#, elixir-autogen, elixir-format
+msgid "Workspace token revoked."
+msgstr "ワークスペーストークンを取り消しました。"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:68
+#, elixir-autogen, elixir-format
+msgid "Workspace tokens"
+msgstr "ワークスペーストークン"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:148
+#, elixir-autogen, elixir-format
+msgid "Your new workspace token"
+msgstr "新しいワークスペーストークン"
+
+#: lib/kanban_web/live/workspace_live/tokens_card.ex:229
+#, elixir-autogen, elixir-format
+msgid "never"
+msgstr "なし"

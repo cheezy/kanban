@@ -28,6 +28,14 @@ defmodule KanbanWeb.API.Agent.EndpointDocsTest do
       end
     end
 
+    test "lists GET /api/boards under discovery (W2220)" do
+      boards = Enum.filter(EndpointDocs.endpoints().discovery, &(&1.path == "/api/boards"))
+
+      assert [%{method: "GET", documentation_url: url, description: description}] = boards
+      assert url == @docs_prefix <> "get_boards.md"
+      assert description =~ "workspace token"
+    end
+
     test "lists the comment endpoints, each once" do
       paths =
         for {_group, entries} <- EndpointDocs.endpoints(),

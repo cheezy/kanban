@@ -532,6 +532,18 @@ defmodule KanbanWeb.API.OpenApiContractTest do
                schema_keys(spec, "TaskComment")
     end
 
+    test "Board lists exactly the keys of BoardJSON.board/1", %{spec: spec} do
+      board = %Kanban.Boards.Board{id: 1, name: "Board", description: nil, workspace_id: nil}
+
+      assert rendered_keys(KanbanWeb.API.BoardJSON.board(board)) == schema_keys(spec, "Board")
+    end
+
+    test "BoardList lists exactly the keys of BoardJSON.index/1", %{spec: spec} do
+      rendered = KanbanWeb.API.BoardJSON.index(%{boards: [], token_scope: "board"})
+
+      assert rendered_keys(rendered) == schema_keys(spec, "BoardList")
+    end
+
     test "TaskCommentListMeta lists exactly the keys of a real comment list meta", %{
       conn: conn,
       spec: spec

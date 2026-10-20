@@ -416,6 +416,149 @@ defmodule KanbanWeb.WorkspaceLive.SettingsTest do
     %{admin: admin, workspace: org_workspace_fixture(organization)}
   end
 
+  # Every token of the workspace, newest first, read without the org-admin
+  # check Kanban.ApiTokens.list_workspace_api_tokens/2 makes.
+  defp workspace_tokens(workspace) do
+    from(t in Kanban.ApiTokens.ApiToken,
+      where: t.workspace_id == ^workspace.id,
+      order_by: [desc: t.inserted_at, desc: t.id]
+    )
+    |> Repo.all()
+  end
+
+  defp shown_token(view) do
+    case Regex.run(~r/id="workspace-token-value"[^>]*>([^<]+)</, render(view)) do
+      [_, plain] -> String.trim(plain)
+      nil -> nil
+    end
+  end
+
+  defp create_token(view, name \\ "Fleet") do
+    view
+    |> form("#workspace-token-form",
+      token: %{name: name, agent_capabilities: "code_generation, testing"}
+    )
+    |> render_submit()
+  end
+
+  describe "tokens (W2220)" do
+    test "an org-admin sees the Tokens section and creates a token shown once", ctx do
+      {view, _html} = admin_view(ctx)
+      assert has_element?(view, "#settings-tab-tokens")
+
+      render_click(view, "select_section", %{"section" => "tokens"})
+      assert_patch(view, ~p"/workspace/settings?section=tokens")
+      assert has_element?(view, "#no-workspace-tokens")
+
+      assert create_token(view) =~ "Workspace token created."
+
+      plain = shown_token(view)
+      assert plain
+      assert [api_token] = workspace_tokens(ctx.workspace)
+      assert api_token.token_hash == Kanban.ApiTokens.ApiToken.hash_token_string(plain)
+      assert api_token.user_id == ctx.org_admin.id
+      assert api_token.agent_capabilities == ["code_generation", "testing"]
+      assert has_element?(view, "#workspace-token-#{api_token.id}", "Fleet")
+      assert has_element?(view, "#workspace-token-status-#{api_token.id}", "Active")
+
+      render_click(view, "select_section", %{"section" => "boards"})
+      assert_patch(view, ~p"/workspace/settings?section=boards")
+      render_click(view, "select_section", %{"section" => "tokens"})
+      assert_patch(view, ~p"/workspace/settings?section=tokens")
+      assert shown_token(view) == nil
+      refute render(view) =~ plain
+
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
+      refute render(view) =~ plain
+      assert has_element?(view, "#workspace-token-#{api_token.id}")
+    end
+
+    test "dismissing the new token hides it", ctx do
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
+      create_token(view)
+      plain = shown_token(view)
+
+      view |> element("#workspace-token-dismiss") |> render_click()
+
+      refute has_element?(view, "#workspace-token-reveal")
+      refute render(view) =~ plain
+    end
+
+    test "a blank name shows the form error and creates nothing", ctx do
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
+
+      assert create_token(view, "") =~ "can&#39;t be blank"
+      assert workspace_tokens(ctx.workspace) == []
+      refute has_element?(view, "#workspace-token-reveal")
+    end
+
+    test "an org-admin revokes a token, and a foreign token id is not found", ctx do
+      {:ok, {api_token, _}} =
+        Kanban.ApiTokens.create_workspace_api_token(ctx.org_admin, ctx.workspace, %{name: "A"})
+
+      other = org_with_admin_workspace()
+
+      {:ok, {foreign, _}} =
+        Kanban.ApiTokens.create_workspace_api_token(other.admin, other.workspace, %{name: "B"})
+
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
+
+      assert render_click(view, "revoke_token", %{"id" => Integer.to_string(foreign.id)}) =~
+               "Token not found."
+
+      refute Repo.reload!(foreign).revoked_at
+
+      assert view |> element("#revoke-workspace-token-#{api_token.id}") |> render_click() =~
+               "Workspace token revoked."
+
+      assert Repo.reload!(api_token).revoked_at
+      assert has_element?(view, "#workspace-token-status-#{api_token.id}", "Revoked")
+      refute has_element?(view, "#revoke-workspace-token-#{api_token.id}")
+    end
+
+    test "a member or guest has no Tokens section and crafted token events are denied", ctx do
+      {:ok, {api_token, _}} =
+        Kanban.ApiTokens.create_workspace_api_token(ctx.org_admin, ctx.workspace, %{name: "A"})
+
+      for viewer <- [ctx.member, ctx.guest] do
+        conn = ctx.conn |> log_in_user(viewer) |> switch(ctx.workspace)
+        {:ok, view, _html} = live(conn, ~p"/workspace/settings?section=tokens")
+
+        refute has_element?(view, "#settings-tab-tokens")
+        refute has_element?(view, "#workspace-token-form")
+        assert has_element?(view, "#members")
+
+        events = [
+          {"create_token", %{"token" => %{"name" => "Crafted"}}},
+          {"revoke_token", %{"id" => Integer.to_string(api_token.id)}},
+          {"create_token", %{}},
+          {"revoke_token", %{}}
+        ]
+
+        for {event, params} <- events do
+          assert render_click(view, event, params) =~ @denied
+        end
+
+        refute render(view) =~ "workspace-token-value"
+      end
+
+      assert [%{id: id, revoked_at: nil}] =
+               workspace_tokens(ctx.workspace)
+
+      assert id == api_token.id
+    end
+
+    test "an org-admin demoted while the page is open cannot create a token", ctx do
+      {view, _html} = admin_view(ctx, ~p"/workspace/settings?section=tokens")
+
+      from(m in OrganizationMember, where: m.user_id == ^ctx.org_admin.id)
+      |> Repo.update_all(set: [role: :member])
+
+      assert create_token(view) =~ @denied
+      assert workspace_tokens(ctx.workspace) == []
+    end
+  end
+
   describe "denial" do
     test "a member or guest crafting every management event is denied and audited", ctx do
       board = board_fixture(ctx.member, %{name: "Member board"})

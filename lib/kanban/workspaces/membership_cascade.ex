@@ -8,8 +8,9 @@ defmodule Kanban.Workspaces.MembershipCascade do
   given workspaces:
 
     * deletes the user's `board_users` row,
-    * revokes the user's API tokens for the board, so an agent acting through
-      one loses access at once, and
+    * revokes the user's API tokens for the board, and their workspace tokens
+      for the workspace (W2220), so an agent acting through one loses access at
+      once, and
     * unassigns the user from the board's open (unarchived) tasks, as
       `Kanban.Boards.MembershipChanges.remove_user_from_board/3` does.
 
@@ -26,7 +27,9 @@ defmodule Kanban.Workspaces.MembershipCascade do
 
   `revoke_derived_tokens/2` is the narrower cascade for losing org-admin
   access alone (`Kanban.Organizations.remove_org_admin/3`): it revokes only the
-  tokens on boards whose write access came through that access, and
+  tokens on boards whose write access came through that access, plus every
+  workspace token the user holds in the Organization, which only an org-admin
+  may hold (W2220), and
   `notify_derived_access_ended/2` tells those boards' open pages after commit.
   """
 
@@ -82,7 +85,8 @@ defmodule Kanban.Workspaces.MembershipCascade do
   token on such a board was minted through derived access and goes too. Call
   it inside the transaction that ends that access, so an agent acting through
   such a token loses access with it. Tokens on boards they can still modify
-  are kept. Returns the number revoked.
+  are kept. Their workspace tokens in the Organization's workspaces are revoked
+  as well (W2220). Returns the number revoked.
   """
   @spec revoke_derived_tokens(integer(), integer()) :: non_neg_integer()
   def revoke_derived_tokens(user_id, organization_id)
@@ -95,7 +99,7 @@ defmodule Kanban.Workspaces.MembershipCascade do
       )
       |> Repo.update_all(set: [revoked_at: DateTime.utc_now(:second)])
 
-    revoked
+    revoked + ApiTokens.revoke_user_workspace_tokens(user_id, organization_id)
   end
 
   @doc """
@@ -162,11 +166,13 @@ defmodule Kanban.Workspaces.MembershipCascade do
     from(b in Board, where: b.workspace_id in ^workspace_ids, select: b.id)
   end
 
+  # Board tokens on the workspaces' boards, and workspace tokens (W2220) of the
+  # workspaces themselves.
   defp revoke_remaining_tokens(user_id, workspace_ids) do
     from(t in ApiToken,
       where:
         t.user_id == ^user_id and is_nil(t.revoked_at) and
-          t.board_id in subquery(boards_in(workspace_ids))
+          (t.board_id in subquery(boards_in(workspace_ids)) or t.workspace_id in ^workspace_ids)
     )
     |> Repo.update_all(set: [revoked_at: DateTime.utc_now(:second)])
   end

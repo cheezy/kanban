@@ -25,6 +25,10 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
       member or guest, optionally with access to one of the workspace's
       boards, and resend or revoke open invitations
       (`Kanban.Workspaces.Invitations`, `KanbanWeb.WorkspaceLive.InvitationsCard`).
+    * Tokens — org-admins only (W2220). Create a workspace-scoped API token,
+      whose plain text is shown once (`:new_token`, cleared on dismiss and on
+      every section change), and revoke the workspace's tokens
+      (`KanbanWeb.WorkspaceLive.Tokens`, `KanbanWeb.WorkspaceLive.TokensCard`).
 
   Hidden controls are not authorization. Every management event re-reads the
   actor, the workspace and the org-admin role from the database first; a
@@ -35,6 +39,7 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
 
   import KanbanWeb.UserLive.SettingsComponents, only: [section_tab: 1, settings_card: 1]
   import KanbanWeb.WorkspaceLive.InvitationsCard, only: [invitations_card: 1]
+  import KanbanWeb.WorkspaceLive.TokensCard, only: [tokens_card: 1]
 
   alias Ecto.Changeset
   alias Kanban.Accounts
@@ -44,9 +49,12 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
   alias Kanban.Workspaces.Invitations
   alias Kanban.Workspaces.Policy
   alias Kanban.Workspaces.Workspace
+  alias KanbanWeb.WorkspaceLive.Tokens
 
-  @sections ["members", "boards", "invitations"]
+  @sections ["members", "boards", "invitations", "tokens"]
+  @manager_sections ["invitations", "tokens"]
   @invitation_events ["invite", "resend_invitation", "revoke_invitation"]
+  @token_events ["create_token", "revoke_token"]
   @roles %{"member" => :member, "guest" => :guest}
 
   @impl true
@@ -79,6 +87,8 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
     |> assign(:can_manage?, can_manage?)
     |> assign(:section, :members)
     |> assign(:invite_form, invite_form())
+    |> assign(:token_form, Tokens.form())
+    |> assign(:new_token, nil)
     |> load_lists(user)
   end
 
@@ -90,24 +100,27 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
     |> assign(:boards, Workspaces.list_boards(user, workspace))
     |> assign(:movable_boards, movable_boards(socket.assigns.can_manage?, user))
     |> assign(:invitations, Invitations.list_pending(user, workspace))
+    |> assign(:tokens, Tokens.list(user, workspace))
   end
 
   defp movable_boards(true, user), do: Workspaces.list_movable_boards(user)
   defp movable_boards(false, _user), do: []
 
+  # Every section change drops a token shown once, so it never reappears.
   @impl true
-  def handle_params(
-        %{"section" => "invitations"},
-        _uri,
-        %{assigns: %{can_manage?: false}} = socket
-      ),
-      do: {:noreply, assign(socket, :section, :members)}
+  def handle_params(%{"section" => section}, _uri, %{assigns: %{can_manage?: false}} = socket)
+      when section in @manager_sections,
+      do: {:noreply, show_section(socket, :members)}
 
   def handle_params(%{"section" => section}, _uri, socket) when section in @sections do
-    {:noreply, assign(socket, :section, String.to_existing_atom(section))}
+    {:noreply, show_section(socket, String.to_existing_atom(section))}
   end
 
-  def handle_params(_params, _uri, socket), do: {:noreply, assign(socket, :section, :members)}
+  def handle_params(_params, _uri, socket), do: {:noreply, show_section(socket, :members)}
+
+  defp show_section(socket, section) do
+    socket |> assign(:section, section) |> assign(:new_token, nil)
+  end
 
   @impl true
   def handle_event("select_section", %{"section" => section}, socket)
@@ -177,11 +190,37 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
     end)
   end
 
+  def handle_event("create_token", %{"token" => params}, socket) when is_map(params) do
+    with_manager(socket, fn actor, workspace ->
+      actor
+      |> Tokens.create(workspace, params)
+      |> respond_to_token_create(socket, actor)
+    end)
+  end
+
+  def handle_event("revoke_token", %{"id" => id}, socket) when is_binary(id) or is_integer(id) do
+    with_manager(socket, fn actor, workspace ->
+      case Tokens.revoke(actor, workspace, id) do
+        :ok ->
+          respond({:ok, nil}, socket, actor, gettext("Workspace token revoked."))
+
+        {:error, :unauthorized} ->
+          {:noreply, deny(socket)}
+
+        {:error, message} ->
+          {:noreply, socket |> replace_flash(:error, message) |> load_lists(actor)}
+      end
+    end)
+  end
+
+  def handle_event("dismiss_token", _params, socket),
+    do: {:noreply, assign(socket, :new_token, nil)}
+
   # A crafted management event without its parameters changes nothing, but is
   # still refused for a viewer who may not manage the workspace.
   def handle_event(event, _params, socket)
       when event in ["update_role", "remove_member", "move_board"] or
-             event in @invitation_events do
+             event in @invitation_events or event in @token_events do
     with_manager(socket, fn _actor, _workspace -> {:noreply, socket} end)
   end
 
@@ -264,6 +303,27 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
      |> replace_flash(:error, gettext("Invitation not found."))
      |> load_lists(actor)}
   end
+
+  defp respond_to_token_create({:ok, plain_text}, socket, actor) do
+    {:noreply,
+     socket
+     |> replace_flash(
+       :info,
+       gettext("Workspace token created. Copy it now; it won't be shown again.")
+     )
+     |> assign(:new_token, plain_text)
+     |> assign(:token_form, Tokens.form())
+     |> load_lists(actor)}
+  end
+
+  defp respond_to_token_create({:error, :unauthorized}, socket, _actor),
+    do: {:noreply, deny(socket)}
+
+  defp respond_to_token_create({:error, %Phoenix.HTML.Form{} = form}, socket, _actor),
+    do: {:noreply, assign(socket, :token_form, form)}
+
+  defp respond_to_token_create({:error, message}, socket, actor) when is_binary(message),
+    do: {:noreply, socket |> replace_flash(:error, message) |> load_lists(actor)}
 
   defp invite_form(params \\ %{}, action \\ nil) do
     params
@@ -365,7 +425,10 @@ defmodule KanbanWeb.WorkspaceLive.Settings do
       {:boards, gettext("Boards"), gettext("list · move a board here")}
     ] ++
       if can_manage?,
-        do: [{:invitations, gettext("Invitations"), gettext("invite · resend · revoke")}],
+        do: [
+          {:invitations, gettext("Invitations"), gettext("invite · resend · revoke")},
+          {:tokens, gettext("Tokens"), gettext("API tokens · create · revoke")}
+        ],
         else: []
   end
 

@@ -68,6 +68,7 @@ Returns comprehensive onboarding information:
     "base_url": "https://www.stridelikeaboss.com",
     "authentication": "Bearer token in Authorization header",
     "openapi_url": "https://www.stridelikeaboss.com/api/openapi.json",
+    "workspace_tokens": {...},
     "endpoints": {
       "discovery": [...],
       "management": [...],
@@ -250,6 +251,11 @@ Each endpoint includes:
 - Description
 - Which hooks it returns (if any)
 - Link to detailed documentation
+
+`workspace_tokens` explains workspace-scoped tokens: who creates them, the
+`X-Stride-Board` header and `board_id` parameter that name the board each
+request acts on, the `400` and `404` responses, and
+[GET /api/boards](get_boards.md), which lists the boards a token can use.
 
 ### `resources`
 

@@ -81,7 +81,9 @@ Authorization: Bearer stride_dev_abc123def456...
 
 - **Simple**: Just one header on every request
 - **Stateless**: No session management or cookies
-- **Board-scoped**: Each token grants access to one specific board only
+- **Scoped**: A board token grants access to one specific board only; a
+  workspace token grants access to the boards of one Organization workspace
+  (see [Workspace tokens](#workspace-tokens))
 - **Revocable**: Human can revoke your token without affecting their login
 - **Trackable**: Your usage is tracked via `last_used_at` timestamps
 
@@ -210,6 +212,33 @@ Your token grants access to:
 - ✓ **All API endpoints** - Task operations, hook configuration, onboarding info
 - ✗ **Other boards** - Your token cannot access other boards
 - ✗ **User authentication** - Your token doesn't grant UI access
+
+### Workspace tokens
+
+An org-admin of an Organization can create a **workspace token** in the Tokens
+section of the workspace settings page (`/workspace/settings?section=tokens`).
+One workspace token reaches every board of that workspace that is AI Optimized
+and that the org-admin can modify, so an agent fleet working across many boards
+needs one token instead of one per board. The token acts as the org-admin who
+created it.
+
+With a workspace token, every request except `GET /api/boards` names the board
+it acts on, by id, in the `X-Stride-Board` header or the `board_id` parameter:
+
+```bash
+curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+     -H "X-Stride-Board: 42" \
+     https://www.stridelikeaboss.com/api/tasks/next
+```
+
+- A request that names no board, or names two different ones, gets `400`.
+- A board outside the workspace, or one the token's user can no longer modify,
+  gets `404` with the same body as a board that does not exist.
+- [GET /api/boards](api/get_boards.md) lists the board ids the token can use.
+- The token is revoked when its user stops being an org-admin of the
+  Organization or is removed from the workspace, and it expires after 90 days.
+
+Board tokens are unchanged and ignore both selectors.
 
 ### Token Revocation
 

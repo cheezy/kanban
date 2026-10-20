@@ -22,15 +22,38 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
   - Assign :current_user, :current_board, and :api_token to conn.assigns
   - Return 401 Unauthorized if token is invalid or missing
 
-  Note: Tokens are scoped to both a user and a board. Each user has separate
-  tokens for each board they have access to.
+  ## Board tokens and workspace tokens
+
+  A board token is scoped to a user and one board, and `:current_board` is
+  that board, whatever the request says.
+
+  A workspace token (W2220) is scoped to a user and an Organization workspace,
+  so each request names its board with the `X-Stride-Board` header or the
+  `board_id` parameter (`KanbanWeb.Plugs.AuthenticateApiToken.BoardSelector`).
+  The board is re-checked on every request
+  (`Kanban.ApiTokens.fetch_workspace_board/2`): it must be in the token's
+  workspace and the token's user must still be able to modify it. Then
+  `:current_board` is assigned exactly as for a board token, so controllers
+  and the MCP server need nothing new. The request is refused with:
+
+    * 400 when it names no board, or names two different ones, and
+    * 404 with one fixed body for every board it may not use — a board that
+      does not exist, one in another workspace or Organization, one its user
+      cannot modify — so the response never tells them apart.
+
+  These are not authentication failures: the token is valid, so they are not
+  counted by the failed-authentication rate limit. Routes marked with
+  `KanbanWeb.Plugs.BoardSelectorOptional` (`GET /api/boards`) take a workspace
+  token without a selector and get no `:current_board`.
   """
 
   import Plug.Conn
   import Phoenix.Controller, only: [json: 2]
 
   alias Kanban.ApiTokens
+  alias Kanban.ApiTokens.ApiToken
   alias Kanban.RateLimit
+  alias KanbanWeb.Plugs.AuthenticateApiToken.BoardSelector
 
   def init(opts), do: opts
 
@@ -52,11 +75,71 @@ defmodule KanbanWeb.Plugs.AuthenticateApiToken do
          {:ok, api_token} <- ApiTokens.get_api_token_by_token(token) do
       conn
       |> assign(:current_user, api_token.user)
-      |> assign(:current_board, api_token.board)
       |> assign(:api_token, api_token)
+      |> assign_board(api_token)
     else
       {:error, reason} = error -> handle_auth_failure(conn, reason, error)
     end
+  end
+
+  defp assign_board(conn, %ApiToken{workspace_id: nil} = api_token),
+    do: assign(conn, :current_board, api_token.board)
+
+  defp assign_board(%Plug.Conn{private: %{stride_board_selector: :optional}} = conn, _api_token),
+    do: conn
+
+  defp assign_board(conn, %ApiToken{} = api_token) do
+    with {:ok, selector} <- BoardSelector.read(conn),
+         {:ok, board} <- ApiTokens.fetch_workspace_board(api_token, selector) do
+      assign(conn, :current_board, board)
+    else
+      :none -> halt_board_error(conn, :board_selector_missing)
+      :conflict -> halt_board_error(conn, :board_selector_conflict)
+      :error -> halt_board_error(conn, :board_not_found)
+    end
+  end
+
+  defp halt_board_error(conn, :board_selector_missing) do
+    emit_auth_failed_telemetry(conn, "board_selector_missing")
+
+    conn
+    |> put_status(:bad_request)
+    |> json(%{
+      error: "Board selector required",
+      message:
+        "A workspace token must name a board with the X-Stride-Board header or the board_id parameter. GET /api/boards lists the boards it can use."
+    })
+    |> halt()
+  end
+
+  defp halt_board_error(conn, :board_selector_conflict) do
+    emit_auth_failed_telemetry(conn, "board_selector_conflict")
+
+    conn
+    |> put_status(:bad_request)
+    |> json(%{
+      error: "Conflicting board selectors",
+      message:
+        "The X-Stride-Board header and the board_id parameter must name the same board, and the header may be sent once."
+    })
+    |> halt()
+  end
+
+  # One fixed body for a board that does not exist, one in another workspace
+  # or Organization, and one the token's user may not modify, so the response
+  # never says which (cross-tenant enumeration).
+  defp halt_board_error(conn, :board_not_found) do
+    emit_auth_failed_telemetry(conn, "board_not_found")
+
+    Kanban.AuditLog.event(:permission_denied,
+      user_id: conn.assigns.current_user.id,
+      gate: :api_board_selector
+    )
+
+    conn
+    |> put_status(:not_found)
+    |> json(%{error: "Board not found"})
+    |> halt()
   end
 
   defp handle_auth_failure(conn, reason, error) do

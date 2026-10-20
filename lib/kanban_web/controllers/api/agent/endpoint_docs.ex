@@ -18,6 +18,14 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
       discovery: [
         %{
           method: "GET",
+          path: "/api/boards",
+          description:
+            "List the boards this token can use: a board token's one board, or the boards of a workspace token's workspace its user can modify. Needs no X-Stride-Board header",
+          auth_required: true,
+          documentation_url: "#{@docs_base_url}/docs/api/get_boards.md"
+        },
+        %{
+          method: "GET",
           path: "/api/tasks/next",
           description: "Get next available task",
           auth_required: true,

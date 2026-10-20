@@ -353,6 +353,13 @@ W2343 added these. Two of them are spans: their `:start`, `:stop` and
   `[:kanban, :audit, :api_token_auth_failed]`, carries the token lookup's own
   atoms instead (`:missing_token`, `:not_found`, `:revoked`, `:expired` and
   `:user_disabled`), and a rate-limited request writes no audit row.
+- **Board selection reasons** (W2220). A workspace token's request that names
+  no board emits `board_selector_missing`, one whose `X-Stride-Board` header
+  and `board_id` parameter disagree emits `board_selector_conflict`, and one
+  naming a board the token may not use emits `board_not_found`. The token was
+  valid, so none of the three writes an `api_token_auth_failed` audit row or
+  counts toward the failed-authentication rate limit; `board_not_found` writes
+  a `permission_denied` audit row with `gate: :api_board_selector` instead.
 
 ### Task activity events
 
@@ -1064,13 +1071,13 @@ the sections above explain which code emits each family and when.
 
 | Event | Kind | Measurements | Metadata | Description |
 |---|---|---|---|---|
-| `[:kanban, :api, :token_created]` | event, legacy | `count` | `user_id`, `board_id`, `token_id` | An API token was created. |
+| `[:kanban, :api, :token_created]` | event, legacy | `count` | `user_id`, `board_id`, `workspace_id`, `token_id` | An API token was created. |
 | `[:kanban, :api, :token_revoked]` | event, legacy | `count` | `user_id`, `token_id` | An API token was revoked. |
 | `[:kanban, :api, :token_deleted]` | event, legacy | `count` | `user_id`, `token_id` | An API token was deleted. |
 | `[:kanban, :api, :token_used]` | event, legacy | `count` | `user_id`, `token_id` | An API token authenticated a request. |
 | `[:kanban, :api, :request]` | event, legacy | `count`, `duration` | `endpoint`, `method`, `status` | An API request finished. Duration is in native time units. |
 | `[:kanban, :api, :error]` | event, legacy | `count` | `endpoint`, `status`, `method` | An API request finished with a status of 400 or above. |
-| `[:kanban, :api, :auth_failed]` | event, legacy | `count` | `reason`, `path`, `method` | An API request failed bearer-token authentication. |
+| `[:kanban, :api, :auth_failed]` | event, legacy | `count` | `reason`, `path`, `method` | An API request failed bearer-token authentication or board selection. |
 | `[:kanban, :api, :after_goal_delivered]` | event, legacy | `count` | `goal_id`, `board_id`, `project_id` | An after_goal hook was included in a /complete or /mark_reviewed response. |
 | `[:kanban, :api, :token_bulk_revoked]` | event | `count` | `board_id`, `user_id`, `actor_user_id`, `reason` | A member's API tokens for a board were revoked because they were removed (reason :member_removed) or set to read_only (:read_only_access). count is the number revoked and may be 0. |
 | `[:kanban, :api, :next_task_fetched]` | event, legacy | `count` | `task_id`, `priority`, `board_id`, `user_id`, `path`, `method` | An agent fetched its next task. |
@@ -1104,8 +1111,8 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :login_failed]` | event, legacy | `count` | none | A browser sign-in failed. |
 | `[:kanban, :audit, :password_reset_requested]` | event, legacy | `count` | none | A password reset was requested. |
 | `[:kanban, :audit, :api_token_auth_failed]` | event, legacy | `count` | `reason` | An API request presented a bad bearer token. |
-| `[:kanban, :audit, :api_token_created]` | event, legacy | `count` | `user_id`, `board_id`, `token_id` | An API token was created. |
-| `[:kanban, :audit, :api_token_revoked]` | event, legacy | `count` | `user_id`, `token_id` | An API token was revoked. |
+| `[:kanban, :audit, :api_token_created]` | event, legacy | `count` | `user_id`, `board_id`, `workspace_id`, `organization_id`, `token_id` | An API token was created. |
+| `[:kanban, :audit, :api_token_revoked]` | event, legacy | `count` | `user_id`, `token_id`, `organization_id` | An API token was revoked. |
 | `[:kanban, :audit, :comment_deleted_by_owner]` | event, legacy | `count` | `user_id`, `board_id`, `task_id`, `comment_id`, `author_user_id` | A board owner deleted someone else's comment. |
 | `[:kanban, :audit, :completion_notes_credential_suspected]` | event, legacy | `count` | `task_id`, `agent_name` | Completion notes looked like they contained a credential. |
 | `[:kanban, :audit, :security_considerations_credential_suspected]` | event, legacy | `count` | `task_id`, `agent_name` | A security consideration in a reviewer result looked like it contained a credential. |

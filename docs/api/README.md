@@ -247,6 +247,10 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 
 - [POST /api/mcp](../MCP.md) — Model Context Protocol server (Streamable HTTP, JSON-RPC 2.0, JSON responses only). MCP clients such as Claude Code call the task API through six schema-validated tools: next task, claim, complete, get task, list tasks and add comment. Claims and completions go through the same validation as the REST endpoints. `GET` and `DELETE /api/mcp` return `405`. Setup and the tool reference are in [MCP.md](../MCP.md)
 
+### Boards
+
+- [GET /api/boards](get_boards.md) — List the boards your token can use. A board token sees its one board; a workspace token sees the boards of its workspace that its user can modify. With a workspace token, every other request names its board in the `X-Stride-Board` header or the `board_id` parameter
+
 ### Task Discovery
 
 - [GET /api/tasks/next](get_tasks_next.md) — Get next available task matching your capabilities
@@ -295,6 +299,7 @@ a filter it simply matches nothing.
 |--------|----------|---------|---------------|
 | GET | `/api/agent/onboarding` | Get onboarding info | No |
 | GET | `/api/openapi.json` | OpenAPI 3.1 spec (no auth) | No |
+| GET | `/api/boards` | List the boards this token can use | No |
 | GET | `/api/tasks/next` | Get next available task | No |
 | GET | `/api/tasks` | List tasks (filters, cursor pagination) | No |
 | GET | `/api/tasks/:id` | Get task details | No |

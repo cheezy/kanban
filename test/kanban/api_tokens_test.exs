@@ -3,7 +3,9 @@ defmodule Kanban.ApiTokensTest do
 
   import Kanban.AccountsFixtures
   import Kanban.BoardsFixtures
+  import Kanban.OrganizationsFixtures
   import Kanban.TelemetryHelpers
+  import Kanban.WorkspacesFixtures
 
   alias Kanban.ApiTokens
   alias Kanban.ApiTokens.ApiToken
@@ -420,5 +422,344 @@ defmodule Kanban.ApiTokensTest do
 
       assert ApiTokens.list_api_tokens(board) == []
     end
+  end
+
+  describe "workspace tokens (W2220)" do
+    setup do
+      organization = organization_fixture()
+      admin = user_fixture()
+      organization_member_fixture(organization, admin, :org_admin)
+      workspace = org_workspace_fixture(organization)
+      board = workspace_board(workspace)
+
+      %{organization: organization, admin: admin, workspace: workspace, board: board}
+    end
+
+    test "create_workspace_api_token/3 creates a workspace-scoped token with a 90-day expiry",
+         %{admin: admin, workspace: workspace} do
+      assert {:ok, {api_token, plain_text}} =
+               ApiTokens.create_workspace_api_token(admin, workspace, %{name: "Fleet"})
+
+      assert api_token.workspace_id == workspace.id
+      assert api_token.board_id == nil
+      assert api_token.user_id == admin.id
+      assert String.starts_with?(plain_text, "stride_")
+      assert api_token.token_hash == ApiToken.hash_token_string(plain_text)
+
+      days = DateTime.diff(api_token.expires_at, DateTime.utc_now(), :day)
+      assert days in 89..90
+    end
+
+    test "create_workspace_api_token/3 accepts a workspace id", %{admin: admin, workspace: ws} do
+      assert {:ok, {api_token, _}} =
+               ApiTokens.create_workspace_api_token(admin, Integer.to_string(ws.id), %{
+                 name: "Fleet"
+               })
+
+      assert api_token.workspace_id == ws.id
+    end
+
+    test "create_workspace_api_token/3 ignores a crafted user_id and workspace_id",
+         %{admin: admin, workspace: workspace, organization: organization} do
+      other = user_fixture()
+      other_workspace = org_workspace_fixture(organization)
+
+      assert {:ok, {api_token, _}} =
+               ApiTokens.create_workspace_api_token(admin, workspace, %{
+                 "name" => "Fleet",
+                 "user_id" => other.id,
+                 "workspace_id" => other_workspace.id
+               })
+
+      assert api_token.user_id == admin.id
+      assert api_token.workspace_id == workspace.id
+    end
+
+    test "create_workspace_api_token/3 refuses members, guests, free users and other orgs' admins",
+         %{organization: organization, workspace: workspace} do
+      member = user_fixture()
+      organization_member_fixture(organization, member, :member)
+      workspace_member_fixture(workspace, member, :member)
+
+      guest = user_fixture()
+      workspace_member_fixture(workspace, guest, :guest)
+
+      free_user = user_fixture()
+
+      foreign_admin = user_fixture()
+      organization_member_fixture(organization_fixture(), foreign_admin, :org_admin)
+
+      for user <- [member, guest, free_user, foreign_admin] do
+        assert {:error, :unauthorized} =
+                 ApiTokens.create_workspace_api_token(user, workspace, %{name: "Fleet"})
+      end
+
+      assert workspace_tokens(workspace) == []
+    end
+
+    test "create_workspace_api_token/3 refuses a disabled org-admin",
+         %{admin: admin, workspace: workspace} do
+      Kanban.Accounts.User
+      |> Ecto.Query.where([u], u.id == ^admin.id)
+      |> Repo.update_all(set: [disabled_at: DateTime.utc_now(:second)])
+
+      assert {:error, :unauthorized} =
+               ApiTokens.create_workspace_api_token(admin, workspace, %{name: "Fleet"})
+    end
+
+    test "create_workspace_api_token/3 refuses a personal workspace", %{admin: admin} do
+      personal = personal_workspace_fixture(admin)
+
+      assert {:error, :unauthorized} =
+               ApiTokens.create_workspace_api_token(admin, personal, %{name: "Fleet"})
+    end
+
+    test "create_workspace_api_token/3 refuses an archived workspace and a missing one",
+         %{admin: admin, organization: organization} do
+      archived = org_workspace_fixture(organization, archived_at: DateTime.utc_now(:second))
+
+      assert {:error, :archived} =
+               ApiTokens.create_workspace_api_token(admin, archived, %{name: "Fleet"})
+
+      assert {:error, :unauthorized} =
+               ApiTokens.create_workspace_api_token(admin, -1, %{name: "Fleet"})
+
+      assert {:error, :unauthorized} =
+               ApiTokens.create_workspace_api_token(admin, "abc", %{name: "Fleet"})
+    end
+
+    test "create_workspace_api_token/3 returns a changeset for invalid attributes",
+         %{admin: admin, workspace: workspace} do
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               ApiTokens.create_workspace_api_token(admin, workspace, %{name: ""})
+
+      assert "can't be blank" in errors_on(changeset).name
+    end
+
+    test "create_workspace_api_token/3 emits token_created and audits it",
+         %{admin: admin, workspace: workspace} do
+      attach_telemetry([:kanban, :api, :token_created])
+
+      {:ok, {api_token, _}} =
+        ApiTokens.create_workspace_api_token(admin, workspace, %{name: "Fleet"})
+
+      assert_receive {:telemetry_event, [:kanban, :api, :token_created], %{count: 1}, metadata}
+
+      assert metadata == %{
+               user_id: admin.id,
+               workspace_id: workspace.id,
+               token_id: api_token.id
+             }
+
+      assert [created] =
+               Kanban.AuditLog.list_events(action: :api_token_created, actor_user_id: admin.id)
+
+      assert created.metadata["token_id"] == api_token.id
+      assert created.metadata["workspace_id"] == workspace.id
+      assert created.organization_id == workspace.organization_id
+    end
+
+    test "the database rejects a token with both or neither of board_id and workspace_id",
+         %{admin: admin, workspace: workspace, board: board} do
+      both =
+        ApiToken.workspace_changeset(%ApiToken{board_id: board.id}, %{
+          name: "Both",
+          user_id: admin.id,
+          workspace_id: workspace.id
+        })
+
+      assert {:error, changeset} = Repo.insert(both)
+      assert "a token belongs to exactly one board or workspace" in errors_on(changeset).board_id
+
+      now = DateTime.utc_now(:second)
+
+      assert_raise Postgrex.Error, ~r/api_tokens_board_xor_workspace/, fn ->
+        Repo.insert_all("api_tokens", [
+          %{
+            name: "Neither",
+            token_hash: "neither-#{System.unique_integer([:positive])}",
+            user_id: admin.id,
+            inserted_at: now,
+            updated_at: now
+          }
+        ])
+      end
+    end
+
+    test "list_workspace_api_tokens/2 lists only the workspace's tokens, newest first",
+         %{admin: admin, workspace: workspace, organization: organization, board: board} do
+      {:ok, {first, _}} = ApiTokens.create_workspace_api_token(admin, workspace, %{name: "A"})
+      {:ok, {second, _}} = ApiTokens.create_workspace_api_token(admin, workspace, %{name: "B"})
+
+      other = org_workspace_fixture(organization)
+      {:ok, _} = ApiTokens.create_workspace_api_token(admin, other, %{name: "Other"})
+      {:ok, _} = ApiTokens.create_api_token(admin, board, %{name: "Board"})
+
+      assert [listed_second, listed_first] = ApiTokens.list_workspace_api_tokens(admin, workspace)
+      assert listed_second.id == second.id
+      assert listed_first.id == first.id
+      assert listed_first.user.id == admin.id
+    end
+
+    test "list_workspace_api_tokens/2 lists nothing for anyone who is not an org-admin",
+         %{admin: admin, workspace: workspace, organization: organization} do
+      {:ok, _} = ApiTokens.create_workspace_api_token(admin, workspace, %{name: "Fleet"})
+
+      member = user_fixture()
+      organization_member_fixture(organization, member, :member)
+      workspace_member_fixture(workspace, member, :member)
+
+      foreign_admin = user_fixture()
+      organization_member_fixture(organization_fixture(), foreign_admin, :org_admin)
+
+      for user <- [member, foreign_admin, user_fixture()] do
+        assert ApiTokens.list_workspace_api_tokens(user, workspace) == []
+      end
+
+      assert [_token] = ApiTokens.list_workspace_api_tokens(admin, workspace)
+    end
+
+    test "revoke_workspace_api_token/3 revokes the workspace's token for an org-admin",
+         %{admin: admin, workspace: workspace} do
+      {:ok, {api_token, plain}} =
+        ApiTokens.create_workspace_api_token(admin, workspace, %{name: "A"})
+
+      assert {:ok, revoked} = ApiTokens.revoke_workspace_api_token(admin, workspace, api_token.id)
+      assert revoked.revoked_at
+      assert {:error, :revoked} = ApiTokens.get_api_token_by_token(plain)
+
+      assert {:ok, again} =
+               ApiTokens.revoke_workspace_api_token(admin, workspace, "#{api_token.id}")
+
+      assert again.revoked_at == revoked.revoked_at
+    end
+
+    test "revoke_workspace_api_token/3 cannot reach another workspace's or a board token",
+         %{admin: admin, workspace: workspace, organization: organization, board: board} do
+      other = org_workspace_fixture(organization)
+      {:ok, {foreign, _}} = ApiTokens.create_workspace_api_token(admin, other, %{name: "A"})
+      {:ok, {board_token, _}} = ApiTokens.create_api_token(admin, board, %{name: "B"})
+
+      assert {:error, :not_found} =
+               ApiTokens.revoke_workspace_api_token(admin, workspace, foreign.id)
+
+      assert {:error, :not_found} =
+               ApiTokens.revoke_workspace_api_token(admin, workspace, board_token.id)
+
+      assert {:error, :not_found} = ApiTokens.revoke_workspace_api_token(admin, workspace, "x")
+      assert Repo.reload!(foreign).revoked_at == nil
+      assert Repo.reload!(board_token).revoked_at == nil
+    end
+
+    test "revoke_workspace_api_token/3 refuses someone who is not an org-admin",
+         %{admin: admin, workspace: workspace, organization: organization} do
+      {:ok, {api_token, _}} = ApiTokens.create_workspace_api_token(admin, workspace, %{name: "A"})
+      member = user_fixture()
+      organization_member_fixture(organization, member, :member)
+
+      assert {:error, :unauthorized} =
+               ApiTokens.revoke_workspace_api_token(member, workspace, api_token.id)
+
+      assert Repo.reload!(api_token).revoked_at == nil
+    end
+
+    test "revoke_user_workspace_tokens/2 revokes only that user's workspace tokens",
+         %{admin: admin, workspace: workspace, organization: organization, board: board} do
+      other_admin = user_fixture()
+      organization_member_fixture(organization, other_admin, :org_admin)
+      other = org_workspace_fixture(organization)
+
+      {:ok, {mine, _}} = ApiTokens.create_workspace_api_token(admin, workspace, %{name: "A"})
+
+      {:ok, {theirs, _}} =
+        ApiTokens.create_workspace_api_token(other_admin, workspace, %{name: "B"})
+
+      {:ok, {in_other, _}} = ApiTokens.create_workspace_api_token(admin, other, %{name: "C"})
+
+      {:ok, {board_token, _}} = ApiTokens.create_api_token(admin, board, %{name: "D"})
+
+      assert ApiTokens.revoke_user_workspace_tokens(admin.id, organization.id) == 2
+      assert Repo.reload!(mine).revoked_at
+      assert Repo.reload!(in_other).revoked_at
+      refute Repo.reload!(theirs).revoked_at
+      refute Repo.reload!(board_token).revoked_at
+    end
+
+    test "get_api_token_by_token/1 preloads the workspace",
+         %{admin: admin, workspace: workspace} do
+      {:ok, {_, plain}} = ApiTokens.create_workspace_api_token(admin, workspace, %{name: "A"})
+
+      assert {:ok, api_token} = ApiTokens.get_api_token_by_token(plain)
+      assert api_token.workspace.id == workspace.id
+      assert api_token.board == nil
+      assert ApiToken.workspace_token?(api_token)
+      assert ApiTokens.token_scope(api_token) == "workspace"
+    end
+
+    test "removing the org-admin from the Organization revokes their workspace tokens",
+         %{admin: admin, workspace: workspace, organization: organization} do
+      second_admin = user_fixture()
+      organization_member_fixture(organization, second_admin, :org_admin)
+
+      {:ok, {api_token, plain}} =
+        ApiTokens.create_workspace_api_token(admin, workspace, %{name: "A"})
+
+      assert {:ok, _} =
+               Kanban.Organizations.remove_org_admin(admin_fixture(), organization, admin)
+
+      assert Repo.reload!(api_token).revoked_at
+      assert {:error, :revoked} = ApiTokens.get_api_token_by_token(plain)
+    end
+
+    test "removing the user from the workspace revokes their workspace token for it",
+         %{admin: admin, workspace: workspace, organization: organization} do
+      second_admin = user_fixture()
+      organization_member_fixture(organization, second_admin, :org_admin)
+      workspace_member_fixture(workspace, admin, :member)
+      other = org_workspace_fixture(organization)
+
+      {:ok, {here, _}} = ApiTokens.create_workspace_api_token(admin, workspace, %{name: "A"})
+      {:ok, {there, _}} = ApiTokens.create_workspace_api_token(admin, other, %{name: "B"})
+
+      assert {:ok, _} = Kanban.Workspaces.remove_member(second_admin, workspace, admin)
+
+      assert Repo.reload!(here).revoked_at
+      refute Repo.reload!(there).revoked_at
+    end
+
+    test "removing the user from the Organization through MembershipCascade revokes workspace tokens",
+         %{admin: admin, workspace: workspace, organization: organization} do
+      other = org_workspace_fixture(organization)
+      {:ok, {here, _}} = ApiTokens.create_workspace_api_token(admin, workspace, %{name: "A"})
+      {:ok, {there, _}} = ApiTokens.create_workspace_api_token(admin, other, %{name: "B"})
+
+      {:ok, _} =
+        Repo.transaction(fn ->
+          Kanban.Workspaces.MembershipCascade.remove(admin.id, [workspace.id, other.id])
+        end)
+
+      assert Repo.reload!(here).revoked_at
+      assert Repo.reload!(there).revoked_at
+    end
+  end
+
+  # An AI Optimized board, owned by a new user, moved into `workspace`.
+  # Every token of the workspace, read without the org-admin check
+  # list_workspace_api_tokens/2 makes.
+  defp workspace_tokens(workspace) do
+    ApiToken
+    |> Ecto.Query.where([t], t.workspace_id == ^workspace.id)
+    |> Kanban.Repo.all()
+  end
+
+  defp workspace_board(workspace) do
+    board = ai_optimized_board_fixture(user_fixture())
+
+    {1, _} =
+      Kanban.Boards.Board
+      |> Ecto.Query.where([b], b.id == ^board.id)
+      |> Repo.update_all(set: [workspace_id: workspace.id])
+
+    Repo.reload!(board)
   end
 end

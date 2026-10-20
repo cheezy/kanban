@@ -3,7 +3,7 @@
   "info": {
     "title": "Stride API",
     "version": "1.0.0",
-    "description": "Task-management API for AI agents. Human-readable reference: docs/api/README.md. Every authenticated operation requires a board-scoped Bearer token."
+    "description": "Task-management API for AI agents. Human-readable reference: docs/api/README.md. Every authenticated operation requires a Bearer token, which is either board-scoped or workspace-scoped; see the bearerAuth security scheme for how a workspace token names its board."
   },
   "servers": [
     {
@@ -93,6 +93,40 @@
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/boards": {
+      "get": {
+        "operationId": "listBoards",
+        "summary": "List the boards this token can use",
+        "description": "A board token sees its one board. A workspace token sees the boards of its workspace that its user can currently modify: the ids it may send in `X-Stride-Board` or `board_id`. This operation needs no board selector. Human-readable reference: docs/api/get_boards.md.",
+        "tags": [
+          "Discovery"
+        ],
+        "responses": {
+          "200": {
+            "description": "The boards the token can use, sorted by name.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "406": {
+            "$ref": "#/components/responses/NotAcceptable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -1645,7 +1679,7 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "Board-scoped Stride API token, sent as `Authorization: Bearer <token>`."
+        "description": "Stride API token, sent as `Authorization: Bearer <token>`. A board token is scoped to one board, and every operation acts on that board. A workspace token (created by an org-admin of an Organization workspace) acts as that org-admin on any board of its workspace they can modify, so every operation except GET /api/boards must name the board with the `X-Stride-Board` header or the `board_id` parameter. A missing selector, or a header and parameter that name different boards, returns 400; a board the token may not use returns 404 with `{\"error\": \"Board not found\"}`, the same body as a board that does not exist. Board tokens ignore both selectors."
       }
     },
     "parameters": {
@@ -1817,7 +1851,7 @@
     },
     "responses": {
       "BadRequest": {
-        "description": "The request is malformed. Any operation returns this for a query string or request body that cannot be parsed, such as an invalid percent-encoding (`?a=%FF`) or malformed JSON; that 400 is decided before routing and authentication, always has a JSON body whatever the Accept header says, and never echoes the request. Some operations also return it for a malformed query parameter or a request-body column_id that is not an integer, with an `error` naming the field.",
+        "description": "The request is malformed. Any operation returns this for a query string or request body that cannot be parsed, such as an invalid percent-encoding (`?a=%FF`) or malformed JSON; that 400 is decided before routing and authentication, always has a JSON body whatever the Accept header says, and never echoes the request. Some operations also return it for a malformed query parameter or a request-body column_id that is not an integer, with an `error` naming the field. With a workspace token, any board-bound operation also returns it when the request names no board, or names two different ones in the `X-Stride-Board` header and the `board_id` parameter.",
         "content": {
           "application/json": {
             "schema": {
@@ -3549,6 +3583,70 @@
             }
           }
         }
+      },
+      "Board": {
+        "type": "object",
+        "description": "A board an API token can be used on.",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "workspace_id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The board id, as sent in X-Stride-Board or board_id."
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workspace_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "BoardList": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Board"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "required": [
+              "token_scope"
+            ],
+            "properties": {
+              "token_scope": {
+                "type": "string",
+                "enum": [
+                  "board",
+                  "workspace"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
       }
     }
   }

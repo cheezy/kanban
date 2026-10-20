@@ -75,6 +75,18 @@ defmodule KanbanWeb.API.AgentJSONTest do
       assert create["description"] =~ "a goal cannot contain a goal"
     end
 
+    # W2220: agents learn how a workspace token names its board.
+    test "describes workspace tokens and the board selector", %{conn: conn} do
+      section = conn |> json_response(200) |> get_in(["api_reference", "workspace_tokens"])
+
+      assert section["board_selector"]["header"] == "X-Stride-Board"
+      assert section["board_selector"]["parameter"] == "board_id"
+      assert section["discovery"] =~ "GET /api/boards"
+      assert section["expiry_days"] == 90
+      assert Map.keys(section["errors"]) |> Enum.sort() == ["400", "404"]
+      assert section["documentation_url"] =~ "/docs/api/get_boards.md"
+    end
+
     # W2215: agents discover the comment API from onboarding, so both verbs must
     # be listed, each pointing at its own reference page.
     test "lists GET /api/tasks/:id/comments under discovery", %{conn: conn} do

@@ -4,6 +4,7 @@ defmodule KanbanWeb.API.AgentJSON do
   alias KanbanWeb.API.Agent.MultiAgentInstructions
   alias KanbanWeb.API.Agent.SchemaDoc
   alias KanbanWeb.API.Agent.SetupDocs
+  alias KanbanWeb.API.Agent.WorkspaceTokenDocs
 
   @docs_base_url "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main"
   @skills_version "1.0"
@@ -270,6 +271,7 @@ defmodule KanbanWeb.API.AgentJSON do
         base_url: base_url,
         authentication: "Bearer token in Authorization header",
         openapi_url: "#{base_url}/api/openapi.json",
+        workspace_tokens: WorkspaceTokenDocs.summary(),
         endpoints: EndpointDocs.endpoints()
       },
       required_reading: %{

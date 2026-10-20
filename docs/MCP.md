@@ -33,7 +33,10 @@ and the completion gate all work exactly as described in the
 
 The endpoint uses the API token you already use for the REST API, sent in an
 `Authorization: Bearer` header. Every tool acts as the token's user, on the
-token's board. A request with a missing, invalid or revoked token gets the
+token's board. With a workspace token, which reaches several boards, add an
+`X-Stride-Board` header naming the board's id to every `POST`; without it the
+request gets `400` (see [GET /api/boards](api/get_boards.md)). A request with a
+missing, invalid or revoked token gets the
 REST API's `401` before the server reads any JSON-RPC. Failed attempts count
 toward the same failed-authentication rate limit as the REST API.
 

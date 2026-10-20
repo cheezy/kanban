@@ -223,6 +223,13 @@
           boards={@boards}
           invitations={@invitations}
         />
+
+        <.tokens_card
+          :if={@section == :tokens and @can_manage?}
+          form={@token_form}
+          tokens={@tokens}
+          new_token={@new_token}
+        />
       </div>
     </div>
   </div>

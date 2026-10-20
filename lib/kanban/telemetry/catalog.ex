@@ -158,7 +158,7 @@ defmodule Kanban.Telemetry.Catalog do
       kind: :event,
       domain: :api,
       measurements: [:count],
-      metadata: [:user_id, :board_id, :token_id],
+      metadata: [:user_id, :board_id, :workspace_id, :token_id],
       description: "An API token was created.",
       legacy: true,
       metrics: [counter: :count],
@@ -227,7 +227,7 @@ defmodule Kanban.Telemetry.Catalog do
       domain: :api,
       measurements: [:count],
       metadata: [:reason, :path, :method],
-      description: "An API request failed bearer-token authentication.",
+      description: "An API request failed bearer-token authentication or board selection.",
       legacy: true,
       metrics: [counter: :count],
       persist: false
