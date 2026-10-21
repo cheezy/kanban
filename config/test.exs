@@ -125,6 +125,13 @@ config :kanban, Kanban.Webhooks.Transport,
 config :kanban, Kanban.Webhooks.DeliveryWorker, resolver: {Kanban.WebhooksFixtures, :resolve}
 config :kanban, Kanban.Webhooks, resolver: {Kanban.WebhooksFixtures, :resolve}
 
+# Single sign-on (W2245): identity provider requests go to a Req.Test stub,
+# issuer hosts resolve from a fixed table and TXT lookups come from a stub
+# resolver, so no test touches the network or DNS.
+config :kanban, Kanban.SSO.OIDC, req_options: [plug: {Req.Test, Kanban.SSO.OIDC}]
+config :kanban, Kanban.SSO, resolver: {Kanban.SSOFixtures, :resolve}
+config :kanban, Kanban.SSO.DomainVerification, resolver: Kanban.SSOFixtures.TxtResolver
+
 # Speed up the after_goal grace window for tests so timing assertions
 # can run synchronously via Oban.drain_queue(with_scheduled: true).
 config :kanban, :after_goal_grace_window_ms, 1

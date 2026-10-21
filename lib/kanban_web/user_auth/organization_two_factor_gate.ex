@@ -31,10 +31,11 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGate do
   ## Single sign-on
 
   A session whose identity provider owns MFA satisfies the policy. The OIDC
-  and SAML sign-in flows mark such a session by putting `sso_session_key/0`
-  with the value `true` into the session, after
-  `KanbanWeb.UserAuth.log_in_user/3` has renewed it. Only that server-written
-  session value counts; request params are never read.
+  (`KanbanWeb.SSOController`) and SAML sign-in flows call
+  `KanbanWeb.UserAuth.log_in_user/4` with `sso: true`, which puts
+  `sso_session_key/0` with the value `true` into the session after renewing
+  it (`mark_session/2`); every other sign-in removes it. Only that
+  server-written session value counts; request params are never read.
   """
   @behaviour Plug
 
@@ -55,6 +56,15 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGate do
   """
   @spec sso_session_key() :: String.t()
   def sso_session_key, do: @sso_session_key
+
+  @doc """
+  Sets the single sign-on mark on a freshly signed-in session when `sso?` is
+  true, and removes it otherwise, so a password sign-in into a session that
+  was not renewed (the same user signing in again) cannot keep an old mark.
+  """
+  @spec mark_session(Plug.Conn.t(), boolean()) :: Plug.Conn.t()
+  def mark_session(conn, true), do: put_session(conn, @sso_session_key, true)
+  def mark_session(conn, false), do: delete_session(conn, @sso_session_key)
 
   @doc "Where an overdue member is sent: the two-factor section of the settings page."
   @spec redirect_path() :: String.t()

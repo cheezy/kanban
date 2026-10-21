@@ -1,13 +1,13 @@
 defmodule KanbanWeb.UserLive.SettingsComponents do
   @moduledoc """
   The account settings shell shared by `KanbanWeb.UserLive.Settings` (Profile,
-  Password, Two-factor and Delete account) and `KanbanWeb.UserLive.NotificationPreferences`: the page
+  Password, Two-factor, Single sign-on and Delete account) and `KanbanWeb.UserLive.NotificationPreferences`: the page
   header, the section menu and the card each section renders in.
 
   The two pages live in different `live_session`s (the settings page is
   sudo-gated, notification preferences are not), so they cannot be one
-  LiveView. On the settings page Profile, Password, Two-factor and Delete
-  account are tabs that
+  LiveView. On the settings page Profile, Password, Two-factor, Single sign-on
+  and Delete account are tabs that
   swap in place (`tabs`); on any other page they are links back to the settings
   page.
   Notifications is always a link, marked as the current page when active.
@@ -16,7 +16,7 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
 
   attr :active, :atom,
     required: true,
-    values: [:profile, :password, :two_factor, :danger_zone, :notifications]
+    values: [:profile, :password, :two_factor, :sso, :danger_zone, :notifications]
 
   attr :tabs, :boolean,
     default: false,
@@ -45,8 +45,8 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
           aria-label={gettext("Settings sections")}
           class="flex flex-row flex-wrap md:flex-nowrap md:flex-col gap-1 md:w-[184px] md:flex-shrink-0 md:pt-1"
         >
-          <%!-- Below md the four account sections sit in a two-by-two grid and
-                Notifications takes its own row: four or five items in one
+          <%!-- Below md the five account sections sit in a two-column grid and
+                Notifications takes its own row: five or six items in one
                 phone-width row would squeeze every label. --%>
           <div
             role={@tabs && "tablist"}
@@ -97,10 +97,12 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
   Returns the path an account section's menu link points at: the settings
   page, opened on that section.
   """
-  @spec account_section_path(:profile | :password | :two_factor | :danger_zone) :: String.t()
+  @spec account_section_path(:profile | :password | :two_factor | :sso | :danger_zone) ::
+          String.t()
   def account_section_path(:profile), do: ~p"/users/settings"
   def account_section_path(:password), do: ~p"/users/settings?section=password"
   def account_section_path(:two_factor), do: ~p"/users/settings?section=two_factor"
+  def account_section_path(:sso), do: ~p"/users/settings?section=sso"
   def account_section_path(:danger_zone), do: ~p"/users/settings?section=danger_zone"
 
   defp account_sections do
@@ -108,6 +110,7 @@ defmodule KanbanWeb.UserLive.SettingsComponents do
       {:profile, gettext("Profile"), gettext("name · email")},
       {:password, gettext("Password"), gettext("change credentials")},
       {:two_factor, gettext("Two-factor"), gettext("authenticator app")},
+      {:sso, gettext("Single sign-on"), gettext("identity provider")},
       {:danger_zone, gettext("Delete account"), gettext("danger zone")}
     ]
   end

@@ -116,3 +116,9 @@ config :swoosh, :api_client, false
 # Key for Kanban.Encryption (TOTP secrets at rest). A fixed, public dev-only
 # key: dev data is not secret. Production reads ENCRYPTION_KEY in runtime.exs.
 config :kanban, Kanban.Encryption, key: "dev-only-encryption-key-32bytes!"
+
+# Single sign-on (W2245): let an org-admin point a connection at a local
+# identity provider (such as Keycloak on localhost over http) in development.
+# Kanban.SSO checks every issuer and provider URL with
+# Kanban.Webhooks.UrlGuard otherwise. Never set this outside development.
+config :kanban, Kanban.SSO, allow_private_issuers: true

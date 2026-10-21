@@ -40,14 +40,19 @@ defmodule KanbanWeb.UserAuth do
   Emits `[:kanban, :user, :login]`. Only a real sign-in comes through here; the
   session token reissue in `fetch_current_scope_for_user/2` does not, so it is
   not counted as a login.
+
+  `sso: true` (server code only, never a request param) marks the renewed
+  session as signed in through single sign-on; any other sign-in clears the
+  mark (`KanbanWeb.UserAuth.OrganizationTwoFactorGate.mark_session/2`).
   """
-  def log_in_user(conn, user, params \\ %{}) do
+  def log_in_user(conn, user, params \\ %{}, opts \\ []) do
     user_return_to = get_session(conn, :user_return_to)
 
     Kanban.Telemetry.emit([:kanban, :user, :login], %{count: 1}, %{user_id: user.id})
 
     conn
     |> create_or_extend_session(user, params)
+    |> KanbanWeb.UserAuth.OrganizationTwoFactorGate.mark_session(opts[:sso] == true)
     |> redirect(to: user_return_to || signed_in_path(conn))
   end
 

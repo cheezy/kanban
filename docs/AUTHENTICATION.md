@@ -71,6 +71,15 @@ and so agents, are not affected. See
 An Organization's org-admins can require it for every member, after a grace
 period; see [Organization Security Policies](organization-security-policies.md).
 
+## User Accounts: Single Sign-On
+
+An Organization can connect its own OpenID Connect identity provider. People
+with an email on a domain the Organization verified sign in with **Sign in
+with SSO** on the login page; their first sign-in creates a confirmed account
+without a password and makes them a member of the Organization. Like
+two-factor, it covers the browser only: API tokens, and so agents, are not
+affected. See [Single Sign-On](single-sign-on.md).
+
 ## Authentication Method: Bearer Token
 
 All API requests require authentication using a Bearer token in the Authorization header:

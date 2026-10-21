@@ -547,6 +547,36 @@ defmodule KanbanWeb.UserLive.SettingsTest do
     end
   end
 
+  describe "single sign-on section" do
+    setup %{conn: conn} do
+      user = user_fixture()
+      %{conn: log_in_user(conn, user), user: user}
+    end
+
+    test "is a tab that explains single sign-on to an unlinked user", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/users/settings")
+      assert has_element?(lv, ~s([role="tablist"] button[phx-value-section="sso"]))
+
+      render_click(lv, "select_section", %{"section" => "sso"})
+      assert has_element?(lv, "#sso #sso-not-linked")
+      refute has_element?(lv, "#sso-locked")
+    end
+
+    test "tells a linked user they sign in through their Organization", %{conn: conn, user: user} do
+      org = Kanban.OrganizationsFixtures.organization_fixture()
+      Kanban.OrganizationsFixtures.organization_member_fixture(org, user)
+
+      Kanban.SSOFixtures.identity_fixture(
+        user,
+        Kanban.SSOFixtures.oidc_connection_fixture(org),
+        "s"
+      )
+
+      {:ok, lv, _html} = live(conn, ~p"/users/settings?section=sso")
+      assert has_element?(lv, "#sso-linked")
+    end
+  end
+
   describe "danger zone section" do
     setup %{conn: conn} do
       user = user_fixture()

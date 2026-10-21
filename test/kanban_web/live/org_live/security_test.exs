@@ -90,6 +90,7 @@ defmodule KanbanWeb.OrgLive.SecurityTest do
       {:ok, lv, html} = live(conn, ~p"/org/security")
 
       assert html =~ "Security policy for Acme Widgets"
+      assert html =~ "Members who sign in through single sign-on are not affected."
       assert has_element?(lv, ~s(input[name="security_policy[two_factor_grace_days]"][value="7"]))
       refute has_element?(lv, "#two-factor-enforced-at")
 

@@ -53,6 +53,15 @@ defmodule Kanban.RateLimitTest do
     end
   end
 
+  describe ":sso surface" do
+    test "limits single sign-on requests per IP" do
+      ip = unique_ip()
+      for _ <- 1..60, do: assert(:ok = RateLimit.check(:sso, ip: ip))
+      assert {:error, {:rate_limited, _}} = RateLimit.check(:sso, ip: ip)
+      assert :ok = RateLimit.check(:sso, ip: unique_ip())
+    end
+  end
+
   describe "peek/2 + record_failure/2 (login / api_token)" do
     test "peek does not consume the budget" do
       ip = unique_ip()

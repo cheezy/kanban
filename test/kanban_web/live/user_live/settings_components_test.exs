@@ -24,6 +24,8 @@ defmodule KanbanWeb.UserLive.SettingsComponentsTest do
 
       assert SettingsComponents.account_section_path(:danger_zone) ==
                "/users/settings?section=danger_zone"
+
+      assert SettingsComponents.account_section_path(:sso) == "/users/settings?section=sso"
     end
   end
 
@@ -41,7 +43,7 @@ defmodule KanbanWeb.UserLive.SettingsComponentsTest do
       html = shell(%{active: :password, tabs: true})
       doc = LazyHTML.from_fragment(html)
 
-      assert doc |> LazyHTML.query(~s([role="tablist"] button[role="tab"])) |> Enum.count() == 4
+      assert doc |> LazyHTML.query(~s([role="tablist"] button[role="tab"])) |> Enum.count() == 5
 
       assert doc
              |> LazyHTML.query(~s(button[aria-selected="true"][phx-value-section="password"]))
@@ -59,7 +61,7 @@ defmodule KanbanWeb.UserLive.SettingsComponentsTest do
       html = shell(%{active: :password, tabs: true})
       doc = LazyHTML.from_fragment(html)
 
-      for section <- ~w(profile password two_factor danger_zone) do
+      for section <- ~w(profile password two_factor sso danger_zone) do
         assert doc |> LazyHTML.query("button#settings-tab-#{section}") |> Enum.count() == 1
       end
 

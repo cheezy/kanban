@@ -76,6 +76,19 @@ defmodule Kanban.Accounts.User do
     |> validate_password(opts)
   end
 
+  @doc """
+  A changeset for an account created by single sign-on (`Kanban.SSO`): the
+  identity provider has verified the email address, so the account is
+  confirmed straight away, and it has no password.
+  """
+  def sso_registration_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:email, :name])
+    |> validate_name()
+    |> validate_email(validate_unique: true)
+    |> put_change(:confirmed_at, DateTime.utc_now(:second))
+  end
+
   # Disallow HTML/markup metacharacters and control characters (including CR/LF
   # for header-injection defense). Combined with HTML-escaping at email render
   # time in UserNotifier, this denies the stored-XSS / email-template-injection

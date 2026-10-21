@@ -4,8 +4,9 @@ defmodule Kanban.Accounts do
 
   Admin user management (`Kanban.Accounts.AdminManagement`), TOTP two-factor
   authentication (`Kanban.Accounts.TwoFactor`), the password reset email flow
-  (`Kanban.Accounts.PasswordReset`) and the account confirmation email flow
-  (`Kanban.Accounts.EmailConfirmation`) are delegated below.
+  (`Kanban.Accounts.PasswordReset`), the account confirmation email flow
+  (`Kanban.Accounts.EmailConfirmation`) and the account writes of single
+  sign-on (`Kanban.Accounts.SSOUsers`) are delegated below.
   """
 
   import Ecto.Query, warn: false
@@ -15,6 +16,7 @@ defmodule Kanban.Accounts do
   alias Kanban.Accounts.AdminManagement
   alias Kanban.Accounts.EmailConfirmation
   alias Kanban.Accounts.PasswordReset
+  alias Kanban.Accounts.SSOUsers
   alias Kanban.Accounts.TwoFactor
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserNotifier
@@ -306,6 +308,11 @@ defmodule Kanban.Accounts do
   defdelegate deletion_warnings(user), to: AccountDeletion
   defdelegate delete_own_account(scope, password, confirmation), to: AccountDeletion
   defdelegate account_deletion_phrase(), to: AccountDeletion, as: :confirmation_phrase
+
+  ## Single sign-on accounts (see `Kanban.Accounts.SSOUsers`)
+
+  defdelegate register_sso_user(attrs), to: SSOUsers
+  defdelegate secure_linked_unconfirmed_user(user), to: SSOUsers
 
   ## Two-factor authentication
 

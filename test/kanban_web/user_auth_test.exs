@@ -46,6 +46,25 @@ defmodule KanbanWeb.UserAuthTest do
       assert Accounts.get_user_by_session_token(token)
     end
 
+    test "marks a single sign-on session, and a password sign-in clears the mark",
+         %{conn: conn, user: user} do
+      key = KanbanWeb.UserAuth.OrganizationTwoFactorGate.sso_session_key()
+
+      sso_conn = UserAuth.log_in_user(conn, user, %{}, sso: true)
+      assert get_session(sso_conn, key) == true
+
+      refute get_session(UserAuth.log_in_user(conn, user), key)
+
+      # Re-authenticating keeps the session, so the mark must be removed explicitly.
+      reauth =
+        conn
+        |> assign(:current_scope, Scope.for_user(user))
+        |> put_session(key, true)
+        |> UserAuth.log_in_user(user)
+
+      refute get_session(reauth, key)
+    end
+
     test "clears everything previously stored in the session", %{conn: conn, user: user} do
       conn = conn |> put_session(:to_be_removed, "value") |> UserAuth.log_in_user(user)
       refute get_session(conn, :to_be_removed)

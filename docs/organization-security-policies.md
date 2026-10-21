@@ -74,8 +74,10 @@ described in the [Authentication Guide](AUTHENTICATION.md).
 
 A session signed in through single sign-on is exempt, because the identity
 provider enforces its own second factor. The gate treats a session as SSO only
-when it holds `"sso_authenticated" => true` (the literal `true`); no sign-in
-path sets it yet.
+when it holds `"sso_authenticated" => true` (the literal `true`). Only a
+single sign-on sign-in sets it; a password sign-in removes it. The security
+policy page says that members who sign in through single sign-on are not
+affected. See [Single Sign-On](single-sign-on.md).
 
 The check lives in `KanbanWeb.UserAuth.OrganizationTwoFactorGate`: a plug in
 the `:enforce_organization_two_factor` pipeline for controller routes, and

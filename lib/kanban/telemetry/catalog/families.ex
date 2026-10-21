@@ -104,7 +104,27 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:account_self_deleted, [:user_id],
      "A user deleted their own account from the account settings. user_id is the deleted account; no email is recorded."},
     {:board_given_to_site_admin, [:user_id, :board_id, :member_user_id],
-     "An account deletion left a board that no enabled member could reach, so the earliest enabled site admin was made its owner. user_id is the deleted account, member_user_id the site admin."}
+     "An account deletion left a board that no enabled member could reach, so the earliest enabled site admin was made its owner. user_id is the deleted account, member_user_id the site admin."},
+    {:sso_login, [:user_id, :organization_id, :sso_connection_id],
+     "A user signed in through their Organization's single sign-on connection."},
+    {:sso_login_refused, [:organization_id, :sso_connection_id, :reason],
+     "A single sign-on sign-in was refused. reason is why: missing_flow, flow_expired, idp_error, state_mismatch, missing_code, connection_unavailable, provider_unreachable, unsafe_url, invalid_discovery, issuer_mismatch, unsupported_algorithms, invalid_jwks, unsupported_client_auth, token_exchange_failed, token_expired, invalid_token, invalid_claims, email_not_verified, domain_not_verified, user_disabled, membership_conflict (the user belongs to another Organization) or plan_required. organization_id and sso_connection_id are set when the connection is known."},
+    {:sso_user_provisioned, [:user_id, :organization_id, :sso_connection_id],
+     "Single sign-on created an account and an Organization membership for a new user. user_id is the new account."},
+    {:sso_account_linked, [:user_id, :organization_id, :sso_connection_id],
+     "Single sign-on linked an existing account to its identity provider and made it an Organization member if it was not one."},
+    {:organization_domain_verified, [:user_id, :organization_id, :domain],
+     "An org-admin verified an email domain for their Organization through its DNS TXT record. user_id is the org-admin."},
+    {:sso_connection_updated,
+     [
+       :user_id,
+       :organization_id,
+       :sso_connection_id,
+       :enabled,
+       :issuer_changed,
+       :credentials_changed
+     ],
+     "An org-admin created or changed their Organization's single sign-on connection. user_id is the org-admin; issuer_changed and credentials_changed say whether the issuer and the client id or secret changed, never their values."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,

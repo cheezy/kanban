@@ -127,6 +127,27 @@ defmodule KanbanWeb.UserLive.LoginTest do
     end
   end
 
+  describe "user login - single sign-on" do
+    test "a work email starts single sign-on for its domain", %{conn: conn} do
+      {:ok, lv, html} = live(conn, ~p"/users/log-in")
+      assert html =~ "sso-sign-in"
+
+      assert {:error, {:redirect, %{to: to}}} =
+               lv
+               |> form("#login_form_sso", sso: %{email: "Pat@Acme.Example"})
+               |> render_submit()
+
+      assert to == "/users/sso/start?domain=acme.example"
+    end
+
+    test "an address without a domain shows an error", %{conn: conn} do
+      {:ok, lv, _html} = live(conn, ~p"/users/log-in")
+
+      html = lv |> form("#login_form_sso", sso: %{email: "not-an-email"}) |> render_submit()
+      assert html =~ "Enter your work email address to use single sign-on."
+    end
+  end
+
   describe "login navigation" do
     test "redirects to registration page when the Register button is clicked", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/users/log-in")

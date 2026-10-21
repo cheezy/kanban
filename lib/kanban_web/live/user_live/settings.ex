@@ -2,10 +2,15 @@ defmodule KanbanWeb.UserLive.Settings do
   use KanbanWeb, :live_view
 
   import KanbanWeb.FormHelpers
+  import KanbanWeb.LockedFeature, only: [locked_feature: 1]
   import KanbanWeb.UserLive.SettingsComponents
 
   alias Kanban.Accounts
+  alias Kanban.Plans
+  alias Kanban.SSO
   alias KanbanWeb.UserAuth
+
+  @sections ["profile", "password", "two_factor", "sso", "danger_zone"]
 
   @impl true
   def render(assigns) do
@@ -167,6 +172,38 @@ defmodule KanbanWeb.UserLive.Settings do
         </.settings_card>
 
         <.settings_card
+          :if={@section == :sso}
+          id="sso"
+          tab={:sso}
+          title={gettext("Single sign-on")}
+          hint={
+            gettext(
+              "Sign in through your Organization's identity provider, which also handles multi-factor authentication."
+            )
+          }
+        >
+          <.locked_feature :if={@sso_locked?} feature={:sso} variant={:panel} id="sso-locked" />
+          <p
+            :if={!@sso_locked? && @sso_linked?}
+            id="sso-linked"
+            style="margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.55;"
+          >
+            {gettext(
+              "Your account signs in through your Organization's identity provider. Use Sign in with SSO on the sign-in page."
+            )}
+          </p>
+          <p
+            :if={!@sso_locked? && !@sso_linked?}
+            id="sso-not-linked"
+            style="margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.55;"
+          >
+            {gettext(
+              "Your Organization's org-admins set up single sign-on in the org console. Once your email domain is verified there, use Sign in with SSO on the sign-in page."
+            )}
+          </p>
+        </.settings_card>
+
+        <.settings_card
           :if={@section == :danger_zone}
           id="danger_zone"
           tab={:danger_zone}
@@ -244,15 +281,16 @@ defmodule KanbanWeb.UserLive.Settings do
       |> assign(:password_form, to_form(password_changeset))
       |> assign(:trigger_submit, false)
       |> assign(:section, :profile)
+      |> assign(:sso_locked?, not Plans.user_unlocked?(socket.assigns.current_scope))
+      |> assign(:sso_linked?, SSO.user_has_identity?(user))
 
     {:ok, socket}
   end
 
   # The other settings pages link here with ?section=password (or two_factor,
-  # danger_zone) to open that tab.
+  # sso, danger_zone) to open that tab.
   @impl true
-  def handle_params(%{"section" => section}, _uri, socket)
-      when section in ["profile", "password", "two_factor", "danger_zone"] do
+  def handle_params(%{"section" => section}, _uri, socket) when section in @sections do
     {:noreply, assign(socket, :section, String.to_existing_atom(section))}
   end
 
@@ -260,7 +298,7 @@ defmodule KanbanWeb.UserLive.Settings do
 
   @impl true
   def handle_event("select_section", %{"section" => section}, socket)
-      when section in ["profile", "password", "two_factor", "danger_zone"] do
+      when section in @sections do
     {:noreply, assign(socket, :section, String.to_existing_atom(section))}
   end
 

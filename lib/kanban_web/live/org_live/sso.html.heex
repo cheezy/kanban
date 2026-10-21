@@ -1,0 +1,224 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:organization}>
+  <div class="stride-screen px-4 pb-6 pt-5 md:px-7 md:pb-7">
+    <.link
+      id="org-sso-back"
+      navigate={~p"/org"}
+      class="text-sm underline"
+      style="color: var(--ink-2);"
+    >
+      {gettext("Back to Organization")}
+    </.link>
+
+    <header style="padding: 12px 0 14px;">
+      <h1
+        id="org-sso-title"
+        style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink);"
+      >
+        {gettext("Single sign-on")}
+      </h1>
+      <p style="margin: 6px 0 0; font-size: 13px; color: var(--ink-2); max-width: 720px; text-wrap: pretty; line-height: 1.55;">
+        {gettext(
+          "Let people with an email address on a verified domain sign in to %{name} through your identity provider. New people get an account and join as members; your identity provider handles their multi-factor authentication.",
+          name: @organization.name
+        )}
+      </p>
+    </header>
+
+    <div :if={@locked?} class="max-w-3xl">
+      <.locked_feature feature={:sso} variant={:panel} id="org-sso-locked" />
+    </div>
+
+    <div :if={!@locked?} class="flex flex-col gap-5 max-w-3xl">
+      <.settings_card
+        id="sso-domains"
+        title={gettext("Verified domains")}
+        hint={
+          gettext(
+            "Add each email domain your people use, publish its TXT record with your DNS provider, then verify it. A domain can be verified by only one Organization."
+          )
+        }
+      >
+        <div class="flex flex-col gap-4">
+          <p
+            :if={@domains == []}
+            id="sso-no-domains"
+            style="margin: 0; font-size: 13px; color: var(--ink-2);"
+          >
+            {gettext("No domains yet.")}
+          </p>
+
+          <ul :if={@domains != []} id="sso-domain-list" class="flex flex-col gap-3" role="list">
+            <li
+              :for={domain <- @domains}
+              id={"sso-domain-#{domain.id}"}
+              style="border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: var(--surface-2);"
+            >
+              <div class="flex flex-wrap items-center gap-2">
+                <span style="font-size: 14px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere;">
+                  {domain.domain}
+                </span>
+                <span
+                  :if={domain.verified_at}
+                  id={"sso-domain-#{domain.id}-verified"}
+                  style="font-size: 11.5px; font-weight: 500; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink);"
+                >
+                  {gettext("Verified")}
+                </span>
+                <span
+                  :if={!domain.verified_at}
+                  id={"sso-domain-#{domain.id}-pending"}
+                  style="font-size: 11.5px; font-weight: 500; padding: 1px 8px; border-radius: 999px; border: 1px dashed var(--line-strong); color: var(--ink-2);"
+                >
+                  {gettext("Not verified")}
+                </span>
+                <span class="flex-1"></span>
+                <.button
+                  :if={!domain.verified_at}
+                  id={"sso-verify-#{domain.id}"}
+                  phx-click="verify_domain"
+                  phx-value-id={domain.id}
+                  phx-disable-with={gettext("Checking...")}
+                >
+                  {gettext("Verify")}
+                </.button>
+                <.button
+                  id={"sso-remove-#{domain.id}"}
+                  phx-click="remove_domain"
+                  phx-value-id={domain.id}
+                  data-confirm={
+                    gettext("Remove this domain? People on it can no longer use single sign-on.")
+                  }
+                >
+                  {gettext("Remove")}
+                </.button>
+              </div>
+
+              <dl
+                :if={!domain.verified_at}
+                class="mt-3 grid gap-1"
+                style="font-size: 12px; color: var(--ink-2);"
+              >
+                <dt style="font-weight: 500; color: var(--ink);">{gettext("TXT record name")}</dt>
+                <dd style="margin: 0 0 6px; font-family: var(--font-mono); overflow-wrap: anywhere;">
+                  {record_name(domain)}
+                </dd>
+                <dt style="font-weight: 500; color: var(--ink);">
+                  {gettext("TXT record value")}
+                </dt>
+                <dd
+                  id={"sso-domain-#{domain.id}-value"}
+                  style="margin: 0; font-family: var(--font-mono); overflow-wrap: anywhere;"
+                >
+                  {record_value(domain)}
+                </dd>
+              </dl>
+            </li>
+          </ul>
+
+          <.form
+            for={@domain_form}
+            id="sso-domain-form"
+            phx-submit="add_domain"
+            class="flex flex-col sm:flex-row sm:items-end gap-3"
+          >
+            <div class="flex-1">
+              <.input
+                field={@domain_form[:domain]}
+                type="text"
+                label={gettext("Email domain")}
+                placeholder="example.com"
+                autocomplete="off"
+              />
+            </div>
+            <div class="sm:pb-2">
+              <.button id="sso-add-domain" type="submit" phx-disable-with={gettext("Adding...")}>
+                {gettext("Add domain")}
+              </.button>
+            </div>
+          </.form>
+        </div>
+      </.settings_card>
+
+      <.form
+        for={@connection_form}
+        id="sso-connection-form"
+        phx-change="validate_connection"
+        phx-submit="save_connection"
+        class="flex flex-col gap-5"
+      >
+        <.settings_card
+          id="sso-connection"
+          title={gettext("OpenID Connect identity provider")}
+          hint={
+            gettext(
+              "Register Stride as an application in your identity provider with the redirect URI below, then enter its issuer URL, client ID and client secret."
+            )
+          }
+        >
+          <div class="flex flex-col gap-3">
+            <div style="font-size: 12px; color: var(--ink-2);">
+              <span style="font-weight: 500; color: var(--ink);">{gettext("Redirect URI")}</span>
+              <code
+                id="sso-callback-url"
+                style="display: block; margin-top: 4px; font-family: var(--font-mono); overflow-wrap: anywhere; color: var(--ink);"
+              >
+                {@callback_url}
+              </code>
+            </div>
+            <.input
+              field={@connection_form[:issuer]}
+              type="url"
+              label={gettext("Issuer URL")}
+              placeholder="https://login.example.com"
+              autocomplete="off"
+            />
+            <.input
+              field={@connection_form[:client_id]}
+              type="text"
+              label={gettext("Client ID")}
+              autocomplete="off"
+            />
+            <.input
+              field={@connection_form[:client_secret]}
+              type="password"
+              value=""
+              label={gettext("Client secret")}
+              autocomplete="new-password"
+              placeholder={
+                if @secret_set?, do: gettext("Leave blank to keep the stored secret"), else: ""
+              }
+            />
+            <p
+              :if={@secret_set?}
+              id="sso-secret-set"
+              style="margin: 0; font-size: 12px; color: var(--ink-2);"
+            >
+              {gettext("A client secret is stored. It is never shown again.")}
+            </p>
+            <.input
+              field={@connection_form[:enabled]}
+              type="checkbox"
+              label={gettext("Allow sign-in through this identity provider")}
+            />
+            <p style="margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.5;">
+              {gettext(
+                "People you remove from the Organization can sign in again through single sign-on until your identity provider stops them. Sign-ins through single sign-on satisfy the Organization's two-factor requirement."
+              )}
+            </p>
+          </div>
+        </.settings_card>
+
+        <div>
+          <.button
+            id="save-sso-connection"
+            type="submit"
+            variant="primary"
+            phx-disable-with={gettext("Saving...")}
+          >
+            {gettext("Save connection")}
+          </.button>
+        </div>
+      </.form>
+    </div>
+  </div>
+</Layouts.app>

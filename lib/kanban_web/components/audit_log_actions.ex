@@ -106,5 +106,22 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("board_given_to_site_admin"),
     do: pgettext("audit action", "Board given to a site admin")
 
+  def action_label("sso_login"), do: pgettext("audit action", "Single sign-on login")
+
+  def action_label("sso_login_refused"),
+    do: pgettext("audit action", "Single sign-on login refused")
+
+  def action_label("sso_user_provisioned"),
+    do: pgettext("audit action", "Account created by single sign-on")
+
+  def action_label("sso_account_linked"),
+    do: pgettext("audit action", "Account linked to single sign-on")
+
+  def action_label("organization_domain_verified"),
+    do: pgettext("audit action", "Organization domain verified")
+
+  def action_label("sso_connection_updated"),
+    do: pgettext("audit action", "Single sign-on connection changed")
+
   def action_label(action) when is_binary(action), do: action
 end

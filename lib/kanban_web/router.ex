@@ -343,6 +343,10 @@ defmodule KanbanWeb.Router do
       # The org-admin security policy page (W2244); OrgLive.Security re-declares
       # the same gate and re-checks the role on every event.
       live "/org/security", OrgLive.Security, :index
+      # The org-admin single sign-on page (W2245): verified domains and the
+      # OIDC connection. OrgLive.SSO re-declares the same gate and re-checks
+      # the role and paid access on every event.
+      live "/org/sso", OrgLive.SSO, :index
       # Workspace settings for the current workspace; the LiveView checks paid
       # access and reach on mount and re-checks the org-admin role on every
       # event.
@@ -451,5 +455,10 @@ defmodule KanbanWeb.Router do
     post "/users/log-in", UserSessionController, :create
     post "/users/two-factor", UserSessionController, :verify_two_factor
     delete "/users/log-out", UserSessionController, :delete
+    # Single sign-on (W2245). Public because the person is not signed in yet;
+    # both GET routes are rate limited per IP inside the controller, and the
+    # callback accepts only the flow it finds in this browser's session.
+    get "/users/sso/start", SSOController, :start
+    get "/users/sso/callback", SSOController, :callback
   end
 end

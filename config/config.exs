@@ -185,6 +185,13 @@ config :kanban, :after_goal_grace_window_ms, 300_000
 # Backs the per-viewer local-time display in the /agents activity feed.
 config :elixir, :time_zone_database, Tz.TimeZoneDatabase
 
+# Single sign-on (W2245): the clock skew, in seconds, oidcc allows when it
+# checks an id_token's exp and nbf. Its own default is 0, which turns a few
+# seconds of drift between Stride and an identity provider into a refused
+# sign-in.
+config :oidcc, max_clock_skew: 30
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
+
 import_config "#{config_env()}.exs"
