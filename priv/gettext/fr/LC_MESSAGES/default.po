@@ -166,8 +166,8 @@ msgstr "Mot de passe"
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
 #: lib/kanban_web/live/org_live/console.html.heex:270
 #: lib/kanban_web/live/org_live/security.html.heex:100
-#: lib/kanban_web/live/org_live/sso.html.heex:216
-#: lib/kanban_web/live/org_live/sso.html.heex:317
+#: lib/kanban_web/live/org_live/sso.html.heex:233
+#: lib/kanban_web/live/org_live/sso.html.heex:334
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/components/comment_row.ex:139
 #: lib/kanban_web/live/task_live/form_component.html.heex:421
@@ -575,7 +575,7 @@ msgstr "Ajouter un commentaire"
 msgid "Add a comment"
 msgstr "Ajouter un commentaire"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:134
+#: lib/kanban_web/live/org_live/sso.html.heex:151
 #: lib/kanban_web/live/task_live/comment_thread_component.ex:345
 #, elixir-autogen, elixir-format
 msgid "Adding..."
@@ -8028,8 +8028,8 @@ msgstr "90 derniers jours"
 msgid "New column"
 msgstr "Nouvelle colonne"
 
-#: lib/kanban_web/controllers/saml_controller.ex:100
-#: lib/kanban_web/controllers/sso_controller.ex:124
+#: lib/kanban_web/controllers/saml_controller.ex:105
+#: lib/kanban_web/controllers/sso_controller.ex:131
 #: lib/kanban_web/controllers/user_session_controller.ex:312
 #: lib/kanban_web/live/user_live/two_factor_component.ex:410
 #, elixir-autogen, elixir-format
@@ -9907,8 +9907,8 @@ msgstr "Utiliser plutôt votre application d'authentification"
 msgid "Verify"
 msgstr "Vérifier"
 
-#: lib/kanban_web/controllers/saml_controller.ex:81
-#: lib/kanban_web/controllers/sso_controller.ex:97
+#: lib/kanban_web/controllers/saml_controller.ex:87
+#: lib/kanban_web/controllers/sso_controller.ex:103
 #: lib/kanban_web/controllers/user_session_controller.ex:272
 #, elixir-autogen, elixir-format
 msgid "Welcome back!"
@@ -10862,7 +10862,7 @@ msgstr "Lecture seule. Demandez à un admin du site de les modifier."
 #: lib/kanban_web/live/org_live/console.ex:306
 #: lib/kanban_web/live/org_live/scim.ex:133
 #: lib/kanban_web/live/org_live/security.ex:103
-#: lib/kanban_web/live/org_live/sso.ex:219
+#: lib/kanban_web/live/org_live/sso.ex:220
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
 #, elixir-autogen, elixir-format
 msgid "You must be an org-admin of an Organization to access this page."
@@ -12269,17 +12269,17 @@ msgctxt "audit action"
 msgid "Retention purge ran"
 msgstr "Purge de conservation exécutée"
 
-#: lib/kanban_web/live/org_live/sso.ex:234
+#: lib/kanban_web/live/org_live/sso.ex:250
 #, elixir-autogen, elixir-format
 msgid "%{domain} is verified."
 msgstr "%{domain} est vérifié."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:196
+#: lib/kanban_web/live/org_live/sso.html.heex:213
 #, elixir-autogen, elixir-format
 msgid "A client secret is stored. It is never shown again."
 msgstr "Un secret client est enregistré. Il n'est plus jamais affiché."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:135
+#: lib/kanban_web/live/org_live/sso.html.heex:152
 #, elixir-autogen, elixir-format
 msgid "Add domain"
 msgstr "Ajouter le domaine"
@@ -12289,37 +12289,37 @@ msgstr "Ajouter le domaine"
 msgid "Add each email domain your people use, publish its TXT record with your DNS provider, then verify it. A domain can be verified by only one Organization."
 msgstr "Ajoutez chaque domaine de messagerie utilisé par vos équipes, publiez son enregistrement TXT chez votre fournisseur DNS, puis vérifiez-le. Un domaine ne peut être vérifié que par une seule organisation."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:201
+#: lib/kanban_web/live/org_live/sso.html.heex:218
 #, elixir-autogen, elixir-format
 msgid "Allow sign-in through this identity provider"
 msgstr "Autoriser la connexion via ce fournisseur d'identité"
 
-#: lib/kanban_web/live/org_live/sso.ex:225
+#: lib/kanban_web/live/org_live/sso.ex:226
 #, elixir-autogen, elixir-format
 msgid "Another Organization has already verified this domain."
 msgstr "Une autre organisation a déjà vérifié ce domaine."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:178
+#: lib/kanban_web/live/org_live/sso.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Client ID"
 msgstr "ID client"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:185
+#: lib/kanban_web/live/org_live/sso.html.heex:202
 #, elixir-autogen, elixir-format
 msgid "Client secret"
 msgstr "Secret client"
 
-#: lib/kanban_web/live/org_live/sso.ex:58
+#: lib/kanban_web/live/org_live/sso.ex:59
 #, elixir-autogen, elixir-format
 msgid "Domain added. Publish its TXT record, then verify it."
 msgstr "Domaine ajouté. Publiez son enregistrement TXT, puis vérifiez-le."
 
-#: lib/kanban_web/live/org_live/sso.ex:85
+#: lib/kanban_web/live/org_live/sso.ex:86
 #, elixir-autogen, elixir-format
 msgid "Domain removed."
 msgstr "Domaine supprimé."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:128
+#: lib/kanban_web/live/org_live/sso.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "Email domain"
 msgstr "Domaine de messagerie"
@@ -12329,12 +12329,12 @@ msgstr "Domaine de messagerie"
 msgid "Enter your work email address to use single sign-on."
 msgstr "Saisissez votre adresse e-mail professionnelle pour utiliser l'authentification unique."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:171
+#: lib/kanban_web/live/org_live/sso.html.heex:188
 #, elixir-autogen, elixir-format
 msgid "Issuer URL"
 msgstr "URL de l'émetteur"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:188
+#: lib/kanban_web/live/org_live/sso.html.heex:205
 #, elixir-autogen, elixir-format
 msgid "Leave blank to keep the stored secret"
 msgstr "Laissez vide pour conserver le secret enregistré"
@@ -12354,17 +12354,17 @@ msgstr "Aucun domaine pour l'instant."
 msgid "Not verified"
 msgstr "Non vérifié"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:151
+#: lib/kanban_web/live/org_live/sso.html.heex:168
 #, elixir-autogen, elixir-format
 msgid "OpenID Connect identity provider"
 msgstr "Fournisseur d'identité OpenID Connect"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:204
+#: lib/kanban_web/live/org_live/sso.html.heex:221
 #, elixir-autogen, elixir-format
 msgid "People you remove from the Organization can sign in again through single sign-on until your identity provider stops them. Sign-ins through single sign-on satisfy the Organization's two-factor requirement."
 msgstr "Les personnes que vous retirez de l'organisation peuvent se reconnecter via l'authentification unique tant que votre fournisseur d'identité ne les bloque pas. Les connexions par authentification unique satisfont l'exigence de double authentification de l'organisation."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:160
+#: lib/kanban_web/live/org_live/sso.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "Redirect URI"
 msgstr "URI de redirection"
@@ -12374,7 +12374,7 @@ msgstr "URI de redirection"
 msgid "Redirecting..."
 msgstr "Redirection en cours..."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:153
+#: lib/kanban_web/live/org_live/sso.html.heex:170
 #, elixir-autogen, elixir-format
 msgid "Register Stride as an application in your identity provider with the redirect URI below, then enter its issuer URL, client ID and client secret."
 msgstr "Enregistrez Stride comme application auprès de votre fournisseur d'identité avec l'URI de redirection ci-dessous, puis saisissez l'URL de l'émetteur, l'ID client et le secret client."
@@ -12384,7 +12384,7 @@ msgstr "Enregistrez Stride comme application auprès de votre fournisseur d'iden
 msgid "Remove this domain? People on it can no longer use single sign-on."
 msgstr "Supprimer ce domaine ? Les personnes de ce domaine ne pourront plus utiliser l'authentification unique."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:218
+#: lib/kanban_web/live/org_live/sso.html.heex:235
 #, elixir-autogen, elixir-format
 msgid "Save connection"
 msgstr "Enregistrer la connexion"
@@ -12400,7 +12400,7 @@ msgid "Sign in with SSO"
 msgstr "Se connecter avec le SSO"
 
 #: lib/kanban_web/live/org_live/console.html.heex:24
-#: lib/kanban_web/live/org_live/sso.ex:40
+#: lib/kanban_web/live/org_live/sso.ex:41
 #: lib/kanban_web/live/org_live/sso.html.heex:17
 #: lib/kanban_web/live/user_live/settings.ex:178
 #: lib/kanban_web/live/user_live/settings_components.ex:113
@@ -12408,13 +12408,13 @@ msgstr "Se connecter avec le SSO"
 msgid "Single sign-on"
 msgstr "Authentification unique"
 
-#: lib/kanban_web/live/org_live/sso.ex:115
+#: lib/kanban_web/live/org_live/sso.ex:116
 #, elixir-autogen, elixir-format
 msgid "Single sign-on connection saved."
 msgstr "Connexion d'authentification unique enregistrée."
 
-#: lib/kanban_web/controllers/saml_controller.ex:108
-#: lib/kanban_web/controllers/sso_controller.ex:112
+#: lib/kanban_web/controllers/saml_controller.ex:113
+#: lib/kanban_web/controllers/sso_controller.ex:120
 #: lib/kanban_web/controllers/user_session_controller.ex:255
 #, elixir-autogen, elixir-format
 msgid "Single sign-on could not sign you in. Contact your Organization's administrator if this continues."
@@ -12425,22 +12425,22 @@ msgstr "L'authentification unique n'a pas pu vous connecter. Si le problème per
 msgid "Single sign-on is not available for that email address."
 msgstr "L'authentification unique n'est pas disponible pour cette adresse e-mail."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:101
+#: lib/kanban_web/live/org_live/sso.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "TXT record name"
 msgstr "Nom de l'enregistrement TXT"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:106
+#: lib/kanban_web/live/org_live/sso.html.heex:123
 #, elixir-autogen, elixir-format
 msgid "TXT record value"
 msgstr "Valeur de l'enregistrement TXT"
 
-#: lib/kanban_web/live/org_live/sso.ex:242
+#: lib/kanban_web/live/org_live/sso.ex:258
 #, elixir-autogen, elixir-format
 msgid "The TXT record was not found. DNS changes can take a while to appear; try again later."
 msgstr "L'enregistrement TXT est introuvable. Les modifications DNS peuvent mettre du temps à apparaître ; réessayez plus tard."
 
-#: lib/kanban_web/live/org_live/sso.ex:122
+#: lib/kanban_web/live/org_live/sso.ex:123
 #, elixir-autogen, elixir-format
 msgid "The issuer URL must be a public https address."
 msgstr "L'URL de l'émetteur doit être une adresse https publique."
@@ -12475,12 +12475,12 @@ msgstr "Votre compte se connecte via le fournisseur d'identité de votre organis
 msgid "identity provider"
 msgstr "fournisseur d'identité"
 
-#: lib/kanban/sso/organization_domain.ex:69
+#: lib/kanban/sso/organization_domain.ex:77
 #, elixir-autogen, elixir-format
 msgid "is already added to your Organization"
 msgstr "a déjà été ajouté à votre organisation"
 
-#: lib/kanban/sso/organization_domain.ex:93
+#: lib/kanban/sso/organization_domain.ex:104
 #, elixir-autogen, elixir-format
 msgid "must be a domain such as example.com"
 msgstr "doit être un domaine comme example.com"
@@ -12513,7 +12513,7 @@ msgctxt "audit action"
 msgid "Organization domain verified"
 msgstr "Domaine de l'organisation vérifié"
 
-#: lib/kanban_web/components/audit_log_actions.ex:124
+#: lib/kanban_web/components/audit_log_actions.ex:127
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Single sign-on connection changed"
@@ -12531,82 +12531,82 @@ msgctxt "audit action"
 msgid "Single sign-on login refused"
 msgstr "Connexion par authentification unique refusée"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:295
+#: lib/kanban_web/live/org_live/sso.html.heex:312
 #, elixir-autogen, elixir-format
 msgid "Add your identity provider's new certificate next to the old one while it rotates its signing key; at most two are kept."
 msgstr "Ajoutez le nouveau certificat de votre fournisseur d'identité à côté de l'ancien pendant qu'il renouvelle sa clé de signature ; deux au maximum sont conservés."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:302
+#: lib/kanban_web/live/org_live/sso.html.heex:319
 #, elixir-autogen, elixir-format
 msgid "Allow sign-in through this SAML identity provider"
 msgstr "Autoriser la connexion via ce fournisseur d'identité SAML"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:249
+#: lib/kanban_web/live/org_live/sso.html.heex:266
 #, elixir-autogen, elixir-format
 msgid "Assertion consumer service URL"
 msgstr "URL du service consommateur d'assertions"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:264
+#: lib/kanban_web/live/org_live/sso.html.heex:281
 #, elixir-autogen, elixir-format
 msgid "Download Stride's SP metadata"
 msgstr "Télécharger les métadonnées SP de Stride"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:234
+#: lib/kanban_web/live/org_live/sso.html.heex:251
 #, elixir-autogen, elixir-format
 msgid "For identity providers that only speak SAML 2.0. Register Stride in your identity provider with the details below, then paste its metadata XML, or enter its entity ID, single sign-on URL and signing certificate."
 msgstr "Pour les fournisseurs d'identité qui ne prennent en charge que SAML 2.0. Enregistrez Stride auprès de votre fournisseur d'identité avec les informations ci-dessous, puis collez son XML de métadonnées ou saisissez son ID d'entité, son URL d'authentification unique et son certificat de signature."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:277
+#: lib/kanban_web/live/org_live/sso.html.heex:294
 #, elixir-autogen, elixir-format
 msgid "Identity provider entity ID"
 msgstr "ID d'entité du fournisseur d'identité"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:271
+#: lib/kanban_web/live/org_live/sso.html.heex:288
 #, elixir-autogen, elixir-format
 msgid "Identity provider metadata XML"
 msgstr "XML de métadonnées du fournisseur d'identité"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:272
+#: lib/kanban_web/live/org_live/sso.html.heex:289
 #, elixir-autogen, elixir-format
 msgid "Paste the metadata XML to fill the fields below"
 msgstr "Collez le XML de métadonnées pour remplir les champs ci-dessous"
 
-#: lib/kanban_web/live/org_live/sso.ex:153
+#: lib/kanban_web/live/org_live/sso.ex:154
 #, elixir-autogen, elixir-format
 msgid "SAML connection saved."
 msgstr "Connexion SAML enregistrée."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:232
+#: lib/kanban_web/live/org_live/sso.html.heex:249
 #, elixir-autogen, elixir-format
 msgid "SAML identity provider"
 msgstr "Fournisseur d'identité SAML"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:319
+#: lib/kanban_web/live/org_live/sso.html.heex:336
 #, elixir-autogen, elixir-format
 msgid "Save SAML connection"
 msgstr "Enregistrer la connexion SAML"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:292
+#: lib/kanban_web/live/org_live/sso.html.heex:309
 #, elixir-autogen, elixir-format
 msgid "Signing certificates (PEM)"
 msgstr "Certificats de signature (PEM)"
 
-#: lib/kanban_web/live/org_live/sso.html.heex:283
+#: lib/kanban_web/live/org_live/sso.html.heex:300
 #, elixir-autogen, elixir-format
 msgid "Single sign-on URL"
 msgstr "URL d'authentification unique"
 
-#: lib/kanban_web/controllers/saml_controller.ex:133
+#: lib/kanban_web/controllers/saml_controller.ex:138
 #, elixir-autogen, elixir-format
 msgid "Single sign-on needs a paid plan."
 msgstr "L'authentification unique nécessite une offre payante."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:305
+#: lib/kanban_web/live/org_live/sso.html.heex:322
 #, elixir-autogen, elixir-format
 msgid "Stride accepts only responses signed with RSA-SHA256 that answer a sign-in it started. People are matched by the email attribute or an email NameID on a verified domain. Sign-ins through SAML satisfy the Organization's two-factor requirement."
 msgstr "Stride n'accepte que les réponses signées en RSA-SHA256 qui répondent à une connexion qu'il a lancée. Les personnes sont identifiées par l'attribut e-mail ou par un NameID e-mail sur un domaine vérifié. Les connexions via SAML satisfont l'exigence de double authentification de l'Organisation."
 
-#: lib/kanban_web/live/org_live/sso.html.heex:241
+#: lib/kanban_web/live/org_live/sso.html.heex:258
 #, elixir-autogen, elixir-format
 msgid "Stride entity ID"
 msgstr "ID d'entité de Stride"
@@ -12646,7 +12646,7 @@ msgstr "doit contenir un ou deux certificats RSA au format PEM"
 msgid "must not contain spaces"
 msgstr "ne doit pas contenir d'espaces"
 
-#: lib/kanban_web/components/audit_log_actions.ex:127
+#: lib/kanban_web/components/audit_log_actions.ex:130
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Replayed SAML sign-in refused"
@@ -12719,43 +12719,43 @@ msgstr "Jeton révoqué."
 msgid "Your new SCIM token"
 msgstr "Votre nouveau jeton SCIM"
 
-#: lib/kanban_web/components/audit_log_actions.ex:142
+#: lib/kanban_web/components/audit_log_actions.ex:145
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Group members changed by SCIM"
 msgstr "Membres du groupe modifiés par SCIM"
 
-#: lib/kanban_web/components/audit_log_actions.ex:129
+#: lib/kanban_web/components/audit_log_actions.ex:132
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "SCIM token created"
 msgstr "Jeton SCIM créé"
 
-#: lib/kanban_web/components/audit_log_actions.ex:131
+#: lib/kanban_web/components/audit_log_actions.ex:134
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "SCIM token rejected"
 msgstr "Jeton SCIM refusé"
 
-#: lib/kanban_web/components/audit_log_actions.ex:130
+#: lib/kanban_web/components/audit_log_actions.ex:133
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "SCIM token revoked"
 msgstr "Jeton SCIM révoqué"
 
-#: lib/kanban_web/components/audit_log_actions.ex:136
+#: lib/kanban_web/components/audit_log_actions.ex:139
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "User changed by SCIM"
 msgstr "Utilisateur modifié par SCIM"
 
-#: lib/kanban_web/components/audit_log_actions.ex:139
+#: lib/kanban_web/components/audit_log_actions.ex:142
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "User deprovisioned by SCIM"
 msgstr "Utilisateur déprovisionné par SCIM"
 
-#: lib/kanban_web/components/audit_log_actions.ex:134
+#: lib/kanban_web/components/audit_log_actions.ex:137
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "User provisioned by SCIM"
@@ -12770,3 +12770,16 @@ msgstr "Saisissez votre adresse e-mail professionnelle pour continuer avec l'aut
 #, elixir-autogen, elixir-format
 msgid "Single sign-on is being connected to this account. Confirm it's you this once; later single sign-on sign-ins won't ask."
 msgstr "L'authentification unique est en cours de connexion à ce compte. Confirmez votre identité cette fois seulement ; les prochaines connexions par authentification unique ne vous le demanderont plus."
+
+#: lib/kanban_web/live/org_live/sso.ex:237
+#, elixir-autogen, elixir-format
+msgid "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next check does not find it either, the domain stops being verified and people on it can no longer use single sign-on."
+msgid_plural "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next %{count} checks do not find it either, the domain stops being verified and people on it can no longer use single sign-on."
+msgstr[0] "La vérification quotidienne de Stride ne trouve plus l'enregistrement TXT de ce domaine depuis le %{date}. Publiez-le à nouveau : si la prochaine vérification ne le trouve pas non plus, le domaine ne sera plus vérifié et les personnes de ce domaine ne pourront plus utiliser l'authentification unique."
+msgstr[1] "La vérification quotidienne de Stride ne trouve plus l'enregistrement TXT de ce domaine depuis le %{date}. Publiez-le à nouveau : si les %{count} prochaines vérifications ne le trouvent pas non plus, le domaine ne sera plus vérifié et les personnes de ce domaine ne pourront plus utiliser l'authentification unique."
+
+#: lib/kanban_web/components/audit_log_actions.ex:124
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Organization domain no longer verified"
+msgstr "Domaine de l'organisation plus vérifié"

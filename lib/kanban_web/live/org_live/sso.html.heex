@@ -93,8 +93,25 @@
                 </.button>
               </div>
 
+              <p
+                :if={failing?(domain)}
+                id={"sso-domain-#{domain.id}-failing"}
+                role="status"
+                class="mt-3 flex items-start gap-2"
+                style="font-size: 12.5px; color: var(--ink);"
+              >
+                <span
+                  aria-hidden="true"
+                  class="inline-flex shrink-0"
+                  style="color: var(--color-error-ink); margin-top: 1px;"
+                >
+                  <.icon name="hero-exclamation-triangle" class="size-4" />
+                </span>
+                <span>{failing_message(domain)}</span>
+              </p>
+
               <dl
-                :if={!domain.verified_at}
+                :if={!domain.verified_at or failing?(domain)}
                 class="mt-3 grid gap-1"
                 style="font-size: 12px; color: var(--ink-2);"
               >

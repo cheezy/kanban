@@ -118,6 +118,8 @@ defmodule Kanban.Telemetry.Catalog.Families do
      "Single sign-on linked an existing account to its identity provider and made it an Organization member if it was not one. An account with two-factor turned on is linked only after its code is accepted."},
     {:organization_domain_verified, [:user_id, :organization_id, :domain],
      "An org-admin verified an email domain for their Organization through its DNS TXT record. user_id is the org-admin."},
+    {:organization_domain_unverified, [:organization_id, :domain],
+     "A verified email domain stopped being verified because the daily re-check did not find its DNS TXT record three times in a row. Single sign-on and SCIM stop accepting addresses on it until it is verified again."},
     {:sso_connection_updated,
      [
        :user_id,

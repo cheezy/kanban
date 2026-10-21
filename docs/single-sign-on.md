@@ -45,6 +45,27 @@ is refused with "Another Organization has already verified this domain."
 
 Only verified domains are used for sign-in. An unverified domain does nothing.
 
+**Keep the record published.** A domain can lapse or change hands after it
+was verified, so `Kanban.SSO.DomainRecheckWorker` looks every verified
+domain's record up again each day at 04:11 UTC
+(`Kanban.SSO.DomainRecheck`):
+
+- When the record is found, nothing changes.
+- When it is not found, the miss is counted and the domain's row on the
+  single sign-on page shows a warning with the date of the first miss and the
+  record to publish again. A later check that finds the record clears it.
+- When three checks in a row miss it, the domain stops being verified: single
+  sign-on and SCIM stop accepting addresses on it, and another Organization
+  may verify it. This is recorded as `organization_domain_unverified`. The
+  row and its token are kept, so publishing the record and selecting
+  **Verify** makes it verified again. People already in the Organization stay
+  members.
+
+A DNS lookup that fails counts as a miss, so a resolver outage on Stride's
+side would have to last for three daily runs before a domain is unverified.
+The cron schedule is read when the application boots, so a running server
+starts the daily check after its next restart.
+
 ### The identity provider
 
 Register Stride as an application (a confidential client using the
@@ -317,6 +338,7 @@ a minute by default).
 | `Kanban.SSO.OIDC` | Discovery, the token request and ID token validation, through `oidcc`. |
 | `Kanban.SSO.OIDCLogin` | The sign-in flow: start and callback. |
 | `Kanban.SSO.Provisioning` | Which account, and its membership. |
+| `Kanban.SSO.DomainRecheck` | The daily re-check of verified domains (run by `Kanban.SSO.DomainRecheckWorker`). |
 | `Kanban.SSO.TwoFactorLink` | Links an account with two-factor on once its code is accepted. |
 | `Kanban.SSO.SAML` | SAML response validation and the AuthnRequest, through `simple_saml`. |
 | `Kanban.SSO.SAML.XML` | Hardened XML reading for SAML responses and metadata. |

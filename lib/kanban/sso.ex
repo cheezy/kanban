@@ -27,6 +27,10 @@ defmodule Kanban.SSO do
   connection lookups are scoped to the Organization id, so another
   Organization's row is `:not_found`.
 
+  A verified domain is checked again every day (`Kanban.SSO.DomainRecheck`,
+  decided 2026-10-21) and stops being verified when its TXT record has been
+  missing for three checks in a row.
+
   ## Outbound requests
 
   The issuer and the JWKS and token endpoints its discovery document names

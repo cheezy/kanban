@@ -120,6 +120,9 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("organization_domain_verified"),
     do: pgettext("audit action", "Organization domain verified")
 
+  def action_label("organization_domain_unverified"),
+    do: pgettext("audit action", "Organization domain no longer verified")
+
   def action_label("sso_connection_updated"),
     do: pgettext("audit action", "Single sign-on connection changed")
 

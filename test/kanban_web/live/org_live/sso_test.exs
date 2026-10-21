@@ -156,6 +156,29 @@ defmodule KanbanWeb.OrgLive.SSOTest do
       assert has_element?(lv, "#sso-domain-#{published.id}-verified")
     end
 
+    test "warns while the daily re-check is not finding a verified domain's record",
+         %{conn: conn, org: org} do
+      domain = verified_domain_fixture(org)
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+      refute has_element?(lv, "#sso-domain-#{domain.id}-failing")
+      refute has_element?(lv, "#sso-domain-#{domain.id}-value")
+
+      from(d in Kanban.SSO.OrganizationDomain, where: d.id == ^domain.id)
+      |> Repo.update_all(set: [failed_checks: 1, failing_since: ~U[2026-10-20 04:11:00Z]])
+
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+      assert has_element?(lv, "#sso-domain-#{domain.id}-verified")
+      assert has_element?(lv, "#sso-domain-#{domain.id}-failing", "since 2026-10-20")
+      assert has_element?(lv, "#sso-domain-#{domain.id}-failing", "the next 2 checks")
+      assert has_element?(lv, "#sso-domain-#{domain.id}-value")
+
+      from(d in Kanban.SSO.OrganizationDomain, where: d.id == ^domain.id)
+      |> Repo.update_all(set: [failed_checks: 2])
+
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+      assert has_element?(lv, "#sso-domain-#{domain.id}-failing", "if the next check does not")
+    end
+
     test "remove deletes the domain", %{conn: conn, org: org} do
       domain = domain_fixture(org)
       {:ok, lv, _html} = live(conn, ~p"/org/sso")

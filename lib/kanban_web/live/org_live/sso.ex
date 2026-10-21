@@ -28,6 +28,7 @@ defmodule KanbanWeb.OrgLive.SSO do
   alias Kanban.Accounts.User
   alias Kanban.Organizations
   alias Kanban.SSO
+  alias Kanban.SSO.DomainRecheck
   alias Kanban.SSO.DomainVerification
   alias Kanban.SSO.SAML
 
@@ -225,6 +226,22 @@ defmodule KanbanWeb.OrgLive.SSO do
     do: gettext("Another Organization has already verified this domain.")
 
   defp record_name(domain), do: DomainVerification.record_name(domain)
+
+  # A verified domain whose daily re-check has stopped finding its record.
+  defp failing?(%{verified_at: %DateTime{}, failed_checks: failed}) when failed > 0, do: true
+  defp failing?(_domain), do: false
+
+  defp failing_message(domain) do
+    remaining = DomainRecheck.misses_before_unverify() - domain.failed_checks
+
+    ngettext(
+      "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next check does not find it either, the domain stops being verified and people on it can no longer use single sign-on.",
+      "Stride's daily check has not found this domain's TXT record since %{date}. Publish it again: if the next %{count} checks do not find it either, the domain stops being verified and people on it can no longer use single sign-on.",
+      remaining,
+      date: Calendar.strftime(domain.failing_since, "%Y-%m-%d")
+    )
+  end
+
   defp record_value(domain), do: DomainVerification.record_value(domain)
 
   defp verified({:ok, domain}, socket, organization_id) do

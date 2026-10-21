@@ -9,6 +9,11 @@ defmodule Kanban.SSO.OrganizationDomain do
   `organization_domains_verified_domain_index` admits one verified row per
   domain, so the first verification wins.
 
+  A verified domain is checked again every day (`Kanban.SSO.DomainRecheck`):
+  `failed_checks` counts the consecutive checks that did not find the record
+  and `failing_since` is when the first of them ran, both reset when a check
+  finds it, and `last_checked_at` is the latest check.
+
   Managed by `Kanban.SSO`.
   """
 
@@ -30,6 +35,9 @@ defmodule Kanban.SSO.OrganizationDomain do
     field :domain, :string
     field :verification_token, :string, redact: true
     field :verified_at, :utc_datetime
+    field :last_checked_at, :utc_datetime
+    field :failed_checks, :integer, default: 0
+    field :failing_since, :utc_datetime
 
     timestamps(type: :utc_datetime)
   end
@@ -72,13 +80,16 @@ defmodule Kanban.SSO.OrganizationDomain do
   end
 
   @doc """
-  Marks the domain verified at `now`. A domain another Organization verified
-  first fails on the partial unique index.
+  Marks the domain verified at `now`, which is also a check that found the
+  record. A domain another Organization verified first fails on the partial
+  unique index.
   """
   @spec verify_changeset(t(), DateTime.t()) :: Ecto.Changeset.t()
   def verify_changeset(%__MODULE__{} = domain, %DateTime{} = now) do
+    now = DateTime.truncate(now, :second)
+
     domain
-    |> change(verified_at: DateTime.truncate(now, :second))
+    |> change(verified_at: now, last_checked_at: now, failed_checks: 0, failing_since: nil)
     |> unique_constraint(:domain, name: :organization_domains_verified_domain_index)
   end
 

@@ -128,8 +128,9 @@ config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 # the weekly digest fan-out on Mondays at 13:00 UTC (W2207), the
 # delivery-target status sweeper hourly at minute 17 (W2291), the
 # metrics retention cleanup daily at 03:23 UTC (W2345), the workspace
-# export cleanup hourly at minute 41 (W2222) and the audit and archived-task
-# retention purge daily at 03:47 UTC (W2244).
+# export cleanup hourly at minute 41 (W2222), the audit and archived-task
+# retention purge daily at 03:47 UTC (W2244) and the verified-domain re-check
+# daily at 04:11 UTC.
 config :kanban, Oban,
   repo: Kanban.Repo,
   engine: Oban.Engines.Basic,
@@ -149,6 +150,7 @@ config :kanban, Oban,
        {"17 * * * *", Kanban.Notifications.TargetStatusWorker},
        {"23 3 * * *", Kanban.Metrics.RetentionWorker},
        {"47 3 * * *", Kanban.Retention.PurgeWorker},
+       {"11 4 * * *", Kanban.SSO.DomainRecheckWorker},
        {"41 * * * *", Kanban.Workspaces.Export.CleanupWorker}
      ]}
   ]
