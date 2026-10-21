@@ -26,6 +26,7 @@ defmodule Kanban.Columns.Column do
     |> cast(attrs, [:name, :position, :wip_limit])
     |> ChangesetText.validate_storable([:name])
     |> validate_required([:name, :position])
+    |> ChangesetText.validate_visible([:name])
     # The column is varchar(255); a longer name raised at the database.
     |> validate_length(:name, max: 255, count: :codepoints)
     |> validate_number(:wip_limit, greater_than_or_equal_to: 0)

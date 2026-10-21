@@ -31,7 +31,8 @@ defmodule Kanban.Labels.Label do
   Builds a changeset for a label.
 
   The name is trimmed before the length and uniqueness checks, and its length
-  is counted in codepoints to match the `varchar(40)` column. Uniqueness is
+  is counted in codepoints to match the `varchar(40)` column. A name with no
+  visible character is blank (`Kanban.ChangesetText.validate_visible/2`). Uniqueness is
   case-insensitive per board, enforced by the `lower(name)` expression index.
   """
   def changeset(label, attrs) do
@@ -40,6 +41,7 @@ defmodule Kanban.Labels.Label do
     |> ChangesetText.validate_storable([:name])
     |> update_change(:name, &trim/1)
     |> validate_required([:name, :color])
+    |> ChangesetText.validate_visible([:name])
     |> validate_length(:name, max: @max_name_length, count: :codepoints)
     |> unique_constraint(:name, name: :labels_board_id_lower_name_index)
   end

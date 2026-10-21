@@ -9,6 +9,7 @@ defmodule Kanban.ApiTokens do
   alias Kanban.ApiTokens.WorkspaceTokens
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
+  alias Kanban.ChangesetText
   alias Kanban.Organizations.Organization
   alias Kanban.Repo
   alias Kanban.Workspaces.Policy
@@ -395,12 +396,10 @@ defmodule Kanban.ApiTokens do
   """
   def usable_agent_name?(agent_name) when is_binary(agent_name) do
     String.valid?(agent_name) and not String.contains?(agent_name, <<0>>) and
-      visible?(agent_name) and agent_name != @unknown_agent_name
+      ChangesetText.visible?(agent_name) and agent_name != @unknown_agent_name
   end
 
   def usable_agent_name?(_agent_name), do: false
-
-  defp visible?(text), do: String.replace(text, ~r/[\s\p{Cf}]/u, "") != ""
 
   @doc """
   Best-effort stamp of the last usable agent name presented by this token

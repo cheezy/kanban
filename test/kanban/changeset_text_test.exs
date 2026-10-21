@@ -135,4 +135,72 @@ defmodule Kanban.ChangesetTextTest do
   test "message/0 is the default message" do
     assert ChangesetText.message() == @message
   end
+
+  doctest Kanban.ChangesetText, only: [visible?: 1]
+
+  describe "visible?/1 and validate_visible/2" do
+    # Every invisible kind the rule names, as raw codepoints: zero-width
+    # space, joiners, word joiner, BOM, soft hyphen, RTL override, a tag
+    # character, combining grapheme joiner, Hangul fillers, Khmer vowels.
+    @invisible [
+      0x200B,
+      0x200C,
+      0x200D,
+      0x2060,
+      0xFEFF,
+      0x00AD,
+      0x202E,
+      0xE0041,
+      0x034F,
+      0x115F,
+      0x1160,
+      0x3164,
+      0xFFA0,
+      0x17B4,
+      0x17B5
+    ]
+
+    defp visible_changeset(name) do
+      {%{}, %{name: :string, count: :integer}}
+      |> cast(%{name: name}, [:name])
+      |> ChangesetText.validate_storable([:name])
+      |> validate_required([:name])
+      |> ChangesetText.validate_visible([:name, :count])
+    end
+
+    test "each invisible character alone, and all of them with spaces, are blank" do
+      for codepoint <- @invisible do
+        text = <<codepoint::utf8>>
+        refute ChangesetText.visible?(text), "U+#{Integer.to_string(codepoint, 16)}"
+        assert errors(visible_changeset(text)) == %{name: ["can't be blank"]}
+      end
+
+      all = Enum.map_join(@invisible, " ", &<<&1::utf8>>)
+      assert errors(visible_changeset(all)) == %{name: ["can't be blank"]}
+    end
+
+    test "text with a visible character is kept exactly as typed" do
+      for text <- ["Board", "  a  ", "👨‍👩‍👧", "\u200BDesign\u200B", "日本", "é"] do
+        assert ChangesetText.visible?(text)
+        changeset = visible_changeset(text)
+        assert changeset.valid?
+        assert get_change(changeset, :name) == text
+      end
+    end
+
+    test "whitespace-only and unstorable text keep the error they already have, once" do
+      assert errors(visible_changeset("   ")) == %{name: ["can't be blank"]}
+      assert errors(visible_changeset(<<0x200B::utf8, 0>>)) == %{name: [@message]}
+      assert errors(visible_changeset(<<0xFF, 0xFE>>)) == %{name: [@message]}
+    end
+
+    test "nil, unchanged and non-string fields are skipped" do
+      changeset =
+        {%{name: <<0x200B::utf8>>}, %{name: :string, count: :integer}}
+        |> cast(%{count: 3}, [:name, :count])
+        |> ChangesetText.validate_visible([:name, :count])
+
+      assert changeset.valid?
+    end
+  end
 end

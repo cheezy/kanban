@@ -31,11 +31,26 @@ defmodule Kanban.ChangesetText do
   A schema whose API already promised a different message for these bytes can
   keep it with the `:message` option (`Kanban.Tasks.TaskComment` keeps
   "is invalid").
+
+  `validate_visible/2` is the one rule for names and other required text
+  that must show something (decided 2026-10-21): a value made only of
+  whitespace and characters that render as nothing (`visible?/1`) is refused
+  as "can't be blank". It refuses and never strips, so a name that has a
+  visible character is stored exactly as typed. `Kanban.Workspaces.Workspace`
+  strips the same characters from workspace names instead, because a
+  workspace name is compared for uniqueness.
   """
 
   import Ecto.Changeset
 
   @message "contains characters that are not allowed"
+
+  # Whitespace, every format character (category Cf: zero-width spaces and
+  # joiners, direction marks and overrides, the soft hyphen, tag characters),
+  # and the default-ignorable letters and marks that render as nothing: the
+  # combining grapheme joiner, the Hangul fillers and the Khmer inherent
+  # vowels.
+  @not_visible ~r/[\s\p{Cf}\x{034F}\x{115F}\x{1160}\x{17B4}\x{17B5}\x{3164}\x{FFA0}]/u
 
   @doc """
   Adds "contains characters that are not allowed" to each of `fields` whose
@@ -56,6 +71,48 @@ defmodule Kanban.ChangesetText do
       end)
     end)
   end
+
+  @doc """
+  Adds "can't be blank" to each of `fields` whose change is text with no
+  visible character (`visible?/1`), such as a name typed as zero-width
+  spaces.
+
+  Whitespace-only text is left to `validate_required/3`, which already
+  reports it, and text that cannot be stored is left to `validate_storable/2`,
+  so neither gets a second error. Call it after both.
+  """
+  @spec validate_visible(Ecto.Changeset.t(), [atom()]) :: Ecto.Changeset.t()
+  def validate_visible(%Ecto.Changeset{} = changeset, fields) when is_list(fields) do
+    Enum.reduce(fields, changeset, fn field, acc ->
+      validate_change(acc, field, fn ^field, value ->
+        if invisible_only?(value), do: [{field, "can't be blank"}], else: []
+      end)
+    end)
+  end
+
+  defp invisible_only?(value) when is_binary(value),
+    do: storable?(value) and String.trim(value) != "" and not visible?(value)
+
+  defp invisible_only?(_value), do: false
+
+  @doc """
+  Returns true when `text` has at least one character that shows: anything
+  other than whitespace, format characters (zero-width spaces and joiners,
+  direction marks, the soft hyphen, tag characters) and the letters and
+  marks that render as nothing (U+034F, U+115F, U+1160, U+17B4, U+17B5,
+  U+3164, U+FFA0). `text` must be valid UTF-8.
+
+  ## Examples
+
+      iex> Kanban.ChangesetText.visible?("Board")
+      true
+
+      iex> Kanban.ChangesetText.visible?("\u200B \u200D")
+      false
+
+  """
+  @spec visible?(String.t()) :: boolean()
+  def visible?(text) when is_binary(text), do: String.replace(text, @not_visible, "") != ""
 
   @doc """
   Returns true when `value` can be stored: every string in it, including map

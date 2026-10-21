@@ -56,7 +56,7 @@ defmodule Kanban.Tasks.TaskComment do
     |> ChangesetText.validate_storable([:content], message: "is invalid")
     |> validate_required([:content, :task_id])
     |> validate_length(:content, max: @content_max_length, count: :codepoints)
-    |> validate_change(:content, &validate_visible_text/2)
+    |> ChangesetText.validate_visible([:content])
     |> foreign_key_constraint(:task_id)
     |> foreign_key_constraint(:author_user_id)
   end
@@ -72,22 +72,6 @@ defmodule Kanban.Tasks.TaskComment do
     |> put_change(:author_agent_name, agent_name)
     |> ChangesetText.validate_storable([:author_agent_name], message: "is invalid")
     |> validate_length(:author_agent_name, max: @agent_name_max_length, count: :codepoints)
-    |> validate_change(:author_agent_name, &validate_visible_text/2)
+    |> ChangesetText.validate_visible([:author_agent_name])
   end
-
-  # Text made only of whitespace and invisible format characters (zero-width
-  # spaces, bidi marks) is blank. Whitespace-only text is left to
-  # validate_required, which already reports it. Text that cannot be stored
-  # (a NUL byte or invalid UTF-8) already carries the storable error, and a
-  # regex with the `u` flag raises on invalid UTF-8, so it is skipped here.
-  defp validate_visible_text(field, value) when is_binary(value) do
-    cond do
-      not ChangesetText.storable?(value) -> []
-      String.trim(value) == "" -> []
-      String.replace(value, ~r/[\s\p{Cf}]/u, "") == "" -> [{field, "can't be blank"}]
-      true -> []
-    end
-  end
-
-  defp validate_visible_text(_field, _value), do: []
 end

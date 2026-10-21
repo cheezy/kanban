@@ -71,6 +71,7 @@ defmodule Kanban.Organizations.Organization do
     |> ChangesetText.validate_storable(@fields)
     |> trim_fields()
     |> validate_required(@required_fields)
+    |> ChangesetText.validate_visible([:name, :contact_name])
     |> validate_format(:contact_email, ~r/^[^@,;\s]+@[^@,;\s]+$/,
       message: "must have the @ sign and no spaces"
     )

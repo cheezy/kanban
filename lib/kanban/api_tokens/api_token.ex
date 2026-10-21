@@ -48,6 +48,7 @@ defmodule Kanban.ApiTokens.ApiToken do
     ])
     |> ChangesetText.validate_storable(@text_fields)
     |> validate_required([:name, :user_id, :board_id])
+    |> ChangesetText.validate_visible([:name])
     |> validate_column_lengths()
     |> finish_new_token()
   end
@@ -72,6 +73,7 @@ defmodule Kanban.ApiTokens.ApiToken do
     ])
     |> ChangesetText.validate_storable(@text_fields)
     |> validate_required([:name, :user_id, :workspace_id])
+    |> ChangesetText.validate_visible([:name])
     |> validate_column_lengths()
     |> finish_new_token()
   end

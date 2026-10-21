@@ -49,6 +49,7 @@ defmodule Kanban.Targets.DeliveryTarget do
     |> cast(attrs, [:name, :target_date, :description])
     |> ChangesetText.validate_storable([:name, :description])
     |> validate_required([:name, :target_date])
+    |> ChangesetText.validate_visible([:name])
     |> foreign_key_constraint(:owner_id)
   end
 
