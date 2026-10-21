@@ -20,10 +20,23 @@ defmodule KanbanWeb.TokenPathsTest do
       end
     end
 
+    test "matches repeated slashes, which reach the same routes" do
+      for path <- [
+            "/invitations//#{@token}",
+            "/users//reset-password/#{@token}",
+            "/users/confirm///#{@token}",
+            "/users//settings//confirm-email//#{@token}"
+          ] do
+        assert TokenPaths.token_path?(path), path
+      end
+    end
+
     test "does not match other routes, a bare prefix or a non-string" do
       for value <- [
             "/users/confirmation-pending",
+            "/users//confirmation-pending",
             "/users/reset-password",
+            "/users/reset-password//",
             "/invitations/",
             "/boards/1",
             "/notifications/unsubscribe?token=x",
@@ -43,6 +56,10 @@ defmodule KanbanWeb.TokenPathsTest do
                "https://h/users/reset-password/[X]?r=1#top"
 
       assert TokenPaths.redact("/invitations/#{@token}/extra", "[X]") == "/invitations/[X]/extra"
+    end
+
+    test "redacts the token behind repeated slashes, keeping the slashes" do
+      assert TokenPaths.redact("/users//confirm//#{@token}", "[X]") == "/users//confirm//[X]"
     end
 
     test "redacts encoded and unusual segments too" do

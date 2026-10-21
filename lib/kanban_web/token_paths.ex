@@ -10,10 +10,14 @@ defmodule KanbanWeb.TokenPaths do
   `KanbanWeb.ErrorTrackerFilter` use this module to keep those out.
 
   The routes are the invitation link (`/invitations/:token`, W2219), password
-  reset, account confirmation and email-change confirmation.
+  reset, account confirmation and email-change confirmation. A path with
+  repeated slashes (`/users//confirm//<token>`) reaches the same page, so it
+  counts as well.
   """
 
-  @token_path ~r{(/(?:invitations|users/reset-password|users/confirm|users/settings/confirm-email)/)[^/?#\s]+}
+  # Runs of slashes are allowed between segments, because the router ignores
+  # empty segments and so serves `/invitations//<token>` as the invitation page.
+  @token_path ~r{(/+(?:invitations|users/+reset-password|users/+confirm|users/+settings/+confirm-email)/+)[^/?#\s]+}
 
   @doc """
   True when `value`, a path or URL, contains a token route's secret segment.
@@ -21,6 +25,9 @@ defmodule KanbanWeb.TokenPaths do
   ## Examples
 
       iex> token_path?("/invitations/abc")
+      true
+
+      iex> token_path?("/invitations//abc")
       true
 
       iex> token_path?("/users/confirmation-pending")

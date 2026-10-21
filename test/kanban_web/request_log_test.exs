@@ -48,6 +48,23 @@ defmodule KanbanWeb.RequestLogTest do
       assert log =~ "GET /users/reset-password/[FILTERED]"
     end
 
+    test "never contains a token reached through repeated slashes, which the router still serves",
+         %{conn: conn} do
+      token = "slashtoken#{System.unique_integer([:positive])}"
+
+      for path <- [
+            "/invitations//#{token}",
+            "/users//reset-password/#{token}",
+            "/users/confirm///#{token}",
+            "/users/settings//confirm-email//#{token}"
+          ] do
+        log = capture_all(fn -> get(conn, path) end)
+
+        refute log =~ token, "#{path} logged its token"
+        assert log =~ "[FILTERED]"
+      end
+    end
+
     test "still logs other requests' paths as Phoenix does", %{conn: conn} do
       log = capture_all(fn -> get(conn, ~p"/users/log-in") end)
 
