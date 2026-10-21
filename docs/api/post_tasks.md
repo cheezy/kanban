@@ -100,7 +100,7 @@ in the board UI.
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `task.required_capabilities` | array | No | Required agent capabilities (e.g., `["code_generation", "testing"]`) |
-| `task.column_id` | integer | No | Column ID where task should be created (default: Ready). Sent as a JSON number or a numeric string. A value that is not an integer returns 400 `Invalid column_id: must be an integer`. A column that does not exist or is on another board returns 404 `Task not found`, and so does a whole number outside the signed 64-bit range. |
+| `task.column_id` | integer | No | Column ID where task should be created (default: Ready). Sent as a JSON number or a numeric string. A value that is not an integer returns 400 `Invalid column_id: must be an integer`. A column that does not exist or is on another board returns 404 `Column not found` (`Task not found` before 2026-10-21), and so does a whole number outside the signed 64-bit range. |
 | `task.tasks` | array | No | Array of child task objects (for goals only). Each child's `type` must be `work` or `defect`; a child of type `goal` returns 422, and so does a child with a non-empty `tasks` list of its own (see [Unprocessable Entity (422)](#unprocessable-entity-422)) |
 | `agent_name` | string | No | **Top-level** (sibling of `task`, not nested inside it): the display name of the agent creating the task, used for `created_by_agent` attribution (see resolution order below) |
 

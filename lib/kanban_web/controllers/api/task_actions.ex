@@ -231,7 +231,7 @@ defmodule KanbanWeb.API.TaskActions do
          {:ok, filter} <- page_extra_filters(conn, board, params) do
       {:ok, :index, task_page(conn, board, page, filter, view_for(params))}
     else
-      {:error, :not_found} -> {:error, :not_found}
+      {:error, :column_not_found} -> {:error, :column_not_found}
       {:error, message} when is_binary(message) -> {:error, {:invalid_param, message}}
     end
   end
@@ -275,7 +275,7 @@ defmodule KanbanWeb.API.TaskActions do
   # and a nonexistent column id produce the same 404 in both modes.
   defp board_column_filter(board, column_id) do
     case column_for_board(column_id, board.id) do
-      nil -> {:error, :not_found}
+      nil -> {:error, :column_not_found}
       column -> {:ok, %{column_id: column.id}}
     end
   end

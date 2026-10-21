@@ -23,6 +23,7 @@ defmodule KanbanWeb.API.TaskIdOutOfBigintRangeTest do
   @below_bigint_min "-9223372036854775809"
   @reported_id "99999999999999999999"
   @not_found %{"error" => "Task not found"}
+  @column_not_found %{"error" => "Column not found"}
 
   # Every route that resolves :id through the shared task lookup, with a body
   # that lets the request reach the lookup (update needs a "task" key first).
@@ -185,20 +186,20 @@ defmodule KanbanWeb.API.TaskIdOutOfBigintRangeTest do
   describe "column_id out of range returns 404 on list, paginated list and create" do
     test "GET /api/tasks legacy mode", %{conn: conn} do
       conn = get(conn, "/api/tasks?column_id=#{@above_bigint_max}")
-      assert json_response(conn, 404) == @not_found
+      assert json_response(conn, 404) == @column_not_found
     end
 
     test "GET /api/tasks paginated mode", %{conn: conn} do
       conn = get(conn, "/api/tasks?column_id=#{@above_bigint_max}&limit=2")
-      assert json_response(conn, 404) == @not_found
+      assert json_response(conn, 404) == @column_not_found
     end
 
     test "GET /api/tasks with bigint min - 1 in both modes", %{conn: conn} do
       legacy = get(conn, "/api/tasks?column_id=#{@below_bigint_min}")
       paged = get(conn, "/api/tasks?column_id=#{@below_bigint_min}&limit=2")
 
-      assert json_response(legacy, 404) == @not_found
-      assert json_response(paged, 404) == @not_found
+      assert json_response(legacy, 404) == @column_not_found
+      assert json_response(paged, 404) == @column_not_found
     end
 
     test "out-of-range column_id is the same 404 as a nonexistent column", %{conn: conn} do
@@ -214,7 +215,7 @@ defmodule KanbanWeb.API.TaskIdOutOfBigintRangeTest do
           "task" => %{"title" => "D360", "column_id" => @above_bigint_max}
         })
 
-      assert json_response(conn, 404) == @not_found
+      assert json_response(conn, 404) == @column_not_found
     end
 
     test "POST /api/tasks with an out-of-range column_id JSON number", %{conn: conn} do
@@ -225,7 +226,7 @@ defmodule KanbanWeb.API.TaskIdOutOfBigintRangeTest do
         |> put_req_header("content-type", "application/json")
         |> post("/api/tasks", body)
 
-      assert json_response(conn, 404) == @not_found
+      assert json_response(conn, 404) == @column_not_found
     end
 
     test "non-numeric column_id still returns 400 in every mode", %{conn: conn} do

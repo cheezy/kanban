@@ -80,12 +80,12 @@ defmodule KanbanWeb.API.TaskController do
     case parse_id(raw_column_id) do
       {:ok, column_id} ->
         # Board-scoped lookup so a cross-board column id and a nonexistent
-        # column id produce the same {:error, :not_found} response — closes
-        # the existence-oracle gap that the old get_column! + verify pattern
-        # had (W399).
+        # column id produce the same {:error, :column_not_found} response —
+        # closes the existence-oracle gap that the old get_column! + verify
+        # pattern had (W399).
         case column_for_board(column_id, board.id) do
           nil ->
-            TaskErrors.handle_task_error(conn, {:error, :not_found})
+            TaskErrors.handle_task_error(conn, {:error, :column_not_found})
 
           column ->
             tasks = column_tasks(conn, [column], label)

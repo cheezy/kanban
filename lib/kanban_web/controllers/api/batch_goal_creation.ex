@@ -67,7 +67,7 @@ defmodule KanbanWeb.API.BatchGoalCreation do
     # this is defense-in-depth in case get_default_column_id returns nil/stale.
     case column_id && Columns.get_column_for_board(column_id, board.id) do
       nil ->
-        TaskErrors.handle_task_error(conn, {:error, :not_found})
+        TaskErrors.handle_task_error(conn, {:error, :column_not_found})
 
       column ->
         # W2409: the paid telemetry fields are dropped for the whole batch

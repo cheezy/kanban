@@ -456,9 +456,13 @@ two cases are deliberately indistinguishable, in both modes:
 
 ```json
 {
-  "error": "Task not found"
+  "error": "Column not found"
 }
 ```
+
+Before 2026-10-21 this body said `Task not found`. The status was 404 then too.
+Through MCP, `stride_list_tasks` reports it with `error_code`
+`column_not_found`.
 
 A `column_id` that is a whole number outside the signed 64-bit range (below
 `-9223372036854775808` or above `9223372036854775807`) gets this same 404 in both

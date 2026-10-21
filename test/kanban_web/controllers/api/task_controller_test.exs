@@ -1545,6 +1545,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
         )
 
       refute inspect(json_response(foreign, 404)) =~ "WIP limit"
+      assert json_response(foreign, 404) == %{"error" => "Column not found"}
     end
 
     test "PATCH, claim and complete never yield the WIP reason, even into a full column",
@@ -2630,6 +2631,7 @@ defmodule KanbanWeb.API.TaskControllerTest do
       paged = get(conn, ~p"/api/tasks?column_id=#{other_column.id}&limit=5")
 
       assert json_response(paged, 404) == json_response(legacy, 404)
+      assert json_response(legacy, 404) == %{"error" => "Column not found"}
     end
 
     test "invalid params return 400 with an invalid_param error message", %{conn: conn} do

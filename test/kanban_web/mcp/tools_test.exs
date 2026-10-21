@@ -179,6 +179,17 @@ defmodule KanbanWeb.MCP.ToolsTest do
              }
     end
 
+    test "a column_id that is not on the board is reported as a missing column", %{conn: conn} do
+      assert {:ok, %{isError: true} = result} =
+               Tools.call("stride_list_tasks", %{"column_id" => 999_999_999}, conn)
+
+      assert text_body(result) == %{
+               "error" => "Column not found",
+               "error_code" => "column_not_found",
+               "http_status" => 404
+             }
+    end
+
     test "the list tool defaults to slim summaries", %{conn: conn, user: user, ready: ready} do
       {:ok, _} = Tasks.create_task(ready, %{"title" => "T", "created_by_id" => user.id})
 

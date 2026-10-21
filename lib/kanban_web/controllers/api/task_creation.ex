@@ -67,10 +67,10 @@ defmodule KanbanWeb.API.TaskCreation do
 
   defp resolve_column_and_create(conn, board, column_id, task_params, creator) do
     # Board-scoped lookup unifies "no such column" and "column on other
-    # board" into a single not_found response (W399).
+    # board" into a single column_not_found response (W399).
     case TaskActions.column_for_board(column_id, board.id) do
       nil ->
-        TaskErrors.handle_task_error(conn, {:error, :not_found})
+        TaskErrors.handle_task_error(conn, {:error, :column_not_found})
 
       column ->
         perform_api_task_create(conn, column, task_params, creator)

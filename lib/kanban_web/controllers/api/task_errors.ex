@@ -51,6 +51,11 @@ defmodule KanbanWeb.API.TaskErrors do
   """
   def error_body(:not_found), do: {:not_found, :not_found, %{error: "Task not found"}}
 
+  # A column_id that names no column on the token's board, whether it does not
+  # exist or is on another board: the two stay indistinguishable (W399).
+  def error_body(:column_not_found),
+    do: {:not_found, :column_not_found, %{error: "Column not found"}}
+
   def error_body(:forbidden),
     do: {:forbidden, :forbidden, %{error: "Task does not belong to this board"}}
 

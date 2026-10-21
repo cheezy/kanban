@@ -310,9 +310,9 @@ defmodule KanbanWeb.API.TaskActionsTest do
       assert is_binary(message)
     end
 
-    test "an unknown column is not_found", %{conn: conn} do
+    test "an unknown column is column_not_found", %{conn: conn} do
       assert TaskActions.list_page(conn, %{"limit" => "5", "column_id" => "999999999"}) ==
-               {:error, :not_found}
+               {:error, :column_not_found}
     end
   end
 
