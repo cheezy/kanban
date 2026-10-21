@@ -802,6 +802,32 @@ defmodule Kanban.ApiTokensTest do
       assert Repo.reload!(here).revoked_at
       assert Repo.reload!(there).revoked_at
     end
+
+    test "the token a create returns lists and resolves the same boards as one read back",
+         %{admin: admin, workspace: workspace, board: board} do
+      {:ok, {created, _plain}} =
+        ApiTokens.create_workspace_api_token(admin, workspace, %{name: "Fleet"})
+
+      read_back = Repo.preload(Repo.reload!(created), [:board, :workspace, :user])
+
+      assert [%{id: id}] = ApiTokens.list_token_boards(created)
+      assert id == board.id
+      assert ApiTokens.list_token_boards(created) == ApiTokens.list_token_boards(read_back)
+
+      assert {:ok, %{id: ^id}} = ApiTokens.fetch_workspace_board(created, board.id)
+      assert ApiTokens.fetch_workspace_board(created, -1) == :error
+    end
+  end
+
+  describe "list_token_boards/1 on a board token" do
+    test "lists its one board whether or not the board is loaded" do
+      user = user_fixture()
+      board = board_fixture(user)
+      {:ok, {created, _plain}} = ApiTokens.create_api_token(user, board, %{"name" => "One"})
+
+      assert [%{id: id}] = ApiTokens.list_token_boards(Repo.reload!(created))
+      assert id == board.id
+    end
   end
 
   # An AI Optimized board, owned by a new user, moved into `workspace`.

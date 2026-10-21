@@ -275,13 +275,18 @@ defmodule Kanban.ApiTokens.WorkspaceTokens do
   for every other case — a board that does not exist, one in another workspace
   or Organization, one the user cannot modify, and an id that is not a board id
   at all — so the caller can answer them all identically. It costs one query
-  whenever the selector is a valid id, whatever the outcome.
+  whenever the selector is a valid id, whatever the outcome, plus the loading
+  of the token's workspace and user when they are not loaded yet.
   """
   @spec fetch_workspace_board(ApiToken.t(), integer() | String.t()) :: {:ok, Board.t()} | :error
-  def fetch_workspace_board(
-        %ApiToken{workspace: %Workspace{} = workspace, user: %User{} = user},
-        selector
-      ) do
+  def fetch_workspace_board(%ApiToken{} = api_token, selector) do
+    api_token |> with_owner_links() |> fetch_loaded_board(selector)
+  end
+
+  defp fetch_loaded_board(
+         %ApiToken{workspace: %Workspace{} = workspace, user: %User{} = user},
+         selector
+       ) do
     case Policy.fetch_board(selector, user) do
       {%Board{} = board, access} ->
         if usable_workspace?(workspace) and usable_board?(board, access, workspace),
@@ -293,17 +298,23 @@ defmodule Kanban.ApiTokens.WorkspaceTokens do
     end
   end
 
-  def fetch_workspace_board(%ApiToken{}, _selector), do: :error
+  defp fetch_loaded_board(%ApiToken{}, _selector), do: :error
 
   @doc """
   Returns the boards `api_token` can be used on, sorted by name: its one board
   for a board token, and the usable boards of its workspace for a workspace
-  token (none when the workspace is archived).
+  token (none when the workspace is archived). The token's board, workspace and
+  user are loaded first when they are not, so the struct a create returns
+  lists the same boards as one read back from the database.
   """
   @spec list_token_boards(ApiToken.t()) :: [Board.t()]
-  def list_token_boards(%ApiToken{workspace_id: nil, board: %Board{} = board}), do: [board]
+  def list_token_boards(%ApiToken{} = api_token) do
+    api_token |> with_owner_links() |> loaded_token_boards()
+  end
 
-  def list_token_boards(%ApiToken{workspace: %Workspace{} = workspace, user: %User{} = user}) do
+  defp loaded_token_boards(%ApiToken{workspace_id: nil, board: %Board{} = board}), do: [board]
+
+  defp loaded_token_boards(%ApiToken{workspace: %Workspace{} = workspace, user: %User{} = user}) do
     if usable_workspace?(workspace) do
       user
       |> Policy.list_accessible_boards(workspace_id: workspace.id)
@@ -314,7 +325,12 @@ defmodule Kanban.ApiTokens.WorkspaceTokens do
     end
   end
 
-  def list_token_boards(%ApiToken{}), do: []
+  defp loaded_token_boards(%ApiToken{}), do: []
+
+  # Loads only what is not loaded yet, so a token from the auth plug, which has
+  # them all, costs no query here.
+  defp with_owner_links(%ApiToken{} = api_token),
+    do: Repo.preload(api_token, [:board, :workspace, :user])
 
   @doc """
   Returns `"workspace"` for a workspace token and `"board"` for a board token.
