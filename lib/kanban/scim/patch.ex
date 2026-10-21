@@ -278,12 +278,20 @@ defmodule Kanban.SCIM.Patch do
   defp member_id(_invalid), do: nil
 
   # Concatenates the operations each item yields, stopping at the first error.
+  # The chunks are gathered in reverse and joined once: appending each to the
+  # accumulator made a body of many operations quadratic (a full-size PATCH
+  # held a scheduler for over a minute).
   defp collect_ops(items, fun) do
-    Enum.reduce_while(items, {:ok, []}, fn item, {:ok, acc} ->
+    items
+    |> Enum.reduce_while({:ok, []}, fn item, {:ok, chunks} ->
       case fun.(item) do
-        {:ok, ops} -> {:cont, {:ok, acc ++ ops}}
+        {:ok, ops} -> {:cont, {:ok, [ops | chunks]}}
         {:error, _reason} = error -> {:halt, error}
       end
     end)
+    |> case do
+      {:ok, chunks} -> {:ok, chunks |> Enum.reverse() |> Enum.concat()}
+      {:error, _reason} = error -> error
+    end
   end
 end
