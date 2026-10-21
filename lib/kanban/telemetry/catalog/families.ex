@@ -98,7 +98,9 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:user_delete_refused, [:user_id, :member_user_id, :reason],
      "An account deletion was refused. user_id is the acting user, member_user_id the target account, reason why: unauthorized, cannot_delete_self, user_has_boards, last_admin, last_org_admin or personal_workspace_has_boards."},
     {:account_self_deleted, [:user_id],
-     "A user deleted their own account from the account settings. user_id is the deleted account; no email is recorded."}
+     "A user deleted their own account from the account settings. user_id is the deleted account; no email is recorded."},
+    {:board_given_to_site_admin, [:user_id, :board_id, :member_user_id],
+     "An account deletion left a board that no enabled member could reach, so the earliest enabled site admin was made its owner. user_id is the deleted account, member_user_id the site admin."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,

@@ -12114,3 +12114,9 @@ msgstr "追加した人がこのボードにアクセスできなくなったた
 #, elixir-autogen, elixir-format
 msgid "The account that added this endpoint is disabled, so it sends nothing. Disable and enable it to take it over."
 msgstr "このエンドポイントを追加したアカウントは無効になっているため、何も送信しません。無効にしてから有効にすると、あなたが引き継ぎます。"
+
+#: lib/kanban_web/components/audit_log_actions.ex:102
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Board given to a site admin"
+msgstr "ボードをサイト管理者に移管"

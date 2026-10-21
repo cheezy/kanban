@@ -12084,3 +12084,9 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "The account that added this endpoint is disabled, so it sends nothing. Disable and enable it to take it over."
 msgstr ""
+
+#: lib/kanban_web/components/audit_log_actions.ex:102
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Board given to a site admin"
+msgstr ""

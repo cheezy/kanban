@@ -12130,3 +12130,9 @@ msgstr "Désactivé automatiquement, car la personne qui l'a ajouté n'a plus ac
 #, elixir-autogen, elixir-format
 msgid "The account that added this endpoint is disabled, so it sends nothing. Disable and enable it to take it over."
 msgstr "Le compte qui a ajouté cet endpoint est désactivé, il n'envoie donc rien. Désactivez-le puis réactivez-le pour le reprendre à votre nom."
+
+#: lib/kanban_web/components/audit_log_actions.ex:102
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Board given to a site admin"
+msgstr "Tableau confié à un admin du site"

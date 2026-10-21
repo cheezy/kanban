@@ -339,6 +339,9 @@ defmodule Kanban.Workspaces do
   @doc "Empties a user's personal workspace before deletion. See `Kanban.Workspaces.PersonalCleanup`."
   defdelegate clear_personal_boards(user), to: PersonalCleanup
 
+  @doc "Reports the boards a deletion gave to a site admin. See `Kanban.Workspaces.PersonalCleanup`."
+  defdelegate report_admin_grants(grants, deleted_user), to: PersonalCleanup
+
   @doc "Lists a workspace's members. See `Kanban.Workspaces.Listing`."
   defdelegate list_members(actor, workspace), to: Listing
 

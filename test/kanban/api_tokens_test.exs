@@ -808,7 +808,7 @@ defmodule Kanban.ApiTokensTest do
       {:ok, {created, _plain}} =
         ApiTokens.create_workspace_api_token(admin, workspace, %{name: "Fleet"})
 
-      read_back = Repo.preload(Repo.reload!(created), [:board, :workspace, :user])
+      read_back = created |> Repo.reload!() |> Repo.preload([:board, :workspace, :user])
 
       assert [%{id: id}] = ApiTokens.list_token_boards(created)
       assert id == board.id
@@ -825,7 +825,9 @@ defmodule Kanban.ApiTokensTest do
       board = board_fixture(user)
       {:ok, {created, _plain}} = ApiTokens.create_api_token(user, board, %{"name" => "One"})
 
-      assert [%{id: id}] = ApiTokens.list_token_boards(Repo.reload!(created))
+      reloaded = Repo.reload!(created)
+
+      assert [%{id: id}] = ApiTokens.list_token_boards(reloaded)
       assert id == board.id
     end
   end

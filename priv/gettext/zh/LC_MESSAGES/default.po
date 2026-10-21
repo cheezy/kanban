@@ -12114,3 +12114,9 @@ msgstr "由于添加它的人已无法访问此看板，它已被自动停用。
 #, elixir-autogen, elixir-format
 msgid "The account that added this endpoint is disabled, so it sends nothing. Disable and enable it to take it over."
 msgstr "添加此端点的账户已被停用，因此它不会发送任何内容。先停用再启用即可由你接管。"
+
+#: lib/kanban_web/components/audit_log_actions.ex:102
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Board given to a site admin"
+msgstr "看板已移交给站点管理员"

@@ -36,7 +36,9 @@ defmodule Kanban.Accounts.AccountDeletion do
     2. empties their personal workspace (`Kanban.Workspaces.clear_personal_boards/1`):
        boards only they use are deleted, any board others still use is
        re-homed to the personal workspace of an enabled user, never a
-       disabled one (`Kanban.Workspaces.PersonalCleanup` has the rule);
+       disabled one, and a site admin who receives a board nobody enabled
+       could reach is made its owner (`Kanban.Workspaces.PersonalCleanup`
+       has the rule);
     3. deletes every one of their `users_tokens` rows (sessions, email
        tokens);
     4. deletes the personal workspace, then the user row.
@@ -46,7 +48,8 @@ defmodule Kanban.Accounts.AccountDeletion do
   rows, and nilify the attribution columns of tasks, comments and history.
 
   After commit it records the `:account_self_deleted` audit event with the
-  user id only — never the email — reports each deleted board, and broadcasts
+  user id only — never the email — reports each deleted board and each board
+  given to a site admin (`:board_given_to_site_admin`), and broadcasts
   `{Kanban.Boards, :members_changed, board_id}` for every board whose
   membership changed. The caller disconnects the returned session tokens'
   open LiveViews (`KanbanWeb.UserAuth.disconnect_sessions/1`).
@@ -406,8 +409,9 @@ defmodule Kanban.Accounts.AccountDeletion do
     %{user: user, session_tokens: Enum.filter(tokens, &(&1.context == "session"))}
   end
 
-  defp report_boards(user, %{deleted: deleted, rehomed: rehomed}, board_ids) do
+  defp report_boards(user, %{deleted: deleted, rehomed: rehomed} = cleared, board_ids) do
     Enum.each(deleted, &BoardTelemetry.deleted({:ok, &1}, user))
+    Workspaces.report_admin_grants(cleared.given_to_admin, user)
 
     rehomed_ids = Enum.map(rehomed, &elem(&1, 0))
     broadcast_changed(board_ids ++ rehomed_ids, MapSet.new(deleted, & &1.id))

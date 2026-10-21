@@ -387,6 +387,29 @@ defmodule Kanban.Accounts.AccountDeletionTest do
       assert Repo.get!(Workspace, moved.workspace_id).personal
     end
 
+    test "makes the site admin the owner of a board whose other members are all disabled", %{
+      user: user,
+      workspace: workspace
+    } do
+      board = place_board_in_workspace(workspace)
+      from(bu in BoardUser, where: bu.board_id == ^board.id) |> Repo.delete_all()
+      add_member(board, user)
+      old_owner = disable_directly(user_fixture())
+      add_member(board, old_owner, :owner)
+      admin = admin_fixture()
+
+      assert {:ok, _} = delete(user)
+
+      assert Repo.get!(Board, board.id).workspace_id ==
+               Workspaces.get_personal_workspace(admin).id
+
+      assert Boards.get_user_access(board.id, admin.id) == :owner
+      assert Boards.get_user_access(board.id, old_owner.id) == :modify
+      assert [event] = AuditLog.list_events(action: :board_given_to_site_admin)
+      assert event.metadata["board_id"] == board.id
+      assert event.metadata["member_user_id"] == admin.id
+    end
+
     test "deletes a memberless board when no other enabled site admin exists", %{
       user: user,
       workspace: workspace
