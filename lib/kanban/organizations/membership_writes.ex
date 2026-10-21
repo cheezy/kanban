@@ -212,12 +212,16 @@ defmodule Kanban.Organizations.MembershipWrites do
   # A user whose row is gone passes here; the insert's foreign key refuses it.
   defp ensure_enabled(%User{id: user_id}) do
     # Locks the user row, as SCIM deprovisioning does, so a join and a
-    # deprovisioning of the same user never interleave (W2247).
+    # deprovisioning of the same user never interleave (W2247). NO KEY UPDATE
+    # still conflicts with that lock and with account deletion's, but not with
+    # the key-share locks foreign-key checks take: an audit insert naming this
+    # user and Organization takes the user's key-share lock and then waits for
+    # the Organization lock held here, so FOR UPDATE would deadlock against it.
     disabled_query =
       from(u in User,
         where: u.id == ^user_id,
         select: not is_nil(u.disabled_at),
-        lock: "FOR UPDATE"
+        lock: "FOR NO KEY UPDATE"
       )
 
     case Repo.one(disabled_query) do
