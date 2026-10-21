@@ -50,7 +50,9 @@ defmodule Kanban.Workspaces.Export.Importer do
   `jsonb` map too), text longer than its `varchar` column, a value of the
   wrong type, or an integer outside PostgreSQL's 32-bit `integer` range — is
   refused like any other bad row: the import is rolled back with
-  `{:error, {:invalid_row, entity, ref, errors}}`, never raised. An archive
+  `{:error, {:invalid_row, entity, ref, errors}}`, never raised, where `ref`
+  names the row in at most about 60 characters
+  (`Kanban.Workspaces.Export.Importer.Refs`). An archive
   user's email that is not such a string counts as no email at all.
   """
 
@@ -68,6 +70,7 @@ defmodule Kanban.Workspaces.Export.Importer do
   alias Kanban.Repo
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Export.Importer.Archive
+  alias Kanban.Workspaces.Export.Importer.Refs
   alias Kanban.Workspaces.Export.Importer.Tasks
   alias Kanban.Workspaces.Export.Importer.Users
   alias Kanban.Workspaces.Workspace
@@ -279,7 +282,7 @@ defmodule Kanban.Workspaces.Export.Importer do
       |> Board.owner_changeset(attrs)
       |> Ecto.Changeset.change(ai_optimized_board: row["ai_optimized_board"] == true)
       |> cast_timestamps(row)
-      |> insert!(:boards, row["name"])
+      |> insert!(:boards, row)
 
     {row["id"], board}
   end
@@ -404,7 +407,7 @@ defmodule Kanban.Workspaces.Export.Importer do
           |> struct(board_id: board_id)
           |> schema.changeset(Map.take(row, fields))
           |> cast_timestamps(row)
-          |> insert!(entity, row["name"])
+          |> insert!(entity, row)
 
         {Map.put(map, row["id"], record.id), ctx}
 
@@ -460,10 +463,10 @@ defmodule Kanban.Workspaces.Export.Importer do
         end)
       end)
 
-    Repo.rollback({:invalid_row, entity, to_string(ref), errors})
+    Repo.rollback({:invalid_row, entity, Refs.ref(ref), errors})
   end
 
-  def fail(entity, ref, reason), do: Repo.rollback({:invalid_row, entity, to_string(ref), reason})
+  def fail(entity, ref, reason), do: Repo.rollback({:invalid_row, entity, Refs.ref(ref), reason})
 
   defp interpolation(value) when is_binary(value) or is_number(value) or is_atom(value),
     do: to_string(value)

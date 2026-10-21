@@ -288,6 +288,15 @@ defmodule Kanban.Workspaces.Export.ImporterTest do
       end
     end
 
+    test "a refused row is named by its name cut to 60 characters and its archive id", ctx do
+      too_long = String.duplicate("é", 300)
+      [first | _] = ctx.files[Serializer.file_name(:columns)]
+      files = update_rows(ctx.files, :columns, &Map.put(&1, "name", too_long))
+
+      assert {:error, {:invalid_row, :columns, ref, _errors}} = import_files(ctx, files)
+      assert ref == ~s("#{String.duplicate("é", 60)}…", id #{first["id"]})
+    end
+
     test "column and history names longer than their columns", ctx do
       too_long = String.duplicate("é", 256)
       files = update_rows(ctx.files, :columns, &Map.put(&1, "name", too_long))
