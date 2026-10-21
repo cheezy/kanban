@@ -100,7 +100,9 @@ says whether an account exists or which Organization it belongs to.
 ### Which account
 
 Accounts are linked to the identity provider by the provider's issuer and the
-person's subject (`sub`), never by email alone.
+person's subject (`sub`), never by email alone. The email the provider sends
+is compared case-insensitively and without trailing dots, so
+`pat@example.com.` names `pat@example.com`.
 
 - **A known identity** signs in to the account it is linked to, even if the
   provider now sends a different email address.

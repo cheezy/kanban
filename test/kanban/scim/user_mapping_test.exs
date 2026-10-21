@@ -60,9 +60,14 @@ defmodule Kanban.SCIM.UserMappingTest do
     end
   end
 
+  test "email/1 drops the trailing dots the domain check ignores" do
+    assert UserMapping.email("Ada@Example.com.") == {:ok, "ada@example.com"}
+  end
+
   test "same_user_name?/2 compares case-insensitively" do
     user = %User{email: "ada@example.com"}
     assert UserMapping.same_user_name?(" ADA@example.com", user)
+    assert UserMapping.same_user_name?("ada@example.com.", user)
     refute UserMapping.same_user_name?("bob@example.com", user)
   end
 

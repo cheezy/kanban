@@ -53,6 +53,16 @@ defmodule Kanban.SSO.DomainVerification do
   defp match_record(_error, _expected), do: {:error, :record_not_found}
 
   @doc """
+  An email address as single sign-on and SCIM look accounts up and create
+  them: trimmed, lowercased and without trailing dots, the dots
+  `email_domain/1` ignores, so the address whose domain passed the gate is
+  the one an account is found or created with.
+  """
+  @spec normalize_email(String.t()) :: String.t()
+  def normalize_email(email) when is_binary(email),
+    do: email |> String.trim() |> String.downcase() |> String.trim_trailing(".")
+
+  @doc """
   The normalized domain of an email address: the part after the last `@`.
   Returns `:error` for anything that is not an address on a valid domain.
   """

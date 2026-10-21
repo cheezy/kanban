@@ -311,11 +311,13 @@ defmodule Kanban.SSO.Provisioning do
   defp email_verified("true"), do: :ok
   defp email_verified(_other), do: {:error, :email_not_verified}
 
-  # Lowercased so a new account matches the citext lookup's spelling; the
-  # local part is kept as it is otherwise (plus-addresses are their own
-  # mailboxes and are never merged).
+  # Lowercased so a new account matches the citext lookup's spelling, and
+  # without the trailing dots the domain gate ignores, so `boss@example.com.`
+  # finds `boss@example.com` instead of making a second account; the local
+  # part is kept as it is otherwise (plus-addresses are their own mailboxes
+  # and are never merged).
   defp normalized_email(email) when is_binary(email) do
-    case email |> String.trim() |> String.downcase() do
+    case DomainVerification.normalize_email(email) do
       "" -> nil
       normalized -> normalized
     end

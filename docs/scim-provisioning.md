@@ -36,7 +36,8 @@ last used (updated at most once a minute).
 
 ## Users
 
-`userName` is the person's email address, compared case-insensitively. Its
+`userName` is the person's email address, compared case-insensitively and
+without trailing dots, so `ada@example.com.` names `ada@example.com`. Its
 domain must be one of the Organization's verified domains.
 
 | Request | What happens |

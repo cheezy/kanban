@@ -89,6 +89,13 @@ defmodule Kanban.SSO.DomainVerificationTest do
     end
   end
 
+  describe "normalize_email/1" do
+    test "trims, lowercases and drops the trailing dots email_domain/1 ignores" do
+      assert DomainVerification.normalize_email(" Pat@Example.COM.. ") == "pat@example.com"
+      assert DomainVerification.normalize_email("pat+tag@example.com") == "pat+tag@example.com"
+    end
+  end
+
   describe "OrganizationDomain.normalize/1" do
     test "trims, lowercases and drops a trailing dot" do
       assert {:ok, "example.com"} = OrganizationDomain.normalize("  Example.COM. ")

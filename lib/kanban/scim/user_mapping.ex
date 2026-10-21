@@ -67,7 +67,7 @@ defmodule Kanban.SCIM.UserMapping do
   """
   @spec email(String.t()) :: {:ok, String.t()} | {:error, :invalid_value}
   def email(user_name) when is_binary(user_name) do
-    email = user_name |> String.trim() |> String.downcase()
+    email = DomainVerification.normalize_email(user_name)
 
     case DomainVerification.email_domain(email) do
       {:ok, _domain} when byte_size(email) <= 160 -> {:ok, email}
@@ -78,7 +78,7 @@ defmodule Kanban.SCIM.UserMapping do
   @doc "Whether `user_name` names the same account as `user`'s email."
   @spec same_user_name?(String.t(), User.t()) :: boolean()
   def same_user_name?(user_name, %User{email: email}) when is_binary(user_name),
-    do: user_name |> String.trim() |> String.downcase() == String.downcase(email)
+    do: DomainVerification.normalize_email(user_name) == String.downcase(email)
 
   @doc "A name sliced to the length Stride stores, or `nil`."
   @spec name(map()) :: String.t() | nil

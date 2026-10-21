@@ -151,6 +151,14 @@ defmodule Kanban.SSO.ProvisioningTest do
       assert [_event] = AuditLog.list_events(action: "sso_account_linked")
     end
 
+    test "is found by an email whose domain has a trailing dot", ctx do
+      user = user_fixture(%{email: "pat@#{ctx.domain}"})
+      claims = claims(ctx.domain, %{"email" => "Pat@#{ctx.domain}."})
+
+      assert {:ok, linked, :linked} = Provisioning.provision(ctx.connection, claims)
+      assert linked.id == user.id
+    end
+
     test "keeps an org-admin's role", ctx do
       user = user_fixture(%{email: "admin@#{ctx.domain}"})
       organization_member_fixture(ctx.organization, user, :org_admin)
