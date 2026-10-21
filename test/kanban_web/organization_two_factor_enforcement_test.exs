@@ -132,14 +132,30 @@ defmodule KanbanWeb.OrganizationTwoFactorEnforcementTest do
     end
 
     test "a session marked as signed in through SSO is not redirected",
-         %{conn: conn, member: member} do
+         %{conn: conn, org: org, member: member} do
       conn =
         conn
         |> log_in_user(member)
-        |> Plug.Conn.put_session(OrganizationTwoFactorGate.sso_session_key(), true)
+        |> Plug.Conn.put_session(OrganizationTwoFactorGate.sso_session_key(), org.id)
 
       {:ok, lv, _html} = live(conn, ~p"/boards")
       refute has_element?(lv, "#organization-two-factor-banner")
+    end
+
+    test "a session signed in through another Organization's SSO is still redirected",
+         %{conn: conn, member: member} do
+      # The member signed in through their previous Organization's identity
+      # provider, then left it and joined this one in the same session.
+      conn =
+        conn
+        |> log_in_user(member)
+        |> Plug.Conn.put_session(
+          OrganizationTwoFactorGate.sso_session_key(),
+          organization_fixture().id
+        )
+
+      assert redirected_to(get(conn, ~p"/boards")) == @settings
+      assert {:error, {:redirect, %{to: @settings}}} = live(conn, ~p"/my-work")
     end
 
     test "an SSO marker in the request params is ignored", %{conn: conn, member: member} do

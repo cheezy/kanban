@@ -92,7 +92,10 @@ defmodule KanbanWeb.SSOControllerTest do
 
       assert redirected_to(conn) == ~p"/boards"
       assert get_session(conn, :user_token)
-      assert get_session(conn, OrganizationTwoFactorGate.sso_session_key()) == true
+
+      assert get_session(conn, OrganizationTwoFactorGate.sso_session_key()) ==
+               ctx.organization.id
+
       refute get_session(conn, "sso_flow")
 
       user = Accounts.get_user_by_email("pat@#{ctx.domain}")

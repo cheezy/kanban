@@ -46,12 +46,14 @@ defmodule KanbanWeb.UserAuthTest do
       assert Accounts.get_user_by_session_token(token)
     end
 
-    test "marks a single sign-on session, and a password sign-in clears the mark",
+    test "marks a single sign-on session with the user's Organization, and a password sign-in clears the mark",
          %{conn: conn, user: user} do
       key = KanbanWeb.UserAuth.OrganizationTwoFactorGate.sso_session_key()
+      organization = organization_fixture()
+      organization_member_fixture(organization, user)
 
       sso_conn = UserAuth.log_in_user(conn, user, %{}, sso: true)
-      assert get_session(sso_conn, key) == true
+      assert get_session(sso_conn, key) == organization.id
 
       refute get_session(UserAuth.log_in_user(conn, user), key)
 

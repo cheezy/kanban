@@ -112,7 +112,9 @@ defmodule KanbanWeb.SAMLControllerTest do
 
       assert redirected_to(conn) == ~p"/boards"
       assert get_session(conn, :user_token)
-      assert get_session(conn, OrganizationTwoFactorGate.sso_session_key()) == true
+
+      assert get_session(conn, OrganizationTwoFactorGate.sso_session_key()) ==
+               ctx.organization.id
 
       user = Accounts.get_user_by_email("pat@#{ctx.domain}")
       assert user.confirmed_at
@@ -442,7 +444,10 @@ defmodule KanbanWeb.SAMLControllerTest do
       {conn, _params} = sign_in(ctx)
 
       assert redirected_to(conn) == ~p"/boards"
-      assert get_session(conn, OrganizationTwoFactorGate.sso_session_key()) == true
+
+      assert get_session(conn, OrganizationTwoFactorGate.sso_session_key()) ==
+               ctx.organization.id
+
       assert refusal_reasons() == []
     end
 

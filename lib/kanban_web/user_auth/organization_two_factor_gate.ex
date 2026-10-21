@@ -30,12 +30,17 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGate do
 
   ## Single sign-on
 
-  A session whose identity provider owns MFA satisfies the policy. The OIDC
+  A session whose identity provider owns MFA satisfies the policy of the
+  Organization that identity provider signs in for, and no other. The OIDC
   (`KanbanWeb.SSOController`) and SAML sign-in flows call
   `KanbanWeb.UserAuth.log_in_user/4` with `sso: true`, which puts
-  `sso_session_key/0` with the value `true` into the session after renewing
-  it (`mark_session/2`); every other sign-in removes it. Only that
-  server-written session value counts; request params are never read.
+  `sso_session_key/0` into the session after renewing it, holding the id of
+  the Organization the user belongs to once single sign-on has signed them in
+  (`mark_session/2`); every other sign-in removes it. The mark counts only
+  while it names the member's current Organization, so someone who later
+  joins another Organization in the same session is held to that
+  Organization's requirement. Only that server-written session value counts;
+  request params are never read.
   """
   @behaviour Plug
 
@@ -47,6 +52,7 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGate do
 
   alias Kanban.Accounts.Scope
   alias Kanban.Accounts.User
+  alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.SecurityPolicies
 
   @sso_session_key "sso_authenticated"
@@ -58,31 +64,42 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGate do
   def sso_session_key, do: @sso_session_key
 
   @doc """
-  Sets the single sign-on mark on a freshly signed-in session when `sso?` is
-  true, and removes it otherwise, so a password sign-in into a session that
-  was not renewed (the same user signing in again) cannot keep an old mark.
+  Sets the single sign-on mark on a freshly signed-in session to the id of
+  the Organization whose identity provider signed the user in, and removes it
+  when given `nil`, so a password sign-in into a session that was not renewed
+  (the same user signing in again) cannot keep an old mark.
   """
-  @spec mark_session(Plug.Conn.t(), boolean()) :: Plug.Conn.t()
-  def mark_session(conn, true), do: put_session(conn, @sso_session_key, true)
-  def mark_session(conn, false), do: delete_session(conn, @sso_session_key)
+  @spec mark_session(Plug.Conn.t(), pos_integer() | nil) :: Plug.Conn.t()
+  def mark_session(conn, organization_id) when is_integer(organization_id),
+    do: put_session(conn, @sso_session_key, organization_id)
+
+  def mark_session(conn, nil), do: delete_session(conn, @sso_session_key)
 
   @doc "Where an overdue member is sent: the two-factor section of the settings page."
   @spec redirect_path() :: String.t()
   def redirect_path, do: ~p"/users/settings?section=two_factor"
 
   @doc """
-  What the policy means for this scope and session: `:ok` (no requirement,
-  enrolled, signed in through SSO, or no signed-in member), `{:grace,
+  What the policy means for this scope and the session's single sign-on mark
+  (the Organization id it holds, or anything else when there is none): `:ok`
+  (no requirement, enrolled, signed in through the member's own
+  Organization's single sign-on, or no signed-in member), `{:grace,
   deadline}` or `{:overdue, deadline}`.
   """
-  @spec evaluate(Scope.t() | nil, boolean()) ::
+  @spec evaluate(Scope.t() | nil, term()) ::
           :ok | {:grace, DateTime.t()} | {:overdue, DateTime.t()}
-  def evaluate(scope, sso?)
+  def evaluate(scope, sso_organization_id)
 
-  def evaluate(_scope, true), do: :ok
+  def evaluate(
+        %Scope{organization_membership: %OrganizationMember{organization_id: organization_id}},
+        organization_id
+      ),
+      do: :ok
 
-  def evaluate(%Scope{user: %User{} = user, organization_membership: membership}, _sso?)
-      when not is_nil(membership) do
+  def evaluate(
+        %Scope{user: %User{} = user, organization_membership: %OrganizationMember{} = membership},
+        _sso_organization_id
+      ) do
     case SecurityPolicies.two_factor_status(user, membership) do
       {:grace, _deadline} = grace -> grace
       {:overdue, _deadline} = overdue -> overdue
@@ -90,7 +107,7 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGate do
     end
   end
 
-  def evaluate(_scope, _sso?), do: :ok
+  def evaluate(_scope, _sso_organization_id), do: :ok
 
   # --- plug ------------------------------------------------------------------
 
@@ -101,7 +118,7 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGate do
   def call(conn, _opts) do
     scope = conn.assigns[:current_scope]
 
-    case evaluate(scope, get_session(conn, @sso_session_key) == true) do
+    case evaluate(scope, get_session(conn, @sso_session_key)) do
       {:grace, deadline} ->
         assign(conn, :current_scope, %{scope | two_factor_deadline: deadline})
 
@@ -124,7 +141,7 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGate do
   alike, and never redirects.
   """
   def on_mount(:enforce, _params, session, socket) do
-    case evaluate(socket.assigns[:current_scope], sso_session?(session)) do
+    case evaluate(socket.assigns[:current_scope], Map.get(session, @sso_session_key)) do
       {:grace, deadline} ->
         socket =
           socket
@@ -146,7 +163,7 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGate do
   end
 
   def on_mount(:banner, _params, session, socket) do
-    case evaluate(socket.assigns[:current_scope], sso_session?(session)) do
+    case evaluate(socket.assigns[:current_scope], Map.get(session, @sso_session_key)) do
       {_grace_or_overdue, deadline} -> {:cont, put_deadline(socket, deadline)}
       :ok -> {:cont, socket}
     end
@@ -176,8 +193,6 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGate do
       _not_required_or_enrolled -> {:cont, put_deadline(socket, nil)}
     end
   end
-
-  defp sso_session?(session), do: Map.get(session, @sso_session_key) == true
 
   defp put_deadline(socket, deadline) do
     scope = %{socket.assigns.current_scope | two_factor_deadline: deadline}

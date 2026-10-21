@@ -61,21 +61,30 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGateTest do
 
   describe "evaluate/2" do
     test "is :ok without a member, without a policy, with SSO and once enrolled",
-         %{admin: admin, member: member} do
-      assert OrganizationTwoFactorGate.evaluate(nil, false) == :ok
-      assert nil |> Scope.for_user() |> OrganizationTwoFactorGate.evaluate(false) == :ok
-      assert member |> scope() |> OrganizationTwoFactorGate.evaluate(false) == :ok
-      assert user_fixture() |> scope() |> OrganizationTwoFactorGate.evaluate(false) == :ok
+         %{org: org, admin: admin, member: member} do
+      assert OrganizationTwoFactorGate.evaluate(nil, nil) == :ok
+      assert nil |> Scope.for_user() |> OrganizationTwoFactorGate.evaluate(nil) == :ok
+      assert member |> scope() |> OrganizationTwoFactorGate.evaluate(nil) == :ok
+      assert user_fixture() |> scope() |> OrganizationTwoFactorGate.evaluate(nil) == :ok
 
       {:ok, _} = require!(admin)
 
       assert {:grace, %DateTime{}} =
-               member |> scope() |> OrganizationTwoFactorGate.evaluate(false)
+               member |> scope() |> OrganizationTwoFactorGate.evaluate(nil)
 
-      assert member |> scope() |> OrganizationTwoFactorGate.evaluate(true) == :ok
+      assert member |> scope() |> OrganizationTwoFactorGate.evaluate(org.id) == :ok
 
       Kanban.TwoFactorHelpers.enroll(member)
-      assert member |> scope() |> OrganizationTwoFactorGate.evaluate(false) == :ok
+      assert member |> scope() |> OrganizationTwoFactorGate.evaluate(nil) == :ok
+    end
+
+    test "an SSO mark for another Organization does not satisfy the member's own",
+         %{admin: admin, member: member} do
+      {:ok, _} = require!(admin)
+      other = organization_fixture()
+
+      assert {:grace, %DateTime{}} =
+               member |> scope() |> OrganizationTwoFactorGate.evaluate(other.id)
     end
   end
 
@@ -93,7 +102,7 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGateTest do
       assert conn.halted
       assert redirected_to(conn) == OrganizationTwoFactorGate.redirect_path()
 
-      conn = gate_conn(member, %{OrganizationTwoFactorGate.sso_session_key() => true})
+      conn = gate_conn(member, %{OrganizationTwoFactorGate.sso_session_key() => org.id})
       refute conn.halted
       assert conn.assigns.current_scope.two_factor_deadline == nil
     end
@@ -103,15 +112,20 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGateTest do
       refute gate_conn(user_fixture()).halted
     end
 
-    test "only the literal true session value counts as SSO", %{
+    test "only the member's own Organization id in the session counts as SSO", %{
       org: org,
       admin: admin,
       member: member
     } do
       {:ok, _} = require!(admin)
       overdue!(org)
+      key = OrganizationTwoFactorGate.sso_session_key()
 
-      assert gate_conn(member, %{OrganizationTwoFactorGate.sso_session_key() => "true"}).halted
+      for value <- [true, "true", to_string(org.id), organization_fixture().id] do
+        assert gate_conn(member, %{key => value}).halted, "#{inspect(value)} must not count"
+      end
+
+      refute gate_conn(member, %{key => org.id}).halted
     end
   end
 
@@ -139,7 +153,7 @@ defmodule KanbanWeb.UserAuth.OrganizationTwoFactorGateTest do
                OrganizationTwoFactorGate.on_mount(
                  :enforce,
                  %{},
-                 %{"sso_authenticated" => true},
+                 %{"sso_authenticated" => org.id},
                  socket(scope(member))
                )
     end

@@ -74,8 +74,12 @@ described in the [Authentication Guide](AUTHENTICATION.md).
 
 A session signed in through single sign-on is exempt, because the identity
 provider enforces its own second factor. The gate treats a session as SSO only
-when it holds `"sso_authenticated" => true` (the literal `true`). Only a
-single sign-on sign-in sets it; a password sign-in removes it. The security
+when `"sso_authenticated"` holds the id of the member's current Organization.
+Only a single sign-on sign-in sets it, to the Organization it signed the
+person in to; a password sign-in removes it. Someone who leaves that
+Organization and joins another in the same session is held to the new
+Organization's requirement, since its identity provider never signed them
+in. The security
 policy page says that members who sign in through single sign-on are not
 affected. See [Single Sign-On](single-sign-on.md).
 

@@ -42,8 +42,10 @@ defmodule KanbanWeb.UserAuth do
   not counted as a login.
 
   `sso: true` (server code only, never a request param) marks the renewed
-  session as signed in through single sign-on; any other sign-in clears the
-  mark (`KanbanWeb.UserAuth.OrganizationTwoFactorGate.mark_session/2`).
+  session as signed in through single sign-on, with the id of the
+  Organization the user belongs to (single sign-on has just made them a
+  member of the connection's Organization); any other sign-in clears the mark
+  (`KanbanWeb.UserAuth.OrganizationTwoFactorGate.mark_session/2`).
   """
   def log_in_user(conn, user, params \\ %{}, opts \\ []) do
     user_return_to = get_session(conn, :user_return_to)
@@ -52,8 +54,17 @@ defmodule KanbanWeb.UserAuth do
 
     conn
     |> create_or_extend_session(user, params)
-    |> KanbanWeb.UserAuth.OrganizationTwoFactorGate.mark_session(opts[:sso] == true)
+    |> KanbanWeb.UserAuth.OrganizationTwoFactorGate.mark_session(sso_organization_id(user, opts))
     |> redirect(to: user_return_to || signed_in_path(conn))
+  end
+
+  defp sso_organization_id(user, opts) do
+    with true <- opts[:sso] == true,
+         %{organization_id: organization_id} <- Organizations.get_membership(user) do
+      organization_id
+    else
+      _not_single_sign_on_or_no_membership -> nil
+    end
   end
 
   @doc """

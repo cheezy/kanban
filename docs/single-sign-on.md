@@ -224,9 +224,10 @@ refused as expired anyway.
 
 The identity provider enforces its own sign-in rules, so a single sign-on
 session satisfies the Organization's require-two-factor policy: the session
-holds `"sso_authenticated" => true`, which
-`KanbanWeb.UserAuth.OrganizationTwoFactorGate` accepts. A password sign-in
-never sets it, and removes it from a session that had it. See
+holds `"sso_authenticated"` set to the Organization's id, which
+`KanbanWeb.UserAuth.OrganizationTwoFactorGate` accepts only while the person
+is still a member of that Organization. A password sign-in never sets it,
+and removes it from a session that had it. See
 [Requiring two-factor](organization-security-policies.md#requiring-two-factor).
 
 ## Paid access and rate limits
