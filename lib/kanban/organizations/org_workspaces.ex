@@ -42,6 +42,7 @@ defmodule Kanban.Organizations.OrgWorkspaces do
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrganizationTelemetry
   alias Kanban.Repo
+  alias Kanban.Workspaces.InvitationRevocation
   alias Kanban.Workspaces.Workspace
 
   @max_bigint 9_223_372_036_854_775_807
@@ -142,9 +143,10 @@ defmodule Kanban.Organizations.OrgWorkspaces do
   counted, so a board cannot be moved into it between the check and the
   archive.
 
-  Archiving revokes the workspace's API tokens in the same transaction: an
-  archived workspace holds no boards and cannot be unarchived, so its tokens
-  could never be used again.
+  Archiving revokes the workspace's API tokens and its open invitations in the
+  same transaction: an archived workspace holds no boards and cannot be
+  unarchived, so its tokens could never be used again, and its invitations
+  could never be accepted, resent or revoked.
 
   ## Examples
 
@@ -171,14 +173,34 @@ defmodule Kanban.Organizations.OrgWorkspaces do
   defp name_attrs(%{name: name}), do: %{"name" => name}
   defp name_attrs(_attrs), do: %{}
 
+  # The workspace's open invitations are locked before the workspace row: an
+  # acceptance locks its invitation first and then takes a key-share lock on
+  # the workspace row when it adds the member row.
   defp archive_locked(workspace_id, organization_id) do
+    invitations = open_invitations(workspace_id)
+    :ok = InvitationRevocation.lock(invitations)
+
     with {:ok, workspace} <- fetch_workspace(workspace_id, organization_id, lock: true),
          :ok <- check_no_boards(workspace),
          {:ok, archived} <- workspace |> archive_changeset() |> Repo.update() do
-      ApiTokens.revoke_workspace_tokens(archived.id)
-      archived
+      revoke_access(archived, invitations)
     else
       {:error, reason} -> Repo.rollback(reason)
+    end
+  end
+
+  # An archived workspace's tokens and open invitations can never be used
+  # again, so both are revoked. Returns the workspace.
+  defp revoke_access(archived, invitations) do
+    ApiTokens.revoke_workspace_tokens(archived.id)
+    InvitationRevocation.revoke(invitations)
+    archived
+  end
+
+  defp open_invitations(workspace_id) do
+    case parse_id(workspace_id) do
+      id when is_integer(id) -> [InvitationRevocation.to_workspace(id)]
+      nil -> []
     end
   end
 

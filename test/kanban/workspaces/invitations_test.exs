@@ -401,6 +401,17 @@ defmodule Kanban.Workspaces.InvitationsTest do
       assert {:error, :invalid} = Invitations.accept(token, invitee)
     end
 
+    test "an invitation an earlier archive left open is refused on the accept page too",
+         %{organization: org, admin: admin, workspace: ws} do
+      invitee = user_fixture()
+      {_invitation, token} = invite!(admin, ws, %{"email" => invitee.email})
+      ws |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert {:error, :invalid} = Invitations.preview(token, invitee)
+      assert {:error, :invalid} = Invitations.accept(token, invitee)
+      refute Organizations.member?(invitee, org)
+    end
+
     test "refuses an invitee in another Organization and writes nothing",
          %{organization: org, admin: admin, workspace: ws} do
       invitee = user_fixture()

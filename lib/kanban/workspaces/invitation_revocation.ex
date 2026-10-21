@@ -12,7 +12,10 @@ defmodule Kanban.Workspaces.InvitationRevocation do
       the ones addressed to the user in that workspace;
     * removing an org-admin also revokes the invitations they sent in the
       Organization, which would otherwise come back to life if they were
-      appointed again.
+      appointed again;
+    * archiving a workspace (`Kanban.Organizations.OrgWorkspaces.archive_workspace/2`)
+      revokes every open invitation to it, which no one could accept, resend
+      or revoke any more.
 
   An invitation is addressed to a user when its email is the user's address,
   ignoring case and surrounding space, or when the user registered through it
@@ -45,6 +48,12 @@ defmodule Kanban.Workspaces.InvitationRevocation do
       where: i.workspace_id in subquery(workspace_ids(scope)),
       where: i.registered_user_id == ^user_id or i.email == ^(email || "")
     )
+  end
+
+  @doc "Every open invitation to the workspace with `workspace_id`."
+  @spec to_workspace(integer()) :: Ecto.Query.t()
+  def to_workspace(workspace_id) when is_integer(workspace_id) do
+    from(i in Invitation.open_query(), where: i.workspace_id == ^workspace_id)
   end
 
   @doc """

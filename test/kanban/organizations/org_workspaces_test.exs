@@ -13,6 +13,7 @@ defmodule Kanban.Organizations.OrgWorkspacesTest do
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrgWorkspaces
   alias Kanban.Repo
+  alias Kanban.Workspaces.Invitation
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
 
@@ -33,6 +34,21 @@ defmodule Kanban.Organizations.OrgWorkspacesTest do
     |> board_fixture()
     |> Ecto.Changeset.change(workspace_id: workspace.id)
     |> Repo.update!()
+  end
+
+  defp invitation!(workspace, inviter, attrs \\ []) do
+    {_token, hash} = Invitation.build_token()
+
+    %Invitation{
+      workspace_id: workspace.id,
+      email: "invitee#{System.unique_integer([:positive])}@example.com",
+      role: :member,
+      invited_by_id: inviter.id,
+      token_hash: hash,
+      expires_at: Invitation.expires_at_from(DateTime.utc_now())
+    }
+    |> struct(attrs)
+    |> Repo.insert!()
   end
 
   defp org_workspaces(organization) do
@@ -343,6 +359,37 @@ defmodule Kanban.Organizations.OrgWorkspacesTest do
       assert %ApiToken{revoked_at: %DateTime{}} = Repo.get!(ApiToken, second.id)
       assert %ApiToken{revoked_at: nil} = Repo.get!(ApiToken, elsewhere.id)
       assert ApiTokens.get_api_token_by_token(plain) == {:error, :revoked}
+    end
+
+    test "revokes the workspace's open invitations and no others", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      workspace = org_workspace_fixture(organization)
+      other = org_workspace_fixture(organization)
+      open = invitation!(workspace, org_admin)
+      accepted = invitation!(workspace, org_admin, accepted_at: ~U[2026-01-01 00:00:00Z])
+      elsewhere = invitation!(other, org_admin)
+
+      assert {:ok, _} = OrgWorkspaces.archive_workspace(org_admin, workspace.id)
+
+      assert %Invitation{revoked_at: %DateTime{}} = Repo.get!(Invitation, open.id)
+      assert %Invitation{revoked_at: nil} = Repo.get!(Invitation, accepted.id)
+      assert %Invitation{revoked_at: nil} = Repo.get!(Invitation, elsewhere.id)
+    end
+
+    test "a refused archive revokes no invitation", %{
+      organization: organization,
+      org_admin: org_admin
+    } do
+      workspace = org_workspace_fixture(organization)
+      put_board_in(workspace, org_admin)
+      open = invitation!(workspace, org_admin)
+
+      assert {:error, :workspace_has_boards} =
+               OrgWorkspaces.archive_workspace(org_admin, workspace.id)
+
+      assert %Invitation{revoked_at: nil} = Repo.get!(Invitation, open.id)
     end
 
     test "keeps the revocation time of a token revoked earlier", %{

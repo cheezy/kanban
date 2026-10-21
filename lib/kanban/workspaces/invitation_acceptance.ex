@@ -102,7 +102,8 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
   @doc """
   True when `user` could accept `invitation` as things stand: their email
   matches, a board-only invitation's board is still in a personal workspace,
-  and for a workspace invitation they are in no other Organization. A
+  and a workspace invitation's workspace is not archived and they are in no
+  other Organization. `invitation.workspace` must be preloaded. A
   read-only check for the accept page; acceptance checks everything again.
   """
   @spec acceptable_by?(Invitation.t(), User.t()) :: boolean()
@@ -113,7 +114,8 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
   end
 
   defp target_open?(%Invitation{role: nil, board_id: board_id}), do: personal_board?(board_id)
-  defp target_open?(%Invitation{}), do: true
+  defp target_open?(%Invitation{workspace: %Workspace{archived_at: nil}}), do: true
+  defp target_open?(%Invitation{}), do: false
 
   defp personal_board?(nil), do: false
 
