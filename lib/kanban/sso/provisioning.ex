@@ -13,8 +13,11 @@ defmodule Kanban.SSO.Provisioning do
        account, and the stored email is never updated from a claim. A
        disabled account is refused. If the account is no longer a member of
        the connection's Organization (it was removed), it is added back as a
-       member only when the email gate below passes again, so offboarding is
-       the identity provider's job, as it is for every other sign-in.
+       member only when the identity provider asserts `email_verified` and
+       the account's own email (not the claim's) is on a domain the
+       Organization verified, so offboarding is the identity provider's job,
+       and an account moved to an address off those domains is no longer the
+       identity provider's to sign in as.
     2. **Email gate.** Otherwise the identity provider must assert
        `email_verified`, and the email's domain must be verified by the
        connection's Organization. An account is never linked by email alone.
@@ -196,8 +199,15 @@ defmodule Kanban.SSO.Provisioning do
     end
   end
 
+  # The gate reads the account's own email, not the claim's: someone who left
+  # and moved their account to an address off the Organization's domains is
+  # no longer the identity provider's to sign in as.
   defp rejoin(identity, connection, claims) do
-    with {:ok, _email} <- email_gate(connection, claims),
+    with :ok <- email_verified(claims["email_verified"]),
+         {:ok, _email} <-
+           identity.user.email
+           |> normalized_email()
+           |> on_verified_domain(connection.organization_id),
          {:ok, _membership} <- add_member(connection.organization_id, identity.user) do
       touch(identity)
       {:ok, identity.user, :existing_identity}

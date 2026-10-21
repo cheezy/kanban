@@ -262,6 +262,27 @@ defmodule Kanban.SSO.ProvisioningTest do
       assert Organizations.member?(ctx.user, ctx.organization.id)
     end
 
+    test "a removed member whose own email left the verified domains is not signed in", ctx do
+      from(m in OrganizationMember, where: m.user_id == ^ctx.user.id) |> Repo.delete_all()
+      ctx.user |> Ecto.Changeset.change(email: "known@elsewhere.example") |> Repo.update!()
+
+      claims = claims(ctx.domain, %{"sub" => "known-subject"})
+      assert {:error, :domain_not_verified} = Provisioning.provision(ctx.connection, claims)
+      refute Organizations.member?(ctx.user, ctx.organization.id)
+    end
+
+    test "a removed member on a verified domain rejoins even when the claim email differs",
+         ctx do
+      from(m in OrganizationMember, where: m.user_id == ^ctx.user.id) |> Repo.delete_all()
+
+      claims =
+        claims(ctx.domain, %{"sub" => "known-subject", "email" => "renamed@elsewhere.example"})
+
+      assert {:ok, user, :existing_identity} = Provisioning.provision(ctx.connection, claims)
+      assert user.id == ctx.user.id
+      assert Organizations.member?(ctx.user, ctx.organization.id)
+    end
+
     test "a removed member who joined another Organization is refused", ctx do
       from(m in OrganizationMember, where: m.user_id == ^ctx.user.id) |> Repo.delete_all()
       organization_fixture() |> organization_member_fixture(ctx.user)

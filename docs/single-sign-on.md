@@ -131,8 +131,11 @@ org-admin, and it never changes the role of an existing org-admin.
   signature, issuer, audience, expiry or `nonce` is wrong.
 
 A person removed from the Organization who signs in again through single
-sign-on is made a member again, as long as the provider still asserts their
-verified address on a verified domain. Stop them in the identity provider.
+sign-on is made a member again, as long as the provider asserts a verified
+address and the account's own email is still on a domain the Organization
+verified. Stop them in the identity provider. Someone who has since moved
+their account to an address on another domain is refused: it is no longer
+the Organization's to sign in as.
 
 ## SAML 2.0
 
