@@ -197,6 +197,46 @@ defmodule Kanban.SSO.SAMLTest do
       assert validate(ctx, response) == {:error, :unsafe_xml}
     end
 
+    # The canonicalization keeps the last copy of a repeated attribute and
+    # reads return the first, so a copy added in front left the digest as it
+    # was while changing what was read.
+    test "a display name the user chose, read as the email through a repeated Name", ctx do
+      for sign <- [:assertion, :response] do
+        response =
+          tampered(
+            ctx,
+            [email: "pat@corp.example", name: "boss@corp.example", sign: sign],
+            fn xml ->
+              xml
+              |> String.replace(
+                ~s(<saml:Attribute Name="email">),
+                ~s(<saml:Attribute Name="x" Name="email">)
+              )
+              |> String.replace(
+                ~s(<saml:Attribute Name="displayName">),
+                ~s(<saml:Attribute Name="email" Name="displayName">)
+              )
+            end
+          )
+
+        assert validate(ctx, response) == {:error, :unsafe_xml}
+      end
+    end
+
+    test "a repeated NotOnOrAfter or assertion ID added in front of the signed one", ctx do
+      far = "2099-01-01T00:00:00Z"
+
+      for {sign, from, to} <- [
+            {:assertion, "<saml:SubjectConfirmationData ",
+             ~s(<saml:SubjectConfirmationData NotOnOrAfter="#{far}" )},
+            {:assertion, "<saml:Conditions ", ~s(<saml:Conditions NotOnOrAfter="#{far}" )},
+            {:response, "<saml:Assertion ", ~s(<saml:Assertion ID="_fresh" )}
+          ] do
+        response = tampered(ctx, [sign: sign], &String.replace(&1, from, to, global: false))
+        assert validate(ctx, response) == {:error, :unsafe_xml}
+      end
+    end
+
     test "malformed XML and invalid base64", ctx do
       assert validate(ctx, Base.encode64("<samlp:Response")) == {:error, :unsafe_xml}
       assert validate(ctx, "not base64!") == {:error, :invalid_response}

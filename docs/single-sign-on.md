@@ -185,7 +185,8 @@ Certificates are public, so they are stored unencrypted. Saving records an
    same token, so a response cannot be posted into another browser.
 3. The response is checked against that Organization's connection only. It
    must be no larger than 256 KB, carry no DOCTYPE, entity, comment, CDATA or
-   processing instruction, hold exactly one assertion directly under the
+   processing instruction and no element with the same attribute written
+   twice, hold exactly one assertion directly under the
    response, and be signed (the response, the assertion or both) with
    RSA-SHA256, SHA-256 digests and exclusive canonicalization by one of the
    configured certificates. The assertion must name the configured issuer,

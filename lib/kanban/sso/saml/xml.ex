@@ -18,6 +18,12 @@ defmodule Kanban.SSO.SAML.XML do
       changing the digest. Every text node holding `<`, `>` or `&`, and every
       attribute value holding those or `"`, is refused. A genuine document
       with such a value could not pass signature verification anyway.
+    * Its parser keeps an attribute written twice on one element, while its
+      canonicalization keeps only the last copy, and attribute reads return
+      the first. A copy added in front of a signed attribute would change
+      what is read (an `Attribute` `Name`, an assertion `ID`, a
+      `NotOnOrAfter`) without changing the digest, so an element with a
+      repeated attribute name is refused.
     * It finds elements with unanchored name patterns (`~r/.*:?Assertion$/i`)
       and leaves any child whose name ends in `Signature` out of the digest.
       The response is refused unless it holds exactly one element whose name
@@ -139,9 +145,15 @@ defmodule Kanban.SSO.SAML.XML do
   end
 
   defp check_values({_name, attrs, children}) do
-    if Enum.all?(attrs, &safe_attribute?/1) and Enum.all?(children, &safe_child?/1),
-      do: :ok,
-      else: :error
+    if Enum.all?(attrs, &safe_attribute?/1) and unique_attribute_names?(attrs) and
+         Enum.all?(children, &safe_child?/1),
+       do: :ok,
+       else: :error
+  end
+
+  defp unique_attribute_names?(attrs) do
+    names = Enum.map(attrs, &elem(&1, 0))
+    length(names) == length(Enum.uniq(names))
   end
 
   defp safe_attribute?({name, value}) when is_binary(name) and is_binary(value),
