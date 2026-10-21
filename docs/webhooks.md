@@ -342,9 +342,25 @@ endpoints they added there, so the board's events stop reaching them:
 
 Handing a board to a new owner does not disable anything: the old owner keeps
 modify access, so they can still open the board. The disabled endpoint shows
-as **Disabled** on the Integrations tab. If you trust its address, choose
-**Enable**. That makes you the person who added it, so it is disabled again
-only when you lose access.
+as **Disabled** on the Integrations tab, with a note saying it was switched
+off because the person who added it no longer has access. If you trust its
+address, choose **Enable**. That makes you the person who added it, so it is
+disabled again only when you lose access.
+
+Every endpoint on the Integrations tab shows who added it ("Added by …"), or
+"Added by a deleted account" once that account is gone.
+
+### When their account is disabled
+
+A site admin can disable an account and enable it again later, so Stride does
+not switch its endpoints off. While the account is disabled they send nothing:
+events are not queued for them, deliveries already waiting are dropped, and
+**Send test** is refused. The Integrations tab marks each one **Not sending**.
+Events from that time are not sent later. Once the account is enabled again,
+new events are sent as before.
+
+To keep such an endpoint sending, choose **Disable** and then **Enable**. That
+makes you the person who added it.
 
 ## Retries
 

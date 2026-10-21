@@ -3,7 +3,9 @@ defmodule Kanban.Webhooks.Events do
   Turns task changes into webhook deliveries (W2227).
 
   `emit/3` maps an internal event atom to its public name, finds the
-  board's enabled endpoints subscribed to it, builds the envelope once
+  board's endpoints subscribed to it that may send
+  (`Kanban.Webhooks.Endpoint.sendable/1`: enabled, and not created by a
+  disabled account), builds the envelope once
   (`Kanban.Webhooks.Payload`) and queues one `Kanban.Webhooks.DeliveryWorker`
   job per endpoint. A board with no subscribed endpoint costs one indexed
   query and builds nothing.
@@ -101,8 +103,8 @@ defmodule Kanban.Webhooks.Events do
   defp subscribed_endpoint_ids(nil, _name), do: []
 
   defp subscribed_endpoint_ids(board_id, name) do
-    Endpoint
-    |> where([e], e.board_id == ^board_id and e.enabled and ^name in e.event_types)
+    Endpoint.sendable()
+    |> where([e], e.board_id == ^board_id and ^name in e.event_types)
     |> order_by([e], asc: e.id)
     |> select([e], e.id)
     |> Repo.all()

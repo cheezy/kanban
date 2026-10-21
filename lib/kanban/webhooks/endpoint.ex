@@ -10,11 +10,17 @@ defmodule Kanban.Webhooks.Endpoint do
   credential: whoever holds it can post to the channel. Both are
   redacted from `inspect/1`. The virtual `secret` field carries the plaintext on the
   struct returned by a create or a rotation, so it can be shown once; a
-  struct loaded from the database never has it. `board_id`, `created_by_id`
-  and the secret are set by `Kanban.Webhooks`, never cast from params.
+  struct loaded from the database never has it. `board_id`, `created_by_id`,
+  `disabled_reason` and the secret are set by `Kanban.Webhooks`, never cast
+  from params.
+
+  `disabled_reason` says why Stride switched an endpoint off by itself
+  (`:creator_lost_access`). It is `nil` while the endpoint is enabled and
+  when the owner switched it off, and any change to `enabled` clears it.
   """
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, only: [join: 5, where: 3]
 
   alias Kanban.Integrations.EncryptedString
   alias Kanban.Integrations.SecretBox
@@ -34,6 +40,8 @@ defmodule Kanban.Webhooks.Endpoint do
 
   @kinds [:generic, :slack, :discord]
 
+  @disabled_reasons [:creator_lost_access]
+
   @slack_url_message "must be a Slack incoming webhook URL starting with https://hooks.slack.com/"
 
   @discord_url_message "must be a Discord webhook URL, for example https://discord.com/api/webhooks/…"
@@ -49,6 +57,7 @@ defmodule Kanban.Webhooks.Endpoint do
     field :secret, :string, virtual: true, redact: true
     field :event_types, {:array, :string}, default: []
     field :enabled, :boolean, default: true
+    field :disabled_reason, Ecto.Enum, values: @disabled_reasons
     field :lock_version, :integer, default: 1
 
     belongs_to :board, Kanban.Boards.Board
@@ -64,6 +73,21 @@ defmodule Kanban.Webhooks.Endpoint do
   def kinds, do: @kinds
 
   @doc """
+  Narrows `queryable` to the endpoints that may send now: enabled, and not
+  created by a disabled account. An endpoint whose creator was deleted has
+  no creator and may send. `Kanban.Webhooks.Events` and
+  `Kanban.Webhooks.DeliveryWorker` both read through it, so a disabled
+  creator's endpoints send nothing and resume when the account is enabled
+  again (decided 2026-10-21).
+  """
+  @spec sendable(Ecto.Queryable.t()) :: Ecto.Query.t()
+  def sendable(queryable \\ __MODULE__) do
+    queryable
+    |> join(:left, [e], c in assoc(e, :created_by), as: :creator)
+    |> where([e, creator: c], e.enabled and is_nil(c.disabled_at))
+  end
+
+  @doc """
   Casts the owner-editable fields: `kind`, `url`, `event_types` and
   `enabled`. The URL gets `UrlGuard.validate_syntax/2` (no DNS); `opts` is
   passed through to it. At least one known event type is required, a
@@ -75,6 +99,7 @@ defmodule Kanban.Webhooks.Endpoint do
     endpoint
     |> cast(attrs, [:kind, :url, :event_types, :enabled])
     |> validate_required([:kind, :url, :enabled])
+    |> clear_disabled_reason()
     |> validate_length(:url, max: 2048)
     |> update_change(:event_types, &Enum.uniq/1)
     |> validate_some_event_types()
@@ -122,6 +147,14 @@ defmodule Kanban.Webhooks.Endpoint do
 
   defp discord_webhook_path?(path),
     do: Regex.match?(~r<\A/api(?:/v\d{1,3})?/webhooks/\d{1,20}/[A-Za-z0-9_-]+/?\z>, path)
+
+  # The reason belongs to the switch-off it explains, so turning the endpoint
+  # on, or off by hand, drops it.
+  defp clear_disabled_reason(changeset) do
+    if changed?(changeset, :enabled),
+      do: put_change(changeset, :disabled_reason, nil),
+      else: changeset
+  end
 
   # Checked on the field, not the change: casting [] onto the default [] is
   # no change at all, so validate_length/3 would never see it.

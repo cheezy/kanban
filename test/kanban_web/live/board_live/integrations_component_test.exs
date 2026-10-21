@@ -419,6 +419,45 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentTest do
       refute_enqueued(worker: DeliveryWorker)
     end
 
+    test "an endpoint of a disabled creator is marked, and its test event is refused",
+         %{conn: conn} = ctx do
+      creator = user_fixture(%{name: "Grace Hopper"})
+
+      creator
+      |> Kanban.Accounts.User.disabled_changeset(DateTime.utc_now(:second))
+      |> Repo.update!()
+
+      endpoint = webhook_endpoint_fixture(ctx.board, created_by_id: creator.id)
+      view = open(conn, ctx.owner, ctx.board)
+
+      row = "#webhook-endpoint-#{endpoint.id}"
+      assert has_element?(view, "#{row} [data-endpoint-creator]", "Added by Grace Hopper")
+      assert has_element?(view, "#{row} [data-endpoint-not-sending]")
+
+      view |> element("#webhook-test-#{endpoint.id}") |> render_click()
+
+      assert render(view) =~ "The account that added this endpoint is disabled"
+      refute_enqueued(worker: DeliveryWorker)
+    end
+
+    test "an endpoint switched off because its creator left says so and names them",
+         %{conn: conn} = ctx do
+      creator = user_fixture(%{name: "Grace Hopper"})
+      endpoint = webhook_endpoint_fixture(ctx.board, created_by_id: creator.id)
+      Webhooks.pause_creator_endpoints(creator.id, :all)
+      view = open(conn, ctx.owner, ctx.board)
+
+      row = "#webhook-endpoint-#{endpoint.id}"
+      assert has_element?(view, "#{row} [data-endpoint-disabled]")
+      assert has_element?(view, "#{row} [data-endpoint-creator]", "Added by Grace Hopper")
+      assert has_element?(view, "#{row} [data-endpoint-state-note]", "no longer has access")
+
+      view |> element("#webhook-toggle-#{endpoint.id}") |> render_click()
+
+      refute has_element?(view, "#{row} [data-endpoint-state-note]")
+      assert has_element?(view, "#{row} [data-endpoint-creator]", "Added by #{ctx.owner.email}")
+    end
+
     test "the log shows the 20 most recent deliveries and hides again", %{conn: conn} = ctx do
       endpoint = webhook_endpoint_fixture(ctx.board)
       ids = for n <- 1..25, do: delivery_fixture(endpoint, %{attempt: n, status: :failed}).id

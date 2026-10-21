@@ -12,7 +12,10 @@ defmodule Kanban.Webhooks.DeliveryWorker do
   Each attempt:
 
     1. A deleted or disabled endpoint ends the job with `:ok`, sending
-       nothing and recording nothing. So does an endpoint on a free board
+       nothing and recording nothing. So does an endpoint whose creator's
+       account is disabled (`Endpoint.sendable/1`): the job is dropped, not
+       held, and later events are sent again once the account is enabled.
+       So does an endpoint on a free board
        while paid plans are enforced (`Kanban.Plans.check_board/3`, surface
        `:oban`, which emits `feature_refused`): a job queued before
        enforcement, or a retry across the switch, is dropped rather than
@@ -45,6 +48,8 @@ defmodule Kanban.Webhooks.DeliveryWorker do
   is a credential, never appears in them or in the log.
   """
   use Oban.Worker, queue: :webhooks, max_attempts: 8
+
+  import Ecto.Query, only: [where: 3]
 
   alias Kanban.Plans
   alias Kanban.Repo
@@ -105,9 +110,9 @@ defmodule Kanban.Webhooks.DeliveryWorker do
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"endpoint_id" => endpoint_id} = args, attempt: attempt}) do
-    case Repo.get(Endpoint, endpoint_id) do
-      %Endpoint{enabled: true} = endpoint -> deliver_if_paid(endpoint, args, attempt)
-      _deleted_or_disabled -> :ok
+    case Endpoint.sendable() |> where([e], e.id == ^endpoint_id) |> Repo.one() do
+      %Endpoint{} = endpoint -> deliver_if_paid(endpoint, args, attempt)
+      nil -> :ok
     end
   end
 

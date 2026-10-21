@@ -4,6 +4,7 @@ defmodule KanbanWeb.BoardLive.WebhookViewsTest do
   import Phoenix.Component
   import Phoenix.LiveViewTest
 
+  alias Kanban.Accounts.User
   alias Kanban.Webhooks.Delivery
   alias Kanban.Webhooks.Endpoint
   alias KanbanWeb.BoardLive.WebhookViews
@@ -111,6 +112,68 @@ defmodule KanbanWeb.BoardLive.WebhookViewsTest do
       assert html =~ ~s(data-enabled="false")
       refute html =~ "secret?token"
     end
+
+    test "names the creator by name, by email when the name is blank, or as a deleted account" do
+      for {creator, expected} <- [
+            {%User{name: "Ada Lovelace", email: "ada@example.com"}, "Added by Ada Lovelace"},
+            {%User{name: "  ", email: "ada@example.com"}, "Added by ada@example.com"},
+            {nil, "Added by a deleted account"}
+          ] do
+        assert render_row(endpoint(created_by: creator)) =~ expected
+      end
+    end
+
+    test "leaves the creator line out when the creator was not preloaded" do
+      refute render_row(endpoint([])) =~ "data-endpoint-creator"
+    end
+
+    test "says why Stride switched an endpoint off" do
+      html = render_row(endpoint(enabled: false, disabled_reason: :creator_lost_access))
+
+      assert html =~ "data-endpoint-disabled"
+      assert html =~ "data-endpoint-state-note"
+      assert html =~ "no longer has access to this board"
+    end
+
+    test "an endpoint the owner switched off has no note" do
+      refute render_row(endpoint(enabled: false, created_by: nil)) =~ "data-endpoint-state-note"
+    end
+
+    test "an enabled endpoint of a disabled creator is marked Not sending" do
+      creator = %User{
+        name: "Ada",
+        email: "ada@example.com",
+        disabled_at: ~U[2026-10-21 10:00:00Z]
+      }
+
+      html = render_row(endpoint(created_by: creator))
+
+      assert html =~ "data-endpoint-not-sending"
+      assert html =~ "Not sending"
+      assert html =~ "is disabled"
+    end
+
+    test "a switched-off endpoint of a disabled creator shows only Disabled" do
+      creator = %User{
+        name: "Ada",
+        email: "ada@example.com",
+        disabled_at: ~U[2026-10-21 10:00:00Z]
+      }
+
+      html = render_row(endpoint(enabled: false, created_by: creator))
+
+      assert html =~ "data-endpoint-disabled"
+      refute html =~ "data-endpoint-not-sending"
+      refute html =~ "data-endpoint-state-note"
+    end
+  end
+
+  defp render_row(endpoint) do
+    assigns = %{endpoint: endpoint}
+
+    rendered_to_string(~H"""
+    <WebhookViews.endpoint_row endpoint={@endpoint} myself={nil} />
+    """)
   end
 
   describe "delivery_log/1" do

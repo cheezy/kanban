@@ -62,14 +62,26 @@ defmodule Kanban.Webhooks do
     * `pause_outside_endpoints/2` when a board moves into an Organization
       and an endpoint's creator is not a member of it.
 
-  The owner sees it as Disabled in the Integrations tab. Re-enabling it
-  through `update_endpoint/4` makes the owner its creator.
+  Each of them stores `disabled_reason: :creator_lost_access`, so the owner
+  sees in the Integrations tab why it is Disabled. Re-enabling it through
+  `update_endpoint/4` makes the owner its creator and clears the reason.
+
+  ## Endpoints whose creator is disabled
+
+  A site admin can disable an account and enable it again, so its endpoints
+  are not switched off. They send nothing while the account is disabled,
+  because `Kanban.Webhooks.Events` and `Kanban.Webhooks.DeliveryWorker` read
+  through `Kanban.Webhooks.Endpoint.sendable/1` (decided 2026-10-21), and
+  `send_test_event/2` returns `{:error, :creator_disabled}`. Events from that
+  time are not sent later. `list_endpoints/2` preloads each endpoint's
+  creator, so the tab can say so.
   """
 
   import Ecto.Query, warn: false
 
   alias Ecto.Changeset
   alias Kanban.Accounts.Scope
+  alias Kanban.Accounts.User
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Integrations.SecretBox
@@ -85,16 +97,23 @@ defmodule Kanban.Webhooks do
 
   @delivery_log_fields ~w(id endpoint_id event status attempt response_status error delivered_at inserted_at)a
 
+  # What the Integrations tab shows of an endpoint's creator.
+  @creator_fields [:id, :name, :email, :disabled_at]
+
   @doc """
   Lists a board's endpoints, oldest first, for its owner; `[]` for anyone
-  else.
+  else. Each has its creator preloaded with only their id, name, email and
+  `disabled_at` (`nil` when the creator's account was deleted).
   """
   def list_endpoints(scope, %Board{id: board_id}) do
     case authorize_owner(scope, board_id) do
       :ok ->
+        creators = from(u in User, select: struct(u, ^@creator_fields))
+
         Endpoint
         |> where([e], e.board_id == ^board_id)
         |> order_by([e], asc: e.inserted_at, asc: e.id)
+        |> preload(created_by: ^creators)
         |> Repo.all()
 
       {:error, :unauthorized} ->
@@ -198,13 +217,15 @@ defmodule Kanban.Webhooks do
   @doc """
   Queues a `ping` delivery to the endpoint so its owner can check the
   receiver. Returns `{:ok, job}`, `{:error, :unauthorized}` for anyone but
-  the board's owner, or `{:error, :disabled}` for a disabled endpoint (the
-  worker never sends to one).
+  the board's owner, `{:error, :disabled}` for a disabled endpoint, or
+  `{:error, :creator_disabled}` when the account that created it is disabled
+  (the worker sends to neither).
   """
   def send_test_event(scope, %Endpoint{board_id: board_id} = endpoint) do
     with :ok <- authorize_owner(scope, board_id),
          :ok <- check_plan(board_id),
-         :ok <- check_enabled(endpoint) do
+         :ok <- check_enabled(endpoint),
+         :ok <- check_creator_enabled(endpoint) do
       payload = Board |> Repo.get!(board_id) |> Payload.ping()
       DeliveryWorker.enqueue(endpoint.id, "ping", payload)
     end
@@ -316,7 +337,11 @@ defmodule Kanban.Webhooks do
   defp pause_all(query) do
     {count, _} =
       Repo.update_all(query,
-        set: [enabled: false, updated_at: DateTime.utc_now(:second)],
+        set: [
+          enabled: false,
+          disabled_reason: :creator_lost_access,
+          updated_at: DateTime.utc_now(:second)
+        ],
         inc: [lock_version: 1]
       )
 
@@ -335,6 +360,13 @@ defmodule Kanban.Webhooks do
 
   defp check_enabled(%Endpoint{enabled: true}), do: :ok
   defp check_enabled(%Endpoint{}), do: {:error, :disabled}
+
+  defp check_creator_enabled(%Endpoint{created_by_id: nil}), do: :ok
+
+  defp check_creator_enabled(%Endpoint{created_by_id: creator_id}) do
+    disabled = from(u in User, where: u.id == ^creator_id and not is_nil(u.disabled_at))
+    if Repo.exists?(disabled), do: {:error, :creator_disabled}, else: :ok
+  end
 
   defp check_reachable(%Changeset{valid?: true} = changeset, opts) do
     case Changeset.get_change(changeset, :url) do

@@ -296,6 +296,17 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponent do
     {:noreply, reload(socket)}
   end
 
+  defp handle_write({:error, :creator_disabled}, socket, _message) do
+    notify_parent(
+      {:flash, :error,
+       gettext(
+         "The account that added this endpoint is disabled, so it sends nothing. Disable and enable it to take it over."
+       )}
+    )
+
+    {:noreply, reload(socket)}
+  end
+
   defp handle_write({:error, _changeset}, socket, _message) do
     notify_parent(
       {:flash, :error, gettext("Could not update the endpoint. Reload and try again.")}

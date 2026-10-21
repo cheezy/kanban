@@ -118,6 +118,11 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
 
   When `paused?` (a free board while paid plans are enforced) the row is read
   only: a Paused badge, and only the Deliveries and Delete actions.
+
+  The row names who added the endpoint, from the creator `list_endpoints/2`
+  preloads, and says why it is not sending when Stride switched it off
+  (`disabled_reason`) or its creator's account is disabled (a Not sending
+  badge) (decided 2026-10-21).
   """
   attr :endpoint, Endpoint, required: true
   attr :myself, :any, required: true
@@ -160,6 +165,16 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
         >
           {gettext("Paused")}
         </span>
+        <span
+          :if={creator_state(@endpoint) == :creator_disabled}
+          data-endpoint-not-sending
+          style={[
+            "font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px;",
+            "background: var(--st-blocked-soft); color: var(--st-blocked);"
+          ]}
+        >
+          {gettext("Not sending")}
+        </span>
       </div>
       <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
         <code
@@ -172,6 +187,20 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
           {event}
         </code>
       </div>
+      <p
+        :if={added_by(@endpoint)}
+        data-endpoint-creator
+        style="margin: 6px 0 0; font-size: 11.5px; color: var(--ink-3); overflow-wrap: anywhere;"
+      >
+        {added_by(@endpoint)}
+      </p>
+      <p
+        :if={state_note(@endpoint)}
+        data-endpoint-state-note
+        style="margin: 4px 0 0; font-size: 11.5px; color: var(--ink-2); line-height: 1.5;"
+      >
+        {state_note(@endpoint)}
+      </p>
       <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px;">
         <button
           :if={!@paused?}
@@ -268,6 +297,36 @@ defmodule KanbanWeb.BoardLive.WebhookViews do
       />
     </li>
     """
+  end
+
+  # Who added the endpoint, or nil when the creator was not preloaded. The
+  # creator's id is cleared when their account is deleted.
+  defp added_by(%Endpoint{created_by: %Ecto.Association.NotLoaded{}}), do: nil
+
+  defp added_by(%Endpoint{created_by: %{name: name, email: email}}) do
+    shown = if is_binary(name) and String.trim(name) != "", do: name, else: email
+    gettext("Added by %{name}", name: shown)
+  end
+
+  defp added_by(%Endpoint{}), do: gettext("Added by a deleted account")
+
+  defp creator_state(%Endpoint{enabled: true, created_by: %{disabled_at: %DateTime{}}}),
+    do: :creator_disabled
+
+  defp creator_state(%Endpoint{}), do: :ok
+
+  defp state_note(%Endpoint{enabled: false, disabled_reason: :creator_lost_access}) do
+    gettext(
+      "Switched off automatically because the person who added it no longer has access to this board. Enable it to take it over."
+    )
+  end
+
+  defp state_note(%Endpoint{} = endpoint) do
+    if creator_state(endpoint) == :creator_disabled do
+      gettext(
+        "Sends nothing while the account of the person who added it is disabled. Disable and enable it to take it over."
+      )
+    end
   end
 
   attr :kind, :atom, required: true
