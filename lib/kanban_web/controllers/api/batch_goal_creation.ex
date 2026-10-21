@@ -25,9 +25,8 @@ defmodule KanbanWeb.API.BatchGoalCreation do
   `log_create_forbidden_fields/3`, `render_goal_with_children/1`,
   `get_default_column_id/1`) from `KanbanWeb.API.TaskCreation`, which owns them
   because the single-create action shares them, plus the controller's
-  `emit_telemetry/3` and `render_task_summary/1` delegates — the summary shape
-  is owned by `KanbanWeb.API.TaskJSON`; the controller keeps a delegate under
-  that name so the call below resolves unchanged.
+  `emit_telemetry/3` delegate. Each child is rendered with
+  `KanbanWeb.API.TaskJSON.render_child_summary/1`, as the single create does.
   """
 
   import Plug.Conn, only: [put_status: 2]
@@ -40,6 +39,7 @@ defmodule KanbanWeb.API.BatchGoalCreation do
   alias KanbanWeb.API.TaskController
   alias KanbanWeb.API.TaskCreation
   alias KanbanWeb.API.TaskErrors
+  alias KanbanWeb.API.TaskJSON
   alias KanbanWeb.API.TaskLabels
   alias KanbanWeb.API.TaskParamFilter
 
@@ -179,7 +179,7 @@ defmodule KanbanWeb.API.BatchGoalCreation do
 
     result = %{
       goal: TaskCreation.render_goal_with_children(goal),
-      child_tasks: Enum.map(created_child_tasks, &TaskController.render_task_summary/1)
+      child_tasks: Enum.map(created_child_tasks, &TaskJSON.render_child_summary/1)
     }
 
     {:cont, {:ok, [result | acc]}}

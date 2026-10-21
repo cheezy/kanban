@@ -114,6 +114,17 @@ defmodule KanbanWeb.API.TaskJSONTest do
     }
   end
 
+  describe "render_child_summary/1" do
+    test "is the summary plus the child's column_id", %{column: column} do
+      {:ok, task} = Tasks.create_task(column, %{"title" => "Child"})
+
+      child = TaskJSON.render_child_summary(task)
+
+      assert Map.delete(child, :column_id) == TaskJSON.render_task_summary(task)
+      assert child.column_id == column.id
+    end
+  end
+
   describe "render_task_summary/1 — canonical summary shape (W2055)" do
     test "renders exactly the eleven summary keys and nothing wider", %{column: column} do
       {:ok, task} = Tasks.create_task(column, %{"title" => "Summary shape task"})

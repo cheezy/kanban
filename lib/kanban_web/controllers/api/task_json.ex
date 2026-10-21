@@ -207,10 +207,11 @@ defmodule KanbanWeb.API.TaskJSON do
   @doc """
   Canonical compact summary shape for a single task.
 
-  Three responses render it byte-for-byte — `GET /api/tasks/:id/dependencies`
-  (both the subject task and every node of the dependency tree), `GET
-  /api/tasks/:id/dependents`, and the `child_tasks` entries of goal creation
-  (single `POST /api/tasks` and `POST /api/tasks/batch`) — so widening it
+  It is rendered byte-for-byte by `GET /api/tasks/:id/dependencies` (both the
+  subject task and every node of the dependency tree), `GET
+  /api/tasks/:id/dependents` and the slim views, and with `column_id` added
+  (`render_child_summary/1`) by the `child_tasks` entries of goal creation
+  (single `POST /api/tasks` and `POST /api/tasks/batch`), so widening it
   widens all of them at once. It is deliberately narrower than `data/1`:
   anything added here is exposed on endpoints that were only ever meant to
   return a compact row.
@@ -245,6 +246,18 @@ defmodule KanbanWeb.API.TaskJSON do
       parent_id: task.parent_id,
       claim_expires_at: task.claim_expires_at
     }
+  end
+
+  @doc """
+  A `child_tasks` entry of goal creation (single `POST /api/tasks` and
+  `POST /api/tasks/batch`): `render_task_summary/1` plus the child's
+  `column_id`, so the caller learns where each new child landed without a
+  second request (decided 2026-10-21). Only these entries carry it: the
+  summary itself stays narrow, because the slim list and show views render it
+  for every row.
+  """
+  def render_child_summary(task) do
+    task |> render_task_summary() |> Map.put(:column_id, task.column_id)
   end
 
   @projectable_field_names ~w(id identifier title type status priority complexity

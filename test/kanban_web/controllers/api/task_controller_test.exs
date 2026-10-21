@@ -531,6 +531,35 @@ defmodule KanbanWeb.API.TaskControllerTest do
       assert Enum.all?(tree_response["children"], fn child -> child["parent_id"] == goal_id end)
     end
 
+    test "each goal child reports the column it landed in, in both create endpoints",
+         %{conn: conn} do
+      children = [
+        %{"title" => "First", "type" => "work"},
+        %{"title" => "Second", "type" => "work", "dependencies" => [0]}
+      ]
+
+      single =
+        conn
+        |> post(~p"/api/tasks", task: %{"title" => "Goal", "type" => "goal", "tasks" => children})
+        |> json_response(201)
+
+      batch =
+        conn
+        |> post(~p"/api/tasks/batch", %{
+          "goals" => [%{"title" => "Goal", "type" => "goal", "tasks" => children}]
+        })
+        |> json_response(201)
+
+      for %{"goal" => goal, "child_tasks" => [first, second]} <- [single | batch["goals"]] do
+        for child <- [first, second] do
+          assert child["column_id"] == Tasks.get_task!(child["id"]).column_id
+          assert child["column_id"] == goal["column_id"]
+        end
+
+        assert second["status"] == "blocked"
+      end
+    end
+
     test "creates goal without child tasks (empty array)", %{conn: conn} do
       goal_params = %{
         "title" => "Empty Goal",

@@ -187,6 +187,7 @@ Returns all created goals with their child tasks:
           "status": "open",
           "priority": "high",
           "complexity": "small",
+          "column_id": 5,
           "dependencies": []
         },
         {
@@ -196,6 +197,7 @@ Returns all created goals with their child tasks:
           "status": "blocked",
           "priority": "high",
           "complexity": "medium",
+          "column_id": 5,
           "dependencies": ["W1"]
         },
         {
@@ -205,6 +207,7 @@ Returns all created goals with their child tasks:
           "status": "blocked",
           "priority": "high",
           "complexity": "medium",
+          "column_id": 5,
           "dependencies": ["W1", "W2"]
         }
       ]
@@ -233,6 +236,7 @@ Returns all created goals with their child tasks:
           "status": "open",
           "priority": "medium",
           "complexity": "small",
+          "column_id": 5,
           "dependencies": []
         },
         {
@@ -242,6 +246,7 @@ Returns all created goals with their child tasks:
           "status": "blocked",
           "priority": "medium",
           "complexity": "medium",
+          "column_id": 5,
           "dependencies": ["W4"]
         },
         {
@@ -251,6 +256,7 @@ Returns all created goals with their child tasks:
           "status": "blocked",
           "priority": "medium",
           "complexity": "medium",
+          "column_id": 5,
           "dependencies": ["W4", "W5"]
         }
       ]
@@ -258,6 +264,9 @@ Returns all created goals with their child tasks:
   ]
 }
 ```
+
+Each `child_tasks` entry is the compact task summary plus `column_id`, the
+column the child was placed in: always its goal's column.
 
 When paid plans are enforced and the board is not in an Organization's
 workspace, `telemetry_event` and `metrics_to_track` on any goal or child task

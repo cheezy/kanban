@@ -638,6 +638,7 @@ path. Reword either one.
       "status": "open",
       "priority": "critical",
       "complexity": "medium",
+      "column_id": 5,
       "dependencies": []
     },
     {
@@ -647,6 +648,7 @@ path. Reword either one.
       "status": "blocked",
       "priority": "critical",
       "complexity": "medium",
+      "column_id": 5,
       "dependencies": ["W23"]
     },
     {
@@ -656,11 +658,16 @@ path. Reword either one.
       "status": "blocked",
       "priority": "high",
       "complexity": "medium",
+      "column_id": 5,
       "dependencies": ["W24"]
     }
   ]
 }
 ```
+
+Each `child_tasks` entry is the compact task summary plus `column_id`, the
+column the child was placed in. A goal's children are always placed in the
+goal's column, so it equals the goal's `column_id`.
 
 ### Warnings
 

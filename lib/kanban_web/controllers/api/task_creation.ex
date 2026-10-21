@@ -180,7 +180,7 @@ defmodule KanbanWeb.API.TaskCreation do
       LockedTaskFields.put_warnings(
         %{
           goal: render_goal_with_children(goal),
-          child_tasks: Enum.map(child_tasks, &TaskJSON.render_task_summary/1)
+          child_tasks: Enum.map(child_tasks, &TaskJSON.render_child_summary/1)
         },
         conn
       )
