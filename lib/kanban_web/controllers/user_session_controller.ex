@@ -6,6 +6,7 @@ defmodule KanbanWeb.UserSessionController do
   alias Kanban.Accounts.User
   alias Kanban.AuditLog
   alias Kanban.RateLimit
+  alias Kanban.SSO
   alias Kanban.Workspaces.Invitations
   alias KanbanWeb.TwoFactorPending
   alias KanbanWeb.UserAuth
@@ -134,6 +135,12 @@ defmodule KanbanWeb.UserSessionController do
   `:two_factor_challenge` and per user over a day on `:two_factor_daily`; any
   of them refuses the attempt with the same message as a throttled password
   login.
+
+  A marker single sign-on stored (`TwoFactorPending.put_sso_link/3`) carries
+  the identity link it waits to make: an accepted code makes it
+  (`Kanban.SSO.complete_two_factor_link/3`) and signs the person in through
+  single sign-on, or, when the link is refused, sends them back to the log-in
+  page with single sign-on's one generic message.
   """
   def verify_two_factor(conn, params) do
     case open_challenge(conn) do
@@ -231,6 +238,30 @@ defmodule KanbanWeb.UserSessionController do
 
     conn
     |> TwoFactorPending.delete()
+    |> finish_two_factor_login(user, pending, method)
+  end
+
+  defp finish_two_factor_login(conn, user, %{sso_link: link}, method) do
+    case SSO.complete_two_factor_link(user, link, ip: conn.remote_ip) do
+      {:ok, user} ->
+        conn
+        |> put_flash(:info, two_factor_success_message(method))
+        |> UserAuth.log_in_user(user, %{}, sso: true)
+
+      {:error, _reason} ->
+        conn
+        |> put_flash(
+          :error,
+          gettext(
+            "Single sign-on could not sign you in. Contact your Organization's administrator if this continues."
+          )
+        )
+        |> redirect(to: ~p"/users/log-in")
+    end
+  end
+
+  defp finish_two_factor_login(conn, user, pending, method) do
+    conn
     |> put_flash(:info, two_factor_success_message(method))
     |> UserAuth.log_in_user(user, remember_me_params(pending))
   end

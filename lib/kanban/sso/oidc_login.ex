@@ -17,6 +17,11 @@ defmodule Kanban.SSO.OIDCLogin do
   validates the id_token against the flow's nonce, provisions the user
   (`Kanban.SSO.Provisioning`) and checks the paid gate.
 
+  A sign-in that would link an existing account with two-factor turned on
+  returns `{:two_factor_required, user, link}` instead, with nothing written
+  or recorded: the controller asks for that account's code, then
+  `Kanban.SSO.TwoFactorLink.complete/3` links it and records the outcome.
+
   Every refusal is recorded as `:sso_login_refused` with a reason, and every
   success as `:sso_login`. The reasons are for the audit log only; the user is
   always shown one generic message, so a refusal reveals neither whether an
@@ -29,6 +34,7 @@ defmodule Kanban.SSO.OIDCLogin do
   alias Kanban.SSO.OIDC
   alias Kanban.SSO.Provisioning
   alias Kanban.SSO.SSOConnection
+  alias Kanban.SSO.TwoFactorLink
 
   @flow_ttl_seconds 600
 
@@ -52,9 +58,13 @@ defmodule Kanban.SSO.OIDCLogin do
   Completes a sign-in from the identity provider's callback `params` and the
   flow removed from the session (`nil` when there was none). `opts` takes
   `:redirect_uri` (required) and `:ip` (recorded in the audit log only).
-  Returns `{:ok, user}` or `{:error, reason}`.
+  Returns `{:ok, user}`, `{:two_factor_required, user, link}` (see
+  `Kanban.SSO.TwoFactorLink`) or `{:error, reason}`.
   """
-  @spec complete(map() | nil, map(), keyword()) :: {:ok, User.t()} | {:error, atom()}
+  @spec complete(map() | nil, map(), keyword()) ::
+          {:ok, User.t()}
+          | {:two_factor_required, User.t(), TwoFactorLink.link()}
+          | {:error, atom()}
   def complete(flow, params, opts) when is_map(params) and is_list(opts) do
     redirect_uri = Keyword.fetch!(opts, :redirect_uri)
 
@@ -109,12 +119,29 @@ defmodule Kanban.SSO.OIDCLogin do
   end
 
   defp sign_in(%SSOConnection{} = connection, flow, code, redirect_uri) do
-    with {:ok, claims} <- verified_claims(connection, flow, code, redirect_uri),
-         {:ok, user, _outcome} <- Provisioning.provision(connection, claims),
-         :ok <- paid_access(user) do
-      {:ok, user, connection}
-    else
+    case verified_claims(connection, flow, code, redirect_uri) do
+      {:ok, claims} -> connection |> provision(claims) |> signed_in(connection)
       {:error, reason} -> {:error, reason, connection}
+    end
+  end
+
+  defp signed_in({:ok, user, _outcome}, connection) do
+    case paid_access(user) do
+      :ok -> {:ok, user, connection}
+      {:error, reason} -> {:error, reason, connection}
+    end
+  end
+
+  defp signed_in({:two_factor_required, _user, _link} = pending, _connection), do: pending
+  defp signed_in({:error, reason}, connection), do: {:error, reason, connection}
+
+  defp provision(connection, claims) do
+    case Provisioning.provision(connection, claims) do
+      {:two_factor_required, user} ->
+        {:two_factor_required, user, TwoFactorLink.link(connection, claims["sub"])}
+
+      result ->
+        result
     end
   end
 
@@ -132,6 +159,9 @@ defmodule Kanban.SSO.OIDCLogin do
       {:error, {:plan_required, :sso}} -> {:error, :plan_required}
     end
   end
+
+  # Nothing is written before the challenge, so there is nothing to record.
+  defp audit({:two_factor_required, _user, _link} = pending, _flow, _opts), do: pending
 
   defp audit({:ok, user, connection}, _flow, opts) do
     AuditLog.event(:sso_login,

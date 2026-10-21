@@ -18,7 +18,11 @@ defmodule KanbanWeb.SSOController do
       can be used once, and hands it to `Kanban.SSO.complete_oidc_login/3`. A
       successful sign-in goes through `KanbanWeb.UserAuth.log_in_user/4` with
       `sso: true`, which renews the session and marks it as signed in through
-      single sign-on.
+      single sign-on. A sign-in that would link an existing account with
+      two-factor turned on stores the link in the pending-login marker
+      (`KanbanWeb.TwoFactorPending.put_sso_link/3`) and goes to the two-factor
+      challenge instead; `UserSessionController.verify_two_factor/2` makes
+      the link and signs the person in once the code is accepted.
 
   A start another site sends the browser to (`Sec-Fetch-Site` of
   `cross-site` or `same-site`) goes to the log-in page instead, with no flow:
@@ -35,6 +39,7 @@ defmodule KanbanWeb.SSOController do
 
   alias Kanban.RateLimit
   alias Kanban.SSO
+  alias KanbanWeb.TwoFactorPending
   alias KanbanWeb.UserAuth
 
   @flow_key "sso_flow"
@@ -85,26 +90,38 @@ defmodule KanbanWeb.SSOController do
     flow = get_session(conn, @flow_key)
     conn = delete_session(conn, @flow_key)
 
-    with :ok <- rate_limit(conn),
-         {:ok, user} <-
-           SSO.complete_oidc_login(flow, params, redirect_uri: callback_url(), ip: conn.remote_ip) do
-      conn
-      |> put_flash(:info, gettext("Welcome back!"))
-      |> UserAuth.log_in_user(user, %{}, sso: true)
-    else
-      {:error, {:rate_limited, _retry_after}} ->
-        rate_limited(conn)
+    result =
+      with :ok <- rate_limit(conn) do
+        SSO.complete_oidc_login(flow, params, redirect_uri: callback_url(), ip: conn.remote_ip)
+      end
 
-      {:error, _reason} ->
-        conn
-        |> put_flash(
-          :error,
-          gettext(
-            "Single sign-on could not sign you in. Contact your Organization's administrator if this continues."
-          )
-        )
-        |> redirect(to: ~p"/users/log-in")
-    end
+    finish_callback(conn, result)
+  end
+
+  defp finish_callback(conn, {:ok, user}) do
+    conn
+    |> put_flash(:info, gettext("Welcome back!"))
+    |> UserAuth.log_in_user(user, %{}, sso: true)
+  end
+
+  defp finish_callback(conn, {:two_factor_required, user, link}) do
+    conn
+    |> TwoFactorPending.put_sso_link(user, link)
+    |> redirect(to: ~p"/users/two-factor")
+  end
+
+  defp finish_callback(conn, {:error, {:rate_limited, _retry_after}}), do: rate_limited(conn)
+  defp finish_callback(conn, {:error, _reason}), do: refused(conn)
+
+  defp refused(conn) do
+    conn
+    |> put_flash(
+      :error,
+      gettext(
+        "Single sign-on could not sign you in. Contact your Organization's administrator if this continues."
+      )
+    )
+    |> redirect(to: ~p"/users/log-in")
   end
 
   defp rate_limit(conn), do: RateLimit.check(:sso, ip: conn.remote_ip)

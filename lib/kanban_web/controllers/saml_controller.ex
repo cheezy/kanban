@@ -16,7 +16,10 @@ defmodule KanbanWeb.SAMLController do
       successful sign-in goes through `KanbanWeb.UserAuth.log_in_user/4` with
       `sso: true`, which renews the session, marks it as signed in through
       single sign-on and returns the person to the request's stored local
-      path. Rate limited per IP (`Kanban.RateLimit` surface `:sso`) before
+      path. A sign-in that would link an existing account with two-factor
+      turned on goes to the two-factor challenge first, with the link kept in
+      the pending-login marker (`KanbanWeb.TwoFactorPending.put_sso_link/3`)
+      and the stored path in the session. Rate limited per IP (`Kanban.RateLimit` surface `:sso`) before
       any work; every refusal shows the same message.
     * `GET /org/sso/saml/metadata` — Stride's SP metadata for the signed-in
       org-admin's Organization, as a download. The route's pipeline runs
@@ -32,6 +35,7 @@ defmodule KanbanWeb.SAMLController do
   alias Kanban.SSO
   alias Kanban.SSO.SAML
   alias Kanban.SSO.SAML.Metadata
+  alias KanbanWeb.TwoFactorPending
   alias KanbanWeb.UserAuth
 
   plug :require_org_admin_user when action in [:metadata]
@@ -70,16 +74,28 @@ defmodule KanbanWeb.SAMLController do
   end
 
   defp sign_in(conn, %{"organization_id" => organization_id} = params, binding) do
-    with :ok <- RateLimit.check(:sso, ip: conn.remote_ip),
-         {:ok, user, return_to} <- complete(conn, organization_id, params, binding) do
-      conn
-      |> put_return_to(return_to)
-      |> put_flash(:info, gettext("Welcome back!"))
-      |> UserAuth.log_in_user(user, %{}, sso: true)
-    else
-      {:error, reason} -> refuse(conn, reason)
-    end
+    result =
+      with :ok <- RateLimit.check(:sso, ip: conn.remote_ip),
+           do: complete(conn, organization_id, params, binding)
+
+    respond(conn, result)
   end
+
+  defp respond(conn, {:ok, user, return_to}) do
+    conn
+    |> put_return_to(return_to)
+    |> put_flash(:info, gettext("Welcome back!"))
+    |> UserAuth.log_in_user(user, %{}, sso: true)
+  end
+
+  defp respond(conn, {:two_factor_required, user, link, return_to}) do
+    conn
+    |> put_return_to(return_to)
+    |> TwoFactorPending.put_sso_link(user, link)
+    |> redirect(to: ~p"/users/two-factor")
+  end
+
+  defp respond(conn, {:error, reason}), do: refuse(conn, reason)
 
   defp complete(conn, organization_id, params, binding),
     do: SSO.complete_saml_login(organization_id, params, binding: binding, ip: conn.remote_ip)

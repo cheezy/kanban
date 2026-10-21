@@ -50,6 +50,11 @@ code. Only after a code is accepted does Stride create the session.
   creating new codes under **Settings → Two-factor**.
 - If the account is disabled, or two-factor is turned off, while a sign-in is
   pending, the code is refused and the person starts again.
+- Single sign-on asks for the code too, once: the first time an
+  Organization's identity provider would link an account that has two-factor
+  on, Stride asks for its code (or a recovery code) before making the link.
+  Later single sign-on sign-ins do not ask. See
+  [Single Sign-On](single-sign-on.md#which-account).
 - Re-authenticating for sensitive settings (the same sign-in page, reached
   from **Settings**) asks for the second factor too. Changing the password
   from Settings, which already needed a recent sign-in, does not ask again.

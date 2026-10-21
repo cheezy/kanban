@@ -135,6 +135,15 @@ is compared case-insensitively and without trailing dots, so
   one. An account whose email was never confirmed is confirmed, its password
   is removed and its sessions are ended, because whoever created it never
   proved they own the address. This is recorded as `sso_account_linked`.
+- **An existing account with two-factor turned on** is not linked straight
+  away. Stride sends the person to **Two-factor authentication**
+  (`/users/two-factor`) and asks for the code from the account's authenticator
+  app, or a recovery code, once; nothing is linked or recorded until a code is
+  accepted. The account is then read again and linked under the same rules,
+  and the person is signed in through single sign-on. Later single sign-on
+  sign-ins find the linked identity and do not ask again. Without this, an
+  identity provider could sign in to an account protected by a second factor
+  it never checked. See [Two-factor and single sign-on](#two-factor-and-single-sign-on).
 
 Single sign-on only ever makes someone a **member**. It never makes anyone an
 org-admin, and it never changes the role of an existing org-admin.
@@ -255,6 +264,17 @@ is still a member of that Organization. A password sign-in never sets it,
 and removes it from a session that had it. See
 [Requiring two-factor](organization-security-policies.md#requiring-two-factor).
 
+The first time single sign-on would link an existing account that has its own
+two-factor turned on, the account's code is asked for once before the link is
+made (see [Which account](#which-account)). Between the two steps the session
+holds the same pending-sign-in marker as a password sign-in, which also
+carries the connection's id and the identity provider's subject; it is
+accepted for five minutes, never remembers the device, and the challenge's
+attempt limits apply. `Kanban.SSO.TwoFactorLink` makes the link once the code
+is accepted and records `sso_login`, or `sso_login_refused` with the reason;
+a refused link sends the person back to the log-in page with the usual single
+sign-on message.
+
 ## Paid access and rate limits
 
 Single sign-on is a paid feature (`:sso`). The org-admin page and every sign-in
@@ -297,6 +317,7 @@ a minute by default).
 | `Kanban.SSO.OIDC` | Discovery, the token request and ID token validation, through `oidcc`. |
 | `Kanban.SSO.OIDCLogin` | The sign-in flow: start and callback. |
 | `Kanban.SSO.Provisioning` | Which account, and its membership. |
+| `Kanban.SSO.TwoFactorLink` | Links an account with two-factor on once its code is accepted. |
 | `Kanban.SSO.SAML` | SAML response validation and the AuthnRequest, through `simple_saml`. |
 | `Kanban.SSO.SAML.XML` | Hardened XML reading for SAML responses and metadata. |
 | `Kanban.SSO.SAML.Metadata` | IdP metadata, certificates and Stride's SP metadata. |

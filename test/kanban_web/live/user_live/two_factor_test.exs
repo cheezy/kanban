@@ -45,6 +45,22 @@ defmodule KanbanWeb.UserLive.TwoFactorTest do
       assert has_element?(lv, ~s(a[href="/users/log-in"]))
     end
 
+    test "says so when single sign-on is linking the account for the first time",
+         %{conn: conn, user: user} do
+      {:ok, lv, _html} = conn |> pending(user) |> live(~p"/users/two-factor")
+      refute has_element?(lv, "#two-factor-sso-hint")
+
+      marker =
+        user.id
+        |> TwoFactorPending.new(false)
+        |> Map.put("sso", %{"connection_id" => 1, "subject" => "abc"})
+
+      {:ok, lv, _html} =
+        conn |> init_test_session(two_factor_pending: marker) |> live(~p"/users/two-factor")
+
+      assert has_element?(lv, "#two-factor-sso-hint", "Confirm it's you this once")
+    end
+
     test "mounting again has no side effects", %{conn: conn, user: user} do
       conn = pending(conn, user)
 

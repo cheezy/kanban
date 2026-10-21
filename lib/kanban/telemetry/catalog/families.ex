@@ -115,7 +115,7 @@ defmodule Kanban.Telemetry.Catalog.Families do
     {:sso_user_provisioned, [:user_id, :organization_id, :sso_connection_id],
      "Single sign-on created an account and an Organization membership for a new user. user_id is the new account."},
     {:sso_account_linked, [:user_id, :organization_id, :sso_connection_id],
-     "Single sign-on linked an existing account to its identity provider and made it an Organization member if it was not one."},
+     "Single sign-on linked an existing account to its identity provider and made it an Organization member if it was not one. An account with two-factor turned on is linked only after its code is accepted."},
     {:organization_domain_verified, [:user_id, :organization_id, :domain],
      "An org-admin verified an email domain for their Organization through its DNS TXT record. user_id is the org-admin."},
     {:sso_connection_updated,

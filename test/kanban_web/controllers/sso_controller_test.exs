@@ -15,6 +15,7 @@ defmodule KanbanWeb.SSOControllerTest do
   alias Kanban.Organizations.SecurityPolicies
   alias Kanban.Organizations.SecurityPolicy
   alias Kanban.Repo
+  alias KanbanWeb.TwoFactorPending
   alias KanbanWeb.UserAuth.OrganizationTwoFactorGate
 
   @refused "Single sign-on could not sign you in."
@@ -333,6 +334,73 @@ defmodule KanbanWeb.SSOControllerTest do
       # The same overdue member signed in with a password is redirected.
       password_conn = build_conn() |> log_in_user(user) |> get(~p"/boards")
       assert redirected_to(password_conn) == OrganizationTwoFactorGate.redirect_path()
+    end
+  end
+
+  describe "an existing account with two-factor on" do
+    setup ctx do
+      user = user_fixture(%{email: "pat@#{ctx.domain}"})
+      %{user: user, totp: Kanban.TwoFactorHelpers.enroll(user)}
+    end
+
+    defp verify(conn, code) do
+      post(recycle(conn), ~p"/users/two-factor", %{
+        "two_factor" => %{"code" => code, "mode" => "totp"}
+      })
+    end
+
+    test "is asked for its code once, before the first link", %{conn: conn} = ctx do
+      {conn, _query} = sign_in(conn, ctx, sub: "first-link")
+
+      assert redirected_to(conn) == ~p"/users/two-factor"
+      refute get_session(conn, :user_token)
+
+      assert {:ok, %{user_id: id, sso_link: %{subject: "first-link"}}} =
+               TwoFactorPending.get(conn)
+
+      assert id == ctx.user.id
+      refute Organizations.member?(ctx.user, ctx.organization.id)
+      assert AuditLog.list_events(action: "sso_login") == []
+
+      conn = verify(conn, Kanban.TwoFactorHelpers.code(ctx.totp.secret, 1))
+
+      assert redirected_to(conn) == ~p"/boards"
+      assert get_session(conn, :user_token)
+
+      assert get_session(conn, OrganizationTwoFactorGate.sso_session_key()) ==
+               ctx.organization.id
+
+      assert TwoFactorPending.get(conn) == {:error, :expired}
+      assert Organizations.member?(ctx.user, ctx.organization.id)
+      assert [_login] = AuditLog.list_events(action: "sso_login")
+
+      {conn, _query} = sign_in(build_conn(), ctx, sub: "first-link")
+      assert redirected_to(conn) == ~p"/boards"
+    end
+
+    test "a wrong code links nothing", %{conn: conn} = ctx do
+      {conn, _query} = sign_in(conn, ctx, sub: "first-link")
+      conn = verify(conn, "000000")
+
+      assert redirected_to(conn) == ~p"/users/two-factor"
+      refute get_session(conn, :user_token)
+      refute Organizations.member?(ctx.user, ctx.organization.id)
+      assert AuditLog.list_events(action: "sso_account_linked") == []
+    end
+
+    test "a link refused after the code sends the person back to log in", %{conn: conn} = ctx do
+      {conn, _query} = sign_in(conn, ctx, sub: "first-link")
+      organization_member_fixture(organization_fixture(), ctx.user)
+
+      conn = verify(conn, Kanban.TwoFactorHelpers.code(ctx.totp.secret, 1))
+
+      assert redirected_to(conn) == ~p"/users/log-in"
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ @refused
+      refute get_session(conn, :user_token)
+      assert TwoFactorPending.get(conn) == {:error, :expired}
+
+      assert [event] = AuditLog.list_events(action: "sso_login_refused")
+      assert event.metadata["reason"] == "membership_conflict"
     end
   end
 

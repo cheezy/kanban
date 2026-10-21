@@ -14,6 +14,7 @@ defmodule KanbanWeb.SAMLControllerTest do
   alias Kanban.Repo
   alias Kanban.SAMLTestHelpers
   alias Kanban.SSO.SAML.Request
+  alias KanbanWeb.TwoFactorPending
   alias KanbanWeb.UserAuth.OrganizationTwoFactorGate
 
   @refused "Single sign-on could not sign you in."
@@ -448,6 +449,49 @@ defmodule KanbanWeb.SAMLControllerTest do
   # Organization member, provisioning makes the user a member before the
   # gate runs, and the metadata route needs an org-admin. These tests pin the
   # gate's wiring with enforcement on: a member passes it on both routes.
+  describe "an existing account with two-factor on" do
+    test "is asked for its code before the first link, then returns to the stored path",
+         ctx do
+      user = user_fixture(%{email: "pat@#{ctx.domain}"})
+      totp = Kanban.TwoFactorHelpers.enroll(user)
+
+      conn = Plug.Test.init_test_session(build_conn(), %{user_return_to: "/boards/42"})
+      {start_conn, relay, request_id, _location} = start(conn, ctx.domain)
+
+      response =
+        SAMLTestHelpers.response(ctx.idp,
+          organization_id: ctx.organization.id,
+          request_id: request_id,
+          email: user.email
+        )
+
+      %{value: relay_cookie} = start_conn.resp_cookies["_kanban_saml_relay"]
+      acs_conn = put_req_cookie(build_conn(), "_kanban_saml_relay", relay_cookie)
+
+      conn =
+        acs(ctx.organization.id, %{"SAMLResponse" => response, "RelayState" => relay}, acs_conn)
+
+      assert redirected_to(conn) == ~p"/users/two-factor"
+      refute get_session(conn, :user_token)
+      assert {:ok, %{sso_link: %{connection_id: id}}} = TwoFactorPending.get(conn)
+      assert id == ctx.connection.id
+      refute Organizations.member?(user, ctx.organization.id)
+
+      conn =
+        post(recycle(conn), ~p"/users/two-factor", %{
+          "two_factor" => %{"code" => Kanban.TwoFactorHelpers.code(totp.secret, 1)}
+        })
+
+      assert redirected_to(conn) == "/boards/42"
+
+      assert get_session(conn, OrganizationTwoFactorGate.sso_session_key()) ==
+               ctx.organization.id
+
+      assert [event] = AuditLog.list_events(action: "sso_login")
+      assert event.metadata["protocol"] == "saml"
+    end
+  end
+
   describe "with paid plans enforced" do
     setup :enforce_plans
 

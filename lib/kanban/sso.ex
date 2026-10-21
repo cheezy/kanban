@@ -51,6 +51,7 @@ defmodule Kanban.SSO do
   alias Kanban.SSO.OrganizationDomain
   alias Kanban.SSO.SAMLLogin
   alias Kanban.SSO.SSOConnection
+  alias Kanban.SSO.TwoFactorLink
   alias Kanban.SSO.UserIdentity
   alias Kanban.Webhooks.UrlGuard
 
@@ -440,4 +441,5 @@ defmodule Kanban.SSO do
   defdelegate complete_oidc_login(flow, params, opts), to: OIDCLogin, as: :complete
   defdelegate begin_saml_login(domain, return_to), to: SAMLLogin, as: :begin
   defdelegate complete_saml_login(organization_id, params, opts), to: SAMLLogin, as: :complete
+  defdelegate complete_two_factor_link(user, link, opts), to: TwoFactorLink, as: :complete
 end

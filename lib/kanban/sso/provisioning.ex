@@ -29,7 +29,14 @@ defmodule Kanban.SSO.Provisioning do
        `:member` membership if it has none (an org-admin keeps their role) and
        the identity, unless SCIM deprovisioned it (`:scim_deprovisioned`). An account whose email was never confirmed is first
        confirmed, its password removed and its tokens deleted, because
-       whoever registered it may not own the address.
+       whoever registered it may not own the address. An account with
+       two-factor turned on is not linked yet: `provision/2` returns
+       `{:two_factor_required, user}` and writes nothing, and the caller asks
+       for a code from the account's authenticator app (or a recovery code)
+       before `link_after_two_factor/3` links it. Signing in through the
+       identity provider is then enough, so the code is asked for once, before
+       the first link (decided 2026-10-21): otherwise the identity provider
+       would sign in as an account protected by a second factor it never saw.
 
   A user who belongs to another Organization is refused with
   `:membership_conflict`, and nothing is written: Organizations never move a
@@ -42,7 +49,8 @@ defmodule Kanban.SSO.Provisioning do
 
   Records `:sso_user_provisioned` or `:sso_account_linked` once the
   transaction commits. Refusals are audited by the caller
-  (`Kanban.SSO.OIDCLogin`), which knows the request context.
+  (`Kanban.SSO.OIDCLogin`, `Kanban.SSO.SAMLLogin`,
+  `Kanban.SSO.TwoFactorLink`), which knows the request context.
   """
 
   import Ecto.Query, warn: false
@@ -71,9 +79,13 @@ defmodule Kanban.SSO.Provisioning do
 
   @doc """
   Decides the account for a sign-in through `connection` with the validated
-  id_token `claims`. Returns `{:ok, user, outcome}` or `{:error, refusal}`.
+  id_token `claims`. Returns `{:ok, user, outcome}`, `{:error, refusal}`, or
+  `{:two_factor_required, user}` when the sign-in would link an existing
+  account that has two-factor turned on (nothing is written; see
+  `link_after_two_factor/3`).
   """
-  @spec provision(SSOConnection.t(), map()) :: {:ok, User.t(), outcome()} | {:error, refusal()}
+  @spec provision(SSOConnection.t(), map()) ::
+          {:ok, User.t(), outcome()} | {:error, refusal()} | {:two_factor_required, User.t()}
   def provision(%SSOConnection{} = connection, claims) when is_map(claims) do
     case claims["sub"] do
       subject when is_binary(subject) and subject != "" ->
@@ -85,6 +97,37 @@ defmodule Kanban.SSO.Provisioning do
   end
 
   def provision(%SSOConnection{}, _claims), do: {:error, :invalid_claims}
+
+  @doc """
+  Links the account with `user_id` to the identity `subject` of `connection`
+  once the person has passed that account's two-factor challenge, after
+  `provision/2` returned `{:two_factor_required, user}`. The account is read
+  again, so one disabled, made a site admin or moved to an email off the
+  Organization's verified domains in the meantime is refused, and the link
+  itself has the same rules as any other (`:scim_deprovisioned`,
+  `:membership_conflict`; an identity linked in the meantime is
+  `:invalid_claims`). Returns `{:ok, user, :linked}` or `{:error, refusal}`.
+  """
+  @spec link_after_two_factor(SSOConnection.t(), String.t(), integer()) ::
+          {:ok, User.t(), :linked} | {:error, refusal()}
+  def link_after_two_factor(%SSOConnection{} = connection, subject, user_id)
+      when is_binary(subject) and subject != "" and is_integer(user_id) do
+    case Accounts.get_user(user_id) do
+      nil -> {:error, :invalid_claims}
+      %User{disabled_at: %DateTime{}} -> {:error, :user_disabled}
+      %User{type: :admin} -> {:error, :site_admin}
+      %User{} = user -> link_verified(connection, subject, user)
+    end
+  end
+
+  def link_after_two_factor(%SSOConnection{}, _subject, _user_id), do: {:error, :invalid_claims}
+
+  defp link_verified(connection, subject, user) do
+    with {:ok, _email} <-
+           user.email |> normalized_email() |> on_verified_domain(connection.organization_id) do
+      link_existing(connection, subject, user)
+    end
+  end
 
   defp find_identity(connection, subject) do
     from(i in UserIdentity,
@@ -217,7 +260,7 @@ defmodule Kanban.SSO.Provisioning do
         nil -> provision_new(connection, subject, email, claims)
         %User{disabled_at: %DateTime{}} -> {:error, :user_disabled}
         %User{type: :admin} -> {:error, :site_admin}
-        %User{} = user -> link_existing(connection, subject, user)
+        %User{} = user -> link_or_challenge(connection, subject, user)
       end
     end
   end
@@ -273,8 +316,23 @@ defmodule Kanban.SSO.Provisioning do
     case Accounts.get_user_by_email(email) do
       %User{disabled_at: %DateTime{}} -> {:error, :user_disabled}
       %User{type: :admin} -> {:error, :site_admin}
-      %User{} = user -> link_existing(connection, subject, user)
+      %User{} = user -> link_or_challenge(connection, subject, user)
       nil -> {:error, :invalid_claims}
+    end
+  end
+
+  # A deprovisioned account is refused before any challenge, so the person is
+  # not asked for a code only to be turned away.
+  defp link_or_challenge(connection, subject, user) do
+    cond do
+      not_scim_deprovisioned(connection.organization_id, user) != :ok ->
+        {:error, :scim_deprovisioned}
+
+      Accounts.two_factor_enabled?(user) ->
+        {:two_factor_required, user}
+
+      true ->
+        link_existing(connection, subject, user)
     end
   end
 

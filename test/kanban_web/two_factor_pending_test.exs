@@ -46,6 +46,38 @@ defmodule KanbanWeb.TwoFactorPendingTest do
     end
   end
 
+  describe "put_sso_link/3" do
+    test "stores the link with the user id and never remembers the device", %{conn: conn} do
+      user = user_fixture()
+
+      conn =
+        conn
+        |> init_test_session(user_return_to: "/boards/1")
+        |> TwoFactorPending.put_sso_link(user, %{connection_id: 3, subject: "abc"})
+
+      assert {:ok, %{user_id: id, remember_me: false, sso_link: link}} =
+               TwoFactorPending.get(conn)
+
+      assert id == user.id
+      assert link == %{connection_id: 3, subject: "abc"}
+      assert get_session(conn, :user_return_to) == "/boards/1"
+    end
+
+    test "a malformed link refuses the whole marker" do
+      for sso <- [
+            %{},
+            "link",
+            %{"connection_id" => "3", "subject" => "abc"},
+            %{"connection_id" => 3, "subject" => ""},
+            %{"connection_id" => 3, "subject" => 7}
+          ] do
+        marker = 42 |> TwoFactorPending.new(false, 5_000) |> Map.put("sso", sso)
+
+        assert TwoFactorPending.fetch(marker, 5_000) == {:error, :expired}
+      end
+    end
+  end
+
   describe "from_session/2" do
     test "reads the marker from a string-keyed LiveView session" do
       session = %{"two_factor_pending" => TwoFactorPending.new(42, true, 5_000)}

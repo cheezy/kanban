@@ -23,7 +23,11 @@ defmodule Kanban.SSO.SAMLLogin do
   use is refused as `:assertion_replayed` and audited as
   `:saml_assertion_replayed`) and marks the request consumed. Only then are
   the NameID and email handed to `Kanban.SSO.Provisioning` (the same rules as
-  OIDC) and the paid gate checked.
+  OIDC) and the paid gate checked. A sign-in that would link an existing
+  account with two-factor turned on returns
+  `{:two_factor_required, user, link, return_to}` instead, with nothing
+  written or recorded beyond the consumed request and assertion ID; the
+  controller asks for that account's code first (`Kanban.SSO.TwoFactorLink`).
 
   Every refusal is recorded as `:sso_login_refused` with a reason and
   `protocol: :saml`, and every success as `:sso_login`. The person is always
@@ -43,6 +47,7 @@ defmodule Kanban.SSO.SAMLLogin do
   alias Kanban.SSO.SAML
   alias Kanban.SSO.SAML.AssertionID
   alias Kanban.SSO.SAML.Request
+  alias Kanban.SSO.TwoFactorLink
 
   @request_ttl_seconds 600
   @max_relay_token_bytes 128
@@ -85,10 +90,13 @@ defmodule Kanban.SSO.SAMLLogin do
   cookie), which must match the posted one so a response cannot be replayed
   into somebody else's browser (login CSRF), and `:ip` (recorded in the audit
   log only). Returns `{:ok, user, return_to}`
-  (`return_to` is a local path or `nil`) or `{:error, reason}`.
+  (`return_to` is a local path or `nil`),
+  `{:two_factor_required, user, link, return_to}` or `{:error, reason}`.
   """
   @spec complete(term(), map(), keyword()) ::
-          {:ok, User.t(), String.t() | nil} | {:error, atom()}
+          {:ok, User.t(), String.t() | nil}
+          | {:two_factor_required, User.t(), TwoFactorLink.link(), String.t() | nil}
+          | {:error, atom()}
   def complete(organization_id, params, opts) when is_map(params) and is_list(opts) do
     case fetch_connection(organization_id) do
       {:ok, connection} ->
@@ -127,9 +135,16 @@ defmodule Kanban.SSO.SAMLLogin do
   end
 
   defp provision(connection, result, request) do
-    with {:ok, user, _outcome} <- Provisioning.provision(connection, claims(result)),
-         :ok <- paid_access(user) do
-      {:ok, user, local_path(request.return_to)}
+    case Provisioning.provision(connection, claims(result)) do
+      {:ok, user, _outcome} ->
+        with :ok <- paid_access(user), do: {:ok, user, local_path(request.return_to)}
+
+      {:two_factor_required, user} ->
+        {:two_factor_required, user, TwoFactorLink.link(connection, result.subject),
+         local_path(request.return_to)}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -223,6 +238,10 @@ defmodule Kanban.SSO.SAMLLogin do
 
   # The audit calls name their action literally so the telemetry source scan
   # (test/kanban/telemetry/emit_sites_test.exs) finds them.
+  # Nothing is linked before the challenge, so there is nothing to record.
+  defp audit({:two_factor_required, _user, _link, _return_to} = pending, _connection, _opts),
+    do: pending
+
   defp audit({:ok, user, return_to}, connection, opts) do
     AuditLog.event(:sso_login,
       user_id: user.id,

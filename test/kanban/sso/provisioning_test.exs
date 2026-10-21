@@ -253,6 +253,98 @@ defmodule Kanban.SSO.ProvisioningTest do
     end
   end
 
+  describe "an existing account with two-factor on" do
+    setup ctx do
+      user = user_fixture(%{email: "pat@#{ctx.domain}"})
+      Kanban.TwoFactorHelpers.enroll(user)
+      %{user: user, claims: claims(ctx.domain, %{"email" => user.email})}
+    end
+
+    test "is not linked before its code: provision asks for it and writes nothing", ctx do
+      assert {:two_factor_required, %User{id: id}} =
+               Provisioning.provision(ctx.connection, ctx.claims)
+
+      assert id == ctx.user.id
+      assert identities(ctx.user) == []
+      refute Organizations.member?(ctx.user, ctx.organization.id)
+      assert AuditLog.list_events(action: "sso_account_linked") == []
+    end
+
+    test "a SCIM-deprovisioned account is refused without asking for a code", ctx do
+      organization_member_fixture(ctx.organization, ctx.user)
+      scim_deprovision(ctx.organization, ctx.user)
+
+      assert {:error, :scim_deprovisioned} = Provisioning.provision(ctx.connection, ctx.claims)
+    end
+
+    test "is linked once the code was accepted, and later sign-ins are not asked again",
+         ctx do
+      subject = ctx.claims["sub"]
+
+      assert {:ok, linked, :linked} =
+               Provisioning.link_after_two_factor(ctx.connection, subject, ctx.user.id)
+
+      assert linked.id == ctx.user.id
+      assert Organizations.member?(ctx.user, ctx.organization.id)
+      assert [%UserIdentity{subject: ^subject}] = identities(ctx.user)
+      assert [_event] = AuditLog.list_events(action: "sso_account_linked")
+
+      assert {:ok, again, :existing_identity} =
+               Provisioning.provision(ctx.connection, ctx.claims)
+
+      assert again.id == ctx.user.id
+    end
+
+    test "a second link for the same subject is refused", ctx do
+      subject = ctx.claims["sub"]
+
+      assert {:ok, _user, :linked} =
+               Provisioning.link_after_two_factor(ctx.connection, subject, ctx.user.id)
+
+      assert {:error, :invalid_claims} =
+               Provisioning.link_after_two_factor(ctx.connection, subject, ctx.user.id)
+    end
+
+    test "re-reads the account: disabled, site admin, moved off the domain or gone", ctx do
+      subject = ctx.claims["sub"]
+
+      assert {:error, :invalid_claims} =
+               Provisioning.link_after_two_factor(ctx.connection, subject, -1)
+
+      assert {:error, :invalid_claims} =
+               Provisioning.link_after_two_factor(ctx.connection, "", ctx.user.id)
+
+      {:ok, moved} =
+        ctx.user |> Ecto.Changeset.change(email: "pat@elsewhere.example") |> Repo.update()
+
+      assert {:error, :domain_not_verified} =
+               Provisioning.link_after_two_factor(ctx.connection, subject, moved.id)
+
+      admin = admin_fixture(%{email: "boss@#{ctx.domain}"})
+
+      assert {:error, :site_admin} =
+               Provisioning.link_after_two_factor(ctx.connection, subject, admin.id)
+
+      disabled = user_fixture(%{email: "gone@#{ctx.domain}"})
+      disabled |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
+
+      assert {:error, :user_disabled} =
+               Provisioning.link_after_two_factor(ctx.connection, subject, disabled.id)
+
+      assert identities(ctx.user) == []
+    end
+
+    test "an identity linked before two-factor was turned on is not asked", ctx do
+      other = user_fixture(%{email: "lee@#{ctx.domain}"})
+      claims = claims(ctx.domain, %{"email" => other.email})
+      assert {:ok, _user, :linked} = Provisioning.provision(ctx.connection, claims)
+
+      Kanban.TwoFactorHelpers.enroll(other)
+
+      assert {:ok, _user, :existing_identity} = Provisioning.provision(ctx.connection, claims)
+    end
+  end
+
   describe "a known identity" do
     setup ctx do
       user = user_fixture(%{email: "known@#{ctx.domain}"})

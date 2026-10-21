@@ -5656,7 +5656,7 @@ msgstr "Log de auditoria para reordenação de colunas"
 
 #: lib/kanban_web/live/user_live/forgot_password.ex:18
 #: lib/kanban_web/live/user_live/reset_password.ex:19
-#: lib/kanban_web/live/user_live/two_factor.ex:32
+#: lib/kanban_web/live/user_live/two_factor.ex:34
 #, elixir-autogen, elixir-format
 msgid "Back to sign in"
 msgstr "Voltar para o login"
@@ -7150,7 +7150,7 @@ msgstr "Seu conteúdo"
 msgid "Your use of the service is subject to our "
 msgstr "O seu uso do serviço está sujeito à nossa "
 
-#: lib/kanban_web/controllers/user_session_controller.ex:77
+#: lib/kanban_web/controllers/user_session_controller.ex:78
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "Você deve confirmar sua conta antes de entrar. Verifique seu e-mail para encontrar o link de confirmação."
@@ -8058,9 +8058,9 @@ msgstr "Últimos 90 dias"
 msgid "New column"
 msgstr "Nova coluna"
 
-#: lib/kanban_web/controllers/saml_controller.ex:89
-#: lib/kanban_web/controllers/sso_controller.ex:114
-#: lib/kanban_web/controllers/user_session_controller.ex:281
+#: lib/kanban_web/controllers/saml_controller.ex:100
+#: lib/kanban_web/controllers/sso_controller.ex:124
+#: lib/kanban_web/controllers/user_session_controller.ex:312
 #: lib/kanban_web/live/user_live/two_factor_component.ex:410
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
@@ -9854,7 +9854,7 @@ msgstr "Escaneie este código QR com seu app autenticador ou digite a chave manu
 msgid "Set up two-factor authentication"
 msgstr "Configurar a autenticação em dois fatores"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:262
+#: lib/kanban_web/controllers/user_session_controller.ex:293
 #: lib/kanban_web/live/user_live/two_factor_component.ex:403
 #, elixir-autogen, elixir-format
 msgid "That code is not valid. Check it and try again."
@@ -9874,7 +9874,7 @@ msgstr "Dois fatores"
 
 #: lib/kanban_web/live/org_live/security.html.heex:35
 #: lib/kanban_web/live/user_live/settings.ex:160
-#: lib/kanban_web/live/user_live/two_factor.ex:38
+#: lib/kanban_web/live/user_live/two_factor.ex:40
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication"
 msgstr "Autenticação em dois fatores"
@@ -9901,56 +9901,56 @@ msgstr "Verificar e ativar"
 msgid "authenticator app"
 msgstr "app autenticador"
 
-#: lib/kanban_web/live/user_live/two_factor.ex:138
+#: lib/kanban_web/live/user_live/two_factor.ex:152
 #, elixir-autogen, elixir-format
 msgid "Authentication code"
 msgstr "Código de autenticação"
 
-#: lib/kanban_web/live/user_live/two_factor.ex:135
+#: lib/kanban_web/live/user_live/two_factor.ex:149
 #, elixir-autogen, elixir-format
 msgid "Enter one of the recovery codes you saved when you turned on two-factor."
 msgstr "Digite um dos códigos de recuperação que você salvou ao ativar a autenticação de dois fatores."
 
-#: lib/kanban_web/live/user_live/two_factor.ex:132
+#: lib/kanban_web/live/user_live/two_factor.ex:146
 #, elixir-autogen, elixir-format
 msgid "Enter the 6-digit code from your authenticator app."
 msgstr "Digite o código de 6 dígitos do seu app autenticador."
 
-#: lib/kanban_web/live/user_live/two_factor.ex:139
+#: lib/kanban_web/live/user_live/two_factor.ex:153
 #, elixir-autogen, elixir-format
 msgid "Recovery code"
 msgstr "Código de recuperação"
 
-#: lib/kanban_web/live/user_live/two_factor.ex:141
+#: lib/kanban_web/live/user_live/two_factor.ex:155
 #, elixir-autogen, elixir-format
 msgid "Use a recovery code instead"
 msgstr "Usar um código de recuperação"
 
-#: lib/kanban_web/live/user_live/two_factor.ex:142
+#: lib/kanban_web/live/user_live/two_factor.ex:156
 #, elixir-autogen, elixir-format
 msgid "Use your authenticator app instead"
 msgstr "Usar o app autenticador"
 
 #: lib/kanban_web/live/org_live/sso.html.heex:82
-#: lib/kanban_web/live/user_live/two_factor.ex:77
+#: lib/kanban_web/live/user_live/two_factor.ex:88
 #, elixir-autogen, elixir-format
 msgid "Verify"
 msgstr "Verificar"
 
-#: lib/kanban_web/controllers/saml_controller.ex:77
-#: lib/kanban_web/controllers/sso_controller.ex:92
-#: lib/kanban_web/controllers/user_session_controller.ex:241
+#: lib/kanban_web/controllers/saml_controller.ex:81
+#: lib/kanban_web/controllers/sso_controller.ex:97
+#: lib/kanban_web/controllers/user_session_controller.ex:272
 #, elixir-autogen, elixir-format
 msgid "Welcome back!"
 msgstr "Bem-vindo de volta!"
 
-#: lib/kanban_web/controllers/user_session_controller.ex:244
+#: lib/kanban_web/controllers/user_session_controller.ex:275
 #, elixir-autogen, elixir-format
 msgid "Welcome back! You signed in with a recovery code, which can't be used again. Create new recovery codes in Settings → Two-factor."
 msgstr "Bem-vindo de volta! Você entrou com um código de recuperação, que não pode ser usado novamente. Crie novos códigos de recuperação em Configurações → Dois fatores."
 
-#: lib/kanban_web/controllers/user_session_controller.ex:277
-#: lib/kanban_web/live/user_live/two_factor.ex:104
+#: lib/kanban_web/controllers/user_session_controller.ex:308
+#: lib/kanban_web/live/user_live/two_factor.ex:118
 #, elixir-autogen, elixir-format
 msgid "Your sign-in attempt expired. Please sign in again."
 msgstr "Sua tentativa de entrar expirou. Entre novamente."
@@ -12003,7 +12003,7 @@ msgstr "Você é o último administrador do site. Torne outro usuário administr
 msgid "You own %{board}, which other people use."
 msgstr "Você é proprietário de %{board}, que outras pessoas usam."
 
-#: lib/kanban_web/controllers/user_session_controller.ex:325
+#: lib/kanban_web/controllers/user_session_controller.ex:356
 #, elixir-autogen, elixir-format
 msgid "Your account has been deleted."
 msgstr "Sua conta foi excluída."
@@ -12024,8 +12024,8 @@ msgstr "Conta excluída pelo próprio titular"
 msgid "Deleting your account signs you out everywhere and removes your API tokens, your memberships and the boards in your personal workspace that only you use. Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and the tasks and comments you added there are kept without your name. This cannot be undone."
 msgstr "Excluir sua conta encerra sua sessão em todos os lugares e remove seus tokens de API, suas associações e os quadros do seu espaço de trabalho pessoal que só você usa. Os quadros que outras pessoas ainda usam ficam com elas, os quadros do espaço de trabalho de uma Organização ficam com a Organização, e as tarefas e comentários que você adicionou neles são mantidos sem o seu nome. Isso não pode ser desfeito."
 
-#: lib/kanban_web/controllers/user_session_controller.ex:324
-#: lib/kanban_web/controllers/user_session_controller.ex:334
+#: lib/kanban_web/controllers/user_session_controller.ex:355
+#: lib/kanban_web/controllers/user_session_controller.ex:365
 #, elixir-autogen, elixir-format
 msgid "Logged out successfully."
 msgstr "Sessão encerrada com sucesso."
@@ -12443,13 +12443,14 @@ msgstr "Login único"
 msgid "Single sign-on connection saved."
 msgstr "Conexão de login único salva."
 
-#: lib/kanban_web/controllers/saml_controller.ex:97
-#: lib/kanban_web/controllers/sso_controller.ex:102
+#: lib/kanban_web/controllers/saml_controller.ex:108
+#: lib/kanban_web/controllers/sso_controller.ex:112
+#: lib/kanban_web/controllers/user_session_controller.ex:255
 #, elixir-autogen, elixir-format
 msgid "Single sign-on could not sign you in. Contact your Organization's administrator if this continues."
 msgstr "O login único não conseguiu fazer seu login. Se isso continuar, fale com o administrador da sua organização."
 
-#: lib/kanban_web/controllers/sso_controller.ex:79
+#: lib/kanban_web/controllers/sso_controller.ex:84
 #, elixir-autogen, elixir-format
 msgid "Single sign-on is not available for that email address."
 msgstr "O login único não está disponível para esse e-mail."
@@ -12625,7 +12626,7 @@ msgstr "Certificados de assinatura (PEM)"
 msgid "Single sign-on URL"
 msgstr "URL de login único"
 
-#: lib/kanban_web/controllers/saml_controller.ex:122
+#: lib/kanban_web/controllers/saml_controller.ex:133
 #, elixir-autogen, elixir-format
 msgid "Single sign-on needs a paid plan."
 msgstr "O login único exige um plano pago."
@@ -12790,7 +12791,12 @@ msgctxt "audit action"
 msgid "User provisioned by SCIM"
 msgstr "Usuário provisionado por SCIM"
 
-#: lib/kanban_web/controllers/sso_controller.ex:51
+#: lib/kanban_web/controllers/sso_controller.ex:56
 #, elixir-autogen, elixir-format
 msgid "Enter your work email to continue with single sign-on."
 msgstr "Digite seu e-mail de trabalho para continuar com o login único."
+
+#: lib/kanban_web/live/user_live/two_factor.ex:50
+#, elixir-autogen, elixir-format
+msgid "Single sign-on is being connected to this account. Confirm it's you this once; later single sign-on sign-ins won't ask."
+msgstr "O login único está sendo conectado a esta conta. Confirme que é você só desta vez; os próximos logins únicos não vão pedir isso."

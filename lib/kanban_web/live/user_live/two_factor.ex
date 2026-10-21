@@ -8,6 +8,8 @@ defmodule KanbanWeb.UserLive.TwoFactor do
   app, or a recovery code, and submits it to `POST /users/two-factor`
   (`UserSessionController.verify_two_factor/2`), which logs the user in.
   Mounting has no side effects, so a refresh or a second tab only re-renders.
+  When single sign-on stored the marker because it is linking the account for
+  the first time, the page says so, and that it asks only this once.
   """
 
   use KanbanWeb, :live_view
@@ -39,6 +41,15 @@ defmodule KanbanWeb.UserLive.TwoFactor do
         </h1>
         <p id="two-factor-hint" style="margin: 8px 0 0; font-size: 13.5px; color: var(--ink-3);">
           {hint(@mode)}
+        </p>
+        <p
+          :if={@sso_link?}
+          id="two-factor-sso-hint"
+          style="margin: 8px 0 0; font-size: 13.5px; color: var(--ink-3);"
+        >
+          {gettext(
+            "Single sign-on is being connected to this account. Confirm it's you this once; later single sign-on sign-ins won't ask."
+          )}
         </p>
       </div>
 
@@ -95,8 +106,11 @@ defmodule KanbanWeb.UserLive.TwoFactor do
   @impl true
   def mount(params, session, socket) do
     case TwoFactorPending.from_session(session) do
-      {:ok, _pending} ->
-        {:ok, socket |> assign(trigger_submit: false) |> assign_mode(mode_param(params))}
+      {:ok, pending} ->
+        {:ok,
+         socket
+         |> assign(trigger_submit: false, sso_link?: Map.has_key?(pending, :sso_link))
+         |> assign_mode(mode_param(params))}
 
       {:error, :expired} ->
         {:ok,
