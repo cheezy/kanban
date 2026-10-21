@@ -164,7 +164,7 @@ msgstr "パスワード"
 #: lib/kanban_web/live/board_live/webhook_form.ex:78
 #: lib/kanban_web/live/board_live/webhook_form.ex:182
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
-#: lib/kanban_web/live/org_live/console.html.heex:266
+#: lib/kanban_web/live/org_live/console.html.heex:270
 #: lib/kanban_web/live/org_live/security.html.heex:100
 #: lib/kanban_web/live/org_live/sso.html.heex:216
 #: lib/kanban_web/live/org_live/sso.html.heex:317
@@ -213,7 +213,7 @@ msgstr "ボードが正常に更新されました"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:254
 #: lib/kanban_web/live/board_live/settings_form_component.ex:172
 #: lib/kanban_web/live/board_live/webhook_form.ex:178
-#: lib/kanban_web/live/org_live/console.html.heex:276
+#: lib/kanban_web/live/org_live/console.html.heex:280
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
@@ -254,7 +254,7 @@ msgstr "ボード用の列を作成して開始しましょう。"
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:110
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
-#: lib/kanban_web/live/org_live/console.html.heex:64
+#: lib/kanban_web/live/org_live/console.html.heex:68
 #: lib/kanban_web/live/target_live/form.html.heex:29
 #: lib/kanban_web/live/user_live/settings.ex:38
 #, elixir-autogen, elixir-format
@@ -676,7 +676,7 @@ msgstr "読み取り専用"
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:135
 #: lib/kanban_web/live/board_live/form.html.heex:353
 #: lib/kanban_web/live/board_live/members_form_component.ex:308
-#: lib/kanban_web/live/org_live/console.html.heex:180
+#: lib/kanban_web/live/org_live/console.html.heex:184
 #: lib/kanban_web/live/org_live/sso.html.heex:92
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:52
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:103
@@ -1681,6 +1681,7 @@ msgstr "このトークンを取り消してもよろしいですか?"
 #: lib/kanban_web/live/board_live/show.html.heex:644
 #: lib/kanban_web/live/board_live/show.html.heex:674
 #: lib/kanban_web/live/board_live/webhook_views.ex:82
+#: lib/kanban_web/live/org_live/scim.html.heex:72
 #: lib/kanban_web/live/user_live/confirmation.ex:63
 #: lib/kanban_web/live/user_live/confirmation.ex:89
 #: lib/kanban_web/live/user_live/confirmation.ex:367
@@ -1691,7 +1692,8 @@ msgid "Copy"
 msgstr "コピー"
 
 #: lib/kanban_web/live/board_live/show.html.heex:794
-#: lib/kanban_web/live/org_live/console.html.heex:219
+#: lib/kanban_web/live/org_live/console.html.heex:223
+#: lib/kanban_web/live/org_live/scim.html.heex:146
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:64
 #, elixir-autogen, elixir-format
 msgid "Creating..."
@@ -1761,6 +1763,7 @@ msgid "PubSub Broadcasts"
 msgstr "PubSubブロードキャスト"
 
 #: lib/kanban_web/live/board_live/show.html.heex:896
+#: lib/kanban_web/live/org_live/scim.html.heex:206
 #: lib/kanban_web/live/workspace_live/invitations_card.ex:129
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:125
 #, elixir-autogen, elixir-format
@@ -1833,6 +1836,7 @@ msgstr "topic:event"
 
 #: lib/kanban_web/live/board_live/show.html.heex:681
 #: lib/kanban_web/live/board_live/webhook_views.ex:105
+#: lib/kanban_web/live/org_live/scim.html.heex:94
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:209
 #, elixir-autogen, elixir-format
 msgid "Dismiss"
@@ -1840,6 +1844,7 @@ msgstr "閉じる"
 
 #: lib/kanban_web/live/board_live/show.html.heex:645
 #: lib/kanban_web/live/board_live/webhook_views.ex:89
+#: lib/kanban_web/live/org_live/scim.html.heex:79
 #: lib/kanban_web/live/user_live/confirmation.ex:64
 #: lib/kanban_web/live/user_live/confirmation.ex:368
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:194
@@ -4475,7 +4480,7 @@ msgstr "エージェントはこの列からプルします。ここのタスク
 #: lib/kanban_web/components/board_tabs.ex:128
 #: lib/kanban_web/components/bulk_action_bar.ex:259
 #: lib/kanban_web/live/archive_live/index.html.heex:9
-#: lib/kanban_web/live/org_live/console.html.heex:310
+#: lib/kanban_web/live/org_live/console.html.heex:314
 #, elixir-autogen, elixir-format
 msgid "Archive"
 msgstr "アーカイブ"
@@ -4513,7 +4518,7 @@ msgstr "進行中の作業。フックは前後に実行され、アクティビ
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
 #: lib/kanban_web/live/org_live/console.ex:391
-#: lib/kanban_web/live/org_live/console.html.heex:127
+#: lib/kanban_web/live/org_live/console.html.heex:131
 #: lib/kanban_web/live/workspace_live/settings.ex:471
 #: lib/kanban_web/live/workspace_live/settings.html.heex:47
 #, elixir-autogen, elixir-format
@@ -4779,7 +4784,7 @@ msgstr "閉じる"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:251
 #: lib/kanban_web/live/board_live/settings_form_component.ex:184
 #: lib/kanban_web/live/board_live/webhook_form.ex:189
-#: lib/kanban_web/live/org_live/console.html.heex:268
+#: lib/kanban_web/live/org_live/console.html.heex:272
 #: lib/kanban_web/live/task_live/components/comment_row.ex:140
 #: lib/kanban_web/live/workspace_live/settings.html.heex:119
 #, elixir-autogen, elixir-format
@@ -4865,6 +4870,7 @@ msgstr "カンマ区切り。有効な値: api_design, code_generation, code_rev
 
 #: lib/kanban_web/live/board_live/show.html.heex:627
 #: lib/kanban_web/live/board_live/webhook_views.ex:54
+#: lib/kanban_web/live/org_live/scim.html.heex:45
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:157
 #, elixir-autogen, elixir-format
 msgid "Copy it now — you won't be able to see it again."
@@ -4896,6 +4902,7 @@ msgid "Token created"
 msgstr "トークンを作成しました"
 
 #: lib/kanban_web/live/board_live/show.html.heex:709
+#: lib/kanban_web/live/org_live/scim.html.heex:136
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:46
 #, elixir-autogen, elixir-format
 msgid "Token name"
@@ -6611,7 +6618,7 @@ msgstr "エージェントがタスクを完了するためのコードを書き
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #: lib/kanban_web/live/org_live/audit_log.html.heex:75
 #: lib/kanban_web/live/org_live/console.ex:390
-#: lib/kanban_web/live/org_live/console.html.heex:59
+#: lib/kanban_web/live/org_live/console.html.heex:63
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr "詳細"
@@ -8014,7 +8021,7 @@ msgstr "過去90日間"
 msgid "New column"
 msgstr "新しい列"
 
-#: lib/kanban_web/controllers/saml_controller.ex:78
+#: lib/kanban_web/controllers/saml_controller.ex:89
 #: lib/kanban_web/controllers/sso_controller.ex:94
 #: lib/kanban_web/controllers/user_session_controller.ex:281
 #: lib/kanban_web/live/user_live/two_factor_component.ex:410
@@ -9889,7 +9896,7 @@ msgstr "代わりに認証アプリを使う"
 msgid "Verify"
 msgstr "確認"
 
-#: lib/kanban_web/controllers/saml_controller.ex:71
+#: lib/kanban_web/controllers/saml_controller.ex:77
 #: lib/kanban_web/controllers/sso_controller.ex:72
 #: lib/kanban_web/controllers/user_session_controller.ex:241
 #, elixir-autogen, elixir-format
@@ -10583,7 +10590,7 @@ msgstr "コピーできませんでした。シークレットを選択して手
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:73
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:37
-#: lib/kanban_web/live/org_live/console.html.heex:73
+#: lib/kanban_web/live/org_live/console.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Address"
 msgstr "住所"
@@ -10611,28 +10618,28 @@ msgstr "市区町村"
 
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:26
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:48
-#: lib/kanban_web/live/org_live/console.html.heex:85
+#: lib/kanban_web/live/org_live/console.html.heex:89
 #, elixir-autogen, elixir-format
 msgid "City and country"
 msgstr "市区町村と国"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:94
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:60
-#: lib/kanban_web/live/org_live/console.html.heex:103
+#: lib/kanban_web/live/org_live/console.html.heex:107
 #, elixir-autogen, elixir-format
 msgid "Contact email"
 msgstr "連絡先メールアドレス"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:92
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:54
-#: lib/kanban_web/live/org_live/console.html.heex:94
+#: lib/kanban_web/live/org_live/console.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "Contact name"
 msgstr "連絡先の氏名"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:93
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:69
-#: lib/kanban_web/live/org_live/console.html.heex:112
+#: lib/kanban_web/live/org_live/console.html.heex:116
 #, elixir-autogen, elixir-format
 msgid "Contact phone"
 msgstr "連絡先の電話番号"
@@ -10825,19 +10832,20 @@ msgstr "組織にほかのメンバーがいる間は、最後の組織管理者
 msgid "Organization"
 msgstr "組織"
 
-#: lib/kanban_web/live/org_live/console.html.heex:35
-#: lib/kanban_web/live/org_live/console.html.heex:41
+#: lib/kanban_web/live/org_live/console.html.heex:39
+#: lib/kanban_web/live/org_live/console.html.heex:45
 #, elixir-autogen, elixir-format
 msgid "Organization sections"
 msgstr "組織のセクション"
 
-#: lib/kanban_web/live/org_live/console.html.heex:60
+#: lib/kanban_web/live/org_live/console.html.heex:64
 #, elixir-autogen, elixir-format
 msgid "Read-only. Ask a site admin to change them."
 msgstr "読み取り専用です。変更はサイト管理者に依頼してください。"
 
 #: lib/kanban_web/live/org_live/console.ex:66
 #: lib/kanban_web/live/org_live/console.ex:306
+#: lib/kanban_web/live/org_live/scim.ex:130
 #: lib/kanban_web/live/org_live/security.ex:103
 #: lib/kanban_web/live/org_live/sso.ex:219
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
@@ -10855,12 +10863,13 @@ msgstr "名前 · 住所 · 連絡先"
 msgid "names · roles"
 msgstr "名前 · 役割"
 
-#: lib/kanban_web/live/org_live/console.html.heex:28
+#: lib/kanban_web/live/org_live/console.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Audit log"
 msgstr "監査ログ"
 
 #: lib/kanban_web/live/org_live/audit_log.html.heex:4
+#: lib/kanban_web/live/org_live/scim.html.heex:9
 #: lib/kanban_web/live/org_live/security.html.heex:9
 #: lib/kanban_web/live/org_live/sso.html.heex:9
 #, elixir-autogen, elixir-format
@@ -10893,22 +10902,22 @@ msgstr "組織の管理者"
 msgid "Outside your Organization"
 msgstr "組織外のユーザー"
 
-#: lib/kanban_web/live/org_live/console.html.heex:307
+#: lib/kanban_web/live/org_live/console.html.heex:311
 #, elixir-autogen, elixir-format
 msgid "Archive the workspace %{name}?"
 msgstr "ワークスペース「%{name}」をアーカイブしますか？"
 
-#: lib/kanban_web/live/org_live/console.html.heex:221
+#: lib/kanban_web/live/org_live/console.html.heex:225
 #, elixir-autogen, elixir-format
 msgid "Create workspace"
 msgstr "ワークスペースを作成"
 
-#: lib/kanban_web/live/org_live/console.html.heex:208
+#: lib/kanban_web/live/org_live/console.html.heex:212
 #, elixir-autogen, elixir-format
 msgid "New workspace name"
 msgstr "新しいワークスペース名"
 
-#: lib/kanban_web/live/org_live/console.html.heex:300
+#: lib/kanban_web/live/org_live/console.html.heex:304
 #, elixir-autogen, elixir-format
 msgid "Rename"
 msgstr "名前を変更"
@@ -10923,7 +10932,7 @@ msgstr "ワークスペースを変更できませんでした。もう一度お
 msgid "This workspace still holds boards. Move them out before archiving it."
 msgstr "このワークスペースにはまだボードがあります。アーカイブする前にボードを移動してください。"
 
-#: lib/kanban_web/live/org_live/console.html.heex:193
+#: lib/kanban_web/live/org_live/console.html.heex:197
 #, elixir-autogen, elixir-format
 msgid "Where your Organization's boards live. A workspace can be archived once it holds no boards."
 msgstr "組織のボードを置く場所です。ボードがなくなったワークスペースはアーカイブできます。"
@@ -10938,7 +10947,7 @@ msgstr "ワークスペースをアーカイブしました。"
 msgid "Workspace created."
 msgstr "ワークスペースを作成しました。"
 
-#: lib/kanban_web/live/org_live/console.html.heex:255
+#: lib/kanban_web/live/org_live/console.html.heex:259
 #, elixir-autogen, elixir-format
 msgid "Workspace name"
 msgstr "ワークスペース名"
@@ -10955,12 +10964,12 @@ msgstr "ワークスペースの名前を変更しました。"
 
 #: lib/kanban_web/components/locked_feature.ex:139
 #: lib/kanban_web/live/org_live/console.ex:392
-#: lib/kanban_web/live/org_live/console.html.heex:191
+#: lib/kanban_web/live/org_live/console.html.heex:195
 #, elixir-autogen, elixir-format
 msgid "Workspaces"
 msgstr "ワークスペース"
 
-#: lib/kanban_web/live/org_live/console.html.heex:230
+#: lib/kanban_web/live/org_live/console.html.heex:234
 #, elixir-autogen, elixir-format
 msgid "Your Organization has no workspaces yet."
 msgstr "組織にはまだワークスペースがありません。"
@@ -11288,7 +11297,7 @@ msgstr "ワークスペースを選択"
 msgid "Every board in this workspace."
 msgstr "このワークスペースのすべてのボード。"
 
-#: lib/kanban_web/live/org_live/console.html.heex:129
+#: lib/kanban_web/live/org_live/console.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Everyone in your Organization, org-admins first. Removing a member also removes them from every workspace and its boards."
 msgstr "組織のメンバー全員（組織管理者が先頭）。メンバーを削除すると、すべてのワークスペースとそのボードからも削除されます。"
@@ -11383,7 +11392,7 @@ msgstr "個人ボード"
 msgid "Read-only. Only an org-admin manages members."
 msgstr "閲覧のみ。メンバーを管理できるのは組織管理者だけです。"
 
-#: lib/kanban_web/live/org_live/console.html.heex:174
+#: lib/kanban_web/live/org_live/console.html.heex:178
 #, elixir-autogen, elixir-format
 msgid "Remove this member from the Organization? They lose their board memberships and API tokens in every workspace of the Organization."
 msgstr "このメンバーを組織から削除しますか？組織のすべてのワークスペースでボードのメンバーシップと API トークンを失います。"
@@ -11731,6 +11740,7 @@ msgstr "トークンは、取り消されたとき、有効期限が切れたと
 msgid "API tokens · create · revoke"
 msgstr "APIトークン · 作成 · 取り消し"
 
+#: lib/kanban_web/live/org_live/scim.html.heex:191
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:238
 #, elixir-autogen, elixir-format
 msgid "Active"
@@ -11746,6 +11756,7 @@ msgstr "エージェントの機能(カンマ区切り、任意)"
 msgid "By %{creator} · created %{created} · last used %{used} · expires %{expires}"
 msgstr "作成者 %{creator} · 作成日 %{created} · 最終使用 %{used} · 有効期限 %{expires}"
 
+#: lib/kanban_web/live/org_live/scim.html.heex:86
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:201
 #, elixir-autogen, elixir-format
 msgid "Couldn't copy it. Select the token and copy it yourself."
@@ -11756,6 +11767,7 @@ msgstr "コピーできませんでした。トークンを選択して手動で
 msgid "Create a workspace token"
 msgstr "ワークスペーストークンを作成"
 
+#: lib/kanban_web/live/org_live/scim.html.heex:148
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:66
 #, elixir-autogen, elixir-format
 msgid "Create token"
@@ -11776,6 +11788,7 @@ msgstr "このワークスペースのすべてのボードで使える1つの�
 msgid "Revoke this token? Agents using it lose access immediately."
 msgstr "このトークンを取り消しますか?使用中のエージェントはすぐにアクセスできなくなります。"
 
+#: lib/kanban_web/live/org_live/scim.html.heex:191
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:239
 #, elixir-autogen, elixir-format
 msgid "Revoked"
@@ -11816,6 +11829,7 @@ msgstr "ワークスペーストークン"
 msgid "Your new workspace token"
 msgstr "新しいワークスペーストークン"
 
+#: lib/kanban_web/live/org_live/scim.ex:149
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:235
 #, elixir-autogen, elixir-format
 msgid "never"
@@ -12383,7 +12397,7 @@ msgstr "シングルサインオン"
 msgid "Single sign-on connection saved."
 msgstr "シングルサインオンの接続を保存しました。"
 
-#: lib/kanban_web/controllers/saml_controller.ex:86
+#: lib/kanban_web/controllers/saml_controller.ex:97
 #: lib/kanban_web/controllers/sso_controller.ex:82
 #, elixir-autogen, elixir-format
 msgid "Single sign-on could not sign you in. Contact your Organization's administrator if this continues."
@@ -12454,7 +12468,7 @@ msgstr "はすでに組織に追加されています"
 msgid "must be a domain such as example.com"
 msgstr "example.com のようなドメインである必要があります"
 
-#: lib/kanban/sso/sso_connection.ex:204
+#: lib/kanban/sso/sso_connection.ex:211
 #, elixir-autogen, elixir-format
 msgid "must be an https URL such as https://login.example.com"
 msgstr "https://login.example.com のような https URL である必要があります"
@@ -12565,7 +12579,7 @@ msgstr "署名証明書（PEM）"
 msgid "Single sign-on URL"
 msgstr "シングルサインオンURL"
 
-#: lib/kanban_web/controllers/saml_controller.ex:109
+#: lib/kanban_web/controllers/saml_controller.ex:122
 #, elixir-autogen, elixir-format
 msgid "Single sign-on needs a paid plan."
 msgstr "シングルサインオンには有料プランが必要です。"
@@ -12580,37 +12594,37 @@ msgstr "Strideが受け付けるのは、Strideが開始したサインインに
 msgid "Stride entity ID"
 msgstr "StrideのエンティティID"
 
-#: lib/kanban/sso/sso_connection.ex:133
+#: lib/kanban/sso/sso_connection.ex:139
 #, elixir-autogen, elixir-format
 msgid "has no RSA signing certificate Stride can use"
 msgstr "Strideが使用できるRSA署名証明書がありません"
 
-#: lib/kanban/sso/sso_connection.ex:130
+#: lib/kanban/sso/sso_connection.ex:136
 #, elixir-autogen, elixir-format
 msgid "has no single sign-on service with the HTTP-Redirect binding"
 msgstr "HTTP-Redirectバインディングのシングルサインオンサービスがありません"
 
-#: lib/kanban/sso/sso_connection.ex:135
+#: lib/kanban/sso/sso_connection.ex:141
 #, elixir-autogen, elixir-format
 msgid "is not valid identity provider metadata"
 msgstr "有効なIDプロバイダーのメタデータではありません"
 
-#: lib/kanban/sso/sso_connection.ex:127
+#: lib/kanban/sso/sso_connection.ex:133
 #, elixir-autogen, elixir-format
 msgid "is too large"
 msgstr "大きすぎます"
 
-#: lib/kanban/sso/sso_connection.ex:140
+#: lib/kanban/sso/sso_connection.ex:146
 #, elixir-autogen, elixir-format
 msgid "must be an https URL such as https://login.example.com/saml"
 msgstr "https://login.example.com/saml のようなhttps URLである必要があります"
 
-#: lib/kanban/sso/sso_connection.ex:155
+#: lib/kanban/sso/sso_connection.ex:169
 #, elixir-autogen, elixir-format
 msgid "must be one or two RSA certificates in PEM format"
 msgstr "PEM形式のRSA証明書を1つまたは2つ指定する必要があります"
 
-#: lib/kanban/sso/sso_connection.ex:84
+#: lib/kanban/sso/sso_connection.ex:93
 #, elixir-autogen, elixir-format
 msgid "must not contain spaces"
 msgstr "スペースを含めることはできません"
@@ -12620,3 +12634,112 @@ msgstr "スペースを含めることはできません"
 msgctxt "audit action"
 msgid "Replayed SAML sign-in refused"
 msgstr "再送されたSAMLサインインを拒否"
+
+#: lib/kanban_web/live/org_live/scim.html.heex:120
+#, elixir-autogen, elixir-format
+msgid "A SCIM token can add, change and remove the people in your Organization and their workspace memberships. Give it only to your identity provider, and revoke it if it leaks."
+msgstr "SCIM トークンは、組織内のユーザーとそのワークスペースのメンバーシップを追加、変更、削除できます。ID プロバイダーにのみ渡し、漏えいした場合は取り消してください。"
+
+#: lib/kanban_web/live/org_live/scim.html.heex:157
+#, elixir-autogen, elixir-format
+msgid "A revoked token stops working at once and cannot be restored."
+msgstr "取り消したトークンは直ちに使用できなくなり、復元できません。"
+
+#: lib/kanban_web/live/org_live/scim.ex:136
+#, elixir-autogen, elixir-format
+msgid "By %{creator} · created %{created} · last used %{used}"
+msgstr "作成者 %{creator} · 作成日 %{created} · 最終使用 %{used}"
+
+#: lib/kanban_web/live/org_live/scim.html.heex:118
+#, elixir-autogen, elixir-format
+msgid "Create a SCIM token"
+msgstr "SCIM トークンを作成"
+
+#: lib/kanban_web/live/org_live/scim.html.heex:105
+#, elixir-autogen, elixir-format
+msgid "Enter this URL and a token below in your identity provider's SCIM provisioning settings. People it creates must have an email address on one of your verified domains."
+msgstr "この URL と下で作成したトークンを ID プロバイダーの SCIM プロビジョニング設定に入力してください。作成されるユーザーは、検証済みドメインのいずれかのメールアドレスを持っている必要があります。"
+
+#: lib/kanban_web/live/org_live/scim.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Let your identity provider add people to %{name}, keep their workspace memberships in step with its groups, and remove their access the moment it deprovisions them."
+msgstr "ID プロバイダーが %{name} にユーザーを追加し、ワークスペースのメンバーシップをそのグループと同期させ、プロビジョニングを解除した時点でアクセスを削除できるようにします。"
+
+#: lib/kanban_web/live/org_live/scim.html.heex:165
+#, elixir-autogen, elixir-format
+msgid "No SCIM tokens yet."
+msgstr "SCIM トークンはまだありません。"
+
+#: lib/kanban_web/live/org_live/scim.html.heex:201
+#, elixir-autogen, elixir-format
+msgid "Revoke this token? Your identity provider can no longer provision people until you give it a new one."
+msgstr "このトークンを取り消しますか？新しいトークンを渡すまで、ID プロバイダーはユーザーをプロビジョニングできなくなります。"
+
+#: lib/kanban_web/live/org_live/scim.html.heex:103
+#, elixir-autogen, elixir-format
+msgid "SCIM base URL"
+msgstr "SCIM ベース URL"
+
+#: lib/kanban_web/live/org_live/console.html.heex:28
+#: lib/kanban_web/live/org_live/scim.ex:37
+#: lib/kanban_web/live/org_live/scim.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "SCIM provisioning"
+msgstr "SCIM プロビジョニング"
+
+#: lib/kanban_web/live/org_live/scim.html.heex:156
+#, elixir-autogen, elixir-format
+msgid "SCIM tokens"
+msgstr "SCIM トークン"
+
+#: lib/kanban_web/live/org_live/scim.ex:83
+#, elixir-autogen, elixir-format
+msgid "Token revoked."
+msgstr "トークンを取り消しました。"
+
+#: lib/kanban_web/live/org_live/scim.html.heex:42
+#, elixir-autogen, elixir-format
+msgid "Your new SCIM token"
+msgstr "新しい SCIM トークン"
+
+#: lib/kanban_web/components/audit_log_actions.ex:142
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Group members changed by SCIM"
+msgstr "SCIM によりグループのメンバーを変更"
+
+#: lib/kanban_web/components/audit_log_actions.ex:129
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "SCIM token created"
+msgstr "SCIM トークンを作成"
+
+#: lib/kanban_web/components/audit_log_actions.ex:131
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "SCIM token rejected"
+msgstr "SCIM トークンを拒否"
+
+#: lib/kanban_web/components/audit_log_actions.ex:130
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "SCIM token revoked"
+msgstr "SCIM トークンを取り消し"
+
+#: lib/kanban_web/components/audit_log_actions.ex:136
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "User changed by SCIM"
+msgstr "SCIM によりユーザーを変更"
+
+#: lib/kanban_web/components/audit_log_actions.ex:139
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "User deprovisioned by SCIM"
+msgstr "SCIM によりユーザーのプロビジョニングを解除"
+
+#: lib/kanban_web/components/audit_log_actions.ex:134
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "User provisioned by SCIM"
+msgstr "SCIM によりユーザーをプロビジョニング"

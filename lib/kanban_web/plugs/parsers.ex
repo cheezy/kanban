@@ -22,6 +22,9 @@ defmodule KanbanWeb.Plugs.Parsers do
   before, and an unrouted `/api` path still renders its HTML 404. Non-`/api`
   paths are passed straight to `Plug.Parsers` and never get the pin.
 
+  `/scim` paths get the same treatment with the `scim` format, so their
+  errors render as SCIM errors (`KanbanWeb.SCIM.ErrorJSON`, W2247).
+
   One exception (W2231): a malformed JSON body on `POST /api/mcp` is not
   raised but flagged, so the MCP endpoint can answer it with a JSON-RPC
   `-32700` after authentication — see `parse_api/2`.
@@ -38,6 +41,18 @@ defmodule KanbanWeb.Plugs.Parsers do
     kind, reason ->
       conn
       |> Phoenix.Controller.put_format("json")
+      |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
+  end
+
+  # SCIM (W2247): a parse failure on /scim renders through
+  # KanbanWeb.SCIM.ErrorJSON as an application/scim+json SCIM error, which is
+  # what an identity provider expects; the pin works as for /api above.
+  def call(%Plug.Conn{path_info: ["scim" | _]} = conn, opts) do
+    Plug.Parsers.call(conn, opts)
+  catch
+    kind, reason ->
+      conn
+      |> Phoenix.Controller.put_format("scim")
       |> Plug.Conn.WrapperError.reraise(kind, reason, __STACKTRACE__)
   end
 

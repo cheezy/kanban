@@ -378,6 +378,22 @@ defmodule Kanban.Workspaces.MembershipCascadeTest do
     end
   end
 
+  describe "MembershipCascade.broadcast_removed/1 (W2247)" do
+    test "tells every board in the result that its members changed" do
+      [first, second] = for _ <- 1..2, do: board_fixture(user_fixture())
+      Enum.each([first, second], &Phoenix.PubSub.subscribe(Kanban.PubSub, "board:#{&1.id}"))
+
+      assert MembershipCascade.broadcast_removed([{first, nil, 0}, {second, nil, 1}]) == :ok
+
+      for board <- [first, second] do
+        board_id = board.id
+        assert_receive {Kanban.Boards, :members_changed, ^board_id}
+      end
+
+      assert MembershipCascade.broadcast_removed([]) == :ok
+    end
+  end
+
   describe "MembershipCascade.notify_derived_access_ended/2" do
     test "tells only the boards whose write access was derived", ctx do
       derived = user_fixture() |> board_fixture() |> put_in_workspace(ctx.workspace)

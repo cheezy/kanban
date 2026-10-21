@@ -126,5 +126,20 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("saml_assertion_replayed"),
     do: pgettext("audit action", "Replayed SAML sign-in refused")
 
+  def action_label("scim_token_created"), do: pgettext("audit action", "SCIM token created")
+  def action_label("scim_token_revoked"), do: pgettext("audit action", "SCIM token revoked")
+  def action_label("scim_auth_failed"), do: pgettext("audit action", "SCIM token rejected")
+
+  def action_label("scim_user_provisioned"),
+    do: pgettext("audit action", "User provisioned by SCIM")
+
+  def action_label("scim_user_updated"), do: pgettext("audit action", "User changed by SCIM")
+
+  def action_label("scim_user_deprovisioned"),
+    do: pgettext("audit action", "User deprovisioned by SCIM")
+
+  def action_label("scim_group_updated"),
+    do: pgettext("audit action", "Group members changed by SCIM")
+
   def action_label(action) when is_binary(action), do: action
 end

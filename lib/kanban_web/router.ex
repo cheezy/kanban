@@ -72,6 +72,39 @@ defmodule KanbanWeb.Router do
     plug KanbanWeb.Plugs.ApiTelemetry
   end
 
+  # SCIM 2.0 provisioning (W2247). No :accepts: identity providers vary their
+  # Accept header, and every response is application/scim+json. The scim
+  # format renders raised errors through KanbanWeb.SCIM.ErrorJSON.
+  pipeline :scim do
+    plug :put_format, "scim"
+    plug KanbanWeb.Plugs.RemoteClientIp
+    plug KanbanWeb.Plugs.AuthenticateScimToken
+  end
+
+  scope "/scim/v2", KanbanWeb.SCIM do
+    pipe_through :scim
+
+    get "/ServiceProviderConfig", DiscoveryController, :service_provider_config
+    get "/ResourceTypes", DiscoveryController, :resource_types
+    get "/ResourceTypes/:id", DiscoveryController, :resource_type
+    get "/Schemas", DiscoveryController, :schemas
+    get "/Schemas/:id", DiscoveryController, :schema
+
+    get "/Users", UserController, :index
+    post "/Users", UserController, :create
+    get "/Users/:id", UserController, :show
+    put "/Users/:id", UserController, :update
+    patch "/Users/:id", UserController, :patch
+    delete "/Users/:id", UserController, :delete
+
+    get "/Groups", GroupController, :index
+    get "/Groups/:id", GroupController, :show
+    patch "/Groups/:id", GroupController, :patch
+    post "/Groups", GroupController, :unsupported
+    put "/Groups/:id", GroupController, :unsupported
+    delete "/Groups/:id", GroupController, :unsupported
+  end
+
   scope "/", KanbanWeb do
     pipe_through :browser
 
@@ -371,6 +404,10 @@ defmodule KanbanWeb.Router do
       # OIDC connection. OrgLive.SSO re-declares the same gate and re-checks
       # the role and paid access on every event.
       live "/org/sso", OrgLive.SSO, :index
+      # The org-admin SCIM token page (W2247); OrgLive.SCIM re-declares the
+      # same gate and re-checks the role on every event that changes or
+      # validates a token.
+      live "/org/scim", OrgLive.SCIM, :index
       # Workspace settings for the current workspace; the LiveView checks paid
       # access and reach on mount and re-checks the org-admin role on every
       # event.

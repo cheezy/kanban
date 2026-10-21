@@ -30,6 +30,7 @@ defmodule Kanban.Organizations.MembershipWrites do
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Organizations.OrganizationTelemetry
   alias Kanban.Repo
+  alias Kanban.SCIM.UserLink
   alias Kanban.Workspaces.InvitationRevocation
   alias Kanban.Workspaces.MembershipCascade
 
@@ -210,7 +211,14 @@ defmodule Kanban.Organizations.MembershipWrites do
 
   # A user whose row is gone passes here; the insert's foreign key refuses it.
   defp ensure_enabled(%User{id: user_id}) do
-    disabled_query = from(u in User, where: u.id == ^user_id, select: not is_nil(u.disabled_at))
+    # Locks the user row, as SCIM deprovisioning does, so a join and a
+    # deprovisioning of the same user never interleave (W2247).
+    disabled_query =
+      from(u in User,
+        where: u.id == ^user_id,
+        select: not is_nil(u.disabled_at),
+        lock: "FOR UPDATE"
+      )
 
     case Repo.one(disabled_query) do
       true -> {:error, :user_disabled}
@@ -261,8 +269,14 @@ defmodule Kanban.Organizations.MembershipWrites do
     |> OrganizationMember.changeset(user_id, role)
     |> Repo.insert()
     |> case do
-      {:ok, membership} -> {:ok, {:created, membership}}
-      {:error, changeset} -> {:error, membership_error(changeset)}
+      {:ok, membership} ->
+        # A member of an Organization again: no Organization's SCIM link
+        # reaches them once this membership ends some other way (W2247).
+        :ok = UserLink.clear_deprovisioned_for_user(user_id)
+        {:ok, {:created, membership}}
+
+      {:error, changeset} ->
+        {:error, membership_error(changeset)}
     end
   end
 

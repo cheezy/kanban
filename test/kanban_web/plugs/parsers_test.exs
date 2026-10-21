@@ -35,6 +35,30 @@ defmodule KanbanWeb.Plugs.ParsersTest do
     assert Phoenix.Controller.get_format(error.conn) == "json"
   end
 
+  test "a /scim malformed JSON body keeps its status and gets the scim format (W2247)" do
+    conn =
+      :post
+      |> conn("/scim/v2/Users", "{not json")
+      |> Plug.Conn.put_req_header("content-type", "application/scim+json")
+
+    error = assert_raise Plug.Conn.WrapperError, fn -> Parsers.call(conn, @opts) end
+
+    assert %Plug.Parsers.ParseError{} = error.reason
+    assert Plug.Exception.status(error.reason) == 400
+    assert Phoenix.Controller.get_format(error.conn) == "scim"
+  end
+
+  test "a /scim+json body that parses cleanly is read as JSON (W2247)" do
+    conn =
+      :post
+      |> conn("/scim/v2/Users", ~s({"userName":"a@b.c"}))
+      |> Plug.Conn.put_req_header("content-type", "application/scim+json")
+      |> Parsers.call(@opts)
+
+    assert conn.body_params == %{"userName" => "a@b.c"}
+    refute Map.has_key?(conn.private, :phoenix_format)
+  end
+
   test "a non-/api parse failure is raised as-is, without a format" do
     conn = conn(:get, "/about?a=%FF")
 

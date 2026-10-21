@@ -2,9 +2,10 @@ defmodule Kanban.SSO.Provisioning do
   @moduledoc """
   Just-in-time accounts and Organization membership for single sign-on.
 
-  Shared by every sign-in protocol (OIDC now; SAML in W2246 and SCIM in W2247
-  later), so it takes a connection and the identity provider's claims, already
-  validated, and decides who signs in:
+  Shared by every sign-in protocol (OIDC, and SAML since W2246), so it takes a
+  connection and the identity provider's claims, already validated, and
+  decides who signs in (SCIM provisioning, W2247, has its own entry point,
+  `provision_scim/2`, with the same domain and membership rules):
 
     1. **Known identity.** An identity row for the connection, its issuer and
        the `sub` claim decides the account; the email claim is ignored, so an
@@ -83,6 +84,92 @@ defmodule Kanban.SSO.Provisioning do
     |> Repo.one()
   end
 
+  @doc """
+  Provisions the account a SCIM client asks for (W2247) in the Organization
+  with `organization_id`, from the already-mapped `%{email: ..., name: ...}`
+  of the User resource.
+
+  SCIM is the identity provider's own provisioning channel, so there is no
+  `email_verified` claim and no identity row; the domain gate is the same as
+  for single sign-on: the email's domain must be verified by the
+  Organization. Then:
+
+    * no account has that email: a confirmed, passwordless account is
+      created (with its personal workspace), marked as managed by the
+      Organization, with a `:member` membership, in one transaction
+      (`:provisioned`);
+    * an enabled account has it: it gains a `:member` membership if it has
+      none (an org-admin keeps their role), and an unconfirmed one is
+      secured as for single sign-on (`:linked`). A linked account is not
+      managed by the Organization, so deprovisioning never disables it.
+
+  A disabled account is refused with `:user_disabled`, a user in another
+  Organization with `:membership_conflict`, and nothing is written. Audit
+  events are recorded by the SCIM layer, which knows the token.
+  """
+  @spec provision_scim(integer(), %{email: String.t(), name: String.t() | nil}) ::
+          {:ok, User.t(), :provisioned | :linked}
+          | {:error,
+             :domain_not_verified | :user_disabled | :membership_conflict | :invalid_claims}
+  def provision_scim(organization_id, %{email: email} = attrs) when is_integer(organization_id) do
+    with {:ok, email} <- email |> normalized_email() |> on_verified_domain(organization_id) do
+      email
+      |> Accounts.get_user_by_email()
+      |> provision_scim_user(organization_id, %{email: email, name: attrs[:name]})
+    end
+  end
+
+  defp provision_scim_user(nil, organization_id, attrs), do: scim_new(organization_id, attrs)
+
+  defp provision_scim_user(%User{disabled_at: %DateTime{}}, _organization_id, _attrs),
+    do: {:error, :user_disabled}
+
+  defp provision_scim_user(%User{} = user, organization_id, _attrs),
+    do: scim_link(organization_id, user)
+
+  defp scim_new(organization_id, attrs) do
+    fn -> Repo.transact(fn -> register_managed(organization_id, attrs) end) end
+    |> AfterCommit.after_commit()
+    |> case do
+      {:ok, user} -> {:ok, user, :provisioned}
+      # Another request registered the email first: link that account.
+      {:error, %Ecto.Changeset{}} -> scim_retry_as_existing(organization_id, attrs.email)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp register_managed(organization_id, attrs) do
+    with {:ok, user} <- Accounts.register_sso_user(attrs),
+         {:ok, user} <- user |> User.managed_by_changeset(organization_id) |> Repo.update(),
+         {:ok, _membership} <- add_member(organization_id, user) do
+      {:ok, user}
+    end
+  end
+
+  defp scim_retry_as_existing(organization_id, email) do
+    case Accounts.get_user_by_email(email) do
+      %User{disabled_at: nil} = user -> scim_link(organization_id, user)
+      %User{} -> {:error, :user_disabled}
+      nil -> {:error, :invalid_claims}
+    end
+  end
+
+  defp scim_link(organization_id, %User{} = user) do
+    fn ->
+      Repo.transact(fn ->
+        with {:ok, _membership} <- add_member(organization_id, user) do
+          Accounts.secure_linked_unconfirmed_user(user)
+        end
+      end)
+    end
+    |> AfterCommit.after_commit()
+    |> case do
+      {:ok, user} -> {:ok, user, :linked}
+      {:error, %Ecto.Changeset{}} -> {:error, :invalid_claims}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
   # --- a known identity --------------------------------------------------------
 
   defp provision_for(%UserIdentity{user: %User{disabled_at: %DateTime{}}}, _conn, _sub, _claims),
@@ -111,7 +198,7 @@ defmodule Kanban.SSO.Provisioning do
 
   defp rejoin(identity, connection, claims) do
     with {:ok, _email} <- email_gate(connection, claims),
-         {:ok, _membership} <- add_member(connection, identity.user) do
+         {:ok, _membership} <- add_member(connection.organization_id, identity.user) do
       touch(identity)
       {:ok, identity.user, :existing_identity}
     end
@@ -129,7 +216,7 @@ defmodule Kanban.SSO.Provisioning do
     AfterCommit.after_commit(fn ->
       Repo.transact(fn ->
         with {:ok, user} <- Accounts.register_sso_user(attrs),
-             {:ok, _membership} <- add_member(connection, user),
+             {:ok, _membership} <- add_member(connection.organization_id, user),
              {:ok, _identity} <- insert_identity(user, connection, subject) do
           {:ok, user}
         end
@@ -165,7 +252,7 @@ defmodule Kanban.SSO.Provisioning do
   defp add_member_with_identity(connection, subject, user) do
     AfterCommit.after_commit(fn ->
       Repo.transact(fn ->
-        with {:ok, _membership} <- add_member(connection, user),
+        with {:ok, _membership} <- add_member(connection.organization_id, user),
              {:ok, user} <- Accounts.secure_linked_unconfirmed_user(user),
              {:ok, _identity} <- insert_identity(user, connection, subject) do
           {:ok, user}
@@ -188,20 +275,20 @@ defmodule Kanban.SSO.Provisioning do
     with :ok <- email_verified(claims["email_verified"]) do
       claims["email"]
       |> normalized_email()
-      |> on_verified_domain(connection)
+      |> on_verified_domain(connection.organization_id)
     end
   end
 
-  defp on_verified_domain(email, connection) when is_binary(email) do
+  defp on_verified_domain(email, organization_id) when is_binary(email) do
     with {:ok, domain} <- DomainVerification.email_domain(email),
-         true <- SSO.domain_verified_by?(connection.organization_id, domain) do
+         true <- SSO.domain_verified_by?(organization_id, domain) do
       {:ok, email}
     else
       _domain -> {:error, :domain_not_verified}
     end
   end
 
-  defp on_verified_domain(nil, _connection), do: {:error, :domain_not_verified}
+  defp on_verified_domain(nil, _organization_id), do: {:error, :domain_not_verified}
 
   # Some providers (such as Amazon Cognito) send the boolean as a string.
   defp email_verified(true), do: :ok
@@ -223,8 +310,8 @@ defmodule Kanban.SSO.Provisioning do
   defp name_claim(%{"name" => name}) when is_binary(name), do: String.slice(name, 0, 160)
   defp name_claim(_claims), do: nil
 
-  defp add_member(connection, user) do
-    case Organizations.add_member(connection.organization_id, user, :member) do
+  defp add_member(organization_id, user) do
+    case Organizations.add_member(organization_id, user, :member) do
       {:ok, membership} -> {:ok, membership}
       {:error, :already_in_another_organization} -> {:error, :membership_conflict}
       {:error, :user_disabled} -> {:error, :user_disabled}

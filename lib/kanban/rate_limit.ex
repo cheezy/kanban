@@ -30,6 +30,7 @@ defmodule Kanban.RateLimit do
     * `:account_delete` — 5 min / 5 / —     (identity-only, per attempt)
     * `:api_denied_audit` — 5 min / 1 / —   (identity-only, per audit row)
     * `:sso`       — 1 min  / — / 60        (IP-only, per request)
+    * `:scim`      — 1 min  / 10 / 100      (failure-counted)
 
   `:two_factor` counts every second-factor code attempt per user (`identity:
   "user:<id>"`, no IP) wherever a code is checked, with `check/2` so the
@@ -79,6 +80,13 @@ defmodule Kanban.RateLimit do
   identity: neither request has a trusted one yet. One sign-in uses two
   requests, and the ceiling leaves room for an office behind one NAT.
 
+  `:scim` counts failed SCIM authentications (`KanbanWeb.Plugs.AuthenticateScimToken`)
+  with `peek/2` before the token lookup and `record_failure/2` after a
+  failure. The identity is a short digest of the presented token
+  (`"token:<hex>"`), never the token itself. Identity providers call from
+  shared egress addresses, so the IP ceiling is looser than `:api_token`'s and
+  one tenant retrying a revoked token is stopped by its own key first.
+
   `:api_denied_audit` counts the `permission_denied` audit rows a refused API
   board gate writes (`Kanban.ApiTokens.DeniedAudit`) per token and gate
   (`identity: "token:<id>:<gate>"`, no IP), with `check/2` before the row is
@@ -91,7 +99,8 @@ defmodule Kanban.RateLimit do
       (`:reset`, `:resend`, `:issue`, `:two_factor`, `:org_audit_export`,
       `:invite`, `:account_delete`, `:api_denied_audit`, `:sso`).
     * `peek/2`   — evaluate WITHOUT incrementing; use to block before doing work
-      (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`)
+      (`:login`, `:api_token`, `:two_factor_challenge`, `:two_factor_daily`,
+      `:scim`)
       so a flood cannot force password hashing or DB lookups.
     * `record_failure/2` — increment the failure counter after an authentication
       attempt fails; pair with `peek/2`.
@@ -115,7 +124,8 @@ defmodule Kanban.RateLimit do
     invite: %{scale_ms: 3_600_000, id_limit: 20},
     account_delete: %{scale_ms: 300_000, id_limit: 5},
     api_denied_audit: %{scale_ms: 300_000, id_limit: 1},
-    sso: %{scale_ms: 60_000, ip_limit: 60}
+    sso: %{scale_ms: 60_000, ip_limit: 60},
+    scim: %{scale_ms: 60_000, id_limit: 10, ip_limit: 100}
   }
 
   @type surface ::
@@ -132,6 +142,7 @@ defmodule Kanban.RateLimit do
           | :account_delete
           | :api_denied_audit
           | :sso
+          | :scim
   @type opts :: [ip: term(), identity: String.t() | nil]
   @type result :: :ok | {:error, {:rate_limited, non_neg_integer()}}
 

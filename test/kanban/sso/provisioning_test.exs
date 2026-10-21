@@ -270,4 +270,70 @@ defmodule Kanban.SSO.ProvisioningTest do
       assert {:error, :membership_conflict} = Provisioning.provision(ctx.connection, claims)
     end
   end
+
+  describe "provision_scim/2 (W2247)" do
+    defp scim_email(domain), do: "scim#{System.unique_integer([:positive])}@#{domain}"
+
+    test "creates a confirmed account managed by the Organization, with a member role", ctx do
+      email = scim_email(ctx.domain)
+
+      assert {:ok, user, :provisioned} =
+               Provisioning.provision_scim(ctx.organization.id, %{email: email, name: "Pat"})
+
+      assert user.confirmed_at
+      assert is_nil(user.hashed_password)
+      assert user.managed_by_organization_id == ctx.organization.id
+
+      assert %OrganizationMember{role: :member} =
+               Repo.get_by(OrganizationMember, user_id: user.id)
+
+      assert %Workspace{personal: true} = Kanban.Workspaces.get_personal_workspace(user)
+      assert identities(user) == []
+    end
+
+    test "links an existing account without managing it and keeps an org-admin's role", ctx do
+      member = user_fixture(%{email: scim_email(ctx.domain)})
+
+      assert {:ok, linked, :linked} =
+               Provisioning.provision_scim(ctx.organization.id, %{email: member.email, name: nil})
+
+      assert linked.id == member.id
+      assert is_nil(Repo.reload(member).managed_by_organization_id)
+      assert Organizations.member?(member, ctx.organization.id)
+
+      org_admin = user_fixture(%{email: scim_email(ctx.domain)})
+      organization_member_fixture(ctx.organization, org_admin, :org_admin)
+
+      assert {:ok, _user, :linked} =
+               Provisioning.provision_scim(ctx.organization.id, %{
+                 email: org_admin.email,
+                 name: nil
+               })
+
+      assert Organizations.org_admin?(org_admin, ctx.organization.id)
+    end
+
+    test "refuses an unverified domain, a disabled account and another Organization's member",
+         ctx do
+      assert Provisioning.provision_scim(ctx.organization.id, %{
+               email: "a@unverified.example",
+               name: nil
+             }) ==
+               {:error, :domain_not_verified}
+
+      disabled = user_fixture(%{email: scim_email(ctx.domain)})
+      {:ok, _} = disabled |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update()
+
+      assert Provisioning.provision_scim(ctx.organization.id, %{email: disabled.email, name: nil}) ==
+               {:error, :user_disabled}
+
+      elsewhere = user_fixture(%{email: scim_email(ctx.domain)})
+      organization_member_fixture(organization_fixture(), elsewhere)
+
+      assert Provisioning.provision_scim(ctx.organization.id, %{email: elsewhere.email, name: nil}) ==
+               {:error, :membership_conflict}
+
+      refute Organizations.member?(elsewhere, ctx.organization.id)
+    end
+  end
 end

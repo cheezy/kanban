@@ -118,6 +118,25 @@ defmodule Kanban.Workspaces.MembershipCascade do
   end
 
   @doc """
+  Tells each board `remove/2` removed a membership from that its members
+  changed, by broadcasting `{Kanban.Boards, :members_changed, board_id}` on
+  `"board:<id>"`, so an open board page re-reads the viewer's access. The
+  actor-less form of `notify/3`, for removals no user made (SCIM
+  deprovisioning, W2247): it sends no notification and emits no membership
+  telemetry. Call it only after the transaction has committed. Returns `:ok`.
+  """
+  @spec broadcast_removed(removed()) :: :ok
+  def broadcast_removed(removed) when is_list(removed) do
+    Enum.each(removed, fn {board, _board_user, _revoked} ->
+      Phoenix.PubSub.broadcast(
+        Kanban.PubSub,
+        "board:#{board.id}",
+        {Kanban.Boards, :members_changed, board.id}
+      )
+    end)
+  end
+
+  @doc """
   Broadcasts `{Kanban.Boards, :members_changed, board_id}` on `"board:<id>"`
   for every board of `organization_id`'s workspaces that `user_id` holds no
   `:owner` or `:modify` `board_users` row on — the boards whose derived access

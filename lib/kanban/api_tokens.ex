@@ -317,6 +317,30 @@ defmodule Kanban.ApiTokens do
   end
 
   @doc """
+  Revokes every active (non-revoked) API token belonging to `user_id`, board
+  and workspace tokens alike, on every board and workspace.
+
+  Used when SCIM deprovisioning disables an account the Organization manages
+  (W2247), so no token outlives the identity provider's removal. Already
+  revoked tokens keep their `revoked_at`. Like
+  `revoke_user_tokens_for_board/2` it issues a single `update_all`, emits
+  nothing and is safe inside a transaction.
+
+  Returns `{count, nil}` where `count` is the number of tokens revoked.
+
+  ## Examples
+
+      iex> revoke_all_user_tokens(user.id)
+      {3, nil}
+
+  """
+  @spec revoke_all_user_tokens(integer()) :: {non_neg_integer(), nil}
+  def revoke_all_user_tokens(user_id) when is_integer(user_id) do
+    from(t in ApiToken, where: t.user_id == ^user_id and is_nil(t.revoked_at))
+    |> Repo.update_all(set: [revoked_at: DateTime.utc_now(:second)])
+  end
+
+  @doc """
   Emits `[:kanban, :api, :token_bulk_revoked]` for a revocation made by
   `revoke_user_tokens_for_board/2`.
 

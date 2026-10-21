@@ -128,7 +128,30 @@ defmodule Kanban.Telemetry.Catalog.Families do
        :issuer_changed,
        :credentials_changed
      ],
-     "An org-admin created or changed their Organization's single sign-on connection. user_id is the org-admin; protocol is oidc or saml; issuer_changed and credentials_changed say whether the issuer (the IdP entity id for SAML) and the client id or secret (the signing certificates for SAML) changed, never their values."}
+     "An org-admin created or changed their Organization's single sign-on connection. user_id is the org-admin; protocol is oidc or saml; issuer_changed and credentials_changed say whether the issuer (the IdP entity id for SAML) and the client id or secret (the signing certificates for SAML) changed, never their values."},
+    {:scim_token_created, [:user_id, :organization_id, :scim_token_id],
+     "An org-admin created a SCIM provisioning token for their Organization. user_id is the org-admin; the token value is never recorded."},
+    {:scim_token_revoked, [:user_id, :organization_id, :scim_token_id],
+     "An org-admin revoked one of their Organization's SCIM provisioning tokens. user_id is the org-admin."},
+    {:scim_auth_failed, [:reason],
+     "A SCIM request presented a missing, unknown or revoked bearer token. reason is missing_token, not_found or revoked."},
+    {:scim_user_provisioned, [:organization_id, :scim_token_id, :member_user_id, :outcome],
+     "A SCIM client provisioned a user. outcome is created (a new account managed by the Organization), linked (an existing account joined it) or reactivated (a deprovisioned user was restored)."},
+    {:scim_user_updated, [:organization_id, :scim_token_id, :member_user_id, :fields],
+     "A SCIM client changed a user's attributes. fields names what changed (name, external_id), never the values."},
+    {:scim_user_deprovisioned,
+     [
+       :organization_id,
+       :scim_token_id,
+       :member_user_id,
+       :reason,
+       :disabled,
+       :api_credentials_revoked
+     ],
+     "A SCIM client deprovisioned a user: their Organization membership, workspace memberships and board access there were removed. reason is deactivated or deleted; disabled is true when the account, managed by the Organization, was disabled with every session and API token revoked."},
+    {:scim_group_updated,
+     [:organization_id, :scim_token_id, :workspace_id, :added_count, :removed_count],
+     "A SCIM client changed the members of a Group, one of the Organization's workspaces."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,

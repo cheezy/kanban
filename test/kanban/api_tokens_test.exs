@@ -319,6 +319,28 @@ defmodule Kanban.ApiTokensTest do
     end
   end
 
+  describe "revoke_all_user_tokens/1 (W2247)" do
+    test "revokes every active token of the user on every board, and only theirs" do
+      user = user_fixture()
+      other = user_fixture()
+      attrs = %{name: "Agent", agent_model: "claude", agent_version: "v1", agent_purpose: "work"}
+      {:ok, {first, _}} = ApiTokens.create_api_token(user, board_fixture(user), attrs)
+      {:ok, {second, _}} = ApiTokens.create_api_token(user, board_fixture(user), attrs)
+      {:ok, {already, _}} = ApiTokens.create_api_token(user, board_fixture(user), attrs)
+      {:ok, _} = ApiTokens.revoke_api_token(already)
+      already_at = Repo.get!(ApiToken, already.id).revoked_at
+      {:ok, {theirs, _}} = ApiTokens.create_api_token(other, board_fixture(other), attrs)
+
+      assert ApiTokens.revoke_all_user_tokens(user.id) == {2, nil}
+
+      assert Repo.get!(ApiToken, first.id).revoked_at
+      assert Repo.get!(ApiToken, second.id).revoked_at
+      assert Repo.get!(ApiToken, already.id).revoked_at == already_at
+      refute Repo.get!(ApiToken, theirs.id).revoked_at
+      assert ApiTokens.revoke_all_user_tokens(user.id) == {0, nil}
+    end
+  end
+
   describe "token_bulk_revoked telemetry" do
     @bulk_revoked [:kanban, :api, :token_bulk_revoked]
 

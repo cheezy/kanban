@@ -301,6 +301,8 @@ defmodule Kanban.Accounts do
   defdelegate disable_user(user, current_user), to: AdminManagement
   defdelegate enable_user(user, current_user), to: AdminManagement
   defdelegate delete_user(user, current_user), to: AdminManagement
+  defdelegate deprovision_from_organization(user, organization_id), to: AdminManagement
+  defdelegate reactivate_in_organization(user, organization_id), to: AdminManagement
 
   ## Self-service account deletion (see `Kanban.Accounts.AccountDeletion`)
 

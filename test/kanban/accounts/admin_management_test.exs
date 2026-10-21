@@ -17,6 +17,7 @@ defmodule Kanban.Accounts.AdminManagementTest do
   alias Kanban.AuditLog
   alias Kanban.Boards
   alias Kanban.Boards.Board
+  alias Kanban.SCIM.UserLink
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
@@ -778,6 +779,197 @@ defmodule Kanban.Accounts.AdminManagementTest do
       assert event.actor_user_id == nil
       assert event.actor_user == nil
       assert event.metadata["user_id"] == user.id
+    end
+  end
+
+  describe "deprovision_from_organization/2 and reactivate_in_organization/2 (W2247)" do
+    setup do
+      organization = organization_fixture()
+      user = user_fixture()
+      organization_member_fixture(organization, user)
+      %{organization: organization, user: user}
+    end
+
+    defp manage(user, organization) do
+      {:ok, user} = user |> User.managed_by_changeset(organization.id) |> Repo.update()
+      user
+    end
+
+    test "a managed account is disabled with its sessions deleted, once", ctx do
+      user = manage(ctx.user, ctx.organization)
+      session = Accounts.generate_user_session_token(user)
+
+      assert {:ok, %{disabled: true, membership: %{}, session_tokens: [%{token: ^session}]}} =
+               Accounts.deprovision_from_organization(user, ctx.organization.id)
+
+      assert Repo.reload(user).disabled_at
+      refute Accounts.get_user_by_session_token(session)
+
+      mark_deprovisioned(user, ctx.organization)
+
+      assert {:ok, %{membership: nil, session_tokens: [], api_tokens_revoked: 0}} =
+               Accounts.deprovision_from_organization(user, ctx.organization.id)
+    end
+
+    test "an unmanaged account keeps its sessions and stays enabled", ctx do
+      session = Accounts.generate_user_session_token(ctx.user)
+
+      assert {:ok, %{disabled: false, session_tokens: [%{token: ^session}]}} =
+               Accounts.deprovision_from_organization(ctx.user, ctx.organization.id)
+
+      assert is_nil(Repo.reload(ctx.user).disabled_at)
+      assert Accounts.get_user_by_session_token(session)
+    end
+
+    test "an unknown Organization or user is not found", ctx do
+      assert Accounts.deprovision_from_organization(ctx.user, -1) == {:error, :not_found}
+
+      assert Accounts.deprovision_from_organization(%User{id: -1}, ctx.organization.id) ==
+               {:error, :not_found}
+
+      assert Accounts.reactivate_in_organization(%User{id: -1}, ctx.organization.id) ==
+               {:error, :not_found}
+    end
+
+    # What Kanban.SCIM.Lifecycle records when its deprovisioning disables the
+    # account.
+    defp record_scim_disable(user, organization, %{disabled_at: %DateTime{} = at}) do
+      {:ok, _link} = UserLink.upsert(organization.id, user.id, :keep)
+      :ok = UserLink.put_scim_disabled(organization.id, user.id, at)
+    end
+
+    # What Kanban.SCIM.Lifecycle records once its deprovisioning has ended
+    # the membership.
+    defp mark_deprovisioned(user, organization) do
+      {:ok, _link} = UserLink.upsert(organization.id, user.id, :keep)
+      :ok = UserLink.put_deprovisioned(organization.id, user.id, DateTime.utc_now(:second))
+    end
+
+    test "a user who is no longer the Organization's is not deprovisioned from it", ctx do
+      user = manage(ctx.user, ctx.organization)
+      {:ok, _} = Accounts.deprovision_from_organization(user, ctx.organization.id)
+      {:ok, user} = user |> Repo.reload() |> User.disabled_changeset(nil) |> Repo.update()
+
+      # No membership here and no SCIM mark: removed some other way.
+      assert Accounts.deprovision_from_organization(user, ctx.organization.id) ==
+               {:error, :not_found}
+
+      # Marked, but has since joined another Organization.
+      mark_deprovisioned(user, ctx.organization)
+      organization_member_fixture(organization_fixture(), user)
+
+      assert Accounts.deprovision_from_organization(user, ctx.organization.id) ==
+               {:error, :not_found}
+
+      assert is_nil(Repo.reload(user).disabled_at)
+    end
+
+    test "deprovisioning reports the disabled_at it set, and only when it set one", ctx do
+      user = manage(ctx.user, ctx.organization)
+
+      assert {:ok, %{disabled: true, disabled_at: %DateTime{} = at}} =
+               Accounts.deprovision_from_organization(user, ctx.organization.id)
+
+      assert Repo.reload(user).disabled_at == at
+      mark_deprovisioned(user, ctx.organization)
+
+      assert {:ok, %{disabled_at: nil}} =
+               Accounts.deprovision_from_organization(user, ctx.organization.id)
+    end
+
+    test "re-activation enables a managed account and restores a member role", ctx do
+      user = manage(ctx.user, ctx.organization)
+      {:ok, result} = Accounts.deprovision_from_organization(user, ctx.organization.id)
+      record_scim_disable(user, ctx.organization, result)
+
+      assert {:ok, %{enabled: true, user: %{disabled_at: nil}}} =
+               Accounts.reactivate_in_organization(user, ctx.organization.id)
+
+      assert Kanban.Organizations.member?(user, ctx.organization.id)
+
+      assert {:ok, %{enabled: false}} =
+               Accounts.reactivate_in_organization(user, ctx.organization.id)
+    end
+
+    test "re-activation never enables a managed account a site admin disabled", ctx do
+      # Disabled while still a member, so SCIM's deprovisioning disabled nothing.
+      user = manage(ctx.user, ctx.organization)
+      disable_directly(user)
+
+      {:ok, %{disabled_at: nil}} =
+        Accounts.deprovision_from_organization(user, ctx.organization.id)
+
+      assert Accounts.reactivate_in_organization(user, ctx.organization.id) ==
+               {:error, :user_disabled}
+
+      # Disabled by SCIM, then re-enabled and disabled again by a site admin.
+      other = manage(user_fixture(), ctx.organization)
+      organization_member_fixture(ctx.organization, other)
+      {:ok, result} = Accounts.deprovision_from_organization(other, ctx.organization.id)
+      record_scim_disable(other, ctx.organization, result)
+
+      other
+      |> Repo.reload()
+      |> Ecto.Changeset.change(disabled_at: DateTime.add(result.disabled_at, 60))
+      |> Repo.update!()
+
+      assert Accounts.reactivate_in_organization(other, ctx.organization.id) ==
+               {:error, :user_disabled}
+
+      assert Repo.reload(user).disabled_at
+      assert Repo.reload(other).disabled_at
+    end
+
+    test "a site admin's disable in the same second as SCIM's is never reversed", ctx do
+      user = manage(ctx.user, ctx.organization)
+      {:ok, result} = Accounts.deprovision_from_organization(user, ctx.organization.id)
+      record_scim_disable(user, ctx.organization, result)
+
+      # A stale page: the site admin disables the account SCIM just disabled,
+      # writing the same second-precision disabled_at.
+      user
+      |> Repo.reload()
+      |> Ecto.Changeset.change(disabled_at: nil)
+      |> Repo.update!()
+
+      {1, _} =
+        User
+        |> where([u], u.id == ^user.id)
+        |> Repo.update_all(set: [disabled_at: result.disabled_at])
+
+      assert {:ok, _} = user |> Repo.reload() |> Accounts.disable_user(admin_fixture())
+      assert %UserLink{scim_disabled_at: nil} = UserLink.get(ctx.organization.id, user.id)
+
+      assert Accounts.reactivate_in_organization(user, ctx.organization.id) ==
+               {:error, :user_disabled}
+
+      assert Repo.reload(user).disabled_at
+    end
+
+    test "a site admin's enable forgets SCIM's disable", ctx do
+      user = manage(ctx.user, ctx.organization)
+      {:ok, result} = Accounts.deprovision_from_organization(user, ctx.organization.id)
+      record_scim_disable(user, ctx.organization, result)
+
+      assert {:ok, %User{disabled_at: nil}} =
+               user |> Repo.reload() |> Accounts.enable_user(admin_fixture())
+
+      assert %UserLink{scim_disabled_at: nil} = UserLink.get(ctx.organization.id, user.id)
+    end
+
+    test "re-activation refuses an unmanaged disabled account and another Organization's member",
+         ctx do
+      {:ok, _} = Accounts.deprovision_from_organization(ctx.user, ctx.organization.id)
+      organization_member_fixture(organization_fixture(), ctx.user)
+
+      assert Accounts.reactivate_in_organization(ctx.user, ctx.organization.id) ==
+               {:error, :membership_conflict}
+
+      disabled = user_fixture()
+      disable_directly(disabled)
+
+      assert Accounts.reactivate_in_organization(disabled, ctx.organization.id) ==
+               {:error, :user_disabled}
     end
   end
 end

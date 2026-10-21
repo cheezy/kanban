@@ -15,6 +15,10 @@ defmodule Kanban.Accounts.User do
     field :two_factor_reminder_dismissed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
 
+    # Set when an Organization's SCIM provisioning created the account
+    # (W2247); only that Organization's deprovisioning may disable it.
+    belongs_to :managed_by_organization, Kanban.Organizations.Organization
+
     has_many :board_users, Kanban.Boards.BoardUser
     many_to_many :boards, Kanban.Boards.Board, join_through: Kanban.Boards.BoardUser
     has_many :workspace_members, Kanban.Workspaces.WorkspaceMember
@@ -211,6 +215,15 @@ defmodule Kanban.Accounts.User do
   def disabled_changeset(user, disabled_at)
       when is_nil(disabled_at) or is_struct(disabled_at, DateTime) do
     change(user, disabled_at: disabled_at)
+  end
+
+  @doc """
+  A changeset marking the account as managed by the Organization with
+  `organization_id`, set when SCIM provisioning creates it. Like
+  `:disabled_at`, the field is cast by no user-facing changeset.
+  """
+  def managed_by_changeset(user, organization_id) when is_integer(organization_id) do
+    change(user, managed_by_organization_id: organization_id)
   end
 
   @doc """

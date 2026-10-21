@@ -42,7 +42,11 @@ config :kanban, KanbanWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [html: KanbanWeb.ErrorHTML, json: KanbanWeb.ErrorJSON],
+    formats: [
+      html: KanbanWeb.ErrorHTML,
+      json: KanbanWeb.ErrorJSON,
+      scim: KanbanWeb.SCIM.ErrorJSON
+    ],
     layout: false
   ],
   pubsub_server: Kanban.PubSub,
@@ -85,6 +89,12 @@ config :logger, :default_formatter,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# SCIM 2.0 responses (W2247) are JSON sent as application/scim+json. The
+# mime types are compiled into the mime dependency, so after changing them
+# run `mix deps.clean mime --build`.
+config :mime, :types, %{"application/scim+json" => ["scim"]}
+config :phoenix_template, :format_encoders, scim: Jason
 
 # Configure error_tracker
 config :error_tracker,

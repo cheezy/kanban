@@ -12,7 +12,9 @@ This page describes the setup, what happens at sign-in, what is refused, and
 what an operator has to know. Organizations themselves are described in
 [Organization Security Policies](organization-security-policies.md), and
 password and two-factor sign-in in the
-[Authentication Guide](AUTHENTICATION.md).
+[Authentication Guide](AUTHENTICATION.md). An identity provider can also
+create and deprovision people through
+[SCIM Provisioning](scim-provisioning.md).
 
 ## Setting it up
 

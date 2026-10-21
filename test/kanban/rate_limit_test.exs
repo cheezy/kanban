@@ -62,6 +62,30 @@ defmodule Kanban.RateLimitTest do
     end
   end
 
+  describe ":scim surface (W2247)" do
+    test "a token's failures are limited on its own key first" do
+      ip = unique_ip()
+      for _ <- 1..10, do: RateLimit.record_failure(:scim, ip: ip, identity: "token:aaaa")
+
+      assert {:error, {:rate_limited, _}} = RateLimit.peek(:scim, ip: ip, identity: "token:aaaa")
+      # Another tenant behind the same egress IP is not locked out.
+      assert :ok = RateLimit.peek(:scim, ip: ip, identity: "token:bbbb")
+    end
+
+    test "the IP ceiling bounds guessing across many tokens" do
+      ip = unique_ip()
+
+      for n <- 1..100,
+          do: RateLimit.record_failure(:scim, ip: ip, identity: "token:#{n}")
+
+      assert {:error, {:rate_limited, _}} = RateLimit.peek(:scim, ip: ip, identity: "token:new")
+    end
+
+    test "uses the documented defaults" do
+      assert RateLimit.__limits__(:scim) == %{scale_ms: 60_000, id_limit: 10, ip_limit: 100}
+    end
+  end
+
   describe "peek/2 + record_failure/2 (login / api_token)" do
     test "peek does not consume the budget" do
       ip = unique_ip()
