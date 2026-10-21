@@ -63,6 +63,36 @@ defmodule KanbanWeb.TwoFactorPendingTest do
       assert get_session(conn, :user_return_to) == "/boards/1"
     end
 
+    test "drops a return path that would not fit in the session cookie with the subject" do
+      session_opts =
+        Plug.Session.init(store: :cookie, key: "_kanban_key", signing_salt: "MkVVRya+")
+
+      subject = String.duplicate("s", 1024)
+      long_path = "/" <> String.duplicate("p", 2047)
+      user = %Kanban.Accounts.User{id: 1_234_567}
+
+      conn =
+        build_conn(:post, "/users/sso/saml/1/acs")
+        |> Map.put(:secret_key_base, KanbanWeb.Endpoint.config(:secret_key_base))
+        |> Plug.Session.call(session_opts)
+        |> fetch_session()
+        |> put_session(:user_return_to, long_path)
+        |> TwoFactorPending.put_sso_link(user, %{connection_id: 123_456, subject: subject})
+
+      assert get_session(conn, :user_return_to) == nil
+      assert {:ok, %{sso_link: %{subject: ^subject}}} = TwoFactorPending.get(conn)
+      assert byte_size(send_resp(conn, 302, "").resp_cookies["_kanban_key"].value) < 4096
+
+      fits = "/" <> String.duplicate("p", 1023)
+
+      conn =
+        build_conn()
+        |> init_test_session(user_return_to: fits)
+        |> TwoFactorPending.put_sso_link(user, %{connection_id: 1, subject: subject})
+
+      assert get_session(conn, :user_return_to) == fits
+    end
+
     test "a malformed link refuses the whole marker" do
       for sso <- [
             %{},

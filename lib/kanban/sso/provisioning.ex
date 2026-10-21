@@ -67,6 +67,9 @@ defmodule Kanban.SSO.Provisioning do
   alias Kanban.SSO.UserIdentity
   alias Kanban.Telemetry.AfterCommit
 
+  # The longest subject an identity row stores (Kanban.SSO.UserIdentity).
+  @max_subject 1024
+
   @type outcome :: :existing_identity | :linked | :provisioned
   @type refusal ::
           :invalid_claims
@@ -86,17 +89,12 @@ defmodule Kanban.SSO.Provisioning do
   """
   @spec provision(SSOConnection.t(), map()) ::
           {:ok, User.t(), outcome()} | {:error, refusal()} | {:two_factor_required, User.t()}
-  def provision(%SSOConnection{} = connection, claims) when is_map(claims) do
-    case claims["sub"] do
-      subject when is_binary(subject) and subject != "" ->
-        connection |> find_identity(subject) |> provision_for(connection, subject, claims)
-
-      _missing ->
-        {:error, :invalid_claims}
-    end
+  def provision(%SSOConnection{} = connection, %{"sub" => subject} = claims)
+      when is_binary(subject) and subject != "" and byte_size(subject) <= @max_subject do
+    connection |> find_identity(subject) |> provision_for(connection, subject, claims)
   end
 
-  def provision(%SSOConnection{}, _claims), do: {:error, :invalid_claims}
+  def provision(%SSOConnection{}, _missing_or_oversized), do: {:error, :invalid_claims}
 
   @doc """
   Links the account with `user_id` to the identity `subject` of `connection`

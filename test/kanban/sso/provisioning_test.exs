@@ -128,6 +128,32 @@ defmodule Kanban.SSO.ProvisioningTest do
       refute user.id == existing.id
     end
 
+    test "is refused with a subject longer than an identity can store", ctx do
+      claims = claims(ctx.domain, %{"sub" => String.duplicate("s", 1025)})
+      assert {:error, :invalid_claims} = Provisioning.provision(ctx.connection, claims)
+
+      claims = claims(ctx.domain, %{"sub" => String.duplicate("s", 1024)})
+      assert {:ok, _user, :provisioned} = Provisioning.provision(ctx.connection, claims)
+    end
+
+    test "an oversized subject is refused before a two-factor challenge would carry it", ctx do
+      user = user_fixture(%{email: "long@#{ctx.domain}"})
+      Kanban.TwoFactorHelpers.enroll(user)
+      claims = claims(ctx.domain, %{"email" => user.email})
+
+      assert {:error, :invalid_claims} =
+               Provisioning.provision(
+                 ctx.connection,
+                 Map.put(claims, "sub", String.duplicate("s", 1025))
+               )
+
+      assert {:two_factor_required, _user} =
+               Provisioning.provision(
+                 ctx.connection,
+                 Map.put(claims, "sub", String.duplicate("s", 1024))
+               )
+    end
+
     test "is refused without a subject", ctx do
       for sub <- [nil, "", 42] do
         assert {:error, :invalid_claims} =

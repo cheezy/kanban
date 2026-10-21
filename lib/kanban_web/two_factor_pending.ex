@@ -28,6 +28,7 @@ defmodule KanbanWeb.TwoFactorPending do
 
   @session_key :two_factor_pending
   @ttl_seconds 300
+  @max_link_bytes 2048
 
   @type t :: %{
           required(:user_id) => pos_integer(),
@@ -110,6 +111,10 @@ defmodule KanbanWeb.TwoFactorPending do
   Stores a marker for `user` that waits to make the single sign-on `link`
   once the challenge is passed. It never asks to remember the device: a
   single sign-on session is not a remember-me one.
+
+  The session is a cookie of at most 4096 bytes, so when the subject and the
+  stored `:user_return_to` path together pass 2048 bytes the path is
+  dropped and the person lands on their default page instead.
   """
   @spec put_sso_link(Plug.Conn.t(), User.t(), TwoFactorLink.link()) :: Plug.Conn.t()
   def put_sso_link(conn, %User{id: id}, %{connection_id: connection_id, subject: subject}) do
@@ -118,7 +123,19 @@ defmodule KanbanWeb.TwoFactorPending do
       |> new(false)
       |> Map.put("sso", %{"connection_id" => connection_id, "subject" => subject})
 
-    put_session(conn, @session_key, marker)
+    conn
+    |> put_session(@session_key, marker)
+    |> fit_return_to(byte_size(subject))
+  end
+
+  defp fit_return_to(conn, subject_bytes) do
+    case get_session(conn, :user_return_to) do
+      path when is_binary(path) and byte_size(path) + subject_bytes > @max_link_bytes ->
+        delete_session(conn, :user_return_to)
+
+      _fits_or_none ->
+        conn
+    end
   end
 
   @doc "Reads the marker from the conn's session."

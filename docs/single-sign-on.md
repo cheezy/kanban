@@ -291,7 +291,10 @@ made (see [Which account](#which-account)). Between the two steps the session
 holds the same pending-sign-in marker as a password sign-in, which also
 carries the connection's id and the identity provider's subject; it is
 accepted for five minutes, never remembers the device, and the challenge's
-attempt limits apply. `Kanban.SSO.TwoFactorLink` makes the link once the code
+attempt limits apply. The session is a cookie of at most 4096 bytes, so a
+subject longer than 1024 bytes is refused (`invalid_claims`), and a page to
+return to whose path and the subject together pass 2048 bytes is dropped:
+the person lands on their boards instead. `Kanban.SSO.TwoFactorLink` makes the link once the code
 is accepted and records `sso_login`, or `sso_login_refused` with the reason;
 a refused link sends the person back to the log-in page with the usual single
 sign-on message.
