@@ -149,6 +149,14 @@ index calls no user function, so `status/2` reports the same state afterwards.
 Dev, test and CI migrate as a superuser, and a degraded database migrates it as
 usual.
 
+`20261021120409_add_audit_events_organization_purge_function` is another. Run
+as the app role on a hardened database, it installs the Organization purge
+function in degraded form, owned by the app role, and the function cannot
+delete. Run `harden_audit_log` again after deploying it: until then the status
+reports `:organization_purge_function_not_owned_by_owner_role` and the daily
+retention job names each Organization in its `failed_steps`
+([Organization Security Policies](organization-security-policies.md#after-deploying)).
+
 ## Rollback
 
 There is no release command that undoes hardening. The two hardening

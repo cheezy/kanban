@@ -68,6 +68,8 @@ app (or a recovery code) after the password, at `/users/two-factor`, before
 any session is created. It protects the human's account only: API tokens,
 and so agents, are not affected. See
 [Two-Factor Authentication](TWO-FACTOR-AUTHENTICATION.md) for how it works.
+An Organization's org-admins can require it for every member, after a grace
+period; see [Organization Security Policies](organization-security-policies.md).
 
 ## Authentication Method: Bearer Token
 

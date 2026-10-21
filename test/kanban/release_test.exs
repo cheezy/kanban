@@ -15,6 +15,7 @@ defmodule Kanban.ReleaseTest do
 
   alias Kanban.Accounts.User
   alias Kanban.AuditLog
+  alias Kanban.AuditLog.Hardening.Purge
   alias Kanban.AuditLogRoleHelper
   alias Kanban.Boards
   alias Kanban.Boards.Board
@@ -230,6 +231,22 @@ defmodule Kanban.ReleaseTest do
 
     assert {:ok, :hardened} = Release.apply_hardening(runner, role)
     assert {:ok, :hardened} = Release.apply_hardening(runner, role)
+  end
+
+  test "hardening installs the Organization purge function hardened, and status names it while it is not" do
+    role = AuditLogRoleHelper.create_app_like_role()
+    runner = AuditLogRoleHelper.runner()
+
+    assert Purge.revert_organization(runner) == :reverted
+    assert {:ok, :hardened} = Release.apply_hardening(runner, role)
+    assert Purge.organization_status(runner, app_role: role) == :hardened
+
+    # audit_log_status reads through the app Repo, so a missing function shows
+    # up beside the superuser reason until hardening is run again.
+    assert Purge.revert_organization(runner) == :reverted
+
+    assert Release.audit_log_status() ==
+             {:degraded, [:app_role_is_superuser, :organization_purge_function_missing]}
   end
 
   test "hardening refuses an admin role that is not a superuser" do

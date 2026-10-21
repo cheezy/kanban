@@ -22,6 +22,7 @@ defmodule KanbanWeb.UserLive.TwoFactorComponent do
   use KanbanWeb, :live_component
 
   alias Kanban.Accounts
+  alias Kanban.Organizations.SecurityPolicies
 
   @input_style "width: 100%; max-width: 220px; padding: 0 10px; height: 32px; border-radius: 5px; background: var(--surface); border: 1px solid var(--line-input); font-size: 13px; color: var(--ink); outline: none; font-family: var(--font-mono); letter-spacing: 0.08em;"
   @primary_style "height: 32px; padding: 0 14px; border-radius: 5px; background: var(--ink); color: var(--color-base-100); border: none; font-size: 12.5px; font-weight: 500; letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 2px rgba(0, 0, 0, 0.15);"
@@ -34,7 +35,10 @@ defmodule KanbanWeb.UserLive.TwoFactorComponent do
 
   @impl true
   def update(%{user: user} = assigns, socket) do
-    socket = assign(socket, assigns)
+    socket =
+      socket
+      |> assign(assigns)
+      |> assign(:required_by_organization, SecurityPolicies.two_factor_required?(user))
 
     socket =
       if Map.has_key?(socket.assigns, :state),
@@ -203,7 +207,21 @@ defmodule KanbanWeb.UserLive.TwoFactorComponent do
           </div>
         </.form>
 
+        <div
+          :if={@required_by_organization}
+          id="two-factor-required-by-organization"
+          style="display: flex; flex-direction: column; gap: 10px;"
+        >
+          <h3 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--ink);">
+            {gettext("Turn off two-factor")}
+          </h3>
+          <p style="margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.5; text-wrap: pretty;">
+            {required_by_organization_message()}
+          </p>
+        </div>
+
         <.form
+          :if={!@required_by_organization}
           for={%{}}
           as={:two_factor}
           id="two-factor-disable-form"
@@ -365,7 +383,19 @@ defmodule KanbanWeb.UserLive.TwoFactorComponent do
 
       {:error, :not_enabled} ->
         {:noreply, assign(socket, state: :disabled, error: nil)}
+
+      {:error, :required_by_organization} ->
+        {:noreply,
+         socket
+         |> assign(required_by_organization: true, error: nil)
+         |> put_flash(:error, required_by_organization_message())}
     end
+  end
+
+  defp required_by_organization_message do
+    gettext(
+      "Your Organization requires two-factor authentication, so you cannot turn it off while you are a member."
+    )
   end
 
   defp invalid_code(socket, form) do

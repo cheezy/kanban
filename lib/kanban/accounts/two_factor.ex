@@ -48,6 +48,7 @@ defmodule Kanban.Accounts.TwoFactor do
   alias Kanban.Accounts.UserTotp
   alias Kanban.AuditLog
   alias Kanban.Encryption
+  alias Kanban.Organizations.SecurityPolicies
   alias Kanban.RateLimit
   alias Kanban.Repo
 
@@ -276,10 +277,22 @@ defmodule Kanban.Accounts.TwoFactor do
 
   Records a `two_factor_disabled` audit event naming which kind of code was
   used.
+
+  Refuses with `{:error, :required_by_organization}` while the user's
+  Organization requires two-factor
+  (`Kanban.Organizations.SecurityPolicies.two_factor_required?/1`). That check
+  runs first, so a refusal uses no attempt and no recovery code.
   """
   @spec disable(User.t(), String.t()) ::
-          :ok | {:error, :invalid_code | :not_enabled | :rate_limited}
+          :ok
+          | {:error, :invalid_code | :not_enabled | :rate_limited | :required_by_organization}
   def disable(%User{} = user, code) do
+    if SecurityPolicies.two_factor_required?(user),
+      do: {:error, :required_by_organization},
+      else: disable_checked(user, code)
+  end
+
+  defp disable_checked(user, code) do
     throttled(user, fn ->
       with {:ok, totp} <- fetch_enabled(user),
            {:ok, method} <- check_any_code(totp, code) do

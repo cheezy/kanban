@@ -69,9 +69,10 @@ defmodule Kanban.Release do
   Reads the admin URL from the `#{@admin_url_env}` environment variable, which
   the operator sets for this one command only — it is never stored as a Fly
   secret. Opens its own connection (one connection, no reconnect, never the
-  app pool), runs `Kanban.AuditLog.Hardening.apply/2` and then
-  `Kanban.AuditLog.Hardening.Purge.apply/3` in hardened mode inside one
-  transaction, and stops the connection in every outcome. Safe to run again.
+  app pool), runs `Kanban.AuditLog.Hardening.apply/2`, then
+  `Kanban.AuditLog.Hardening.Purge.apply/3` and
+  `Kanban.AuditLog.Hardening.Purge.apply_organization/3` in hardened mode inside
+  one transaction, and stops the connection in every outcome. Safe to run again.
 
   Returns `{:ok, :hardened}` or `{:ok, {:degraded, reasons}}` with the status
   after hardening, or `{:error, tag}` where tag is one of:
@@ -127,8 +128,9 @@ defmodule Kanban.Release do
   application role, checked through the app Repo.
 
   Returns `:hardened`, or `{:degraded, reasons}` combining the reasons from
-  `Kanban.AuditLog.Hardening.status/2` and
-  `Kanban.AuditLog.Hardening.Purge.status/2`. Dev and test connect as a
+  `Kanban.AuditLog.Hardening.status/2`,
+  `Kanban.AuditLog.Hardening.Purge.status/2` and
+  `Kanban.AuditLog.Hardening.Purge.organization_status/2`. Dev and test connect as a
   superuser, so there it reports `:app_role_is_superuser`.
   """
   @spec audit_log_status() :: :hardened | {:degraded, [atom()]}
@@ -276,6 +278,7 @@ defmodule Kanban.Release do
     if Hardening.hardenable?(runner) do
       :ok = Hardening.apply(runner, app_role: app_role)
       :ok = Purge.apply(runner, :hardened, app_role: app_role)
+      :ok = Purge.apply_organization(runner, :hardened, app_role: app_role)
       {:ok, combined_status(runner, app_role)}
     else
       {:error, :admin_not_superuser}
@@ -284,7 +287,11 @@ defmodule Kanban.Release do
 
   defp combined_status(runner, app_role) do
     reasons =
-      [Hardening.status(runner, app_role: app_role), Purge.status(runner, app_role: app_role)]
+      [
+        Hardening.status(runner, app_role: app_role),
+        Purge.status(runner, app_role: app_role),
+        Purge.organization_status(runner, app_role: app_role)
+      ]
       |> Enum.flat_map(&status_reasons/1)
       |> Enum.uniq()
 

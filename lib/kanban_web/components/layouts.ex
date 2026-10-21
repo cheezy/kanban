@@ -9,6 +9,7 @@ defmodule KanbanWeb.Layouts do
   import KanbanWeb.MarketingClosing
 
   alias KanbanWeb.NotificationBell
+  alias KanbanWeb.OrganizationTwoFactorBanner
   alias KanbanWeb.SideNav
   alias KanbanWeb.TwoFactorReminder
 
@@ -99,7 +100,13 @@ defmodule KanbanWeb.Layouts do
           tabindex="-1"
           class="flex-1 min-h-0 overflow-auto bg-base-100 dark:bg-base-200 focus:outline-none"
         >
-          <TwoFactorReminder.card current_scope={@current_scope} />
+          <OrganizationTwoFactorBanner.card current_scope={@current_scope} />
+          <%!-- The required-by-Organization banner already asks for two-factor,
+                so the dismissible reminder would only repeat it. --%>
+          <TwoFactorReminder.card
+            :if={!(@current_scope && @current_scope.two_factor_deadline)}
+            current_scope={@current_scope}
+          />
           {render_slot(@inner_block)}
         </main>
       </div>

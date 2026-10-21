@@ -71,9 +71,17 @@ dashes and capital letters are ignored when one is typed in.
 app or an unused recovery code, which is then used up. Turning two-factor off
 deletes the stored key and recovery codes.
 
+A member of an Organization that requires two-factor cannot turn it off. The
+page explains why instead of showing the form, and the request is refused
+without checking or using up the code. See
+[Organization Security Policies](organization-security-policies.md#requiring-two-factor)
+for the requirement, its grace period and what happens after the deadline.
+
 ## The setup reminder
 
 Two-factor is opt-in, so Stride reminds people who have not turned it on.
+For a member whose Organization requires it, a card that cannot be dismissed
+shows the deadline instead of this reminder.
 When someone signs in with their email and password and two-factor is off,
 the page they land on, including a page they were sent back to after signing
 in, shows a card above its content: **Protect your account with two-factor

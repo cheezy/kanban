@@ -90,6 +90,11 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("org_workspace_archived"),
     do: pgettext("audit action", "Organization workspace archived")
 
+  def action_label("organization_policy_updated"),
+    do: pgettext("audit action", "Organization security policy changed")
+
+  def action_label("retention_purge"), do: pgettext("audit action", "Retention purge ran")
+
   def action_label("user_deleted"), do: pgettext("audit action", "Account deleted")
 
   def action_label("user_delete_refused"),

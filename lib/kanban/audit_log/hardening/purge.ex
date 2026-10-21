@@ -45,11 +45,23 @@ defmodule Kanban.AuditLog.Hardening.Purge do
   The migration `add_audit_events_purge_function` calls this live code through
   `migrate_or_degrade/2`, so a statement added here must not depend on an
   object a later migration creates.
+
+  ## The Organization-scoped purge function
+
+  A second function, `audit_events_purge_organization`, removes at most a
+  given number of one Organization's rows (or, given no Organization, only the
+  rows that have none) under the same floor. It is installed, verified and
+  removed through `apply_organization/3`, `organization_status/2`,
+  `migrate_or_degrade_organization/2` and `revert_organization/1`, which
+  delegate to `Kanban.AuditLog.Hardening.OrganizationPurge`. It never touches
+  the trigger, and the functions above never touch it, so their results are
+  unchanged by it.
   """
 
   import Kernel, except: [apply: 3]
 
   alias Kanban.AuditLog.Hardening
+  alias Kanban.AuditLog.Hardening.OrganizationPurge
 
   require Logger
 
@@ -87,6 +99,20 @@ defmodule Kanban.AuditLog.Hardening.Purge do
   @doc "The SQLSTATE the purge function raises for a cutoff inside the retention floor."
   @spec cutoff_too_recent_code() :: String.t()
   def cutoff_too_recent_code, do: @cutoff_too_recent_code
+
+  @doc "Installs the Organization-scoped purge function. See `OrganizationPurge.apply/3`."
+  defdelegate apply_organization(runner, mode, opts), to: OrganizationPurge, as: :apply
+
+  @doc "Reports on the Organization-scoped purge function. See `OrganizationPurge.status/2`."
+  defdelegate organization_status(runner, opts), to: OrganizationPurge, as: :status
+
+  @doc "The migration's up step for it. See `OrganizationPurge.migrate_or_degrade/2`."
+  defdelegate migrate_or_degrade_organization(runner, opts),
+    to: OrganizationPurge,
+    as: :migrate_or_degrade
+
+  @doc "The migration's down step for it. See `OrganizationPurge.revert/1`."
+  defdelegate revert_organization(runner), to: OrganizationPurge, as: :revert
 
   @doc """
   Installs the purge function for `:app_role`, idempotently, in `mode`.
@@ -368,7 +394,8 @@ defmodule Kanban.AuditLog.Hardening.Purge do
   # Whether the connection may replace or drop the function: it owns it, holds
   # the rights of its owner, or is a superuser. An absent function counts as
   # ownable.
-  defp ownable_sql(procedure) do
+  @doc false
+  def ownable_sql(procedure) do
     "coalesce((SELECT pg_has_role(current_user, proowner, 'USAGE') FROM pg_proc " <>
       "WHERE oid = #{procedure}), true)"
   end
@@ -390,7 +417,8 @@ defmodule Kanban.AuditLog.Hardening.Purge do
     ])
   end
 
-  defp table_owned_by_owner_role?(runner, opts) do
+  @doc false
+  def table_owned_by_owner_role?(runner, opts) do
     owner = Keyword.get(opts, :owner_role, Hardening.owner_role())
 
     Hardening.scalar(runner, """
@@ -400,7 +428,8 @@ defmodule Kanban.AuditLog.Hardening.Purge do
   end
 
   # The schemas holding the table and the trigger function, quoted by Postgres.
-  defp table_schema(runner) do
+  @doc false
+  def table_schema(runner) do
     Hardening.scalar(runner, """
     SELECT quote_ident(nspname) FROM pg_namespace
     WHERE oid = (SELECT relnamespace FROM pg_class WHERE oid = to_regclass('#{@table}'))

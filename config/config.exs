@@ -117,8 +117,9 @@ config :error_tracker, filter: KanbanWeb.ErrorTrackerFilter
 # The Cron plugin runs the claim-expiry sweeper every five minutes (W2204),
 # the weekly digest fan-out on Mondays at 13:00 UTC (W2207), the
 # delivery-target status sweeper hourly at minute 17 (W2291), the
-# metrics retention cleanup daily at 03:23 UTC (W2345) and the workspace
-# export cleanup hourly at minute 41 (W2222).
+# metrics retention cleanup daily at 03:23 UTC (W2345), the workspace
+# export cleanup hourly at minute 41 (W2222) and the audit and archived-task
+# retention purge daily at 03:47 UTC (W2244).
 config :kanban, Oban,
   repo: Kanban.Repo,
   engine: Oban.Engines.Basic,
@@ -137,6 +138,7 @@ config :kanban, Oban,
        {"0 13 * * 1", Kanban.Notifications.DigestFanoutWorker},
        {"17 * * * *", Kanban.Notifications.TargetStatusWorker},
        {"23 3 * * *", Kanban.Metrics.RetentionWorker},
+       {"47 3 * * *", Kanban.Retention.PurgeWorker},
        {"41 * * * *", Kanban.Workspaces.Export.CleanupWorker}
      ]}
   ]
@@ -158,6 +160,17 @@ config :kanban, Kanban.Notifications.ClaimExpiryWorker, lookback_seconds: 2 * 60
 # per DELETE. A missing value, or one that is not a positive whole number of
 # days, removes nothing and logs a warning. Never applies to audit_events.
 config :kanban, Kanban.Metrics.RetentionWorker, retention_days: 90, batch_size: 1_000
+
+# The daily Kanban.Retention.PurgeWorker (W2244). Organization audit retention
+# is each Organization's own security policy; these settings cover the rest.
+# site_audit_retention_days applies to audit events with no Organization (at
+# least 90, the database floor) and archived_task_retention_days to archived
+# tasks, which are deleted for good. nil keeps everything, and an invalid value
+# removes nothing and logs a warning. batch_size rows are removed per DELETE.
+config :kanban, Kanban.Retention.PurgeWorker,
+  site_audit_retention_days: nil,
+  archived_task_retention_days: nil,
+  batch_size: 1_000
 
 # Grace window (in milliseconds) between the last child's completion and
 # assuming the agent will not report after_goal: 5 minutes, long enough for

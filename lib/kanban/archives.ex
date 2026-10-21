@@ -17,7 +17,10 @@ defmodule Kanban.Archives do
 
   This module is read-only by design — writes (archive, unarchive) live
   on `Kanban.Tasks.Archiving` and `Kanban.Tasks.BulkActions`. Mirrors
-  the structure of `Kanban.Agents` and `Kanban.Reviews`.
+  the structure of `Kanban.Agents` and `Kanban.Reviews`. The one exception
+  is the retention purge, `purge_archived_before/2`, which only delegates to
+  `Kanban.Archives.Retention`; the daily `Kanban.Retention.PurgeWorker` is
+  its only caller.
   """
 
   import Ecto.Query, warn: false
@@ -26,6 +29,13 @@ defmodule Kanban.Archives do
   alias Kanban.Queries.BoardScope
   alias Kanban.Repo
   alias Kanban.Tasks.Task
+
+  @doc """
+  Permanently deletes archived tasks archived before `cutoff`, `batch_size`
+  at a time, returning `{tasks_removed, batches_run}`. See
+  `Kanban.Archives.Retention`.
+  """
+  defdelegate purge_archived_before(cutoff, batch_size), to: Kanban.Archives.Retention
 
   @doc """
   Returns the list of archived tasks, newest first.

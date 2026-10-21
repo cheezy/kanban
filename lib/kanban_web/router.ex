@@ -58,6 +58,15 @@ defmodule KanbanWeb.Router do
     plug KanbanWeb.Plugs.AuthenticateApiToken
   end
 
+  # Enforces an Organization's two-factor requirement on authenticated browser
+  # requests (W2244). Piped after :require_authenticated_user and never added
+  # to :browser, so log-in, log-out and the two-factor sign-in step are never
+  # redirected; the settings scope below leaves it out, because that is where
+  # an overdue member is sent to enroll.
+  pipeline :enforce_organization_two_factor do
+    plug KanbanWeb.UserAuth.OrganizationTwoFactorGate
+  end
+
   pipeline :api_public do
     plug :accepts, ["json"]
     plug KanbanWeb.Plugs.ApiTelemetry
@@ -205,7 +214,12 @@ defmodule KanbanWeb.Router do
   end
 
   scope "/admin" do
-    pipe_through [:browser, :require_authenticated_user, :require_admin_user]
+    pipe_through [
+      :browser,
+      :require_authenticated_user,
+      :require_admin_user,
+      :enforce_organization_two_factor
+    ]
 
     live_dashboard "/dashboard",
       metrics: KanbanWeb.Telemetry,
@@ -224,13 +238,19 @@ defmodule KanbanWeb.Router do
   end
 
   scope "/admin", KanbanWeb.Admin do
-    pipe_through [:browser, :require_authenticated_user, :require_admin_user]
+    pipe_through [
+      :browser,
+      :require_authenticated_user,
+      :require_admin_user,
+      :enforce_organization_two_factor
+    ]
 
     live_session :admin,
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
         {KanbanWeb.UserAuth, :require_admin},
+        {KanbanWeb.UserAuth.OrganizationTwoFactorGate, :enforce},
         {KanbanWeb.NotificationsOnMount, :default},
         {KanbanWeb.TwoFactorReminderOnMount, :default}
       ],
@@ -253,6 +273,10 @@ defmodule KanbanWeb.Router do
 
   ## Authentication routes
 
+  # Account settings and the password update are left out of the
+  # Organization two-factor enforcement: an overdue member is redirected to the
+  # settings page to enroll, so enforcing it here would loop. The banner hook
+  # still shows them the requirement.
   scope "/", KanbanWeb do
     pipe_through [:browser, :require_authenticated_user]
 
@@ -266,6 +290,7 @@ defmodule KanbanWeb.Router do
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
         {KanbanWeb.UserAuth, :require_sudo_mode},
+        {KanbanWeb.UserAuth.OrganizationTwoFactorGate, :banner},
         {KanbanWeb.NotificationsOnMount, :default},
         {KanbanWeb.TwoFactorReminderOnMount, :default}
       ],
@@ -274,11 +299,18 @@ defmodule KanbanWeb.Router do
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
     end
 
+    post "/users/update-password", UserSessionController, :update_password
+  end
+
+  scope "/", KanbanWeb do
+    pipe_through [:browser, :require_authenticated_user, :enforce_organization_two_factor]
+
     live_session :require_authenticated_user,
       on_mount: [
         {KanbanWeb.SandboxOnMount, :default},
         {KanbanWeb.LocaleOnMount, :set_locale},
         {KanbanWeb.UserAuth, :require_authenticated},
+        {KanbanWeb.UserAuth.OrganizationTwoFactorGate, :enforce},
         {KanbanWeb.NotificationsOnMount, :default},
         {KanbanWeb.TwoFactorReminderOnMount, :default}
       ],
@@ -308,6 +340,9 @@ defmodule KanbanWeb.Router do
       # The org-admin audit log; OrgLive.AuditLog re-declares the same gate and
       # forces the Organization filter from the membership.
       live "/org/audit", OrgLive.AuditLog, :index
+      # The org-admin security policy page (W2244); OrgLive.Security re-declares
+      # the same gate and re-checks the role on every event.
+      live "/org/security", OrgLive.Security, :index
       # Workspace settings for the current workspace; the LiveView checks paid
       # access and reach on mount and re-checks the org-admin role on every
       # event.
@@ -351,7 +386,6 @@ defmodule KanbanWeb.Router do
     # Counts a locked feature's Available to organizations click (signed-in
     # users only, so anonymous traffic cannot inflate the stored metric).
     get "/locked/:feature", LockedFeatureController, :show
-    post "/users/update-password", UserSessionController, :update_password
     # The workspace switcher. Signed-in users only; the controller checks paid
     # access and reach before it changes the session.
     post "/workspace/switch", WorkspaceSessionController, :switch
@@ -360,7 +394,12 @@ defmodule KanbanWeb.Router do
   # Org-admin audit export. The pipeline gates on the org-admin role, and the
   # controller re-declares the plug as defense in depth.
   scope "/org", KanbanWeb do
-    pipe_through [:browser, :require_authenticated_user, :require_org_admin_user]
+    pipe_through [
+      :browser,
+      :require_authenticated_user,
+      :require_org_admin_user,
+      :enforce_organization_two_factor
+    ]
 
     get "/audit/export", OrgAuditLogExportController, :export
   end

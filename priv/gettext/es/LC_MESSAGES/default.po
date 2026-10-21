@@ -19,18 +19,18 @@ msgstr ""
 msgid "Actions"
 msgstr "Acciones"
 
-#: lib/kanban_web/components/layouts.ex:214
-#: lib/kanban_web/components/layouts.ex:226
+#: lib/kanban_web/components/layouts.ex:221
+#: lib/kanban_web/components/layouts.ex:233
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "Intentando reconectar"
 
-#: lib/kanban_web/components/layouts.ex:221
+#: lib/kanban_web/components/layouts.ex:228
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "¡Algo salió mal!"
 
-#: lib/kanban_web/components/layouts.ex:209
+#: lib/kanban_web/components/layouts.ex:216
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "No podemos encontrar internet"
@@ -164,7 +164,8 @@ msgstr "Contraseña"
 #: lib/kanban_web/live/board_live/webhook_form.ex:78
 #: lib/kanban_web/live/board_live/webhook_form.ex:182
 #: lib/kanban_web/live/column_live/form_component.html.heex:34
-#: lib/kanban_web/live/org_live/console.html.heex:256
+#: lib/kanban_web/live/org_live/console.html.heex:262
+#: lib/kanban_web/live/org_live/security.html.heex:100
 #: lib/kanban_web/live/target_live/form.html.heex:39
 #: lib/kanban_web/live/task_live/components/comment_row.ex:139
 #: lib/kanban_web/live/task_live/form_component.html.heex:421
@@ -210,12 +211,12 @@ msgstr "Tablero actualizado exitosamente"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:254
 #: lib/kanban_web/live/board_live/settings_form_component.ex:172
 #: lib/kanban_web/live/board_live/webhook_form.ex:178
-#: lib/kanban_web/live/org_live/console.html.heex:266
+#: lib/kanban_web/live/org_live/console.html.heex:272
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
 #: lib/kanban_web/live/user_live/danger_zone_component.ex:243
-#: lib/kanban_web/live/user_live/two_factor_component.ex:137
+#: lib/kanban_web/live/user_live/two_factor_component.ex:141
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr "Cancelar"
@@ -251,7 +252,7 @@ msgstr "Comienza creando columnas para tu tablero."
 #: lib/kanban_web/live/board_live/form.html.heex:30
 #: lib/kanban_web/live/board_live/settings_form_component.ex:110
 #: lib/kanban_web/live/column_live/form_component.html.heex:21
-#: lib/kanban_web/live/org_live/console.html.heex:54
+#: lib/kanban_web/live/org_live/console.html.heex:60
 #: lib/kanban_web/live/target_live/form.html.heex:29
 #: lib/kanban_web/live/user_live/settings.ex:33
 #, elixir-autogen, elixir-format
@@ -396,7 +397,7 @@ msgstr "Actualizar detalles de tarea"
 msgid "WIP limit reached for this column"
 msgstr "Límite WIP alcanzado para esta columna"
 
-#: lib/kanban_web/components/layouts.ex:172
+#: lib/kanban_web/components/layouts.ex:179
 #: lib/kanban_web/components/layouts/app_chrome.html.heex:7
 #: lib/kanban_web/components/layouts/marketing.html.heex:7
 #: lib/kanban_web/components/layouts/root.html.heex:7
@@ -672,7 +673,7 @@ msgstr "Solo Lectura"
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:135
 #: lib/kanban_web/live/board_live/form.html.heex:353
 #: lib/kanban_web/live/board_live/members_form_component.ex:308
-#: lib/kanban_web/live/org_live/console.html.heex:170
+#: lib/kanban_web/live/org_live/console.html.heex:176
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:52
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:103
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:193
@@ -1686,7 +1687,7 @@ msgid "Copy"
 msgstr "Copiar"
 
 #: lib/kanban_web/live/board_live/show.html.heex:794
-#: lib/kanban_web/live/org_live/console.html.heex:209
+#: lib/kanban_web/live/org_live/console.html.heex:215
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:64
 #, elixir-autogen, elixir-format
 msgid "Creating..."
@@ -3398,6 +3399,8 @@ msgstr "Revisa a la velocidad de la aprobación"
 #: lib/kanban_web/components/review_report_panel.ex:449
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:168
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
+#: lib/kanban_web/live/org_live/console.html.heex:20
+#: lib/kanban_web/live/org_live/security.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "Security"
 msgstr "Seguridad"
@@ -4472,7 +4475,7 @@ msgstr "Los agentes toman desde esta columna. Una tarea aquí debe estar complet
 #: lib/kanban_web/components/board_tabs.ex:128
 #: lib/kanban_web/components/bulk_action_bar.ex:259
 #: lib/kanban_web/live/archive_live/index.html.heex:9
-#: lib/kanban_web/live/org_live/console.html.heex:300
+#: lib/kanban_web/live/org_live/console.html.heex:306
 #, elixir-autogen, elixir-format
 msgid "Archive"
 msgstr "Archivar"
@@ -4510,7 +4513,7 @@ msgstr "Trabajo en curso. Los hooks se ejecutan antes y después; el panel de ac
 #: lib/kanban_web/components/board_tabs.ex:146
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:29
 #: lib/kanban_web/live/org_live/console.ex:391
-#: lib/kanban_web/live/org_live/console.html.heex:117
+#: lib/kanban_web/live/org_live/console.html.heex:123
 #: lib/kanban_web/live/workspace_live/settings.ex:471
 #: lib/kanban_web/live/workspace_live/settings.html.heex:47
 #, elixir-autogen, elixir-format
@@ -4780,7 +4783,7 @@ msgstr "Cerrar"
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:251
 #: lib/kanban_web/live/board_live/settings_form_component.ex:184
 #: lib/kanban_web/live/board_live/webhook_form.ex:189
-#: lib/kanban_web/live/org_live/console.html.heex:258
+#: lib/kanban_web/live/org_live/console.html.heex:264
 #: lib/kanban_web/live/task_live/components/comment_row.ex:140
 #: lib/kanban_web/live/workspace_live/settings.html.heex:119
 #, elixir-autogen, elixir-format
@@ -5561,7 +5564,7 @@ msgstr "todos los tableros"
 msgid "Toggle menu"
 msgstr "Alternar menú"
 
-#: lib/kanban_web/components/layouts.ex:151
+#: lib/kanban_web/components/layouts.ex:158
 #, elixir-autogen, elixir-format
 msgid "Toggle sidebar"
 msgstr "Alternar barra lateral"
@@ -6645,7 +6648,7 @@ msgstr "El agente escribe el código para completar la tarea."
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:33
 #: lib/kanban_web/live/org_live/audit_log.html.heex:75
 #: lib/kanban_web/live/org_live/console.ex:390
-#: lib/kanban_web/live/org_live/console.html.heex:49
+#: lib/kanban_web/live/org_live/console.html.heex:55
 #, elixir-autogen, elixir-format
 msgid "Details"
 msgstr "Detalles"
@@ -8068,7 +8071,7 @@ msgid "New column"
 msgstr "Nueva columna"
 
 #: lib/kanban_web/controllers/user_session_controller.ex:281
-#: lib/kanban_web/live/user_live/two_factor_component.ex:380
+#: lib/kanban_web/live/user_live/two_factor_component.ex:410
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Please wait a few minutes and try again."
 msgstr "Demasiados intentos. Espera unos minutos e inténtalo de nuevo."
@@ -9775,55 +9778,55 @@ msgstr "Miembros del tablero"
 msgid "No matching members"
 msgstr "No hay miembros coincidentes"
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:122
-#: lib/kanban_web/live/user_live/two_factor_component.ex:195
+#: lib/kanban_web/live/user_live/two_factor_component.ex:126
+#: lib/kanban_web/live/user_live/two_factor_component.ex:199
 #, elixir-autogen, elixir-format
 msgid "6-digit code"
 msgstr "Código de 6 dígitos"
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:66
+#: lib/kanban_web/live/user_live/two_factor_component.ex:70
 #, elixir-autogen, elixir-format
 msgid "Add a second step to signing in: a 6-digit code from an authenticator app such as 1Password, Google Authenticator or Authy."
 msgstr "Añade un segundo paso al iniciar sesión: un código de 6 dígitos de una app de autenticación como 1Password, Google Authenticator o Authy."
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:127
-#: lib/kanban_web/live/user_live/two_factor_component.ex:200
-#: lib/kanban_web/live/user_live/two_factor_component.ex:230
+#: lib/kanban_web/live/user_live/two_factor_component.ex:131
+#: lib/kanban_web/live/user_live/two_factor_component.ex:204
+#: lib/kanban_web/live/user_live/two_factor_component.ex:248
 #, elixir-autogen, elixir-format
 msgid "Checking..."
 msgstr "Comprobando..."
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:224
+#: lib/kanban_web/live/user_live/two_factor_component.ex:242
 #, elixir-autogen, elixir-format
 msgid "Code or recovery code"
 msgstr "Código o código de recuperación"
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:149
+#: lib/kanban_web/live/user_live/two_factor_component.ex:153
 #, elixir-autogen, elixir-format
 msgid "Each code can be used once to sign in or to turn off two-factor if you lose your authenticator."
 msgstr "Cada código se puede usar una vez para iniciar sesión o desactivar la verificación en dos pasos si pierdes tu autenticador."
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:218
+#: lib/kanban_web/live/user_live/two_factor_component.ex:236
 #, elixir-autogen, elixir-format
 msgid "Enter a code from your authenticator app, or a recovery code if you no longer have it."
 msgstr "Introduce un código de tu app de autenticación, o un código de recuperación si ya no la tienes."
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:201
+#: lib/kanban_web/live/user_live/two_factor_component.ex:205
 #, elixir-autogen, elixir-format
 msgid "Generate new codes"
 msgstr "Generar códigos nuevos"
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:173
+#: lib/kanban_web/live/user_live/two_factor_component.ex:177
 #, elixir-autogen, elixir-format
 msgid "I have saved these codes"
 msgstr "He guardado estos códigos"
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:102
+#: lib/kanban_web/live/user_live/two_factor_component.ex:106
 #, elixir-autogen, elixir-format
 msgid "Key"
 msgstr "Clave"
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:188
+#: lib/kanban_web/live/user_live/two_factor_component.ex:192
 #, elixir-autogen, elixir-format
 msgid "New recovery codes"
 msgstr "Nuevos códigos de recuperación"
@@ -9833,40 +9836,42 @@ msgstr "Nuevos códigos de recuperación"
 msgid "Protect your account with a code from an authenticator app in addition to your password."
 msgstr "Protege tu cuenta con un código de una app de autenticación además de tu contraseña."
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:94
+#: lib/kanban_web/live/user_live/two_factor_component.ex:98
 #, elixir-autogen, elixir-format
 msgid "QR code for your authenticator app"
 msgstr "Código QR para tu app de autenticación"
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:191
+#: lib/kanban_web/live/user_live/two_factor_component.ex:195
 #, elixir-autogen, elixir-format
 msgid "Replaces all of your recovery codes. The old ones stop working."
 msgstr "Sustituye todos tus códigos de recuperación. Los anteriores dejan de funcionar."
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:148
+#: lib/kanban_web/live/user_live/two_factor_component.ex:152
 #, elixir-autogen, elixir-format
 msgid "Save these recovery codes now. They will not be shown again."
 msgstr "Guarda ahora estos códigos de recuperación. No se volverán a mostrar."
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:83
+#: lib/kanban_web/live/user_live/two_factor_component.ex:87
 #, elixir-autogen, elixir-format
 msgid "Scan this QR code with your authenticator app, or enter the key by hand. Then enter the 6-digit code the app shows."
 msgstr "Escanea este código QR con tu app de autenticación o introduce la clave manualmente. Después, introduce el código de 6 dígitos que muestra la app."
 
+#: lib/kanban_web/components/organization_two_factor_banner.ex:80
 #: lib/kanban_web/components/two_factor_reminder.ex:60
-#: lib/kanban_web/live/user_live/two_factor_component.ex:77
+#: lib/kanban_web/live/user_live/two_factor_component.ex:81
 #, elixir-autogen, elixir-format
 msgid "Set up two-factor authentication"
 msgstr "Configurar la verificación en dos pasos"
 
 #: lib/kanban_web/controllers/user_session_controller.ex:262
-#: lib/kanban_web/live/user_live/two_factor_component.ex:373
+#: lib/kanban_web/live/user_live/two_factor_component.ex:403
 #, elixir-autogen, elixir-format
 msgid "That code is not valid. Check it and try again."
 msgstr "Ese código no es válido. Compruébalo e inténtalo de nuevo."
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:215
-#: lib/kanban_web/live/user_live/two_factor_component.ex:231
+#: lib/kanban_web/live/user_live/two_factor_component.ex:216
+#: lib/kanban_web/live/user_live/two_factor_component.ex:233
+#: lib/kanban_web/live/user_live/two_factor_component.ex:249
 #, elixir-autogen, elixir-format
 msgid "Turn off two-factor"
 msgstr "Desactivar la verificación en dos pasos"
@@ -9876,25 +9881,26 @@ msgstr "Desactivar la verificación en dos pasos"
 msgid "Two-factor"
 msgstr "Dos pasos"
 
+#: lib/kanban_web/live/org_live/security.html.heex:35
 #: lib/kanban_web/live/user_live/settings.ex:155
 #: lib/kanban_web/live/user_live/two_factor.ex:38
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication"
 msgstr "Verificación en dos pasos"
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:252
-#: lib/kanban_web/live/user_live/two_factor_component.ex:358
+#: lib/kanban_web/live/user_live/two_factor_component.ex:270
+#: lib/kanban_web/live/user_live/two_factor_component.ex:376
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication is off."
 msgstr "La verificación en dos pasos está desactivada."
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:251
-#: lib/kanban_web/live/user_live/two_factor_component.ex:319
+#: lib/kanban_web/live/user_live/two_factor_component.ex:269
+#: lib/kanban_web/live/user_live/two_factor_component.ex:337
 #, elixir-autogen, elixir-format
 msgid "Two-factor authentication is on."
 msgstr "La verificación en dos pasos está activada."
 
-#: lib/kanban_web/live/user_live/two_factor_component.ex:128
+#: lib/kanban_web/live/user_live/two_factor_component.ex:132
 #, elixir-autogen, elixir-format
 msgid "Verify and turn on"
 msgstr "Verificar y activar"
@@ -9985,6 +9991,7 @@ msgstr "Ahora no"
 msgid "Protect your account with two-factor authentication"
 msgstr "Protege tu cuenta con la verificación en dos pasos"
 
+#: lib/kanban_web/components/organization_two_factor_banner.ex:87
 #: lib/kanban_web/components/two_factor_reminder.ex:81
 #, elixir-autogen, elixir-format
 msgid "Read the setup guide"
@@ -10634,7 +10641,7 @@ msgstr "No se pudo copiar. Selecciona el secreto y cópialo tú mismo."
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:73
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:37
-#: lib/kanban_web/live/org_live/console.html.heex:63
+#: lib/kanban_web/live/org_live/console.html.heex:69
 #, elixir-autogen, elixir-format
 msgid "Address"
 msgstr "Dirección"
@@ -10662,28 +10669,28 @@ msgstr "Ciudad"
 
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:26
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:48
-#: lib/kanban_web/live/org_live/console.html.heex:75
+#: lib/kanban_web/live/org_live/console.html.heex:81
 #, elixir-autogen, elixir-format
 msgid "City and country"
 msgstr "Ciudad y país"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:94
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:60
-#: lib/kanban_web/live/org_live/console.html.heex:93
+#: lib/kanban_web/live/org_live/console.html.heex:99
 #, elixir-autogen, elixir-format
 msgid "Contact email"
 msgstr "Correo electrónico de contacto"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:92
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:54
-#: lib/kanban_web/live/org_live/console.html.heex:84
+#: lib/kanban_web/live/org_live/console.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Contact name"
 msgstr "Nombre de contacto"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:93
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:69
-#: lib/kanban_web/live/org_live/console.html.heex:102
+#: lib/kanban_web/live/org_live/console.html.heex:108
 #, elixir-autogen, elixir-format
 msgid "Contact phone"
 msgstr "Teléfono de contacto"
@@ -10876,19 +10883,20 @@ msgstr "No puedes retirar al último administrador de la organización mientras 
 msgid "Organization"
 msgstr "Organización"
 
-#: lib/kanban_web/live/org_live/console.html.heex:25
 #: lib/kanban_web/live/org_live/console.html.heex:31
+#: lib/kanban_web/live/org_live/console.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "Organization sections"
 msgstr "Secciones de la organización"
 
-#: lib/kanban_web/live/org_live/console.html.heex:50
+#: lib/kanban_web/live/org_live/console.html.heex:56
 #, elixir-autogen, elixir-format
 msgid "Read-only. Ask a site admin to change them."
 msgstr "Solo lectura. Pida a un administrador del sitio que los cambie."
 
 #: lib/kanban_web/live/org_live/console.ex:66
 #: lib/kanban_web/live/org_live/console.ex:306
+#: lib/kanban_web/live/org_live/security.ex:103
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
 #, elixir-autogen, elixir-format
 msgid "You must be an org-admin of an Organization to access this page."
@@ -10904,12 +10912,13 @@ msgstr "nombre · dirección · contacto"
 msgid "names · roles"
 msgstr "nombres · roles"
 
-#: lib/kanban_web/live/org_live/console.html.heex:19
+#: lib/kanban_web/live/org_live/console.html.heex:24
 #, elixir-autogen, elixir-format
 msgid "Audit log"
 msgstr "Registro de auditoría"
 
 #: lib/kanban_web/live/org_live/audit_log.html.heex:4
+#: lib/kanban_web/live/org_live/security.html.heex:9
 #, elixir-autogen, elixir-format
 msgid "Back to Organization"
 msgstr "Volver a la organización"
@@ -10940,22 +10949,22 @@ msgstr "Administradores de la organización"
 msgid "Outside your Organization"
 msgstr "Fuera de su organización"
 
-#: lib/kanban_web/live/org_live/console.html.heex:297
+#: lib/kanban_web/live/org_live/console.html.heex:303
 #, elixir-autogen, elixir-format
 msgid "Archive the workspace %{name}?"
 msgstr "¿Archivar el espacio de trabajo %{name}?"
 
-#: lib/kanban_web/live/org_live/console.html.heex:211
+#: lib/kanban_web/live/org_live/console.html.heex:217
 #, elixir-autogen, elixir-format
 msgid "Create workspace"
 msgstr "Crear espacio de trabajo"
 
-#: lib/kanban_web/live/org_live/console.html.heex:198
+#: lib/kanban_web/live/org_live/console.html.heex:204
 #, elixir-autogen, elixir-format
 msgid "New workspace name"
 msgstr "Nombre del nuevo espacio de trabajo"
 
-#: lib/kanban_web/live/org_live/console.html.heex:290
+#: lib/kanban_web/live/org_live/console.html.heex:296
 #, elixir-autogen, elixir-format
 msgid "Rename"
 msgstr "Renombrar"
@@ -10970,7 +10979,7 @@ msgstr "No se pudo cambiar el espacio de trabajo. Inténtelo de nuevo."
 msgid "This workspace still holds boards. Move them out before archiving it."
 msgstr "Este espacio de trabajo todavía contiene tableros. Muévalos antes de archivarlo."
 
-#: lib/kanban_web/live/org_live/console.html.heex:183
+#: lib/kanban_web/live/org_live/console.html.heex:189
 #, elixir-autogen, elixir-format
 msgid "Where your Organization's boards live. A workspace can be archived once it holds no boards."
 msgstr "Donde viven los tableros de su organización. Un espacio de trabajo se puede archivar cuando ya no contiene tableros."
@@ -10985,7 +10994,7 @@ msgstr "Espacio de trabajo archivado."
 msgid "Workspace created."
 msgstr "Espacio de trabajo creado."
 
-#: lib/kanban_web/live/org_live/console.html.heex:245
+#: lib/kanban_web/live/org_live/console.html.heex:251
 #, elixir-autogen, elixir-format
 msgid "Workspace name"
 msgstr "Nombre del espacio de trabajo"
@@ -11002,12 +11011,12 @@ msgstr "Espacio de trabajo renombrado."
 
 #: lib/kanban_web/components/locked_feature.ex:139
 #: lib/kanban_web/live/org_live/console.ex:392
-#: lib/kanban_web/live/org_live/console.html.heex:181
+#: lib/kanban_web/live/org_live/console.html.heex:187
 #, elixir-autogen, elixir-format
 msgid "Workspaces"
 msgstr "Espacios de trabajo"
 
-#: lib/kanban_web/live/org_live/console.html.heex:220
+#: lib/kanban_web/live/org_live/console.html.heex:226
 #, elixir-autogen, elixir-format
 msgid "Your Organization has no workspaces yet."
 msgstr "Su organización aún no tiene espacios de trabajo."
@@ -11050,13 +11059,13 @@ msgctxt "audit action"
 msgid "API token revoked"
 msgstr "Token de API revocado"
 
-#: lib/kanban_web/components/audit_log_actions.ex:93
+#: lib/kanban_web/components/audit_log_actions.ex:98
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Account deleted"
 msgstr "Cuenta eliminada"
 
-#: lib/kanban_web/components/audit_log_actions.ex:96
+#: lib/kanban_web/components/audit_log_actions.ex:101
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Account deletion refused"
@@ -11336,7 +11345,7 @@ msgstr "Elige un espacio de trabajo"
 msgid "Every board in this workspace."
 msgstr "Todos los tableros de este espacio de trabajo."
 
-#: lib/kanban_web/live/org_live/console.html.heex:119
+#: lib/kanban_web/live/org_live/console.html.heex:125
 #, elixir-autogen, elixir-format
 msgid "Everyone in your Organization, org-admins first. Removing a member also removes them from every workspace and its boards."
 msgstr "Todos los miembros de tu organización, primero los administradores de la organización. Quitar a un miembro también lo quita de cada espacio de trabajo y sus tableros."
@@ -11431,7 +11440,7 @@ msgstr "Tableros personales"
 msgid "Read-only. Only an org-admin manages members."
 msgstr "Solo lectura. Solo un administrador de la organización gestiona los miembros."
 
-#: lib/kanban_web/live/org_live/console.html.heex:164
+#: lib/kanban_web/live/org_live/console.html.heex:170
 #, elixir-autogen, elixir-format
 msgid "Remove this member from the Organization? They lose their board memberships and API tokens in every workspace of the Organization."
 msgstr "¿Quitar a este miembro de la organización? Perderá sus membresías de tableros y sus tokens de API en todos los espacios de trabajo de la organización."
@@ -12001,7 +12010,7 @@ msgstr "Tu cuenta se ha eliminado."
 msgid "danger zone"
 msgstr "zona de peligro"
 
-#: lib/kanban_web/components/audit_log_actions.ex:99
+#: lib/kanban_web/components/audit_log_actions.ex:104
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Account deleted by its owner"
@@ -12184,8 +12193,105 @@ msgstr "Desactivado automáticamente porque la persona que lo añadió ya no tie
 msgid "The account that added this endpoint is disabled, so it sends nothing. Disable and enable it to take it over."
 msgstr "La cuenta que añadió este endpoint está deshabilitada, así que no envía nada. Deshabilítalo y vuelve a habilitarlo para hacerte cargo de él."
 
-#: lib/kanban_web/components/audit_log_actions.ex:102
+#: lib/kanban_web/components/audit_log_actions.ex:107
 #, elixir-autogen, elixir-format
 msgctxt "audit action"
 msgid "Board given to a site admin"
 msgstr "Tablero entregado a un administrador del sitio"
+
+#: lib/kanban_web/live/org_live/security.html.heex:74
+#, elixir-autogen, elixir-format
+msgid "A daily job removes your Organization's audit events older than this many days. Leave it empty to keep them forever. Events are always kept for at least %{min} days."
+msgstr "Un proceso diario elimina los eventos de auditoría de tu organización con más de este número de días. Déjalo vacío para conservarlos siempre. Los eventos se conservan siempre al menos %{min} días."
+
+#: lib/kanban_web/live/org_live/security.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "Audit log retention"
+msgstr "Conservación del registro de auditoría"
+
+#: lib/kanban_web/live/org_live/security.html.heex:54
+#, elixir-autogen, elixir-format
+msgid "Grace period in days (%{min} to %{max})"
+msgstr "Periodo de gracia en días (de %{min} a %{max})"
+
+#: lib/kanban_web/live/org_live/security.html.heex:85
+#, elixir-autogen, elixir-format
+msgid "Keep forever"
+msgstr "Conservar siempre"
+
+#: lib/kanban_web/live/org_live/security.ex:37
+#, elixir-autogen, elixir-format
+msgid "Organization security"
+msgstr "Seguridad de la organización"
+
+#: lib/kanban_web/live/org_live/security.html.heex:37
+#, elixir-autogen, elixir-format
+msgid "Require every member to use two-factor authentication. Members who have not turned it on get a grace period, counted from when you turn this on or from when they join, whichever is later. Members who sign in through single sign-on are not affected."
+msgstr "Exige que todos los miembros usen la verificación en dos pasos. Los miembros que aún no la hayan activado tienen un periodo de gracia, contado desde que actives esta opción o desde que se unan, lo que ocurra más tarde. Los miembros que inician sesión mediante inicio de sesión único no se ven afectados."
+
+#: lib/kanban_web/live/org_live/security.html.heex:46
+#, elixir-autogen, elixir-format
+msgid "Require two-factor authentication for every member"
+msgstr "Exigir la verificación en dos pasos a todos los miembros"
+
+#: lib/kanban_web/live/org_live/security.html.heex:65
+#, elixir-autogen, elixir-format
+msgid "Required since %{time}."
+msgstr "Exigida desde %{time}."
+
+#: lib/kanban_web/live/org_live/security.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Retention in days (%{min} to %{max})"
+msgstr "Conservación en días (de %{min} a %{max})"
+
+#: lib/kanban_web/live/org_live/security.html.heex:102
+#, elixir-autogen, elixir-format
+msgid "Save security policy"
+msgstr "Guardar la política de seguridad"
+
+#: lib/kanban_web/live/org_live/security.html.heex:20
+#, elixir-autogen, elixir-format
+msgid "Security policy for %{name}. Only its org-admins can change it."
+msgstr "Política de seguridad de %{name}. Solo sus administradores pueden cambiarla."
+
+#: lib/kanban_web/live/org_live/security.ex:62
+#, elixir-autogen, elixir-format
+msgid "Security policy saved."
+msgstr "Política de seguridad guardada."
+
+#: lib/kanban_web/components/organization_two_factor_banner.ex:72
+#, elixir-autogen, elixir-format
+msgid "The grace period has ended. Turn it on now to keep using Stride."
+msgstr "El periodo de gracia ha terminado. Actívala ahora para seguir usando Stride."
+
+#: lib/kanban_web/components/organization_two_factor_banner.ex:62
+#, elixir-autogen, elixir-format
+msgid "Turn it on before %{deadline}, or you will be asked to before you can continue."
+msgstr "Actívala antes del %{deadline}; de lo contrario, se te pedirá que lo hagas antes de poder continuar."
+
+#: lib/kanban_web/components/organization_two_factor_banner.ex:54
+#, elixir-autogen, elixir-format
+msgid "Your Organization requires two-factor authentication"
+msgstr "Tu organización exige la verificación en dos pasos"
+
+#: lib/kanban_web/live/user_live/two_factor_component.ex:396
+#, elixir-autogen, elixir-format
+msgid "Your Organization requires two-factor authentication, so you cannot turn it off while you are a member."
+msgstr "Tu organización exige la verificación en dos pasos, así que no puedes desactivarla mientras seas miembro."
+
+#: lib/kanban_web/user_auth/organization_two_factor_gate.ex:184
+#, elixir-autogen, elixir-format
+msgid "Your Organization requires two-factor authentication. Turn it on to keep using Stride."
+msgstr "Tu organización exige la verificación en dos pasos. Actívala para seguir usando Stride."
+
+#: lib/kanban_web/components/audit_log_actions.ex:94
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Organization security policy changed"
+msgstr "Política de seguridad de la organización modificada"
+
+#: lib/kanban_web/components/audit_log_actions.ex:96
+#, elixir-autogen, elixir-format
+msgctxt "audit action"
+msgid "Retention purge ran"
+msgstr "Depuración por conservación ejecutada"

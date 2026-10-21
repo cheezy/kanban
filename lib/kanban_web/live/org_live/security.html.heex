@@ -1,0 +1,107 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} active={:organization}>
+  <div class="stride-screen px-4 pb-6 pt-5 md:px-7 md:pb-7">
+    <.link
+      id="org-security-back"
+      navigate={~p"/org"}
+      class="text-sm underline"
+      style="color: var(--ink-2);"
+    >
+      {gettext("Back to Organization")}
+    </.link>
+
+    <header style="padding: 12px 0 14px;">
+      <h1
+        id="org-security-title"
+        style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink);"
+      >
+        {gettext("Security")}
+      </h1>
+      <p style="margin: 6px 0 0; font-size: 13px; color: var(--ink-2); max-width: 720px; text-wrap: pretty; line-height: 1.55;">
+        {gettext("Security policy for %{name}. Only its org-admins can change it.",
+          name: @organization.name
+        )}
+      </p>
+    </header>
+
+    <.form
+      for={@form}
+      id="security-policy-form"
+      phx-change="validate"
+      phx-submit="save"
+      class="flex flex-col gap-5 max-w-3xl"
+    >
+      <.settings_card
+        id="two-factor-policy"
+        title={gettext("Two-factor authentication")}
+        hint={
+          gettext(
+            "Require every member to use two-factor authentication. Members who have not turned it on get a grace period, counted from when you turn this on or from when they join, whichever is later. Members who sign in through single sign-on are not affected."
+          )
+        }
+      >
+        <div class="flex flex-col gap-3">
+          <.input
+            field={@form[:require_two_factor]}
+            type="checkbox"
+            label={gettext("Require two-factor authentication for every member")}
+          />
+          <.input
+            field={@form[:two_factor_grace_days]}
+            type="number"
+            min={grace_range().first}
+            max={grace_range().last}
+            label={
+              gettext("Grace period in days (%{min} to %{max})",
+                min: grace_range().first,
+                max: grace_range().last
+              )
+            }
+          />
+          <p
+            :if={@policy.two_factor_enforced_at}
+            id="two-factor-enforced-at"
+            style="margin: 0; font-size: 12px; color: var(--ink-2);"
+          >
+            {gettext("Required since %{time}.", time: format_time(@policy.two_factor_enforced_at))}
+          </p>
+        </div>
+      </.settings_card>
+
+      <.settings_card
+        id="audit-retention-policy"
+        title={gettext("Audit log retention")}
+        hint={
+          gettext(
+            "A daily job removes your Organization's audit events older than this many days. Leave it empty to keep them forever. Events are always kept for at least %{min} days.",
+            min: retention_range().first
+          )
+        }
+      >
+        <.input
+          field={@form[:audit_retention_days]}
+          type="number"
+          min={retention_range().first}
+          max={retention_range().last}
+          placeholder={gettext("Keep forever")}
+          label={
+            gettext("Retention in days (%{min} to %{max})",
+              min: retention_range().first,
+              max: retention_range().last
+            )
+          }
+        />
+      </.settings_card>
+
+      <div>
+        <.button
+          id="save-security-policy"
+          type="submit"
+          variant="primary"
+          phx-disable-with={gettext("Saving...")}
+        >
+          {gettext("Save security policy")}
+        </.button>
+      </div>
+    </.form>
+  </div>
+</Layouts.app>

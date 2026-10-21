@@ -24,6 +24,12 @@ defmodule Kanban.Accounts.Scope do
   sets it from the `:two_factor_reminder` flash; controller pages and later
   navigations leave it false, so `KanbanWeb.Layouts.app/1` shows no card there.
 
+  `two_factor_deadline` is the `DateTime` by which the user must turn on
+  two-factor because their Organization requires it, or `nil`.
+  `KanbanWeb.UserAuth.OrganizationTwoFactorGate` sets it while the user is in
+  their grace period (and, on the settings page only, after it has passed), and
+  `KanbanWeb.Layouts.app/1` reads it to render the grace banner.
+
   `organization_membership` is the user's `Kanban.Organizations.OrganizationMember`
   with its Organization preloaded (without the contact fields), or `nil` when the
   user belongs to no Organization. `KanbanWeb.UserAuth` loads it for every
@@ -54,6 +60,7 @@ defmodule Kanban.Accounts.Scope do
   defstruct user: nil,
             unread_notifications: nil,
             two_factor_reminder: false,
+            two_factor_deadline: nil,
             organization_membership: nil,
             notifications_locked: false,
             workspace: nil,

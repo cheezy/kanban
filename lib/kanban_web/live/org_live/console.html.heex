@@ -14,10 +14,16 @@
           )}
         </p>
       </div>
-      <.button id="org-audit-log-link" navigate={~p"/org/audit"}>
-        <.icon name="hero-shield-check" class="size-4" />
-        {gettext("Audit log")}
-      </.button>
+      <div class="flex flex-wrap gap-2">
+        <.button id="org-security-link" navigate={~p"/org/security"}>
+          <.icon name="hero-lock-closed" class="size-4" />
+          {gettext("Security")}
+        </.button>
+        <.button id="org-audit-log-link" navigate={~p"/org/audit"}>
+          <.icon name="hero-shield-check" class="size-4" />
+          {gettext("Audit log")}
+        </.button>
+      </div>
     </header>
 
     <div class="flex flex-col md:flex-row gap-4 md:gap-7 flex-1 min-h-0">

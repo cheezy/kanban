@@ -347,6 +347,18 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       NimbleTOTP.verification_code(secret, time: System.os_time(:second) + offset_steps * 30)
     end
 
+    defp require_two_factor_for(user) do
+      org = Kanban.OrganizationsFixtures.organization_fixture()
+      admin = user_fixture()
+      Kanban.OrganizationsFixtures.organization_member_fixture(org, admin, :org_admin)
+      Kanban.OrganizationsFixtures.organization_member_fixture(org, user)
+
+      {:ok, _} =
+        Kanban.Organizations.SecurityPolicies.update_policy(admin, %{
+          "require_two_factor" => "true"
+        })
+    end
+
     defp open_two_factor(conn) do
       {:ok, lv, _html} = live(conn, ~p"/users/settings?section=two_factor")
       lv
@@ -440,6 +452,34 @@ defmodule KanbanWeb.UserLive.SettingsTest do
 
       assert has_element?(lv, "#two-factor-begin")
       assert TwoFactor.get_user_totp(user) == nil
+    end
+
+    test "while the Organization requires two-factor the disable form is replaced by an explanation",
+         %{conn: conn, user: user} do
+      enroll(user)
+      require_two_factor_for(user)
+
+      lv = open_two_factor(conn)
+
+      assert has_element?(lv, "#two-factor-required-by-organization")
+      refute has_element?(lv, "#two-factor-disable-form")
+
+      assert render(lv) =~
+               "Your Organization requires two-factor authentication, so you cannot turn it off"
+    end
+
+    test "a disable submitted after the Organization started requiring two-factor is refused",
+         %{conn: conn, user: user} do
+      %{secret: secret} = enroll(user)
+      lv = open_two_factor(conn)
+      require_two_factor_for(user)
+
+      html =
+        lv |> form("#two-factor-disable-form", %{"code" => totp(secret, 1)}) |> render_submit()
+
+      assert html =~ "so you cannot turn it off while you are a member"
+      assert has_element?(lv, "#two-factor-required-by-organization")
+      assert Accounts.two_factor_enabled?(user)
     end
 
     test "disable with a wrong code shows an error and keeps two-factor on",

@@ -309,6 +309,15 @@ defmodule Kanban.AuditLog do
     end
   end
 
+  @doc """
+  Removes up to `batch_limit` events of one Organization (or, for `nil`, events
+  with no Organization) inserted strictly before `cutoff`, under the same
+  90-day floor as `purge_before/1`. See
+  `Kanban.AuditLog.Retention.purge_organization_before/3`.
+  """
+  defdelegate purge_organization_before(organization_id, cutoff, batch_limit),
+    to: Kanban.AuditLog.Retention
+
   # --- persistence -----------------------------------------------------------
 
   # Stores the already-sanitized pairs, never the raw metadata. Every failure —

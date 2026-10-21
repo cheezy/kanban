@@ -198,6 +198,51 @@ role's name and returns `:hardened` or `{:degraded, reasons}`:
 | `:app_role_cannot_execute_purge_function` | The named application role is missing or cannot execute the purge function |
 | `:trigger_function_honors_flag` | The trigger still admits a delete when the `kanban.audit_purge` flag is on |
 
+### Organization retention purge
+
+Organizations that set an audit retention period
+([Organization Security Policies](organization-security-policies.md#audit-retention))
+have their events removed through a second function,
+`audit_events_purge_organization(org_id bigint, cutoff timestamptz, batch_limit integer)`.
+Its statements live in `Kanban.AuditLog.Hardening.OrganizationPurge`
+(`lib/kanban/audit_log/hardening/organization_purge.ex`), the migration
+`priv/repo/migrations/20261021120409_add_audit_events_organization_purge_function.exs`
+installs them, and `Kanban.AuditLog.purge_organization_before/3` calls it with
+bound parameters.
+
+It follows the same rules as `audit_events_purge`: the same 90-day floor and
+`KAP01` refusal, `SECURITY DEFINER` with the same pinned `search_path`,
+`EXECUTE` revoked from `PUBLIC`, owned by `kanban_audit_owner` when hardened
+and setting the `kanban.audit_purge` flag around its own delete when degraded.
+It differs in three ways:
+
+- it removes only rows of one Organization (`organization_id = org_id`), or
+  only rows with no Organization when `org_id` is `NULL`, so one
+  Organization's setting never reaches another's events;
+- it removes at most `batch_limit` rows, oldest first, and refuses a
+  `batch_limit` that is `NULL` or below 1 with SQLSTATE `22023`, so the
+  caller loops in short statements instead of holding one long lock;
+- it is installed through `Purge.migrate_or_degrade_organization/2` and
+  checked by `Purge.organization_status/2`, whose degraded notice is
+  `security_audit_organization_purge_degraded`.
+
+`Kanban.Release.harden_audit_log/0` hardens both functions, and
+`Kanban.Release.audit_log_status/0` combines their reasons. The Organization
+function's reasons mirror the site function's with an `organization_` prefix:
+
+| Reason | Meaning |
+|---|---|
+| `:organization_purge_function_missing` | No Organization purge function is installed |
+| `:organization_purge_function_not_owned_by_owner_role` | It belongs to another role, such as the application role in degraded mode |
+| `:organization_purge_function_not_security_definer` | It runs with its caller's rights, so it cannot delete from a hardened table |
+| `:organization_purge_function_search_path_not_pinned` | Its `search_path` is not pinned to `pg_catalog, pg_temp` |
+| `:organization_purge_function_executable_by_public` | Every role can execute it |
+| `:app_role_cannot_execute_organization_purge_function` | The named application role is missing or cannot execute it |
+
+When the migration cannot install it, it changes nothing and logs
+`schema_create_denied` or `organization_purge_function_not_replaceable`.
+The daily retention job, `Kanban.Retention.PurgeWorker`, is the only caller.
+
 ## Tests
 
 `test/kanban/audit_log/hardening_test.exs` proves the separation. A superuser
@@ -208,6 +253,8 @@ the transaction to it. Hardening locks `audit_events` until the sandbox rolls
 back, so a test module that uses the helper must be `async: false`.
 
 `test/kanban/audit_log/purge_test.exs` covers the purge function, both modes
-and `status/2`, using the same helper. The append-only trigger tests in
+and `status/2`, using the same helper, and
+`test/kanban/audit_log/organization_purge_test.exs` does the same for the
+Organization purge function. The append-only trigger tests in
 `test/kanban/audit_log_test.exs` assert that the test database is hardened, so
 a degraded test database fails them instead of passing for the wrong reason.

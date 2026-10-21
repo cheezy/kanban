@@ -378,6 +378,43 @@ defmodule Kanban.Accounts.TwoFactorTest do
     end
   end
 
+  describe "disable/2 while the user's Organization requires two-factor" do
+    setup %{user: user} do
+      org = Kanban.OrganizationsFixtures.organization_fixture()
+      admin = user_fixture()
+      Kanban.OrganizationsFixtures.organization_member_fixture(org, admin, :org_admin)
+      Kanban.OrganizationsFixtures.organization_member_fixture(org, user)
+      %{admin: admin}
+    end
+
+    test "refuses, using no attempt and no recovery code, and succeeds once the policy is off",
+         %{user: user, admin: admin} do
+      away_from_step_boundary()
+      %{recovery_codes: [recovery | _]} = enroll(user)
+
+      {:ok, _} =
+        Kanban.Organizations.SecurityPolicies.update_policy(admin, %{
+          "require_two_factor" => "true"
+        })
+
+      # More refusals than the rate limit allows: none of them is counted.
+      for _ <- 1..12 do
+        assert Accounts.disable_two_factor(user, recovery) == {:error, :required_by_organization}
+      end
+
+      assert Accounts.two_factor_enabled?(user)
+      assert AuditLog.list_events(action: "two_factor_disabled", actor_user_id: user.id) == []
+
+      {:ok, _} =
+        Kanban.Organizations.SecurityPolicies.update_policy(admin, %{
+          "require_two_factor" => "false"
+        })
+
+      assert Accounts.disable_two_factor(user, recovery) == :ok
+      refute Accounts.two_factor_enabled?(user)
+    end
+  end
+
   describe "disable/2" do
     test "turns two-factor off with a current code", %{user: user} do
       %{secret: secret} = enroll(user)
