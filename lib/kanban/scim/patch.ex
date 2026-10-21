@@ -283,15 +283,17 @@ defmodule Kanban.SCIM.Patch do
   # held a scheduler for over a minute).
   defp collect_ops(items, fun) do
     items
-    |> Enum.reduce_while({:ok, []}, fn item, {:ok, chunks} ->
-      case fun.(item) do
-        {:ok, ops} -> {:cont, {:ok, [ops | chunks]}}
-        {:error, _reason} = error -> {:halt, error}
-      end
-    end)
-    |> case do
-      {:ok, chunks} -> {:ok, chunks |> Enum.reverse() |> Enum.concat()}
-      {:error, _reason} = error -> error
+    |> Enum.reduce_while({:ok, []}, &collect_op(&1, &2, fun))
+    |> join_chunks()
+  end
+
+  defp collect_op(item, {:ok, chunks}, fun) do
+    case fun.(item) do
+      {:ok, ops} -> {:cont, {:ok, [ops | chunks]}}
+      {:error, _reason} = error -> {:halt, error}
     end
   end
+
+  defp join_chunks({:ok, chunks}), do: {:ok, chunks |> Enum.reverse() |> Enum.concat()}
+  defp join_chunks({:error, _reason} = error), do: error
 end

@@ -289,7 +289,7 @@ defmodule Kanban.SSO.OIDC do
   # is collected by collect/2 and decoded by the caller.
   defp send_request(method, pinned, options) do
     headers = Keyword.get(pinned, :headers, []) ++ Keyword.get(options, :headers, [])
-    connect_options = Keyword.put(Keyword.get(pinned, :connect_options, []), :timeout, 5_000)
+    connect_options = pinned |> Keyword.get(:connect_options, []) |> Keyword.put(:timeout, 5_000)
 
     [
       method: method,
