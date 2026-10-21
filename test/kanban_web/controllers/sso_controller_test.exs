@@ -66,6 +66,26 @@ defmodule KanbanWeb.SSOControllerTest do
       assert flow["connection_id"] == ctx.connection.id
     end
 
+    test "a start from another site goes to the log-in page and starts no flow", ctx do
+      for site <- ["cross-site", "same-site"] do
+        conn =
+          build_conn()
+          |> put_req_header("sec-fetch-site", site)
+          |> get(~p"/users/sso/start?#{[domain: ctx.domain]}")
+
+        assert redirected_to(conn) == ~p"/users/log-in"
+        assert Phoenix.Flash.get(conn.assigns.flash, :info) =~ "single sign-on"
+        refute get_session(conn, "sso_flow")
+      end
+    end
+
+    test "a start from this site or a typed address goes to the identity provider", ctx do
+      for site <- ["same-origin", "none"] do
+        {conn, query} = start(put_req_header(build_conn(), "sec-fetch-site", site), ctx.domain)
+        assert get_session(conn, "sso_flow")["state"] == query["state"]
+      end
+    end
+
     test "a domain with no verified Organization is not available", %{conn: conn} do
       conn = get(conn, ~p"/users/sso/start?domain=unclaimed.example")
 

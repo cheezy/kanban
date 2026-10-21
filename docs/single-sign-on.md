@@ -80,6 +80,11 @@ requests it, it only sends the person's browser there. In development,
 1. On the login page the person enters their work email under **Work email for
    single sign-on** and selects **Sign in with SSO**. Only the domain is used: Stride finds the Organization
    that verified it and sends the browser to its identity provider.
+   A sign-in that another site starts (the browser's `Sec-Fetch-Site` header
+   says `cross-site` or `same-site`) is sent to the login page instead, with
+   no flow started. Otherwise any page could bounce a visitor through an
+   identity provider its author controls and sign them in to the author's
+   account (login CSRF). The same applies to SAML, which starts here too.
 2. The request uses the authorization code flow with PKCE (`S256`), a random
    `state` and a random `nonce`. All three are kept in the person's session,
    are used once and are removed when the provider sends the browser back. A

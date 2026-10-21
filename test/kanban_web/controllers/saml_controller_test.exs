@@ -97,6 +97,17 @@ defmodule KanbanWeb.SAMLControllerTest do
       end
     end
 
+    test "a start from another site creates no request and sets no binding cookie", ctx do
+      conn =
+        build_conn()
+        |> put_req_header("sec-fetch-site", "cross-site")
+        |> get(~p"/users/sso/start?#{[domain: ctx.domain]}")
+
+      assert redirected_to(conn) == ~p"/users/log-in"
+      refute Map.has_key?(conn.resp_cookies, "_kanban_saml_relay")
+      assert Repo.aggregate(Request, :count) == 0
+    end
+
     test "a disabled SAML connection is not available", %{conn: conn} = ctx do
       ctx.connection |> Ecto.Changeset.change(enabled: false) |> Repo.update!()
       conn = get(conn, ~p"/users/sso/start?#{[domain: ctx.domain]}")

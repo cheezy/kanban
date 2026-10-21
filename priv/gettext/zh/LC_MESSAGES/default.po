@@ -7125,11 +7125,11 @@ msgstr "您对本服务的使用须遵守我们的"
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "您必须先确认您的账户才能登录。请检查您的电子邮件以获取确认链接。"
 
-#: lib/kanban_web/user_auth.ex:311
-#: lib/kanban_web/user_auth.ex:400
-#: lib/kanban_web/user_auth.ex:436
-#: lib/kanban_web/user_auth.ex:467
-#: lib/kanban_web/user_auth.ex:498
+#: lib/kanban_web/user_auth.ex:322
+#: lib/kanban_web/user_auth.ex:411
+#: lib/kanban_web/user_auth.ex:447
+#: lib/kanban_web/user_auth.ex:478
+#: lib/kanban_web/user_auth.ex:509
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "您必须确认您的账户才能访问此页面。"
@@ -8022,7 +8022,7 @@ msgid "New column"
 msgstr "新建列"
 
 #: lib/kanban_web/controllers/saml_controller.ex:89
-#: lib/kanban_web/controllers/sso_controller.ex:94
+#: lib/kanban_web/controllers/sso_controller.ex:114
 #: lib/kanban_web/controllers/user_session_controller.ex:281
 #: lib/kanban_web/live/user_live/two_factor_component.ex:410
 #, elixir-autogen, elixir-format
@@ -9897,7 +9897,7 @@ msgid "Verify"
 msgstr "验证"
 
 #: lib/kanban_web/controllers/saml_controller.ex:77
-#: lib/kanban_web/controllers/sso_controller.ex:72
+#: lib/kanban_web/controllers/sso_controller.ex:92
 #: lib/kanban_web/controllers/user_session_controller.ex:241
 #, elixir-autogen, elixir-format
 msgid "Welcome back!"
@@ -12236,7 +12236,7 @@ msgstr "您的组织要求使用双重验证"
 msgid "Your Organization requires two-factor authentication, so you cannot turn it off while you are a member."
 msgstr "您的组织要求使用双重验证，因此您作为成员期间无法关闭它。"
 
-#: lib/kanban_web/user_auth/organization_two_factor_gate.ex:194
+#: lib/kanban_web/user_auth/organization_two_factor_gate.ex:209
 #, elixir-autogen, elixir-format
 msgid "Your Organization requires two-factor authentication. Turn it on to keep using Stride."
 msgstr "您的组织要求使用双重验证。请开启以继续使用 Stride。"
@@ -12398,12 +12398,12 @@ msgid "Single sign-on connection saved."
 msgstr "已保存单点登录连接。"
 
 #: lib/kanban_web/controllers/saml_controller.ex:97
-#: lib/kanban_web/controllers/sso_controller.ex:82
+#: lib/kanban_web/controllers/sso_controller.ex:102
 #, elixir-autogen, elixir-format
 msgid "Single sign-on could not sign you in. Contact your Organization's administrator if this continues."
 msgstr "单点登录未能让您登录。如果问题持续，请联系您组织的管理员。"
 
-#: lib/kanban_web/controllers/sso_controller.ex:59
+#: lib/kanban_web/controllers/sso_controller.ex:79
 #, elixir-autogen, elixir-format
 msgid "Single sign-on is not available for that email address."
 msgstr "该电子邮件地址无法使用单点登录。"
@@ -12743,3 +12743,8 @@ msgstr "已通过 SCIM 取消预配用户"
 msgctxt "audit action"
 msgid "User provisioned by SCIM"
 msgstr "已通过 SCIM 预配用户"
+
+#: lib/kanban_web/controllers/sso_controller.ex:51
+#, elixir-autogen, elixir-format
+msgid "Enter your work email to continue with single sign-on."
+msgstr "请输入您的工作电子邮件地址以继续使用单点登录。"

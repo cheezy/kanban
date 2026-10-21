@@ -20,6 +20,13 @@ defmodule KanbanWeb.SSOController do
       `sso: true`, which renews the session and marks it as signed in through
       single sign-on.
 
+  A start another site sends the browser to (`Sec-Fetch-Site` of
+  `cross-site` or `same-site`) goes to the log-in page instead, with no flow:
+  otherwise any page could bounce a visitor through an identity provider its
+  author controls and sign them in to the author's account (login CSRF). The
+  login page's own start is `same-origin`, a typed address is `none`, and a
+  browser that sends no fetch metadata still needs this site's session.
+
   Both are rate limited per IP (`Kanban.RateLimit` surface `:sso`) before any
   work. Every refusal shows the same message, so a response reveals nothing
   about accounts or Organizations. The decisions live in `Kanban.SSO`.
@@ -33,6 +40,19 @@ defmodule KanbanWeb.SSOController do
   @flow_key "sso_flow"
 
   def start(conn, params) do
+    if started_here?(conn), do: begin(conn, params), else: continue_from_log_in(conn)
+  end
+
+  defp started_here?(conn),
+    do: get_req_header(conn, "sec-fetch-site") in [[], ["same-origin"], ["none"]]
+
+  defp continue_from_log_in(conn) do
+    conn
+    |> put_flash(:info, gettext("Enter your work email to continue with single sign-on."))
+    |> redirect(to: ~p"/users/log-in")
+  end
+
+  defp begin(conn, params) do
     with :ok <- rate_limit(conn),
          {:ok, flow, url} <- SSO.begin_oidc_login(params["domain"], callback_url()) do
       conn

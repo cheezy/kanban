@@ -7125,11 +7125,11 @@ msgstr "Votre utilisation du service est soumise à notre "
 msgid "You must confirm your account before signing in. Check your email for a confirmation link."
 msgstr "Vous devez confirmer votre compte avant de vous connecter. Vérifiez votre e-mail pour trouver le lien de confirmation."
 
-#: lib/kanban_web/user_auth.ex:311
-#: lib/kanban_web/user_auth.ex:400
-#: lib/kanban_web/user_auth.ex:436
-#: lib/kanban_web/user_auth.ex:467
-#: lib/kanban_web/user_auth.ex:498
+#: lib/kanban_web/user_auth.ex:322
+#: lib/kanban_web/user_auth.ex:411
+#: lib/kanban_web/user_auth.ex:447
+#: lib/kanban_web/user_auth.ex:478
+#: lib/kanban_web/user_auth.ex:509
 #, elixir-autogen, elixir-format
 msgid "You must confirm your account to access this page."
 msgstr "Vous devez confirmer votre compte pour accéder à cette page."
@@ -8029,7 +8029,7 @@ msgid "New column"
 msgstr "Nouvelle colonne"
 
 #: lib/kanban_web/controllers/saml_controller.ex:89
-#: lib/kanban_web/controllers/sso_controller.ex:94
+#: lib/kanban_web/controllers/sso_controller.ex:114
 #: lib/kanban_web/controllers/user_session_controller.ex:281
 #: lib/kanban_web/live/user_live/two_factor_component.ex:410
 #, elixir-autogen, elixir-format
@@ -9908,7 +9908,7 @@ msgid "Verify"
 msgstr "Vérifier"
 
 #: lib/kanban_web/controllers/saml_controller.ex:77
-#: lib/kanban_web/controllers/sso_controller.ex:72
+#: lib/kanban_web/controllers/sso_controller.ex:92
 #: lib/kanban_web/controllers/user_session_controller.ex:241
 #, elixir-autogen, elixir-format
 msgid "Welcome back!"
@@ -12252,7 +12252,7 @@ msgstr "Votre organisation exige la double authentification"
 msgid "Your Organization requires two-factor authentication, so you cannot turn it off while you are a member."
 msgstr "Votre organisation exige la double authentification : vous ne pouvez pas la désactiver tant que vous en êtes membre."
 
-#: lib/kanban_web/user_auth/organization_two_factor_gate.ex:194
+#: lib/kanban_web/user_auth/organization_two_factor_gate.ex:209
 #, elixir-autogen, elixir-format
 msgid "Your Organization requires two-factor authentication. Turn it on to keep using Stride."
 msgstr "Votre organisation exige la double authentification. Activez-la pour continuer à utiliser Stride."
@@ -12414,12 +12414,12 @@ msgid "Single sign-on connection saved."
 msgstr "Connexion d'authentification unique enregistrée."
 
 #: lib/kanban_web/controllers/saml_controller.ex:97
-#: lib/kanban_web/controllers/sso_controller.ex:82
+#: lib/kanban_web/controllers/sso_controller.ex:102
 #, elixir-autogen, elixir-format
 msgid "Single sign-on could not sign you in. Contact your Organization's administrator if this continues."
 msgstr "L'authentification unique n'a pas pu vous connecter. Si le problème persiste, contactez l'administrateur de votre organisation."
 
-#: lib/kanban_web/controllers/sso_controller.ex:59
+#: lib/kanban_web/controllers/sso_controller.ex:79
 #, elixir-autogen, elixir-format
 msgid "Single sign-on is not available for that email address."
 msgstr "L'authentification unique n'est pas disponible pour cette adresse e-mail."
@@ -12759,3 +12759,8 @@ msgstr "Utilisateur déprovisionné par SCIM"
 msgctxt "audit action"
 msgid "User provisioned by SCIM"
 msgstr "Utilisateur provisionné par SCIM"
+
+#: lib/kanban_web/controllers/sso_controller.ex:51
+#, elixir-autogen, elixir-format
+msgid "Enter your work email to continue with single sign-on."
+msgstr "Saisissez votre adresse e-mail professionnelle pour continuer avec l'authentification unique."
