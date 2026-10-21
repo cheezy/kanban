@@ -137,8 +137,6 @@ defmodule Kanban.Workspaces.InvitationAcceptance do
     end
   end
 
-  defp in_other_organization?(_invitation, _user), do: true
-
   defp accept_locked(user, finder) do
     now = DateTime.utc_now()
 
