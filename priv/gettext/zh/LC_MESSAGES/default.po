@@ -12253,7 +12253,7 @@ msgctxt "audit action"
 msgid "Retention purge ran"
 msgstr "已执行保留期清理"
 
-#: lib/kanban_web/live/org_live/sso.ex:250
+#: lib/kanban_web/live/org_live/sso.ex:251
 #, elixir-autogen, elixir-format
 msgid "%{domain} is verified."
 msgstr "%{domain} 已验证。"
@@ -12419,7 +12419,7 @@ msgstr "TXT 记录名称"
 msgid "TXT record value"
 msgstr "TXT 记录值"
 
-#: lib/kanban_web/live/org_live/sso.ex:258
+#: lib/kanban_web/live/org_live/sso.ex:259
 #, elixir-autogen, elixir-format
 msgid "The TXT record was not found. DNS changes can take a while to appear; try again later."
 msgstr "未找到 TXT 记录。DNS 更改可能需要一段时间才能生效，请稍后重试。"

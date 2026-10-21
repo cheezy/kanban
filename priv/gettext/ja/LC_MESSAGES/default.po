@@ -12253,7 +12253,7 @@ msgctxt "audit action"
 msgid "Retention purge ran"
 msgstr "保持期間による削除を実行"
 
-#: lib/kanban_web/live/org_live/sso.ex:250
+#: lib/kanban_web/live/org_live/sso.ex:251
 #, elixir-autogen, elixir-format
 msgid "%{domain} is verified."
 msgstr "%{domain} は確認済みです。"
@@ -12419,7 +12419,7 @@ msgstr "TXT レコード名"
 msgid "TXT record value"
 msgstr "TXT レコードの値"
 
-#: lib/kanban_web/live/org_live/sso.ex:258
+#: lib/kanban_web/live/org_live/sso.ex:259
 #, elixir-autogen, elixir-format
 msgid "The TXT record was not found. DNS changes can take a while to appear; try again later."
 msgstr "TXT レコードが見つかりませんでした。DNS の変更が反映されるまで時間がかかる場合があります。後でもう一度お試しください。"
