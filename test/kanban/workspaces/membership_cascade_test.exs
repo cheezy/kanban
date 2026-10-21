@@ -50,6 +50,24 @@ defmodule Kanban.Workspaces.MembershipCascadeTest do
     token
   end
 
+  defp column_named(board, name),
+    do: board |> Kanban.Columns.list_columns() |> Enum.find(&(&1.name == name))
+
+  defp claimed_by(board, user) do
+    now = DateTime.utc_now(:second)
+
+    board
+    |> column_named("Doing")
+    |> task_fixture()
+    |> Ecto.Changeset.change(
+      status: :in_progress,
+      claimed_at: now,
+      claim_expires_at: DateTime.add(now, 3600),
+      assigned_to_id: user.id
+    )
+    |> Repo.update!()
+  end
+
   defp revoked?(token), do: not is_nil(Repo.get!(ApiToken, token.id).revoked_at)
   defp row(board, user), do: Repo.get_by(BoardUser, board_id: board.id, user_id: user.id)
 
@@ -117,6 +135,27 @@ defmodule Kanban.Workspaces.MembershipCascadeTest do
       assert Boards.get_user_access(shared.id, ctx.member.id) == nil
       # The board the member owned stays reachable through the org-admin.
       assert Boards.get_user_access(owned.id, ctx.admin.id) == :owner
+    end
+
+    test "returns the member's claimed tasks in that workspace to Ready, and only there", ctx do
+      here = ai_optimized_board_fixture(user_fixture()) |> put_in_workspace(ctx.workspace)
+      there = ai_optimized_board_fixture(user_fixture()) |> put_in_workspace(ctx.other_workspace)
+      grant(here, ctx.member, :modify)
+      grant(there, ctx.member, :modify)
+      claimed_here = claimed_by(here, ctx.member)
+      claimed_there = claimed_by(there, ctx.member)
+
+      assert {:ok, _} = Workspaces.remove_member(ctx.admin, ctx.workspace, ctx.member)
+
+      assert %Task{status: :open, assigned_to_id: nil, column_id: column_id} =
+               Repo.get!(Task, claimed_here.id)
+
+      assert column_id == column_named(here, "Ready").id
+
+      assert %Task{status: :in_progress, assigned_to_id: assignee} =
+               Repo.get!(Task, claimed_there.id)
+
+      assert assignee == ctx.member.id
     end
 
     test "a refusal changes nothing", ctx do

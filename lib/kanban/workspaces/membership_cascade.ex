@@ -13,7 +13,8 @@ defmodule Kanban.Workspaces.MembershipCascade do
     * revokes the user's API tokens for the board, and their workspace tokens
       for the workspace (W2220), so an agent acting through one loses access at
       once, and
-    * unassigns the user from the board's open (unarchived) tasks, as
+    * returns the user's claimed tasks to Ready (`Kanban.Tasks.ClaimRelease`)
+      and unassigns them from the board's other open (unarchived) tasks, as
       `Kanban.Boards.MembershipChanges.remove_user_from_board/3` does.
 
   The user's **owner** row is deleted too. `remove_user_from_board/3` refuses
@@ -43,6 +44,7 @@ defmodule Kanban.Workspaces.MembershipCascade do
   alias Kanban.Boards.BoardUser
   alias Kanban.Boards.MembershipChanges
   alias Kanban.Repo
+  alias Kanban.Tasks.ClaimRelease
   alias Kanban.Tasks.Task
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
@@ -64,6 +66,7 @@ defmodule Kanban.Workspaces.MembershipCascade do
   def remove(user_id, workspace_ids) when is_integer(user_id) and is_list(workspace_ids) do
     removed = user_id |> lock_rows(workspace_ids) |> delete_rows(user_id)
     revoke_remaining_tokens(user_id, workspace_ids)
+    ClaimRelease.release(user_id, boards_in(workspace_ids))
     unassign_open_tasks(user_id, workspace_ids)
     removed
   end

@@ -144,4 +144,67 @@ defmodule Kanban.Boards.AccessDowngradeTest do
       assert Boards.get_user_access(ctx.board.id, ctx.org_admin.id) == :owner
     end
   end
+
+  describe "a claimed task when write access ends" do
+    setup %{owner: owner} do
+      board = ai_optimized_board_fixture(owner)
+      member = user_fixture()
+      {:ok, _} = Boards.add_user_to_board(board, member, :modify, owner)
+      columns = Kanban.Columns.list_columns(board)
+
+      %{
+        board: board,
+        member: member,
+        doing: Enum.find(columns, &(&1.name == "Doing")),
+        ready: Enum.find(columns, &(&1.name == "Ready"))
+      }
+    end
+
+    defp claimed_by(column, user) do
+      now = DateTime.utc_now(:second)
+
+      column
+      |> task_fixture()
+      |> Ecto.Changeset.change(
+        status: :in_progress,
+        claimed_at: now,
+        claim_expires_at: DateTime.add(now, 3600),
+        assigned_to_id: user.id
+      )
+      |> Repo.update!()
+    end
+
+    defp assert_back_in_ready(task, ready) do
+      assert %Task{status: :open, assigned_to_id: nil, claimed_at: nil, column_id: column_id} =
+               Repo.get!(Task, task.id)
+
+      assert column_id == ready.id
+    end
+
+    test "a downgrade to read-only returns it to Ready", ctx do
+      task = claimed_by(ctx.doing, ctx.member)
+
+      {:ok, _} = Boards.update_user_access(ctx.board, ctx.member, :read_only, ctx.owner)
+
+      assert_back_in_ready(task, ctx.ready)
+    end
+
+    test "a removal returns it to Ready", ctx do
+      task = claimed_by(ctx.doing, ctx.member)
+
+      {:ok, _} = Boards.remove_user_from_board(ctx.board, ctx.member, ctx.owner)
+
+      assert_back_in_ready(task, ctx.ready)
+    end
+
+    test "a lateral change keeps the claim", ctx do
+      task = claimed_by(ctx.doing, ctx.member)
+
+      {:ok, _} = Boards.update_user_access(ctx.board, ctx.member, :modify, ctx.owner)
+
+      assert %Task{status: :in_progress, column_id: column_id} = Repo.get!(Task, task.id)
+      assert column_id == ctx.doing.id
+      assert assignee(task) == ctx.member.id
+    end
+  end
 end

@@ -44,6 +44,7 @@ defmodule Kanban.Boards.MembershipChanges do
   alias Kanban.Notifications.Events
   alias Kanban.Plans
   alias Kanban.Repo
+  alias Kanban.Tasks.ClaimRelease
   alias Kanban.Tasks.Task
   alias Kanban.Telemetry.AfterCommit
   alias Kanban.Workspaces.Policy
@@ -411,9 +412,10 @@ defmodule Kanban.Boards.MembershipChanges do
     |> notify_membership(board, user, access_change(board_user, new_access), current_user)
   end
 
-  # Downgrading to :read_only revokes the user's board-scoped API tokens (W1430)
-  # and unassigns them from the board's open tasks, which they could no longer
-  # complete or unclaim, in the same transaction, as removal does.
+  # Downgrading to :read_only revokes the user's board-scoped API tokens (W1430),
+  # returns their claimed tasks to Ready and unassigns them from the board's
+  # other open tasks, which they could no longer complete or unclaim, in the
+  # same transaction, as removal does.
   # Upgrades/lateral changes leave both intact.
   defp change_access(board_user, board_id, user_id, new_access) do
     Ecto.Multi.new()
@@ -427,9 +429,10 @@ defmodule Kanban.Boards.MembershipChanges do
 
   defp maybe_end_write_access(multi, _board_id, _user_id, _access), do: multi
 
-  # Revokes the user's tokens for the board and unassigns their open tasks
-  # there, after a removal or downgrade earlier in `multi`, only when that
-  # change left them without write access. An org-admin of the board's
+  # Revokes the user's tokens for the board, returns their claimed tasks there
+  # to Ready (Kanban.Tasks.ClaimRelease) and unassigns their other open tasks,
+  # after a removal or downgrade earlier in `multi`, only when that change left
+  # them without write access. An org-admin of the board's
   # Organization keeps owner access through their role
   # (Kanban.Workspaces.Policy, read inside the transaction, after the change),
   # so their tokens and tasks stay.
@@ -447,6 +450,8 @@ defmodule Kanban.Boards.MembershipChanges do
     end)
     |> Ecto.Multi.run(:unassign, fn
       repo, %{write_access_ended: true} ->
+        ClaimRelease.release(user_id, [board_id])
+
         unassigned =
           board_id
           |> open_assignments(user_id)
