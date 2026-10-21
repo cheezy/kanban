@@ -10845,7 +10845,7 @@ msgstr "只读。如需更改，请联系站点管理员。"
 
 #: lib/kanban_web/live/org_live/console.ex:66
 #: lib/kanban_web/live/org_live/console.ex:306
-#: lib/kanban_web/live/org_live/scim.ex:130
+#: lib/kanban_web/live/org_live/scim.ex:133
 #: lib/kanban_web/live/org_live/security.ex:103
 #: lib/kanban_web/live/org_live/sso.ex:219
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
@@ -11829,7 +11829,7 @@ msgstr "工作区令牌"
 msgid "Your new workspace token"
 msgstr "你的新工作区令牌"
 
-#: lib/kanban_web/live/org_live/scim.ex:149
+#: lib/kanban_web/live/org_live/scim.ex:152
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:235
 #, elixir-autogen, elixir-format
 msgid "never"
@@ -12645,7 +12645,7 @@ msgstr "SCIM 令牌可以添加、更改和移除您组织中的人员及其工�
 msgid "A revoked token stops working at once and cannot be restored."
 msgstr "已撤销的令牌会立即失效，且无法恢复。"
 
-#: lib/kanban_web/live/org_live/scim.ex:136
+#: lib/kanban_web/live/org_live/scim.ex:139
 #, elixir-autogen, elixir-format
 msgid "By %{creator} · created %{created} · last used %{used}"
 msgstr "创建者 %{creator} · 创建于 %{created} · 最后使用 %{used}"
@@ -12681,7 +12681,7 @@ msgid "SCIM base URL"
 msgstr "SCIM 基础 URL"
 
 #: lib/kanban_web/live/org_live/console.html.heex:28
-#: lib/kanban_web/live/org_live/scim.ex:37
+#: lib/kanban_web/live/org_live/scim.ex:39
 #: lib/kanban_web/live/org_live/scim.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "SCIM provisioning"
@@ -12692,7 +12692,7 @@ msgstr "SCIM 预配"
 msgid "SCIM tokens"
 msgstr "SCIM 令牌"
 
-#: lib/kanban_web/live/org_live/scim.ex:83
+#: lib/kanban_web/live/org_live/scim.ex:69
 #, elixir-autogen, elixir-format
 msgid "Token revoked."
 msgstr "令牌已撤销。"

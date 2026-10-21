@@ -10845,7 +10845,7 @@ msgstr "読み取り専用です。変更はサイト管理者に依頼してく
 
 #: lib/kanban_web/live/org_live/console.ex:66
 #: lib/kanban_web/live/org_live/console.ex:306
-#: lib/kanban_web/live/org_live/scim.ex:130
+#: lib/kanban_web/live/org_live/scim.ex:133
 #: lib/kanban_web/live/org_live/security.ex:103
 #: lib/kanban_web/live/org_live/sso.ex:219
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
@@ -11829,7 +11829,7 @@ msgstr "ワークスペーストークン"
 msgid "Your new workspace token"
 msgstr "新しいワークスペーストークン"
 
-#: lib/kanban_web/live/org_live/scim.ex:149
+#: lib/kanban_web/live/org_live/scim.ex:152
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:235
 #, elixir-autogen, elixir-format
 msgid "never"
@@ -12645,7 +12645,7 @@ msgstr "SCIM トークンは、組織内のユーザーとそのワークスペ�
 msgid "A revoked token stops working at once and cannot be restored."
 msgstr "取り消したトークンは直ちに使用できなくなり、復元できません。"
 
-#: lib/kanban_web/live/org_live/scim.ex:136
+#: lib/kanban_web/live/org_live/scim.ex:139
 #, elixir-autogen, elixir-format
 msgid "By %{creator} · created %{created} · last used %{used}"
 msgstr "作成者 %{creator} · 作成日 %{created} · 最終使用 %{used}"
@@ -12681,7 +12681,7 @@ msgid "SCIM base URL"
 msgstr "SCIM ベース URL"
 
 #: lib/kanban_web/live/org_live/console.html.heex:28
-#: lib/kanban_web/live/org_live/scim.ex:37
+#: lib/kanban_web/live/org_live/scim.ex:39
 #: lib/kanban_web/live/org_live/scim.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "SCIM provisioning"
@@ -12692,7 +12692,7 @@ msgstr "SCIM プロビジョニング"
 msgid "SCIM tokens"
 msgstr "SCIM トークン"
 
-#: lib/kanban_web/live/org_live/scim.ex:83
+#: lib/kanban_web/live/org_live/scim.ex:69
 #, elixir-autogen, elixir-format
 msgid "Token revoked."
 msgstr "トークンを取り消しました。"

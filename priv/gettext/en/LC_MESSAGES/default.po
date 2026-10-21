@@ -10814,7 +10814,7 @@ msgstr ""
 
 #: lib/kanban_web/live/org_live/console.ex:66
 #: lib/kanban_web/live/org_live/console.ex:306
-#: lib/kanban_web/live/org_live/scim.ex:130
+#: lib/kanban_web/live/org_live/scim.ex:133
 #: lib/kanban_web/live/org_live/security.ex:103
 #: lib/kanban_web/live/org_live/sso.ex:219
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
@@ -11799,7 +11799,7 @@ msgstr ""
 msgid "Your new workspace token"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/scim.ex:149
+#: lib/kanban_web/live/org_live/scim.ex:152
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:235
 #, elixir-autogen, elixir-format
 msgid "never"
@@ -12615,7 +12615,7 @@ msgstr ""
 msgid "A revoked token stops working at once and cannot be restored."
 msgstr ""
 
-#: lib/kanban_web/live/org_live/scim.ex:136
+#: lib/kanban_web/live/org_live/scim.ex:139
 #, elixir-autogen, elixir-format
 msgid "By %{creator} · created %{created} · last used %{used}"
 msgstr ""
@@ -12651,7 +12651,7 @@ msgid "SCIM base URL"
 msgstr ""
 
 #: lib/kanban_web/live/org_live/console.html.heex:28
-#: lib/kanban_web/live/org_live/scim.ex:37
+#: lib/kanban_web/live/org_live/scim.ex:39
 #: lib/kanban_web/live/org_live/scim.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "SCIM provisioning"
@@ -12662,7 +12662,7 @@ msgstr ""
 msgid "SCIM tokens"
 msgstr ""
 
-#: lib/kanban_web/live/org_live/scim.ex:83
+#: lib/kanban_web/live/org_live/scim.ex:69
 #, elixir-autogen, elixir-format
 msgid "Token revoked."
 msgstr ""

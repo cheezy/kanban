@@ -10860,7 +10860,7 @@ msgstr "Lecture seule. Demandez à un admin du site de les modifier."
 
 #: lib/kanban_web/live/org_live/console.ex:66
 #: lib/kanban_web/live/org_live/console.ex:306
-#: lib/kanban_web/live/org_live/scim.ex:130
+#: lib/kanban_web/live/org_live/scim.ex:133
 #: lib/kanban_web/live/org_live/security.ex:103
 #: lib/kanban_web/live/org_live/sso.ex:219
 #: lib/kanban_web/user_auth/org_admin_gate.ex:132
@@ -11845,7 +11845,7 @@ msgstr "Jetons d'espace de travail"
 msgid "Your new workspace token"
 msgstr "Votre nouveau jeton d'espace de travail"
 
-#: lib/kanban_web/live/org_live/scim.ex:149
+#: lib/kanban_web/live/org_live/scim.ex:152
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:235
 #, elixir-autogen, elixir-format
 msgid "never"
@@ -12661,7 +12661,7 @@ msgstr "Un jeton SCIM peut ajouter, modifier et retirer les personnes de votre o
 msgid "A revoked token stops working at once and cannot be restored."
 msgstr "Un jeton révoqué cesse immédiatement de fonctionner et ne peut pas être restauré."
 
-#: lib/kanban_web/live/org_live/scim.ex:136
+#: lib/kanban_web/live/org_live/scim.ex:139
 #, elixir-autogen, elixir-format
 msgid "By %{creator} · created %{created} · last used %{used}"
 msgstr "Par %{creator} · créé le %{created} · dernière utilisation %{used}"
@@ -12697,7 +12697,7 @@ msgid "SCIM base URL"
 msgstr "URL de base SCIM"
 
 #: lib/kanban_web/live/org_live/console.html.heex:28
-#: lib/kanban_web/live/org_live/scim.ex:37
+#: lib/kanban_web/live/org_live/scim.ex:39
 #: lib/kanban_web/live/org_live/scim.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "SCIM provisioning"
@@ -12708,7 +12708,7 @@ msgstr "Provisionnement SCIM"
 msgid "SCIM tokens"
 msgstr "Jetons SCIM"
 
-#: lib/kanban_web/live/org_live/scim.ex:83
+#: lib/kanban_web/live/org_live/scim.ex:69
 #, elixir-autogen, elixir-format
 msgid "Token revoked."
 msgstr "Jeton révoqué."
