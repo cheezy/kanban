@@ -15,7 +15,10 @@ defmodule Kanban.Workspaces.MembershipCascade do
       once, and
     * returns the user's claimed tasks to Ready (`Kanban.Tasks.ClaimRelease`)
       and unassigns them from the board's other open (unarchived) tasks, as
-      `Kanban.Boards.MembershipChanges.remove_user_from_board/3` does.
+      `Kanban.Boards.MembershipChanges.remove_user_from_board/3` does, and
+    * disables the webhook endpoints the user created on the board, unless
+      they can still open it as an org-admin
+      (`Kanban.Webhooks.pause_former_member_endpoints/2`).
 
   The user's **owner** row is deleted too. `remove_user_from_board/3` refuses
   that, because a board without an owner in a personal workspace would be seen
@@ -30,7 +33,9 @@ defmodule Kanban.Workspaces.MembershipCascade do
 
   `remove_from_organization/2` also deletes the user's `workspace_members`
   rows in every workspace of the Organization, so rejoining it later never
-  brings old access back (design doc §4.4). A removed org-admin also loses
+  brings old access back (design doc §4.4), and disables every webhook
+  endpoint they created on the Organization's boards, an org-admin's
+  included. A removed org-admin also loses
   derived access to boards they held no row on, so
   `notify_derived_access_ended/2` tells those boards' open pages after commit.
   """
@@ -46,6 +51,7 @@ defmodule Kanban.Workspaces.MembershipCascade do
   alias Kanban.Repo
   alias Kanban.Tasks.ClaimRelease
   alias Kanban.Tasks.Task
+  alias Kanban.Webhooks
   alias Kanban.Workspaces.Workspace
   alias Kanban.Workspaces.WorkspaceMember
 
@@ -66,6 +72,7 @@ defmodule Kanban.Workspaces.MembershipCascade do
   def remove(user_id, workspace_ids) when is_integer(user_id) and is_list(workspace_ids) do
     removed = user_id |> lock_rows(workspace_ids) |> delete_rows(user_id)
     revoke_remaining_tokens(user_id, workspace_ids)
+    Webhooks.pause_former_member_endpoints(user_id, boards_in(workspace_ids))
     ClaimRelease.release(user_id, boards_in(workspace_ids))
     unassign_open_tasks(user_id, workspace_ids)
     removed
@@ -88,6 +95,7 @@ defmodule Kanban.Workspaces.MembershipCascade do
       |> Repo.all()
 
     removed = remove(user_id, workspace_ids)
+    Webhooks.pause_creator_endpoints(user_id, boards_in(workspace_ids))
 
     from(m in WorkspaceMember,
       where: m.user_id == ^user_id and m.workspace_id in ^workspace_ids

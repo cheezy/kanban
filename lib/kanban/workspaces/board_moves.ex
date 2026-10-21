@@ -7,8 +7,9 @@ defmodule Kanban.Workspaces.BoardMoves do
   member cap and unlocks paid features on the board, because whether a board
   is paid is derived from its workspace's Organization (`Kanban.Plans`).
 
-  The move changes `boards.workspace_id` and revokes the board's open
-  board-only invitations:
+  The move changes `boards.workspace_id`, revokes the board's open board-only
+  invitations and disables its webhook endpoints created by anyone outside
+  the target Organization:
 
     * Every user with a `board_users` row on the board must already be a
       member of the target Organization, or the move is refused with
@@ -26,6 +27,11 @@ defmodule Kanban.Workspaces.BoardMoves do
       invitation. Acceptance also refuses a board-only invitation whose board
       is no longer in a personal workspace, for invitations an earlier move
       left open (`Kanban.Workspaces.InvitationAcceptance`).
+    * Every enabled webhook endpoint on the board whose creator is not a
+      member of the target Organization, or is gone, is disabled in the same
+      transaction (`Kanban.Webhooks.pause_outside_endpoints/2`), so the
+      board's events stop reaching a URL an outsider chose. The owner can
+      re-enable it, which makes them its creator.
     * There is no move back to a personal workspace, and none between org
       workspaces (no downgrade).
 
@@ -64,6 +70,7 @@ defmodule Kanban.Workspaces.BoardMoves do
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
+  alias Kanban.Webhooks
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Invitation
   alias Kanban.Workspaces.Workspace
@@ -88,8 +95,9 @@ defmodule Kanban.Workspaces.BoardMoves do
     * `{:error, {:non_members, users}}` — these users, ordered by id, hold a
       row on the board but are not members of the target Organization.
 
-  A successful move revokes the board's open board-only invitations. A refusal
-  changes nothing.
+  A successful move revokes the board's open board-only invitations and
+  disables its endpoints created outside the Organization. A refusal changes
+  nothing.
 
   ## Examples
 
@@ -194,6 +202,7 @@ defmodule Kanban.Workspaces.BoardMoves do
   defp place_board(board, target) do
     with {:ok, moved} <- board |> Ecto.Changeset.change(workspace_id: target.id) |> Repo.update() do
       revoke_board_invitations(moved)
+      Webhooks.pause_outside_endpoints(moved.id, target.organization_id)
       {:ok, moved}
     end
   end

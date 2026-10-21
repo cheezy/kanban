@@ -32,6 +32,7 @@ defmodule Kanban.Accounts.AdminManagement do
   alias Kanban.Boards
   alias Kanban.Organizations
   alias Kanban.Repo
+  alias Kanban.Webhooks
   alias Kanban.Workspaces
 
   @doc """
@@ -191,11 +192,13 @@ defmodule Kanban.Accounts.AdminManagement do
   defp authorized_admin?(%User{}), do: false
 
   # The personal workspace goes before the user row: its owner row is deleted
-  # with the user, after which the workspace could no longer be found.
+  # with the user, after which the workspace could no longer be found. The
+  # webhook endpoints they created stop sending to a URL they chose.
   defp delete_user_and_tokens(user) do
     Repo.transact(fn ->
       with :ok <- Organizations.ensure_not_last_working_org_admin(user),
            {_count, _} <- Repo.delete_all(UserToken.by_user_and_contexts_query(user, :all)),
+           _paused <- Webhooks.pause_creator_endpoints(user.id, :all),
            {:ok, _workspace} <- Workspaces.delete_personal_workspace(user) do
         Repo.delete(user)
       end

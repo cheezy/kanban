@@ -28,9 +28,11 @@ defmodule Kanban.Accounts.AccountDeletion do
   deadlocking. In that one transaction it:
 
     1. revokes the open invitations the user sent, archives the delivery
-       targets they own (nobody else could ever edit or archive them), and
+       targets they own (nobody else could ever edit or archive them),
        returns their claimed tasks to Ready (`Kanban.Tasks.ClaimRelease`), so
-       no task stays locked in Doing until its claim expires;
+       no task stays locked in Doing until its claim expires, and disables
+       the webhook endpoints they created on boards that outlive them
+       (`Kanban.Webhooks.pause_creator_endpoints/2`);
     2. empties their personal workspace (`Kanban.Workspaces.clear_personal_boards/1`):
        boards only they use are deleted, any board others still use is
        re-homed to the personal workspace of an enabled user, never a
@@ -70,6 +72,7 @@ defmodule Kanban.Accounts.AccountDeletion do
   alias Kanban.Repo
   alias Kanban.Targets.DeliveryTarget
   alias Kanban.Tasks.ClaimRelease
+  alias Kanban.Webhooks
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Invitation
 
@@ -244,11 +247,13 @@ defmodule Kanban.Accounts.AccountDeletion do
   end
 
   # Invitations they sent, targets they own and tasks they claimed, which
-  # nobody else could act on once they are gone.
+  # nobody else could act on once they are gone, and webhook endpoints they
+  # created, which would go on sending to a URL they chose.
   defp settle_work_in_flight(user) do
     revoke_sent_invitations(user)
     archive_owned_targets(user)
     ClaimRelease.release(user.id, :all)
+    Webhooks.pause_creator_endpoints(user.id, :all)
     :ok
   end
 

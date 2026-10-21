@@ -48,6 +48,22 @@ defmodule Kanban.Webhooks do
   (the envelope), `Kanban.Webhooks.SlackFormatter` (Slack messages),
   `Kanban.Webhooks.DiscordFormatter` (Discord messages) and
   `Kanban.Webhooks.Transport` (the HTTP request).
+
+  ## Endpoints whose creator loses access
+
+  An endpoint sends the board's task events to a URL its creator chose, so
+  it is disabled when its creator can no longer open the board (decided
+  2026-10-20), in the transaction that ends their access:
+
+    * `pause_former_member_endpoints/2` when they are removed from the board
+      or from a workspace and keep no access through an org-admin role,
+    * `pause_creator_endpoints/2` when they leave the Organization or delete
+      their account, and
+    * `pause_outside_endpoints/2` when a board moves into an Organization
+      and an endpoint's creator is not a member of it.
+
+  The owner sees it as Disabled in the Integrations tab. Re-enabling it
+  through `update_endpoint/4` makes the owner its creator.
   """
 
   import Ecto.Query, warn: false
@@ -57,6 +73,7 @@ defmodule Kanban.Webhooks do
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Integrations.SecretBox
+  alias Kanban.Organizations.OrganizationMember
   alias Kanban.Plans
   alias Kanban.Repo
   alias Kanban.Webhooks.Delivery
@@ -64,6 +81,7 @@ defmodule Kanban.Webhooks do
   alias Kanban.Webhooks.Endpoint
   alias Kanban.Webhooks.Payload
   alias Kanban.Webhooks.UrlGuard
+  alias Kanban.Workspaces.Policy
 
   @delivery_log_fields ~w(id endpoint_id event status attempt response_status error delivered_at inserted_at)a
 
@@ -125,7 +143,8 @@ defmodule Kanban.Webhooks do
 
   @doc """
   Updates an endpoint's kind, URL, event types or enabled flag. A changed URL
-  is checked again with `UrlGuard.check/2`. An endpoint deleted since it was
+  is checked again with `UrlGuard.check/2`. Enabling a disabled endpoint makes
+  the caller its creator. An endpoint deleted since it was
   loaded yields `{:error, changeset}` with an error on `:id`.
   """
   def update_endpoint(scope, %Endpoint{board_id: board_id} = endpoint, attrs, opts \\ []) do
@@ -135,6 +154,7 @@ defmodule Kanban.Webhooks do
          :ok <- check_plan(board_id) do
       endpoint
       |> Endpoint.changeset(attrs, opts)
+      |> creator_on_enable(scope)
       |> check_reachable(opts)
       |> Repo.update(stale_error_field: :id)
     end
@@ -213,6 +233,101 @@ defmodule Kanban.Webhooks do
     |> limit(^limit)
     |> select([d], struct(d, @delivery_log_fields))
     |> Repo.all()
+  end
+
+  @doc """
+  Disables the enabled endpoints `user_id` created on `boards` and returns how
+  many. `boards` is a list of board ids, a query selecting board ids, or
+  `:all`. Call it inside the transaction that ends the user's access to
+  those boards. It checks no scope.
+
+  ## Examples
+
+      iex> pause_creator_endpoints(user.id, :all)
+      1
+
+  """
+  @spec pause_creator_endpoints(integer(), [integer()] | Ecto.Query.t() | :all) ::
+          non_neg_integer()
+  def pause_creator_endpoints(user_id, boards) when is_integer(user_id) do
+    Endpoint
+    |> where([e], e.enabled and e.created_by_id == ^user_id)
+    |> on_boards(boards)
+    |> pause_all()
+  end
+
+  @doc """
+  Like `pause_creator_endpoints/2`, but leaves the endpoints on boards that
+  `user_id` can still open (`Kanban.Workspaces.Policy.effective_board_access/2`),
+  such as an org-admin's. Call it after the change that removed their access,
+  in the same transaction.
+
+  ## Examples
+
+      iex> pause_former_member_endpoints(user.id, [board.id])
+      1
+
+  """
+  @spec pause_former_member_endpoints(integer(), [integer()] | Ecto.Query.t()) ::
+          non_neg_integer()
+  def pause_former_member_endpoints(user_id, boards) when is_integer(user_id) do
+    lost_board_ids =
+      Endpoint
+      |> where([e], e.enabled and e.created_by_id == ^user_id)
+      |> on_boards(boards)
+      |> distinct(true)
+      |> select([e], e.board_id)
+      |> Repo.all()
+      |> Enum.reject(&Policy.effective_board_access(&1, user_id))
+
+    pause_creator_endpoints(user_id, lost_board_ids)
+  end
+
+  @doc """
+  Disables the enabled endpoints on `board_id` whose creator is not a member
+  of `organization_id`, or is gone, and returns how many. Call it inside the
+  transaction that moves the board into the Organization.
+
+  ## Examples
+
+      iex> pause_outside_endpoints(board.id, organization.id)
+      1
+
+  """
+  @spec pause_outside_endpoints(integer(), integer()) :: non_neg_integer()
+  def pause_outside_endpoints(board_id, organization_id)
+      when is_integer(board_id) and is_integer(organization_id) do
+    members =
+      from(m in OrganizationMember,
+        where: m.organization_id == ^organization_id,
+        select: m.user_id
+      )
+
+    Endpoint
+    |> where([e], e.board_id == ^board_id and e.enabled)
+    |> where([e], is_nil(e.created_by_id) or e.created_by_id not in subquery(members))
+    |> pause_all()
+  end
+
+  defp on_boards(query, :all), do: query
+  defp on_boards(query, ids) when is_list(ids), do: where(query, [e], e.board_id in ^ids)
+  defp on_boards(query, %Ecto.Query{} = ids), do: where(query, [e], e.board_id in subquery(ids))
+
+  defp pause_all(query) do
+    {count, _} =
+      Repo.update_all(query,
+        set: [enabled: false, updated_at: DateTime.utc_now(:second)],
+        inc: [lock_version: 1]
+      )
+
+    count
+  end
+
+  defp creator_on_enable(changeset, scope) do
+    case {Changeset.get_change(changeset, :enabled), scope_user(scope)} do
+      {true, %{id: user_id}} -> Changeset.put_change(changeset, :created_by_id, user_id)
+      _unchanged -> changeset
+    end
   end
 
   # Read by board id, so a preloaded workspace can never decide it.

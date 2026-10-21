@@ -47,6 +47,7 @@ defmodule Kanban.Boards.MembershipChanges do
   alias Kanban.Tasks.ClaimRelease
   alias Kanban.Tasks.Task
   alias Kanban.Telemetry.AfterCommit
+  alias Kanban.Webhooks
   alias Kanban.Workspaces.Policy
 
   @doc """
@@ -230,8 +231,9 @@ defmodule Kanban.Boards.MembershipChanges do
   end
 
   @doc """
-  Removes a user from a board, revoking their API tokens for it and
-  unassigning them from the board's open tasks, in one transaction. An
+  Removes a user from a board, revoking their API tokens for it, unassigning
+  them from the board's open tasks and disabling the webhook endpoints they
+  created on it, in one transaction. An
   org-admin of the board's Organization keeps owner access through their role
   after losing the row, so their removal does neither, exactly as their
   downgrade to `:read_only` does not.
@@ -295,10 +297,15 @@ defmodule Kanban.Boards.MembershipChanges do
   # Revoke the removed user's board-scoped API tokens in the same transaction
   # as the membership delete, so a still-valid token cannot outlive the access
   # it depended on (W1430) — unless they keep write access without the row.
+  # The webhook endpoints they created on the board are disabled unless they
+  # can still open it (Kanban.Webhooks).
   defp removal_multi(board_user, board_id, user_id) do
     Ecto.Multi.new()
     |> Ecto.Multi.delete(:board_user, board_user)
     |> end_write_access_if_lost(board_id, user_id)
+    |> Ecto.Multi.run(:pause_endpoints, fn _repo, _changes ->
+      {:ok, Webhooks.pause_former_member_endpoints(user_id, [board_id])}
+    end)
   end
 
   # The user's assignments on this board's open (unarchived) tasks, cleared on

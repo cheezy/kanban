@@ -327,6 +327,25 @@ held back. Pausing does not disable or delete anything, so when the board
 moves into an Organization's workspace each endpoint resumes with the next
 event, exactly as it was set up. An endpoint you disabled stays disabled.
 
+## When the person who added an endpoint leaves
+
+An endpoint sends the board's events to an address chosen by whoever added
+it. When that person can no longer open the board, Stride disables the
+endpoints they added there, so the board's events stop reaching them:
+
+- when they are removed from the board, or from the workspace that holds it,
+  unless they still reach it as an org-admin;
+- when they leave the Organization that holds the board;
+- when their account is deleted;
+- when the board moves into an Organization they are not a member of. This
+  happens after its ownership has been handed over.
+
+Handing a board to a new owner does not disable anything: the old owner keeps
+modify access, so they can still open the board. The disabled endpoint shows
+as **Disabled** on the Integrations tab. If you trust its address, choose
+**Enable**. That makes you the person who added it, so it is disabled again
+only when you lose access.
+
 ## Retries
 
 A delivery that fails with a `5xx`, `408`, `429`, a redirect, a timeout or a
