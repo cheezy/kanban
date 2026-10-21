@@ -35,8 +35,9 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   is skipped and named, to be re-invited. Every board access the import gave
   is listed. An archive whose tasks name a parent or duplicate on another
   board, form a parent cycle, repeat an identifier on one board or carry a
-  malformed identifier is refused, as is any row holding a value no column
-  can store. Two kinds of row that older versions of Stride wrote are
+  malformed identifier is refused, as is an archive that gives two boards,
+  columns, labels, tasks or users the same id, and any row holding a value
+  no column can store. Two kinds of row that older versions of Stride wrote are
   repaired instead and listed under "Repaired": a comment longer than 10,000
   characters is shortened to 10,000, and required capabilities Stride no
   longer knows are dropped from a task. The workspace keeps the archive's name, or
@@ -104,12 +105,6 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
     :ok
   end
 
-  defp report_changes(report) do
-    report_list("Repaired:", Enum.map(report.repaired, &elem(&1, 1)))
-    report_list("Skipped:", Enum.map(report.skipped, &skipped_line/1))
-    report_list("Board access given:", Enum.map(report.board_access, &board_access_line/1))
-  end
-
   defp handle({:error, reason}),
     do: Mix.raise("Import failed: #{message(reason)} Nothing was written.")
 
@@ -121,6 +116,12 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
     report.counts
     |> Enum.sort()
     |> Enum.each(fn {entity, count} -> shell.info("  #{entity}: #{count}") end)
+  end
+
+  defp report_changes(report) do
+    report_list("Repaired:", Enum.map(report.repaired, &elem(&1, 1)))
+    report_list("Skipped:", Enum.map(report.skipped, &skipped_line/1))
+    report_list("Board access given:", Enum.map(report.board_access, &board_access_line/1))
   end
 
   defp report_unmatched(report) do
@@ -163,6 +164,9 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   defp message(:archive_too_large), do: "the archive is too large to import."
   defp message(:counts_mismatch), do: "the archive's files do not match its manifest."
   defp message({:invalid_file, entity}), do: "the archive's #{entity} file is malformed."
+
+  defp message({:duplicate_id, entity}),
+    do: "the archive's #{entity} file gives two rows the same id."
 
   defp message({:invalid_row, entity, ref, errors}),
     do: "a #{entity} row (#{ref}) was refused: #{inspect(errors)}."

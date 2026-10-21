@@ -113,7 +113,7 @@ defmodule Kanban.Boards.Board do
       visibility when is_map(visibility) ->
         case Map.keys(visibility) -- @toggleable_fields do
           [] ->
-            changeset
+            validate_visibility_values(changeset, visibility)
 
           unknown_keys ->
             add_error(
@@ -123,5 +123,13 @@ defmodule Kanban.Boards.Board do
             )
         end
     end
+  end
+
+  # Every value is a flag. Anything else would be stored in the jsonb column
+  # as it is, and a string holding a NUL byte raised at the database.
+  defp validate_visibility_values(changeset, visibility) do
+    if visibility |> Map.values() |> Enum.all?(&is_boolean/1),
+      do: changeset,
+      else: add_error(changeset, :field_visibility, "values must be true or false")
   end
 end

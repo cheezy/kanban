@@ -493,6 +493,34 @@ defmodule Mix.Tasks.Kanban.ImportWorkspaceTest do
       assert counts() == before
     end
 
+    test "an archive that gives two users the same id", ctx do
+      files = raw_archive(ctx.path)
+      user = %{"id" => 1, "email" => "twin@example.com", "name" => "Twin"}
+
+      manifest =
+        files["manifest.json"]
+        |> Jason.decode!()
+        |> put_in(["counts", "users"], 2)
+        |> Jason.encode!()
+
+      path =
+        rezip(ctx, %{
+          files
+          | "manifest.json" => manifest,
+            "users.json" => Jason.encode!([user, user])
+        })
+
+      before = counts()
+
+      assert_raise Mix.Error, ~r/users file gives two rows the same id/, fn ->
+        capture_io(fn ->
+          ImportWorkspace.run(["--file", path, "--org-admin-email", ctx.org_admin.email])
+        end)
+      end
+
+      assert counts() == before
+    end
+
     test "an archive with an unexpected file or mismatched counts", ctx do
       files = raw_archive(ctx.path)
       extra = rezip(ctx, Map.put(files, "../evil.json", "[]"))

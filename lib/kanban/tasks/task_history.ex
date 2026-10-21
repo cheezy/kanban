@@ -36,11 +36,17 @@ defmodule Kanban.Tasks.TaskHistory do
       :to_priority
     ])
     |> validate_required([:type, :task_id])
+    |> validate_text_lengths([:from_column, :to_column, :from_priority, :to_priority])
     |> validate_inclusion(:type, [:creation, :move, :priority_change, :assignment])
     |> validate_history_fields()
     |> foreign_key_constraint(:task_id)
     |> foreign_key_constraint(:from_user_id)
     |> foreign_key_constraint(:to_user_id)
+  end
+
+  # The four columns are varchar(255); a longer value raised at the database.
+  defp validate_text_lengths(changeset, fields) do
+    Enum.reduce(fields, changeset, &validate_length(&2, &1, max: 255, count: :codepoints))
   end
 
   defp validate_history_fields(changeset) do

@@ -196,6 +196,26 @@ defmodule Kanban.Boards.BoardTest do
       assert msg =~ "unknown keys"
     end
 
+    test "field_visibility values other than true or false are rejected" do
+      for value <- ["x\u0000", "true", 1, nil, %{"deep" => [1]}] do
+        changeset =
+          Board.owner_changeset(%Board{}, %{
+            name: "Test Board",
+            field_visibility: %{"pitfalls" => value, "complexity" => true}
+          })
+
+        assert %{field_visibility: ["values must be true or false"]} = errors_on(changeset)
+      end
+
+      changeset =
+        Board.owner_changeset(%Board{}, %{
+          name: "Test Board",
+          field_visibility: %{"pitfalls" => false, "complexity" => true}
+        })
+
+      assert changeset.valid?
+    end
+
     test "field_visibility is unchanged when not in attrs" do
       changeset = Board.changeset(%Board{}, %{name: "Test Board"})
       assert changeset.valid?
@@ -294,7 +314,7 @@ defmodule Kanban.Boards.BoardTest do
       assert msg =~ "unknown keys"
     end
 
-    test "field_visibility validation only checks key presence, not value types" do
+    test "field_visibility validation checks value types as well as keys" do
       visibility = %{
         "acceptance_criteria" => "yes",
         "complexity" => 1,
@@ -311,8 +331,7 @@ defmodule Kanban.Boards.BoardTest do
       }
 
       changeset = Board.changeset(%Board{}, %{name: "Test Board", field_visibility: visibility})
-      assert changeset.valid?
-      assert get_change(changeset, :field_visibility) == visibility
+      assert %{field_visibility: ["values must be true or false"]} = errors_on(changeset)
     end
 
     test "validate_required is checked even when an unrelated field_visibility change is valid" do

@@ -14,6 +14,11 @@ defmodule Kanban.Workspaces.Export.Importer.Archive do
   manifest is decoded first, so an unknown `format_version` is refused before
   any entity file is parsed, and every entity file must hold exactly the
   number of rows the manifest counts.
+
+  No two rows of an entity that other rows refer to by id — boards, columns,
+  labels, tasks and users — may share an id: the importer remaps references
+  by source id, so a repeated one would link rows to the wrong board, column,
+  task or user. Such an archive is refused with `{:duplicate_id, entity}`.
   """
 
   alias Kanban.Workspaces.Export.Serializer
@@ -28,6 +33,7 @@ defmodule Kanban.Workspaces.Export.Importer.Archive do
           | :counts_mismatch
           | {:unsupported_format_version, term()}
           | {:invalid_file, atom()}
+          | {:duplicate_id, atom()}
 
   @doc "Reads the archive at `path`, or explains why it cannot be imported."
   @spec read(String.t()) :: {:ok, t()} | {:error, error()}
@@ -47,7 +53,8 @@ defmodule Kanban.Workspaces.Export.Importer.Archive do
   defp decode_files(files) do
     with {:ok, manifest} <- decode_manifest(files),
          {:ok, rows} <- decode_entities(files),
-         :ok <- check_counts(manifest, rows) do
+         :ok <- check_counts(manifest, rows),
+         :ok <- check_unique_ids(rows) do
       {:ok, %{manifest: manifest, rows: rows}}
     end
   end
@@ -235,6 +242,20 @@ defmodule Kanban.Workspaces.Export.Importer.Archive do
         {:error, reason} -> {:halt, {:error, reason}}
       end
     end)
+  end
+
+  @referenced_entities [:boards, :columns, :labels, :tasks, :users]
+
+  defp check_unique_ids(rows) do
+    case Enum.find(@referenced_entities, &repeats_id?(Map.fetch!(rows, &1))) do
+      nil -> :ok
+      entity -> {:error, {:duplicate_id, entity}}
+    end
+  end
+
+  defp repeats_id?(list) do
+    ids = Enum.map(list, & &1["id"])
+    length(Enum.uniq(ids)) != length(ids)
   end
 
   defp check_counts(%{"counts" => counts}, rows) do

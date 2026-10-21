@@ -46,10 +46,12 @@ defmodule Kanban.Workspaces.Export.Importer do
   comment cap is shortened to it, and capabilities outside today's list are
   dropped. The report's `repaired` list names each one.
 
-  A value no column can hold — text with a NUL byte or invalid UTF-8, or an
-  integer outside PostgreSQL's 32-bit `integer` range — is refused like any
-  other bad row: the import is rolled back with
-  `{:error, {:invalid_row, entity, ref, errors}}`, never raised.
+  A value no column can hold — text with a NUL byte or invalid UTF-8 (in a
+  `jsonb` map too), text longer than its `varchar` column, a value of the
+  wrong type, or an integer outside PostgreSQL's 32-bit `integer` range — is
+  refused like any other bad row: the import is rolled back with
+  `{:error, {:invalid_row, entity, ref, errors}}`, never raised. An archive
+  user's email that is not such a string counts as no email at all.
   """
 
   import Ecto.Query, warn: false

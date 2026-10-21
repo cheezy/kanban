@@ -256,6 +256,29 @@ defmodule Kanban.ColumnsTest do
     end
   end
 
+  describe "column name length" do
+    test "create_column/3 and update_column/3 refuse a name over 255 characters" do
+      user = user_fixture()
+      board = board_fixture(user)
+      too_long = String.duplicate("é", 256)
+
+      assert {:error, changeset} = Columns.create_column(board, %{name: too_long}, user)
+      assert %{name: ["should be at most 255 character(s)"]} = errors_on(changeset)
+
+      column = column_fixture(board, %{name: "Short"})
+      assert {:error, changeset} = Columns.update_column(column, %{name: too_long}, user)
+      assert %{name: ["should be at most 255 character(s)"]} = errors_on(changeset)
+    end
+
+    test "a name of exactly 255 characters is kept" do
+      user = user_fixture()
+      board = board_fixture(user)
+      name = String.duplicate("é", 255)
+
+      assert {:ok, %Column{name: ^name}} = Columns.create_column(board, %{name: name}, user)
+    end
+  end
+
   describe "update_column/3" do
     test "updates the column with valid attributes" do
       user = user_fixture()

@@ -246,6 +246,107 @@ defmodule Kanban.Workspaces.Export.ImporterTest do
     end
   end
 
+  describe "crafted values refuse cleanly instead of raising" do
+    test "a board field_visibility value that is not true or false", ctx do
+      for value <- ["x\u0000", %{"deep" => [1]}] do
+        files =
+          update_rows(
+            ctx.files,
+            :boards,
+            &Map.put(&1, "field_visibility", %{"pitfalls" => value})
+          )
+
+        assert_refused(ctx, files, fn {:invalid_row, :boards, _ref, errors} ->
+          errors == %{field_visibility: ["values must be true or false"]}
+        end)
+      end
+    end
+
+    test "a NUL byte in a goal's after_goal result or attempts", ctx do
+      for field <- ["after_goal_result", "after_goal_attempts"] do
+        value =
+          if field == "after_goal_result",
+            do: %{"out" => "a\u0000"},
+            else: [%{"out" => "a\u0000"}]
+
+        files = change_task(ctx.files, ctx.goal, %{field => value})
+
+        assert_refused(ctx, files, fn {:invalid_row, :tasks, ref, errors} ->
+          ref == ctx.goal.identifier and
+            errors == %{String.to_existing_atom(field) => @not_storable}
+        end)
+      end
+    end
+
+    test "a comment agent name that is not a string", ctx do
+      for name <- [%{"x" => 1}, [-1], 42] do
+        files = update_rows(ctx.files, :comments, &Map.put(&1, "author_agent_name", name))
+
+        assert_refused(ctx, files, fn {:invalid_row, :comments, _ref, errors} ->
+          errors == %{author_agent_name: ["is invalid"]}
+        end)
+      end
+    end
+
+    test "column and history names longer than their columns", ctx do
+      too_long = String.duplicate("é", 256)
+      files = update_rows(ctx.files, :columns, &Map.put(&1, "name", too_long))
+
+      assert_refused(ctx, files, fn {:invalid_row, :columns, _ref, errors} ->
+        errors == %{name: ["should be at most 255 character(s)"]}
+      end)
+
+      files =
+        update_rows(ctx.files, :task_history, fn
+          %{"type" => "move"} = row -> Map.put(row, "to_column", too_long)
+          row -> row
+        end)
+
+      assert_refused(ctx, files, fn {:invalid_row, :task_history, _ref, errors} ->
+        errors == %{to_column: ["should be at most 255 character(s)"]}
+      end)
+    end
+
+    test "an archive user whose email is not a usable string has no account here", ctx do
+      files =
+        Map.update!(ctx.files, "users.json", fn rows ->
+          Enum.map(rows, fn
+            %{"id" => id} = row when id == ctx.outsider.id ->
+              Map.put(row, "email", "x\u0000" <> row["email"])
+
+            row ->
+              row
+          end) ++ [%{"id" => 987_654, "email" => %{"a" => 1}, "name" => "Odd"}]
+        end)
+
+      assert {:ok, report} = import_files(ctx, files)
+      assert report.unmatched_users == []
+      assert {:board_users, "board member an unknown user has no account here"} in report.skipped
+    end
+  end
+
+  describe "repeated source ids" do
+    test "two boards, columns, labels, tasks or users with one id are refused", ctx do
+      before = table_counts()
+
+      for entity <- [:boards, :columns, :labels, :tasks, :users] do
+        [first | _] = rows = ctx.files[Serializer.file_name(entity)]
+        files = Map.put(ctx.files, Serializer.file_name(entity), rows ++ [first])
+        assert import_files(ctx, files) == {:error, {:duplicate_id, entity}}
+      end
+
+      assert table_counts() == before
+    end
+
+    test "comments and history rows may repeat an id, since nothing refers to them", ctx do
+      [comment | _] = rows = ctx.files["comments.json"]
+      files = Map.put(ctx.files, "comments.json", rows ++ [comment])
+
+      assert {:ok, report} = import_files(ctx, files)
+      assert report.counts.comments == length(rows) + 1
+    end
+  end
+
   describe "rows older versions wrote" do
     test "a comment longer than the cap is shortened to it and reported", ctx do
       max = TaskComment.content_max_length()

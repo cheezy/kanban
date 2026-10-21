@@ -10,6 +10,40 @@ defmodule Kanban.Tasks.TaskHistoryTest do
   alias Kanban.Tasks.TaskHistory
 
   describe "changeset/2" do
+    test "refuses column and priority names over 255 characters" do
+      too_long = String.duplicate("é", 256)
+
+      move =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: 1,
+          type: :move,
+          from_column: "Ready",
+          to_column: too_long
+        })
+
+      assert %{to_column: ["should be at most 255 character(s)"]} = errors_on(move)
+
+      priority =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: 1,
+          type: :priority_change,
+          from_priority: too_long,
+          to_priority: "high"
+        })
+
+      assert %{from_priority: ["should be at most 255 character(s)"]} = errors_on(priority)
+
+      at_limit =
+        TaskHistory.changeset(%TaskHistory{}, %{
+          task_id: 1,
+          type: :move,
+          from_column: String.duplicate("é", 255),
+          to_column: "Done"
+        })
+
+      assert at_limit.valid?
+    end
+
     test "valid changeset for creation type" do
       user = user_fixture()
       board = board_fixture(user)

@@ -29,6 +29,7 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   changeset for any other reason rolls the whole import back, naming it.
   """
 
+  alias Kanban.ChangesetText
   alias Kanban.Labels.TaskLabel
   alias Kanban.Repo
   alias Kanban.Tasks.Task
@@ -116,14 +117,22 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
     task =
       %Task{}
       |> Task.changeset(attrs)
-      |> Ecto.Changeset.cast(
-        Map.take(row, Enum.map(@extra_fields, &Atom.to_string/1)),
-        @extra_fields
-      )
+      |> cast_extra_fields(row)
       |> Importer.cast_timestamps(row)
       |> Importer.insert!(:tasks, row["identifier"])
 
     {task, ctx}
+  end
+
+  # Task.changeset/2 does not cast these, so it does not check them either: a
+  # NUL byte in the jsonb would raise at the database.
+  defp cast_extra_fields(changeset, row) do
+    changeset
+    |> Ecto.Changeset.cast(
+      Map.take(row, Enum.map(@extra_fields, &Atom.to_string/1)),
+      @extra_fields
+    )
+    |> ChangesetText.validate_storable([:after_goal_result, :after_goal_attempts])
   end
 
   defp remap_users(attrs, ctx) do
@@ -287,8 +296,11 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   # Through TaskComment's own length and storable-text checks.
   defp put_agent_name(changeset, nil), do: changeset
 
-  defp put_agent_name(changeset, name),
-    do: TaskComment.put_author_agent_name(changeset, to_string(name))
+  defp put_agent_name(changeset, name) when is_binary(name),
+    do: TaskComment.put_author_agent_name(changeset, name)
+
+  defp put_agent_name(changeset, _name),
+    do: Ecto.Changeset.add_error(changeset, :author_agent_name, "is invalid")
 
   defp insert_history(ctx) do
     insert_task_children(ctx, :task_history, fn row, task ->

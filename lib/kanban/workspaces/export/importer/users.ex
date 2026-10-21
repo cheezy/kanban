@@ -27,6 +27,7 @@ defmodule Kanban.Workspaces.Export.Importer.Users do
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts.User
+  alias Kanban.ChangesetText
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
 
@@ -107,7 +108,13 @@ defmodule Kanban.Workspaces.Export.Importer.Users do
     |> Map.new(fn {email, id} -> {String.downcase(email), id} end)
   end
 
-  defp archive_emails(users), do: for(%{"email" => email} <- users, is_binary(email), do: email)
+  defp archive_emails(users), do: for(%{"email" => email} <- users, usable?(email), do: email)
+
+  # An email is used only when it is a string PostgreSQL can hold; anything
+  # else is treated as no email, so it never reaches a query or the report.
+  defp usable?(email), do: is_binary(email) and ChangesetText.storable?(email)
+
+  defp email(row), do: if(usable?(row["email"]), do: row["email"])
 
   defp enabled_users_query(emails) do
     from(u in User,
@@ -129,9 +136,9 @@ defmodule Kanban.Workspaces.Export.Importer.Users do
     do: is_binary(email) and MapSet.member?(disabled, String.downcase(email))
 
   defp match_user(row, {map, unmatched}, local) do
-    email = if is_binary(row["email"]), do: String.downcase(row["email"])
+    email = row |> email() |> then(&(&1 && String.downcase(&1)))
     local_id = Map.get(local, email)
-    unmatched = if local_id, do: unmatched, else: [row["email"] | unmatched]
+    unmatched = if local_id, do: unmatched, else: [email(row) | unmatched]
     {Map.put(map, row["id"], local_id), unmatched}
   end
 
@@ -167,7 +174,7 @@ defmodule Kanban.Workspaces.Export.Importer.Users do
     end)
   end
 
-  defp source_emails(users), do: Map.new(users, &{&1["id"], &1["email"]})
+  defp source_emails(users), do: Map.new(users, &{&1["id"], email(&1)})
 
   defp sorted_emails(emails), do: emails |> Enum.reject(&is_nil/1) |> Enum.sort()
 end
