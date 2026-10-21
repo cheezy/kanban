@@ -123,6 +123,30 @@ defmodule KanbanWeb.Router do
     post "/unsubscribe/one-click", NotificationUnsubscribeController, :one_click
   end
 
+  # SAML assertion consumer service (W2246). The identity provider's browser
+  # POST is cross-site and carries no CSRF token, and a SameSite=Lax session
+  # cookie is not sent with it, so this pipeline skips protect_from_forgery
+  # and the controller finds the sign-in by its RelayState in the database.
+  # It fetches the session and flash only to write the signed-in session and
+  # the result message. Only the ACS route uses it; every other SSO route
+  # stays in :browser.
+  # sobelow_skip ["Config.CSRF"]
+  pipeline :saml do
+    plug :fetch_session
+    plug KanbanWeb.Plugs.RemoteClientIp
+    plug :fetch_flash
+
+    plug :put_secure_browser_headers, %{
+      "content-security-policy" => "default-src 'none'; frame-ancestors 'none'"
+    }
+  end
+
+  scope "/users/sso/saml", KanbanWeb do
+    pipe_through :saml
+
+    post "/:organization_id/acs", SAMLController, :acs
+  end
+
   # Public API routes (no authentication required)
   scope "/api", KanbanWeb.API, as: :api do
     pipe_through [:api_json, :api_public]
@@ -406,6 +430,9 @@ defmodule KanbanWeb.Router do
     ]
 
     get "/audit/export", OrgAuditLogExportController, :export
+    # Stride's SAML service provider metadata for the org-admin's Organization
+    # (W2246).
+    get "/sso/saml/metadata", SAMLController, :metadata
   end
 
   scope "/", KanbanWeb do

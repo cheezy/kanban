@@ -52,6 +52,24 @@ defmodule Kanban.SSOFixtures do
     |> Repo.insert!()
   end
 
+  @doc """
+  An enabled SAML connection of `organization` trusting the certificate(s)
+  `pems` (see `Kanban.SAMLTestHelpers.idp/0`).
+  """
+  def saml_connection_fixture(organization, pems, attrs \\ %{}) do
+    attrs =
+      Enum.into(attrs, %{
+        "issuer" => Kanban.SAMLTestHelpers.issuer(),
+        "sso_url" => Kanban.SAMLTestHelpers.sso_url(),
+        "certificates_pem" => pems |> List.wrap() |> Enum.join(),
+        "enabled" => true
+      })
+
+    %SSOConnection{organization_id: organization.id, protocol: :saml}
+    |> SSOConnection.saml_changeset(attrs)
+    |> Repo.insert!()
+  end
+
   @doc "An identity linking `user` to `subject` at `connection`."
   def identity_fixture(user, connection, subject) do
     user

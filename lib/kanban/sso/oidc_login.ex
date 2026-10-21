@@ -138,6 +138,7 @@ defmodule Kanban.SSO.OIDCLogin do
       user_id: user.id,
       organization_id: connection.organization_id,
       sso_connection_id: connection.id,
+      protocol: :oidc,
       ip: opts[:ip]
     )
 
@@ -149,6 +150,7 @@ defmodule Kanban.SSO.OIDCLogin do
       reason: reason,
       organization_id: connection.organization_id,
       sso_connection_id: connection.id,
+      protocol: :oidc,
       ip: opts[:ip]
     )
 
@@ -159,6 +161,7 @@ defmodule Kanban.SSO.OIDCLogin do
     AuditLog.event(:sso_login_refused,
       reason: reason,
       sso_connection_id: flow_connection_id(flow),
+      protocol: :oidc,
       ip: opts[:ip]
     )
 

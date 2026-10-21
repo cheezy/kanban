@@ -73,7 +73,8 @@ period; see [Organization Security Policies](organization-security-policies.md).
 
 ## User Accounts: Single Sign-On
 
-An Organization can connect its own OpenID Connect identity provider. People
+An Organization can connect its own OpenID Connect or SAML 2.0 identity
+provider. People
 with an email on a domain the Organization verified sign in with **Sign in
 with SSO** on the login page; their first sign-in creates a confirmed account
 without a password and makes them a member of the Organization. Like

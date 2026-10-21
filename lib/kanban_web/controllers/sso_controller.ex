@@ -9,7 +9,11 @@ defmodule KanbanWeb.SSOController do
     * `GET /users/sso/start?domain=...` starts an OpenID Connect sign-in for
       the Organization that verified the email domain, keeps the flow
       (`state`, `nonce`, PKCE verifier) in the session and redirects to the
-      identity provider.
+      identity provider. When that Organization has no usable OpenID Connect
+      connection, it starts a SAML sign-in instead
+      (`Kanban.SSO.begin_saml_login/2`, W2246), which keeps its state in the
+      database rather than the session; the identity provider then posts to
+      `KanbanWeb.SAMLController`.
     * `GET /users/sso/callback` takes the flow out of the session first, so it
       can be used once, and hands it to `Kanban.SSO.complete_oidc_login/3`. A
       successful sign-in goes through `KanbanWeb.UserAuth.log_in_user/4` with
@@ -37,6 +41,18 @@ defmodule KanbanWeb.SSOController do
     else
       {:error, {:rate_limited, _retry_after}} ->
         rate_limited(conn)
+
+      {:error, :not_available} ->
+        start_saml(conn, params["domain"])
+    end
+  end
+
+  defp start_saml(conn, domain) do
+    case SSO.begin_saml_login(domain, get_session(conn, :user_return_to)) do
+      {:ok, url, relay_token} ->
+        conn
+        |> KanbanWeb.SAMLController.put_relay_cookie(relay_token)
+        |> redirect(external: url)
 
       {:error, :not_available} ->
         conn

@@ -1,8 +1,10 @@
 defmodule KanbanWeb.OrgLive.SSO do
   @moduledoc """
   The org-admin single sign-on page at `/org/sso` (W2245): the email domains
-  the Organization claims, with the DNS TXT record each needs, and the
-  Organization's OpenID Connect connection.
+  the Organization claims, with the DNS TXT record each needs, the
+  Organization's OpenID Connect connection and its SAML 2.0 connection
+  (W2246), with Stride's SP entity id, assertion consumer service URL and a
+  link to download its SP metadata (`KanbanWeb.SAMLController`).
 
   The Organization comes from `current_organization`, which the
   `:require_org_admin` gate assigns from the signed-in user's own membership;
@@ -27,6 +29,7 @@ defmodule KanbanWeb.OrgLive.SSO do
   alias Kanban.Organizations
   alias Kanban.SSO
   alias Kanban.SSO.DomainVerification
+  alias Kanban.SSO.SAML
 
   @impl true
   def mount(_params, _session, socket) do
@@ -128,6 +131,36 @@ defmodule KanbanWeb.OrgLive.SSO do
     end)
   end
 
+  def handle_event("validate_saml", %{"saml" => params}, socket) do
+    with_org_admin(socket, fn _actor, _organization_id ->
+      form =
+        socket.assigns.saml_connection
+        |> SSO.change_saml_connection(params)
+        |> Map.put(:action, :validate)
+        |> to_form(as: :saml)
+
+      {:noreply, assign(socket, :saml_form, form)}
+    end)
+  end
+
+  def handle_event("save_saml", %{"saml" => params}, socket) do
+    with_org_admin(socket, fn actor, organization_id ->
+      case SSO.save_saml_connection(actor, organization_id, params) do
+        {:ok, _connection} ->
+          {:noreply,
+           socket
+           |> load(organization_id)
+           |> put_flash(:info, gettext("SAML connection saved."))}
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          {:noreply, assign(socket, :saml_form, to_form(changeset, as: :saml))}
+
+        {:error, :unauthorized} ->
+          {:noreply, refuse(socket)}
+      end
+    end)
+  end
+
   def handle_event(_event, _params, socket), do: {:noreply, socket}
 
   defp load(socket, organization_id) do
@@ -139,6 +172,16 @@ defmodule KanbanWeb.OrgLive.SSO do
     |> assign(:connection, connection)
     |> assign(:secret_set?, not is_nil(connection) and is_binary(connection.client_secret))
     |> assign(:connection_form, connection |> SSO.change_oidc_connection() |> connection_form())
+    |> load_saml(organization_id)
+  end
+
+  defp load_saml(socket, organization_id) do
+    saml_connection = SSO.get_saml_connection(organization_id)
+
+    socket
+    |> assign(:saml_connection, saml_connection)
+    |> assign(:saml_sp, SAML.service_provider(organization_id))
+    |> assign(:saml_form, saml_connection |> SSO.change_saml_connection() |> to_form(as: :saml))
   end
 
   # The secret never reaches the form, whatever the changeset holds.

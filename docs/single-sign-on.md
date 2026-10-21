@@ -1,7 +1,8 @@
 # Single Sign-On
 
 An Organization can let its people sign in to Stride through its own identity
-provider with OpenID Connect (OIDC). Org-admins claim the Organization's email
+provider with OpenID Connect (OIDC) or, for providers that only speak it,
+SAML 2.0. Org-admins claim the Organization's email
 domains, prove they own them with a DNS record, and connect one identity
 provider. People with an address on a verified domain then sign in with
 **Sign in with SSO** on the login page, and their first sign-in
@@ -131,6 +132,84 @@ A person removed from the Organization who signs in again through single
 sign-on is made a member again, as long as the provider still asserts their
 verified address on a verified domain. Stop them in the identity provider.
 
+## SAML 2.0
+
+An Organization whose identity provider only speaks SAML 2.0 configures it in
+the **SAML identity provider** section of the same page. People still start
+with **Sign in with SSO** and their work email; when the Organization that
+verified the domain has no enabled OIDC connection, Stride starts a SAML
+sign-in instead. OIDC is preferred: when both are enabled, Stride starts a
+SAML sign-in only if the OIDC identity provider cannot be reached.
+
+### Setting up SAML
+
+Register Stride in the identity provider with the two values the page shows,
+or with the SP metadata from **Download Stride's SP metadata**
+(`/org/sso/saml/metadata`, org-admins only):
+
+| Value | What it is |
+|---|---|
+| Stride entity ID | `<site>/users/sso/saml/<organization id>`, the audience Stride requires. |
+| Assertion consumer service URL | The entity ID followed by `/acs`; the provider posts responses there (HTTP-POST binding). |
+
+Stride signs nothing and asks for signed assertions or responses
+(`WantAssertionsSigned`). Then either paste the provider's metadata XML, which
+fills the fields, or enter them:
+
+| Field | What it is |
+|---|---|
+| Identity provider entity ID | The provider's issuer; every response must name it. |
+| Single sign-on URL | The provider's HTTP-Redirect sign-on service, an `https` URL. |
+| Signing certificates (PEM) | One RSA certificate of at least 2048 bits, or two while the provider rotates its key. Bare base64, as metadata carries it, is accepted too. |
+| Allow sign-in | Off until you turn it on. |
+
+Certificates are public, so they are stored unencrypted. Saving records an
+`sso_connection_updated` audit event with `protocol: saml`.
+
+### A SAML sign-in
+
+1. Stride stores a request record: the AuthnRequest ID, a random RelayState
+   token, the local path to return to, and a 10-minute expiry. It sends the
+   browser to the provider with a deflated AuthnRequest and that RelayState,
+   and sets a signed, `SameSite=None`, `Secure` cookie holding the token,
+   scoped to `/users/sso/saml`.
+2. The provider posts the response to the Organization's assertion consumer
+   service. That route has no CSRF token and the session cookie is not sent
+   with the cross-site POST, so Stride finds the request by its RelayState in
+   the database, never the session, and requires the binding cookie to hold the
+   same token, so a response cannot be posted into another browser.
+3. The response is checked against that Organization's connection only. It
+   must be no larger than 256 KB, carry no DOCTYPE, entity, comment, CDATA or
+   processing instruction, hold exactly one assertion directly under the
+   response, and be signed (the response, the assertion or both) with
+   RSA-SHA256, SHA-256 digests and exclusive canonicalization by one of the
+   configured certificates. The assertion must name the configured issuer,
+   have Success status, list Stride's entity ID in every audience restriction,
+   carry one bearer subject confirmation whose recipient is the assertion
+   consumer service URL and whose `InResponseTo` is the stored request, and be
+   inside `NotBefore` and `NotOnOrAfter` with 2 minutes of clock skew. A
+   transient NameID is refused, because it changes on every sign-in.
+4. In one transaction Stride records the assertion ID for that connection and
+   marks the request used. An assertion ID seen before is refused, recorded as
+   `saml_assertion_replayed` and as `sso_login_refused` with reason
+   `assertion_replayed`. A request answers at most one response.
+5. The person's NameID is their subject, and their email comes from the email
+   attribute (`email`, `mail` or the claims URI) or an email-shaped NameID.
+   From here the [Which account](#which-account) and
+   [What is refused](#what-is-refused) rules apply unchanged: the email must
+   be on a domain the Organization verified, people in another Organization and
+   disabled users are refused, and the session is marked as a single sign-on
+   session.
+
+Responses the identity provider starts on its own (IdP-initiated sign-in) are
+refused, because they answer no request. Every refusal shows the same
+message and is recorded with its reason and `protocol: saml`.
+
+Expired request records and assertion IDs are deleted by the daily
+`Kanban.Retention.PurgeWorker` (its `saml_count`). An assertion ID is kept
+until its `NotOnOrAfter` plus the skew, after which the assertion would be
+refused as expired anyway.
+
 ## Two-factor and single sign-on
 
 The identity provider enforces its own sign-in rules, so a single sign-on
@@ -147,8 +226,9 @@ check paid access through `Kanban.Plans`; while paid plans are enforced, the
 single sign-on section of a user's settings shows the shared lock to a user
 without an Organization.
 
-The start and callback requests are throttled per IP address through the
-`:sso` surface of `Kanban.RateLimit` (60 a minute by default).
+The start, callback and SAML assertion consumer service requests are
+throttled per IP address through the `:sso` surface of `Kanban.RateLimit` (60
+a minute by default).
 
 ## Known limits
 
@@ -159,6 +239,18 @@ The start and callback requests are throttled per IP address through the
 - Stride does not cache the discovery document or the provider's signing keys.
   Every sign-in fetches both again, so a slow or unavailable identity provider
   slows or stops sign-in for that Organization.
+- SAML supports only signed, unencrypted assertions over the HTTP-Redirect
+  request and HTTP-POST response bindings, with RSA-SHA256. Encrypted
+  assertions, single logout and IdP-initiated sign-in are not supported.
+- SAML is read through `simple_saml` and `simple_xml`, whose canonicalization
+  is simpler than a full XML signature library. Responses signed by Microsoft
+  Entra ID and Okta are covered by tests; a provider whose signed XML uses
+  constructs Stride refuses (comments, entity references, deep nesting) or
+  canonicalizes differently fails closed with `signature_invalid` or
+  `unsafe_xml`. Test a new provider before turning sign-in on.
+- A SAML sign-in is bound to the browser by one cookie, so starting a second
+  SAML sign-in in another tab replaces the first one's binding. The first tab's
+  sign-in is then refused (`browser_mismatch`); starting it again works.
 
 ## Where it lives
 
@@ -169,7 +261,12 @@ The start and callback requests are throttled per IP address through the
 | `Kanban.SSO.OIDC` | Discovery, the token request and ID token validation, through `oidcc`. |
 | `Kanban.SSO.OIDCLogin` | The sign-in flow: start and callback. |
 | `Kanban.SSO.Provisioning` | Which account, and its membership. |
+| `Kanban.SSO.SAML` | SAML response validation and the AuthnRequest, through `simple_saml`. |
+| `Kanban.SSO.SAML.XML` | Hardened XML reading for SAML responses and metadata. |
+| `Kanban.SSO.SAML.Metadata` | IdP metadata, certificates and Stride's SP metadata. |
+| `Kanban.SSO.SAMLLogin` | The SAML sign-in flow: request records, the assertion consumer service, replay protection. |
 | `KanbanWeb.SSOController` | `/users/sso/start` and `/users/sso/callback`. |
+| `KanbanWeb.SAMLController` | `/users/sso/saml/:organization_id/acs` and `/org/sso/saml/metadata`. |
 | `KanbanWeb.OrgLive.SSO` | The org-admin page at `/org/sso`. |
 
 The audit events are listed in the [Telemetry Guide](telemetry.md).

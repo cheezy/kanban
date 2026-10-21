@@ -123,5 +123,8 @@ defmodule KanbanWeb.AuditLogActions do
   def action_label("sso_connection_updated"),
     do: pgettext("audit action", "Single sign-on connection changed")
 
+  def action_label("saml_assertion_replayed"),
+    do: pgettext("audit action", "Replayed SAML sign-in refused")
+
   def action_label(action) when is_binary(action), do: action
 end

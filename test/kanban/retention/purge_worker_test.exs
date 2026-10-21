@@ -241,4 +241,51 @@ defmodule Kanban.Retention.PurgeWorkerTest do
       assert task_exists?(task)
     end
   end
+
+  describe "expired SAML sign-in state" do
+    test "removes expired SAML requests and assertion IDs in batches and keeps live ones" do
+      put_config(batch_size: 2)
+
+      connection =
+        Kanban.SSOFixtures.saml_connection_fixture(
+          organization_fixture(),
+          Kanban.SAMLTestHelpers.idp().pem
+        )
+
+      now = DateTime.utc_now(:second)
+
+      for n <- 1..3 do
+        insert_saml_rows(connection, "expired-#{n}", DateTime.add(now, -60))
+      end
+
+      insert_saml_rows(connection, "live", DateTime.add(now, 600))
+
+      assert :ok = run()
+
+      assert saml_ids(Kanban.SSO.SAML.Request) == ["live"]
+      assert saml_ids(Kanban.SSO.SAML.AssertionID) == ["live"]
+      assert hd(purge_events()).metadata["saml_count"] == 6
+      assert hd(purge_events()).metadata["failed_steps"] == []
+    end
+  end
+
+  defp insert_saml_rows(connection, id, expires_at) do
+    connection
+    |> Kanban.SSO.SAML.Request.new_changeset(%{
+      request_id: id,
+      relay_token: id,
+      return_to: nil,
+      expires_at: expires_at
+    })
+    |> Repo.insert!()
+
+    connection
+    |> Kanban.SSO.SAML.AssertionID.new_changeset(id, expires_at)
+    |> Repo.insert!()
+  end
+
+  defp saml_ids(Kanban.SSO.SAML.Request = schema),
+    do: from(r in schema, select: r.request_id) |> Repo.all()
+
+  defp saml_ids(schema), do: from(r in schema, select: r.assertion_id) |> Repo.all()
 end

@@ -219,6 +219,107 @@
           </.button>
         </div>
       </.form>
+
+      <.form
+        for={@saml_form}
+        id="saml-connection-form"
+        phx-change="validate_saml"
+        phx-submit="save_saml"
+        class="flex flex-col gap-5"
+      >
+        <.settings_card
+          id="sso-saml"
+          title={gettext("SAML identity provider")}
+          hint={
+            gettext(
+              "For identity providers that only speak SAML 2.0. Register Stride in your identity provider with the details below, then paste its metadata XML, or enter its entity ID, single sign-on URL and signing certificate."
+            )
+          }
+        >
+          <div class="flex flex-col gap-3">
+            <dl class="grid gap-1" style="font-size: 12px; color: var(--ink-2);">
+              <dt style="font-weight: 500; color: var(--ink);">{gettext("Stride entity ID")}</dt>
+              <dd
+                id="saml-sp-entity-id"
+                style="margin: 0 0 6px; font-family: var(--font-mono); overflow-wrap: anywhere; color: var(--ink);"
+              >
+                {@saml_sp.entity_id}
+              </dd>
+              <dt style="font-weight: 500; color: var(--ink);">
+                {gettext("Assertion consumer service URL")}
+              </dt>
+              <dd
+                id="saml-acs-url"
+                style="margin: 0; font-family: var(--font-mono); overflow-wrap: anywhere; color: var(--ink);"
+              >
+                {@saml_sp.acs_url}
+              </dd>
+            </dl>
+            <.link
+              id="saml-sp-metadata"
+              href={~p"/org/sso/saml/metadata"}
+              class="text-sm underline"
+              style="color: var(--ink-2);"
+            >
+              {gettext("Download Stride's SP metadata")}
+            </.link>
+            <.input
+              field={@saml_form[:idp_metadata]}
+              type="textarea"
+              rows="4"
+              phx-debounce="blur"
+              label={gettext("Identity provider metadata XML")}
+              placeholder={gettext("Paste the metadata XML to fill the fields below")}
+            />
+            <.input
+              field={@saml_form[:issuer]}
+              type="text"
+              label={gettext("Identity provider entity ID")}
+              autocomplete="off"
+            />
+            <.input
+              field={@saml_form[:sso_url]}
+              type="url"
+              label={gettext("Single sign-on URL")}
+              placeholder="https://login.example.com/saml"
+              autocomplete="off"
+            />
+            <.input
+              field={@saml_form[:certificates_pem]}
+              type="textarea"
+              rows="6"
+              phx-debounce="blur"
+              label={gettext("Signing certificates (PEM)")}
+            />
+            <p style="margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.5;">
+              {gettext(
+                "Add your identity provider's new certificate next to the old one while it rotates its signing key; at most two are kept."
+              )}
+            </p>
+            <.input
+              field={@saml_form[:enabled]}
+              type="checkbox"
+              label={gettext("Allow sign-in through this SAML identity provider")}
+            />
+            <p style="margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.5;">
+              {gettext(
+                "Stride accepts only responses signed with RSA-SHA256 that answer a sign-in it started. People are matched by the email attribute or an email NameID on a verified domain. Sign-ins through SAML satisfy the Organization's two-factor requirement."
+              )}
+            </p>
+          </div>
+        </.settings_card>
+
+        <div>
+          <.button
+            id="save-saml-connection"
+            type="submit"
+            variant="primary"
+            phx-disable-with={gettext("Saving...")}
+          >
+            {gettext("Save SAML connection")}
+          </.button>
+        </div>
+      </.form>
     </div>
   </div>
 </Layouts.app>

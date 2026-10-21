@@ -95,8 +95,9 @@ defmodule Kanban.Telemetry.Catalog.Families do
      "An org-admin archived one of their Organization's workspaces. user_id is the org-admin."},
     {:organization_policy_updated, [:user_id, :organization_id, :old_values, :new_values],
      "An org-admin changed their Organization's security policy. user_id is the org-admin; old_values and new_values hold only the fields that changed (require_two_factor, two_factor_grace_days, audit_retention_days)."},
-    {:retention_purge, [:organization_counts, :site_count, :archived_task_count, :failed_steps],
-     "The daily retention job ran. organization_counts maps each Organization id with a retention period to the audit events removed; site_count (audit events with no Organization) and archived_task_count are nil when that purge is not configured; failed_steps names any step that failed."},
+    {:retention_purge,
+     [:organization_counts, :site_count, :archived_task_count, :saml_count, :failed_steps],
+     "The daily retention job ran. organization_counts maps each Organization id with a retention period to the audit events removed; site_count (audit events with no Organization) and archived_task_count are nil when that purge is not configured; saml_count is the expired SAML requests and assertion IDs removed; failed_steps names any step that failed."},
     {:user_deleted, [:user_id, :member_user_id],
      "A site admin deleted an account. user_id is the site admin, member_user_id the deleted account."},
     {:user_delete_refused, [:user_id, :member_user_id, :reason],
@@ -105,10 +106,12 @@ defmodule Kanban.Telemetry.Catalog.Families do
      "A user deleted their own account from the account settings. user_id is the deleted account; no email is recorded."},
     {:board_given_to_site_admin, [:user_id, :board_id, :member_user_id],
      "An account deletion left a board that no enabled member could reach, so the earliest enabled site admin was made its owner. user_id is the deleted account, member_user_id the site admin."},
-    {:sso_login, [:user_id, :organization_id, :sso_connection_id],
-     "A user signed in through their Organization's single sign-on connection."},
-    {:sso_login_refused, [:organization_id, :sso_connection_id, :reason],
-     "A single sign-on sign-in was refused. reason is why: missing_flow, flow_expired, idp_error, state_mismatch, missing_code, connection_unavailable, provider_unreachable, unsafe_url, invalid_discovery, issuer_mismatch, unsupported_algorithms, invalid_jwks, unsupported_client_auth, token_exchange_failed, token_expired, invalid_token, invalid_claims, email_not_verified, domain_not_verified, user_disabled, membership_conflict (the user belongs to another Organization) or plan_required. organization_id and sso_connection_id are set when the connection is known."},
+    {:sso_login, [:user_id, :organization_id, :sso_connection_id, :protocol],
+     "A user signed in through their Organization's single sign-on connection. protocol is oidc or saml."},
+    {:sso_login_refused, [:organization_id, :sso_connection_id, :reason, :protocol],
+     "A single sign-on sign-in was refused. protocol is oidc or saml. reason is why: missing_flow, flow_expired, idp_error, state_mismatch, missing_code, connection_unavailable, provider_unreachable, unsafe_url, invalid_discovery, issuer_mismatch, unsupported_algorithms, invalid_jwks, unsupported_client_auth, token_exchange_failed, token_expired, invalid_token, invalid_claims, email_not_verified, domain_not_verified, user_disabled, membership_conflict (the user belongs to another Organization) or plan_required; for SAML also missing_request, request_expired, request_used, response_too_large, invalid_response, unsafe_xml, unsupported_algorithms, status_not_success, destination_mismatch, signature_invalid, audience_mismatch, recipient_mismatch, in_response_to_mismatch, assertion_not_yet_valid, assertion_expired, unsupported_name_id (a transient NameID), assertion_replayed or browser_mismatch (the response was posted from a browser that did not start the sign-in). organization_id and sso_connection_id are set when the connection is known."},
+    {:saml_assertion_replayed, [:organization_id, :sso_connection_id],
+     "A SAML assertion that had already been accepted was posted again and refused."},
     {:sso_user_provisioned, [:user_id, :organization_id, :sso_connection_id],
      "Single sign-on created an account and an Organization membership for a new user. user_id is the new account."},
     {:sso_account_linked, [:user_id, :organization_id, :sso_connection_id],
@@ -120,11 +123,12 @@ defmodule Kanban.Telemetry.Catalog.Families do
        :user_id,
        :organization_id,
        :sso_connection_id,
+       :protocol,
        :enabled,
        :issuer_changed,
        :credentials_changed
      ],
-     "An org-admin created or changed their Organization's single sign-on connection. user_id is the org-admin; issuer_changed and credentials_changed say whether the issuer and the client id or secret changed, never their values."}
+     "An org-admin created or changed their Organization's single sign-on connection. user_id is the org-admin; protocol is oidc or saml; issuer_changed and credentials_changed say whether the issuer (the IdP entity id for SAML) and the client id or secret (the signing certificates for SAML) changed, never their values."}
   ]
 
   # The API actions whose metrics existed, and were stored in metrics_events,

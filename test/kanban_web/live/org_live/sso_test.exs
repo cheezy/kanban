@@ -79,6 +79,12 @@ defmodule KanbanWeb.OrgLive.SSOTest do
           lv
           |> form("#sso-connection-form", connection: %{issuer: issuer(), client_id: "c"})
           |> render_submit()
+        end,
+        fn lv ->
+          lv |> form("#saml-connection-form", saml: %{issuer: "urn:idp"}) |> render_change()
+        end,
+        fn lv ->
+          lv |> form("#saml-connection-form", saml: %{issuer: "urn:idp"}) |> render_submit()
         end
       ]
 
@@ -94,9 +100,10 @@ defmodule KanbanWeb.OrgLive.SSOTest do
 
       assert SSO.list_domains(org.id) == [domain]
       refute SSO.get_oidc_connection(org.id)
+      refute SSO.get_saml_connection(org.id)
 
       assert length(AuditLog.list_events(action: :permission_denied, actor_user_id: org_admin.id)) ==
-               5
+               7
     end
 
     test "an org-admin is not locked out when plans are enforced", %{conn: conn} do
@@ -228,6 +235,101 @@ defmodule KanbanWeb.OrgLive.SSOTest do
 
       assert html =~ "The issuer URL must be a public https address."
       refute SSO.get_oidc_connection(org.id)
+    end
+  end
+
+  describe "the SAML connection" do
+    setup do
+      %{idp: Kanban.SAMLTestHelpers.idp()}
+    end
+
+    test "shows Stride's SP details and the metadata download", %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+      sp = Kanban.SSO.SAML.service_provider(org.id)
+
+      assert lv |> element("#saml-sp-entity-id") |> render() =~ sp.entity_id
+      assert lv |> element("#saml-acs-url") |> render() =~ sp.acs_url
+      assert has_element?(lv, ~s(#saml-sp-metadata[href="/org/sso/saml/metadata"]))
+    end
+
+    test "saves a connection from IdP metadata XML", %{conn: conn, org: org, idp: idp} do
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      html =
+        lv
+        |> form("#saml-connection-form",
+          saml: %{idp_metadata: Kanban.SAMLTestHelpers.idp_metadata(idp.pem), enabled: "true"}
+        )
+        |> render_submit()
+
+      assert html =~ "SAML connection saved."
+
+      connection = SSO.get_saml_connection(org.id)
+      assert connection.issuer == Kanban.SAMLTestHelpers.issuer()
+      assert connection.settings["sso_url"] == Kanban.SAMLTestHelpers.sso_url()
+      assert [_pem] = connection.settings["certificates"]
+      assert connection.enabled
+
+      assert [event] = AuditLog.list_events(action: "sso_connection_updated")
+      assert event.metadata["protocol"] == "saml"
+      assert event.metadata["credentials_changed"] == true
+    end
+
+    test "saves a connection from typed fields and keeps the certificates when left blank",
+         %{conn: conn, org: org, idp: idp} do
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      lv
+      |> form("#saml-connection-form",
+        saml: %{
+          issuer: "urn:example:idp",
+          sso_url: "https://login.example.com/saml",
+          certificates_pem: idp.pem
+        }
+      )
+      |> render_submit()
+
+      connection = SSO.get_saml_connection(org.id)
+      assert connection.issuer == "urn:example:idp"
+      refute connection.enabled
+
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      lv
+      |> form("#saml-connection-form", saml: %{certificates_pem: "", enabled: "true"})
+      |> render_submit()
+
+      reloaded = SSO.get_saml_connection(org.id)
+      assert reloaded.enabled
+      assert reloaded.settings["certificates"] == connection.settings["certificates"]
+    end
+
+    test "invalid metadata, URL and certificates show errors and save nothing",
+         %{conn: conn, org: org} do
+      {:ok, lv, _html} = live(conn, ~p"/org/sso")
+
+      html =
+        lv
+        |> form("#saml-connection-form", saml: %{idp_metadata: "<not metadata"})
+        |> render_submit()
+
+      assert html =~ "is not valid identity provider metadata"
+
+      html =
+        lv
+        |> form("#saml-connection-form",
+          saml: %{
+            idp_metadata: "",
+            issuer: "urn:example:idp",
+            sso_url: "ftp://login.example.com",
+            certificates_pem: "not a certificate"
+          }
+        )
+        |> render_submit()
+
+      assert html =~ "must be an https URL"
+      assert html =~ "must be one or two RSA certificates"
+      refute SSO.get_saml_connection(org.id)
     end
   end
 

@@ -9,7 +9,13 @@ defmodule Kanban.SSO do
   Organization has verified can then sign in through that provider; the
   protocol lives in `Kanban.SSO.OIDC`, the sign-in orchestration in
   `Kanban.SSO.OIDCLogin`, and the just-in-time account and membership rules in
-  `Kanban.SSO.Provisioning` (shared later by SAML and SCIM).
+  `Kanban.SSO.Provisioning` (shared by OIDC, SAML and, later, SCIM).
+
+  An Organization may also register one SAML 2.0 identity provider (W2246):
+  the protocol lives in `Kanban.SSO.SAML` and the sign-in in
+  `Kanban.SSO.SAMLLogin`. It passes the same paid gate and the same
+  provisioning rules; its sign-on URL is only a browser redirect target, so
+  the server never fetches it.
 
   ## Who may change what
 
@@ -43,6 +49,7 @@ defmodule Kanban.SSO do
   alias Kanban.SSO.DomainVerification
   alias Kanban.SSO.OIDCLogin
   alias Kanban.SSO.OrganizationDomain
+  alias Kanban.SSO.SAMLLogin
   alias Kanban.SSO.SSOConnection
   alias Kanban.SSO.UserIdentity
   alias Kanban.Webhooks.UrlGuard
@@ -273,10 +280,13 @@ defmodule Kanban.SSO do
          changeset = oidc_connection_changeset(actor, organization_id, attrs),
          :ok <- guard_issuer(changeset),
          {:ok, connection} <- Repo.insert_or_update(changeset) do
-      audit_connection_update(actor, connection, changeset)
+      audit_connection_update(actor, connection, changeset, client_changed?(changeset))
       {:ok, connection}
     end
   end
+
+  defp client_changed?(%Ecto.Changeset{changes: changes}),
+    do: Map.has_key?(changes, :client_id) or Map.has_key?(changes, :client_secret)
 
   defp oidc_connection_changeset(actor, organization_id, attrs) do
     (get_oidc_connection(organization_id) ||
@@ -295,16 +305,16 @@ defmodule Kanban.SSO do
     end
   end
 
-  defp audit_connection_update(actor, connection, changeset) do
+  # One audit shape for both protocols; the protocol comes from the row.
+  defp audit_connection_update(actor, connection, changeset, credentials_changed) do
     AuditLog.event(:sso_connection_updated,
       user_id: actor.id,
       organization_id: connection.organization_id,
       sso_connection_id: connection.id,
+      protocol: connection.protocol,
       enabled: connection.enabled,
       issuer_changed: Map.has_key?(changeset.changes, :issuer),
-      credentials_changed:
-        Map.has_key?(changeset.changes, :client_id) or
-          Map.has_key?(changeset.changes, :client_secret)
+      credentials_changed: credentials_changed
     )
   end
 
@@ -313,21 +323,31 @@ defmodule Kanban.SSO do
   `{:error, :not_found}`.
   """
   @spec connection_for_domain(term()) :: {:ok, SSOConnection.t()} | {:error, :not_found}
-  def connection_for_domain(domain) do
+  def connection_for_domain(domain), do: enabled_connection_for_domain(domain, :oidc)
+
+  @doc """
+  The enabled SAML connection of the Organization that verified `domain`, or
+  `{:error, :not_found}`.
+  """
+  @spec saml_connection_for_domain(term()) :: {:ok, SSOConnection.t()} | {:error, :not_found}
+  def saml_connection_for_domain(domain), do: enabled_connection_for_domain(domain, :saml)
+
+  defp enabled_connection_for_domain(domain, protocol) do
     with {:ok, domain} <- OrganizationDomain.normalize(domain),
-         %SSOConnection{} = connection <- domain |> enabled_connection_query() |> Repo.one() do
+         %SSOConnection{} = connection <-
+           domain |> enabled_connection_query(protocol) |> Repo.one() do
       {:ok, connection}
     else
       _missing -> {:error, :not_found}
     end
   end
 
-  defp enabled_connection_query(domain) do
+  defp enabled_connection_query(domain, protocol) do
     from(c in SSOConnection,
       join: d in OrganizationDomain,
       on: d.organization_id == c.organization_id,
       where:
-        d.domain == ^domain and not is_nil(d.verified_at) and c.protocol == :oidc and
+        d.domain == ^domain and not is_nil(d.verified_at) and c.protocol == ^protocol and
           c.enabled,
       limit: 1
     )
@@ -344,6 +364,70 @@ defmodule Kanban.SSO do
 
   def get_enabled_oidc_connection(_id), do: {:error, :not_found}
 
+  # --- SAML connections ----------------------------------------------------------
+
+  @doc "The Organization's SAML connection, or `nil`."
+  @spec get_saml_connection(integer()) :: SSOConnection.t() | nil
+  def get_saml_connection(organization_id) when is_integer(organization_id) do
+    Repo.get_by(SSOConnection, organization_id: organization_id, protocol: :saml)
+  end
+
+  @doc "A changeset for the SAML connection form."
+  @spec change_saml_connection(SSOConnection.t() | nil, map()) :: Ecto.Changeset.t()
+  def change_saml_connection(connection, attrs \\ %{})
+
+  def change_saml_connection(nil, attrs),
+    do: SSOConnection.saml_changeset(%SSOConnection{protocol: :saml}, attrs)
+
+  def change_saml_connection(%SSOConnection{} = connection, attrs),
+    do: SSOConnection.saml_changeset(connection, attrs)
+
+  @doc """
+  Creates or updates the Organization's SAML connection. Records
+  `:sso_connection_updated` with whether the IdP entity id and the
+  certificates changed, never their values.
+  """
+  @spec save_saml_connection(User.t(), integer(), map()) ::
+          {:ok, SSOConnection.t()} | {:error, :unauthorized | Ecto.Changeset.t()}
+  def save_saml_connection(%User{} = actor, organization_id, attrs) when is_map(attrs) do
+    with {:ok, actor} <- authorize(actor, organization_id),
+         existing = get_saml_connection(organization_id),
+         changeset = saml_connection_changeset(actor, existing, organization_id, attrs),
+         {:ok, connection} <- Repo.insert_or_update(changeset) do
+      audit_saml_save(actor, existing, connection, changeset)
+      {:ok, connection}
+    end
+  end
+
+  defp audit_saml_save(actor, existing, connection, changeset) do
+    changed = certificates(connection) != certificates(existing)
+    audit_connection_update(actor, connection, changeset, changed)
+  end
+
+  defp saml_connection_changeset(actor, existing, organization_id, attrs) do
+    (existing || %SSOConnection{organization_id: organization_id, protocol: :saml})
+    |> SSOConnection.saml_changeset(attrs)
+    |> Ecto.Changeset.put_change(:updated_by_id, actor.id)
+  end
+
+  defp certificates(%SSOConnection{settings: %{"certificates" => certificates}}), do: certificates
+  defp certificates(_connection), do: nil
+
+  @doc "The enabled SAML connection of the Organization `organization_id`, or `{:error, :not_found}`."
+  @spec get_enabled_saml_connection(term()) :: {:ok, SSOConnection.t()} | {:error, :not_found}
+  def get_enabled_saml_connection(organization_id) when is_integer(organization_id) do
+    case Repo.get_by(SSOConnection,
+           organization_id: organization_id,
+           protocol: :saml,
+           enabled: true
+         ) do
+      %SSOConnection{} = connection -> {:ok, connection}
+      nil -> {:error, :not_found}
+    end
+  end
+
+  def get_enabled_saml_connection(_organization_id), do: {:error, :not_found}
+
   @doc "True when the user has signed in through single sign-on at least once."
   @spec user_has_identity?(User.t()) :: boolean()
   def user_has_identity?(%User{id: user_id}) do
@@ -354,4 +438,6 @@ defmodule Kanban.SSO do
 
   defdelegate begin_oidc_login(domain, redirect_uri), to: OIDCLogin, as: :begin
   defdelegate complete_oidc_login(flow, params, opts), to: OIDCLogin, as: :complete
+  defdelegate begin_saml_login(domain, return_to), to: SAMLLogin, as: :begin
+  defdelegate complete_saml_login(organization_id, params, opts), to: SAMLLogin, as: :complete
 end
