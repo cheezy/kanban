@@ -14,6 +14,15 @@ defmodule Kanban.Workspaces.Export.Serializer do
   never appear. Users appear only as `{id, email, name}`, and only when
   something in the archive refers to them.
 
+  An archive holds only the workspace's boards and what is on them, plus its
+  member and guest rows. It leaves out, besides the secrets above:
+
+    * delivery targets, which belong to the user who made them rather than to
+      a workspace — a goal's `target_id` is not listed, so an imported goal
+      has no target;
+    * webhook endpoints, notifications, workspace invitations, claim-expiry
+      reports, metrics and audit events, and earlier exports.
+
   Rows keep their source ids so the importer can remap every reference; the
   importer never reuses one. `format_version/0` changes whenever a field is
   removed or changes meaning; the importer refuses any version it does not

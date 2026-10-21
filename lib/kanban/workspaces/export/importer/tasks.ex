@@ -18,6 +18,11 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   board, a task that is its own parent, parent cycles — and refuses the whole
   import, naming the row, when one fails.
 
+  Two kinds of row this app wrote before a validation existed are repaired
+  rather than refused (`Kanban.Workspaces.Export.Importer.Repairs`): a comment
+  longer than the comment cap is shortened to it, and capabilities outside
+  today's list are dropped from a task. Each repair is listed in the report.
+
   A reference the archive cannot resolve — a parent or duplicate outside the
   workspace, a comment on a task that is not in it — is skipped and reported,
   never guessed. A task, label link, comment or history row that fails its
@@ -30,6 +35,7 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   alias Kanban.Tasks.TaskComment
   alias Kanban.Tasks.TaskHistory
   alias Kanban.Workspaces.Export.Importer
+  alias Kanban.Workspaces.Export.Importer.Repairs
   alias Kanban.Workspaces.Export.Importer.TaskChecks
   alias Kanban.Workspaces.Export.Importer.Users
 
@@ -105,6 +111,8 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
       |> hold_duplicate_link()
       |> keep_review_attribution(ctx)
 
+    {attrs, ctx} = repair_capabilities(attrs, ctx)
+
     task =
       %Task{}
       |> Task.changeset(attrs)
@@ -138,6 +146,19 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
       {Map.put(attrs, "reviewed_by_id", ctx.admin.id), Map.update!(ctx, :reattributed, &(&1 + 1))}
     else
       {attrs, ctx}
+    end
+  end
+
+  # Tasks written before 2026-01-08 can name capabilities outside today's list.
+  defp repair_capabilities(attrs, ctx) do
+    case Repairs.capabilities(attrs["required_capabilities"]) do
+      {_kept, 0} ->
+        {attrs, ctx}
+
+      {kept, dropped} ->
+        noun = if dropped == 1, do: "capability", else: "capabilities"
+        text = "task #{attrs["identifier"]}: dropped #{dropped} unknown required #{noun}"
+        {Map.put(attrs, "required_capabilities", kept), Importer.repaired(ctx, :tasks, text)}
     end
   end
 
@@ -228,17 +249,39 @@ defmodule Kanban.Workspaces.Export.Importer.Tasks do
   end
 
   defp insert_comments(ctx) do
-    insert_task_children(ctx, :comments, fn row, task ->
-      %TaskComment{
-        task_id: task.id,
-        author_user_id: Users.attributed(ctx, row["author_user_id"]),
-        mentioned_user_ids: mentioned(ctx, row["mentioned_user_ids"])
-      }
-      |> TaskComment.changeset(%{"content" => row["content"]})
-      |> put_agent_name(row["author_agent_name"])
-      |> Ecto.Changeset.cast(Map.take(row, ["edited_at"]), [:edited_at])
-      |> Importer.cast_timestamps(row)
-    end)
+    {rows, ctx} = Enum.map_reduce(ctx.rows.comments, ctx, &repair_comment/2)
+
+    ctx
+    |> put_in([:rows, :comments], rows)
+    |> insert_task_children(:comments, &comment_changeset(ctx, &1, &2))
+  end
+
+  defp comment_changeset(ctx, row, task) do
+    %TaskComment{
+      task_id: task.id,
+      author_user_id: Users.attributed(ctx, row["author_user_id"]),
+      mentioned_user_ids: mentioned(ctx, row["mentioned_user_ids"])
+    }
+    |> TaskComment.changeset(%{"content" => row["content"]})
+    |> put_agent_name(row["author_agent_name"])
+    |> Ecto.Changeset.cast(Map.take(row, ["edited_at"]), [:edited_at])
+    |> Importer.cast_timestamps(row)
+  end
+
+  # Comments written before W2208 (2026-10-07) can be longer than the cap. A
+  # comment on a task that is not imported is skipped later, so it is left as
+  # it is.
+  defp repair_comment(row, ctx) do
+    with {:ok, task} <- Map.fetch(ctx.tasks, row["task_id"]),
+         {content, {:shortened, length}} <- Repairs.comment_content(row["content"]) do
+      text =
+        "comment on #{task.identifier}: shortened from #{length} to " <>
+          "#{TaskComment.content_max_length()} characters"
+
+      {Map.put(row, "content", content), Importer.repaired(ctx, :comments, text)}
+    else
+      _unchanged -> {row, ctx}
+    end
   end
 
   # Through TaskComment's own length and storable-text checks.

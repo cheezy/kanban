@@ -67,7 +67,8 @@ defmodule Kanban.Workspaces.Export.Importer.UsersTest do
 
   test "reports users with no account here and names matched users outside the Organization",
        t do
-    assert t.ctx.unmatched_users == Enum.sort(["nobody-here@example.com", t.disabled.email])
+    assert t.ctx.unmatched_users == ["nobody-here@example.com"]
+    assert t.ctx.disabled_users == [t.disabled.email]
 
     expected =
       [t.outsider.email, t.other_org_member.email]
@@ -78,5 +79,29 @@ defmodule Kanban.Workspaces.Export.Importer.UsersTest do
 
     assert Enum.reverse(t.ctx.skipped) == expected
     assert t.ctx.emails[3] == t.outsider.email
+  end
+
+  test "unmatched_reason/2 names the user and says whether the account is disabled or missing",
+       t do
+    assert Users.unmatched_reason(t.ctx, 5) == "nobody-here@example.com has no account here"
+    assert Users.unmatched_reason(t.ctx, 6) == "#{t.disabled.email} has a disabled account here"
+    assert Users.unmatched_reason(t.ctx, 999) == "an unknown user has no account here"
+  end
+
+  test "a disabled account is recognized whatever the case of the archive's email" do
+    organization = organization_fixture()
+    disabled = user_fixture()
+
+    disabled
+    |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
+    |> Repo.update!()
+
+    upcased = String.upcase(disabled.email)
+    rows = [%{"id" => 1, "email" => upcased}]
+    ctx = Users.match(%{rows: %{users: rows}, organization_id: organization.id, skipped: []})
+
+    assert ctx.disabled_users == [upcased]
+    assert ctx.unmatched_users == []
+    assert Users.unmatched_reason(ctx, 1) == "#{upcased} has a disabled account here"
   end
 end

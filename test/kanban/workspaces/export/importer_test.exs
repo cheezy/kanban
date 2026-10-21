@@ -5,9 +5,11 @@ defmodule Kanban.Workspaces.Export.ImporterTest do
 
   import Kanban.WorkspaceExportFixtures
 
+  alias Kanban.Accounts.User
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
   alias Kanban.Tasks.Task
+  alias Kanban.Tasks.TaskComment
   alias Kanban.Tasks.TaskHistory
   alias Kanban.Workspaces.Export
   alias Kanban.Workspaces.Export.Importer
@@ -244,6 +246,75 @@ defmodule Kanban.Workspaces.Export.ImporterTest do
     end
   end
 
+  describe "rows older versions wrote" do
+    test "a comment longer than the cap is shortened to it and reported", ctx do
+      max = TaskComment.content_max_length()
+      long = String.duplicate("ab", max)
+
+      files =
+        update_rows(ctx.files, :comments, fn row -> Map.put(row, "content", long) end)
+
+      assert {:ok, report} = import_files(ctx, files)
+      assert report.counts.comments == length(files["comments.json"])
+
+      assert {:comments,
+              "comment on #{ctx.first.identifier}: shortened from #{2 * max} to #{max} characters"} in report.repaired
+
+      comment = imported_comment(report.workspace_name)
+      assert comment.content == String.slice(long, 0, max)
+    end
+
+    test "unknown required capabilities are dropped and reported", ctx do
+      files =
+        change_task(ctx.files, ctx.second, %{
+          "required_capabilities" => ["pubsub_integration", "testing", "forms"]
+        })
+
+      assert {:ok, report} = import_files(ctx, files)
+
+      assert report.repaired == [
+               {:tasks, "task #{ctx.second.identifier}: dropped 2 unknown required capabilities"}
+             ]
+
+      task = imported_task(ctx.second.identifier, report.workspace_name)
+      assert task.required_capabilities == ["testing"]
+    end
+
+    test "a clean archive reports no repairs", ctx do
+      assert {:ok, %{repaired: []}} = import_files(ctx, ctx.files)
+    end
+  end
+
+  describe "skipped members" do
+    test "name the user and say whether their account is disabled or missing", ctx do
+      from(u in User, where: u.id == ^ctx.guest.id)
+      |> Repo.update_all(set: [disabled_at: DateTime.utc_now(:second)])
+
+      files =
+        Map.update!(ctx.files, "users.json", fn rows ->
+          Enum.map(rows, fn
+            %{"id" => id} = row when id == ctx.member.id ->
+              Map.put(row, "email", "gone-#{System.unique_integer([:positive])}@example.com")
+
+            row ->
+              row
+          end)
+        end)
+
+      missing = Enum.find(files["users.json"], &(&1["id"] == ctx.member.id))["email"]
+
+      assert {:ok, report} = import_files(ctx, files)
+      assert report.disabled_users == [ctx.guest.email]
+      assert report.unmatched_users == [missing]
+
+      assert {:workspace_members, "member #{ctx.guest.email} has a disabled account here"} in report.skipped
+
+      assert {:board_users, "board member #{ctx.guest.email} has a disabled account here"} in report.skipped
+
+      assert {:workspace_members, "member #{missing} has no account here"} in report.skipped
+    end
+  end
+
   test "a clean archive still imports, history included", ctx do
     assert {:ok, report} = import_files(ctx, ctx.files)
     assert report.counts.tasks == 6
@@ -251,6 +322,30 @@ defmodule Kanban.Workspaces.Export.ImporterTest do
     assert report.counts.task_history == length(ctx.files["task_history.json"])
     assert Repo.aggregate(TaskHistory, :count) >= report.counts.task_history
     assert row(ctx.files, :tasks, ctx.second.id)["identifier"] == ctx.second.identifier
+  end
+
+  # Tasks on the boards of the imported workspace named `workspace_name`.
+  defp imported_tasks(workspace_name) do
+    from(t in Task,
+      join: c in assoc(t, :column),
+      join: b in Board,
+      on: b.id == c.board_id,
+      join: w in Workspace,
+      on: w.id == b.workspace_id,
+      where: w.name == ^workspace_name
+    )
+  end
+
+  defp imported_task(identifier, workspace_name) do
+    workspace_name
+    |> imported_tasks()
+    |> where([t], t.identifier == ^identifier)
+    |> Repo.one!()
+  end
+
+  defp imported_comment(workspace_name) do
+    task_ids = workspace_name |> imported_tasks() |> select([t], t.id)
+    from(tc in TaskComment, where: tc.task_id in subquery(task_ids)) |> Repo.one!()
   end
 
   defp imported_board(name, workspace_name) do

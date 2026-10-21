@@ -24,8 +24,9 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   so a failure part-way through leaves the database exactly as it was.
 
   Users are matched by email and never created; a disabled account is never
-  matched. Attributions of a user with no account here are left empty and
-  their memberships are skipped; their emails are listed at the end. A user
+  matched. Attributions of a user with no account here, or with a disabled
+  one, are left empty and their memberships are skipped; their emails are
+  listed at the end, in two lists, and each skipped membership names them. A user
   whose account is not in the Organization is never attributed either: their
   attributions are left empty and they are named under "Skipped". Board
   access goes only to matched members of the Organization: a board owner who
@@ -35,7 +36,10 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   is listed. An archive whose tasks name a parent or duplicate on another
   board, form a parent cycle, repeat an identifier on one board or carry a
   malformed identifier is refused, as is any row holding a value no column
-  can store. The workspace keeps the archive's name, or
+  can store. Two kinds of row that older versions of Stride wrote are
+  repaired instead and listed under "Repaired": a comment longer than 10,000
+  characters is shortened to 10,000, and required capabilities Stride no
+  longer knows are dropped from a task. The workspace keeps the archive's name, or
   gets an "(imported)" suffix when that name is taken in the Organization.
 
   It starts only the database connection (`Ecto.Migrator.with_repo/2`), not
@@ -94,11 +98,16 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
   defp handle({:ok, report}) do
     report_header(report)
     report_reattributed(report.reattributed)
-    report_list("Users with no account here (attribution left empty):", report.unmatched_users)
-    report_list("Skipped:", Enum.map(report.skipped, &skipped_line/1))
-    report_list("Board access given:", Enum.map(report.board_access, &board_access_line/1))
+    report_unmatched(report)
+    report_changes(report)
     report_dry_run(report.dry_run)
     :ok
+  end
+
+  defp report_changes(report) do
+    report_list("Repaired:", Enum.map(report.repaired, &elem(&1, 1)))
+    report_list("Skipped:", Enum.map(report.skipped, &skipped_line/1))
+    report_list("Board access given:", Enum.map(report.board_access, &board_access_line/1))
   end
 
   defp handle({:error, reason}),
@@ -112,6 +121,15 @@ defmodule Mix.Tasks.Kanban.ImportWorkspace do
     report.counts
     |> Enum.sort()
     |> Enum.each(fn {entity, count} -> shell.info("  #{entity}: #{count}") end)
+  end
+
+  defp report_unmatched(report) do
+    report_list("Users with no account here (attribution left empty):", report.unmatched_users)
+
+    report_list(
+      "Users with a disabled account here (attribution left empty):",
+      report.disabled_users
+    )
   end
 
   defp report_reattributed(count) when count > 0,

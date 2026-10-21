@@ -17,6 +17,11 @@ defmodule Kanban.Workspaces.Export.Importer.Users do
       account outside the Organization. Such attributions are left empty,
       like those of a user with no account here, and each such user is named
       in the report's skipped list.
+
+  An archive user with no match is reported in one of two lists:
+  `unmatched_users` when no account here has their email, and
+  `disabled_users` when one does but it is disabled.
+  `unmatched_reason/2` says which, for the importer's skip lines.
   """
 
   import Ecto.Query, warn: false
@@ -27,7 +32,8 @@ defmodule Kanban.Workspaces.Export.Importer.Users do
 
   @doc """
   Matches `ctx.rows.users` and puts `:users`, `:attributable`, `:emails`,
-  `:unmatched_users` and `:counts` (with the matched user count) on `ctx`,
+  `:unmatched_users`, `:disabled_users` and `:counts` (with the matched user
+  count) on `ctx`,
   adding a `:users` skip for each matched user outside
   `ctx.organization_id`.
   """
@@ -42,10 +48,35 @@ defmodule Kanban.Workspaces.Export.Importer.Users do
       users: user_map,
       attributable: attributable,
       emails: emails,
-      unmatched_users: sorted_emails(unmatched),
       counts: %{users: matched_count}
     })
+    |> Map.merge(split_unmatched(unmatched))
     |> skip_outside(outside, emails)
+  end
+
+  # The unmatched emails, split into those with no account here and those
+  # whose account is disabled.
+  defp split_unmatched(unmatched) do
+    disabled = disabled_emails(unmatched)
+    {disabled_users, unmatched} = Enum.split_with(unmatched, &disabled?(&1, disabled))
+    %{unmatched_users: sorted_emails(unmatched), disabled_users: sorted_emails(disabled_users)}
+  end
+
+  @doc """
+  Why the archive's user `source_id` was not matched, naming them:
+  "<email> has no account here" or "<email> has a disabled account here".
+  """
+  @spec unmatched_reason(map(), term()) :: String.t()
+  def unmatched_reason(ctx, source_id) do
+    case Map.get(ctx.emails, source_id) do
+      email when is_binary(email) ->
+        if email in ctx.disabled_users,
+          do: "#{email} has a disabled account here",
+          else: "#{email} has no account here"
+
+      _no_email ->
+        "an unknown user has no account here"
+    end
   end
 
   @doc "The local id of the archive's user `source_id`, or nil when unmatched."
@@ -84,6 +115,18 @@ defmodule Kanban.Workspaces.Export.Importer.Users do
       select: {u.email, u.id}
     )
   end
+
+  # Downcased emails, among `emails`, of disabled accounts here.
+  defp disabled_emails(emails) do
+    emails = Enum.filter(emails, &is_binary/1)
+
+    from(u in User, where: u.email in ^emails and not is_nil(u.disabled_at), select: u.email)
+    |> Repo.all()
+    |> MapSet.new(&String.downcase/1)
+  end
+
+  defp disabled?(email, disabled),
+    do: is_binary(email) and MapSet.member?(disabled, String.downcase(email))
 
   defp match_user(row, {map, unmatched}, local) do
     email = if is_binary(row["email"]), do: String.downcase(row["email"])

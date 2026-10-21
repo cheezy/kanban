@@ -382,6 +382,42 @@ defmodule Mix.Tasks.Kanban.ImportWorkspaceTest do
     refute Repo.get_by(BoardUser, board_id: board.id, user_id: ctx.member.id)
   end
 
+  test "a comment older versions stored past the cap is shortened and listed", ctx do
+    ctx = seed_workspace(ctx)
+    max = Kanban.Tasks.TaskComment.content_max_length()
+
+    # As the task form stored it before W2208: no author and no length cap.
+    Repo.insert!(%Kanban.Tasks.TaskComment{
+      task_id: ctx.first.id,
+      content: String.duplicate("x", max + 1)
+    })
+
+    path = export_archive(ctx)
+    delete_source(ctx)
+
+    output = import!(["--file", path, "--org-admin-email", ctx.org_admin.email])
+
+    assert output =~
+             "Repaired:\n  comment on #{ctx.first.identifier}: shortened from #{max + 1} to #{max} characters"
+
+    workspace = imported_workspace(ctx.workspace.name)
+
+    lengths =
+      from(tc in Kanban.Tasks.TaskComment,
+        join: t in Kanban.Tasks.Task,
+        on: t.id == tc.task_id,
+        join: c in assoc(t, :column),
+        join: b in Board,
+        on: b.id == c.board_id,
+        where: b.workspace_id == ^workspace.id,
+        select: fragment("char_length(?)", tc.content)
+      )
+      |> Repo.all()
+
+    assert max in lengths
+    assert Enum.all?(lengths, &(&1 <= max))
+  end
+
   test "a disabled account is never matched", ctx do
     ctx = seed_workspace(ctx)
     path = export_archive(ctx)
@@ -392,8 +428,11 @@ defmodule Mix.Tasks.Kanban.ImportWorkspaceTest do
 
     output = import!(["--file", path, "--org-admin-email", ctx.org_admin.email])
 
-    assert output =~ "Users with no account here"
-    assert output =~ ctx.guest.email
+    assert output =~
+             "Users with a disabled account here (attribution left empty):\n  #{ctx.guest.email}"
+
+    refute output =~ "Users with no account here"
+    assert output =~ "board_users: board member #{ctx.guest.email} has a disabled account here"
     workspace = imported_workspace(ctx.workspace.name)
 
     guest_board_access =

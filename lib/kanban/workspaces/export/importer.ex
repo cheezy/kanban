@@ -23,7 +23,10 @@ defmodule Kanban.Workspaces.Export.Importer do
   and each board is new. Users are matched by email and never created
   (`Kanban.Workspaces.Export.Importer.Users`): an unmatched user's
   attributions become empty and their memberships are skipped, and the report
-  lists their emails. A disabled account is never matched. A matched user
+  lists their emails — under `unmatched_users` when no account here has the
+  email, under `disabled_users` when the account is disabled, since a
+  disabled account is never matched. Each skipped membership names the user
+  and which of the two it was. A matched user
   outside the Organization is never attributed either: their task, comment and
   history attributions are left empty and the report names them, so an
   archive cannot make imported rows name an account outside the
@@ -37,6 +40,11 @@ defmodule Kanban.Workspaces.Export.Importer do
   member and guest rows are kept only for matched users who belong to the
   Organization and are not its org-admins. In-progress tasks keep their claim
   timestamps.
+
+  A row this app wrote before a validation existed is repaired, not refused
+  (`Kanban.Workspaces.Export.Importer.Repairs`): a comment longer than the
+  comment cap is shortened to it, and capabilities outside today's list are
+  dropped. The report's `repaired` list names each one.
 
   A value no column can hold — text with a NUL byte or invalid UTF-8, or an
   integer outside PostgreSQL's 32-bit `integer` range — is refused like any
@@ -76,6 +84,8 @@ defmodule Kanban.Workspaces.Export.Importer do
           workspace_name: String.t(),
           counts: %{atom() => non_neg_integer()},
           unmatched_users: [String.t()],
+          disabled_users: [String.t()],
+          repaired: [{atom(), String.t()}],
           skipped: [{atom(), String.t()}],
           reattributed: non_neg_integer(),
           board_access: [{String.t(), String.t(), String.t()}]
@@ -125,6 +135,7 @@ defmodule Kanban.Workspaces.Export.Importer do
         organization_id: organization_id,
         rows: rows,
         skipped: [],
+        repaired: [],
         reattributed: 0,
         granted: []
       }
@@ -142,6 +153,8 @@ defmodule Kanban.Workspaces.Export.Importer do
       workspace_name: ctx.workspace.name,
       counts: ctx.counts,
       unmatched_users: ctx.unmatched_users,
+      disabled_users: ctx.disabled_users,
+      repaired: Enum.reverse(ctx.repaired),
       skipped: Enum.reverse(ctx.skipped),
       reattributed: ctx.reattributed,
       board_access: Enum.reverse(ctx.granted)
@@ -223,7 +236,7 @@ defmodule Kanban.Workspaces.Export.Importer do
 
     cond do
       is_nil(user_id) ->
-        {:skip, "member user not found on this instance"}
+        {:skip, "member " <> Users.unmatched_reason(ctx, row["user_id"])}
 
       is_nil(role) ->
         {:skip, "unknown member role"}
@@ -324,7 +337,7 @@ defmodule Kanban.Workspaces.Export.Importer do
 
   defp other_member_action(ctx, seen, row, user_id) do
     cond do
-      is_nil(user_id) -> {:skip, "board member not found on this instance"}
+      is_nil(user_id) -> {:skip, "board member " <> Users.unmatched_reason(ctx, row["user_id"])}
       MapSet.member?(seen, user_id) or row["access"] not in @board_access -> :ignore
       not org_member?(ctx, user_id) -> {:skip, outside_reason(ctx, row)}
       true -> :insert
@@ -457,6 +470,9 @@ defmodule Kanban.Workspaces.Export.Importer do
 
   @doc false
   def skip(ctx, entity, reason), do: %{ctx | skipped: [{entity, reason} | ctx.skipped]}
+
+  @doc false
+  def repaired(ctx, entity, text), do: %{ctx | repaired: [{entity, text} | ctx.repaired]}
 
   @doc false
   def put_count(ctx, entity, count), do: %{ctx | counts: Map.put(ctx.counts, entity, count)}
