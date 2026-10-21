@@ -78,6 +78,17 @@ requests it, it only sends the person's browser there. In development,
 `config/dev.exs`) allows a local provider such as Keycloak on
 `http://localhost`.
 
+**Shared identity providers.** Some issuers serve many tenants at one URL,
+such as Google (`https://accounts.google.com`). Stride trusts any verified
+email on the Organization's verified domains that the issuer signs, and checks
+no tenant claim (such as Google's `hd`). That includes a personal account
+someone created on a work address, such as a consumer Google account on
+`name@example.com`, which a former employee may still control. Limit the
+client to your own tenant in the identity provider: in Google Cloud, make the
+OAuth consent screen **Internal**. Where a provider offers a tenant-specific
+issuer, use it, such as Microsoft Entra ID's
+`https://login.microsoftonline.com/<tenant id>/v2.0`.
+
 ## Signing in
 
 1. On the login page the person enters their work email under **Work email for
