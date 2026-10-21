@@ -292,6 +292,97 @@ defmodule Kanban.Organizations.SecurityPolicyTest do
       refute SecurityPolicies.two_factor_required?(admin)
     end
 
+    test "re-joining keeps the grace period that already started" do
+      {org, admin} = org_with_admin()
+      member = user_fixture()
+      organization_member_fixture(org, member)
+      {:ok, policy} = SecurityPolicies.update_policy(admin, %{"require_two_factor" => "true"})
+      deadline = DateTime.add(policy.two_factor_enforced_at, 7 * @day, :second)
+
+      # Removed and re-added before their status was ever read, ten days on.
+      from(m in OrganizationMember, where: m.user_id == ^member.id) |> Repo.delete_all()
+      organization_member_fixture(org, member)
+      backdate_membership(member, DateTime.add(policy.two_factor_enforced_at, 10 * @day, :second))
+
+      assert SecurityPolicies.two_factor_status_for_user(
+               member,
+               DateTime.add(policy.two_factor_enforced_at, 11 * @day, :second)
+             ) == {:overdue, deadline}
+    end
+
+    test "a newcomer's grace is recorded on first read and kept across a re-join" do
+      {org, admin} = org_with_admin()
+      {:ok, policy} = SecurityPolicies.update_policy(admin, %{"require_two_factor" => "true"})
+
+      newcomer = user_fixture()
+      organization_member_fixture(org, newcomer)
+      joined = DateTime.add(policy.two_factor_enforced_at, 2 * @day, :second)
+      backdate_membership(newcomer, joined)
+      deadline = DateTime.add(joined, 7 * @day, :second)
+
+      assert SecurityPolicies.two_factor_status_for_user(newcomer, joined) == {:grace, deadline}
+
+      from(m in OrganizationMember, where: m.user_id == ^newcomer.id) |> Repo.delete_all()
+      organization_member_fixture(org, newcomer)
+      rejoined = DateTime.add(joined, 8 * @day, :second)
+      backdate_membership(newcomer, rejoined)
+
+      assert SecurityPolicies.two_factor_status_for_user(newcomer, rejoined) ==
+               {:overdue, deadline}
+    end
+
+    test "turning the requirement off and on again starts everyone's grace again" do
+      {org, admin} = org_with_admin()
+      member = user_fixture()
+      organization_member_fixture(org, member)
+      {:ok, first} = SecurityPolicies.update_policy(admin, %{"require_two_factor" => "true"})
+      assert {:grace, _} = SecurityPolicies.two_factor_status_for_user(member)
+
+      {:ok, _off} = SecurityPolicies.update_policy(admin, %{"require_two_factor" => "false"})
+
+      later = DateTime.add(first.two_factor_enforced_at, 30 * @day, :second)
+      restamp = from(p in SecurityPolicy, where: p.organization_id == ^org.id)
+      {:ok, second} = SecurityPolicies.update_policy(admin, %{"require_two_factor" => "true"})
+      Repo.update_all(restamp, set: [two_factor_enforced_at: later])
+      second = %{second | two_factor_enforced_at: later}
+
+      assert SecurityPolicies.two_factor_status_for_user(member, later) ==
+               {:grace, DateTime.add(second.two_factor_enforced_at, 7 * @day, :second)}
+    end
+
+    test "someone who first joins after the requirement was turned on again gets their own grace" do
+      {org, admin} = org_with_admin()
+      member = user_fixture()
+      organization_member_fixture(org, member)
+      {:ok, first} = SecurityPolicies.update_policy(admin, %{"require_two_factor" => "true"})
+      assert {:grace, _} = SecurityPolicies.two_factor_status_for_user(member)
+
+      # They leave; the requirement is turned off and on again; they come back.
+      from(m in OrganizationMember, where: m.user_id == ^member.id) |> Repo.delete_all()
+      {:ok, _off} = SecurityPolicies.update_policy(admin, %{"require_two_factor" => "false"})
+      {:ok, _on} = SecurityPolicies.update_policy(admin, %{"require_two_factor" => "true"})
+
+      reenforced = DateTime.add(first.two_factor_enforced_at, 30 * @day, :second)
+
+      from(p in SecurityPolicy, where: p.organization_id == ^org.id)
+      |> Repo.update_all(set: [two_factor_enforced_at: reenforced])
+
+      organization_member_fixture(org, member)
+      rejoined = DateTime.add(reenforced, 5 * @day, :second)
+      backdate_membership(member, rejoined)
+
+      deadline = DateTime.add(rejoined, 7 * @day, :second)
+      assert SecurityPolicies.two_factor_status_for_user(member, rejoined) == {:grace, deadline}
+
+      # That start is now the one kept: a further re-join does not extend it.
+      from(m in OrganizationMember, where: m.user_id == ^member.id) |> Repo.delete_all()
+      organization_member_fixture(org, member)
+      again = DateTime.add(rejoined, 8 * @day, :second)
+      backdate_membership(member, again)
+
+      assert SecurityPolicies.two_factor_status_for_user(member, again) == {:overdue, deadline}
+    end
+
     test "the org-admin who enables the policy without two-factor gets the same grace period" do
       {_org, admin} = org_with_admin()
       {:ok, policy} = SecurityPolicies.update_policy(admin, %{"require_two_factor" => "true"})

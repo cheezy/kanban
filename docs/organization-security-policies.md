@@ -44,9 +44,17 @@ When the requirement is on, every member without two-factor gets a grace
 period to turn it on.
 
 - **The deadline** is the later of the moment the requirement was turned on
-  and the moment the member joined the Organization, plus the grace period.
-  Existing members are never locked out the moment it is enabled, and someone
-  who joins later gets their own grace period. Nothing is stored per member.
+  and the moment the member first joined the Organization under it, plus the
+  grace period. Existing members are never locked out the moment it is
+  enabled, and someone who joins later gets their own grace period.
+- **Grace counts once per person.** When the grace period starts is recorded
+  for each member (`Kanban.Organizations.TwoFactorGrace`): for everyone who is
+  a member when the requirement is turned on, and for anyone else the first
+  time Stride checks their status. Leaving and re-joining keeps it, so a SCIM
+  deactivate and re-activate, being removed and re-added, or a single sign-on
+  rejoin never starts a new grace period. Turning the requirement off and on
+  again, or shortening the grace period, starts everyone's grace again, and
+  someone who first joins after that gets their own.
 - **Turning the requirement on** starts the clock (`two_factor_enforced_at`).
   Shortening the grace period while it is on restarts the clock from that
   moment, so no member is put past their deadline by the change. Turning it

@@ -8,7 +8,8 @@ defmodule Kanban.Organizations.SecurityPolicy do
     to the two-factor section of their settings.
   * `two_factor_enforced_at` — when `require_two_factor` was last turned on;
     each member's grace deadline counts from the later of this and the moment
-    they joined. Set by `changeset/3`, never cast.
+    they first joined under it, recorded once per member
+    (`Kanban.Organizations.TwoFactorGrace`). Set by `changeset/3`, never cast.
   * `audit_retention_days` — days (90 to 3650) to keep the Organization's
     audit events, or `nil` to keep them forever. The 90-day floor is also
     enforced by the database purge function.
