@@ -148,7 +148,7 @@ msgstr ""
 msgid "New password"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:155
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:184
 #: lib/kanban_web/live/user_live/login.ex:59
 #: lib/kanban_web/live/user_live/registration.ex:82
 #: lib/kanban_web/live/user_live/settings.ex:74
@@ -214,7 +214,7 @@ msgstr ""
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:214
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:243
 #: lib/kanban_web/live/user_live/two_factor_component.ex:137
 #, elixir-autogen, elixir-format
 msgid "Cancel"
@@ -11770,12 +11770,12 @@ msgstr ""
 msgid "never"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:259
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:288
 #, elixir-autogen, elixir-format
 msgid "A Stride admin must appoint another org-admin before you can delete your account."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:97
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:103
 #, elixir-autogen, elixir-format
 msgid "Before you can delete your account"
 msgstr ""
@@ -11786,43 +11786,43 @@ msgstr ""
 msgid "Delete account"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:124
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:153
 #, elixir-autogen, elixir-format
 msgid "Delete my account"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:131
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:145
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:160
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:174
 #, elixir-autogen, elixir-format
 msgid "Delete your account"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:203
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:232
 #, elixir-autogen, elixir-format
 msgid "Deleting..."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:306
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:335
 #, elixir-autogen, elixir-format
 msgid "None of its other members can take it over because their accounts are disabled. Remove them from the board, then come back."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:275
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:304
 #, elixir-autogen, elixir-format
 msgid "Open its members"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:403
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:432
 #, elixir-autogen, elixir-format
 msgid "Ownership of %{board} could not be transferred."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:395
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:424
 #, elixir-autogen, elixir-format
 msgid "Ownership of %{board} transferred."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:206
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:235
 #, elixir-autogen, elixir-format
 msgid "Permanently delete my account"
 msgstr ""
@@ -11832,62 +11832,62 @@ msgstr ""
 msgid "Permanently delete your account. Available to everyone, with or without an Organization."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:375
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:404
 #, elixir-autogen, elixir-format
 msgid "Something now stops your account being deleted."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:350
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:379
 #, elixir-autogen, elixir-format
 msgid "That board is not waiting for a new owner."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:383
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:412
 #, elixir-autogen, elixir-format
 msgid "That password is not correct."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:148
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:177
 #, elixir-autogen, elixir-format
 msgid "This permanently deletes your account. Enter your password and type the phrase below to confirm."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:386
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:415
 #, elixir-autogen, elixir-format
 msgid "Too many wrong passwords. Try again in a few minutes."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:299
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:328
 #, elixir-autogen, elixir-format
 msgid "Transfer ownership"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:287
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:316
 #, elixir-autogen, elixir-format
 msgid "Transfer ownership to"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:176
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:205
 #, elixir-autogen, elixir-format
 msgid "Type %{phrase} to confirm"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:389
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:418
 #, elixir-autogen, elixir-format
 msgid "Type the phrase exactly as shown."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:254
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:283
 #, elixir-autogen, elixir-format
 msgid "You are the last org-admin of %{organization}, which has other members."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:242
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:271
 #, elixir-autogen, elixir-format
 msgid "You are the last site admin. Make another user a site admin before you delete your account."
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:270
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:299
 #, elixir-autogen, elixir-format
 msgid "You own %{board}, which other people use."
 msgstr ""
@@ -11908,7 +11908,7 @@ msgctxt "audit action"
 msgid "Account deleted by its owner"
 msgstr ""
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:86
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:92
 #, elixir-autogen, elixir-format
 msgid "Deleting your account signs you out everywhere and removes your API tokens, your memberships and the boards in your personal workspace that only you use. Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and the tasks and comments you added there are kept without your name. This cannot be undone."
 msgstr ""
@@ -12043,4 +12043,14 @@ msgstr ""
 #: lib/kanban_web/live/workspace_live/settings.ex:290
 #, elixir-autogen, elixir-format
 msgid "That board can't be moved here: %{names} aren't members of this Organization. Remove them from the board, or invite them to this workspace, then move it."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:138
+#, elixir-autogen, elixir-format
+msgid "If you delete your account, nobody will be able to manage it or open its workspaces and boards until a Stride admin appoints a new org-admin."
+msgstr ""
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:133
+#, elixir-autogen, elixir-format
+msgid "You are the only member of %{organization}."
 msgstr ""

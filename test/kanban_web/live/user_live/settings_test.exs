@@ -709,6 +709,35 @@ defmodule KanbanWeb.UserLive.SettingsTest do
       refute has_element?(lv, "#transfer-board-#{board.id}")
     end
 
+    test "the only member of an Organization is warned but can still delete", %{
+      conn: conn,
+      user: user
+    } do
+      organization = Kanban.OrganizationsFixtures.organization_fixture(%{name: "Solo Org"})
+      Kanban.OrganizationsFixtures.organization_member_fixture(organization, user, :org_admin)
+
+      lv = open_danger_zone(conn)
+
+      warning = "#warning-sole-org-member-#{organization.id}"
+      assert has_element?(lv, warning, "You are the only member of Solo Org.")
+      assert has_element?(lv, warning, "until a Stride admin appoints a new org-admin")
+      refute has_element?(lv, "#deletion-blockers")
+      assert has_element?(lv, "#open-delete-account")
+    end
+
+    test "no warning when the Organization has other members", %{conn: conn, user: user} do
+      organization = Kanban.OrganizationsFixtures.organization_fixture()
+      Kanban.OrganizationsFixtures.organization_member_fixture(organization, user, :member)
+
+      Kanban.OrganizationsFixtures.organization_member_fixture(
+        organization,
+        user_fixture(),
+        :org_admin
+      )
+
+      refute conn |> open_danger_zone() |> has_element?("#deletion-warnings")
+    end
+
     test "the last org-admin sees that a Stride admin must appoint another", %{
       conn: conn,
       user: user

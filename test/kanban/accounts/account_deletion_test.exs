@@ -23,6 +23,8 @@ defmodule Kanban.Accounts.AccountDeletionTest do
   alias Kanban.Boards.BoardUser
   alias Kanban.Columns.Column
   alias Kanban.Organizations.OrganizationMember
+  alias Kanban.Targets
+  alias Kanban.Targets.DeliveryTarget
   alias Kanban.Tasks.Task
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Invitation
@@ -495,6 +497,98 @@ defmodule Kanban.Accounts.AccountDeletionTest do
     test "a free user with no Organization can delete their account", %{user: user} do
       refute Kanban.Organizations.get_membership(user)
       assert {:ok, _} = delete(user)
+    end
+  end
+
+  describe "deletion_warnings/1" do
+    test "warns the only member of an Organization, in either role, without blocking" do
+      for role <- [:org_admin, :member] do
+        user = user_fixture()
+        organization = organization_fixture()
+        organization_member_fixture(organization, user, role)
+
+        assert [{:sole_org_member, warned}] = AccountDeletion.deletion_warnings(user)
+        assert warned.id == organization.id
+        assert AccountDeletion.deletion_blockers(user) == []
+      end
+    end
+
+    test "is empty with other members, and without an Organization" do
+      user = user_fixture()
+      assert AccountDeletion.deletion_warnings(user) == []
+
+      organization = organization_fixture()
+      organization_member_fixture(organization, user, :org_admin)
+      organization_member_fixture(organization, user_fixture(), :org_admin)
+
+      assert AccountDeletion.deletion_warnings(user) == []
+    end
+
+    test "the sole member can still delete, leaving the Organization and its workspace" do
+      user = user_fixture()
+      organization = organization_fixture()
+      organization_member_fixture(organization, user, :org_admin)
+      workspace = org_workspace_fixture(organization)
+
+      assert {:ok, _} = delete(user)
+      assert Repo.get(Workspace, workspace.id)
+
+      refute from(m in OrganizationMember, where: m.organization_id == ^organization.id)
+             |> Repo.exists?()
+    end
+  end
+
+  describe "delete_own_account/3 cleanup of work in flight" do
+    test "archives the delivery targets they own and no one else's" do
+      user = user_fixture()
+      other = user_fixture()
+      date = Date.add(Date.utc_today(), 30)
+
+      target = fn owner, name ->
+        owner |> Scope.for_user() |> Targets.create_target(%{name: name, target_date: date})
+      end
+
+      {:ok, mine} = target.(user, "Mine")
+      {:ok, theirs} = target.(other, "Theirs")
+      archived_at = ~U[2026-01-01 00:00:00.000000Z]
+      {:ok, old} = target.(user, "Old")
+      old |> Ecto.Changeset.change(archived_at: archived_at) |> Repo.update!()
+
+      assert {:ok, _} = delete(user)
+
+      assert %DeliveryTarget{archived_at: %DateTime{}, owner_id: nil} =
+               Repo.get!(DeliveryTarget, mine.id)
+
+      assert %DeliveryTarget{archived_at: nil} = Repo.get!(DeliveryTarget, theirs.id)
+      assert Repo.get!(DeliveryTarget, old.id).archived_at == archived_at
+    end
+
+    test "returns the tasks they claimed on other people's boards to Ready" do
+      user = user_fixture()
+      board = ai_optimized_board_fixture(user_fixture())
+      add_member(board, user)
+      columns = Kanban.Columns.list_columns(board)
+      doing = Enum.find(columns, &(&1.name == "Doing"))
+      ready = Enum.find(columns, &(&1.name == "Ready"))
+      now = DateTime.utc_now(:second)
+
+      task =
+        doing
+        |> task_fixture()
+        |> Ecto.Changeset.change(
+          status: :in_progress,
+          claimed_at: now,
+          claim_expires_at: DateTime.add(now, 3600),
+          assigned_to_id: user.id
+        )
+        |> Repo.update!()
+
+      assert {:ok, _} = delete(user)
+
+      assert %Task{status: :open, assigned_to_id: nil, claimed_at: nil, column_id: column_id} =
+               Repo.get!(Task, task.id)
+
+      assert column_id == ready.id
     end
   end
 end

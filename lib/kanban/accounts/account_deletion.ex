@@ -14,6 +14,11 @@ defmodule Kanban.Accounts.AccountDeletion do
       can appoint another org-admin, and this flow never does.
     * `:last_site_admin` — the user is the last enabled site admin.
 
+  One case warns without refusing (decided 2026-10-20):
+  `{:sole_org_member, organization}` from `deletion_warnings/1` — the user is
+  the only member of an Organization, so after the deletion nobody can manage
+  it or open its workspaces until a site admin appoints an org-admin.
+
   `delete_own_account/3` checks the confirmation phrase and the password
   before taking any lock, then re-checks every blocker inside the deleting
   transaction, under row locks, so a change made at the same moment cannot
@@ -22,7 +27,10 @@ defmodule Kanban.Accounts.AccountDeletion do
   minted for them at the same moment waits or is refused instead of
   deadlocking. In that one transaction it:
 
-    1. revokes the open invitations the user sent;
+    1. revokes the open invitations the user sent, archives the delivery
+       targets they own (nobody else could ever edit or archive them), and
+       returns their claimed tasks to Ready (`Kanban.Tasks.ClaimRelease`), so
+       no task stays locked in Doing until its claim expires;
     2. empties their personal workspace (`Kanban.Workspaces.clear_personal_boards/1`):
        boards only they use are deleted, any board others still use is
        re-homed to the personal workspace of an enabled user, never a
@@ -60,6 +68,8 @@ defmodule Kanban.Accounts.AccountDeletion do
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.RateLimit
   alias Kanban.Repo
+  alias Kanban.Targets.DeliveryTarget
+  alias Kanban.Tasks.ClaimRelease
   alias Kanban.Workspaces
   alias Kanban.Workspaces.Invitation
 
@@ -67,6 +77,8 @@ defmodule Kanban.Accounts.AccountDeletion do
 
   @type blocker ::
           :last_site_admin | {:last_org_admin, Organization.t()} | {:shared_board, Board.t()}
+
+  @type warning :: {:sole_org_member, Organization.t()}
 
   @type error ::
           :invalid_confirmation
@@ -93,6 +105,24 @@ defmodule Kanban.Accounts.AccountDeletion do
   @spec deletion_blockers(User.t()) :: [blocker()]
   def deletion_blockers(%User{} = user) do
     site_admin_blockers(user) ++ listed_org_admin_blockers(user) ++ shared_board_blockers(user)
+  end
+
+  @doc """
+  Returns what the user should know before deleting their account without
+  stopping them, `[]` when there is nothing: `{:sole_org_member, organization}`
+  when they are the only member of an Organization. Takes no lock.
+  """
+  @spec deletion_warnings(User.t()) :: [warning()]
+  def deletion_warnings(%User{id: user_id}) do
+    from(m in OrganizationMember,
+      as: :membership,
+      join: o in assoc(m, :organization),
+      where: m.user_id == ^user_id,
+      where: not exists(other_members_query(user_id)),
+      select: o
+    )
+    |> Repo.all()
+    |> Enum.map(&{:sole_org_member, &1})
   end
 
   @doc """
@@ -203,13 +233,23 @@ defmodule Kanban.Accounts.AccountDeletion do
   defp delete_rows(user) do
     board_ids = member_board_ids(user)
 
-    with {_revoked, _} <- revoke_sent_invitations(user),
-         {:ok, cleared} <- Workspaces.clear_personal_boards(user),
+    settle_work_in_flight(user)
+
+    with {:ok, cleared} <- Workspaces.clear_personal_boards(user),
          {_count, tokens} <- delete_user_tokens(user),
          {:ok, _workspace} <- Workspaces.delete_personal_workspace(user),
          {:ok, deleted} <- Repo.delete(user) do
       {:ok, %{user: deleted, tokens: tokens, cleared: cleared, board_ids: board_ids}}
     end
+  end
+
+  # Invitations they sent, targets they own and tasks they claimed, which
+  # nobody else could act on once they are gone.
+  defp settle_work_in_flight(user) do
+    revoke_sent_invitations(user)
+    archive_owned_targets(user)
+    ClaimRelease.release(user.id, :all)
+    :ok
   end
 
   # An admin also locks every other enabled admin row, in id order, so two
@@ -338,6 +378,13 @@ defmodule Kanban.Accounts.AccountDeletion do
     Invitation.open_query()
     |> where([i], i.invited_by_id == ^user_id)
     |> Repo.update_all(set: [revoked_at: DateTime.utc_now(:second)])
+  end
+
+  # Before the user row goes: its foreign key nilifies owner_id, after which
+  # nobody could edit or archive the target.
+  defp archive_owned_targets(%User{id: user_id}) do
+    from(t in DeliveryTarget, where: t.owner_id == ^user_id and is_nil(t.archived_at))
+    |> Repo.update_all(set: [archived_at: DateTime.utc_now()])
   end
 
   # RETURNING, so a session token issued while the password was being checked

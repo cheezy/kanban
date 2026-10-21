@@ -303,6 +303,7 @@ defmodule Kanban.Accounts do
   ## Self-service account deletion (see `Kanban.Accounts.AccountDeletion`)
 
   defdelegate deletion_blockers(user), to: AccountDeletion
+  defdelegate deletion_warnings(user), to: AccountDeletion
   defdelegate delete_own_account(scope, password, confirmation), to: AccountDeletion
   defdelegate account_deletion_phrase(), to: AccountDeletion, as: :confirmation_phrase
 

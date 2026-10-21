@@ -6,7 +6,9 @@ defmodule KanbanWeb.UserLive.DangerZoneComponent do
   (`Kanban.Accounts.deletion_blockers/1`) with what to do about each: a board
   they own that other people use can be handed to one of its members right
   here (`Kanban.Boards.transfer_board_ownership/3`); being the last org-admin
-  or the last site admin needs someone else to act first.
+  or the last site admin needs someone else to act first. Being the only
+  member of an Organization (`Kanban.Accounts.deletion_warnings/1`) is shown as
+  a warning, and does not stop the deletion.
 
   With nothing in the way, a confirmation dialog asks for the password and the
   confirmation phrase (`Kanban.Accounts.account_deletion_phrase/0`). After the
@@ -56,7 +58,11 @@ defmodule KanbanWeb.UserLive.DangerZoneComponent do
         {board.id, Boards.list_ownership_candidates(board, user)}
       end
 
-    assign(socket, blockers: blockers, candidates: candidates)
+    assign(socket,
+      blockers: blockers,
+      candidates: candidates,
+      warnings: Accounts.deletion_warnings(user)
+    )
   end
 
   @impl true
@@ -112,6 +118,29 @@ defmodule KanbanWeb.UserLive.DangerZoneComponent do
           </li>
         </ul>
       </div>
+
+      <ul
+        :if={@warnings != []}
+        id="deletion-warnings"
+        style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px;"
+      >
+        <li
+          :for={{:sole_org_member, organization} <- @warnings}
+          id={"warning-sole-org-member-#{organization.id}"}
+          style="padding: 10px 12px; border-radius: 6px; border: 1px solid var(--line); border-left: 3px solid var(--st-doing); background: var(--surface);"
+        >
+          <p style="margin: 0; font-size: 12.5px; color: var(--ink); line-height: 1.5;">
+            {gettext("You are the only member of %{organization}.",
+              organization: organization.name
+            )}
+          </p>
+          <p style="margin: 4px 0 0; font-size: 12px; color: var(--ink-2); line-height: 1.5;">
+            {gettext(
+              "If you delete your account, nobody will be able to manage it or open its workspaces and boards until a Stride admin appoints a new org-admin."
+            )}
+          </p>
+        </li>
+      </ul>
 
       <div :if={@blockers == []}>
         <button

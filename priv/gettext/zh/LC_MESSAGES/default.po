@@ -148,7 +148,7 @@ msgstr "邮箱更改成功。"
 msgid "New password"
 msgstr "新密码"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:155
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:184
 #: lib/kanban_web/live/user_live/login.ex:59
 #: lib/kanban_web/live/user_live/registration.ex:82
 #: lib/kanban_web/live/user_live/settings.ex:74
@@ -214,7 +214,7 @@ msgstr "看板更新成功"
 #: lib/kanban_web/live/review_live.html.heex:146
 #: lib/kanban_web/live/target_live/form.html.heex:46
 #: lib/kanban_web/live/task_live/components/comment_row.ex:143
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:214
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:243
 #: lib/kanban_web/live/user_live/two_factor_component.ex:137
 #, elixir-autogen, elixir-format
 msgid "Cancel"
@@ -11800,12 +11800,12 @@ msgstr "你的新工作区令牌"
 msgid "never"
 msgstr "从未"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:259
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:288
 #, elixir-autogen, elixir-format
 msgid "A Stride admin must appoint another org-admin before you can delete your account."
 msgstr "在您删除账户之前，Stride 管理员必须任命另一位组织管理员。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:97
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:103
 #, elixir-autogen, elixir-format
 msgid "Before you can delete your account"
 msgstr "在您删除账户之前"
@@ -11816,43 +11816,43 @@ msgstr "在您删除账户之前"
 msgid "Delete account"
 msgstr "删除账户"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:124
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:153
 #, elixir-autogen, elixir-format
 msgid "Delete my account"
 msgstr "删除我的账户"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:131
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:145
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:160
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:174
 #, elixir-autogen, elixir-format
 msgid "Delete your account"
 msgstr "删除您的账户"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:203
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:232
 #, elixir-autogen, elixir-format
 msgid "Deleting..."
 msgstr "正在删除..."
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:306
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:335
 #, elixir-autogen, elixir-format
 msgid "None of its other members can take it over because their accounts are disabled. Remove them from the board, then come back."
 msgstr "它的其他成员都无法接手，因为他们的账户已被停用。请先将他们从看板中移除，然后再回来。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:275
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:304
 #, elixir-autogen, elixir-format
 msgid "Open its members"
 msgstr "打开其成员"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:403
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:432
 #, elixir-autogen, elixir-format
 msgid "Ownership of %{board} could not be transferred."
 msgstr "无法转让 %{board} 的所有权。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:395
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:424
 #, elixir-autogen, elixir-format
 msgid "Ownership of %{board} transferred."
 msgstr "已转让 %{board} 的所有权。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:206
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:235
 #, elixir-autogen, elixir-format
 msgid "Permanently delete my account"
 msgstr "永久删除我的账户"
@@ -11862,62 +11862,62 @@ msgstr "永久删除我的账户"
 msgid "Permanently delete your account. Available to everyone, with or without an Organization."
 msgstr "永久删除您的账户。所有人都可以使用，无论是否属于组织。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:375
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:404
 #, elixir-autogen, elixir-format
 msgid "Something now stops your account being deleted."
 msgstr "现在有情况阻止删除您的账户。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:350
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:379
 #, elixir-autogen, elixir-format
 msgid "That board is not waiting for a new owner."
 msgstr "该看板并未等待新的所有者。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:383
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:412
 #, elixir-autogen, elixir-format
 msgid "That password is not correct."
 msgstr "密码不正确。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:148
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:177
 #, elixir-autogen, elixir-format
 msgid "This permanently deletes your account. Enter your password and type the phrase below to confirm."
 msgstr "这将永久删除您的账户。请输入密码并键入下方短语以确认。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:386
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:415
 #, elixir-autogen, elixir-format
 msgid "Too many wrong passwords. Try again in a few minutes."
 msgstr "错误密码次数过多。请过几分钟再试。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:299
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:328
 #, elixir-autogen, elixir-format
 msgid "Transfer ownership"
 msgstr "转让所有权"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:287
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:316
 #, elixir-autogen, elixir-format
 msgid "Transfer ownership to"
 msgstr "将所有权转让给"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:176
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:205
 #, elixir-autogen, elixir-format
 msgid "Type %{phrase} to confirm"
 msgstr "键入 %{phrase} 以确认"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:389
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:418
 #, elixir-autogen, elixir-format
 msgid "Type the phrase exactly as shown."
 msgstr "请完全按照显示的内容键入短语。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:254
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:283
 #, elixir-autogen, elixir-format
 msgid "You are the last org-admin of %{organization}, which has other members."
 msgstr "您是 %{organization} 的最后一位组织管理员，而该组织还有其他成员。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:242
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:271
 #, elixir-autogen, elixir-format
 msgid "You are the last site admin. Make another user a site admin before you delete your account."
 msgstr "您是最后一位站点管理员。请在删除账户之前将另一位用户设为站点管理员。"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:270
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:299
 #, elixir-autogen, elixir-format
 msgid "You own %{board}, which other people use."
 msgstr "您是其他人正在使用的 %{board} 的所有者。"
@@ -11938,7 +11938,7 @@ msgctxt "audit action"
 msgid "Account deleted by its owner"
 msgstr "账户由其所有者删除"
 
-#: lib/kanban_web/live/user_live/danger_zone_component.ex:86
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:92
 #, elixir-autogen, elixir-format
 msgid "Deleting your account signs you out everywhere and removes your API tokens, your memberships and the boards in your personal workspace that only you use. Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and the tasks and comments you added there are kept without your name. This cannot be undone."
 msgstr "删除账户会让你在所有地方退出登录，并移除你的 API 令牌、你的成员身份，以及你个人工作区中只有你使用的看板。其他人仍在使用的看板会留给他们，Organization 工作区中的看板会留在该 Organization，你在其中添加的任务和评论会保留但不再显示你的名字。此操作无法撤销。"
@@ -12074,3 +12074,13 @@ msgstr "将您拥有的个人看板移入此工作区。看板的每位成员都
 #, elixir-autogen, elixir-format
 msgid "That board can't be moved here: %{names} aren't members of this Organization. Remove them from the board, or invite them to this workspace, then move it."
 msgstr "该看板无法移到这里：%{names} 不是此组织的成员。请将他们从看板中移除，或邀请他们加入此工作区，然后再移动。"
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:138
+#, elixir-autogen, elixir-format
+msgid "If you delete your account, nobody will be able to manage it or open its workspaces and boards until a Stride admin appoints a new org-admin."
+msgstr "如果你删除账户，在 Stride 管理员任命新的组织管理员之前，没有人能够管理该组织或打开其工作区和看板。"
+
+#: lib/kanban_web/live/user_live/danger_zone_component.ex:133
+#, elixir-autogen, elixir-format
+msgid "You are the only member of %{organization}."
+msgstr "你是 %{organization} 的唯一成员。"
