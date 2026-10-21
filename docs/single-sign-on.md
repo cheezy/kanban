@@ -69,7 +69,10 @@ the discovery document) the same way, so a connection cannot be used to reach
 internal services. Each request then goes to the address that was checked,
 with the host name sent for TLS and in the `host` header, so a DNS answer that
 changes between the check and the connection (DNS rebinding) cannot point it
-somewhere else. The authorization endpoint is not checked: Stride never
+somewhere else. Each request is also bounded: it must connect within 5
+seconds and finish within 10, and a response body over 1 MB is refused, so a
+slow or oversized answer from a provider cannot hold a sign-in open or fill
+the server's memory. The authorization endpoint is not checked: Stride never
 requests it, it only sends the person's browser there. In development,
 `config :kanban, Kanban.SSO, allow_private_issuers: true` (set in
 `config/dev.exs`) allows a local provider such as Keycloak on

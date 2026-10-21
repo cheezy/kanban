@@ -128,6 +128,15 @@ defmodule Kanban.SSO.OIDCTest do
       OIDCTestHelpers.stub_idp(jwk, fn _form -> %{} end, discovery: jwks_private)
       assert {:error, :unsafe_url} = OIDC.fetch_provider(connection)
     end
+
+    test "refuses a response body larger than max_body", %{connection: connection, jwk: jwk} do
+      padding = String.duplicate("0", OIDC.max_body())
+      oversized = OIDCTestHelpers.discovery(issuer(), %{"padding" => padding})
+      assert {:error, :provider_unreachable} = provider(connection, jwk, discovery: oversized)
+
+      fits = OIDCTestHelpers.discovery(issuer(), %{"padding" => String.duplicate("0", 4_096)})
+      assert {:ok, _provider} = provider(connection, jwk, discovery: fits)
+    end
   end
 
   describe "authorize_url/4" do
@@ -228,6 +237,20 @@ defmodule Kanban.SSO.OIDCTest do
     test "reports a failed exchange", %{connection: connection, jwk: jwk} do
       {:ok, %{config: config}} = provider(connection, jwk)
       OIDCTestHelpers.stub_idp(jwk, fn _form -> {:status, 400} end)
+
+      assert {:error, :token_exchange_failed} =
+               OIDC.exchange_code(config, connection, "c", "v", "https://cb")
+    end
+
+    test "refuses a token response larger than max_body", %{connection: connection, jwk: jwk} do
+      {:ok, %{config: config}} = provider(connection, jwk)
+
+      Req.Test.stub(OIDC, fn conn ->
+        Req.Test.json(conn, %{
+          "id_token" => OIDCTestHelpers.sign(jwk, OIDCTestHelpers.claims()),
+          "padding" => String.duplicate("0", OIDC.max_body())
+        })
+      end)
 
       assert {:error, :token_exchange_failed} =
                OIDC.exchange_code(config, connection, "c", "v", "https://cb")

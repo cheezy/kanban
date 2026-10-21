@@ -6,9 +6,16 @@ defmodule Kanban.SSO.OIDC do
 
   Discovery, JWKS and token requests go through Req with `redirect: false`
   and `retry: false`, and every URL is checked by `Kanban.SSO.pinned_request/1`
-  first, which also pins the request to the address the check approved. `config :kanban, Kanban.SSO.OIDC, req_options: [...]` is merged into
-  every request; the test environment routes them to a `Req.Test` stub, so no
-  test touches the network.
+  first, which also pins the request to the address the check approved. The
+  provider is chosen by an org-admin and any visitor can start a sign-in, so
+  each request is also bounded: a 5 second connect timeout, a response body of
+  at most #{1_048_576} bytes (a larger one is refused, not cut), and a
+  deadline for the whole request, 10 seconds unless
+  `config :kanban, Kanban.SSO.OIDC, deadline_ms: ...` says otherwise, so a
+  provider that answers a byte at a time cannot hold a sign-in open.
+  `config :kanban, Kanban.SSO.OIDC, req_options: [...]` is merged into every
+  request; the test environment routes them to a `Req.Test` stub, so no test
+  touches the network.
 
   id_token validation is delegated to `oidcc` (the EEF's OpenID-certified
   library): signature against the provider's JWKS, `iss`, `aud`, `azp`,
@@ -23,6 +30,12 @@ defmodule Kanban.SSO.OIDC do
 
   @scope "openid email profile"
   @allowed_algs ~w(RS256 RS384 RS512 PS256 PS384 PS512 ES256 ES384 ES512 EdDSA)
+  @max_body 1_048_576
+  @default_deadline_ms 10_000
+
+  @doc "The largest provider response body read, in bytes."
+  @spec max_body() :: pos_integer()
+  def max_body, do: @max_body
 
   @type provider :: %{config: Oidcc.ProviderConfiguration.t(), jwks: JOSE.JWK.t()}
 
@@ -173,9 +186,9 @@ defmodule Kanban.SSO.OIDC do
 
   defp post_token_request(token_endpoint, form, headers) do
     with {:ok, pinned} <- SSO.pinned_request(token_endpoint),
-         {:ok, %Req.Response{status: 200, body: %{"id_token" => id_token}}}
-         when is_binary(id_token) <-
-           request(:post, pinned, form: form, headers: headers) do
+         {:ok, %Req.Response{status: 200, body: body}} <-
+           request(:post, pinned, form: form, headers: headers),
+         {:ok, %{"id_token" => id_token}} when is_binary(id_token) <- json_body(body) do
       {:ok, id_token}
     else
       _failed -> {:error, :token_exchange_failed}
@@ -248,8 +261,6 @@ defmodule Kanban.SSO.OIDC do
     end
   end
 
-  defp json_body(body) when is_map(body), do: {:ok, body}
-
   defp json_body(body) when is_binary(body) do
     case Jason.decode(body) do
       {:ok, document} when is_map(document) -> {:ok, document}
@@ -259,24 +270,68 @@ defmodule Kanban.SSO.OIDC do
 
   defp json_body(_body), do: :error
 
-  # `pinned` comes from SSO.pinned_request/1: the URL rewritten to the approved
-  # address, plus the host header and TLS host name that go with it.
+  # Runs the request in its own process so the deadline covers all of it:
+  # receive_timeout only bounds the wait for each packet.
   defp request(method, pinned, options) do
-    headers = Keyword.get(pinned, :headers, []) ++ Keyword.get(options, :headers, [])
+    task =
+      Task.Supervisor.async_nolink(Kanban.TaskSupervisor, fn ->
+        send_request(method, pinned, options)
+      end)
 
-    [method: method, redirect: false, retry: false, receive_timeout: 5_000]
+    case Task.yield(task, deadline_ms()) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> result
+      _timed_out_or_crashed -> {:error, :request_failed}
+    end
+  end
+
+  # `pinned` comes from SSO.pinned_request/1: the URL rewritten to the approved
+  # address, plus the host header and TLS host name that go with it. The body
+  # is collected by collect/2 and decoded by the caller.
+  defp send_request(method, pinned, options) do
+    headers = Keyword.get(pinned, :headers, []) ++ Keyword.get(options, :headers, [])
+    connect_options = Keyword.put(Keyword.get(pinned, :connect_options, []), :timeout, 5_000)
+
+    [
+      method: method,
+      redirect: false,
+      retry: false,
+      receive_timeout: 5_000,
+      decode_body: false,
+      into: &collect/2
+    ]
     |> Keyword.merge(pinned)
     |> Keyword.merge(options)
     |> Keyword.put(:headers, headers)
-    |> Keyword.merge(configured_options())
+    |> Keyword.put(:connect_options, connect_options)
+    |> Keyword.merge(configured(:req_options, []))
     |> Req.request()
+    |> refuse_oversized()
   rescue
     _error -> {:error, :request_failed}
   end
 
-  defp configured_options do
+  # Req's `into:` callback: stops reading once the body passes @max_body.
+  defp collect({:data, data}, {request, response}) do
+    body = IO.iodata_to_binary(response.body) <> data
+
+    if byte_size(body) > @max_body,
+      do: {:halt, {request, %{response | body: :too_large}}},
+      else: {:cont, {request, %{response | body: body}}}
+  end
+
+  defp refuse_oversized({:ok, %Req.Response{body: :too_large}}), do: {:error, :response_too_large}
+  defp refuse_oversized(result), do: result
+
+  defp deadline_ms do
+    case configured(:deadline_ms, @default_deadline_ms) do
+      deadline when is_integer(deadline) and deadline > 0 -> deadline
+      _invalid -> @default_deadline_ms
+    end
+  end
+
+  defp configured(key, default) do
     :kanban
     |> Application.get_env(__MODULE__, [])
-    |> Keyword.get(:req_options, [])
+    |> Keyword.get(key, default)
   end
 end
