@@ -3,6 +3,7 @@ defmodule Kanban.SSO.ProvisioningTest do
 
   import Kanban.AccountsFixtures
   import Kanban.OrganizationsFixtures
+  import Kanban.SCIMFixtures
   import Kanban.SSOFixtures
 
   alias Kanban.Accounts
@@ -12,6 +13,8 @@ defmodule Kanban.SSO.ProvisioningTest do
   alias Kanban.Organizations
   alias Kanban.Organizations.OrganizationMember
   alias Kanban.Repo
+  alias Kanban.SCIM.Lifecycle
+  alias Kanban.SCIM.UserLink
   alias Kanban.SSO.Provisioning
   alias Kanban.SSO.UserIdentity
   alias Kanban.Workspaces.Workspace
@@ -33,6 +36,13 @@ defmodule Kanban.SSO.ProvisioningTest do
       },
       overrides
     )
+  end
+
+  defp scim_deprovision(organization, user) do
+    {token, _plaintext} = scim_token_fixture(organization)
+    {:ok, _link} = UserLink.upsert(organization.id, user.id, nil)
+    {:ok, _sessions} = Lifecycle.deprovision(token, user, :deactivated)
+    token
   end
 
   defp identities(user),
@@ -152,6 +162,17 @@ defmodule Kanban.SSO.ProvisioningTest do
                )
 
       assert %OrganizationMember{role: :org_admin} = Organizations.get_membership(user)
+    end
+
+    test "is not linked while SCIM has it deprovisioned", ctx do
+      user = user_fixture(%{email: "pat@#{ctx.domain}"})
+      organization_member_fixture(ctx.organization, user)
+      scim_deprovision(ctx.organization, user)
+
+      claims = claims(ctx.domain, %{"email" => user.email})
+      assert {:error, :scim_deprovisioned} = Provisioning.provision(ctx.connection, claims)
+      refute Organizations.member?(user, ctx.organization.id)
+      assert identities(user) == []
     end
 
     test "is not linked when email_verified is false", ctx do
@@ -281,6 +302,19 @@ defmodule Kanban.SSO.ProvisioningTest do
       assert {:ok, user, :existing_identity} = Provisioning.provision(ctx.connection, claims)
       assert user.id == ctx.user.id
       assert Organizations.member?(ctx.user, ctx.organization.id)
+    end
+
+    test "a member SCIM deprovisioned is signed in again only once SCIM re-activates them",
+         ctx do
+      token = scim_deprovision(ctx.organization, ctx.user)
+      claims = claims(ctx.domain, %{"sub" => "known-subject", "email" => ctx.user.email})
+
+      assert {:error, :scim_deprovisioned} = Provisioning.provision(ctx.connection, claims)
+      refute Organizations.member?(ctx.user, ctx.organization.id)
+
+      assert {:ok, _user} = Lifecycle.reactivate(token, ctx.user)
+      assert {:ok, user, :existing_identity} = Provisioning.provision(ctx.connection, claims)
+      assert user.id == ctx.user.id
     end
 
     test "a removed member who joined another Organization is refused", ctx do

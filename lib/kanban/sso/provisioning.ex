@@ -17,7 +17,8 @@ defmodule Kanban.SSO.Provisioning do
        the account's own email (not the claim's) is on a domain the
        Organization verified, so offboarding is the identity provider's job,
        and an account moved to an address off those domains is no longer the
-       identity provider's to sign in as.
+       identity provider's to sign in as. A membership SCIM ended is refused
+       with `:scim_deprovisioned` until SCIM re-activates it.
     2. **Email gate.** Otherwise the identity provider must assert
        `email_verified`, and the email's domain must be verified by the
        connection's Organization. An account is never linked by email alone.
@@ -26,7 +27,7 @@ defmodule Kanban.SSO.Provisioning do
        membership and the identity, in one transaction.
     4. **Existing account.** An enabled account with that email gains a
        `:member` membership if it has none (an org-admin keeps their role) and
-       the identity. An account whose email was never confirmed is first
+       the identity, unless SCIM deprovisioned it (`:scim_deprovisioned`). An account whose email was never confirmed is first
        confirmed, its password removed and its tokens deleted, because
        whoever registered it may not own the address.
 
@@ -46,6 +47,7 @@ defmodule Kanban.SSO.Provisioning do
   alias Kanban.AuditLog
   alias Kanban.Organizations
   alias Kanban.Repo
+  alias Kanban.SCIM.UserLink
   alias Kanban.SSO
   alias Kanban.SSO.DomainVerification
   alias Kanban.SSO.SSOConnection
@@ -59,6 +61,7 @@ defmodule Kanban.SSO.Provisioning do
           | :domain_not_verified
           | :user_disabled
           | :membership_conflict
+          | :scim_deprovisioned
 
   @doc """
   Decides the account for a sign-in through `connection` with the validated
@@ -208,6 +211,7 @@ defmodule Kanban.SSO.Provisioning do
            identity.user.email
            |> normalized_email()
            |> on_verified_domain(connection.organization_id),
+         :ok <- not_scim_deprovisioned(connection.organization_id, identity.user),
          {:ok, _membership} <- add_member(connection.organization_id, identity.user) do
       touch(identity)
       {:ok, identity.user, :existing_identity}
@@ -254,9 +258,11 @@ defmodule Kanban.SSO.Provisioning do
   end
 
   defp link_existing(connection, subject, %User{} = user) do
-    connection
-    |> add_member_with_identity(subject, user)
-    |> linked(connection)
+    with :ok <- not_scim_deprovisioned(connection.organization_id, user) do
+      connection
+      |> add_member_with_identity(subject, user)
+      |> linked(connection)
+    end
   end
 
   defp add_member_with_identity(connection, subject, user) do
@@ -319,6 +325,16 @@ defmodule Kanban.SSO.Provisioning do
 
   defp name_claim(%{"name" => name}) when is_binary(name), do: String.slice(name, 0, 160)
   defp name_claim(_claims), do: nil
+
+  # SCIM ended this membership, so only SCIM re-activates it: an identity
+  # provider that still lets the person sign in never undoes its own
+  # deprovisioning.
+  defp not_scim_deprovisioned(organization_id, %User{id: user_id}) do
+    case UserLink.get(organization_id, user_id) do
+      %UserLink{deprovisioned_at: %DateTime{}} -> {:error, :scim_deprovisioned}
+      _link -> :ok
+    end
+  end
 
   defp add_member(organization_id, user) do
     case Organizations.add_member(organization_id, user, :member) do

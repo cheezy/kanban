@@ -125,6 +125,8 @@ org-admin, and it never changes the role of an existing org-admin.
 - An account that belongs to another Organization. Nothing about its
   membership changes; a person belongs to one Organization at a time.
 - A disabled account.
+- A person [SCIM](scim-provisioning.md) deprovisioned from the Organization,
+  until SCIM re-activates them.
 - A connection that is turned off, or a provider that cannot be reached or
   sends something invalid.
 - A missing, expired, reused or mismatched `state`, and an ID token whose
@@ -133,7 +135,9 @@ org-admin, and it never changes the role of an existing org-admin.
 A person removed from the Organization who signs in again through single
 sign-on is made a member again, as long as the provider asserts a verified
 address and the account's own email is still on a domain the Organization
-verified. Stop them in the identity provider. Someone who has since moved
+verified. Stop them in the identity provider. Someone SCIM deprovisioned is
+the exception: they stay out until SCIM re-activates them, even when the
+identity provider still lets them sign in. Someone who has since moved
 their account to an address on another domain is refused: it is no longer
 the Organization's to sign in as.
 

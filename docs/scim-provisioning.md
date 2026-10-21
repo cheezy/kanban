@@ -62,7 +62,10 @@ Organization membership, their memberships of the Organization's workspaces,
 their access to the boards in those workspaces, and the API tokens for those
 boards. Their open pages are disconnected so they re-check their access.
 This happens even when the account was already disabled, so the
-Organization's access never outlives the identity provider's removal.
+Organization's access never outlives the identity provider's removal. Until
+SCIM re-activates them, signing in through the Organization's
+[single sign-on](single-sign-on.md) does not make them a member again, even
+when the identity provider still lets them sign in.
 
 When the Organization manages the account, it is also **disabled**: every
 session is deleted and every API token the person holds is revoked, on any
