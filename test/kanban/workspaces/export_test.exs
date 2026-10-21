@@ -168,6 +168,28 @@ defmodule Kanban.Workspaces.ExportTest do
       assert Export.get_export_for_download(ctx.org_admin, export.id) == {:error, :not_found}
     end
 
+    test "a disabled org-admin gets not found, even with a struct loaded before the disable",
+         ctx do
+      export = succeeded_export(ctx)
+
+      ctx.org_admin
+      |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
+      |> Repo.update!()
+
+      assert Export.get_export_for_download(ctx.org_admin, export.id) == {:error, :not_found}
+    end
+
+    test "an archived workspace's export stays downloadable by its org-admins only", ctx do
+      export = succeeded_export(ctx)
+
+      ctx.workspace
+      |> Ecto.Changeset.change(archived_at: DateTime.utc_now(:second))
+      |> Repo.update!()
+
+      assert {:ok, _export} = Export.get_export_for_download(ctx.org_admin, export.id)
+      assert Export.get_export_for_download(ctx.member, export.id) == {:error, :not_found}
+    end
+
     test "expired, pending, failed and missing-file exports are not found", ctx do
       expired =
         succeeded_export(ctx,
