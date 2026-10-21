@@ -190,6 +190,20 @@ defmodule KanbanWeb.SCIM.UserControllerTest do
     refute error["detail"] =~ "another"
   end
 
+  test "a site admin is not provisioned, and the refusal does not say why", ctx do
+    elsewhere = user_fixture(%{email: email(ctx.domain)})
+    organization_member_fixture(organization_fixture(), elsewhere)
+
+    conflict =
+      scim_json(post(ctx.conn, ~p"/scim/v2/Users", %{"userName" => elsewhere.email}), 409)
+
+    admin = admin_fixture(%{email: email(ctx.domain)})
+    error = scim_json(post(ctx.conn, ~p"/scim/v2/Users", %{"userName" => admin.email}), 409)
+
+    assert error["detail"] == conflict["detail"]
+    refute Kanban.Organizations.member?(admin, ctx.organization.id)
+  end
+
   test "a malformed JSON body gets a SCIM 400", ctx do
     {400, headers, body} =
       assert_error_sent 400, fn -> post(ctx.conn, "/scim/v2/Users", "{not json") end

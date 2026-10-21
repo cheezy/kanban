@@ -237,6 +237,20 @@ defmodule Kanban.SSO.ProvisioningTest do
 
       assert identities(user) == []
     end
+
+    test "is refused when it is a site admin, and nothing is written", ctx do
+      admin = admin_fixture(%{email: "boss@#{ctx.domain}"})
+
+      assert {:error, :site_admin} =
+               Provisioning.provision(
+                 ctx.connection,
+                 claims(ctx.domain, %{"email" => admin.email})
+               )
+
+      assert identities(admin) == []
+      refute Organizations.member?(admin, ctx.organization.id)
+      assert Repo.reload(admin).hashed_password
+    end
   end
 
   describe "a known identity" do
@@ -273,6 +287,16 @@ defmodule Kanban.SSO.ProvisioningTest do
       ctx.user |> User.disabled_changeset(DateTime.utc_now(:second)) |> Repo.update!()
 
       assert {:error, :user_disabled} =
+               Provisioning.provision(
+                 ctx.connection,
+                 claims(ctx.domain, %{"sub" => "known-subject"})
+               )
+    end
+
+    test "is refused once the account has become a site admin", ctx do
+      {:ok, _admin} = Accounts.update_user_type(ctx.user, :admin)
+
+      assert {:error, :site_admin} =
                Provisioning.provision(
                  ctx.connection,
                  claims(ctx.domain, %{"sub" => "known-subject"})
@@ -397,6 +421,15 @@ defmodule Kanban.SSO.ProvisioningTest do
                {:error, :membership_conflict}
 
       refute Organizations.member?(elsewhere, ctx.organization.id)
+    end
+
+    test "refuses a site admin and writes nothing", ctx do
+      admin = admin_fixture(%{email: scim_email(ctx.domain)})
+
+      assert Provisioning.provision_scim(ctx.organization.id, %{email: admin.email, name: nil}) ==
+               {:error, :site_admin}
+
+      refute Organizations.member?(admin, ctx.organization.id)
     end
   end
 end

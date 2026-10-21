@@ -35,6 +35,11 @@ defmodule Kanban.SSO.Provisioning do
   `:membership_conflict`, and nothing is written: Organizations never move a
   user. Nothing here reveals which Organization that is.
 
+  A site admin (`type: :admin`) is refused with `:site_admin` on every path,
+  known identity or not, and by SCIM too: an Organization's identity provider
+  never signs anyone in with site-admin powers. Site admins sign in with their
+  password (decided 2026-10-21).
+
   Records `:sso_user_provisioned` or `:sso_account_linked` once the
   transaction commits. Refusals are audited by the caller
   (`Kanban.SSO.OIDCLogin`), which knows the request context.
@@ -62,6 +67,7 @@ defmodule Kanban.SSO.Provisioning do
           | :user_disabled
           | :membership_conflict
           | :scim_deprovisioned
+          | :site_admin
 
   @doc """
   Decides the account for a sign-in through `connection` with the validated
@@ -109,14 +115,19 @@ defmodule Kanban.SSO.Provisioning do
       secured as for single sign-on (`:linked`). A linked account is not
       managed by the Organization, so deprovisioning never disables it.
 
-  A disabled account is refused with `:user_disabled`, a user in another
-  Organization with `:membership_conflict`, and nothing is written. Audit
+  A disabled account is refused with `:user_disabled`, a site admin with
+  `:site_admin`, a user in another Organization with `:membership_conflict`,
+  and nothing is written. Audit
   events are recorded by the SCIM layer, which knows the token.
   """
   @spec provision_scim(integer(), %{email: String.t(), name: String.t() | nil}) ::
           {:ok, User.t(), :provisioned | :linked}
           | {:error,
-             :domain_not_verified | :user_disabled | :membership_conflict | :invalid_claims}
+             :domain_not_verified
+             | :user_disabled
+             | :site_admin
+             | :membership_conflict
+             | :invalid_claims}
   def provision_scim(organization_id, %{email: email} = attrs) when is_integer(organization_id) do
     with {:ok, email} <- email |> normalized_email() |> on_verified_domain(organization_id) do
       email
@@ -129,6 +140,9 @@ defmodule Kanban.SSO.Provisioning do
 
   defp provision_scim_user(%User{disabled_at: %DateTime{}}, _organization_id, _attrs),
     do: {:error, :user_disabled}
+
+  defp provision_scim_user(%User{type: :admin}, _organization_id, _attrs),
+    do: {:error, :site_admin}
 
   defp provision_scim_user(%User{} = user, organization_id, _attrs),
     do: scim_link(organization_id, user)
@@ -154,8 +168,9 @@ defmodule Kanban.SSO.Provisioning do
 
   defp scim_retry_as_existing(organization_id, email) do
     case Accounts.get_user_by_email(email) do
-      %User{disabled_at: nil} = user -> scim_link(organization_id, user)
-      %User{} -> {:error, :user_disabled}
+      %User{disabled_at: %DateTime{}} -> {:error, :user_disabled}
+      %User{type: :admin} -> {:error, :site_admin}
+      %User{} = user -> scim_link(organization_id, user)
       nil -> {:error, :invalid_claims}
     end
   end
@@ -181,6 +196,10 @@ defmodule Kanban.SSO.Provisioning do
   defp provision_for(%UserIdentity{user: %User{disabled_at: %DateTime{}}}, _conn, _sub, _claims),
     do: {:error, :user_disabled}
 
+  # Also for an identity linked before the account became a site admin.
+  defp provision_for(%UserIdentity{user: %User{type: :admin}}, _conn, _sub, _claims),
+    do: {:error, :site_admin}
+
   defp provision_for(%UserIdentity{user: user} = identity, connection, _subject, claims) do
     if Organizations.member?(user, connection.organization_id) do
       touch(identity)
@@ -197,6 +216,7 @@ defmodule Kanban.SSO.Provisioning do
       case Accounts.get_user_by_email(email) do
         nil -> provision_new(connection, subject, email, claims)
         %User{disabled_at: %DateTime{}} -> {:error, :user_disabled}
+        %User{type: :admin} -> {:error, :site_admin}
         %User{} = user -> link_existing(connection, subject, user)
       end
     end
@@ -251,8 +271,9 @@ defmodule Kanban.SSO.Provisioning do
 
   defp retry_as_existing(connection, subject, email) do
     case Accounts.get_user_by_email(email) do
-      %User{disabled_at: nil} = user -> link_existing(connection, subject, user)
-      %User{} -> {:error, :user_disabled}
+      %User{disabled_at: %DateTime{}} -> {:error, :user_disabled}
+      %User{type: :admin} -> {:error, :site_admin}
+      %User{} = user -> link_existing(connection, subject, user)
       nil -> {:error, :invalid_claims}
     end
   end

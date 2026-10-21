@@ -51,6 +51,7 @@ defmodule Kanban.SCIM.Users do
           | :domain_not_verified
           | :inactive_create
           | :user_disabled
+          | :site_admin
           | :membership_conflict
           | :last_org_admin
 
@@ -167,8 +168,11 @@ defmodule Kanban.SCIM.Users do
   defp check_active(%{active: true}), do: :ok
   defp check_active(%{active: false}), do: {:error, :inactive_create}
 
+  # Site admins never belong to an identity provider (decided 2026-10-21),
+  # so a POST neither links nor re-activates one.
   defp provision(token, %{email: email} = attributes) do
     case Accounts.get_user_by_email(email) do
+      %User{type: :admin} -> {:error, :site_admin}
       %User{} = user -> provision_existing(token, user, attributes)
       nil -> provision_new(token, attributes)
     end

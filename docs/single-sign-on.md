@@ -146,6 +146,10 @@ org-admin, and it never changes the role of an existing org-admin.
 - An account that belongs to another Organization. Nothing about its
   membership changes; a person belongs to one Organization at a time.
 - A disabled account.
+- A site admin. Site admins sign in with their password (and two-factor), so
+  no Organization's identity provider can sign anyone in with site-admin
+  powers. This holds for an identity linked before the account became a site
+  admin, too.
 - A person [SCIM](scim-provisioning.md) deprovisioned from the Organization,
   until SCIM re-activates them.
 - A connection that is turned off, or a provider that cannot be reached or
@@ -228,9 +232,9 @@ Certificates are public, so they are stored unencrypted. Saving records an
    attribute (`email`, `mail` or the claims URI) or an email-shaped NameID.
    From here the [Which account](#which-account) and
    [What is refused](#what-is-refused) rules apply unchanged: the email must
-   be on a domain the Organization verified, people in another Organization and
-   disabled users are refused, and the session is marked as a single sign-on
-   session.
+   be on a domain the Organization verified, people in another Organization,
+   disabled users and site admins are refused, and the session is marked as a
+   single sign-on session.
 
 Responses the identity provider starts on its own (IdP-initiated sign-in) are
 refused, because they answer no request. Every refusal shows the same

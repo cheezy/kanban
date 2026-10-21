@@ -42,6 +42,7 @@ defmodule KanbanWeb.SCIM.FallbackController do
 
   defp error(:membership_conflict), do: {409, "uniqueness", @cannot_provision}
   defp error(:user_disabled), do: {409, "uniqueness", @cannot_provision}
+  defp error(:site_admin), do: {409, "uniqueness", @cannot_provision}
 
   defp error(:last_org_admin),
     do:

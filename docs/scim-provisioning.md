@@ -97,7 +97,7 @@ was.
 | Case | Response |
 |------|----------|
 | The email's domain is not verified by the Organization | `400`, `scimType: "invalidValue"` |
-| The person belongs to another Organization, or the account is disabled and not managed by this Organization | `409`, `scimType: "uniqueness"`, with a generic message that does not name the other Organization |
+| The person belongs to another Organization, the account is disabled and not managed by this Organization, or the account is a site admin | `409`, `scimType: "uniqueness"`, with a generic message that names neither the other Organization nor the reason |
 | The user already exists in the Organization | `409`, `scimType: "uniqueness"` |
 | A user outside the token's Organization | `404` |
 
