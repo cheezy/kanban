@@ -288,6 +288,65 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert html =~ ~s|href="/users/log-in"|
     end
 
+    test "admin links sit in one Admin disclosure on the desktop bar, so it fits from lg" do
+      assigns = %{current_scope: %{user: %{email: "admin@example.com", type: :admin}}}
+
+      html =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+
+      admin_menu =
+        html
+        |> LazyHTML.from_fragment()
+        |> LazyHTML.query("details#marketing-admin-menu")
+
+      assert Enum.count(admin_menu) == 1
+      assert admin_menu |> LazyHTML.attribute("class") |> hd() =~ "hidden lg:block"
+
+      hrefs = admin_menu |> LazyHTML.query("a") |> LazyHTML.attribute("href")
+      assert hrefs == ["/admin/dashboard", "/admin/errors", "/admin/users", "/admin/audit-log"]
+    end
+
+    test "non-admin and signed-out visitors get no Admin disclosure" do
+      for scope <- [%{user: %{email: "member@example.com", type: :member}}, nil] do
+        assigns = %{current_scope: scope}
+
+        html =
+          rendered_to_string(~H"""
+          <MarketingComponents.marketing_nav current_scope={@current_scope} />
+          """)
+
+        refute html =~ "marketing-admin-menu"
+      end
+    end
+
+    test "the desktop links show from lg and the menu toggle below it, without wrapping" do
+      assigns = %{current_scope: %{user: %{email: "member@example.com", type: :member}}}
+
+      document =
+        rendered_to_string(~H"""
+        <MarketingComponents.marketing_nav current_scope={@current_scope} />
+        """)
+        |> LazyHTML.from_fragment()
+
+      assert document |> LazyHTML.query("nav") |> LazyHTML.attribute("class") |> hd() =~
+               "whitespace-nowrap"
+
+      assert document |> LazyHTML.query("details.js-mobile-menu") |> LazyHTML.attribute("class") ==
+               ["lg:hidden relative js-mobile-menu group"]
+
+      [sign_out | _mobile] =
+        document |> LazyHTML.query("a[href='/users/log-out']") |> Enum.to_list()
+
+      assert sign_out |> LazyHTML.attribute("class") |> hd() =~ "hidden lg:inline-flex"
+
+      assert document
+             |> LazyHTML.query("nav > div.hidden")
+             |> LazyHTML.attribute("class")
+             |> Enum.any?(&(&1 =~ "lg:flex"))
+    end
+
     test "mobile menu shows admin links when authenticated as admin" do
       assigns = %{current_scope: %{user: %{email: "admin@example.com", type: :admin}}}
 

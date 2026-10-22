@@ -43,7 +43,7 @@ defmodule KanbanWeb.MarketingComponents do
   def marketing_nav(assigns) do
     ~H"""
     <nav
-      class="flex items-center gap-3 md:gap-6 h-14 px-4 md:px-9"
+      class="flex items-center gap-3 lg:gap-4 h-14 px-4 md:px-9 whitespace-nowrap"
       style="border-bottom: 1px solid var(--line);"
     >
       <.link href={~p"/"} class="flex items-center gap-2">
@@ -57,10 +57,10 @@ defmodule KanbanWeb.MarketingComponents do
         </span>
       </.link>
 
-      <span class="hidden md:inline-block w-px" style="height: 18px; background: var(--line);"></span>
+      <span class="hidden lg:inline-block w-px" style="height: 18px; background: var(--line);"></span>
 
       <div
-        class="hidden md:flex items-center gap-[18px] text-[13px]"
+        class="hidden lg:flex items-center gap-[18px] text-[13px]"
         style="color: var(--ink-2);"
       >
         <.link href={~p"/product"} class="hover:opacity-70 transition-opacity">
@@ -92,40 +92,11 @@ defmodule KanbanWeb.MarketingComponents do
       <span class="flex-1"></span>
 
       <%= if @current_scope do %>
-        <%= if @current_scope.user.type == :admin do %>
-          <.link
-            href={~p"/admin/dashboard"}
-            class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
-            style="color: var(--ink-2);"
-          >
-            {gettext("Dashboard")}
-          </.link>
-          <.link
-            href={~p"/admin/errors"}
-            class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
-            style="color: var(--ink-2);"
-          >
-            {gettext("Error Tracker")}
-          </.link>
-          <.link
-            href={~p"/admin/users"}
-            class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
-            style="color: var(--ink-2);"
-          >
-            {gettext("User Admin")}
-          </.link>
-          <.link
-            href={~p"/admin/audit-log"}
-            class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
-            style="color: var(--ink-2);"
-          >
-            {gettext("Audit Log")}
-          </.link>
-        <% end %>
+        <.marketing_admin_menu :if={@current_scope.user.type == :admin} />
         <.link
           href={~p"/users/log-out"}
           method="delete"
-          class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
+          class="hidden lg:inline-flex text-[13px] hover:opacity-70 transition-opacity"
           style="color: var(--ink-2);"
         >
           {gettext("Sign out")}
@@ -141,7 +112,7 @@ defmodule KanbanWeb.MarketingComponents do
       <% else %>
         <.link
           href={~p"/users/log-in"}
-          class="hidden md:inline-flex text-[13px] hover:opacity-70 transition-opacity"
+          class="hidden lg:inline-flex text-[13px] hover:opacity-70 transition-opacity"
           style="color: var(--ink-2);"
         >
           {gettext("Sign in")}
@@ -158,7 +129,7 @@ defmodule KanbanWeb.MarketingComponents do
 
       <.marketing_language_switcher current_locale={@current_locale} />
 
-      <details class="md:hidden relative js-mobile-menu group">
+      <details class="lg:hidden relative js-mobile-menu group">
         <summary
           class="list-none [&::-webkit-details-marker]:hidden [&::marker]:hidden inline-flex items-center justify-center w-11 h-11 rounded-md cursor-pointer hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           style="color: var(--ink-2);"
@@ -179,6 +150,50 @@ defmodule KanbanWeb.MarketingComponents do
       </details>
     </nav>
     """
+  end
+
+  # The four site-admin pages, folded into one disclosure so the signed-in
+  # admin bar fits from lg (1024px) in every locale; the mobile menu lists them
+  # too. A native <details>, like the mobile menu, so it opens on controller
+  # pages, where no LiveView hook runs; app.js closes it on Escape or an
+  # outside click.
+  defp marketing_admin_menu(assigns) do
+    ~H"""
+    <details class="relative hidden lg:block js-mobile-menu group" id="marketing-admin-menu">
+      <summary
+        class="list-none [&::-webkit-details-marker]:hidden [&::marker]:hidden inline-flex items-center gap-[3px] text-[13px] cursor-pointer hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        style="color: var(--ink-2);"
+        aria-controls="marketing-admin-menu-panel"
+        aria-expanded="false"
+      >
+        {gettext("Admin")}
+        <.icon name="hero-chevron-down" class="w-2.5 h-2.5" />
+      </summary>
+      <div
+        id="marketing-admin-menu-panel"
+        class="absolute top-full right-0 mt-2 py-1 z-50"
+        style="background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow-md); min-width: 160px;"
+      >
+        <.link
+          :for={{label, path} <- admin_links()}
+          href={path}
+          class="flex items-center w-full px-3 py-2 text-[13px] row-hover"
+          style="color: var(--ink-2);"
+        >
+          {label}
+        </.link>
+      </div>
+    </details>
+    """
+  end
+
+  defp admin_links do
+    [
+      {gettext("Dashboard"), ~p"/admin/dashboard"},
+      {gettext("Error Tracker"), ~p"/admin/errors"},
+      {gettext("User Admin"), ~p"/admin/users"},
+      {gettext("Audit Log"), ~p"/admin/audit-log"}
+    ]
   end
 
   @doc false

@@ -95,6 +95,14 @@ window.addEventListener("keydown", (e) => {
   })
 })
 
+// Close an open <details class="js-mobile-menu"> when the user clicks outside
+// it, as a dropdown would. Used by the marketing nav's menu and Admin disclosures.
+document.addEventListener("click", (e) => {
+  document.querySelectorAll("details.js-mobile-menu[open]").forEach((el) => {
+    if (!el.contains(e.target)) el.removeAttribute("open")
+  })
+})
+
 // Mirror the <details open> state onto the summary's aria-expanded so screen
 // readers announce the correct toggle state. The `toggle` event does not bubble,
 // so we listen in the capture phase at the document root.
