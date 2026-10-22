@@ -14,7 +14,7 @@ defmodule KanbanWeb.Sentences do
   @spec join([String.t()]) :: String.t()
   def join(sentences) when is_list(sentences), do: Enum.join(sentences, separator())
 
-  @doc "The text between two sentences in the current locale: `\"\"` or `\" \"`."
+  @doc "The text between two sentences in the current locale: empty or one space."
   @spec separator() :: String.t()
   def separator do
     if Gettext.get_locale(KanbanWeb.Gettext) in @unspaced, do: "", else: " "

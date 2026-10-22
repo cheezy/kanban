@@ -112,21 +112,22 @@ defmodule Kanban.Notifications.Announcement do
   @spec await_enqueue((-> Oban.Job.t()), pos_integer()) ::
           :enqueued | :already_enqueued | :unconfirmed
   def await_enqueue(insert, attempts \\ @lock_attempts) do
-    case insert.() do
-      %Oban.Job{conflict?: false} ->
-        :enqueued
+    case {outcome(insert.()), attempts} do
+      {:locked, 1} ->
+        :unconfirmed
 
-      %Oban.Job{conflict?: true, id: id} when not is_nil(id) ->
-        :already_enqueued
-
-      %Oban.Job{conflict?: true} when attempts > 1 ->
+      {:locked, _attempts} ->
         Process.sleep(@lock_wait_ms)
         await_enqueue(insert, attempts - 1)
 
-      %Oban.Job{conflict?: true} ->
-        :unconfirmed
+      {outcome, _attempts} ->
+        outcome
     end
   end
+
+  defp outcome(%Oban.Job{conflict?: false}), do: :enqueued
+  defp outcome(%Oban.Job{conflict?: true, id: nil}), do: :locked
+  defp outcome(%Oban.Job{conflict?: true}), do: :already_enqueued
 
   defp dry_run!(opts) do
     case Keyword.get(opts, :dry_run, false) do

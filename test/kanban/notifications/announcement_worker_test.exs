@@ -141,7 +141,7 @@ defmodule Kanban.Notifications.AnnouncementWorkerTest do
                Announcement.fan_out(@key)
 
       for user <- [cancelled, discarded] do
-        assert [_one] = Repo.all(where(Oban.Job, [j], j.args["user_id"] == ^user.id))
+        assert [_one] = Oban.Job |> where([j], j.args["user_id"] == ^user.id) |> Repo.all()
       end
     end
 
@@ -170,24 +170,21 @@ defmodule Kanban.Notifications.AnnouncementWorkerTest do
       end
     end
 
-    test "a new job is enqueued and an existing one is already enqueued" do
-      assert Announcement.await_enqueue(inserts([%Oban.Job{conflict?: false, id: 1}])) ==
-               :enqueued
+    defp await(results, attempts \\ 5),
+      do: results |> inserts() |> Announcement.await_enqueue(attempts)
 
-      assert Announcement.await_enqueue(inserts([%Oban.Job{conflict?: true, id: 7}])) ==
-               :already_enqueued
+    test "a new job is enqueued and an existing one is already enqueued" do
+      assert await([%Oban.Job{conflict?: false, id: 1}]) == :enqueued
+      assert await([%Oban.Job{conflict?: true, id: 7}]) == :already_enqueued
     end
 
     test "a job another run is inserting is tried again rather than counted as covered" do
-      assert Announcement.await_enqueue(inserts([@locked, @locked, %Oban.Job{conflict?: false}])) ==
-               :enqueued
-
-      assert Announcement.await_enqueue(inserts([@locked, %Oban.Job{conflict?: true, id: 3}])) ==
-               :already_enqueued
+      assert await([@locked, @locked, %Oban.Job{conflict?: false}]) == :enqueued
+      assert await([@locked, %Oban.Job{conflict?: true, id: 3}]) == :already_enqueued
     end
 
     test "a job still held after every attempt is unconfirmed, never already enqueued" do
-      assert Announcement.await_enqueue(inserts([@locked]), 3) == :unconfirmed
+      assert await([@locked], 3) == :unconfirmed
     end
   end
 

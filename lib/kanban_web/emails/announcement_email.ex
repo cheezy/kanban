@@ -138,13 +138,24 @@ defmodule KanbanWeb.Emails.AnnouncementEmail do
   # Verified routes, so a renamed page fails to compile rather than sending a
   # dead link; announcement_email_test.exs pins the rendered hrefs.
   defp links do
+    Enum.map(page_links() ++ app_links(), fn {label, url, fragment} ->
+      {label, localized(url) <> fragment}
+    end)
+  end
+
+  defp page_links do
     [
-      {gettext("Read the changelog"), localized(url(~p"/changelog"))},
-      {gettext("Pricing"), localized(url(~p"/pricing"))},
-      {gettext("Contact us"), localized(url(~p"/pricing")) <> "#contact"},
-      {gettext("Terms of Service"), localized(url(~p"/terms"))},
-      {gettext("Review queue"), localized(url(~p"/review"))},
-      {gettext("My Work"), localized(url(~p"/my-work"))}
+      {gettext("Read the changelog"), url(~p"/changelog"), ""},
+      {gettext("Pricing"), url(~p"/pricing"), ""},
+      {gettext("Contact us"), url(~p"/pricing"), "#contact"},
+      {gettext("Terms of Service"), url(~p"/terms"), ""}
+    ]
+  end
+
+  defp app_links do
+    [
+      {gettext("Review queue"), url(~p"/review"), ""},
+      {gettext("My Work"), url(~p"/my-work"), ""}
     ]
   end
 
