@@ -13,6 +13,10 @@ defmodule Kanban.Accounts.User do
     field :confirmed_at, :utc_datetime
     field :disabled_at, :utc_datetime
     field :two_factor_reminder_dismissed_at, :utc_datetime
+    # The interface language last chosen from the locale switcher (W2416);
+    # nil until the user chooses one. Only the service announcement email
+    # (Kanban.Notifications.AnnouncementWorker) renders in it so far.
+    field :locale, :string
     field :authenticated_at, :utc_datetime, virtual: true
 
     # Set when an Organization's SCIM provisioning created the account
@@ -199,6 +203,19 @@ defmodule Kanban.Accounts.User do
   """
   def type_changeset(user, type) when type in [:user, :admin] do
     change(user, type: type)
+  end
+
+  @doc """
+  A changeset recording the interface language the user chose.
+
+  Only a locale `KanbanWeb.Gettext` knows is accepted; nothing else on the
+  user changes through it.
+  """
+  def locale_changeset(user, locale) do
+    user
+    |> change(locale: locale)
+    |> validate_required([:locale])
+    |> validate_inclusion(:locale, Gettext.known_locales(KanbanWeb.Gettext))
   end
 
   @doc """

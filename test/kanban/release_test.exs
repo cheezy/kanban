@@ -4,6 +4,7 @@ defmodule Kanban.ReleaseTest do
   # audit_events inside the sandbox, which locks the table until rollback.
   # setup/on_exit restore every value they touch.
   use Kanban.DataCase, async: false
+  use Oban.Testing, repo: Kanban.Repo
 
   import ExUnit.CaptureLog
   import Kanban.AccountsFixtures
@@ -20,6 +21,8 @@ defmodule Kanban.ReleaseTest do
   alias Kanban.Boards
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
+  alias Kanban.Notifications.Announcement
+  alias Kanban.Notifications.AnnouncementWorker
   alias Kanban.Organizations
   alias Kanban.Organizations.Organization
   alias Kanban.Organizations.OrganizationMember
@@ -732,6 +735,70 @@ defmodule Kanban.ReleaseTest do
     for env <- ["dev", "test"] do
       other = "../../config/#{env}.exs" |> Path.expand(__DIR__) |> File.read!()
       refute other =~ "audit_log_boot_check"
+    end
+  end
+
+  describe "send_launch_announcement/1" do
+    @key "organizations-launch"
+
+    defp disable_user(user) do
+      User
+      |> where(id: ^user.id)
+      |> Repo.update_all(set: [disabled_at: DateTime.utc_now(:second)])
+    end
+
+    test "a dry run returns the eligible recipient count and enqueues nothing" do
+      user = user_fixture()
+      attach_telemetry([:kanban, :announcement, :fanout_completed])
+
+      assert {:ok, result} = Release.send_launch_announcement(key: @key, dry_run: true)
+
+      assert %{announcement: @key, dry_run: true, enqueued: 0} = result
+      assert result.recipients == length(Announcement.list_recipients())
+      assert user.id in Announcement.list_recipients()
+      assert all_enqueued(worker: AnnouncementWorker) == []
+      refute_received {:telemetry_event, [:kanban, :announcement, :fanout_completed], _, _}
+    end
+
+    test "enqueues one job per confirmed, enabled user, and a re-run adds none" do
+      user = user_fixture()
+      disabled = user_fixture()
+      disable_user(disabled)
+      unconfirmed = unconfirmed_user_fixture()
+
+      assert {:ok, first} = Release.send_launch_announcement(key: @key)
+      recipients = first.recipients
+
+      assert %{dry_run: false, enqueued: ^recipients, already_enqueued: 0} = first
+      assert_enqueued(worker: AnnouncementWorker, args: %{user_id: user.id, key: @key})
+      refute_enqueued(worker: AnnouncementWorker, args: %{user_id: disabled.id, key: @key})
+      refute_enqueued(worker: AnnouncementWorker, args: %{user_id: unconfirmed.id, key: @key})
+
+      assert {:ok, %{enqueued: 0, already_enqueued: ^recipients}} =
+               Release.send_launch_announcement(key: @key)
+
+      assert length(all_enqueued(worker: AnnouncementWorker)) == recipients
+    end
+
+    test "refuses an unknown or missing key and enqueues nothing" do
+      user_fixture()
+
+      assert Release.send_launch_announcement(key: "nope") == {:error, :unknown_announcement}
+      assert Release.send_launch_announcement([]) == {:error, :unknown_announcement}
+      assert all_enqueued(worker: AnnouncementWorker) == []
+    end
+
+    test "starts an insert-only Oban when none runs and stops it afterwards" do
+      user = user_fixture()
+      name = :w2416_release_oban
+      assert Oban.whereis(name) == nil
+
+      assert {:ok, %{enqueued: enqueued}} =
+               Release.send_launch_announcement(key: @key, oban: name)
+
+      assert enqueued == length(Announcement.list_recipients())
+      assert_enqueued(worker: AnnouncementWorker, args: %{user_id: user.id, key: @key})
+      assert Oban.whereis(name) == nil
     end
   end
 end

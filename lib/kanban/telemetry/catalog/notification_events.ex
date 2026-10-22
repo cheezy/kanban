@@ -1,7 +1,7 @@
 defmodule Kanban.Telemetry.Catalog.NotificationEvents do
   @moduledoc """
-  The notification, email delivery and weekly digest events in
-  `Kanban.Telemetry.Catalog`.
+  The notification, email delivery, weekly digest and service announcement
+  events in `Kanban.Telemetry.Catalog`.
 
   They are emitted by `Kanban.Notifications.NotificationTelemetry` once the
   change they report has been saved, or once the mailer has answered, so a
@@ -136,12 +136,36 @@ defmodule Kanban.Telemetry.Catalog.NotificationEvents do
       legacy: false,
       metrics: [sum: :count],
       persist: true
+    },
+    %{
+      name: [:kanban, :announcement, :email_sent],
+      kind: :event,
+      domain: :announcement,
+      measurements: [:count],
+      metadata: [:user_id, :announcement],
+      description:
+        "The mailer accepted one user's service announcement email. announcement is the announcement key, such as \"organizations-launch\".",
+      legacy: false,
+      metrics: [counter: :count],
+      persist: false
+    },
+    %{
+      name: [:kanban, :announcement, :fanout_completed],
+      kind: :event,
+      domain: :announcement,
+      measurements: [:count],
+      metadata: [:announcement],
+      description:
+        "A service announcement fan-out finished enqueuing. count is the number of jobs this run added and may be 0; a dry run emits nothing.",
+      legacy: false,
+      metrics: [sum: :count],
+      persist: true
     }
   ]
 
   @doc """
-  Returns the notification, email delivery and digest entries, in
-  declaration order.
+  Returns the notification, email delivery, digest and announcement entries,
+  in declaration order.
   """
   @spec events() :: [Kanban.Telemetry.Catalog.entry()]
   def events, do: @events

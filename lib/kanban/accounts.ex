@@ -206,6 +206,22 @@ defmodule Kanban.Accounts do
   end
 
   @doc """
+  Records the interface language `user` chose from the locale switcher, so
+  the service announcement email (`Kanban.Notifications.AnnouncementWorker`)
+  can be rendered in it. Other emails do not read it yet.
+
+  Returns `{:error, changeset}` for a blank locale or one the app does not
+  support.
+  """
+  @spec update_user_locale(User.t(), String.t() | nil) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def update_user_locale(%User{} = user, locale) do
+    user
+    |> User.locale_changeset(locale)
+    |> Repo.update()
+  end
+
+  @doc """
   Updates the user email using the given token.
 
   If the token matches, the user email is updated and the token is deleted.

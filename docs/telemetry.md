@@ -509,10 +509,11 @@ rolled-back change emits nothing. Every event measures `count: 1`, except
 
 ### Notification, email delivery, digest, delivery target and message events
 
-W2342 added these. They are declared in three catalog modules:
+W2342 added these, and W2416 the two service announcement events. They are
+declared in three catalog modules:
 `Kanban.Telemetry.Catalog.NotificationEvents`
 (`lib/kanban/telemetry/catalog/notification_events.ex`) for notifications,
-email delivery and the weekly digest, `Kanban.Telemetry.Catalog.TargetEvents`
+email delivery, the weekly digest and service announcements, `Kanban.Telemetry.Catalog.TargetEvents`
 (`lib/kanban/telemetry/catalog/target_events.ex`) for delivery targets, and
 `Kanban.Telemetry.Catalog.MessageEvents`
 (`lib/kanban/telemetry/catalog/message_events.ex`) for admin broadcast
@@ -520,8 +521,9 @@ messages. They are emitted by `Kanban.Notifications.NotificationTelemetry`,
 `Kanban.Targets.TargetTelemetry` and `Kanban.Messages.MessageTelemetry`, each
 only after its change has been saved, or after the mailer has answered, so a
 refused or invalid change emits nothing. Every event measures `count: 1`,
-except `all_read` and `fanout_completed`, whose `count` is the number of
-notifications marked read or digest recipients, and may be 0.
+except `all_read` and the two `fanout_completed` events, whose `count` is the
+number of notifications marked read, digest recipients or announcement jobs
+added, and may be 0.
 
 | Event | Metadata | Emitted by |
 |---|---|---|
@@ -535,6 +537,8 @@ notifications marked read or digest recipients, and may be 0.
 | `[:kanban, :notification, :email_failed]` | `notification_id`, `user_id`, `event_type`, `error` | `Kanban.Notifications.EmailWorker` |
 | `[:kanban, :digest, :sent]` | `user_id`, `week` | `Kanban.Notifications.DigestWorker` |
 | `[:kanban, :digest, :fanout_completed]` | `week` | `Kanban.Notifications.DigestFanoutWorker` |
+| `[:kanban, :announcement, :email_sent]` | `user_id`, `announcement` | `Kanban.Notifications.AnnouncementWorker` |
+| `[:kanban, :announcement, :fanout_completed]` | `announcement` | `Kanban.Notifications.Announcement.fan_out/2` |
 | `[:kanban, :target, :created]` | `target_id`, `actor_user_id` | `Kanban.Targets.create_target/2` |
 | `[:kanban, :target, :updated]` | `target_id`, `actor_user_id`, `fields` | `Kanban.Targets.update_target/3` |
 | `[:kanban, :target, :archived]` | `target_id`, `actor_user_id` | `Kanban.Targets.archive_target/2` |
@@ -585,6 +589,15 @@ notifications marked read or digest recipients, and may be 0.
   be called after the change that triggers it has committed; a caller that
   runs it inside an outer transaction that later rolls back will already have
   emitted `created`.
+- **Announcements are service notices.** `Kanban.Release.send_launch_announcement/1`
+  enqueues one job per confirmed, enabled user, whatever their notification
+  preferences or plan. `announcement` is the announcement key, such as
+  `"organizations-launch"`, never the email's text. `fanout_completed` counts
+  the jobs a run added, so running it again reports 0; a dry run emits
+  nothing. It is only stored when the send runs inside the app, for example
+  under `bin/kanban rpc`: under `bin/kanban eval` no telemetry handler is
+  attached, so the counts the release function returns are the record.
+  Announcement skips and delivery failures emit no event.
 - **Not covered.** A recipient whose email preference is already off when
   the notification is created gets no email job, so no email event fires for
   them. Digest skips and digest delivery failures emit no event. The status
@@ -858,8 +871,8 @@ raise.
    `Kanban.Telemetry.Catalog.Families`, a new task activity event is an
    entry in `Kanban.Telemetry.Catalog.TaskEvents`, a new account, session or
    user administration event is an entry in
-   `Kanban.Telemetry.Catalog.UserEvents`, a new notification, email delivery
-   or digest event is an entry in
+   `Kanban.Telemetry.Catalog.UserEvents`, a new notification, email delivery,
+   digest or service announcement event is an entry in
    `Kanban.Telemetry.Catalog.NotificationEvents`, a new delivery target event
    is an entry in `Kanban.Telemetry.Catalog.TargetEvents`, a new broadcast
    message event is an entry in `Kanban.Telemetry.Catalog.MessageEvents`, a
@@ -1087,6 +1100,13 @@ the sections above explain which code emits each family and when.
   [privacy rule](#privacy-rule) applies to every one of them.
 
 <!-- event-reference:start -->
+### Domain `announcement`
+
+| Event | Kind | Measurements | Metadata | Description |
+|---|---|---|---|---|
+| `[:kanban, :announcement, :email_sent]` | event | `count` | `user_id`, `announcement` | The mailer accepted one user's service announcement email. announcement is the announcement key, such as "organizations-launch". |
+| `[:kanban, :announcement, :fanout_completed]` | event | `count` | `announcement` | A service announcement fan-out finished enqueuing. count is the number of jobs this run added and may be 0; a dry run emits nothing. |
+
 ### Domain `api`
 
 | Event | Kind | Measurements | Metadata | Description |

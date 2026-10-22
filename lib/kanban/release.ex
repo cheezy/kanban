@@ -23,7 +23,8 @@ defmodule Kanban.Release do
   over the free member cap (W2402), and `ensure_internal_organization/1`, which
   creates Stride's own Organization and appoints its org-admins (W2403), and
   `import_workspace/3`, the release counterpart of `mix kanban.import_workspace`
-  (W2222).
+  (W2222), and `send_launch_announcement/1`, the one-time service announcement
+  email (W2416).
 
   Log lines from this module carry reason atoms and exception types only,
   never the admin URL, its host or its password.
@@ -33,7 +34,9 @@ defmodule Kanban.Release do
   alias Kanban.AuditLog.Hardening.Purge
   alias Kanban.Boards
   alias Kanban.Boards.Membership
+  alias Kanban.Notifications.Announcement
   alias Kanban.Release.InternalOrganization
+  alias Kanban.Release.LaunchAnnouncement
   alias Kanban.Repo
   alias Kanban.Tasks.SecurityConsiderationsScan
   alias Kanban.Workspaces.Export.Importer
@@ -248,6 +251,30 @@ defmodule Kanban.Release do
       Ecto.Migrator.with_repo(Repo, fn _repo ->
         Importer.import_archive(path, org_admin_email, opts)
       end)
+
+    result
+  end
+
+  @doc """
+  Emails the service announcement `opts[:key]` (such as
+  `"organizations-launch"`) to every confirmed, enabled user, through the app
+  Repo: one unique job per user, so running it again sends nothing twice.
+
+  Runs `Kanban.Release.LaunchAnnouncement.send/1` and returns its result:
+  `{:ok, counts}` or `{:error, :unknown_announcement}`. Pass `dry_run: true`
+  to count the recipients and enqueue nothing. Run it once with
+  `bin/kanban eval`, for example:
+
+      Kanban.Release.send_launch_announcement(key: "organizations-launch", dry_run: true)
+      |> IO.inspect()
+  """
+  @spec send_launch_announcement(keyword()) ::
+          {:ok, Announcement.result()} | {:error, :unknown_announcement}
+  def send_launch_announcement(opts) do
+    load_app()
+
+    {:ok, result, _} =
+      Ecto.Migrator.with_repo(Repo, fn _repo -> LaunchAnnouncement.send(opts) end)
 
     result
   end

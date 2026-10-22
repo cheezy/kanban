@@ -3363,6 +3363,7 @@ msgstr "ボード編集時に field_visibility を永続化"
 #: lib/kanban_web/components/marketing_components.ex:77
 #: lib/kanban_web/components/marketing_components.ex:271
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:5
+#: lib/kanban_web/emails/announcement_email.ex:136
 #, elixir-autogen, elixir-format
 msgid "Pricing"
 msgstr "料金"
@@ -5641,6 +5642,7 @@ msgid "Tango"
 msgstr "Tango"
 
 #: lib/kanban_web/controllers/page_html/terms.html.heex:5
+#: lib/kanban_web/emails/announcement_email.ex:137
 #: lib/kanban_web/live/user_live/registration.ex:111
 #, elixir-autogen, elixir-format
 msgid "Terms of Service"
@@ -9047,6 +9049,7 @@ msgstr "通知が見つかりません。"
 #: lib/kanban_web/components/notification_bell.ex:93
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:103
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:83
+#: lib/kanban_web/emails/announcement_email.ex:95
 #: lib/kanban_web/live/notification_live/index.ex:38
 #: lib/kanban_web/live/notification_live/index.html.heex:5
 #: lib/kanban_web/live/notification_live/index.html.heex:16
@@ -10080,6 +10083,7 @@ msgstr "一括操作に失敗しました。変更は行われていません。
 #: lib/kanban_web/components/locked_feature.ex:140
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:104
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:99
+#: lib/kanban_web/emails/announcement_email.ex:96
 #, elixir-autogen, elixir-format
 msgid "Bulk actions"
 msgstr "一括操作"
@@ -11079,6 +11083,7 @@ msgstr "通知(組織で利用可能)"
 
 #: lib/kanban_web/components/notifications_locked.ex:22
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:137
+#: lib/kanban_web/emails/announcement_email.ex:122
 #, elixir-autogen, elixir-format
 msgid "Tasks waiting for you are always listed in the Review queue and My Work."
 msgstr "あなたを待っているタスクは、レビューキューとマイワークにいつでも表示されます。"
@@ -12652,18 +12657,21 @@ msgstr "組織でStrideを使う"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:106
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:103
+#: lib/kanban_web/emails/announcement_email.ex:97
 #, elixir-autogen, elixir-format
 msgid "Integrations (webhooks)"
 msgstr "連携（Webhook）"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:111
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:111
+#: lib/kanban_web/emails/announcement_email.ex:103
 #, elixir-autogen, elixir-format
 msgid "MCP access"
 msgstr "MCPアクセス"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:126
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:47
+#: lib/kanban_web/emails/announcement_email.ex:113
 #, elixir-autogen, elixir-format
 msgid "Metrics and exports"
 msgstr "メトリクスとエクスポート"
@@ -12680,6 +12688,7 @@ msgstr "シングルサインオン（SSO）"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:110
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:107
+#: lib/kanban_web/emails/announcement_email.ex:102
 #, elixir-autogen, elixir-format
 msgid "Task telemetry fields"
 msgstr "タスクのテレメトリフィールド"
@@ -12691,18 +12700,21 @@ msgstr "組織プランはお客様と直接設定します。チームについ
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:125
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:43
+#: lib/kanban_web/emails/announcement_email.ex:112
 #, elixir-autogen, elixir-format
 msgid "The full REST API and client-side hooks"
 msgstr "完全なREST APIとクライアント側フック"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:124
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:31
+#: lib/kanban_web/emails/announcement_email.ex:111
 #, elixir-autogen, elixir-format
 msgid "Unlimited boards, tasks and goals"
 msgstr "ボード、タスク、ゴールが無制限"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:85
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:35
+#: lib/kanban_web/emails/announcement_email.ex:84
 #, elixir-autogen, elixir-format
 msgid "Up to 3 people per board — AI agents do not count"
 msgstr "1ボードあたり最大3人 — AIエージェントは数えません"
@@ -12713,31 +12725,37 @@ msgid "Who counts toward the 3-person limit on a free board?"
 msgstr "無料のボードで3人の上限に数えられるのは誰ですか？"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:57
+#: lib/kanban_web/emails/announcement_email.ex:58
 #, elixir-autogen, elixir-format
 msgid "Announcing Organizations and the Free plan"
 msgstr "組織と Free プランのお知らせ"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:97
+#: lib/kanban_web/emails/announcement_email.ex:92
 #, elixir-autogen, elixir-format
 msgid "Becoming Organization-only"
 msgstr "組織専用になる機能"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:87
+#: lib/kanban_web/emails/announcement_email.ex:85
 #, elixir-autogen, elixir-format
 msgid "Existing boards keep every member they already have. A board over the limit cannot add anyone until it has fewer than 3 people."
 msgstr "既存のボードは現在のメンバーを全員そのまま維持します。上限を超えているボードは、人数が 3 人未満になるまで新しいメンバーを追加できません。"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:136
+#: lib/kanban_web/emails/announcement_email.ex:120
 #, elixir-autogen, elixir-format
 msgid "Free accounts stop receiving notification emails on launch day."
 msgstr "無料アカウントには、開始日以降は通知メールが送信されなくなります。"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:79
+#: lib/kanban_web/emails/announcement_email.ex:81
 #, elixir-autogen, elixir-format
 msgid "Free boards: up to 3 people"
 msgstr "無料ボード：最大 3 人まで"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:133
+#: lib/kanban_web/emails/announcement_email.ex:118
 #, elixir-autogen, elixir-format
 msgid "If you review tasks on a free board"
 msgstr "無料ボードでタスクをレビューしている場合"
@@ -12748,31 +12766,37 @@ msgid "Launch date: to be announced on this page."
 msgstr "開始日：このページでお知らせします。"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:162
+#: lib/kanban_web/emails/announcement_email.ex:126
 #, elixir-autogen, elixir-format
 msgid "Questions"
 msgstr "ご質問"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:118
+#: lib/kanban_web/emails/announcement_email.ex:108
 #, elixir-autogen, elixir-format
 msgid "Staying free"
 msgstr "引き続き無料"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:64
+#: lib/kanban_web/emails/announcement_email.ex:60
 #, elixir-autogen, elixir-format
 msgid "Stride is adding a paid Organization plan. Stride stays free for individuals and small teams, and a few features become available to organizations only."
 msgstr "Stride に有料の Organization プランが加わります。個人や小規模チームは引き続き Stride を無料で利用でき、一部の機能は組織専用になります。"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:72
+#: lib/kanban_web/emails/announcement_email.ex:64
 #, elixir-autogen, elixir-format
 msgid "The changes below take effect on launch day."
 msgstr "以下の変更は開始日から適用されます。"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:165
+#: lib/kanban_web/emails/announcement_email.ex:128
 #, elixir-autogen, elixir-format
 msgid "To move your team into an organization, or to ask about pricing, contact Stride."
 msgstr "チームを組織に移行したい場合や料金について知りたい場合は、Stride までお問い合わせください。"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:106
+#: lib/kanban_web/emails/announcement_email.ex:99
 #, elixir-autogen, elixir-format
 msgid "webhooks on free boards are paused, not deleted, and resume when the board moves into an organization. Events that happen while paused are not delivered later."
 msgstr "無料ボードの Webhook は削除されずに一時停止され、ボードが組織に移ると再開します。一時停止中に発生したイベントは再送されません。"
@@ -12842,3 +12866,18 @@ msgstr "組織の情報"
 #, elixir-autogen, elixir-format
 msgid "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
 msgstr "アカウントが有効な間、アカウントとワークスペースのデータを保持します。アカウントはアカウント設定から自分で削除できます。削除すると、法律により記録の保持が義務付けられている場合（例：組織との契約に関する記録）を除き、30 日以内にアカウントの記録と、個人ワークスペース内のあなただけが使っているボードを削除します。他の人がまだ使っているボードはその人たちのもとに残り、Organization のワークスペースにあるボードは Organization に残ります。そこに追加した内容は、あなたの名前を外して保持されます。"
+
+#: lib/kanban_web/emails/announcement_email.ex:135
+#, elixir-autogen, elixir-format
+msgid "Read the changelog"
+msgstr "変更履歴を読む"
+
+#: lib/kanban_web/emails/announcement_email.ex:63
+#, elixir-autogen, elixir-format
+msgid "The launch date will be announced on the Stride changelog."
+msgstr "開始日は Stride の変更履歴でお知らせします。"
+
+#: lib/kanban_web/emails/announcement_email.ex:74
+#, elixir-autogen, elixir-format
+msgid "You are receiving this one-time service notice because you have a Stride account. It is sent to every account, whatever your notification settings."
+msgstr "Stride のアカウントをお持ちのため、この一度限りのサービスのお知らせをお送りしています。通知設定にかかわらず、すべてのアカウントに送信されます。"

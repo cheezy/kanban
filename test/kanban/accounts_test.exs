@@ -261,6 +261,24 @@ defmodule Kanban.AccountsTest do
     end
   end
 
+  describe "update_user_locale/2" do
+    test "stores a supported locale" do
+      user = user_fixture()
+
+      assert {:ok, %User{locale: "ja"}} = Accounts.update_user_locale(user, "ja")
+      assert Repo.get!(User, user.id).locale == "ja"
+    end
+
+    test "refuses an unsupported or blank locale and stores nothing" do
+      user = user_fixture()
+
+      assert {:error, changeset} = Accounts.update_user_locale(user, "xx")
+      assert "is invalid" in errors_on(changeset).locale
+      assert {:error, _changeset} = Accounts.update_user_locale(user, nil)
+      assert Repo.get!(User, user.id).locale == nil
+    end
+  end
+
   describe "update_user_name/2" do
     test "updates the name when given a valid value" do
       user = user_fixture()

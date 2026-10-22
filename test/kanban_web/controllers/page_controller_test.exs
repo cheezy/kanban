@@ -716,5 +716,25 @@ defmodule KanbanWeb.PageControllerTest do
       conn = post(conn, ~p"/locale/en")
       assert get_session(conn, :locale) == "en"
     end
+
+    test "stores a signed-in user's choice on the account", %{conn: conn} do
+      user = Kanban.AccountsFixtures.user_fixture()
+      assert user.locale == nil
+
+      conn = conn |> log_in_user(user) |> post(~p"/locale/fr")
+
+      assert get_session(conn, :locale) == "fr"
+      assert Kanban.Repo.get!(Kanban.Accounts.User, user.id).locale == "fr"
+    end
+
+    test "ignores an unsupported locale for a signed-in user", %{conn: conn} do
+      user = Kanban.AccountsFixtures.user_fixture()
+      {:ok, _} = Kanban.Accounts.update_user_locale(user, "de")
+
+      conn = conn |> log_in_user(user) |> post(~p"/locale/xx")
+
+      assert redirected_to(conn) == "/"
+      assert Kanban.Repo.get!(Kanban.Accounts.User, user.id).locale == "de"
+    end
   end
 end

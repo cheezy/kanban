@@ -1,6 +1,9 @@
 defmodule KanbanWeb.PageController do
   use KanbanWeb, :controller
 
+  alias Kanban.Accounts
+  alias Kanban.Accounts.User
+
   # Public marketing surfaces — render under the marketing layout (which
   # provides the marketing nav + footer chrome) instead of the default
   # app layout (which provides the in-app nav).
@@ -75,10 +78,21 @@ defmodule KanbanWeb.PageController do
   end
 
   def set_locale(conn, %{"locale" => locale}) do
+    remember_locale(conn.assigns[:current_scope], locale)
+
     conn
     |> KanbanWeb.Plugs.Locale.set_locale(locale)
     |> redirect(to: get_redirect_path(conn))
   end
+
+  # A signed-in user's choice is also stored on the account, so the service
+  # announcement email (Kanban.Notifications.AnnouncementWorker) can use it;
+  # other emails still render in the default locale. An unsupported locale is
+  # refused there and changes nothing, exactly as the session plug ignores it.
+  defp remember_locale(%{user: %User{} = user}, locale),
+    do: Accounts.update_user_locale(user, locale)
+
+  defp remember_locale(_scope, _locale), do: :ok
 
   defp get_redirect_path(conn) do
     # Get the referer or default to home page

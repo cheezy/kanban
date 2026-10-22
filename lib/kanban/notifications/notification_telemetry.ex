@@ -1,7 +1,7 @@
 defmodule Kanban.Notifications.NotificationTelemetry do
   @moduledoc """
-  Emits the notification, email delivery and weekly digest telemetry events
-  through `Kanban.Telemetry`.
+  Emits the notification, email delivery, weekly digest and service
+  announcement telemetry events through `Kanban.Telemetry`.
 
   Every event is emitted only after the change it reports has been saved, or
   after the mailer has answered, so a refused or invalid change emits
@@ -181,6 +181,30 @@ defmodule Kanban.Notifications.NotificationTelemetry do
   def digest_fanout_completed(count, week) when is_integer(count) do
     Kanban.Telemetry.emit([:kanban, :digest, :fanout_completed], %{count: count}, %{
       week: week
+    })
+  end
+
+  @doc """
+  Emits `[:kanban, :announcement, :email_sent]` for `user_id` and the
+  announcement `key`. Call it only once the mailer has accepted the email.
+  Returns `:ok`.
+  """
+  @spec announcement_email_sent(integer(), String.t()) :: :ok
+  def announcement_email_sent(user_id, key) do
+    Kanban.Telemetry.emit([:kanban, :announcement, :email_sent], %{count: 1}, %{
+      user_id: user_id,
+      announcement: key
+    })
+  end
+
+  @doc """
+  Emits `[:kanban, :announcement, :fanout_completed]` with the number of jobs
+  the announcement `key`'s fan-out enqueued. Returns `:ok`.
+  """
+  @spec announcement_fanout_completed(non_neg_integer(), String.t()) :: :ok
+  def announcement_fanout_completed(count, key) when is_integer(count) do
+    Kanban.Telemetry.emit([:kanban, :announcement, :fanout_completed], %{count: count}, %{
+      announcement: key
     })
   end
 end
