@@ -1,91 +1,90 @@
 # Getting Started with AI Agents on Stride
 
-This guide will walk you through setting up Stride to work with AI agents, from creating your first AI-optimized board to managing the complete workflow of AI-human collaboration.
+This guide takes you from a new Stride account to an AI agent working its first task. The fast path is:
+
+1. [Create your account](#creating-your-account) and sign in.
+2. [Create an AI Optimized board](#creating-an-ai-optimized-board).
+3. [Generate an API token](#creating-an-api-token) on the board's **Tokens** tab.
+4. [Install the Stride plugin](#configuring-your-ai-agent) for your coding agent.
+5. Point the agent at the [onboarding endpoint](#agent-onboarding-endpoint) so it writes [`.stride_auth.md`](#creating-stride_authmd) and [`.stride.md`](#creating-stridemd).
+6. [Claim your first task](#claim-your-first-task).
+
+The rest of the guide explains the workflow you are joining, with best practices and troubleshooting.
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Creating an AI-Optimized Board](#creating-an-ai-optimized-board)
-3. [Setting Up API Access](#setting-up-api-access)
-4. [Configuring Your AI Agent](#configuring-your-ai-agent)
-5. [Working Within the Stride Workflow](#working-within-the-stride-workflow)
-6. [Best Practices](#best-practices)
-7. [Troubleshooting](#troubleshooting)
+2. [Creating Your Account](#creating-your-account)
+3. [Creating an AI-Optimized Board](#creating-an-ai-optimized-board)
+4. [Setting Up API Access](#setting-up-api-access)
+5. [Configuring Your AI Agent](#configuring-your-ai-agent)
+6. [Working Within the Stride Workflow](#working-within-the-stride-workflow)
+7. [Best Practices](#best-practices)
+8. [Troubleshooting](#troubleshooting)
 
 ## Overview
 
-Stride is designed to enable seamless collaboration between humans and AI agents. AI agents can autonomously claim and complete tasks while humans maintain control through review workflows and client-side execution hooks.
+Stride lets humans and AI agents share one kanban board:
 
-**The Collaboration Model:**
-- **Humans**: Create boards, define tasks, review AI work, approve changes
-- **AI Agents**: Claim tasks, execute work, run tests, create pull requests
-- **Together**: Complete projects faster with AI handling repetitive work while humans focus on architecture and quality
+- **Humans** create boards, write tasks, decide which tasks need review, and approve the agent's work.
+- **AI agents** claim tasks from the **Ready** column, do the work, run your project's checks through hooks, and complete the task.
+
+Hooks are shell commands in a `.stride.md` file in your project. They run on the agent's machine, never on the Stride server.
+
+## Creating Your Account
+
+1. Go to `/users/register` (the **Create an account** link on the sign-in page). On **Create your account**, fill in **Your name**, **Email** and **Password** (at least 12 characters), accept the terms, and click **Create account**.
+2. Click the link in the confirmation email. Registering does not sign you in, and an unconfirmed account cannot sign in. The confirmation page repeats the setup steps in this guide.
+3. Click **Sign in** and sign in with your email and password.
+
+Lost the email? See [Recovering a Lost Confirmation Email](AUTHENTICATION.md#recovering-a-lost-confirmation-email). If your Organization uses single sign-on, use **Sign in with SSO** instead; see [Single Sign-On](single-sign-on.md).
+
+**Windows users:** see [WINDOWS-SETUP.md](WINDOWS-SETUP.md) for WSL2, PowerShell and Git Bash setup.
 
 ## Creating an AI-Optimized Board
 
-AI-optimized boards come pre-configured with the standard workflow columns that AI agents expect.
+AI Optimized boards come with the fixed columns that agents expect.
 
 ### Steps to Create an AI-Optimized Board
 
-1. **Log in to Stride** at your Stride instance
-
-2. **Navigate to Boards** by clicking "Boards" in the navigation
-
-3. **Click the "New Board" button** and select **"New AI Optimized Board"** from the dropdown options
-
-4. **Fill in the board details:**
-   - **Name**: Give your board a descriptive name (e.g., "My Project - AI Development")
-   - **Description**: Optional description of what this board is for
-
-5. **Click "Create Board"**
+1. **Sign in** to Stride.
+2. Click **Boards** in the side navigation.
+3. Click **New board** and choose **New AI Optimized Board**.
+4. Fill in **Name** and, optionally, **Description**.
+5. Click **Save Board**.
 
 ### What Happens When You Create an AI-Optimized Board?
 
-An AI-optimized board is automatically created with five standard columns:
+The board is created with five columns:
 
-- **Backlog**: Tasks not yet ready to work on
-- **Ready**: Tasks ready for agents to claim
-- **Doing**: Tasks currently being worked on
-- **Review**: Tasks awaiting human review
-- **Done**: Completed tasks
+- **Backlog**: tasks not yet ready to work on
+- **Ready**: tasks agents may claim
+- **Doing**: tasks an agent is working on
+- **Review**: tasks waiting for human review
+- **Done**: completed tasks
 
-**Important Characteristics:**
-- ✅ Columns cannot be added, removed, or reordered
-- ✅ Column names are standardized for AI agent compatibility
-- ✅ API token management is available
-- ✅ Workflow hooks are fully supported
-
-**Windows Users:** See [WINDOWS-SETUP.md](WINDOWS-SETUP.md) for Windows-specific installation instructions including WSL2, PowerShell, and Git Bash setup options.
+The columns cannot be added, removed or reordered, because agents rely on their names. The board also gets a **Tokens** tab, which is where you create the API token an agent uses.
 
 ## Setting Up API Access
 
-AI agents need an API token to authenticate with your Stride instance.
+An agent authenticates with an API token. A **board token**, created on one board, is all you need to start. If an Organization runs agents across many of its boards, an org-admin can create one **workspace token** instead; see [Board Tokens and Workspace Tokens](AUTHENTICATION.md#board-tokens-and-workspace-tokens).
 
 ### Creating an API Token
 
-1. **Open your AI-optimized board**
+1. Open your AI Optimized board and click its **Tokens** tab. The tab is shown only on AI Optimized boards, and only to people with owner or modify access to the board.
+2. Under **Create new token**, fill in:
+   - **Token name**: a name you will recognise later, for example "Claude Development Agent"
+   - **Agent model (optional)** and **Purpose (optional)**: notes for humans, with no effect on access
+   - **Agent capabilities**: a comma-separated list, see [Understanding Capabilities](#understanding-capabilities); leave it empty to let the agent claim any task
+3. Click **Generate token**.
+4. **Copy the token now.** It is shown once, under **Token created**, and cannot be shown again. It starts with `stride_`. Treat it like a password.
 
-2. **Click "API Tokens"** in the board header
-
-3. **Configure the token:**
-   - **Name**: Descriptive name for this token (e.g., "Claude Development Agent")
-   - **Agent Capabilities**: Comma-separated list of capabilities (e.g., "code_generation, testing, documentation")
-   - **Agent Model**: Optional - helps track which AI model is being used
-   - **Agent Purpose**: Optional - describes what this agent is for
-
-4. **Click "Create Token"**
-
-5. **CRITICAL: Copy the token immediately!**
-   - The full token is only shown **once** for security reasons
-   - You'll need this token for the `.stride_auth.md` file
-   - It starts with `stride_` followed by a long random string
-   - Store it securely - treat it like a password
+The token appears under **Active tokens**, where you can **Revoke** it later, and then **Delete** it once revoked. Every new token expires 90 days after it is created; generate a new one before then.
 
 ### Understanding Capabilities
 
-Capabilities determine which tasks an agent can see and claim. When creating an API token, you enter capabilities as a comma-separated list that matches what your agent can actually do.
+Capabilities decide which tasks a token can claim. The names are:
 
-**Standard Capabilities:**
 - `api_design` - REST/GraphQL API design
 - `code_generation` - Writing new code
 - `code_review` - Reviewing code changes
@@ -103,73 +102,56 @@ Capabilities determine which tasks an agent can see and claim. When creating an 
 - `ui_implementation` - User interface implementation
 - `web_browsing` - Web scraping, browser automation, web testing
 
-**Examples:**
-- Single capability: `code_generation`
-- Multiple capabilities: `code_generation, testing, documentation`
-- Full-stack agent: `code_generation, database_design, ui_implementation, testing, debugging`
+A token with no capabilities can claim any task. A token with capabilities can claim a task only when it has **all** of the task's `required_capabilities`; a task that requires none can be claimed by any token. Stride does not check the names when you create a token, so a misspelled name is saved and simply matches nothing. The rules are in [Capability Scopes](AUTHENTICATION.md#capability-scopes).
 
-**Pro Tip**: Start with a focused set of capabilities (e.g., just `code_generation, testing`) and expand as you gain confidence in your agent's work. Leave the field empty to allow the agent to claim any task regardless of requirements.
+**Examples:** `code_generation`, or `code_generation, testing, documentation`.
+
+**Tip:** start with the capabilities your agent is good at, for example `code_generation, testing`, and widen the list as you trust its work.
 
 ## Configuring Your AI Agent
 
-AI agents need two configuration files in their working directory to operate with Stride.
+The agent needs a Stride plugin for its coding tool and two files in your project: `.stride_auth.md` (your token, never committed) and `.stride.md` (your hooks, committed). Install the plugin first, then let the onboarding endpoint guide the agent through the files.
 
 ### Install the Stride Plugin (Claude Code)
 
-> **🔌 REQUIRED FOR CLAUDE CODE USERS:** You must install the Stride plugin before claiming or working on tasks. The plugin provides skills that enforce the correct workflow, prevent common API errors, and guide your agent through each lifecycle step. **Without the plugin, your agent will not follow the Stride workflow correctly.**
-
-Run these two commands in Claude Code:
+**Required for Claude Code.** The plugin's skills enforce the Stride workflow and run your hooks for you. Run these two commands in Claude Code:
 
 ```
 /plugin marketplace add cheezy/stride-marketplace
 /plugin install stride@stride-marketplace
 ```
 
-After installation, verify the plugin is active by checking that Stride skills appear in your available skills list. The recommended entry point is `stride-workflow` — a single orchestrator that walks through the complete task lifecycle.
+Check that the Stride skills appear in your skills list. Start every piece of task work with the `stride-workflow` skill: it walks through claim, explore, implement, review and complete.
 
-> **Automatic Hook Execution (v1.5.0+):** The Stride plugin includes Claude Code hooks that automatically execute your `.stride.md` commands without permission prompts. When the plugin is enabled, Stride API calls are detected and the corresponding hook section runs as a shell process on the harness — bypassing the CLI's tool permission layer entirely. No configuration needed beyond installing the plugin. See the [Hook Execution Guide](AGENT-HOOK-EXECUTION-GUIDE.md#automatic-hook-execution-via-claude-code-hooks-stride-plugin-v150) for details.
+The plugin runs your `.stride.md` commands automatically, without permission prompts, when the agent calls the claim and complete endpoints. See the [Hook Execution Guide](AGENT-HOOK-EXECUTION-GUIDE.md#automatic-hook-execution-via-claude-code-hooks-stride-plugin-v150).
 
-For other AI coding agents (Cursor, Windsurf, Continue.dev, etc.), see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
+Optional: the ideation plugin turns a rough idea into a requirements document. Install it with `/plugin install stride-ideation@stride-marketplace`.
+
+For other AI coding agents (Cursor, Windsurf, Continue.dev and others), see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md).
 
 ### Install the Stride Plugin (GitHub Copilot)
 
-> **🔌 RECOMMENDED FOR GITHUB COPILOT USERS:** Install the stride-copilot plugin to get 7 Copilot-adapted skills (including the `stride-workflow` orchestrator) and 4 custom agents. The `stride-workflow` skill is the recommended entry point for all task work.
-
-Install via the Copilot CLI:
+Install the stride-copilot plugin with the Copilot CLI. It includes the `stride-workflow` skill and custom agents.
 
 ```bash
 copilot plugin install https://github.com/cheezy/stride-copilot
 ```
 
-Manage the plugin:
-
-```bash
-copilot plugin update stride-copilot       # Update to latest version
-copilot plugin uninstall stride-copilot    # Remove plugin
-copilot plugin list                        # View installed plugins
-```
-
-For a manual fallback with 4 generic skills, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
+Update it later with `copilot plugin update stride-copilot`. For a manual fallback, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md).
 
 ### Install the Stride Extension (Gemini CLI)
 
-> **🔌 RECOMMENDED FOR GEMINI CLI USERS:** Install the Stride Gemini extension to get 7 Gemini-adapted skills (including the `stride-workflow` orchestrator) and 4 custom agents. The `stride-workflow` skill is the recommended entry point for all task work.
-
-Install the extension with a single command:
+Install the Stride Gemini extension. It includes the `stride-workflow` skill and custom agents such as `task-explorer` and `task-reviewer`.
 
 ```bash
 gemini extensions install https://github.com/cheezy/stride-gemini
 ```
 
-After installation, verify that Stride skills appear in your available skills list and custom agents (e.g., `task-explorer`, `task-reviewer`) are accessible. The recommended entry point is `stride-workflow`.
-
-For a manual fallback with 4 generic skills, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
+For a manual fallback, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md).
 
 ### Install the Stride Plugin (OpenCode)
 
-> **🔌 RECOMMENDED FOR OPENCODE USERS:** Install the stride-opencode plugin to get 7 OpenCode-adapted skills (including the `stride-workflow` orchestrator), 4 custom agents, and automatic hook execution via the TypeScript plugin.
-
-Add to your project's `opencode.json`:
+Add the stride-opencode plugin to your project's `opencode.json`. It includes the `stride-workflow` skill, custom agents, and automatic hook execution.
 
 ```json
 {
@@ -177,80 +159,63 @@ Add to your project's `opencode.json`:
 }
 ```
 
-Or install locally:
+Or install it into the project with the setup script:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/cheezy/stride-opencode/main/install.sh | bash -s -- --project
 ```
 
-After installation, verify that Stride skills appear in your available skills list. The recommended entry point is `stride-workflow`.
-
-For a manual fallback, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
-
 ### Install the Stride Plugin (Codex CLI)
 
-> **🔌 RECOMMENDED FOR CODEX CLI USERS:** Install the stride-codex plugin to get 7 Codex-adapted skills (including the `stride-workflow` orchestrator) and 4 subagents. Note: Codex has no automatic hook interception — skills instruct the agent to execute hooks directly.
-
-Install globally (available in all projects):
+Install the stride-codex plugin globally:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash
 ```
 
-Or install into the current project only:
+Or into the current project only:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash -s -- --project
 ```
 
-After installation, copy AGENTS.md to your project root if needed:
+Then copy the instructions file into your project root:
 
 ```bash
 cp ~/.agents/AGENTS.md ./AGENTS.md
 ```
 
-For a manual fallback, see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
+Codex does not intercept tool calls, so the skills tell the agent to run your `.stride.md` hooks itself.
+
+### Install the Stride Plugin (Pi)
+
+Install the stride-pi plugin with its setup script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cheezy/stride-pi/main/install.sh | bash
+```
+
+Pi has no ideation plugin yet.
 
 ### Agent Onboarding Endpoint
 
-Before configuring files, have your AI agent read and execute the commands from the onboarding endpoint:
+The onboarding endpoint returns everything an agent needs: the file templates, the workflow, the hooks, the API endpoints and the hook environment variables. You do not need a token to read it.
 
 ```bash
 curl https://www.stridelikeaboss.com/api/agent/onboarding
 ```
 
-This endpoint returns everything the agent needs to know:
-- File templates for both configuration files
-- Complete workflow documentation
-- Available hooks and their purpose
-- All API endpoints
-- Environment variables available in hooks
-- Claude Code skills for workflow enforcement
+Paste this prompt into your agent:
 
-**If you're using Claude Code or another AI coding assistant**, just tell it:
-> "Please fetch and review the Stride onboarding documentation at https://www.stridelikeaboss.com/api/agent/onboarding, then help me set up the required configuration files (`.stride_auth.md` and `.stride.md`) and agent configuration for this project"
+> "Fetch https://www.stridelikeaboss.com/api/agent/onboarding and follow the instructions it returns to set up Stride in this project, creating the .stride_auth.md and .stride.md configuration files."
 
-The onboarding endpoint provides Claude Code Skills for streamlined workflow enforcement. For other AI coding agents (Cursor, Windsurf, Continue.dev, etc.), see the [Multi-Agent Instructions](MULTI-AGENT-INSTRUCTIONS.md) guide.
-
-**⚠️ IMPORTANT: Reload with Each New Session**
-
-Both AI agents and humans should reload the onboarding endpoint at the start of each new work session to ensure you have the latest:
-- Claude Code skills (may be updated with bug fixes or improvements)
-- API documentation and endpoints
-- Hook configurations
-- Workflow features
-
-Reload at the start of each new Claude Code session or after any system updates.
+When the agent asks for your token, give it the one you copied from the board's **Tokens** tab. Have the agent fetch the endpoint again at the start of each new session, so it picks up workflow and API changes.
 
 ### Creating `.stride_auth.md`
 
-This file contains your API credentials and **must never be committed to version control**.
+This file holds your token and **must never be committed**. Create it in your project root from the template the onboarding endpoint serves, replacing every `{{YOUR_TOKEN_HERE}}` (there are three) with your token and `{{YOUR_EMAIL}}` with your email:
 
-**1. Create the file in your project root:**
-
-Create a file named `.stride_auth.md` with the following content:
-
-```markdown
+````markdown
 # Stride API Authentication
 
 **DO NOT commit this file to version control!**
@@ -258,18 +223,16 @@ Create a file named `.stride_auth.md` with the following content:
 ## API Configuration
 
 - **API URL:** `https://www.stridelikeaboss.com`
-- **API Token:** `stride_abc123def456...` (your actual token)
-- **User Email:** `your-email@example.com`
+- **API Token:** `{{YOUR_TOKEN_HERE}}`
+- **User Email:** `{{YOUR_EMAIL}}`
 - **Token Name:** Development Agent
 
 ## Usage
 
-Replace `{{YOUR_TOKEN_HERE}}` with your actual token, then set environment variables:
-
 **Unix/Linux/macOS:**
 
 ```bash
-export STRIDE_API_TOKEN="stride_abc123def456..."
+export STRIDE_API_TOKEN="{{YOUR_TOKEN_HERE}}"
 export STRIDE_API_URL="https://www.stridelikeaboss.com"
 
 curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
@@ -279,156 +242,120 @@ curl -H "Authorization: Bearer $STRIDE_API_TOKEN" \
 **Windows PowerShell:**
 
 ```powershell
-$env:STRIDE_API_TOKEN = "stride_abc123def456..."
+$env:STRIDE_API_TOKEN = "{{YOUR_TOKEN_HERE}}"
 $env:STRIDE_API_URL = "https://www.stridelikeaboss.com"
 
 curl -H "Authorization: Bearer $env:STRIDE_API_TOKEN" `
   $env:STRIDE_API_URL/api/tasks/next
 ```
 
-**Windows Command Prompt:**
+**Windows Users:** For complete setup instructions including WSL2, PowerShell, and Git Bash options, see https://www.stridelikeaboss.com/docs/WINDOWS-SETUP.md
+````
 
-```cmd
-set STRIDE_API_TOKEN=stride_abc123def456...
-set STRIDE_API_URL=https://www.stridelikeaboss.com
-
-curl -H "Authorization: Bearer %STRIDE_API_TOKEN%" %STRIDE_API_URL%/api/tasks/next
-```
-
-**2. Add it to `.gitignore` IMMEDIATELY:**
+Then add it to `.gitignore` **immediately**:
 
 ```bash
 echo ".stride_auth.md" >> .gitignore
 ```
 
-**CRITICAL**: This file contains secrets. Never commit it to Git!
+The file format and what an agent does with it are in [AUTHENTICATION.md](AUTHENTICATION.md#the-stride_authmd-file). Windows users: the Windows setup link in both templates (at the end of `.stride_auth.md`, at the top of `.stride.md`) does not resolve on the server today; use [WINDOWS-SETUP.md](WINDOWS-SETUP.md) in this repository instead.
 
 ### Creating `.stride.md`
 
-This file defines the hooks that execute at key points in the workflow. Unlike `.stride_auth.md`, this file **should be committed** to version control so the whole team shares the same workflow.
+This file holds your hooks. Unlike `.stride_auth.md`, **commit it**, so the whole team shares one workflow. The onboarding endpoint serves this template; create it in your project root and replace the commented examples with your project's commands:
 
-**Create the file in your project root:**
+````markdown
+# Stride Configuration
 
-Create a file named `.stride.md` with the following content. Each section defines a hook with its bash commands:
+**Note:** Examples below use Unix/Linux/macOS bash syntax. Windows users should see https://www.stridelikeaboss.com/docs/WINDOWS-SETUP.md for PowerShell equivalents.
 
-#### before_doing
+## before_doing
 
 Executes before starting work on a task (blocking, 60s timeout).
 
 ```bash
 echo "Starting task $TASK_IDENTIFIER: $TASK_TITLE"
 git pull origin main
-# Ensure we have latest code before starting
+# Add your setup commands here
 ```
 
-#### after_doing
+## after_doing
 
-Executes after completing work (blocking, 120s timeout). If this fails, task completion should fail.
+Executes after completing work (blocking, 120s timeout).
+If this fails, task completion should fail.
 
 ```bash
 echo "Running tests for $TASK_IDENTIFIER"
-mix test
-# Or: npm test, pytest, cargo test, etc.
-echo "All tests passed for $TASK_IDENTIFIER"
+# Run your tests here
+# mix test
+# npm test
+# pytest
 ```
 
-#### before_review
+## before_review
 
-Executes before completing task (blocking, 60s timeout).
+Executes when task enters review (blocking, 60s timeout).
+If this fails, task completion should fail.
 
 ```bash
 echo "Creating PR for $TASK_IDENTIFIER"
-gh pr create --title "$TASK_TITLE" --body "Resolves $TASK_IDENTIFIER
-
-This task was completed by an AI agent and is ready for human review."
+# gh pr create --title "$TASK_TITLE" --body "Closes $TASK_IDENTIFIER"
 ```
+
+## after_review
+
+Executes after review approval (blocking, 60s timeout).
+If this fails, mark_reviewed should fail.
+
+```bash
+echo "Deploying $TASK_IDENTIFIER"
+# Add deployment commands here
+```
+````
+
+What to put in each section:
+
+#### before_doing
+
+Runs before the agent starts a task. Get the latest code and dependencies, for example `git pull origin main`.
+
+#### after_doing
+
+Runs before the agent completes a task. Put your quality gate here: tests, linters, a build. If it fails, the task is not completed.
+
+#### before_review
+
+Runs when the completed task enters review. A common use is opening a pull request with `gh pr create`.
 
 #### after_review
 
-Executes after review approval (blocking, 60s timeout).
-
-```bash
-echo "Task $TASK_IDENTIFIER approved and completed"
-# Optional: Trigger deployment, update docs, etc.
-```
-
-**Customize the hooks for your project:**
-- Replace `mix test` with your project's test command
-- Add linting: `mix credo`, `npm run lint`, `cargo clippy`
-- Add build steps: `mix compile`, `npm run build`
-- Add deployment commands in `after_review`
+Runs after the task is approved. A common use is merging or deploying.
 
 ### Hook Types Explained
 
-**Blocking Hooks** (`before_doing`, `after_doing`):
-- ❌ If these fail, the task operation fails
-- ⏱️ Must complete within timeout
-- 🎯 Use for: Tests, required checks, critical setup
+**All hooks are blocking.** If a hook command exits non-zero, the agent stops and fixes the problem instead of moving the task on. A failed `after_doing`, for example, means the task is not completed. The timeout a hook runs under comes with the hook metadata the server returns on claim and complete, not from `.stride.md`.
 
-**Non-Blocking Hooks** (`before_review`, `after_review`):
-- ✅ Task operation succeeds even if these fail
-- 📝 Failures are logged but don't block progress
-- 🎯 Use for: PR creation, notifications, documentation
+A fifth section, `## after_goal`, runs once when the last task of a goal is done. The full list of sections, with the environment variables each hook receives, is in the [Hook Execution Guide](AGENT-HOOK-EXECUTION-GUIDE.md).
+
+### Claim Your First Task
+
+1. On your board, create a small task and drag it from **Backlog** to **Ready**. Agents only claim tasks in **Ready**.
+2. Ask the agent to work it, for example: "Use the stride-workflow skill to claim and work the next Stride task."
+3. The task moves to **Doing**, claimed by the agent for 60 minutes. See [Agent Claims Expire](#agent-claims-expire) for what happens if it runs over.
 
 ## Working Within the Stride Workflow
 
-Once your board and agent are configured, here's how the collaboration works:
+Once your board and agent are set up, the work moves through the board like this.
 
 ### 1. Creating Tasks (Human & Agent)
 
-**For Simple Tasks:**
-1. Open your AI-optimized board
-2. Click "Add task" in the appropriate column (usually **Backlog** or **Ready**)
-3. Fill in the task details:
-   - **Title**: Clear, actionable description
-   - **Description**: Detailed requirements, acceptance criteria
-   - **Complexity**: Estimate (helps with planning)
-   - **Priority**: How urgent is this?
-   - **Required Capabilities**: What skills are needed? (e.g., `code_generation`)
-   - **Needs Review**: ✅ Check this for AI work that needs human approval
+**For simple tasks**, open your board and click the **Add Task** button (the + in a column header), usually in **Backlog**. Give the task a clear title and description, its complexity and priority, any required capabilities, and tick **Needs Review** if a human must approve the result.
 
-**For Larger Tasks or Goals:**
+**For larger work**, ask your agent to break a goal into tasks and create them. With the Claude Code plugin the `stride-workflow` skill handles creation too:
 
-For complex features that need to be broken down into multiple tasks, you can work with your AI agent to decompose the goal and upload it to Stride. This collaborative approach ensures that large projects are properly structured.
+> "I need to implement [describe your goal here]. Please break this down into a goal with tasks and create it in Stride. First read the [Task Writing Guide](./TASK-WRITING-GUIDE.md) so each task has a description, complexity, required capabilities, key files, acceptance criteria and dependencies."
 
-**Working with Your AI Agent:**
-
-Give your AI agent this prompt to break down and upload a goal:
-
-> "I need to implement [describe your goal here]. Please break this down into a goal with tasks and upload it to Stride.
->
-> **Important**: First read the [Task Writing Guide](./TASK-WRITING-GUIDE.md) to understand how to create complete, well-structured tasks. Each task should include all relevant fields such as:
->
-> - Title and description
-> - Complexity and estimated hours
-> - Required capabilities
-> - Key files to modify
-> - Test scenarios and acceptance criteria
-> - Dependencies (if any)
-> - Any other fields from the Task Writing Guide that apply
->
-> Create a goal with multiple complete child tasks, then upload to Stride using the API at the base URL and token from .stride_auth.md. The endpoint is POST /api/tasks and you'll need to create a JSON structure with type: 'goal' and a tasks array.
->
-> **Important**: The API only supports uploading ONE goal per request. If you need to create multiple goals, you must make separate API calls for each goal."
-
-**✨ Stride Plugin Skills Available:**
-- Use `stride-workflow` for the complete task lifecycle (recommended entry point)
-- Use `stride-claiming-tasks` before claiming tasks (standalone mode)
-- Use `stride-completing-tasks` before marking tasks complete (standalone mode)
-- Use `stride-creating-tasks` for individual tasks and defects
-- Use `stride-creating-goals` for goals with nested tasks or batch creation
-
-These skills are available via the Stride plugin for Claude Code, Gemini CLI, Copilot CLI, Codex CLI, and OpenCode:
-- `stride-workflow`: Single orchestrator that walks through claim → explore → implement → review → complete
-- `stride-claiming-tasks`: Ensures proper prerequisite verification and hook execution before claiming
-- `stride-completing-tasks`: Ensures proper hook execution order and prevents quality gate bypasses
-- `stride-creating-tasks`: Prevents 3+ hour exploration failures from minimal task specifications
-- `stride-creating-goals`: Ensures proper goal structure and prevents batch creation format errors
-
-**Example: If you ask your agent to implement user authentication, it would:**
-
-1. Analyze the requirement and break it into logical tasks
-2. Create a JSON structure like this:
+The agent sends something like this to `POST /api/tasks`:
 
 ```json
 {
@@ -437,252 +364,79 @@ These skills are available via the Stride plugin for Claude Code, Gemini CLI, Co
     "description": "Add complete user auth system with signup, login, and session management",
     "type": "goal",
     "complexity": "large",
-    "required_capabilities": ["code_generation", "testing", "security"],
+    "required_capabilities": ["code_generation", "testing", "security_analysis"],
     "tasks": [
       {
         "title": "Create user database schema",
         "description": "Design and implement user table with proper indexes and constraints",
         "complexity": "small",
-        "required_capabilities": ["code_generation", "database"]
+        "required_capabilities": ["code_generation", "database_design"]
       },
       {
         "title": "Implement signup endpoint",
         "description": "POST /api/users with validation, password hashing, and error handling",
         "complexity": "medium",
-        "required_capabilities": ["code_generation", "api_design", "security"]
-      },
-      {
-        "title": "Add login endpoint",
-        "description": "POST /api/login with JWT token generation and secure session handling",
-        "complexity": "medium",
-        "required_capabilities": ["code_generation", "api_design", "security"]
+        "required_capabilities": ["code_generation", "api_design", "security_analysis"]
       }
     ]
   }
 }
 ```
 
-3. Upload it to Stride using curl or API client
-4. Confirm the goal and tasks appear in your board
+New tasks land in **Backlog**. See [TASK-WRITING-GUIDE](./TASK-WRITING-GUIDE.md) for what makes a task easy for an agent to finish.
 
 #### Creating Multiple Goals
 
-When you need to upload several related goals (such as planning a sprint or project phase), you have two options:
-
 ##### Option 1: Batch Upload (Recommended)
 
-- Use `POST /api/tasks/batch` to create multiple goals in a single API call
-- More efficient than making separate requests
-- Ideal for project planning and sprint setup
-- See [POST /api/tasks/batch](./api/post_tasks_batch.md) for complete documentation
+`POST /api/tasks/batch` creates several goals in one call; its root key is `goals`. See [POST /api/tasks/batch](./api/post_tasks_batch.md).
 
 ##### Option 2: Individual Uploads
 
-- Use `POST /api/tasks` for each goal separately
-- Useful when goals are created individually or over time
-- Each API call creates ONE goal with its child tasks
-
-**Benefits of This Approach:**
-- Your AI agent helps decompose complex work into actionable tasks
-- Tasks are automatically linked as parent-child relationships
-- The agent can then claim and work through tasks sequentially
-- You maintain visibility of overall progress through the goal structure
-
-See [TASK-WRITING-GUIDE](./TASK-WRITING-GUIDE.md) for more details on creating effective tasks.
+`POST /api/tasks` creates one goal, with its child tasks, per call. See [POST /api/tasks](./api/post_tasks.md).
 
 ### 2. Human Reviews and Prepares Tasks (Human)
 
-Once tasks are created (either manually or by an AI agent), humans should review them before making them available for agents to claim.
+Before agents can claim a task, a human reviews it in **Backlog**:
 
-**Review Process:**
+1. Check the description and acceptance criteria, the required capabilities, the complexity and the dependencies.
+2. Decide on review. Tick **Needs Review** when the task touches production code, security or data, or when you want to see the work before it counts as done. Leave it unticked for routine, low-risk work that your hooks check well.
+3. Drag the task to **Ready**. Agents only see tasks in **Ready**.
 
-1. **Review tasks in the Backlog column**
-   - Check that task descriptions are clear and complete
-   - Read the acceptance criteria and make sure you agree with it
-   - Verify required capabilities are appropriate
-   - Ensure complexity estimates are reasonable
-   - Confirm dependencies are set correctly
-
-2. **Decide on review requirements**
-   - **Check "Needs Review"** if:
-     - Task affects production code or critical functionality
-     - Task involves security, authentication, or data handling
-     - You want to review the AI's work before it's considered done
-     - Task is complex or has potential for significant impact
-   - **Leave "Needs Review" unchecked** if:
-     - Task is routine or low-risk (e.g., documentation updates, simple bug fixes)
-     - You trust the agent to handle it autonomously
-     - Tests and hooks provide sufficient quality control
-
-3. **Move tasks to the Ready column**
-   - Drag tasks from **Backlog** to **Ready** when they're ready for agents to claim
-   - Agents can only see and claim tasks in the **Ready** column
-   - Prioritize tasks by position (agents claim highest priority tasks first)
-
-**Best Practices:**
-
-- Keep the Ready column populated so agents always have work available
-- Start with `needs_review=true` for most tasks until you build trust with your agent
-- Gradually shift to `needs_review=false` for routine tasks as confidence grows
-- Review and prioritize the Ready column frequently as the Agent will complete the task quickly
+Start with **Needs Review** on most tasks and relax it for routine work as you come to trust the agent. Keep **Ready** stocked: agents work quickly.
 
 ### 3. Agent Claims Task
 
-**From the agent's perspective:**
+The agent runs its `before_doing` hook and calls `POST /api/tasks/claim`. With the Claude Code plugin both happen automatically inside `stride-workflow`; other agents follow [POST /api/tasks/claim](api/post_tasks_claim.md) and [AI-WORKFLOW.md](AI-WORKFLOW.md).
 
-```bash
-# CRITICAL: Execute before_doing hook FIRST and capture result
-START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c 'git pull origin main' 2>&1)
-EXIT_CODE=$?
-DURATION=$(($(date +%s%3N) - START_TIME))
+Stride gives the agent the highest-priority task in **Ready** (then the highest on the board) that meets all of these:
 
-if [ $EXIT_CODE -ne 0 ]; then
-  echo "before_doing hook failed - cannot claim task"
-  exit 1
-fi
+- **Capabilities match**: the token has every capability the task requires, or the token has none.
+- **Dependencies satisfied**: every task in its `dependencies` is completed.
+- **No file conflicts**: none of its `key_files` is listed by a task in **Doing** or **Review**.
 
-# Agent calls the claim endpoint WITH hook result (required)
-curl -X POST https://your-stride-instance.com/api/tasks/claim \
-  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"agent_name\": \"Claude Sonnet 4.5\",
-    \"before_doing_result\": {
-      \"exit_code\": $EXIT_CODE,
-      \"output\": \"$OUTPUT\",
-      \"duration_ms\": $DURATION
-    }
-  }"
-```
-
-**What happens:**
-1. ⚡ **Agent executes `before_doing` hook FIRST** (pulls latest code, etc.) and captures result
-2. ✅ Stride validates hook was executed successfully (exit_code 0)
-3. ✅ Stride selects the highest priority task that matches:
-   - Agent's capabilities
-   - All dependencies are completed
-   - No file conflicts with tasks currently in Doing or Review
-4. 📝 Task moves to **Doing** column
-5. 💻 Agent begins work
-
-**Important Selection Criteria:**
-
-Agents can only claim tasks that meet ALL of these requirements:
-- **Capabilities match**: Task's `required_capabilities` must be a subset of the agent's capabilities
-- **Dependencies satisfied**: All tasks listed in the task's `dependencies` field must be completed
-- **No file conflicts**: If the task has `key_files` specified, none of those files can overlap with files in tasks currently in Doing or Review columns
-
-**Key Files and Conflict Prevention:**
-
-Tasks can specify `key_files` - a list of file paths that will be modified. This prevents merge conflicts by ensuring only one task modifies a given file at a time:
-
-- If a task specifies `key_files: ["lib/auth.ex", "lib/user.ex"]`
-- And another task in Doing or Review also lists `"lib/auth.ex"` in its `key_files`
-- The second task will NOT be claimable until the first task is completed
-
-This automatic conflict prevention ensures agents don't create competing changes to the same files.
+The task moves to **Doing**. The `key_files` rule stops two agents from editing the same file at once: a task that shares a key file with a task in **Doing** or **Review** waits until that task is done.
 
 ### 4. Agent Completes Work
 
-**From the agent's perspective:**
+When the work is done, the agent runs `after_doing` (your tests and checks), calls `PATCH /api/tasks/:id/complete`, and then runs `before_review`. The completion body is documented in [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md).
 
-```bash
-# CRITICAL: Execute after_doing hook FIRST and capture result
-START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 120 bash -c 'mix test' 2>&1)
-EXIT_CODE=$?
-DURATION=$(($(date +%s%3N) - START_TIME))
-
-if [ $EXIT_CODE -ne 0 ]; then
-  echo "after_doing hook failed - tests did not pass, cannot complete task"
-  exit 1
-fi
-
-# Agent completes the task WITH hook result (required)
-curl -X PATCH https://your-stride-instance.com/api/tasks/123/complete \
-  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"agent_name\": \"Claude Sonnet 4.5\",
-    \"time_spent_minutes\": 45,
-    \"completion_notes\": \"All tests passing\",
-    \"after_doing_result\": {
-      \"exit_code\": $EXIT_CODE,
-      \"output\": \"$OUTPUT\",
-      \"duration_ms\": $DURATION
-    }
-  }"
-```
-
-**What happens:**
-1. ⚡ **Agent executes `after_doing` hook FIRST** (runs tests - **must pass**) and captures result
-2. ✅ Stride validates hook was executed successfully (exit_code 0)
-3. 🔧 Agent receives remaining hook metadata: `before_review`, and conditionally `after_review`
-4. ⚡ Agent executes `before_review` hook (creates PR)
-5. 📋 **If `needs_review=true`**: Task moves to **Review** column → STOP and wait for human
-6. 📋 **If `needs_review=false`**: Agent executes `after_review` hook, task moves to **Done** → Agent claims next task
+- **Needs Review not ticked**: the task moves to **Done** and the agent claims the next task.
+- **Needs Review ticked**: the task moves to **Review** and the agent stops until a human decides.
 
 ### 5. Human Reviews Work (For Tasks Requiring Review)
 
-**As a human reviewer:**
+1. Look at the agent's work, for example the pull request your `before_review` hook opened.
+2. Open **Review queue** in the side navigation and select the task.
+3. Click **Approve** to move the task to **Done**, or **Request changes** and write what needs to change. A task with changes requested stays in **Review** until the agent picks up your notes and calls `PATCH /api/tasks/:id/mark_reviewed`, which moves it back to **Doing**, still assigned to the agent.
 
-1. **View the PR** created by the `before_review` hook
-
-2. **Review the code changes:**
-   - Check logic and correctness
-   - Verify tests are adequate
-   - Ensure it meets requirements
-   - Look for security issues
-
-3. **In Stride, open the task in Review column**
-
-4. **Make your decision:**
-
-   **Option A: Approve**
-   - Click "Approve" in the task
-   - Task status changes to "approved"
-   - Inform your AI agent that the review is complete
-
-   **Option B: Request Changes**
-   - Click "Request Changes"
-   - Add detailed feedback in the comment
-   - Task moves back to **Ready**
-   - Inform your AI agent that changes are needed
-   - Agent can claim it again and address feedback
-
-5. **Notify the agent that review is complete**
-
-Once you've approved or requested changes in Stride, tell your AI agent:
-
-> "The review for task [task identifier] is complete. Please finalize it."
-
-**From the agent's perspective:**
-
-```bash
-# Agent calls the mark_reviewed endpoint
-curl -X PATCH https://your-stride-instance.com/api/tasks/123/mark_reviewed \
-  -H "Authorization: Bearer $STRIDE_API_TOKEN"
-```
-
-**What happens:**
-- **If approved**:
-  - ✅ Agent receives `after_review` hook metadata
-  - ⚡ Agent executes `after_review` hook (merge PR, deploy, etc.)
-  - 📋 Task moves to **Done**
-  - 🔄 Agent claims next task from Ready
-- **If changes requested**:
-  - 📋 Task is already back in **Ready** column
-  - 🔄 Agent can claim it again to address feedback
+Tell your agent when you have reviewed a task. What it does next is in [REVIEW-WORKFLOW](./REVIEW-WORKFLOW.md) and [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md).
 
 ### 6. Continuous Agent Work Loop
 
-**Recommended: Use the `stride-workflow` orchestrator.** It handles the full lifecycle in a single skill — no need to remember which skills to activate at which moments.
-
-**The workflow IS the automation. Every step exists because skipping it caused failures. Following every step IS the fast path.**
+Use the `stride-workflow` skill. It runs the whole lifecycle, so the agent never has to remember which step comes next:
 
 ```
-Orchestrator flow (stride-workflow):
 1. Claim task (hooks fire automatically or are executed manually)
 2. Explore codebase (decision matrix determines depth)
 3. Implement changes
@@ -690,7 +444,6 @@ Orchestrator flow (stride-workflow):
 5. Execute hooks (after_doing, before_review)
 6. Complete task
 7. IF needs_review = false:
-   → after_review hook fires
    → Task to Done
    → Loop to step 1 (claim next task)
 8. IF needs_review = true:
@@ -698,183 +451,74 @@ Orchestrator flow (stride-workflow):
    → STOP and wait for human
 ```
 
-**Manual flow (without orchestrator):**
-
-```
-1. Execute before_doing hook (capture exit_code, output, duration_ms)
-2. Claim task from Ready with before_doing_result
-3. Do the work
-4. Execute after_doing hook (tests must pass - capture exit_code, output, duration_ms)
-5. Complete task with after_doing_result
-6. Execute before_review hook (create PR)
-7. IF needs_review = false:
-   → Execute after_review hook
-   → Task to Done
-   → GOTO step 1 (claim next task)
-8. IF needs_review = true:
-   → Task to Review
-   → STOP and wait for human
-```
-
-**Key Point**: Agents should work continuously through the full workflow — claiming, exploring, implementing, reviewing, and completing tasks. Do not prompt the user between steps, but do not skip steps either.
-
-See [REVIEW-WORKFLOW](./REVIEW-WORKFLOW.md) for more details.
+The agent works through these steps without asking between them, and without skipping any: skipped steps cost more in rework than they save. Agents without the plugin follow the same loop by hand, as described in [AI-WORKFLOW.md](AI-WORKFLOW.md).
 
 ## Best Practices
 
 ### For Humans
 
-**Task Writing:**
-- ✅ Be specific in descriptions - AI agents need clarity
-- ✅ Include acceptance criteria
-- ✅ Set appropriate complexity levels
-- ✅ Use `needs_review=true` for anything that could impact production
-- ✅ Group related work into Goals with tasks
-
-**Review Process:**
-- ✅ Review promptly - don't let agents sit idle
-- ✅ Give detailed feedback when requesting changes
-- ✅ Trust the agent for routine work, focus on architecture and edge cases
-- ✅ Check test coverage, not just functionality
-
-**Workflow Hooks:**
-- ✅ Keep `after_doing` fast (under 2 minutes)
-- ✅ Make test failures clear and actionable
-- ✅ Use PR templates to guide agent's commit messages
+- Write specific tasks with acceptance criteria and key files; agents do best with clear specifications.
+- Tick **Needs Review** for anything that could affect production.
+- Group related work into goals.
+- Review promptly and give specific feedback when you request changes.
+- Keep `after_doing` fast and its failures easy to read.
 
 ### For AI Agents
 
-**Task Selection:**
-- ✅ Only claim tasks matching your capabilities
-- ✅ Check dependencies before claiming
-- ✅ Respect complexity estimates in planning
-
-**Work Quality:**
-- ✅ Write tests for all new code
-- ✅ Follow project conventions and style guides
-- ✅ Commit frequently with clear messages
-- ✅ Document non-obvious decisions
-
-**Hook Execution:**
-- ✅ Execute hooks BEFORE calling API endpoints (mandatory)
-- ✅ Include hook results in API requests (exit_code, output, duration_ms)
-- ✅ Handle hook failures gracefully
-- ✅ Read hook output for error messages
-- ✅ Don't call claim endpoint if `before_doing` fails
-- ✅ Don't call complete endpoint if `after_doing` fails
-
-**Continuous Work:**
-- ✅ Keep claiming tasks until you hit `needs_review=true`
-- ✅ Don't wait between tasks — but don't skip steps either
-- ✅ Following every step IS the fast path — skipping steps causes rework
+- Use `stride-workflow`, and follow every step it gives you.
+- Run the hooks; never complete a task whose `after_doing` failed.
+- Write tests for new code and follow the project's conventions.
+- Keep working through tasks until one needs review.
 
 ### For Teams
 
-**Board Organization:**
-- ✅ Use one AI-optimized board per project/component
-- ✅ Regular backlog grooming to keep Ready column full
-- ✅ Set up notifications for Review column
-- ✅ Use board description to document project-specific conventions
-
-**Agent Management:**
-- ✅ Rotate API tokens regularly
-- ✅ Review agent activity logs
-- ✅ Adjust capabilities based on agent performance
-- ✅ Revoke tokens for inactive agents
-
-**Workflow Optimization:**
-- ✅ Monitor hook success rates
-- ✅ Optimize slow test suites
-- ✅ Automate merge after approval (if confident)
-- ✅ Set up metrics to track agent productivity
+- Use one AI Optimized board per project or component.
+- Groom the backlog so **Ready** always has work.
+- Give each agent its own token, name it clearly, and revoke tokens you no longer use.
+- Watch hook failures and slow test suites; both slow agents down.
 
 ## Troubleshooting
 
 ### Agent Can't See Any Tasks
 
-**Possible causes:**
-1. ❌ No tasks in Ready column → Add tasks
-2. ❌ Tasks require capabilities agent doesn't have → Check `required_capabilities` on tasks
-3. ❌ Agent token doesn't have right capabilities → Check API token configuration
-4. ❌ Tasks have unmet dependencies → Ensure dependency tasks are completed
+1. **Ready** is empty. Drag tasks into **Ready**.
+2. The tasks require capabilities the token lacks, or a capability name on the token is misspelled. Compare the task's `required_capabilities` with the token's capabilities on the **Tokens** tab.
+3. The tasks' dependencies are not completed yet.
+4. Every Ready task shares a key file with a task in **Doing** or **Review**.
 
-**Solution**: Call `/api/tasks/next` to see what's available and why
+`GET /api/tasks/next` returns the task the agent would get; see [GET /api/tasks/next](api/get_tasks_next.md).
 
 ### Agent Claims Expire
 
-**Symptom**: Task goes back to Ready after 60 minutes
-
-**Cause**: Automatic claim expiration prevents tasks from being stuck
-
-**Solution**:
-- Agent should complete tasks within 60 minutes
-- For long-running tasks, break them into smaller tasks
-- Agent can re-claim if needed
+A claim lasts 60 minutes. When it lapses before the task is completed, the task stays in **Doing**. Stride also notifies the person whose token claimed it, except on a free board while paid plans are enforced, where board notifications are not sent. To let another agent pick the task up, drag it back to **Ready**: an expired claim no longer reserves it. Break long work into smaller tasks so claims do not run out.
 
 ### Hooks Keep Failing
 
-**Common issues:**
+- **`before_doing`**: check git credentials and network access to the repository.
+- **`after_doing`**: usually the tests really are failing, and the agent must fix the code. Otherwise check for missing test dependencies or a slow suite.
+- **`before_review`**: a pull-request command needs the GitHub CLI (`gh`) installed and signed in with `gh auth login`.
 
-**`before_doing` fails:**
-- Check git credentials for pulling latest
-- Ensure agent has file system access
-- Verify network access to repositories
-
-**`after_doing` fails:**
-- **Most common**: Tests are actually failing → Agent needs to fix code
-- Missing test dependencies → Update setup
-- Test timeout → Increase hook timeout or optimize tests
-
-**`before_review` fails:**
-- PR creation requires GitHub CLI (`gh`) → Install it
-- GitHub auth issues → Configure `gh auth login`
-- Branch naming conflicts → Use unique branch names
-
-**General debugging:**
-- Check hook output in agent logs
-- Test hooks manually before using with agents
-- Simplify hooks initially, add complexity gradually
-
-**Claude Code users (v1.5.0+):** If you're using the Stride plugin's automatic hook execution and a hook fails, the `stride:hook-diagnostician` agent can parse the structured JSON output and return a prioritized fix plan. The failure JSON includes the exact command that failed, which commands completed, and which commands didn't run yet.
+Run a hook's commands by hand first to see whether they work outside the agent. With the Claude Code plugin, a failed hook's output names the command that failed, and the `stride:hook-diagnostician` agent turns it into a fix plan.
 
 ### Tasks Stuck in Review
 
-**Causes:**
-- Humans not reviewing promptly
-- Notifications not working
-- Unclear what needs review
-
-**Solutions:**
-- Set up Slack/email notifications for Review column
-- Daily review standup
-- PR template with checklist
-- Empower agent to mark routine tasks as `needs_review=false`
+Tasks wait in **Review** until a human decides. Check the **Review queue** daily, and leave **Needs Review** unticked for routine work your hooks check well.
 
 ### Agent Completed Wrong Work
 
-**Prevention:**
-- Write clearer task descriptions
-- Include examples in task description
-- Use `needs_review=true` for critical tasks
-- Improve test coverage so `after_doing` catches issues
-
-**Recovery:**
-- Request changes with specific feedback
-- Update task description for clarity
-- Consider if agent has wrong capabilities assigned
+Request changes with specific feedback, then tighten the task: clearer descriptions, examples, acceptance criteria, and tests that `after_doing` will catch. Check that the token's capabilities fit the work you give it.
 
 ## Next Steps
 
-Now that you're set up:
-
-1. **Start small**: Create a few simple tasks with `needs_review=true`
-2. **Observe**: Watch how your agent works through tasks
-3. **Refine hooks**: Optimize your test suite and PR process
-4. **Build trust**: Gradually use `needs_review=false` for routine work
-5. **Scale up**: Add more complex tasks and goals
+1. **Start small**: a few simple tasks with **Needs Review** ticked.
+2. **Observe**: watch how the agent works through them.
+3. **Refine hooks**: speed up your checks and your pull-request flow.
+4. **Build trust**: leave **Needs Review** unticked for routine work.
+5. **Scale up**: hand the agent goals with several tasks.
 
 ## Additional Resources
 
+- [Authentication Guide](./AUTHENTICATION.md) - Board and workspace tokens, capability scopes
 - [Agent API Workflow Guide](./AI-WORKFLOW.md) - Complete API workflow for agents
 - [Task Writing Guide](./TASK-WRITING-GUIDE.md) - How to write effective tasks
 - [Agent Capabilities](./AGENT-CAPABILITIES.md) - Understanding the capability system
@@ -886,7 +530,3 @@ Now that you're set up:
 - Check the [Changelog](../CHANGELOG.md) for recent changes
 - Submit issues via the About page
 - Review existing documentation at `/api/agent/onboarding`
-
----
-
-**Remember**: The goal of Stride is to amplify human capability through AI collaboration. Humans focus on architecture, design decisions, and quality oversight while AI agents handle the repetitive implementation work. Together, you can achieve more than either could alone.
