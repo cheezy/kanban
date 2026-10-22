@@ -56,6 +56,36 @@ defmodule Kanban.DocLinks do
     end)
   end
 
+  @doc """
+  Returns the repository-relative paths that the relative links in `markdown`
+  point at, in document order, as though it were the file at `source`
+  (relative to `root`). Targets are resolved exactly as the link check
+  resolves them: the `#fragment` is dropped, the path is URL-decoded, and it is
+  expanded against the directory of `source`, or against `root` when it starts
+  with `/`. Same-file fragments and targets outside the repository are left
+  out. Whether the path exists is not checked.
+  """
+  def linked_paths(source, markdown, root) when is_binary(markdown) do
+    root = Path.expand(root)
+
+    markdown
+    |> links()
+    |> Enum.flat_map(fn {_line, target} -> linked_path(source, target, root) end)
+  end
+
+  defp linked_path(source, target, root) do
+    case split_target(target) do
+      {"", _fragment} -> []
+      {path, _fragment} -> path |> expand(source, root) |> repository_path(root)
+    end
+  end
+
+  defp repository_path(root, root), do: []
+
+  defp repository_path(file, root) do
+    if inside?(file, root), do: [Path.relative_to(file, root)], else: []
+  end
+
   defp line_targets(line) do
     prose = String.replace(line, @code_span, "")
 

@@ -276,10 +276,17 @@ Humans maintain control through the review workflow. AI handles implementation, 
 
 ## Documentation
 
+Start with the [documentation index](docs/README.md). It lists every doc in `docs/` by audience and marks which ones are historical records rather than current guidance. The guides for board owners, AI agent integrators and Organization admins are listed below.
+
 ### Getting Started
 
 - **[Getting Started with AI Agents](docs/GETTING-STARTED-WITH-AI.md)** ⭐ Start here!
 - [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) - How to write effective tasks for AI
+
+### Account and Board Settings
+
+- [Two-Factor Authentication](docs/TWO-FACTOR-AUTHENTICATION.md) - Add a second sign-in factor to your account
+- [Task Form Field Visibility](docs/TASK-FORM-FIELD-VISIBILITY.md) - Which fields the task form shows and how a board owner turns optional fields on or off
 
 ### Workflow & Integration
 
@@ -288,6 +295,24 @@ Humans maintain control through the review workflow. AI handles implementation, 
 - [Review Workflow](docs/REVIEW-WORKFLOW.md) - Mastering the review process
 - [Unclaim Tasks Guide](docs/UNCLAIM-TASKS.md) - When and how to unclaim tasks
 - [Webhooks and Slack](docs/webhooks.md) - Send a board's task events to your own systems or a Slack or Discord channel, and verify webhook signatures
+- [Stride MCP Server](docs/MCP.md) - Use Stride through its Model Context Protocol server instead of hand-built API calls
+- [Multi-Agent Instructions](docs/MULTI-AGENT-INSTRUCTIONS.md) - Which instruction files each supported AI coding assistant uses
+- [How Agents Remember Stride Context](docs/AGENT-MEMORY-SOLUTION.md) - Keeping the Stride workflow in an agent's mind between sessions
+- [Windows Setup Guide](docs/WINDOWS-SETUP.md) - Running Stride agents on Windows with WSL2, PowerShell or Git Bash
+
+### Multi-Agent Instruction Files
+
+- [AGENTS.md instructions](docs/multi-agent-instructions/AGENTS.md) - For assistants that read an `AGENTS.md` file
+- [GitHub Copilot instructions](docs/multi-agent-instructions/copilot-instructions.md) - For GitHub Copilot
+- [Gemini Code Assist instructions](docs/multi-agent-instructions/GEMINI.md) - For Gemini Code Assist
+- [Stride skill (single file)](docs/multi-agent-instructions/SKILL.md) - The `stride` skill as one file, for assistants such as OpenCode
+- [stride-workflow skill](docs/multi-agent-instructions/skills/stride-workflow/SKILL.md) - The orchestrator that runs a task from claim to completion
+- [stride-claiming-tasks skill](docs/multi-agent-instructions/skills/stride-claiming-tasks/SKILL.md) - Claiming a task
+- [stride-completing-tasks skill](docs/multi-agent-instructions/skills/stride-completing-tasks/SKILL.md) - Completing a task
+- [stride-creating-tasks skill](docs/multi-agent-instructions/skills/stride-creating-tasks/SKILL.md) - Creating work tasks and defects
+- [stride-creating-goals skill](docs/multi-agent-instructions/skills/stride-creating-goals/SKILL.md) - Creating goals with nested tasks
+- [stride-enriching-tasks skill](docs/multi-agent-instructions/skills/stride-enriching-tasks/SKILL.md) - Filling in a sparse task before work starts
+- [stride-subagent-workflow skill](docs/multi-agent-instructions/skills/stride-subagent-workflow/SKILL.md) - Deciding when to dispatch subagents during a task
 
 ### Configuration & Management
 
@@ -297,13 +322,41 @@ Humans maintain control through the review workflow. AI handles implementation, 
 - [Telemetry Events](docs/telemetry.md) - Every telemetry event, its privacy rule, attaching a handler and metrics retention
 - [Organizations Launch Runbook](docs/organizations-launch-runbook.md) - The ordered launch-day steps for enforcing plans, the verification checklist, rollback and the weekly locked-feature click query
 
+### Organization Administration
+
+- [Single Sign-On](docs/single-sign-on.md) - Let an Organization's members sign in through your identity provider
+- [SCIM Provisioning](docs/scim-provisioning.md) - Manage an Organization's members from your identity provider
+- [Organization Security Policies](docs/organization-security-policies.md) - Require two-factor authentication and set how long audit events are kept
+
+### Plugin Contracts
+
+- [Completion Review Report Contract](docs/completion-contract.md) - What a fully-populated review report on a completion payload must contain
+- [Per-File Diff Contract](docs/diff-contract.md) - The shape of the per-file diff carried on a completion payload
+- [Matrix Row Refusal Contract](docs/matrix-row-refusal-contract.md) - What every agent does with a behaviour/test matrix row it must not follow
+
 ### API Reference
 
 - [API Documentation](docs/api/README.md) - Complete API reference
+- [GET /api/agent/onboarding](docs/api/get_agent_onboarding.md) - Public onboarding information for a new agent
+- [GET /api/boards](docs/api/get_boards.md) - List the boards a token can be used on
+- [GET /api/openapi.json](docs/api/get_openapi_json.md) - Machine-readable OpenAPI description of the API
 - [GET /api/tasks](docs/api/get_tasks.md) - List tasks (filters, cursor pagination)
-- [POST /api/tasks](docs/api/post_tasks.md) - Create tasks
-- [POST /api/tasks/claim](docs/api/post_tasks_claim.md) - Claim tasks
+- [GET /api/tasks/:id](docs/api/get_tasks_id.md) - Fetch one task
+- [GET /api/tasks/next](docs/api/get_tasks_next.md) - Find the next task to claim
+- [GET /api/tasks/:id/comments](docs/api/get_tasks_id_comments.md) - List a task's comments
+- [GET /api/tasks/:id/dependencies](docs/api/get_tasks_id_dependencies.md) - List a task's dependencies
+- [GET /api/tasks/:id/dependents](docs/api/get_tasks_id_dependents.md) - List the tasks that depend on a task
+- [GET /api/tasks/:id/tree](docs/api/get_tasks_id_tree.md) - Fetch a goal or task with its children
+- [PATCH /api/tasks/:id](docs/api/patch_tasks_id.md) - Update a task
 - [PATCH /api/tasks/:id/complete](docs/api/patch_tasks_id_complete.md) - Complete tasks
+- [PATCH /api/tasks/:id/mark_done](docs/api/patch_tasks_id_mark_done.md) - Move a task from Review straight to Done
+- [PATCH /api/tasks/:id/mark_reviewed](docs/api/patch_tasks_id_mark_reviewed.md) - Record the outcome of a human review
+- [POST /api/tasks](docs/api/post_tasks.md) - Create tasks
+- [POST /api/tasks/batch](docs/api/post_tasks_batch.md) - Create several goals in one request
+- [POST /api/tasks/claim](docs/api/post_tasks_claim.md) - Claim tasks
+- [POST /api/tasks/:id/comments](docs/api/post_tasks_id_comments.md) - Add a comment to a task
+- [POST /api/tasks/:id/unclaim](docs/api/post_tasks_id_unclaim.md) - Release a claimed task
+- [PUT /api/tasks/:id/changed_files](docs/api/put_tasks_id_changed_files.md) - Upload the per-file diff snapshot for a task
 
 ## Project Guidelines
 
