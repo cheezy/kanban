@@ -295,6 +295,7 @@ Humans maintain control through the review workflow. AI handles implementation, 
 - [Agent Capabilities](docs/AGENT-CAPABILITIES.md) - Understanding capabilities
 - [Estimation & Feedback](docs/ESTIMATION-FEEDBACK.md) - Improving task estimates
 - [Telemetry Events](docs/telemetry.md) - Every telemetry event, its privacy rule, attaching a handler and metrics retention
+- [Organizations Launch Runbook](docs/organizations-launch-runbook.md) - The ordered launch-day steps for enforcing plans, the verification checklist, rollback and the weekly locked-feature click query
 
 ### API Reference
 
