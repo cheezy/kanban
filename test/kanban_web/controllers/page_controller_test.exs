@@ -273,6 +273,71 @@ defmodule KanbanWeb.PageControllerTest do
     assert html_response(conn, 200)
   end
 
+  describe "GET /changelog Organizations announcement" do
+    test "is the newest entry, above every release section", %{conn: conn} do
+      body = conn |> get(~p"/changelog") |> html_response(200)
+
+      {announcement_at, _} = :binary.match(body, "data-changelog-announcement")
+      {first_release_at, _} = :binary.match(body, ~s(<section class="mb-10">\n))
+
+      assert announcement_at < first_release_at
+    end
+
+    test "lists what becomes Organization-only, what stays free and the 3-person limit",
+         %{conn: conn} do
+      text =
+        conn
+        |> get(~p"/changelog")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("[data-changelog-announcement]")
+        |> LazyHTML.text()
+
+      assert text =~ "Announcing Organizations and the Free plan"
+      assert text =~ "Launch date: to be announced on this page."
+
+      for paid <- [
+            "Notifications",
+            "Bulk actions",
+            "Integrations (webhooks)",
+            "Task telemetry fields",
+            "MCP access"
+          ] do
+        assert text =~ paid
+      end
+
+      assert text =~ "paused, not deleted"
+      assert text =~ "Unlimited boards, tasks and goals"
+      assert text =~ "The full REST API and client-side hooks"
+      assert text =~ "Metrics and exports"
+      assert text =~ "Up to 3 people per board — AI agents do not count"
+      assert text =~ "Existing boards keep every member they already have."
+      assert text =~ "Tasks waiting for you are always listed in the Review queue and My Work."
+    end
+
+    test "links to the Review queue, My Work and the pricing contact form with in-app paths",
+         %{conn: conn} do
+      announcement =
+        conn
+        |> get(~p"/changelog")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("[data-changelog-announcement]")
+
+      assert announcement |> LazyHTML.query("a[href='/pricing#contact']") |> Enum.count() == 1
+      assert announcement |> LazyHTML.query("a[href='/review']") |> Enum.count() == 1
+      assert announcement |> LazyHTML.query("a[href='/my-work']") |> Enum.count() == 1
+    end
+
+    test "renders under the app shell for a signed-in user", %{conn: conn} do
+      %{conn: conn} = register_and_log_in_user(%{conn: conn})
+      body = conn |> get(~p"/changelog") |> html_response(200)
+
+      assert body =~ "data-changelog-announcement"
+      assert body =~ "Announcing Organizations and the Free plan"
+    end
+  end
+
   test "CHANGELOG.md and the /changelog page each have at most one [Unreleased] section",
        %{conn: conn} do
     # New entries go under the existing [Unreleased] heading rather than a

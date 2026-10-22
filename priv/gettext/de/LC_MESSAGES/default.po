@@ -991,7 +991,7 @@ msgid "About Tango"
 msgstr "Über Tango"
 
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:22
-#: lib/kanban_web/controllers/page_html/changelog.html.heex:64
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:193
 #: lib/kanban_web/controllers/page_html/tango.html.heex:22
 #: lib/kanban_web/controllers/page_html/tango.html.heex:190
 #, elixir-autogen, elixir-format
@@ -4042,6 +4042,7 @@ msgstr "Die Hooks `before_doing`, `after_doing`, `before_review` und `after_revi
 msgid "Structured schema, not free-text"
 msgstr "Strukturiertes Schema, kein Freitext"
 
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:175
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:119
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:140
 #, elixir-autogen, elixir-format
@@ -4297,6 +4298,7 @@ msgstr "Unterelemente nach „Bereit“ hochstufen"
 
 #: lib/kanban_web/components/notifications_locked.ex:32
 #: lib/kanban_web/components/side_nav.ex:232
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:145
 #: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
@@ -9122,6 +9124,7 @@ msgstr "Benachrichtigung nicht gefunden."
 
 #: lib/kanban_web/components/locked_feature.ex:136
 #: lib/kanban_web/components/notification_bell.ex:93
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:103
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:83
 #: lib/kanban_web/live/notification_live/index.ex:38
 #: lib/kanban_web/live/notification_live/index.html.heex:5
@@ -10107,6 +10110,7 @@ msgstr[1] "%{count} Aufgaben sind Ihnen zugewiesen"
 
 #: lib/kanban_web/components/notifications_locked.ex:41
 #: lib/kanban_web/components/side_nav.ex:218
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:153
 #: lib/kanban_web/live/my_work_live.ex:27
 #: lib/kanban_web/live/my_work_live.ex:39
 #: lib/kanban_web/live/my_work_live.ex:45
@@ -10158,6 +10162,7 @@ msgstr "Massenaktion fehlgeschlagen. Es wurde nichts geändert."
 
 #: lib/kanban_web/components/bulk_action_bar.ex:148
 #: lib/kanban_web/components/locked_feature.ex:140
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:104
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:99
 #, elixir-autogen, elixir-format
 msgid "Bulk actions"
@@ -11163,6 +11168,7 @@ msgid "Notifications (available to organizations)"
 msgstr "Benachrichtigungen (für Organisationen verfügbar)"
 
 #: lib/kanban_web/components/notifications_locked.ex:22
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "Tasks waiting for you are always listed in the Review queue and My Work."
 msgstr "Aufgaben, die auf Sie warten, finden Sie immer in der Prüfungswarteschlange und unter Meine Arbeit."
@@ -12740,16 +12746,19 @@ msgstr "Für Teams, die mehr brauchen. Kontaktieren Sie uns für Preise."
 msgid "Get Stride for your organization"
 msgstr "Stride für Ihre Organisation"
 
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:106
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "Integrations (webhooks)"
 msgstr "Integrationen (Webhooks)"
 
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:111
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:111
 #, elixir-autogen, elixir-format
 msgid "MCP access"
 msgstr "MCP-Zugriff"
 
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:126
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:47
 #, elixir-autogen, elixir-format
 msgid "Metrics and exports"
@@ -12765,6 +12774,7 @@ msgstr "Nur die menschlichen Mitglieder des Boards, einschließlich seines Eigen
 msgid "Single sign-on (SSO)"
 msgstr "Single Sign-On (SSO)"
 
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:110
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:107
 #, elixir-autogen, elixir-format
 msgid "Task telemetry fields"
@@ -12775,16 +12785,19 @@ msgstr "Telemetriefelder für Aufgaben"
 msgid "The Organization plan is set up with you directly. Email us about your team and we will reply with pricing and next steps."
 msgstr "Der Organisationsplan wird direkt mit Ihnen eingerichtet. Schreiben Sie uns eine E-Mail über Ihr Team, und wir antworten mit Preisen und den nächsten Schritten."
 
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:125
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:43
 #, elixir-autogen, elixir-format
 msgid "The full REST API and client-side hooks"
 msgstr "Die vollständige REST-API und clientseitige Hooks"
 
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:124
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Unlimited boards, tasks and goals"
 msgstr "Unbegrenzte Boards, Aufgaben und Ziele"
 
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:85
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:35
 #, elixir-autogen, elixir-format
 msgid "Up to 3 people per board — AI agents do not count"
@@ -12794,3 +12807,68 @@ msgstr "Bis zu 3 Personen pro Board — KI-Agenten zählen nicht"
 #, elixir-autogen, elixir-format
 msgid "Who counts toward the 3-person limit on a free board?"
 msgstr "Wer zählt zum Limit von 3 Personen auf einem kostenlosen Board?"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:57
+#, elixir-autogen, elixir-format
+msgid "Announcing Organizations and the Free plan"
+msgstr "Neu: Organisationen und der Free-Tarif"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:97
+#, elixir-autogen, elixir-format
+msgid "Becoming Organization-only"
+msgstr "Künftig nur für Organisationen"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:87
+#, elixir-autogen, elixir-format
+msgid "Existing boards keep every member they already have. A board over the limit cannot add anyone until it has fewer than 3 people."
+msgstr "Bestehende Boards behalten alle ihre bisherigen Mitglieder. Ein Board über dem Limit kann erst wieder jemanden hinzufügen, wenn es weniger als 3 Personen hat."
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:136
+#, elixir-autogen, elixir-format
+msgid "Free accounts stop receiving notification emails on launch day."
+msgstr "Kostenlose Konten erhalten ab dem Starttag keine Benachrichtigungs-E-Mails mehr."
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Free boards: up to 3 people"
+msgstr "Kostenlose Boards: bis zu 3 Personen"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:133
+#, elixir-autogen, elixir-format
+msgid "If you review tasks on a free board"
+msgstr "Wenn Sie Aufgaben auf einem kostenlosen Board prüfen"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:70
+#, elixir-autogen, elixir-format
+msgid "Launch date: to be announced on this page."
+msgstr "Starttermin: wird auf dieser Seite bekannt gegeben."
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:162
+#, elixir-autogen, elixir-format
+msgid "Questions"
+msgstr "Fragen"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:118
+#, elixir-autogen, elixir-format
+msgid "Staying free"
+msgstr "Bleibt kostenlos"
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:64
+#, elixir-autogen, elixir-format
+msgid "Stride is adding a paid Organization plan. Stride stays free for individuals and small teams, and a few features become available to organizations only."
+msgstr "Stride führt einen kostenpflichtigen Organization-Tarif ein. Für Einzelpersonen und kleine Teams bleibt Stride kostenlos, und einige Funktionen stehen künftig nur Organisationen zur Verfügung."
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "The changes below take effect on launch day."
+msgstr "Die folgenden Änderungen gelten ab dem Starttag."
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:165
+#, elixir-autogen, elixir-format
+msgid "To move your team into an organization, or to ask about pricing, contact Stride."
+msgstr "Wenn Sie Ihr Team in eine Organisation verschieben oder nach Preisen fragen möchten, kontaktieren Sie Stride."
+
+#: lib/kanban_web/controllers/page_html/changelog.html.heex:106
+#, elixir-autogen, elixir-format
+msgid "webhooks on free boards are paused, not deleted, and resume when the board moves into an organization. Events that happen while paused are not delivered later."
+msgstr "Webhooks auf kostenlosen Boards werden pausiert, nicht gelöscht, und laufen wieder an, sobald das Board in eine Organisation wechselt. Während der Pause ausgelöste Ereignisse werden nicht nachgeliefert."
