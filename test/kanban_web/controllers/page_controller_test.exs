@@ -76,25 +76,98 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "security@letstango.ca"
   end
 
-  test "GET /pricing", %{conn: conn} do
-    conn = get(conn, ~p"/pricing")
-    body = html_response(conn, 200)
-    # Three tiers
-    assert body =~ "Solo"
-    assert body =~ "Team"
-    assert body =~ "Enterprise"
-    # FAQ section
-    assert body =~ "Frequently asked questions"
-  end
+  describe "GET /pricing" do
+    test "shows exactly two plans, Free and Organization", %{conn: conn} do
+      document = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
 
-  test "GET /pricing has the #contact target the lock prompts and member cap link to",
-       %{conn: conn} do
-    contact = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
-    contact = LazyHTML.query(contact, "#contact")
+      plan_names =
+        document
+        |> LazyHTML.query("[id^='plan-'] h2")
+        |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
 
-    assert Enum.count(contact) == 1
-    assert LazyHTML.text(contact) =~ "Enterprise"
-    assert contact |> LazyHTML.query("a[href^='mailto:']") |> LazyHTML.text() =~ "Talk to us"
+      assert plan_names == ["Free", "Organization"]
+      assert document |> LazyHTML.query("#plan-free") |> Enum.count() == 1
+      assert document |> LazyHTML.query("#plan-organization") |> Enum.count() == 1
+    end
+
+    test "the Free plan states its limits and what it includes", %{conn: conn} do
+      document = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
+      free = document |> LazyHTML.query("#plan-free") |> LazyHTML.text()
+
+      assert free =~ "Unlimited boards, tasks and goals"
+      assert free =~ "Up to 3 people per board — AI agents do not count"
+      assert free =~ "The full REST API and client-side hooks"
+      assert free =~ "Metrics and exports"
+    end
+
+    test "the Organization plan lists the eight paid features and a contact call to action",
+         %{conn: conn} do
+      document = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
+      organization = LazyHTML.query(document, "#plan-organization")
+      text = LazyHTML.text(organization)
+
+      for feature <- [
+            "Notifications",
+            "Organization audit log",
+            "Single sign-on (SSO)",
+            "Workspaces",
+            "Bulk actions",
+            "Integrations (webhooks)",
+            "Task telemetry fields",
+            "MCP access"
+          ] do
+        assert text =~ feature
+      end
+
+      assert text =~ "no user or board limits"
+
+      assert organization
+             |> LazyHTML.query("a[href='mailto:enterprise@stridelikeaboss.com']")
+             |> LazyHTML.text() =~ "Talk to us"
+    end
+
+    test "has no price, trial, checkout or seat-limit wording", %{conn: conn} do
+      body = conn |> get(~p"/pricing") |> html_response(200)
+
+      refute body =~ "Start free trial"
+      refute body =~ "$12"
+      refute body =~ "/ user / month"
+      refute body =~ "Up to 25 users"
+      refute body =~ "Team plan"
+      refute body =~ "Most popular"
+      refute body =~ "Enterprise"
+      refute body =~ "Solo"
+    end
+
+    test "the FAQ explains who counts toward the free member limit", %{conn: conn} do
+      body = conn |> get(~p"/pricing") |> html_response(200)
+
+      assert body =~ "Frequently asked questions"
+      assert body =~ "Who counts toward the 3-person limit on a free board?"
+      assert body =~ "Only the human members of the board, including its owner."
+    end
+
+    test "has the #contact target the lock prompts and member cap link to", %{conn: conn} do
+      document = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
+      contact = LazyHTML.query(document, "#contact")
+
+      assert Enum.count(contact) == 1
+      assert LazyHTML.text(contact) =~ "Get Stride for your organization"
+
+      assert contact
+             |> LazyHTML.query("a[href='mailto:enterprise@stridelikeaboss.com']")
+             |> LazyHTML.text() =~ "Talk to us"
+    end
+
+    test "renders the same two plans for a signed-in user", %{conn: conn} do
+      %{conn: conn} = register_and_log_in_user(%{conn: conn})
+      body = conn |> get(~p"/pricing") |> html_response(200)
+
+      assert body =~ ~s(id="plan-free")
+      assert body =~ ~s(id="plan-organization")
+      assert body =~ ~s(id="contact")
+      refute body =~ "Start free trial"
+    end
   end
 
   test "GET /product", %{conn: conn} do

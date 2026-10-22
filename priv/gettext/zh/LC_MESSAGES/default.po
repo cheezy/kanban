@@ -3548,7 +3548,7 @@ msgstr "静态分析在每次提交时通过 CI 运行;发现任何问题构建�
 msgid " uses SQL SELECT FOR UPDATE SKIP LOCKED so two agents cannot ever both claim the same task — concurrency safety is a database guarantee, not application-code best effort."
 msgstr "使用 SQL SELECT FOR UPDATE SKIP LOCKED,因此两个代理不可能同时认领同一任务——并发安全由数据库保证,而非应用代码尽力而为。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:202
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:194
 #, elixir-autogen, elixir-format
 msgid " with a short note about your project and we will set you up."
 msgstr ",并附上您项目的简短说明,我们就会为您完成设置。"
@@ -3603,11 +3603,6 @@ msgstr " — 在我们被合法法律程序要求时。我们会反对过于宽�
 msgid " — your email address, the password hash, and the display name and locale you choose."
 msgstr " — 您的邮箱地址、密码哈希,以及您选择的显示名称和区域设置。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:68
-#, elixir-autogen, elixir-format
-msgid "$12"
-msgstr "$12"
-
 #: lib/kanban_web/components/board_pulse_card.ex:228
 #, elixir-autogen, elixir-format
 msgid "%{n}d ago"
@@ -3637,11 +3632,6 @@ msgstr "。对于 Stride 如何处理您的数据的非安全类问题,请参阅
 #, elixir-autogen, elixir-format
 msgid ". For sensitive reports, request our PGP key in the first message and we will reply with it."
 msgstr "。对于敏感的报告,请在第一条消息中索要我们的 PGP 公钥,我们将以此回复。"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:69
-#, elixir-autogen, elixir-format
-msgid "/ user / month"
-msgstr "/ 用户 / 月"
 
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:39
 #: lib/kanban_web/controllers/page_html/workflows.html.heex:98
@@ -3720,11 +3710,6 @@ msgstr "代理活动"
 msgid "All traffic to and from stridelikeaboss.com is served over TLS 1.2 or newer. HTTP Strict Transport Security is enabled."
 msgstr "所有进出 stridelikeaboss.com 的流量均通过 TLS 1.2 或更高版本提供。已启用 HTTP Strict Transport Security。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:177
-#, elixir-autogen, elixir-format
-msgid "Any human with a login. Agents — Claude, Cursor, Aider, Codex, your own — are not billable. They authenticate via API tokens scoped to a board and a user, and there is no per-agent fee."
-msgstr "任何拥有登录账号的人。代理(Claude、Cursor、Aider、Codex、您自定义的代理)不计费。它们通过限定在某看板和某用户范围内的 API 令牌进行认证,没有按代理收费。"
-
 #: lib/kanban_web/controllers/page_html/security.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Application-level protections"
@@ -3739,11 +3724,6 @@ msgstr "以按键速度进行批准"
 #, elixir-autogen, elixir-format
 msgid "Atomic claiming"
 msgstr "原子化认领"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:138
-#, elixir-autogen, elixir-format
-msgid "Audit log export, custom retention policies"
-msgstr "审计日志导出、自定义保留策略"
 
 #: lib/kanban_web/controllers/page_html/security.html.heex:22
 #, elixir-autogen, elixir-format
@@ -3760,7 +3740,7 @@ msgstr "认证及会话管理绕过。"
 msgid "Authorization bugs that let one user access another user's workspace data."
 msgstr "允许某用户访问其他用户工作区数据的授权缺陷。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:35
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:39
 #, elixir-autogen, elixir-format
 msgid "Bring any agent — Claude, Cursor, Aider, Codex, your own"
 msgstr "带上任何代理 — Claude、Cursor、Aider、Codex 或您自己的"
@@ -3770,7 +3750,7 @@ msgstr "带上任何代理 — Claude、Cursor、Aider、Codex 或您自己的"
 msgid "CSRF protection"
 msgstr "CSRF 保护"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:185
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:177
 #, elixir-autogen, elixir-format
 msgid "Can I switch between self-hosted and hosted later?"
 msgstr "我以后可以在自托管和托管之间切换吗?"
@@ -3781,7 +3761,7 @@ msgstr "我以后可以在自托管和托管之间切换吗?"
 msgid "Changes to this policy"
 msgstr "本政策的变更"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:47
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:51
 #, elixir-autogen, elixir-format
 msgid "Community support on GitHub"
 msgstr "GitHub 上的社区支持"
@@ -3815,16 +3795,6 @@ msgstr "更正不准确的个人数据。"
 msgid "Cryptographic flaws affecting passwords, tokens, or data at rest."
 msgstr "影响密码、令牌或静态数据的加密缺陷。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:116
-#, elixir-autogen, elixir-format
-msgid "Custom"
-msgstr "自定义"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:91
-#, elixir-autogen, elixir-format
-msgid "Daily backups, encrypted at rest"
-msgstr "每日备份,静态加密"
-
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:122
 #, elixir-autogen, elixir-format
 msgid "Data retention"
@@ -3834,11 +3804,6 @@ msgstr "数据保留"
 #, elixir-autogen, elixir-format
 msgid "Data sharing"
 msgstr "数据共享"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:142
-#, elixir-autogen, elixir-format
-msgid "Dedicated success manager + custom SLA"
-msgstr "专属成功经理 + 自定义 SLA"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:146
 #, elixir-autogen, elixir-format
@@ -3870,30 +3835,10 @@ msgstr "诊断错误、衡量性能并防止滥用(限速、欺诈检测)。"
 msgid "Diff, tests, acceptance, hook telemetry — all in one pane. A approves, S sends back, J/K navigates. Designed for humans who review more than they write."
 msgstr "差异、测试、验收、钩子遥测 — 都在一个面板内。A 批准、S 退回、J/K 导航。为审核多于编写的人类设计。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:196
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:188
 #, elixir-autogen, elixir-format
 msgid "Do you offer a discount for non-profits or open-source projects?"
 msgstr "你们为非营利组织或开源项目提供折扣吗?"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:95
-#, elixir-autogen, elixir-format
-msgid "Email support, 1-business-day response"
-msgstr "邮件支持,1 个工作日内响应"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:113
-#, elixir-autogen, elixir-format
-msgid "Enterprise"
-msgstr "企业版"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:79
-#, elixir-autogen, elixir-format
-msgid "Everything in Solo, plus:"
-msgstr "Solo 中的全部内容,外加:"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:126
-#, elixir-autogen, elixir-format
-msgid "Everything in Team, plus:"
-msgstr "Team 中的全部内容,外加:"
 
 #: lib/kanban_web/controllers/page_html/product.html.heex:52
 #, elixir-autogen, elixir-format
@@ -3905,35 +3850,20 @@ msgstr "五列流程,AI 优化"
 msgid "Free"
 msgstr "免费"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:157
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Frequently asked questions"
 msgstr "常见问题"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:39
-#, elixir-autogen, elixir-format
-msgid "Full agent API + client-side hooks"
-msgstr "完整的代理 API + 客户端钩子"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:55
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Get started"
 msgstr "开始使用"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:87
-#, elixir-autogen, elixir-format
-msgid "Goal-driven assignment + per-user agent fleets"
-msgstr "目标驱动的分配 + 每用户的代理舰队"
 
 #: lib/kanban_web/controllers/page_html/security.html.heex:135
 #, elixir-autogen, elixir-format
 msgid "Hooks run on your machine, not ours"
 msgstr "钩子在您的机器上运行,不在我们的"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:72
-#, elixir-autogen, elixir-format
-msgid "Hosted by us. For teams that don't want to run a server."
-msgstr "由我们托管。适合不想维护服务器的团队。"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:60
 #, elixir-autogen, elixir-format
@@ -3950,7 +3880,7 @@ msgstr "如果您认为在 Stride 中发现了安全漏洞,请以私密方式向
 msgid "Information we collect"
 msgstr "我们收集的信息"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:163
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:155
 #, elixir-autogen, elixir-format
 msgid "Is Stride really free if I self-host?"
 msgstr "如果我自托管,Stride 真的免费吗?"
@@ -3982,11 +3912,6 @@ msgstr "前置时间、周期时间、等待时间、吞吐量 — 每项指标�
 #, elixir-autogen, elixir-format
 msgid "Legal requests"
 msgstr "法律请求"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:61
-#, elixir-autogen, elixir-format
-msgid "Most popular"
-msgstr "最受欢迎"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:63
 #, elixir-autogen, elixir-format
@@ -4044,11 +3969,6 @@ msgstr "请将漏洞报告至 "
 msgid "Reports generated purely from automated scanners without manual validation."
 msgstr "仅由自动化扫描器生成、未经人工验证的报告。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:134
-#, elixir-autogen, elixir-format
-msgid "SSO (SAML / OIDC) and SCIM provisioning"
-msgstr "SSO(SAML / OIDC)与 SCIM 预配"
-
 #: lib/kanban_web/controllers/page_html/security.html.heex:185
 #, elixir-autogen, elixir-format
 msgid "Scope"
@@ -4068,16 +3988,6 @@ msgstr "安全问题: "
 #, elixir-autogen, elixir-format
 msgid "See every claim, hook result, completion, and unclaim across your agent fleet. Telemetry by agent, by capability, by board. The board is the operating system; the activity feed is the syslog."
 msgstr "查看您代理舰队中的每一次认领、钩子结果、完成与释放。按代理、能力、看板分类的遥测。看板就是操作系统;活动流就是 syslog。"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:119
-#, elixir-autogen, elixir-format
-msgid "Self-host or hosted. Whatever your security team needs."
-msgstr "自托管或托管。任凭您的安全团队需要。"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:24
-#, elixir-autogen, elixir-format
-msgid "Self-host. Forever. No card required."
-msgstr "自托管。永远。不需要信用卡。"
 
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:73
 #, elixir-autogen, elixir-format
@@ -4099,25 +4009,10 @@ msgstr "服务提供者"
 msgid "Sessions"
 msgstr "会话"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:43
-#, elixir-autogen, elixir-format
-msgid "Single user"
-msgstr "单用户"
-
 #: lib/kanban_web/controllers/page_html/security.html.heex:110
 #, elixir-autogen, elixir-format
 msgid "Sobelow"
 msgstr "Sobelow"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:18
-#, elixir-autogen, elixir-format
-msgid "Solo"
-msgstr "Solo"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:103
-#, elixir-autogen, elixir-format
-msgid "Start free trial"
-msgstr "开始免费试用"
 
 #: lib/kanban_web/controllers/page_html/security.html.heex:85
 #, elixir-autogen, elixir-format
@@ -4144,15 +4039,11 @@ msgstr "Stride 的 `before_doing`、`after_doing`、`before_review` 和 `after_r
 msgid "Structured schema, not free-text"
 msgstr "结构化的模式,而非自由文本"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:150
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:119
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "Talk to us"
 msgstr "与我们交流"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:65
-#, elixir-autogen, elixir-format
-msgid "Team"
-msgstr "团队"
 
 #: lib/kanban_web/components/locked_feature.ex:142
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:50
@@ -4186,21 +4077,6 @@ msgstr "以下内容属于负责任披露的范围:"
 msgid "Transport and storage"
 msgstr "传输与存储"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:31
-#, elixir-autogen, elixir-format
-msgid "Unlimited boards, tasks, goals"
-msgstr "无限的看板、任务、目标"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:130
-#, elixir-autogen, elixir-format
-msgid "Unlimited users"
-msgstr "无限用户"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:83
-#, elixir-autogen, elixir-format
-msgid "Up to 25 users on one workspace"
-msgstr "一个工作区最多 25 个用户"
-
 #: lib/kanban_web/controllers/page_html/security.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "Vulnerability disclosure"
@@ -4226,11 +4102,6 @@ msgstr "我们仅在严格受限的情况下共享您的信息:"
 msgid "We use a small number of cookies and browser-local storage entries that are strictly necessary to operate the service: a session cookie to keep you signed in, a CSRF token to protect form submissions, and a preference entry that remembers your light/dark theme choice. We do not use third-party advertising or analytics cookies."
 msgstr "我们使用少量严格运营所需的 cookie 和浏览器本地存储:用于保持您登录的会话 cookie、用于保护表单提交的 CSRF 令牌,以及记住您浅色/深色主题偏好的设置项。我们不使用第三方广告或分析 cookie。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:174
-#, elixir-autogen, elixir-format
-msgid "What counts as a user on the Team plan?"
-msgstr "在 Team 计划中,什么算作一个用户?"
-
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:106
 #, elixir-autogen, elixir-format
 msgid "Workspace collaborators"
@@ -4241,17 +4112,17 @@ msgstr "工作区协作者"
 msgid "Workspace content"
 msgstr "工作区内容"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:188
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:180
 #, elixir-autogen, elixir-format
 msgid "Yes — both ways. The data model is the same. Export your workspace from one and import it into the other."
 msgstr "可以 — 双向都可以。数据模型相同。可以从其中一方导出工作区并导入到另一方。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:199
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Yes. Email "
 msgstr "可以。请发送邮件至 "
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:166
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:158
 #, elixir-autogen, elixir-format
 msgid "Yes. The whole codebase is open source under the MIT license. Run it on your own machine, your own server, or your own Kubernetes cluster. You owe us nothing."
 msgstr "是。整个代码库以 MIT 许可证开源。可以在您自己的机器、服务器或 Kubernetes 集群上运行。您不需要付费给我们。"
@@ -9182,6 +9053,7 @@ msgstr "未找到通知。"
 
 #: lib/kanban_web/components/locked_feature.ex:136
 #: lib/kanban_web/components/notification_bell.ex:93
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:83
 #: lib/kanban_web/live/notification_live/index.ex:38
 #: lib/kanban_web/live/notification_live/index.html.heex:5
 #: lib/kanban_web/live/notification_live/index.html.heex:16
@@ -10212,6 +10084,7 @@ msgstr "批量操作失败，未做任何更改。"
 
 #: lib/kanban_web/components/bulk_action_bar.ex:148
 #: lib/kanban_web/components/locked_feature.ex:140
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:99
 #, elixir-autogen, elixir-format
 msgid "Bulk actions"
 msgstr "批量操作"
@@ -10827,6 +10700,7 @@ msgid "You cannot remove the last org-admin while the Organization has other mem
 msgstr "组织还有其他成员时，不能移除最后一位组织管理员。请先任命另一位组织管理员。"
 
 #: lib/kanban_web/components/side_nav.ex:261
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:69
 #: lib/kanban_web/live/org_live/console.ex:74
 #, elixir-autogen, elixir-format
 msgid "Organization"
@@ -10876,6 +10750,7 @@ msgstr "审计日志"
 msgid "Back to Organization"
 msgstr "返回组织"
 
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:87
 #: lib/kanban_web/live/org_live/audit_log.ex:45
 #: lib/kanban_web/live/org_live/audit_log.html.heex:8
 #, elixir-autogen, elixir-format
@@ -10963,6 +10838,7 @@ msgid "Workspace renamed."
 msgstr "工作区已重命名。"
 
 #: lib/kanban_web/components/locked_feature.ex:139
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:95
 #: lib/kanban_web/live/org_live/console.ex:392
 #: lib/kanban_web/live/org_live/console.html.heex:195
 #, elixir-autogen, elixir-format
@@ -12766,3 +12642,78 @@ msgstr[0] "自 %{date} 起，Stride 的每日检查一直未找到此域名的 T
 msgctxt "audit action"
 msgid "Organization domain no longer verified"
 msgstr "组织域名不再处于已验证状态"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:79
+#, elixir-autogen, elixir-format
+msgid "Everything in Free, with no user or board limits, plus:"
+msgstr "包含免费方案的全部内容，不限用户数和看板数，另外还有："
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:24
+#, elixir-autogen, elixir-format
+msgid "For individuals and small teams. No card required."
+msgstr "适合个人和小团队。无需信用卡。"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:72
+#, elixir-autogen, elixir-format
+msgid "For teams that need more. Contact us for pricing."
+msgstr "适合需要更多功能的团队。请联系我们了解价格。"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:129
+#, elixir-autogen, elixir-format
+msgid "Get Stride for your organization"
+msgstr "为您的组织使用 Stride"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:103
+#, elixir-autogen, elixir-format
+msgid "Integrations (webhooks)"
+msgstr "集成（Webhook）"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:111
+#, elixir-autogen, elixir-format
+msgid "MCP access"
+msgstr "MCP 访问"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:47
+#, elixir-autogen, elixir-format
+msgid "Metrics and exports"
+msgstr "指标和导出"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:169
+#, elixir-autogen, elixir-format
+msgid "Only the human members of the board, including its owner. Agents — Claude, Cursor, Aider, Codex, your own — never count. They authenticate via API tokens scoped to a board and a user, and there is no per-agent fee. Boards in an Organization have no member limit."
+msgstr "只计算看板的人类成员，包括看板所有者。代理 — Claude、Cursor、Aider、Codex 或您自己的 — 从不计入。它们通过限定于某个看板和某个用户的 API 令牌进行身份验证，并且不按代理收费。组织中的看板没有成员数量限制。"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:91
+#, elixir-autogen, elixir-format
+msgid "Single sign-on (SSO)"
+msgstr "单点登录（SSO）"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:107
+#, elixir-autogen, elixir-format
+msgid "Task telemetry fields"
+msgstr "任务遥测字段"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:132
+#, elixir-autogen, elixir-format
+msgid "The Organization plan is set up with you directly. Email us about your team and we will reply with pricing and next steps."
+msgstr "组织方案由我们直接与您一起设置。请发邮件告诉我们您的团队情况，我们会回复价格和后续步骤。"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:43
+#, elixir-autogen, elixir-format
+msgid "The full REST API and client-side hooks"
+msgstr "完整的 REST API 和客户端钩子"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:31
+#, elixir-autogen, elixir-format
+msgid "Unlimited boards, tasks and goals"
+msgstr "无限看板、任务和目标"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:35
+#, elixir-autogen, elixir-format
+msgid "Up to 3 people per board — AI agents do not count"
+msgstr "每个看板最多 3 人 — AI 代理不计入"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:166
+#, elixir-autogen, elixir-format
+msgid "Who counts toward the 3-person limit on a free board?"
+msgstr "免费看板的 3 人上限计算哪些人？"
