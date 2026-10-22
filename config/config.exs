@@ -141,6 +141,13 @@ config :kanban, Oban,
     maintenance: 1,
     workspace_exports: 1
   ],
+  # Lifeline moves a job left in `executing` for an hour, such as one whose
+  # node was killed mid-run, back to `available`, or to `discarded` once its
+  # attempts are used up (decided 2026-10-22). It goes by time alone, so a job
+  # still genuinely running after an hour would run twice; no worker comes
+  # close (webhook requests time out after 10 seconds), and a rescued
+  # notification may send its email twice.
+  lifeline: [rescue_after: {60, :minutes}],
   plugins: [
     {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
     {Oban.Plugins.Cron,

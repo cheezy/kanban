@@ -121,9 +121,11 @@ below are placeholders.
    - `unconfirmed` counts users whose job another run was inserting at the
      same moment. It is 0 unless two runs overlapped; if it is not, run it
      again to cover them.
-   - A job left in `executing` by a node that was killed mid-send is not sent
-     again: there is no Oban Lifeline plugin to rescue it, and a re-run counts
-     that user as covered. Avoid deploying while the send is running.
+   - A job left in `executing` by a node that was killed mid-send is run
+     again an hour later by Oban's Lifeline, so that user still gets the
+     email; a re-run counts them as covered meanwhile. If the kill came after
+     their email went out, they get it twice, so avoid deploying while the
+     send is running.
    - Keep the printed counts as the record of the run.
    - `{:error, :unknown_announcement}` means the key is misspelled.
 

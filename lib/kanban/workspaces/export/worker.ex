@@ -17,9 +17,9 @@ defmodule Kanban.Workspaces.Export.Worker do
   workspace over the waiting states only. `:executing` is deliberately left
   out: by then the export row is running, and the database's one-active-export
   index already refuses a second export, while a job orphaned in `executing`
-  by a killed node (no Lifeline plugin is configured) would otherwise block
-  every future export of the workspace. The cleanup worker fails such stale
-  exports.
+  by a killed node would otherwise block every future export of the workspace
+  until Oban's Lifeline discards it an hour later. The cleanup worker fails
+  the export row such a job leaves running.
   """
 
   use Oban.Worker,
