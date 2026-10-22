@@ -41,11 +41,12 @@ app; **Use a recovery code instead** switches the same form to a recovery
 code. Only after a code is accepted does Stride create the session.
 
 - Between the two steps the session holds only a pending-sign-in marker (the
-  user id, when it was issued and the **Keep me signed in** choice), never a
-  session token. It is accepted for five minutes. After that, or after logging
-  out, the person starts again from the password.
-- **Keep me signed in** chosen on the password step is honoured once the code
-  is accepted, and a person sent to sign in from another page returns to it.
+  user id, when it was issued and the **Keep me signed in on this device**
+  choice), never a session token. It is accepted for five minutes. After that,
+  or after logging out, the person starts again from the password.
+- **Keep me signed in on this device** chosen on the password step is
+  honoured once the code is accepted, and a person sent to sign in from
+  another page returns to it.
 - Signing in with a recovery code uses that code up, and Stride suggests
   creating new codes under **Settings → Two-factor**.
 - If the account is disabled, or two-factor is turned off, while a sign-in is
@@ -64,11 +65,14 @@ code. Only after a code is accepted does Stride create the session.
 Each recovery code (for example `a3k9x-q7m2p`) works exactly once. Spaces,
 dashes and capital letters are ignored when one is typed in.
 
-- **New recovery codes** replaces all ten codes, after a current code from the
-  authenticator app. The old codes stop working straight away.
+- **Generate new codes**, under **New recovery codes**, replaces all ten
+  codes, after a current code from the authenticator app. The old codes stop
+  working straight away.
 - A recovery code is the way back in for someone who has lost their
-  authenticator: it can be used to turn two-factor off (below) and then set it
-  up again on a new device.
+  authenticator: it signs them in, and it can be used to turn two-factor off
+  (below) and then set it up again on a new device. A member of an
+  Organization that requires two-factor cannot turn it off, so for them a
+  recovery code only signs them in.
 
 ## Turning it off
 

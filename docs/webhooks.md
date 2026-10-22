@@ -209,9 +209,10 @@ changed files and other working detail are never sent. A `ping` has
 when the event happened, and a retry sends exactly the same body.
 
 To keep track of a task, use `task.id`, which is never reused. Its
-`identifier` can be: a new task gets the next number after the highest one
-on the board, so when the task holding the highest number is deleted, the
-next task created is given the same identifier.
+`identifier` can be. Work tasks (`W`), defects (`D`) and goals (`G`) are
+numbered separately, and a new task gets the next number after the highest
+one of its kind on the board. So when the task holding the highest number of
+its kind is deleted, the next task of that kind is given the same identifier.
 
 ### Verify the signature
 
@@ -234,14 +235,17 @@ Python:
 ```python
 import hashlib
 import hmac
+import re
 import time
 
 
 def verify(header: str, body: bytes, secret: str, tolerance: int = 300) -> bool:
+    if not isinstance(header, str):
+        return False
     parts = [part.split("=", 1) for part in header.split(",") if "=" in part]
     timestamps = [value for key, value in parts if key == "t"]
     signatures = [value for key, value in parts if key == "v1"]
-    if len(timestamps) != 1 or not timestamps[0].isdigit() or not signatures:
+    if len(timestamps) != 1 or not re.fullmatch(r"[0-9]+", timestamps[0]) or not signatures:
         return False
     timestamp = timestamps[0]
     if abs(time.time() - int(timestamp)) > tolerance:
@@ -249,7 +253,10 @@ def verify(header: str, body: bytes, secret: str, tolerance: int = 300) -> bool:
     expected = hmac.new(
         secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256
     ).hexdigest()
-    return any(hmac.compare_digest(expected, signature) for signature in signatures)
+    return any(
+        hmac.compare_digest(expected.encode(), signature.encode())
+        for signature in signatures
+    )
 ```
 
 Node.js:
@@ -258,24 +265,25 @@ Node.js:
 const crypto = require("crypto");
 
 function verify(header, rawBody, secret, tolerance = 300) {
-  const parts = header.split(",").map((part) => part.split("=", 2));
+  if (typeof header !== "string") return false;
+  const parts = header
+    .split(",")
+    .filter((part) => part.includes("="))
+    .map((part) => [part.slice(0, part.indexOf("=")), part.slice(part.indexOf("=") + 1)]);
   const timestamps = parts.filter(([key]) => key === "t").map(([, value]) => value);
   const signatures = parts.filter(([key]) => key === "v1").map(([, value]) => value);
-  if (timestamps.length !== 1 || !/^\d+$/.test(timestamps[0]) || signatures.length === 0) {
+  if (timestamps.length !== 1 || !/^[0-9]+$/.test(timestamps[0]) || signatures.length === 0) {
     return false;
   }
   const timestamp = timestamps[0];
   if (Math.abs(Date.now() / 1000 - Number(timestamp)) > tolerance) return false;
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(`${timestamp}.`)
-    .update(rawBody)
-    .digest("hex");
-  return signatures.some(
-    (signature) =>
-      signature.length === expected.length &&
-      crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+  const expected = Buffer.from(
+    crypto.createHmac("sha256", secret).update(`${timestamp}.`).update(rawBody).digest("hex")
   );
+  return signatures.some((signature) => {
+    const given = Buffer.from(signature);
+    return given.length === expected.length && crypto.timingSafeEqual(given, expected);
+  });
 }
 ```
 
