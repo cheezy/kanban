@@ -3552,7 +3552,7 @@ msgstr " análisis estático se ejecuta en CI en cada commit; el build falla ant
 msgid " uses SQL SELECT FOR UPDATE SKIP LOCKED so two agents cannot ever both claim the same task — concurrency safety is a database guarantee, not application-code best effort."
 msgstr " usa SQL SELECT FOR UPDATE SKIP LOCKED para que dos agentes nunca puedan reclamar la misma tarea — la seguridad de concurrencia es una garantía de la base de datos, no un esfuerzo del código de la aplicación."
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:194
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:197
 #, elixir-autogen, elixir-format
 msgid " with a short note about your project and we will set you up."
 msgstr " con una breve nota sobre tu proyecto y te configuraremos."
@@ -3840,7 +3840,7 @@ msgstr "Diagnosticar errores, medir el rendimiento y prevenir el abuso (limitaci
 msgid "Diff, tests, acceptance, hook telemetry — all in one pane. A approves, S sends back, J/K navigates. Designed for humans who review more than they write."
 msgstr "Diff, pruebas, aceptación, telemetría de hooks — todo en un solo panel. A aprueba, S devuelve, J/K navega. Diseñado para humanos que revisan más de lo que escriben."
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:188
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Do you offer a discount for non-profits or open-source projects?"
 msgstr "¿Ofrecen descuento para organizaciones sin fines de lucro o proyectos de código abierto?"
@@ -4113,12 +4113,7 @@ msgstr "Colaboradores del espacio de trabajo"
 msgid "Workspace content"
 msgstr "Contenido del espacio de trabajo"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:180
-#, elixir-autogen, elixir-format
-msgid "Yes — both ways. The data model is the same. Export your workspace from one and import it into the other."
-msgstr "Sí — en ambos sentidos. El modelo de datos es el mismo. Exporta tu espacio de trabajo desde uno e impórtalo en el otro."
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:191
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:194
 #, elixir-autogen, elixir-format
 msgid "Yes. Email "
 msgstr "Sí. Escribe a "
@@ -12977,3 +12972,13 @@ msgstr "Si tu organización también gestiona las cuentas desde su proveedor de 
 #, elixir-autogen, elixir-format
 msgid "If your Organization's identity provider has disabled your account, you cannot sign in to delete it yourself; email us at the address below and we will delete it for you."
 msgstr "Si el proveedor de identidad de tu organización ha desactivado tu cuenta, no puedes iniciar sesión para eliminarla tú mismo; escríbenos a la dirección indicada a continuación y la eliminaremos por ti."
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:185
+#, elixir-autogen, elixir-format
+msgid " and we will help you move."
+msgstr " y te ayudaremos con el cambio."
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:180
+#, elixir-autogen, elixir-format
+msgid "Yes, both ways, and the data model is the same. An Organization's org-admins export a workspace from its workspace settings, and we import it on the other side. On the free plan, email "
+msgstr "Sí, en ambas direcciones, y el modelo de datos es el mismo. Los administradores de una organización exportan un espacio de trabajo desde su configuración, y nosotros lo importamos en el otro lado. Con el plan gratuito, escribe a "

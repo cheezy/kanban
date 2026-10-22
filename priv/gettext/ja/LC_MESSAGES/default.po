@@ -3549,7 +3549,7 @@ msgstr " 静的解析は各コミット時にCIで実行され、検出がある
 msgid " uses SQL SELECT FOR UPDATE SKIP LOCKED so two agents cannot ever both claim the same task — concurrency safety is a database guarantee, not application-code best effort."
 msgstr "はSQL SELECT FOR UPDATE SKIP LOCKEDを使用するため、2つのエージェントが同じタスクをクレームすることは決してありません。並行性の安全性はアプリケーションコードの努力ではなくデータベースの保証です。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:194
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:197
 #, elixir-autogen, elixir-format
 msgid " with a short note about your project and we will set you up."
 msgstr "にあなたのプロジェクトに関する短いメモを送っていただければ、こちらで設定します。"
@@ -3837,7 +3837,7 @@ msgstr "エラーの診断、パフォーマンスの測定、不正利用の防
 msgid "Diff, tests, acceptance, hook telemetry — all in one pane. A approves, S sends back, J/K navigates. Designed for humans who review more than they write."
 msgstr "Diff、テスト、受け入れ、フックのテレメトリ — すべて1つのペインに。Aで承認、Sで差し戻し、J/Kで移動。書くよりレビューする方が多い人間のために設計されています。"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:188
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Do you offer a discount for non-profits or open-source projects?"
 msgstr "非営利団体やオープンソースプロジェクトに割引はありますか?"
@@ -4110,12 +4110,7 @@ msgstr "ワークスペースの共同編集者"
 msgid "Workspace content"
 msgstr "ワークスペースのコンテンツ"
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:180
-#, elixir-autogen, elixir-format
-msgid "Yes — both ways. The data model is the same. Export your workspace from one and import it into the other."
-msgstr "はい — どちらの方向でも可能です。データモデルは同じです。一方からワークスペースをエクスポートして、もう一方にインポートできます。"
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:191
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:194
 #, elixir-autogen, elixir-format
 msgid "Yes. Email "
 msgstr "はい。次までメール: "
@@ -12907,3 +12902,13 @@ msgstr "組織がアイデンティティプロバイダーからアカウント
 #, elixir-autogen, elixir-format
 msgid "If your Organization's identity provider has disabled your account, you cannot sign in to delete it yourself; email us at the address below and we will delete it for you."
 msgstr "組織のアイデンティティプロバイダーがあなたのアカウントを無効化した場合、サインインして自分で削除することはできません。下記のアドレスまでメールでご連絡いただければ、こちらで削除します。"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:185
+#, elixir-autogen, elixir-format
+msgid " and we will help you move."
+msgstr "までメールでご連絡いただければ、移行をお手伝いします。"
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:180
+#, elixir-autogen, elixir-format
+msgid "Yes, both ways, and the data model is the same. An Organization's org-admins export a workspace from its workspace settings, and we import it on the other side. On the free plan, email "
+msgstr "はい、どちらの方向にも移行でき、データモデルも同じです。組織の組織管理者がワークスペースの設定からワークスペースをエクスポートし、移行先で私たちがインポートします。無料プランの場合は、"

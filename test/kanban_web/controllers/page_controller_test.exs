@@ -474,6 +474,29 @@ defmodule KanbanWeb.PageControllerTest do
       refute body =~ "managed for you"
     end
 
+    test "the switching FAQ says who can export and that free users email us to move",
+         %{conn: conn} do
+      faq =
+        conn
+        |> get(~p"/pricing")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("#faq-switch-hosting")
+
+      text = LazyHTML.text(faq)
+
+      assert text =~ "An Organization's org-admins export a workspace"
+      assert text =~ "we import it on the other side"
+
+      assert text =~
+               "On the free plan, email hello@stridelikeaboss.com and we will help you move."
+
+      refute text =~ "Export your workspace from one and import it into the other"
+
+      assert faq |> LazyHTML.query("a[href='mailto:hello@stridelikeaboss.com']") |> Enum.count() ==
+               1
+    end
+
     test "shows exactly two plans, Free and Organization", %{conn: conn} do
       document = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
 

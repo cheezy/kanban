@@ -3552,7 +3552,7 @@ msgstr ""
 msgid " uses SQL SELECT FOR UPDATE SKIP LOCKED so two agents cannot ever both claim the same task — concurrency safety is a database guarantee, not application-code best effort."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:194
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:197
 #, elixir-autogen, elixir-format
 msgid " with a short note about your project and we will set you up."
 msgstr ""
@@ -3840,7 +3840,7 @@ msgstr ""
 msgid "Diff, tests, acceptance, hook telemetry — all in one pane. A approves, S sends back, J/K navigates. Designed for humans who review more than they write."
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:188
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Do you offer a discount for non-profits or open-source projects?"
 msgstr ""
@@ -4113,12 +4113,7 @@ msgstr ""
 msgid "Workspace content"
 msgstr ""
 
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:180
-#, elixir-autogen, elixir-format
-msgid "Yes — both ways. The data model is the same. Export your workspace from one and import it into the other."
-msgstr ""
-
-#: lib/kanban_web/controllers/page_html/pricing.html.heex:191
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:194
 #, elixir-autogen, elixir-format
 msgid "Yes. Email "
 msgstr ""
@@ -12877,4 +12872,14 @@ msgstr ""
 #: lib/kanban_web/controllers/page_html/terms.html.heex:128
 #, elixir-autogen, elixir-format
 msgid "If your Organization's identity provider has disabled your account, you cannot sign in to delete it yourself; email us at the address below and we will delete it for you."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:185
+#, elixir-autogen, elixir-format
+msgid " and we will help you move."
+msgstr ""
+
+#: lib/kanban_web/controllers/page_html/pricing.html.heex:180
+#, elixir-autogen, elixir-format
+msgid "Yes, both ways, and the data model is the same. An Organization's org-admins export a workspace from its workspace settings, and we import it on the other side. On the free plan, email "
 msgstr ""
