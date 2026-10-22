@@ -4,12 +4,17 @@ This guide explains how to provide estimation feedback when completing tasks, he
 
 ## Overview
 
-When completing tasks, agents should report:
+When completing tasks, agents must report:
 - **Actual complexity** experienced (small, medium, large)
-- **Actual number of files changed**
+- **Actual files changed**, as a comma-separated list of paths
 - **Actual time spent in minutes**
 
-This creates a feedback loop that helps calibrate future task estimates by comparing planned vs actual effort.
+All three are required by `PATCH /api/tasks/:id/complete`; a completion without
+them is rejected with `422`. Stride stores them next to the task's estimates and
+shows the two side by side in the task's "Actual vs Estimated" section, so the
+people who write tasks can compare planned and actual effort. Stride does not
+adjust any estimate automatically: improving future estimates is up to the
+people and agents who read this record.
 
 ## Why Provide Feedback?
 
@@ -20,10 +25,13 @@ This creates a feedback loop that helps calibrate future task estimates by compa
 - **Accountability**: Show actual effort invested
 
 ### For the System
-- **Estimation improvement**: Calibrate future estimates based on historical data
+Stride stores these values on the task; it does not recalibrate anything
+automatically. The record is there for the people who read it:
+
+- **Estimation improvement**: Compare estimates with actuals when sizing new tasks
 - **Pattern recognition**: Identify consistently underestimated task types
 - **Resource planning**: Better understand actual effort required
-- **Performance tracking**: Monitor which agents are most accurate
+- **Performance tracking**: See which agents' estimates hold up
 
 ### For Task Creators
 - **Better estimates**: Learn from data what "medium" really means
@@ -42,6 +50,8 @@ This creates a feedback loop that helps calibrate future task estimates by compa
 - `medium` - Moderate, 1-2 hours
 - `large` - Complex, more than 2 hours
 
+The times are a rough guide for choosing a value; Stride does not check them.
+
 **How to choose**:
 ```
 Compare estimated vs actual:
@@ -52,25 +62,29 @@ Compare estimated vs actual:
 
 ### actual_files_changed
 
-**What it is**: The actual count of files you modified, created, or deleted
+**What it is**: The files you modified, created, or deleted, as a **string**
+holding a comma-separated list of paths, such as
+`"lib/kanban/accounts.ex, test/kanban/accounts_test.exs"`. The board card and
+the Review queue count the entries in this list to show how many files changed.
+
+Send a string, not a number: `"actual_files_changed": 8` is rejected with `422`
+and `is invalid`. The same applies to the estimate, `estimated_files`, which is
+also a string (such as `"2-3"`).
 
 **How to determine**:
 ```bash
-# Count files changed in your working directory
-git status --short | wc -l
+# Files changed on your branch since it left main, joined with commas
+git diff --name-only main...HEAD | paste -sd, -
 
-# Or count staged files
-git diff --cached --name-only | wc -l
-
-# Or count from your completion work
-ls -1 | wc -l
+# Or files changed but not yet committed
+git status --short
 ```
 
 **Example**:
 ```
-Task estimated: "2-3 files"
-Actually changed: 8 files (5 source, 2 tests, 1 config)
-Report: actual_files_changed: 8
+Task estimated: "2-3"
+Actually changed: 3 files (2 source, 1 test)
+Report: "actual_files_changed": "lib/kanban/accounts.ex, lib/kanban/accounts/user.ex, test/kanban/accounts_test.exs"
 ```
 
 ### time_spent_minutes
@@ -99,7 +113,13 @@ Report: time_spent_minutes: 85
 
 ### When Completing a Task
 
-Include estimation feedback in the completion request:
+Include estimation feedback in the completion request. The three estimation
+fields sit beside the other fields the endpoint requires: `completion_summary`,
+the `after_doing_result` and `before_review_result` hook results, and the
+`explorer_result` and `reviewer_result` objects. The example below uses the
+skip form of the last two, for an agent that explored and reviewed inline; see
+[PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md#request-body-example)
+for every field and the dispatched form.
 
 ```bash
 curl -X PATCH https://www.stridelikeaboss.com/api/tasks/W42/complete \
@@ -107,10 +127,15 @@ curl -X PATCH https://www.stridelikeaboss.com/api/tasks/W42/complete \
   -H "Content-Type: application/json" \
   -d '{
     "agent_name": "Claude Sonnet 4.5",
+    "completion_summary": "Added task completion tracking to the board",
     "actual_complexity": "large",
-    "actual_files_changed": 8,
+    "actual_files_changed": "lib/kanban/tasks.ex, lib/kanban/tasks/task.ex, test/kanban/tasks_test.exs",
     "time_spent_minutes": 150,
-    "completion_notes": "Implementation complete, all tests passing"
+    "completion_notes": "Implementation complete, all tests passing",
+    "after_doing_result": {"exit_code": 0, "output": "All tests passed", "duration_ms": 45000},
+    "before_review_result": {"exit_code": 0, "output": "", "duration_ms": 0},
+    "explorer_result": {"dispatched": false, "reason": "no_subagent_support", "summary": "Read the task module and its tests inline before changing them"},
+    "reviewer_result": {"dispatched": false, "reason": "self_reported_review", "summary": "Checked the diff against every acceptance criterion and pitfall"}
   }'
 ```
 
@@ -127,7 +152,7 @@ The API returns your feedback in the response:
     "complexity": "medium",
     "estimated_files": "3-4",
     "actual_complexity": "large",
-    "actual_files_changed": 8,
+    "actual_files_changed": "lib/kanban/tasks.ex, lib/kanban/tasks/task.ex, test/kanban/tasks_test.exs",
     "time_spent_minutes": 150,
     "completed_at": "2025-12-29T15:30:00Z"
   }
@@ -135,6 +160,9 @@ The API returns your feedback in the response:
 ```
 
 ## Interpreting Estimation Accuracy
+
+The examples below shorten long file lists with `...` to stay readable. In a real
+completion, send every path.
 
 ### Accurate Estimation
 
@@ -145,7 +173,7 @@ When estimated matches actual:
   "complexity": "medium",
   "estimated_files": "3-4",
   "actual_complexity": "medium",
-  "actual_files_changed": 4,
+  "actual_files_changed": "lib/a.ex, lib/b.ex, test/a_test.exs, test/b_test.exs",
   "time_spent_minutes": 75
 }
 ```
@@ -164,7 +192,7 @@ When actual exceeds estimated:
   "complexity": "small",
   "estimated_files": "2-3",
   "actual_complexity": "large",
-  "actual_files_changed": 12,
+  "actual_files_changed": "lib/a.ex, lib/b.ex, lib/c.ex, ... (12 paths)",
   "time_spent_minutes": 150
 }
 ```
@@ -185,7 +213,7 @@ When actual is less than estimated:
   "complexity": "large",
   "estimated_files": "10-15",
   "actual_complexity": "medium",
-  "actual_files_changed": 4,
+  "actual_files_changed": "lib/a.ex, lib/b.ex, test/a_test.exs, test/b_test.exs",
   "time_spent_minutes": 80
 }
 ```
@@ -221,7 +249,7 @@ When actual is less than estimated:
 ```json
 {
   "actual_complexity": "medium",
-  "actual_files_changed": 4,
+  "actual_files_changed": "lib/kanban_web/controllers/auth_controller.ex, lib/kanban_web/router.ex, test/kanban_web/controllers/auth_controller_test.exs, lib/kanban/accounts.ex",
   "time_spent_minutes": 85
 }
 ```
@@ -255,7 +283,7 @@ When actual is less than estimated:
 ```json
 {
   "actual_complexity": "large",
-  "actual_files_changed": 15,
+  "actual_files_changed": "lib/kanban_web/controllers/oauth_controller.ex, ... (15 paths)",
   "time_spent_minutes": 180
 }
 ```
@@ -281,7 +309,7 @@ When actual is less than estimated:
 ```json
 {
   "actual_complexity": "small",
-  "actual_files_changed": 1,
+  "actual_files_changed": "lib/kanban_web/live/registration_live.ex",
   "time_spent_minutes": 8
 }
 ```
@@ -314,7 +342,7 @@ When actual is less than estimated:
 ```json
 {
   "actual_complexity": "large",
-  "actual_files_changed": 8,
+  "actual_files_changed": "priv/repo/migrations/20251229000000_add_task_indexes.exs, ... (8 paths)",
   "time_spent_minutes": 150
 }
 ```
@@ -325,17 +353,19 @@ When actual is less than estimated:
 
 ### 1. Always Provide Feedback
 
-Even if the estimate was accurate, provide feedback:
+Even if the estimate was accurate, provide feedback. The completion endpoint
+requires all three fields, so leaving them out is not just unhelpful: the
+request is rejected with `422`.
 
 ```bash
 # Good - complete feedback
 {
   "actual_complexity": "medium",
-  "actual_files_changed": 4,
+  "actual_files_changed": "lib/a.ex, lib/b.ex, test/a_test.exs, test/b_test.exs",
   "time_spent_minutes": 75
 }
 
-# Avoid - missing feedback
+# Rejected - missing feedback
 {
   "completion_notes": "Done"
 }
@@ -359,15 +389,16 @@ Report: "small" ← Don't do this!
 
 ### 3. Count All Files
 
-Include all files you modified:
+List every file you modified in `actual_files_changed`, so the count shown on
+the board is complete:
 
 ```bash
-# Complete count
+# Complete list
 - Source files: 5
 - Test files: 3
 - Config files: 2
 - Documentation: 1
-Total: 11 files
+Total: 11 paths in the comma-separated list
 
 # Don't forget:
 - Generated migration files
@@ -400,7 +431,7 @@ When estimates are significantly off, explain why in completion notes:
 ```bash
 {
   "actual_complexity": "large",
-  "actual_files_changed": 20,
+  "actual_files_changed": "lib/kanban_web/controllers/oauth_controller.ex, ... (20 paths)",
   "time_spent_minutes": 240,
   "completion_notes": "Task underestimated due to undocumented OAuth2 token refresh flows and complex redirect handling. Future OAuth2 tasks should be estimated as 'large'."
 }
@@ -466,7 +497,9 @@ Why: Feature required edge case tests, integration tests, mocking setup
 
 ## Analytics Queries
 
-You can query estimation accuracy to learn patterns. `complexity` and
+Whoever runs the Stride instance can query estimation accuracy directly in its
+PostgreSQL database to learn patterns; the API does not run SQL, so an agent
+working through the API cannot use these. `complexity` and
 `actual_complexity` are stored as text, so the queries rank them explicitly
 (`small` = 1, `medium` = 2, `large` = 3). Comparing the two columns directly
 with `>` would compare the strings alphabetically, which puts `large` below
@@ -550,19 +583,22 @@ When you discover additional work during a task, **create new tasks** rather tha
 # Current task: "Add user authentication"
 # Discovered during work: "Need password reset flow"
 
-# 1. Complete current task
-curl -X PATCH /api/tasks/W42/complete \
+# 1. Complete current task (only the estimation fields and notes are shown;
+#    send the other required fields as in "When Completing a Task" above)
+curl -X PATCH https://www.stridelikeaboss.com/api/tasks/W42/complete \
   -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "actual_complexity": "medium",
-    "actual_files_changed": 6,
+    "actual_files_changed": "lib/kanban/accounts.ex, ... (6 paths)",
     "time_spent_minutes": 90,
     "completion_notes": "Authentication complete. Discovered need for password reset flow - creating follow-up task."
   }'
 
-# 2. Create follow-up task
-curl -X POST /api/tasks \
+# 2. Create follow-up task (with no column_id it lands in Backlog until a human moves it to Ready)
+curl -X POST https://www.stridelikeaboss.com/api/tasks \
   -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{
     "task": {
       "title": "Add password reset flow",
@@ -588,12 +624,12 @@ Providing estimation feedback helps everyone:
 
 1. **Always provide** all three fields when completing tasks
 2. **Be honest** about actual complexity experienced
-3. **Count all files** you modified, including tests and config
+3. **List all files** you modified, including tests and config, as a comma-separated string
 4. **Track actual time** from start to completion
 5. **Document mismatches** to help improve future estimates
 6. **Create follow-up tasks** instead of expanding scope
 
-This feedback loop improves estimation accuracy over time, helping create better task estimates for everyone.
+Kept honestly, this record lets the people and agents who write tasks compare their estimates with what really happened, and size the next tasks better.
 
 ## See Also
 

@@ -7,9 +7,18 @@ This document explains which fields are visible in the task creation and editing
 As a board owner, you can control which optional task fields appear on task forms by toggling their visibility in the board settings:
 
 1. Navigate to your board
-2. Click "Edit board"
-3. Scroll to the "Field Visibility Settings" section
+2. Open the **Settings** tab
+3. Find the "Field visibility" section
 4. Toggle checkboxes to show/hide fields
+
+Each checkbox saves as soon as you click it; there is no separate save step for
+field visibility. Only the board owner can change these settings. Other members
+see a note that only the owner can change them.
+
+The older Edit Board page, opened from the pencil icon ("Edit board") on the
+board's card in your boards list, has the same checkboxes under "Field
+Visibility Settings", except **Behaviour/Test Matrix**, which only the Settings
+tab offers.
 
 ### Configurable Fields
 
@@ -29,7 +38,18 @@ The following fields can be shown or hidden via board settings:
 - **Required Agent Capabilities** - Agent capabilities needed for claiming
 - **Security Considerations** - Security requirements and warnings
 - **Testing Strategy** - Unit tests, integration tests, manual tests
-- **Integration Points** - Telemetry events, PubSub broadcasts, external APIs
+- **Integration Points** - Telemetry events, PubSub broadcasts, Phoenix Channels, external APIs
+- **Technical Details** - Free-form technical notes, as a JSON object
+- **Behaviour/Test Matrix** - Behaviours paired with the tests that cover them (Settings tab only)
+
+On a new board only **Acceptance Criteria** is shown; every other field starts
+hidden until the owner turns it on.
+
+On a board whose paid fields are locked, **Observability** still shows Logging
+Requirements but hides Telemetry Event and Metrics to Track. Paid fields are
+locked only while paid plans are enforced and the board is not in an
+Organization's workspace; with enforcement off, which is the default, they are
+never locked.
 
 ## Always-Visible Fields
 
@@ -43,10 +63,14 @@ These fields appear on every task form, regardless of board settings:
 - **Priority** - Low, Medium, High, or Critical (required)
 - **Status** - Open, In Progress, Blocked, or Completed (required)
   - When set to "Completed", automatically sets `completed_at` timestamp
-  - Automatically unblocks any tasks that depend on this task
+  - Tasks that depend on this one become claimable once all of their dependencies are completed
 - **Assigned To** - User assigned to task
 - **Column** - Which column to place the task in (new tasks only)
-- **Needs Review** - Whether task requires human review before completion
+- **Human Task** - Marks the task for people only, so agents are never offered it
+- **Labels** - The board's labels to attach to the task
+
+**Needs Review** - whether the task requires human review before completion -
+appears only on AI-optimized boards.
 
 ### Always-Visible Management Fields
 - **Dependencies** - Task identifiers that must complete first
@@ -65,7 +89,7 @@ The **Actual Metrics** section only appears when a task has actual metrics data 
 
 **Fields in This Section:**
 - **Actual Complexity** - Actual complexity level (Small, Medium, Large)
-- **Actual Files Changed** - Number of files actually modified
+- **Actual Files Changed** - The files actually modified, as free text (agents send a comma-separated list of paths)
 - **Time Spent (minutes)** - Actual time spent on the task
 
 **Why This Design?**
@@ -75,10 +99,13 @@ The **Actual Metrics** section only appears when a task has actual metrics data 
 
 ### Review Queue
 
-The **Review Queue** section only appears when a task has a review status set.
+The **Review Queue** section only appears on AI-optimized boards, and only for a task that is in the review workflow.
 
 **When It Appears:**
-- The task has a value in `review_status` (pending, approved, changes_requested, or rejected)
+- The board is AI-optimized, **and** any of these is true:
+  - The task has a value in `review_status` (pending, approved, changes_requested, or rejected)
+  - The task is in the Review column
+  - The task has `needs_review` set
 
 **When It's Hidden:**
 - For tasks that have not yet been reviewed, this section is hidden to reduce form clutter
@@ -134,22 +161,32 @@ When visible, the Agent Tracking section includes:
 
 ## API Behavior
 
-When creating or updating tasks via the API, all fields are available regardless of board visibility settings:
+When creating or updating tasks via the API, board visibility settings never decide which fields are accepted:
 
-- Field visibility settings only affect the **UI form**
-- API endpoints accept all fields at all times
+- Field visibility settings only affect the **UI**: the task form and the sections shown when you view a task
+- A field hidden on the board is still accepted by the API whenever a client may set it at all
 - This allows agents to populate any field they need
 
-For example, an agent can set `acceptance_criteria` via API even if that field is hidden in the UI form. The data is saved, but won't appear in the form unless the board owner enables that field.
+Fields the server owns are a separate rule that visibility does not change: some
+are ignored on create and some are refused on update. See
+[Fields ignored on create](TASK-WRITING-GUIDE.md#fields-ignored-on-create) and
+[Fields PATCH will not change](TASK-WRITING-GUIDE.md#fields-patch-will-not-change).
+
+For example, an agent can set `acceptance_criteria` via API even if that field is hidden in the UI form. The data is saved, but won't appear in the form or the task view unless the board owner enables that field.
+
+Board settings are not the only limit on what the API stores. When paid plans
+are enforced, `telemetry_event` and `metrics_to_track` are dropped on a board
+that is not in an Organization's workspace, and the response carries a
+`warnings` list saying so (see [Warnings](api/post_tasks.md#warnings)).
 
 ## Updating Field Visibility
 
 When a board owner changes field visibility settings:
 
-1. Changes take effect immediately
+1. Changes take effect immediately, as each checkbox is clicked
 2. No data is lost - hidden fields retain their values
 3. Hidden fields can be shown again at any time
-4. All connected users see the updated form in real-time (via PubSub)
+4. The change is broadcast to everyone viewing the board (via PubSub)
 
 ## Best Practices
 
