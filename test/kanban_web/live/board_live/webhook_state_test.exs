@@ -15,13 +15,13 @@ defmodule KanbanWeb.BoardLive.WebhookStateTest do
 
   describe "added_by/1" do
     test "names the creator, falls back to their email, and marks a deleted account" do
-      assert WebhookState.added_by(endpoint(created_by: %User{name: "Ada", email: "a@x"})) ==
+      assert endpoint(created_by: %User{name: "Ada", email: "a@x"}) |> WebhookState.added_by() ==
                "Added by Ada"
 
-      assert WebhookState.added_by(endpoint(created_by: %User{name: " ", email: "a@x"})) ==
+      assert endpoint(created_by: %User{name: " ", email: "a@x"}) |> WebhookState.added_by() ==
                "Added by a@x"
 
-      assert WebhookState.added_by(endpoint(created_by: nil)) == "Added by a deleted account"
+      assert endpoint(created_by: nil) |> WebhookState.added_by() == "Added by a deleted account"
     end
 
     test "is nil when the creator was not preloaded" do
@@ -31,21 +31,24 @@ defmodule KanbanWeb.BoardLive.WebhookStateTest do
 
   describe "paused?/2" do
     test "only an enabled endpoint whose creator is not disabled is paused on a locked board" do
-      assert WebhookState.paused?(endpoint([]), true)
-      refute WebhookState.paused?(endpoint(enabled: false), true)
-      refute WebhookState.paused?(endpoint(created_by: @disabled_creator), true)
+      assert endpoint([]) |> WebhookState.paused?(true)
+      refute endpoint(enabled: false) |> WebhookState.paused?(true)
+      refute endpoint(created_by: @disabled_creator) |> WebhookState.paused?(true)
     end
 
     test "nothing is paused on an unlocked board" do
-      refute WebhookState.paused?(endpoint([]), false)
+      refute endpoint([]) |> WebhookState.paused?(false)
     end
   end
 
   describe "not_sending?/1" do
     test "is true only for an enabled endpoint whose creator is disabled" do
-      assert WebhookState.not_sending?(endpoint(created_by: @disabled_creator))
-      refute WebhookState.not_sending?(endpoint(enabled: false, created_by: @disabled_creator))
-      refute WebhookState.not_sending?(endpoint([]))
+      assert endpoint(created_by: @disabled_creator) |> WebhookState.not_sending?()
+
+      refute endpoint(enabled: false, created_by: @disabled_creator)
+             |> WebhookState.not_sending?()
+
+      refute endpoint([]) |> WebhookState.not_sending?()
     end
   end
 
@@ -60,8 +63,8 @@ defmodule KanbanWeb.BoardLive.WebhookStateTest do
     end
 
     test "an endpoint the owner switched off has no note, locked or not" do
-      assert WebhookState.note(endpoint(enabled: false), false) == nil
-      assert WebhookState.note(endpoint(enabled: false), true) == nil
+      assert endpoint(enabled: false) |> WebhookState.note(false) == nil
+      assert endpoint(enabled: false) |> WebhookState.note(true) == nil
     end
 
     test "a disabled creator's endpoint says to disable and enable it, after the move when locked" do
@@ -74,10 +77,10 @@ defmodule KanbanWeb.BoardLive.WebhookStateTest do
     end
 
     test "a paused endpoint says it sends again after the move; an active one has no note" do
-      assert WebhookState.note(endpoint([]), true) ==
+      assert endpoint([]) |> WebhookState.note(true) ==
                "Sends again once this board moves into an Organization."
 
-      assert WebhookState.note(endpoint([]), false) == nil
+      assert endpoint([]) |> WebhookState.note(false) == nil
     end
   end
 end
