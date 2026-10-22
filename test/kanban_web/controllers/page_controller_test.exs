@@ -377,6 +377,24 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "security@letstango.ca"
   end
 
+  test "the legal page headings shrink and hyphenate on phones, so a long German word fits",
+       %{conn: conn} do
+    for path <- [~p"/terms", ~p"/privacy", ~p"/acceptable-use", ~p"/security"] do
+      [class] =
+        conn
+        |> init_test_session(%{locale: "de"})
+        |> get(path)
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("main h1")
+        |> LazyHTML.attribute("class")
+
+      for token <- ~w(text-3xl sm:text-4xl break-words hyphens-auto) do
+        assert token in String.split(class), "#{path} h1 lacks #{token}"
+      end
+    end
+  end
+
   describe "GET /pricing" do
     test "the hero says hosted Stride is free for individuals and small teams", %{conn: conn} do
       body = conn |> get(~p"/pricing") |> html_response(200)
