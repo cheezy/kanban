@@ -430,6 +430,7 @@ Start with the [documentation index](docs/README.md). It lists every doc in `doc
 
 ### Organization Administration
 
+- [Organizations and Workspaces](docs/organizations.md) - What Organizations and workspaces are, the Free and Organization plans, roles, invitations, moving a board into a workspace and account deletion
 - [Single Sign-On](docs/single-sign-on.md) - Let an Organization's members sign in through your identity provider
 - [SCIM Provisioning](docs/scim-provisioning.md) - Manage an Organization's members from your identity provider
 - [Organization Security Policies](docs/organization-security-policies.md) - Require two-factor authentication and set how long audit events are kept

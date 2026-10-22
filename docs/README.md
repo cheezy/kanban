@@ -20,6 +20,9 @@ under the audience it is written for, with one line saying what it is for.
 
 ## End users (board owners and members)
 
+Board owners deciding whether to move their boards to an Organization should
+read Organizations and Workspaces, the first entry under Organization admins.
+
 - [Getting Started with AI Agents](GETTING-STARTED-WITH-AI.md) — Start here: set up a board and connect your first AI agent to it.
 - [Task Writing Guide](TASK-WRITING-GUIDE.md) — How to write tasks an AI agent can finish without guessing.
 - [Review Workflow](REVIEW-WORKFLOW.md) — How tasks that need review move through the Review column and how to approve or reject them.
@@ -90,6 +93,7 @@ under the audience it is written for, with one line saying what it is for.
 
 ## Organization admins
 
+- [Organizations and Workspaces](organizations.md) — What Organizations and workspaces are, the Free and Organization plans, roles, invitations, moving a board into a workspace and account deletion.
 - [Single Sign-On](single-sign-on.md) — Letting an Organization's members sign in through your identity provider.
 - [SCIM Provisioning](scim-provisioning.md) — Creating and removing an Organization's members from your identity provider.
 - [Organization Security Policies](organization-security-policies.md) — Requiring two-factor authentication for members and setting how long audit events are kept.
