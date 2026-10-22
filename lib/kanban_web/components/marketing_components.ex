@@ -203,27 +203,26 @@ defmodule KanbanWeb.MarketingComponents do
     assigns = assign(assigns, :locales, NavComponents.supported_locales())
 
     ~H"""
-    <div
-      class="relative hidden md:flex items-center"
+    <details
+      class="relative hidden md:block js-mobile-menu group"
       id="marketing-language-switcher"
-      phx-hook="Dropdown"
     >
-      <button
-        type="button"
-        data-dropdown-toggle
-        class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[12.5px] hover:opacity-70 transition-opacity"
+      <summary
+        class="list-none [&::-webkit-details-marker]:hidden [&::marker]:hidden inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[12.5px] cursor-pointer hover:opacity-70 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         style="color: var(--ink-2);"
         aria-label={gettext("Change language")}
+        aria-controls="marketing-language-menu"
+        aria-expanded="false"
       >
         <NavComponents.locale_flag locale={@current_locale} />
         <span style="font-family: var(--font-mono);">
           {String.upcase(@current_locale)}
         </span>
         <.icon name="hero-chevron-down" class="w-2.5 h-2.5" />
-      </button>
+      </summary>
       <div
-        data-dropdown-menu
-        class="hidden absolute top-full right-0 mt-1 py-1 z-50"
+        id="marketing-language-menu"
+        class="absolute top-full right-0 mt-1 py-1 z-50"
         style="background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow-md); min-width: 160px;"
       >
         <form
@@ -257,7 +256,7 @@ defmodule KanbanWeb.MarketingComponents do
           </button>
         </form>
       </div>
-    </div>
+    </details>
     """
   end
 

@@ -152,8 +152,11 @@ defmodule KanbanWeb.MarketingComponentsTest do
       # Each locale option POSTs to /locale/:code
       assert html =~ ~s|action="/locale/en"|
       assert html =~ ~s|action="/locale/fr"|
-      # Phoenix dropdown hook is wired
-      assert html =~ ~s|phx-hook="Dropdown"|
+      # A native disclosure, so it opens on controller pages, where no
+      # LiveView hook runs (a phx-hook="Dropdown" never mounted there)
+      assert html =~ ~r/<details[^>]*id="marketing-language-switcher"/
+      assert html =~ ~s|aria-controls="marketing-language-menu"|
+      refute html =~ ~s|phx-hook="Dropdown"|
     end
 
     test "admin user sees Dashboard and Error Tracker links" do
@@ -333,7 +336,9 @@ defmodule KanbanWeb.MarketingComponentsTest do
       assert document |> LazyHTML.query("nav") |> LazyHTML.attribute("class") |> hd() =~
                "whitespace-nowrap"
 
-      assert document |> LazyHTML.query("details.js-mobile-menu") |> LazyHTML.attribute("class") ==
+      assert document
+             |> LazyHTML.query("details:has(#marketing-mobile-menu)")
+             |> LazyHTML.attribute("class") ==
                ["lg:hidden relative js-mobile-menu group"]
 
       [sign_out | _mobile] =
