@@ -90,11 +90,7 @@ Returns the claimed task and the `before_doing` hook metadata:
     "needs_review": true,
     "type": "work",
     "column_id": 6,
-    "column_name": "Doing",
-    "board_id": 1,
-    "board_name": "Main Board",
     "assigned_to_id": 5,
-    "assigned_to_name": "Agent User",
     "dependencies": [],
     "inserted_at": "2025-12-28T10:00:00Z",
     "updated_at": "2025-12-28T10:30:00Z"
@@ -117,9 +113,42 @@ Returns the claimed task and the `before_doing` hook metadata:
       "AGENT_NAME": "Claude Sonnet 4.5",
       "HOOK_NAME": "before_doing"
     },
-    "timeout": 60000,
+    "timeout": 600000,
     "blocking": true
-  }
+  },
+  "current_skills_version": "1.0"
+}
+```
+
+### Unauthorized (401)
+
+The token is missing or invalid. See
+[401 for a missing or invalid token](README.md#401-for-a-missing-or-invalid-token).
+
+### Forbidden (403)
+
+The token's user does not have owner or modify access to the board:
+
+```json
+{
+  "error": "You do not have write access to claim tasks on this board",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
+}
+```
+
+You asked for a specific task by `identifier`, and it is assigned to a different
+user:
+
+```json
+{
+  "error": "Task 'W21' is assigned to a different user. Only the assigned user can claim it.",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md#claiming-tasks",
+  "common_causes": [
+    "Task 'W21' has a non-nil assigned_to_id pointing to a different user",
+    "The task was pre-assigned via the UI (or cascaded from a goal assignment) to someone else",
+    "Skip this task and call GET /api/tasks/next again — your queue will exclude assigned-to-others tasks automatically"
+  ]
 }
 ```
 
@@ -186,12 +215,15 @@ Or hook execution failed with non-zero exit code:
 }
 ```
 
-Other claim failures:
+### Internal Server Error (500)
+
+The claim failed for an unexpected reason. The cause is logged on the server
+and never sent back:
 
 ```json
 {
-  "error": "Failed to claim task",
-  "reason": "..."
+  "error": "internal_server_error",
+  "message": "Failed to claim task. Please retry; if the failure persists, contact support."
 }
 ```
 
@@ -204,7 +236,7 @@ Other claim failures:
 2. **Execute the `before_doing` hook** on your local machine FIRST
    - Read the hook command from your `.stride.md` file
    - Set up environment variables as needed
-   - Execute the hook command with a 60-second timeout
+   - Execute the hook command within the `timeout` the server sent (600000 ms)
    - Capture the exit code, output, and duration
 
 3. **Call the claim endpoint** - Include the hook execution result in your request
@@ -230,7 +262,7 @@ Other claim failures:
 
 # Step 2: Execute the hook BEFORE claiming
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c 'echo "Starting task..."; git pull origin main' 2>&1)
+OUTPUT=$(timeout 600 bash -c 'echo "Starting task..."; git pull origin main' 2>&1)
 EXIT_CODE=$?
 END_TIME=$(date +%s%3N)
 DURATION=$((END_TIME - START_TIME))
@@ -255,7 +287,7 @@ curl -X POST \
 ```bash
 # Execute hook first
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c 'git pull origin main && npm install' 2>&1)
+OUTPUT=$(timeout 600 bash -c 'git pull origin main && npm install' 2>&1)
 EXIT_CODE=$?
 END_TIME=$(date +%s%3N)
 DURATION=$((END_TIME - START_TIME))
@@ -287,7 +319,7 @@ curl -X POST \
 - Agent capabilities are checked - task must require capabilities you have
 - Dependencies must be satisfied - all dependency tasks must be completed
 - The `before_doing` hook is **blocking** - non-zero exit codes will cause the API to reject your claim
-- The hook timeout is 60 seconds (60000 milliseconds)
+- The hook timeout the server sends is 600 seconds (600000 milliseconds)
 - Tasks can only be claimed from the "Ready" column (not from Backlog or other columns)
 
 ## See Also

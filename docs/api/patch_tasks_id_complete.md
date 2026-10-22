@@ -264,7 +264,12 @@ submitted — `reviewer_result` with its 25 `project_checks`, plus
 That is the largest response in the workflow, and a response that large can
 exceed an agent harness's output-truncation threshold, cutting the JSON
 mid-string so `after_goal` detection silently fails and the goal-completion
-push never fires. The slim view removes that condition at the source.
+push never fires. The slim view removes that condition at the source. If
+you lose the response anyway,
+[GET /api/tasks/:id/after_goal_status](get_tasks_id_after_goal_status.md)
+answers whether the completion armed `after_goal`, and
+[PATCH /api/tasks/:id/after_goal](patch_tasks_id_after_goal.md) takes its
+result.
 
 **What still rides along.** `hooks` and the skills-version keys
 (`current_skills_version`, and `skills_update_required` when your
@@ -290,8 +295,8 @@ selected only after the completion succeeds.
     "priority": "high"
   },
   "hooks": [
-    { "name": "after_doing", "timeout": 120000, "blocking": true, "env": { "...": "..." } },
-    { "name": "before_review", "timeout": 60000, "blocking": true, "env": { "...": "..." } }
+    { "name": "after_doing", "timeout": 600000, "blocking": true, "env": { "...": "..." } },
+    { "name": "before_review", "timeout": 600000, "blocking": true, "env": { "...": "..." } }
   ],
   "current_skills_version": "1.0"
 }
@@ -328,11 +333,7 @@ Returns the completed task and hook metadata. The number of hooks depends on the
     "needs_review": true,
     "type": "work",
     "column_id": 7,
-    "column_name": "Review",
-    "board_id": 1,
-    "board_name": "Main Board",
     "assigned_to_id": 5,
-    "assigned_to_name": "Agent User",
     "completed_by_agent": "ai_agent:claude-sonnet-4-5",
     "time_spent_minutes": 45,
     "completion_notes": "Implemented JWT authentication with refresh tokens. All tests passing.",
@@ -358,7 +359,7 @@ Returns the completed task and hook metadata. The number of hooks depends on the
         "AGENT_NAME": "Claude Sonnet 4.5",
         "HOOK_NAME": "after_doing"
       },
-      "timeout": 120000,
+      "timeout": 600000,
       "blocking": true
     },
     {
@@ -371,10 +372,11 @@ Returns the completed task and hook metadata. The number of hooks depends on the
         "AGENT_NAME": "Claude Sonnet 4.5",
         "HOOK_NAME": "before_review"
       },
-      "timeout": 60000,
+      "timeout": 600000,
       "blocking": true
     }
-  ]
+  ],
+  "current_skills_version": "1.0"
 }
 ```
 
@@ -469,13 +471,13 @@ Or task is not in a valid state to complete:
 
 1. **Complete the work** - Implement all required changes
 
-2. **Execute the `after_doing` hook FIRST** (blocking, 120s timeout)
+2. **Execute the `after_doing` hook FIRST** (blocking, 600s timeout)
    - This hook typically runs tests, builds, or quality checks
    - Example: Run test suite, build project, run linters
    - Capture the exit code, output, and duration
    - If hook fails (non-zero exit code), fix the issues before proceeding
 
-3. **Execute the `before_review` hook SECOND** (blocking, 60s timeout)
+3. **Execute the `before_review` hook SECOND** (blocking, 600s timeout)
    - This hook typically creates PRs, generates documentation, or prepares for review
    - Example: Create pull request, generate API docs, update changelog
    - Capture the exit code, output, and duration
@@ -487,7 +489,7 @@ Or task is not in a valid state to complete:
    - If either hook failed, do NOT call the complete endpoint - fix the issues first
 
 5. **Execute remaining hooks** (returned in the response):
-   - `after_review` hook (blocking, 60s timeout) - only if `needs_review=false`
+   - `after_review` hook (blocking, 600s timeout) - only if `needs_review=false`
 
 6. **Wait for review** (if `needs_review=true`)
    - A human reviewer will approve or request changes
@@ -501,7 +503,7 @@ Or task is not in a valid state to complete:
 # Step 1: Execute after_doing hook FIRST
 # Read hook command from .stride.md (e.g., "mix test && mix credo --strict")
 START_TIME_1=$(date +%s%3N)
-OUTPUT_1=$(timeout 120 bash -c 'mix test && mix format --check-formatted && mix credo --strict' 2>&1)
+OUTPUT_1=$(timeout 600 bash -c 'mix test && mix format --check-formatted && mix credo --strict' 2>&1)
 EXIT_CODE_1=$?
 END_TIME_1=$(date +%s%3N)
 DURATION_1=$((END_TIME_1 - START_TIME_1))
@@ -515,7 +517,7 @@ fi
 # Step 2: Execute before_review hook SECOND
 # Read hook command from .stride.md (e.g., "gh pr create --title '$TASK_TITLE'")
 START_TIME_2=$(date +%s%3N)
-OUTPUT_2=$(timeout 60 bash -c 'gh pr create --title "W21: Implement authentication" --body "Ready for review"' 2>&1)
+OUTPUT_2=$(timeout 600 bash -c 'gh pr create --title "W21: Implement authentication" --body "Ready for review"' 2>&1)
 EXIT_CODE_2=$?
 END_TIME_2=$(date +%s%3N)
 DURATION_2=$((END_TIME_2 - START_TIME_2))
@@ -556,14 +558,14 @@ curl -X PATCH \
 ```bash
 # Execute after_doing hook
 START_TIME_1=$(date +%s%3N)
-OUTPUT_1=$(timeout 120 bash -c 'npm test && npm run lint && npm run build' 2>&1)
+OUTPUT_1=$(timeout 600 bash -c 'npm test && npm run lint && npm run build' 2>&1)
 EXIT_CODE_1=$?
 END_TIME_1=$(date +%s%3N)
 DURATION_1=$((END_TIME_1 - START_TIME_1))
 
 # Execute before_review hook
 START_TIME_2=$(date +%s%3N)
-OUTPUT_2=$(timeout 60 bash -c 'npm run docs:generate' 2>&1)
+OUTPUT_2=$(timeout 600 bash -c 'npm run docs:generate' 2>&1)
 EXIT_CODE_2=$?
 END_TIME_2=$(date +%s%3N)
 DURATION_2=$((END_TIME_2 - START_TIME_2))
@@ -603,7 +605,7 @@ export HOOK_NAME="after_review"
 # ... set all env vars from response
 
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c './scripts/deploy.sh' 2>&1)
+OUTPUT=$(timeout 600 bash -c './scripts/deploy.sh' 2>&1)
 EXIT_CODE=$?
 END_TIME=$(date +%s%3N)
 DURATION=$((END_TIME - START_TIME))
@@ -626,7 +628,7 @@ fi
 - If `needs_review=false`, task automatically moves to Done column with `completed` status
 - Both `after_doing` and `before_review` hooks are **blocking** - non-zero exit codes will cause the API to reject your completion
 - The `after_review` hook is also **blocking** and must be executed after API call returns (only if `needs_review=false`)
-- Hook timeouts: `after_doing` is 120 seconds, `before_review` is 60 seconds, `after_review` is 60 seconds
+- Hook timeouts: the server sends 600 seconds (600000 milliseconds) for `after_doing`, `before_review` and `after_review`
 - Agent model from your API token is automatically recorded as `completed_by_agent`
 - If the task is a goal (parent task), it will only move to Done when all child tasks are complete
 

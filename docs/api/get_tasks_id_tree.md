@@ -52,8 +52,6 @@ Returns the task together with its child tasks and a counts summary:
       "complexity": "large",
       "type": "goal",
       "column_id": 6,
-      "column_name": "Doing",
-      "board_id": 1,
       "created_by_id": 1,
       "created_by_agent": "ai_agent:claude-sonnet-4-5",
       "inserted_at": "2025-12-28T13:00:00Z",

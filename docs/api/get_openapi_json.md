@@ -117,9 +117,9 @@ the file is restored.
 
 ## What the Document Contains
 
-- **Every `/api` route.** That includes `GET /api/tasks/:id/after_goal_status`,
-  `PATCH /api/tasks/:id/after_goal` and the `PUT` alias of
-  `PATCH /api/tasks/:id`, none of which has its own markdown page. Router
+- **Every `/api` route.** That includes the `PUT` alias of
+  `PATCH /api/tasks/:id`, which shares that endpoint's
+  [page](patch_tasks_id.md). Router
   `:id` segments are written in OpenAPI form, `{id}`. Its type is `string`
   because it accepts both a numeric id and an identifier such as `W21`.
 - **Security.** `bearerAuth` (an HTTP Bearer scheme) is the document-wide

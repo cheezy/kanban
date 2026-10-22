@@ -160,10 +160,16 @@ so an unauthorized caller receives the same 403 under either view.
 
 ### Unauthorized (401)
 
-Missing or invalid Bearer token.
+The `Authorization` header is missing, or does not start with `Bearer `:
 
 ```json
-{ "error": "Authentication required" }
+{ "error": "Missing or invalid Authorization header" }
+```
+
+The token is empty or unknown, was revoked or expired, or its user is disabled:
+
+```json
+{ "error": "Invalid API token" }
 ```
 
 ### Forbidden (403)

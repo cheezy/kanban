@@ -69,9 +69,6 @@ The behavior depends on the review status:
     "needs_review": true,
     "type": "work",
     "column_id": 8,
-    "column_name": "Done",
-    "board_id": 1,
-    "board_name": "Main Board",
     "review_status": "approved",
     "review_report": null,
     "completed_at": "2025-12-28T12:00:00Z",
@@ -94,9 +91,10 @@ The behavior depends on the review status:
       "AGENT_NAME": "Unknown",
       "HOOK_NAME": "after_review"
     },
-    "timeout": 60000,
+    "timeout": 600000,
     "blocking": true
-  }
+  },
+  "current_skills_version": "1.0"
 }
 ```
 
@@ -110,10 +108,10 @@ The behavior depends on the review status:
     "title": "Implement authentication",
     "status": "in_progress",
     "column_id": 6,
-    "column_name": "Doing",
     "review_status": "changes_requested",
     "updated_at": "2025-12-28T12:00:00Z"
-  }
+  },
+  "current_skills_version": "1.0"
 }
 ```
 
@@ -210,7 +208,7 @@ that names no task or a task on another board. See
    - They examine the work, test the changes, review code, etc.
    - They set the review status to: `approved`, `changes_requested`, or `rejected`
 
-2. **Execute the `after_review` hook FIRST** (blocking, 60s timeout)
+2. **Execute the `after_review` hook FIRST** (blocking, 600s timeout)
    - This hook typically handles deployment, notifications, or finalization
    - Example: Deploy to production, notify stakeholders, update changelog
    - Capture the exit code, output, and duration
@@ -240,7 +238,7 @@ that names no task or a task on another board. See
 ```bash
 # Step 1: Execute after_review hook FIRST
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c './scripts/deploy.sh && ./scripts/notify_team.sh' 2>&1)
+OUTPUT=$(timeout 600 bash -c './scripts/deploy.sh && ./scripts/notify_team.sh' 2>&1)
 EXIT_CODE=$?
 END_TIME=$(date +%s%3N)
 DURATION=$((END_TIME - START_TIME))
@@ -264,7 +262,7 @@ curl -X PATCH \
 ```bash
 # Execute hook first
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c 'npm run deploy && npm run notify' 2>&1)
+OUTPUT=$(timeout 600 bash -c 'npm run deploy && npm run notify' 2>&1)
 EXIT_CODE=$?
 END_TIME=$(date +%s%3N)
 DURATION=$((END_TIME - START_TIME))
@@ -295,10 +293,10 @@ export TASK_TITLE="Implement authentication"
 export HOOK_NAME="after_review"
 # ... set all env vars
 
-# Read hook command from .stride.md and execute with 60s timeout
+# Read hook command from .stride.md and execute with the 600s timeout the server sent
 # This is BLOCKING - must succeed for endpoint call to work
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c './scripts/deploy_to_production.sh' 2>&1)
+OUTPUT=$(timeout 600 bash -c './scripts/deploy_to_production.sh' 2>&1)
 EXIT_CODE=$?
 END_TIME=$(date +%s%3N)
 DURATION=$((END_TIME - START_TIME))
@@ -321,19 +319,19 @@ fi
 - If approved, the task automatically moves to Done and unblocks dependent tasks
 - If changes requested/rejected, the task moves back to Doing for rework
 - The `after_review` hook is **blocking** - non-zero exit codes will cause the API to reject your request
-- Hook timeout for `after_review` is 60 seconds (60000 milliseconds)
+- The `after_review` hook timeout the server sends is 600 seconds (600000 milliseconds)
 - Parent goals automatically move to Done when all child tasks are complete
 - This is typically called by an agent polling for review completion, not immediately after `complete`
 
 ## Typical Agent Workflow
 
 1. Implement the work
-2. Execute `after_doing` hook (blocking, 120s timeout)
-3. Execute `before_review` hook (blocking, 60s timeout)
+2. Execute `after_doing` hook (blocking, 600s timeout)
+3. Execute `before_review` hook (blocking, 600s timeout)
 4. Complete task: `PATCH /api/tasks/:id/complete` with both hook results
 5. Wait for human review (poll periodically or use webhooks)
 6. When review status is set to approved:
-   - Execute `after_review` hook (blocking, 60s timeout)
+   - Execute `after_review` hook (blocking, 600s timeout)
    - Call `PATCH /api/tasks/:id/mark_reviewed` with hook result
 7. If changes requested, fix issues and repeat from step 1
 

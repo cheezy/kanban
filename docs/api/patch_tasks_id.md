@@ -20,6 +20,8 @@ Authorization: Bearer <your_api_token>
 **Endpoint:** `/api/tasks/:id`
 **Content-Type:** application/json
 
+`PUT /api/tasks/:id` is routed to the same action. It takes the same body and returns the same responses.
+
 ### URL Parameters
 
 | Parameter | Type | Required | Description |
@@ -114,7 +116,7 @@ These fields are not unwritable; they are written **somewhere else**. Use the en
 | `review_status`, `review_notes` | The review **verdict**, recorded by a human reviewing in the board UI. No API route sets it: [`mark_reviewed`](patch_tasks_id_mark_reviewed.md) *reads* `review_status` and errors when it has not been set |
 | `reviewed_at`, `reviewed_by_id` | Review **attribution**, stamped by the server when a review is recorded — by [`mark_reviewed`](patch_tasks_id_mark_reviewed.md) and by the board UI review form |
 | `changed_files` | [`PUT /api/tasks/:id/changed_files`](put_tasks_id_changed_files.md), its sole writer |
-| `after_goal_status`, `after_goal_result`, `after_goal_attempts` | `PATCH /api/tasks/:id/after_goal` |
+| `after_goal_status`, `after_goal_result`, `after_goal_attempts` | [`PATCH /api/tasks/:id/after_goal`](patch_tasks_id_after_goal.md) |
 | `archive_reason`, `archive_note`, `archived_by_id` | The archive action |
 | `target_id`, `duplicate_of_id` | Set in the board UI |
 | `identifier`, `parent_id`, `created_by_id`, `created_by_agent` | Set at creation and never changed. A task **cannot be reparented** — ask a human to move it in the board UI |
@@ -238,13 +240,9 @@ Returns the updated task with all fields:
     "needs_review": true,
     "type": "work",
     "column_id": 6,
-    "column_name": "Doing",
-    "board_id": 1,
-    "board_name": "Main Board",
     "created_by_id": 1,
     "created_by_agent": null,
     "assigned_to_id": 5,
-    "assigned_to_name": "Agent User",
     "parent_id": null,
     "why": "Users need secure authentication",
     "what": "JWT-based auth with refresh tokens",
@@ -262,7 +260,8 @@ Returns the updated task with all fields:
     "inserted_at": "2025-12-28T10:00:00Z",
     "updated_at": "2025-12-28T11:30:00Z",
     "completed_at": null
-  }
+  },
+  "current_skills_version": "1.0"
 }
 ```
 
@@ -281,7 +280,8 @@ on every board.
   "data": { "id": 123, "identifier": "W22", "title": "Add metrics dashboard" },
   "warnings": [
     "telemetry_event, metrics_to_track need a board in an Organization and were not stored."
-  ]
+  ],
+  "current_skills_version": "1.0"
 }
 ```
 

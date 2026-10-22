@@ -55,10 +55,12 @@ under the audience it is written for, with one line saying what it is for.
 - [GET /api/tasks/:id/dependencies](api/get_tasks_id_dependencies.md) — List the tasks a task depends on.
 - [GET /api/tasks/:id/dependents](api/get_tasks_id_dependents.md) — List the tasks that depend on a task.
 - [GET /api/tasks/:id/tree](api/get_tasks_id_tree.md) — Fetch a goal or task with its children.
+- [GET /api/tasks/:id/after_goal_status](api/get_tasks_id_after_goal_status.md) — Check whether completing a task armed its goal's `after_goal` hook.
 - [PATCH /api/tasks/:id](api/patch_tasks_id.md) — Update a task's fields.
 - [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md) — Complete a claimed task.
 - [PATCH /api/tasks/:id/mark_done](api/patch_tasks_id_mark_done.md) — Move a task from Review straight to Done.
 - [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) — Record the outcome of a human review: approved, changes requested or rejected.
+- [PATCH /api/tasks/:id/after_goal](api/patch_tasks_id_after_goal.md) — Report the result of a goal's `after_goal` hook.
 - [POST /api/tasks](api/post_tasks.md) — Create a task, or a goal with nested tasks.
 - [POST /api/tasks/batch](api/post_tasks_batch.md) — Create several goals in one request.
 - [POST /api/tasks/claim](api/post_tasks_claim.md) — Claim a task.

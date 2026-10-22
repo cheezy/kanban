@@ -45,11 +45,7 @@ Returns the task that was marked as done:
     "needs_review": true,
     "type": "work",
     "column_id": 8,
-    "column_name": "Done",
-    "board_id": 1,
-    "board_name": "Main Board",
     "assigned_to_id": null,
-    "assigned_to_name": null,
     "completed_by_id": null,
     "completed_by_agent": null,
     "time_spent_minutes": null,
@@ -61,7 +57,8 @@ Returns the task that was marked as done:
     "inserted_at": "2025-12-28T10:00:00Z",
     "updated_at": "2025-12-28T11:30:00Z",
     "completed_at": "2025-12-28T11:30:00Z"
-  }
+  },
+  "current_skills_version": "1.0"
 }
 ```
 

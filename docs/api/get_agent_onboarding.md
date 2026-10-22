@@ -20,44 +20,55 @@ Get comprehensive onboarding information for new AI agents. This endpoint provid
 
 ### Success (200 OK)
 
-Returns comprehensive onboarding information:
+Returns comprehensive onboarding information. The real response is much longer:
+this example shortens long strings with `...` and elides most arrays and
+objects.
 
 ```json
 {
   "version": "1.0",
+  "skills_version": "1.0",
   "api_base_url": "https://www.stridelikeaboss.com",
+  "⚠️⚠️⚠️_STOP_DO_NOT_PROCEED_UNTIL_SETUP_COMPLETE_⚠️⚠️⚠️": {...},
+  "MANDATORY_SETUP_CHECKLIST": {...},
+  "SETUP_COMPLETION_CONFIRMATION": {...},
+  "required_reading": {...},
   "overview": {
-    "description": "Stride is a kanban-based task management system...",
+    "description": "Stride is a kanban-based task management system designed for AI agents with integrated workflow hooks.",
+    "agent_workflow_pattern": "Agents should work continuously: claim task → complete → ...",
     "workflow_summary": "Ready → Doing → Review → Done",
     "key_features": [...]
   },
   "quick_start": [
-    "1. Get your API token from your user/project manager",
-    "2. Create .stride_auth.md with authentication details",
+    "Windows users: See https://www.stridelikeaboss.com/docs/WINDOWS-SETUP.md for platform-specific setup ...",
+    "1. Check if .stride_auth.md exists - if NOT, create by copying the ENTIRE file_templates.stride_auth_md content exactly",
     ...
   ],
   "file_templates": {
     "stride_auth_md": "# Stride API Authentication\n\n...",
     "stride_md": "# Stride Configuration\n\n..."
   },
-  "workflow": {
-    "claim_task": {
+  "workflow": [
+    {
+      "name": "claim_task",
       "endpoint": "POST https://www.stridelikeaboss.com/api/tasks/claim",
-      "description": "Claim next available task",
+      "description": "Claim next available task matching your capabilities. ...",
       "returns": "Task data + before_doing hook metadata",
-      "documentation_url": "docs/api/post_tasks_claim.md"
+      "required_parameters": ["before_doing_result"],
+      "hook_validation": "MANDATORY - Must execute before_doing hook BEFORE calling this endpoint ...",
+      "documentation_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/post_tasks_claim.md"
     },
     ...
-  },
+  ],
   "hooks": {
-    "description": "Hooks execute on YOUR machine, not the server...",
+    "description": "Hooks execute on YOUR machine, not the server. Server provides metadata only.",
     "available_hooks": [
       {
         "name": "before_doing",
         "blocking": true,
-        "timeout": 60000,
+        "timeout": 600000,
         "when": "Before starting work on a task",
-        "typical_use": "Setup workspace, pull latest code"
+        "typical_use": "Pull latest code"
       },
       ...
     ],
@@ -70,73 +81,67 @@ Returns comprehensive onboarding information:
     "openapi_url": "https://www.stridelikeaboss.com/api/openapi.json",
     "workspace_tokens": {...},
     "endpoints": {
-      "discovery": [...],
+      "discovery": [
+        {
+          "method": "GET",
+          "path": "/api/boards",
+          "description": "List the boards this token can use: ...",
+          "auth_required": true,
+          "documentation_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/get_boards.md"
+        },
+        ...
+      ],
       "management": [...],
       "creation": [...]
     }
   },
+  "api_schema": {...},
+  "task_creation_requirements": {...},
+  "claude_code_skills": {...},
   "multi_agent_instructions": {
-    "description": "Always-active code completion guidance for other AI assistants",
+    "description": "Always-active code completion guidance for AI assistants other than Claude Code. ...",
+    "note": "Claude Code users should use the claude_code_skills section above ...",
     "formats": {
       "copilot": {
-        "description": "GitHub Copilot plugin (recommended: copilot plugin install https://github.com/cheezy/stride-copilot)",
+        "description": "Stride Copilot Plugin — provides 6 Copilot-adapted skills and 4 custom agents via copilot plugin install",
         "installation_unix": "copilot plugin install https://github.com/cheezy/stride-copilot",
         "installation_windows": "copilot plugin install https://github.com/cheezy/stride-copilot",
-        "fallback_file_path": ".github/copilot-instructions.md",
-        "fallback_download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md",
-        "fallback_installation_unix": "curl -o .github/copilot-instructions.md [fallback_download_url]",
-        "fallback_installation_windows": "Invoke-WebRequest -Uri \"[fallback_download_url]\" -OutFile .github/copilot-instructions.md"
+        "update": "copilot plugin update stride-copilot",
+        "plugin_repo": "https://github.com/cheezy/stride-copilot",
+        "skills_provided": [...],
+        "custom_agents": [...],
+        "note": "...",
+        "fallback_note": "...",
+        "uninstall": "..."
       },
-      "opencode": {
-        "description": "OpenCode plugin with automatic hook execution (recommended: add to opencode.json)",
-        "installation_unix": "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-opencode/main/install.sh | bash -s -- --project",
-        "config_file": "opencode.json",
-        "config_entry": "{\"plugin\": [\"github:cheezy/stride-opencode\"]}",
-        "fallback_download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md",
-        "fallback_installation_unix": "curl -o .github/copilot-instructions.md [fallback_download_url]"
-      },
-      "codex": {
-        "description": "Codex CLI plugin with 6 adapted skills and 4 subagents (no automatic hook interception)",
-        "installation_unix": "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash",
-        "installation_project": "curl -fsSL https://raw.githubusercontent.com/cheezy/stride-codex/main/install.sh | bash -s -- --project",
-        "agents_file": "AGENTS.md",
-        "fallback_download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/copilot-instructions.md",
-        "fallback_installation_unix": "cp ~/.agents/AGENTS.md ./AGENTS.md"
-      },
-      "cursor": {
-        "file_path": ".cursorrules",
-        "description": "Cursor rules",
-        "download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/cursorrules.txt",
-        "installation_unix": "curl -o .cursorrules [download_url]",
-        "installation_windows": "Invoke-WebRequest -Uri \"[download_url]\" -OutFile .cursorrules"
-      },
-      "windsurf": {
-        "file_path": ".windsurfrules",
-        "description": "Windsurf Cascade rules",
-        "download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/windsurfrules.txt",
-        "installation_unix": "curl -o .windsurfrules [download_url]",
-        "installation_windows": "Invoke-WebRequest -Uri \"[download_url]\" -OutFile .windsurfrules"
-      },
-      "aider": {
-        "file_path": ".aider.conf.yml",
-        "description": "Aider configuration",
-        "download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/aider.conf.yml",
-        "installation_unix": "curl -o .aider.conf.yml [download_url]",
-        "installation_windows": "Invoke-WebRequest -Uri \"[download_url]\" -OutFile .aider.conf.yml"
-      },
-      "continue": {
-        "file_path": ".continue/config.json",
-        "description": "Continue.dev configuration",
-        "download_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/multi-agent-instructions/continue-config.json",
-        "installation_unix": "mkdir -p .continue && curl -o .continue/config.json [download_url]",
-        "installation_windows": "New-Item -ItemType Directory -Force -Path .continue; Invoke-WebRequest -Uri \"[download_url]\" -OutFile .continue/config.json"
-      }
-    }
+      "codex": {...},
+      "continue": {...},
+      "cursor": {...},
+      "gemini": {...},
+      "kimi": {...},
+      "opencode": {...},
+      "windsurf": {...}
+    },
+    "safe_installation": [...],
+    "installation_warning": "...",
+    "usage_notes": [...]
   },
+  "common_mistakes_agents_make": {...},
+  "first_session_vs_returning": {...},
+  "memory_strategy": {...},
+  "session_initialization": {...},
+  "quick_reference_card": {...},
   "resources": {
     "documentation_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
     "api_workflow_guide": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AI-WORKFLOW.md",
-    "changelog_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/CHANGELOG.md"
+    "authentication_guide": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AUTHENTICATION.md",
+    "capabilities_guide": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-CAPABILITIES.md",
+    "changelog_url": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/CHANGELOG.md",
+    "estimation_feedback_guide": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/ESTIMATION-FEEDBACK.md",
+    "hook_execution_guide": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/AGENT-HOOK-EXECUTION-GUIDE.md",
+    "review_workflow_guide": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/REVIEW-WORKFLOW.md",
+    "task_writing_guide": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md",
+    "unclaim_guide": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/UNCLAIM-TASKS.md"
   }
 }
 ```
@@ -181,7 +186,7 @@ High-level description of Stride and its key features for agents.
 
 ### `quick_start`
 
-Step-by-step instructions to get started (5 steps).
+Step-by-step setup instructions, as an array of strings.
 
 ### `file_templates`
 
@@ -198,12 +203,17 @@ Both templates include:
 
 ### `workflow`
 
-Details for each workflow step with:
+An array with one object per workflow step (`claim_task`, `complete_task`,
+`upload_changed_files`, `mark_reviewed`, `unclaim_task`). Each has:
 
-- Endpoint URL
-- Description
-- What it returns
-- Link to detailed documentation
+- `name`
+- `endpoint` (method and full URL)
+- `description`
+- `returns`
+- `required_parameters`, where the step needs any
+- `hook_validation`, on every step except `unclaim_task` (it says how the
+  step's hook result is checked, or that the step is not a hook endpoint)
+- `documentation_url`, a link to the detailed page
 
 ### `hooks`
 
@@ -218,19 +228,21 @@ Complete hook system information:
 
 Always-active code completion guidance for AI assistants other than Claude Code:
 
-- **Description**: Complementary approach to Claude Code Skills
-- **Formats**: Seven AI assistant formats (Copilot, OpenCode, Codex, Cursor, Windsurf, Aider, Continue.dev)
-- **Download URLs**: Direct links to instruction files hosted on GitHub
-- **Installation**: Platform-specific download commands (Unix/Linux/macOS and Windows)
+- `description` and `note` — how this complements Claude Code Skills
+- `formats` — one entry per assistant: `copilot`, `codex`, `continue`,
+  `cursor`, `gemini`, `kimi`, `opencode` and `windsurf`
+- `safe_installation`, `installation_warning` and `usage_notes` — how to
+  install without overwriting existing configuration
 
-Each format includes:
+Each format entry has a `description` and installation commands for
+Unix/Linux/macOS (`installation_unix`) and Windows (`installation_windows`).
+The other keys depend on how that assistant is set up:
 
-- File path where instructions should be placed
-- Description of the AI assistant
-- Download URL for the instruction file
-- Installation command for Unix/Linux/macOS (using curl)
-- Installation command for Windows (using PowerShell)
-- Token limit information
+- Plugin formats (`copilot`, `codex`, `gemini`, `opencode`) name their
+  repository (`plugin_repo` or `extension_repo`), the skills and agents they
+  provide, and a `fallback_note` for manual installation.
+- Instruction-file formats (`continue`, `cursor`, `kimi`, `windsurf`) give a
+  `file_path` and a `token_limit`. `kimi` also gives a `download_url`.
 
 **Note**: Claude Code users should use the `claude_code_skills` section instead for comprehensive workflow enforcement. The recommended entry point for all platforms is the `stride-workflow` orchestrator skill, which walks through the complete task lifecycle (claim → explore → implement → review → complete) in a single skill.
 
@@ -246,11 +258,13 @@ plus an organized list of the core API endpoints:
 
 Each endpoint includes:
 
-- HTTP method
-- Full path
-- Description
-- Which hooks it returns (if any)
-- Link to detailed documentation
+- `method` and `path`
+- `description`
+- `auth_required`
+- `documentation_url`, a link to the detailed page
+
+Some endpoints also carry `required_parameters`, `hook_validation_required`
+and `returns_hooks` (the hooks the response includes).
 
 `workspace_tokens` explains workspace-scoped tokens: who creates them, the
 `X-Stride-Board` header and `board_id` parameter that name the board each

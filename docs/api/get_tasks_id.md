@@ -38,13 +38,9 @@ Authorization: Bearer <your_api_token>
     "needs_review": true,
     "type": "work",
     "column_id": 6,
-    "column_name": "Doing",
-    "board_id": 1,
-    "board_name": "Main Board",
     "created_by_id": 1,
     "created_by_agent": null,
     "assigned_to_id": 5,
-    "assigned_to_name": "Agent User",
     "completed_by_agent": null,
     "time_spent_minutes": null,
     "completion_notes": null,
@@ -57,7 +53,8 @@ Authorization: Bearer <your_api_token>
     "updated_at": "2025-12-28T11:00:00Z",
     "completed_at": null
   },
-  "comment_count": 2
+  "comment_count": 2,
+  "current_skills_version": "1.0"
 }
 ```
 
@@ -113,19 +110,15 @@ that names no task or a task on another board. See
 | `identifier` | string | Human-readable identifier (W21, G10, etc.) |
 | `title` | string | Task title |
 | `description` | string | Detailed description |
-| `status` | string | Current status: `open`, `in_progress`, `blocked`, `completed` (a task awaiting review keeps `in_progress`; its `column_name` is the Review column) |
+| `status` | string | Current status: `open`, `in_progress`, `blocked`, `completed` (a task awaiting review keeps `in_progress`; its `column_id` is the Review column's) |
 | `priority` | string | Priority: `low`, `medium`, `high`, `critical` |
 | `complexity` | string | Complexity: `small`, `medium`, `large` |
 | `needs_review` | boolean | Whether task requires human review before completion |
 | `type` | string | Type: `work`, `defect`, or `goal` |
 | `column_id` | integer | Current column ID |
-| `column_name` | string | Current column name |
-| `board_id` | integer | Board ID |
-| `board_name` | string | Board name |
 | `created_by_id` | integer | User ID who created the task |
 | `created_by_agent` | string | Agent that created the task (e.g., "ai_agent:claude-sonnet-4-5") |
 | `assigned_to_id` | integer | User ID assigned to the task (null if unclaimed) |
-| `assigned_to_name` | string | Name of assigned user |
 | `completed_by_agent` | string | Agent that completed the task |
 | `time_spent_minutes` | integer | Time spent on task in minutes |
 | `completion_notes` | string | Notes provided when completing the task |

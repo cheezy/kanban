@@ -599,8 +599,6 @@ path. Reword either one.
     "needs_review": true,
     "type": "work",
     "column_id": 5,
-    "column_name": "Ready",
-    "board_id": 1,
     "created_by_id": 5,
     "created_by_agent": "ai_agent:claude-sonnet-4-5",
     "required_capabilities": ["code_generation"],
@@ -609,7 +607,8 @@ path. Reword either one.
     ],
     "inserted_at": "2025-12-28T13:00:00Z",
     "updated_at": "2025-12-28T13:00:00Z"
-  }
+  },
+  "current_skills_version": "1.0"
 }
 ```
 
@@ -685,7 +684,26 @@ neither field gets no `warnings` key. For a goal, `warnings` sits beside
   "data": { "id": 123, "identifier": "W22", "title": "Add metrics dashboard" },
   "warnings": [
     "telemetry_event, metrics_to_track need a board in an Organization and were not stored."
-  ]
+  ],
+  "current_skills_version": "1.0"
+}
+```
+
+### Unauthorized (401)
+
+The token is missing or invalid. See
+[401 for a missing or invalid token](README.md#401-for-a-missing-or-invalid-token).
+
+### Forbidden (403)
+
+The token's user does not have owner or modify access to the board. This is
+checked before anything is created:
+
+```json
+{
+  "error": "Not authorized — board write access (owner or modify) required",
+  "documentation": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/README.md",
+  "getting_started": "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/GETTING-STARTED-WITH-AI.md"
 }
 ```
 

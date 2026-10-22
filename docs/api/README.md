@@ -10,7 +10,7 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
 4. [Hook System](#hook-system)
 5. [Completion Validation (explorer_result, reviewer_result, workflow_steps)](#completion-validation-explorer_result-reviewer_result-workflow_steps)
 6. [API Endpoints](#api-endpoints) (including the [OpenAPI specification](#api-specification) and the [MCP server](#mcp-server))
-7. [Errors](#errors) (including [Documentation links in error bodies](#documentation-links-in-error-bodies), [400 for a malformed query string or body](#400-for-a-malformed-query-string-or-body), [406 Not Acceptable](#406-not-acceptable) and [404 for out-of-range numeric IDs](#404-for-out-of-range-numeric-ids))
+7. [Errors](#errors) (including [Documentation links in error bodies](#documentation-links-in-error-bodies), [400 for a malformed query string or body](#400-for-a-malformed-query-string-or-body), [406 Not Acceptable](#406-not-acceptable), [401 for a missing or invalid token](#401-for-a-missing-or-invalid-token), [429 Too Many Requests](#429-too-many-requests) and [404 for out-of-range numeric IDs](#404-for-out-of-range-numeric-ids))
 8. [Configuration Files](#configuration-files)
 9. [Examples](#examples)
 
@@ -30,7 +30,7 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
    ```bash
    # Execute before_doing hook FIRST and capture result
    START_TIME=$(date +%s%3N)
-   OUTPUT=$(timeout 60 bash -c 'git pull origin main' 2>&1)
+   OUTPUT=$(timeout 600 bash -c 'git pull origin main' 2>&1)
    EXIT_CODE=$?
    DURATION=$(($(date +%s%3N) - START_TIME))
 
@@ -51,7 +51,7 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
 
    # Execute after_doing hook FIRST and capture result
    START_TIME=$(date +%s%3N)
-   OUTPUT=$(timeout 120 bash -c 'mix test' 2>&1)
+   OUTPUT=$(timeout 600 bash -c 'mix test' 2>&1)
    EXIT_CODE=$?
    DURATION=$(($(date +%s%3N) - START_TIME))
 
@@ -107,16 +107,16 @@ Tasks may also be `blocked` when one of their dependencies is incomplete.
 ### Typical Agent Workflow
 
 1. **Discover tasks** — `GET /api/tasks/next` or `GET /api/tasks` (on large boards, page with `limit`/`cursor` and narrow with filters such as `status` or `updated_since`; to sync with `updated_since`, follow [Incremental sync](get_tasks.md#incremental-sync))
-2. **Execute `before_doing` hook FIRST** (blocking, 60s timeout) — capture `exit_code`, `output`, `duration_ms`
+2. **Execute `before_doing` hook FIRST** (blocking, 600s timeout) — capture `exit_code`, `output`, `duration_ms`
 3. **Claim a task** — `POST /api/tasks/claim` with `before_doing_result` (required)
 4. **Explore the codebase** — dispatch a task-explorer subagent (where supported) or read key_files manually; capture the outcome for `explorer_result`
 5. **Implement the change**
 6. **Review your own work** — dispatch a task-reviewer subagent (where supported) or self-review against acceptance_criteria; capture the outcome for `reviewer_result`
-7. **Execute `after_doing` hook** (blocking, 120s timeout) — run tests / lint / format / security scans
-8. **Execute `before_review` hook** (blocking, 60s timeout) — open a PR, generate docs, etc.
+7. **Execute `after_doing` hook** (blocking, 600s timeout) — run tests / lint / format / security scans
+8. **Execute `before_review` hook** (blocking, 600s timeout) — open a PR, generate docs, etc.
 9. **Complete the task** — `PATCH /api/tasks/:id/complete` with `after_doing_result`, `before_review_result`, `explorer_result`, `reviewer_result`, and the six-entry `workflow_steps` telemetry array
 10. **Wait for human review** if `needs_review=true`; otherwise the task moves to Done immediately
-11. **Execute `after_review` hook** (blocking, 60s timeout) — deploy, notify stakeholders
+11. **Execute `after_review` hook** (blocking, 600s timeout) — deploy, notify stakeholders
 12. **Finalize review** — `PATCH /api/tasks/:id/mark_reviewed` with `after_review_result` (required, only after step 11 succeeds)
 
 ### Task Status vs. Column
@@ -148,19 +148,32 @@ Stride uses a **client-side hook execution** architecture with **mandatory API-l
 
 | Hook | When | Blocking | Timeout | Typical Use |
 |------|------|----------|---------|-------------|
-| `before_doing` | Before starting work | Yes | 60s | Setup workspace, pull latest code |
-| `after_doing` | After completing work | Yes | 120s | Run tests, build project, lint code |
-| `before_review` | Entering review | No | 60s | Create PR, generate docs |
-| `after_review` | After review approval | No | 60s | Deploy, notify stakeholders |
+| `before_doing` | Before starting work | Yes | 600s | Setup workspace, pull latest code |
+| `after_doing` | After completing work | Yes | 600s | Run tests, build project, lint code |
+| `before_review` | Entering review | Yes | 600s | Create PR, generate docs |
+| `after_review` | After review approval | Yes | 600s | Deploy, notify stakeholders |
+
+A fifth hook, `after_goal`, runs when the last child task of a goal is
+completed. It is also blocking with a 600s timeout; see
+[PATCH /api/tasks/:id/after_goal](patch_tasks_id_after_goal.md).
+
+The server sends each hook's `blocking` flag and `timeout` (in milliseconds) in
+the hook metadata. Today every hook is sent as `"blocking": true` with a
+`"timeout"` of `600000`.
 
 ### Blocking vs Non-Blocking
 
-- **Blocking hooks** — If they fail, the task action should fail
-  - `before_doing` — Don't proceed if setup fails
-  - `after_doing` — Don't complete if tests fail
-- **Non-blocking hooks** — Log errors but continue
-  - `before_review` — Continue even if PR creation fails
-  - `after_review` — Continue even if deployment fails
+Every hook is blocking. The server checks the result you send for each one, and
+rejects the request with a `422` when it is missing or its `exit_code` is not
+`0`:
+
+- `before_doing` — `POST /api/tasks/claim` needs `before_doing_result`
+- `after_doing` and `before_review` — `PATCH /api/tasks/:id/complete` needs both
+  results
+- `after_review` — `PATCH /api/tasks/:id/mark_reviewed` needs
+  `after_review_result`
+
+Fix the failure and send the request again with the new result.
 
 ### Environment Variables
 
@@ -276,11 +289,13 @@ Skipped steps record `dispatched: false` and a free-text `reason` describing **w
 
 - [POST /api/tasks/claim](post_tasks_claim.md) — Claim a task and receive `before_doing` hook
 - [POST /api/tasks/:id/unclaim](post_tasks_id_unclaim.md) — Unclaim a task you can't complete
-- [PATCH /api/tasks/:id](patch_tasks_id.md) — Update task fields (title, description, labels, etc.)
+- [PATCH /api/tasks/:id](patch_tasks_id.md) — Update task fields (title, description, labels, etc.). `PUT /api/tasks/:id` is the same action
 - [PATCH /api/tasks/:id/complete](patch_tasks_id_complete.md) — Complete a task and receive hooks
 - [PUT /api/tasks/:id/changed_files](put_tasks_id_changed_files.md) — Upload the per-file diff snapshot (sole writer for `tasks.changed_files`)
 - [PATCH /api/tasks/:id/mark_done](patch_tasks_id_mark_done.md) — Bypass review and mark task as done
 - [PATCH /api/tasks/:id/mark_reviewed](patch_tasks_id_mark_reviewed.md) — Finalize review and receive `after_review` hook
+- [PATCH /api/tasks/:id/after_goal](patch_tasks_id_after_goal.md) — Report the result of a goal's `after_goal` hook, which moves the goal to Done on success
+- [GET /api/tasks/:id/after_goal_status](get_tasks_id_after_goal_status.md) — Check whether completing a task armed its goal's `after_goal` hook
 - [POST /api/tasks/:id/comments](post_tasks_id_comments.md) — Add a comment, authored by the token's user and attributed to your agent name
 
 ### Task Creation
@@ -323,10 +338,13 @@ a filter it simply matches nothing.
 | POST | `/api/tasks/claim` | Claim a task | `before_doing` |
 | POST | `/api/tasks/:id/unclaim` | Unclaim a task | No |
 | PATCH | `/api/tasks/:id` | Update task fields | No |
+| PUT | `/api/tasks/:id` | Same as `PATCH /api/tasks/:id` | No |
 | PATCH | `/api/tasks/:id/complete` | Complete a task | `after_doing`, `before_review`, `after_review`* |
 | PUT | `/api/tasks/:id/changed_files` | Upload per-file diff snapshot (sole writer) | No |
 | PATCH | `/api/tasks/:id/mark_done` | Bypass review, mark done | No |
 | PATCH | `/api/tasks/:id/mark_reviewed` | Finalize review | `after_review`* |
+| PATCH | `/api/tasks/:id/after_goal` | Report the `after_goal` hook result for a goal | No |
+| GET | `/api/tasks/:id/after_goal_status` | Check whether completing a task armed `after_goal` | No |
 | POST | `/api/tasks/:id/comments` | Add a task comment | No |
 | POST | `/api/mcp` | MCP server: JSON-RPC over Streamable HTTP | Through its claim and complete tools |
 | GET, DELETE | `/api/mcp` | Not supported, returns `405` | No |
@@ -339,7 +357,9 @@ Every `/api` route returns JSON, errors included. Most error bodies carry an
 `error` string, often with a `message` and documentation keys. Validation
 (changeset) failures return `errors` keyed by field instead. Each endpoint page
 documents its own error responses, and the
-[OpenAPI specification](get_openapi_json.md) lists them per operation.
+[OpenAPI specification](get_openapi_json.md) lists them per operation. The
+`400`, `406`, `401` and `429` responses below can come from any route that
+needs a token, and a page may leave them out.
 
 ### Documentation links in error bodies
 
@@ -437,6 +457,50 @@ with an unsupported `Accept` header gets the 406, not a 401, and the body is the
 same whether or not the token is valid. The body is a fixed string: it never
 echoes the `Accept` header back.
 
+### 401 for a missing or invalid token
+
+Every `/api` route except `GET /api/agent/onboarding` and
+`GET /api/openapi.json` needs a token. A request without a usable one gets a
+`401`. When the `Authorization` header is missing, or does not start with
+`Bearer `:
+
+```json
+{
+  "error": "Missing or invalid Authorization header"
+}
+```
+
+When the token is empty or unknown, was revoked or expired, or belongs to a
+disabled user, the body is the same in every case, so it never shows which one
+applies:
+
+```json
+{
+  "error": "Invalid API token"
+}
+```
+
+### 429 Too Many Requests
+
+Each failed authentication (a `401` above) counts against the client's IP
+address. After 20 failures from one IP address within a minute, every request
+from that address to a route that needs a token gets a `429` until that one-minute
+window ends, even one that carries a valid token:
+
+```http
+HTTP/1.1 429 Too Many Requests
+content-type: application/json; charset=utf-8
+retry-after: 42
+
+{
+  "error": "Too many requests"
+}
+```
+
+`retry-after` is the number of seconds to wait. Requests with a valid token are
+never counted, so normal traffic does not hit this limit. If you see it, check
+that every client on that address sends a working token.
+
 ### 404 for out-of-range numeric IDs
 
 Task IDs and column IDs are stored as signed 64-bit integers. A numeric ID
@@ -461,8 +525,8 @@ This applies to every route that takes a task `:id`:
   `PATCH /api/tasks/:id/mark_done`
 - `GET /api/tasks/:id/dependencies`, `GET /api/tasks/:id/dependents` and
   `GET /api/tasks/:id/tree`
-- `PATCH /api/tasks/:id/after_goal` and `GET /api/tasks/:id/after_goal_status`,
-  which have no page of their own
+- `PATCH /api/tasks/:id/after_goal` and `GET /api/tasks/:id/after_goal_status`
+- `GET /api/tasks/:id/comments` and `POST /api/tasks/:id/comments`
 
 It also applies to `column_id` on `GET /api/tasks` (legacy and paginated mode)
 and on `POST /api/tasks` (as a JSON number or a string).
@@ -563,7 +627,7 @@ gh pr create --title "$TASK_TITLE" --body "Closes $TASK_IDENTIFIER"
 ```bash
 # 1. Execute before_doing hook FIRST and capture result
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c 'git pull origin main && mix deps.get' 2>&1)
+OUTPUT=$(timeout 600 bash -c 'git pull origin main && mix deps.get' 2>&1)
 EXIT_CODE=$?
 DURATION=$(($(date +%s%3N) - START_TIME))
 
@@ -600,7 +664,7 @@ TASK_ID=$(echo $RESPONSE | jq -r '.data.id')
 
 # 7. Execute after_doing hook (blocking)
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 120 bash -c 'mix test && mix credo' 2>&1)
+OUTPUT=$(timeout 600 bash -c 'mix test && mix credo' 2>&1)
 EXIT_CODE=$?
 DURATION=$(($(date +%s%3N) - START_TIME))
 
@@ -611,7 +675,7 @@ fi
 
 # 8. Execute before_review hook (blocking)
 START_TIME=$(date +%s%3N)
-REVIEW_OUTPUT=$(timeout 60 bash -c 'gh pr create ...' 2>&1)
+REVIEW_OUTPUT=$(timeout 600 bash -c 'gh pr create ...' 2>&1)
 REVIEW_EXIT_CODE=$?
 REVIEW_DURATION=$(($(date +%s%3N) - START_TIME))
 
@@ -737,7 +801,7 @@ done
 3. **Include explorer/reviewer results** — `PATCH /complete` requires `explorer_result` and `reviewer_result` per the validation rules above (currently grace-warned, will be strict-rejected once the feature flag flips)
 4. **Include the `workflow_steps` telemetry** — six entries always, one per phase, with `dispatched: false` + a `reason` for any phase intentionally skipped
 5. **Use the 5-value skip-reason enum** — free-form reasons are rejected
-6. **All blocking hooks must succeed** — `before_doing` (60s) and `after_doing` (120s) must exit 0 before the corresponding API call
+6. **All blocking hooks must succeed** — the server sends every hook as blocking with a 600s timeout; `before_doing` and `after_doing` must exit 0 before the corresponding API call
 7. **Provide context** — include `agent_name`, `time_spent_minutes`, `completion_notes`, `completion_summary`, and `actual_complexity` on completion
 8. **Identify your agent on create too** — `POST /api/tasks` and `POST /api/tasks/batch` accept a top-level `agent_name` used for `created_by_agent` attribution when the explicit field and the token's `agent_model` are absent; claim/complete/create requests carrying a usable `agent_name` also update the token's remembered `last_agent_name`, the final create-time fallback (see `POST /api/tasks` docs for the full resolution order)
 9. **Abort on hook failure** — if any blocking hook fails, don't call the API endpoint; fix the issue first

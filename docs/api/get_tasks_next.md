@@ -40,13 +40,9 @@ Returns the next available task that:
     "needs_review": true,
     "type": "work",
     "column_id": 5,
-    "column_name": "Ready",
-    "board_id": 1,
-    "board_name": "Main Board",
     "created_by_id": 1,
     "created_by_agent": null,
     "assigned_to_id": null,
-    "assigned_to_name": null,
     "completed_by_agent": null,
     "time_spent_minutes": null,
     "review_status": null,
@@ -56,7 +52,8 @@ Returns the next available task that:
     "inserted_at": "2025-12-28T10:00:00Z",
     "updated_at": "2025-12-28T10:00:00Z",
     "completed_at": null
-  }
+  },
+  "current_skills_version": "1.0"
 }
 ```
 
