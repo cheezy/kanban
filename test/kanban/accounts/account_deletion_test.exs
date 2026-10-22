@@ -664,7 +664,7 @@ defmodule Kanban.Accounts.AccountDeletionTest do
     # The struct passed in is stale: the row was re-enabled after it was read.
     test "re-checks the account's state under the lock" do
       user = disabled_managed(user_fixture())
-      Repo.update_all(from(u in User, where: u.id == ^user.id), set: [disabled_at: nil])
+      from(u in User, where: u.id == ^user.id) |> Repo.update_all(set: [disabled_at: nil])
 
       assert AccountDeletion.disabled_managed?(user)
       assert {:error, :not_found} = AccountDeletion.delete_disabled_managed_account(user)
