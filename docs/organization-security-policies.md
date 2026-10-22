@@ -8,7 +8,9 @@ An Organization's org-admins set two security policies for everyone in it:
 
 This page describes what each setting does, how the requirement is enforced,
 what the daily retention job removes, and what an operator has to do after
-deploying it. Two-factor itself is described in
+deploying it. Organizations themselves, their roles and their console are
+described in [Organizations and Workspaces](organizations.md). Two-factor
+itself is described in
 [Two-Factor Authentication](TWO-FACTOR-AUTHENTICATION.md), and the database
 side of audit retention in
 [Audit Log Ownership Hardening](audit-log-hardening.md#retention-purge).
@@ -22,11 +24,14 @@ an Organization to access this page." and the refusal is recorded as a
 `permission_denied` audit event. The role is checked again on every change and
 save, so an org-admin demoted while the page is open cannot save.
 
+The page has two cards, **Two-factor authentication** and **Audit log
+retention**, saved together with **Save security policy**:
+
 | Setting | Allowed values | Default |
 |---|---|---|
-| Require two-factor authentication | On or off | Off |
-| Grace period | 1 to 30 days | 7 days |
-| Audit retention | 90 to 3,650 days, or empty to keep events forever | Empty |
+| Require two-factor authentication for every member | On or off | Off |
+| Grace period in days | 1 to 30 days | 7 days |
+| Retention in days | 90 to 3,650 days, or empty (the field shows "Keep forever") to keep events forever | Empty |
 
 An Organization without a saved policy behaves as if it had the defaults.
 The policy is stored in `organization_security_policies`, one row per
@@ -120,7 +125,10 @@ way as the site purge; see
    `site_audit_retention_days`, only when that is set (90 days in
    `config/config.exs`, the period `/privacy` promises);
 3. removes archived tasks archived before `archived_task_retention_days` ago,
-   only when that is set.
+   only when that is set;
+4. removes expired SAML sign-in state (request records and the assertion IDs
+   kept against replay) on every run; see
+   [Single Sign-On](single-sign-on.md#a-saml-sign-in).
 
 The site and archived-task settings are application config. `config/config.exs`
 keeps site events for 90 days and archived tasks for ever; `nil` keeps
@@ -146,8 +154,9 @@ config :kanban, Kanban.Retention.PurgeWorker,
   The job is not retried, because the next day's run repeats it.
 
 Each run records one `retention_purge` audit event with the rows removed per
-Organization (`organization_counts`), for site events (`site_count`) and for
-archived tasks (`archived_task_count`), plus `failed_steps`. A count is `nil`
+Organization (`organization_counts`), for site events (`site_count`), for
+archived tasks (`archived_task_count`) and for expired SAML sign-in state
+(`saml_count`), plus `failed_steps`. A count is `nil`
 when its step did not run.
 
 ## After deploying

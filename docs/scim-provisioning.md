@@ -11,7 +11,8 @@ workspace outside its own Organization.
 SCIM works alongside [Single Sign-On](single-sign-on.md). It uses the same
 verified domains, and the people it creates sign in through that
 connection. Organizations themselves are described in
-[Organization Security Policies](organization-security-policies.md).
+[Organizations and Workspaces](organizations.md), and their security policies
+in [Organization Security Policies](organization-security-policies.md).
 
 ## Setting it up
 
@@ -59,9 +60,18 @@ false is refused (`400`, `scimType: "invalidValue"`).
 ### Deprovisioning
 
 Setting `active` to false, or deleting the user, removes the user's
-Organization membership, their memberships of the Organization's workspaces,
-their access to the boards in those workspaces, and the API tokens for those
-boards. Their open pages are disconnected so they re-check their access.
+Organization membership. In every workspace of the Organization, archived ones
+included, it also removes their workspace membership and their access to the
+boards, owner access included (a board they owned is left to the
+Organization's org-admins), and revokes their API tokens for those boards and
+their workspace tokens. Tasks they still hold under a claim, including ones
+waiting in Review, go back to the board's Ready column; on a board with no
+Ready column they stay where they are. They are unassigned from every other
+task that is not archived, finished ones included, the webhook endpoints they
+created on those boards are disabled (see
+[When the person who added an endpoint leaves](webhooks.md#when-the-person-who-added-an-endpoint-leaves)),
+and open invitations sent to them, or sent by them, in the Organization are
+revoked. Their open pages are disconnected so they re-check their access.
 This happens even when the account was already disabled, so the
 Organization's access never outlives the identity provider's removal. Until
 SCIM re-activates them, signing in through the Organization's
@@ -69,9 +79,10 @@ SCIM re-activates them, signing in through the Organization's
 when the identity provider still lets them sign in.
 
 When the Organization manages the account, it is also **disabled**: every
-session is deleted and every API token the person holds is revoked, on any
-board. A linked account, which the person owns, keeps its personal boards and
-its other access. A site admin is never disabled. Whether the person is
+session is deleted, along with any password-reset or email-change link it has
+not used, and every API token the person holds is revoked, on any board. A
+linked account, which the person owns, keeps its personal boards and its other
+access. A site admin is never disabled. Whether the person is
 still the Organization's is checked again inside the deprovisioning
 transaction, so one who joins another Organization at the same moment is
 answered `404` and is never disabled from here.
@@ -93,10 +104,14 @@ Setting `active` back to true re-activates the user: a `member` membership is
 restored and a managed account is enabled again, but only when SCIM's own
 deprovisioning disabled it. An account a site admin disabled stays disabled,
 and SCIM's request is refused (`409`); once a site admin disables or enables
-the account, SCIM's earlier disable no longer counts as SCIM's. Revoked API tokens and
-deleted sessions are not restored. Re-activation is refused once the person
-has joined another Organization, and for an account the Organization does not
-manage whose email domain it no longer verifies (`400`).
+the account, SCIM's earlier disable no longer counts as SCIM's. Revoked API
+tokens and deleted sessions are not restored, and neither is anything else
+deprovisioning removed: workspace memberships, board access, task assignments
+and disabled webhook endpoints stay as they are. Add the person to workspaces
+again, through the identity provider's groups or the org console.
+Re-activation is refused once the person has joined another Organization, and
+for an account the Organization does not manage whose email domain it no
+longer verifies (`400`).
 
 A request that is refused changes nothing: a PATCH that sets `externalId` and
 `active: false` together on the last org-admin leaves the `externalId` as it
@@ -117,12 +132,19 @@ Groups are the Organization's workspaces (personal workspaces are never
 shown, and archived ones are not listed). The identity provider can read them
 and change their members with `PATCH /Groups/:id`:
 
-- `add` adds Organization members with the `member` role. Adding anyone who
-  is not a member of the Organization is refused (`400`), and an archived
-  workspace gains no members.
+- `add` adds Organization members with the `member` role; someone already in
+  the workspace, such as a guest, keeps their role. Adding anyone who is not a
+  member of the Organization is refused (`400`), and an archived workspace
+  gains no members.
 - `remove`, with a `members[value eq "<id>"]` path or a list of values,
-  removes members together with their access to that workspace's boards.
-  Workspace owners are never removed.
+  removes members the way an org-admin's removal does: they lose their access
+  to that workspace's boards and their board and workspace API tokens there,
+  their claimed tasks go back to Ready as in
+  [Deprovisioning](#deprovisioning), they are unassigned from its tasks that
+  are not archived, the webhook endpoints they created on its boards are disabled
+  unless they can still open the board as an org-admin, and open invitations
+  to that workspace addressed to them are revoked. Workspace owners are never
+  removed.
 - `replace` of `members` adds and removes to match the list it sends.
 
 A change of members moves the Group's `meta.lastModified`. Two PATCHes to one

@@ -10,6 +10,8 @@ creates their account and makes them a member of the Organization.
 
 This page describes the setup, what happens at sign-in, what is refused, and
 what an operator has to know. Organizations themselves are described in
+[Organizations and Workspaces](organizations.md), their two-factor and audit
+retention policies in
 [Organization Security Policies](organization-security-policies.md), and
 password and two-factor sign-in in the
 [Authentication Guide](AUTHENTICATION.md). An identity provider can also
@@ -70,14 +72,15 @@ starts the daily check after its next restart.
 
 Register Stride as an application (a confidential client using the
 authorization code flow) in the identity provider, with the redirect URI the
-page shows, which ends in `/users/sso/callback`. Then enter on the page:
+page shows, which ends in `/users/sso/callback`. Then enter in the page's
+**OpenID Connect identity provider** section:
 
 | Field | What it is |
 |---|---|
 | Issuer URL | The provider's issuer, such as `https://login.example.com`. Stride reads `/.well-known/openid-configuration` under it. |
 | Client ID | The application's client ID. |
 | Client secret | The application's client secret. |
-| Allow sign-in | Off until you turn it on. |
+| Allow sign-in through this identity provider | Off until you turn it on. |
 
 The client secret is stored encrypted and is never sent back to the browser:
 the field is always empty, and saving with it empty keeps the stored secret.
@@ -217,15 +220,15 @@ or with the SP metadata from **Download Stride's SP metadata**
 | Assertion consumer service URL | The entity ID followed by `/acs`; the provider posts responses there (HTTP-POST binding). |
 
 Stride signs nothing and asks for signed assertions or responses
-(`WantAssertionsSigned`). Then either paste the provider's metadata XML, which
-fills the fields, or enter them:
+(`WantAssertionsSigned`). Then either paste the provider's metadata XML into
+**Identity provider metadata XML**, which fills the fields, or enter them:
 
 | Field | What it is |
 |---|---|
 | Identity provider entity ID | The provider's issuer; every response must name it. |
 | Single sign-on URL | The provider's HTTP-Redirect sign-on service, an `https` URL. |
 | Signing certificates (PEM) | One RSA certificate of at least 2048 bits, or two while the provider rotates its key. Bare base64, as metadata carries it, is accepted too. |
-| Allow sign-in | Off until you turn it on. |
+| Allow sign-in through this SAML identity provider | Off until you turn it on. |
 
 Certificates are public, so they are stored unencrypted. Saving records an
 `sso_connection_updated` audit event with `protocol: saml`.
@@ -302,9 +305,12 @@ sign-on message.
 ## Paid access and rate limits
 
 Single sign-on is a paid feature (`:sso`). The org-admin page and every sign-in
-check paid access through `Kanban.Plans`; while paid plans are enforced, the
-single sign-on section of a user's settings shows the shared lock to a user
-without an Organization.
+check paid access through `Kanban.Plans`, which refuses only while paid plans
+are enforced (the `:plans_enforced` setting). Then the page and sign-in are
+refused to someone without paid access, and the single sign-on section of a
+user's settings shows the shared lock to a user without an Organization. With
+enforcement off, nothing is refused. SCIM and the security policy page are not
+paid features and never check it.
 
 The start, callback and SAML assertion consumer service requests are
 throttled per IP address through the `:sso` surface of `Kanban.RateLimit` (60
