@@ -417,6 +417,33 @@ defmodule KanbanWeb.PageControllerTest do
     assert de =~ "Aufbewahrungseinstellung dieser Organisation"
   end
 
+  test "/privacy discloses that audit events about a deleted account are kept", %{conn: conn} do
+    text =
+      conn
+      |> get(~p"/privacy")
+      |> html_response(200)
+      |> LazyHTML.from_document()
+      |> LazyHTML.query("#privacy-deletion")
+      |> LazyHTML.text()
+
+    assert text =~ "we delete your account record"
+    assert text =~ "including your email address and IP address, are not removed"
+    assert text =~ "can still see the events that belong to it"
+
+    for {locale, fragment} <- [
+          {"de", "werden beim Löschen Ihres Kontos nicht entfernt"},
+          {"ja", "アカウントを削除しても消去されません。"}
+        ] do
+      body =
+        conn
+        |> init_test_session(%{locale: locale})
+        |> get(~p"/privacy")
+        |> html_response(200)
+
+      assert body =~ fragment
+    end
+  end
+
   describe "GET /pricing" do
     test "the hero says hosted Stride is free for individuals and small teams", %{conn: conn} do
       body = conn |> get(~p"/pricing") |> html_response(200)

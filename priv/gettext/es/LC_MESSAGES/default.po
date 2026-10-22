@@ -3407,7 +3407,7 @@ msgstr "Revisa a la velocidad de la aprobación"
 
 #: lib/kanban_web/components/marketing_closing.ex:113
 #: lib/kanban_web/components/review_report_panel.ex:449
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:185
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:190
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
 #: lib/kanban_web/live/org_live/console.html.heex:20
 #: lib/kanban_web/live/org_live/security.html.heex:17
@@ -3511,7 +3511,7 @@ msgid "Now in release →"
 msgstr "Ahora en lanzamiento →"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:157
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:213
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:218
 #: lib/kanban_web/controllers/page_html/terms.html.heex:176
 #, elixir-autogen, elixir-format
 msgid " and we will respond within a reasonable time."
@@ -3692,7 +3692,7 @@ msgstr "Fuga de tokens de API o escape de alcance mediante la API de agentes."
 msgid "API tokens"
 msgstr "Tokens de API"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:161
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:166
 #, elixir-autogen, elixir-format
 msgid "Access the personal data we hold about you."
 msgstr "Acceder a los datos personales que tenemos sobre ti."
@@ -3760,7 +3760,7 @@ msgid "Can I switch between self-hosted and hosted later?"
 msgstr "¿Puedo cambiar entre autoalojado y alojado más adelante?"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:140
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:196
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "Changes to this policy"
 msgstr "Cambios en esta política"
@@ -3778,19 +3778,19 @@ msgid "Contact"
 msgstr "Contacto"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:151
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:207
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:212
 #: lib/kanban_web/controllers/page_html/terms.html.heex:170
 #: lib/kanban_web/emails/announcement_email.ex:150
 #, elixir-autogen, elixir-format
 msgid "Contact us"
 msgstr "Contáctanos"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:174
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "Cookies and local storage"
 msgstr "Cookies y almacenamiento local"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:162
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:167
 #, elixir-autogen, elixir-format
 msgid "Correct inaccurate personal data."
 msgstr "Corregir datos personales inexactos."
@@ -3810,7 +3810,7 @@ msgstr "Retención de datos"
 msgid "Data sharing"
 msgstr "Compartición de datos"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:163
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:168
 #, elixir-autogen, elixir-format
 msgid "Delete your account and your personal data."
 msgstr "Eliminar tu cuenta y tus datos personales."
@@ -3825,7 +3825,7 @@ msgstr "Ataques de denegación de servicio, saturación de tráfico y bypass del
 msgid "Dependency hygiene"
 msgstr "Higiene de dependencias"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:158
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:163
 #, elixir-autogen, elixir-format
 msgid "Depending on where you live, you may have the right to:"
 msgstr "Dependiendo de dónde vivas, puedes tener derecho a:"
@@ -3944,7 +3944,7 @@ msgstr "Planifica al nivel en el que piensas"
 msgid "Privacy Policy"
 msgstr "Política de privacidad"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:210
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "Questions, concerns, or requests about this policy? Email "
 msgstr "¿Preguntas, dudas o solicitudes sobre esta política? Escribe a "
@@ -4024,7 +4024,7 @@ msgstr "Sobelow"
 msgid "Strict Content Security Policy"
 msgstr "Política de Seguridad de Contenido estricta"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:188
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:193
 #, elixir-autogen, elixir-format
 msgid "Stride is hosted on encrypted infrastructure, passwords are hashed with bcrypt, and API tokens are hashed at rest. Despite our best efforts, no system is perfectly secure. If you discover a vulnerability, please report it to us responsibly at the contact address below."
 msgstr "Stride está alojado en infraestructura cifrada, las contraseñas se hashean con bcrypt y los tokens de API se hashean en reposo. A pesar de nuestros mejores esfuerzos, ningún sistema es perfectamente seguro. Si descubres una vulnerabilidad, repórtala de forma responsable a la dirección de contacto a continuación."
@@ -4053,7 +4053,7 @@ msgstr "Habla con nosotros"
 msgid "Telemetry"
 msgstr "Telemetría"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:143
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Telemetry and audit logs are retained for up to 90 days, then aggregated or deleted."
 msgstr "Los registros de telemetría y auditoría se retienen hasta 90 días, luego se agregan o se eliminan."
@@ -4088,7 +4088,7 @@ msgstr "Divulgación de vulnerabilidades"
 msgid "We do not sell your data. We do not use your workspace content to train AI models. We do not run advertising on Stride."
 msgstr "No vendemos tus datos. No usamos el contenido de tu espacio de trabajo para entrenar modelos de IA. No mostramos publicidad en Stride."
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:199
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:204
 #, elixir-autogen, elixir-format
 msgid "We may update this policy from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect."
 msgstr "Podemos actualizar esta política de vez en cuando. Cuando hagamos cambios materiales, notaremos la nueva fecha de vigencia en la parte superior de esta página y, cuando corresponda, te notificaremos por correo o mediante un banner en la aplicación antes de que el cambio entre en vigor."
@@ -4098,7 +4098,7 @@ msgstr "Podemos actualizar esta política de vez en cuando. Cuando hagamos cambi
 msgid "We share your information only in narrowly limited circumstances:"
 msgstr "Solo compartimos tu información en circunstancias estrictamente limitadas:"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:177
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:182
 #, elixir-autogen, elixir-format
 msgid "We use a small number of cookies and browser-local storage entries that are strictly necessary to operate the service: a session cookie to keep you signed in, a CSRF token to protect form submissions, and a preference entry that remembers your light/dark theme choice. We do not use third-party advertising or analytics cookies."
 msgstr "Usamos un pequeño número de cookies y entradas de almacenamiento local del navegador estrictamente necesarias para operar el servicio: una cookie de sesión para mantenerte autenticado, un token CSRF para proteger los envíos de formularios y una entrada de preferencia que recuerda tu elección de tema claro/oscuro. No usamos cookies publicitarias ni de analítica de terceros."
@@ -4128,7 +4128,7 @@ msgstr "Sí. Escribe a "
 msgid "Yes. The whole codebase is open source under the MIT license. Run it on your own machine, your own server, or your own Kubernetes cluster. You owe us nothing."
 msgstr "Sí. Todo el código es de código abierto bajo licencia MIT. Ejecútalo en tu propia máquina, en tu propio servidor o en tu propio clúster de Kubernetes. No nos debes nada."
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:155
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:160
 #, elixir-autogen, elixir-format
 msgid "Your rights"
 msgstr "Tus derechos"
@@ -5895,7 +5895,7 @@ msgstr "Límite WIP alcanzado"
 msgid " runs for every release detecting any security vulnerabilities."
 msgstr " se ejecuta en cada release detectando cualquier vulnerabilidad de seguridad."
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:166
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:171
 #, elixir-autogen, elixir-format
 msgid "As a user of this system, you have full access to your data to manage it as you see fit."
 msgstr "Como usuario de este sistema, tienes acceso completo a tus datos para gestionarlos como prefieras."
@@ -12922,7 +12922,7 @@ msgstr " — si tu empresa tiene una organización en Stride, almacenamos el nom
 msgid "Organization information"
 msgstr "Información de la organización"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:137
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:138
 #, elixir-autogen, elixir-format
 msgid "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
 msgstr "Conservamos los datos de tu cuenta y de tu espacio de trabajo mientras tu cuenta esté activa. Puedes eliminar tu cuenta tú mismo en la configuración de tu cuenta. Cuando lo haces, eliminamos el registro de tu cuenta y los tableros de tu espacio de trabajo personal que solo usas tú en un plazo de 30 días, salvo cuando la ley nos obligue a conservar un registro (por ejemplo, los registros relacionados con los acuerdos de las organizaciones). Los tableros que otras personas siguen usando se quedan con ellas, los tableros del espacio de trabajo de una Organización se quedan con la Organización, y lo que añadiste en ellos se conserva sin tu nombre."
@@ -12952,7 +12952,12 @@ msgstr "Stride es gratis para autoalojar y gratis en la versión alojada para pe
 msgid "The launch date is published on the Stride changelog."
 msgstr "La fecha de lanzamiento está publicada en el registro de cambios de Stride."
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:146
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:151
 #, elixir-autogen, elixir-format
 msgid "An Organization's security audit events are kept for as long as that Organization's retention setting says; its org-admins may choose a longer period or keep them indefinitely."
 msgstr "Los eventos de auditoría de seguridad de una organización se conservan durante el tiempo que indique la configuración de retención de esa organización; sus administradores pueden elegir un período más largo o conservarlos indefinidamente."
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:141
+#, elixir-autogen, elixir-format
+msgid "Security audit events that record what you did, including your email address and IP address, are not removed when you delete your account: they are kept for the retention period below, and an Organization's org-admins can still see the events that belong to it."
+msgstr "Los eventos de auditoría de seguridad que registran lo que hiciste, incluidas tu dirección de correo electrónico y tu dirección IP, no se eliminan cuando eliminas tu cuenta: se conservan durante el período de retención indicado a continuación, y los administradores de una organización pueden seguir viendo los eventos que le pertenecen."

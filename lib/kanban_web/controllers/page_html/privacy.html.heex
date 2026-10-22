@@ -133,10 +133,15 @@
           <h2 class="text-2xl font-semibold text-base-content mb-4">
             {gettext("Data retention")}
           </h2>
-          <p class="text-base-content opacity-70 leading-relaxed mb-4">
-            {gettext(
-              "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
-            )}
+          <p id="privacy-deletion" class="text-base-content opacity-70 leading-relaxed mb-4">
+            {KanbanWeb.Sentences.join([
+              gettext(
+                "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
+              ),
+              gettext(
+                "Security audit events that record what you did, including your email address and IP address, are not removed when you delete your account: they are kept for the retention period below, and an Organization's org-admins can still see the events that belong to it."
+              )
+            ])}
           </p>
           <p id="privacy-retention" class="text-base-content opacity-70 leading-relaxed">
             {KanbanWeb.Sentences.join([
