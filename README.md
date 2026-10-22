@@ -345,7 +345,7 @@ See [AGENTS.md](AGENTS.md) for development guidelines.
 
 ## License
 
-[Add your license here]
+Stride is released under the MIT License. See [LICENSE](LICENSE).
 
 ---
 
