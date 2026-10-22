@@ -120,10 +120,15 @@
           <h2 class="text-2xl font-semibold text-base-content mb-4">
             {gettext("Termination")}
           </h2>
-          <p class="text-base-content opacity-70 leading-relaxed mb-4">
-            {gettext(
-              "You may stop using the service at any time. Every user, on the free plan or in an Organization, can delete their own account in their account settings. If you are the sole owner of a board other people use, transfer its ownership first; if you are the last org-admin of an Organization with other members, another org-admin must be appointed first."
-            )}
+          <p id="terms-account-deletion" class="text-base-content opacity-70 leading-relaxed mb-4">
+            {KanbanWeb.Sentences.join([
+              gettext(
+                "You may stop using the service at any time. Every user, on the free plan or in an Organization, can delete their own account in their account settings. If you are the sole owner of a board other people use, transfer its ownership first; if you are the last org-admin of an Organization with other members, another org-admin must be appointed first."
+              ),
+              gettext(
+                "If your Organization's identity provider has disabled your account, you cannot sign in to delete it yourself; email us at the address below and we will delete it for you."
+              )
+            ])}
           </p>
           <p class="text-base-content opacity-70 leading-relaxed">
             {gettext(

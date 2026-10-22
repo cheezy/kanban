@@ -14,6 +14,14 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
   alias Kanban.Accounts.User
   alias Kanban.Tasks
 
+  defp disabled_managed_user_fixture do
+    user_fixture()
+    |> User.managed_by_changeset(organization_fixture().id)
+    |> Kanban.Repo.update!()
+    |> Ecto.Changeset.change(disabled_at: DateTime.utc_now(:second))
+    |> Kanban.Repo.update!()
+  end
+
   defp register_and_log_in_admin(%{conn: conn}) do
     admin = admin_fixture()
     %{conn: log_in_user(conn, admin), user: admin}
@@ -562,6 +570,46 @@ defmodule KanbanWeb.Admin.UserLive.IndexTest do
 
       assert has_element?(live, "#user-#{user.id}")
       assert Kanban.Repo.get(User, user.id) != nil
+    end
+
+    # H3: a deprovisioned managed account cannot sign in to delete itself, so
+    # a site admin deletes it on request, personal boards and all.
+    test "a disabled managed account with a personal board can be deleted, board and all",
+         %{conn: conn} do
+      user = disabled_managed_user_fixture()
+      board = board_fixture(user)
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      refute has_element?(live, "#user-#{user.id} button[disabled]", "Delete")
+
+      html = live |> element("#user-#{user.id} button", "Delete") |> render_click()
+
+      assert html =~ "Account deleted."
+      assert Kanban.Repo.get(User, user.id) == nil
+      assert Kanban.Repo.get(Kanban.Boards.Board, board.id) == nil
+      assert [_event] = Kanban.AuditLog.list_events(action: :user_deleted)
+    end
+
+    test "a disabled managed account that owns a shared board is refused with what to do",
+         %{conn: conn} do
+      user = disabled_managed_user_fixture()
+      board = board_fixture(user)
+
+      Kanban.Repo.insert!(%Kanban.Boards.BoardUser{
+        board_id: board.id,
+        user_id: user_fixture().id,
+        access: :modify
+      })
+
+      {:ok, live, _html} = live(conn, ~p"/admin/users")
+
+      html = live |> element("#user-#{user.id} button", "Delete") |> render_click()
+
+      assert html =~ "This user owns a board other people still use."
+      assert Kanban.Repo.get(User, user.id) != nil
+
+      assert [event] = Kanban.AuditLog.list_events(action: :user_delete_refused)
+      assert event.metadata["reason"] == "owns_shared_board"
     end
 
     test "an admin cannot delete their own account", %{conn: conn, user: admin} do

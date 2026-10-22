@@ -60,9 +60,14 @@
             </li>
             <li id="privacy-single-sign-on">
               <strong>{gettext("Single sign-on")}</strong>
-              {gettext(
-                " — if your Organization enables single sign-on (SSO), we process the identity details its identity provider sends when you sign in, such as your email address, and we store the provider's identifier for you so we can recognize you the next time you sign in."
-              )}
+              {KanbanWeb.Sentences.join([
+                gettext(
+                  " — if your Organization enables single sign-on (SSO), we process the identity details its identity provider sends when you sign in, such as your email address, and we store the provider's identifier for you so we can recognize you the next time you sign in."
+                ),
+                gettext(
+                  "If your Organization also manages accounts from its identity provider (SCIM), that provider can create, update and disable your account."
+                )
+              ])}
             </li>
           </ul>
         </section>
@@ -137,6 +142,9 @@
             {KanbanWeb.Sentences.join([
               gettext(
                 "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
+              ),
+              gettext(
+                "If your Organization's identity provider has disabled your account, you cannot sign in to delete it yourself; email us at the address below and we will delete it for you."
               ),
               gettext(
                 "Security audit events that record what you did, including your email address and IP address, are not removed when you delete your account: they are kept for the retention period below, and an Organization's org-admins can still see the events that belong to it."

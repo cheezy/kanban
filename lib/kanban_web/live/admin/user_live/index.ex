@@ -150,6 +150,12 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   defp error_message(:user_has_boards),
     do: gettext("This user still belongs to a board and cannot be deleted.")
 
+  defp error_message(:owns_shared_board),
+    do:
+      gettext(
+        "This user owns a board other people still use. Transfer it or remove its other members first."
+      )
+
   defp error_message(:personal_workspace_has_boards),
     do:
       gettext("A board still sits in this user's personal workspace, so they cannot be deleted.")
@@ -202,6 +208,11 @@ defmodule KanbanWeb.Admin.UserLive.Index do
   defp tab_atom(_tab), do: :users
 
   defp board_count(board_counts, user), do: Map.get(board_counts, user.id, 0)
+
+  # A disabled account an Organization manages is deleted with its personal
+  # boards settled, so its board count does not block the button.
+  defp delete_blocked?(board_counts, user),
+    do: board_count(board_counts, user) > 0 and not Accounts.disabled_managed?(user)
 
   # View-only filter: when the admin ticks "hide users with no boards", drop
   # every user whose already-loaded board count is zero. Filtering here — before

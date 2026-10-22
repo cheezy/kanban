@@ -209,9 +209,9 @@
                   <.button
                     phx-click="delete"
                     phx-value-id={user.id}
-                    disabled={board_count(@board_counts, user) > 0}
+                    disabled={delete_blocked?(@board_counts, user)}
                     title={
-                      board_count(@board_counts, user) > 0 &&
+                      delete_blocked?(@board_counts, user) &&
                         gettext("This user still belongs to a board and cannot be deleted.")
                     }
                     data-confirm={

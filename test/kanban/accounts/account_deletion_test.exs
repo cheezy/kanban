@@ -614,4 +614,61 @@ defmodule Kanban.Accounts.AccountDeletionTest do
       assert column_id == ready.id
     end
   end
+
+  describe "delete_disabled_managed_account/1" do
+    defp disabled_managed(user) do
+      user
+      |> User.managed_by_changeset(organization_fixture().id)
+      |> Repo.update!()
+      |> disable_directly()
+    end
+
+    test "deletes a disabled managed account with the self-deletion cascade" do
+      user = disabled_managed(user_fixture())
+      board = board_fixture(user)
+
+      assert {:ok, %User{id: id}} = AccountDeletion.delete_disabled_managed_account(user)
+
+      assert id == user.id
+      refute Repo.get(User, user.id)
+      refute Repo.get(Board, board.id)
+      refute Workspaces.get_personal_workspace(user)
+      assert AuditLog.list_events(action: :account_self_deleted) == []
+    end
+
+    test "is refused while the account owns a board other people use" do
+      user = disabled_managed(user_fixture())
+      board = board_fixture(user)
+      add_member(board, user_fixture())
+
+      assert {:error, {:blocked, [{:shared_board, %Board{id: id}}]}} =
+               AccountDeletion.delete_disabled_managed_account(user)
+
+      assert id == board.id
+      assert Repo.get(User, user.id)
+    end
+
+    test "refuses an enabled managed account and a disabled unmanaged one" do
+      enabled =
+        user_fixture() |> User.managed_by_changeset(organization_fixture().id) |> Repo.update!()
+
+      unmanaged = disable_directly(user_fixture())
+
+      for user <- [enabled, unmanaged] do
+        refute AccountDeletion.disabled_managed?(user)
+        assert {:error, :not_found} = AccountDeletion.delete_disabled_managed_account(user)
+        assert Repo.get(User, user.id)
+      end
+    end
+
+    # The struct passed in is stale: the row was re-enabled after it was read.
+    test "re-checks the account's state under the lock" do
+      user = disabled_managed(user_fixture())
+      Repo.update_all(from(u in User, where: u.id == ^user.id), set: [disabled_at: nil])
+
+      assert AccountDeletion.disabled_managed?(user)
+      assert {:error, :not_found} = AccountDeletion.delete_disabled_managed_account(user)
+      assert Repo.get(User, user.id)
+    end
+  end
 end

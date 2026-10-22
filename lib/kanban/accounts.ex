@@ -326,6 +326,7 @@ defmodule Kanban.Accounts do
   defdelegate deletion_blockers(user), to: AccountDeletion
   defdelegate deletion_warnings(user), to: AccountDeletion
   defdelegate delete_own_account(scope, password, confirmation), to: AccountDeletion
+  defdelegate disabled_managed?(user), to: AccountDeletion
   defdelegate account_deletion_phrase(), to: AccountDeletion, as: :confirmation_phrase
 
   ## Single sign-on accounts (see `Kanban.Accounts.SSOUsers`)

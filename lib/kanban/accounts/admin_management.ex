@@ -32,6 +32,7 @@ defmodule Kanban.Accounts.AdminManagement do
   import Ecto.Query, warn: false
 
   alias Kanban.Accounts
+  alias Kanban.Accounts.AccountDeletion
   alias Kanban.Accounts.User
   alias Kanban.Accounts.UserTelemetry
   alias Kanban.Accounts.UserToken
@@ -173,6 +174,14 @@ defmodule Kanban.Accounts.AdminManagement do
       personal workspace, even one they are not a member of. The foreign key
       refuses it inside the transaction, so a board placed there at the same
       moment is refused too and the whole delete rolls back
+    * `:owns_shared_board` - only for a disabled account an Organization
+      manages: it still owns a board other people use
+
+  A disabled account an Organization manages cannot sign in to delete itself,
+  so it is deleted at the person's request with the self-deletion cascade
+  (`Kanban.Accounts.AccountDeletion.delete_disabled_managed_account/1`): its
+  personal boards are deleted or re-homed instead of refusing with
+  `:user_has_boards`.
 
   A successful deletion records a `:user_deleted` audit event and every
   refusal above records a `:user_delete_refused` audit event naming its
@@ -199,11 +208,26 @@ defmodule Kanban.Accounts.AdminManagement do
     cond do
       not authorized_admin?(current_user) -> {:error, :unauthorized}
       user.id == current_user.id -> {:error, :cannot_delete_self}
+      AccountDeletion.disabled_managed?(user) -> delete_disabled_managed(user)
       Boards.user_has_boards?(user) -> {:error, :user_has_boards}
       last_admin?(user) -> {:error, :last_admin}
       true -> delete_user_and_tokens(user)
     end
   end
+
+  # A disabled account an Organization manages cannot sign in to delete
+  # itself, so it is deleted on request with the self-deletion cascade, which
+  # settles its personal boards instead of refusing because it has some.
+  defp delete_disabled_managed(user) do
+    case AccountDeletion.delete_disabled_managed_account(user) do
+      {:error, {:blocked, [blocker | _]}} -> {:error, blocked_reason(blocker)}
+      result -> result
+    end
+  end
+
+  defp blocked_reason({:shared_board, _board}), do: :owns_shared_board
+  defp blocked_reason({:last_org_admin, _organization}), do: :last_org_admin
+  defp blocked_reason(:last_site_admin), do: :last_admin
 
   # Rejects a disabled admin whose scope was re-fetched after the disable landed,
   # which covers any new request or mount. This reads the struct in memory, so an

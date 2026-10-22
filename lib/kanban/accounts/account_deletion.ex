@@ -162,12 +162,38 @@ defmodule Kanban.Accounts.AccountDeletion do
          :ok <- check_rate_limit(user_id),
          {:ok, user} <- fetch_enabled_user(user_id),
          :ok <- check_password(user, password),
-         {:ok, deleted} <- delete_locked(user) do
+         {:ok, deleted} <- delete_locked(user, :enabled) do
       {:ok, report_deletion(deleted)}
     end
   end
 
   def delete_own_account(_scope, _password, _confirmation), do: {:error, :not_found}
+
+  @doc """
+  Deletes a disabled account that an Organization manages, which a site admin
+  does at the person's request: once their Organization's identity provider
+  has disabled it, they cannot sign in to use `delete_own_account/3`.
+
+  It runs the same cascade, under the same locks and blockers, without the
+  confirmation phrase and the password. Returns `{:ok, deleted_user}`, or
+  changes nothing and returns `{:error, :not_found}` (the account is gone,
+  enabled, or not managed) or `{:error, {:blocked, blockers}}`. It records no
+  `:account_self_deleted` event: the admin deletion is recorded by its caller.
+  """
+  @spec delete_disabled_managed_account(User.t()) ::
+          {:ok, User.t()} | {:error, :not_found | {:blocked, [blocker()]}}
+  def delete_disabled_managed_account(%User{} = user) do
+    with {:ok, %{user: deleted, cleared: cleared, board_ids: board_ids}} <-
+           delete_locked(user, :disabled_managed) do
+      report_boards(deleted, cleared, board_ids)
+      {:ok, deleted}
+    end
+  end
+
+  @doc "Whether `user` is a disabled account that an Organization manages."
+  @spec disabled_managed?(User.t()) :: boolean()
+  def disabled_managed?(%User{disabled_at: disabled_at, managed_by_organization_id: org_id}),
+    do: not is_nil(disabled_at) and not is_nil(org_id)
 
   defp check_confirmation(confirmation) when is_binary(confirmation) do
     if String.trim(confirmation) == @confirmation_phrase,
@@ -203,10 +229,10 @@ defmodule Kanban.Accounts.AccountDeletion do
       else: {:error, :invalid_password}
   end
 
-  defp delete_locked(user) do
+  defp delete_locked(user, expected) do
     Repo.transact(fn ->
       with :ok <- lock_organization(user),
-           {:ok, user} <- lock_user(user),
+           {:ok, user} <- lock_user(user, expected),
            :ok <- ensure_no_blockers(user) do
         delete_rows(user)
       end
@@ -264,16 +290,21 @@ defmodule Kanban.Accounts.AccountDeletion do
   # admins deleting themselves at once cannot both see the other as the
   # remaining admin. Everyone else locks only their own row, which also makes a
   # concurrent ownership transfer to them wait (it takes FOR KEY SHARE).
-  defp lock_user(%User{id: user_id, type: type}) do
+  # `expected` is the state the locked row must still be in: enabled for a
+  # self-deletion, disabled and managed for a deletion on request.
+  defp lock_user(%User{id: user_id, type: type}, expected) do
     from(u in User, where: u.id == ^user_id, order_by: u.id, lock: "FOR UPDATE")
     |> maybe_lock_admins(type)
     |> Repo.all()
     |> Enum.find(&(&1.id == user_id))
     |> case do
-      %User{disabled_at: nil} = user -> {:ok, user}
-      _gone_or_disabled -> {:error, :not_found}
+      %User{} = user -> if in_state?(user, expected), do: {:ok, user}, else: {:error, :not_found}
+      nil -> {:error, :not_found}
     end
   end
+
+  defp in_state?(%User{disabled_at: disabled_at}, :enabled), do: is_nil(disabled_at)
+  defp in_state?(user, :disabled_managed), do: disabled_managed?(user)
 
   defp maybe_lock_admins(query, :admin),
     do: or_where(query, [u], u.type == ^:admin and is_nil(u.disabled_at))

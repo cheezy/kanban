@@ -79,6 +79,16 @@ answered `404` and is never disabled from here.
 The last enabled org-admin of an Organization that still has other members
 cannot be deprovisioned (`409`).
 
+A disabled managed account cannot sign in, so its owner cannot use
+self-service deletion. Neither SCIM's deactivation nor its delete removes the
+account. When the person asks for it to be deleted (`/terms` and `/privacy`
+tell them to email us), a site admin deletes it from `/admin/users`. For a
+disabled managed account that deletion runs the self-service cascade: boards
+in its personal workspace that only the person uses are deleted, and the
+rest are re-homed, instead of being refused because the account still has
+boards. It is still refused while the account owns a board other people use;
+transfer that board or remove its other members first.
+
 Setting `active` back to true re-activates the user: a `member` membership is
 restored and a managed account is enabled again, but only when SCIM's own
 deprovisioning disabled it. An account a site admin disabled stays disabled,

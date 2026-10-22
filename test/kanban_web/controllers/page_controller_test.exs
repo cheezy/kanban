@@ -444,6 +444,28 @@ defmodule KanbanWeb.PageControllerTest do
     end
   end
 
+  test "/privacy and /terms say an identity provider can disable an account and how to have it deleted",
+       %{conn: conn} do
+    privacy = conn |> get(~p"/privacy") |> html_response(200) |> LazyHTML.from_document()
+    terms = conn |> get(~p"/terms") |> html_response(200) |> LazyHTML.from_document()
+
+    assert privacy |> LazyHTML.query("#privacy-single-sign-on") |> LazyHTML.text() =~
+             "that provider can create, update and disable your account"
+
+    for {document, id} <- [{privacy, "#privacy-deletion"}, {terms, "#terms-account-deletion"}] do
+      assert document |> LazyHTML.query(id) |> LazyHTML.text() =~
+               "has disabled your account, you cannot sign in to delete it yourself; email us at the address below"
+    end
+
+    de =
+      conn
+      |> init_test_session(%{locale: "de"})
+      |> get(~p"/terms")
+      |> html_response(200)
+
+    assert de =~ "schreiben Sie uns an die unten genannte Adresse"
+  end
+
   describe "GET /pricing" do
     test "the hero says hosted Stride is free for individuals and small teams", %{conn: conn} do
       body = conn |> get(~p"/pricing") |> html_response(200)

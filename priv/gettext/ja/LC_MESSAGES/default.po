@@ -3214,7 +3214,7 @@ msgstr "このタスクにコメントするにはボードメンバーである
 #: lib/kanban_web/live/admin/message_live/index.ex:85
 #: lib/kanban_web/live/admin/organization_live/form.ex:156
 #: lib/kanban_web/live/admin/user_live/index.ex:139
-#: lib/kanban_web/live/admin/user_live/index.ex:177
+#: lib/kanban_web/live/admin/user_live/index.ex:183
 #, elixir-autogen, elixir-format
 msgid "You must be an admin to perform this action."
 msgstr "この操作を実行するには管理者である必要があります。"
@@ -3404,7 +3404,7 @@ msgstr "承認するスピードでレビュー"
 
 #: lib/kanban_web/components/marketing_closing.ex:113
 #: lib/kanban_web/components/review_report_panel.ex:449
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:190
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:198
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
 #: lib/kanban_web/live/org_live/console.html.heex:20
 #: lib/kanban_web/live/org_live/security.html.heex:17
@@ -3508,8 +3508,8 @@ msgid "Now in release →"
 msgstr "リリース中 →"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:157
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:218
-#: lib/kanban_web/controllers/page_html/terms.html.heex:176
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:226
+#: lib/kanban_web/controllers/page_html/terms.html.heex:181
 #, elixir-autogen, elixir-format
 msgid " and we will respond within a reasonable time."
 msgstr "、合理的な時間内にご返信いたします。"
@@ -3569,12 +3569,12 @@ msgstr " — StrideはEctoを使用しており、SQLをパラメータ化して
 msgid " — boards, columns, tasks, comments, attachments, and the metadata you author (titles, descriptions, acceptance criteria, key files, hooks, and so on)."
 msgstr " — ボード、列、タスク、コメント、添付ファイル、およびあなたが作成するメタデータ (タイトル、説明、受け入れ基準、主要ファイル、フックなど)。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:119
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:124
 #, elixir-autogen, elixir-format
 msgid " — content you put in a board is visible to the people you invite to that board."
 msgstr " — ボードに入れたコンテンツは、そのボードに招待した人に表示されます。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:107
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:112
 #, elixir-autogen, elixir-format
 msgid " — hosting, transactional email, and error tracking. These vendors process data on our behalf under written agreements that prohibit secondary use."
 msgstr " — ホスティング、トランザクションメール、エラートラッキング。これらのベンダーは、二次利用を禁止する書面契約のもと、当社の代わりにデータを処理します。"
@@ -3594,7 +3594,7 @@ msgstr " — ハッシュ化されたトークン、発行ユーザー、スコ�
 msgid " — when an AI agent claims a task, runs a hook, or completes work, we record the agent's identifier, the task affected, and a timestamp."
 msgstr " — AIエージェントがタスクをクレームしたり、フックを実行したり、作業を完了したりすると、エージェントの識別子、対象タスク、タイムスタンプを記録します。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:113
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:118
 #, elixir-autogen, elixir-format
 msgid " — when we are required by valid legal process. We push back on overbroad requests and notify the affected user where the law allows."
 msgstr " — 有効な法的手続きにより要求された場合。過度に広範な要求には抵抗し、法律が許す範囲で影響を受けるユーザーに通知します。"
@@ -3689,7 +3689,7 @@ msgstr "エージェントAPI経由のAPIトークンの漏洩またはスコー
 msgid "API tokens"
 msgstr "APIトークン"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:166
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:174
 #, elixir-autogen, elixir-format
 msgid "Access the personal data we hold about you."
 msgstr "当社が保持するお客様の個人データへのアクセス。"
@@ -3757,7 +3757,7 @@ msgid "Can I switch between self-hosted and hosted later?"
 msgstr "後でセルフホストとホスティング版を切り替えられますか?"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:140
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:201
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:209
 #, elixir-autogen, elixir-format
 msgid "Changes to this policy"
 msgstr "このポリシーの変更"
@@ -3775,19 +3775,19 @@ msgid "Contact"
 msgstr "お問い合わせ"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:151
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:212
-#: lib/kanban_web/controllers/page_html/terms.html.heex:170
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:220
+#: lib/kanban_web/controllers/page_html/terms.html.heex:175
 #: lib/kanban_web/emails/announcement_email.ex:150
 #, elixir-autogen, elixir-format
 msgid "Contact us"
 msgstr "お問い合わせ"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:179
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:187
 #, elixir-autogen, elixir-format
 msgid "Cookies and local storage"
 msgstr "クッキーとローカルストレージ"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:167
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Correct inaccurate personal data."
 msgstr "不正確な個人データの訂正。"
@@ -3797,17 +3797,17 @@ msgstr "不正確な個人データの訂正。"
 msgid "Cryptographic flaws affecting passwords, tokens, or data at rest."
 msgstr "パスワード、トークン、保存データに影響する暗号化の欠陥。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:134
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Data retention"
 msgstr "データの保持"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:99
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:104
 #, elixir-autogen, elixir-format
 msgid "Data sharing"
 msgstr "データの共有"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:168
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:176
 #, elixir-autogen, elixir-format
 msgid "Delete your account and your personal data."
 msgstr "アカウントと個人データの削除。"
@@ -3822,12 +3822,12 @@ msgstr "サービス妨害攻撃、トラフィックフラッディング、量
 msgid "Dependency hygiene"
 msgstr "依存関係の衛生"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:163
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:171
 #, elixir-autogen, elixir-format
 msgid "Depending on where you live, you may have the right to:"
 msgstr "お住まいの地域によっては、次の権利を有する場合があります:"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:80
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Diagnose errors, measure performance, and prevent abuse (rate limiting, fraud detection)."
 msgstr "エラーの診断、パフォーマンスの測定、不正利用の防止 (レート制限、不正検出)。"
@@ -3867,7 +3867,7 @@ msgstr "始める"
 msgid "Hooks run on your machine, not ours"
 msgstr "フックはあなたのマシンで実行され、当社のマシンでは実行されません"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:72
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "How we use your information"
 msgstr "情報の利用方法"
@@ -3910,12 +3910,12 @@ msgstr "最終更新: %{date}"
 msgid "Lead time, cycle time, wait time, throughput — every metric is split by who did the work. See exactly where your humans become the bottleneck and where agents are crushing it."
 msgstr "リードタイム、サイクルタイム、待ち時間、スループット — どの指標も誰が作業を行ったかで分割されます。人間がボトルネックになる箇所と、エージェントが活躍する箇所を正確に把握できます。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:112
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Legal requests"
 msgstr "法的要請"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:75
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Operate the service and authenticate you and your agents."
 msgstr "サービスの運営と、あなたおよびエージェントの認証。"
@@ -3941,7 +3941,7 @@ msgstr "あなたが考えるレベルで計画する"
 msgid "Privacy Policy"
 msgstr "プライバシーポリシー"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:215
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:223
 #, elixir-autogen, elixir-format
 msgid "Questions, concerns, or requests about this policy? Email "
 msgstr "このポリシーに関する質問、懸念、要望がありますか? 次までメール: "
@@ -3956,7 +3956,7 @@ msgstr "レート制限"
 msgid "Ready to see it run?"
 msgstr "動きを見てみる準備はできていますか?"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:77
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Render the boards, tasks, and activity feeds you have access to."
 msgstr "アクセス権のあるボード、タスク、アクティビティフィードを表示します。"
@@ -3991,7 +3991,7 @@ msgstr "セキュリティに関する問題: "
 msgid "See every claim, hook result, completion, and unclaim across your agent fleet. Telemetry by agent, by capability, by board. The board is the operating system; the activity feed is the syslog."
 msgstr "エージェント全体のクレーム、フック結果、完了、解除をすべて確認できます。エージェント別、能力別、ボード別のテレメトリ。ボードがOSなら、アクティビティフィードはsyslogです。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:85
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:90
 #, elixir-autogen, elixir-format
 msgid "Send transactional email — account confirmation, password reset, security notifications. We do not send marketing email unless you explicitly opt in."
 msgstr "トランザクションメールを送信 — アカウント確認、パスワードリセット、セキュリティ通知。明示的にオプトインしない限りマーケティングメールは送信しません。"
@@ -4001,7 +4001,7 @@ msgstr "トランザクションメールを送信 — アカウント確認、�
 msgid "Server-side or client-side injection (SQL, XSS, SSRF, etc.)."
 msgstr "サーバーサイドまたはクライアントサイドのインジェクション (SQL、XSS、SSRFなど)。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:106
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:111
 #, elixir-autogen, elixir-format
 msgid "Service providers"
 msgstr "サービス提供者"
@@ -4021,7 +4021,7 @@ msgstr "Sobelow"
 msgid "Strict Content Security Policy"
 msgstr "厳格なContent Security Policy"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:193
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "Stride is hosted on encrypted infrastructure, passwords are hashed with bcrypt, and API tokens are hashed at rest. Despite our best efforts, no system is perfectly secure. If you discover a vulnerability, please report it to us responsibly at the contact address below."
 msgstr "Strideは暗号化されたインフラ上でホスティングされ、パスワードはbcryptでハッシュ化、APIトークンも保存時にハッシュ化されます。最善を尽くしても完全に安全なシステムはありません。脆弱性を発見した場合は、下記の連絡先まで責任ある形でご報告ください。"
@@ -4050,7 +4050,7 @@ msgstr "ご相談はこちら"
 msgid "Telemetry"
 msgstr "テレメトリ"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:148
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:156
 #, elixir-autogen, elixir-format
 msgid "Telemetry and audit logs are retained for up to 90 days, then aggregated or deleted."
 msgstr "テレメトリと監査ログは最大90日間保持され、その後集計または削除されます。"
@@ -4080,27 +4080,27 @@ msgstr "転送と保存"
 msgid "Vulnerability disclosure"
 msgstr "脆弱性の開示"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:91
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:96
 #, elixir-autogen, elixir-format
 msgid "We do not sell your data. We do not use your workspace content to train AI models. We do not run advertising on Stride."
 msgstr "あなたのデータを販売することはありません。ワークスペースのコンテンツをAIモデルの訓練に使用することもありません。Stride上で広告を配信することもありません。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:204
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:212
 #, elixir-autogen, elixir-format
 msgid "We may update this policy from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect."
 msgstr "このポリシーは随時更新する可能性があります。重要な変更を行う場合は、このページの上部に新しい発効日を記し、適切な場合は変更の発効前にメールまたはアプリ内バナーで通知します。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:102
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:107
 #, elixir-autogen, elixir-format
 msgid "We share your information only in narrowly limited circumstances:"
 msgstr "情報を共有するのは、極めて限定された状況のみです:"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:182
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:190
 #, elixir-autogen, elixir-format
 msgid "We use a small number of cookies and browser-local storage entries that are strictly necessary to operate the service: a session cookie to keep you signed in, a CSRF token to protect form submissions, and a preference entry that remembers your light/dark theme choice. We do not use third-party advertising or analytics cookies."
 msgstr "サービスの運営に厳密に必要な少数のクッキーとブラウザのローカルストレージのエントリーを使用します: サインインを保つセッションクッキー、フォーム送信を保護するCSRFトークン、ライト/ダークテーマの選択を記憶する設定エントリーです。第三者の広告や分析クッキーは使用しません。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:118
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:123
 #, elixir-autogen, elixir-format
 msgid "Workspace collaborators"
 msgstr "ワークスペースの共同編集者"
@@ -4125,7 +4125,7 @@ msgstr "はい。次までメール: "
 msgid "Yes. The whole codebase is open source under the MIT license. Run it on your own machine, your own server, or your own Kubernetes cluster. You owe us nothing."
 msgstr "はい。コードベース全体はMITライセンスのオープンソースです。自分のマシン、自分のサーバー、または自分のKubernetesクラスターで動かせます。当社に何の負債もありません。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:160
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:168
 #, elixir-autogen, elixir-format
 msgid "Your rights"
 msgstr "あなたの権利"
@@ -5883,7 +5883,7 @@ msgstr "WIP上限に到達"
 msgid " runs for every release detecting any security vulnerabilities."
 msgstr " はすべてのリリースで実行され、あらゆるセキュリティ脆弱性を検出します。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:171
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "As a user of this system, you have full access to your data to manage it as you see fit."
 msgstr "本システムのユーザーとして、あなたは自分のデータに完全にアクセスでき、好きなように管理できます。"
@@ -6672,7 +6672,7 @@ msgstr "ディスパッチされたレビューでは必須です: レビュー�
 #: lib/kanban_web/controllers/metrics_pdf_html/wait_time.html.heex:302
 #: lib/kanban_web/export/metrics_excel.ex:360
 #: lib/kanban_web/export/metrics_excel.ex:363
-#: lib/kanban_web/live/admin/user_live/index.ex:240
+#: lib/kanban_web/live/admin/user_live/index.ex:251
 #, elixir-autogen, elixir-format
 msgid "N/A"
 msgstr "該当なし"
@@ -6872,12 +6872,12 @@ msgstr "AIエージェントと帰属条項"
 msgid "Acceptable use"
 msgstr "許容される利用"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:159
+#: lib/kanban_web/controllers/page_html/terms.html.heex:164
 #, elixir-autogen, elixir-format
 msgid "Changes to these terms"
 msgstr "本規約の変更"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:137
+#: lib/kanban_web/controllers/page_html/terms.html.heex:142
 #, elixir-autogen, elixir-format
 msgid "Disclaimers"
 msgstr "免責事項"
@@ -6887,7 +6887,7 @@ msgstr "免責事項"
 msgid "Fees and plans"
 msgstr "料金とプラン"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:148
+#: lib/kanban_web/controllers/page_html/terms.html.heex:153
 #, elixir-autogen, elixir-format
 msgid "Limitation of liability"
 msgstr "責任の制限"
@@ -6897,7 +6897,7 @@ msgstr "責任の制限"
 msgid "Notify us promptly if you suspect unauthorized access to your account."
 msgstr "アカウントへの不正アクセスが疑われる場合は、速やかにご連絡ください。"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:173
+#: lib/kanban_web/controllers/page_html/terms.html.heex:178
 #, elixir-autogen, elixir-format
 msgid "Questions about these terms? Email "
 msgstr "本規約に関するご質問は、"
@@ -6922,7 +6922,7 @@ msgstr "解約"
 msgid "The service"
 msgstr "本サービス"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:140
+#: lib/kanban_web/controllers/page_html/terms.html.heex:145
 #, elixir-autogen, elixir-format
 msgid "The service is provided \"as is\" and \"as available\", without warranties of any kind, express or implied, including merchantability, fitness for a particular purpose, and non-infringement. We do not warrant that the service will be uninterrupted, error-free, or secure, or that work performed by AI agents through the service will be correct or fit for your purposes."
 msgstr "本サービスは「現状のまま」かつ「提供可能な範囲で」提供され、商品性、特定目的への適合性、非侵害性を含め、明示または黙示を問わずいかなる保証もありません。本サービスが中断なく、エラーなく、安全に提供されること、また本サービスを通じてAIエージェントが行った作業が正確であることや目的に適合することを保証しません。"
@@ -6932,12 +6932,12 @@ msgstr "本サービスは「現状のまま」かつ「提供可能な範囲で
 msgid "These Terms of Service govern your use of Stride, the task-management platform available as a hosted service at stridelikeaboss.com. By creating an account or using the service, you agree to these terms. If you do not agree, do not use the service. If you self-host Stride on your own infrastructure, the open-source license that accompanies the code governs your use instead of these terms."
 msgstr "本利用規約は、stridelikeaboss.comでホスティングサービスとして提供されるタスク管理プラットフォームStrideの利用に適用されます。アカウントを作成するか本サービスを利用することにより、お客様は本規約に同意したものとみなされます。同意されない場合は、本サービスを利用しないでください。ご自身のインフラでStrideをセルフホストする場合は、本規約ではなく、コードに付属するオープンソースライセンスが適用されます。"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:151
+#: lib/kanban_web/controllers/page_html/terms.html.heex:156
 #, elixir-autogen, elixir-format
 msgid "To the maximum extent permitted by law, we will not be liable for indirect, incidental, special, consequential, or punitive damages, or for lost profits, revenues, or data, arising out of or related to the service. Our total liability for any claim arising out of these terms is limited to the amount you paid us for the service in the twelve months before the claim arose, or one hundred US dollars if you paid nothing. Nothing in these terms limits liability that cannot be limited by law."
 msgstr "法律で認められる最大限の範囲で、当社は、本サービスに起因または関連して生じる間接損害、付随的損害、特別損害、結果的損害、懲罰的損害、または利益、収益、データの損失について責任を負いません。本規約に起因するいかなる請求についても、当社の責任総額は、請求発生前の12か月間にお客様が本サービスに対して支払った金額、または何も支払っていない場合は100米ドルを上限とします。本規約のいかなる規定も、法律上制限できない責任を制限するものではありません。"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:162
+#: lib/kanban_web/controllers/page_html/terms.html.heex:167
 #, elixir-autogen, elixir-format
 msgid "We may update these terms from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect. Continued use of the service after a change takes effect constitutes acceptance of the revised terms."
 msgstr "当社は本規約を随時更新することがあります。重要な変更を行う場合は、このページの上部に新しい発効日を記載し、適切な場合には、変更が発効する前にメールまたはアプリ内バナーでお知らせします。変更の発効後も本サービスの利用を継続した場合、改定後の規約に同意したものとみなされます。"
@@ -7934,12 +7934,12 @@ msgid "User Administration"
 msgstr "ユーザー管理"
 
 #: lib/kanban_web/components/marketing_components.ex:169
-#: lib/kanban_web/live/admin/user_live/index.ex:243
+#: lib/kanban_web/live/admin/user_live/index.ex:254
 #, elixir-autogen, elixir-format
 msgid "Admin"
 msgstr "管理者"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:244
+#: lib/kanban_web/live/admin/user_live/index.ex:255
 #, elixir-autogen, elixir-format
 msgid "User"
 msgstr "ユーザー"
@@ -8002,12 +8002,12 @@ msgid "Send another confirmation email to this account?"
 msgstr "このアカウントに確認メールをもう一度送信しますか？"
 
 #: lib/kanban_web/live/admin/organization_live/form.ex:161
-#: lib/kanban_web/live/admin/user_live/index.ex:158
+#: lib/kanban_web/live/admin/user_live/index.ex:164
 #, elixir-autogen, elixir-format
 msgid "Something went wrong. Please try again."
 msgstr "問題が発生しました。もう一度お試しください。"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:157
+#: lib/kanban_web/live/admin/user_live/index.ex:163
 #: lib/kanban_web/live/admin/user_live/index.html.heex:201
 #, elixir-autogen, elixir-format
 msgid "This account is already confirmed."
@@ -10760,7 +10760,7 @@ msgstr "組織の監査ログ"
 msgid "Security events recorded for %{name}, newest first. Times are in UTC."
 msgstr "%{name} について記録されたセキュリティイベント（新しい順）。時刻はUTCです。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:124
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:129
 #, elixir-autogen, elixir-format
 msgid "Organization administrators"
 msgstr "組織の管理者"
@@ -10853,7 +10853,7 @@ msgstr "組織の詳細、メンバー、ワークスペースです。詳細の
 msgid "create · rename · archive"
 msgstr "作成 · 名前変更 · アーカイブ"
 
-#: lib/kanban_web/live/admin/user_live/index.ex:155
+#: lib/kanban_web/live/admin/user_live/index.ex:161
 #, elixir-autogen, elixir-format
 msgid "A board still sits in this user's personal workspace, so they cannot be deleted."
 msgstr "このユーザーの個人ワークスペースにまだボードがあるため、削除できません。"
@@ -12801,12 +12801,12 @@ msgstr "無料プランの機能と制限は、たとえばある機能が組織
 msgid "Stride offers a free plan and an Organization plan, both described on our pricing page. The free plan has stated limits: a board can have up to 3 people, not counting AI agents, and some features are available only to Organizations."
 msgstr "Stride は無料プランと組織プランを提供しており、いずれも料金ページで説明しています。無料プランには定められた制限があります。1 つのボードに参加できるのは最大 3 人まで（AI エージェントは数えません）で、一部の機能は組織でのみ利用できます。"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:129
+#: lib/kanban_web/controllers/page_html/terms.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "We may suspend or terminate your access if you materially breach these terms, if required by law, or if we discontinue the service — in which case we will give you reasonable advance notice and a way to export your data. Sections of these terms that by their nature should survive termination (such as ownership, disclaimers, and limitation of liability) do survive."
 msgstr "お客様が本規約に重大に違反した場合、法律で義務付けられた場合、または本サービスを終了する場合、当社はお客様のアクセスを停止または終了することがあります。サービス終了の場合は、合理的な事前通知とデータをエクスポートする手段を提供します。その性質上解約後も存続すべき条項（所有権、免責事項、責任の制限など）は存続します。"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:124
+#: lib/kanban_web/controllers/page_html/terms.html.heex:125
 #, elixir-autogen, elixir-format
 msgid "You may stop using the service at any time. Every user, on the free plan or in an Organization, can delete their own account in their account settings. If you are the sole owner of a board other people use, transfer its ownership first; if you are the last org-admin of an Organization with other members, another org-admin must be appointed first."
 msgstr "お客様はいつでも本サービスの利用を停止できます。無料プランのユーザーも組織のメンバーも、すべてのユーザーがアカウント設定から自分のアカウントを削除できます。ほかの人が使っているボードの唯一のオーナーである場合は、先にその所有権を移転してください。ほかのメンバーがいる組織の最後の組織管理者である場合は、先に別の組織管理者が任命される必要があります。"
@@ -12832,12 +12832,12 @@ msgstr "2026年5月14日"
 msgid "October 21, 2026"
 msgstr "2026年10月21日"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:125
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:130
 #, elixir-autogen, elixir-format
 msgid " — if you belong to an Organization, its org-admins can see the Organization's members, including their names, email addresses and roles, and its workspaces and boards. They can view and export that Organization's security audit events, including your email address and IP address when you are the person who acted in that Organization."
 msgstr " — 組織に所属している場合、その組織の組織管理者は、組織のメンバー（氏名、メールアドレス、ロールを含む）と、組織のワークスペースおよびボードを閲覧できます。また、組織のセキュリティ監査イベントを閲覧およびエクスポートできます。あなたがその組織内で操作した場合は、あなたのメールアドレスとIPアドレスも含まれます。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:63
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:64
 #, elixir-autogen, elixir-format
 msgid " — if your Organization enables single sign-on (SSO), we process the identity details its identity provider sends when you sign in, such as your email address, and we store the provider's identifier for you so we can recognize you the next time you sign in."
 msgstr " — 組織がシングルサインオン（SSO）を有効にしている場合、サインイン時にその組織のアイデンティティプロバイダーが送信する、メールアドレスなどの本人情報を処理し、次回のサインイン時にあなたを識別できるよう、プロバイダーがあなたに割り当てた識別子を保存します。"
@@ -12852,7 +12852,7 @@ msgstr " — あなたの会社が Stride で組織を持っている場合、�
 msgid "Organization information"
 msgstr "組織の情報"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:138
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:143
 #, elixir-autogen, elixir-format
 msgid "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
 msgstr "アカウントが有効な間、アカウントとワークスペースのデータを保持します。アカウントはアカウント設定から自分で削除できます。削除すると、法律により記録の保持が義務付けられている場合（例：組織との契約に関する記録）を除き、30 日以内にアカウントの記録と、個人ワークスペース内のあなただけが使っているボードを削除します。他の人がまだ使っているボードはその人たちのもとに残り、Organization のワークスペースにあるボードは Organization に残ります。そこに追加した内容は、あなたの名前を外して保持されます。"
@@ -12882,12 +12882,28 @@ msgstr "Stride はセルフホストなら無料で、ホスト版も個人や�
 msgid "The launch date is published on the Stride changelog."
 msgstr "開始日は Stride の変更履歴に掲載しています。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:151
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "An Organization's security audit events are kept for as long as that Organization's retention setting says; its org-admins may choose a longer period or keep them indefinitely."
 msgstr "組織のセキュリティ監査イベントは、その組織の保持設定に従って保持されます。組織管理者は、より長い期間を選ぶことも、無期限に保持することもできます。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:141
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Security audit events that record what you did, including your email address and IP address, are not removed when you delete your account: they are kept for the retention period below, and an Organization's org-admins can still see the events that belong to it."
 msgstr "あなたの操作を記録したセキュリティ監査イベントは、メールアドレスやIPアドレスを含め、アカウントを削除しても消去されません。これらは下記の保持期間のあいだ保持され、組織の組織管理者は、その組織に属するイベントを引き続き閲覧できます。"
+
+#: lib/kanban_web/live/admin/user_live/index.ex:155
+#, elixir-autogen, elixir-format
+msgid "This user owns a board other people still use. Transfer it or remove its other members first."
+msgstr "このユーザーは、ほかのユーザーがまだ使用しているボードを所有しています。先にボードを譲渡するか、ほかのメンバーを削除してください。"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:67
+#, elixir-autogen, elixir-format
+msgid "If your Organization also manages accounts from its identity provider (SCIM), that provider can create, update and disable your account."
+msgstr "組織がアイデンティティプロバイダーからアカウントも管理している場合（SCIM）、そのプロバイダーはあなたのアカウントを作成、更新、無効化できます。"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:146
+#: lib/kanban_web/controllers/page_html/terms.html.heex:128
+#, elixir-autogen, elixir-format
+msgid "If your Organization's identity provider has disabled your account, you cannot sign in to delete it yourself; email us at the address below and we will delete it for you."
+msgstr "組織のアイデンティティプロバイダーがあなたのアカウントを無効化した場合、サインインして自分で削除することはできません。下記のアドレスまでメールでご連絡いただければ、こちらで削除します。"
