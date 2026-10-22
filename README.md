@@ -19,6 +19,28 @@ This comprehensive guide walks you through:
 
 ### Local development setup
 
+To run Stride itself on your machine you need:
+
+- **Erlang/OTP 28.5.0.2 and Elixir 1.20.2**, the versions pinned in
+  `.tool-versions`. asdf and mise read that file.
+- **PostgreSQL** on `localhost`, with user `postgres` and password
+  `postgres`. The development database is `kanban_dev`. CI uses
+  PostgreSQL 16.
+- **Node.js and npm**, to install the JavaScript packages in
+  `assets/package.json`. `mix setup` does not install them.
+- **Google Chrome**, which Stride starts headless to export metrics as PDFs. The
+  test suite uses it too.
+
+Then, from the repository root:
+
+```bash
+# JavaScript packages the asset build bundles:
+npm install --prefix assets
+
+# deps.get, ecto.setup (create, migrate, seed), assets.setup and assets.build:
+mix setup
+```
+
 Before running `mix phx.server` (or any dev work that signs cookies /
 LiveView tokens), export a per-developer `SECRET_KEY_BASE`. The dev
 environment no longer ships with a shared signing key — every
@@ -28,19 +50,32 @@ server is ever exposed externally (ngrok, tunneling, port forwarding).
 ```bash
 # generate once and store it in your shell rc / direnv:
 export SECRET_KEY_BASE="$(mix phx.gen.secret)"
+
+# start the server at http://localhost:4000 (set PORT to use another port):
+mix phx.server
 ```
 
-If you don't set the variable, `config/dev.exs` falls back to a
-clearly-labeled placeholder so non-server tasks (`mix help`,
-`mix deps.audit`, etc.) keep working — but **do not** start
-`mix phx.server` against an externally-reachable network without
-setting your own key first.
+Without the variable, `mix phx.server`, `iex -S mix phx.server` and any
+run with `PHX_SERVER` set refuse to start and tell you to set it. So does
+any other command whose arguments include `phx.server`, such as
+`mix help phx.server`. Other Mix tasks (`mix help`, `mix deps.audit`,
+etc.) keep working on a clearly-labeled placeholder in `config/dev.exs`.
+
+The seed file creates no data. Register an account at `/users/register`
+and confirm it from the development mailbox at `/dev/mailbox`.
+
+Run the test suite with `mix test`, which creates and migrates the test
+database first, and run `mix precommit` before you commit. It compiles,
+formats, checks translations and dark-mode colours, runs the tests and
+runs Credo.
 
 ### Encryption key (`ENCRYPTION_KEY`)
 
-Secrets stored in the database, such as each user's two-factor
-authenticator secret, are encrypted with AES-256-GCM using
-`ENCRYPTION_KEY`: 32 random bytes, base64-encoded.
+Secrets stored in the database are encrypted with AES-256-GCM using
+`ENCRYPTION_KEY`: 32 random bytes, base64-encoded. Today that covers
+each user's two-factor authenticator secret and each Organization's
+OIDC single sign-on client secret. Two-factor recovery codes are stored
+only as an HMAC keyed from it.
 
 ```bash
 # generate one key per environment:
@@ -58,7 +93,12 @@ openssl rand -base64 32
   stored authenticator secret unreadable, so every user who turned on
   two-factor authentication has to set it up again. After a lost or
   replaced key, clear the unreadable rows with `DELETE FROM user_totps;`
-  so those users can enroll again.
+  so those users can enroll again. Unused recovery codes stop matching,
+  and stored OIDC client secrets become unreadable too.
+- **Webhook secrets use `SECRET_KEY_BASE`, not this key.** Webhook
+  endpoint URLs and signing secrets are encrypted with a key derived
+  from `SECRET_KEY_BASE`, so replacing that value makes them unreadable
+  and each endpoint has to be set up again.
 - **Development and test need nothing.** `config/dev.exs` and
   `config/test.exs` use fixed, public keys.
 
@@ -112,8 +152,15 @@ Stride is a kanban board application designed from the ground up for seamless hu
 ### For AI Agents
 
 - **RESTful JSON API** for programmatic task management
-- **Bearer token authentication** with capability-based permissions
-- **Atomic task claiming** with automatic conflict prevention
+- **MCP server** at `POST /api/mcp`, using the same Bearer token, for
+  agents that speak the Model Context Protocol
+  ([Stride MCP Server](docs/MCP.md))
+- **Bearer token authentication** with a board token or a
+  [workspace token](docs/AUTHENTICATION.md#workspace-tokens); the
+  token's capabilities decide which tasks it is offered
+  ([Authentication Guide](docs/AUTHENTICATION.md))
+- **Atomic task claiming**: a claim succeeds for one agent only, and
+  expires after 60 minutes if the task is not completed
 - **Rich task metadata** for effective implementation:
   - `why`, `what`, `where_context` - Planning & Context
   - `key_files` - Files to modify (prevents merge conflicts)
@@ -125,33 +172,75 @@ Stride is a kanban board application designed from the ground up for seamless hu
   - `database_changes`, `validation_rules` - Implementation guidance
   - `telemetry_event`, `metrics_to_track`, `logging_requirements` - Observability
   - And more...
-- **Client-side workflow hooks** for automation:
+- **Client-side workflow hooks** for automation. All five are blocking,
+  and Stride gives each a 10-minute timeout:
   - `before_doing` - Pull latest code, setup
-  - `after_doing` - Run tests (blocking - must pass)
+  - `after_doing` - Run tests (must pass)
   - `before_review` - Create PR, generate docs
   - `after_review` - Merge PR, deploy
+  - `after_goal` - Runs once after the last task of a goal is done; the
+    goal moves to Done when it reports success
 - **Dependency resolution** to find ready work
 - **Continuous work loop** - agents claim and complete tasks until hitting review
+
+### For Organizations
+
+- **Organizations and workspaces**: a site admin creates an Organization,
+  and its org-admins manage shared workspaces (members, boards,
+  invitations and [workspace tokens](docs/AUTHENTICATION.md#workspace-tokens))
+  from the workspace settings. Boards outside an Organization live in each
+  user's own personal workspace. See the
+  [Organizations Launch Runbook](docs/organizations-launch-runbook.md) for
+  turning on paid plans
+- **[Workspace export](docs/workspace-export.md)**: an org-admin can
+  download a zip of an Organization workspace (boards, columns, labels,
+  tasks, comments, task history and memberships) from the Export section
+  of the workspace settings. Each archive stays downloadable for 7 days.
+  Personal workspaces have no export
+- **[Webhooks, Slack and Discord](docs/webhooks.md)**: send a board's
+  task events to your own systems or a chat channel
+- **[Single sign-on](docs/single-sign-on.md)** through OIDC or SAML 2.0,
+  and **[SCIM provisioning](docs/scim-provisioning.md)** of members from
+  your identity provider
+- **[Two-factor authentication](docs/TWO-FACTOR-AUTHENTICATION.md)**,
+  which an Organization can require of its members
+  ([Organization Security Policies](docs/organization-security-policies.md))
+
+Workspaces, single sign-on, webhooks and the MCP server are paid
+features. They are open to everyone until a deployment sets
+`STRIDE_PLANS_ENFORCED=true`; from then on they need an Organization,
+and a board gets them only when it is in an Organization workspace.
 
 ## The AI Workflow
 
 ```text
 1. Human or AI creates structured tasks in Backlog column
 2. Human reviews and moves tasks to Ready column
-3. AI queries /api/tasks/claim to get next available task
-4. AI executes before_doing hook (pull latest code)
-5. AI implements the task
-6. AI executes after_doing hook (tests must pass)
-7. AI marks complete - task moves to Review or Done:
+3. AI executes the before_doing hook (pull latest code), then calls
+   POST /api/tasks/claim with its result to claim the next available
+   task, or one named by identifier (GET /api/tasks/next only looks)
+4. AI implements the task
+5. AI executes the after_doing hook (tests must pass) and the
+   before_review hook, then calls PATCH /api/tasks/:id/complete with
+   both results - task moves to Review or Done:
    - IF needs_review=true → Review column (wait for human)
    - IF needs_review=false → Done column (claim next task immediately)
-8. For reviewed tasks:
+6. For reviewed tasks:
    - Human reviews in Stride UI and sets review_status
-   - AI calls /api/tasks/:id/mark_reviewed to finalize
-   - If approved → Done column, execute after_review hook
-   - If changes requested → Back to Ready column for fixes
-9. Dependencies automatically unblock when tasks complete
-10. AI continues claiming tasks until hitting needs_review=true
+   - AI executes the after_review hook and calls
+     PATCH /api/tasks/:id/mark_reviewed with its result to finalize
+   - If approved → Done column
+   - If changes requested or rejected → back to the Doing column,
+     still claimed, for fixes
+7. When the last task of a goal is done, AI executes the after_goal
+   hook and reports it with PATCH /api/tasks/:id/after_goal; the goal
+   moves to Done when it succeeds, or after a grace window if no
+   report arrives
+8. Dependencies automatically unblock when tasks complete
+9. AI continues claiming tasks until hitting needs_review=true
+
+Stride refuses a claim, completion or review call whose hook result is
+missing or has a non-zero exit code.
 ```
 
 ## Task Schema: AI-Optimized
@@ -173,7 +262,7 @@ Tasks in Stride contain everything an AI needs to implement effectively:
 - `why` - Why this task matters (business justification)
 - `what` - What needs to be done (concise summary)
 - `where_context` - Where in the codebase this work happens
-- `estimated_files` - Estimated number of files to modify
+- `estimated_files` - Estimated number of files to modify, as text such as `2`, `3-5` or `5+`
 - `patterns_to_follow` - Specific coding patterns to replicate
 - `database_changes` - Database schema changes required
 - `validation_rules` - Input validation requirements
@@ -193,7 +282,9 @@ Tasks in Stride contain everything an AI needs to implement effectively:
 - `security_considerations` - Security concerns and requirements
 - `integration_points` - Systems or APIs this touches
 - `telemetry_event` - Telemetry events to emit
-- `metrics_to_track` - Metrics to instrument
+- `metrics_to_track` - Metrics to instrument. While paid plans are
+  enforced, only boards in an Organization workspace store this field and
+  `telemetry_event`; other boards accept and drop them
 - `logging_requirements` - What to log for debugging
 - `error_user_message` - User-facing error messages
 - `error_on_failure` - How to handle failures
@@ -205,16 +296,19 @@ Tasks in Stride contain everything an AI needs to implement effectively:
 - `required_capabilities` - Required agent capabilities
 - `created_by_agent` - Tracks AI vs human creation
 - `completed_by_agent` - Tracks AI vs human completion
-- `review_status` - `approved`, `changes_requested`, `rejected`
+- `review_status` - `pending`, `approved`, `changes_requested`, `rejected`
 - `review_notes` - Reviewer feedback
 
 See the [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) for details on creating effective tasks.
 
-**✨ Claude Code Skills:** Agents receive workflow enforcement skills via the onboarding endpoint:
+**✨ Claude Code Skills:** Claude Code agents get the workflow skills from the Stride plugin. Run `/plugin marketplace add cheezy/stride-marketplace`, then `/plugin install stride@stride-marketplace`; the onboarding endpoint gives the same instructions ([Install the Stride Plugin (Claude Code)](docs/GETTING-STARTED-WITH-AI.md#install-the-stride-plugin-claude-code)). The plugin includes seven skills:
+- `stride-workflow`: The orchestrator that runs a task from claim to completion and calls the skills below
 - `stride-claiming-tasks`: Ensures proper prerequisite verification and hook execution before claiming
 - `stride-completing-tasks`: Ensures proper hook execution order and prevents quality gate bypasses
 - `stride-creating-tasks`: Ensures comprehensive task specifications and prevents exploration failures
 - `stride-creating-goals`: Ensures proper goal structure and prevents batch creation format errors
+- `stride-enriching-tasks`: Fills in a sparse task before work starts
+- `stride-subagent-workflow`: Decides when to dispatch subagents during a task
 
 ## API Endpoints
 
@@ -230,37 +324,49 @@ See the [Task Writing Guide](docs/TASK-WRITING-GUIDE.md) for details on creating
 - `GET /api/tasks/:id/dependents` - Get tasks that depend on this task
 - `GET /api/tasks/:id/comments` - Read a task's most recent comments (`limit`, default 50), oldest first ([docs](docs/api/get_tasks_id_comments.md))
 - `POST /api/tasks/:id/comments` - Add a comment as the token's user, attributed to your agent name ([docs](docs/api/post_tasks_id_comments.md))
-- `POST /api/tasks` - Create task(s) or goal with nested tasks
-- `PATCH /api/tasks/:id` - Update task fields
+- `GET /api/boards` - List the boards the token can be used on ([docs](docs/api/get_boards.md))
+- `POST /api/tasks` - Create a task, or a goal with nested tasks
+- `POST /api/tasks/batch` - Create several goals with their tasks in one request (root key `goals`) ([docs](docs/api/post_tasks_batch.md))
+- `PATCH /api/tasks/:id` - Update task fields (`PUT /api/tasks/:id` does the same)
 
 ### Workflow Operations
 
-- `POST /api/tasks/claim` - Claim next available task (with before_doing hook)
+- `POST /api/tasks/claim` - Claim the next available task, or the one named by `identifier` (with before_doing hook result)
 - `POST /api/tasks/:id/unclaim` - Release claimed task back to Ready
-- `PATCH /api/tasks/:id/complete` - Complete task (with after_doing, before_review hooks)
-- `PATCH /api/tasks/:id/mark_reviewed` - Finalize reviewed task (with after_review hook)
+- `PATCH /api/tasks/:id/complete` - Complete task (with after_doing, before_review hook results)
+- `PATCH /api/tasks/:id/mark_reviewed` - Finalize reviewed task (with after_review hook result)
+- `PATCH /api/tasks/:id/mark_done` - Move a task from Review straight to Done ([docs](docs/api/patch_tasks_id_mark_done.md))
+- `PUT /api/tasks/:id/changed_files` - Upload the per-file diff snapshot for a task ([docs](docs/api/put_tasks_id_changed_files.md))
+- `PATCH /api/tasks/:id/after_goal` - Report the after_goal hook result for a goal whose last task is done
+- `GET /api/tasks/:id/after_goal_status` - Read a goal's after_goal status
+
+### MCP
+
+- `POST /api/mcp` - The Model Context Protocol endpoint, authenticated with the same Bearer token ([Stride MCP Server](docs/MCP.md)). `GET` and `DELETE` on the same path answer `405`
+
+The [API Documentation](docs/api/README.md) is the full reference, with a page for most endpoints.
 
 ### Authentication
 
-Bearer token with capability-based permissions:
+Every endpoint except `GET /api/agent/onboarding` and `GET /api/openapi.json` needs a Bearer token. The token's capabilities decide which tasks it is offered:
 
 ```bash
-Authorization: Bearer stride_abc123def456...
+Authorization: Bearer stride_dev_xxx
 ```
 
 ## Design Principles
 
 ### 1. AI-Native, Not AI-Bolted-On
 
-Every feature considers "how will an AI agent use this?" first. The API is the primary interface, and the UI is built on top of it.
+Every feature considers "how will an AI agent use this?" first. The API is a first-class interface: the board UI, the REST API and the MCP server call the same application code, so a task behaves the same way whichever one changes it.
 
 ### 2. Structured Context Over Free-Form
 
-JSON schemas for technical context make tasks machine-readable and actionable. No guessing, no assumptions.
+Technical context is stored as structured fields rather than one free-form description: `key_files` and `verification_steps` are lists of objects, and `testing_strategy` is a JSON object whose shape Stride validates. Tasks stay machine-readable and actionable. No guessing, no assumptions.
 
 ### 3. Conflict Prevention via Key Files
 
-Tasks specify which files they'll modify. Only one task can modify a file at a time, preventing merge conflicts automatically.
+Tasks specify which files they'll modify. When an agent asks for the next task, Stride skips a Ready task that lists a file already listed by an in-progress task in Doing or Review, so two agents are not handed the same file. The check covers `GET /api/tasks/next` and a claim without an `identifier`; a claim that names a task does not run it.
 
 ### 4. Client-Side Hook Execution
 
@@ -268,7 +374,7 @@ Hooks execute on the agent's machine, not the server. Agents maintain full contr
 
 ### 5. Capability-Based Permissions
 
-Agents specify their capabilities (`code_generation`, `testing`, etc.) and only see tasks matching their skills.
+Each API token carries capabilities (`code_generation`, `testing`, etc.). When an agent asks for the next task or claims one, Stride offers only tasks whose `required_capabilities` the token has all of. A task with no required capabilities is offered to every token, and a token with no capabilities is offered every task. Listing and reading tasks are not filtered.
 
 ### 6. Human-in-the-Loop Review
 
@@ -327,6 +433,7 @@ Start with the [documentation index](docs/README.md). It lists every doc in `doc
 - [Single Sign-On](docs/single-sign-on.md) - Let an Organization's members sign in through your identity provider
 - [SCIM Provisioning](docs/scim-provisioning.md) - Manage an Organization's members from your identity provider
 - [Organization Security Policies](docs/organization-security-policies.md) - Require two-factor authentication and set how long audit events are kept
+- [Workspace Export](docs/workspace-export.md) - Download an Organization workspace as a zip archive, and import one into a self-hosted instance
 
 ### Plugin Contracts
 
@@ -382,12 +489,12 @@ See [AGENTS.md](AGENTS.md) for detailed development guidelines including:
 
 Traditional project management tools were built for humans first, with AI integration as an afterthought. Stride flips this model:
 
-- **Atomic Task Claiming** - Agents claim tasks atomically with automatic conflict prevention
+- **Atomic Task Claiming** - A claim succeeds for one agent only and expires after 60 minutes
 - **Client-Side Hooks** - Full control over execution environment (tests, builds, PRs)
 - **Rich Task Metadata** - 20+ fields of structured context for effective implementation
-- **Capability Matching** - Agents only see tasks they're qualified to handle
+- **Capability Matching** - Agents are offered only the tasks their token's capabilities cover
 - **Continuous Work Loop** - Agents work continuously until hitting review
-- **File Conflict Prevention** - `key_files` ensures only one task modifies a file at a time
+- **File Conflict Prevention** - The next-task query skips a task whose `key_files` overlap a task already in progress
 - **Dependency-Aware** - Tasks know what blocks them and what they block
 
 ## Contributing

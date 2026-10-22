@@ -10,6 +10,12 @@ Stride AI agents can run on Windows using three approaches:
 
 Each approach has different tradeoffs for compatibility, performance, and ease of setup.
 
+This guide covers running a Stride agent in your own project on Windows. The
+hook examples assume an Elixir project, because they run `mix`; replace those
+commands with your project's own. To work on the Stride application itself,
+use WSL2 and follow the local development setup in the [README](../README.md),
+which pins Erlang/OTP 28.5.0.2 and Elixir 1.20.2.
+
 ## Quick Recommendation
 
 **For most users: Use WSL2**
@@ -66,15 +72,21 @@ sudo apt update && sudo apt upgrade -y
 
 5. **Install Elixir and Erlang:**
 
-```bash
-# Add Erlang Solutions repository
-wget https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb
-sudo dpkg -i erlang-solutions_2.0_all.deb
-sudo apt update
+Install the versions your project pins. If it has a `.tool-versions` file,
+install a version manager such as [asdf](https://asdf-vm.com) or
+[mise](https://mise.jdx.dev) now, following its own Linux instructions;
+after you clone your project in step 7, run it from the project directory
+to install exactly those versions:
 
-# Install Erlang and Elixir
-sudo apt install -y esl-erlang elixir
+```bash
+# with mise, after step 7, from the project directory:
+mise install
 ```
+
+Otherwise follow the Linux instructions at
+[elixir-lang.org/install.html](https://elixir-lang.org/install.html). The
+`esl-erlang` and `elixir` packages from a distribution's package manager
+are often older than a project needs.
 
 6. **Install Git:**
 
@@ -90,12 +102,17 @@ git clone <your-repo-url>
 cd <your-project>
 ```
 
-8. **Set up environment variables:**
+8. **Set up your Stride credentials:**
 
-Add to `~/.bashrc`:
+Your agent reads its API URL and token from `.stride_auth.md` in the project
+root; add that file to `.gitignore` and never commit it. See
+[The `.stride_auth.md` File](AUTHENTICATION.md#the-stride_authmd-file).
+
+If you also want to call the API with `curl` yourself, add the same values
+to `~/.bashrc`:
 
 ```bash
-export STRIDE_API_TOKEN="stride_abc123def456..."
+export STRIDE_API_TOKEN="stride_dev_xxx"
 export STRIDE_API_URL="https://www.stridelikeaboss.com"
 ```
 
@@ -147,10 +164,17 @@ choco install elixir
 
 Download from [git-scm.com](https://git-scm.com/download/win)
 
-3. **Set environment variables:**
+3. **Set up your Stride credentials:**
+
+Your agent reads its API URL and token from `.stride_auth.md` in the project
+root; add that file to `.gitignore` and never commit it. See
+[The `.stride_auth.md` File](AUTHENTICATION.md#the-stride_authmd-file).
+
+If you also want to call the API yourself, set the same values as
+environment variables:
 
 ```powershell
-$env:STRIDE_API_TOKEN = "stride_abc123def456..."
+$env:STRIDE_API_TOKEN = "stride_dev_xxx"
 $env:STRIDE_API_URL = "https://www.stridelikeaboss.com"
 ```
 
@@ -162,7 +186,7 @@ notepad $PROFILE
 
 Add these lines:
 ```powershell
-$env:STRIDE_API_TOKEN = "stride_abc123def456..."
+$env:STRIDE_API_TOKEN = "stride_dev_xxx"
 $env:STRIDE_API_URL = "https://www.stridelikeaboss.com"
 ```
 
@@ -184,18 +208,26 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 #### after_doing
 
 ```powershell
-# Run tests with timeout (120 seconds)
-$job = Start-Job -ScriptBlock { mix test }
-$completed = Wait-Job $job -Timeout 120
-if (-not $completed) {
+# Run tests with a timeout. Stride gives each hook 600 seconds, so stop the
+# tests a little earlier to leave time for the error and the compile step.
+# A background job does not set $LASTEXITCODE in this session, so the job
+# writes its exit code as its last line of output (1 if mix never ran).
+$job = Start-Job -ScriptBlock {
+    Set-Location -LiteralPath $using:PWD
+    mix test
+    "EXIT:$(if ($null -eq $LASTEXITCODE) { 1 } else { $LASTEXITCODE })"
+}
+if (-not (Wait-Job $job -Timeout 540)) {
     Stop-Job $job
     Remove-Job $job
-    Write-Error "Tests timed out after 120 seconds"
+    Write-Error "Tests timed out after 540 seconds"
     exit 1
 }
-$result = Receive-Job $job
+$output = @(Receive-Job $job)
 Remove-Job $job
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$output | Select-Object -SkipLast 1
+$exitCode = [int]($output[-1] -replace '^EXIT:', '')
+if ($exitCode -ne 0) { exit $exitCode }
 
 # Build project
 mix compile --warnings-as-errors
@@ -247,12 +279,17 @@ Make sure to select "Use Git and optional Unix tools from the Command Prompt" du
 
 Download from [elixir-lang.org/install.html#windows](https://elixir-lang.org/install.html#windows)
 
-3. **Open Git Bash** and configure environment variables:
+3. **Open Git Bash** and set up your Stride credentials:
 
-Add to `~/.bashrc`:
+Your agent reads its API URL and token from `.stride_auth.md` in the project
+root; add that file to `.gitignore` and never commit it. See
+[The `.stride_auth.md` File](AUTHENTICATION.md#the-stride_authmd-file).
+
+If you also want to call the API with `curl` yourself, add the same values
+to `~/.bashrc`:
 
 ```bash
-export STRIDE_API_TOKEN="stride_abc123def456..."
+export STRIDE_API_TOKEN="stride_dev_xxx"
 export STRIDE_API_URL="https://www.stridelikeaboss.com"
 ```
 

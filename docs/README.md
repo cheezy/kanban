@@ -91,6 +91,7 @@ under the audience it is written for, with one line saying what it is for.
 - [Single Sign-On](single-sign-on.md) — Letting an Organization's members sign in through your identity provider.
 - [SCIM Provisioning](scim-provisioning.md) — Creating and removing an Organization's members from your identity provider.
 - [Organization Security Policies](organization-security-policies.md) — Requiring two-factor authentication for members and setting how long audit events are kept.
+- [Workspace Export](workspace-export.md) — Downloading an Organization workspace as a zip archive, and importing one into a self-hosted instance.
 
 ## Self-hosting operators
 
