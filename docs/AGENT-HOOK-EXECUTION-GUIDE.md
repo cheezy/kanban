@@ -32,12 +32,12 @@ Create a `.stride.md` file at the root of your repository with hook implementati
 
 **Note:** Examples below use Unix/Linux/macOS bash syntax. For Windows PowerShell equivalents, see [WINDOWS-SETUP.md](WINDOWS-SETUP.md#powershell-hook-examples).
 
-```markdown
+````markdown
 # Stride Configuration
 
 ## before_doing
 
-Executes before starting work on a task (blocking, 60s timeout).
+Executes before starting work on a task (blocking).
 
 ```bash
 echo "Starting task $TASK_IDENTIFIER: $TASK_TITLE"
@@ -46,7 +46,7 @@ git pull origin main
 
 ## after_doing
 
-Executes after completing work (blocking, 120s timeout).
+Executes after completing work (blocking).
 If this fails, task completion should fail.
 
 ```bash
@@ -57,7 +57,7 @@ mix credo --strict
 
 ## before_review
 
-Executes when task enters review (blocking, 60s timeout).
+Executes when task enters review (blocking).
 
 ```bash
 echo "Creating PR for $TASK_IDENTIFIER"
@@ -66,12 +66,21 @@ gh pr create --title "$TASK_TITLE" --body "Closes $TASK_IDENTIFIER"
 
 ## after_review
 
-Executes after review approval (blocking, 60s timeout).
+Executes after review approval (blocking).
 
 ```bash
 echo "Task $TASK_IDENTIFIER complete"
 ```
+
+## after_goal
+
+Executes once the last child task of a goal is done (blocking).
+
+```bash
+echo "Goal finished after $TASK_IDENTIFIER"
+git push origin main
 ```
+````
 
 ### 2. Commit `.stride.md` to Version Control
 
@@ -79,14 +88,43 @@ This file should be committed so all agents and developers can see the configure
 
 ## Four Fixed Hook Points
 
-Stride defines exactly four hook points in the task lifecycle:
+Stride defines four hook points in the task lifecycle, plus a fifth, `after_goal`, that runs when a goal's last child task is done:
 
 | Hook | When | Blocking | Timeout | Typical Use |
 |------|------|----------|---------|-------------|
-| `before_doing` | Before starting work | Yes | 60s | Pull latest code, setup workspace |
-| `after_doing` | After completing work | Yes | 120s | Run tests, build project, lint code |
-| `before_review` | Entering review | Yes | 60s | Create PR, generate documentation |
-| `after_review` | After review approval | Yes | 60s | Merge PR, deploy to production |
+| `before_doing` | Before starting work | Yes | 600s | Pull latest code, setup workspace |
+| `after_doing` | After completing work | Yes | 600s | Run tests, build project, lint code |
+| `before_review` | Entering review | Yes | 600s | Create PR, generate documentation |
+| `after_review` | After review approval | Yes | 600s | Merge PR, deploy to production |
+| `after_goal` | After a goal's last child task is done | Yes | 600s | Push the goal's work, release |
+
+The server sends each hook's `blocking` flag and its `timeout` in milliseconds in the hook metadata. Today every hook is sent as `"blocking": true` with a `"timeout"` of `600000`. Use the value the server sends rather than a number from this guide.
+
+**Where each hook arrives:**
+
+| Hook | Delivered in | Result reported in |
+|------|--------------|--------------------|
+| `before_doing` | The claim response's `hook` object | `before_doing_result` on [POST /api/tasks/claim](api/post_tasks_claim.md) |
+| `after_doing` | The `/complete` response's `hooks` list | `after_doing_result` on [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md) |
+| `before_review` | The `/complete` response's `hooks` list | `before_review_result` on `/complete` |
+| `after_review` | The `/complete` response's `hooks` list when `needs_review=false`; the approving `/mark_reviewed` response when `needs_review=true` | `after_review_result` on [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md); not reported when `needs_review=false` |
+| `after_goal` | Appended to the `hooks` list of the `/complete` or approving `/mark_reviewed` response that finished the goal's last child | [PATCH /api/tasks/:id/after_goal](api/patch_tasks_id_after_goal.md), against the goal |
+
+You run `after_doing` and `before_review` before calling `/complete`, and `after_review` before calling `/mark_reviewed`: their entries in the response describe hooks you have already run.
+
+### The after_goal Hook
+
+When a completion finishes the last open child task of a goal, the server arms the goal's `after_goal` hook and appends an `after_goal` entry to that response's `hooks` list. That is the `/complete` response when the child went straight to Done (`needs_review=false`), or the `/mark_reviewed` response that approved it.
+
+1. Run the `## after_goal` section of `.stride.md`, capturing `exit_code`, `output` and `duration_ms`. An empty section did no work; report it as `{"exit_code": 0, "output": "", "duration_ms": 0}`.
+2. Report the result with [PATCH /api/tasks/:id/after_goal](api/patch_tasks_id_after_goal.md), where `:id` is the goal, not the child task.
+3. An `exit_code` of `0` moves the goal to Done. Any other exit code is recorded and the goal stays where it is, so fix the problem, run the section again and send a new report.
+
+The goal does not wait forever: completing its last child also starts a five-minute grace window, and if no successful report has arrived when it ends, the server moves the goal to Done itself, even when the latest report failed.
+
+The `after_goal` entry in `hooks` carries the completed child's `TASK_*` variables, with `HOOK_NAME` set to `after_goal`. To learn the goal's own ID and identifier, or whether a completion armed the hook at all, call [GET /api/tasks/:id/after_goal_status](api/get_tasks_id_after_goal_status.md) — see [Goal Information (after_goal only)](#goal-information-after_goal-only).
+
+`PATCH /api/tasks/:id/mark_done` never arms or delivers `after_goal`.
 
 ### Blocking Hooks
 
@@ -100,6 +138,9 @@ Stride defines exactly four hook points in the task lifecycle:
 - If `after_doing` tests fail, task completion is blocked
 - If `before_review` PR creation fails, task completion is blocked
 - If `after_review` deployment fails, mark_reviewed is blocked
+- If `after_goal` fails, the goal stays out of Done until a successful report or the end of the grace window
+
+For the `422` bodies each endpoint returns, see its page under [api/](api/), for example [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md#unprocessable-entity-422).
 
 ## Hook Execution Workflow
 
@@ -109,9 +150,9 @@ Stride defines exactly four hook points in the task lifecycle:
 
 ```bash
 # 1. Execute before_doing hook FIRST
-# Read hook command from .stride.md
+# Read hook command from .stride.md. 600 seconds is the timeout the server sends today.
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c 'echo "Starting task..."; git pull origin main' 2>&1)
+OUTPUT=$(timeout 600 bash -c 'echo "Starting task..."; git pull origin main' 2>&1)
 EXIT_CODE=$?
 END_TIME=$(date +%s%3N)
 DURATION=$((END_TIME - START_TIME))
@@ -122,31 +163,30 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit 1
 fi
 
-# 2. Claim task with hook result
-RESPONSE=$(curl -s -X POST \
-  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"agent_name\": \"Claude Sonnet 4.5\",
-    \"before_doing_result\": {
-      \"exit_code\": $EXIT_CODE,
-      \"output\": \"$OUTPUT\",
-      \"duration_ms\": $DURATION
-    }
-  }" \
-  $STRIDE_API_URL/api/tasks/claim)
+# 2. Claim task with hook result (jq builds the JSON, so quotes and newlines
+#    in the hook output cannot break the request body)
+RESPONSE=$(jq -n \
+  --arg agent "Claude Sonnet 4.5" \
+  --arg out "$OUTPUT" --argjson code "$EXIT_CODE" --argjson dur "$DURATION" \
+  '{agent_name: $agent,
+    before_doing_result: {exit_code: $code, output: $out, duration_ms: $dur}}' |
+  curl -s -X POST \
+    -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d @- \
+    "$STRIDE_API_URL/api/tasks/claim")
 
 # 3. Extract task details
-TASK_ID=$(echo $RESPONSE | jq -r '.data.id')
-TASK_IDENTIFIER=$(echo $RESPONSE | jq -r '.data.identifier')
-TASK_TITLE=$(echo $RESPONSE | jq -r '.data.title')
+TASK_ID=$(echo "$RESPONSE" | jq -r '.data.id')
+TASK_IDENTIFIER=$(echo "$RESPONSE" | jq -r '.data.identifier')
+TASK_TITLE=$(echo "$RESPONSE" | jq -r '.data.title')
 
 # 4. Do your work on the task
 # ... implement changes ...
 
 # 5. Execute after_doing hook FIRST
 START_TIME_1=$(date +%s%3N)
-OUTPUT_1=$(timeout 120 bash -c 'mix test && mix credo --strict' 2>&1)
+OUTPUT_1=$(timeout 600 bash -c 'mix test && mix credo --strict' 2>&1)
 EXIT_CODE_1=$?
 END_TIME_1=$(date +%s%3N)
 DURATION_1=$((END_TIME_1 - START_TIME_1))
@@ -158,7 +198,7 @@ fi
 
 # 6. Execute before_review hook SECOND
 START_TIME_2=$(date +%s%3N)
-OUTPUT_2=$(timeout 60 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
+OUTPUT_2=$(timeout 600 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
 EXIT_CODE_2=$?
 END_TIME_2=$(date +%s%3N)
 DURATION_2=$((END_TIME_2 - START_TIME_2))
@@ -168,28 +208,34 @@ if [ $EXIT_CODE_2 -ne 0 ]; then
   exit 1
 fi
 
-# 7. Complete the task with BOTH hook results
-COMPLETE_RESPONSE=$(curl -s -X PATCH \
-  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"agent_name\": \"Claude Sonnet 4.5\",
-    \"time_spent_minutes\": 45,
-    \"completion_notes\": \"All tests passing, PR created\",
-    \"after_doing_result\": {
-      \"exit_code\": $EXIT_CODE_1,
-      \"output\": \"$OUTPUT_1\",
-      \"duration_ms\": $DURATION_1
-    },
-    \"before_review_result\": {
-      \"exit_code\": $EXIT_CODE_2,
-      \"output\": \"$OUTPUT_2\",
-      \"duration_ms\": $DURATION_2
-    }
-  }" \
-  $STRIDE_API_URL/api/tasks/$TASK_IDENTIFIER/complete)
+# 7. Complete the task with BOTH hook results and the other required fields.
+#    explorer_result and reviewer_result use the self-reported skip form here;
+#    see "Related: Completion Validation (G65)" below for the dispatched form.
+COMPLETE_RESPONSE=$(jq -n \
+  --arg agent "Claude Sonnet 4.5" \
+  --arg out1 "$OUTPUT_1" --argjson code1 "$EXIT_CODE_1" --argjson dur1 "$DURATION_1" \
+  --arg out2 "$OUTPUT_2" --argjson code2 "$EXIT_CODE_2" --argjson dur2 "$DURATION_2" \
+  '{agent_name: $agent,
+    completion_summary: "Added refresh-token rotation to the session controller.",
+    actual_complexity: "medium",
+    actual_files_changed: "lib/my_app/auth.ex, test/my_app/auth_test.exs",
+    time_spent_minutes: 45,
+    completion_notes: "All tests passing, PR created",
+    after_doing_result: {exit_code: $code1, output: $out1, duration_ms: $dur1},
+    before_review_result: {exit_code: $code2, output: $out2, duration_ms: $dur2},
+    explorer_result: {dispatched: false, reason: "self_reported_exploration",
+      summary: "Read the key files and their tests inline; the change follows the existing context pattern."},
+    reviewer_result: {dispatched: false, reason: "self_reported_review",
+      summary: "Re-read the diff against every acceptance criterion and pitfall; no issues found."}}' |
+  curl -s -X PATCH \
+    -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d @- \
+    "$STRIDE_API_URL/api/tasks/$TASK_IDENTIFIER/complete")
 
-# 8. If needs_review=false, execute after_review hook (returned in response)
+# 8. The response's hooks list names what to run next: after_review when
+#    needs_review=false, and after_goal when this task was a goal's last open
+#    child (see "The after_goal Hook" above)
 ```
 
 ## Environment Variables
@@ -215,6 +261,18 @@ All hooks receive these environment variables:
 ### Agent Information
 - `AGENT_NAME` - Your agent name (e.g., `Claude Sonnet 4.5`)
 - `HOOK_NAME` - Current hook name (`before_doing`, `after_doing`, etc.)
+
+### Goal Information (after_goal only)
+
+The `after_goal` entry in a `hooks` list carries the same fourteen variables as the other hooks, describing the **child task** whose completion finished the goal, with `HOOK_NAME` set to `after_goal`. The goal's own details come from [GET /api/tasks/:id/after_goal_status](api/get_tasks_id_after_goal_status.md), whose `env` object holds:
+
+- `GOAL_ID` - The goal's numeric ID, the `:id` to report against
+- `GOAL_IDENTIFIER` - The goal's identifier (e.g., `G10`)
+- `GOAL_TITLE` - The goal's title
+- `GOAL_DESCRIPTION` - The goal's description
+- `BOARD_ID` - Board ID
+- `BOARD_NAME` - Board name
+- `HOOK_NAME` - Always `after_goal`
 
 **Platform Note:** In bash, access variables with `$VARIABLE_NAME`. In PowerShell, use `$env:VARIABLE_NAME`.
 
@@ -277,7 +335,8 @@ gh pr create --title "$TASK_TITLE" --body "Closes $TASK_IDENTIFIER
 - Quality checks passed"
 ```
 
-## after_review
+**Unix/Linux/macOS/WSL2 (after_review):**
+
 ```bash
 # Merge PR and clean up
 gh pr merge --auto --squash
@@ -285,11 +344,10 @@ git checkout main
 git pull origin main
 git branch -d "task-$TASK_IDENTIFIER-*"
 ```
-```
 
 ### Quality Gate Enforcement
 
-```markdown
+````markdown
 ## after_doing
 ```bash
 # Comprehensive quality checks - task cannot complete if these fail
@@ -312,11 +370,11 @@ mix coveralls || exit 1
 
 echo "✓ All quality gates passed"
 ```
-```
+````
 
 ### Environment Setup and Cleanup
 
-```markdown
+````markdown
 ## before_doing
 ```bash
 # Ensure environment is ready
@@ -351,7 +409,7 @@ $TASK_DESCRIPTION
 
 Closes $TASK_IDENTIFIER"
 ```
-```
+````
 
 ## Error Handling
 
@@ -360,8 +418,8 @@ Closes $TASK_IDENTIFIER"
 **Unix/Linux/macOS/WSL2:**
 
 ```bash
-# Execute after_doing hook (blocking)
-timeout 120 bash -c 'mix test'
+# Execute after_doing hook (blocking), within the server's 600s timeout
+timeout 600 bash -c 'mix test'
 HOOK_EXIT_CODE=$?
 
 if [ $HOOK_EXIT_CODE -ne 0 ]; then
@@ -377,12 +435,12 @@ fi
 ```powershell
 # Execute after_doing hook (blocking) with timeout
 $job = Start-Job -ScriptBlock { mix test }
-$completed = Wait-Job $job -Timeout 120
+$completed = Wait-Job $job -Timeout 600
 
 if (-not $completed) {
     Stop-Job $job
     Remove-Job $job
-    Write-Error "ERROR: Tests timed out after 120 seconds"
+    Write-Error "ERROR: Tests timed out after 600 seconds"
     Write-Error "Task remains in 'in_progress' status"
     exit 1
 }
@@ -405,7 +463,7 @@ if ($LASTEXITCODE -ne 0) {
 ```bash
 # Execute before_review hook (BLOCKING - must succeed)
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
+OUTPUT=$(timeout 600 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
 EXIT_CODE=$?
 END_TIME=$(date +%s%3N)
 DURATION=$((END_TIME - START_TIME))
@@ -422,23 +480,27 @@ fi
 ```powershell
 # Execute before_review hook (BLOCKING - must succeed) with timeout
 $startTime = Get-Date
-$job = Start-Job -ScriptBlock { gh pr create --title "$env:TASK_TITLE" }
-$completed = Wait-Job $job -Timeout 60
+# The job's last output is the command's exit code
+$job = Start-Job -ScriptBlock { gh pr create --title "$env:TASK_TITLE" 2>&1 | Out-String; $LASTEXITCODE }
+$completed = Wait-Job $job -Timeout 600
 
 if (-not $completed) {
     Stop-Job $job
     Remove-Job $job
-    Write-Warning "WARNING: PR creation timed out, but task moved to review"
-    Write-Warning "Create PR manually"
-} elseif ($LASTEXITCODE -ne 0) {
-    Write-Warning "WARNING: PR creation failed, but task moved to review"
-    Write-Warning "Create PR manually"
+    Write-Error "ERROR: before_review hook timed out after 600 seconds"
+    Write-Error "Fix the issue before calling /complete endpoint"
+    exit 1
 }
 
-if ($job) { Remove-Job $job -ErrorAction SilentlyContinue }
+$results = @(Receive-Job $job)
+Remove-Job $job
+$exitCode = $results[-1]
 
-# Continue with workflow even if hook failed
-Write-Host "Task moved to Review column"
+if ($exitCode -ne 0) {
+    Write-Error "ERROR: before_review hook failed"
+    Write-Error "Fix the issue before calling /complete endpoint"
+    exit 1
+}
 ```
 
 ### Timeout Handling
@@ -447,7 +509,7 @@ All hooks have timeouts to prevent hanging:
 
 ```bash
 # Use timeout command to enforce hook timeout
-HOOK_TIMEOUT=60  # seconds
+HOOK_TIMEOUT=600  # seconds: the hook metadata's timeout (600000 ms) divided by 1000
 
 timeout $HOOK_TIMEOUT bash -c '
   # Hook commands here
@@ -475,7 +537,7 @@ If a blocking hook fails, **do not proceed** with the action. The hook failed fo
 
 ### 3. Use Provided Timeouts
 
-Use the timeout values from hook metadata. Different hooks have different timeout requirements.
+Use the `timeout` value from the hook metadata. It is in milliseconds, and today it is `600000` (600 seconds) for every hook.
 
 ### 4. Log Hook Execution
 
@@ -554,9 +616,9 @@ mix credo
 **Problem:** Hook times out before completing
 
 **Solution:**
-- Long-running operations may need longer timeouts
-- `after_doing` defaults to 120s for running tests
-- If consistently timing out, optimize the hook commands or request timeout increase
+- Every hook gets the `timeout` the server sends in the hook metadata: `600000` ms (600 seconds) today, for every hook
+- The server sets the value, so a hook cannot ask for more time; make the commands faster, for example by caching dependencies and build output between runs. Never drop a test, lint or security check from a blocking hook just to fit the timeout
+- Check that your own runner is not cutting the hook off sooner than the server's timeout
 
 ### Variables Not Substituted
 
@@ -575,7 +637,7 @@ set -e  # Exit on error
 
 # Configuration
 STRIDE_API_URL="https://www.stridelikeaboss.com"
-STRIDE_API_TOKEN="your_token_here"
+STRIDE_API_TOKEN="stride_dev_xxx"  # placeholder: read yours from .stride_auth.md
 AGENT_NAME="Claude Sonnet 4.5"
 
 # Function to execute hook
@@ -612,10 +674,10 @@ execute_hook() {
   fi
 }
 
-# 1. Execute before_doing hook FIRST
+# 1. Execute before_doing hook FIRST (600s is the timeout the server sends today)
 echo "Executing before_doing hook..."
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c 'echo "Starting task..."; git pull origin main' 2>&1)
+OUTPUT=$(timeout 600 bash -c 'echo "Starting task..."; git pull origin main' 2>&1)
 EXIT_CODE=$?
 END_TIME=$(date +%s%3N)
 DURATION=$((END_TIME - START_TIME))
@@ -625,20 +687,18 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit 1
 fi
 
-# 2. Claim task with hook result
+# 2. Claim task with hook result (jq builds the JSON safely)
 echo "Claiming next task..."
-CLAIM_RESPONSE=$(curl -s -X POST \
-  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"agent_name\": \"$AGENT_NAME\",
-    \"before_doing_result\": {
-      \"exit_code\": $EXIT_CODE,
-      \"output\": \"$OUTPUT\",
-      \"duration_ms\": $DURATION
-    }
-  }" \
-  "$STRIDE_API_URL/api/tasks/claim")
+CLAIM_RESPONSE=$(jq -n \
+  --arg agent "$AGENT_NAME" \
+  --arg out "$OUTPUT" --argjson code "$EXIT_CODE" --argjson dur "$DURATION" \
+  '{agent_name: $agent,
+    before_doing_result: {exit_code: $code, output: $out, duration_ms: $dur}}' |
+  curl -s -X POST \
+    -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d @- \
+    "$STRIDE_API_URL/api/tasks/claim")
 
 # 3. Get task identifier
 TASK_IDENTIFIER=$(echo "$CLAIM_RESPONSE" | jq -r '.data.identifier')
@@ -650,7 +710,7 @@ echo "Working on task: $TASK_IDENTIFIER"
 # 5. Execute after_doing hook FIRST
 echo "Executing after_doing hook..."
 START_TIME_1=$(date +%s%3N)
-OUTPUT_1=$(timeout 120 bash -c 'mix test && mix credo --strict' 2>&1)
+OUTPUT_1=$(timeout 600 bash -c 'mix test && mix credo --strict' 2>&1)
 EXIT_CODE_1=$?
 END_TIME_1=$(date +%s%3N)
 DURATION_1=$((END_TIME_1 - START_TIME_1))
@@ -663,7 +723,7 @@ fi
 # 6. Execute before_review hook SECOND
 echo "Executing before_review hook..."
 START_TIME_2=$(date +%s%3N)
-OUTPUT_2=$(timeout 60 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
+OUTPUT_2=$(timeout 600 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
 EXIT_CODE_2=$?
 END_TIME_2=$(date +%s%3N)
 DURATION_2=$((END_TIME_2 - START_TIME_2))
@@ -673,29 +733,41 @@ if [ $EXIT_CODE_2 -ne 0 ]; then
   exit 1
 fi
 
-# 7. Complete the task with BOTH hook results
+# 7. Complete the task with BOTH hook results and the other required fields
 echo "Completing task..."
-COMPLETE_RESPONSE=$(curl -s -X PATCH \
-  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"agent_name\": \"$AGENT_NAME\",
-    \"time_spent_minutes\": 45,
-    \"completion_notes\": \"All tests passing, PR created\",
-    \"after_doing_result\": {
-      \"exit_code\": $EXIT_CODE_1,
-      \"output\": \"$OUTPUT_1\",
-      \"duration_ms\": $DURATION_1
-    },
-    \"before_review_result\": {
-      \"exit_code\": $EXIT_CODE_2,
-      \"output\": \"$OUTPUT_2\",
-      \"duration_ms\": $DURATION_2
-    }
-  }" \
-  "$STRIDE_API_URL/api/tasks/$TASK_IDENTIFIER/complete")
+COMPLETE_RESPONSE=$(jq -n \
+  --arg agent "$AGENT_NAME" \
+  --arg out1 "$OUTPUT_1" --argjson code1 "$EXIT_CODE_1" --argjson dur1 "$DURATION_1" \
+  --arg out2 "$OUTPUT_2" --argjson code2 "$EXIT_CODE_2" --argjson dur2 "$DURATION_2" \
+  '{agent_name: $agent,
+    completion_summary: "Added refresh-token rotation to the session controller.",
+    actual_complexity: "medium",
+    actual_files_changed: "lib/my_app/auth.ex, test/my_app/auth_test.exs",
+    time_spent_minutes: 45,
+    completion_notes: "All tests passing, PR created",
+    after_doing_result: {exit_code: $code1, output: $out1, duration_ms: $dur1},
+    before_review_result: {exit_code: $code2, output: $out2, duration_ms: $dur2},
+    explorer_result: {dispatched: false, reason: "self_reported_exploration",
+      summary: "Read the key files and their tests inline; the change follows the existing context pattern."},
+    reviewer_result: {dispatched: false, reason: "self_reported_review",
+      summary: "Re-read the diff against every acceptance criterion and pitfall; no issues found."}}' |
+  curl -s -X PATCH \
+    -H "Authorization: Bearer $STRIDE_API_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d @- \
+    "$STRIDE_API_URL/api/tasks/$TASK_IDENTIFIER/complete")
 
-# 8. Execute after_review hook if needs_review=false (returned in response)
+# 8. Run the hooks the response still needs: after_review is in the list only
+#    when needs_review=false, and after_goal only when this task finished its
+#    goal. after_doing and before_review are in the list too, but already ran.
+for HOOK in after_review after_goal; do
+  HOOK_DATA=$(echo "$COMPLETE_RESPONSE" | jq -c --arg n "$HOOK" '.hooks[]? | select(.name == $n)')
+  if [ -n "$HOOK_DATA" ]; then
+    execute_hook "$HOOK_DATA"
+    # For after_goal, also report the result to PATCH /api/tasks/:id/after_goal,
+    # where :id is the goal (see "The after_goal Hook" above)
+  fi
+done
 
 # 9. Check if task needs review
 NEEDS_REVIEW=$(echo "$COMPLETE_RESPONSE" | jq -r '.data.needs_review')
@@ -856,9 +928,9 @@ See [stride-codex](https://github.com/cheezy/stride-codex) for details.
 
 ## Related: Completion Validation (G65)
 
-**Hooks and completion validation are separate systems.** This guide covers hook execution (`before_doing`, `after_doing`, `before_review`, `after_review`) — bash commands that run on your machine and whose results are submitted to the server. It does **not** cover the `explorer_result`, `reviewer_result`, and `workflow_steps` fields that the `/complete` endpoint now also requires. Those fields report on exploration and review work your agent did (via subagent dispatch or inline) — they are not derived from any hook.
+**Hooks and completion validation are separate systems.** This guide covers hook execution (`before_doing`, `after_doing`, `before_review`, `after_review`, `after_goal`) — commands that run on your machine and whose results are submitted to the server. Besides the two hook results, `/complete` also requires `completion_summary`, `actual_complexity`, `actual_files_changed` and `time_spent_minutes`, plus the `explorer_result` and `reviewer_result` fields. Those two report on exploration and review work your agent did (via subagent dispatch or inline) — they are not derived from any hook. `workflow_steps` is optional, but its shape is checked when you send it. The `after_goal` result is not part of `/complete` at all: it goes to [PATCH /api/tasks/:id/after_goal](api/patch_tasks_id_after_goal.md).
 
-Completing a task with valid `after_doing_result` and `before_review_result` but missing `explorer_result` / `reviewer_result` will log a soft-warn today and return HTTP 422 once `:strict_completion_validation` flips to strict mode.
+Completing a task with valid hook results but a missing `explorer_result` or `reviewer_result` returns HTTP `422` wherever `:strict_completion_validation` is on, which is the default in production; elsewhere it logs a warning and succeeds. In every mode, a malformed `explorer_result`, `reviewer_result` or `workflow_steps` is rejected with `422`, and so is a dispatched `reviewer_result` that does not carry the full report in [completion-contract.md](completion-contract.md).
 
 - [PATCH /api/tasks/:id/complete — Completion Validation Format (G65)](api/patch_tasks_id_complete.md#completion-validation-format-g65) — full field specification, shapes, enum values
 - [AI Workflow Guide — Completion Validation](AI-WORKFLOW.md#completion-validation) — workflow integration

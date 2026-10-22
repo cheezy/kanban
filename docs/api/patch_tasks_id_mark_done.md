@@ -121,7 +121,8 @@ When marking a task as done:
    - `actual_files_changed`
    - `review_status`
 7. **Does NOT execute hooks**: This endpoint bypasses all workflow hooks (`after_review`, etc.)
-8. **Does NOT unblock dependents**: This endpoint does NOT automatically check and unblock dependent tasks
+8. **Unblocks dependents**: Like every move to Done, it checks the tasks that depend on this one and unblocks those whose dependencies are now all complete
+9. **Does NOT deliver `after_goal`**: Even when the task is a goal's last open child, no `after_goal` hook is armed or returned
 
 ## Use Cases
 
@@ -170,11 +171,10 @@ curl -X PATCH \
 - Task **must** be in the Review column to use this endpoint
 - This endpoint **does not** execute any workflow hooks
 - This endpoint **does not** set completion metadata (completed_by, completion_summary, etc.)
-- This endpoint **does not** automatically unblock dependent tasks
+- This endpoint **does** unblock dependent tasks, as every move to Done does
 - Use `PATCH /api/tasks/:id/mark_reviewed` instead if you want to go through the normal review process with:
-  - Hook execution (`after_review`)
-  - Completion metadata tracking
-  - Automatic unblocking of dependent tasks
+  - Hook execution (`after_review`, and `after_goal` for a goal's last child)
+  - The human reviewer's `review_status` decision honoured
 - The task's `status` will be set to `completed`
 - The task's `completed_at` timestamp will be set
 - This action is broadcast to all connected clients viewing the board

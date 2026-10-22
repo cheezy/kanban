@@ -34,7 +34,7 @@ of type `goal` is rejected with HTTP 422.
 - completion_notes (text) - Notes about the completion
 
 **Review Workflow:**
-- review_status (enum: approved, changes_requested, rejected) - Review decision
+- review_status (enum: pending, approved, changes_requested, rejected) - Review decision. A human records it in the board UI; the API cannot set it
 - review_report (text) - Structured review report from task-reviewer agent (optional, set at completion time)
 - needs_review (boolean) - Whether task requires human review
 
@@ -67,6 +67,8 @@ of type `goal` is rejected with HTTP 422.
 - [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md) - Complete a task and receive hooks
 - [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) - Finalize review
 - [PATCH /api/tasks/:id/mark_done](api/patch_tasks_id_mark_done.md) - Bypass review and mark as done (⚠️ limited functionality)
+- [PATCH /api/tasks/:id/after_goal](api/patch_tasks_id_after_goal.md) - Report the result of a goal's `after_goal` hook
+- [GET /api/tasks/:id/after_goal_status](api/get_tasks_id_after_goal_status.md) - Find out whether a completion armed its goal's `after_goal` hook
 - [POST /api/tasks/:id/comments](api/post_tasks_id_comments.md) - Leave a comment humans can read in the UI, attributed to your agent name
 
 **Task Creation:**
@@ -128,7 +130,7 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
 
 1. **Discover tasks** - Call [GET /api/tasks/next](api/get_tasks_next.md) to find available tasks
 
-2. **Execute `before_doing` hook FIRST** (blocking, 60s timeout)
+2. **Execute `before_doing` hook FIRST** (blocking; see [Hook System](#hook-system))
    - Example: Pull latest code, setup workspace
    - Capture exit_code, output, and duration_ms
    - **Hook must succeed (exit_code 0) to proceed**
@@ -143,14 +145,14 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
    - Do the actual implementation work
    - Write tests, fix bugs, add features
 
-5. **⚠️ CRITICAL: Execute `after_doing` hook FIRST** (blocking, 120s timeout)
+5. **⚠️ CRITICAL: Execute `after_doing` hook FIRST** (blocking; see [Hook System](#hook-system))
    - Example: Run tests, build project, lint code
    - Capture exit_code, output, and duration_ms
    - **Hook must succeed (exit_code 0) to proceed**
    - If this fails, DO NOT call `/complete` - fix the issues first
    - This validates your work is ready for completion
 
-6. **⚠️ CRITICAL: Execute `before_review` hook SECOND** (blocking, 60s timeout)
+6. **⚠️ CRITICAL: Execute `before_review` hook SECOND** (blocking; see [Hook System](#hook-system))
    - Example: Create PR, generate documentation
    - Capture exit_code, output, and duration_ms
    - **Hook must succeed (exit_code 0) to proceed**
@@ -158,33 +160,38 @@ Hooks MUST be executed in the exact order specified below. The API validates hoo
    - This prepares the task for review
 
 7. **Complete the task** - Call [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md)
-   - **REQUIRED:** Include BOTH `after_doing_result` AND `before_review_result` parameters
-   - **REQUIRED (G65):** Include `explorer_result` and `reviewer_result` — dispatched-subagent shape or self-reported skip-form with enum `reason` and 40+ non-whitespace-char `summary`. See [Completion Validation](#completion-validation) below.
-   - **Recommended:** Include `workflow_steps` — six-entry telemetry array, one object per phase (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). On a skipped entry, add the optional `reason_code` next to `reason` so the skip aggregates on the compliance dashboard instead of fragmenting.
+   - **REQUIRED:** `completion_summary`, `actual_complexity` (`small`, `medium` or `large`), `actual_files_changed` and `time_spent_minutes`
+   - **REQUIRED:** BOTH `after_doing_result` AND `before_review_result`
+   - **REQUIRED (G65):** Include `explorer_result` and `reviewer_result` — dispatched-subagent shape or self-reported skip-form with enum `reason` and 40+ non-whitespace-char `summary`. A dispatched `reviewer_result` must carry the full review report described in [completion-contract.md](completion-contract.md). See [Completion Validation](#completion-validation) below.
+   - **Optional:** `workflow_steps` — six-entry telemetry array, one object per phase (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`). The server checks its shape when you send it. On a skipped entry, add the optional `reason_code` next to `reason` so the skip aggregates on the compliance dashboard instead of fragmenting.
    - **Only call this AFTER both hooks succeed**
    - API validates both hooks were executed and succeeded
-   - Task moves to Review column (or Done if `needs_review=false`)
+   - Task moves to Review column, or to Done if `needs_review=false`
+   - The response's `hooks` list names the hooks for this step: `after_doing` and `before_review` always, `after_review` too when `needs_review=false`, and `after_goal` when this task was the last open child of a goal. See [Hook System](#hook-system)
 
 8. **⚠️ STOP HERE if `needs_review=true`**
    - **DO NOT execute `after_review` hook yet!**
    - Wait for human reviewer to approve/reject the task
-   - Human reviewer sets review_status through the UI or API
+   - The human reviewer records `review_status` in the board UI: the Review queue's **Approve** and **Request changes** buttons, or the task's Review Status field. The API cannot set it
    - Proceed to step 9 only when notified of approval
 
-9. **Execute `after_review` hook FIRST** (blocking, 60s timeout)
+9. **Execute `after_review` hook FIRST** (blocking; see [Hook System](#hook-system))
    - Example: Deploy to production, notify stakeholders
    - Capture exit_code, output, and duration_ms
    - **Hook must succeed (exit_code 0) to proceed**
    - If this fails, DO NOT call `/mark_reviewed` - fix the issues first
 
 10. **Finalize review** - Call [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md)
-    - **REQUIRED:** Include `after_review_result` parameter with hook execution result
+    - **REQUIRED:** Include `after_review_result` parameter with hook execution result. It is the only body field: there is no `status` parameter, because the call acts on the `review_status` the human recorded
     - **Only call this AFTER `after_review` hook succeeds** (if `needs_review=true`)
-    - API validates hook was executed and succeeded
+    - API validates hook was executed and succeeded, before it looks at the review decision
     - If approved: task moves to Done
-    - If changes requested: task returns to Doing, repeat from step 4
+    - If changes requested or rejected: task returns to Doing, repeat from step 4. The request still needs an `after_review_result`
+    - If the human used **Approve** in the Review queue, the server has already moved the task to Done, and this call returns `422` because the task is no longer in Review. See [When a Human Approves from the Review Queue](REVIEW-WORKFLOW.md#when-a-human-approves-from-the-review-queue)
 
-11. **Dependencies automatically unblock** - Next tasks become available
+11. **Dependencies automatically unblock** - Next tasks become available once the task reaches Done
+
+12. **Run `after_goal` if it arrived** - When the `hooks` list from step 7 or step 10 includes `after_goal`, this task was the last open child of its goal. Run your `after_goal` section and report its result with [PATCH /api/tasks/:id/after_goal](api/patch_tasks_id_after_goal.md), using the goal's ID
 
 ---
 
@@ -194,7 +201,7 @@ A claim (step 3 above) succeeds only for a task that is available to you. The ma
 
 - **It is in the Ready column.** Tasks created through the API land in Backlog, which is never claimable — a human must promote the task to Ready in the board UI.
 - **It is a `work` or `defect` task.** Goals are never claimed; their child tasks are. A task marked as a human task, or an archived task, is never offered to an agent either.
-- **It is not already claimed.** Its status is `open`, or an earlier claim on it has expired (claims expire after 60 minutes).
+- **It is not already claimed.** Its status is `open`, or an earlier claim on it has expired (claims expire after 60 minutes). An expired claim is not released on its own: the claimed task stays in Doing, still assigned, and its user gets a notification (on a paid board, or anywhere while paid plans are not enforced). It can be claimed again only once it is back in Ready, either because its agent unclaimed it (see [UNCLAIM-TASKS.md](UNCLAIM-TASKS.md)) or because a person moved it there.
 - **Every task in its `dependencies` is completed.**
 - **Your API token's capabilities include every entry in its `required_capabilities`.** A token with no capabilities configured skips this check.
 - **It is not assigned to a different user.** A task pre-assigned to someone else (in the UI, or cascaded from its goal) can only be claimed by that user.
@@ -214,18 +221,19 @@ When the claim fails, the error response names the likely causes in `common_caus
 
 ### Completion Validation
 
-Starting with G65 (April 2026), the `/complete` endpoint validates three additional top-level fields alongside `after_doing_result` and `before_review_result`:
+Every `/complete` request needs `completion_summary`, `actual_complexity` (`small`, `medium` or `large`), `actual_files_changed`, `time_spent_minutes`, `after_doing_result` and `before_review_result`; a request without one of them is rejected with HTTP `422`. Starting with G65 (April 2026), the endpoint also validates three more top-level fields:
 
 | Field | Required | Shape |
 |---|---|---|
-| `explorer_result` | Yes (grace-warned, strict-rejected) | Dispatched-subagent shape **OR** self-reported skip-form |
-| `reviewer_result` | Yes (grace-warned, strict-rejected) | Same two shapes as `explorer_result`; dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found`, and **optionally accepts** the structured schema (`schema_version`, `status`, `issue_counts`, `issues[]`, `acceptance_criteria[]`, `testing_strategy`, `patterns`, `pitfalls`) |
-| `workflow_steps` | Recommended (telemetry) | Six-entry array: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`. A skipped entry may carry an optional `reason_code` alongside its free-text `reason` — see [reason_code](api/patch_tasks_id_complete.md) |
+| `explorer_result` | Yes (absent: grace-warned, strict-rejected; malformed: always rejected) | Dispatched-subagent shape **OR** self-reported skip-form |
+| `reviewer_result` | Yes (absent: grace-warned, strict-rejected; malformed: always rejected) | Same two shapes as `explorer_result`. The dispatched shape additionally requires `acceptance_criteria_checked` and `issues_found`, and must carry the full structured review report: every section listed in [completion-contract.md](completion-contract.md), plus `status` or `issue_counts`. A dispatched report that leaves one out, that leaves a section the task supplied (`testing_strategy`, `security_considerations`) unassessed, or that checks fewer acceptance criteria than the task lists, is rejected in every mode |
+| `workflow_steps` | Optional (telemetry); its shape is checked when you send it | Six-entry array: `explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`. A skipped entry may carry an optional `reason_code` alongside its free-text `reason` — see [reason_code](api/patch_tasks_id_complete.md) |
 
 **Rollout modes** (controlled by the `:strict_completion_validation` application flag):
 
-- **Grace mode (current default):** Missing or invalid `explorer_result` / `reviewer_result` log a structured warning and the request succeeds. Emit the fields correctly now to prepare for the flip.
-- **Strict mode (post-rollout):** Missing or invalid results return HTTP `422` with a `failures` list. Any agent not emitting valid fields is locked out of completion.
+- **Strict mode (the default in production):** A missing `explorer_result` or `reviewer_result`, a review that checks more acceptance criteria than the task lists, or another check the flag governs returns HTTP `422` with a `failures` list. Production runs in strict mode unless the deployment sets `STRIDE_STRICT_COMPLETION_VALIDATION=false`.
+- **Grace mode (the default everywhere else):** Those same failures log a structured warning and the request succeeds. Setting `STRIDE_STRICT_COMPLETION_VALIDATION=true` turns strict mode on outside production.
+- **In both modes:** An `explorer_result`, `reviewer_result` or `workflow_steps` that is present but malformed is rejected with `422`, and so is a dispatched `reviewer_result` that falls short of [completion-contract.md](completion-contract.md). Grace mode forgives a missing result and a few consistency checks: a review that checks more acceptance criteria than the task lists, and a `security_considerations` breakdown that marks an item `partial` or `unmitigated` beside a verdict that is not `failed`. Those two are rejected in strict mode.
 
 **Skip form** — for platforms without subagent dispatch (Cursor, Windsurf, Continue.dev, Kimi Code) or when the decision matrix legitimately skipped the step:
 
@@ -239,7 +247,7 @@ Starting with G65 (April 2026), the `/complete` endpoint validates three additio
 
 The `reason` field must be one of five enum values: `no_subagent_support`, `small_task_0_1_key_files`, `trivial_change_docs_only`, `self_reported_exploration`, `self_reported_review`. The `summary` must contain at least 40 non-whitespace characters.
 
-**Full specification:** See [PATCH /api/tasks/:id/complete — Completion Validation Format (G65)](api/patch_tasks_id_complete.md#completion-validation-format-g65) for the complete shape, rejection example, and authoritative schema references.
+**Full specification:** See [PATCH /api/tasks/:id/complete — Completion Validation Format (G65)](api/patch_tasks_id_complete.md#completion-validation-format-g65) for the complete shape, rejection example, and authoritative schema references, and its [422 section](api/patch_tasks_id_complete.md#unprocessable-entity-422) for the error bodies.
 
 ---
 
@@ -249,25 +257,29 @@ The `after_review` hook execution depends on whether the task requires human rev
 
 **Path 1: needs_review=true (Human Review Required)**
 ```
-1. Execute before_review hook
+1. Execute before_review hook, then call /complete
 2. STOP and WAIT for human reviewer
-3. Human reviews and decides: approve/changes_requested/reject
-4. Call /mark_reviewed endpoint with review decision
-5. IF approved: Execute after_review hook ← ONLY AFTER APPROVAL!
-6. Task moves to Done column
+3. Human reviews and records approve/changes_requested/reject in the board UI
+4. IF approved and the task is still in Review: Execute after_review hook ← ONLY AFTER APPROVAL!
+5. Call /mark_reviewed with after_review_result
+6. Task moves to Done column (approved) or back to Doing (changes_requested, rejected)
 ```
+
+If the human approved from the Review queue, the task is already in Done and step 5 returns `422`; see [When a Human Approves from the Review Queue](REVIEW-WORKFLOW.md#when-a-human-approves-from-the-review-queue).
 
 **Path 2: needs_review=false (Auto-Approved)**
 ```
-1. Execute before_review hook
-2. Execute after_review hook immediately ← No waiting required
-3. Task moves to Done column
+1. Execute before_review hook, then call /complete
+2. Task moves to Done column
+3. Execute after_review hook from the response's hooks list ← No waiting required
 ```
+
+On this path nothing reports the `after_review` result back to the server.
 
 **Common Mistake:**
 ```
 ❌ WRONG: Execute after_review immediately after before_review when needs_review=true
-✅ CORRECT: Wait for /mark_reviewed approval before executing after_review
+✅ CORRECT: Wait for the human's approval before executing after_review
 ```
 
 ---
@@ -277,20 +289,19 @@ The `after_review` hook execution depends on whether the task requires human rev
 1. Execute before_doing hook ← FIRST! Capture exit_code, output, duration_ms
 2. Claim task WITH before_doing_result parameter ← API validates hook succeeded
 3. Do work
-4. Execute after_doing hook ← FIRST! Capture exit_code, output, duration_ms
-5. Call /complete WITH after_doing_result parameter ← API validates hook succeeded
-6. Receive before_review, after_review hooks
-7. Execute before_review hook
-8. IF needs_review=false: Execute after_review hook immediately
-   IF needs_review=true: STOP and wait for human approval
-9. IF needs_review=true: Wait for approval notification
-10. Call /mark_reviewed (when approved)
-11. Execute after_review hook (after approval received)
+4. Execute after_doing hook ← Capture exit_code, output, duration_ms
+5. Execute before_review hook ← Capture exit_code, output, duration_ms
+6. Call /complete WITH after_doing_result AND before_review_result ← API validates both succeeded
+7. IF needs_review=false: the task is in Done; execute after_review from the response's hooks list
+   IF needs_review=true: STOP and wait for the human's decision
+8. IF needs_review=true and approved: execute after_review, then call /mark_reviewed WITH after_review_result
+9. IF the hooks list from step 6 or step 8 includes after_goal: execute it and report it with PATCH /api/tasks/:id/after_goal
 ```
 
 **Important Requirements:**
 - `before_doing_result` is a **REQUIRED** parameter for POST /api/tasks/claim
-- `after_doing_result` is a **REQUIRED** parameter for PATCH /api/tasks/:id/complete
+- `after_doing_result` and `before_review_result` are **REQUIRED** parameters for PATCH /api/tasks/:id/complete
+- `after_review_result` is a **REQUIRED** parameter for PATCH /api/tasks/:id/mark_reviewed
 - API validates hook was executed and succeeded (exit_code 0)
 - API returns 422 error if hook result is missing or hook failed
 
@@ -305,11 +316,11 @@ The `after_review` hook execution depends on whether the task requires human rev
 **✅ CORRECT: Wait for Approval**
 ```
 ✅ CORRECT for needs_review=true:
-7. Execute before_review hook (create PR)
+7. Execute before_review hook (create PR), then call /complete
 8. STOP and wait for human reviewer
 9. Receive approval notification
-10. Call /mark_reviewed endpoint
-11. Execute after_review hook (git commit) ← Only after approval
+10. Execute after_review hook (git commit) ← Only after approval
+11. Call /mark_reviewed endpoint WITH after_review_result
 ```
 
 **Hook System:**
@@ -395,33 +406,49 @@ These skills are available via the Stride plugin for Claude Code, Gemini CLI, Co
 
 You MUST execute BOTH the `after_doing` AND `before_review` hooks BEFORE calling the complete endpoint and include both results in your request.
 
-When completing a task, use [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md):
+When completing a task, use [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md). This is the smallest body every mode accepts; it reports exploration and review in the self-reported skip form:
 
 ```json
 PATCH /api/tasks/:id/complete
 {
   "agent_name": "Claude Sonnet 4.5",
+  "completion_summary": "Added refresh-token rotation to the session controller.",
+  "actual_complexity": "medium",
+  "actual_files_changed": "lib/my_app/auth.ex, test/my_app/auth_test.exs",
   "time_spent_minutes": 45,
-  "completion_notes": "Implemented JWT authentication with refresh tokens. All tests passing. PR created.",
+  "completion_notes": "All tests passing. PR created.",
   "after_doing_result": {
     "exit_code": 0,
-    "output": "Running tests...\n230 tests, 0 failures\nmix format --check-formatted\nAll files formatted correctly",
+    "output": "Running tests...\n230 tests, 0 failures",
     "duration_ms": 45678
   },
   "before_review_result": {
     "exit_code": 0,
-    "output": "Creating pull request...\nPR #123 created: https://github.com/org/repo/pull/123",
+    "output": "Creating pull request...",
     "duration_ms": 2340
+  },
+  "explorer_result": {
+    "dispatched": false,
+    "reason": "self_reported_exploration",
+    "summary": "Read the key files and their tests inline; the change follows the existing context pattern."
+  },
+  "reviewer_result": {
+    "dispatched": false,
+    "reason": "self_reported_review",
+    "summary": "Re-read the diff against every acceptance criterion and pitfall; no issues found."
   }
 }
 ```
 
+When a subagent did the exploring or reviewing, send the dispatched shape instead. A dispatched `reviewer_result` must carry the full review report in [completion-contract.md](completion-contract.md), or the request is rejected in every mode. The field-by-field schema is in [Completion Validation Format (G65)](api/patch_tasks_id_complete.md#completion-validation-format-g65); this guide does not repeat it.
+
 **What happens:**
 1. API validates that BOTH `after_doing_result` and `before_review_result` are present and hooks succeeded (exit_code 0)
-2. Task moves to Review column (or Done if `needs_review=false`)
-3. If `needs_review=false`, server returns `after_review` hook metadata
-4. If `needs_review=true`, wait for human review
-5. Call [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) to finalize (with `after_review_result`)
+2. API validates the completion fields — see [Completion Validation](#completion-validation). A rejection is a `422` whose body names each failing field; see [the 422 section](api/patch_tasks_id_complete.md#unprocessable-entity-422)
+3. Task moves to Review column (or Done if `needs_review=false`)
+4. The response's `hooks` list carries `after_doing` and `before_review`, plus `after_review` if `needs_review=false`, plus `after_goal` if this task was the last open child of a goal
+5. If `needs_review=true`, wait for human review
+6. Call [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) to finalize (with `after_review_result`)
 
 **Important:** If either the `after_doing` or `before_review` hook fails (non-zero exit code), DO NOT call the complete endpoint. Fix the issues first, then re-execute the hooks and try again.
 
@@ -432,36 +459,38 @@ See [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md) for complete
 The [PATCH /api/tasks/:id/mark_done](api/patch_tasks_id_mark_done.md) endpoint exists as a bypass mechanism for administrative or emergency situations, but **agents should NOT use it** in normal workflows due to critical limitations:
 
 **What mark_done Does:**
+- Requires the task to be in the Review column; anywhere else it returns `422`
 - Moves task from Review column directly to Done column
 - Sets `status` to `completed`
 - Sets `completed_at` timestamp
+- Unblocks dependent tasks, as any move to Done does
 
 **What mark_done Does NOT Do:**
-- ❌ **Does NOT execute any workflow hooks** (no `after_review`, etc.)
-- ❌ **Does NOT set completion metadata** (`completed_by_agent`, `completion_summary`, `time_spent_minutes`)
-- ❌ **Does NOT automatically unblock dependent tasks** (this is critical!)
-- ❌ **Does NOT track who completed the task**
+- ❌ **Does NOT execute or return any workflow hooks** (no `after_review`, and no `after_goal` even when the task is a goal's last child)
+- ❌ **Does NOT take a hook result** — no `after_review_result` is checked
+- ❌ **Does NOT look at `review_status`** — it completes the task whatever the human reviewer decided
+- ❌ **Does NOT set review metadata** — `review_status`, `reviewed_at` and `reviewed_by_id` are left as they are
 
 **Why This Matters:**
 
-If you use `mark_done` instead of the proper workflow, dependent tasks will remain blocked indefinitely because the system won't trigger the automatic unblocking logic. This breaks the dependency chain.
+If you use `mark_done` instead of the review workflow, your `after_review` hook never runs and the human's review decision is ignored: a task the reviewer sent back with changes requested still lands in Done.
 
 **Correct Approach:**
 ```
-✅ Use PATCH /api/tasks/:id/mark_reviewed with status "approved"
-   - Executes after_review hook
-   - Sets completion metadata
-   - Automatically unblocks dependent tasks
-   - Tracks completion properly
+✅ Wait for the human's decision, then use PATCH /api/tasks/:id/mark_reviewed
+   - Requires after_review_result, so your after_review hook has run
+   - Acts on the review_status the human recorded (there is no status parameter)
+   - approved: moves the task to Done and unblocks dependent tasks
+   - changes_requested / rejected: moves the task back to Doing
+   - Returns after_review (and after_goal for a goal's last child) in its hooks list
 ```
 
 **Incorrect Approach:**
 ```
 ❌ Use PATCH /api/tasks/:id/mark_done
    - Skips hooks
-   - No completion metadata
-   - Dependent tasks stay blocked forever
-   - No audit trail
+   - Ignores the review decision
+   - Never delivers after_goal
 ```
 
 **When mark_done is Appropriate:**
@@ -481,15 +510,24 @@ The hook system enables agents to execute custom workflows at key points in the 
 
 | Hook | When | Blocking | Timeout | Typical Use |
 |------|------|----------|---------|-------------|
-| `before_doing` | Before starting work | Yes | 60s | Setup workspace, pull code |
-| `after_doing` | After completing work | Yes | 120s | Run tests, build project |
-| `before_review` | Entering review | No | 60s | Create PR, generate docs |
-| `after_review` | After review approval | No | 60s | Deploy, notify stakeholders |
+| `before_doing` | Before starting work | Yes | 600s | Setup workspace, pull code |
+| `after_doing` | After completing work | Yes | 600s | Run tests, build project |
+| `before_review` | Entering review | Yes | 600s | Create PR, generate docs |
+| `after_review` | After review approval | Yes | 600s | Deploy, notify stakeholders |
+
+The server sends each hook's `blocking` flag and its `timeout` in milliseconds. Today every hook is sent as `"blocking": true` with a `"timeout"` of `600000`. A blocking hook must succeed before you make the request that reports it: `before_doing_result` on the claim, `after_doing_result` and `before_review_result` on `/complete`, `after_review_result` on `/mark_reviewed`. A missing result, or one with a non-zero `exit_code`, is rejected with `422`.
+
+**Where each hook arrives:**
+- `before_doing` — the claim response's `hook` object
+- `after_doing` and `before_review` — the `/complete` response's `hooks` list. You run both before calling `/complete`
+- `after_review` — the `/complete` response's `hooks` list when `needs_review=false` (its result is not reported anywhere), or the `/mark_reviewed` response when the review was approved
+
+**The fifth hook, `after_goal`:** when a completion finishes the last open child of a goal, the server appends an `after_goal` entry to that response's `hooks` list — the `/complete` response when the task went straight to Done, or the approving `/mark_reviewed` response. It is blocking with a 600s timeout, like the other four. Run your `## after_goal` section and report `{exit_code, output, duration_ms}` with [PATCH /api/tasks/:id/after_goal](api/patch_tasks_id_after_goal.md), using the goal's ID. An `exit_code` of `0` moves the goal to Done; any other exit code is recorded and the goal waits for another report. If no successful report arrives within the five-minute grace window, the server moves the goal to Done itself. The `after_goal` entry carries the completed child's `TASK_*` variables; the goal's own ID, identifier, title and description come from [GET /api/tasks/:id/after_goal_status](api/get_tasks_id_after_goal_status.md).
 
 **Client-Side Execution:**
 - Server provides metadata (name, env vars, timeout, blocking status)
 - Agent reads `.stride.md` configuration file
-- Agent executes hooks locally on their machine
+- Agent executes hooks locally on their machine, within the `timeout` the server sent
 - Language-agnostic - works with any environment
 
 **Configuration Files:**
@@ -528,6 +566,11 @@ gh pr create --title "$TASK_TITLE"
 ```bash
 ./scripts/deploy.sh
 ```
+
+## after_goal
+```bash
+git push origin main
+```
 ````
 
 See [api/README.md](api/README.md) for complete hook system documentation and examples.
@@ -543,7 +586,7 @@ See [api/README.md](api/README.md) for complete hook system documentation and ex
 **Quality Improvements:**
 - **Completion tracking** - Time spent, notes, agent attribution
 - **Review workflow** - Optional human review with approve/reject
-- **Mandatory hook validation** - All four hooks are blocking and must succeed
+- **Mandatory hook validation** - All five hooks are blocking and must succeed
 - **API-level enforcement** - Server validates hook execution before state changes
 
 **Coordination:**

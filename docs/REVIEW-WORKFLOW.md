@@ -35,14 +35,14 @@ Defaulting to `false` reduces friction for autonomous agent operation and focuse
 ### When needs_review = false (Auto-Complete)
 
 **Workflow:**
-1. Agent claims task from Ready column
-2. Execute `before_doing` hook (blocking, 60s)
-3. Agent completes work
-4. Execute `after_doing` hook (blocking, 120s) - quality checks MUST pass
-5. Execute `before_review` hook (blocking, 60s) - still runs for automation
-6. Agent calls `/api/tasks/:id/complete`
-7. Execute `after_review` hook (blocking, 60s) - still runs for automation
-8. **Task moves directly to Done** - skips Review column
+1. Execute `before_doing` hook (blocking), then claim the task from the Ready column
+2. Agent completes work
+3. Execute `after_doing` hook (blocking) - quality checks MUST pass
+4. Execute `before_review` hook (blocking) - still runs for automation
+5. Agent calls `/api/tasks/:id/complete` with both hook results
+6. **Task moves directly to Done** - skips Review column
+7. Execute `after_review` hook from the response's `hooks` list - still runs for automation; its result is not reported to the server
+8. If the `hooks` list also carries `after_goal`, this task finished its goal: run it and report it (see [Which Response Carries Each Hook](#which-response-carries-each-hook))
 9. **Agent IMMEDIATELY claims next task** - continue working
 
 **Key Point**: Review hooks still execute even when `needs_review = false`. This allows automated quality checks, PR creation, and other automation while bypassing human review.
@@ -72,19 +72,20 @@ Defaulting to `false` reduces friction for autonomous agent operation and focuse
 ### When needs_review = true (Human Review Required)
 
 **Workflow:**
-1. Agent claims task from Ready column
-2. Execute `before_doing` hook (blocking, 60s)
-3. Agent completes work
-4. Execute `after_doing` hook (blocking, 120s) - quality checks MUST pass
-5. Execute `before_review` hook (blocking, 60s) - create PR, notify reviewers
-6. Agent calls `/api/tasks/:id/complete`
-7. **Task moves to Review column**
-8. **Task waits for human review** - agent STOPS and does not claim next task
-9. Human reviews and sets `review_status` (approved/changes_requested/rejected)
-10. If approved: Execute `after_review` hook (blocking, 60s) - merge PR, deploy
-11. If approved: Agent calls `/api/tasks/:id/mark_reviewed`
-12. Task moves to Done
-13. If changes_requested: Task returns to Doing for agent to address feedback
+1. Execute `before_doing` hook (blocking), then claim the task from the Ready column
+2. Agent completes work
+3. Execute `after_doing` hook (blocking) - quality checks MUST pass
+4. Execute `before_review` hook (blocking) - create PR, notify reviewers
+5. Agent calls `/api/tasks/:id/complete` with both hook results
+6. **Task moves to Review column**
+7. **Task waits for human review** - agent STOPS and does not claim next task
+8. Human records `review_status` (approved/changes_requested/rejected) in the board UI: the Review queue's **Approve** or **Request changes** button, or the task's Review Status field
+9. If approved: Execute `after_review` hook (blocking) - merge PR, deploy
+10. If approved: Agent calls `/api/tasks/:id/mark_reviewed` with `after_review_result`
+11. Task moves to Done. If the `mark_reviewed` response's `hooks` list carries `after_goal`, run it and report it
+12. If changes_requested or rejected: Agent calls `/api/tasks/:id/mark_reviewed`, and the task returns to Doing for agent to address feedback
+
+When the human approves with the Review queue's **Approve** button, the server finishes steps 10 and 11 itself and the task is already in Done; see [When a Human Approves from the Review Queue](#when-a-human-approves-from-the-review-queue).
 
 **Use Cases:**
 - Security-related changes (authentication, authorization, encryption)
@@ -106,8 +107,8 @@ Defaulting to `false` reduces friction for autonomous agent operation and focuse
 # - AGENT STOPS - does not claim next task
 # - Human reviews security implementation
 # - Human approves (review_status = "approved")
-# - Agent calls mark_reviewed
 # - after_review hook merges PR ✓
+# - Agent calls mark_reviewed with after_review_result
 # - Task moves to Done
 ```
 
@@ -123,17 +124,39 @@ A task in the Review column carries a `review_status`, which a **human reviewer*
 | `changes_requested` | Moves the task back to Doing (status `in_progress`, still assigned to you) to address the feedback |
 | `rejected` | Moves the task back to Doing (status `in_progress`, still assigned to you), exactly like `changes_requested` |
 
+`mark_reviewed` has no `status` parameter. Its only body field is `after_review_result`, which it checks before it looks at the review decision, so a call that sends the task back to Doing needs a successful `after_review_result` too. A task that is not in the Review column is refused with `422`. An approval returns a `hooks` list with `after_review`, plus `after_goal` when the task was the last open child of a goal. See [PATCH /api/tasks/:id/mark_reviewed](api/patch_tasks_id_mark_reviewed.md) for the request and the error bodies.
+
+### When a Human Approves from the Review Queue
+
+The board gives a human reviewer two ways to record a decision, and they do not leave the task in the same place:
+
+- **The Review queue's Approve button** records `approved` and finishes the review on the spot: the server moves the task to Done, unblocks its dependents, and, when the task was a goal's last open child, starts the goal's `after_goal` grace window. No hooks are sent to anyone, and a later `mark_reviewed` call from the agent is refused with `422` because the task is no longer in Review.
+- **The Review queue's Request changes button** records `changes_requested` with the reviewer's notes and leaves the task in Review for the agent's `mark_reviewed` call.
+- **The task's Review Status field** records the decision and leaves the task in Review for the agent's `mark_reviewed` call.
+
+So an agent waiting on a review cannot count on reaching `mark_reviewed`. Check the task with [GET /api/tasks/:id](api/get_tasks_id.md) before you call it. A task in Review and a task in Doing both show `status: in_progress`, so tell them apart by `column_id`: it is the Review column's id while the task waits for review.
+
+| What the task shows | What to do |
+|---|---|
+| `status` is `completed` (it is in Done) | The review is finished. Do not call `mark_reviewed`. The server has not delivered or checked `after_review`, so run your `## after_review` section yourself if your project relies on it. If the task belongs to a goal, call [GET /api/tasks/:id/after_goal_status](api/get_tasks_id_after_goal_status.md); when `after_goal_armed` is `true`, run `## after_goal` and report it with [PATCH /api/tasks/:id/after_goal](api/patch_tasks_id_after_goal.md) before the five-minute grace window ends |
+| Still in Review, `review_status` is `approved` | Run `after_review`, then call `mark_reviewed` with its result |
+| Still in Review, `review_status` is `changes_requested` or `rejected` | Call `mark_reviewed` with an `after_review_result` to move the task back to Doing, then address the feedback |
+| Still in Review, `review_status` is `null` or `pending` | The review is not finished; wait |
+
 ## API Integration
 
 ### Check needs_review When Claiming
 
-When you claim a task, the response includes the `needs_review` field:
+When you claim a task, the response includes the `needs_review` field. The claim needs the result of the `before_doing` hook you ran first; see [POST /api/tasks/claim](api/post_tasks_claim.md) for every parameter:
 
 ```bash
-curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
-  -H "Authorization: Bearer $TOKEN" \
+curl -X POST "$STRIDE_API_URL/api/tasks/claim" \
+  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"agent_name": "Claude Sonnet 4.5"}'
+  -d '{
+    "agent_name": "Claude Sonnet 4.5",
+    "before_doing_result": {"exit_code": 0, "output": "Already up to date.", "duration_ms": 850}
+  }'
 ```
 
 Response:
@@ -159,16 +182,25 @@ Response:
 
 ### Complete Task and Check Response
 
-When completing, check the response to determine next action:
+When completing, check the response to determine next action. This is the smallest body every mode accepts; [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md#completion-validation-format-g65) has the full field reference, and a dispatched `reviewer_result` must carry the full report in [completion-contract.md](completion-contract.md):
 
 ```bash
-curl -X PATCH https://www.stridelikeaboss.com/api/tasks/W42/complete \
-  -H "Authorization: Bearer $TOKEN" \
+curl -X PATCH "$STRIDE_API_URL/api/tasks/W42/complete" \
+  -H "Authorization: Bearer $STRIDE_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "agent_name": "Claude Sonnet 4.5",
+    "completion_summary": "Added OAuth2 login with refresh tokens.",
+    "actual_complexity": "medium",
+    "actual_files_changed": "lib/my_app/auth.ex, test/my_app/auth_test.exs",
     "time_spent_minutes": 45,
-    "completion_notes": "All tests passing"
+    "completion_notes": "All tests passing",
+    "after_doing_result": {"exit_code": 0, "output": "230 tests, 0 failures", "duration_ms": 45678},
+    "before_review_result": {"exit_code": 0, "output": "PR created", "duration_ms": 2340},
+    "explorer_result": {"dispatched": false, "reason": "self_reported_exploration",
+      "summary": "Read the key files and their tests inline; the change follows the existing context pattern."},
+    "reviewer_result": {"dispatched": false, "reason": "self_reported_review",
+      "summary": "Re-read the diff against every acceptance criterion and pitfall; no issues found."}
   }'
 ```
 
@@ -187,6 +219,8 @@ Response includes `needs_review`:
   ]
 }
 ```
+
+With `needs_review: true` the `hooks` list holds `after_doing` and `before_review`. With `needs_review: false` it adds `after_review`, and the task is already in Done. Either way, an `after_goal` entry is appended when the task was the last open child of a goal.
 
 **Decision logic:**
 ```python
@@ -211,11 +245,24 @@ This design allows:
 - Consistent workflow execution
 - Hooks can conditionally adapt using `TASK_NEEDS_REVIEW` env var
 
+### Which Response Carries Each Hook
+
+Every hook is blocking, and the server sends each one's `timeout` in milliseconds (`600000` today); the full table is in [Four Fixed Hook Points](AGENT-HOOK-EXECUTION-GUIDE.md#four-fixed-hook-points). Which response hands you a hook depends on `needs_review`:
+
+| Hook | `needs_review = false` | `needs_review = true` |
+|------|------------------------|-----------------------|
+| `before_doing` | Claim response | Claim response |
+| `after_doing`, `before_review` | `/complete` response — you run both before the call and send their results with it | Same |
+| `after_review` | `/complete` response — run it after the call; nothing reports its result | Approving `/mark_reviewed` response — run it before the call and send `after_review_result` with it |
+| `after_goal` | Appended to the `/complete` response when the task was a goal's last open child | Appended to the approving `/mark_reviewed` response when the task was a goal's last open child |
+
+Report an `after_goal` result with [PATCH /api/tasks/:id/after_goal](api/patch_tasks_id_after_goal.md), against the goal. An `exit_code` of `0` moves the goal to Done; otherwise the goal waits for another report, or for the server to move it to Done itself when the five-minute grace window ends.
+
 ### Using TASK_NEEDS_REVIEW in Hooks
 
 All hooks receive the `TASK_NEEDS_REVIEW` environment variable:
 
-```bash
+````markdown
 # Example .stride.md hook configuration
 
 ## before_review
@@ -250,7 +297,7 @@ fi
 git checkout main
 git pull origin main
 ```
-```
+````
 
 ## Continuous Work Loop
 
@@ -262,12 +309,12 @@ Agents should work continuously through the full workflow — do not prompt the 
 
 ```
 ┌─────────────────────────────────────┐
-│ 1. Claim task from Ready            │
+│ 1. Execute before_doing hook        │
 └──────────────┬──────────────────────┘
                │
                ▼
 ┌─────────────────────────────────────┐
-│ 2. Execute before_doing hook        │
+│ 2. Claim task from Ready            │
 └──────────────┬──────────────────────┘
                │
                ▼
@@ -286,6 +333,11 @@ Agents should work continuously through the full workflow — do not prompt the 
 └──────────────┬──────────────────────┘
                │
                ▼
+┌─────────────────────────────────────┐
+│ 6. Call /complete with both results │
+└──────────────┬──────────────────────┘
+               │
+               ▼
        ┌───────┴────────┐
        │                │
        ▼                ▼
@@ -294,17 +346,18 @@ needs_review?     needs_review?
        │                │
        ▼                ▼
 ┌─────────────┐  ┌──────────────┐
-│ Execute     │  │ Task moves   │
-│ after_review│  │ to Review    │
-│ hook        │  │              │
+│ Task moves  │  │ Task moves   │
+│ to Done     │  │ to Review    │
 └──────┬──────┘  └──────┬───────┘
        │                │
        ▼                ▼
 ┌─────────────┐  ┌──────────────┐
-│ Task moves  │  │ STOP - wait  │
-│ to Done     │  │ for human    │
-└──────┬──────┘  │ review       │
-       │         └──────────────┘
+│ Execute     │  │ STOP - wait  │
+│ after_review│  │ for human    │
+│ (+after_goal│  │ review       │
+│ if present) │  └──────────────┘
+└──────┬──────┘
+       │
        ▼
 ┌─────────────┐
 │ IMMEDIATELY │
@@ -341,6 +394,8 @@ PATCH /api/tasks/:id/complete
   "before_review_result": { "exit_code": 0, "output": "...", "duration_ms": 0 }
 }
 ```
+
+The example is shortened to the fields around `review_report`: the same request also needs `explorer_result` and `reviewer_result` (see [Complete Task and Check Response](#complete-task-and-check-response)). A report written by a reviewer subagent comes from a dispatched review, so its `reviewer_result` must be the dispatched shape carrying the full structured report in [completion-contract.md](completion-contract.md); `review_report` is the prose that goes with it.
 
 The report is then visible to human reviewers in the task detail view, providing traceability for code review findings.
 
@@ -382,14 +437,14 @@ The report is then visible to human reviewers in the task detail view, providing
 
 **Workflow:**
 ```
-1. Agent claims task
-2. before_doing: git pull origin main ✓
+1. before_doing: git pull origin main ✓
+2. Agent claims task
 3. Agent updates docs/api/tasks.md
-4. Agent completes task
-5. after_doing: mix test, spell check ✓
-6. before_review: Create PR ✓
-7. after_review: Auto-merge PR ✓
-8. Task → Done
+4. after_doing: mix test, spell check ✓
+5. before_review: Create PR ✓
+6. Agent completes task
+7. Task → Done
+8. after_review: Auto-merge PR ✓
 9. Agent immediately claims next task ← IMPORTANT
 ```
 
@@ -406,18 +461,18 @@ The report is then visible to human reviewers in the task detail view, providing
 
 **Workflow:**
 ```
-1. Agent claims task
-2. before_doing: git pull, setup test env ✓
+1. before_doing: git pull, setup test env ✓
+2. Agent claims task
 3. Agent implements 2FA
-4. Agent completes task
-5. after_doing: mix test, security scan ✓
-6. before_review: Create PR, notify #security-team ✓
+4. after_doing: mix test, security scan ✓
+5. before_review: Create PR, notify #security-team ✓
+6. Agent completes task
 7. Task → Review
 8. AGENT STOPS ← Does not claim next task
 9. Human reviews security implementation
 10. Human approves (review_status = "approved")
-11. Agent calls mark_reviewed
-12. after_review: Merge PR ✓
+11. after_review: Merge PR ✓
+12. Agent calls mark_reviewed with after_review_result
 13. Task → Done
 ```
 
@@ -434,18 +489,18 @@ The report is then visible to human reviewers in the task detail view, providing
 
 **Workflow:**
 ```
-1. Agent claims task
-2. before_doing: git pull, verify DB connection ✓
+1. before_doing: git pull, verify DB connection ✓
+2. Agent claims task
 3. Agent writes migration
-4. Agent completes task
-5. after_doing: Validate migration syntax ✓
-6. before_review: Create PR with migration plan ✓
+4. after_doing: Validate migration syntax ✓
+5. before_review: Create PR with migration plan ✓
+6. Agent completes task
 7. Task → Review
 8. AGENT STOPS ← Does not claim next task
 9. Human reviews migration (reversibility, performance)
 10. Human approves after DB audit
-11. Agent calls mark_reviewed
-12. after_review: Run migration in staging ✓
+11. after_review: Run migration in staging ✓
+12. Agent calls mark_reviewed with after_review_result
 13. Task → Done
 ```
 
@@ -522,11 +577,15 @@ Agent: Claims and completes W3
   - Runs full test suite ✓
   - Completes task
   → Task W3 moves to Done
-  → Goal G1 automatically moves to Done (all children complete)
+  → The /complete response's hooks list carries after_goal (W3 was G1's last open child)
+
+Agent: Runs the after_goal section and reports it
+  PATCH /api/tasks/G1/after_goal (exit_code 0)
+  → Goal G1 moves to Done
 
 Agent: IMMEDIATELY queries next
   GET /api/tasks/next
-  → 204 No Content (no more tasks)
+  → 404 Not Found (no more tasks)
 
 Agent: "Search feature complete! All 3 tasks finished and Goal G1 moved to Done."
 
@@ -538,7 +597,7 @@ Total time: Continuous execution, no waiting between tasks
 **Key Points:**
 - Agent works continuously through all 3 tasks
 - Dependencies automatically unblock as tasks complete
-- Goal automatically moves to Done when all children complete
+- Goal moves to Done once the agent reports a successful `after_goal` run, or when the five-minute grace window ends after its last child completes
 - Human only needed at start - agent handles entire workflow
 - Each task had `needs_review: false` allowing continuous work
 
@@ -555,13 +614,15 @@ if task["needs_review"] == False:
 
 **Correct:**
 ```python
-# Always execute all hooks returned by the API
-complete_task()  # API returns hooks
+# Execute every hook the response lists, in order (needs_review=false shown;
+# with needs_review=true, after_review waits for mark_reviewed)
 execute_hook("after_doing")
 execute_hook("before_review")  # Still runs even if needs_review=false
-execute_hook("after_review")   # Still runs even if needs_review=false
-
+response = complete_task()     # Send both results; the response lists the hooks
 if task["needs_review"] == False:
+    execute_hook("after_review")   # Still runs even if needs_review=false
+    if has_hook(response, "after_goal"):
+        execute_hook("after_goal") # Only when this task finished its goal
     claim_next_task()  # Continue working
 ```
 
@@ -622,10 +683,11 @@ When testing, verify both paths:
 # Verify all hooks execute
 # Verify task moves to Review
 # Verify agent stops (does not claim next)
-# Human approves review
-# Agent calls mark_reviewed
+# Human approves in the task's Review Status field
 # Verify after_review hook executes
+# Agent calls mark_reviewed with after_review_result
 # Verify task moves to Done
+# (An Approve from the Review queue moves it to Done without mark_reviewed)
 ```
 
 ## Summary
