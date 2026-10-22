@@ -13,8 +13,9 @@ defmodule Kanban.Accounts.User do
     field :confirmed_at, :utc_datetime
     field :disabled_at, :utc_datetime
     field :two_factor_reminder_dismissed_at, :utc_datetime
-    # The interface language last chosen from the locale switcher (W2416);
-    # nil until the user chooses one. Only the service announcement email
+    # The interface language last chosen from the locale switcher (W2416),
+    # including just before signing in; nil until the user chooses one. Sign-in
+    # loads it into the session. Only the service announcement email
     # (Kanban.Notifications.AnnouncementWorker) renders in it so far.
     field :locale, :string
     field :authenticated_at, :utc_datetime, virtual: true

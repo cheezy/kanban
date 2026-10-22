@@ -206,8 +206,9 @@ defmodule Kanban.Accounts do
   end
 
   @doc """
-  Records the interface language `user` chose from the locale switcher, so
-  the service announcement email (`Kanban.Notifications.AnnouncementWorker`)
+  Records the interface language `user` chose from the locale switcher —
+  signed in, or just before signing in (`KanbanWeb.UserAuth.log_in_user/4`) —
+  so the service announcement email (`Kanban.Notifications.AnnouncementWorker`)
   can be rendered in it. Other emails do not read it yet.
 
   Returns `{:error, changeset}` for a blank locale or one the app does not
