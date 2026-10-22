@@ -780,6 +780,18 @@ defmodule Kanban.ReleaseTest do
       assert length(all_enqueued(worker: AnnouncementWorker)) == recipients
     end
 
+    test "a misspelled option or a non-boolean dry_run raises and enqueues nothing" do
+      user_fixture()
+
+      for opts <- [[dryrun: true], [dry: true], [dry_run: "true"]] do
+        assert_raise ArgumentError, fn ->
+          Release.send_launch_announcement([key: @key] ++ opts)
+        end
+      end
+
+      assert all_enqueued(worker: AnnouncementWorker) == []
+    end
+
     test "refuses an unknown or missing key and enqueues nothing" do
       user_fixture()
 

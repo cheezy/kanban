@@ -77,7 +77,8 @@ defmodule Kanban.Notifications.AnnouncementWorkerTest do
                dry_run: true,
                recipients: length(Announcement.list_recipients()),
                enqueued: 0,
-               already_enqueued: 0
+               already_enqueued: 0,
+               unconfirmed: 0
              }
 
       assert result.recipients >= 2
@@ -113,12 +114,80 @@ defmodule Kanban.Notifications.AnnouncementWorkerTest do
                        %{announcement: @key}}
     end
 
+    test "a dry_run other than true or false raises and enqueues nothing" do
+      user_fixture()
+
+      for value <- ["true", 1, :yes, nil] do
+        assert_raise ArgumentError, ~r/expected :dry_run to be true or false/, fn ->
+          Announcement.fan_out(@key, dry_run: value)
+        end
+      end
+
+      assert all_enqueued(worker: AnnouncementWorker) == []
+    end
+
+    test "a re-run sends nothing to a recipient whose job was cancelled or discarded" do
+      cancelled = user_fixture()
+      discarded = user_fixture()
+      assert {:ok, %{enqueued: recipients}} = Announcement.fan_out(@key)
+
+      for {user, state} <- [{cancelled, "cancelled"}, {discarded, "discarded"}] do
+        Oban.Job
+        |> where([j], j.args["user_id"] == ^user.id)
+        |> Repo.update_all(set: [state: state])
+      end
+
+      assert {:ok, %{enqueued: 0, already_enqueued: ^recipients, unconfirmed: 0}} =
+               Announcement.fan_out(@key)
+
+      for user <- [cancelled, discarded] do
+        assert [_one] = Repo.all(where(Oban.Job, [j], j.args["user_id"] == ^user.id))
+      end
+    end
+
     test "refuses an unknown key and enqueues nothing" do
       user_fixture()
 
       assert Announcement.fan_out("no-such-announcement") == {:error, :unknown_announcement}
       assert Announcement.fan_out(nil, dry_run: true) == {:error, :unknown_announcement}
       assert all_enqueued(worker: AnnouncementWorker) == []
+    end
+  end
+
+  describe "await_enqueue/2" do
+    # A unique insert that cannot take Oban's lock, because another run holds
+    # it for the same recipient, returns a conflict with no id.
+    @locked %Oban.Job{conflict?: true, id: nil}
+
+    defp inserts(results) do
+      {:ok, agent} = Agent.start_link(fn -> results end)
+
+      fn ->
+        Agent.get_and_update(agent, fn
+          [last] -> {last, [last]}
+          [next | rest] -> {next, rest}
+        end)
+      end
+    end
+
+    test "a new job is enqueued and an existing one is already enqueued" do
+      assert Announcement.await_enqueue(inserts([%Oban.Job{conflict?: false, id: 1}])) ==
+               :enqueued
+
+      assert Announcement.await_enqueue(inserts([%Oban.Job{conflict?: true, id: 7}])) ==
+               :already_enqueued
+    end
+
+    test "a job another run is inserting is tried again rather than counted as covered" do
+      assert Announcement.await_enqueue(inserts([@locked, @locked, %Oban.Job{conflict?: false}])) ==
+               :enqueued
+
+      assert Announcement.await_enqueue(inserts([@locked, %Oban.Job{conflict?: true, id: 3}])) ==
+               :already_enqueued
+    end
+
+    test "a job still held after every attempt is unconfirmed, never already enqueued" do
+      assert Announcement.await_enqueue(inserts([@locked]), 3) == :unconfirmed
     end
   end
 

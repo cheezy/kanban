@@ -22,9 +22,9 @@ below are placeholders.
 - **How release functions run.** The `Kanban.Release` functions below run in
   the production release with `bin/kanban eval`, the same way as the audit
   log steps in [Audit log database roles](audit-log-database-roles.md), except
-  `send_launch_announcement/1`, which runs with `bin/kanban rpc` (see step 5 of
-  [Before launch](#before-launch)). Pipe the result to `IO.inspect/1` so it is
-  printed:
+  `send_launch_announcement/1`, which is best run with `bin/kanban rpc` (see
+  step 5 of [Before launch](#before-launch)). Pipe the result to
+  `IO.inspect/1` so it is printed:
 
   ```bash
   /app/bin/kanban eval 'Kanban.Release.report_over_cap_boards() |> IO.inspect()'
@@ -87,16 +87,18 @@ below are placeholders.
    Edit the date sentence into the body once the date is set.
 
 5. **Send the launch announcement email.** Run it with `bin/kanban rpc`, inside
-   the running app. Under `bin/kanban eval` it currently fails with
-   `unknown registry: Oban.Registry`, because `eval` does not start Oban. Run a
-   dry run first. It counts the recipients and enqueues nothing:
+   the running app, so its `fanout_completed` telemetry is stored. It also
+   runs under `bin/kanban eval`, but then the printed counts are the only
+   record. Run a dry run first. It counts the recipients and enqueues nothing:
 
    ```bash
    /app/bin/kanban rpc 'Kanban.Release.send_launch_announcement(key: "organizations-launch", dry_run: true) |> IO.inspect()'
    ```
 
    It returns `{:ok, %{announcement: "organizations-launch", dry_run: true,
-   recipients: n, enqueued: 0, already_enqueued: 0}}`. Check that
+   recipients: n, enqueued: 0, already_enqueued: 0, unconfirmed: 0}}`. Type
+   `dry_run: true` exactly: a misspelled option, or a value other than `true`
+   or `false`, raises an `ArgumentError` and sends nothing. Check that
    `recipients` is close to the number of confirmed, enabled users. A dry run
    always reports `already_enqueued: 0`, so it cannot tell you whether a real
    run already happened; check your own record of the send before running it
@@ -110,9 +112,18 @@ below are placeholders.
      queue, whatever their notification preferences or plan, because it is a
      service notice. The running app sends them.
    - Jobs are unique per user and announcement, so a second run within seven
-     days enqueues 0 and reports the rest as `already_enqueued`. The Oban
-     Pruner removes finished jobs after seven days; **do not run it again
-     after that**, or everyone gets the email twice.
+     days enqueues 0 and reports the rest as `already_enqueued`. That includes
+     jobs that were cancelled or discarded: to stop a bad send, cancel its
+     jobs, and running it again will not re-send to those users. To send one
+     a discarded job again, retry that job in Oban. The Oban Pruner removes
+     finished jobs after seven days; **do not run it again after that**, or
+     everyone gets the email twice.
+   - `unconfirmed` counts users whose job another run was inserting at the
+     same moment. It is 0 unless two runs overlapped; if it is not, run it
+     again to cover them.
+   - A job left in `executing` by a node that was killed mid-send is not sent
+     again: there is no Oban Lifeline plugin to rescue it, and a re-run counts
+     that user as covered. Avoid deploying while the send is running.
    - Keep the printed counts as the record of the run.
    - `{:error, :unknown_announcement}` means the key is misspelled.
 

@@ -3,9 +3,10 @@ defmodule Kanban.Notifications.AnnouncementWorker do
   Sends one user one service announcement email.
 
   `Kanban.Notifications.Announcement.fan_out/2` enqueues one job per recipient
-  with `%{user_id, key}`. Jobs are unique per `user_id` and `key` for as long
-  as Oban keeps them, so a second fan-out adds no job for a user who already
-  has one.
+  with `%{user_id, key}`. Jobs are unique per `user_id` and `key` in every
+  job state for as long as Oban keeps them, so a second fan-out adds no job
+  for a user who already has one — cancelled and discarded jobs included, so
+  cancelling a bad send and running it again does not re-send to those users.
 
   `perform/1` re-checks the recipient, so a user disabled after the fan-out
   is skipped. The email renders in the user's stored `locale`, or English
@@ -19,7 +20,12 @@ defmodule Kanban.Notifications.AnnouncementWorker do
   use Oban.Worker,
     queue: :notifications,
     max_attempts: 3,
-    unique: [period: :infinity, fields: [:worker, :args], keys: [:user_id, :key]]
+    unique: [
+      period: :infinity,
+      fields: [:worker, :args],
+      keys: [:user_id, :key],
+      states: :all
+    ]
 
   alias Kanban.Accounts.User
   alias Kanban.Mailer

@@ -262,8 +262,8 @@ defmodule Kanban.Release do
 
   Runs `Kanban.Release.LaunchAnnouncement.send/1` and returns its result:
   `{:ok, counts}` or `{:error, :unknown_announcement}`. Pass `dry_run: true`
-  to count the recipients and enqueue nothing. Run it once with
-  `bin/kanban eval`, for example:
+  to count the recipients and enqueue nothing; an unknown option or a
+  non-boolean `:dry_run` raises first. Run it once with `bin/kanban rpc`:
 
       Kanban.Release.send_launch_announcement(key: "organizations-launch", dry_run: true)
       |> IO.inspect()
