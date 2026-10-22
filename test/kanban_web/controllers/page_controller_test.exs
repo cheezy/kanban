@@ -175,7 +175,7 @@ defmodule KanbanWeb.PageControllerTest do
   for {path, localized, english} <- [
         {"/terms", "21. Oktober 2026", "October 21, 2026"},
         {"/acceptable-use", "11. Juni 2026", "June 11, 2026"},
-        {"/privacy", "14. Mai 2026", "May 14, 2026"},
+        {"/privacy", "21. Oktober 2026", "October 21, 2026"},
         {"/security", "14. Mai 2026", "May 14, 2026"}
       ] do
     test "GET #{path} shows the Last updated date with a German month under de", %{conn: conn} do
@@ -208,6 +208,164 @@ defmodule KanbanWeb.PageControllerTest do
              ~r/id="privacy-organization-administrators"[^>]*>\s*<strong>Organization administrators<\/strong>/
 
     assert body =~ "can view and export that Organization&#39;s security audit events"
+  end
+
+  # The Organization disclosures must render translated under every locale,
+  # not fall back to English. The locale is seeded into the session so
+  # KanbanWeb.Plugs.Locale runs.
+  @privacy_organization_translations %{
+    "de" => [
+      "speichern wir den Namen und die Adresse der Organisation",
+      "die Mitglieder der Organisation einschließlich ihrer Namen, E-Mail-Adressen und Rollen",
+      "wenn Ihre Organisation Single Sign-On (SSO) aktiviert",
+      "zum Beispiel Unterlagen zu Vereinbarungen mit Organisationen"
+    ],
+    "es" => [
+      "almacenamos el nombre y la dirección de la organización",
+      "pueden ver los miembros de la organización",
+      "si tu organización activa el inicio de sesión único (SSO)",
+      "registros relacionados con los acuerdos de las organizaciones"
+    ],
+    "fr" => [
+      "nous enregistrons le nom et l'adresse de l'organisation",
+      "ses administrateurs peuvent voir les membres de l'organisation",
+      "si votre organisation active l'authentification unique (SSO)",
+      "les documents liés aux accords conclus avec des organisations"
+    ],
+    "ja" => [
+      "担当者の氏名・電話番号・メールアドレスを保存します",
+      "組織のメンバー（氏名、メールアドレス、ロールを含む）",
+      "組織がシングルサインオン（SSO）を有効にしている場合",
+      "（例：組織との契約に関する記録）"
+    ],
+    "pt" => [
+      "armazenamos o nome e o endereço da organização",
+      "podem ver os membros da organização",
+      "se a sua organização ativar o login único (SSO)",
+      "registros relacionados a acordos com organizações"
+    ],
+    "zh" => [
+      "我们会存储该组织的名称和地址",
+      "该组织的成员（包括其姓名、电子邮件地址和角色）",
+      "如果你的组织启用了单点登录（SSO）",
+      "（例如与组织协议相关的记录）"
+    ]
+  }
+
+  # Each new list item keeps the "<strong>label</strong> — body" structure under
+  # every locale, with both the label and the body translated.
+  @privacy_organization_labels %{
+    "de" => {"Organisationsinformationen", "Single Sign-On"},
+    "es" => {"Información de la organización", "Inicio de sesión único"},
+    "fr" => {"Informations sur l'organisation", "Authentification unique"},
+    "ja" => {"組織の情報", "シングルサインオン"},
+    "pt" => {"Informações da organização", "Login único"},
+    "zh" => {"组织信息", "单点登录"}
+  }
+
+  for {locale, expected} <- @privacy_organization_translations do
+    test "GET /privacy renders the Organization disclosures translated under #{locale}",
+         %{conn: conn} do
+      document =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => unquote(locale)})
+        |> get(~p"/privacy")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+
+      text = document |> LazyHTML.query("main") |> LazyHTML.text()
+
+      for phrase <- unquote(expected) do
+        assert text =~ phrase,
+               "expected #{inspect(phrase)} on /privacy under #{unquote(locale)}"
+      end
+
+      refute text =~ "if your company has an Organization on Stride"
+      refute text =~ "if your Organization enables single sign-on"
+
+      {org_label, sso_label} = Map.fetch!(@privacy_organization_labels, unquote(locale))
+
+      for {id, label, english} <- [
+            {"privacy-organization-information", org_label, "Organization information"},
+            {"privacy-single-sign-on", sso_label, "Single sign-on"}
+          ] do
+        item = LazyHTML.query(document, "main section li##{id}")
+
+        assert item |> LazyHTML.query("strong") |> LazyHTML.text() |> String.trim() == label
+        refute item |> LazyHTML.text() =~ english
+
+        assert item |> LazyHTML.text() |> String.replace(~r/\s+/u, " ") |> String.trim() =~
+                 ~r/^#{Regex.escape(label)} — \S/u
+      end
+    end
+  end
+
+  describe "GET /privacy Organizations" do
+    test "lists the Organization data collected and who can see it", %{conn: conn} do
+      body = conn |> get(~p"/privacy") |> html_response(200)
+
+      assert body =~
+               ~r/id="privacy-organization-information"[^>]*>\s*<strong>Organization information<\/strong>/
+
+      assert body =~
+               "we store the Organization&#39;s name and address and a contact person&#39;s name, phone number and email address."
+
+      assert body =~
+               "We use them to set up and administer the Organization and its agreement with us."
+
+      assert body =~ "The Organization&#39;s org-admins and the Stride team can see them."
+    end
+
+    test "discloses what org-admins can see, including actor emails and IP addresses in the audit log",
+         %{conn: conn} do
+      body = conn |> get(~p"/privacy") |> html_response(200)
+
+      assert body =~
+               "its org-admins can see the Organization&#39;s members, including their names, email addresses and roles, and its workspaces and boards."
+
+      assert body =~
+               "including your email address and IP address when you are the person who acted in that Organization."
+    end
+
+    test "mentions SSO processing for Organizations that enable it", %{conn: conn} do
+      body = conn |> get(~p"/privacy") |> html_response(200)
+
+      assert body =~ ~r/id="privacy-single-sign-on"[^>]*>\s*<strong>Single sign-on<\/strong>/
+
+      assert body =~
+               "if your Organization enables single sign-on (SSO), we process the identity details"
+    end
+
+    test "retention refers to Organization agreements, not billing, and keeps self-service deletion",
+         %{conn: conn} do
+      body = conn |> get(~p"/privacy") |> html_response(200)
+
+      assert body =~ "(for example, records related to Organization agreements)"
+      refute body =~ "billing"
+      assert body =~ "You can delete your account yourself in your account settings."
+      assert body =~ "Delete your account and your personal data."
+    end
+
+    test "keeps every existing section heading", %{conn: conn} do
+      document = conn |> get(~p"/privacy") |> html_response(200) |> LazyHTML.from_document()
+
+      headings =
+        document
+        |> LazyHTML.query("main h2")
+        |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
+
+      assert headings == [
+               "Information we collect",
+               "How we use your information",
+               "Data sharing",
+               "Data retention",
+               "Your rights",
+               "Cookies and local storage",
+               "Security",
+               "Changes to this policy",
+               "Contact us"
+             ]
+    end
   end
 
   test "GET /security", %{conn: conn} do

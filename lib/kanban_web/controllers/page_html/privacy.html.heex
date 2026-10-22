@@ -5,7 +5,7 @@
         {gettext("Privacy Policy")}
       </h1>
       <p class="text-sm text-base-content opacity-80 mb-10">
-        {gettext("Last updated: %{date}", date: gettext("May 14, 2026"))}
+        {gettext("Last updated: %{date}", date: gettext("October 21, 2026"))}
       </p>
 
       <div class="prose prose-lg max-w-none">
@@ -50,6 +50,18 @@
               <strong>{gettext("Telemetry")}</strong>
               {gettext(
                 " — request paths, status codes, response durations, and aggregate usage counts. We do not record full request bodies or individual user-agent strings beyond what is needed to keep the service available."
+              )}
+            </li>
+            <li id="privacy-organization-information">
+              <strong>{gettext("Organization information")}</strong>
+              {gettext(
+                " — if your company has an Organization on Stride, we store the Organization's name and address and a contact person's name, phone number and email address. We use them to set up and administer the Organization and its agreement with us. The Organization's org-admins and the Stride team can see them."
+              )}
+            </li>
+            <li id="privacy-single-sign-on">
+              <strong>{gettext("Single sign-on")}</strong>
+              {gettext(
+                " — if your Organization enables single sign-on (SSO), we process the identity details its identity provider sends when you sign in, such as your email address, and we store the provider's identifier for you so we can recognize you the next time you sign in."
               )}
             </li>
           </ul>
@@ -111,7 +123,7 @@
             <li id="privacy-organization-administrators">
               <strong>{gettext("Organization administrators")}</strong>
               {gettext(
-                " — if you belong to an Organization, its org-admins can view and export that Organization's security audit events, including your email address and IP address when you are the person who acted."
+                " — if you belong to an Organization, its org-admins can see the Organization's members, including their names, email addresses and roles, and its workspaces and boards. They can view and export that Organization's security audit events, including your email address and IP address when you are the person who acted in that Organization."
               )}
             </li>
           </ul>
@@ -123,7 +135,7 @@
           </h2>
           <p class="text-base-content opacity-70 leading-relaxed mb-4">
             {gettext(
-              "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, financial records for billing). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
+              "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
             )}
           </p>
           <p class="text-base-content opacity-70 leading-relaxed">

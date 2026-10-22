@@ -3403,7 +3403,7 @@ msgstr "以批准的速度完成评审"
 
 #: lib/kanban_web/components/marketing_closing.ex:113
 #: lib/kanban_web/components/review_report_panel.ex:449
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:168
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:180
 #: lib/kanban_web/controllers/page_html/security.html.heex:5
 #: lib/kanban_web/live/org_live/console.html.heex:20
 #: lib/kanban_web/live/org_live/security.html.heex:17
@@ -3507,7 +3507,7 @@ msgid "Now in release →"
 msgstr "最新发布 →"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:157
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:196
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:208
 #: lib/kanban_web/controllers/page_html/terms.html.heex:176
 #, elixir-autogen, elixir-format
 msgid " and we will respond within a reasonable time."
@@ -3568,12 +3568,12 @@ msgstr " — Stride 使用 Ecto,以参数化方式构造 SQL,因此不受经典 
 msgid " — boards, columns, tasks, comments, attachments, and the metadata you author (titles, descriptions, acceptance criteria, key files, hooks, and so on)."
 msgstr " — 看板、列、任务、评论、附件以及您撰写的元数据(标题、描述、验收标准、关键文件、钩子等)。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:107
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:119
 #, elixir-autogen, elixir-format
 msgid " — content you put in a board is visible to the people you invite to that board."
 msgstr " — 您放入看板的内容对您邀请到该看板的人可见。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:95
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:107
 #, elixir-autogen, elixir-format
 msgid " — hosting, transactional email, and error tracking. These vendors process data on our behalf under written agreements that prohibit secondary use."
 msgstr " — 托管、事务性邮件和错误跟踪。这些供应商在禁止二次使用的书面协议下代表我们处理数据。"
@@ -3593,7 +3593,7 @@ msgstr " — 我们存储哈希化的令牌、签发用户、作用域和最后�
 msgid " — when an AI agent claims a task, runs a hook, or completes work, we record the agent's identifier, the task affected, and a timestamp."
 msgstr " — 当 AI 代理认领任务、执行钩子或完成工作时,我们会记录代理标识符、相关任务和时间戳。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:101
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:113
 #, elixir-autogen, elixir-format
 msgid " — when we are required by valid legal process. We push back on overbroad requests and notify the affected user where the law allows."
 msgstr " — 在我们被合法法律程序要求时。我们会反对过于宽泛的请求,并在法律允许的情况下通知受影响的用户。"
@@ -3688,7 +3688,7 @@ msgstr "通过代理 API 泄露 API 令牌或越权访问。"
 msgid "API tokens"
 msgstr "API令牌"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:144
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:156
 #, elixir-autogen, elixir-format
 msgid "Access the personal data we hold about you."
 msgstr "访问我们持有的关于您的个人数据。"
@@ -3756,7 +3756,7 @@ msgid "Can I switch between self-hosted and hosted later?"
 msgstr "我以后可以在自托管和托管之间切换吗?"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:140
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:179
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:191
 #, elixir-autogen, elixir-format
 msgid "Changes to this policy"
 msgstr "本政策的变更"
@@ -3774,18 +3774,18 @@ msgid "Contact"
 msgstr "联系"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:151
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:190
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:202
 #: lib/kanban_web/controllers/page_html/terms.html.heex:170
 #, elixir-autogen, elixir-format
 msgid "Contact us"
 msgstr "联系我们"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:157
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:169
 #, elixir-autogen, elixir-format
 msgid "Cookies and local storage"
 msgstr "Cookie 和本地存储"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:145
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:157
 #, elixir-autogen, elixir-format
 msgid "Correct inaccurate personal data."
 msgstr "更正不准确的个人数据。"
@@ -3795,17 +3795,17 @@ msgstr "更正不准确的个人数据。"
 msgid "Cryptographic flaws affecting passwords, tokens, or data at rest."
 msgstr "影响密码、令牌或静态数据的加密缺陷。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:122
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Data retention"
 msgstr "数据保留"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:87
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:99
 #, elixir-autogen, elixir-format
 msgid "Data sharing"
 msgstr "数据共享"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:146
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:158
 #, elixir-autogen, elixir-format
 msgid "Delete your account and your personal data."
 msgstr "删除您的账户和个人数据。"
@@ -3820,12 +3820,12 @@ msgstr "拒绝服务攻击、流量洪水攻击,以及通过请求量绕过限�
 msgid "Dependency hygiene"
 msgstr "依赖卫生"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:141
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:153
 #, elixir-autogen, elixir-format
 msgid "Depending on where you live, you may have the right to:"
 msgstr "视您所在地而定,您可能享有以下权利:"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:68
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:80
 #, elixir-autogen, elixir-format
 msgid "Diagnose errors, measure performance, and prevent abuse (rate limiting, fraud detection)."
 msgstr "诊断错误、衡量性能并防止滥用(限速、欺诈检测)。"
@@ -3865,7 +3865,7 @@ msgstr "开始使用"
 msgid "Hooks run on your machine, not ours"
 msgstr "钩子在您的机器上运行,不在我们的"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:60
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:72
 #, elixir-autogen, elixir-format
 msgid "How we use your information"
 msgstr "我们如何使用您的信息"
@@ -3908,12 +3908,12 @@ msgstr "最后更新:%{date}"
 msgid "Lead time, cycle time, wait time, throughput — every metric is split by who did the work. See exactly where your humans become the bottleneck and where agents are crushing it."
 msgstr "前置时间、周期时间、等待时间、吞吐量 — 每项指标都按完成工作的对象划分。准确看到您的人类在哪里成为瓶颈,以及代理在哪里表现出色。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:100
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:112
 #, elixir-autogen, elixir-format
 msgid "Legal requests"
 msgstr "法律请求"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:63
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "Operate the service and authenticate you and your agents."
 msgstr "运营服务并对您及您的代理进行认证。"
@@ -3939,7 +3939,7 @@ msgstr "在您思考的层面进行规划"
 msgid "Privacy Policy"
 msgstr "隐私政策"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:193
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:205
 #, elixir-autogen, elixir-format
 msgid "Questions, concerns, or requests about this policy? Email "
 msgstr "对本政策有疑问、担忧或请求?请发送邮件至 "
@@ -3954,7 +3954,7 @@ msgstr "限速"
 msgid "Ready to see it run?"
 msgstr "准备好看它运行了吗?"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:65
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Render the boards, tasks, and activity feeds you have access to."
 msgstr "渲染您有权访问的看板、任务和活动流。"
@@ -3989,7 +3989,7 @@ msgstr "安全问题: "
 msgid "See every claim, hook result, completion, and unclaim across your agent fleet. Telemetry by agent, by capability, by board. The board is the operating system; the activity feed is the syslog."
 msgstr "查看您代理舰队中的每一次认领、钩子结果、完成与释放。按代理、能力、看板分类的遥测。看板就是操作系统;活动流就是 syslog。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:73
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:85
 #, elixir-autogen, elixir-format
 msgid "Send transactional email — account confirmation, password reset, security notifications. We do not send marketing email unless you explicitly opt in."
 msgstr "发送事务性邮件 — 账户确认、密码重置、安全通知。除非您明确选择加入,否则我们不会发送营销邮件。"
@@ -3999,7 +3999,7 @@ msgstr "发送事务性邮件 — 账户确认、密码重置、安全通知。�
 msgid "Server-side or client-side injection (SQL, XSS, SSRF, etc.)."
 msgstr "服务端或客户端注入(SQL、XSS、SSRF 等)。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:94
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:106
 #, elixir-autogen, elixir-format
 msgid "Service providers"
 msgstr "服务提供者"
@@ -4024,7 +4024,7 @@ msgstr "严格的内容安全策略"
 msgid "Stride is free to self-host on day one. Pay us only if you want it managed for you."
 msgstr "Stride 首日即可免费自托管。只有当您希望由我们托管时才需要付费。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:171
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:183
 #, elixir-autogen, elixir-format
 msgid "Stride is hosted on encrypted infrastructure, passwords are hashed with bcrypt, and API tokens are hashed at rest. Despite our best efforts, no system is perfectly secure. If you discover a vulnerability, please report it to us responsibly at the contact address below."
 msgstr "Stride 部署在加密基础设施上,密码使用 bcrypt 哈希,API 令牌静态哈希。尽管我们已尽全力,但没有任何系统是绝对安全的。如果您发现漏洞,请负责任地通过下方的联系地址向我们报告。"
@@ -4053,7 +4053,7 @@ msgstr "与我们交流"
 msgid "Telemetry"
 msgstr "遥测"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:130
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:142
 #, elixir-autogen, elixir-format
 msgid "Telemetry and audit logs are retained for up to 90 days, then aggregated or deleted."
 msgstr "遥测和审计日志最多保留 90 天,之后会被聚合或删除。"
@@ -4083,27 +4083,27 @@ msgstr "传输与存储"
 msgid "Vulnerability disclosure"
 msgstr "漏洞披露"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:79
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "We do not sell your data. We do not use your workspace content to train AI models. We do not run advertising on Stride."
 msgstr "我们不出售您的数据。我们不会将您工作区中的内容用于训练 AI 模型。我们也不会在 Stride 上投放广告。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:182
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:194
 #, elixir-autogen, elixir-format
 msgid "We may update this policy from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect."
 msgstr "我们可能会不时更新本政策。当我们进行实质性变更时,我们会在本页顶部标注新的生效日期,并在适当情况下,在变更生效前通过邮件或应用内横幅通知您。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:90
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:102
 #, elixir-autogen, elixir-format
 msgid "We share your information only in narrowly limited circumstances:"
 msgstr "我们仅在严格受限的情况下共享您的信息:"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:160
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:172
 #, elixir-autogen, elixir-format
 msgid "We use a small number of cookies and browser-local storage entries that are strictly necessary to operate the service: a session cookie to keep you signed in, a CSRF token to protect form submissions, and a preference entry that remembers your light/dark theme choice. We do not use third-party advertising or analytics cookies."
 msgstr "我们使用少量严格运营所需的 cookie 和浏览器本地存储:用于保持您登录的会话 cookie、用于保护表单提交的 CSRF 令牌,以及记住您浅色/深色主题偏好的设置项。我们不使用第三方广告或分析 cookie。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:106
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:118
 #, elixir-autogen, elixir-format
 msgid "Workspace collaborators"
 msgstr "工作区协作者"
@@ -4128,7 +4128,7 @@ msgstr "可以。请发送邮件至 "
 msgid "Yes. The whole codebase is open source under the MIT license. Run it on your own machine, your own server, or your own Kubernetes cluster. You owe us nothing."
 msgstr "是。整个代码库以 MIT 许可证开源。可以在您自己的机器、服务器或 Kubernetes 集群上运行。您不需要付费给我们。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:138
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:150
 #, elixir-autogen, elixir-format
 msgid "Your rights"
 msgstr "您的权利"
@@ -5884,7 +5884,7 @@ msgstr "已达到 WIP 上限"
 msgid " runs for every release detecting any security vulnerabilities."
 msgstr " 在每次发布时运行,检测任何安全漏洞。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:149
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:161
 #, elixir-autogen, elixir-format
 msgid "As a user of this system, you have full access to your data to manage it as you see fit."
 msgstr "作为本系统的用户,您可以完全访问自己的数据并按需管理。"
@@ -10757,12 +10757,7 @@ msgstr "组织审计日志"
 msgid "Security events recorded for %{name}, newest first. Times are in UTC."
 msgstr "为 %{name} 记录的安全事件，按时间倒序排列。时间为 UTC。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:113
-#, elixir-autogen, elixir-format
-msgid " — if you belong to an Organization, its org-admins can view and export that Organization's security audit events, including your email address and IP address when you are the person who acted."
-msgstr " — 如果您属于某个组织，该组织的组织管理员可以查看和导出该组织的安全审计事件，其中包括您执行操作时的电子邮件地址和 IP 地址。"
-
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:112
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:124
 #, elixir-autogen, elixir-format
 msgid "Organization administrators"
 msgstr "组织管理员"
@@ -11856,11 +11851,6 @@ msgstr "删除账户会让你在所有地方退出登录，并移除你的 API �
 msgid "Logged out successfully."
 msgstr "已成功退出登录。"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:125
-#, elixir-autogen, elixir-format
-msgid "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, financial records for billing). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
-msgstr "只要你的账户处于活动状态，我们就会保留你的账户和工作区数据。你可以在账户设置中自行删除账户。删除后，我们会在 30 天内删除你的账户记录以及你个人工作区中只有你使用的看板，法律要求我们保留记录的情况除外（例如用于计费的财务记录）。其他人仍在使用的看板会留给他们，Organization 工作区中的看板会留在该 Organization，你在其中添加的内容会保留但不再显示你的名字。"
-
 #: lib/kanban_web/live/workspace_live/export_card.ex:31
 #, elixir-autogen, elixir-format
 msgid "A zip archive of this workspace's boards, columns, labels, tasks, comments, history and memberships, for a backup or to move the workspace to another Stride instance. It is prepared in the background; its status and download link appear below. Archives are kept for %{days} days."
@@ -12255,6 +12245,7 @@ msgstr "通过您组织的身份提供商登录，它也会处理多重身份验
 msgid "Sign in with SSO"
 msgstr "使用 SSO 登录"
 
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:62
 #: lib/kanban_web/live/org_live/console.html.heex:24
 #: lib/kanban_web/live/org_live/sso.ex:41
 #: lib/kanban_web/live/org_live/sso.html.heex:17
@@ -12816,13 +12807,38 @@ msgstr "组织方案根据我们与您的组织之间单独签订的书面协议
 msgid "June 11, 2026"
 msgstr "2026年6月11日"
 
-#: lib/kanban_web/controllers/page_html/privacy.html.heex:8
 #: lib/kanban_web/controllers/page_html/security.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "May 14, 2026"
 msgstr "2026年5月14日"
 
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:8
 #: lib/kanban_web/controllers/page_html/terms.html.heex:8
 #, elixir-autogen, elixir-format
 msgid "October 21, 2026"
 msgstr "2026年10月21日"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:125
+#, elixir-autogen, elixir-format
+msgid " — if you belong to an Organization, its org-admins can see the Organization's members, including their names, email addresses and roles, and its workspaces and boards. They can view and export that Organization's security audit events, including your email address and IP address when you are the person who acted in that Organization."
+msgstr " — 如果您属于某个组织，该组织的组织管理员可以查看该组织的成员（包括其姓名、电子邮件地址和角色）以及该组织的工作区和看板。他们可以查看和导出该组织的安全审计事件，其中包括您在该组织中执行操作时的电子邮件地址和 IP 地址。"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:63
+#, elixir-autogen, elixir-format
+msgid " — if your Organization enables single sign-on (SSO), we process the identity details its identity provider sends when you sign in, such as your email address, and we store the provider's identifier for you so we can recognize you the next time you sign in."
+msgstr " — 如果你的组织启用了单点登录（SSO），我们会处理你登录时其身份提供商发送的身份信息（例如你的电子邮件地址），并存储该提供商为你分配的标识符，以便在你下次登录时识别你。"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:57
+#, elixir-autogen, elixir-format
+msgid " — if your company has an Organization on Stride, we store the Organization's name and address and a contact person's name, phone number and email address. We use them to set up and administer the Organization and its agreement with us. The Organization's org-admins and the Stride team can see them."
+msgstr " — 如果你的公司在 Stride 上拥有组织，我们会存储该组织的名称和地址，以及一位联系人的姓名、电话号码和电子邮件地址。我们使用这些信息来设立和管理该组织及其与我们的协议。该组织的组织管理员和 Stride 团队可以查看这些信息。"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:56
+#, elixir-autogen, elixir-format
+msgid "Organization information"
+msgstr "组织信息"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:137
+#, elixir-autogen, elixir-format
+msgid "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
+msgstr "只要你的账户处于活动状态，我们就会保留你的账户和工作区数据。你可以在账户设置中自行删除账户。删除后，我们会在 30 天内删除你的账户记录以及你个人工作区中只有你使用的看板，法律要求我们保留记录的情况除外（例如与组织协议相关的记录）。其他人仍在使用的看板会留给他们，Organization 工作区中的看板会留在该 Organization，你在其中添加的内容会保留但不再显示你的名字。"
