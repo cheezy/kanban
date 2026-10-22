@@ -97,11 +97,11 @@ defmodule Kanban.Retention.PurgeWorkerTest do
       assert PurgeWorker.__opts__()[:queue] == :maintenance
     end
 
-    test "config.exs ships settings that keep everything" do
+    test "config.exs keeps site audit events for the 90 days /privacy promises, and archived tasks for ever" do
       config =
         "config/config.exs" |> Config.Reader.read!(env: :prod) |> get_in([:kanban, PurgeWorker])
 
-      assert config[:site_audit_retention_days] == nil
+      assert config[:site_audit_retention_days] == 90
       assert config[:archived_task_retention_days] == nil
       assert config[:batch_size] == 1_000
     end
@@ -195,6 +195,22 @@ defmodule Kanban.Retention.PurgeWorkerTest do
       assert audit_ids() == Enum.sort([site_recent, org_old])
       refute site_old in audit_ids()
       assert hd(purge_events()).metadata["site_count"] == 1
+    end
+
+    test "a 90-day setting removes rows past the floor even when the app's clock runs ahead" do
+      put_config(site_audit_retention_days: 90)
+      site_old = audit_at!(91)
+      site_recent = audit_at!(89)
+
+      # Ten seconds ahead of the database: a cutoff of exactly now - 90 days
+      # would be inside the database's floor and refused.
+      ahead = DateTime.utc_now() |> DateTime.add(10, :second) |> DateTime.to_iso8601()
+
+      log = capture_log(fn -> assert :ok = perform_job(PurgeWorker, %{"now" => ahead}) end)
+
+      refute log =~ "refused"
+      assert audit_ids() == [site_recent]
+      refute site_old in audit_ids()
     end
 
     test "a setting below the 90-day floor or not an integer removes nothing and warns" do

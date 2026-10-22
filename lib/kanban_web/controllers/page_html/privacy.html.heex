@@ -138,10 +138,15 @@
               "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
             )}
           </p>
-          <p class="text-base-content opacity-70 leading-relaxed">
-            {gettext(
-              "Telemetry and audit logs are retained for up to 90 days, then aggregated or deleted."
-            )}
+          <p id="privacy-retention" class="text-base-content opacity-70 leading-relaxed">
+            {KanbanWeb.Sentences.join([
+              gettext(
+                "Telemetry and audit logs are retained for up to 90 days, then aggregated or deleted."
+              ),
+              gettext(
+                "An Organization's security audit events are kept for as long as that Organization's retention setting says; its org-admins may choose a longer period or keep them indefinitely."
+              )
+            ])}
           </p>
         </section>
 

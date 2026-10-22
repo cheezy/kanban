@@ -117,16 +117,18 @@ way as the site purge; see
 
 1. removes each Organization's audit events older than its retention period;
 2. removes site events (no Organization) older than
-   `site_audit_retention_days`, only when that is set;
+   `site_audit_retention_days`, only when that is set (90 days in
+   `config/config.exs`, the period `/privacy` promises);
 3. removes archived tasks archived before `archived_task_retention_days` ago,
    only when that is set.
 
-The site and archived-task settings are application config, unset by default,
-which keeps everything:
+The site and archived-task settings are application config. `config/config.exs`
+keeps site events for 90 days and archived tasks for ever; `nil` keeps
+everything:
 
 ```elixir
 config :kanban, Kanban.Retention.PurgeWorker,
-  site_audit_retention_days: nil,
+  site_audit_retention_days: 90,
   archived_task_retention_days: nil,
   batch_size: 1_000
 ```

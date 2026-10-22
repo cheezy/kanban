@@ -10,7 +10,8 @@ defmodule Kanban.Retention.PurgeWorker do
        `Kanban.AuditLog.purge_organization_before/3`. Organizations without a
        retention period keep everything.
     2. **Site-level audit events** (rows with no Organization), only when
-       `site_audit_retention_days` is set. Unset, the default, keeps them all.
+       `site_audit_retention_days` is set. `config/config.exs` sets 90, the
+       period `/privacy` promises; unset keeps them all.
     3. **Archived tasks**, only when `archived_task_retention_days` is set,
        through `Kanban.Archives.purge_archived_before/2`. Unset, the default,
        keeps them all.
@@ -22,14 +23,16 @@ defmodule Kanban.Retention.PurgeWorker do
   Settings are read at run time from
 
       config :kanban, Kanban.Retention.PurgeWorker,
-        site_audit_retention_days: nil,
+        site_audit_retention_days: 90,
         archived_task_retention_days: nil,
         batch_size: 1_000
 
   An audit retention below the 90-day floor, or a setting that is not a
   positive whole number of days, removes nothing for that step and logs a
   warning, so a mistake can never empty a table; the database purge function
-  refuses a cutoff inside the floor as well. Every purge removes `batch_size`
+  refuses a cutoff inside the floor as well. Audit cutoffs are taken a few
+  minutes further back than the retention period, so a retention of exactly
+  the floor is not refused when the app's clock runs ahead of the database's. Every purge removes `batch_size`
   rows per statement and loops until a batch comes back short, so it never
   holds one long lock. Running the job twice removes nothing the second time.
 
@@ -55,6 +58,9 @@ defmodule Kanban.Retention.PurgeWorker do
 
   @default_batch_size 1_000
   @seconds_per_day 24 * 60 * 60
+  # How far an audit cutoff is moved back, so clock skew between the app and
+  # the database cannot put a cutoff at the 90-day floor inside it.
+  @clock_skew_allowance_seconds 5 * 60
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: args}) do
@@ -94,7 +100,9 @@ defmodule Kanban.Retention.PurgeWorker do
   defp purge_organization(%{organization_id: id, audit_retention_days: days}, now, batch_size) do
     case audit_days(days) do
       {:ok, days} ->
-        run_step({:organization, id}, fn -> purge_audit(id, cutoff(now, days), batch_size) end)
+        run_step({:organization, id}, fn ->
+          purge_audit(id, audit_cutoff(now, days), batch_size)
+        end)
 
       :error ->
         warn_invalid("audit_retention_days for organization #{id}", days)
@@ -118,7 +126,7 @@ defmodule Kanban.Retention.PurgeWorker do
   end
 
   defp purge_site_days({:ok, days}, _value, now, batch_size) do
-    case run_step(:site, fn -> purge_audit(nil, cutoff(now, days), batch_size) end) do
+    case run_step(:site, fn -> purge_audit(nil, audit_cutoff(now, days), batch_size) end) do
       {:ok, removed} -> {removed, []}
       :error -> {nil, ["site"]}
     end
@@ -165,9 +173,9 @@ defmodule Kanban.Retention.PurgeWorker do
     end
   end
 
-  # The database measures the floor from its own clock, so a retention of
-  # exactly the floor can be refused when the app's clock runs ahead of it.
-  # That removes nothing, which is safe; the warning makes it visible.
+  # The database measures the floor from its own clock. audit_cutoff/2 leaves
+  # room for clock skew; a refusal beyond that removes nothing, which is safe,
+  # and the warning makes it visible.
   defp refused(organization_id, removed) do
     Logger.warning(
       "retention purge refused a cutoff inside the floor organization_id=#{inspect(organization_id)}"
@@ -203,6 +211,9 @@ defmodule Kanban.Retention.PurgeWorker do
   defp audit_days(_days), do: :error
 
   defp cutoff(now, days), do: DateTime.add(now, -days * @seconds_per_day, :second)
+
+  defp audit_cutoff(now, days),
+    do: now |> cutoff(days) |> DateTime.add(-@clock_skew_allowance_seconds, :second)
 
   defp batch_size(settings) do
     case Keyword.get(settings, :batch_size) do

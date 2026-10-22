@@ -176,11 +176,12 @@ config :kanban, Kanban.Metrics.RetentionWorker, retention_days: 90, batch_size: 
 # The daily Kanban.Retention.PurgeWorker (W2244). Organization audit retention
 # is each Organization's own security policy; these settings cover the rest.
 # site_audit_retention_days applies to audit events with no Organization (at
-# least 90, the database floor) and archived_task_retention_days to archived
-# tasks, which are deleted for good. nil keeps everything, and an invalid value
-# removes nothing and logs a warning. batch_size rows are removed per DELETE.
+# least 90, the database floor); 90 matches the "up to 90 days" /privacy
+# promises. archived_task_retention_days applies to archived tasks, which are
+# deleted for good. nil keeps everything, and an invalid value removes nothing
+# and logs a warning. batch_size rows are removed per DELETE.
 config :kanban, Kanban.Retention.PurgeWorker,
-  site_audit_retention_days: nil,
+  site_audit_retention_days: 90,
   archived_task_retention_days: nil,
   batch_size: 1_000
 

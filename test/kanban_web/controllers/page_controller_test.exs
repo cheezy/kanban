@@ -395,6 +395,28 @@ defmodule KanbanWeb.PageControllerTest do
     end
   end
 
+  test "/privacy states the 90-day audit retention and that an Organization's own setting governs its events",
+       %{conn: conn} do
+    text =
+      conn
+      |> get(~p"/privacy")
+      |> html_response(200)
+      |> LazyHTML.from_document()
+      |> LazyHTML.query("#privacy-retention")
+      |> LazyHTML.text()
+
+    assert text =~ "retained for up to 90 days"
+    assert text =~ "kept for as long as that Organization's retention setting says"
+
+    de =
+      conn
+      |> init_test_session(%{locale: "de"})
+      |> get(~p"/privacy")
+      |> html_response(200)
+
+    assert de =~ "Aufbewahrungseinstellung dieser Organisation"
+  end
+
   describe "GET /pricing" do
     test "the hero says hosted Stride is free for individuals and small teams", %{conn: conn} do
       body = conn |> get(~p"/pricing") |> html_response(200)
