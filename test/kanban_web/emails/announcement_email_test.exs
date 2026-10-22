@@ -11,7 +11,7 @@ defmodule KanbanWeb.Emails.AnnouncementEmailTest do
   # English for any of them fails below.
   @english_labels [
     "Announcing Organizations and the Free plan",
-    "The launch date will be announced on the Stride changelog.",
+    "The launch date is published on the Stride changelog.",
     "Free boards: up to 3 people",
     "Becoming Organization-only",
     "Staying free",
@@ -33,13 +33,55 @@ defmodule KanbanWeb.Emails.AnnouncementEmailTest do
              "<announcement-organizations-launch-42@stridelikeaboss.com>"
   end
 
-  test "links to /changelog, /pricing and /terms in both bodies" do
+  test "links to the changelog, pricing, contact, terms, review queue and My Work in both bodies" do
     email = build()
     base = KanbanWeb.Endpoint.url()
 
-    for path <- ["/changelog", "/pricing", "/terms"] do
+    for path <- ["/changelog", "/pricing", "/pricing#contact", "/terms", "/review", "/my-work"] do
       assert email.html_body =~ ~s(href="#{base}#{path}")
       assert email.text_body =~ "#{base}#{path}"
+    end
+
+    refute email.text_body =~ "?locale="
+  end
+
+  test "a translated email's links open the pages in its language" do
+    email = Gettext.with_locale(KanbanWeb.Gettext, "de", fn -> build() end)
+    base = KanbanWeb.Endpoint.url()
+
+    for path <- ["/changelog", "/pricing", "/terms", "/review", "/my-work"] do
+      assert email.html_body =~ ~s(href="#{base}#{path}?locale=de")
+      assert email.text_body =~ "#{base}#{path}?locale=de"
+    end
+
+    assert email.text_body =~ "#{base}/pricing?locale=de#contact"
+  end
+
+  test "joins Japanese and Chinese sentences with no space after 。" do
+    for locale <- ~w(ja zh) do
+      email = Gettext.with_locale(KanbanWeb.Gettext, locale, fn -> build() end)
+
+      refute email.text_body =~ "。 ", "space after 。 in the #{locale} email"
+    end
+  end
+
+  test "names the plans as /pricing and /terms do in every translation" do
+    # The /pricing and /terms wording for the Organization plan in each locale.
+    names = %{
+      "de" => "Organisationsplan",
+      "es" => "plan Organización",
+      "fr" => "offre Organisation",
+      "ja" => "組織プラン",
+      "pt" => "plano Organização",
+      "zh" => "组织方案"
+    }
+
+    for {locale, name} <- names do
+      email = Gettext.with_locale(KanbanWeb.Gettext, locale, fn -> build() end)
+
+      assert email.text_body =~ name, "#{locale} email does not say #{name}"
+      refute email.text_body =~ "Free", "#{locale} email names the Free plan in English"
+      refute email.text_body =~ "Organization", "#{locale} email names the plan in English"
     end
   end
 

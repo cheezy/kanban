@@ -274,7 +274,7 @@ defmodule KanbanWeb.BoardLive.MembershipTest do
 
       for count <- [3, 5] do
         assert Membership.member_cap_explanation(%{count: count, cap: 3, reached?: true}) ==
-                 "Free boards hold 3 people. To add more, move this board to a paid plan."
+                 "Free boards hold 3 people. To add more, move this board into an organization."
       end
 
       assert is_nil(Membership.member_cap_explanation(%{count: 7, cap: nil, reached?: false}))

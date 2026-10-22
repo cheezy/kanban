@@ -129,7 +129,7 @@ defmodule KanbanWeb.BoardLive.Membership do
   the same explanation and no removal prompt.
   """
   def member_cap_explanation(%{cap: cap, reached?: true}) when is_integer(cap) do
-    gettext("Free boards hold %{cap} people. To add more, move this board to a paid plan.",
+    gettext("Free boards hold %{cap} people. To add more, move this board into an organization.",
       cap: cap
     )
   end

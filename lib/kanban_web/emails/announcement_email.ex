@@ -5,7 +5,10 @@ defmodule KanbanWeb.Emails.AnnouncementEmail do
 
   The `"organizations-launch"` announcement repeats the Organizations and Free
   plan entry on `/changelog`, reusing its translated text, and links to
-  `/changelog`, `/pricing` and `/terms`. It is a service notice sent to every
+  `/changelog`, `/pricing`, its `#contact` section, `/terms`, `/review` and
+  `/my-work`. In a locale other than English each link carries `?locale=`, so
+  the page opens in the email's language (`KanbanWeb.Plugs.Locale`). It is a
+  service notice sent to every
   account, so it carries no unsubscribe link or `List-Unsubscribe` header:
   those are for the notification emails a user can turn off.
 
@@ -23,6 +26,7 @@ defmodule KanbanWeb.Emails.AnnouncementEmail do
 
   alias Kanban.Accounts.User
   alias KanbanWeb.Emails.EmailHelpers
+  alias KanbanWeb.Sentences
 
   # dark-mode-ignore: email HTML cannot use the app's CSS variables
   @rule_style "border:none;border-top:1px solid #d4d4d8;margin:24px 0 12px"
@@ -52,7 +56,7 @@ defmodule KanbanWeb.Emails.AnnouncementEmail do
   # The same text as the announcement on /changelog
   # (lib/kanban_web/controllers/page_html/changelog.html.heex), so the
   # existing translations apply. Its "to be announced on this page" line is
-  # replaced, because in an email "this page" would not mean the changelog.
+  # replaced: the runbook publishes the date there before this email is sent.
   defp organizations_launch do
     %{
       heading: gettext("Announcing Organizations and the Free plan"),
@@ -60,8 +64,10 @@ defmodule KanbanWeb.Emails.AnnouncementEmail do
         gettext(
           "Stride is adding a paid Organization plan. Stride stays free for individuals and small teams, and a few features become available to organizations only."
         ),
-        gettext("The launch date will be announced on the Stride changelog.") <>
-          " " <> gettext("The changes below take effect on launch day.")
+        Sentences.join([
+          gettext("The launch date is published on the Stride changelog."),
+          gettext("The changes below take effect on launch day.")
+        ])
       ],
       sections: [
         free_boards_section(),
@@ -117,9 +123,10 @@ defmodule KanbanWeb.Emails.AnnouncementEmail do
   defp reviewers_section do
     {gettext("If you review tasks on a free board"),
      {:text,
-      gettext("Free accounts stop receiving notification emails on launch day.") <>
-        " " <>
-        gettext("Tasks waiting for you are always listed in the Review queue and My Work.")}}
+      Sentences.join([
+        gettext("Free accounts stop receiving notification emails on launch day."),
+        gettext("Tasks waiting for you are always listed in the Review queue and My Work.")
+      ])}}
   end
 
   defp questions_section do
@@ -132,10 +139,20 @@ defmodule KanbanWeb.Emails.AnnouncementEmail do
   # dead link; announcement_email_test.exs pins the rendered hrefs.
   defp links do
     [
-      {gettext("Read the changelog"), url(~p"/changelog")},
-      {gettext("Pricing"), url(~p"/pricing")},
-      {gettext("Terms of Service"), url(~p"/terms")}
+      {gettext("Read the changelog"), localized(url(~p"/changelog"))},
+      {gettext("Pricing"), localized(url(~p"/pricing"))},
+      {gettext("Contact us"), localized(url(~p"/pricing")) <> "#contact"},
+      {gettext("Terms of Service"), localized(url(~p"/terms"))},
+      {gettext("Review queue"), localized(url(~p"/review"))},
+      {gettext("My Work"), localized(url(~p"/my-work"))}
     ]
+  end
+
+  defp localized(url) do
+    case Gettext.get_locale(KanbanWeb.Gettext) do
+      "en" -> url
+      locale -> url <> "?" <> URI.encode_query(locale: locale)
+    end
   end
 
   defp render_html(content, links) do

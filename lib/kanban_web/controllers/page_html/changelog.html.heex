@@ -66,10 +66,9 @@
           )}
         </p>
         <p class="m-0 mt-2 text-[13px] leading-relaxed" style="color: var(--ink-2);">
-          <strong style="color: var(--ink);">
-            {gettext("Launch date: to be announced on this page.")}
-          </strong>
-          {gettext("The changes below take effect on launch day.")}
+          <strong style="color: var(--ink);">{gettext("Launch date: to be announced on this page.")}</strong>{KanbanWeb.Sentences.separator()}{gettext(
+            "The changes below take effect on launch day."
+          )}
         </p>
 
         <h3
@@ -133,8 +132,10 @@
           {gettext("If you review tasks on a free board")}
         </h3>
         <p class="m-0 text-[13px] leading-relaxed" style="color: var(--ink-2);">
-          {gettext("Free accounts stop receiving notification emails on launch day.")}
-          {gettext("Tasks waiting for you are always listed in the Review queue and My Work.")}
+          {KanbanWeb.Sentences.join([
+            gettext("Free accounts stop receiving notification emails on launch day."),
+            gettext("Tasks waiting for you are always listed in the Review queue and My Work.")
+          ])}
         </p>
         <p class="m-0 mt-2 flex flex-wrap gap-4 text-[13px] font-medium">
           <.link

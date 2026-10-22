@@ -378,6 +378,13 @@ defmodule KanbanWeb.PageControllerTest do
   end
 
   describe "GET /pricing" do
+    test "the hero says hosted Stride is free for individuals and small teams", %{conn: conn} do
+      body = conn |> get(~p"/pricing") |> html_response(200)
+
+      assert body =~ "free to use hosted for individuals and small teams"
+      refute body =~ "managed for you"
+    end
+
     test "shows exactly two plans, Free and Organization", %{conn: conn} do
       document = conn |> get(~p"/pricing") |> html_response(200) |> LazyHTML.from_document()
 
@@ -628,6 +635,35 @@ defmodule KanbanWeb.PageControllerTest do
       assert announcement |> LazyHTML.query("a[href='/pricing#contact']") |> Enum.count() == 1
       assert announcement |> LazyHTML.query("a[href='/review']") |> Enum.count() == 1
       assert announcement |> LazyHTML.query("a[href='/my-work']") |> Enum.count() == 1
+    end
+
+    test "joins its Japanese and Chinese sentences with no space after 。", %{conn: conn} do
+      for locale <- ~w(ja zh) do
+        text =
+          conn
+          |> init_test_session(%{locale: locale})
+          |> get(~p"/changelog")
+          |> html_response(200)
+          |> LazyHTML.from_document()
+          |> LazyHTML.query("[data-changelog-announcement] p")
+          |> Enum.map(&LazyHTML.text/1)
+
+        refute Enum.any?(text, &(&1 =~ ~r/。\s+\S/u)),
+               "space after 。 in the #{locale} announcement"
+      end
+    end
+
+    test "separates its sentences with a space in English", %{conn: conn} do
+      text =
+        conn
+        |> get(~p"/changelog")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+        |> LazyHTML.query("[data-changelog-announcement]")
+        |> LazyHTML.text()
+
+      assert text =~ "Launch date: to be announced on this page. The changes below take effect"
+      assert text =~ "on launch day. Tasks waiting for you"
     end
 
     test "renders under the app shell for a signed-in user", %{conn: conn} do

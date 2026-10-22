@@ -221,7 +221,7 @@ defmodule Kanban.Notifications.AnnouncementWorkerTest do
       assert :ok = perform_job(AnnouncementWorker, args(user))
 
       assert_email_sent(fn email ->
-        assert email.subject == "[Stride] Annonce : les organisations et l'offre Free"
+        assert email.subject == "[Stride] Annonce : les organisations et l'offre gratuite"
         assert email.text_body =~ "Lire le journal des modifications"
       end)
     end

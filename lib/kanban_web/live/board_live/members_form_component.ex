@@ -112,7 +112,7 @@ defmodule KanbanWeb.BoardLive.MembersFormComponent do
               href={~p"/pricing" <> "#contact"}
               style="color: var(--ink); font-weight: 500; text-decoration: underline; text-underline-offset: 2px;"
             >
-              {gettext("See paid plans")}
+              {gettext("Get Stride for your organization")}
             </.link>
           </p>
         </div>
