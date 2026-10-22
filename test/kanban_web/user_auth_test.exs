@@ -67,6 +67,48 @@ defmodule KanbanWeb.UserAuthTest do
       refute get_session(reauth, key)
     end
 
+    test "keeps a language chosen before signing in and stores it on the account",
+         %{conn: conn, user: user} do
+      conn = conn |> put_session(:locale, "de") |> UserAuth.log_in_user(user)
+
+      assert get_session(conn, :locale) == "de"
+      assert Repo.reload!(user).locale == "de"
+    end
+
+    test "a language chosen before signing in replaces the account's stored one",
+         %{conn: conn, user: user} do
+      {:ok, user} = Accounts.update_user_locale(user, "fr")
+
+      conn = conn |> put_session(:locale, "ja") |> UserAuth.log_in_user(user)
+
+      assert get_session(conn, :locale) == "ja"
+      assert Repo.reload!(user).locale == "ja"
+    end
+
+    test "loads the account's stored language when none was chosen before signing in",
+         %{conn: conn, user: user} do
+      {:ok, user} = Accounts.update_user_locale(user, "zh")
+
+      conn = UserAuth.log_in_user(conn, user)
+
+      assert get_session(conn, :locale) == "zh"
+    end
+
+    test "leaves the language unset when neither the session nor the account has one",
+         %{conn: conn, user: user} do
+      conn = UserAuth.log_in_user(conn, user)
+
+      refute get_session(conn, :locale)
+      refute Repo.reload!(user).locale
+    end
+
+    test "does not store an unsupported session language on the account",
+         %{conn: conn, user: user} do
+      conn |> put_session(:locale, "xx") |> UserAuth.log_in_user(user)
+
+      refute Repo.reload!(user).locale
+    end
+
     test "clears everything previously stored in the session", %{conn: conn, user: user} do
       conn = conn |> put_session(:to_be_removed, "value") |> UserAuth.log_in_user(user)
       refute get_session(conn, :to_be_removed)
@@ -160,6 +202,13 @@ defmodule KanbanWeb.UserAuthTest do
       assert %{max_age: 0} = conn.resp_cookies[@remember_me_cookie]
       assert redirected_to(conn) == ~p"/"
       refute Accounts.get_user_by_session_token(user_token)
+    end
+
+    test "clears the session language, so the next person on the browser does not inherit it",
+         %{conn: conn} do
+      conn = conn |> put_session(:locale, "de") |> UserAuth.log_out_user()
+
+      refute get_session(conn, :locale)
     end
 
     test "broadcasts to the given live_socket_id", %{conn: conn} do

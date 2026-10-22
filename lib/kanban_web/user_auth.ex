@@ -7,6 +7,7 @@ defmodule KanbanWeb.UserAuth do
 
   alias Kanban.Accounts
   alias Kanban.Accounts.Scope
+  alias Kanban.Accounts.User
   alias Kanban.Organizations
   alias Kanban.Plans
   alias Kanban.Workspaces.Current
@@ -46,6 +47,9 @@ defmodule KanbanWeb.UserAuth do
   Organization the user belongs to (single sign-on has just made them a
   member of the connection's Organization); any other sign-in clears the mark
   (`KanbanWeb.UserAuth.OrganizationTwoFactorGate.mark_session/2`).
+
+  A language chosen before signing in is kept and stored on the account;
+  without one, the account's stored language is loaded into the session.
   """
   def log_in_user(conn, user, params \\ %{}, opts \\ []) do
     user_return_to = get_session(conn, :user_return_to)
@@ -54,6 +58,7 @@ defmodule KanbanWeb.UserAuth do
 
     conn
     |> create_or_extend_session(user, params)
+    |> sync_locale(user)
     |> KanbanWeb.UserAuth.OrganizationTwoFactorGate.mark_session(sso_organization_id(user, opts))
     |> redirect(to: user_return_to || signed_in_path(conn))
   end
@@ -64,6 +69,17 @@ defmodule KanbanWeb.UserAuth do
       organization_id
     else
       _not_single_sign_on_or_no_membership -> nil
+    end
+  end
+
+  # The session's language is an explicit choice (only PageController.set_locale
+  # writes it), so it wins over the account's and is stored for the emails that
+  # render in it; Accounts.update_user_locale/2 refuses an unsupported value.
+  defp sync_locale(conn, %User{locale: stored} = user) do
+    case get_session(conn, :locale) do
+      nil -> KanbanWeb.Plugs.Locale.set_locale(conn, stored)
+      ^stored -> conn
+      chosen -> tap(conn, fn _ -> Accounts.update_user_locale(user, chosen) end)
     end
   end
 
@@ -198,12 +214,18 @@ defmodule KanbanWeb.UserAuth do
   #       |> put_session(:preferred_locale, preferred_locale)
   #     end
   #
-  defp renew_session(conn, _user) do
+  #
+  # Signing in keeps the chosen language: it is no fixation risk, and dropping
+  # it sent the user's announcement email in English. Signing out still clears
+  # it, so the next person on a shared browser does not inherit it.
+  defp renew_session(conn, user) do
     delete_csrf_token()
+    locale = user && get_session(conn, :locale)
 
     conn
     |> configure_session(renew: true)
     |> clear_session()
+    |> KanbanWeb.Plugs.Locale.set_locale(locale)
   end
 
   defp maybe_write_remember_me_cookie(conn, token, %{"remember_me" => "true"}, _),
