@@ -47,6 +47,149 @@ defmodule KanbanWeb.PageControllerTest do
     assert body =~ "privacy@letstango.ca"
   end
 
+  describe "GET /terms plans and termination" do
+    test "Fees and plans describes the free plan limits and the Organization agreement",
+         %{conn: conn} do
+      body = conn |> get(~p"/terms") |> html_response(200)
+
+      assert body =~ "a board can have up to 3 people, not counting AI agents"
+      assert body =~ "some features are available only to Organizations"
+
+      assert body =~
+               "The Organization plan is sold under a separate written agreement between us and your organization."
+
+      assert body =~
+               "Fees are invoiced outside the service, and Stride has no self-serve billing."
+
+      assert body =~
+               "Free-plan features and limits may change over time, for example when a feature becomes available only to Organizations. We will give advance notice before such a change takes effect."
+    end
+
+    test "Fees and plans no longer promises advance billing or an automatic downgrade",
+         %{conn: conn} do
+      body = conn |> get(~p"/terms") |> html_response(200)
+
+      refute body =~ "billed in advance"
+      refute body =~ "grace period"
+      refute body =~ "downgrade your account"
+    end
+
+    test "keeps the no-reduction promise for paid periods", %{conn: conn} do
+      body = conn |> get(~p"/terms") |> html_response(200)
+
+      assert body =~
+               "We will not materially reduce the core functionality of a paid plan during a period you have already paid for."
+    end
+
+    test "Termination says every user can delete their own account", %{conn: conn} do
+      body = conn |> get(~p"/terms") |> html_response(200)
+
+      assert body =~
+               "Every user, on the free plan or in an Organization, can delete their own account in their account settings."
+
+      assert body =~
+               "We may suspend or terminate your access if you materially breach these terms"
+    end
+
+    test "keeps every existing section heading", %{conn: conn} do
+      document = conn |> get(~p"/terms") |> html_response(200) |> LazyHTML.from_document()
+
+      headings =
+        document
+        |> LazyHTML.query("main h2")
+        |> Enum.map(&(&1 |> LazyHTML.text() |> String.trim()))
+
+      assert headings == [
+               "The service",
+               "Your account",
+               "Your content",
+               "AI agents and the attribution clause",
+               "Acceptable use",
+               "Fees and plans",
+               "Termination",
+               "Disclaimers",
+               "Limitation of liability",
+               "Changes to these terms",
+               "Contact us"
+             ]
+    end
+  end
+
+  # The Fees and plans and Termination copy is long, so each locale must render
+  # translated (not fall back to English) inside the same wrapping paragraph
+  # markup as English: a leading-relaxed <p> with no truncate or nowrap class.
+  # The locale is seeded into the session so KanbanWeb.Plugs.Locale runs.
+  @terms_translations %{
+    "de" => [
+      "Ein Board kann bis zu 3 Personen haben",
+      "kann sein eigenes Konto in seinen Kontoeinstellungen löschen"
+    ],
+    "es" => [
+      "un tablero puede tener hasta 3 personas",
+      "pueden eliminar su propia cuenta en la configuración de su cuenta"
+    ],
+    "fr" => [
+      "certaines fonctionnalités sont réservées aux organisations",
+      "peut supprimer son propre compte dans les paramètres de son compte"
+    ],
+    "ja" => ["一部の機能は組織でのみ利用できます", "アカウント設定から自分のアカウントを削除できます"],
+    "pt" => [
+      "um quadro pode ter até 3 pessoas",
+      "podem excluir a própria conta nas configurações da conta"
+    ],
+    "zh" => ["部分功能仅对组织开放", "都可以在账户设置中删除自己的账户"]
+  }
+
+  for {locale, expected} <- @terms_translations do
+    test "GET /terms renders the plans and termination copy translated under #{locale}",
+         %{conn: conn} do
+      document =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => unquote(locale)})
+        |> get(~p"/terms")
+        |> html_response(200)
+        |> LazyHTML.from_document()
+
+      paragraphs =
+        document
+        |> LazyHTML.query("main section p")
+        |> Enum.map(&{LazyHTML.text(&1), &1 |> LazyHTML.attribute("class") |> List.first("")})
+
+      for phrase <- unquote(expected) do
+        assert [{_text, class}] = Enum.filter(paragraphs, fn {text, _} -> text =~ phrase end),
+               "expected one #{unquote(locale)} paragraph containing #{inspect(phrase)} on /terms"
+
+        assert class =~ "leading-relaxed"
+        refute class =~ "truncate"
+        refute class =~ "nowrap"
+      end
+
+      text = document |> LazyHTML.query("main") |> LazyHTML.text()
+      refute text =~ "a board can have up to 3 people"
+      refute text =~ "can delete their own account in their account settings"
+    end
+  end
+
+  # The "Last updated" date is translated text, not an English constant, so a
+  # German reader sees a German month on every legal page.
+  for {path, localized, english} <- [
+        {"/terms", "21. Oktober 2026", "October 21, 2026"},
+        {"/acceptable-use", "11. Juni 2026", "June 11, 2026"},
+        {"/privacy", "14. Mai 2026", "May 14, 2026"},
+        {"/security", "14. Mai 2026", "May 14, 2026"}
+      ] do
+    test "GET #{path} shows the Last updated date with a German month under de", %{conn: conn} do
+      body =
+        conn
+        |> Plug.Test.init_test_session(%{"locale" => "de"})
+        |> get(unquote(path))
+        |> html_response(200)
+
+      assert body =~ "Zuletzt aktualisiert: #{unquote(localized)}"
+      refute body =~ unquote(english)
+    end
+  end
+
   test "GET /privacy", %{conn: conn} do
     conn = get(conn, ~p"/privacy")
     body = html_response(conn, 200)

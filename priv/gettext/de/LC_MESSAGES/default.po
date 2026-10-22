@@ -3511,7 +3511,7 @@ msgstr "Jetzt im Release →"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:157
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:196
-#: lib/kanban_web/controllers/page_html/terms.html.heex:161
+#: lib/kanban_web/controllers/page_html/terms.html.heex:176
 #, elixir-autogen, elixir-format
 msgid " and we will respond within a reasonable time."
 msgstr " und wir antworten innerhalb angemessener Zeit."
@@ -3778,7 +3778,7 @@ msgstr "Kontakt"
 
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:151
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:190
-#: lib/kanban_web/controllers/page_html/terms.html.heex:155
+#: lib/kanban_web/controllers/page_html/terms.html.heex:170
 #, elixir-autogen, elixir-format
 msgid "Contact us"
 msgstr "Kontaktieren Sie uns"
@@ -6933,12 +6933,12 @@ msgstr "KI-Agenten und die Zurechnungsklausel"
 msgid "Acceptable use"
 msgstr "Akzeptable Nutzung"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:144
+#: lib/kanban_web/controllers/page_html/terms.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "Changes to these terms"
 msgstr "Änderungen dieser Bedingungen"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:122
+#: lib/kanban_web/controllers/page_html/terms.html.heex:137
 #, elixir-autogen, elixir-format
 msgid "Disclaimers"
 msgstr "Haftungsausschlüsse"
@@ -6948,7 +6948,7 @@ msgstr "Haftungsausschlüsse"
 msgid "Fees and plans"
 msgstr "Gebühren und Tarife"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:133
+#: lib/kanban_web/controllers/page_html/terms.html.heex:148
 #, elixir-autogen, elixir-format
 msgid "Limitation of liability"
 msgstr "Haftungsbeschränkung"
@@ -6958,15 +6958,10 @@ msgstr "Haftungsbeschränkung"
 msgid "Notify us promptly if you suspect unauthorized access to your account."
 msgstr "Benachrichtigen Sie uns umgehend, wenn Sie einen unbefugten Zugriff auf Ihr Konto vermuten."
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:158
+#: lib/kanban_web/controllers/page_html/terms.html.heex:173
 #, elixir-autogen, elixir-format
 msgid "Questions about these terms? Email "
 msgstr "Fragen zu diesen Bedingungen? Schreiben Sie an "
-
-#: lib/kanban_web/controllers/page_html/terms.html.heex:103
-#, elixir-autogen, elixir-format
-msgid "Some parts of the service are offered under paid plans described on our pricing page. Fees are billed in advance, are non-refundable except where required by law, and may change with at least 30 days' notice before your next billing period. If you stop paying, we may downgrade your account to a free tier after a reasonable grace period."
-msgstr "Teile des Dienstes werden im Rahmen kostenpflichtiger Tarife angeboten, die auf unserer Preisseite beschrieben sind. Gebühren werden im Voraus abgerechnet, sind nicht erstattungsfähig, sofern nicht gesetzlich vorgeschrieben, und können sich mit einer Frist von mindestens 30 Tagen vor Ihrem nächsten Abrechnungszeitraum ändern. Wenn Sie die Zahlung einstellen, können wir Ihr Konto nach einer angemessenen Karenzzeit auf einen kostenlosen Tarif herabstufen."
 
 #: lib/kanban_web/controllers/page_html/terms.html.heex:78
 #, elixir-autogen, elixir-format
@@ -6978,7 +6973,7 @@ msgstr "Stride ist für KI-Agenten gebaut, die über API-Token handeln, die übe
 msgid "Stride provides kanban-style boards, tasks, goals, reviews, and an API designed for both people and AI agents to manage work. We may add, change, or remove features over time. We will not materially reduce the core functionality of a paid plan during a period you have already paid for."
 msgstr "Stride bietet Kanban-Boards, Aufgaben, Ziele, Reviews und eine API, die sowohl für Menschen als auch für KI-Agenten zur Verwaltung von Arbeit konzipiert ist. Wir können Funktionen im Laufe der Zeit hinzufügen, ändern oder entfernen. Wir werden die Kernfunktionalität eines kostenpflichtigen Tarifs während eines bereits bezahlten Zeitraums nicht wesentlich einschränken."
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:111
+#: lib/kanban_web/controllers/page_html/terms.html.heex:121
 #, elixir-autogen, elixir-format
 msgid "Termination"
 msgstr "Kündigung"
@@ -6988,7 +6983,7 @@ msgstr "Kündigung"
 msgid "The service"
 msgstr "Der Dienst"
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:125
+#: lib/kanban_web/controllers/page_html/terms.html.heex:140
 #, elixir-autogen, elixir-format
 msgid "The service is provided \"as is\" and \"as available\", without warranties of any kind, express or implied, including merchantability, fitness for a particular purpose, and non-infringement. We do not warrant that the service will be uninterrupted, error-free, or secure, or that work performed by AI agents through the service will be correct or fit for your purposes."
 msgstr "Der Dienst wird „wie besehen“ und „wie verfügbar“ bereitgestellt, ohne Gewährleistungen jeglicher Art, weder ausdrücklich noch stillschweigend, einschließlich der Marktgängigkeit, der Eignung für einen bestimmten Zweck und der Nichtverletzung von Rechten. Wir gewährleisten nicht, dass der Dienst ununterbrochen, fehlerfrei oder sicher ist oder dass von KI-Agenten über den Dienst ausgeführte Arbeit korrekt oder für Ihre Zwecke geeignet ist."
@@ -6998,12 +6993,12 @@ msgstr "Der Dienst wird „wie besehen“ und „wie verfügbar“ bereitgestell
 msgid "These Terms of Service govern your use of Stride, the task-management platform available as a hosted service at stridelikeaboss.com. By creating an account or using the service, you agree to these terms. If you do not agree, do not use the service. If you self-host Stride on your own infrastructure, the open-source license that accompanies the code governs your use instead of these terms."
 msgstr "Diese Nutzungsbedingungen regeln Ihre Nutzung von Stride, der Aufgabenverwaltungsplattform, die als gehosteter Dienst unter stridelikeaboss.com verfügbar ist. Mit der Erstellung eines Kontos oder der Nutzung des Dienstes stimmen Sie diesen Bedingungen zu. Wenn Sie nicht einverstanden sind, nutzen Sie den Dienst nicht. Wenn Sie Stride auf Ihrer eigenen Infrastruktur selbst hosten, gilt für Ihre Nutzung die Open-Source-Lizenz, die dem Code beiliegt, anstelle dieser Bedingungen."
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:136
+#: lib/kanban_web/controllers/page_html/terms.html.heex:151
 #, elixir-autogen, elixir-format
 msgid "To the maximum extent permitted by law, we will not be liable for indirect, incidental, special, consequential, or punitive damages, or for lost profits, revenues, or data, arising out of or related to the service. Our total liability for any claim arising out of these terms is limited to the amount you paid us for the service in the twelve months before the claim arose, or one hundred US dollars if you paid nothing. Nothing in these terms limits liability that cannot be limited by law."
 msgstr "Soweit gesetzlich zulässig, haften wir nicht für indirekte, zufällige, besondere, Folge- oder Strafschäden oder für entgangene Gewinne, Einnahmen oder Daten, die aus dem Dienst entstehen oder damit zusammenhängen. Unsere Gesamthaftung für Ansprüche aus diesen Bedingungen ist auf den Betrag begrenzt, den Sie uns in den zwölf Monaten vor Entstehung des Anspruchs für den Dienst gezahlt haben, oder auf einhundert US-Dollar, wenn Sie nichts gezahlt haben. Nichts in diesen Bedingungen beschränkt eine Haftung, die gesetzlich nicht beschränkt werden kann."
 
-#: lib/kanban_web/controllers/page_html/terms.html.heex:147
+#: lib/kanban_web/controllers/page_html/terms.html.heex:162
 #, elixir-autogen, elixir-format
 msgid "We may update these terms from time to time. When we make material changes, we will note the new effective date at the top of this page and, where appropriate, notify you by email or in-app banner before the change takes effect. Continued use of the service after a change takes effect constitutes acceptance of the revised terms."
 msgstr "Wir können diese Bedingungen von Zeit zu Zeit aktualisieren. Bei wesentlichen Änderungen vermerken wir das neue Inkrafttretensdatum oben auf dieser Seite und benachrichtigen Sie, wo angemessen, per E-Mail oder In-App-Banner, bevor die Änderung wirksam wird. Die fortgesetzte Nutzung des Dienstes nach Inkrafttreten einer Änderung gilt als Annahme der überarbeiteten Bedingungen."
@@ -7017,11 +7012,6 @@ msgstr "Sie sind für den Schutz Ihres Passworts und aller über Ihr Konto ausge
 #, elixir-autogen, elixir-format
 msgid "You are responsible for the content you and your agents submit, and you represent that you have the rights necessary to share it."
 msgstr "Sie sind für die Inhalte verantwortlich, die Sie und Ihre Agenten einreichen, und Sie versichern, dass Sie über die erforderlichen Rechte verfügen, sie zu teilen."
-
-#: lib/kanban_web/controllers/page_html/terms.html.heex:114
-#, elixir-autogen, elixir-format
-msgid "You may stop using the service and delete your account at any time. We may suspend or terminate your access if you materially breach these terms, if required by law, or if we discontinue the service — in which case we will give you reasonable advance notice and a way to export your data. Sections of these terms that by their nature should survive termination (such as ownership, disclaimers, and limitation of liability) do survive."
-msgstr "Sie können die Nutzung des Dienstes jederzeit beenden und Ihr Konto löschen. Wir können Ihren Zugang sperren oder kündigen, wenn Sie diese Bedingungen wesentlich verletzen, wenn dies gesetzlich vorgeschrieben ist oder wenn wir den Dienst einstellen — in diesem Fall geben wir Ihnen eine angemessene Vorankündigung und eine Möglichkeit, Ihre Daten zu exportieren. Abschnitte dieser Bedingungen, die ihrer Natur nach die Kündigung überdauern sollten (wie Eigentum, Haftungsausschlüsse und Haftungsbeschränkung), bleiben bestehen."
 
 #: lib/kanban_web/controllers/page_html/terms.html.heex:47
 #, elixir-autogen, elixir-format
@@ -12872,3 +12862,44 @@ msgstr "Wenn Sie Ihr Team in eine Organisation verschieben oder nach Preisen fra
 #, elixir-autogen, elixir-format
 msgid "webhooks on free boards are paused, not deleted, and resume when the board moves into an organization. Events that happen while paused are not delivered later."
 msgstr "Webhooks auf kostenlosen Boards werden pausiert, nicht gelöscht, und laufen wieder an, sobald das Board in eine Organisation wechselt. Während der Pause ausgelöste Ereignisse werden nicht nachgeliefert."
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:113
+#, elixir-autogen, elixir-format
+msgid "Free-plan features and limits may change over time, for example when a feature becomes available only to Organizations. We will give advance notice before such a change takes effect."
+msgstr "Funktionen und Grenzen des kostenlosen Plans können sich im Laufe der Zeit ändern, zum Beispiel wenn eine Funktion nur noch für Organisationen verfügbar wird. Wir kündigen eine solche Änderung an, bevor sie wirksam wird."
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:103
+#, elixir-autogen, elixir-format
+msgid "Stride offers a free plan and an Organization plan, both described on our pricing page. The free plan has stated limits: a board can have up to 3 people, not counting AI agents, and some features are available only to Organizations."
+msgstr "Stride bietet einen kostenlosen Plan und einen Organisationsplan an, die beide auf unserer Preisseite beschrieben sind. Für den kostenlosen Plan gelten festgelegte Grenzen: Ein Board kann bis zu 3 Personen haben, KI-Agenten nicht mitgezählt, und einige Funktionen sind nur für Organisationen verfügbar."
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:129
+#, elixir-autogen, elixir-format
+msgid "We may suspend or terminate your access if you materially breach these terms, if required by law, or if we discontinue the service — in which case we will give you reasonable advance notice and a way to export your data. Sections of these terms that by their nature should survive termination (such as ownership, disclaimers, and limitation of liability) do survive."
+msgstr "Wir können Ihren Zugang sperren oder kündigen, wenn Sie diese Bedingungen wesentlich verletzen, wenn dies gesetzlich vorgeschrieben ist oder wenn wir den Dienst einstellen — in diesem Fall geben wir Ihnen eine angemessene Vorankündigung und eine Möglichkeit, Ihre Daten zu exportieren. Abschnitte dieser Bedingungen, die ihrer Natur nach die Kündigung überdauern sollten (wie Eigentum, Haftungsausschlüsse und Haftungsbeschränkung), bleiben bestehen."
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:124
+#, elixir-autogen, elixir-format
+msgid "You may stop using the service at any time. Every user, on the free plan or in an Organization, can delete their own account in their account settings. If you are the sole owner of a board other people use, transfer its ownership first; if you are the last org-admin of an Organization with other members, another org-admin must be appointed first."
+msgstr "Sie können die Nutzung des Dienstes jederzeit beenden. Jeder Benutzer, ob im kostenlosen Plan oder in einer Organisation, kann sein eigenes Konto in seinen Kontoeinstellungen löschen. Wenn Sie der alleinige Eigentümer eines Boards sind, das andere Personen nutzen, übertragen Sie zuerst dessen Eigentum; wenn Sie der letzte Org-Admin einer Organisation mit weiteren Mitgliedern sind, muss zuerst ein anderer Org-Admin ernannt werden."
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:108
+#, elixir-autogen, elixir-format
+msgid "The Organization plan is sold under a separate written agreement between us and your organization. Its fees, payment terms and duration are set in that agreement. Fees are invoiced outside the service, and Stride has no self-serve billing. Renewal, non-payment and the end of an Organization plan are governed by that agreement."
+msgstr "Der Organisationsplan wird im Rahmen einer separaten schriftlichen Vereinbarung zwischen uns und Ihrer Organisation verkauft. Seine Gebühren, Zahlungsbedingungen und Laufzeit werden in dieser Vereinbarung festgelegt. Die Gebühren werden außerhalb des Dienstes in Rechnung gestellt, und Stride bietet keine Selbstbedienungs-Abrechnung. Verlängerung, Nichtzahlung und das Ende eines Organisationsplans richten sich nach dieser Vereinbarung."
+
+#: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "June 11, 2026"
+msgstr "11. Juni 2026"
+
+#: lib/kanban_web/controllers/page_html/privacy.html.heex:8
+#: lib/kanban_web/controllers/page_html/security.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "May 14, 2026"
+msgstr "14. Mai 2026"
+
+#: lib/kanban_web/controllers/page_html/terms.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "October 21, 2026"
+msgstr "21. Oktober 2026"

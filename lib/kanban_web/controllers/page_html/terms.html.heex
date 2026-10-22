@@ -5,7 +5,7 @@
         {gettext("Terms of Service")}
       </h1>
       <p class="text-sm text-base-content opacity-80 mb-10">
-        {gettext("Last updated: %{date}", date: "June 11, 2026")}
+        {gettext("Last updated: %{date}", date: gettext("October 21, 2026"))}
       </p>
 
       <div class="prose prose-lg max-w-none">
@@ -99,9 +99,19 @@
           <h2 class="text-2xl font-semibold text-base-content mb-4">
             {gettext("Fees and plans")}
           </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "Stride offers a free plan and an Organization plan, both described on our pricing page. The free plan has stated limits: a board can have up to 3 people, not counting AI agents, and some features are available only to Organizations."
+            )}
+          </p>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "The Organization plan is sold under a separate written agreement between us and your organization. Its fees, payment terms and duration are set in that agreement. Fees are invoiced outside the service, and Stride has no self-serve billing. Renewal, non-payment and the end of an Organization plan are governed by that agreement."
+            )}
+          </p>
           <p class="text-base-content opacity-70 leading-relaxed">
             {gettext(
-              "Some parts of the service are offered under paid plans described on our pricing page. Fees are billed in advance, are non-refundable except where required by law, and may change with at least 30 days' notice before your next billing period. If you stop paying, we may downgrade your account to a free tier after a reasonable grace period."
+              "Free-plan features and limits may change over time, for example when a feature becomes available only to Organizations. We will give advance notice before such a change takes effect."
             )}
           </p>
         </section>
@@ -110,9 +120,14 @@
           <h2 class="text-2xl font-semibold text-base-content mb-4">
             {gettext("Termination")}
           </h2>
+          <p class="text-base-content opacity-70 leading-relaxed mb-4">
+            {gettext(
+              "You may stop using the service at any time. Every user, on the free plan or in an Organization, can delete their own account in their account settings. If you are the sole owner of a board other people use, transfer its ownership first; if you are the last org-admin of an Organization with other members, another org-admin must be appointed first."
+            )}
+          </p>
           <p class="text-base-content opacity-70 leading-relaxed">
             {gettext(
-              "You may stop using the service and delete your account at any time. We may suspend or terminate your access if you materially breach these terms, if required by law, or if we discontinue the service — in which case we will give you reasonable advance notice and a way to export your data. Sections of these terms that by their nature should survive termination (such as ownership, disclaimers, and limitation of liability) do survive."
+              "We may suspend or terminate your access if you materially breach these terms, if required by law, or if we discontinue the service — in which case we will give you reasonable advance notice and a way to export your data. Sections of these terms that by their nature should survive termination (such as ownership, disclaimers, and limitation of liability) do survive."
             )}
           </p>
         </section>
