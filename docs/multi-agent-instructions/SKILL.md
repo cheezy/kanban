@@ -8,6 +8,8 @@ metadata:
   api_base: https://www.stridelikeaboss.com
 ---
 
+> **Historical file, no longer maintained.** No Stride endpoint serves this file, and it does not track current API behaviour. Install the Stride plugin for your tool instead: see [Multi-Agent Instructions](../MULTI-AGENT-INSTRUCTIONS.md).
+
 ## STOP — orchestrator check
 
 If you arrived here directly from a user prompt, you are in the wrong skill.

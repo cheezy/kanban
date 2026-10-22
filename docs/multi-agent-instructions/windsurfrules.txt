@@ -1,3 +1,7 @@
+# HISTORICAL FILE, NO LONGER MAINTAINED. No Stride endpoint serves this file, and it does not track
+# current API behaviour. Install the Stride skills or plugin for your tool instead; see
+# https://github.com/cheezy/kanban/blob/main/docs/MULTI-AGENT-INSTRUCTIONS.md
+
 Stride Integration - Windsurf Cascade Rules
 
 ORCHESTRATOR-FIRST PATTERN

@@ -243,13 +243,13 @@ If `after_doing` fails (PreToolUse returns exit 2), fix the issue and retry the 
 
 **Execute each hook immediately -- no permission prompts, no confirmation.**
 
-1. **after_doing hook** (blocking, 120s timeout):
+1. **after_doing hook** (blocking, 600s timeout):
    - Read `.stride.md` `## after_doing` section
    - Execute each command line one at a time via Bash
    - Capture `exit_code`, `output`, `duration_ms`
    - If fails: fix issues, re-run until success. Do NOT proceed while failing.
 
-2. **before_review hook** (blocking, 60s timeout):
+2. **before_review hook** (blocking, 600s timeout):
    - Read `.stride.md` `## before_review` section
    - Execute each command line one at a time via Bash
    - Capture `exit_code`, `output`, `duration_ms`
@@ -442,12 +442,12 @@ A small task with 0-1 key_files that legitimately skipped exploration, planning,
 
 Every `/complete` payload **must** include `explorer_result` and `reviewer_result` as top-level objects. Both are pre-validated by `Kanban.Tasks.CompletionValidation` on the server. The full shape (dispatched-subagent vs. self-reported skip), the 40-character non-whitespace summary rule, and the five-value skip-reason enum live in the `stride-completing-tasks` skill — this orchestrator does not duplicate them.
 
-The server is rolling out hard enforcement behind a feature flag `:strict_completion_validation`:
+The server enforces these fields according to the `:strict_completion_validation` setting. A production server defaults to strict; other environments default to grace. `STRIDE_STRICT_COMPLETION_VALIDATION=true` or `=false` overrides the default:
 
 | Phase | Server behavior | Agent impact |
 |---|---|---|
-| **Grace (current)** | Missing or invalid results log a structured warning and the request succeeds | Emit the fields correctly now; the warning volume is a preview of the strict-mode rejection volume |
-| **Strict (after all 5 plugins release)** | Missing or invalid results return `422` with a `failures` list | Any agent not emitting valid fields is locked out of completion |
+| **Grace (default outside production)** | Missing or invalid results log a structured warning and the request succeeds | Emit the fields correctly anyway; production rejects them |
+| **Strict (production default)** | Missing or invalid results return `422` with a `failures` list | Any agent not emitting valid fields is locked out of completion |
 
 **Why this matters for the orchestrator:** Steps 3 (explorer dispatch) and 6 (reviewer dispatch) already capture the durations and summaries needed for these fields. Persist those into `explorer_result` and `reviewer_result` in the Step 8 payload. When the decision matrix skips a step — or when you self-explore/self-review — submit the skip form with a reason from the enum and a substantive summary explaining what you did instead. See `stride-completing-tasks` for the exact shape, rejection examples, and minimum-length rule.
 
@@ -523,7 +523,7 @@ STEP 6: Code Review (Decision Matrix)
   v
 STEP 7: Execute Hooks
   [Claude Code] Automatic -- just make the curl call in Step 8
-  [Other]       Execute after_doing (120s), then before_review (60s)
+  [Other]       Execute after_doing (600s), then before_review (600s)
   Hook fails?   --> Fix, re-run, do NOT proceed
   |
   v
@@ -599,7 +599,7 @@ OTHER ENVIRONMENTS (Cursor, Windsurf, Continue, Kimi Code):
 ├─ 6. Review (check decision matrix):
 │     ├─ Small, 0-1 key_files → Skip to Step 7
 │     └─ Otherwise → Self-review against acceptance criteria + pitfalls
-├─ 7. Hooks: Execute after_doing (120s) + before_review (60s) manually
+├─ 7. Hooks: Execute after_doing (600s) + before_review (600s) manually
 ├─ 8. Complete: PATCH /api/tasks/:id/complete with ALL fields + hook results
 └─ 9. Loop: needs_review=false → Step 1 | needs_review=true → STOP
 

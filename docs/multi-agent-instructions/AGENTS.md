@@ -28,7 +28,7 @@ WORKFLOW (Claim → Explore → Implement → Review → Complete):
 ├─ 5. Review (check decision matrix):
 │     ├─ Small, 0-1 key_files → Skip to Step 6
 │     └─ Otherwise → Self-review against acceptance criteria + pitfalls
-├─ 6. Hooks: Execute after_doing (120s) + before_review (60s) manually
+├─ 6. Hooks: Execute after_doing + before_review manually (600s timeout each)
 ├─ 7. Complete: PATCH /api/tasks/:id/complete with ALL required fields + hook results
 └─ 8. Loop: needs_review=false → Step 1 | needs_review=true → STOP
 ```
@@ -55,12 +55,13 @@ Before calling the completion endpoint, verify ALL of these:
 
 ## Hook Execution (MANDATORY)
 
-Stride enforces workflow discipline through four client-side hooks that execute on your machine:
+Stride enforces workflow discipline through client-side hooks that execute on your machine. The server reports every hook as blocking with a 600-second (10-minute) timeout:
 
-- **before_doing** (60s, blocking) - Execute before starting work (pull code, setup)
-- **after_doing** (120s, blocking) - Execute after work, BEFORE calling complete endpoint (tests, lint)
-- **before_review** (60s, blocking) - Execute BEFORE calling complete endpoint (create PR, docs)
-- **after_review** (60s, blocking) - Execute after approval (merge, deploy)
+- **before_doing** (600s, blocking) - Execute before starting work (pull code, setup)
+- **after_doing** (600s, blocking) - Execute after work, BEFORE calling complete endpoint (tests, lint)
+- **before_review** (600s, blocking) - Execute BEFORE calling complete endpoint (create PR, docs)
+- **after_review** (600s, blocking) - Execute after approval (merge, deploy)
+- **after_goal** (600s, blocking) - Execute once, when the last task of a goal completes
 
 **CRITICAL:** Execute BOTH `after_doing` AND `before_review` hooks BEFORE calling the task completion endpoint. The API requires both `after_doing_result` and `before_review_result` in the completion request. Hook validation failures must prevent task completion.
 
@@ -72,7 +73,7 @@ Every `/api/tasks/:id/complete` call **must** include three additional top-level
 - **`reviewer_result`** — same shape as `explorer_result`. Use skip-form with `reason: "self_reported_review"` and a 40+ char summary describing what you checked.
 - **`workflow_steps`** — array of six telemetry entries, one per phase (`explorer`, `planner`, `implementation`, `reviewer`, `after_doing`, `before_review`), each with `{name, dispatched, duration_ms}` for dispatched steps and `{name, dispatched: false, reason}` for skipped steps.
 
-Rollout status: currently **grace mode** — missing or invalid payloads log a warning and succeed. When `:strict_completion_validation` flips, missing/invalid payloads return `422`. Emit the fields correctly now. For the exact shape, skip-reason enum (5 values), 40-char rule, and 422 rejection format, see the full schema in `stride-completing-tasks/SKILL.md` at the URL listed under Documentation Links.
+Validation mode: a production server defaults to **strict mode** (the `:strict_completion_validation` setting), so a missing or invalid `explorer_result` or `reviewer_result` returns `422`. Outside production the default is grace mode, where those payloads log a warning and succeed. `STRIDE_STRICT_COMPLETION_VALIDATION=true` or `=false` overrides the default in any environment. A dispatched review that is present but incomplete is rejected in either mode. Emit the fields correctly. For the exact shape, skip-reason enum (5 values), 40-char rule, and 422 rejection format, see the full schema in `stride-completing-tasks/SKILL.md` at the URL listed under Documentation Links.
 
 ## Top 5 Critical Mistakes to Avoid
 

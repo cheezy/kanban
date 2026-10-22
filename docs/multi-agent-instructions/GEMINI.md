@@ -1,5 +1,7 @@
 # Stride Integration - Gemini Code Assist Instructions
 
+> **Historical file, no longer maintained.** No Stride endpoint serves this file, and it does not track current API behaviour. Install the Stride plugin for your tool instead: see [Multi-Agent Instructions](../MULTI-AGENT-INSTRUCTIONS.md).
+
 ## ORCHESTRATOR-FIRST PATTERN
 
 For any Stride task work, the entry point is the `stride-workflow` skill. Every task should be claimed, explored, implemented, reviewed, and completed through that single lifecycle: **claim → explore → implement → review → complete**. The supporting skills (`stride-claiming-tasks`, `stride-completing-tasks`, `stride-creating-tasks`, `stride-creating-goals`, `stride-enriching-tasks`, `stride-subagent-workflow`) document API contracts and per-phase rules, but they are dispatched from inside `stride-workflow`, not invoked directly. On Gemini CLI the stride-gemini plugin provides a runtime gate via `BeforeTool(activate_skill)`; without that plugin, the discipline is on the agent. When the user says "claim a task" or "complete this task", follow the lifecycle below — do not read or apply sub-skill contracts independently.

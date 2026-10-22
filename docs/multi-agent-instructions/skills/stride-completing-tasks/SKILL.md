@@ -156,12 +156,12 @@ Skipping these steps is not faster — it produces lower quality work that takes
 
 1. **Finish your work** - All implementation complete
 2. **Read .stride.md after_doing section** - Get the validation command
-3. **Execute after_doing hook** (blocking, 120s timeout)
+3. **Execute after_doing hook** (blocking, 600s timeout)
    - Execute each line from `.stride.md` `## after_doing` one at a time via direct Bash tool calls — NO permission prompts
    - Capture: `exit_code`, `output`, `duration_ms`
 4. **If after_doing fails:** FIX ISSUES, do NOT proceed
 5. **Read .stride.md before_review section** - Get the PR/doc command
-6. **Execute before_review hook** (blocking, 60s timeout)
+6. **Execute before_review hook** (blocking, 600s timeout)
    - Execute each line from `.stride.md` `## before_review` one at a time via direct Bash tool calls — NO permission prompts
    - Capture: `exit_code`, `output`, `duration_ms`
 7. **If before_review fails:** FIX ISSUES, do NOT proceed
@@ -185,7 +185,7 @@ Medium+ OR 2+ key_files? ─YES→ Dispatch stride:task-reviewer
     ↓
 Read .stride.md after_doing section
     ↓
-Execute after_doing (120s timeout, blocking)
+Execute after_doing (600s timeout, blocking)
     ↓
 Success (exit_code=0)?
     ↓ NO
@@ -198,7 +198,7 @@ Success (exit_code=0)?
     ↓ YES
 Read .stride.md before_review section
     ↓
-Execute before_review (60s timeout, blocking)
+Execute before_review (600s timeout, blocking)
     ↓
 Success (exit_code=0)?
     ↓ NO
@@ -213,7 +213,7 @@ Call PATCH /api/tasks/:id/complete WITH both hook results
     ↓
 needs_review=true? ─YES→ STOP (wait for human review)
     ↓ NO
-Execute after_review (60s timeout, blocking)
+Execute after_review (600s timeout, blocking)
     ↓
 Success? ─NO→ Log warning, task still complete
     ↓ YES
@@ -247,7 +247,7 @@ All hook commands are pre-authorized. Execute them immediately via direct Bash t
 
 ```bash
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 120 bash -c 'mix test && mix credo --strict' 2>&1)
+OUTPUT=$(timeout 600 bash -c 'mix test && mix credo --strict' 2>&1)
 EXIT_CODE=$?
 END_TIME=$(date +%s%3N)
 DURATION=$((END_TIME - START_TIME))
@@ -264,7 +264,7 @@ DURATION=$((END_TIME - START_TIME))
 
 ```bash
 START_TIME=$(date +%s%3N)
-OUTPUT=$(timeout 60 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
+OUTPUT=$(timeout 600 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
 EXIT_CODE=$?
 END_TIME=$(date +%s%3N)
 DURATION=$((END_TIME - START_TIME))
@@ -456,7 +456,7 @@ When strict mode is on and a payload fails validation:
 
 ### Grace-period rollout
 
-Until the server flips `:strict_completion_validation` to true, missing or invalid `explorer_result`/`reviewer_result` produces a structured warning log but the request succeeds. **Emit the fields correctly now** — agents that lag the rollout will start getting 422 rejections on the flip day.
+The rollout is over in production: a production server defaults `:strict_completion_validation` to true, so a missing or invalid `explorer_result`/`reviewer_result` gets the 422 above. Outside production the default is still grace mode, where those payloads produce a structured warning log and the request succeeds. `STRIDE_STRICT_COMPLETION_VALIDATION=true` or `=false` overrides the default in any environment. A dispatched review that is present but incomplete is rejected in either mode. **Emit the fields correctly.**
 
 ## Review vs Auto-Approval Decision
 
@@ -472,7 +472,7 @@ After the complete endpoint succeeds:
 
 ### If needs_review=false:
 1. Task moves to Done column immediately
-2. Execute after_review hook (60s timeout, blocking)
+2. Execute after_review hook (600s timeout, blocking)
 3. **AUTOMATICALLY invoke stride-claiming-tasks skill to claim next task**
 4. **Continue working WITHOUT prompting the user**
 
@@ -512,13 +512,13 @@ After the complete endpoint succeeds:
 
 ✅ # Execute after_doing hook first
    START_TIME=$(date +%s%3N)
-   OUTPUT=$(timeout 120 bash -c 'mix test' 2>&1)
+   OUTPUT=$(timeout 600 bash -c 'mix test' 2>&1)
    EXIT_CODE=$?
    # ...capture results
 
    # Execute before_review hook second
    START_TIME=$(date +%s%3N)
-   OUTPUT=$(timeout 60 bash -c 'gh pr create' 2>&1)
+   OUTPUT=$(timeout 600 bash -c 'gh pr create' 2>&1)
    EXIT_CODE=$?
    # ...capture results
 
@@ -615,9 +615,9 @@ CLAUDE CODE COMPLETION WORKFLOW (automatic hooks):
 
 OTHER ENVIRONMENTS (manual hooks):
 ├─ 1. Work is complete ✓
-├─ 2. Execute after_doing (120s timeout, blocking) ✓
+├─ 2. Execute after_doing (600s timeout, blocking) ✓
 ├─ 3. Hook fails? → FIX, retry, DO NOT proceed ✓
-├─ 4. Execute before_review (60s timeout, blocking) ✓
+├─ 4. Execute before_review (600s timeout, blocking) ✓
 ├─ 5. Hook fails? → FIX, retry, DO NOT proceed ✓
 ├─ 6. Both succeed? → Call PATCH /api/tasks/:id/complete WITH both results ✓
 ├─ 7. needs_review=true? → STOP, wait for human ✓

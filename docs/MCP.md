@@ -106,7 +106,7 @@ names and types are the same as in the REST API's
 |---|---|---|
 | `stride_next_task` | [GET /api/tasks/next](api/get_tasks_next.md) | `skills_version`, `response_view` |
 | `stride_claim_task` | [POST /api/tasks/claim](api/post_tasks_claim.md) | `before_doing_result` (required), `identifier`, `agent_name`, `skills_version` |
-| `stride_complete_task` | [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md) | `id`, `after_doing_result`, `before_review_result`, `reviewer_result` (required), plus every other completion field |
+| `stride_complete_task` | [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md) | `id`, `after_doing_result`, `before_review_result`, `reviewer_result` (all four required), plus `explorer_result`, `workflow_steps`, `agent_name`, `skills_version`, `time_spent_minutes`, `completion_summary`, `completion_notes`, `actual_complexity`, `actual_files_changed`, `review_report`, `response_view` and every other completion field |
 | `stride_get_task` | [GET /api/tasks/:id](api/get_tasks_id.md) | `id` (required), `response_view` |
 | `stride_list_tasks` | [GET /api/tasks](api/get_tasks.md) (paginated mode) | `limit`, `cursor`, `status`, `type`, `priority`, `assigned_to_id`, `parent`, `updated_since`, `column_id`, `label`, `response_view` |
 | `stride_add_comment` | [POST /api/tasks/:id/comments](api/post_tasks_id_comments.md) | `id`, `content` (both required), `agent_name` |
@@ -114,6 +114,20 @@ names and types are the same as in the REST API's
 Notes:
 
 - **`id`** is a task identifier such as `W14`, or a numeric task id.
+- **Limits in the schemas:** `limit` is 1 to 200 (the server uses 50 when it is
+  omitted; the schema itself declares no default), `content` is 1
+  to 10,000 characters, `label` is 1 to 40 characters, `parent` and the
+  comment tool's `agent_name` are at most 255 characters, and
+  `completion_notes` is at most 65,535 characters. `stride_complete_task`
+  accepts arguments its schema does not name and passes them on to the
+  completion endpoint; the other five tools refuse any argument they do not
+  list.
+- **`reviewer_result` is always required here.** The REST endpoint accepts a
+  completion without it when the server runs in grace mode, but the MCP tool's
+  schema refuses the call with `-32602` first.
+- **`response_view`** defaults to `full` for `stride_next_task` and
+  `stride_get_task`, and to `slim` for `stride_complete_task` and
+  `stride_list_tasks`.
 - **Integer arguments** also accept a number with a zero fractional part, such
   as `5.0`, as JSON Schema does.
 - **Hooks still run on your machine.** `stride_claim_task` returns the
@@ -205,16 +219,18 @@ returned: the claimed task under `data` and the `before_doing` hook under
 
 ## Errors
 
-There are two kinds of failure.
+There are two kinds of failure, plus the authentication refusals the whole
+API shares.
 
 **Protocol errors** are JSON-RPC errors:
 
 | Code | Meaning | HTTP status |
 |---|---|---|
-| `-32700` | The body is not valid JSON | 400 |
-| `-32600` | The body is not a valid JSON-RPC request, the batch is empty or holds more than 50 messages, or the `Content-Type` is not `application/json` (form and multipart bodies included) | 400 |
+| `-32700` | The body is not valid JSON. An empty body is read as an empty JSON object and gets `-32600` instead | 400 |
+| `-32600` | The body is not a valid JSON-RPC request, the batch is empty or holds more than 50 messages, the `Content-Type` is not `application/json` (form and multipart bodies included), or the `MCP-Protocol-Version` header names a version the server does not support. Inside a batch, an invalid message gets its own `-32600` in the `200` response. | 400 |
 | `-32601` | Unknown method | 200 |
-| `-32602` | Unknown tool, or arguments that do not match the tool's `inputSchema`. `error.data.errors` names each failing argument by path | 200 |
+| `-32602` | Unknown tool, or arguments that do not match the tool's `inputSchema`; `error.data.errors` then names each failing argument by path. A `tools/call` whose `params.name` is not a string, or whose `arguments` is not an object, gets `-32602` with only a message and no `error.data` | 200 |
+| `-32000` | `GET` or `DELETE /api/mcp` (`"Method not allowed"`, with `Allow: POST`), or an `Origin` header that is not Stride's own (`"Forbidden origin"`) | 405 or 403 |
 | `-32001` | The token's board needs an Organization while paid plans are enforced (see [Authentication](#authentication)). The message is fixed text, and `error.data.feature` is `"mcp"`. In a batch, each request gets its own error | 200 |
 
 **Tool failures** come back as a successful JSON-RPC response whose result has
@@ -234,6 +250,18 @@ completion gate. The text is the REST error body, plus two fields:
 
 A task on another board is reported as not found, the same way the REST API
 reports it.
+
+**Authentication refusals** are not JSON-RPC at all. The token check runs
+before the MCP server, so its refusals are the plain JSON bodies every API
+route returns, with no `jsonrpc`, `id` or `error.code`: `401` for a missing or
+invalid token, `429` after too many failed attempts, `400` for a board
+selector (`X-Stride-Board` or `board_id`) that is required, conflicting or
+does not match a board token, and `404` for a selector naming a board that does
+not exist. For example:
+
+```json
+{"error": "Board selector does not match token", "message": "A board token acts only on the board it was created for. ..."}
+```
 
 ## Related Documentation
 

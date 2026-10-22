@@ -9,8 +9,9 @@ under the audience it is written for, with one line saying what it is for.
   start with Getting Started with AI Agents, the first entry under End users,
   which walks from a new board to a connected agent. Whoever builds or
   maintains the agent integration goes on to the AI agent integrators group.
-- The last group, Historical records, holds plans, requirements, findings and
-  validation runs. They are records of a point in time, not current guidance.
+- The last group, Historical records, holds plans, requirements, findings,
+  validation runs and retired instruction files. They are records of a point
+  in time, not current guidance.
 - Adding a doc? Add one entry for it under exactly one group, with a link
   written relative to this `docs/` directory and a one-line purpose.
   `test/kanban/docs_index_test.exs` fails until every doc under `docs/` is
@@ -73,10 +74,13 @@ read Organizations and Workspaces, the first entry under Organization admins.
 
 ### Multi-agent instruction files
 
+The onboarding endpoint serves these files to tools that have no Stride
+plugin: the seven skills to Cursor, Windsurf and Continue.dev, and `AGENTS.md`
+to Kimi Code CLI. They are snapshots, edited here; the per-tool Stride plugins
+are the maintained source of the skills (see "Served skill copies and the
+plugins" in Multi-Agent Instructions, under Guides above).
+
 - [AGENTS.md instructions](multi-agent-instructions/AGENTS.md) — Stride integration instructions for assistants that read an `AGENTS.md` file.
-- [GitHub Copilot instructions](multi-agent-instructions/copilot-instructions.md) — Stride integration instructions for GitHub Copilot.
-- [Gemini Code Assist instructions](multi-agent-instructions/GEMINI.md) — Stride integration instructions for Gemini Code Assist.
-- [Stride skill (single file)](multi-agent-instructions/SKILL.md) — The `stride` skill as one file, for assistants that load skills such as OpenCode.
 - [stride-workflow skill](multi-agent-instructions/skills/stride-workflow/SKILL.md) — The orchestrator skill that runs a task from claim to completion.
 - [stride-claiming-tasks skill](multi-agent-instructions/skills/stride-claiming-tasks/SKILL.md) — The skill for claiming a task.
 - [stride-completing-tasks skill](multi-agent-instructions/skills/stride-completing-tasks/SKILL.md) — The skill for completing a task.
@@ -129,6 +133,17 @@ read Organizations and Workspaces, the first entry under Organization admins.
 - [Stride Claude Code Skills Implementation Plan](STRIDE-SKILLS-PLAN.md) — The completed January 2026 plan for the first Stride Claude Code skills.
 - [Stride Plugin Workflow Enforcement Recommendations](stride-plugin-enforcement-recommendations.md) — Recommendations written after an agent skipped mandatory workflow steps.
 - [Security Review Baseline](security-review-baseline.md) — The attack-surface inventory and tooling baseline for the G309 security review.
+
+### Retired instruction files
+
+No endpoint serves these files and they are no longer maintained. Use the
+Stride plugin for the tool instead, as Multi-Agent Instructions describes.
+
+- [GitHub Copilot instructions](multi-agent-instructions/copilot-instructions.md) — Former Stride instructions for GitHub Copilot, replaced by the stride-copilot plugin.
+- [Gemini Code Assist instructions](multi-agent-instructions/GEMINI.md) — Former Stride instructions for Gemini, replaced by the stride-gemini extension.
+- [Stride skill (single file)](multi-agent-instructions/SKILL.md) — The former single-file `stride` skill, replaced by the seven per-skill files and the stride-opencode plugin.
+- [Cursor rules](multi-agent-instructions/cursorrules.txt) — Former `.cursorrules` content for Cursor, replaced by the seven Stride skills in `.cursor/skills/`.
+- [Windsurf rules](multi-agent-instructions/windsurfrules.txt) — Former `.windsurfrules` content for Windsurf, replaced by the seven Stride skills in `.windsurf/skills/`.
 
 ### Plans
 
