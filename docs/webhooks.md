@@ -320,12 +320,14 @@ Slack and Discord, delete the endpoint and add a new one.
 
 Integrations are part of the paid plans. When paid plans are enforced and a
 board is not in an Organization's workspace, its endpoints are **paused**:
-the Integrations tab shows them with a Paused badge and offers only
-**Deliveries** and **Delete**, no new endpoint can be added, and no events
-are sent. Deliveries already queued or waiting to be retried are dropped, not
-held back. Pausing does not disable or delete anything, so when the board
-moves into an Organization's workspace each endpoint resumes with the next
-event, exactly as it was set up. An endpoint you disabled stays disabled.
+the Integrations tab offers only **Deliveries** and **Delete**, no new
+endpoint can be added, and no events are sent. Deliveries already queued or
+waiting to be retried are dropped, not held back. Pausing does not disable or
+delete anything, so when the board moves into an Organization's workspace
+each enabled endpoint resumes with the next event, exactly as it was set up;
+only those carry a Paused badge. A disabled endpoint, whether you or Stride
+switched it off, shows only Disabled and stays disabled after the move until
+you enable it, and its note says so.
 
 ## When the person who added an endpoint leaves
 

@@ -182,6 +182,39 @@ defmodule KanbanWeb.BoardLive.IntegrationsComponentLockTest do
       assert Repo.get!(Endpoint, ctx.endpoint.id).enabled
     end
 
+    # M4: Paused promises the endpoint sends again after the move, so a
+    # switched-off endpoint, which stays off, gets only Disabled and a note it
+    # can follow.
+    test "a switched-off endpoint is Disabled, not Paused, and says what to do after the move",
+         %{conn: conn} = ctx do
+      # disabled_reason is never cast, so it is written the way Kanban.Webhooks does.
+      lost = webhook_endpoint_fixture(ctx.board)
+
+      Endpoint
+      |> where(id: ^lost.id)
+      |> Repo.update_all(set: [enabled: false, disabled_reason: :creator_lost_access])
+
+      view = open(conn, ctx.owner, ctx.board)
+      row = "#webhook-endpoint-#{lost.id}"
+
+      assert has_element?(view, "#{row} [data-endpoint-disabled]")
+      refute has_element?(view, "#{row} [data-endpoint-paused]")
+
+      assert has_element?(
+               view,
+               "#{row} [data-endpoint-state-note]",
+               "After this board moves into an Organization, enable it to take it over."
+             )
+
+      refute has_element?(view, "#webhook-toggle-#{lost.id}")
+
+      assert has_element?(
+               view,
+               "#webhook-endpoint-#{ctx.endpoint.id} [data-endpoint-state-note]",
+               "Sends again once this board moves into an Organization."
+             )
+    end
+
     test "translates the Paused badge", %{conn: conn} = ctx do
       conn = conn |> log_in_user(ctx.owner) |> Plug.Test.init_test_session(%{"locale" => "fr"})
       {:ok, view, _html} = live(conn, ~p"/boards/#{ctx.board}/integrations")

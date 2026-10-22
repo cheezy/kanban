@@ -795,7 +795,7 @@ msgid "No history available"
 msgstr "Aucun historique disponible"
 
 #: lib/kanban_web/components/task_metadata_grid.ex:61
-#: lib/kanban_web/live/board_live/webhook_views.ex:393
+#: lib/kanban_web/live/board_live/webhook_views.ex:366
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:16
 #: lib/kanban_web/live/task_live/components/task_detail_aside.ex:48
 #: lib/kanban_web/live/task_live/form/embed_sections.ex:141
@@ -1434,7 +1434,7 @@ msgstr "Patrons à suivre"
 
 #: lib/kanban_web/components/acceptance_checklist.ex:203
 #: lib/kanban_web/components/acceptance_checklist.ex:289
-#: lib/kanban_web/live/board_live/webhook_views.ex:458
+#: lib/kanban_web/live/board_live/webhook_views.ex:431
 #: lib/kanban_web/live/task_live/components/review_status_section.ex:75
 #: lib/kanban_web/live/task_live/form_component.html.heex:409
 #: lib/kanban_web/live/workspace_live/exports.ex:56
@@ -1680,7 +1680,7 @@ msgstr "Êtes-vous sûr de vouloir révoquer ce token ?"
 
 #: lib/kanban_web/live/board_live/show.html.heex:644
 #: lib/kanban_web/live/board_live/show.html.heex:674
-#: lib/kanban_web/live/board_live/webhook_views.ex:82
+#: lib/kanban_web/live/board_live/webhook_views.ex:83
 #: lib/kanban_web/live/org_live/scim.html.heex:72
 #: lib/kanban_web/live/user_live/confirmation.ex:63
 #: lib/kanban_web/live/user_live/confirmation.ex:89
@@ -1835,7 +1835,7 @@ msgid "topic:event"
 msgstr "topic:event"
 
 #: lib/kanban_web/live/board_live/show.html.heex:681
-#: lib/kanban_web/live/board_live/webhook_views.ex:105
+#: lib/kanban_web/live/board_live/webhook_views.ex:106
 #: lib/kanban_web/live/org_live/scim.html.heex:94
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:209
 #, elixir-autogen, elixir-format
@@ -1843,7 +1843,7 @@ msgid "Dismiss"
 msgstr "Rejeter"
 
 #: lib/kanban_web/live/board_live/show.html.heex:645
-#: lib/kanban_web/live/board_live/webhook_views.ex:89
+#: lib/kanban_web/live/board_live/webhook_views.ex:90
 #: lib/kanban_web/live/org_live/scim.html.heex:79
 #: lib/kanban_web/live/user_live/confirmation.ex:64
 #: lib/kanban_web/live/user_live/confirmation.ex:368
@@ -2022,7 +2022,7 @@ msgstr "Tableau :"
 #: lib/kanban_web/live/admin/user_live/index.html.heex:222
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:287
 #: lib/kanban_web/live/board_live/show.html.heex:911
-#: lib/kanban_web/live/board_live/webhook_views.ex:283
+#: lib/kanban_web/live/board_live/webhook_views.ex:286
 #: lib/kanban_web/live/task_live/components/comment_row.ex:123
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -4743,7 +4743,7 @@ msgid "Comma-separated. Valid: api_design, code_generation, code_review, databas
 msgstr "Séparées par des virgules. Valides : api_design, code_generation, code_review, database_design, debugging, devops, documentation, file_operations, git, performance_optimization, refactoring, security_analysis, testing, ui_design, ui_implementation, web_browsing. Laissez vide pour autoriser toutes les tâches."
 
 #: lib/kanban_web/live/board_live/show.html.heex:627
-#: lib/kanban_web/live/board_live/webhook_views.ex:54
+#: lib/kanban_web/live/board_live/webhook_views.ex:55
 #: lib/kanban_web/live/org_live/scim.html.heex:45
 #: lib/kanban_web/live/workspace_live/tokens_card.ex:157
 #, elixir-autogen, elixir-format
@@ -4909,7 +4909,7 @@ msgid "Throughput · last 12 hours"
 msgstr "Débit · 12 dernières heures"
 
 #: lib/kanban_web/components/goal_sidebar.ex:75
-#: lib/kanban_web/live/board_live/webhook_views.ex:397
+#: lib/kanban_web/live/board_live/webhook_views.ex:370
 #, elixir-autogen, elixir-format
 msgid "Time"
 msgstr "Temps"
@@ -7907,7 +7907,7 @@ msgstr "Confirmé"
 #: lib/kanban_web/components/account_status.ex:34
 #: lib/kanban_web/live/admin/user_live/index.html.heex:99
 #: lib/kanban_web/live/board_live/members_form_component.ex:281
-#: lib/kanban_web/live/board_live/webhook_views.ex:156
+#: lib/kanban_web/live/board_live/webhook_views.ex:159
 #, elixir-autogen, elixir-format
 msgid "Disabled"
 msgstr "Désactivé"
@@ -7972,7 +7972,7 @@ msgid "Delete this account permanently? This cannot be undone."
 msgstr "Supprimer définitivement ce compte ? Cette action est irréversible."
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:182
-#: lib/kanban_web/live/board_live/webhook_views.ex:232
+#: lib/kanban_web/live/board_live/webhook_views.ex:235
 #, elixir-autogen, elixir-format
 msgid "Disable"
 msgstr "Désactiver"
@@ -7983,7 +7983,7 @@ msgid "Disable this account? They will be signed out and unable to log in."
 msgstr "Désactiver ce compte ? L'utilisateur sera déconnecté et ne pourra plus se connecter."
 
 #: lib/kanban_web/live/admin/user_live/index.html.heex:193
-#: lib/kanban_web/live/board_live/webhook_views.ex:232
+#: lib/kanban_web/live/board_live/webhook_views.ex:235
 #, elixir-autogen, elixir-format
 msgid "Enable"
 msgstr "Activer"
@@ -9478,7 +9478,7 @@ msgstr "Êtes-vous sûr de vouloir supprimer ce commentaire ?"
 #: lib/kanban_web/live/admin/organization_live/index.html.heex:90
 #: lib/kanban_web/live/admin/organization_live/show.html.heex:26
 #: lib/kanban_web/live/board_live/labels_manager_component.ex:270
-#: lib/kanban_web/live/board_live/webhook_views.ex:216
+#: lib/kanban_web/live/board_live/webhook_views.ex:219
 #: lib/kanban_web/live/task_live/components/comment_row.ex:111
 #, elixir-autogen, elixir-format
 msgid "Edit"
@@ -10224,7 +10224,7 @@ msgstr "Ajouter un endpoint"
 msgid "Add endpoint"
 msgstr "Ajouter l'endpoint"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:394
+#: lib/kanban_web/live/board_live/webhook_views.ex:367
 #, elixir-autogen, elixir-format
 msgid "Attempt"
 msgstr "Tentative"
@@ -10234,12 +10234,12 @@ msgstr "Tentative"
 msgid "Could not update the endpoint. Reload and try again."
 msgstr "Impossible de mettre à jour l'endpoint. Rechargez la page et réessayez."
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:279
+#: lib/kanban_web/live/board_live/webhook_views.ex:282
 #, elixir-autogen, elixir-format
 msgid "Delete this endpoint and its delivery log?"
 msgstr "Supprimer cet endpoint et son journal de livraisons ?"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:256
+#: lib/kanban_web/live/board_live/webhook_views.ex:259
 #, elixir-autogen, elixir-format
 msgid "Deliveries"
 msgstr "Livraisons"
@@ -10275,12 +10275,12 @@ msgstr "Endpoint activé"
 msgid "Endpoint not found"
 msgstr "Endpoint introuvable"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:396
+#: lib/kanban_web/live/board_live/webhook_views.ex:369
 #, elixir-autogen, elixir-format
 msgid "Error"
 msgstr "Erreur"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:392
+#: lib/kanban_web/live/board_live/webhook_views.ex:365
 #, elixir-autogen, elixir-format
 msgid "Event"
 msgstr "Événement"
@@ -10290,7 +10290,7 @@ msgstr "Événement"
 msgid "Events"
 msgstr "Événements"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:457
+#: lib/kanban_web/live/board_live/webhook_views.ex:430
 #: lib/kanban_web/live/workspace_live/exports.ex:59
 #, elixir-autogen, elixir-format
 msgid "Failed"
@@ -10316,7 +10316,7 @@ msgstr "Intégrations"
 msgid "Kind"
 msgstr "Type"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:386
+#: lib/kanban_web/live/board_live/webhook_views.ex:359
 #, elixir-autogen, elixir-format
 msgid "No deliveries yet."
 msgstr "Aucune livraison pour l'instant."
@@ -10337,27 +10337,27 @@ msgstr "Seul le propriétaire du tableau peut gérer les intégrations"
 msgid "Paste a Slack incoming webhook URL (https://hooks.slack.com/…)."
 msgstr "Collez une URL de webhook entrant Slack (https://hooks.slack.com/…)."
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:367
+#: lib/kanban_web/live/board_live/webhook_views.ex:340
 #, elixir-autogen, elixir-format
 msgid "Recent deliveries"
 msgstr "Livraisons récentes"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:378
+#: lib/kanban_web/live/board_live/webhook_views.ex:351
 #, elixir-autogen, elixir-format
 msgid "Refresh"
 msgstr "Actualiser"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:395
+#: lib/kanban_web/live/board_live/webhook_views.ex:368
 #, elixir-autogen, elixir-format
 msgid "Response"
 msgstr "Réponse"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:271
+#: lib/kanban_web/live/board_live/webhook_views.ex:274
 #, elixir-autogen, elixir-format
 msgid "Rotate secret"
 msgstr "Renouveler le secret"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:266
+#: lib/kanban_web/live/board_live/webhook_views.ex:269
 #, elixir-autogen, elixir-format
 msgid "Rotate the signing secret? The old secret stops working immediately."
 msgstr "Renouveler le secret de signature ? L'ancien secret cesse de fonctionner immédiatement."
@@ -10367,12 +10367,12 @@ msgstr "Renouveler le secret de signature ? L'ancien secret cesse de fonctionner
 msgid "Secret rotated"
 msgstr "Secret renouvelé"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:244
+#: lib/kanban_web/live/board_live/webhook_views.ex:247
 #, elixir-autogen, elixir-format
 msgid "Send test"
 msgstr "Envoyer un test"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:51
+#: lib/kanban_web/live/board_live/webhook_views.ex:52
 #, elixir-autogen, elixir-format
 msgid "Signing secret"
 msgstr "Secret de signature"
@@ -10387,7 +10387,7 @@ msgstr "Slack"
 msgid "Stride sends a signed JSON POST to this HTTPS address."
 msgstr "Stride envoie un POST JSON signé à cette adresse HTTPS."
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:456
+#: lib/kanban_web/live/board_live/webhook_views.ex:429
 #, elixir-autogen, elixir-format
 msgid "Succeeded"
 msgstr "Réussie"
@@ -10403,7 +10403,7 @@ msgstr "Événement de test mis en file d'attente. Actualisez les livraisons dan
 msgid "URL"
 msgstr "URL"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:55
+#: lib/kanban_web/live/board_live/webhook_views.ex:56
 #, elixir-autogen, elixir-format
 msgid "Use it to verify the X-Stride-Signature header on each request."
 msgstr "Utilisez-le pour vérifier l'en-tête X-Stride-Signature de chaque requête."
@@ -10413,8 +10413,8 @@ msgstr "Utilisez-le pour vérifier l'en-tête X-Stride-Signature de chaque requ�
 msgid "Webhooks"
 msgstr "Webhooks"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:469
-#: lib/kanban_web/live/board_live/webhook_views.ex:473
+#: lib/kanban_web/live/board_live/webhook_views.ex:442
+#: lib/kanban_web/live/board_live/webhook_views.ex:446
 #, elixir-autogen, elixir-format
 msgid "unknown host"
 msgstr "hôte inconnu"
@@ -10464,7 +10464,7 @@ msgstr "Envoyez les événements de tâche de ce tableau à vos propres services
 msgid "Paste the webhook URL you copied from Discord (for example https://discord.com/api/webhooks/…)."
 msgstr "Collez l'URL de webhook que vous avez copiée dans Discord (par exemple https://discord.com/api/webhooks/…)."
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:96
+#: lib/kanban_web/live/board_live/webhook_views.ex:97
 #, elixir-autogen, elixir-format
 msgid "Couldn't copy it. Select the secret and copy it yourself."
 msgstr "Impossible de le copier. Sélectionnez le secret et copiez-le vous-même."
@@ -11097,7 +11097,7 @@ msgstr "Les actions groupées sont disponibles pour les organisations. Rien n'a 
 msgid "Integrations are available to organizations. Nothing was changed."
 msgstr "Les intégrations sont disponibles pour les organisations. Rien n'a été modifié."
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:166
+#: lib/kanban_web/live/board_live/webhook_views.ex:169
 #, elixir-autogen, elixir-format
 msgid "Paused"
 msgstr "En pause"
@@ -11987,27 +11987,27 @@ msgstr "Si vous supprimez votre compte, personne ne pourra la gérer ni ouvrir s
 msgid "You are the only member of %{organization}."
 msgstr "Vous êtes le seul membre de %{organization}."
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:308
+#: lib/kanban_web/live/board_live/webhook_state.ex:29
 #, elixir-autogen, elixir-format
 msgid "Added by %{name}"
 msgstr "Ajouté par %{name}"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:311
+#: lib/kanban_web/live/board_live/webhook_state.ex:32
 #, elixir-autogen, elixir-format
 msgid "Added by a deleted account"
 msgstr "Ajouté par un compte supprimé"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:176
+#: lib/kanban_web/live/board_live/webhook_views.ex:179
 #, elixir-autogen, elixir-format
 msgid "Not sending"
 msgstr "N'envoie rien"
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:326
+#: lib/kanban_web/live/board_live/webhook_state.ex:63
 #, elixir-autogen, elixir-format
 msgid "Sends nothing while the account of the person who added it is disabled. Disable and enable it to take it over."
 msgstr "N'envoie rien tant que le compte de la personne qui l'a ajouté est désactivé. Désactivez-le puis réactivez-le pour le reprendre à votre nom."
 
-#: lib/kanban_web/live/board_live/webhook_views.ex:319
+#: lib/kanban_web/live/board_live/webhook_state.ex:47
 #, elixir-autogen, elixir-format
 msgid "Switched off automatically because the person who added it no longer has access to this board. Enable it to take it over."
 msgstr "Désactivé automatiquement, car la personne qui l'a ajouté n'a plus accès à ce tableau. Activez-le pour le reprendre à votre nom."
@@ -12929,3 +12929,18 @@ msgstr " et nous vous aiderons à migrer."
 #, elixir-autogen, elixir-format
 msgid "Yes, both ways, and the data model is the same. An Organization's org-admins export a workspace from its workspace settings, and we import it on the other side. On the free plan, email "
 msgstr "Oui, dans les deux sens, et le modèle de données est le même. Les administrateurs d'une organisation exportent un espace de travail depuis ses paramètres, et nous l'importons de l'autre côté. Avec l'offre gratuite, écrivez à "
+
+#: lib/kanban_web/live/board_live/webhook_state.ex:73
+#, elixir-autogen, elixir-format
+msgid "Sends again once this board moves into an Organization."
+msgstr "Enverra de nouveau une fois ce tableau déplacé dans une organisation."
+
+#: lib/kanban_web/live/board_live/webhook_state.ex:68
+#, elixir-autogen, elixir-format
+msgid "Sends nothing while the account of the person who added it is disabled. After this board moves into an Organization, disable and enable it to take it over."
+msgstr "N'envoie rien tant que le compte de la personne qui l'a ajouté est désactivé. Une fois ce tableau déplacé dans une organisation, désactivez-le puis réactivez-le pour le reprendre à votre nom."
+
+#: lib/kanban_web/live/board_live/webhook_state.ex:53
+#, elixir-autogen, elixir-format
+msgid "Switched off automatically because the person who added it no longer has access to this board. After this board moves into an Organization, enable it to take it over."
+msgstr "Désactivé automatiquement, car la personne qui l'a ajouté n'a plus accès à ce tableau. Une fois ce tableau déplacé dans une organisation, activez-le pour le reprendre à votre nom."
