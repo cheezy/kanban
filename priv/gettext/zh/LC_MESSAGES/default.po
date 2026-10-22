@@ -3363,7 +3363,7 @@ msgstr "在看板编辑时持久化 field_visibility"
 #: lib/kanban_web/components/marketing_components.ex:77
 #: lib/kanban_web/components/marketing_components.ex:285
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:5
-#: lib/kanban_web/emails/announcement_email.ex:143
+#: lib/kanban_web/emails/announcement_email.ex:149
 #, elixir-autogen, elixir-format
 msgid "Pricing"
 msgstr "定价"
@@ -3777,7 +3777,7 @@ msgstr "联系"
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:151
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:202
 #: lib/kanban_web/controllers/page_html/terms.html.heex:170
-#: lib/kanban_web/emails/announcement_email.ex:144
+#: lib/kanban_web/emails/announcement_email.ex:150
 #, elixir-autogen, elixir-format
 msgid "Contact us"
 msgstr "联系我们"
@@ -4292,7 +4292,7 @@ msgstr "将子项提升至「就绪」"
 #: lib/kanban_web/components/notifications_locked.ex:32
 #: lib/kanban_web/components/side_nav.ex:232
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:146
-#: lib/kanban_web/emails/announcement_email.ex:146
+#: lib/kanban_web/emails/announcement_email.ex:157
 #: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
@@ -5639,7 +5639,7 @@ msgid "Tango"
 msgstr "Tango"
 
 #: lib/kanban_web/controllers/page_html/terms.html.heex:5
-#: lib/kanban_web/emails/announcement_email.ex:145
+#: lib/kanban_web/emails/announcement_email.ex:151
 #: lib/kanban_web/live/user_live/registration.ex:111
 #, elixir-autogen, elixir-format
 msgid "Terms of Service"
@@ -10029,7 +10029,7 @@ msgstr[0] "分配给你的 %{count} 个任务"
 #: lib/kanban_web/components/notifications_locked.ex:41
 #: lib/kanban_web/components/side_nav.ex:218
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:154
-#: lib/kanban_web/emails/announcement_email.ex:147
+#: lib/kanban_web/emails/announcement_email.ex:158
 #: lib/kanban_web/live/my_work_live.ex:27
 #: lib/kanban_web/live/my_work_live.ex:39
 #: lib/kanban_web/live/my_work_live.ex:45
@@ -12857,7 +12857,7 @@ msgstr "组织信息"
 msgid "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
 msgstr "只要你的账户处于活动状态，我们就会保留你的账户和工作区数据。你可以在账户设置中自行删除账户。删除后，我们会在 30 天内删除你的账户记录以及你个人工作区中只有你使用的看板，法律要求我们保留记录的情况除外（例如与组织协议相关的记录）。其他人仍在使用的看板会留给他们，Organization 工作区中的看板会留在该 Organization，你在其中添加的内容会保留但不再显示你的名字。"
 
-#: lib/kanban_web/emails/announcement_email.ex:142
+#: lib/kanban_web/emails/announcement_email.ex:148
 #, elixir-autogen, elixir-format
 msgid "Read the changelog"
 msgstr "阅读更新日志"

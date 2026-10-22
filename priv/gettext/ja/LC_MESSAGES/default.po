@@ -3363,7 +3363,7 @@ msgstr "ボード編集時に field_visibility を永続化"
 #: lib/kanban_web/components/marketing_components.ex:77
 #: lib/kanban_web/components/marketing_components.ex:285
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:5
-#: lib/kanban_web/emails/announcement_email.ex:143
+#: lib/kanban_web/emails/announcement_email.ex:149
 #, elixir-autogen, elixir-format
 msgid "Pricing"
 msgstr "料金"
@@ -3777,7 +3777,7 @@ msgstr "お問い合わせ"
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:151
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:202
 #: lib/kanban_web/controllers/page_html/terms.html.heex:170
-#: lib/kanban_web/emails/announcement_email.ex:144
+#: lib/kanban_web/emails/announcement_email.ex:150
 #, elixir-autogen, elixir-format
 msgid "Contact us"
 msgstr "お問い合わせ"
@@ -4292,7 +4292,7 @@ msgstr "子要素を「Ready」にプロモート"
 #: lib/kanban_web/components/notifications_locked.ex:32
 #: lib/kanban_web/components/side_nav.ex:232
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:146
-#: lib/kanban_web/emails/announcement_email.ex:146
+#: lib/kanban_web/emails/announcement_email.ex:157
 #: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
@@ -5639,7 +5639,7 @@ msgid "Tango"
 msgstr "Tango"
 
 #: lib/kanban_web/controllers/page_html/terms.html.heex:5
-#: lib/kanban_web/emails/announcement_email.ex:145
+#: lib/kanban_web/emails/announcement_email.ex:151
 #: lib/kanban_web/live/user_live/registration.ex:111
 #, elixir-autogen, elixir-format
 msgid "Terms of Service"
@@ -10029,7 +10029,7 @@ msgstr[0] "あなたに割り当てられたタスク %{count} 件"
 #: lib/kanban_web/components/notifications_locked.ex:41
 #: lib/kanban_web/components/side_nav.ex:218
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:154
-#: lib/kanban_web/emails/announcement_email.ex:147
+#: lib/kanban_web/emails/announcement_email.ex:158
 #: lib/kanban_web/live/my_work_live.ex:27
 #: lib/kanban_web/live/my_work_live.ex:39
 #: lib/kanban_web/live/my_work_live.ex:45
@@ -12857,7 +12857,7 @@ msgstr "組織の情報"
 msgid "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
 msgstr "アカウントが有効な間、アカウントとワークスペースのデータを保持します。アカウントはアカウント設定から自分で削除できます。削除すると、法律により記録の保持が義務付けられている場合（例：組織との契約に関する記録）を除き、30 日以内にアカウントの記録と、個人ワークスペース内のあなただけが使っているボードを削除します。他の人がまだ使っているボードはその人たちのもとに残り、Organization のワークスペースにあるボードは Organization に残ります。そこに追加した内容は、あなたの名前を外して保持されます。"
 
-#: lib/kanban_web/emails/announcement_email.ex:142
+#: lib/kanban_web/emails/announcement_email.ex:148
 #, elixir-autogen, elixir-format
 msgid "Read the changelog"
 msgstr "変更履歴を読む"

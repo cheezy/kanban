@@ -3366,7 +3366,7 @@ msgstr "Persistir field_visibility al editar el tablero"
 #: lib/kanban_web/components/marketing_components.ex:77
 #: lib/kanban_web/components/marketing_components.ex:285
 #: lib/kanban_web/controllers/page_html/pricing.html.heex:5
-#: lib/kanban_web/emails/announcement_email.ex:143
+#: lib/kanban_web/emails/announcement_email.ex:149
 #, elixir-autogen, elixir-format
 msgid "Pricing"
 msgstr "Precios"
@@ -3780,7 +3780,7 @@ msgstr "Contacto"
 #: lib/kanban_web/controllers/page_html/acceptable_use.html.heex:151
 #: lib/kanban_web/controllers/page_html/privacy.html.heex:202
 #: lib/kanban_web/controllers/page_html/terms.html.heex:170
-#: lib/kanban_web/emails/announcement_email.ex:144
+#: lib/kanban_web/emails/announcement_email.ex:150
 #, elixir-autogen, elixir-format
 msgid "Contact us"
 msgstr "Contáctanos"
@@ -4296,7 +4296,7 @@ msgstr "Promover hijos a Listo"
 #: lib/kanban_web/components/notifications_locked.ex:32
 #: lib/kanban_web/components/side_nav.ex:232
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:146
-#: lib/kanban_web/emails/announcement_email.ex:146
+#: lib/kanban_web/emails/announcement_email.ex:157
 #: lib/kanban_web/emails/digest_email.ex:158
 #: lib/kanban_web/live/review_live.html.heex:5
 #: lib/kanban_web/live/review_live.html.heex:26
@@ -5651,7 +5651,7 @@ msgid "Tango"
 msgstr "Tango"
 
 #: lib/kanban_web/controllers/page_html/terms.html.heex:5
-#: lib/kanban_web/emails/announcement_email.ex:145
+#: lib/kanban_web/emails/announcement_email.ex:151
 #: lib/kanban_web/live/user_live/registration.ex:111
 #, elixir-autogen, elixir-format
 msgid "Terms of Service"
@@ -10095,7 +10095,7 @@ msgstr[1] "%{count} tareas asignadas a ti"
 #: lib/kanban_web/components/notifications_locked.ex:41
 #: lib/kanban_web/components/side_nav.ex:218
 #: lib/kanban_web/controllers/page_html/changelog.html.heex:154
-#: lib/kanban_web/emails/announcement_email.ex:147
+#: lib/kanban_web/emails/announcement_email.ex:158
 #: lib/kanban_web/live/my_work_live.ex:27
 #: lib/kanban_web/live/my_work_live.ex:39
 #: lib/kanban_web/live/my_work_live.ex:45
@@ -12927,7 +12927,7 @@ msgstr "Información de la organización"
 msgid "We keep your account and workspace data for as long as your account is active. You can delete your account yourself in your account settings. When you do, we delete your account record and the boards in your personal workspace that only you use within 30 days, except where we are required by law to retain a record (for example, records related to Organization agreements). Boards other people still use stay with them, boards in an Organization's workspace stay with the Organization, and what you added to them is kept without your name."
 msgstr "Conservamos los datos de tu cuenta y de tu espacio de trabajo mientras tu cuenta esté activa. Puedes eliminar tu cuenta tú mismo en la configuración de tu cuenta. Cuando lo haces, eliminamos el registro de tu cuenta y los tableros de tu espacio de trabajo personal que solo usas tú en un plazo de 30 días, salvo cuando la ley nos obligue a conservar un registro (por ejemplo, los registros relacionados con los acuerdos de las organizaciones). Los tableros que otras personas siguen usando se quedan con ellas, los tableros del espacio de trabajo de una Organización se quedan con la Organización, y lo que añadiste en ellos se conserva sin tu nombre."
 
-#: lib/kanban_web/emails/announcement_email.ex:142
+#: lib/kanban_web/emails/announcement_email.ex:148
 #, elixir-autogen, elixir-format
 msgid "Read the changelog"
 msgstr "Leer el registro de cambios"
