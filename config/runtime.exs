@@ -242,10 +242,8 @@ if config_env() == :prod do
       # HTTP/2 is off. Fly's proxy talks HTTP/1.1 to the app (fly.*.toml set
       # no h2_backend), so nothing legitimate uses it, and Bandit 1.4.0
       # through 1.12.5 let a peer pin HTTP/2 stream processes indefinitely
-      # (EEF-CVE-2026-105659, GHSA-69m6-wcv4-rwcf). The advisory is also
-      # skipped in mix hex.audit and mix deps.audit
-      # (.github/workflows/elixir.yml, .stride.md); remove those skips once a
-      # fixed Bandit is on Hex and locked. HTTP/2 can stay off.
+      # (EEF-CVE-2026-105659, GHSA-69m6-wcv4-rwcf, fixed in 1.13.0). HTTP/2
+      # can stay off.
       http_2_options: [enabled: false]
     ],
     secret_key_base: secret_key_base

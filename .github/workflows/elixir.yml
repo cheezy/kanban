@@ -120,16 +120,13 @@ jobs:
       run: mix format --check-formatted --no-exit
 
     # Step: Run audit on dependencies
-    # GHSA-69m6-wcv4-rwcf (Bandit HTTP/2, EEF-CVE-2026-105659) is skipped by
-    # both audits: mix hex.audit (Hex 2.5.1+ reads HEX_IGNORE_ADVISORIES) and
-    # mix deps.audit. No fixed Bandit is on Hex yet, and production runs with
-    # HTTP/2 off (config/runtime.exs). Remove both skips, here and in
-    # .stride.md, once a fixed Bandit is locked.
+    # mix hex.audit fails on security advisories as well as retired packages
+    # (Hex 2.5.1+). To skip one that has no fixed release yet, set
+    # HEX_IGNORE_ADVISORIES here and pass --ignore-advisory-ids to
+    # mix deps.audit, and mirror both in .stride.md's before_doing hook.
     - name: Run Audit Security Vulnerabilities and Retired Packages
-      env:
-        HEX_IGNORE_ADVISORIES: GHSA-69m6-wcv4-rwcf
       run: |
-        mix deps.audit --ignore-advisory-ids GHSA-69m6-wcv4-rwcf
+        mix deps.audit
         mix hex.audit
 
     # Step: Execute the tests with coverage
