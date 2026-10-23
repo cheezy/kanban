@@ -150,20 +150,34 @@ defmodule Kanban.ChromeWatchdogTest do
       assert_eventually(fn -> not os_process_alive?(fake.chrome_pid) end)
       assert_receive {_port, {:exit_status, 137}}, 5_000
     end
+
+    # The shell reaps Chrome during stop_chrome's `sleep`, before the script
+    # checks whether Chrome is still running. The script must still exit with
+    # Chrome's own status, not the 143 of the wait the SIGTERM interrupted.
+    test "exits with Chrome's status when Chrome stops on the forwarded SIGTERM",
+         %{tmp_dir: tmp_dir} do
+      fake = start_fake_chrome(tmp_dir, [], System.pid(), "'exit 7'")
+
+      kill(fake.script_pid)
+
+      assert_eventually(fn -> not os_process_alive?(fake.chrome_pid) end)
+      assert_receive {_port, {:exit_status, 7}}, 5_000
+    end
   end
 
   defp run_script(args) do
     System.cmd("sh", [ChromeWatchdog.script_path() | args], stderr_to_stdout: true)
   end
 
-  # A fake Chrome that records its pid and arguments, ignores SIGTERM, and
-  # never exits on its own. The watchdog runs it with `watch_pid` as the VM.
-  defp start_fake_chrome(tmp_dir, chrome_args, watch_pid) do
+  # A fake Chrome that records its pid and arguments, runs `on_term` on
+  # SIGTERM (by default it ignores it), and never exits on its own. The
+  # watchdog runs it with `watch_pid` as the VM.
+  defp start_fake_chrome(tmp_dir, chrome_args, watch_pid, on_term \\ "''") do
     pid_file = Path.join(tmp_dir, "chrome.pid")
     args_file = Path.join(tmp_dir, "chrome.args")
 
     args =
-      ["--kanban-chrome=#{write_fake_chrome(tmp_dir)}"] ++
+      ["--kanban-chrome=#{write_fake_chrome(tmp_dir, on_term)}"] ++
         chrome_args ++ ["--kanban-watch-pid=#{watch_pid}"]
 
     port = open_script(args, FAKE_CHROME_ARGS_FILE: args_file, FAKE_CHROME_PID_FILE: pid_file)
@@ -177,12 +191,12 @@ defmodule Kanban.ChromeWatchdogTest do
     %{port: port, script_pid: script_pid, chrome_pid: chrome_pid, args_file: args_file}
   end
 
-  defp write_fake_chrome(tmp_dir) do
+  defp write_fake_chrome(tmp_dir, on_term) do
     chrome = Path.join(tmp_dir, "fake_chrome.sh")
 
     File.write!(chrome, """
     #!/bin/sh
-    trap '' TERM
+    trap #{on_term} TERM
     printf '%s\\n' "$@" > "$FAKE_CHROME_ARGS_FILE"
     echo $$ > "$FAKE_CHROME_PID_FILE"
     while :; do sleep 1; done

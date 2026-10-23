@@ -52,14 +52,22 @@ stop_chrome() {
   return 0
 }
 
+# The trap is set before Chrome starts, so a signal that arrives while it is
+# starting still stops it. `stopping` records that a signal arrived.
+chrome_pid=
+stopping=
+trap 'stopping=1; [ -z "$chrome_pid" ] || stop_chrome "$chrome_pid"' TERM HUP INT
+
 "$chrome" "$@" &
 chrome_pid=$!
+[ -z "$stopping" ] || stop_chrome "$chrome_pid"
 
 # Chrome holds its own copies of the pipe. Drop this script's, so the VM sees
 # the pipe close as soon as Chrome exits.
 exec 0</dev/null 1>/dev/null 3<&- 4>&-
 
 (
+  trap - TERM HUP INT
   while kill -0 "$watch_pid" 2>/dev/null; do
     sleep 1
   done
@@ -67,14 +75,19 @@ exec 0</dev/null 1>/dev/null 3<&- 4>&-
 ) &
 watcher_pid=$!
 
-trap 'stop_chrome "$chrome_pid"' TERM HUP INT
-
-# A trapped signal interrupts wait before Chrome has exited, so wait again
-# until Chrome is reaped.
+# A trapped signal interrupts wait with status 128+signal before Chrome has
+# exited, so wait again after any signal. Do not test whether Chrome is still
+# running instead: the shell can reap Chrome between commands once it exits,
+# and only wait returns the status it reaped. A wait that answers 127 means an
+# earlier wait already returned Chrome's status, so keep that one.
+status=
 while :; do
+  stopping=
   wait "$chrome_pid"
-  status=$?
-  kill -0 "$chrome_pid" 2>/dev/null || break
+  rc=$?
+  [ "$rc" -eq 127 ] && [ -n "$status" ] && break
+  status=$rc
+  [ -n "$stopping" ] || break
 done
 
 kill "$watcher_pid" 2>/dev/null
