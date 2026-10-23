@@ -27,7 +27,7 @@ exactly how `project_checks` came to be silently dropped).
 |---------|------|---------|
 | `issues` | list | Categorized review issues. May be empty, but must be present. |
 | `acceptance_criteria` | list | Per-criterion results the review queue renders. |
-| `project_checks` | list | One verdict per bullet of the **calling project's** optional root `CODE-REVIEW.md`. The key must be present; the list may be any length, and `[]` is valid — it means that project has no checklist. The server never sees that file, so it never gates on the list's length. |
+| `project_checks` | list | One verdict per bullet of the **calling project's** optional root `CODE-REVIEW.md`. The key must be present and its value a list — `null` is rejected; the list may be any length, and `[]` is valid — it means that project has no checklist. The server never sees that file, so it never gates on the list's length. |
 | `testing_strategy` | object | Per-section verdict: were the task's specified tests written. |
 | `patterns` | object | Per-section verdict: was `patterns_to_follow` honored. |
 | `pitfalls` | object | Per-section verdict: were the task's `pitfalls` avoided. |

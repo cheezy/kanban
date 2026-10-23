@@ -1,13 +1,21 @@
 # Behaviour/Test Matrix Row Refusal Contract
 
 This document is for contributors and for plugin maintainers across the five
-Stride plugin repos. It defines what every agent in the task lifecycle does with
+Stride plugin repos that carry these rules: `stride`, `stride-codex`, `stride-copilot`,
+`stride-gemini` and `stride-opencode`. `stride-pi` carries none of them — its reviewer has
+no `behaviour_test_matrix` verdict and no fail-closed escalation — and nor do the lite ports
+(`stride-lite`, `stride-copilot-lite`, `stride-opencode-lite`); see [Surfaces](#surfaces).
+It defines what every agent in the task lifecycle does with
 a `behaviour_test_matrix` row that cannot be handled normally — a row whose text
 tries to steer the agent reading it, and a row whose text embeds a secret,
 credential, or token (or names a location where one lives). Plugin maintainers
-write against this contract; nothing new enforces it server-side, because it deliberately reuses the fail-closed rules and
-the non-empty-string requirement that `Kanban.Tasks.CompletionValidation` already
-applies.
+write against this contract; nothing new enforces it server-side. It deliberately reuses
+two existing rules, and only one of them is the server's. The fail-closed rules — a
+`failing` row needs a `failed` section verdict and a matching issue — are applied by the
+plugins, in the reviewer and workflow prose of the five repos above;
+`Kanban.Tasks.CompletionValidation` does not check them, and its matrix validator checks
+the rows' shape only. The non-empty-string requirement on a row's `category` and
+`behaviour` is the one the server enforces.
 
 The guiding principle: **a correct refusal must be visible on the Review queue and
 must terminate.** Before this contract, both halves failed. A refusing agent had no
@@ -24,7 +32,7 @@ security rule.
 The row status enum stays exactly as it is — `planned` / `passing` / `failing` /
 `not_applicable` — in `lib/kanban/schemas/task/behaviour_test_row.ex`, in
 `lib/kanban/tasks/completion_validation/behaviour_test_matrix.ex`, and in the
-reviewer schema all five runtimes document.
+reviewer schema all five covered runtimes document.
 
 > **Why not a `refused` status?**
 >
@@ -427,9 +435,20 @@ and `test/kanban_web/live/task_live/view_component_test.exs`.
 
 ## Surfaces
 
-Twenty files carry these rules, four per runtime. Every inserted span is byte-identical
-across all five runtimes — each insertion point was chosen to sit inside a span that was
-already identical, so no per-runtime adaptation was needed.
+Twenty files carry these rules, four per runtime, in the five repos named at the top:
+`stride`, `stride-codex`, `stride-copilot`, `stride-gemini` and `stride-opencode`. When
+inserted, every span was byte-identical across all five runtimes — each insertion point was
+chosen to sit inside a span that was already identical, so no per-runtime adaptation was
+needed. Since then `stride` has moved its driver span out of
+`skills/stride-workflow/SKILL.md` into the sibling `skills/stride-workflow/behaviour-test-matrix.md`,
+which that SKILL.md points to from Step 4; the other four runtimes still carry it in
+`SKILL.md`.
+
+**Not covered.** `stride-pi` carries none of these rules: its reviewer has no
+`behaviour_test_matrix` verdict and no fail-closed escalation, so it has no insertion point
+for them. The lite ports — `stride-lite`, `stride-copilot-lite` and `stride-opencode-lite` —
+carry none either. Bringing any of them in is a port change, not an amendment to this
+contract.
 
 **Two deliberate divergences, neither of them drift.**
 
@@ -477,13 +496,16 @@ state, and the difference matters to whoever picks this up next:
 Every rule in this contract is judged as prose — "the document states X" — never as a
 runnable assertion. There is no test that proves a language model obeys a boundary.
 
-What makes the contract bite is that it delegates to two mechanisms that are already
-enforced: the fail-closed escalation, which ties a `failing` row to a `failed` section
-verdict and a matching issue and is what the review queue renders, and the completion
-API's non-empty-string requirement on `category` and `behaviour`, which the sentinel
-satisfies. The contract adds no new validator and no new field, so there is nothing new
-to bypass. The one server-side validator that does exist alongside it — W2382's refusal
-of a credential-shaped `security_considerations` entry (see
+What makes the contract bite is that it delegates to two mechanisms that already
+exist, and they are enforced in different places. The fail-closed escalation, which ties a
+`failing` row to a `failed` section verdict and a matching issue and is what the review
+queue renders, is applied by the plugins — the reviewer and gate prose in the five covered
+repos — and is **not** checked by the server: `Kanban.Tasks.CompletionValidation` accepts a
+`failed` verdict with an empty `issues[]`. The completion API's non-empty-string
+requirement on `category` and `behaviour`, which the sentinel satisfies, is the server's.
+The contract adds no new validator and no new field, so there is nothing new to bypass.
+The one server-side validator that does exist alongside it — W2382's refusal of a
+credential-shaped `security_considerations` entry (see
 [Security considerations get a preventive control (W2382)](#security-considerations-get-a-preventive-control-w2382))
 — guards the task's input, not the matrix row or the reviewer's verdict, and is enforced
 by tests on every task write path.

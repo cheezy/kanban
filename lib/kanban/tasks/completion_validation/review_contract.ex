@@ -161,12 +161,15 @@ defmodule Kanban.Tasks.CompletionValidation.ReviewContract do
   # and the length of a non-empty list is never judged: only the reviewer that
   # read the caller's checklist knows how many bullets it has. See the moduledoc.
   # Absence of the key is already reported by the presence check above, so only a
-  # present-but-non-list value is flagged here.
+  # present-but-non-list value is flagged here — and a present `null` is one
+  # (D396): `Map.has_key?/2` lets it through the presence check, but a null is
+  # not the list `docs/completion-contract.md` requires. `Map.fetch/2` keeps the
+  # absent key (`:error`) apart from the null one so absence is not reported twice.
   defp require_list_project_checks(errors, result) do
-    case Map.get(result, "project_checks") do
-      checks when is_list(checks) -> errors
-      nil -> errors
-      _ -> [{:project_checks, non_list_project_checks_message()} | errors]
+    case Map.fetch(result, "project_checks") do
+      {:ok, checks} when is_list(checks) -> errors
+      :error -> errors
+      {:ok, _} -> [{:project_checks, non_list_project_checks_message()} | errors]
     end
   end
 
@@ -182,9 +185,11 @@ defmodule Kanban.Tasks.CompletionValidation.ReviewContract do
   # are grace-gated: they warn under the default flag and reject only in strict
   # mode, so a stub would still land on every deployment that has not opted in.
   # A stubbed note is malformed output, not a consistency nit — the same footing
-  # as an omitted section — so it belongs in the always-reject contract, which
-  # is also where its sibling half (a `failed` verdict with an empty `issues[]`)
-  # is already caught.
+  # as an omitted section — so it belongs in the always-reject contract. Its
+  # sibling half, a `failed` verdict with an empty `issues[]`, is NOT checked
+  # here or anywhere else on the server (D396): the plugins' fail-closed rules
+  # apply it, and `BehaviourTestMatrix` validates the matrix's shape only. See
+  # `docs/matrix-row-refusal-contract.md`.
   #
   # Deliberately narrow, per D222's scope boundary:
   #

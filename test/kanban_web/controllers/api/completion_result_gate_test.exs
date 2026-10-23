@@ -79,6 +79,18 @@ defmodule KanbanWeb.API.CompletionResultGateTest do
       assert :ok = CompletionResultGate.gate(request, strict: true)
     end
 
+    test "a null project_checks rejects end to end, in grace mode too (D396)" do
+      request =
+        full_reviewer()
+        |> Map.put("project_checks", nil)
+        |> build_request()
+
+      for strict <- [false, true] do
+        assert {:reject, body} = CompletionResultGate.gate(request, strict: strict)
+        assert "project_checks" in reviewer_failure_fields(body)
+      end
+    end
+
     test "a purely legacy-shape difference still follows the grace path (warn, not reject)" do
       # A complete review (contract satisfied) with only a bad schema_version FORMAT
       # is a shape nit — grace warns, strict rejects.

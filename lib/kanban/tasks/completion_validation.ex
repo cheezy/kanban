@@ -236,9 +236,9 @@ defmodule Kanban.Tasks.CompletionValidation do
   @doc """
   Validates the optional `changed_files` array on the completion payload.
 
-  Returns `{:ok, value}` when valid (including `nil` for legacy payloads
-  that omit the field entirely and `[]` for empty arrays), or
-  `{:error, [{field, message}, ...]}` listing every failing entry.
+  Returns `{:ok, value}` when valid (including `[]`, which clears the
+  field), or `{:error, [{field, message}, ...]}` listing every failing entry.
+  `nil` is rejected with `must be present (send [] to clear)`.
 
   See `Kanban.Tasks.CompletionValidation.ChangedFiles` for the entry rules and
   the path-safety guarantee.

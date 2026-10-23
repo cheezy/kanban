@@ -101,10 +101,29 @@ defmodule Kanban.Tasks.CompletionValidation.ChangedFilesTest do
       assert message == "changed_files[0].diff exceeds the 500-line cap"
     end
 
-    test "a trailing newline terminates rather than adds a line" do
+    test "a diff of exactly 500 lines plus one trailing newline is accepted" do
       # 500 lines plus a trailing newline is still 500 lines, not 501.
       value = [entry("lib/a.ex", %{"diff" => diff_of(500) <> "\n"})]
       assert ChangedFiles.validate(value) == {:ok, value}
+    end
+
+    # D396: only ONE trailing newline is a terminator (docs/diff-contract.md);
+    # a second is a blank line and counts, so it cannot pad past the cap.
+    test "a diff of 500 lines plus two trailing newlines counts the extra blank line" do
+      assert {:error, [{:changed_file_diff, message}]} =
+               ChangedFiles.validate([entry("lib/a.ex", %{"diff" => diff_of(500) <> "\n\n"})])
+
+      assert message == "changed_files[0].diff exceeds the 500-line cap"
+    end
+
+    test "a diff made only of newlines counts all but the last one" do
+      at_cap = [entry("lib/a.ex", %{"diff" => String.duplicate("\n", 500)})]
+      assert ChangedFiles.validate(at_cap) == {:ok, at_cap}
+
+      assert {:error, [{:changed_file_diff, _}]} =
+               ChangedFiles.validate([
+                 entry("lib/a.ex", %{"diff" => String.duplicate("\n", 501)})
+               ])
     end
 
     test "a non-string diff is rejected" do

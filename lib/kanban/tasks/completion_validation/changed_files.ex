@@ -28,9 +28,10 @@ defmodule Kanban.Tasks.CompletionValidation.ChangedFiles do
   @doc """
   Validates the optional `changed_files` array on the completion payload.
 
-  Returns `{:ok, value}` when valid (including `nil` for legacy payloads
-  that omit the field entirely and `[]` for empty arrays), or
-  `{:error, [{field, message}, ...]}` listing every failing entry.
+  Returns `{:ok, value}` when valid (including `[]`, which clears the
+  field), or `{:error, [{field, message}, ...]}` listing every failing entry.
+  `nil` is rejected with `must be present (send [] to clear)`: the field must
+  be sent explicitly.
 
   Each entry must be a map with a non-empty string `"path"`. The `"diff"`
   field is optional; when present it must be a string of at most
@@ -113,12 +114,14 @@ defmodule Kanban.Tasks.CompletionValidation.ChangedFiles do
     end
   end
 
-  # Counts logical lines in a diff. A trailing newline is treated as a
-  # line terminator, not a separator — so a 500-line patch with or
-  # without a trailing newline reports 500 lines.
+  # Counts logical lines in a diff, per `docs/diff-contract.md`: a single
+  # trailing newline is a line terminator, not a separator, so a 500-line
+  # patch with or without one reports 500 lines. Only ONE is discounted —
+  # every further trailing newline is a blank line and counts toward the cap
+  # (D396), so a diff cannot pad past the cap with trailing blank lines.
   defp diff_line_count(diff) do
     diff
-    |> String.trim_trailing("\n")
+    |> String.replace_suffix("\n", "")
     |> String.split("\n")
     |> length()
   end

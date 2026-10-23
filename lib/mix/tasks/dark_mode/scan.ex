@@ -44,12 +44,13 @@ defmodule Mix.Tasks.DarkMode.Scan do
 
   Multi-line `style={[ ... ]}` list continuation lines ARE now scanned (W938):
   raw `oklch(...)`/hex on them is flagged, with `var(--token, oklch(...))`
-  fallbacks exempt. Two limitations remain by design:
+  fallbacks exempt. These limitations remain — the same list as the
+  "Known scanner limitations" section of `docs/dark-mode-contract.md`:
 
     * Bare `oklch()`/hex that sits OUTSIDE any `style=` attribute is not
       flagged — doing so false-positives on legitimate `var(--token,
       oklch(...))` fallbacks and on intentional fixed-palette components
-      (avatars, the light-locked auth frame).
+      (generated avatar palettes, HTML emails, the metrics PDF export).
     * `assets/css/app.css` itself is not scanned — it legitimately *defines*
       the oklch tokens, so a literal scan there is meaningless; legibility of
       those values is measured by `mix dark_mode.contrast` instead.
@@ -58,6 +59,13 @@ defmodule Mix.Tasks.DarkMode.Scan do
       nested function (e.g. `var(--ink, oklch(calc(…) …))`) is only partially
       stripped and can false-positive, and a CSS value literally containing
       `]}` ends the style-list scan one line early.
+    * The `style="..."` and `style={"..."}` checks read one line at a time and
+      only double-quoted values, so a literal on the continuation line of a
+      multi-line `style="..."` string or `style={"..."}` expression, or in a
+      single-quoted `style='...'` attribute, is not flagged.
+    * The palette rule matches a colour only directly after the prefix, so side
+      and axis utilities such as `border-l-red-500` or `border-x-blue-500` are
+      not flagged, though they are just as theme-blind.
 
   See `docs/dark-mode-contract.md`.
   """
@@ -66,6 +74,14 @@ defmodule Mix.Tasks.DarkMode.Scan do
   @scan_root "lib/kanban_web"
   @extensions ~w(.ex .heex .eex)
   @ignore_marker "dark-mode-ignore"
+
+  # Look back this many lines for an `dark-mode-ignore:` marker. HEEx commonly
+  # splits an element's open tag, attributes, and class/style value across many
+  # lines (10+ in some cases), so a marker placed above the opening tag may sit
+  # well before the actual flagged string. 10 covers every spread in the
+  # current tree while still keeping the marker visually associated with the
+  # violation.
+  @ignore_lookback 10
 
   # Numbered Tailwind palette colours (the theme-blind families). daisyUI
   # semantic names (base, primary, secondary, accent, neutral, info, success,
@@ -110,7 +126,8 @@ defmodule Mix.Tasks.DarkMode.Scan do
       Mix.shell().error("dark_mode.scan: #{length(violations)} violation(s) found.")
 
       Mix.shell().error(
-        "Allow-list with a 'dark-mode-ignore: <reason>' comment on the same or previous line."
+        "Allow-list with a 'dark-mode-ignore: <reason>' comment on the violating line " <>
+          "or one of the #{@ignore_lookback} lines above it."
       )
 
       exit({:shutdown, 1})
@@ -130,14 +147,6 @@ defmodule Mix.Tasks.DarkMode.Scan do
       _ -> []
     end
   end
-
-  # Look back this many lines for an `dark-mode-ignore:` marker. HEEx commonly
-  # splits an element's open tag, attributes, and class/style value across many
-  # lines (10+ in some cases), so a marker placed above the opening tag may sit
-  # well before the actual flagged string. 10 covers every spread in the
-  # current tree while still keeping the marker visually associated with the
-  # violation.
-  @ignore_lookback 10
 
   defp scan_file(path) do
     lines = read_indexed_lines(path)

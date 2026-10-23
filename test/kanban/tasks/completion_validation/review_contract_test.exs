@@ -62,6 +62,41 @@ defmodule Kanban.Tasks.CompletionValidation.ReviewContractTest do
       assert [{:project_checks, message}] = failures
       assert message =~ "list"
     end
+
+    # D396: `Map.has_key?/2` let a present `null` through the presence check and
+    # the list check skipped it, so a review with no checklist verdicts at all
+    # was accepted. completion-contract.md requires a list.
+    test "a dispatched reviewer_result with project_checks: null is rejected" do
+      failures =
+        @dispatched_sections
+        |> Map.put("project_checks", nil)
+        |> ReviewContract.failures()
+        |> Enum.filter(fn {field, _} -> field == :project_checks end)
+
+      assert [{:project_checks, message}] = failures
+      assert message =~ "must be a list"
+    end
+
+    test "project_checks: [] is still accepted" do
+      failures =
+        @dispatched_sections
+        |> Map.put("project_checks", [])
+        |> ReviewContract.failures()
+
+      refute Enum.any?(failures, fn {field, _} -> field == :project_checks end)
+    end
+
+    # The null fix must not double-report an ABSENT key: the presence check
+    # already names it, and the list check must stay silent.
+    test "an absent project_checks is reported once, as missing" do
+      failures =
+        @dispatched_sections
+        |> ReviewContract.failures()
+        |> Enum.filter(fn {field, _} -> field == :project_checks end)
+
+      assert [{:project_checks, message}] = failures
+      assert message =~ "is missing"
+    end
   end
 
   describe "check_structured_block/4 — short circuits" do

@@ -44,8 +44,9 @@ end
 # W1070 — IMPORTANT: this flag now gates ONLY legacy *shape* nits (a malformed
 # issue entry, a bad schema_version format, a missing legacy summary field). The
 # fully-populated + consistent *review contract* — a dispatched review must carry
-# every required structured section, with project_checks covering the whole
-# CODE-REVIEW.md checklist, and be consistent with the task's own inputs — is
+# every required structured section, with project_checks present as a list of
+# any length ([] is valid: the project has no CODE-REVIEW.md; null is rejected),
+# and be consistent with the task's own inputs (docs/completion-contract.md) — is
 # enforced UNCONDITIONALLY by `KanbanWeb.API.CompletionResultGate`, in every env
 # and regardless of this flag. Deliberate, accepted consequence: any client that
 # submits a thin or task-inconsistent dispatched review cannot complete the task,
