@@ -362,8 +362,10 @@ These have their own guides:
 
 Anyone with a password can delete their own account from the **Delete
 account** section of their account settings, by entering their password and
-typing `delete my account`. An account created by single sign-on has no
-password, so it cannot (see [Known limits](single-sign-on.md#known-limits)).
+typing `delete my account`. An account created by single sign-on starts
+without a password; its owner can set one with the **Forgot?** link on the
+log-in page and then delete the account the same way (see
+[Known limits](single-sign-on.md#known-limits)).
 For someone in an Organization, Stride first checks two things:
 
 - **The last org-admin.** If they are the last enabled org-admin of an
@@ -392,7 +394,8 @@ The Organization's data stays with the Organization:
   still see the events that belong to it, for as long as its audit retention
   setting keeps them.
 
-Someone whose account was disabled by the Organization's identity provider
+Someone whose account was disabled, for example by the Organization's SCIM
+deprovisioning (see [Deprovisioning](scim-provisioning.md#deprovisioning)),
 cannot sign in to delete it; the privacy policy says how to ask Stride to
 delete it. The privacy policy and terms of service are the authority on how
 long Stride keeps data.

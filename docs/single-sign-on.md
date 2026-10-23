@@ -152,8 +152,10 @@ is compared case-insensitively and without trailing dots, so
   provider now sends a different email address.
 - **A new person** gets an account when their email is on a domain the
   connection's Organization verified and the provider asserts
-  `email_verified`. The account is confirmed, has no password, gets a personal
-  workspace like any new account, and becomes a member of the Organization.
+  `email_verified`. The account is confirmed, starts without a password (the
+  person can set one with **Forgot?**; see [Known limits](#known-limits)), gets
+  a personal workspace like any new account, and becomes a member of the
+  Organization.
   This is recorded as `sso_user_provisioned`.
 - **An existing account with the same email** is linked under the same two
   conditions, and becomes a member of the Organization if it is not already
@@ -321,8 +323,34 @@ a minute by default).
 
 - Turning a connection off stops new sign-ins; it does not end sessions that
   are already signed in.
-- An account created by single sign-on has no password, so it cannot use
-  actions that ask for the password, such as deleting the account.
+- An account created by single sign-on starts without a password, but it is
+  not limited to single sign-on. Whoever can read the account's email can set
+  a password with the **Forgot?** link on the log-in page
+  (`/users/forgot-password`): Stride sends a reset link to any account that is
+  not disabled, and setting the new password does not ask for a current one.
+  The same goes for an existing account whose password was removed when it
+  was linked. With a password, the person can sign in without the identity
+  provider and use actions that ask for the password, such as deleting the
+  account. Stride has no setting that limits an Organization's members to
+  single sign-on.
+- So removing someone in the identity provider stops their single sign-on
+  sign-ins, but not a password they have set. To offboard them, also take them
+  out of the Organization: [deprovision them through SCIM](scim-provisioning.md#deprovisioning),
+  or remove them from the org console's **Members** section (see
+  [Roles](organizations.md#roles)). Either one ends their access to the
+  Organization's workspaces and boards and revokes their API tokens there.
+  After a console removal, keep them stopped in the identity provider too, or
+  their next single sign-on sign-in makes them a member again (see
+  [What is refused](#what-is-refused)). Neither removal stops a password
+  sign-in to the account itself, which keeps its personal boards, with one
+  exception: SCIM deprovisioning also disables an account the Organization
+  manages, one SCIM created, which deletes its sessions and refuses password
+  sign-in and reset links. An account created by a single sign-on sign-in is
+  not managed, so SCIM never disables it; only a Stride site admin can.
+- While the person is still a member, a session they sign in to with a
+  password is held to the Organization's require-two-factor policy: only a
+  single sign-on session is exempt. See
+  [Requiring two-factor](organization-security-policies.md#requiring-two-factor).
 - Stride does not cache the discovery document or the provider's signing keys.
   Every sign-in fetches both again, so a slow or unavailable identity provider
   slows or stops sign-in for that Organization.
