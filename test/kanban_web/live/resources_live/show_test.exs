@@ -44,8 +44,9 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
     test "renders the review steps as ordered lists", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/resources/reviewing-completed-work")
 
-      assert html =~ "<li>Click the <strong>Approve</strong> button on the task</li>"
-      assert html =~ "<li>Click <strong>Request Changes</strong></li>"
+      assert html =~ ~r{<ol class="list-decimal[^"]*">\s*<li>Click <strong>Approve</strong>}
+      assert html =~ "<li>Click <strong>Request changes</strong></li>"
+      refute html =~ "Request Changes"
     end
 
     test "renders hook output as a code block", %{conn: conn} do
@@ -77,6 +78,34 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
         refute html =~ "**", "#{id} renders a literal **"
         assert html =~ "<strong>", "#{id} renders no bold UI label"
       end
+    end
+
+    test "renders each working-with-tasks guide without raw markup", %{conn: conn} do
+      for id <- [
+            "writing-tasks-for-ai",
+            "monitoring-task-progress",
+            "reviewing-completed-work",
+            "organizing-with-dependencies",
+            "using-complexity-priority"
+          ] do
+        {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
+
+        refute html =~ "&lt;", "#{id} renders escaped HTML"
+        refute html =~ "**", "#{id} renders a literal **"
+        assert html =~ "<strong>", "#{id} renders no bold UI label"
+      end
+    end
+
+    test "the reviewing guide shows the Review queue screenshots", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/resources/reviewing-completed-work")
+
+      for step <- 2..5 do
+        assert html =~
+                 ~s(src="/images/resources/guides/reviewing-completed-work-step-#{step}.png")
+      end
+
+      assert html =~ "<strong>Review queue</strong>"
+      assert html =~ "<strong>Notes for the agent</strong>"
     end
 
     test "the members guide renders the invitation and free-board steps", %{conn: conn} do

@@ -279,6 +279,74 @@ seed_ai_board = fn ->
     )
   end
 
+  # The Review task carries what an agent's completion would: acceptance
+  # criteria, a structured review and a diff for each changed file, so the
+  # Review queue shows a full task rather than empty panels.
+  review_criteria = [
+    "The order summary is visible without scrolling on a 375px-wide phone",
+    "The Pay button stays on screen while the summary is open",
+    "The summary total matches the cart total"
+  ]
+
+  review_diffs = [
+    %{
+      "path" => "lib/storefront_web/components/order_summary.ex",
+      "diff" => """
+      --- a/lib/storefront_web/components/order_summary.ex
+      +++ b/lib/storefront_web/components/order_summary.ex
+      @@ -14,8 +14,9 @@ defmodule StorefrontWeb.Components.OrderSummary do
+         def order_summary(assigns) do
+           ~H\"\"\"
+      -    <section class="order-summary">
+      +    <section class="order-summary order-summary--sticky" aria-label="Order summary">
+             <.line_items items={@cart.items} />
+      -      <.totals cart={@cart} />
+      +      <.totals cart={@cart} compact={@compact} />
+      +      <p :if={@compact} class="order-summary__total">{@cart.total}</p>
+           </section>
+           \"\"\"
+         end
+      """
+    },
+    %{
+      "path" => "assets/css/checkout.css",
+      "diff" => """
+      --- a/assets/css/checkout.css
+      +++ b/assets/css/checkout.css
+      @@ -41,3 +41,12 @@
+       .order-summary {
+         padding: 1rem;
+       }
+      +
+      +.order-summary--sticky {
+      +  position: sticky;
+      +  top: 0;
+      +}
+      +
+      +@media (max-width: 360px) {
+      +  .order-summary .line-items { display: none; }
+      +}
+      """
+    },
+    %{
+      "path" => "test/storefront_web/components/order_summary_test.exs",
+      "diff" => """
+      --- a/test/storefront_web/components/order_summary_test.exs
+      +++ b/test/storefront_web/components/order_summary_test.exs
+      @@ -22,3 +22,9 @@ defmodule StorefrontWeb.Components.OrderSummaryTest do
+           assert html =~ "Order summary"
+         end
+      +
+      +  test "the summary renders before the payment form" do
+      +    html = render_component(&checkout/1, cart: cart_fixture())
+      +    [summary_at, payment_at] = Enum.map(["order-summary", "payment-form"], &position(html, &1))
+      +    assert summary_at < payment_at
+      +  end
+       end
+      """
+    }
+  ]
+
   review_task =
     add_task.(
       columns["Review"],
@@ -295,6 +363,44 @@ seed_ai_board = fn ->
         completed_by_agent: "Claude Opus 5.5",
         completion_summary:
           "Moved the order summary into the first screen on phones and kept the Pay button in view.",
+        completion_notes:
+          "Checked on an iPhone SE and a Pixel 7 simulator. Below 360px the summary collapses to one line with the total.",
+        completed_by_id: priya.id,
+        acceptance_criteria: Enum.join(review_criteria, "\n"),
+        testing_strategy: %{
+          "unit_tests" => ["The summary renders before the payment form"],
+          "manual_tests" => ["Check the checkout on an iPhone SE"]
+        },
+        patterns_to_follow:
+          "Follow the existing checkout components in lib/storefront_web/components",
+        pitfalls: ["Don't hide the Pay button behind the summary"],
+        security_considerations: ["Show no more than the last four card digits in the summary"],
+        actual_files_changed: Enum.map_join(review_diffs, ", ", & &1["path"]),
+        changed_files: review_diffs,
+        reviewer_result: %{
+          "dispatched" => true,
+          "schema_version" => "1.0",
+          "status" => "approved",
+          "summary" =>
+            "All three acceptance criteria are met: the summary renders above the fold at 375px and the Pay button stays visible.",
+          "duration_ms" => 48_000,
+          "acceptance_criteria_checked" => length(review_criteria),
+          "issues_found" => 0,
+          "issues" => [],
+          "acceptance_criteria" =>
+            Enum.map(review_criteria, fn criterion ->
+              %{
+                "criterion" => criterion,
+                "status" => "met",
+                "evidence" => "test/storefront_web/components/order_summary_test.exs"
+              }
+            end),
+          "project_checks" => [],
+          "testing_strategy" => %{"status" => "passed"},
+          "patterns" => %{"status" => "passed"},
+          "pitfalls" => %{"status" => "passed"},
+          "security_considerations" => %{"status" => "passed"}
+        },
         assigned_to_id: priya.id,
         inserted_hours_ago: 120
       },
@@ -335,6 +441,16 @@ seed_ai_board = fn ->
       claimed_at: ago.(60),
       completed_at: ago.(26),
       completed_by_agent: "Claude Sonnet 5.5"
+    })
+
+  # Set the dependency once its prerequisite is done: a dependency change
+  # recomputes the blocked status, which would reset an in-progress task.
+  {:ok, shown} =
+    Tasks.update_task(shown, %{
+      dependencies: [stored.identifier],
+      description: "Let returning shoppers pick a saved card in the payment sheet.",
+      acceptance_criteria:
+        "Saved cards appear above the new-card form\nEach card shows its brand, last four digits and expiry"
     })
 
   {:ok, shown} = Tasks.move_task(shown, columns["Doing"], 2)

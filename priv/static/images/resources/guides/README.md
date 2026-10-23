@@ -41,7 +41,12 @@ It creates:
     Accessibility, Performance);
   - the goal "Saved payment methods" with three children;
   - "Move the order summary above the fold" waiting in Review, with a comment
-    from Priya that mentions Maya;
+    from Priya that mentions Maya, and a full agent completion: acceptance
+    criteria, completion notes, a passing structured review and a diff for
+    each of its three changed files, so the Review queue has something to
+    show;
+  - "Show saved cards in the payment sheet" in Doing, depending on the
+    finished "Store card tokens with the payment provider";
   - an API token record named "Checkout agent";
   - four weeks of completed work by several agents, so every metrics page
     has data.
@@ -167,6 +172,12 @@ so routes say which demo board to open. `Checkout` is Checkout Revamp and
 | `inviting-team-members-step-4.png` | inviting-team-members / 4 Invite Someone Without an Account | `/boards/<Checkout>/members` | Searched `sam.ortiz@example.test`, which has no account; the invite card shown. Don't click an invite button | Crop the window |
 | `using-stride-with-a-team-step-2.png` | using-stride-with-a-team / 2 Plan the Work as Goals | `/boards/<Checkout>` | The Saved payment methods goal card in Ready, its child W10 below and W9 in Doing | Ready and Doing columns, scrolled to the goal |
 | `using-stride-with-a-team-step-3.png` | using-stride-with-a-team / 3 Assign Each Goal to a Developer | `/boards/<Checkout>/tasks/<goal>/edit` | **Assigned To** set to Priya Raman with a ring, not saved | Priority to Assigned To |
+| `monitoring-task-progress-step-4.png` | monitoring-task-progress / 4 Viewing Task Details | `/boards/<Checkout>` | Details of "Show saved cards in the payment sheet" (W9) open, comment box not focused | The window, from the header to **Edit task** |
+| `monitoring-task-progress-step-5.png` | monitoring-task-progress / 5 Using Filters to Focus | `/boards/<Checkout>?assignee=<Marcus id>&priority=high` | Filter bar with High and Marcus Bell set and **Clear filters** showing, at desktop width so the `/` and `?` buttons show | The bar and the first four columns, scaled to 1000px wide |
+| `reviewing-completed-work-step-2.png` | reviewing-completed-work / 2 Open the Review Queue | `/review` (as Maya) | The order-summary task selected; the hard-coded "Avg time to review" text hidden in the page | Full window, scaled to 1200px wide |
+| `reviewing-completed-work-step-3.png` | reviewing-completed-work / 3 What to Check | `/review` | **Changed files** with `order_summary.ex` clicked open | Crop the Changed files panel |
+| `reviewing-completed-work-step-4.png` | reviewing-completed-work / 4 Approving Work | `/review` | The task header with **Request changes** and **Approve**. Don't click **Approve**: it moves the task to Done | From the header to the stats row |
+| `reviewing-completed-work-step-5.png` | reviewing-completed-work / 5 Requesting Changes | `/review` | **Request changes** clicked and demo notes typed, not sent; click **Cancel** afterwards | From the header to **Send request** |
 | `hooks-step-2.png` | setting-up-hooks / 2 Create .stride.md | an editor, not the app | `.stride.md` with the guide's example hooks | Crop the editor pane |
 | `api-auth-step-1.png` | api-authentication / 1 Generate an API Token | `/boards/<Checkout>/api_tokens` | Token form filled with a demo name | Crop the form |
 | `api-auth-step-2.png` | api-authentication / 2 Complete Token Generation | `/boards/<Checkout>/api_tokens` | New-token panel, token text replaced with a fake value | Crop the panel |

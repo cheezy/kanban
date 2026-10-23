@@ -11,8 +11,11 @@ defmodule Kanban.ResourcesDemoSeedsTest do
   alias Kanban.Columns.Column
   alias Kanban.Labels.Label
   alias Kanban.Organizations.Organization
+  alias Kanban.Tasks.ChangedFilesAudit
+  alias Kanban.Tasks.CompletionValidation
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
+  alias KanbanWeb.ReviewAcceptance
 
   @seed Path.expand("../../priv/repo/resources_demo_seeds.exs", __DIR__)
   @password "demo-password-for-the-seed-test"
@@ -120,6 +123,38 @@ defmodule Kanban.ResourcesDemoSeedsTest do
 
     [comment] = from(c in TaskComment, where: c.task_id == ^review.id) |> Repo.all()
     assert comment.content =~ "@[Maya Chen](user:"
+  end
+
+  test "the Review task carries a full completion for the Review queue" do
+    run_seed()
+    by_column = tasks_by_column(demo_board("Checkout Revamp"))
+    [review] = by_column["Review"]
+    result = review.reviewer_result
+
+    assert {:ok, _} = CompletionValidation.validate_changed_files(review.changed_files)
+
+    assert Enum.map(review.changed_files, & &1["path"]) ==
+             String.split(review.actual_files_changed, ", ")
+
+    refute ChangedFilesAudit.diff_missing?(review)
+    assert {:ok, _} = CompletionValidation.validate_reviewer_result(result)
+    assert CompletionValidation.review_contract_failures(result, review) == []
+    assert CompletionValidation.acceptance_criteria_count_failures(result, review) == []
+    assert {:ok, _} = CompletionValidation.cross_check_reviewer_result(result, review)
+    assert ReviewAcceptance.acceptance_value(review) == "3/3"
+    refute ReviewAcceptance.acceptance_inconsistent?(review)
+    assert review.completed_by_id
+  end
+
+  test "the Doing goal child depends on the finished one and stays in progress" do
+    run_seed()
+    tasks = demo_board("Checkout Revamp") |> tasks_by_column() |> Map.values() |> List.flatten()
+    stored = Enum.find(tasks, &(&1.title == "Store card tokens with the payment provider"))
+    shown = Enum.find(tasks, &(&1.title == "Show saved cards in the payment sheet"))
+
+    assert stored.status == :completed
+    assert shown.dependencies == [stored.identifier]
+    assert shown.status == :in_progress
   end
 
   test "the custom board has a WIP-limited column and tasks in every column" do

@@ -11,6 +11,18 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     "using-stride-with-a-team"
   ]
 
+  @working_with_tasks_ids [
+    "writing-tasks-for-ai",
+    "monitoring-task-progress",
+    "reviewing-completed-work",
+    "organizing-with-dependencies",
+    "using-complexity-priority"
+  ]
+
+  # Column names are board data, not translated strings, so they are checked
+  # against the AI board's column list instead.
+  @ai_board_columns ~w(Backlog Ready Doing Review Done)
+
   describe "all_how_tos/0" do
     test "returns a list of how-to guides" do
       how_tos = HowToData.all_how_tos()
@@ -563,6 +575,128 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         assert length(guide.steps) >= 3,
                "Guide #{guide.id} should have at least 3 steps"
       end
+    end
+  end
+
+  describe "working-with-tasks guides" do
+    defp working_with_tasks_content(ids \\ @working_with_tasks_ids) do
+      for id <- ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          step <- guide.steps,
+          into: "",
+          do: step.content <> "\n"
+    end
+
+    test "every bolded UI label in the working-with-tasks guides exists in the source" do
+      sources =
+        Enum.map_join(
+          [
+            "lib/kanban_web/components/side_nav.ex",
+            "lib/kanban_web/components/board_filter_bar.ex",
+            "lib/kanban_web/components/keyboard_shortcuts_help.ex",
+            "lib/kanban_web/components/task_card.ex",
+            "lib/kanban_web/live/review_live.ex",
+            "lib/kanban_web/live/review_live.html.heex",
+            "lib/kanban_web/notification_labels.ex"
+            | Path.wildcard("lib/kanban_web/components/review_*.ex") ++
+                Path.wildcard("lib/kanban_web/live/{board,task}_live/**/*.{ex,heex}")
+          ],
+          &File.read!/1
+        )
+
+      columns = File.read!("lib/kanban/boards/creation.ex")
+
+      labels =
+        for id <- @working_with_tasks_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            do: {id, label}
+
+      for id <- @working_with_tasks_ids do
+        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
+      end
+
+      for {id, label} <- labels do
+        # A bare quoted string would also match an attribute or a map key, so
+        # a label must be the text of a gettext call.
+        translated = ~r/gettext\("#{Regex.escape(label)}"/
+
+        assert sources =~ translated or
+                 (label in @ai_board_columns and columns =~ ~s(name: "#{label}")),
+               "#{id} names **#{label}**, which no screen shows"
+      end
+    end
+
+    test "working-with-tasks guides keep their ids, titles and minimum step counts" do
+      for {id, title, steps} <- [
+            {"writing-tasks-for-ai", "Writing Effective Tasks for AI Agents", 6},
+            {"monitoring-task-progress", "Monitoring Task Progress", 5},
+            {"reviewing-completed-work", "Reviewing Completed Work", 6},
+            {"organizing-with-dependencies", "Organizing Tasks with Dependencies", 5},
+            {"using-complexity-priority", "Using Complexity and Priority Effectively", 5}
+          ] do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.title == title
+        assert length(guide.steps) >= steps, "#{id} should have at least #{steps} steps"
+      end
+    end
+
+    test "working-with-tasks guides drop the claims the app no longer makes" do
+      content = working_with_tasks_content()
+
+      for stale <- [
+            "Request Changes",
+            "Dependencies** field",
+            "Select tasks that must complete first",
+            "Filter by status",
+            "returns to Ready",
+            "Optionally add review notes",
+            "after_review",
+            "which agent claimed it and when",
+            "under 2 hours",
+            "2-8 hours",
+            "8+ hours",
+            "**Good examples:**",
+            "**Priority levels:**",
+            "so you can tick them off",
+            "Only the board owner sees",
+            "for another row"
+          ] do
+        refute content =~ stale, "a working-with-tasks guide still says #{inspect(stale)}"
+      end
+    end
+
+    test "the claim, filter, review and sizing facts match the code" do
+      monitoring = working_with_tasks_content(["monitoring-task-progress"])
+      assert monitoring =~ "A claim lasts 60 minutes"
+      assert monitoring =~ "the task stays in **Doing**"
+      assert File.read!("lib/kanban/tasks/agent_workflow.ex") =~ "DateTime.add(60 * 60, :second)"
+      assert File.read!("lib/kanban/notifications/claim_expiry_worker.ex") =~ "never unclaims"
+
+      assert monitoring =~ "no status filter"
+      refute Map.has_key?(%Kanban.Tasks.BoardFilters{}, :status)
+
+      reviewing = working_with_tasks_content(["reviewing-completed-work"])
+      header = File.read!("lib/kanban_web/components/review_detail_header.ex")
+
+      for label <- ["Approve", "Request changes"] do
+        assert reviewing =~ "Click **#{label}**"
+        assert header =~ ~s{gettext("#{label}")}
+      end
+
+      caveat = "When Stride's plans are switched on, a free board sends no notifications."
+      assert monitoring =~ caveat
+      assert reviewing =~ caveat
+      assert File.read!("lib/kanban/notifications.ex") =~ "Kanban.Plans.board_unlocked?/1"
+
+      sizing = working_with_tasks_content(["using-complexity-priority"])
+      assert sizing =~ "under 1 hour"
+      assert sizing =~ "1 to 2 hours"
+      assert sizing =~ "more than 2 hours"
+
+      assert File.read!("docs/TASK-WRITING-GUIDE.md") =~
+               "Small (< 1 hour), Medium (1-2 hours), Large (> 2 hours)"
     end
   end
 
