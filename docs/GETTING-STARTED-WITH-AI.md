@@ -313,6 +313,10 @@ echo "Deploying $TASK_IDENTIFIER"
 ```
 ````
 
+The `60s` and `120s` timeouts in the served template are out of date. The
+server gives every hook a 10-minute (600,000 ms) timeout; see
+[Hook Types Explained](#hook-types-explained).
+
 What to put in each section:
 
 #### before_doing
@@ -333,7 +337,7 @@ Runs after the task is approved. A common use is merging or deploying.
 
 ### Hook Types Explained
 
-**All hooks are blocking.** If a hook command exits non-zero, the agent stops and fixes the problem instead of moving the task on. A failed `after_doing`, for example, means the task is not completed. The timeout a hook runs under comes with the hook metadata the server returns on claim and complete, not from `.stride.md`.
+**All hooks are blocking.** If a hook command exits non-zero, the agent stops and fixes the problem instead of moving the task on. A failed `after_doing`, for example, means the task is not completed. The timeout a hook runs under comes with the hook metadata the server returns on claim and complete, not from `.stride.md`. Today it is 10 minutes (600,000 ms) for every hook.
 
 A fifth section, `## after_goal`, runs once when the last task of a goal is done. The full list of sections, with the environment variables each hook receives, is in the [Hook Execution Guide](AGENT-HOOK-EXECUTION-GUIDE.md).
 

@@ -138,8 +138,8 @@ The `key_files` array should contain objects with the following structure:
 **Why key_files is CRITICAL:**
 
 - Prevents merge conflicts - only one task can modify a file at a time
-- Tasks with overlapping key_files cannot be claimed simultaneously
-- If Task A is working on `lib/auth.ex`, Task B listing the same file will be blocked until Task A completes
+- `GET /api/tasks/next` and a claim without an `identifier` skip a Ready task whose key_files overlap a task in progress in Doing or Review
+- If Task A is working on `lib/auth.ex`, Task B listing the same file is not offered until Task A completes. A claim that names Task B with `identifier` does not run this check
 
 #### Verification Steps Format
 

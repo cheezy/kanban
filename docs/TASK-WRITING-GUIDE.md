@@ -406,8 +406,8 @@ This gives you:
 
 **Why critical:** Prevents merge conflicts by ensuring only one task modifies a file at a time.
 
-- Tasks with overlapping `key_files` CANNOT be claimed simultaneously
-- If Task A is modifying `lib/auth.ex` and is in Doing or Review, Task B that also lists `lib/auth.ex` will NOT be claimable until Task A completes
+- `GET /api/tasks/next` and a claim without an `identifier` skip a Ready task whose `key_files` overlap a task in progress in Doing or Review
+- If Task A is modifying `lib/auth.ex` and is in Doing or Review, Task B that also lists `lib/auth.ex` is not offered until Task A completes. A claim that names Task B with `identifier` does not run this check
 - **Specify key_files whenever possible**, even if it's an educated guess based on the task description
 - Better to specify approximately than to omit entirely
 

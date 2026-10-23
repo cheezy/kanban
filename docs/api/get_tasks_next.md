@@ -121,8 +121,8 @@ Agent capabilities are configured in your API token. Common capabilities include
 - This endpoint does NOT claim the task - it only shows what's available
 - Use `POST /api/tasks/claim` to actually claim a task
 - The response includes ALL task fields (same as GET /api/tasks/:id)
-- Tasks with overlapping `key_files` (files being modified) cannot be claimed simultaneously
-- Claims expire after 60 minutes if the task is not completed
+- A Ready task whose `key_files` (files being modified) overlap a task in progress in Doing or Review is skipped. A claim that names a task with `identifier` does not run this check
+- Claims expire after 60 minutes if the task is not completed. An expired claim stays in Doing until it is unclaimed or moved back to Ready
 
 ## See Also
 

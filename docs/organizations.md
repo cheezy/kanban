@@ -17,8 +17,9 @@ Organization's security policies have their own guides, linked from
 > enforces plans only when its operator sets the environment variable
 > `STRIDE_PLANS_ENFORCED` to exactly `true` and restarts it. A self-hosted
 > instance does not enforce them unless you set it, so every board has every
-> feature and no member limit. Workspaces are the exception: they need an
-> Organization in either mode, because a workspace belongs to one. Everything in this guide that is about a
+> feature and no member limit. Workspaces, single sign-on and the
+> Organization audit log are the exceptions: each belongs to an Organization,
+> so it needs one in either mode. Everything in this guide that is about a
 > locked feature, the three-person limit, a **Paused** webhook or the
 > "Available to organizations" prompt applies only while plans are enforced.
 > Organizations, workspaces, roles, invitations, board moves, the audit log
@@ -359,9 +360,11 @@ These have their own guides:
 
 ## When someone deletes their account
 
-Anyone can delete their own account from the **Danger zone** of their account
-settings, by entering their password and typing `delete my account`. For
-someone in an Organization, Stride first checks two things:
+Anyone with a password can delete their own account from the **Delete
+account** section of their account settings, by entering their password and
+typing `delete my account`. An account created by single sign-on has no
+password, so it cannot (see [Known limits](single-sign-on.md#known-limits)).
+For someone in an Organization, Stride first checks two things:
 
 - **The last org-admin.** If they are the last enabled org-admin of an
   Organization that has other members, the deletion is refused: "A Stride
@@ -403,7 +406,7 @@ long Stride keeps data.
 | `/workspace/settings`: Members, Boards | Everyone in the workspace |
 | `/workspace/settings`: Invitations, Tokens, Export | Org-admins |
 | `/admin/organizations` | Stride site admins |
-| Danger zone in account settings | Everyone |
+| Delete account in account settings | Everyone with a password |
 
 The plan check lives in `Kanban.Plans` (`lib/kanban/plans.ex`), board moves
 in `Kanban.Workspaces.BoardMoves`, and effective board access in

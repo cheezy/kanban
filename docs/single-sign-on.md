@@ -137,7 +137,8 @@ issuer, use it, such as Microsoft Entra ID's
 
 Every sign-in is recorded as an `sso_login` audit event, and every refusal as
 `sso_login_refused` with the reason. The person sees the same message for
-every refusal, "Single sign-on could not sign you in.", so the page never
+every refusal, "Single sign-on could not sign you in. Contact your
+Organization's administrator if this continues.", so the page never
 says whether an account exists or which Organization it belongs to.
 
 ### Which account

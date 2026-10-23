@@ -107,6 +107,7 @@ plugins" in Multi-Agent Instructions, under Guides above).
 
 - [Audit Log Database Roles](audit-log-database-roles.md) — Which database roles the audit log needs and the one-time step that hardens production.
 - [Audit Log Ownership Hardening](audit-log-hardening.md) — Why the audit log's table owner matters and how ownership keeps it append-only.
+- [Error Pages and Error Responses](error-pages.md) — What a browser, API or SCIM client gets when a request fails, and which module renders it.
 - [Organizations Launch Runbook](organizations-launch-runbook.md) — The launch-day steps for enforcing plans, the verification checklist and rollback.
 - [Telemetry Events](telemetry.md) — Every telemetry event, its privacy rule, attaching a handler and metrics retention.
 
@@ -118,7 +119,6 @@ plugins" in Multi-Agent Instructions, under Guides above).
 - [Dark Mode Contract](dark-mode-contract.md) — Theme tokens, prohibited patterns and the dark-mode scanner.
 - [Responsive Audit Baseline](responsive-audit.md) — The breakpoints, test widths and layout rules every page follows.
 - [Organizing Tailwind CSS](TAILWIND_ORGANIZATION.md) — Keeping Tailwind classes readable in HEEx templates with function components.
-- [Error Pages and Error Responses](error-pages.md) — How an exception becomes a browser page or an API error body.
 
 ## Historical records
 

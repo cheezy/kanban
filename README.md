@@ -160,7 +160,8 @@ Stride is a kanban board application designed from the ground up for seamless hu
   token's capabilities decide which tasks it is offered
   ([Authentication Guide](docs/AUTHENTICATION.md))
 - **Atomic task claiming**: a claim succeeds for one agent only, and
-  expires after 60 minutes if the task is not completed
+  expires after 60 minutes if the task is not completed. An expired
+  claim stays in Doing until it is unclaimed or moved back to Ready
 - **Rich task metadata** for effective implementation:
   - `why`, `what`, `where_context` - Planning & Context
   - `key_files` - Files to modify (prevents merge conflicts)
@@ -206,10 +207,16 @@ Stride is a kanban board application designed from the ground up for seamless hu
   which an Organization can require of its members
   ([Organization Security Policies](docs/organization-security-policies.md))
 
-Workspaces, single sign-on, webhooks and the MCP server are paid
-features. They are open to everyone until a deployment sets
-`STRIDE_PLANS_ENFORCED=true`; from then on they need an Organization,
-and a board gets them only when it is in an Organization workspace.
+The Organization plan's paid features are notifications, the
+Organization audit log, single sign-on, workspaces, bulk actions,
+integrations (webhooks, Slack and Discord), the task telemetry fields
+and the MCP server. Workspaces, single sign-on and the audit log always
+need an Organization, because they belong to one. The others are
+open to everyone until a deployment sets `STRIDE_PLANS_ENFORCED=true`;
+from then on they need an Organization, and a board gets them only when
+it is in an Organization workspace.
+[What a free board cannot do](docs/organizations.md#what-a-free-board-cannot-do)
+says what each lock does.
 
 ## The AI Workflow
 
@@ -408,10 +415,13 @@ Start with the [documentation index](docs/README.md). It lists every doc in `doc
 
 ### Multi-Agent Instruction Files
 
+The onboarding endpoint serves these files to tools that have no Stride
+plugin. The retired GitHub Copilot, Gemini and single-file `stride` skill
+files are listed under
+[Retired instruction files](docs/README.md#retired-instruction-files) in
+the documentation index; use each tool's Stride plugin instead.
+
 - [AGENTS.md instructions](docs/multi-agent-instructions/AGENTS.md) - For assistants that read an `AGENTS.md` file
-- [GitHub Copilot instructions](docs/multi-agent-instructions/copilot-instructions.md) - For GitHub Copilot
-- [Gemini Code Assist instructions](docs/multi-agent-instructions/GEMINI.md) - For Gemini Code Assist
-- [Stride skill (single file)](docs/multi-agent-instructions/SKILL.md) - The `stride` skill as one file, for assistants such as OpenCode
 - [stride-workflow skill](docs/multi-agent-instructions/skills/stride-workflow/SKILL.md) - The orchestrator that runs a task from claim to completion
 - [stride-claiming-tasks skill](docs/multi-agent-instructions/skills/stride-claiming-tasks/SKILL.md) - Claiming a task
 - [stride-completing-tasks skill](docs/multi-agent-instructions/skills/stride-completing-tasks/SKILL.md) - Completing a task
@@ -455,10 +465,12 @@ Start with the [documentation index](docs/README.md). It lists every doc in `doc
 - [GET /api/tasks/:id/dependencies](docs/api/get_tasks_id_dependencies.md) - List a task's dependencies
 - [GET /api/tasks/:id/dependents](docs/api/get_tasks_id_dependents.md) - List the tasks that depend on a task
 - [GET /api/tasks/:id/tree](docs/api/get_tasks_id_tree.md) - Fetch a goal or task with its children
+- [GET /api/tasks/:id/after_goal_status](docs/api/get_tasks_id_after_goal_status.md) - Check whether completing a task armed its goal's `after_goal` hook
 - [PATCH /api/tasks/:id](docs/api/patch_tasks_id.md) - Update a task
 - [PATCH /api/tasks/:id/complete](docs/api/patch_tasks_id_complete.md) - Complete tasks
 - [PATCH /api/tasks/:id/mark_done](docs/api/patch_tasks_id_mark_done.md) - Move a task from Review straight to Done
 - [PATCH /api/tasks/:id/mark_reviewed](docs/api/patch_tasks_id_mark_reviewed.md) - Record the outcome of a human review
+- [PATCH /api/tasks/:id/after_goal](docs/api/patch_tasks_id_after_goal.md) - Report the result of a goal's `after_goal` hook
 - [POST /api/tasks](docs/api/post_tasks.md) - Create tasks
 - [POST /api/tasks/batch](docs/api/post_tasks_batch.md) - Create several goals in one request
 - [POST /api/tasks/claim](docs/api/post_tasks_claim.md) - Claim tasks
