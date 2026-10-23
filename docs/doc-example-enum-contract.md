@@ -1,8 +1,8 @@
 # Documentation Example Enum Contract
 
-This document defines the rules for enum values written in the JSON examples
-of the API reference (`docs/api/*.md`) and the top-level guides (`docs/*.md`).
-The test `test/kanban_web/controllers/api/doc_examples_enum_test.exs` enforces
+This document is for contributors who write JSON examples in the API reference
+(`docs/api/*.md`) or the top-level guides (`docs/*.md`). It defines the rules for
+the enum values those examples use. The test `test/kanban_web/controllers/api/doc_examples_enum_test.exs` enforces
 them in the default `mix test` run. Introduced by D358, after several endpoint
 docs were found giving a task the `type` value `task`, which `POST /api/tasks`
 rejects with a 422, and complexity values from a retired five-level scale.
@@ -64,7 +64,10 @@ silently matches nothing cannot pass.
   show `task` as a `type` on purpose, as the wrong value an agent must not send.
   Leave those anti-examples as they are.
 - **`"type": "http"` is allowed.** It is the OpenAPI `securitySchemes` entry in
-  `docs/api/get_openapi_json.md`, not a task type.
+  `docs/api/get_openapi_json.md`, not a task type. The test allows it in every
+  scanned file, not only that one (`docs/MCP.md` uses it for an MCP server
+  transport), so a task example with `"type": "http"` would also pass. Check
+  that by hand: it is never a valid task type.
 - **`status` is not scanned.** Reviewer, hook and verification payloads in the
   same docs use other statuses, such as `failed`, `success` and `met`. Check
   task `status` values in an example by hand against the table above.

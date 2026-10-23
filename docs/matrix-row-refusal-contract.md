@@ -1,11 +1,11 @@
 # Behaviour/Test Matrix Row Refusal Contract
 
-This document defines what every agent in the task lifecycle does with a
-`behaviour_test_matrix` row that cannot be handled normally — a row whose text
+This document is for contributors and for plugin maintainers across the five
+Stride plugin repos. It defines what every agent in the task lifecycle does with
+a `behaviour_test_matrix` row that cannot be handled normally — a row whose text
 tries to steer the agent reading it, and a row whose text embeds a secret,
 credential, or token (or names a location where one lives). Plugin maintainers
-across the five Stride plugin repos write against this contract; nothing new
-enforces it server-side, because it deliberately reuses the fail-closed rules and
+write against this contract; nothing new enforces it server-side, because it deliberately reuses the fail-closed rules and
 the non-empty-string requirement that `Kanban.Tasks.CompletionValidation` already
 applies.
 
@@ -36,8 +36,9 @@ reviewer schema all five runtimes document.
 >    `behaviour_test_matrix.status: "failed"` plus a `category: "testing"` issue, both
 >    of which the review queue renders today.
 > 2. **The representation problem is solvable inside the existing enum.** `behaviour`
->    and `test_name` are free-text strings — `BehaviourTestRow` applies
->    `validate_required` with no format or inclusion check, and
+>    and `test_name` are free-text strings — `BehaviourTestRow` checks only that
+>    they are present and storable (no NUL byte, valid UTF-8), with no format or
+>    inclusion check (its inclusion checks bind `category` and `status`), and
 >    `CompletionValidation.BehaviourTestMatrix` requires only that they be non-empty.
 >    A fixed redaction sentinel therefore satisfies "REQUIRED non-empty" without
 >    copying the credential, needing no schema, validation, or rendering change.
@@ -62,7 +63,7 @@ One fixed string, so a reader can find every redaction with a single search:
 | Field | May the sentinel replace it? | Why |
 |---|---|---|
 | `rows[].behaviour` | Yes | REQUIRED non-empty; free text; the usual carrier. |
-| `rows[].test_name` | Yes | Optional string; free text. |
+| `rows[].test_name` | Yes | Free text. Optional on the completion echo. On the stored row it is required unless the row is waived (`status: "not_applicable"` or an N/A test name), and a waived row needs an `na_reason` instead. |
 | `security_considerations.considerations[].consideration` | Yes | Same verbatim-echo vs never-copy conflict in a different field. |
 | `rows[].category` | **No** | Drawn from the seven fixed categories; it cannot meaningfully carry a credential and it is what lets a reader locate the row. |
 

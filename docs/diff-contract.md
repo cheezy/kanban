@@ -1,23 +1,22 @@
 # Per-File Diff JSON Contract
 
-This document defines the shape of the optional per-file `diff` field carried on the agent completion payload submitted to `PATCH /api/tasks/:id/complete`. Plugin maintainers across the six Stride plugin repos (`stride`, `stride-copilot`, `stride-gemini`, `stride-codex`, `stride-opencode`, `stride-pi`) write against this contract; the Stride server validates against it and the review queue UI renders it.
+This document is for contributors changing how Stride stores or shows per-file diffs, and for plugin maintainers across the six Stride plugin repos (`stride`, `stride-copilot`, `stride-gemini`, `stride-codex`, `stride-opencode`, `stride-pi`) whose hooks upload them. It defines the `changed_files` array a plugin uploads with `PUT /api/tasks/:id/changed_files` after a completion, including the optional per-file `diff` field. Plugin maintainers write against this contract; the Stride server validates against it and the review queue UI renders it.
 
-The field is **optional**. Legacy plugin versions that do not emit it produce a working review with no diff panel (no crash, no error). New plugin versions emit it so reviewers can approve or reject without leaving Stride.
+The upload is **optional**. Legacy plugin versions that do not send it produce a working review with no diff panel (no crash, no error). New plugin versions emit it so reviewers can approve or reject without leaving Stride.
 
 ## Field location
 
-The completion payload gains a `changed_files` array. Each entry is an object describing one file the agent touched.
+The `PUT /api/tasks/:id/changed_files` body carries a `changed_files` array. Each entry is an object describing one file the agent touched. The completion endpoint does not store this field (see **See also**).
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `path` | string | Yes | Repo-relative file path (e.g., `lib/foo.ex`). Matches the path the plugin would put in `actual_files_changed`. |
 | `diff` | string | No | Unified-patch text for this file, truncated to the rule below. Omit for binary files (see below) and for legacy emit paths that do not capture diffs. |
 
-Example completion payload fragment:
+Example `PUT /api/tasks/:id/changed_files` body:
 
 ```json
 {
-  "actual_files_changed": "lib/foo.ex, lib/bar.ex, assets/logo.png",
   "changed_files": [
     {"path": "lib/foo.ex", "diff": "--- a/lib/foo.ex\n+++ b/lib/foo.ex\n@@ -1,3 +1,4 @@\n defmodule Foo do\n+  @moduledoc \"Foo\"\n end\n"},
     {"path": "lib/bar.ex", "diff": "--- a/lib/bar.ex\n+++ b/lib/bar.ex\n@@ -10,7 +10,7 @@\n   def call(x), do: x\n-  def old(x), do: x\n+  def new(x), do: x + 1\n"},
@@ -26,7 +25,7 @@ Example completion payload fragment:
 }
 ```
 
-`changed_files` coexists with `actual_files_changed` (the existing comma-separated string). The server keeps `actual_files_changed` as the canonical file list for backward compatibility; `changed_files` adds structured per-file content alongside it.
+`changed_files` sits beside `actual_files_changed`, the comma-separated string on the completion payload (for the example above, `"lib/foo.ex, lib/bar.ex, assets/logo.png"`). The server keeps `actual_files_changed` as the canonical file list for backward compatibility; `changed_files` adds structured per-file content alongside it.
 
 ## Encoding
 
@@ -59,7 +58,9 @@ Rules:
 
 ## Truncation
 
-The `diff` value for any single file MUST NOT exceed **500 lines** (counting newlines in the captured patch text). Plugins are responsible for truncating before sending; the server applies a defensive backstop and rejects payloads where any per-file `diff` exceeds the cap.
+The `diff` value for any single file MUST NOT exceed **500 lines** (counting newlines in the captured patch text; a single trailing newline is not counted). Plugins are responsible for truncating before sending; the server applies a defensive backstop and rejects payloads where any per-file `diff` exceeds the cap.
+
+The truncation marker below counts toward the cap: keep at most 499 lines of patch and append the marker as line 500. A plugin that keeps 500 lines and then appends the marker sends 501 and is rejected.
 
 When a plugin truncates, it appends this exact marker on its own line at the end of the truncated content:
 
@@ -75,7 +76,7 @@ Example truncated diff:
 --- a/lib/big_module.ex
 +++ b/lib/big_module.ex
 @@ -1,500 +1,500 @@
-... 498 lines of patch content ...
+... 496 lines of patch content ...
 [diff truncated at 500 lines]
 ```
 
@@ -93,9 +94,9 @@ Untracked new files that the plugin captures via the synthesized new-file patch 
 
 ## Backward compatibility
 
-- The `changed_files` field is **optional** on the completion payload. Payloads that omit it continue to validate.
+- The upload is **optional**: completion does not need it, and a completion payload that omits `changed_files` continues to validate. The PUT endpoint itself does require the field: a body without `changed_files` is refused with `must be present (send [] to clear)`, and `[]` clears the stored list.
 - Per-file `diff` is optional within each `changed_files` entry. A plugin MAY emit `{"path": "lib/foo.ex"}` with no `diff` if it could not capture one (e.g., the file was deleted, the base ref was unavailable, the diff exceeded a sanity cap). The UI renders "no diff available" for such entries.
-- Server-side validation accepts entries with or without `diff`; only malformed values (non-string `diff`, missing `path`, oversized per-file `diff`) are rejected.
+- Server-side validation accepts entries with or without `diff`; only malformed values are rejected: an entry that is not an object, a missing or empty `path`, an absolute `path`, a `path` containing `..` traversal or a null byte, a non-string `diff`, or a `diff` over the line cap. Each error names the entry by its index.
 - Older plugin versions that emit only `actual_files_changed` continue to work; the review queue shows the file list with no inline diff panel content.
 
 ## Transport encoding (optional, edge-filter safe)
@@ -111,7 +112,7 @@ To avoid that, `PUT /api/tasks/:id/changed_files` **also** accepts a transport-e
 - `encoding` MUST be `"base64"` or `"gzip+base64"` (gzip the JSON array, then base64 the gzipped bytes).
 - `data` MUST be the encoded JSON array; once decoded it is validated and stored **identically** to the raw shape — all rules above (per-file 500-line cap, binary placeholder, `path` required) apply to the decoded entries.
 - This is **purely additive**. The raw array (`{"changed_files": [...]}`) and the bare top-level array body continue to work unchanged; plugins only need the envelope when an edge filter would otherwise reject the raw diff.
-- The server bounds the encoded and decoded sizes and returns the standard `completion validation failed` (422) envelope for invalid base64, an unsupported `encoding`, a decompression failure, or a payload that does not decode to a JSON array.
+- The server bounds the encoded `data` at 10,000,000 bytes and the decoded array at 5,000,000 bytes, and returns the standard `completion validation failed` (422) envelope for invalid base64, an unsupported `encoding`, a decompression failure, or a payload that does not decode to a JSON array.
 
 Plugin maintainers SHOULD prefer the encoded form for the diff upload when targeting an edge-filtered deployment, and SHOULD surface a failed upload (a non-2xx response) rather than discarding it silently.
 
@@ -132,6 +133,6 @@ Plugin maintainers SHOULD prefer the encoded form for the diff upload when targe
 ## See also
 
 - [`PUT /api/tasks/:id/changed_files`](api/put_tasks_id_changed_files.md) — the dedicated upload endpoint and **sole writer** for this field (as of W777/W778).
-- [`PATCH /api/tasks/:id/complete`](api/patch_tasks_id_complete.md) — the completion endpoint; **no longer writes `changed_files`** — any value in the completion body is silently ignored. Sending it for backwards compatibility is tolerated.
+- [`PATCH /api/tasks/:id/complete`](api/patch_tasks_id_complete.md) — the completion endpoint; **no longer writes `changed_files`**. A value still sent in the completion body is never stored, but it is checked against the rules above: a malformed one is refused with a 422 when strict completion validation is on and logged as a warning otherwise.
 - `lib/kanban_web/components/review_diff_panel.ex` — the review queue component that consumes this field.
 - `lib/kanban/tasks/completion_validation/changed_files.ex` — server-side validator (`changed_files` validation added in W720; extracted from `completion_validation.ex` in W1953 and still reached through `CompletionValidation.validate_changed_files/1`).

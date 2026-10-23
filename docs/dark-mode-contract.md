@@ -1,7 +1,8 @@
 # Dark Mode Contract
 
-Single source of truth for theming rules across the Stride app. Read this before
-adding or changing any user-visible UI; honor it on every PR.
+This document is for contributors adding or changing any user-visible UI in
+Stride. It is the single source of truth for theming rules across the app: read
+it before you start and honor it on every PR.
 
 This document is enforced by **two** mix tasks:
 
@@ -10,7 +11,8 @@ This document is enforced by **two** mix tasks:
   `mix precommit`.
 - `mix dark_mode.contrast` measures whether the resulting colors are actually
   **legible** — it parses the token palette and computes WCAG contrast for both
-  themes. Its enforcing mode is wired into `mix precommit` by the lock-in task.
+  themes. `mix precommit` runs it as `mix dark_mode.contrast --enforce`, which
+  exits non-zero when any pair falls below its floor.
 
 A green scanner alone does **not** mean dark mode is correct: the scanner only
 checks that you used *tokens*, not that the tokens are *readable*. That gap is
@@ -25,14 +27,15 @@ The app ships two daisyUI v5 themes (`light`, `dark`) defined in
 on `<html>`, written by the theme switch script in
 `lib/kanban_web/components/layouts/{root,marketing,app_chrome}.html.heex`. A
 custom Tailwind variant —
-`@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *))` at
-`assets/css/app.css:105` — makes the standard `dark:` Tailwind prefix work
+`@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *))` in
+`assets/css/app.css` — makes the standard `dark:` Tailwind prefix work
 alongside the daisyUI tokens. On top of that, a set of **Stride custom tokens**
 (`--ink`, `--ink-2`, `--ink-3`, `--surface`, `--surface-2`, `--surface-sunken`,
 `--line`, `--line-2`, `--line-strong`, `--line-input`, `--stride-orange`, `--stride-violet`, `--st-ok`,
 `--st-blocked`, …) is scoped to `.stride-screen` (authenticated app) and
-`.stride-marketing` (public marketing surfaces), with light/dark values defined
-at `assets/css/app.css:887+` and `1160+`.
+`.stride-marketing` (public marketing surfaces). The light values live in the
+`.stride-marketing, .stride-screen` block of `assets/css/app.css` and the dark
+values in its `:where([data-theme="dark"])` override blocks.
 
 Every theme-aware element must use one of these three vocabularies, never raw
 greys, whites, hex literals, or `oklch()` literals inline.
@@ -173,7 +176,7 @@ bulk-action bar and the metrics filters. There are two routes:
   that to `base-content` at 20% alpha (about 1.5:1). A rule in
   `assets/css/app.css` sets `--input-color: var(--line-input)` inside
   `.stride-screen` / `.stride-marketing`, and leaves the focus and `-error`
-  states to daisyUI.
+  states to daisyUI. The same rule also covers daisyUI's `.file-input`.
 
 `test/kanban_web/form_control_border_test.exs` checks both routes. A Stride form control is
 filled with the panel colour it sits on (1.00:1), so its border is the only
@@ -315,14 +318,16 @@ single `var()` reference flips with the theme.
 ## Scope rules
 
 - **`.stride-screen`** wraps every authenticated LiveView via
-  `lib/kanban_web/components/layouts.ex:61`. Children should prefer Stride
+  `lib/kanban_web/components/layouts.ex`. Children should prefer Stride
   custom tokens (`var(--ink)`, `var(--surface)`).
 - **`.stride-marketing`** wraps marketing pages via
-  `lib/kanban_web/components/layouts/marketing.html.heex:50`. Same token
+  `lib/kanban_web/components/layouts/marketing.html.heex`. Same token
   vocabulary as `.stride-screen`.
-- **`.stride-screen[data-stride-auth-frame]`** is a deliberate sub-scope at
-  `assets/css/app.css:898+` that pins auth pages to a light palette regardless
-  of `data-theme`. See the comment in the CSS for the rationale.
+- **Auth pages** render inside `auth_frame/1`
+  (`lib/kanban_web/components/auth_frame.ex`), which uses the Stride tokens and
+  follows the active theme like any other app page. There is no light-locked
+  auth sub-scope: the `[data-auth-frame]` rule in `assets/css/app.css` only
+  raises form controls to a 44px touch target below 768px.
 - Components rendered outside any of these scopes (rare, but it happens for
   some isolated form components) should use daisyUI tokens (`bg-base-100`,
   `text-base-content`), not Stride custom tokens — the Stride tokens are
@@ -374,12 +379,13 @@ in addition to the `style="..."` and single-line `style={"..."}` forms. A
 `var(--token, oklch(...))` fallback is exempt (the `var(...)` is stripped before
 the raw-color check), so legitimate fallbacks do not false-positive.
 
-Two limitations remain **by design**:
+These limitations remain:
 
 - Bare `oklch()` / hex literals **outside** any `style=` attribute are not
   flagged. Flagging them broadly would false-positive on legitimate
   `var(--token, oklch(...))` fallbacks and on intentional fixed-palette
-  components (e.g. generated avatar palettes, the light-locked auth frame).
+  components (e.g. generated avatar palettes, HTML emails, the metrics PDF
+  export).
 - `assets/css/app.css` is **not** scanned. It legitimately *defines* the oklch
   tokens, so a literal scan there is meaningless — the objective legibility of
   those values is measured by `mix dark_mode.contrast` instead.
@@ -388,10 +394,20 @@ Two limitations remain **by design**:
   nested function (e.g. `var(--ink, oklch(calc(…) …))`) is only partially
   stripped and can false-positive, and a CSS value literally containing `]}`
   ends the style-list scan one line early.
+- The `style="..."` and `style={"..."}` checks look at one line at a time and
+  only at double-quoted values. A hex or `oklch()` literal on the continuation
+  line of a multi-line `style="..."` string or `style={"..."}` expression, or in
+  a single-quoted `style='...'` attribute, is not flagged. Keep those values on
+  one line in double quotes so the scan can see them.
+- Rule 2 matches a palette name only directly after the prefix, so side and
+  axis utilities such as `border-l-red-500`, `border-t-gray-200` and
+  `border-x-blue-500` are not flagged. They are just as theme-blind; use a token
+  instead.
 
 When adding a multi-line inline gradient, prefer a composite gradient token (see
 the **Composite gradient tokens** table); if a fixed-palette literal is genuinely
-intentional (like the auth-frame gradient), allow-list it with a real reason.
+intentional (like the generated avatar palette), allow-list it with a real
+reason.
 
 ### Known contrast limitation: opacity on text (D213)
 
@@ -463,8 +479,8 @@ individually measured** — do not read this section as a clean bill of health f
 them.
 
 One custom-token site is also outside this sweep and unmeasured:
-`board_live/show.html.heex:707` puts `opacity: 0.55` on a whole revoked-API-token
-row, whose descendants carry `var(--ink)` and `var(--ink-3)` at 11.5px. It is
+`lib/kanban_web/live/board_live/show.html.heex` puts `opacity: 0.55` on a whole
+revoked-API-token row, whose descendants carry `var(--ink)` and `var(--ink-3)` at 11.5px. It is
 arguably an inactive-state affordance rather than de-emphasized text, which is
 why D214 left it, but at that alpha the `--ink-3` child would land well below the
 sites this task fixed. It is a genuine open question, not a considered pass.
@@ -484,18 +500,25 @@ cheaper appears.
 
 Some violations are legitimate (brand markers, fixed-contrast overlays). To
 allow-list a specific line, place a `dark-mode-ignore: <reason>` comment on
-the violating line OR on the immediately preceding line. The scanner accepts
-all three comment shapes:
+the violating line or as close above it as you can. The scanner accepts a
+marker on the violating line or on any of the 10 lines above it, because HEEx
+often spreads one tag, its attributes and its class or style value across many
+lines. A marker therefore also covers every other violation in the 10 lines
+below it, so keep it next to the line it excuses.
+
+The scanner only looks for the text `dark-mode-ignore` on those lines, so any
+comment shape works. These are the usual ones:
 
 ```elixir
 # dark-mode-ignore: <reason>             ← Elixir (.ex files)
 <%# dark-mode-ignore: <reason> %>        ← EEx (.eex files)
 <!-- dark-mode-ignore: <reason> -->      ← HTML comment (.heex files)
+<%!-- dark-mode-ignore: <reason> --%>    ← HEEx comment (.heex files)
 ```
 
-`<reason>` must be a short explanation (one short sentence). Avoid "TODO" or
-"FIXME" without a tracking task — if a violation needs follow-up, link the
-task identifier:
+The scanner does not check the reason; reviewers do. `<reason>` must be a
+short explanation (one short sentence). Avoid "TODO" or "FIXME" without a
+tracking task — if a violation needs follow-up, link the task identifier:
 
 ```heex
 <!-- dark-mode-ignore: TODO W903 — translucent overlay needs dark-mode variant -->
@@ -527,8 +550,8 @@ against.
 When adding or changing user-visible UI:
 
 1. Run `mix dark_mode.scan` **and** `mix dark_mode.contrast` locally before
-   committing (the scanner is in `mix precommit`; the contrast validator's
-   enforcing mode is wired in by the lock-in task).
+   committing (both run in `mix precommit`, the contrast validator with
+   `--enforce`).
 2. Toggle `data-theme="dark"` in DevTools and inspect the changed surface; also
    confirm light is unchanged.
 3. Read the `mix dark_mode.contrast` report for the pairs your change touches;
@@ -537,9 +560,9 @@ When adding or changing user-visible UI:
 4. For form controls, confirm inputs, labels, placeholders, and focus rings
    are all visible in dark mode.
 
-The longer "Dark Mode Verification Guidelines" runbook in the user's
-`CLAUDE.md` (under that exact heading) covers the manual flow including
-browser-eval snippets.
+The longer "Dark Mode Verification Guidelines" runbook in the repository's
+`AGENTS.md` (under that exact heading, and included by `CLAUDE.md`) covers the
+manual flow including browser-eval snippets.
 
 ## See also
 
@@ -550,10 +573,3 @@ browser-eval snippets.
 - `test/mix/tasks/dark_mode/scan_test.exs` — scanner unit tests
 - `lib/mix/tasks/dark_mode/contrast.ex` — the WCAG contrast validator
 - `test/mix/tasks/dark_mode/contrast_test.exs` — contrast validator tests
-
-
-
-
-
-
-

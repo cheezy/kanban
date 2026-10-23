@@ -1,8 +1,9 @@
 # Responsive Audit Baseline
 
-Single source of truth for responsive layout rules across the Stride app. Read
-this before auditing or changing the layout of any page; honor it on every
-responsive PR. It is the responsive counterpart to `docs/dark-mode-contract.md`
+This document is for contributors auditing or changing the layout of any
+Stride page. It is the single source of truth for responsive layout rules across
+the app: read it before you start and honor it on every responsive PR. It is the
+responsive counterpart to `docs/dark-mode-contract.md`
 — where that document anchors theming work, this one anchors responsive work so
 each per-page audit applies the **same** breakpoints, the **same** test widths,
 and the **same** checklist instead of inventing its own.
@@ -19,9 +20,10 @@ Responsive behavior in the app comes from **two** layers. Most of it is
 **Tailwind responsive prefix utilities** (`sm:`, `md:`, `lg:`) applied directly
 in HEEX templates — the default and preferred mechanism. A smaller set of
 **custom `@media` rules in `assets/css/app.css`** handles structural overrides
-that a utility prefix cannot express cleanly — they target named classes
-(`board-header-bar`, `task-detail-layout`, `task-detail-aside`) and use
-`!important` to beat inline declarations. The split is the convention:
+that a utility prefix cannot express cleanly — they target named classes and
+`[data-*]` anchors (for example `board-header-bar`, `task-detail-layout`,
+`task-detail-aside`, `[data-goal-child-row]`) and use `!important` where they
+must beat an inline declaration. The split is the convention:
 **Tailwind prefixes for everything; custom CSS `@media` only when an override
 must defeat an inline style or restructure a scoped layout.** The Tailwind
 breakpoints and the custom `@media` breakpoints are deliberately aligned to the
@@ -46,9 +48,10 @@ only ever apply inside the desktop layout. Keep them ordered — compression
 | 640px | `sm:` | min-width | Tailwind | Marketing nav/hero/features padding step-up, brand name reveal, hero typography |
 | 768px | `md:` | min-width | Tailwind | The primary app pivot — sidebar static vs drawer, snap-scroll off, master-detail side-by-side, grids widen |
 | 1024px | `lg:` | min-width | Tailwind | Marketing 2-column layouts, final padding tier, hero illustration reveal |
-| `max-width: 767px` | — | max-width | custom `@media` | Global body font bump (`14.5px`) on narrow mobile |
+| `max-width: 639px` | — | max-width | custom `@media` | Review stats strip dividers and the goal child-row four-column grid (below `sm`) |
+| `max-width: 767px` | — | max-width | custom `@media` | Global body font bump (`14.5px`) on narrow mobile; 44px touch targets for auth and settings controls (`[data-auth-frame]`, `[data-settings-panel]`) |
 | `max-width: 768px` | — | max-width | custom `@media` | `.stride-screen` board header/tabs density |
-| `max-width: 1023px` | — | max-width | custom `@media` | `.stride-screen` task-detail layout stacking (below `lg`) |
+| `max-width: 1023px` | — | max-width | custom `@media` | `.stride-screen` task-detail and goal-detail layout stacking (below `lg`) |
 | `min-height: 700px` | — | min-height | custom `@media` | `/agents` height-aware pin — below this the pinned layout falls back to page scroll |
 | `max-height: 800px` | — | max-height | custom `@media` | `/agents` header-band compression — engages above the pin threshold so density sheds first |
 
@@ -104,7 +107,7 @@ that is already tested in production.
 |---|---|---|
 | **Sidebar drawer** | `assets/js/hooks/sidebar.js` (hook `Sidebar` on `#app-shell` in `lib/kanban_web/components/layouts.ex`) | Below 768px the sidebar is an off-canvas drawer (`-translate-x-full` → `translate-x-0`), opened by the `[data-sidebar-toggle]` hamburger, with backdrop, focus trap, Escape/backdrop/link-click close, and auto-close on resize past 768px. Static `md:` sidebar above. |
 | **Snap-scroll columns** | `lib/kanban_web/live/board_live/show.html.heex` (`#columns`) + `assets/js/hooks/snap_indicator.js` | Mobile: `flex overflow-x-auto snap-x snap-mandatory` container with each column `snap-start w-[calc(100vw-2rem)]` so exactly one column is in view; an `IntersectionObserver`-driven dot strip (`#snap-indicator`, `md:hidden`) shows position. Desktop: `md:snap-none`, columns become `md:flex-1 md:min-w-[288px]`. |
-| **Mobile-first master-detail** | `lib/kanban_web/live/review_live.ex`, `lib/kanban_web/live/agents_live.ex` | List pane `w-full md:w-[380px] md:flex-shrink-0`, detail pane `flex-1 min-w-0`; on mobile the unselected pane is `hidden`, with a `md:hidden` back button. Use this for any list-plus-detail screen. |
+| **Mobile-first master-detail** | `lib/kanban_web/live/review_live.html.heex`; for `/agents`, the list pane in `lib/kanban_web/live/agents_live/components/roster.ex` and the detail pane in `lib/kanban_web/live/agents_live.ex` | List pane `w-full md:w-[380px] md:flex-shrink-0`, detail pane `flex-1 min-w-0`. On the review queue the unselected pane is `hidden` on mobile, with a `md:hidden` back button; `/agents` stacks the list above the detail below `md` (`flex flex-col md:flex-row`). Use this for any list-plus-detail screen. |
 | **Responsive container padding ladder** | `assets/css/app.css` (`.nav-container`, `.hero-container`, `.features-container`) | The shared 3-step padding scale: `1rem` mobile → `1.5rem` at `sm` → `2rem` at `lg`. The marketing-scope container convention. |
 | **Mismatched overflow escape hatch** | `assets/css/app.css` (`.stride-screen #columns`: `overflow-x: auto; overflow-y: visible`) | Lets tooltip bubbles escape the horizontally-scrolling board vertically. Pair with `overflow: visible` on the card `<article>`. Reuse when a scroll container must still let overlays bleed out one axis. |
 | **Tailwind responsive grid/flex utilities** | App-wide (e.g. `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`, `grid-cols-2 md:grid-cols-4`, `flex flex-col md:flex-row`, `flex flex-col sm:flex-row`) | The default mechanism for column counts and axis flips. Prefer these prefix utilities over custom CSS for any new responsive layout. |
@@ -172,11 +175,15 @@ When adding or changing the layout of a page:
 - `assets/js/hooks/sidebar.js` — the sidebar drawer primitive (`MD_BREAKPOINT_PX = 768`)
 - `assets/js/hooks/snap_indicator.js` — the snap-scroll column indicator
 - `lib/kanban_web/live/board_live/show.html.heex` — the snap-scroll board columns
-- `lib/kanban_web/live/review_live.ex` — the mobile-first master-detail pattern
-- `lib/kanban_web/live/agents_live.ex` — the master-detail pattern (Agents view)
+- `lib/kanban_web/live/review_live.html.heex` — the mobile-first master-detail pattern
+- `lib/kanban_web/live/agents_live.ex` and `lib/kanban_web/live/agents_live/components/roster.ex` — the master-detail pattern (Agents view)
 - `lib/kanban_web/components/layouts.ex` — the `#app-shell` sidebar mount point
-- `test/kanban_web/responsive_primitives_test.exs` — the lightweight guard that
-  flags removal of the responsive primitives below
+- `test/kanban_web/responsive_primitives_test.exs` — a lightweight guard that
+  fails when one of 14 class and `[data-*]` selectors (the task-detail,
+  goal-detail, auth-frame, settings, review-stats and Agents bands) or one of
+  the 1023px, 639px and short-viewport `@media` rules is missing from
+  `assets/css/app.css`. It does not check the sidebar drawer, the snap-scroll
+  columns, the master-detail views or the padding ladder; check those by hand
 
 ## Completed audit log
 
@@ -191,7 +198,7 @@ tests. Outcome per group:
 | W1384 | This contract document | Established the breakpoint ladder, test widths, checklist, and primitives index |
 | W1385 | Global nav chrome (sidebar drawer + root/marketing top nav, all pages) | Fixed: root top nav (auth pages) collapsed to a `<details>` hamburger below `md` (was overflowing at 375px). Sidebar drawer, marketing nav, footer already compliant |
 | W1386 | Marketing/static (`/`, `/about`, `/product`, `/pricing`, `/security`, `/tango`, `/workflows`, `/changelog`, `/terms`, `/privacy`, `/acceptable-use`) | Fixed: changelog markdown body (long inline `<code>`, wide tables) via `[data-changelog]` CSS. The other 10 pages already responsive |
-| W1387 | Auth LiveViews (`/users/log-in`, `/register`, `/forgot-password`, `/reset-password/:token`, `/confirm/:token`, `/confirmation-pending`, `/settings`) | Fixed: auth + settings form controls raised to a 44px mobile touch target via `[data-auth-frame]` / `[data-settings-panel]`. Overflow, settings stacking, dark mode already compliant |
+| W1387 | Auth LiveViews (`/users/log-in`, `/users/register`, `/users/forgot-password`, `/users/reset-password/:token`, `/users/confirm/:token`, `/users/confirmation-pending`, `/users/settings`) | Fixed: auth + settings form controls raised to a 44px mobile touch target via `[data-auth-frame]` / `[data-settings-panel]`. Overflow, settings stacking, dark mode already compliant |
 | W1388 | Boards index + board form (`/boards`, `/boards/new`, `/boards/:id/edit`) | Fixed: board-form add-user buttons stack and the field-visibility grid collapses on mobile. Index grid/header/card actions already compliant |
 | W1389 | Board view (`/boards/:id`) | Already compliant (snap-scroll columns, indicator, touch-accessible actions, drag-and-drop). Locked in with regression tests |
 | W1390 | Board modals (`/boards/:id/{api_tokens,members,settings,columns/*,tasks/*}`) | Fixed: the column/settings/members modals are now mobile-fullscreen (was ~231px cramped/overflowing). The shared `delayed_modal` container already correct |
@@ -213,8 +220,10 @@ tests. Outcome per group:
 - **Token legibility** — `mix dark_mode.scan` (source) and `mix dark_mode.contrast --enforce`
   (WCAG, both themes) pass in `mix precommit`.
 - **Responsive primitive guard** — `test/kanban_web/responsive_primitives_test.exs`
-  asserts the load-bearing `@media` rules and `[data-*]` anchors above are still
-  present in `assets/css/app.css`.
+  asserts that 14 load-bearing class and `[data-*]` selectors and the 1023px,
+  639px and short-viewport `@media` rules are still present in
+  `assets/css/app.css`. It checks that the text is there, not how the rules
+  behave.
 
 ### Representative-route spot-check (W1397)
 

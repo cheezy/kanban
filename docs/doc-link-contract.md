@@ -1,7 +1,8 @@
 # Documentation Link Contract
 
-This document defines the rules for links written inside the repository's own
-markdown: every file under `docs/` and the top-level `README.md`. The test
+This document is for contributors who write or edit the repository's own
+markdown: every file under `docs/` and the top-level `README.md`. It defines the
+rules for links in those files. The test
 `test/kanban/docs_relative_links_test.exs` enforces them in the default
 `mix test` run, using the helpers in `test/support/doc_links.ex`. Introduced by
 D355, after `docs/AI-WORKFLOW.md` was found linking every API page as
@@ -16,6 +17,7 @@ directory that does not exist.
 | Relative targets, with or without a `#fragment` | Targets with a scheme (`https:`, `mailto:`) or starting `//` |
 | Same-file fragments, `[text](#heading)` | A lone `#` |
 | Every `docs/**/*.md` file and `README.md` | Links inside fenced code blocks or inline code spans |
+| | Inline links whose text wraps onto a second line, and targets that contain parentheses. The check reads one line at a time, so keep each link on one line |
 
 A covered link fails the test when:
 
@@ -43,7 +45,7 @@ Every failure names the file, the line and the target as written, for example
   draft that lives only on your machine; link an existing doc or drop the link.
   Never create a stub file to make a link pass.
 - **Take fragments from the heading text.** The check uses the slug rule in
-  `KanbanWeb.DocAnchors.slug/1`: reduce inline links to their text, drop HTML
+  `KanbanWeb.DocAnchors.slug/1` (`test/support/doc_anchors.ex`): reduce inline links to their text, drop HTML
   tags, lowercase, drop every character that is not a letter, a combining
   mark, a number, connector punctuation (`_`), `-` or a space, and turn each
   space into `-`. `### Completion Validation Format (G65)` becomes
