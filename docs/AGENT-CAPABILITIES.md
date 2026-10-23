@@ -126,10 +126,17 @@ with no capabilities at all would be offered this task.
 
 ```bash
 curl -X POST https://www.stridelikeaboss.com/api/tasks/claim \
-  -H "Authorization: Bearer $TOKEN"
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_name": "Claude Sonnet 4.5", "before_doing_result": {"exit_code": 0, "output": "Already up to date.", "duration_ms": 1200}}'
 ```
 
-Response (409 Conflict):
+The claim checks `before_doing_result` before it looks for a task, so a claim
+sent without one never reaches this response: it gets **422** with
+`"error": "before_doing hook result is required"` instead. See
+[POST /api/tasks/claim](api/post_tasks_claim.md#unprocessable-entity-422).
+
+Response when no task can be claimed (409 Conflict):
 ```json
 {
   "error": "No tasks available to claim matching your capabilities. All tasks in Ready column are either blocked, already claimed, or require capabilities you don't have."

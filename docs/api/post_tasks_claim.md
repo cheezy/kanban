@@ -251,6 +251,8 @@ and never sent back:
 
 ### Complete Workflow Example
 
+The examples on this page time hooks with `$(( $(date +%s) * 1000 ))`, which is whole-second precision and works with both GNU and BSD date, and wrap them in `timeout`, which stock macOS lacks. See the [portability note in the API README](README.md#examples).
+
 ```bash
 # Step 1: Get hook command from .stride.md
 # Assume .stride.md contains:
@@ -261,10 +263,10 @@ and never sent back:
 # ```
 
 # Step 2: Execute the hook BEFORE claiming
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c 'echo "Starting task..."; git pull origin main' 2>&1)
 EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
+END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 # Step 3: Claim the task with hook result
@@ -286,10 +288,10 @@ curl -X POST \
 
 ```bash
 # Execute hook first
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c 'git pull origin main && npm install' 2>&1)
 EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
+END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 # Then claim with result

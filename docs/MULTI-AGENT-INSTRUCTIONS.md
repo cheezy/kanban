@@ -391,7 +391,7 @@ The onboarding response has no Pi entry yet; the [stride-pi README](https://gith
 The downloadable skills and `AGENTS.md` cover the same essential topics:
 
 1. **Hook Execution Mandate**
-   - The five hooks (`before_doing`, `after_doing`, `before_review`, `after_review`, `after_goal`) and their purpose
+   - The five hooks (`before_doing`, `after_doing`, `before_review`, `after_review`, `after_goal`) and their purpose. Among the seven skills, `after_goal` is covered by `stride-workflow` (Step 9) and `stride-completing-tasks`
    - Every hook is blocking, with a 600-second timeout reported by the server
    - Execute after_doing and before_review BEFORE calling the complete endpoint
 

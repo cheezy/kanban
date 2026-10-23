@@ -152,13 +152,15 @@ For the `422` bodies each endpoint returns, see its page under [api/](api/), for
 
 ### Example: Claiming and Completing a Task
 
+The timing lines in this guide use `$(( $(date +%s) * 1000 ))`, which works with both GNU date (Linux) and BSD date (macOS), at whole-second precision. Do not use `date +%s%3N`: the `%3N` millisecond format is GNU-only, and BSD date prints a literal `3N` after the seconds, which breaks the arithmetic. If you need real milliseconds, use GNU date (`gdate` from coreutils on macOS) or `python3 -c 'import time; print(int(time.time() * 1000))'`. The `timeout` wrapper in these examples is GNU coreutils too and is not on stock macOS, where the line fails with exit code 127: `brew install coreutils` provides it as `gtimeout` (recent versions also install it as `timeout`), or drop the wrapper and lose only the time limit it enforces.
+
 ```bash
 # 1. Execute before_doing hook FIRST
 # Read hook command from .stride.md. 600 seconds is the timeout the server sends today.
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c 'echo "Starting task..."; git pull origin main' 2>&1)
 EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
+END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 # Check if hook succeeded
@@ -189,10 +191,10 @@ TASK_TITLE=$(echo "$RESPONSE" | jq -r '.data.title')
 # ... implement changes ...
 
 # 5. Execute after_doing hook FIRST
-START_TIME_1=$(date +%s%3N)
+START_TIME_1=$(( $(date +%s) * 1000 ))
 OUTPUT_1=$(timeout 600 bash -c 'mix test && mix credo --strict' 2>&1)
 EXIT_CODE_1=$?
-END_TIME_1=$(date +%s%3N)
+END_TIME_1=$(( $(date +%s) * 1000 ))
 DURATION_1=$((END_TIME_1 - START_TIME_1))
 
 if [ $EXIT_CODE_1 -ne 0 ]; then
@@ -201,10 +203,10 @@ if [ $EXIT_CODE_1 -ne 0 ]; then
 fi
 
 # 6. Execute before_review hook SECOND
-START_TIME_2=$(date +%s%3N)
+START_TIME_2=$(( $(date +%s) * 1000 ))
 OUTPUT_2=$(timeout 600 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
 EXIT_CODE_2=$?
-END_TIME_2=$(date +%s%3N)
+END_TIME_2=$(( $(date +%s) * 1000 ))
 DURATION_2=$((END_TIME_2 - START_TIME_2))
 
 if [ $EXIT_CODE_2 -ne 0 ]; then
@@ -466,10 +468,10 @@ if ($LASTEXITCODE -ne 0) {
 
 ```bash
 # Execute before_review hook (BLOCKING - must succeed)
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
 EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
+END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 if [ $EXIT_CODE -ne 0 ]; then
@@ -680,10 +682,10 @@ execute_hook() {
 
 # 1. Execute before_doing hook FIRST (600s is the timeout the server sends today)
 echo "Executing before_doing hook..."
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c 'echo "Starting task..."; git pull origin main' 2>&1)
 EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
+END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 if [ $EXIT_CODE -ne 0 ]; then
@@ -713,10 +715,10 @@ echo "Working on task: $TASK_IDENTIFIER"
 
 # 5. Execute after_doing hook FIRST
 echo "Executing after_doing hook..."
-START_TIME_1=$(date +%s%3N)
+START_TIME_1=$(( $(date +%s) * 1000 ))
 OUTPUT_1=$(timeout 600 bash -c 'mix test && mix credo --strict' 2>&1)
 EXIT_CODE_1=$?
-END_TIME_1=$(date +%s%3N)
+END_TIME_1=$(( $(date +%s) * 1000 ))
 DURATION_1=$((END_TIME_1 - START_TIME_1))
 
 if [ $EXIT_CODE_1 -ne 0 ]; then
@@ -726,10 +728,10 @@ fi
 
 # 6. Execute before_review hook SECOND
 echo "Executing before_review hook..."
-START_TIME_2=$(date +%s%3N)
+START_TIME_2=$(( $(date +%s) * 1000 ))
 OUTPUT_2=$(timeout 600 bash -c 'gh pr create --title "$TASK_TITLE"' 2>&1)
 EXIT_CODE_2=$?
-END_TIME_2=$(date +%s%3N)
+END_TIME_2=$(( $(date +%s) * 1000 ))
 DURATION_2=$((END_TIME_2 - START_TIME_2))
 
 if [ $EXIT_CODE_2 -ne 0 ]; then

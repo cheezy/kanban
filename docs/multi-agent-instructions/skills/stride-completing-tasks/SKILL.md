@@ -254,7 +254,7 @@ END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 ```
 
-The `$(( $(date +%s) * 1000 ))` form works with both GNU date (Linux) and BSD date (macOS), at whole-second precision. Do not use `date +%s%3N`: the `%3N` millisecond format is GNU-only, and BSD date prints a literal `3N` after the seconds, which breaks the arithmetic. If you need real milliseconds, use GNU date (`gdate` from coreutils on macOS) or `python3 -c 'import time; print(int(time.time() * 1000))'`.
+The `$(( $(date +%s) * 1000 ))` form works with both GNU date (Linux) and BSD date (macOS), at whole-second precision. Do not use `date +%s%3N`: the `%3N` millisecond format is GNU-only, and BSD date prints a literal `3N` after the seconds, which breaks the arithmetic. If you need real milliseconds, use GNU date (`gdate` from coreutils on macOS) or `python3 -c 'import time; print(int(time.time() * 1000))'`. The `timeout` wrapper in these examples is GNU coreutils too and is not on stock macOS, where the line fails with exit code 127: `brew install coreutils` provides it as `gtimeout` (recent versions also install it as `timeout`), or drop the wrapper and lose only the time limit it enforces.
 
 5. Check exit code - MUST be 0 to proceed
 

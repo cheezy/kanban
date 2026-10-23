@@ -65,7 +65,7 @@ Stride enforces workflow discipline through four client-side hooks that execute 
 {"title": "Add dark mode", "type": "work"}
 ```
 
-**WHY:** Identifiers are auto-generated (G1, W47, D12). Specifying them causes API rejection.
+**WHY:** Identifiers are auto-generated (G1, W47, D12). A supplied identifier is not rejected: the server drops it and generates one, so the request still returns 201 but the task never gets the identifier you chose.
 
 ### 2. Using String Arrays for verification_steps
 

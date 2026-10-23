@@ -597,13 +597,15 @@ Values shown as `"..."` are elided. `required_format` holds one accepted payload
 
 These two examples show how to capture and send the hook results, so their request bodies leave out the other fields. A real request also carries `explorer_result`, `reviewer_result`, `workflow_steps` and the other required fields shown in the [Request Body Example](#request-body-example). Without `explorer_result` and `reviewer_result` it is rejected with `422` in strict mode, the production default.
 
+The examples on this page time hooks with `$(( $(date +%s) * 1000 ))`, which is whole-second precision and works with both GNU and BSD date, and wrap them in `timeout`, which stock macOS lacks. See the [portability note in the API README](README.md#examples).
+
 ```bash
 # Step 1: Execute after_doing hook FIRST
 # Read hook command from .stride.md (e.g., "mix test && mix credo --strict")
-START_TIME_1=$(date +%s%3N)
+START_TIME_1=$(( $(date +%s) * 1000 ))
 OUTPUT_1=$(timeout 600 bash -c 'mix test && mix format --check-formatted && mix credo --strict' 2>&1)
 EXIT_CODE_1=$?
-END_TIME_1=$(date +%s%3N)
+END_TIME_1=$(( $(date +%s) * 1000 ))
 DURATION_1=$((END_TIME_1 - START_TIME_1))
 
 # Check if after_doing succeeded before proceeding
@@ -614,10 +616,10 @@ fi
 
 # Step 2: Execute before_review hook SECOND
 # Read hook command from .stride.md (e.g., "gh pr create --title '$TASK_TITLE'")
-START_TIME_2=$(date +%s%3N)
+START_TIME_2=$(( $(date +%s) * 1000 ))
 OUTPUT_2=$(timeout 600 bash -c 'gh pr create --title "W21: Implement authentication" --body "Ready for review"' 2>&1)
 EXIT_CODE_2=$?
-END_TIME_2=$(date +%s%3N)
+END_TIME_2=$(( $(date +%s) * 1000 ))
 DURATION_2=$((END_TIME_2 - START_TIME_2))
 
 # Check if before_review succeeded before proceeding
@@ -655,17 +657,17 @@ curl -X PATCH \
 
 ```bash
 # Execute after_doing hook
-START_TIME_1=$(date +%s%3N)
+START_TIME_1=$(( $(date +%s) * 1000 ))
 OUTPUT_1=$(timeout 600 bash -c 'npm test && npm run lint && npm run build' 2>&1)
 EXIT_CODE_1=$?
-END_TIME_1=$(date +%s%3N)
+END_TIME_1=$(( $(date +%s) * 1000 ))
 DURATION_1=$((END_TIME_1 - START_TIME_1))
 
 # Execute before_review hook
-START_TIME_2=$(date +%s%3N)
+START_TIME_2=$(( $(date +%s) * 1000 ))
 OUTPUT_2=$(timeout 600 bash -c 'npm run docs:generate' 2>&1)
 EXIT_CODE_2=$?
-END_TIME_2=$(date +%s%3N)
+END_TIME_2=$(( $(date +%s) * 1000 ))
 DURATION_2=$((END_TIME_2 - START_TIME_2))
 
 # Complete with both results
@@ -702,10 +704,10 @@ export TASK_IDENTIFIER="W21"
 export HOOK_NAME="after_review"
 # ... set all env vars from response
 
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c './scripts/deploy.sh' 2>&1)
 EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
+END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 if [ $EXIT_CODE -ne 0 ]; then

@@ -67,7 +67,7 @@ You do NOT need to invoke `stride-claiming-tasks`, `stride-subagent-workflow`, o
 
 2. **`.stride.md`** -- Contains hook commands for each lifecycle phase
    - If missing: Ask user to create it
-   - Verify sections exist: `## before_doing`, `## after_doing`, `## before_review`, `## after_review`
+   - Verify sections exist: `## before_doing`, `## after_doing`, `## before_review`, `## after_review`, `## after_goal`
 
 **This step runs once per session, not once per task.**
 
@@ -143,8 +143,9 @@ The `hooks.json` PostToolUse handler automatically executes `.stride.md` `## bef
 If the task is a **goal**, has **large complexity without child tasks**, or has a **25+ hour estimate**:
 
 1. **Claude Code:** Dispatch `stride:task-decomposer` agent with the task's title, description, acceptance_criteria, key_files, where_context, and patterns_to_follow
-2. **Other environments:** Manually analyze the task scope, break it into subtasks, and create them via `POST /api/tasks/batch`
-3. After child tasks are created, claim the first child task and re-enter this workflow at Step 1
+2. **Other environments:** Manually analyze the task scope and break it into subtasks
+3. **The API cannot add children to a task that already exists.** `POST /api/tasks` strips a client-sent `parent_id` and still returns `201`, so a "child" created that way is a standalone task, and `POST /api/tasks/batch` creates new goals rather than filling this one. Create the subtasks as standalone tasks with `POST /api/tasks`, then ask a human to set each one's parent goal in the board UI — see [Adding Tasks to Existing Goals](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#adding-tasks-to-existing-goals). Never recreate the goal as a new one to work around this
+4. Once the child tasks sit under the goal and in Ready, claim the first child task and re-enter this workflow at Step 1
 
 **Do NOT implement goals directly. Decompose first.**
 
@@ -338,14 +339,27 @@ Call `PATCH /api/tasks/:id/complete` with ALL required fields:
 2. **STOP.** Wait for human reviewer to approve/reject.
 3. When approved, execute the `after_review` hook first, then call `PATCH /api/tasks/:id/mark_reviewed` with its result as `after_review_result`
 4. When changes are requested or the task is rejected, do **not** execute `after_review`. Call `PATCH /api/tasks/:id/mark_reviewed` with a [placeholder `after_review_result`](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/patch_tasks_id_mark_reviewed.md#placeholder-result-for-changes-requested-or-rejected) and the task moves back to Doing
-5. On approval the task moves to Done
+5. On approval the task moves to Done. If the approving `/mark_reviewed` response's `hooks` list includes `after_goal`, run it now (see "If this completion finished a goal's last child task" below)
 
 ### If `needs_review=false`:
 1. Task moves to Done immediately
 2. Execute `after_review` hook (automatic in Claude Code, manual in other environments)
-3. **Loop back to Step 1** -- claim the next task and repeat the full workflow
+3. If the `/complete` response's `hooks` list includes `after_goal`, run it and report it before you go on (see "If this completion finished a goal's last child task" below)
+4. **Loop back to Step 1** -- claim the next task and repeat the full workflow
 
 **Do not ask the user whether to continue. Do not ask "Should I claim the next task?" Just proceed.**
+
+### If this completion finished a goal's last child task: run `after_goal`
+
+When the task you just finished was the last open child of a goal, the server appends a fifth hook, `after_goal`, to the `hooks` list of the response that finished it: the `/complete` response when `needs_review=false`, or the `/mark_reviewed` response that approved it when `needs_review=true`. Check the `hooks` list on both responses. A changes-requested or rejected `/mark_reviewed` response has no `hooks` list, and `PATCH /api/tasks/:id/mark_done` never delivers `after_goal`.
+
+When `after_goal` is in the list:
+
+1. Execute the `## after_goal` section of `.stride.md` (blocking, with the timeout the server sends), one line at a time, capturing `exit_code`, `output` and `duration_ms`. An empty section did no work: report it as `{"exit_code": 0, "output": "", "duration_ms": 0}`
+2. Report the result with `PATCH /api/tasks/:id/after_goal`, where `:id` is the **goal**, not the child task. The three fields sit at the top level of the body and all three are required
+3. A report with `exit_code: 0` moves the goal to Done. Any other exit code is recorded and the goal stays where it is: fix the problem, run the section again and report again
+
+The server never runs your section, so anything it does, such as a push, happens only if you run it. Completing the last child also starts a five-minute grace window, after which the server moves the goal to Done itself if no successful report has arrived. Do this before you loop back to Step 1. The request body, the curl example and how to find the goal when the human approved from the Review queue are in `stride-completing-tasks` under "The after_goal Hook (Last Task of a Goal)"; the endpoint reference is [PATCH /api/tasks/:id/after_goal](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/api/patch_tasks_id_after_goal.md).
 
 ---
 
@@ -470,7 +484,7 @@ The server enforces these fields according to the `:strict_completion_validation
 
 ### Goal type tasks
 - Goals are decomposed, not implemented directly
-- The decomposer creates child tasks -- claim and work those individually
+- The decomposer proposes child tasks; a human places them under the goal in the board UI (see Step 3 Branch A) -- then claim and work those individually
 - Each child task follows this full workflow independently
 
 ### Skills update required
@@ -498,7 +512,7 @@ STEP 2: Claim
   |
   v
 STEP 3: Explore (Decision Matrix)
-  Goal/large undecomposed? --> Decompose --> Create children --> Claim first child --> Step 1
+  Goal/large undecomposed? --> Decompose --> Human places children under goal --> Claim first child --> Step 1
   Small, 0-1 key_files?   --> Skip to Step 4
   Otherwise:
     [Claude Code] Dispatch task-explorer, optionally Plan agent
@@ -532,8 +546,9 @@ STEP 8: Complete
   |
   v
 STEP 9: Post-Completion
-  needs_review=true?  --> STOP, wait for human
-  needs_review=false? --> Execute after_review, loop to Step 1
+  after_goal in hooks? --> Run after_goal, PATCH the goal's after_goal result
+  needs_review=true?   --> STOP, wait for human
+  needs_review=false?  --> Execute after_review, loop to Step 1
 ```
 
 ---
@@ -547,7 +562,7 @@ STEP 9: Post-Completion
 | Implementation planning | Dispatch Plan agent | Outline approach manually |
 | Code review | Dispatch `stride:task-reviewer` agent | Self-review against criteria |
 | Hook failure diagnosis | Dispatch `stride:hook-diagnostician` | Debug manually |
-| Goal decomposition | Dispatch `stride:task-decomposer` agent | Break down manually, create via API |
+| Goal decomposition | Dispatch `stride:task-decomposer` agent | Break down manually; a human places the children under the goal |
 
 **Both platforms follow the same step sequence.** The difference is HOW each step is executed (subagent dispatch vs manual work), not WHETHER it's executed.
 
@@ -574,7 +589,7 @@ CLAUDE CODE WORKFLOW:
 ├─ 1. Discovery: GET /api/tasks/next, review task, enrich if needed
 ├─ 2. Claim: POST /api/tasks/claim (hooks auto-fire via hooks.json)
 ├─ 3. Explore (check decision matrix):
-│     ├─ Goal/large undecomposed → Dispatch task-decomposer → Claim children
+│     ├─ Goal/large undecomposed → Dispatch task-decomposer → Human places children → Claim first child
 │     ├─ Small, 0-1 key_files → Skip to Step 4
 │     └─ Otherwise → Dispatch task-explorer (+ Plan agent if medium+)
 ├─ 4. Implement: Write code using explorer/plan output
@@ -584,14 +599,14 @@ CLAUDE CODE WORKFLOW:
 │     └─ Otherwise → Dispatch task-reviewer, fix issues
 ├─ 7. Hooks: Automatic via hooks.json (fires on curl call)
 ├─ 8. Complete: PATCH /api/tasks/:id/complete with ALL fields
-└─ 9. Loop: needs_review=false → Step 1 | needs_review=true → STOP
+└─ 9. Loop: after_goal if in hooks list | needs_review=false → Step 1 | needs_review=true → STOP
 
 OTHER ENVIRONMENTS (Cursor, Windsurf, Continue, Kimi Code):
 ├─ 0. Prerequisites: .stride_auth.md + .stride.md exist
 ├─ 1. Discovery: GET /api/tasks/next, review task, enrich if needed
 ├─ 2. Claim: Execute before_doing manually, then POST /api/tasks/claim
 ├─ 3. Explore (check decision matrix):
-│     ├─ Goal/large undecomposed → Break down manually → Create via API
+│     ├─ Goal/large undecomposed → Break down manually → Human places children → Claim first child
 │     ├─ Small, 0-1 key_files → Skip to Step 4
 │     └─ Otherwise → Read key_files, search patterns, outline approach
 ├─ 4. Implement: Write code using task metadata as guide
@@ -601,7 +616,7 @@ OTHER ENVIRONMENTS (Cursor, Windsurf, Continue, Kimi Code):
 │     └─ Otherwise → Self-review against acceptance criteria + pitfalls
 ├─ 7. Hooks: Execute after_doing (600s) + before_review (600s) manually
 ├─ 8. Complete: PATCH /api/tasks/:id/complete with ALL fields + hook results
-└─ 9. Loop: needs_review=false → Step 1 | needs_review=true → STOP
+└─ 9. Loop: after_goal if in hooks list | needs_review=false → Step 1 | needs_review=true → STOP
 
 DECISION MATRIX QUICK CHECK:
   small + 0-1 key_files  → Skip explore, plan, review

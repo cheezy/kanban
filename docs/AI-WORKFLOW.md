@@ -95,7 +95,7 @@ Stride ships a per-agent plugin for each supported AI coding agent. Each plugin 
 | OpenCode | [`stride-opencode`](https://github.com/cheezy/stride-opencode) | See plugin README |
 | Pi Coding Agent | [`stride-pi`](https://github.com/cheezy/stride-pi) | `curl -fsSL https://raw.githubusercontent.com/cheezy/stride-pi/main/install.sh \| bash` |
 
-The Pi edition ships the same 11 lifecycle skills as the other plugins plus two Pi-specific TypeScript extensions: `hook-bridge` (automatic `.stride.md` hook execution intercepting Pi's `tool_call` events) and `subagent-dispatch` (inline sub-agent skill dispatch). See the [stride-pi v1.0.0 release notes](https://github.com/cheezy/stride-pi/releases/tag/v1.0.0) for the feature matrix.
+The Pi edition ships the seven Stride skills the other plugins carry, plus four skills that stand in for subagents (`stride-task-explorer`, `stride-task-reviewer`, `stride-task-decomposer`, `stride-hook-diagnostician`) and two Pi-specific TypeScript extensions: `hook-bridge` (automatic `.stride.md` hook execution intercepting Pi's `tool_call` events) and `subagent-dispatch` (inline sub-agent skill dispatch). See the [stride-pi v1.0.0 release notes](https://github.com/cheezy/stride-pi/releases/tag/v1.0.0) for the feature matrix.
 
 **In-app onboarding picker**
 

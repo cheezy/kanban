@@ -21,7 +21,7 @@ WORKFLOW (Claim → Explore → Implement → Review → Complete):
 ├─ 1. Discovery: GET /api/tasks/next, review task details
 ├─ 2. Claim: Execute before_doing hook manually, then POST /api/tasks/claim
 ├─ 3. Explore (check decision matrix):
-│     ├─ Goal/large undecomposed → Break down, create via API
+│     ├─ Goal/large undecomposed → Break down; a human places the children under the goal
 │     ├─ Small, 0-1 key_files → Skip to Step 4
 │     └─ Otherwise → Read key_files, search patterns, outline approach
 ├─ 4. Implement: Write code following acceptance_criteria, patterns_to_follow, pitfalls
@@ -89,7 +89,7 @@ Validation mode: a production server defaults to **strict mode** (the `:strict_c
 {"title": "Add dark mode", "type": "work"}
 ```
 
-**WHY:** Identifiers are auto-generated (G1, W47, D12). Specifying them causes API rejection.
+**WHY:** Identifiers are auto-generated (G1, W47, D12). A supplied `identifier` is not rejected: the server drops it, logs it as a mass-assignment attempt, and gives the task a generated identifier anyway, so the request still returns `201` but the task never gets the identifier you chose. Leave it out.
 
 ### 2. Using String Arrays for verification_steps
 

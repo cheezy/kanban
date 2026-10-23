@@ -281,12 +281,14 @@ that names no task or a task on another board. See
 
 These examples are for `review_status` `approved` only. For `changes_requested` or `rejected`, see [Send the placeholder for a non-approving review](#send-the-placeholder-for-a-non-approving-review).
 
+The examples on this page time hooks with `$(( $(date +%s) * 1000 ))`, which is whole-second precision and works with both GNU and BSD date, and wrap them in `timeout`, which stock macOS lacks. See the [portability note in the API README](README.md#examples).
+
 ```bash
 # Step 1: review_status is "approved" - execute after_review hook FIRST
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c './scripts/deploy.sh && ./scripts/notify_team.sh' 2>&1)
 EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
+END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 # Step 2: If hook succeeded, mark as reviewed
@@ -307,10 +309,10 @@ curl -X PATCH \
 
 ```bash
 # Execute hook first
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c 'npm run deploy && npm run notify' 2>&1)
 EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
+END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 # Mark reviewed with result
@@ -370,10 +372,10 @@ export HOOK_NAME="after_review"
 
 # Read hook command from .stride.md and execute with the 600s timeout the server sent
 # This is BLOCKING - must succeed for endpoint call to work
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c './scripts/deploy_to_production.sh' 2>&1)
 EXIT_CODE=$?
-END_TIME=$(date +%s%3N)
+END_TIME=$(( $(date +%s) * 1000 ))
 DURATION=$((END_TIME - START_TIME))
 
 if [ $EXIT_CODE -ne 0 ]; then

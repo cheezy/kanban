@@ -29,10 +29,10 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
 
    ```bash
    # Execute before_doing hook FIRST and capture result
-   START_TIME=$(date +%s%3N)
+   START_TIME=$(( $(date +%s) * 1000 ))
    OUTPUT=$(timeout 600 bash -c 'git pull origin main' 2>&1)
    EXIT_CODE=$?
-   DURATION=$(($(date +%s%3N) - START_TIME))
+   DURATION=$(( $(date +%s) * 1000 - START_TIME ))
 
    # Claim a task with hook result
    curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -50,10 +50,10 @@ Welcome to the Stride API documentation. This guide will help AI agents understa
    # ... do your work ...
 
    # Execute after_doing hook FIRST and capture result
-   START_TIME=$(date +%s%3N)
+   START_TIME=$(( $(date +%s) * 1000 ))
    OUTPUT=$(timeout 600 bash -c 'mix test' 2>&1)
    EXIT_CODE=$?
-   DURATION=$(($(date +%s%3N) - START_TIME))
+   DURATION=$(( $(date +%s) * 1000 - START_TIME ))
 
    # Complete the task with hook result + explorer_result + reviewer_result
    # + workflow_steps (see "Completion Validation" section below for full shape)
@@ -625,14 +625,16 @@ gh pr create --title "$TASK_TITLE" --body "Closes $TASK_IDENTIFIER"
 
 ## Examples
 
+The timing lines in these examples use `$(( $(date +%s) * 1000 ))`, which works with both GNU date (Linux) and BSD date (macOS), at whole-second precision. Do not use `date +%s%3N`: the `%3N` millisecond format is GNU-only, and BSD date prints a literal `3N` after the seconds, which breaks the arithmetic. If you need real milliseconds, use GNU date (`gdate` from coreutils on macOS) or `python3 -c 'import time; print(int(time.time() * 1000))'`. The `timeout` wrapper in these examples is GNU coreutils too and is not on stock macOS, where the line fails with exit code 127: `brew install coreutils` provides it as `gtimeout` (recent versions also install it as `timeout`), or drop the wrapper and lose only the time limit it enforces.
+
 ### Example 1: Claim and Complete a Task
 
 ```bash
 # 1. Execute before_doing hook FIRST and capture result
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c 'git pull origin main && mix deps.get' 2>&1)
 EXIT_CODE=$?
-DURATION=$(($(date +%s%3N) - START_TIME))
+DURATION=$(( $(date +%s) * 1000 - START_TIME ))
 
 if [ $EXIT_CODE -ne 0 ]; then
   echo "before_doing hook failed - cannot claim task"
@@ -666,10 +668,10 @@ TASK_ID=$(echo $RESPONSE | jq -r '.data.id')
 #    Capture the outcome for reviewer_result.
 
 # 7. Execute after_doing hook (blocking)
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 OUTPUT=$(timeout 600 bash -c 'mix test && mix credo' 2>&1)
 EXIT_CODE=$?
-DURATION=$(($(date +%s%3N) - START_TIME))
+DURATION=$(( $(date +%s) * 1000 - START_TIME ))
 
 if [ $EXIT_CODE -ne 0 ]; then
   echo "after_doing hook failed - cannot complete task"
@@ -677,10 +679,10 @@ if [ $EXIT_CODE -ne 0 ]; then
 fi
 
 # 8. Execute before_review hook (blocking)
-START_TIME=$(date +%s%3N)
+START_TIME=$(( $(date +%s) * 1000 ))
 REVIEW_OUTPUT=$(timeout 600 bash -c 'gh pr create ...' 2>&1)
 REVIEW_EXIT_CODE=$?
-REVIEW_DURATION=$(($(date +%s%3N) - START_TIME))
+REVIEW_DURATION=$(( $(date +%s) * 1000 - START_TIME ))
 
 if [ $REVIEW_EXIT_CODE -ne 0 ]; then
   echo "before_review hook failed - cannot complete task"
@@ -808,10 +810,10 @@ while true; do
   case "$REVIEW_STATUS" in
     approved)
       # Run your ## after_review section first (merge, deploy, notify)
-      START_TIME=$(date +%s%3N)
+      START_TIME=$(( $(date +%s) * 1000 ))
       OUTPUT=$(timeout 600 ./scripts/after_review.sh 2>&1)
       EXIT_CODE=$?
-      DURATION=$(( $(date +%s%3N) - START_TIME ))
+      DURATION=$(( $(date +%s) * 1000 - START_TIME ))
       if [ "$EXIT_CODE" -ne 0 ]; then
         echo "after_review failed - fix it before calling mark_reviewed"
         exit 1

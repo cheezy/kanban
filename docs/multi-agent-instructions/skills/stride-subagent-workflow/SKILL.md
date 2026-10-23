@@ -104,7 +104,7 @@ The decomposer will return an ordered list of child tasks with:
 - Key files and testing strategies per task
 
 **After decomposition:**
-1. Use `POST /api/tasks` or `POST /api/tasks/batch` to create the child tasks under the goal
+1. The API cannot add children to a task that already exists. `POST /api/tasks` strips a client-sent `parent_id` and still returns `201`, so a "child" created that way is a standalone task, and `POST /api/tasks/batch` creates new goals rather than filling this one. Create the decomposer's tasks as standalone tasks with `POST /api/tasks`, then ask a human to set each one's parent goal in the board UI — see [Adding Tasks to Existing Goals](https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main/docs/TASK-WRITING-GUIDE.md#adding-tasks-to-existing-goals). Never recreate the goal as a new one to work around this
 2. Do NOT implement the goal directly — claim and implement the child tasks individually
 3. Each child task follows its own row in the Decision Matrix when claimed
 
@@ -176,7 +176,7 @@ Is it a goal OR large+undecomposed OR 25+ hours?
     +--> YES --> Dispatch stride:task-decomposer
     |               |
     |               v
-    |           Create child tasks via API
+    |           Human places children under goal
     |               |
     |               v
     |           Claim first child task --> (re-enter this flowchart)
@@ -247,7 +247,7 @@ SUBAGENT WORKFLOW:
 ├─ 0. Task claimed successfully
 ├─ 1. Is it a goal OR large+undecomposed OR 25+ hours?
 │     ├─ YES → Dispatch stride:task-decomposer
-│     ├─ Create child tasks via API
+│     ├─ Create as standalone tasks; a human places them under the goal
 │     └─ Claim first child task (re-enter workflow)
 ├─ 2. Check decision matrix (complexity + key_files count)
 ├─ 3. If medium+ OR 2+ key_files:

@@ -55,7 +55,7 @@ When the user asks you to create goals or tasks, they have **already granted bla
 Using incorrect format or structure when creating goals causes:
 - 422 API errors (wrong root key)
 - Silently ignored dependencies (cross-goal deps in batch)
-- Validation failures (missing identifiers or wrong format)
+- Validation failures (wrong field formats)
 - Nested tasks without specifications (same 3+ hour exploration)
 
 **The API requires "goals" as the root key for batch creation, NOT "tasks".**
@@ -232,7 +232,7 @@ When depending on EXISTING tasks already in the system:
 | Excuse | Reality | Consequence |
 |--------|---------|-------------|
 | "'tasks' works too" | API requires "goals" root key | 422 error, batch rejected entirely |
-| "I'll add identifiers" | System auto-generates them | Validation error, creation fails |
+| "I'll add identifiers" | System auto-generates them | Silently dropped and replaced; the task gets a different identifier than you planned |
 | "Cross-goal deps work" | Only within-goal indices work | Dependencies ignored silently |
 | "Simple nested tasks" | Each must follow full task spec | Minimal nested tasks fail same way |
 | "Easier as flat tasks" | Loses structure and coordination | Tasks overlap, no clear dependencies |
