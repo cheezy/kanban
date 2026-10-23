@@ -113,7 +113,7 @@ plugins" in Multi-Agent Instructions, under Guides above).
 
 ## Contributors to Stride
 
-- [Stride development guidelines skill](multi-agent-instructions/stride-development-guidelines/SKILL.md) — The rules an AI agent follows when changing this codebase.
+- [Stride development guidelines skill](multi-agent-instructions/stride-development-guidelines/SKILL.md) — Points contributors to the development-guidelines skill Claude Code loads, and lists what `mix precommit` runs. Not served to agents.
 - [Documentation Link Contract](doc-link-contract.md) — How links inside these docs are written and checked.
 - [Documentation Example Enum Contract](doc-example-enum-contract.md) — Rules for enum values in the JSON examples of the API docs and guides.
 - [Dark Mode Contract](dark-mode-contract.md) — Theme tokens, prohibited patterns and the dark-mode scanner.

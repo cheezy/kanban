@@ -69,13 +69,19 @@ This approach improves:
     else `text-base-content` — **not** `text-base-content opacity-60` (D214)
   - `bg-white` → `bg-base-100`
   - `bg-gray-50` → `bg-base-200`
-  - `border-gray-200` → `border-base-300`
+  - `border-gray-200` → `border-base-300` for decorative borders only; form
+    controls use `var(--line-input)` (see 2. Form Elements)
 
 **2. Form Elements**
 - **Issue**: Labels and inputs invisible in dark mode
 - **Fix**: Ensure labels use `text-base-content` with full opacity
 - **Fix**: Ensure inputs have `bg-base-100` background and `text-base-content` text
-- Add visible borders with `border-base-300`
+- **Fix**: Give every `<input>`, `<select>` and `<textarea>` its resting border
+  with `var(--line-input)`, **not** `border-base-300`. The core `<.input>`
+  component already gets it through daisyUI's `--input-color`; an inline-styled
+  control writes `border: 1px solid var(--line-input)`. Form-control borders
+  must reach 3:1, and `docs/dark-mode-contract.md` ("Form-control borders") has
+  the rule and the measured values
 
 **3. Buttons and Links**
 - **Issue**: Low contrast buttons/links in dark mode
@@ -143,7 +149,9 @@ await page.eval(() => {
   select.select {
     background-color: var(--color-base-100) !important;
     color: var(--color-base-content) !important;
-    border-color: var(--color-base-300) !important;
+    /* No border-color here: an !important border would override the
+       --input-color: var(--line-input) rule that gives form controls
+       their 3:1 border (docs/dark-mode-contract.md) */
   }
 
   /* High contrast buttons */
