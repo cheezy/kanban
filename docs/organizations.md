@@ -108,8 +108,13 @@ when enforcement was switched on keeps them all, and removing someone is
 always allowed. While the board is at the limit, adding someone is refused
 with "This board is full. Free boards hold 3 people." and the board's members
 screen says "Free boards hold 3 people. To add more, move this board into an
-organization." An invitation to a full board shows "This board is full" when
-it is opened, and asks the invitee to have the board owner make room.
+organization." The owner cannot send a board invitation while the board is
+full either: sending one is refused with the same message. An invitation sent
+before the board filled up still opens normally. The invitee sees "This board
+is full" only after selecting Accept, with a request to have the board owner
+make room and then open the link again, and every later Accept is refused the
+same way until the board has room again. An invitee who registered a new
+account from the link gets the same message when they confirm their email.
 
 ### Webhooks on a free board
 

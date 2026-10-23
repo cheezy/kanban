@@ -37,7 +37,7 @@ defmodule Kanban.Boards.BoardTelemetryTest do
 
   describe "member_cap_reached/4" do
     test "emits board_id, actor_user_id and via for a cap refusal and returns it" do
-      for via <- [:direct_add, :invitation, :board_move] do
+      for via <- [:direct_add, :invitation] do
         result = {:error, :member_cap_reached}
         assert BoardTelemetry.member_cap_reached(result, @board, via, @actor) == result
 
@@ -56,10 +56,11 @@ defmodule Kanban.Boards.BoardTelemetryTest do
       refute_received {:telemetry_event, _, _, _}
     end
 
-    test "raises for a via outside the three addition paths" do
-      for via <- [:api, :direct_add_typo, nil] do
+    test "raises for a via outside the two addition paths, including :board_move" do
+      for via <- [:board_move, :api, :direct_add_typo, nil],
+          result <- [{:error, :member_cap_reached}, {:ok, %BoardUser{}}] do
         assert_raise FunctionClauseError, fn ->
-          BoardTelemetry.member_cap_reached({:error, :member_cap_reached}, @board, via, @actor)
+          BoardTelemetry.member_cap_reached(result, @board, via, @actor)
         end
       end
 

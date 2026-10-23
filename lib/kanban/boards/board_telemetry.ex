@@ -19,7 +19,7 @@ defmodule Kanban.Boards.BoardTelemetry do
   alias Kanban.Boards.Board
   alias Kanban.Boards.BoardUser
 
-  @cap_vias [:direct_add, :invitation, :board_move]
+  @cap_vias [:direct_add, :invitation]
 
   @doc """
   Emits `[:kanban, :board, :updated]` when `result` is a saved board and the
@@ -93,12 +93,14 @@ defmodule Kanban.Boards.BoardTelemetry do
   Emits `[:kanban, :board, :member_cap_reached]` when `result` is
   `{:error, :member_cap_reached}`, the refusal of a member addition because
   the free board is full. `via` names the path that tried to add the member:
-  `:direct_add`, `:invitation` or `:board_move`. Returns `result`.
+  `:direct_add` when an owner adds the member, or `:invitation` when the
+  invitee accepts a board invitation. Moving a board never asks the member
+  cap, so it has no `via`. Returns `result`.
 
   This is the one membership event emitted for a change that did not happen;
   the refused addition itself is rolled back before it is called.
   """
-  @spec member_cap_reached(result, Board.t(), :direct_add | :invitation | :board_move, map()) ::
+  @spec member_cap_reached(result, Board.t(), :direct_add | :invitation, map()) ::
           result
         when result: term()
   def member_cap_reached({:error, :member_cap_reached} = result, %Board{} = board, via, actor)

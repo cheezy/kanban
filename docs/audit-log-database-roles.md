@@ -158,6 +158,10 @@ delete. Run `harden_audit_log` again after deploying it: until then the status
 reports `:organization_purge_function_not_owned_by_owner_role` and the daily
 retention job names each Organization in its `failed_steps`
 ([Organization Security Policies](organization-security-policies.md#after-deploying)).
+The site step calls the same function, so it fails too: `failed_steps` also
+holds `"site"`, and audit events with no Organization are kept past
+`site_audit_retention_days` (90 days by default) until `harden_audit_log` has
+been run again.
 
 `20261019230522_add_actor_in_organization_to_audit_events` is another. It adds
 the nullable boolean column `actor_in_organization` and updates no row. On a

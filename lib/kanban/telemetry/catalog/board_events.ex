@@ -99,7 +99,7 @@ defmodule Kanban.Telemetry.Catalog.BoardEvents do
       measurements: [:count],
       metadata: [:board_id, :actor_user_id, :via],
       description:
-        "Adding a member to a free board was refused because plans are enforced and the board already has 3 or more members. via is :direct_add, :invitation or :board_move.",
+        "Adding a member to a free board was refused because plans are enforced and the board already has 3 or more members. via is :direct_add (an owner adding the member) or :invitation (the invitee accepting a board invitation).",
       legacy: false,
       metrics: [counter: :count],
       persist: true,

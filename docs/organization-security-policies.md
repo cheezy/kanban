@@ -168,7 +168,11 @@ the hardening command again and check the status, as described in
 [Future migrations that alter audit_events](audit-log-database-roles.md#future-migrations-that-alter-audit_events).
 Until then `Kanban.Release.audit_log_status/0` reports a reason such as
 `:organization_purge_function_not_owned_by_owner_role`, and the daily job
-records each Organization's purge in `failed_steps`.
+records each Organization's purge in `failed_steps`. The site step fails the
+same way, because it calls the same function, so `failed_steps` also holds
+`"site"` and audit events with no Organization are kept past
+`site_audit_retention_days` (90 days by default) until the hardening command
+has been run again.
 
 The cron schedule is read when the application boots, so a running server
 picks up the job only after a restart.

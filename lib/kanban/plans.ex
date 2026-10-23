@@ -68,9 +68,12 @@ defmodule Kanban.Plans do
   `free_board_member_cap/0` is the number of human members a free board holds
   while plans are enforced, and `member_cap_reached?/2` decides whether a board
   with a given member count may take another. Members are `board_users` rows,
-  the owner's included. `Kanban.Boards.add_user_to_board/4` asks it under a row
-  lock on the board, and board invitations and board moves (G442) will ask it
-  the same way.
+  the owner's included. `Kanban.Boards.add_user_to_board/4` and
+  `Kanban.Boards.add_invited_user/4`, which runs when a board invitation is
+  accepted, ask it under a row lock on the board. Sending a board invitation
+  asks it too, through `Kanban.Boards.member_cap_status/1`, so an owner cannot
+  invite to a full board. Moving a board never asks it: a board moves only
+  into an Organization workspace, where there is no cap.
   """
 
   import Ecto.Query, warn: false

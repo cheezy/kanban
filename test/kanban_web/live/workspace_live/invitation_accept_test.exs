@@ -212,6 +212,39 @@ defmodule KanbanWeb.WorkspaceLive.InvitationAcceptTest do
       assert html =~ "This board is full"
       refute Repo.get_by(BoardUser, board_id: board.id, user_id: invitee.id)
     end
+
+    test "a link opened on an already-full board shows the full message only after Accept" do
+      owner = user_fixture()
+      board = board_fixture(owner)
+      invitee = user_fixture()
+
+      {:ok, _invitation} =
+        Invitations.invite_to_board(
+          owner,
+          board,
+          %{"email" => invitee.email, "access" => "read_only"},
+          url_fun()
+        )
+
+      token = sent_token()
+      enforce_plans()
+
+      for _ <- 1..(Kanban.Plans.free_board_member_cap() - 1),
+          do: {:ok, _} = Boards.add_user_to_board(board, user_fixture(), :read_only, owner)
+
+      {:ok, view, html} = live(log_in_user(build_conn(), invitee), ~p"/invitations/#{token}")
+
+      assert has_element?(view, "#invitation[data-state=ready]")
+      assert has_element?(view, "#accept-invitation")
+      assert html =~ "Join the board"
+      refute html =~ "This board is full"
+
+      html = view |> element("#accept-invitation") |> render_click()
+
+      assert has_element?(view, "#invitation[data-state=full]")
+      assert html =~ "This board is full"
+      refute Repo.get_by(BoardUser, board_id: board.id, user_id: invitee.id)
+    end
   end
 
   describe "audit trail" do

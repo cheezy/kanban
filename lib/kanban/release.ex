@@ -214,8 +214,8 @@ defmodule Kanban.Release do
       |> IO.inspect()
 
   Moving Stride's boards into the Organization's workspace is a separate step
-  (the board move, G442 W2218), to be described in the launch runbook that
-  W2417 adds.
+  (the board move, G442 W2218), described under "Launch day" in
+  `docs/organizations-launch-runbook.md`.
   """
   @spec ensure_internal_organization(keyword() | map()) :: InternalOrganization.summary()
   def ensure_internal_organization(opts) do

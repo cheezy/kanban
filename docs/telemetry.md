@@ -272,12 +272,15 @@ addition. Every event measures `count: 1`, except `token_bulk_revoked` and
   more `board_users` rows (see `Kanban.Plans.member_cap_reached?/2`). Nothing
   is emitted while `:plans_enforced` is off, for a board in an Organization
   workspace, or when a caller who does not own the board is refused first.
-  `actor_user_id` is the owner who tried to add the member, and the would-be
-  member is never sent. `via` is a tag naming the path that tried:
-  `:direct_add` for `add_user_to_board/4`, `:invitation` for
-  `add_invited_user/4` (accepting a board invitation, where `actor_user_id`
-  is the inviter), and `:board_move` for the board move path. It is stored in
-  `metrics_events`, because only a board owner can trigger it.
+  The would-be member is never sent. `via` is a tag naming the path that
+  tried, and it has two values. `:direct_add` is an owner adding the member
+  with `add_user_to_board/4`, and `actor_user_id` is that owner. `:invitation`
+  is `add_invited_user/4`, which runs when the invitee accepts a board
+  invitation: by selecting Accept on the invitation page, or by confirming the
+  email of an account registered from the invitation link. It fires on every
+  such attempt while the board stays full, and `actor_user_id` is the
+  inviter, or the invitee when the inviter's account has since been deleted.
+  Moving a board never asks the member cap, so no `via` names it. The event is stored in `metrics_events`.
 - **`token_bulk_revoked` counts revoked tokens.** Its `count` is the number of
   tokens revoked, and it is 0 when the member had none. `reason` is
   `:member_removed`, or `:read_only_access` when an access save leaves the
@@ -499,8 +502,12 @@ rolled-back change emits nothing. Every event measures `count: 1`, except
 - **Account deletions are audited.** `delete_user/2` also records the
   `:user_deleted` audit event on success and `:user_delete_refused` on every
   refusal, whose `reason` is `unauthorized`, `cannot_delete_self`,
-  `user_has_boards`, `last_admin`, `last_org_admin` or
-  `personal_workspace_has_boards`. Each
+  `user_has_boards`, `last_admin`, `last_org_admin`, `owns_shared_board`,
+  `personal_workspace_has_boards` or `not_found`. `owns_shared_board` refuses
+  a disabled account an Organization manages while it still owns a board
+  that other people are members of. `not_found` means such an account was
+  deleted, or was no longer disabled and managed, by the time the deletion
+  locked it. Each
   carries the acting user as `user_id` and the target account as
   `member_user_id`, ids only. Both are written after the deletion's
   transaction returns, so a rollback cannot erase a refusal.
@@ -1209,7 +1216,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :audit, :organization_policy_updated]` | event, legacy | `count` | `user_id`, `organization_id`, `old_values`, `new_values` | An org-admin changed their Organization's security policy. user_id is the org-admin; old_values and new_values hold only the fields that changed (require_two_factor, two_factor_grace_days, audit_retention_days). |
 | `[:kanban, :audit, :retention_purge]` | event, legacy | `count` | `organization_counts`, `site_count`, `archived_task_count`, `saml_count`, `failed_steps` | The daily retention job ran. organization_counts maps each Organization id with a retention period to the audit events removed; site_count (audit events with no Organization) and archived_task_count are nil when that purge is not configured; saml_count is the expired SAML requests and assertion IDs removed; failed_steps names any step that failed. |
 | `[:kanban, :audit, :user_deleted]` | event, legacy | `count` | `user_id`, `member_user_id` | A site admin deleted an account. user_id is the site admin, member_user_id the deleted account. |
-| `[:kanban, :audit, :user_delete_refused]` | event, legacy | `count` | `user_id`, `member_user_id`, `reason` | An account deletion was refused. user_id is the acting user, member_user_id the target account, reason why: unauthorized, cannot_delete_self, user_has_boards, last_admin, last_org_admin or personal_workspace_has_boards. |
+| `[:kanban, :audit, :user_delete_refused]` | event, legacy | `count` | `user_id`, `member_user_id`, `reason` | An account deletion was refused. user_id is the acting user, member_user_id the target account, reason why: unauthorized, cannot_delete_self, user_has_boards, last_admin, last_org_admin, owns_shared_board, personal_workspace_has_boards or not_found. |
 | `[:kanban, :audit, :account_self_deleted]` | event, legacy | `count` | `user_id` | A user deleted their own account from the account settings. user_id is the deleted account; no email is recorded. |
 | `[:kanban, :audit, :board_given_to_site_admin]` | event, legacy | `count` | `user_id`, `board_id`, `member_user_id` | An account deletion left a board that no enabled member could reach, so the earliest enabled site admin was made its owner. user_id is the deleted account, member_user_id the site admin. |
 | `[:kanban, :audit, :sso_login]` | event, legacy | `count` | `user_id`, `organization_id`, `sso_connection_id`, `protocol` | A user signed in through their Organization's single sign-on connection. protocol is oidc or saml. |
@@ -1239,7 +1246,7 @@ the sections above explain which code emits each family and when.
 | `[:kanban, :board, :member_added]` | event | `count` | `board_id`, `user_id`, `access`, `actor_user_id` | A user was given access to a board. user_id is the member, actor_user_id the owner who added them. |
 | `[:kanban, :board, :member_removed]` | event | `count` | `board_id`, `user_id`, `access`, `actor_user_id` | A user was removed from a board. access is the level they held. |
 | `[:kanban, :board, :member_access_changed]` | event | `count` | `board_id`, `user_id`, `from_access`, `to_access`, `actor_user_id` | A board member's access level changed. |
-| `[:kanban, :board, :member_cap_reached]` | event | `count` | `board_id`, `actor_user_id`, `via` | Adding a member to a free board was refused because plans are enforced and the board already has 3 or more members. via is :direct_add, :invitation or :board_move. |
+| `[:kanban, :board, :member_cap_reached]` | event | `count` | `board_id`, `actor_user_id`, `via` | Adding a member to a free board was refused because plans are enforced and the board already has 3 or more members. via is :direct_add (an owner adding the member) or :invitation (the invitee accepting a board invitation). |
 
 ### Domain `column`
 

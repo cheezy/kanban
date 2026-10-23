@@ -604,6 +604,26 @@ defmodule Kanban.Workspaces.InvitationsTest do
       assert board_count(board) == 3
     end
 
+    test "refuses every repeated Accept while the board stays full, with one cap event each" do
+      invitee = user_fixture()
+      %{owner: owner, board: board, token: token} = free_board_invitation(1, invitee.email)
+      enforce_plans()
+      {:ok, _} = Boards.add_user_to_board(board, user_fixture(), :read_only, owner)
+
+      attach_telemetry([@cap_event])
+
+      for _attempt <- 1..2 do
+        assert {:error, :member_cap_reached} = Invitations.accept(token, invitee)
+        assert_received {:telemetry_event, @cap_event, _m, %{via: :invitation} = metadata}
+        assert metadata.actor_user_id == owner.id
+      end
+
+      refute_received {:telemetry_event, @cap_event, _m, _metadata}
+      refute Repo.get_by(BoardUser, board_id: board.id, user_id: invitee.id)
+      assert from(i in Invitation, select: i.accepted_at) |> Repo.one!() == nil
+      assert board_count(board) == 3
+    end
+
     test "succeeds at the cap when plans are not enforced" do
       invitee = user_fixture()
       %{board: board, token: token} = free_board_invitation(2, invitee.email)

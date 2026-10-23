@@ -66,7 +66,7 @@ defmodule Kanban.TelemetryTest do
   # non-personal metadata keys may be used as one. Never an id. A reason is
   # allowed only as a fixed atom set, such as github.issue_created's four, and
   # so is a feature, such as plan.feature_refused's Kanban.Plans.features/0,
-  # and a via, such as board.member_cap_reached's three addition paths.
+  # and a via, such as board.member_cap_reached's two addition paths.
   @tag_keys [
     :endpoint,
     :method,

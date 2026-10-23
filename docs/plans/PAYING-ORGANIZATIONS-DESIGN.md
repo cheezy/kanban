@@ -438,7 +438,7 @@ There is no grandfathered flag. An addition is refused whenever the count is **a
 | `Kanban.Boards.MembershipChanges.add_user_to_board/4` | W2400 | In a transaction: row-lock the board, count `board_users`, refuse with `{:error, :member_cap_reached}` when `Plans.member_cap_reached?/2`. Two concurrent adds cannot pass 3. |
 | Invitation acceptance (`Invitations.accept/2`) for a board grant on a personal-workspace board | W2219 | Refused with a clear cap message while the board is full. Board grants go through the cap-checked add path, never a direct insert. An invitation whose board has since moved into an Organization is refused and revoked, never accepted uncapped: the move revokes it, and acceptance refuses any a move left open. |
 | Registration from an invitation link | W2219 | Joins after email confirmation, subject to the same cap check. |
-| Board move | W2218 | D6 lists the move as a cap path. The only move v1 allows is personal to org, which lifts the cap, so this check never refuses. The `via: :board_move` telemetry value stays reserved. **The move must broadcast `{Kanban.Boards, :members_changed, board_id}` on `"board:<id>"`** (the message `MembershipChanges` already sends for membership writes), so an open `/boards/:id/members` screen recomputes `member_cap_status/1` and drops the cap line without a reload. |
+| Board move | W2218 | D6 lists the move as a cap path. The only move v1 allows is personal to org, which lifts the cap, so this check never refuses. The reserved `via: :board_move` telemetry value was dropped (D401), since no move can hit the cap. **The move must broadcast `{Kanban.Boards, :members_changed, board_id}` on `"board:<id>"`** (the message `MembershipChanges` already sends for membership writes), so an open `/boards/:id/members` screen recomputes `member_cap_status/1` and drops the cap line without a reload. |
 
 ### User messaging
 
@@ -452,7 +452,7 @@ There is no grandfathered flag. An addition is refused whenever the count is **a
 
 ### Telemetry and reporting
 
-- Each refusal emits `[:kanban, :board, :member_cap_reached]` once, through `Kanban.Boards.BoardTelemetry`, with `board_id`, `actor_user_id` and `via` (`:direct_add`, `:invitation`, `:board_move`). It is declared in `BoardEvents` with tag `via` and `persist: true`.
+- Each refusal emits `[:kanban, :board, :member_cap_reached]` once, through `Kanban.Boards.BoardTelemetry`, with `board_id`, `actor_user_id` and `via` (`:direct_add` or `:invitation`; the reserved `:board_move` value was dropped in D401). It is declared in `BoardEvents` with tag `via` and `persist: true`.
 - W2219 does not emit a second cap event; the shared check already emits it.
 - **Over-cap report (W2402):** `Kanban.Boards.over_cap_boards/0` lists personal-workspace boards with more than 3 `board_users` rows (board id, owner user id, member count) from one aggregate query. It is exposed as `mix kanban.over_cap_boards` in development and `Kanban.Release.report_over_cap_boards/0` in releases (`bin/kanban eval`). Both are read-only and print no names or emails. The mix task takes no arguments (it refuses any) and starts only the database connection, not the app, so Oban never runs during a report.
 
@@ -1076,5 +1076,5 @@ These are the places where the sources disagreed, and how this design resolves t
 | W2396: add `archived_at` "if W2216 does not provide one" | W2216 adds it; W2396 adds no migration | W2216 database changes |
 | W2396 adds `OrgWorkspaces.create_workspace/3`; W2216 adds `Workspaces.create_org_workspace/2` | One creation path: `OrgWorkspaces.create_workspace/3` delegates to `create_org_workspace/2` | Avoids two writers for the same invariant |
 | D11: `audit_events.organization_id` is added by "the org schema / org audit task" | It is added by W2397 (the Organization audit log), not W2390 or W2244 | Batch file, W2244 pitfalls |
-| D6: the cap is checked when moving a board | The only move is personal to org, which lifts the cap, so the check never refuses; `via: :board_move` stays reserved | D8, W2218 |
+| D6: the cap is checked when moving a board | The only move is personal to org, which lifts the cap, so the check never refuses; the reserved `via: :board_move` value was later dropped (D401) | D8, W2218 |
 | W2395: no member removal in the console | W2218 adds removing ordinary members to the console's Members section | Program decision; W2395 builds the console, W2218 extends it |
