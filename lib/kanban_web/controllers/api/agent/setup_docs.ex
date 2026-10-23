@@ -6,10 +6,71 @@ defmodule KanbanWeb.API.Agent.SetupDocs do
   verbatim from `KanbanWeb.API.AgentJSON` (W1442). Pure data.
   """
 
+  alias Kanban.Hooks
+
   @docs_base_url "https://raw.githubusercontent.com/cheezy/kanban/refs/heads/main"
+
+  @doc """
+  Each hook's blocking flag and timeout as onboarding text, keyed by hook
+  name: `%{"before_doing" => "blocking, 600s", ...}`. Read from
+  `Kanban.Hooks`, so the text matches the metadata the server sends.
+  """
+  def hook_terms do
+    Map.new(Hooks.list_hooks(), fn {name, config} ->
+      blocking = if config.blocking, do: "blocking", else: "non-blocking"
+      {name, "#{blocking}, #{div(config.timeout, 1000)}s"}
+    end)
+  end
+
+  # The when and typical_use text of each hook in Kanban.Hooks.list_hooks/0.
+  @hook_usage %{
+    "before_doing" => %{when: "Before starting work on a task", typical_use: "Pull latest code"},
+    "after_doing" => %{
+      when: "After completing work",
+      typical_use: "Rebase, run tests, build project, lint code"
+    },
+    "before_review" => %{
+      when: "When task enters review",
+      typical_use: "Create PR, generate documentation"
+    },
+    "after_review" => %{
+      when: "After review approval",
+      typical_use: "Merge PR, deploy to production"
+    },
+    "after_goal" => %{
+      when: "After the last open child task of a goal is done",
+      typical_use: "Push the goal's work, cut a release"
+    }
+  }
+
+  @doc """
+  The `hooks.available_hooks` list of the onboarding payload: every hook in
+  `Kanban.Hooks.list_hooks/0`, in order, with its blocking flag, timeout (ms),
+  when it runs and what it is typically used for.
+  """
+  def hook_info do
+    Enum.map(Hooks.list_hooks(), fn {name, config} ->
+      %{
+        name: name,
+        blocking: config.blocking,
+        timeout: config.timeout,
+        when: get_in(@hook_usage, [name, :when]),
+        typical_use: get_in(@hook_usage, [name, :typical_use])
+      }
+    end)
+  end
+
+  @doc "The names of the blocking hooks, in order, joined with commas."
+  def blocking_hook_names do
+    Hooks.list_hooks()
+    |> Enum.filter(fn {_name, config} -> config.blocking end)
+    |> Enum.map_join(", ", &elem(&1, 0))
+  end
 
   @doc "The `file_templates` section of the onboarding payload."
   def file_templates(base_url) do
+    terms = hook_terms()
+
     %{
       stride_auth_md: """
       # Stride API Authentication
@@ -54,7 +115,7 @@ defmodule KanbanWeb.API.Agent.SetupDocs do
 
       ## before_doing
 
-      Executes before starting work on a task (blocking, 60s timeout).
+      Executes before starting work on a task (#{terms["before_doing"]} timeout).
 
       ```bash
       echo "Starting task $TASK_IDENTIFIER: $TASK_TITLE"
@@ -64,7 +125,7 @@ defmodule KanbanWeb.API.Agent.SetupDocs do
 
       ## after_doing
 
-      Executes after completing work (blocking, 120s timeout).
+      Executes after completing work (#{terms["after_doing"]} timeout).
       If this fails, task completion should fail.
 
       ```bash
@@ -77,7 +138,7 @@ defmodule KanbanWeb.API.Agent.SetupDocs do
 
       ## before_review
 
-      Executes when task enters review (blocking, 60s timeout).
+      Executes when task enters review (#{terms["before_review"]} timeout).
       If this fails, task completion should fail.
 
       ```bash
@@ -87,12 +148,23 @@ defmodule KanbanWeb.API.Agent.SetupDocs do
 
       ## after_review
 
-      Executes after review approval (blocking, 60s timeout).
+      Executes after review approval (#{terms["after_review"]} timeout).
       If this fails, mark_reviewed should fail.
 
       ```bash
       echo "Deploying $TASK_IDENTIFIER"
       # Add deployment commands here
+      ```
+
+      ## after_goal
+
+      Executes once, when the last task of a goal is done (#{terms["after_goal"]} timeout).
+      Report its result with PATCH /api/tasks/:id/after_goal, where :id is the goal.
+      The goal moves to Done only when the reported exit code is 0.
+
+      ```bash
+      echo "Goal finished with $TASK_IDENTIFIER"
+      # git push origin main
       ```
       """
     }
@@ -126,7 +198,7 @@ defmodule KanbanWeb.API.Agent.SetupDocs do
 
           **Setup:** Fetch onboarding at #{base_url}/api/agent/onboarding
 
-          **Workflow:** before_doing hook → claim WITH result → work → after_doing hook → before_review hook → complete WITH both results → [if needs_review=false: after_review hook → claim next, else: stop]
+          **Workflow:** before_doing hook → claim WITH result → work → after_doing hook → before_review hook → complete WITH both results → [if needs_review=false: after_review hook → claim next, else: stop] → [after a goal's last child: after_goal hook → PATCH /api/tasks/:goal_id/after_goal]
 
           **Files:** .stride.md (hooks), .stride_auth.md (token, gitignored)
 

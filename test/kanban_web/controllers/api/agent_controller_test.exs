@@ -78,7 +78,9 @@ defmodule KanbanWeb.API.AgentControllerTest do
 
       # Verify key features are present
       features = overview["key_features"]
-      assert "Client-side hook execution at four lifecycle points" in features
+
+      assert "Client-side hook execution at these lifecycle points: before_doing, after_doing, before_review, after_review, after_goal" in features
+
       assert "Atomic task claiming with capability matching" in features
     end
 

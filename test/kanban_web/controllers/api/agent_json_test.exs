@@ -153,4 +153,104 @@ defmodule KanbanWeb.API.AgentJSONTest do
       refute "review" in listed
     end
   end
+
+  # D386: the onboarding text stated 60s/120s hook timeouts and a four-hook
+  # model while hooks.available_hooks (from Kanban.Hooks) said 600000 ms for
+  # five hooks. The text is now read from Kanban.Hooks; these tests fail if a
+  # stated timeout or the hook list drifts from it again.
+  describe "GET /api/agent/onboarding hook text (D386)" do
+    setup %{conn: conn} do
+      conn = get(conn, ~p"/api/agent/onboarding")
+      %{body: json_response(conn, 200)}
+    end
+
+    test "every stated hook timeout matches Kanban.Hooks", %{body: body} do
+      expected = Map.new(Kanban.Hooks.list_hooks(), &{elem(&1, 0), elem(&1, 1)})
+
+      template_sections =
+        body
+        |> get_in(["file_templates", "stride_md"])
+        |> String.split("\n## ")
+        |> Enum.drop(1)
+
+      lines =
+        get_in(body, ["hooks", "execution_flow"]) ++
+          get_in(body, ["quick_reference_card", "hook_execution_order"]) ++ template_sections
+
+      stated =
+        for line <- lines,
+            [_, blocking, seconds] <- Regex.scan(~r/\((non-blocking|blocking), (\d+)s/, line) do
+          name = expected |> Map.keys() |> Enum.find(&String.contains?(line, &1))
+          assert name, "no hook name in a line stating a timeout: #{line}"
+          {name, blocking, String.to_integer(seconds)}
+        end
+
+      assert length(stated) >= map_size(expected)
+
+      for {name, blocking, seconds} <- stated do
+        assert seconds * 1000 == expected[name].timeout, "#{name} timeout drifted: #{seconds}s"
+        assert blocking == if(expected[name].blocking, do: "blocking", else: "non-blocking")
+      end
+
+      # Every hook, after_goal included, has its timeout stated in the template.
+      stated_names = stated |> Enum.map(&elem(&1, 0)) |> Enum.uniq() |> Enum.sort()
+      assert stated_names == expected |> Map.keys() |> Enum.sort()
+    end
+
+    test "available_hooks describes every hook, after_goal included", %{body: body} do
+      hooks = get_in(body, ["hooks", "available_hooks"])
+
+      assert Enum.map(hooks, & &1["name"]) == Enum.map(Kanban.Hooks.list_hooks(), &elem(&1, 0))
+
+      for hook <- hooks do
+        assert is_binary(hook["when"]) and hook["when"] != "Unknown", hook["name"]
+        assert is_binary(hook["typical_use"]) and hook["typical_use"] != "Unknown", hook["name"]
+      end
+
+      after_goal = Enum.find(hooks, &(&1["name"] == "after_goal"))
+      assert after_goal["when"] =~ "goal"
+    end
+
+    test "no text describes a four-hook model", %{body: body} do
+      texts =
+        get_in(body, ["hooks", "execution_flow"]) ++
+          (body |> get_in(["common_mistakes_agents_make", "mistakes"]) |> Enum.map(& &1["fix"])) ++
+          get_in(body, ["overview", "key_features"])
+
+      for text <- texts, do: refute(text =~ ~r/four (hooks|lifecycle)/i, text)
+
+      assert body |> get_in(["hooks", "execution_flow"]) |> Enum.any?(&(&1 =~ "after_goal"))
+      assert get_in(body, ["quick_reference_card", "workflow"]) =~ "after_goal"
+      assert get_in(body, ["file_templates", "stride_md"]) =~ "\n## after_goal\n"
+    end
+
+    test "complete and mark_reviewed list after_goal among their hooks", %{body: body} do
+      management = get_in(body, ["api_reference", "endpoints", "management"])
+
+      for path <- ["/api/tasks/:id/complete", "/api/tasks/:id/mark_reviewed"] do
+        entry = Enum.find(management, &(&1["method"] == "PATCH" and &1["path"] == path))
+        assert Enum.any?(entry["returns_hooks"], &String.starts_with?(&1, "after_goal")), path
+      end
+    end
+
+    test "the API reference lists the after_goal and mark_done endpoints", %{body: body} do
+      endpoints = body |> get_in(["api_reference", "endpoints"]) |> Map.values() |> List.flatten()
+
+      for {method, path, doc} <- [
+            {"PATCH", "/api/tasks/:id/after_goal", "patch_tasks_id_after_goal.md"},
+            {"GET", "/api/tasks/:id/after_goal_status", "get_tasks_id_after_goal_status.md"},
+            {"PATCH", "/api/tasks/:id/mark_done", "patch_tasks_id_mark_done.md"}
+          ] do
+        entry = Enum.find(endpoints, &(&1["method"] == method and &1["path"] == path))
+        assert entry, "expected #{method} #{path} in api_reference.endpoints"
+        assert entry["documentation_url"] =~ "/docs/api/#{doc}"
+        assert "docs/api" |> Path.join(doc) |> File.exists?()
+      end
+
+      key_endpoints = get_in(body, ["quick_reference_card", "key_endpoints"])
+      assert key_endpoints["after_goal"] =~ "PATCH /api/tasks/:id/after_goal"
+      assert key_endpoints["after_goal_status"] =~ "GET /api/tasks/:id/after_goal_status"
+      assert key_endpoints["mark_done"] =~ "PATCH /api/tasks/:id/mark_done"
+    end
+  end
 end

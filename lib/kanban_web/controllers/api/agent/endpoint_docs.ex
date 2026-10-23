@@ -60,6 +60,14 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
             "List a task's comments, oldest first: the most recent limit (default 50, max 200), with meta.has_more when older ones exist. GET /api/tasks/:id carries comment_count",
           auth_required: true,
           documentation_url: "#{@docs_base_url}/docs/api/get_tasks_id_comments.md"
+        },
+        %{
+          method: "GET",
+          path: "/api/tasks/:id/after_goal_status",
+          description:
+            "Read-only. Whether completing task :id armed its goal's after_goal hook, with the GOAL_* environment variables for running the ## after_goal section locally",
+          auth_required: true,
+          documentation_url: "#{@docs_base_url}/docs/api/get_tasks_id_after_goal_status.md"
         }
       ],
       management: [
@@ -88,7 +96,12 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
             "Complete a task - REQUIRES after_doing_result parameter. changed_files in the body is silently ignored; use PUT /api/tasks/:id/changed_files instead.",
           required_parameters: ["after_doing_result"],
           hook_validation_required: true,
-          returns_hooks: ["after_doing", "before_review", "after_review (conditional)"],
+          returns_hooks: [
+            "after_doing",
+            "before_review",
+            "after_review (conditional)",
+            "after_goal (only when needs_review=false and the task was the last open child of a goal)"
+          ],
           auth_required: true,
           documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_complete.md"
         },
@@ -107,9 +120,31 @@ defmodule KanbanWeb.API.Agent.EndpointDocs do
           method: "PATCH",
           path: "/api/tasks/:id/mark_reviewed",
           description: "Finalize review",
-          returns_hooks: ["after_review (if approved)"],
+          returns_hooks: [
+            "after_review (if approved)",
+            "after_goal (if approved and the task was the last open child of a goal)"
+          ],
           auth_required: true,
           documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_mark_reviewed.md"
+        },
+        %{
+          method: "PATCH",
+          path: "/api/tasks/:id/mark_done",
+          description:
+            "Move a task from the Review column straight to Done without a review. Returns 422 when the task is not in Review. Never arms or delivers after_goal",
+          returns_hooks: [],
+          auth_required: true,
+          documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_mark_done.md"
+        },
+        %{
+          method: "PATCH",
+          path: "/api/tasks/:id/after_goal",
+          description:
+            "Report the result of a goal's after_goal hook, where :id is the goal. Body: exit_code, output, duration_ms. Exit code 0 moves the goal to Done; any other exit code is recorded and the goal stays where it is, so you can fix the problem and report again",
+          required_parameters: ["exit_code", "output", "duration_ms"],
+          returns_hooks: [],
+          auth_required: true,
+          documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_after_goal.md"
         },
         %{
           method: "POST",

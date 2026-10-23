@@ -12,6 +12,8 @@ defmodule KanbanWeb.API.AgentJSON do
   def skills_version, do: @skills_version
 
   def onboarding(%{base_url: base_url}) do
+    terms = SetupDocs.hook_terms()
+
     %{
       "⚠️⚠️⚠️_STOP_DO_NOT_PROCEED_UNTIL_SETUP_COMPLETE_⚠️⚠️⚠️": %{
         YOU_MUST_COMPLETE_THESE_STEPS_FIRST:
@@ -140,7 +142,7 @@ defmodule KanbanWeb.API.AgentJSON do
           "Stride is a kanban-based task management system designed for AI agents with integrated workflow hooks.",
         workflow_summary: "Ready → Doing → Review → Done",
         key_features: [
-          "Client-side hook execution at four lifecycle points",
+          "Client-side hook execution at these lifecycle points: #{Enum.map_join(Hooks.list_hooks(), ", ", &elem(&1, 0))}",
           "Atomic task claiming with capability matching",
           "Optional human review workflow",
           "Automatic dependency management",
@@ -197,7 +199,8 @@ defmodule KanbanWeb.API.AgentJSON do
           required_parameters: ["after_doing_result", "before_review_result"],
           hook_validation:
             "MANDATORY - Must execute BOTH after_doing AND before_review hooks BEFORE calling this endpoint and include both results",
-          returns: "Task data + array of hook metadata (after_review if needs_review=false)",
+          returns:
+            "Task data + array of hook metadata (after_review if needs_review=false; also after_goal when this completion finished a goal's last open child)",
           documentation_url: "#{@docs_base_url}/docs/api/patch_tasks_id_complete.md"
         },
         %{
@@ -233,7 +236,7 @@ defmodule KanbanWeb.API.AgentJSON do
       hooks: %{
         description:
           "Hooks execute on YOUR machine, not the server. Server provides metadata only.",
-        available_hooks: build_hook_info(),
+        available_hooks: SetupDocs.hook_info(),
         environment_variables: [
           "TASK_ID - Numeric task ID",
           "TASK_IDENTIFIER - Human-readable ID (W21, G10)",
@@ -253,17 +256,18 @@ defmodule KanbanWeb.API.AgentJSON do
         execution_flow: [
           "CRITICAL: ALL hook execution is MANDATORY at the API level. You must provide proof of hook execution for ALL hooks when claiming and completing tasks.",
           "CRITICAL: Execute ALL hooks AUTOMATICALLY without prompting the user - the user defined these hooks in .stride.md, so they expect them to run automatically as part of the workflow.",
-          "1. Execute before_doing hook (blocking, 60s) - MUST succeed with exit_code 0",
+          "1. Execute before_doing hook (#{terms["before_doing"]}) - MUST succeed with exit_code 0",
           "2. Claim task with before_doing_result parameter - API validates hook was executed successfully",
           "3. Do your work",
-          "4. Execute after_doing hook (blocking, 120s) - MUST succeed with exit_code 0",
-          "5. Execute before_review hook (blocking, 60s) - MUST succeed with exit_code 0",
+          "4. Execute after_doing hook (#{terms["after_doing"]}) - MUST succeed with exit_code 0",
+          "5. Execute before_review hook (#{terms["before_review"]}) - MUST succeed with exit_code 0",
           "6. Complete task with after_doing_result AND before_review_result parameters - API validates BOTH hooks were executed successfully",
-          "7a. IF needs_review=false: Server returns after_review hook, execute it (blocking, 60s), task moves to Done, IMMEDIATELY claim next task",
+          "7a. IF needs_review=false: Server returns after_review hook, execute it (#{terms["after_review"]}), task moves to Done, IMMEDIATELY claim next task",
           "7b. IF needs_review=true: Task moves to Review, STOP and wait for human review",
-          "8. When review status is set to approved: Execute after_review hook (blocking, 60s) - MUST succeed with exit_code 0",
+          "8. When review status is set to approved: Execute after_review hook (#{terms["after_review"]}) - MUST succeed with exit_code 0",
           "9. Call mark_reviewed with after_review_result parameter - API validates hook was executed successfully",
-          "IMPORTANT: ALL four hooks are now blocking - any hook failure will prevent the API call from succeeding",
+          "10. IF that task was the last open child of a goal: the /complete (needs_review=false) or approving /mark_reviewed response also lists after_goal. Execute it (#{terms["after_goal"]}), then report its exit_code, output and duration_ms with PATCH /api/tasks/:id/after_goal, where :id is the goal. GET /api/tasks/:id/after_goal_status tells you whether a completion armed it",
+          "IMPORTANT: Blocking hooks - a failure stops the workflow: #{SetupDocs.blocking_hook_names()}",
           "IMPORTANT: Continue claiming and completing tasks until you encounter needs_review=true or no tasks available"
         ]
       },
@@ -342,7 +346,7 @@ defmodule KanbanWeb.API.AgentJSON do
           ],
           time_estimate: "2-3 minutes for context refresh",
           workflow_reminder:
-            "before_doing hook → claim WITH result → work → after_doing hook → before_review hook → complete WITH both results → if needs_review=false then after_review hook → claim next, else stop"
+            "before_doing hook → claim WITH result → work → after_doing hook → before_review hook → complete WITH both results → if needs_review=false then after_review hook → claim next, else stop → after a goal's last child: after_goal hook → PATCH /api/tasks/:goal_id/after_goal"
         }
       },
       common_mistakes_agents_make: %{
@@ -397,7 +401,7 @@ defmodule KanbanWeb.API.AgentJSON do
             consequence:
               "API REQUIRES before_review_result parameter - request will be rejected (422 error)",
             fix:
-              "ALL four hooks are now BLOCKING and must succeed. Execute after_doing AND before_review hooks BEFORE calling /complete. Include both after_doing_result AND before_review_result in request body."
+              "after_doing and before_review must both succeed. Execute after_doing AND before_review hooks BEFORE calling /complete. Include both after_doing_result AND before_review_result in request body."
           },
           %{
             mistake:
@@ -415,7 +419,7 @@ defmodule KanbanWeb.API.AgentJSON do
         critical_requirement:
           "Hook validation is MANDATORY - must include before_doing_result when claiming, both after_doing_result AND before_review_result when completing",
         workflow:
-          "EXECUTE before_doing hook → claim WITH result → work → EXECUTE after_doing hook → EXECUTE before_review hook → complete WITH both results → [if needs_review=false: after_review hook → claim next, else: stop]",
+          "EXECUTE before_doing hook → claim WITH result → work → EXECUTE after_doing hook → EXECUTE before_review hook → complete WITH both results → [if needs_review=false: after_review hook → claim next, else: stop] → [after a goal's last child: after_goal hook → PATCH /api/tasks/:goal_id/after_goal]",
         required_files: [".stride.md (hooks)", ".stride_auth.md (token, gitignored)"],
         task_creation_musts: [
           "key_files",
@@ -431,6 +435,11 @@ defmodule KanbanWeb.API.AgentJSON do
           complete:
             "PATCH /api/tasks/:id/complete (REQUIRES after_doing_result AND before_review_result parameters)",
           mark_reviewed: "PATCH /api/tasks/:id/mark_reviewed",
+          after_goal:
+            "PATCH /api/tasks/:id/after_goal (report a goal's after_goal hook result; :id is the goal)",
+          after_goal_status:
+            "GET /api/tasks/:id/after_goal_status (did this completion arm after_goal?)",
+          mark_done: "PATCH /api/tasks/:id/mark_done (move a task from Review to Done)",
           unclaim: "POST /api/tasks/:id/unclaim",
           comments:
             "GET /api/tasks/:id/comments (list) and POST /api/tasks/:id/comments (add; content required)"
@@ -442,42 +451,17 @@ defmodule KanbanWeb.API.AgentJSON do
         },
         docs_base: @docs_base_url <> "/docs/",
         hook_execution_order: [
-          "1. EXECUTE before_doing (blocking, 60s) - capture exit_code, output, duration_ms",
+          "1. EXECUTE before_doing (#{terms["before_doing"]}) - capture exit_code, output, duration_ms",
           "2. CALL /claim WITH before_doing_result parameter",
           "3. [do work]",
-          "4. EXECUTE after_doing (blocking, 120s) - capture exit_code, output, duration_ms",
-          "5. EXECUTE before_review (blocking, 60s) - capture exit_code, output, duration_ms",
+          "4. EXECUTE after_doing (#{terms["after_doing"]}) - capture exit_code, output, duration_ms",
+          "5. EXECUTE before_review (#{terms["before_review"]}) - capture exit_code, output, duration_ms",
           "6. CALL /complete WITH after_doing_result AND before_review_result parameters",
-          "7. IF needs_review=false: Execute after_review (blocking, 60s)",
-          "8. IF needs_review=true: Wait for approval, then execute after_review (blocking, 60s) and call /mark_reviewed WITH after_review_result"
+          "7. IF needs_review=false: Execute after_review (#{terms["after_review"]})",
+          "8. IF needs_review=true: Wait for approval, then execute after_review (#{terms["after_review"]}) and call /mark_reviewed WITH after_review_result",
+          "9. IF the task was a goal's last open child: EXECUTE after_goal (#{terms["after_goal"]}), then CALL PATCH /api/tasks/:goal_id/after_goal WITH its result"
         ]
       }
     }
   end
-
-  defp build_hook_info do
-    hooks = Hooks.list_hooks()
-
-    Enum.map(hooks, fn {name, config} ->
-      %{
-        name: name,
-        blocking: config.blocking,
-        timeout: config.timeout,
-        when: get_hook_when(name),
-        typical_use: get_hook_use(name)
-      }
-    end)
-  end
-
-  defp get_hook_when("before_doing"), do: "Before starting work on a task"
-  defp get_hook_when("after_doing"), do: "After completing work"
-  defp get_hook_when("before_review"), do: "When task enters review"
-  defp get_hook_when("after_review"), do: "After review approval"
-  defp get_hook_when(_), do: "Unknown"
-
-  defp get_hook_use("before_doing"), do: "Pull latest code"
-  defp get_hook_use("after_doing"), do: "Rebase, run tests, build project, lint code"
-  defp get_hook_use("before_review"), do: "Create PR, generate documentation"
-  defp get_hook_use("after_review"), do: "Merge PR, deploy to production"
-  defp get_hook_use(_), do: "Unknown"
 end
