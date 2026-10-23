@@ -42,6 +42,18 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
         end
       end
     end
+
+    # The renderer escapes HTML, so raw markup in a guide reaches readers as
+    # literal text. Name UI elements in words instead.
+    test "no guide step contains raw HTML" do
+      for how_to <- HowToData.all_how_tos(), step <- how_to.steps do
+        refute step.content =~ ~r{</?[a-zA-Z!]},
+               "#{how_to.id} step \"#{step.title}\" contains raw HTML"
+
+        refute step.title =~ ~r{</?[a-zA-Z!]},
+               "#{how_to.id} step \"#{step.title}\" has raw HTML in its title"
+      end
+    end
   end
 
   describe "all_tags/0" do
@@ -256,6 +268,15 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       all_content = Enum.map_join(guide.steps, "\n", & &1.content)
       assert String.contains?(all_content, "Column")
       assert String.contains?(all_content, "workflow")
+    end
+
+    test "the Open the Task Form step names the add button by its real label" do
+      {:ok, guide} = HowToData.get_how_to("adding-your-first-task")
+      step = Enum.find(guide.steps, &(&1.title == "Open the Task Form"))
+
+      assert step.content =~ "**Add Task**"
+      refute step.content =~ "keyboard shortcut"
+      assert File.read!("lib/kanban_web/components/column_header.ex") =~ ~s{gettext("Add Task")}
     end
 
     test "adding-your-first-task guide has complete content" do

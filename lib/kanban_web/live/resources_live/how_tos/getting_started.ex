@@ -125,10 +125,10 @@ defmodule KanbanWeb.ResourcesLive.HowTos.GettingStarted do
           %{
             title: "Open the Task Form",
             content:
-              "Click the <span class=\"hero-plus-circle-solid h-5 w-5 text-[var(--st-done)] inline-block\"></span> button at the bottom of any column, or use the keyboard shortcut **N** when focused on a column.",
+              "Click the plus button next to the column's name, in the column header. Hover over it to see its label, **Add Task**. The button only appears on boards you can edit, and it's hidden while a column is at its WIP limit.",
             image: "/images/resources/guides/adding-task-step-1.png",
-            image_width: 517,
-            image_height: 263
+            image_width: 560,
+            image_height: 160
           },
           %{
             title: "Enter Task Details",

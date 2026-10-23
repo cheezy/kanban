@@ -28,6 +28,42 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
     end
   end
 
+  describe "guide pages with numbered lists" do
+    test "renders the claim-complete lifecycle as an ordered list", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/resources/claim-complete-workflow")
+
+      assert html =~ ~s(<ol class="list-decimal list-inside space-y-1 my-2">)
+      assert html =~ "<li><strong>Open</strong> → Available for claiming</li>"
+      assert html =~ "<p>Agents automatically discover, claim, and complete tasks"
+      refute html =~ "1. <strong>Open</strong>"
+      # A list wrapped in <p> comes back with <br/> between its items.
+      assert html =~ ~r{<ol class="list-decimal[^"]*">\s*<li><strong>Open</strong>}
+      refute html =~ "<br/><li>"
+    end
+
+    test "renders the review steps as ordered lists", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/resources/reviewing-completed-work")
+
+      assert html =~ "<li>Click the <strong>Approve</strong> button on the task</li>"
+      assert html =~ "<li>Click <strong>Request Changes</strong></li>"
+    end
+
+    test "renders hook output as a code block", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/resources/debugging-hooks")
+
+      assert html =~ ~s(<pre class="p-4 rounded-lg bg-base-200 overflow-x-auto">)
+      refute html =~ "``"
+    end
+
+    test "names the add-task button in plain words", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/resources/adding-your-first-task")
+
+      assert html =~ "<strong>Add Task</strong>"
+      refute html =~ "&lt;span"
+      refute html =~ "hero-plus-circle-solid"
+    end
+  end
+
   describe "mount/3 with valid how-to" do
     test "assigns how_to data", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/resources/creating-your-first-board")
@@ -212,6 +248,87 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       assert result =~ ~s(href="https://example.com")
       assert result =~ ">Stride</a>"
     end
+
+    test "renders a numbered list as an ordered list" do
+      result =
+        Show.render_markdown(
+          "Steps:\n\n1. **Open** the `form`\n2. Read [docs](https://example.com)\n3. Save"
+        )
+
+      assert result =~
+               ~s(<ol class="list-decimal list-inside space-y-1 my-2">\n<li><strong>Open</strong> the <code)
+
+      assert result =~ ~s(<li>Read <a href="https://example.com")
+      assert result =~ "<li>Save</li>\n</ol>"
+      assert result =~ "<p>Steps:</p>"
+      refute result =~ "<p><ol"
+      refute result =~ "1. "
+    end
+
+    test "keeps numbers inside a paragraph as plain text" do
+      result = Show.render_markdown("Upgrade to version 2. Then restart.\nPage 3.5 explains why.")
+
+      assert result == "<p>Upgrade to version 2. Then restart.<br/>Page 3.5 explains why.</p>"
+
+      assert Show.render_markdown("Looking back:\n2026. was a year") ==
+               "<p>Looking back:<br/>2026. was a year</p>"
+    end
+
+    test "renders an empty numbered item without crashing" do
+      result = Show.render_markdown("1. First\n2.\n3. ")
+
+      assert result ==
+               ~s(<ol class="list-decimal list-inside space-y-1 my-2">\n<li>First</li>\n<li></li>\n<li></li>\n</ol>)
+    end
+
+    test "mixes bullet and numbered lists in one step" do
+      result = Show.render_markdown("- Bullet\n1. Numbered\n- Bullet again")
+
+      assert result ==
+               Enum.join(
+                 [
+                   ~s(<ul class="list-disc list-inside space-y-1 my-2">\n<li>Bullet</li>\n</ul>),
+                   ~s(<ol class="list-decimal list-inside space-y-1 my-2">\n<li>Numbered</li>\n</ol>),
+                   ~s(<ul class="list-disc list-inside space-y-1 my-2">\n<li>Bullet again</li>\n</ul>)
+                 ],
+                 "\n"
+               )
+    end
+
+    test "wraps the text after a list in its own paragraph" do
+      result = Show.render_markdown("Lead:\n- a\n- b\nTrailing line.\n\n1. one\n\nAfter.")
+
+      assert result ==
+               Enum.join(
+                 [
+                   "<p>Lead:</p>",
+                   ~s(<ul class="list-disc list-inside space-y-1 my-2">\n<li>a</li>\n<li>b</li>\n</ul>),
+                   "<p>Trailing line.</p>",
+                   ~s(<ol class="list-decimal list-inside space-y-1 my-2">\n<li>one</li>\n</ol>),
+                   "<p>After.</p>"
+                 ],
+                 "\n"
+               )
+    end
+
+    test "renders a list followed by a fenced code block" do
+      result =
+        Show.render_markdown(
+          "1. Run this:\n\n```bash\n- not a list\n2. not a list\n**not bold** `x`\n```\n\nDone."
+        )
+
+      assert result =~ "<li>Run this:</li>\n</ol>"
+
+      assert result =~
+               ~s(<pre class="p-4 rounded-lg bg-base-200 overflow-x-auto"><code class="text-sm font-mono">- not a list\n2. not a list\n**not bold** `x`</code></pre>)
+
+      assert result =~ "<p>Done.</p>"
+      refute result =~ "<p><pre"
+    end
+
+    test "leaves an unclosed fence as plain text" do
+      assert Show.render_markdown("```\nno closing fence") == "<p>```<br/>no closing fence</p>"
+    end
   end
 
   describe "render_markdown/1 XSS prevention" do
@@ -242,6 +359,16 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
     test "escapes HTML inside list items" do
       result = Show.render_markdown("- <img src=x onerror=alert(1)>")
       refute result =~ "<img"
+      assert result =~ "&lt;img"
+    end
+
+    test "escapes HTML inside numbered list items" do
+      result =
+        Show.render_markdown("1. <script>alert(1)</script>\n2. <img src=x onerror=alert(1)>")
+
+      refute result =~ "<script>"
+      refute result =~ "<img"
+      assert result =~ "<li>&lt;script&gt;alert(1)&lt;/script&gt;</li>"
       assert result =~ "&lt;img"
     end
 
