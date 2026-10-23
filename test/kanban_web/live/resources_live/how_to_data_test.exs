@@ -28,6 +28,15 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
   @hook_names ~w(before_doing after_doing before_review after_review after_goal)
 
+  @metrics_ids [
+    "metrics-dashboard",
+    "throughput-metrics",
+    "cycle-time-metrics",
+    "lead-time-metrics",
+    "wait-time-metrics",
+    "workspace-and-compliance-metrics"
+  ]
+
   # Column names are board data, not translated strings, so they are checked
   # against the AI board's column list instead.
   @ai_board_columns ~w(Backlog Ready Doing Review Done)
@@ -519,12 +528,12 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "best practices guides content" do
-    test "all 2 best-practices guides exist" do
+    test "all 9 best-practices guides exist" do
       best_practices_guides =
         HowToData.all_how_tos()
         |> Enum.filter(&("best-practices" in &1.tags))
 
-      assert length(best_practices_guides) == 8
+      assert length(best_practices_guides) == 9
 
       guide_ids = Enum.map(best_practices_guides, & &1.id)
       assert "using-stride-with-a-team" in guide_ids
@@ -535,6 +544,7 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert "cycle-time-metrics" in guide_ids
       assert "lead-time-metrics" in guide_ids
       assert "wait-time-metrics" in guide_ids
+      assert "workspace-and-compliance-metrics" in guide_ids
     end
 
     test "organizing-with-dependencies guide has complete content" do
@@ -910,6 +920,255 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
     end
   end
 
+  describe "metrics guides" do
+    defp metrics_content(ids) do
+      for id <- ids,
+          {:ok, guide} = HowToData.get_how_to(id),
+          step <- guide.steps,
+          into: "",
+          do: step.content <> "\n"
+    end
+
+    test "every bolded UI label in the metrics guides exists in the source" do
+      sources =
+        Enum.map_join(
+          [
+            "lib/kanban_web/components/board_tabs.ex",
+            "lib/kanban_web/components/side_nav.ex"
+            | Path.wildcard("lib/kanban_web/live/metrics_live/**/*.{ex,heex}") ++
+                Path.wildcard("lib/kanban_web/components/metrics_*.ex")
+          ],
+          &File.read!/1
+        )
+
+      labels =
+        for id <- @metrics_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            do: {id, label}
+
+      for id <- @metrics_ids do
+        assert Enum.any?(labels, &(elem(&1, 0) == id)), "#{id} bolds no UI label"
+      end
+
+      for {id, label} <- labels do
+        refute label =~ ~r/^[a-z_]+$/, "#{id} bolds #{label}, which is code, not a UI label"
+
+        assert sources =~ ~r/gettext\("#{Regex.escape(label)}"/,
+               "#{id} names **#{label}**, which no metrics screen shows"
+      end
+    end
+
+    test "metrics guides keep their ids and minimum step counts" do
+      for {id, title, steps} <- [
+            {"metrics-dashboard", "Using the Metrics Dashboard", 4},
+            {"throughput-metrics", "Tracking Throughput", 4},
+            {"cycle-time-metrics", "Understanding Cycle Time", 4},
+            {"lead-time-metrics", "Understanding Lead Time", 4},
+            {"wait-time-metrics", "Understanding Wait Time", 4},
+            {"workspace-and-compliance-metrics", "Workspace Metrics and Compliance", 9}
+          ] do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.title == title
+        assert length(guide.steps) >= steps, "#{id} should have at least #{steps} steps"
+      end
+
+      # Navigation groups guides by first tag: the old five stay in the
+      # best-practices group, and the new guide leads a metrics group.
+      for id <- Enum.take(@metrics_ids, 5) do
+        {:ok, guide} = HowToData.get_how_to(id)
+        assert guide.tags == ["best-practices", "metrics", "monitoring"]
+      end
+
+      {:ok, new_guide} = HowToData.get_how_to("workspace-and-compliance-metrics")
+      assert new_guide.tags == ["metrics", "best-practices", "monitoring"]
+      assert {%{id: "wait-time-metrics"}, nil} = HowToData.get_navigation(new_guide)
+
+      {:ok, wait_time} = HowToData.get_how_to("wait-time-metrics")
+
+      assert {_previous, %{id: "workspace-and-compliance-metrics"}} =
+               HowToData.get_navigation(wait_time)
+    end
+
+    test "metrics guides drop the claims the app no longer makes" do
+      content = metrics_content(@metrics_ids)
+
+      for stale <- [
+            "Metrics →",
+            "**Agent**:",
+            "Review time",
+            "Upward trends",
+            "Flat lines",
+            "**Dips**",
+            "**Trends**",
+            "remove weekend data",
+            "task complexity and actual cycle time",
+            "**Backlog Wait**",
+            "**Review Wait**",
+            "in the navigation",
+            "**idle**",
+            "Speed up reviews",
+            "Use notifications",
+            "amber"
+          ] do
+        refute content =~ stale, "a metrics guide still says #{inspect(stale)}"
+      end
+
+      titles =
+        for id <- @metrics_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            do: step.title
+
+      refute "Reading the Tables" in titles
+    end
+
+    test "the board metrics facts match the code" do
+      dashboard = metrics_content(["metrics-dashboard"])
+      live = "lib/kanban_web/live/metrics_live/"
+
+      assert File.read!(live <> "base.ex") =~ "time_range: :last_30_days"
+      assert dashboard =~ "The range starts at **Last 30 Days**"
+
+      for page <- ~w(dashboard throughput cycle_time lead_time wait_time) do
+        assert File.read!(live <> page <> ".html.heex") =~
+                 "show_agent_filter={@board.ai_optimized_board}"
+      end
+
+      assert dashboard =~ "**Agent Filter** appears only on AI-optimized boards"
+
+      assert File.read!("lib/kanban/metrics.ex") =~
+               "t.completed_by_agent == ^agent_name or t.created_by_agent == ^agent_name"
+
+      assert dashboard =~ "only the tasks it completed or created"
+      assert File.read!("lib/kanban/metrics.ex") =~ "maybe_filter_by_completing_agent(agent_name)"
+      assert dashboard =~ "(for wait time, only the tasks it completed)"
+
+      # The detail pages pass the browser time zone; the dashboard passes none,
+      # so Kanban.Metrics falls back to UTC for its cards.
+      assert File.read!(live <> "base.ex") =~
+               "timezone: KanbanWeb.Timezone.browser_timezone(socket)"
+
+      refute File.read!(live <> "dashboard.ex") =~ "timezone"
+      assert dashboard =~ "The dashboard's cards count from midnight UTC"
+
+      # Board metrics and their exports aren't plan-gated, so no guide may say so.
+      metrics_code =
+        Enum.map_join(
+          Path.wildcard(live <> "**/*.{ex,heex}") ++
+            [
+              "lib/kanban_web/controllers/metrics_pdf_controller.ex",
+              "lib/kanban_web/controllers/workspace_metrics_export_controller.ex"
+            ],
+          &File.read!/1
+        )
+
+      refute metrics_code =~ "Plans."
+      refute metrics_code =~ "plans_enforced"
+      all_guides = metrics_content(@metrics_ids)
+
+      for lock <- ["locked", "paid plan", "upgrade", "Upgrade", "free board"] do
+        refute all_guides =~ lock, "a metrics guide claims a plan lock: #{inspect(lock)}"
+      end
+
+      router = File.read!("lib/kanban_web/router.ex")
+      assert router =~ ~s(get "/boards/:id/metrics/:metric/export", MetricsPdfController, :export)
+      assert router =~ ~s(get "/metrics/export", WorkspaceMetricsExportController, :export)
+
+      exports = File.read!("lib/kanban_web/controllers/metrics_pdf_controller.ex")
+
+      for metric <- ~w(throughput cycle-time lead-time wait-time) do
+        assert exports =~ ~s("#{metric}" =>)
+        page = String.replace(metric, "-", "_")
+        assert File.read!(live <> page <> ".html.heex") =~ "<.export_dropdown"
+      end
+
+      refute exports =~ ~s("compliance" =>)
+
+      for page <- ~w(dashboard compliance) do
+        refute File.read!(live <> page <> ".html.heex") =~ "export_dropdown"
+      end
+
+      assert dashboard =~ "The dashboard and the Compliance page have no export"
+
+      metrics = File.read!("lib/kanban/metrics.ex")
+      assert metrics =~ "Cycle time is measured from `claimed_at` to `completed_at`"
+      assert metrics =~ "Lead time is measured from task creation (`inserted_at`)"
+      assert metrics =~ "Review wait time - Time from `completed_at` to `reviewed_at`"
+
+      lead = metrics_content(["lead-time-metrics"])
+      assert lead =~ "Lead time = backlog wait + cycle time"
+      assert lead =~ "Review wait starts when the agent completes the task"
+
+      assert File.read!(live <> "throughput.ex") =~ "total / days_count"
+      assert metrics_content(["throughput-metrics"]) =~ "divided by the days that had completions"
+    end
+
+    test "the workspace and compliance facts match the code" do
+      guide = metrics_content(["workspace-and-compliance-metrics"])
+      live = "lib/kanban_web/live/metrics_live/"
+
+      helpers = File.read!(live <> "helpers.ex")
+      assert helpers =~ "@window_options [7, 14, 30, 90]"
+      assert helpers =~ "@default_window_days 14"
+      assert guide =~ "the last 7, 14, 30 or 90 days. It starts at 14 days"
+
+      assert File.read!("lib/kanban_web/controllers/workspace_metrics_export_controller.ex") =~
+               ~S|"stride_workspace_metrics_#{assigns.window_days}d_#{date}#{extension}"|
+
+      assert guide =~ "`stride_workspace_metrics_14d_"
+
+      assert File.read!("lib/kanban/metrics/workspace.ex") =~
+               "up to six contributors (agents before humans"
+
+      assert guide =~ "ranks the top six contributors **by completed**, agents before people"
+
+      assert File.read!("lib/kanban/metrics/workspace/completed_tasks.ex") =~
+               "length(counted_current) / counted_days"
+
+      assert guide =~ "**Throughput** is the average number of tasks completed per day"
+
+      assert File.read!("lib/kanban/metrics/workspace/cumulative_flow.ex") =~
+               "| `:ready`    | always 0"
+
+      assert guide =~ "the Ready band stays empty"
+
+      compliance = File.read!(live <> "compliance.ex")
+      assert compliance =~ "true <- Boards.can_modify?(board, user)"
+
+      assert File.read!("lib/kanban/boards.ex") =~
+               "get_user_access(board_id, user.id) in [:owner, :modify]"
+
+      assert guide =~ "Only the board's owner and members with edit access can open it"
+
+      assert File.read!(live <> "dashboard.html.heex") =~
+               ~r/:if=\{@board.ai_optimized_board\}\s*navigate=\{~p"\/boards\/#\{@board\}\/metrics\/compliance"\}/
+
+      refute File.read!(live <> "compliance.html.heex") =~ "metrics-filter-form"
+      assert guide =~ "The page has no filters and no export"
+
+      assert compliance =~ ~s|when rate >= 80.0, do: "var(--st-done)"|
+      assert compliance =~ ~s|when rate >= 50.0, do: "var(--st-review)"|
+      assert compliance =~ ~s|dispatch_rate_color(_rate), do: "var(--st-blocked)"|
+
+      assert guide =~
+               "the Done column's colour at 80% or more, the Review column's colour from 50%, and red below 50%"
+
+      for code <- Kanban.Tasks.WorkflowSteps.skip_reason_codes() do
+        [_, label] =
+          Regex.run(~r/skip_reason_label\("#{code}"\), do: gettext\("([^"]+)"\)/, compliance)
+
+        assert guide =~ "**#{label}**", "the guide doesn't name the #{code} skip reason"
+      end
+
+      for name <- ~w(explorer planner implementation reviewer) do
+        assert name in Kanban.Tasks.WorkflowSteps.canonical_step_names()
+        assert guide =~ "`#{name}`"
+      end
+    end
+  end
+
   describe "all_tags/0 includes new tags" do
     test "includes non-developer tag" do
       assert "non-developer" in HowToData.all_tags()
@@ -941,8 +1200,8 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
   end
 
   describe "total guide count" do
-    test "has all 20 guides" do
-      assert length(HowToData.all_how_tos()) == 20
+    test "has all 21 guides" do
+      assert length(HowToData.all_how_tos()) == 21
     end
 
     test "every guide id is unique across the area modules" do

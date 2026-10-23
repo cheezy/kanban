@@ -4,7 +4,8 @@
 # teammates (all @example.test), an AI-optimized board and a custom board, tasks
 # in every column, a goal with children, a task waiting in Review, labels, a
 # comment with a mention, an API token record, and four weeks of completed work
-# so the metrics charts have data. See
+# so the metrics charts have data, with the workflow steps each agent reported
+# so the Compliance page has data too. See
 # priv/static/images/resources/guides/README.md for how to use it.
 #
 # Run it inside the running dev app with Tidewave project_eval, never with mix
@@ -94,6 +95,98 @@ ago = fn hours -> DateTime.add(now, -hours * 3600, :second) end
 naive_ago = fn hours -> hours |> ago.() |> DateTime.to_naive() end
 
 agents = ["Claude Opus 5.5", "Claude Sonnet 5.5", "Codex", "Claude Haiku 4.5"]
+
+# The workflow steps an agent reported when it completed finished task i, so
+# the Compliance page has dispatch rates, skip reasons and per-agent numbers.
+# Deterministic, and it uses no outer variables. rem(i, 4) is the agent's
+# index in `agents`: Codex never runs a planner or reviewer, and some Haiku
+# tasks report no steps at all.
+demo_workflow_steps = fn i ->
+  dispatched = fn name, ms -> %{"name" => name, "dispatched" => true, "duration_ms" => ms} end
+
+  skipped = fn name, code, reason ->
+    %{"name" => name, "dispatched" => false, "reason" => reason, "reason_code" => code}
+  end
+
+  explorer =
+    if rem(i, 6) == 5,
+      do: skipped.("explorer", "ran_inline", "Explored inline: the change touched one module."),
+      else: dispatched.("explorer", 40_000 + rem(i * 17, 9) * 5_000)
+
+  planner =
+    cond do
+      rem(i, 9) in [0, 1, 2, 4, 6] ->
+        dispatched.("planner", 30_000 + rem(i * 11, 7) * 4_000)
+
+      rem(i, 9) == 8 ->
+        skipped.(
+          "planner",
+          "subsumed_by_task_spec",
+          "The task spec already names the files and the approach."
+        )
+
+      rem(i, 9) == 7 ->
+        skipped.("planner", "folded_into_prior_step", "The explorer returned a complete plan.")
+
+      true ->
+        skipped.(
+          "planner",
+          "decision_matrix_skip",
+          "Small, low-risk task: the decision matrix skips the planner."
+        )
+    end
+
+  implementation =
+    if rem(i, 11) == 10,
+      do: skipped.("implementation", "ran_inline", "Implemented inline: a one-line fix."),
+      else: dispatched.("implementation", 300_000 + rem(i * 37, 13) * 60_000)
+
+  reviewer =
+    cond do
+      rem(i, 5) in [0, 2] ->
+        dispatched.("reviewer", 45_000 + rem(i * 13, 8) * 6_000)
+
+      rem(i, 20) == 19 ->
+        skipped.(
+          "reviewer",
+          "matrix_deviation",
+          "The matrix called for a review; skipped to ship the hotfix."
+        )
+
+      true ->
+        skipped.(
+          "reviewer",
+          "decision_matrix_skip",
+          "Small task: the decision matrix skips the reviewer."
+        )
+    end
+
+  after_doing =
+    if rem(i, 8) == 6,
+      do:
+        skipped.(
+          "after_doing",
+          "hook_body_empty",
+          "The after_doing section of .stride.md is empty."
+        ),
+      else: dispatched.("after_doing", 20_000 + rem(i * 7, 10) * 3_000)
+
+  before_review =
+    if rem(i, 3) == 1,
+      do:
+        skipped.(
+          "before_review",
+          "hook_body_empty",
+          "The before_review section of .stride.md is empty."
+        ),
+      else: dispatched.("before_review", 15_000 + rem(i * 3, 10) * 2_000)
+
+  cond do
+    rem(i, 4) == 3 and rem(i, 8) == 7 -> []
+    rem(i, 4) == 2 -> [explorer, implementation, after_doing, before_review]
+    true -> [explorer, planner, implementation, reviewer, after_doing, before_review]
+  end
+end
 
 # --- Helpers -----------------------------------------------------------------
 
@@ -361,6 +454,7 @@ seed_ai_board = fn ->
         claimed_at: ago.(30),
         completed_at: ago.(3),
         completed_by_agent: "Claude Opus 5.5",
+        workflow_steps: demo_workflow_steps.(0),
         completion_summary:
           "Moved the order summary into the first screen on phones and kept the Pay button in view.",
         completion_notes:
@@ -417,7 +511,7 @@ seed_ai_board = fn ->
         "@[#{Mentions.token_name(maya.name)}](user:#{maya.id}) the summary now stays visible on small phones. Can you check it on an iPhone SE before we ship?"
     })
 
-  {:ok, %{goal: _goal, child_tasks: [stored, shown, removed]}} =
+  {:ok, %{goal: goal, child_tasks: [stored, shown, removed]}} =
     Tasks.create_goal_with_tasks(
       columns["Ready"],
       %{
@@ -442,6 +536,13 @@ seed_ai_board = fn ->
       completed_at: ago.(26),
       completed_by_agent: "Claude Sonnet 5.5"
     })
+
+  # Created days before any of it was claimed, so no lead or backlog wait is
+  # negative.
+  backdate.(goal, 120)
+  backdate.(stored, 100)
+  backdate.(shown, 50)
+  backdate.(removed, 50)
 
   # Set the dependency once its prerequisite is done: a dependency change
   # recomputes the blocked status, which would reset an in-progress task.
@@ -578,6 +679,7 @@ seed_ai_board = fn ->
           claimed_at: ago.(claimed),
           completed_at: ago.(completed),
           completed_by_agent: Enum.at(agents, rem(i, length(agents))),
+          workflow_steps: demo_workflow_steps.(i),
           inserted_hours_ago: inserted
         },
         review_attrs

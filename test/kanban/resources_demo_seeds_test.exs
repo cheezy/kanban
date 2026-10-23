@@ -13,8 +13,10 @@ defmodule Kanban.ResourcesDemoSeedsTest do
   alias Kanban.Organizations.Organization
   alias Kanban.Tasks.ChangedFilesAudit
   alias Kanban.Tasks.CompletionValidation
+  alias Kanban.Tasks.Compliance
   alias Kanban.Tasks.Task
   alias Kanban.Tasks.TaskComment
+  alias Kanban.Tasks.WorkflowSteps
   alias KanbanWeb.ReviewAcceptance
 
   @seed Path.expand("../../priv/repo/resources_demo_seeds.exs", __DIR__)
@@ -222,6 +224,75 @@ defmodule Kanban.ResourcesDemoSeedsTest do
     error = assert_raise RuntimeError, fn -> run_seed() end
     assert error.message =~ "12 to 72 characters"
     refute error.message =~ "short-pw"
+  end
+
+  test "the AI board has workflow steps for the Compliance page" do
+    run_seed()
+    board = demo_board("Checkout Revamp")
+
+    rates = Compliance.step_dispatch_rates(board.id)
+    assert rates |> Map.keys() |> Enum.sort() == Enum.sort(WorkflowSteps.canonical_step_names())
+    percentages = Enum.map(rates, fn {_name, %{rate: rate}} -> rate end)
+    assert Enum.any?(percentages, &(&1 >= 80.0)), "no Done-coloured dispatch-rate bar"
+
+    assert Enum.any?(percentages, &(&1 >= 50.0 and &1 < 80.0)),
+           "no Review-coloured dispatch-rate bar"
+
+    assert Enum.any?(percentages, &(&1 < 50.0)), "no red dispatch-rate bar"
+
+    reasons = Compliance.skip_reasons(board.id)
+    codes = Enum.map(WorkflowSteps.skip_reason_codes(), &to_string/1)
+    assert reasons |> Map.keys() |> Enum.sort() == Enum.sort(codes)
+    counts = Map.values(reasons)
+    assert counts == Enum.uniq(counts), "skip reasons should have uneven counts"
+
+    by_agent = Compliance.compliance_by_agent(board.id)
+    assert map_size(by_agent) == 4
+    assert by_agent |> Map.values() |> Enum.map(& &1.avg_steps) |> Enum.uniq() |> length() > 1
+    assert Enum.any?(by_agent, fn {_agent, a} -> a.tasks_with_steps < a.total_tasks end)
+
+    steps =
+      from(t in Task,
+        join: c in assoc(t, :column),
+        where: c.board_id == ^board.id,
+        select: t.workflow_steps
+      )
+      |> Repo.all()
+      |> List.flatten()
+
+    assert steps != []
+    assert Enum.all?(steps, &WorkflowSteps.valid_step?/1)
+    assert Enum.all?(steps, &WorkflowSteps.valid_reason_code?/1)
+  end
+
+  test "every started demo task was created before it was claimed and completed" do
+    run_seed()
+    board = demo_board("Checkout Revamp")
+
+    tasks =
+      from(t in Task,
+        join: c in assoc(t, :column),
+        where: c.board_id == ^board.id,
+        where: not is_nil(t.completed_at) or not is_nil(t.claimed_at),
+        select: {t.title, t.inserted_at, t.claimed_at, t.completed_at}
+      )
+      |> Repo.all()
+
+    assert length(tasks) > 30
+
+    for {title, inserted, claimed, completed} <- tasks do
+      inserted = DateTime.from_naive!(inserted, "Etc/UTC")
+
+      if completed do
+        assert DateTime.compare(inserted, completed) == :lt,
+               "#{title} was completed before it was created"
+      end
+
+      if claimed do
+        assert DateTime.compare(inserted, claimed) == :lt,
+               "#{title} was claimed before it was created"
+      end
+    end
   end
 
   test "a board that fails part-way is rolled back, not left half-built" do

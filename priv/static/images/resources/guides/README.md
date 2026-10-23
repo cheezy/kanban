@@ -39,7 +39,8 @@ It creates:
 - **Checkout Revamp**, an AI-optimized board:
   - tasks in every column, with labels (Payments, iOS, Android,
     Accessibility, Performance);
-  - the goal "Saved payment methods" with three children;
+  - the goal "Saved payment methods" with three children, created days before
+    any of them was claimed;
   - "Move the order summary above the fold" waiting in Review, with a comment
     from Priya that mentions Maya, and a full agent completion: acceptance
     criteria, completion notes, a passing structured review and a diff for
@@ -49,7 +50,8 @@ It creates:
     finished "Store card tokens with the payment provider";
   - an API token record named "Checkout agent";
   - four weeks of completed work by several agents, so every metrics page
-    has data.
+    has data, with the workflow steps each agent reported, so the Compliance
+    page has dispatch rates, skip reasons and per-agent numbers.
 - **Marketing Site Launch**, a custom board with To Do, In Progress (WIP limit
   3, and full), In Review and Published.
 
@@ -182,16 +184,21 @@ so routes say which demo board to open. `Checkout` is Checkout Revamp and
 | `api-auth-step-1.png` | api-authentication / 1 Generate an API Token | `/boards/<Checkout>/api_tokens` (as Maya) | **Create new token** filled with demo values (Checkout laptop agent, claude-opus-5-5), not submitted; **Active tokens** shows the seeded Checkout agent, **Never used** | From **Create new token** to **Active tokens**, below the window's subtitle |
 | `api-auth-step-2.png` | api-authentication / 2 Complete Token Generation | `/boards/<Checkout>/api_tokens` | **Token created** panel for a throwaway token. Replace the whole token text in the page with `stride_dev_` and dots before capturing (match up to whitespace: tokens contain characters such as `+`), check no token text is left, then revoke and delete the token | Crop the panel |
 | `api-auth-step-3.png` | api-authentication / 3 Create .stride_auth.md | an editor view, not the app | `.stride_auth.md` from the onboarding template with the fake token `stride_dev_XXXX…` and `maya.chen@example.test` | Crop the editor pane |
-| `metrics-button.png` | metrics-dashboard / 1 Access the Metrics Dashboard | `/boards/<Checkout>` | Board tabs with **Metrics** | Crop the tabs |
-| `metrics-filter.png` | metrics-dashboard / 2 Filter Your Data | `/boards/<Checkout>/metrics` | Filters card | Crop the card |
-| `metrics-summary-cards.png` | metrics-dashboard / 3 Understand the Summary Cards | `/boards/<Checkout>/metrics` | Summary cards with data | Crop the card row |
-| `throughput-summary.png` | throughput-metrics / 2 Navigate to Throughput | `/boards/<Checkout>/metrics/throughput` | Summary stats | Crop the stat row |
-| `throughput-chart.png` | throughput-metrics / 3 Reading the Chart | `/boards/<Checkout>/metrics/throughput` | Daily completions chart | Crop the chart |
-| `cycle-time-summary.png` | cycle-time-metrics / 2 Navigate to Cycle Time | `/boards/<Checkout>/metrics/cycle-time` | Summary stats | Crop the stat row |
-| `cycle-time-chart.png` | cycle-time-metrics / 3 Reading the Chart | `/boards/<Checkout>/metrics/cycle-time` | Cycle time chart | Crop the chart |
-| `lead-time-summary.png` | lead-time-metrics / 2 Navigate to Lead Time | `/boards/<Checkout>/metrics/lead-time` | Summary stats | Crop the stat row |
-| `lead-time-chart.png` | lead-time-metrics / 3 Lead Time vs. Cycle Time | `/boards/<Checkout>/metrics/lead-time` | Lead time chart | Crop the chart |
-| `review-wait-time.png` | wait-time-metrics / 3 Reading the Tables | `/boards/<Checkout>/metrics/wait-time` | Review wait table | Crop the table |
-| `backlog-wait-time.png` | wait-time-metrics / 3 Reading the Tables | `/boards/<Checkout>/metrics/wait-time` | Backlog wait table | Crop the table |
+| `metrics-button.png` | metrics-dashboard / 1 Access the Metrics Dashboard | `/boards/<Checkout>` (as Maya) | Board title and the owner's full tab row with **Metrics** | From the board title to the bottom of the tab row, no sidebar |
+| `metrics-filter.png` | metrics-dashboard / 2 Filter Your Data | `/boards/<Checkout>/metrics` | Defaults: **Last 30 Days**, **All Agents**, **Exclude Weekends** unticked | Crop the **Filters** card |
+| `metrics-summary-cards.png` | metrics-dashboard / 3 Understand the Summary Cards | `/boards/<Checkout>/metrics` | Defaults; all five cards, including **Compliance** | Crop the card row |
+| `throughput-summary.png` | throughput-metrics / 2 Navigate to Throughput | `/boards/<Checkout>/metrics/throughput` | Defaults | Crop the four stat cards |
+| `throughput-chart.png` | throughput-metrics / 3 Reading the Chart | `/boards/<Checkout>/metrics/throughput` | Defaults | **Daily Completions Bar Chart** card, cut after about eleven bars |
+| `cycle-time-summary.png` | cycle-time-metrics / 2 Navigate to Cycle Time | `/boards/<Checkout>/metrics/cycle-time` | Defaults | Crop the four stat cards |
+| `cycle-time-chart.png` | cycle-time-metrics / 3 Reading the Chart | `/boards/<Checkout>/metrics/cycle-time` | Defaults; hide the filters and stats in the DOM so the whole chart fits | The whole **Cycle Time Trend** card |
+| `lead-time-summary.png` | lead-time-metrics / 2 Navigate to Lead Time | `/boards/<Checkout>/metrics/lead-time` | Defaults | Crop the four stat cards |
+| `lead-time-chart.png` | lead-time-metrics / 3 Lead Time vs. Cycle Time | `/boards/<Checkout>/metrics/lead-time` | Defaults; hide the filters and stats in the DOM so the whole chart fits | The whole **Lead Time Trend** card |
+| `wait-time-metrics-step-2.png` | wait-time-metrics / 2 Navigate to Wait Time | `/boards/<Checkout>/metrics` | Defaults | Crop the **Wait Time** card |
+| `review-wait-time.png` | wait-time-metrics / 3 Reading the Two Sections | `/boards/<Checkout>/metrics/wait-time` | Defaults | **Review Wait Time** section: the stats and the first three tasks |
+| `backlog-wait-time.png` | wait-time-metrics / 3 Reading the Two Sections | `/boards/<Checkout>/metrics/wait-time` | Defaults; hide the filters and the review section in the DOM | **Backlog Wait Time** section: the stats and the first four tasks |
+| `workspace-and-compliance-metrics-step-2.png` | workspace-and-compliance-metrics / 2 Open the Workspace Metrics Page | `/metrics` (as Maya) | Defaults: 14 days, **All boards**, weekends included | From the page title and toolbar to the bottom of the KPI strip, no sidebar |
+| `workspace-and-compliance-metrics-step-4.png` | workspace-and-compliance-metrics / 4 Read the Daily Charts and Agents | `/metrics` | Defaults; hide the cycle and lead charts in the DOM | The throughput chart and the agents panel |
+| `workspace-and-compliance-metrics-step-8.png` | workspace-and-compliance-metrics / 8 Read Step Dispatch Rates | `/boards/<Checkout>/metrics/compliance` (as Maya, the owner) | Seeded workflow steps: bars in all three colours | From the page title to the bottom of **Step Dispatch Rates** |
+| `workspace-and-compliance-metrics-step-9.png` | workspace-and-compliance-metrics / 9 Read Skip Reasons and Agent Compliance | `/boards/<Checkout>/metrics/compliance` | Hide **Step Dispatch Rates** in the DOM | **Skip Reasons** and **Compliance by Agent** |
 
 When you add an image to a guide, add its row here in the same change.

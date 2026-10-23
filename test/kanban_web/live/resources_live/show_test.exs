@@ -125,6 +125,36 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       end
     end
 
+    test "renders each metrics guide without raw markup", %{conn: conn} do
+      for id <- [
+            "metrics-dashboard",
+            "throughput-metrics",
+            "cycle-time-metrics",
+            "lead-time-metrics",
+            "wait-time-metrics",
+            "workspace-and-compliance-metrics"
+          ] do
+        {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
+
+        refute html =~ "&lt;", "#{id} renders escaped HTML"
+        refute html =~ "**", "#{id} renders a literal **"
+        assert html =~ "<strong>", "#{id} renders no bold UI label"
+      end
+    end
+
+    test "the metrics guides show the new workspace, compliance and wait-time images",
+         %{conn: conn} do
+      {:ok, _view, wait} = live(conn, ~p"/resources/wait-time-metrics")
+      assert wait =~ ~s(src="/images/resources/guides/wait-time-metrics-step-2.png")
+
+      {:ok, _view, html} = live(conn, ~p"/resources/workspace-and-compliance-metrics")
+
+      for step <- [2, 4, 8, 9] do
+        assert html =~
+                 ~s(src="/images/resources/guides/workspace-and-compliance-metrics-step-#{step}.png")
+      end
+    end
+
     test "the reviewing guide shows the Review queue screenshots", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/resources/reviewing-completed-work")
 
