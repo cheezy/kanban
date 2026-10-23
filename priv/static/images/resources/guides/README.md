@@ -68,6 +68,13 @@ already signed in, your own name, avatar and other boards are on screen too.
 Crop them out: the sidebar footer, the member avatars in the board header, the
 workspace switcher, and `/boards`. For shots of those, sign in as Maya.
 
+Once a viewer is on the demo boards, they stay there, so they show up even
+when you're signed in as Maya: in the **Manage members** list, as an avatar on
+the board cards and the board header, and in the **Assigned To** options.
+Remove them from the page before you capture (delete their member row and
+avatar in the browser's dev tools or with a `browser.eval` script). Change only
+the page, never the data.
+
 Never forge a session cookie to sign in as someone else.
 
 Organization and workspace screens (`/org`, `/org/audit`, `/org/security`,
@@ -95,9 +102,19 @@ and check that every name and email on screen is a test account.
      `tmp/tidewave/screenshots/`.
    - If a capture call hangs or fails, don't wait on it. Take the shot by
      hand with Cmd+Shift+4 on macOS (or the Snipping Tool) instead.
+   - Fill and click with `browser.fill` and `browser.click`. Setting an
+     input's value in a script and submitting the form doesn't reach the
+     LiveView.
+   - Wait about a second after any change to the page before you capture.
+     A capture taken straight away can still show the old page.
+   - A screen taller than the window (the task form) can be captured whole
+     by zooming the page out, for example
+     `document.documentElement.style.zoom = "0.8"`. Don't go below 0.8, or
+     the text is too small to read.
 6. **Crop** to the part of the UI the step talks about, plus enough around it
    to find it. On macOS, `sips -c <height> <width> --cropOffset <y> <x> in.png --out out.png`
-   crops without other tools.
+   crops without other tools. Use an offset of at least 1: `sips` treats
+   `--cropOffset 0 0` as no offset and crops from the middle.
 7. **Compress** to under 200 KB (ImageOptim, TinyPNG or `pngquant`).
 8. **Name** the file `[guide-id]-step-[n].png`, kebab-case. Use
    `-step-[n]-[m].png` when one step has several images. Older files keep their
@@ -133,20 +150,23 @@ so routes say which demo board to open. `Checkout` is Checkout Revamp and
 
 | File | Guide / step | Route | UI state | Viewport / crop |
 |---|---|---|---|---|
-| `board-creation-step-1.png` | creating-your-first-board / 1 Access Your Boards Dashboard | any page | Sidebar with **Boards** | Crop the sidebar item |
-| `board-creation-step-2.png` | creating-your-first-board / 2 Click New Board | `/boards` (as Maya) | The new-board control | Crop the control |
-| `board-creation-step-3.png` | creating-your-first-board / 3 Enter Board Details | `/boards/new` | Form filled with a demo name and description | Crop the form |
-| `board-creation-step-4.png` | creating-your-first-board / 4 Start Using Your Board | `/boards/<Checkout>` | Board header and first columns | Full width, top of the board |
-| `understanding-columns-step-2.png` | understanding-columns / 2 AI-Optimized Boards: Fixed Columns | `/boards/<Checkout>` | All five column headers with cards | Full width, column headers and first cards |
-| `understanding-columns-step-3.png` | understanding-columns / 3 Custom Boards: Flexible Columns | `/boards/<Marketing>` | Four custom columns | Crop the column headers |
-| `understanding-columns-step-5-1.png` | understanding-columns / 5 WIP Limits | `/boards/<Marketing>/columns/<In Progress>/edit` | Column form with the WIP limit | Crop the form |
-| `understanding-columns-step-5-2.png` | understanding-columns / 5 WIP Limits | `/boards/<Marketing>` | In Progress header showing 3 of 3 | Crop the header |
-| `adding-task-step-1.png` | adding-your-first-task / 1 Open the Task Form | `/boards/<Checkout>` | Ring and arrow on the Backlog **Add Task** (+) button | Backlog and Ready headers |
-| `adding-task-step-2.png` | adding-your-first-task / 2 Enter Task Details | `/boards/<Checkout>/columns/<Backlog>/tasks/new` | New Task form filled with a demo task | Crop the form |
-| `adding-task-step-4.png` | adding-your-first-task / 4 Save and Start Working | same as above | The form's save button | Crop the button area |
-| `inviting-members-step-1.png` | inviting-team-members / 1 Access Board Settings | `/boards/<Checkout>` | Board tabs with **Members** | Full width, header and tabs |
-| `inviting-members-step-2.png` | inviting-team-members / 2 Search for Users | `/boards/<Checkout>/members` | Search for "Jordan" showing Jordan Alvarez | Crop the search panel |
-| `inviting-members-step-3.png` | inviting-team-members / 3 Set Permission Level | `/boards/<Checkout>/members` | Access level choice for Jordan | Crop the panel |
+| `board-creation-step-1.png` | creating-your-first-board / 1 Access Your Boards Dashboard | `/boards` (as Maya) | Top of the sidebar with **Boards** active | Crop the top of the sidebar |
+| `board-creation-step-2.png` | creating-your-first-board / 2 Choose a Board Type | `/boards` (as Maya) | Checkout Revamp card and the **New board** card with **Empty Board** and **AI Optimized**; Marketing card hidden in the page | Header and first grid row |
+| `board-creation-step-3.png` | creating-your-first-board / 3 Enter Board Details | `/boards/new?ai_optimized=true` | **New Board** form with a demo name and description, not saved | From the heading to **Save Board** |
+| `board-creation-step-4.png` | creating-your-first-board / 4 Start Using Your Board | `/boards/<Checkout>` | Header, tabs and all five columns, page zoomed to 80% | Full width, top of the board |
+| `understanding-columns-step-2.png` | understanding-columns / 2 AI-Optimized Boards: Fixed Columns | `/boards/<Checkout>` | All five column headers with cards, page zoomed to 80% | Column headers and first cards |
+| `understanding-columns-step-3.png` | understanding-columns / 3 Custom Boards: Flexible Columns | `/boards/<Marketing>` | Four custom columns, In Progress at 3/3 | Crop the columns |
+| `understanding-columns-step-5-1.png` | understanding-columns / 5 WIP Limits | `/boards/<Marketing>/columns/<In Progress>/edit` | Column form with **WIP Limit** 3, nothing focused | Crop the form |
+| `understanding-columns-step-5-2.png` | understanding-columns / 5 WIP Limits | `/boards/<Marketing>` | In Progress header showing 3/3, with no + button | Crop the column |
+| `adding-task-step-1.png` | adding-your-first-task / 1 Open the Task Form | `/boards/<Checkout>` | Ring and arrow on the Backlog **Add Task** (+) button | Backlog and Ready headers, exactly 560x160 (the image test uses this size) |
+| `adding-task-step-2.png` | adding-your-first-task / 2 Enter Task Details | `/boards/<Checkout>/columns/<Backlog>/tasks/new` | New Task form filled with a demo task under the Saved payment methods goal, page zoomed to 80%, not saved | From the heading to **Column** |
+| `adding-task-step-4.png` | adding-your-first-task / 4 Save and Start Working | same as above, scrolled to the bottom | Labels (Payments ticked), Dependencies and **Save Task** | Crop the button area |
+| `inviting-members-step-1.png` | inviting-team-members / 1 Open the Members Tab | `/boards/<Checkout>` | Ring and arrow on the **Members** tab | Full width, header and tabs |
+| `inviting-members-step-2.png` | inviting-team-members / 2 Search by Email | `/boards/<Checkout>/members` | Searched `jordan.alvarez@example.test` (search matches whole emails only); Jordan's card shown | From the heading to Jordan's card |
+| `inviting-members-step-3.png` | inviting-team-members / 3 Choose Their Access | `/boards/<Checkout>/members` | Jordan's card and the current users (Maya, Marcus, Priya) | From Jordan's card to **Close** |
+| `inviting-team-members-step-4.png` | inviting-team-members / 4 Invite Someone Without an Account | `/boards/<Checkout>/members` | Searched `sam.ortiz@example.test`, which has no account; the invite card shown. Don't click an invite button | Crop the window |
+| `using-stride-with-a-team-step-2.png` | using-stride-with-a-team / 2 Plan the Work as Goals | `/boards/<Checkout>` | The Saved payment methods goal card in Ready, its child W10 below and W9 in Doing | Ready and Doing columns, scrolled to the goal |
+| `using-stride-with-a-team-step-3.png` | using-stride-with-a-team / 3 Assign Each Goal to a Developer | `/boards/<Checkout>/tasks/<goal>/edit` | **Assigned To** set to Priya Raman with a ring, not saved | Priority to Assigned To |
 | `hooks-step-2.png` | setting-up-hooks / 2 Create .stride.md | an editor, not the app | `.stride.md` with the guide's example hooks | Crop the editor pane |
 | `api-auth-step-1.png` | api-authentication / 1 Generate an API Token | `/boards/<Checkout>/api_tokens` | Token form filled with a demo name | Crop the form |
 | `api-auth-step-2.png` | api-authentication / 2 Complete Token Generation | `/boards/<Checkout>/api_tokens` | New-token panel, token text replaced with a fake value | Crop the panel |

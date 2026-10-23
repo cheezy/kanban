@@ -3,6 +3,14 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
 
   alias KanbanWeb.ResourcesLive.HowToData
 
+  @getting_started_ids [
+    "creating-your-first-board",
+    "understanding-columns",
+    "adding-your-first-task",
+    "inviting-team-members",
+    "using-stride-with-a-team"
+  ]
+
   describe "all_how_tos/0" do
     test "returns a list of how-to guides" do
       how_tos = HowToData.all_how_tos()
@@ -277,6 +285,69 @@ defmodule KanbanWeb.ResourcesLive.HowToDataTest do
       assert step.content =~ "**Add Task**"
       refute step.content =~ "keyboard shortcut"
       assert File.read!("lib/kanban_web/components/column_header.ex") =~ ~s{gettext("Add Task")}
+    end
+
+    test "every bolded UI label in the getting-started guides exists in the source" do
+      sources =
+        Enum.map_join(
+          [
+            "lib/kanban_web/components/side_nav.ex",
+            "lib/kanban_web/components/board_tabs.ex",
+            "lib/kanban_web/components/column_header.ex"
+            | Path.wildcard("lib/kanban_web/live/{board,column,task}_live/**/*.{ex,heex}")
+          ],
+          &File.read!/1
+        )
+
+      labels =
+        for id <- @getting_started_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            [_, label] <- Regex.scan(~r/\*\*([^*]+)\*\*/, step.content),
+            do: {id, label}
+
+      assert labels != []
+
+      for {id, label} <- labels do
+        assert sources =~ ~s("#{label}"), "#{id} names **#{label}**, which no screen shows"
+      end
+    end
+
+    test "getting-started guides keep their ids and minimum step counts" do
+      for {id, steps} <- [
+            {"creating-your-first-board", 4},
+            {"understanding-columns", 5},
+            {"adding-your-first-task", 4},
+            {"inviting-team-members", 5},
+            {"using-stride-with-a-team", 7}
+          ] do
+        assert {:ok, guide} = HowToData.get_how_to(id)
+        assert length(guide.steps) >= steps, "#{id} should have at least #{steps} steps"
+      end
+    end
+
+    test "getting-started guides drop the labels the UI no longer shows" do
+      content =
+        for id <- @getting_started_ids,
+            {:ok, guide} = HowToData.get_how_to(id),
+            step <- guide.steps,
+            into: "",
+            do: step.content <> "\n"
+
+      for stale <- [
+            "My Boards",
+            "Edit Board",
+            "Edit board",
+            "Board Users",
+            "Can View",
+            "Add User",
+            "Create Task",
+            "Add Column",
+            "**None**",
+            "must already have a Stride account"
+          ] do
+        refute content =~ stale, "a getting-started guide still says #{inspect(stale)}"
+      end
     end
 
     test "adding-your-first-task guide has complete content" do

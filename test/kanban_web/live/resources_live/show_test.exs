@@ -62,6 +62,30 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       refute html =~ "&lt;span"
       refute html =~ "hero-plus-circle-solid"
     end
+
+    test "renders each getting-started guide without raw markup", %{conn: conn} do
+      for id <- [
+            "creating-your-first-board",
+            "understanding-columns",
+            "adding-your-first-task",
+            "inviting-team-members",
+            "using-stride-with-a-team"
+          ] do
+        {:ok, _view, html} = live(conn, ~p"/resources/#{id}")
+
+        refute html =~ "&lt;", "#{id} renders escaped HTML"
+        refute html =~ "**", "#{id} renders a literal **"
+        assert html =~ "<strong>", "#{id} renders no bold UI label"
+      end
+    end
+
+    test "the members guide renders the invitation and free-board steps", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/resources/inviting-team-members")
+
+      assert html =~ "<strong>Invite with Edit Access</strong>"
+      assert html =~ "holds up to 3 people"
+      assert html =~ "When Stride&#39;s plans are switched on"
+    end
   end
 
   describe "mount/3 with valid how-to" do
@@ -147,7 +171,7 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       # The numbers are in div elements with the rounded-full class
       assert html =~ "rounded-full"
       assert html =~ "Access Your Boards Dashboard"
-      assert html =~ "Click New Board"
+      assert html =~ "Choose a Board Type"
       assert html =~ "Enter Board Details"
       assert html =~ "Start Using Your Board"
     end
@@ -156,7 +180,7 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
       {:ok, _view, html} = live(conn, ~p"/resources/creating-your-first-board")
 
       assert html =~ "Access Your Boards Dashboard"
-      assert html =~ "Click New Board"
+      assert html =~ "Choose a Board Type"
       assert html =~ "Enter Board Details"
       assert html =~ "Start Using Your Board"
     end
@@ -164,8 +188,9 @@ defmodule KanbanWeb.ResourcesLive.ShowTest do
     test "displays step content", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/resources/creating-your-first-board")
 
-      assert html =~ "My Boards"
-      assert html =~ "navigation bar"
+      assert html =~ "<strong>Boards</strong>"
+      assert html =~ "in the sidebar"
+      refute html =~ "My Boards"
     end
 
     test "displays completion message after steps", %{conn: conn} do
