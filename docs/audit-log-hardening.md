@@ -1,5 +1,8 @@
 # Audit Log Ownership Hardening
 
+This document is for operators running Stride, and for developers changing
+the audit log. It explains what hardening changes in the database; the steps
+an operator runs are in [Audit Log Database Roles](audit-log-database-roles.md).
 The security audit log stores one row per event in the `audit_events` table. A
 trigger, `audit_events_append_only()`, rejects every edit of a stored row, every
 `TRUNCATE`, and every `DELETE` outside the retention purge. In Postgres the role
@@ -128,8 +131,11 @@ hardened, but `status/2` for that role reports `:app_role_is_superuser`.
 
 ## Retention purge
 
-Retention removes old events through one database function,
-`audit_events_purge(cutoff timestamptz)`. The statements live in
+The site-wide purge function, `audit_events_purge(cutoff timestamptz)`, removes
+old events across the whole table. Nothing in the app calls it on a schedule:
+`purge_before/1` is an operator maintenance call, and the daily retention job
+uses the [Organization purge function](#organization-retention-purge) instead.
+The statements live in
 `Kanban.AuditLog.Hardening.Purge` (`lib/kanban/audit_log/hardening/purge.ex`),
 the migration
 `priv/repo/migrations/20261006164351_add_audit_events_purge_function.exs`
@@ -159,13 +165,15 @@ What else changes depends on whether the table is hardened:
 | Trigger rule for `DELETE` | Allowed only when the current role owns `audit_events` and the delete is not fired from another trigger; the `kanban.audit_purge` flag is ignored | Allowed when the transaction-local `kanban.audit_purge` flag is on |
 | How the purge gets through | It runs as the owner role | It sets the flag around its own delete and restores the previous value |
 
-In hardened mode the application cannot become the owner role, so the purge
-function is the only way the application can delete a row. A superuser that sets the flag and
+In hardened mode the application cannot become the owner role, so the two
+purge functions (this one and the
+[Organization purge function](#organization-retention-purge)) are the only
+way the application can delete a row. A superuser that sets the flag and
 deletes directly is refused too. The owner is read from the catalog when the
 trigger runs, so no role name is embedded in it. The update branch, with its
 foreign-key nilify exception, and the always-rejected `TRUNCATE` are unchanged.
-The owner role must own no other function the application can call, because any
-such function could also delete.
+The owner role must own no function the application can call other than the
+two purge functions, because any such function could also delete.
 
 The migration installs the hardened purge only when it runs as a superuser and
 the table already belongs to `kanban_audit_owner`. Otherwise it installs the
@@ -242,6 +250,9 @@ function's reasons mirror the site function's with an `organization_` prefix:
 When the migration cannot install it, it changes nothing and logs
 `schema_create_denied` or `organization_purge_function_not_replaceable`.
 The daily retention job, `Kanban.Retention.PurgeWorker`, is the only caller.
+It calls it for each Organization that sets a retention period and, with
+`org_id` `NULL`, for site-level events when `site_audit_retention_days` is set
+in `config/config.exs`.
 
 ## Tests
 

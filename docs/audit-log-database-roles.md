@@ -1,11 +1,12 @@
 # Audit Log Database Roles
 
-The security audit log is only tamper-resistant when the role the application
-connects as does not own the `audit_events` table, its trigger function, its
-purge function or the schema holding them. This document explains which
-database roles are involved, what each environment ends up with, and the
-one-time step an operator runs to harden production. The statements themselves,
-the reason atoms and the retention purge are described in
+This document is for operators running Stride who look after its Postgres
+database. The security audit log is only tamper-resistant when the role the
+application connects as does not own the `audit_events` table, its trigger
+function, its two purge functions or the schema holding them. This document
+explains which database roles are involved, what each environment ends up
+with, and the one-time step an operator runs to harden production. The
+statements themselves, the reason atoms and the retention purge are described in
 [Audit Log Ownership Hardening](audit-log-hardening.md).
 
 ## Role model
@@ -14,8 +15,8 @@ Three roles matter:
 
 | Role | Who uses it | What it may do to the audit log |
 |---|---|---|
-| **App role** | The running application, through `DATABASE_URL` | Insert and read events, draw ids, and call the purge function. Nothing else |
-| **Owner role** (`kanban_audit_owner`) | Nobody; it cannot log in | Owns the table, its id sequence, the trigger function, the purge function and their schema |
+| **App role** | The running application, through `DATABASE_URL` | Insert and read events, draw ids, and call the two purge functions. Nothing else |
+| **Owner role** (`kanban_audit_owner`) | Nobody; it cannot log in | Owns the table, its id sequence, the trigger function, the purge functions `audit_events_purge` and `audit_events_purge_organization`, and their schema |
 | **Admin role** | An operator, for one command at a time | A superuser that can create the owner role and hand ownership to it |
 
 The app role is never a member of the owner role. The admin credential is
@@ -90,12 +91,13 @@ instead.
    warning.
 
 The command opens one connection of its own (never the app pool, and no
-reconnect), runs the table hardening and then the purge hardening in one
-transaction, and stops the connection whatever happens. A failing statement
-rolls everything back. It logs only result tags and, on a failure, the
-exception type and database error code. It never logs the admin URL, its host
-or its password. Postgrex's own connection-error line can name the host and
-port; the password is never shown.
+reconnect), runs the table hardening, the purge hardening and the
+Organization purge hardening, in that order, in one transaction, and stops
+the connection whatever happens. A failing statement rolls everything back.
+It logs only result tags and, on a failure, the exception type and database
+error code. It never logs the admin URL, its host or its password. Postgrex's
+own connection-error line can name the host and port; the password is never
+shown.
 
 | Result | Meaning |
 |---|---|
@@ -120,17 +122,17 @@ Before and after hardening, ask the running release:
 ```
 
 It connects as the app role through the normal Repo configuration and returns
-`:hardened`, or `{:degraded, reasons}` combining the table check and the purge
-check. Before provisioning, production reports reasons such as
-`:owner_role_missing` and `:table_not_owned_by_owner_role`; afterwards it
-reports `:hardened`.
+`:hardened`, or `{:degraded, reasons}` combining the table check, the purge
+check and the Organization purge check. Before provisioning, production
+reports reasons such as `:owner_role_missing` and
+`:table_not_owned_by_owner_role`; afterwards it reports `:hardened`.
 
 ## Future migrations that alter audit_events
 
 Once hardened, the app role no longer owns `audit_events`, its trigger
-function or its purge function, and `release_command` runs migrations as the
+function or its purge functions, and `release_command` runs migrations as the
 app role. A later migration that alters any of them (adding a column or index,
-replacing the trigger or the purge function, changing their ownership) fails
+replacing the trigger or a purge function, changing their ownership) fails
 with `insufficient_privilege` in production.
 
 Such a migration must run through the admin path. Write it so it runs as the
@@ -157,15 +159,30 @@ reports `:organization_purge_function_not_owned_by_owner_role` and the daily
 retention job names each Organization in its `failed_steps`
 ([Organization Security Policies](organization-security-policies.md#after-deploying)).
 
+`20261019230522_add_actor_in_organization_to_audit_events` is another. It adds
+the nullable boolean column `actor_in_organization` and updates no row. On a
+hardened database apply it through the admin path. A plain boolean column with
+no default calls no function, so `status/2` reports the same state afterwards.
+
 ## Rollback
 
-There is no release command that undoes hardening. The two hardening
-migrations can be rolled back only by a superuser: their down steps hand the
-table, sequence, trigger function and schema back to the role running the
-rollback, and drop the purge function
-([When the migration hardens](audit-log-hardening.md#when-the-migration-hardens),
-[Retention purge](audit-log-hardening.md#retention-purge)). Run as the app
-role, a rollback degrades instead and changes nothing. The owner role is never
+There is no release command that undoes hardening. Three migrations take
+part in it, and on a hardened database each can be rolled back only by a
+superuser:
+
+- `20261006155407_move_audit_events_ownership` hands the table, sequence,
+  trigger function and schema back to the role running the rollback
+  ([When the migration hardens](audit-log-hardening.md#when-the-migration-hardens)).
+- `20261006164351_add_audit_events_purge_function` drops `audit_events_purge`
+  and restores the flag-based trigger body
+  ([Retention purge](audit-log-hardening.md#retention-purge)).
+- `20261021120409_add_audit_events_organization_purge_function` drops
+  `audit_events_purge_organization`
+  ([Organization retention purge](audit-log-hardening.md#organization-retention-purge)).
+
+The two purge migrations drop their function only when the role running the
+rollback owns it, holds its owner's rights, or is a superuser. On a hardened database, a rollback run as
+the app role degrades instead and changes nothing. The owner role is never
 dropped, because other databases on the cluster may use it.
 
 ## Fly Managed Postgres
@@ -191,10 +208,10 @@ What degraded mode still gives on Managed Postgres:
 - The append-only trigger rejects every update, except the cascade that clears
   the actor link when a user is deleted, and every `TRUNCATE` sent through the
   application's normal code paths.
-- The purge function still refuses a cutoff newer than 90 days.
+- Both purge functions still refuse a cutoff newer than 90 days.
 
 What it does not give: the application role owns `audit_events`, its trigger
-function and its purge function. A compromised application could therefore
+function and its purge functions. A compromised application could therefore
 disable or replace the trigger, or set the purge flag and delete rows directly
 without the 90-day floor.
 

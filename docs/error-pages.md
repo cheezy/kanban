@@ -1,8 +1,12 @@
 # Error Pages and Error Responses
 
-How Stride turns an exception into a response: which module renders it, in
-which format, and what the client sees. This covers browser pages and `/api`
-JSON bodies, including errors raised before the router runs.
+This document is for operators running Stride who need to know what a
+browser, API or SCIM client gets when a request fails, and that nothing from
+the request reaches it, and for contributors changing the error modules. It
+explains how Stride turns an exception into a response: which module renders
+it, in which format, and what the client sees. This covers browser pages,
+`/api` JSON bodies and `/scim` SCIM errors, including errors raised before the
+router runs.
 
 For the API contract itself (status codes, bodies, how to avoid them), see the
 [Errors section of the API README](api/README.md#errors). For the theme
@@ -16,7 +20,11 @@ An exception that escapes a request is caught by
 
 ```elixir
 render_errors: [
-  formats: [html: KanbanWeb.ErrorHTML, json: KanbanWeb.ErrorJSON],
+  formats: [
+    html: KanbanWeb.ErrorHTML,
+    json: KanbanWeb.ErrorJSON,
+    scim: KanbanWeb.SCIM.ErrorJSON
+  ],
   layout: false
 ]
 ```
@@ -25,10 +33,12 @@ It picks the format like this:
 
 1. If the request already has a format set (`conn.private.phoenix_format`),
    that format is used. The `/api` scopes set `json` in their `:api_json`
-   pipeline, so a routed `/api` request always renders JSON.
-2. Otherwise the `Accept` header is matched against `html` and `json`, in that
-   order. No `Accept` header, or `*/*`, gives `html`.
-3. If the `Accept` header matches neither, `html` is used.
+   pipeline, so a routed `/api` request always renders JSON. The `/scim/v2`
+   scope's `:scim` pipeline sets `scim` (`application/scim+json`), so a routed
+   SCIM request renders through `KanbanWeb.SCIM.ErrorJSON`.
+2. Otherwise the `Accept` header is matched against `html`, `json` and `scim`,
+   in that order. No `Accept` header, or `*/*`, gives `html`.
+3. If the `Accept` header matches none of them, `html` is used.
 
 The template name is `"<status>.<format>"`, for example `"404.html"` or
 `"400.json"`. Keep `html` first in `formats`: it is what an unmatched browser
@@ -94,7 +104,19 @@ conn as it entered the endpoint, unless the exception is a
 `Plug.Parsers` for that reason. On an `/api` path it re-raises any parse
 failure as a `WrapperError` whose conn has its format pinned to json, so the
 error renders through `ErrorJSON` whatever the `Accept` header says. The status
-is unchanged. On any other path it is plain `Plug.Parsers`.
+is unchanged. Two other paths are handled too:
+
+- **`/scim` paths** are re-raised the same way, with the format pinned to
+  `scim`, so the error renders through `KanbanWeb.SCIM.ErrorJSON` as a SCIM
+  error.
+- **A malformed JSON body on `POST /api/mcp`** is not raised. The wrapper
+  flags it and empties the body, the request goes on to the `:api` pipeline,
+  and once the request is authenticated the MCP endpoint answers with a 400
+  whose body is a JSON-RPC `-32700` parse error. An unauthenticated request
+  gets its 401 first. A 413, a 415 or a malformed query string on that route
+  still raises as on every other `/api` path.
+
+On any other path it is plain `Plug.Parsers`.
 
 Two rules keep this working:
 

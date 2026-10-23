@@ -1,6 +1,8 @@
 # Organizations launch runbook
 
-This runbook takes Stride from "every goal merged with plans off" to "plans
+This runbook is for operators running Stride: the site admin with shell
+access to the production release (see [Before you start](#before-you-start)).
+It takes Stride from "every goal merged with plans off" to "plans
 enforced", in order, and back again if needed. It is the operator's copy of
 the launch plan in
 [Paying Organizations design § 12](plans/PAYING-ORGANIZATIONS-DESIGN.md#12-launch-plan)
@@ -127,7 +129,9 @@ below are placeholders.
      their email went out, they get it twice, so avoid deploying while the
      send is running.
    - Keep the printed counts as the record of the run.
-   - `{:error, :unknown_announcement}` means the key is misspelled.
+   - `{:error, :unknown_announcement}` means `key:` is missing or is not the
+     string `"organizations-launch"`; check its spelling. A misspelled option
+     name such as `dryrun:` raises `ArgumentError` instead.
 
 ## Launch day
 
@@ -151,8 +155,10 @@ below are placeholders.
      `already_org_admin`, `skipped_unknown` (no account; none is created) or
      `refused` (with a reason).
    - It is idempotent and provisions no accounts. A repeat run returns
-     `created: false` and must list at least the same org-admin emails as the
-     first.
+     `created: false`. It reuses the Organization only when every current
+     org-admin is a site admin or is listed in `org_admin_emails`, so list
+     every org-admin who is not a site admin, including any appointed since
+     the first run.
    - Check that `appointed` (or `already_org_admin`) is not empty before the
      board move. A first run that appointed nobody leaves an Organization with
      no org-admin, and every later run is refused with `:name_taken`; appoint
@@ -160,8 +166,12 @@ below are placeholders.
    - `%{status: :refused, reason: ...}` writes nothing. The reasons are
      `:unknown_acting_user`, `:not_site_admin`, `:invalid_org_admin_emails`,
      `:invalid_organization` (with `errors`) and `:name_taken`, which means an
-     Organization of that name exists that staff do not run. Never work around
-     `:name_taken` by taking that Organization over; choose another `name`.
+     Organization of that name exists that has no org-admin, or has an
+     org-admin who is neither a site admin nor listed. If it is Stride's own
+     Organization, run again listing its current org-admins; do not choose
+     another `name`, which would create a second internal Organization.
+     Otherwise it is one staff do not run: never work around `:name_taken` by
+     taking that Organization over; choose another `name`.
 
 3. **Move Stride's own boards into it.** This is the board move from G442
    (W2218, `Kanban.Workspaces.move_board_to_workspace/3`).
@@ -245,5 +255,7 @@ ORDER BY 1, 2;
 - Run it read-only against the production database.
 - `metrics_events` rows are deleted after 90 days by the daily retention job
   (see [Metrics retention](telemetry.md#metrics-retention)). To compare
-  weeks across the 6 months after launch, save each week's counts, or raise
-  `retention_days`, before the first rows age out.
+  weeks across the 6 months after launch, save each week's counts before the
+  first rows age out, or raise `retention_days`. That is a setting for
+  `Kanban.Metrics.RetentionWorker` in `config/config.exs`, not an environment
+  variable, so raising it takes a deploy.

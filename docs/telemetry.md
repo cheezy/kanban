@@ -1,10 +1,11 @@
 # Telemetry Events
 
 This document describes the [`:telemetry`](https://hexdocs.pm/telemetry/)
-events the kanban app emits, for operators who want to feed them into their
-own monitoring and for developers who add new ones. Introduced by W2336, it
-covers the foundation every later telemetry task builds on: one catalog of
-events, one emit path that enforces it, and one test helper.
+events the kanban app emits, for operators running Stride who want to feed
+them into their own monitoring and for developers who add new ones.
+Introduced by W2336, it covers the foundation every later telemetry task
+builds on: one catalog of events, one emit path that enforces it, and one
+test helper.
 
 If you are setting up monitoring for the first time, read these first:
 
@@ -934,7 +935,8 @@ without one:
 
 Most events take `[counter: :count]`. Use `:sum` when `count` is a number of
 things rather than 1, as for `token_bulk_revoked`, `sessions_revoked`,
-`notification.all_read` and `digest.fanout_completed`, and give every span
+`notification.all_read`, `digest.fanout_completed` and
+`announcement.fanout_completed`, and give every span
 `[summary: :duration]` first. The entry's description becomes the metric's
 description, and its `tags` become the metric's tags.
 
@@ -965,7 +967,11 @@ Stored today:
 - since W2400, `board.member_cap_reached`, a refused addition to a full free
   board;
 - since W2404, `plan.locked_feature_clicked`, a signed-in, same-origin click
-  on a locked feature's prompt, at most once per user and feature a week.
+  on a locked feature's prompt, at most once per user and feature a week;
+- since W2416, `announcement.fanout_completed`, one row per real service
+  announcement run, whose `count` is the number of jobs that run added. A dry
+  run emits nothing, and the per-recipient `announcement.email_sent` is not
+  stored.
 
 The API request and error counts are the exception to the rule for new
 events. `KanbanWeb.Plugs.ApiTelemetry` runs before the API token is checked,
@@ -1042,6 +1048,9 @@ config :kanban, Kanban.Metrics.RetentionWorker, retention_days: 90, batch_size: 
   1,000.
 - The job never touches `audit_events`, which has its own retention rules and
   database roles (see [Audit log hardening](audit-log-hardening.md)).
+- `retention_days` and `batch_size` are application config, not environment
+  variables: `config/runtime.exs` does not read them, so changing one takes a
+  change to `config/config.exs` and a deploy.
 - `Kanban.Metrics.UserActivity`, behind the admin users page, reads
   `metrics_events`, so its counts cover the retention period only.
 
@@ -1054,6 +1063,28 @@ When it finishes, the job emits `[:kanban, :metrics, :retention_completed]`:
 | `retention_days` (metadata) | The retention period used |
 
 A run skipped for an invalid setting emits nothing.
+
+The other retention settings belong to a second daily job,
+`Kanban.Retention.PurgeWorker`, which runs at 03:47 UTC on the same
+`:maintenance` queue, one attempt per run. It removes Organization audit events
+older than each Organization's own retention period
+([Organization Security Policies](organization-security-policies.md#audit-retention)),
+site-level audit events older than `site_audit_retention_days`, archived tasks
+older than `archived_task_retention_days`, and expired SAML sign-in state. It
+reads these settings, also from `config/config.exs`:
+
+```elixir
+config :kanban, Kanban.Retention.PurgeWorker,
+  site_audit_retention_days: 90,
+  archived_task_retention_days: nil,
+  batch_size: 1_000
+```
+
+`nil` keeps everything for that step. An audit retention below the 90-day
+floor, or a value that is not a positive whole number of days, removes nothing
+for that step and logs a warning. The audit rows go through the database
+function described in
+[Organization retention purge](audit-log-hardening.md#organization-retention-purge).
 
 ## Testing events
 

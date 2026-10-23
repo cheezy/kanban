@@ -1,5 +1,11 @@
 # Security Review Baseline & Surface Inventory
 
+This is a dated record for operators running Stride and for security
+reviewers: what the G309 review checked on 2026-07-06. It is not current
+guidance. Sections 1 to 5 are left as they were recorded, and
+[Changes since the baseline](#6-changes-since-the-baseline) lists the figures
+and surfaces that have changed since.
+
 > Foundation artifact for the comprehensive security review tracked under Stride
 > goal **G309** (review) and **G310** (remediation). This document is the shared
 > attack-surface map and the known-good tooling baseline that the nine domain
@@ -206,3 +212,47 @@ Each domain review below has a concrete, non-exhaustive starting file list.
   `stride-security-review` skill.
 - Every finding is hand-traced against the code to confirm exploitability
   before filing — no pattern-match-only findings.
+
+## 6. Changes since the baseline
+
+Re-checked on 2026-10-22 (W2433). Each row names the command that produced the
+current value, so it can be re-run. The baseline's own counting commands were
+not recorded; the ones below give 69 context files, 197 web files and about
+50k lines when run on the commit that added this document, so they count the
+same way.
+
+| Baseline claim | Value on 2026-10-22 | Command |
+|---|---|---|
+| Sobelow: no findings | 26 low-confidence findings printed: 14 `XSS.Raw` and 1 `XSS.SendResp` at sites listed in the triage table above, 10 `Traversal.FileModule` in `lib/kanban/workspaces/export/`, and 1 `SQL.Query` in `lib/kanban/audit_log/retention.ex`. `.sobelow-conf` sets `exit: false`, so the scan still exits 0 | `mix sobelow --config` |
+| 20 triaged entries in `.sobelow-skips` | 21 entries | `grep -c . .sobelow-skips` |
+| `mix deps.audit`: no vulnerabilities | No vulnerabilities, with advisory `GHSA-69m6-wcv4-rwcf` ignored | `mix deps.audit --ignore-advisory-ids GHSA-69m6-wcv4-rwcf` (the `before_doing` hook in `.stride.md`) |
+| `mix hex.audit`: no retired or advisory packages | No retired packages, with the same advisory ignored | `HEX_IGNORE_ADVISORIES=GHSA-69m6-wcv4-rwcf mix hex.audit` |
+| 35 dependencies, all up to date | 42 direct dependencies in `mix.exs` (86 packages in `mix.lock`), all up to date | `mix hex.outdated` |
+| ~49k lines of Elixir in `lib/` | 122,246 lines | `find lib -name '*.ex' -print0 \| xargs -0 cat \| wc -l` |
+| 66 context files | 287 | `find lib/kanban -name '*.ex' \| wc -l` |
+| 190 web files | 384 | `find lib/kanban_web -type f \| wc -l` |
+| 66 files with auth or scope primitives | 189 | `grep -rlE 'BoardScope\|require_authenticated\|current_scope\|authorize' lib \| wc -l` |
+| 6 context modules with `fragment(...)` | 21 | `grep -rl 'fragment(' lib/kanban \| wc -l` |
+| 13 changeset-bearing modules | 24 | `grep -rl 'def changeset' lib/kanban \| wc -l` |
+| 1 outbound-HTTP context (`github.ex`) | 4 modules call `Req`: `lib/kanban/github.ex`, `lib/kanban/sso/oidc.ex`, `lib/kanban/webhooks/transport.ex` and the `lib/mix/tasks/kanban/backfill_changed_files.ex` mix task | `grep -rln 'Req\.' lib` |
+| `@api_update_fields` / `@api_create_fields` in `lib/kanban/tasks/task.ex` | Both are in `lib/kanban/tasks/task/changesets.ex` | `grep -rnE '@api_(update\|create)_fields (\[\|@)' lib` |
+
+The pipelines and routes have grown too
+(`grep -n 'pipeline :' lib/kanban_web/router.ex`):
+
+- `:browser` and `:api` now also run `KanbanWeb.Plugs.RemoteClientIp`, which
+  resolves the client IP behind the proxy before rate limiting reads it.
+- Pipelines the table in section 2 does not list:
+  `:enforce_organization_two_factor`, `:scim`, `:one_click_unsubscribe`,
+  `:mcp_discovery`, `:api_board_optional` and `:mcp_event_stream_accept`.
+- Routes the boundary map does not list: SCIM provisioning under `/scim/v2`
+  (SCIM token), `POST /api/mcp` and `GET /api/boards` (API token),
+  `/admin/users`, `/admin/audit-log` and its export, and
+  `/admin/organizations` (site admin), `/org` (org-admins), and
+  `/workspace/settings` and `/locked/:feature` (signed in).
+- The parse-failure pin in `KanbanWeb.Plugs.Parsers` now also applies to
+  `/scim` paths, with the `scim` format, and a malformed JSON body on
+  `POST /api/mcp` is answered by the MCP endpoint instead of raised (see
+  [Errors raised before the router](error-pages.md#errors-raised-before-the-router)).
+
+The toolchain line still holds: `.tool-versions` pins Elixir 1.20.2 on OTP 28.
