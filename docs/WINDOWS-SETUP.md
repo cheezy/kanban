@@ -239,14 +239,26 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 ```powershell
 # Create branch name from task info
 $branchName = "task-$env:TASK_IDENTIFIER-$($env:TASK_TITLE.ToLower() -replace ' ', '-' -replace '[^a-z0-9\-]', '')"
-git checkout -b $branchName origin/main
+
+# Safe to re-run: switch to the branch if an earlier run already created it
+git show-ref --verify --quiet "refs/heads/$branchName"
+if ($LASTEXITCODE -eq 0) {
+    git checkout $branchName
+} else {
+    git checkout -b $branchName origin/main
+}
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 git add .
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-git commit -m "$env:TASK_TITLE"
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+# Commit only when something is staged, so a re-run with nothing new succeeds.
+# git diff --cached --quiet exits 0 when nothing is staged and 1 when there is.
+git diff --cached --quiet
+if ($LASTEXITCODE -ne 0) {
+    git commit -m "$env:TASK_TITLE"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
 
 git push -u origin $branchName
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

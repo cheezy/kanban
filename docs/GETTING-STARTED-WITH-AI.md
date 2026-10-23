@@ -343,11 +343,11 @@ Runs before the agent completes a task. Put your quality gate here: tests, linte
 
 #### before_review
 
-Runs when the completed task enters review. A common use is opening a pull request with `gh pr create`.
+Runs after `after_doing` and before the agent calls `PATCH /api/tasks/:id/complete`, for every task, whether or not **Needs Review** is ticked. The completion call is refused without a successful `before_review` result. A common use is opening a pull request with `gh pr create`.
 
 #### after_review
 
-Runs after the task is approved. A common use is merging or deploying.
+Runs right after the completion call when **Needs Review** is not ticked, or after a human approves the task. A common use is merging or deploying.
 
 #### after_goal
 
@@ -436,14 +436,18 @@ Stride gives the agent the highest-priority task in **Ready** (then the highest 
 - **Capabilities match**: the token has every capability the task requires, or the token has none.
 - **Dependencies satisfied**: every task in its `dependencies` is completed.
 - **No file conflicts**: none of its `key_files` is listed by a task in **Doing** or **Review**.
+- **Not a Human Task**: the task's **Human Task** box is not ticked. Agents are never offered a Human Task.
+- **Not assigned to someone else**: the task's **Assigned To** is empty, or is the user who owns the token.
+
+Claiming a task by its identifier applies the same rules except the file-conflict check. The full list is in [How the next task is chosen](AGENT-CAPABILITIES.md#how-the-next-task-is-chosen).
 
 The task moves to **Doing**. The `key_files` rule stops two agents from editing the same file at once: a task that shares a key file with a task in **Doing** or **Review** waits until that task is done.
 
 ### 4. Agent Completes Work
 
-When the work is done, the agent runs `after_doing` (your tests and checks), calls `PATCH /api/tasks/:id/complete`, and then runs `before_review`. The completion body is documented in [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md).
+When the work is done, the agent runs `after_doing` (your tests and checks), then `before_review`, and then calls `PATCH /api/tasks/:id/complete` with both results. Both hooks run before the completion call for every task, whether or not **Needs Review** is ticked, and the call is refused unless both succeeded. The completion body is documented in [PATCH /api/tasks/:id/complete](api/patch_tasks_id_complete.md).
 
-- **Needs Review not ticked**: the task moves to **Done** and the agent claims the next task.
+- **Needs Review not ticked**: the task moves to **Done**, the agent runs `after_review`, and then it claims the next task.
 - **Needs Review ticked**: the task moves to **Review** and the agent stops until a human decides.
 
 ### 5. Human Reviews Work (For Tasks Requiring Review)
@@ -507,6 +511,8 @@ The agent works through these steps without asking between them, and without ski
 2. The tasks require capabilities the token lacks, or a capability name on the token is misspelled. Compare the task's `required_capabilities` with the token's capabilities on the **Tokens** tab.
 3. The tasks' dependencies are not completed yet.
 4. Every Ready task shares a key file with a task in **Doing** or **Review**.
+5. The tasks are marked **Human Task**. Agents are never offered them; untick the box on the task form if an agent should do the work.
+6. The tasks are assigned to another user. An agent is offered only tasks whose **Assigned To** is empty or is the user who owns its token. Clear the field, or assign the task to that user.
 
 `GET /api/tasks/next` returns the task the agent would get; see [GET /api/tasks/next](api/get_tasks_next.md).
 
